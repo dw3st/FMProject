@@ -63,16 +63,30 @@ export function ScoutScreen() {
 
   const [result, setResult] = useState<ScoutSearchResponse | null>(null);
   const [fetching, setFetching] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [leagueRows, setLeagueRows] = useState<LeagueData[]>([]);
   const [mySquadId, setMySquadId] = useState<string>("");
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
 
   const isFiltering = filters !== debouncedFilters || fetching;
 
+  // Reset the page to 0 exactly once per settled query change (debounced filters or sort) —
+  // not on every keystroke. Comparing + resetting during render (rather than in a `useEffect`)
+  // means the fetch effect below only ever sees the final, already-reset page, so a filter or
+  // sort change fires a single request instead of one with the stale page plus a follow-up.
+  const [committedQuery, setCommittedQuery] = useState({ filters: debouncedFilters, sortKey, sortDir });
+  if (
+    committedQuery.filters !== debouncedFilters
+    || committedQuery.sortKey !== sortKey
+    || committedQuery.sortDir !== sortDir
+  ) {
+    setCommittedQuery({ filters: debouncedFilters, sortKey, sortDir });
+    setPage(0);
+  }
+
   function handleSetFilters(f: ScoutFilterState) {
     setFilters(f);
     saveFilters(f);
-    setPage(0);
   }
 
   function handleSort(key: string) {
@@ -82,7 +96,6 @@ export function ScoutScreen() {
       setSortKey(key);
       setSortDir("desc");
     }
-    setPage(0);
   }
 
   // Static data: league list (filter options) and the user's squad id (disables offers on own players).
@@ -110,18 +123,22 @@ export function ScoutScreen() {
       body: JSON.stringify(query),
       signal: controller.signal,
     })
-      .then((r) => (r.ok ? (r.json() as Promise<ScoutSearchResponse>) : null))
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`scout-search failed with status ${r.status}`);
+        return (await r.json()) as ScoutSearchResponse;
+      })
       .then((res) => {
         if (controller.signal.aborted) return;
-        if (res) {
-          setResult(res);
-          // The server clamps out-of-range pages; follow it so the pager stays consistent.
-          if (res.page !== page) setPage(res.page);
-        }
+        setResult(res);
+        setFetchError(false);
+        // The server clamps out-of-range pages; follow it so the pager stays consistent.
+        if (res.page !== page) setPage(res.page);
         setFetching(false);
       })
       .catch(() => {
-        if (!controller.signal.aborted) setFetching(false);
+        if (controller.signal.aborted) return;
+        setFetchError(true);
+        setFetching(false);
       });
     return () => controller.abort();
   }, [session, debouncedFilters, sortKey, sortDir, page, refreshTick]);
@@ -181,6 +198,8 @@ export function ScoutScreen() {
           mySquadId={mySquadId}
           onOffer={setOfferTarget}
           sellListedIds={sellListedIds}
+          error={fetchError}
+          onRetry={() => setRefreshTick((n) => n + 1)}
         />
       </div>
 
