@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, UserPlus, Tag } from "lucide-react";
+import { ChevronUp, ChevronDown, UserPlus, Tag } from "lucide-react";
+import { Icon } from "@/GameInterface/Icons";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
@@ -35,11 +36,15 @@ interface Props {
   onOffer?: (player: DisplayPlayer) => void;
   /** Sell-listed ids among `rows`. */
   sellListedIds?: Set<string>;
+  /** True when the last search request failed (server error, network error, non-OK response). */
+  error?: boolean;
+  /** Called when the user clicks the retry button in the error state. */
+  onRetry?: () => void;
 }
 
 export function ScoutTable({
   rows, total, page, pageSize, sortKey, sortDir, onSort, onPageChange,
-  loading, filtering, mySquadId, onOffer, sellListedIds = new Set(),
+  loading, filtering, mySquadId, onOffer, sellListedIds = new Set(), error, onRetry,
 }: Props) {
   const { t } = useTranslation();
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -92,8 +97,21 @@ export function ScoutTable({
 
       <div className={`flex-1 overflow-y-auto transition-opacity ${showUpdating ? "opacity-50 pointer-events-none" : ""}`}>
         {rows.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-sm font-medium">
-            {filtering ? "" : t("scout.table.noPlayersFound")}
+          <div className="flex flex-col items-center justify-center h-32 gap-3 text-muted-foreground text-sm font-medium">
+            {error ? (
+              <>
+                <span>{t("scout.table.loadError")}</span>
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/40 cursor-pointer"
+                >
+                  {t("scout.table.retry")}
+                </button>
+              </>
+            ) : (
+              !filtering && t("scout.table.noPlayersFound")
+            )}
           </div>
         ) : (
           rows.map((player, index) => (
@@ -187,7 +205,7 @@ export function ScoutTable({
           onClick={() => onPageChange(page - 1)}
           className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="w-3 h-3" />
+          <Icon name="chevron-left" size={12} />
           {t("scout.table.previousPage")}
         </button>
         <span className="text-xs text-muted-foreground font-semibold">
@@ -200,7 +218,7 @@ export function ScoutTable({
           className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {t("scout.table.nextPage")}
-          <ChevronRight className="w-3 h-3" />
+          <Icon name="chevron-right" size={12} />
         </button>
       </div>
     </div>

@@ -327,6 +327,7 @@
     "territoryDescription": "Defina a base de sua dinastia. Selecione uma nação para desbloquear divisões profissionais locais e comece sua ascensão tática.",
     "searchTerritory": "Buscar território...",
     "countriesCount": "{{count}} países",
+    "countriesCount_one": "{{count}} país",
     "continents": {
       "europe": "Europa",
       "south_america": "América do Sul",
@@ -360,7 +361,6 @@
       "5": "Elite Mundial"
     },
     "selectClubDetail": "Selecione um clube para ver detalhes",
-    "top": "Topo",
     "squadStrength": "Força do Elenco",
     "keyPlayers": "Jogadores Chave",
     "noData": "Sem dados.",
@@ -1466,6 +1466,8 @@
       "nextPage": "Próxima",
       "pageOf": "Página {{page}} de {{pages}}",
       "noPlayersFound": "Nenhum jogador encontrado com os critérios selecionados",
+      "loadError": "Não foi possível carregar os jogadores. Tente novamente.",
+      "retry": "Tentar novamente",
       "action": "Ação",
       "offer": "Oferta"
     },

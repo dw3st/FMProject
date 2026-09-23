@@ -13,10 +13,10 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 | `leagueLabel(league, countryName)` | Rótulo `"Nome da Liga · País"` usado em combobox e seletor de liga. |
 | `competitionName(slug, leagues)` | Nome de exibição de uma competição pelo slug; se não achar na lista, faz `titleCase` do slug (tira o prefixo `of_`). |
 | `groupCountriesByContinent(countries, displayName)` | Agrupa países por continente, na ordem de `CONTINENT_ORDER`, ordenado dentro do grupo pelo nome de exibição. |
-| `sortLeaguesForCountry(leagues, countryName)` | Filtra as ligas de um país, mantendo a ordem de tier já escrita pelo importador. |
+| `leaguesOfCountry(leagues, countryName)` | Filtra as ligas de um país, mantendo a ordem de tier já escrita pelo importador. |
 | `matchesCountryQuery(query, parts)` | Busca sem acento e sem caixa; string vazia sempre casa. |
 | `continentI18nKey(continent)` | Converte o nome do continente (`"South America"`) na chave i18n (`"south_america"`). |
-| `partitionDayMatches(matches, ownLeague, followed)` | Separa as partidas do dia em `primary` (liga própria + seguidas) e `others` (o resto). |
+| `partitionDayMatches(matches, ownLeague, followed, isOwnMatch?)` | Separa as partidas do dia em `primary` (liga própria + seguidas) e `others` (o resto). `isOwnMatch` força a partida do usuário para `primary` mesmo com a liga da sessão ausente/obsoleta. |
 
 ## Nomes de país
 

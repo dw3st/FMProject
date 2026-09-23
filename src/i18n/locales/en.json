@@ -327,6 +327,7 @@
     "territoryDescription": "Define the foundation of your dynasty. Select a host nation to unlock local professional divisions and begin your tactical ascent.",
     "searchTerritory": "Search territory...",
     "countriesCount": "{{count}} countries",
+    "countriesCount_one": "{{count}} country",
     "continents": {
       "europe": "Europe",
       "south_america": "South America",
@@ -360,7 +361,6 @@
       "5": "World Elite"
     },
     "selectClubDetail": "Select a club to view details",
-    "top": "Top",
     "squadStrength": "Squad Strength",
     "keyPlayers": "Key Players",
     "noData": "No data.",
@@ -1466,6 +1466,8 @@
       "nextPage": "Next",
       "pageOf": "Page {{page}} of {{pages}}",
       "noPlayersFound": "No players found matching your criteria",
+      "loadError": "Could not load players. Try again.",
+      "retry": "Retry",
       "action": "Action",
       "offer": "Offer"
     },

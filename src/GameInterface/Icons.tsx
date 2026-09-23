@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Palette,
   Save,
   Upload,
@@ -57,6 +59,8 @@ export type IconName =
   | "arrow-left"
   | "chevron-up"
   | "chevron-down"
+  | "chevron-left"
+  | "chevron-right"
   | "palette"
   | "save"
   | "upload"
@@ -90,6 +94,8 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "arrow-left":   ArrowLeft,
   "chevron-up":   ChevronUp,
   "chevron-down": ChevronDown,
+  "chevron-left":  ChevronLeft,
+  "chevron-right": ChevronRight,
   "palette":      Palette,
   "save":         Save,
   "upload":       Upload,
