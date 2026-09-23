@@ -9,8 +9,12 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import { mkdir, readdir, rm, unlink } from "fs/promises";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
+import { runPool } from "@/backend/dal/pool";
 
 const SAVES_DIR = `${RUNTIME_DATA_DIR}/saves`;
+
+/** Max squad files parsed in parallel by listSquadFiles / listAllSquads. */
+const SQUAD_READ_CONCURRENCY = 32;
 
 function metaPath(saveId: string)      { return `${SAVES_DIR}/${saveId}.json`; }
 function seasonPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/season.json`; }
@@ -183,35 +187,34 @@ export class FileSystemDAL implements ISaveDAL {
   }
 
   async listAllSquads(saveId: string): Promise<Squad[]> {
-    const dir = `${SAVES_DIR}/${saveId}/squads`;
-    const glob = new Bun.Glob("**/*.json");
-    const squads: Squad[] = [];
-    for await (const path of glob.scan(dir)) {
-      const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
-      // Bun.Glob yields "\"-separated paths on Windows.
-      const segs = path.replace(/\.json$/i, "").split(/[\\/]/);
-      const leagueFromPath = segs.length >= 2 ? segs[0]! : undefined;
-      squads.push(
-        leagueFromPath ? { ...raw, leagueSlug: leagueFromPath } : raw,
-      );
-    }
-    return squads;
+    return (await this.listSquadFiles(saveId)).map((f) => f.squad);
   }
 
+  /**
+   * Every squad file of the save, i.e. exactly the `squads/{league}/{club}.json`
+   * files that readSquad/writeSquad address — hence the `*\/*.json` glob (a file at
+   * another depth is not addressable by (league, club) and is not a squad).
+   * listAllSquads is derived from this, so both use the same layout. Paths are
+   * collected first, then parsed in parallel (at most SQUAD_READ_CONCURRENCY at a
+   * time); the result keeps the directory-scan order.
+   */
   async listSquadFiles(saveId: string): Promise<SquadFile[]> {
     const dir = `${SAVES_DIR}/${saveId}/squads`;
     const glob = new Bun.Glob("*/*.json");
-    const files: SquadFile[] = [];
+    const paths: string[] = [];
     try {
-      for await (const path of glob.scan(dir)) {
-        const [leagueSlug, file] = path.split(/[\\/]/) as [string, string];
-        const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
-        files.push({ leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...raw, leagueSlug } });
-      }
+      for await (const path of glob.scan(dir)) paths.push(path);
     } catch (e) {
       // A save without a squads dir has no squads (mirrors listLeagues).
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
     }
+    const files = new Array<SquadFile>(paths.length);
+    await runPool(paths, SQUAD_READ_CONCURRENCY, async (path, i) => {
+      // Bun.Glob yields "\"-separated paths on Windows.
+      const [leagueSlug, file] = path.split(/[\\/]/) as [string, string];
+      const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+      files[i] = { leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...raw, leagueSlug } };
+    });
     return files;
   }
 
