@@ -31,6 +31,9 @@ describe("derivePlayer", () => {
     expect(p.profile.archetype.length).toBeGreaterThan(0);
     expect(p.nationality).toBe("Uruguay");
   });
+  test("código gb vira England, como no TouchLines", () => {
+    expect(derivePlayer({ ...seedP, country: "gb" }, "s", coeffs).nationality).toBe("England");
+  });
   test("pé B vira right; código de país inválido não gera nacionalidade", () => {
     const p = derivePlayer({ ...seedP, foot: "B", country: "zz-bad" }, "s", coeffs);
     expect(p.preferredFoot).toBe("right");

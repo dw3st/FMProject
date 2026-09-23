@@ -38,10 +38,11 @@ const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
 /**
  * English country name for a seed ISO 3166 alpha-2 code. TL squads store `nationality` as a
  * country name ("Brazil", "Spain"), which `toDisplayPlayer` shows as-is. Unknown codes give
- * undefined, and the UI then falls back to the club country. The seed's "gb" becomes "United Kingdom".
+ * undefined, and the UI then falls back to the club country. The seed's "gb" is England, as in TL.
  */
 function nationalityFor(code: string): string | undefined {
   if (!/^[a-z]{2}$/i.test(code)) return undefined;
+  if (code.toLowerCase() === "gb") return "England";
   try {
     const name = regionNames.of(code.toUpperCase());
     return name && name !== code.toUpperCase() ? name : undefined;
