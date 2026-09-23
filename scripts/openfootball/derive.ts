@@ -1,5 +1,5 @@
 import type { SeedPlayer } from "@/../scripts/openfootball/types";
-import type { LineFit } from "@/../scripts/openfootball/calibration";
+import type { LineFit, PlaneFit } from "@/../scripts/openfootball/calibration";
 import { gaussianFromKey, playerId, unitHash } from "@/../scripts/openfootball/ids";
 import { mainRole, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
@@ -11,12 +11,17 @@ export const STAT_KEYS = [
 export type StatKey = (typeof STAT_KEYS)[number];
 
 export interface PlayerCoeffs {
-  byRole: Record<MainRole, Record<string, LineFit>>;
-  pooled: Record<string, LineFit>;
+  byRole: Record<MainRole, Record<string, PlaneFit>>;
+  pooled: Record<string, PlaneFit>;
+  /** League reputation (/1000) range seen in calibration. */
+  repMin: number;
+  repMax: number;
 }
 
 export const NOISE_SCALE = 1;
 export const MIN_PAIRS = 30;
+/** How far below the lowest calibration league reputation (/1000) the fit may extrapolate. */
+export const REP_FLOOR_MARGIN = 3;
 
 const ARCHETYPES: Record<MainRole, Partial<Record<StatKey, string>> & { _: string }> = {
   GK:         { _: "Goalkeeper", reflex: "Shot-stopper", passing: "Sweeper-keeper", jump: "Commanding keeper" },
@@ -30,8 +35,8 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-const finiteFit = (f: LineFit | undefined): f is LineFit =>
-  !!f && Number.isFinite(f.a) && Number.isFinite(f.b) && Number.isFinite(f.sd);
+const finiteFit = (f: PlaneFit | undefined): f is PlaneFit =>
+  !!f && Number.isFinite(f.a) && Number.isFinite(f.b) && Number.isFinite(f.c) && Number.isFinite(f.sd);
 
 const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
 
@@ -51,14 +56,19 @@ function nationalityFor(code: string): string | undefined {
   }
 }
 
-export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs): RosterPlayer {
+/**
+ * `leagueRep` is the seed league reputation / 1000. It is clamped to
+ * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
+ */
+export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number): RosterPlayer {
   const role = mainRole(sp.position);
+  const rep = clamp(leagueRep, coeffs.repMin - REP_FLOOR_MARGIN, coeffs.repMax);
   const statOf = (k: StatKey): number => {
     const roleFit = coeffs.byRole[role]?.[k];
     const pooledFit = coeffs.pooled[k];
     const f = finiteFit(roleFit) && roleFit.n >= MIN_PAIRS ? roleFit : finiteFit(pooledFit) ? pooledFit : undefined;
     if (!f) throw new Error(`derivePlayer: missing/non-finite fit for ${role}.${k}`);
-    const raw = f.a + f.b * sp.overall + f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`);
+    const raw = f.a + f.b * sp.overall + f.c * rep + f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`);
     return clamp(Math.round(raw), 0, 10);
   };
   const stats: PlayerStatsRecord = {
@@ -153,10 +163,15 @@ function median(xs: number[], label: string): number {
   return m;
 }
 
+export const MONEY_MULT_CAP = 1;
+export const CAPACITY_MULT_CAP = 1.2;
+
 /**
  * Tier multipliers from TL Brazil, computed separately for every field:
  *   mult[2] = median(TL Série B) / median(fit prediction at the seed's brazilian-serie-b reputations)
  *   mult[3] = mult[2] × median(TL Série C) / median(TL Série B)
+ * then capped: money fields (budget, broadcasting, commercial, followers) at MONEY_MULT_CAP, so a lower
+ * division never earns more than the top-flight fit; capacity at CAPACITY_MULT_CAP.
  */
 export function computeTierMultipliers(input: {
   fits: ClubFits;
@@ -170,7 +185,8 @@ export function computeTierMultipliers(input: {
     const tlB = median(input.tlSerieB.map((x) => x[k]), `serie_b.${k}`);
     const tlC = median(input.tlSerieC.map((x) => x[k]), `serie_c.${k}`);
     const m2 = tlB / median(predicted.map((x) => x[k]), `predicted.${k}`);
-    out[k] = { 1: 1, 2: m2, 3: (m2 * tlC) / tlB };
+    const cap = k === "capacity" ? CAPACITY_MULT_CAP : MONEY_MULT_CAP;
+    out[k] = { 1: 1, 2: Math.min(cap, m2), 3: Math.min(cap, (m2 * tlC) / tlB) };
   }
   return out;
 }

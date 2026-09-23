@@ -87,40 +87,75 @@ export function matchPlayers(
   return out;
 }
 
-export type StatPoints = Record<StatKey, Array<[number, number]>>;
+export interface PlaneFit { a: number; b: number; c: number; sd: number; n: number }
+
+/**
+ * OLS y = a + b·x1 + c·x2 (solved on centered data). Residual sd uses n − 3 degrees of freedom
+ * (floored at 1). Throws on fewer than 3 points or a singular design (x1 or x2 constant, or collinear).
+ */
+export function fitPlane(points: Array<[x1: number, x2: number, y: number]>): PlaneFit {
+  const n = points.length;
+  if (n < 3) throw new Error(`fitPlane: need at least 3 points (got ${n})`);
+  const m1 = points.reduce((s, [x]) => s + x, 0) / n;
+  const m2 = points.reduce((s, [, x]) => s + x, 0) / n;
+  const my = points.reduce((s, [, , y]) => s + y, 0) / n;
+  let s11 = 0, s22 = 0, s12 = 0, s1y = 0, s2y = 0;
+  for (const [x1, x2, y] of points) {
+    const d1 = x1 - m1, d2 = x2 - m2, dy = y - my;
+    s11 += d1 * d1; s22 += d2 * d2; s12 += d1 * d2; s1y += d1 * dy; s2y += d2 * dy;
+  }
+  const det = s11 * s22 - s12 * s12;
+  if (!(s11 > 0) || !(s22 > 0) || !(det > 1e-9 * s11 * s22)) throw new Error("fitPlane: singular matrix");
+  const b = (s1y * s22 - s2y * s12) / det;
+  const c = (s2y * s11 - s1y * s12) / det;
+  const a = my - b * m1 - c * m2;
+  const sd = Math.sqrt(points.reduce((s, [x1, x2, y]) => s + (y - (a + b * x1 + c * x2)) ** 2, 0) / Math.max(1, n - 3));
+  return { a, b, c, sd, n };
+}
+
+/** Points are [seed overall, league reputation / 1000, TL stat]. */
+export type StatPoints = Record<StatKey, Array<[number, number, number]>>;
 export interface CollectedStatPoints { byRole: Record<MainRole, StatPoints>; pooled: StatPoints }
 
 const emptyPoints = (): StatPoints =>
-  Object.fromEntries(STAT_KEYS.map((k) => [k, [] as Array<[number, number]>])) as StatPoints;
+  Object.fromEntries(STAT_KEYS.map((k) => [k, [] as Array<[number, number, number]>])) as StatPoints;
 
 /**
- * Groups (seed.overall, tl.stats[k]) points by the SEED main role (that is what `derivePlayer` keys on).
- * The pooled set only takes outfield roles: GK stat profiles would drag outfield fallbacks toward
- * keeper values. Non-finite stat values are skipped.
+ * Groups (seed.overall, leagueRep, tl.stats[k]) points by the SEED main role (that is what `derivePlayer`
+ * keys on). `leagueRep` is the seed league reputation / 1000: seed OVR is normalized within each league,
+ * so league quality must enter as its own covariate. The pooled set only takes outfield roles: GK stat
+ * profiles would drag outfield fallbacks toward keeper values. Non-finite stat values are skipped.
  */
 export function collectStatPoints(
-  pairs: Array<{ tl: { stats: Partial<Record<string, number>> }; seed: Pick<SeedPlayer, "position" | "overall"> }>,
+  pairs: Array<{ tl: { stats: Partial<Record<string, number>> }; seed: Pick<SeedPlayer, "position" | "overall">; leagueRep: number }>,
 ): CollectedStatPoints {
   const byRole: Record<MainRole, StatPoints> = { GK: emptyPoints(), Defender: emptyPoints(), Midfielder: emptyPoints(), Forward: emptyPoints() };
   const pooled = emptyPoints();
-  for (const { tl, seed } of pairs) {
+  for (const { tl, seed, leagueRep } of pairs) {
     const role = mainRole(seed.position);
     for (const k of STAT_KEYS) {
       const y = tl.stats[k];
       if (typeof y !== "number" || !Number.isFinite(y)) continue;
-      byRole[role][k].push([seed.overall, y]);
-      if (role !== "GK") pooled[k].push([seed.overall, y]);
+      byRole[role][k].push([seed.overall, leagueRep, y]);
+      if (role !== "GK") pooled[k].push([seed.overall, leagueRep, y]);
     }
   }
   return { byRole, pooled };
 }
 
-/** Fits every non-empty role/stat set; empty role sets are omitted (derivePlayer falls back to pooled). */
+/**
+ * Fits a plane for every role/stat set with ≥ 3 points; smaller sets are omitted (derivePlayer falls
+ * back to pooled). `repMin` / `repMax` are the league reputations seen in calibration.
+ */
 export function fitPlayerCoeffs(points: CollectedStatPoints): PlayerCoeffs {
   const fitAll = (sp: StatPoints) =>
-    Object.fromEntries(STAT_KEYS.filter((k) => sp[k].length > 0).map((k) => [k, fitLine(sp[k])])) as Record<string, LineFit>;
+    Object.fromEntries(STAT_KEYS.filter((k) => sp[k].length >= 3).map((k) => [k, fitPlane(sp[k])])) as Record<string, PlaneFit>;
+  const reps = [...Object.values(points.byRole), points.pooled].flatMap((sp) => STAT_KEYS.flatMap((k) => sp[k].map(([, r]) => r)));
+  if (reps.length === 0) throw new Error("fitPlayerCoeffs: no points");
   return {
     byRole: { GK: fitAll(points.byRole.GK), Defender: fitAll(points.byRole.Defender), Midfielder: fitAll(points.byRole.Midfielder), Forward: fitAll(points.byRole.Forward) },
     pooled: fitAll(points.pooled),
+    repMin: Math.min(...reps),
+    repMax: Math.max(...reps),
   };
 }

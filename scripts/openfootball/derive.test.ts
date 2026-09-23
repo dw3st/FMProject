@@ -3,21 +3,25 @@ import { STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derive
 import type { SeedPlayer } from "@/../scripts/openfootball/types";
 
 const line = (a: number, b: number, sd = 0, n = 100) => ({ a, b, sd, n });
+const plane = (a: number, b: number, c = 0, sd = 0, n = 100) => ({ a, b, c, sd, n });
 const coeffs: PlayerCoeffs = {
   byRole: {
-    GK: Object.fromEntries(STAT_KEYS.map((k) => [k, line(-2, 0.08)])),
-    Defender: Object.fromEntries(STAT_KEYS.map((k) => [k, line(-3, 0.09)])),
-    Midfielder: Object.fromEntries(STAT_KEYS.map((k) => [k, line(-3, 0.09)])),
-    Forward: Object.fromEntries(STAT_KEYS.map((k) => [k, k === "finishing" ? line(-4, 0.12, 0, 5) : line(-3, 0.09)])),
+    GK: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-2, 0.08)])),
+    Defender: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.09)])),
+    Midfielder: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.09)])),
+    Forward: Object.fromEntries(STAT_KEYS.map((k) => [k, k === "finishing" ? plane(-4, 0.12, 0, 0, 5) : plane(-3, 0.09)])),
   },
-  pooled: Object.fromEntries(STAT_KEYS.map((k) => [k, line(-3, 0.1)])),
+  pooled: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.1)])),
+  repMin: 5.8,
+  repMax: 9.5,
 };
+const REP = 7;
 
 const seedP: SeedPlayer = { id: "uy-x-1", name: "Juan Pérez", position: "ATT", overall: 70, potential: 72, age: 24, country: "uy", foot: "L", value: 0, clubId: "uy-x" };
 
 describe("derivePlayer", () => {
   test("formato do elenco do TouchLines", () => {
-    const p = derivePlayer(seedP, "of_uy_x", coeffs);
+    const p = derivePlayer(seedP, "of_uy_x", coeffs, REP);
     expect(p.id).toBe("of_uy_x_1");
     expect(p.squadId).toBe("of_uy_x");
     expect(p.positions).toEqual(["Forward"]);
@@ -32,34 +36,47 @@ describe("derivePlayer", () => {
     expect(p.nationality).toBe("Uruguay");
   });
   test("código gb vira England, como no TouchLines", () => {
-    expect(derivePlayer({ ...seedP, country: "gb" }, "s", coeffs).nationality).toBe("England");
+    expect(derivePlayer({ ...seedP, country: "gb" }, "s", coeffs, REP).nationality).toBe("England");
   });
   test("pé B vira right; código de país inválido não gera nacionalidade", () => {
-    const p = derivePlayer({ ...seedP, foot: "B", country: "zz-bad" }, "s", coeffs);
+    const p = derivePlayer({ ...seedP, foot: "B", country: "zz-bad" }, "s", coeffs, REP);
     expect(p.preferredFoot).toBe("right");
     expect(p.nationality).toBeUndefined();
   });
   test("sem ajuste utilizável (papel nem agrupado) lança erro nomeado", () => {
     const broken: PlayerCoeffs = {
-      byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, finishing: line(Number.NaN, 0.1) } },
-      pooled: { ...coeffs.pooled, finishing: line(Number.NaN, 0.1) },
+      ...coeffs,
+      byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, finishing: plane(Number.NaN, 0.1) } },
+      pooled: { ...coeffs.pooled, finishing: plane(Number.NaN, 0.1) },
     };
-    expect(() => derivePlayer(seedP, "s", broken)).toThrow("derivePlayer: missing/non-finite fit for Forward.finishing");
-    const missing: PlayerCoeffs = { byRole: { ...coeffs.byRole, Forward: {} }, pooled: {} };
-    expect(() => derivePlayer(seedP, "s", missing)).toThrow("derivePlayer: missing/non-finite fit for Forward.passing");
+    expect(() => derivePlayer(seedP, "s", broken, REP)).toThrow("derivePlayer: missing/non-finite fit for Forward.finishing");
+    const missing: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: {} }, pooled: {} };
+    expect(() => derivePlayer(seedP, "s", missing, REP)).toThrow("derivePlayer: missing/non-finite fit for Forward.passing");
   });
   test("ajuste de papel com NaN cai no agrupado; overall não finito faz clamp lançar", () => {
-    const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, passing: line(Number.NaN, 0.09) } } };
-    expect(derivePlayer(seedP, "s", c).stats.passing).toBe(Math.round(-3 + 0.1 * 70));
-    expect(() => derivePlayer({ ...seedP, overall: Number.NaN }, "s", coeffs)).toThrow("clamp: non-finite");
+    const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, passing: plane(Number.NaN, 0.09) } } };
+    expect(derivePlayer(seedP, "s", c, REP).stats.passing).toBe(Math.round(-3 + 0.1 * 70));
+    expect(() => derivePlayer({ ...seedP, overall: Number.NaN }, "s", coeffs, REP)).toThrow("clamp: non-finite");
   });
   test("sem ruído (sd 0) segue a reta; n < 30 usa o ajuste agrupado", () => {
-    const p = derivePlayer(seedP, "of_uy_x", coeffs);
+    const p = derivePlayer(seedP, "of_uy_x", coeffs, REP);
     expect(p.stats.passing).toBe(Math.round(-3 + 0.09 * 70));   // 3
     expect(p.stats.finishing).toBe(Math.round(-3 + 0.1 * 70));  // pooled → 4
   });
+  test("reputação da liga entra como covariável e é limitada a [repMin − 3, repMax]", () => {
+    const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.05, 0.5)])) } };
+    expect(derivePlayer(seedP, "s", c, 7).stats.passing).toBe(Math.round(-3 + 0.05 * 70 + 0.5 * 7));
+    expect(derivePlayer(seedP, "s", c, 9.5).stats.passing).toBe(Math.round(-3 + 0.05 * 70 + 0.5 * 9.5));
+    expect(derivePlayer(seedP, "s", c, 20)).toEqual(derivePlayer(seedP, "s", c, 9.5));
+    expect(derivePlayer(seedP, "s", c, 0.5)).toEqual(derivePlayer(seedP, "s", c, 2.8));
+    expect(derivePlayer(seedP, "s", c, 2.8).stats.passing).toBe(Math.round(-3 + 0.05 * 70 + 0.5 * 2.8));
+  });
+  test("c não finito conta como ajuste degenerado", () => {
+    const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, passing: plane(-3, 0.09, Number.NaN) } } };
+    expect(derivePlayer(seedP, "s", c, REP).stats.passing).toBe(Math.round(-3 + 0.1 * 70));
+  });
   test("determinístico", () => {
-    expect(derivePlayer(seedP, "s", coeffs)).toEqual(derivePlayer(seedP, "s", coeffs));
+    expect(derivePlayer(seedP, "s", coeffs, REP)).toEqual(derivePlayer(seedP, "s", coeffs, REP));
   });
 });
 
@@ -126,6 +143,17 @@ describe("computeTierMultipliers", () => {
     expect(m.followers[2]).toBeCloseTo(600 / 1000, 9);
     expect(m.capacity[2]).toBeCloseTo(20000 / 40000, 9);
     expect(m.capacity[3]).toBeCloseTo(0.5 * (6500 / 20000), 9);
+  });
+  test("multiplicadores de dinheiro ≤ 1 e de capacidade ≤ 1,2 nos níveis ≥ 2", () => {
+    const c = (a: number) => line(a, 0);
+    const f: ClubFits = { budget: c(0), broadcasting: c(0), commercial: c(0), followers: c(0), capacity: c(0), repMax: 3000 };
+    const big = { budget: 5, broadcasting: 0.5, commercial: 3, followers: 4, capacity: 2 };
+    const m = computeTierMultipliers({ fits: f, seedSerieBReputations: [1000], tlSerieB: [big], tlSerieC: [big] });
+    expect(m.budget).toEqual({ 1: 1, 2: 1, 3: 1 });
+    expect(m.followers).toEqual({ 1: 1, 2: 1, 3: 1 });
+    expect(m.commercial[2]).toBe(1);
+    expect(m.broadcasting[2]).toBeCloseTo(0.5, 9);
+    expect(m.capacity).toEqual({ 1: 1, 2: 1.2, 3: 1.2 });
   });
   test("previsão usa a reputação limitada e entradas vazias lançam", () => {
     const f: ClubFits = { budget: line(0, 0.001), broadcasting: line(0, 0.001), commercial: line(0, 0.001), followers: line(0, 0.001), capacity: line(0, 0.001), repMax: 1000 };

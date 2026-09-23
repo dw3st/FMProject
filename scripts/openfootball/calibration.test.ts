@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { collectStatPoints, fitLine, fitLogLine, fitPlayerCoeffs, matchClubs, matchPlayers } from "@/../scripts/openfootball/calibration";
+import { collectStatPoints, fitLine, fitLogLine, fitPlane, fitPlayerCoeffs, matchClubs, matchPlayers } from "@/../scripts/openfootball/calibration";
 import { STAT_KEYS } from "@/../scripts/openfootball/derive";
 
 describe("fitLine", () => {
@@ -23,6 +23,31 @@ describe("fitLine", () => {
     const f = fitLine([[0, 1], [1, 0], [2, 3], [3, 2]]);
     expect(f.sd).toBeCloseTo(Math.sqrt(3.2 / 2), 9);
     expect(fitLine([[1, 1], [2, 2]]).sd).toBe(0);
+  });
+});
+
+describe("fitPlane", () => {
+  test("recupera plano exato com resíduo 0", () => {
+    const y = (x1: number, x2: number) => 1.5 + 0.04 * x1 - 0.3 * x2;
+    const xs: Array<[number, number]> = [[60, 5], [70, 6], [65, 9], [80, 7], [55, 8]];
+    const f = fitPlane(xs.map(([a, b]) => [a, b, y(a, b)]));
+    expect(f.a).toBeCloseTo(1.5, 9);
+    expect(f.b).toBeCloseTo(0.04, 9);
+    expect(f.c).toBeCloseTo(-0.3, 9);
+    expect(f.sd).toBeCloseTo(0, 9);
+    expect(f.n).toBe(5);
+  });
+  test("sd residual divide por n − 3", () => {
+    // Ajuste y = −0,25 + 1,5·x1 + 1,5·x2 deixa resíduos ±0,25 → SQR = 0,25, n − 3 = 1
+    const f = fitPlane([[0, 0, 0], [1, 0, 1], [0, 1, 1], [1, 1, 3]]);
+    expect(f.sd).toBeCloseTo(0.5, 9);
+  });
+  test("< 3 pontos ou matriz singular lança erro", () => {
+    expect(() => fitPlane([])).toThrow("fitPlane: need at least 3 points");
+    expect(() => fitPlane([[1, 1, 1], [2, 2, 2]])).toThrow("fitPlane: need at least 3 points");
+    expect(() => fitPlane([[1, 5, 1], [2, 5, 2], [3, 5, 3]])).toThrow("fitPlane: singular matrix");
+    expect(() => fitPlane([[1, 2, 1], [2, 4, 2], [3, 6, 4]])).toThrow("fitPlane: singular matrix");
+    expect(() => fitPlane([[1, 1, 1], [1, 2, 2], [1, 3, 3]])).toThrow("fitPlane: singular matrix");
   });
 });
 
@@ -92,19 +117,25 @@ describe("collectStatPoints / fitPlayerCoeffs", () => {
   const stats = (v: number) => Object.fromEntries(STAT_KEYS.map((k) => [k, v]));
   test("agrupa pelo papel do SEED e o agrupado exclui GK", () => {
     const pts = collectStatPoints([
-      { tl: { stats: stats(9) }, seed: { position: "GK", overall: 80 } },
-      { tl: { stats: stats(5) }, seed: { position: "DEF", overall: 70 } },
-      { tl: { stats: { ...stats(6), reflex: Number.NaN } }, seed: { position: "ATT", overall: 75 } },
+      { tl: { stats: stats(9) }, seed: { position: "GK", overall: 80 }, leagueRep: 9.5 },
+      { tl: { stats: stats(5) }, seed: { position: "DEF", overall: 70 }, leagueRep: 7.8 },
+      { tl: { stats: { ...stats(6), reflex: Number.NaN } }, seed: { position: "ATT", overall: 75 }, leagueRep: 5.8 },
+      { tl: { stats: stats(4) }, seed: { position: "DEF", overall: 60 }, leagueRep: 9.5 },
     ]);
-    expect(pts.byRole.GK.reflex).toEqual([[80, 9]]);
-    expect(pts.byRole.Defender.passing).toEqual([[70, 5]]);
-    expect(pts.byRole.Forward.passing).toEqual([[75, 6]]);
+    expect(pts.byRole.GK.reflex).toEqual([[80, 9.5, 9]]);
+    expect(pts.byRole.Defender.passing).toEqual([[70, 7.8, 5], [60, 9.5, 4]]);
+    expect(pts.byRole.Forward.passing).toEqual([[75, 5.8, 6]]);
     expect(pts.byRole.Forward.reflex).toEqual([]);
     expect(pts.byRole.Midfielder.passing).toEqual([]);
-    expect(pts.pooled.passing).toEqual([[70, 5], [75, 6]]);
-    expect(pts.pooled.reflex).toEqual([[70, 5]]);
+    expect(pts.pooled.passing).toEqual([[70, 7.8, 5], [75, 5.8, 6], [60, 9.5, 4]]);
+    expect(pts.pooled.reflex).toEqual([[70, 7.8, 5], [60, 9.5, 4]]);
     const c = fitPlayerCoeffs(pts);
     expect(c.byRole.Midfielder.passing).toBeUndefined();
-    expect(c.pooled.passing!.n).toBe(2);
+    expect(c.byRole.Defender.passing).toBeUndefined();
+    expect(c.pooled.passing!.n).toBe(3);
+    expect(Number.isFinite(c.pooled.passing!.c)).toBe(true);
+    expect(c.pooled.reflex).toBeUndefined();
+    expect(c.repMin).toBe(5.8);
+    expect(c.repMax).toBe(9.5);
   });
 });
