@@ -1,0 +1,49 @@
+{
+  "name": "bun-react-template",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brenosss/touchlines.git"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "dev": "bun --hot src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts",
+    "build": "bun run build.ts",
+    "typecheck": "tsc --noEmit",
+    "balance:formations": "bun scripts/formation-balance.ts --matches 200 --pretty",
+    "balance:tactics": "bun scripts/tactics-balance.ts --matches 100 --pretty",
+    "lab": "bun --hot src/lab/server.ts",
+    "mcp": "bun src/mcp/server.ts",
+    "i18n:lint": "bun scripts/find-untranslated.ts",
+    "kits:generate": "bun scripts/generateStartKits.ts"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.2.9",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "bun-plugin-tailwind": "^0.1.2",
+    "chart.js": "^4",
+    "flag-icons": "^7.5.0",
+    "i18next": "^26.0.10",
+    "iconoir-react": "^7.11.0",
+    "lucide-react": "^0.577.0",
+    "pixi.js": "^8.16.0",
+    "posthog-js": "^1.391.2",
+    "react": "^19",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19",
+    "react-i18next": "^17.0.7",
+    "react-json-view-lite": "^2.5.0",
+    "tailwindcss": "^4.1.11",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^6.0.3"
+  }
+}

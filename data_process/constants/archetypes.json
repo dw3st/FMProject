@@ -1,0 +1,91 @@
+{
+  "GK": [
+    "Traditional goalkeeper",
+    "Sweeper-keeper",
+    "Shot-stopper",
+    "Ball-playing keeper"
+  ],
+  "CB": [
+    "Ball-playing defender",
+    "Stopper",
+    "Modern centre-back",
+    "No-nonsense defender"
+  ],
+  "RB": [
+    "Modern full-back",
+    "Wing-back",
+    "Defensive full-back",
+    "Overlapping full-back"
+  ],
+  "LB": [
+    "Modern full-back",
+    "Inverted full-back",
+    "Wing-back",
+    "Defensive full-back"
+  ],
+  "RWB": [
+    "Wing-back",
+    "Attacking wing-back",
+    "Modern full-back"
+  ],
+  "LWB": [
+    "Wing-back",
+    "Attacking wing-back",
+    "Inverted full-back"
+  ],
+  "CDM": [
+    "Defensive midfielder",
+    "Ball-winning midfielder",
+    "Deep-lying playmaker",
+    "Anchor"
+  ],
+  "CM": [
+    "Box-to-box midfielder",
+    "Central midfielder",
+    "Engine room",
+    "Ball-winning midfielder"
+  ],
+  "AM": [
+    "Number 10",
+    "Advanced playmaker",
+    "Shadow striker",
+    "Creative midfielder"
+  ],
+  "LM": [
+    "Inside forward",
+    "Inverted winger",
+    "Traditional winger",
+    "Wide midfielder"
+  ],
+  "RM": [
+    "Inside forward",
+    "Traditional winger",
+    "Wide midfielder",
+    "Inverted winger"
+  ],
+  "LW": [
+    "Inside forward",
+    "Inverted winger",
+    "Direct winger",
+    "Wide forward"
+  ],
+  "RW": [
+    "Inside forward",
+    "Direct winger",
+    "Wide forward",
+    "Inverted winger"
+  ],
+  "ST": [
+    "Target man",
+    "Poacher",
+    "Complete forward",
+    "Speed merchant",
+    "Fox in the box"
+  ],
+  "CF": [
+    "False nine",
+    "Deep-lying forward",
+    "Complete forward",
+    "Link-up striker"
+  ]
+}

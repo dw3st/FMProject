@@ -1,0 +1,66 @@
+{
+  "eng Premier League": {
+    "slug": "premier_league",
+    "name": "Premier League",
+    "country": "England",
+    "divisionTier": "europe_top",
+    "football_api_name": "Premier League",
+    "csv_file_pattern": "england-premier-league"
+  },
+  "de Bundesliga": {
+    "slug": "bundesliga",
+    "name": "Bundesliga",
+    "country": "Germany",
+    "divisionTier": "europe_top",
+    "football_api_name": "Bundesliga",
+    "csv_file_pattern": "germany-bundesliga"
+  },
+  "fr Ligue 1": {
+    "slug": "ligue_1",
+    "name": "Ligue 1",
+    "country": "France",
+    "divisionTier": "europe_top",
+    "football_api_name": "Ligue 1",
+    "csv_file_pattern": "france-ligue-1"
+  },
+  "es La Liga": {
+    "slug": "la_liga",
+    "name": "La Liga",
+    "country": "Spain",
+    "divisionTier": "europe_top",
+    "football_api_name": "La Liga",
+    "csv_file_pattern": "spain-la-liga"
+  },
+  "it Serie A": {
+    "slug": "serie_a",
+    "name": "Serie A",
+    "country": "Italy",
+    "divisionTier": "europe_top",
+    "football_api_name": "Serie A",
+    "csv_file_pattern": "italy-serie-a"
+  },
+  "Serie A": {
+    "slug": "brazil_serie_a",
+    "name": "Brasileirão Série A",
+    "country": "Brazil",
+    "divisionTier": "brazil_serie_a",
+    "football_api_name": "Serie A",
+    "csv_file_pattern": "brazil-serie-a"
+  },
+  "Serie B": {
+    "slug": "brazil_serie_b",
+    "name": "Brasileirão Série B",
+    "country": "Brazil",
+    "divisionTier": "brazil_serie_b",
+    "football_api_name": "Serie B",
+    "csv_file_pattern": "brazil-serie-b"
+  },
+  "Serie C": {
+    "slug": "brazil_serie_c",
+    "name": "Brasileirão Série C",
+    "country": "Brazil",
+    "divisionTier": "brazil_serie_c",
+    "football_api_name": "Serie C",
+    "csv_file_pattern": "brazil-serie-c"
+  }
+}

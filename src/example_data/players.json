@@ -1,0 +1,646 @@
+[
+  {
+    "id": "p001",
+    "name": "Garcia",
+    "age": 22,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "CM",
+      "AM"
+    ],
+    "stats": {
+      "passing": 8,
+      "vision": 7,
+      "finishing": 5,
+      "shotPower": 6,
+      "pressing": 8,
+      "tackling": 7,
+      "speed": 6,
+      "acceleration": 7,
+      "firstTouch": 8,
+      "dribbling": 7
+    },
+    "profile": {
+      "summary": "Energetic midfielder with good passing and pressing. Better at creating play than finishing.",
+      "archetype": "Box-to-box playmaker"
+    }
+  },
+  {
+    "id": "p002",
+    "name": "Martinez",
+    "age": 28,
+    "squadId": "team_red",
+    "preferredFoot": "left",
+    "positions": [
+      "GK"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 6,
+      "finishing": 2,
+      "shotPower": 3,
+      "pressing": 4,
+      "tackling": 5,
+      "speed": 5,
+      "acceleration": 6,
+      "firstTouch": 7,
+      "dribbling": 4
+    },
+    "profile": {
+      "summary": "Reliable shot-stopper with good distribution. Commands his area.",
+      "archetype": "Traditional goalkeeper"
+    }
+  },
+  {
+    "id": "p003",
+    "name": "Silva",
+    "age": 26,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "CB"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 5,
+      "pressing": 6,
+      "tackling": 9,
+      "speed": 6,
+      "acceleration": 5,
+      "firstTouch": 7,
+      "dribbling": 4
+    },
+    "profile": {
+      "summary": "Composed centre-back who reads the game well. Strong in the air and in the tackle.",
+      "archetype": "Ball-playing defender"
+    }
+  },
+  {
+    "id": "p004",
+    "name": "Okeke",
+    "age": 24,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "CB",
+      "RB"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 5,
+      "finishing": 2,
+      "shotPower": 4,
+      "pressing": 7,
+      "tackling": 8,
+      "speed": 7,
+      "acceleration": 7,
+      "firstTouch": 6,
+      "dribbling": 5
+    },
+    "profile": {
+      "summary": "Athletic defender who can step into midfield. Quick to close down and recover.",
+      "archetype": "Modern centre-back"
+    }
+  },
+  {
+    "id": "p005",
+    "name": "Chen",
+    "age": 23,
+    "squadId": "team_red",
+    "preferredFoot": "left",
+    "positions": [
+      "LM",
+      "LW"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 7,
+      "finishing": 6,
+      "shotPower": 6,
+      "pressing": 7,
+      "tackling": 5,
+      "speed": 8,
+      "acceleration": 9,
+      "firstTouch": 8,
+      "dribbling": 8
+    },
+    "profile": {
+      "summary": "Direct winger with explosive pace. Cuts inside to shoot or create.",
+      "archetype": "Inside forward"
+    }
+  },
+  {
+    "id": "p006",
+    "name": "Reyes",
+    "age": 25,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "RM",
+      "RW"
+    ],
+    "stats": {
+      "passing": 8,
+      "vision": 8,
+      "finishing": 5,
+      "shotPower": 5,
+      "pressing": 6,
+      "tackling": 5,
+      "speed": 7,
+      "acceleration": 7,
+      "firstTouch": 8,
+      "dribbling": 7
+    },
+    "profile": {
+      "summary": "Creative wide player who links play and delivers from the flank.",
+      "archetype": "Traditional winger"
+    }
+  },
+  {
+    "id": "p007",
+    "name": "Okafor",
+    "age": 21,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "CDM",
+      "CM"
+    ],
+    "stats": {
+      "passing": 8,
+      "vision": 7,
+      "finishing": 4,
+      "shotPower": 5,
+      "pressing": 9,
+      "tackling": 8,
+      "speed": 6,
+      "acceleration": 6,
+      "firstTouch": 8,
+      "dribbling": 6
+    },
+    "profile": {
+      "summary": "Tenacious defensive midfielder who breaks up play and recycles possession.",
+      "archetype": "Ball-winning midfielder"
+    }
+  },
+  {
+    "id": "p008",
+    "name": "Vasquez",
+    "age": 27,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "AM",
+      "CM"
+    ],
+    "stats": {
+      "passing": 9,
+      "vision": 9,
+      "finishing": 6,
+      "shotPower": 6,
+      "pressing": 5,
+      "tackling": 4,
+      "speed": 6,
+      "acceleration": 7,
+      "firstTouch": 9,
+      "dribbling": 8
+    },
+    "profile": {
+      "summary": "Playmaker who finds pockets of space and threads passes. Dictates tempo.",
+      "archetype": "Number 10"
+    }
+  },
+  {
+    "id": "p009",
+    "name": "Santos",
+    "age": 29,
+    "squadId": "team_red",
+    "preferredFoot": "left",
+    "positions": [
+      "ST",
+      "CF"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 6,
+      "finishing": 9,
+      "shotPower": 8,
+      "pressing": 7,
+      "tackling": 3,
+      "speed": 7,
+      "acceleration": 6,
+      "firstTouch": 8,
+      "dribbling": 7
+    },
+    "profile": {
+      "summary": "Clinical striker who thrives in the box. Holds the ball up and brings others in.",
+      "archetype": "Target man"
+    }
+  },
+  {
+    "id": "p010",
+    "name": "Ndiaye",
+    "age": 20,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "ST",
+      "LW"
+    ],
+    "stats": {
+      "passing": 5,
+      "vision": 6,
+      "finishing": 8,
+      "shotPower": 7,
+      "pressing": 8,
+      "tackling": 4,
+      "speed": 9,
+      "acceleration": 9,
+      "firstTouch": 7,
+      "dribbling": 8
+    },
+    "profile": {
+      "summary": "Rapid forward who runs in behind. Raw but dangerous in space.",
+      "archetype": "Speed merchant"
+    }
+  },
+  {
+    "id": "p011",
+    "name": "Kim",
+    "age": 24,
+    "squadId": "team_red",
+    "preferredFoot": "right",
+    "positions": [
+      "RB",
+      "RWB"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 4,
+      "pressing": 8,
+      "tackling": 7,
+      "speed": 8,
+      "acceleration": 8,
+      "firstTouch": 7,
+      "dribbling": 6
+    },
+    "profile": {
+      "summary": "Overlapping full-back who contributes in attack. Solid defensively.",
+      "archetype": "Modern full-back"
+    }
+  },
+  {
+    "id": "p012",
+    "name": "Hassan",
+    "age": 22,
+    "squadId": "team_red",
+    "preferredFoot": "left",
+    "positions": [
+      "LB",
+      "LWB"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 5,
+      "pressing": 7,
+      "tackling": 7,
+      "speed": 7,
+      "acceleration": 7,
+      "firstTouch": 7,
+      "dribbling": 6
+    },
+    "profile": {
+      "summary": "Balanced full-back who supports the winger and tucks inside when needed.",
+      "archetype": "Inverted full-back"
+    }
+  },
+  {
+    "id": "p013",
+    "name": "Kowalski",
+    "age": 30,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "GK"
+    ],
+    "stats": {
+      "passing": 5,
+      "vision": 5,
+      "finishing": 1,
+      "shotPower": 2,
+      "pressing": 3,
+      "tackling": 4,
+      "speed": 4,
+      "acceleration": 5,
+      "firstTouch": 6,
+      "dribbling": 3
+    },
+    "profile": {
+      "summary": "Experienced keeper with excellent reflexes. Good at saving penalties and organising the back line.",
+      "archetype": "Shot-stopper"
+    }
+  },
+  {
+    "id": "p014",
+    "name": "Berg",
+    "age": 27,
+    "squadId": "team_blue",
+    "preferredFoot": "left",
+    "positions": [
+      "CB"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 5,
+      "finishing": 2,
+      "shotPower": 4,
+      "pressing": 6,
+      "tackling": 8,
+      "speed": 5,
+      "acceleration": 5,
+      "firstTouch": 6,
+      "dribbling": 4
+    },
+    "profile": {
+      "summary": "No-nonsense defender who clears his lines. Strong in the air and in one-v-one situations.",
+      "archetype": "Stopper"
+    }
+  },
+  {
+    "id": "p015",
+    "name": "Torres",
+    "age": 23,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "CB",
+      "RB"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 4,
+      "pressing": 7,
+      "tackling": 7,
+      "speed": 7,
+      "acceleration": 7,
+      "firstTouch": 7,
+      "dribbling": 5
+    },
+    "profile": {
+      "summary": "Quick centre-back who steps up to intercept. Comfortable bringing the ball out.",
+      "archetype": "Ball-playing defender"
+    }
+  },
+  {
+    "id": "p016",
+    "name": "Yamamoto",
+    "age": 25,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "RB",
+      "RWB"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 6,
+      "finishing": 4,
+      "shotPower": 5,
+      "pressing": 7,
+      "tackling": 6,
+      "speed": 8,
+      "acceleration": 8,
+      "firstTouch": 6,
+      "dribbling": 6
+    },
+    "profile": {
+      "summary": "Attack-minded full-back who gets forward and delivers early crosses.",
+      "archetype": "Wing-back"
+    }
+  },
+  {
+    "id": "p017",
+    "name": "Andersson",
+    "age": 26,
+    "squadId": "team_blue",
+    "preferredFoot": "left",
+    "positions": [
+      "LB",
+      "LWB"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 5,
+      "pressing": 6,
+      "tackling": 7,
+      "speed": 7,
+      "acceleration": 6,
+      "firstTouch": 7,
+      "dribbling": 6
+    },
+    "profile": {
+      "summary": "Solid left-back who defends first but supports attacks when safe.",
+      "archetype": "Defensive full-back"
+    }
+  },
+  {
+    "id": "p018",
+    "name": "Diallo",
+    "age": 24,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "CDM",
+      "CM"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 5,
+      "pressing": 8,
+      "tackling": 8,
+      "speed": 6,
+      "acceleration": 6,
+      "firstTouch": 7,
+      "dribbling": 5
+    },
+    "profile": {
+      "summary": "Screening midfielder who shields the defence and keeps the ball moving.",
+      "archetype": "Defensive midfielder"
+    }
+  },
+  {
+    "id": "p019",
+    "name": "Petrov",
+    "age": 28,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "CM",
+      "AM"
+    ],
+    "stats": {
+      "passing": 8,
+      "vision": 8,
+      "finishing": 5,
+      "shotPower": 6,
+      "pressing": 6,
+      "tackling": 5,
+      "speed": 6,
+      "acceleration": 6,
+      "firstTouch": 8,
+      "dribbling": 7
+    },
+    "profile": {
+      "summary": "All-round midfielder who links defence and attack. Can shoot from distance.",
+      "archetype": "Central midfielder"
+    }
+  },
+  {
+    "id": "p020",
+    "name": "Müller",
+    "age": 22,
+    "squadId": "team_blue",
+    "preferredFoot": "left",
+    "positions": [
+      "LM",
+      "LW"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 7,
+      "finishing": 6,
+      "shotPower": 6,
+      "pressing": 7,
+      "tackling": 4,
+      "speed": 8,
+      "acceleration": 8,
+      "firstTouch": 7,
+      "dribbling": 8
+    },
+    "profile": {
+      "summary": "Skilful winger who takes on defenders and creates chances.",
+      "archetype": "Inverted winger"
+    }
+  },
+  {
+    "id": "p021",
+    "name": "Ibrahim",
+    "age": 21,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "RM",
+      "RW"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 6,
+      "finishing": 7,
+      "shotPower": 7,
+      "pressing": 7,
+      "tackling": 4,
+      "speed": 9,
+      "acceleration": 9,
+      "firstTouch": 7,
+      "dribbling": 8
+    },
+    "profile": {
+      "summary": "Lightning-quick winger who stretches defences and finishes when through.",
+      "archetype": "Wide forward"
+    }
+  },
+  {
+    "id": "p022",
+    "name": "Rossi",
+    "age": 29,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "ST",
+      "CF"
+    ],
+    "stats": {
+      "passing": 6,
+      "vision": 6,
+      "finishing": 8,
+      "shotPower": 8,
+      "pressing": 6,
+      "tackling": 3,
+      "speed": 6,
+      "acceleration": 6,
+      "firstTouch": 8,
+      "dribbling": 7
+    },
+    "profile": {
+      "summary": "Poacher who comes alive in the box. Times runs and finishes clinically.",
+      "archetype": "Poacher"
+    }
+  },
+  {
+    "id": "p023",
+    "name": "Johansson",
+    "age": 24,
+    "squadId": "team_blue",
+    "preferredFoot": "left",
+    "positions": [
+      "AM",
+      "LW"
+    ],
+    "stats": {
+      "passing": 8,
+      "vision": 8,
+      "finishing": 6,
+      "shotPower": 6,
+      "pressing": 5,
+      "tackling": 4,
+      "speed": 7,
+      "acceleration": 7,
+      "firstTouch": 8,
+      "dribbling": 8
+    },
+    "profile": {
+      "summary": "Creative attacker who drifts inside to find space and play key passes.",
+      "archetype": "False nine"
+    }
+  },
+  {
+    "id": "p024",
+    "name": "O'Brien",
+    "age": 27,
+    "squadId": "team_blue",
+    "preferredFoot": "right",
+    "positions": [
+      "CB",
+      "CDM"
+    ],
+    "stats": {
+      "passing": 7,
+      "vision": 6,
+      "finishing": 3,
+      "shotPower": 5,
+      "pressing": 7,
+      "tackling": 8,
+      "speed": 5,
+      "acceleration": 5,
+      "firstTouch": 7,
+      "dribbling": 4
+    },
+    "profile": {
+      "summary": "Versatile defender who can slot into midfield. Reads the game and breaks up attacks.",
+      "archetype": "Utility defender"
+    }
+  }
+]

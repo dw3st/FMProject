@@ -1,0 +1,9 @@
+{
+  "id": "premier_league",
+  "league": {
+    "teams": 20,
+    "rounds": 38,
+    "season_start": "2027-08-15",
+    "season_end": "2028-05-20"
+  }
+}

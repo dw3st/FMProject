@@ -1,0 +1,9 @@
+{
+  "id": "ligue_1",
+  "league": {
+    "teams": 18,
+    "rounds": 34,
+    "season_start": "2027-08-15",
+    "season_end": "2028-05-20"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "GK": [
+    "GK"
+  ],
+  "DF": [
+    "CB",
+    "CB",
+    "CB",
+    "RB",
+    "LB",
+    "RWB",
+    "LWB"
+  ],
+  "MF": [
+    "CM",
+    "CM",
+    "CDM",
+    "AM",
+    "LM",
+    "RM"
+  ],
+  "FW": [
+    "ST",
+    "ST",
+    "CF",
+    "LW",
+    "RW"
+  ],
+  "MF,FW": [
+    "AM",
+    "LW",
+    "RW",
+    "CF",
+    "ST"
+  ],
+  "FW,MF": [
+    "AM",
+    "LW",
+    "RW",
+    "CF",
+    "ST"
+  ],
+  "DF,MF": [
+    "CDM",
+    "CDM",
+    "CM",
+    "CB"
+  ],
+  "MF,DF": [
+    "CDM",
+    "CDM",
+    "CM",
+    "CB"
+  ],
+  "DF,FW": [
+    "CF",
+    "CB"
+  ],
+  "FW,DF": [
+    "CF",
+    "CB"
+  ]
+}

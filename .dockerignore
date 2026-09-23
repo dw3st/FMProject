@@ -1,0 +1,11 @@
+node_modules
+dist
+.env*
+debug
+data_process
+promo-video
+results.json
+.claude
+.idea
+.DS_Store
+src/Data
