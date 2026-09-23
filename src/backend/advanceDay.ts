@@ -795,8 +795,13 @@ export const advanceDayRoutes = {
       }
     }
 
-    const outcome = await advanceOneDay(saveService, req.params.saveId!, playedMatchOverride);
+    // One buffered unit of work per day: each squad is read at most once and written once.
+    // A failed day (!outcome.ok) flushes nothing.
+    const buffer = new BufferingSaveDAL(new FileSystemDAL());
+    const dayService = new SaveService(buffer);
+    const outcome = await advanceOneDay(dayService, req.params.saveId!, playedMatchOverride);
     if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
+    await buffer.flush();
     return Response.json(outcome.payload);
   },
 
