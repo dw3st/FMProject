@@ -21,8 +21,8 @@ export const ATTACKING_MID_ROLES = ["CAM", "AM", "LM", "RM"] as const;
 export const DEFENSIVE_MID_ROLES = ["CDM", "DM"] as const;
 
 export const QUICK_SIM_CONFIG = {
-  /** Expected goals for one side when both teams are equal, before home advantage. */
-  BASE_GOALS: 1.06,
+  /** Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage. */
+  BASE_GOALS: 0.94,
   HOME_ADVANTAGE: 1.01,
   /** Exponent on (atk × mid) / (def × gk). < 1 compresses mismatches. */
   STRENGTH_EXPONENT: 0.5,
@@ -36,6 +36,16 @@ export const QUICK_SIM_CONFIG = {
    * Anti-correlates the two sides' chances → more lopsided results, fewer draws. 0 disables.
    */
   DOMINANCE_SIGMA: 0.35,
+  /**
+   * Match level (mean of both XIs' mean line strength, floor included) at which the level
+   * term is 1 — BASE_GOALS applies as-is at this level.
+   */
+  LEVEL_REF: 5,
+  /**
+   * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
+   * teams than between weak ones at the same strength ratio. 0 disables.
+   */
+  LEVEL_EXPONENT: 1.2,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
   /** Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100). */

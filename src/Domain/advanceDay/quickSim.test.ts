@@ -213,7 +213,7 @@ describe("quickSimMatch", () => {
     expect(Object.keys(recording.playerStats).filter((id) => id.startsWith("h-")).length).toBe(9);
   });
 
-  test("distribuição: times iguais com média de 1,8 a 2,6 gols e mandante vencendo mais", () => {
+  test("distribuição: times iguais com média de 1,3 a 1,9 gols e mandante vencendo mais", () => {
     const h = makeSquad("h", 4);
     const a = makeSquad("a", 4);
     let goals = 0, homeWins = 0, awayWins = 0;
@@ -224,9 +224,23 @@ describe("quickSimMatch", () => {
       if (score.home > score.away) homeWins++;
       else if (score.away > score.home) awayWins++;
     }
-    expect(goals / N).toBeGreaterThanOrEqual(1.8);
-    expect(goals / N).toBeLessThanOrEqual(2.6);
+    expect(goals / N).toBeGreaterThanOrEqual(1.3);
+    expect(goals / N).toBeLessThanOrEqual(1.9);
     expect(homeWins).toBeGreaterThan(awayWins);
+  });
+
+  test("nível absoluto: dois nível 7 marcam mais que dois nível 3", () => {
+    const avgGoals = (level: number) => {
+      const h = makeSquad("h", level);
+      const a = makeSquad("a", level);
+      let goals = 0;
+      for (let seed = 0; seed < 1000; seed++) {
+        const { score } = run(h, a, seed).recording;
+        goals += score.home + score.away;
+      }
+      return goals / 1000;
+    };
+    expect(avgGoals(7)).toBeGreaterThan(avgGoals(3));
   });
 
   test("forte vence o fraco na maioria", () => {

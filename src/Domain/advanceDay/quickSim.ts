@@ -114,9 +114,25 @@ function strengthOf(xi: XIPlayer[]): TeamStrength {
   };
 }
 
+/** A team's overall level: the mean of its 4 line strengths. */
+export function teamLevel(s: TeamStrength): number {
+  return (s.attack + s.midfield + s.defense + s.goalkeeper) / 4;
+}
+
+/**
+ * xG for `attacker` vs `defender`. The strength ratio decides who is favoured; the match
+ * level (mean of both teams' `teamLevel`) scales the goal rate, since in the full engine
+ * strong-vs-strong matches produce more goals than weak-vs-weak ones at the same ratio.
+ */
 export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, isHome: boolean): number {
   const ratio = (attacker.attack * attacker.midfield) / (defender.defense * defender.goalkeeper);
-  return C.BASE_GOALS * Math.pow(ratio, C.STRENGTH_EXPONENT) * (isHome ? C.HOME_ADVANTAGE : 1);
+  const matchLevel = (teamLevel(attacker) + teamLevel(defender)) / 2;
+  return (
+    C.BASE_GOALS *
+    Math.pow(ratio, C.STRENGTH_EXPONENT) *
+    Math.pow(matchLevel / C.LEVEL_REF, C.LEVEL_EXPONENT) *
+    (isHome ? C.HOME_ADVANTAGE : 1)
+  );
 }
 
 /**
