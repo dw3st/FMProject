@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CALENDAR_YEAR, CONTINENT, OVERLAP, buildCountryEntry, keptLeagues, scheduleFor, zonesFor } from "@/../scripts/openfootball/leagues";
+import { CALENDAR_YEAR, CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, levelFlags, scheduleFor, zonesFor } from "@/../scripts/openfootball/leagues";
 import type { SeedLeague } from "@/../scripts/openfootball/types";
 
 const L = (slug: string, country: string, tier: number, countryName = country): SeedLeague =>
@@ -52,5 +52,28 @@ describe("buildCountryEntry / CONTINENT", () => {
     for (const code of ["ae","al","am","ar","at","au","be","bg","br","by","ch","cl","cm","co","cy","cz","de","dk","dz","eg","es","fi","fj","fr","gb","ge","gh","gr","hr","hu","id","il","ir","is","it","jp","ke","kz","mt","mx","ng","nl","no","pe","pl","pt","py","rs","ru","sa","se","si","sk","tr","ua","us","uy","uz","ve","za"]) {
       expect(CONTINENT[code]).toBeDefined();
     }
+  });
+});
+
+describe("levelFlags", () => {
+  test("acima/abaixo pelos níveis do país", () => {
+    expect(levelFlags(2, [1, 2, 3])).toEqual({ hasAbove: true, hasBelow: true });
+    expect(levelFlags(1, [1, 1])).toEqual({ hasAbove: false, hasBelow: false });
+    expect(levelFlags(3, [1, 2, 3, 3])).toEqual({ hasAbove: true, hasBelow: false });
+  });
+});
+
+describe("formatSchedules", () => {
+  test("reproduz o alinhamento das linhas originais", () => {
+    const out = formatSchedules([
+      { slug: "bundesliga", seasonStartMMDD: "08-15", seasonEndMMDD: "05-17", crossYear: true, matchDays: [6, 0], baseWeekOffset: 1 },
+      { slug: "brazil_serie_a", seasonStartMMDD: "02-05", seasonEndMMDD: "12-07", crossYear: false, matchDays: [3, 6, 0], baseWeekOffset: 0 },
+    ]);
+    expect(out).toBe(
+      '[\n' +
+      '  { "slug": "bundesliga",     "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 1 },\n' +
+      '  { "slug": "brazil_serie_a", "seasonStartMMDD": "02-05", "seasonEndMMDD": "12-07", "crossYear": false, "matchDays": [3, 6, 0], "baseWeekOffset": 0 }\n' +
+      ']\n',
+    );
   });
 });
