@@ -280,7 +280,7 @@ export async function runScenario(
   const limit = Math.max(1, opts.concurrency ?? pairs.length);
   const raw = await runWithConcurrency(pairs, limit, (p) =>
     runOnePair(
-      { variantA: p.variantA, variantB: p.variantB, matches: scenario.matchesPerPair },
+      { variantA: p.variantA, variantB: p.variantB, matches: scenario.matchesPerPair, simEngine: scenario.simEngine ?? "full" },
       opts.onProgress,
     ),
   );

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
 import type { DebugOverlays } from "@/GraficsEngine/PixiPitch";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
+import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
 import type { CrowdMode } from "@/GameInterface/CrowdHeatmapPanel";
 import { Icon } from "@/GameInterface/Icons";
@@ -318,6 +319,7 @@ export function TestScreen() {
   const [paused, setPaused]       = useState(false);
   const [speed, setSpeed]         = useState(1);
   const [debug, setDebug]         = useState(true);
+  const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
   const [debugOverlays, setDebugOverlays] = useState<DebugOverlays>(() => {
     try {
@@ -1095,6 +1097,16 @@ export function TestScreen() {
           onClear={handleClearPitchClick}
         />
       )}
+
+      <div>
+        <button
+          className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10"
+          onClick={() => setQuickSimOpen((o) => !o)}
+        >
+          QuickSim
+        </button>
+        {quickSimOpen && <div className="mt-2"><QuickSimPanel /></div>}
+      </div>
 
       {/* ── Pitch row: Team A | Pitch | Team B ── */}
       <div className="flex-1 flex gap-2 min-h-[460px] min-w-0">

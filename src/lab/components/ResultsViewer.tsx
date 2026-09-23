@@ -28,7 +28,14 @@ export function ResultsViewer({
       <div className="bg-white/[0.03] border border-white/10 rounded p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">{result.scenario.name}</h2>
+            <h2 className="text-lg font-semibold">
+              {result.scenario.name}
+              {result.scenario.simEngine === "quick" && (
+                <span className="ml-2 text-[10px] uppercase tracking-widest text-white/40 border border-white/10 rounded px-1.5 py-0.5 align-middle">
+                  quickSim
+                </span>
+              )}
+            </h2>
             <p className="text-xs text-white/40">
               {new Date(result.startedAt).toLocaleString()} · {result.pairs.length} pairs ·{" "}
               {result.scenario.matchesPerPair} matches/pair · ran in{" "}

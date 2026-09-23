@@ -12,6 +12,8 @@ import type {
 import { applyDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import rolesData from "@/Data/roles.json";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
+import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 
 export interface MatchSimResult {
   event: MatchEvent;
@@ -353,4 +355,47 @@ export function buildMatchEvent(
   };
 
   return { event, updatedHome: devHome, updatedAway: devAway };
+}
+
+/** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
+export function compactMatchEvent(event: MatchEvent): MatchEvent {
+  return {
+    ...event,
+    playerStats: {},
+    playerRatings: {},
+    playerNames: Object.fromEntries(event.scorers.map((s) => [s.playerId, s.playerName])),
+    playerTeams: Object.fromEntries(event.scorers.map((s) => [s.playerId, s.team])),
+    developmentChanges: [],
+    compact: true,
+  };
+}
+
+/** Resolve a fixture with quickSim; squads still get seasonLog/energy/development updates. */
+export function buildQuickMatchEvent(
+  fixture: Fixture,
+  homeSquad: Squad,
+  awaySquad: Squad,
+  sim: {
+    homeLineup: string[];
+    awayLineup: string[];
+    /** When given, each lineup slot plays its formation slot role (as in the engine). */
+    homeFormation?: Formation;
+    awayFormation?: Formation;
+  },
+  rng: Rng = Math.random,
+): MatchSimResult {
+  const { recording } = quickSimMatch(
+    {
+      fixtureId: fixture.id,
+      home: homeSquad,
+      away: awaySquad,
+      homeLineup: sim.homeLineup,
+      awayLineup: sim.awayLineup,
+      homeRoles: sim.homeFormation ? slotRoles(sim.homeFormation) : undefined,
+      awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
+    },
+    rng,
+  );
+  const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording);
+  return { ...r, event: compactMatchEvent(r.event) };
 }

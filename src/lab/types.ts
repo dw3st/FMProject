@@ -32,6 +32,11 @@ export interface CustomSquadSpec {
 
 export type SquadSpec = UniformSquadSpec | CustomSquadSpec;
 
+// ── Simulation engine ────────────────────────────────────────────────────────
+
+/** Which engine resolves each match. Absent ⇒ "full". */
+export type SimEngine = "full" | "quick";
+
 /** All raw attributes a player can carry. Mirrors `RosterPlayer.stats`. */
 export interface RawAttributes {
   passing: number;
@@ -74,6 +79,8 @@ export interface BalanceScenario {
   name: string;
   description?: string;
   matchesPerPair: number;
+  /** Which engine resolves matches for this scenario. Defaults to "full" when absent. */
+  simEngine?: SimEngine;
   /** Single pool — every variant plays every other variant once, no self-pairs. */
   variants: Variant[];
 }
@@ -84,6 +91,8 @@ export interface WorkerInput {
   variantA: Variant;
   variantB: Variant;
   matches: number;
+  /** Which engine resolves matches for this pair. Defaults to "full" when absent. */
+  simEngine?: SimEngine;
 }
 
 /** Raw sums across all N matches for one team. */

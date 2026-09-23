@@ -9,6 +9,8 @@
  */
 
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
+import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
+import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { emptySeasonLog } from "@/types/playerTypes";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
@@ -87,17 +89,32 @@ async function loadFormation(id: string): Promise<Formation> {
   return Bun.file(`${FORMATIONS_DIR}${id}.json`).json() as Promise<Formation>;
 }
 
+/**
+ * The lab's two squads share player ids (p0…p19). The full engine keys stats by a
+ * fresh numeric GamePlayer id per team, so the collision never matters there — but
+ * quickSim's playerStats/assists are keyed by the RosterPlayer id directly, so a
+ * collision would merge Team A's and Team B's per-player stats. Prefix ids per side
+ * so quickSim output stays attributable.
+ */
+function prefixIds(squad: Squad, side: "A" | "B"): Squad {
+  return { ...squad, players: squad.players.map((p) => ({ ...p, id: `${side}-${p.id}` })) };
+}
+
+function squadIdOf(side: "A" | "B", playerId: string): boolean {
+  return playerId.startsWith(`${side}-`);
+}
+
 self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   try {
-    const { variantA, variantB, matches } = e.data;
+    const { variantA, variantB, matches, simEngine = "full" } = e.data;
 
     const [formationA, formationB] = await Promise.all([
       loadFormation(variantA.formation),
       loadFormation(variantB.formation),
     ]);
 
-    const squadA = buildSquad(variantA.squad, variantA.label);
-    const squadB = buildSquad(variantB.squad, variantB.label);
+    const squadA = prefixIds(buildSquad(variantA.squad, variantA.label), "A");
+    const squadB = prefixIds(buildSquad(variantB.squad, variantB.label), "B");
 
     // Apply per-team tactics ONCE — all N matches use them.
     applyTeamTacticsConfig("A", variantA.tacticalStyle);
@@ -105,12 +122,53 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamTacticsConfig("B", variantB.tacticalStyle);
     applyTeamAttackConfig("B", variantB.tacticalStyle);
 
+    // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
+    const quickLineupA = autoLineupForFormation(squadA, formationA);
+    const quickLineupB = autoLineupForFormation(squadB, formationB);
+    const quickRolesA = slotRoles(formationA);
+    const quickRolesB = slotRoles(formationB);
+
     const start = performance.now();
     const teamA = emptyTeamRaw();
     const teamB = emptyTeamRaw();
     let draws = 0;
 
     for (let m = 0; m < matches; m++) {
+      if (simEngine === "quick") {
+        const q = quickSimMatch({
+          fixtureId: `lab-${m}`,
+          home: squadA,
+          away: squadB,
+          homeLineup: quickLineupA,
+          awayLineup: quickLineupB,
+          homeRoles: quickRolesA,
+          awayRoles: quickRolesB,
+        });
+        const hA = q.recording.teamStats.home;
+        const hB = q.recording.teamStats.away;
+        const assists = (side: "A" | "B") =>
+          Object.entries(q.recording.playerStats)
+            .filter(([id]) => squadIdOf(side, id))
+            .reduce((acc, [, s]) => acc + s.assists, 0);
+        teamA.goals += q.recording.score.home;   teamB.goals += q.recording.score.away;
+        teamA.shots += hA.shots;                 teamB.shots += hB.shots;
+        teamA.xg    += q.breakdown.xgHome;       teamB.xg    += q.breakdown.xgAway;
+        teamA.assists += assists("A");           teamB.assists += assists("B");
+        teamA.passesAttempted += hA.passesAttempted; teamB.passesAttempted += hB.passesAttempted;
+        teamA.passesCompleted += hA.passesCompleted; teamB.passesCompleted += hB.passesCompleted;
+        teamA.passesFailed += hA.passesAttempted - hA.passesCompleted;
+        teamB.passesFailed += hB.passesAttempted - hB.passesCompleted;
+        teamA.tackles += hA.tackles;             teamB.tackles += hB.tackles;
+        teamA.interceptions += hA.interceptions; teamB.interceptions += hB.interceptions;
+        if (q.recording.score.home > q.recording.score.away) teamA.wins++;
+        else if (q.recording.score.away > q.recording.score.home) teamB.wins++;
+        else draws++;
+        if ((m + 1) % 10 === 0 || m + 1 === matches) {
+          postMessage({ type: "progress", variantAId: variantA.id, variantBId: variantB.id, done: m + 1, total: matches });
+        }
+        continue;
+      }
+
       const r = simulateMatch(squadA, squadB, formationA, formationB);
       const sA = r.teamStats.A;
       const sB = r.teamStats.B;
