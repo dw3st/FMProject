@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { saveService, SaveService } from "@/backend/SaveService";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee } from "@/backend/FinancialService";
 import type { LeagueTeam, Squad } from "@/types/playerTypes";
@@ -801,21 +802,26 @@ export const advanceDayRoutes = {
       }
     }
 
-    // One buffered unit of work per day: each squad is read at most once and written once.
-    // A failed day (!outcome.ok) flushes nothing.
-    const buffer = new BufferingSaveDAL(new FileSystemDAL());
-    const dayService = new SaveService(buffer);
-    const outcome = await advanceOneDay(dayService, req.params.saveId!, playedMatchOverride);
-    if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-    try {
-      await buffer.flush();
-    } catch (err) {
-      // flush() writes meta last, so on failure currentDate was not advanced.
-      const errors = err instanceof AggregateError ? err.errors : [err];
-      for (const e of errors) logError("advance-day", `failed to persist day for save ${req.params.saveId}`, e);
-      return Response.json({ error: "failed to persist day" }, { status: 500 });
-    }
-    return Response.json(outcome.payload);
+    // Serialise days per save: a second request for the same save waits until the
+    // first has flushed, so it reads the advanced state instead of racing it.
+    const saveId = req.params.saveId!;
+    return withSaveLock(saveId, async () => {
+      // One buffered unit of work per day: each squad is read at most once and written once.
+      // A failed day (!outcome.ok) flushes nothing.
+      const buffer = new BufferingSaveDAL(new FileSystemDAL());
+      const dayService = new SaveService(buffer);
+      const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride);
+      if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
+      try {
+        await buffer.flush();
+      } catch (err) {
+        // flush() writes meta last, so on failure currentDate was not advanced.
+        const errors = err instanceof AggregateError ? err.errors : [err];
+        for (const e of errors) logError("advance-day", `failed to persist day for save ${saveId}`, e);
+        return Response.json({ error: "failed to persist day" }, { status: 500 });
+      }
+      return Response.json(outcome.payload);
+    });
   },
 
   "/api/saves/:saveId/days/:date": async (
