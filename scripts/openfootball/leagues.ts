@@ -13,7 +13,7 @@ export const OVERLAP: Record<string, string> = {
   "brazilian-serie-b": "brazil_serie_b",
 };
 
-export const CALENDAR_YEAR = new Set(["br", "ar", "cl", "uy", "py", "pe", "co", "ve", "us", "jp", "no", "se", "fi", "is", "kz", "by"]);
+export const CALENDAR_YEAR = new Set(["br", "ar", "cl", "uy", "py", "pe", "co", "ve", "us", "jp", "no", "se", "fi", "is", "kz", "by", "ge", "uz", "fj"]);
 
 export const CONTINENT: Record<string, string> = {
   al: "Europe", am: "Europe", at: "Europe", be: "Europe", bg: "Europe", by: "Europe", ch: "Europe", cy: "Europe",

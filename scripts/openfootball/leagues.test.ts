@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CONTINENT, OVERLAP, buildCountryEntry, keptLeagues, scheduleFor, zonesFor } from "@/../scripts/openfootball/leagues";
+import { CALENDAR_YEAR, CONTINENT, OVERLAP, buildCountryEntry, keptLeagues, scheduleFor, zonesFor } from "@/../scripts/openfootball/leagues";
 import type { SeedLeague } from "@/../scripts/openfootball/types";
 
 const L = (slug: string, country: string, tier: number, countryName = country): SeedLeague =>
@@ -33,6 +33,12 @@ describe("scheduleFor", () => {
     expect(scheduleFor("of_y", "pt", 18, 1)).toMatchObject({ seasonStartMMDD: "08-15", seasonEndMMDD: "05-17", crossYear: true, baseWeekOffset: 1 });
     expect(scheduleFor("of_z", "us", 30, 7).matchDays).toEqual([3, 6, 0]);
     expect(scheduleFor("of_z", "us", 30, 7).baseWeekOffset).toBe(2);
+  });
+  test("Geórgia, Uzbequistão e Fiji jogam no ano civil", () => {
+    for (const code of ["ge", "uz", "fj"]) {
+      expect(CALENDAR_YEAR.has(code)).toBe(true);
+      expect(scheduleFor("of_x", code, 10, 0)).toMatchObject({ seasonStartMMDD: "02-05", seasonEndMMDD: "11-30", crossYear: false });
+    }
   });
 });
 
