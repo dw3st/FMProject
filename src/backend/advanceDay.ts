@@ -1,7 +1,9 @@
+import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService } from "@/backend/SaveService";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee } from "@/backend/FinancialService";
 import type { LeagueTeam, Squad } from "@/types/playerTypes";
@@ -36,9 +38,9 @@ import { runSeasonTransition } from "@/Domain/season";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
-import { debugLog, logSeason, LOG_NS_SEASON } from "@/Logger";
+import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 
-const DATA_DIR = new URL("../Data", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 function withDefaultFinances(s: Squad): Squad {
   if (s.finances) return s;
@@ -88,8 +90,11 @@ type AdvanceDayOutcome =
  * To avoid the per-day disk churn (re-reading/writing every squad for ~130 days),
  * the whole catch-up runs against a BufferingSaveDAL: every read is cached and every
  * write is held in memory, then flushed to disk once at the end. The on-disk
- * currentDate is only mutated by that flush, so an interrupted run leaves a clean
- * (un-caught-up) save rather than a half-written world.
+ * currentDate is only mutated by that flush, and the flush writes the save meta
+ * last — only after every other file was persisted. A run interrupted before the
+ * flush leaves the save untouched; a flush that fails part-way may leave some
+ * world files written but never records the save as caught up (currentDate stays
+ * at the player's start).
  *
  * Idempotent enough for safety: if worldStart >= playerStart there is nothing to do.
  */
@@ -301,6 +306,7 @@ export async function advanceOneDay(
             playerName,
             changes: net,
           }),
+          saveService,
         );
       }
     }
@@ -502,6 +508,7 @@ export async function advanceOneDay(
             fromClub:   tx.sellerSquad.name,
             feeEuros:   tx.fee,
           }),
+          saveService,
         );
       } else if (isSellerPlayer) {
         await emitInboxMessage(
@@ -514,6 +521,7 @@ export async function advanceOneDay(
             toClub:     tx.buyerSquad.name,
             feeEuros:   tx.fee,
           }),
+          saveService,
         );
       }
     }
@@ -794,9 +802,26 @@ export const advanceDayRoutes = {
       }
     }
 
-    const outcome = await advanceOneDay(saveService, req.params.saveId!, playedMatchOverride);
-    if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-    return Response.json(outcome.payload);
+    // Serialise days per save: a second request for the same save waits until the
+    // first has flushed, so it reads the advanced state instead of racing it.
+    const saveId = req.params.saveId!;
+    return withSaveLock(saveId, async () => {
+      // One buffered unit of work per day: each squad is read at most once and written once.
+      // A failed day (!outcome.ok) flushes nothing.
+      const buffer = new BufferingSaveDAL(new FileSystemDAL());
+      const dayService = new SaveService(buffer);
+      const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride);
+      if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
+      try {
+        await buffer.flush();
+      } catch (err) {
+        // flush() writes meta last, so on failure currentDate was not advanced.
+        const errors = err instanceof AggregateError ? err.errors : [err];
+        for (const e of errors) logError("advance-day", `failed to persist day for save ${saveId}`, e);
+        return Response.json({ error: "failed to persist day" }, { status: 500 });
+      }
+      return Response.json(outcome.payload);
+    });
   },
 
   "/api/saves/:saveId/days/:date": async (

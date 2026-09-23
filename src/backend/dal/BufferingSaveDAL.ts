@@ -1,4 +1,5 @@
-import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
+import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
+import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type {
@@ -13,6 +14,13 @@ import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+
+/** Max buffered writes in flight during `flush()`. */
+export const FLUSH_CONCURRENCY = 32;
+
+function squadKey(leagueSlug: string, clubSlug: string): string {
+  return `${leagueSlug}/${clubSlug}`;
+}
 
 /**
  * An ISaveDAL wrapper that keeps all save state in memory and writes to the
@@ -30,25 +38,66 @@ import type { InboxMessage } from "@/types/inboxTypes";
  *  - Writes update the cache and register a flush thunk keyed by resource. Writing
  *    the same resource again replaces the thunk, so only the final value is
  *    persisted.
- *  - `flush()` runs every pending thunk, then clears them.
+ *  - `flush()` runs every pending thunk (bounded parallelism), save meta last,
+ *    then clears them — see `flush()`.
  *
- * Squad list reads overlay buffered squad edits (indexed by squad id) on top of
- * the on-disk snapshot, so `listAllSquads` / `listSquadsInLeague` reflect in-flight
- * changes without re-reading from disk.
+ * Aliasing: reads within one unit of work return SHARED objects — the same
+ * instance to every caller (a squad from `readSquad` is the one inside
+ * `listAllSquads`, a buffered write is returned as-is to later reads). Callers
+ * must treat what they read as immutable (build a new object and write it), or
+ * write the object back after mutating it; an in-place mutation that is never
+ * written is visible to the rest of the unit of work but never persisted.
+ *
+ * Squads are different: every squad file is loaded once, in bulk, on first squad
+ * access, and every squad read (single, per league, all) is served from that one
+ * store with buffered edits overlaid by file key (league + club stem). Each squad
+ * file is therefore read from disk at most once per buffer.
  *
  * Not safe to share across saves or concurrent runs — construct one per bulk run.
  */
 export class BufferingSaveDAL implements ISaveDAL {
   private readonly cache = new Map<string, unknown>();
   private readonly pending = new Map<string, () => Promise<void>>();
-  private readonly squadById = new Map<string, Squad>();
+  private readonly squadStores = new Map<string, Promise<Map<string, SquadFile>>>();
+  private readonly squadEdits = new Map<string, Map<string, SquadFile>>();
 
   constructor(private readonly inner: ISaveDAL) {}
 
-  /** Persist every buffered write to the underlying DAL, then clear the write set. */
+  /**
+   * Persist every buffered write (the final value per resource) to the underlying
+   * DAL, in two phases:
+   *
+   *  1. every non-meta resource, at most FLUSH_CONCURRENCY at a time;
+   *  2. only if phase 1 fully succeeded, the save meta (`meta:*`).
+   *
+   * Meta carries `currentDate`, so writing it last keeps the invariant that a save
+   * is never recorded as advanced unless everything else of that unit of work was
+   * persisted. Within a phase every write is attempted; successful ones are
+   * cleared, failed ones stay pending (a later flush retries them), and one
+   * AggregateError is thrown after all have settled. If phase 1 fails, meta is
+   * left pending and unwritten.
+   */
   async flush(): Promise<void> {
-    for (const write of this.pending.values()) await write();
-    this.pending.clear();
+    const entries = Array.from(this.pending.entries());
+    const isMeta = ([key]: [string, unknown]) => key.startsWith("meta:");
+    await this.flushPhase(entries.filter((e) => !isMeta(e)));
+    await this.flushPhase(entries.filter(isMeta));
+  }
+
+  private async flushPhase(entries: Array<[string, () => Promise<void>]>): Promise<void> {
+    const errors: unknown[] = [];
+    await runPool(entries, FLUSH_CONCURRENCY, async ([key, write]) => {
+      try {
+        await write();
+        // Only clear if not re-buffered while this write was in flight.
+        if (this.pending.get(key) === write) this.pending.delete(key);
+      } catch (e) {
+        errors.push(e);
+      }
+    });
+    if (errors.length > 0) {
+      throw new AggregateError(errors, `BufferingSaveDAL.flush: ${errors.length} of ${entries.length} writes failed`);
+    }
   }
 
   private async readThrough<T>(key: string, loader: () => Promise<T>): Promise<T> {
@@ -106,28 +155,76 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
 
   // ── Squads ──────────────────────────────────────────────────────────────────
-  readSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null> {
-    return this.readThrough(`squad:${saveId}:${leagueSlug}:${clubSlug}`, () => this.inner.readSquad(saveId, leagueSlug, clubSlug));
+  //
+  // All squad access goes through ONE per-save store keyed by file identity
+  // (`league/clubStem`), bulk-loaded with a single inner `listSquadFiles` on first
+  // use. Once loaded the store is authoritative for which squad files exist, so
+  // `readSquad` / `squadExists` never touch the inner DAL — including the slug
+  // probe misses of `SaveService.getSquad` (`{slug}.json` absent → null, from
+  // memory) — and `listAllSquads` is served from the same objects.
+  //
+  // Buffered writes live in `squadEdits` (same key) and overlay the store for every
+  // read path; a write never forces the store to load.
+
+  private squadStore(saveId: string): Promise<Map<string, SquadFile>> {
+    let store = this.squadStores.get(saveId);
+    if (!store) {
+      store = this.inner.listSquadFiles(saveId).then((files) => {
+        const m = new Map<string, SquadFile>();
+        for (const f of files) m.set(squadKey(f.leagueSlug, f.clubSlug), f);
+        return m;
+      });
+      // Concurrent first reads (e.g. both sides of a fixture) share one load; a
+      // failed load is not cached so a later call can retry.
+      store.catch(() => this.squadStores.delete(saveId));
+      this.squadStores.set(saveId, store);
+    }
+    return store;
+  }
+
+  private edits(saveId: string): Map<string, SquadFile> {
+    let m = this.squadEdits.get(saveId);
+    if (!m) this.squadEdits.set(saveId, (m = new Map()));
+    return m;
+  }
+
+  /** Store entries with buffered edits overlaid in place; newly written files appended. */
+  private async squadFilesView(saveId: string): Promise<SquadFile[]> {
+    const store = await this.squadStore(saveId);
+    const edits = this.edits(saveId);
+    const out: SquadFile[] = [];
+    for (const [key, f] of store) out.push(edits.get(key) ?? f);
+    for (const [key, f] of edits) if (!store.has(key)) out.push(f);
+    return out;
+  }
+
+  async readSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null> {
+    const key = squadKey(leagueSlug, clubSlug);
+    const edited = this.edits(saveId).get(key);
+    if (edited) return edited.squad;
+    return (await this.squadStore(saveId)).get(key)?.squad ?? null;
   }
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
-    this.buffer(`squad:${saveId}:${leagueSlug}:${clubSlug}`, squad, () => this.inner.writeSquad(saveId, leagueSlug, clubSlug, squad));
-    this.squadById.set(squad.id, squad);
+    const key = squadKey(leagueSlug, clubSlug);
+    this.edits(saveId).set(key, { leagueSlug, clubSlug, squad });
+    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.writeSquad(saveId, leagueSlug, clubSlug, squad));
   }
   async squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean> {
-    const key = `squad:${saveId}:${leagueSlug}:${clubSlug}`;
-    if (this.cache.has(key)) return this.cache.get(key) != null;
-    return this.inner.squadExists(saveId, leagueSlug, clubSlug);
+    const key = squadKey(leagueSlug, clubSlug);
+    if (this.edits(saveId).has(key)) return true;
+    return (await this.squadStore(saveId)).has(key);
   }
   listLeagues(saveId: string): Promise<string[]> {
     return this.inner.listLeagues(saveId);
   }
+  async listSquadFiles(saveId: string): Promise<SquadFile[]> {
+    return this.squadFilesView(saveId);
+  }
   async listSquadsInLeague(saveId: string, leagueSlug: string): Promise<Squad[]> {
-    const base = await this.readThrough(`listSquadsInLeague:${saveId}:${leagueSlug}`, () => this.inner.listSquadsInLeague(saveId, leagueSlug));
-    return base.map((s) => this.squadById.get(s.id) ?? s);
+    return (await this.squadFilesView(saveId)).filter((f) => f.leagueSlug === leagueSlug).map((f) => f.squad);
   }
   async listAllSquads(saveId: string): Promise<Squad[]> {
-    const base = await this.readThrough(`listAllSquads:${saveId}`, () => this.inner.listAllSquads(saveId));
-    return base.map((s) => this.squadById.get(s.id) ?? s);
+    return (await this.squadFilesView(saveId)).map((f) => f.squad);
   }
 
   // ── Tactics ─────────────────────────────────────────────────────────────────
