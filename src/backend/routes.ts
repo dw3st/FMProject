@@ -18,6 +18,7 @@ import { clubProfileStem } from "@/backend/clubProfile";
 import { authRoutes } from "@/backend/auth/routes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
+import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -236,6 +237,26 @@ export const apiRoutes = {
     if (squads.length === 0)
       return Response.json({ error: "save squads not found" }, { status: 404 });
     return Response.json(squads);
+  },
+
+  /** Scout database: filter / sort / paginate every squad's players server-side (body: ScoutQuery). */
+  "/api/saves/:saveId/scout-search": async (
+    req: Request & { params: Record<string, string> },
+  ) => {
+    if (req.method !== "POST")
+      return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: "invalid json" }, { status: 400 });
+    }
+    const result = await searchScout(saveId!, parseScoutQuery(body));
+    if (!result) return Response.json({ error: "save not found" }, { status: 404 });
+    return Response.json(result);
   },
 
   "/api/saves/:saveId/import-squads": async (

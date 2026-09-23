@@ -1462,6 +1462,9 @@
       "foundPlayers": "Encontrados {{count}} jogadores",
       "loadingPlayers": "Carregando jogadores...",
       "applyingFilters": "Aplicando filtros…",
+      "previousPage": "Anterior",
+      "nextPage": "Próxima",
+      "pageOf": "Página {{page}} de {{pages}}",
       "noPlayersFound": "Nenhum jogador encontrado com os critérios selecionados",
       "action": "Ação",
       "offer": "Oferta"

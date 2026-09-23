@@ -3,8 +3,22 @@ import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { ScoutFilters } from "@/GameInterface/Scout/ScoutFilters";
 import { createDefaultScoutFilters, type ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
+import type { LeagueData, Squad } from "@/types/playerTypes";
+import type { CountryEntry } from "@/types/worldTypes";
+import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
+import { loadSession } from "@/GameInterface/gameSession";
+import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
+import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
+import type { TransferRecord } from "@/types/transferTypes";
+import type { ScoutQuery, ScoutSearchResponse, ScoutSortDir } from "@/Domain/scout/scoutQuery";
+import { countryDisplayName, leagueLabel } from "@/Domain/world/labels";
+import countriesRaw from "@/Data/countries.json";
+
+const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
+const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
 
 const FILTERS_STORAGE_KEY = "scout_filters_v1";
+const PAGE_SIZE = 100;
 
 function loadFilters(): ScoutFilterState {
   try {
@@ -23,14 +37,6 @@ function saveFilters(f: ScoutFilterState) {
     try { localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(f)); } catch { /* unavailable */ }
   }, 400);
 }
-import type { LeagueData } from "@/types/playerTypes";
-import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
-import { loadSession } from "@/GameInterface/gameSession";
-import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
-import { mapSquadsToScoutPlayers } from "@/Domain/scout/scoutQuery";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-import type { Squad } from "@/types/playerTypes";
-import type { TransferRecord } from "@/types/transferTypes";
 
 function useDebounced<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -44,78 +50,108 @@ function useDebounced<T>(value: T, delay: number): T {
 }
 
 export function ScoutScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [session] = useState(() => loadSession());
   const [filters, setFilters] = useState<ScoutFilterState>(() => loadFilters());
   const debouncedFilters = useDebounced(filters, 1_000);
-  const isFiltering = filters !== debouncedFilters;
+
+  const [sortKey, setSortKey] = useState<string>("avg");
+  const [sortDir, setSortDir] = useState<ScoutSortDir>("desc");
+  const [page, setPage] = useState(0);
+  /** Bumped to re-run the current search (e.g. after an accepted transfer). */
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  const [result, setResult] = useState<ScoutSearchResponse | null>(null);
+  const [fetching, setFetching] = useState(true);
+  const [leagueRows, setLeagueRows] = useState<LeagueData[]>([]);
+  const [mySquadId, setMySquadId] = useState<string>("");
+  const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
+
+  const isFiltering = filters !== debouncedFilters || fetching;
 
   function handleSetFilters(f: ScoutFilterState) {
     setFilters(f);
     saveFilters(f);
+    setPage(0);
   }
 
-  const [allPlayers, setAllPlayers] = useState<DisplayPlayer[]>([]);
-  const [leagueRows, setLeagueRows] = useState<Pick<LeagueData, "slug" | "name">[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [mySquadId, setMySquadId] = useState<string>("");
-  const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
-  const [sellListedIds, setSellListedIds] = useState<Set<string>>(new Set());
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+    setPage(0);
+  }
+
+  // Static data: league list (filter options) and the user's squad id (disables offers on own players).
+  useEffect(() => {
+    if (!session) { window.location.href = "/new-game"; return; }
+    fetch("/api/leagues")
+      .then((r) => r.json() as Promise<LeagueData[]>)
+      .then((leagues) => setLeagueRows(Array.isArray(leagues) ? leagues : []))
+      .catch(() => setLeagueRows([]));
+    fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${session.clubId}`)
+      .then(async (r) => (r.ok ? ((await r.json()) as Squad) : null))
+      .then((squad) => setMySquadId(squad?.id ?? session.clubId))
+      .catch(() => setMySquadId(session.clubId));
+  }, [session]);
+
+  // Server-side search: re-run on (debounced) filter, sort, page, or explicit refresh.
+  useEffect(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    const query: ScoutQuery = { filters: debouncedFilters, sortKey, sortDir, page, pageSize: PAGE_SIZE };
+    setFetching(true);
+    fetch(`/api/saves/${session.saveId}/scout-search`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(query),
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? (r.json() as Promise<ScoutSearchResponse>) : null))
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        if (res) {
+          setResult(res);
+          // The server clamps out-of-range pages; follow it so the pager stays consistent.
+          if (res.page !== page) setPage(res.page);
+        }
+        setFetching(false);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setFetching(false);
+      });
+    return () => controller.abort();
+  }, [session, debouncedFilters, sortKey, sortDir, page, refreshTick]);
 
   const leagueFilterOptions = useMemo(
     () => [
       { value: "all", label: t("scout.allLeagues") },
-      ...leagueRows.map((l) => ({ value: l.slug, label: l.name })),
+      ...leagueRows.map((l) => {
+        const country = COUNTRY_BY_NAME.get(l.country);
+        const countryName = country ? countryDisplayName(country, i18n.language, t) : l.country;
+        return { value: l.slug, label: leagueLabel(l, countryName) };
+      }),
     ],
-    [leagueRows, t],
+    [leagueRows, t, i18n.language],
   );
 
-  const nationalityFilterOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of allPlayers) {
-      if (p.nationality) set.add(p.nationality);
-    }
-    return [
+  const nationalities = result?.nationalities;
+  const nationalityFilterOptions = useMemo(
+    () => [
       { value: "all", label: t("scout.allNationalities") },
-      ...[...set].sort((a, b) => a.localeCompare(b)).map((n) => ({ value: n, label: n })),
-    ];
-  }, [allPlayers, t]);
+      ...(nationalities ?? []).map((n) => ({ value: n, label: n })),
+    ],
+    [nationalities, t],
+  );
 
-  useEffect(() => {
-    const session = loadSession();
-    if (!session) { window.location.href = "/new-game"; return; }
+  const sellListedIds = useMemo(() => new Set(result?.sellListedIds ?? []), [result]);
 
-    Promise.all([
-      fetch(`/api/saves/${session.saveId}/all-squads`).then((r) => r.json() as Promise<Squad[]>),
-      fetch("/api/leagues").then((r) => r.json() as Promise<LeagueData[]>),
-      fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${session.clubId}`),
-      fetch(`/api/saves/${session.saveId}/sell-listed-players`).then((r) => r.json() as Promise<string[]>),
-    ])
-      .then(async ([squads, leagues, mySquadRes, sellIds]) => {
-        const mySquadJson = mySquadRes.ok ? ((await mySquadRes.json()) as Squad) : null;
-        const myId = mySquadJson?.id ?? session.clubId;
-        setMySquadId(myId);
-        const list = Array.isArray(leagues) ? leagues : [];
-        setLeagueRows(list.map((l) => ({ slug: l.slug, name: l.name })));
-        const leagueSlugs = list.map((l) => l.slug);
-        setAllPlayers(mapSquadsToScoutPlayers(squads, leagueSlugs));
-        setSellListedIds(new Set(Array.isArray(sellIds) ? sellIds : []));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  function refreshScoutPlayersAfterTransfer(record: TransferRecord) {
+  function refreshAfterTransfer(record: TransferRecord) {
     if (record.status !== "accepted") return;
-    const session = loadSession();
-    if (!session) return;
-    Promise.all([
-      fetch(`/api/saves/${session.saveId}/all-squads`).then((r) => r.json() as Promise<Squad[]>),
-      fetch("/api/leagues").then((r) => r.json() as Promise<LeagueData[]>),
-    ]).then(([squads, leagues]) => {
-      const list = Array.isArray(leagues) ? leagues : [];
-      const leagueSlugs = list.map((l) => l.slug);
-      setAllPlayers(mapSquadsToScoutPlayers(squads, leagueSlugs));
-    });
+    setRefreshTick((n) => n + 1);
   }
 
   return (
@@ -132,9 +168,15 @@ export function ScoutScreen() {
           nationalityOptions={nationalityFilterOptions}
         />
         <ScoutTable
-          filters={debouncedFilters}
-          players={allPlayers}
-          loading={loading}
+          rows={result?.rows ?? []}
+          total={result?.total ?? 0}
+          page={result?.page ?? 0}
+          pageSize={result?.pageSize ?? PAGE_SIZE}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+          onPageChange={setPage}
+          loading={!result && fetching}
           filtering={isFiltering}
           mySquadId={mySquadId}
           onOffer={setOfferTarget}
@@ -145,7 +187,7 @@ export function ScoutScreen() {
       <PlayerOfferModal
         player={offerTarget}
         onClose={() => setOfferTarget(null)}
-        onTransferComplete={refreshScoutPlayersAfterTransfer}
+        onTransferComplete={refreshAfterTransfer}
       />
     </>
   );
