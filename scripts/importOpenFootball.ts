@@ -13,10 +13,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Seed, SeedClub, SeedLeague, SeedPlayer } from "@/../scripts/openfootball/types";
 import { clubId, leagueSlug, unitHash } from "@/../scripts/openfootball/ids";
-import { buildNamePools, mainRole, trimAndFill, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
+import { MAX_AGE, buildNamePools, mainRole, trimAndFill, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
 import { collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubs, matchPlayers } from "@/../scripts/openfootball/calibration";
 import {
-  ECON_FIELDS, STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer,
+  ECON_FIELDS, REP_FLOOR_MARGIN, STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer,
   type ClubFits, type EconSample,
 } from "@/../scripts/openfootball/derive";
 import {
@@ -86,7 +86,10 @@ for (const ps of playersByClub.values()) ps.sort((a, b) => byStr(a.id, b.id));
 const tlSquads = Object.fromEntries(Object.keys(TL_LEAGUES).map((l) => [l, readTLSquads(l)])) as Record<string, TLSquad[]>;
 
 // ── 2. Calibrate ────────────────────────────────────────────────────────────
-const statPairs: Array<{ tl: { stats: Record<string, number> }; seed: SeedPlayer }> = [];
+const statPairs: Array<{ tl: { stats: Record<string, number> }; seed: SeedPlayer; leagueRep: number }> = [];
+const seedLeagueBySlug = new Map(seed.leagues.map((l) => [l.slug, l]));
+/** Seed league reputation on the /1000 scale used as the second calibration covariate. */
+const leagueRepOf = (seedSlug: string) => seedLeagueBySlug.get(seedSlug)!.reputation / 1000;
 const econPairs: Array<{ rep: number; econ: EconSample }> = [];
 const pairCounts: Record<string, { clubs: number; players: number }> = {};
 const clubPairNames: Record<string, string[]> = {};
@@ -95,6 +98,7 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
   const topFlight = TL_LEAGUES[tlLeague]!.tier === 1;
   if (!topFlight && !MATCH_SERIE_B) continue;
   const seedClubs = clubsByLeague.get(seedSlug) ?? [];
+  const leagueRep = leagueRepOf(seedSlug);
   const seedById = new Map(seedClubs.map((c) => [c.id, c]));
   const clubMap = matchClubs(tlSquads[tlLeague]!, seedClubs);
   let players = 0;
@@ -113,7 +117,7 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
     );
     const tlById = new Map(tl.players.map((p) => [p.id, p]));
     for (const [tid, spid] of [...pm].sort((a, b) => byStr(a[0], b[0]))) {
-      statPairs.push({ tl: { stats: tlById.get(tid)!.stats as unknown as Record<string, number> }, seed: spById.get(spid)! });
+      statPairs.push({ tl: { stats: tlById.get(tid)!.stats as unknown as Record<string, number> }, seed: spById.get(spid)!, leagueRep });
       players++;
     }
   }
@@ -134,6 +138,7 @@ const tierMult = computeTierMultipliers({
 writeJson(join(OF_DIR, "calibration.json"), {
   pairs: { players: statPairs.length, clubs: totalClubPairs, economyClubs: econPairs.length, byLeague: pairCounts, matchSerieB: MATCH_SERIE_B },
   playerCoeffs: coeffs,
+  leagueRepFloor: coeffs.repMin - REP_FLOOR_MARGIN,
   clubFits,
   tierMultipliers: tierMult,
   tierOverrides,
@@ -156,7 +161,7 @@ const pools = buildNamePools(seed.players);
 const EMPTY_POOL: NamePool = { first: [], last: [] };
 const countryNames = new Map<string, string>();
 const newSummary: Array<{ tier: number; budget: number; capacity: number }> = [];
-const newPlayers: Array<{ role: MainRole; overall: number; stats: Record<string, number> }> = [];
+const newPlayers: Array<{ role: MainRole; overall: number; league: string; stats: Record<string, number> }> = [];
 let youthCount = 0;
 let missingPools = 0;
 const indexInCountry = new Map<string, number>();
@@ -176,8 +181,8 @@ for (const league of kept) {
     const id = clubId(club.id);
     const roster = trimAndFill(playersByClub.get(club.id) ?? [], club.id, pool, code);
     youthCount += roster.filter((p) => p.id.startsWith(`${club.id}-youth-`)).length;
-    const players = roster.map((p) => derivePlayer(p, id, coeffs));
-    roster.forEach((p, i) => newPlayers.push({ role: mainRole(p.position), overall: p.overall, stats: players[i]!.stats as unknown as Record<string, number> }));
+    const players = roster.map((p) => derivePlayer(p, id, coeffs, league.reputation / 1000));
+    roster.forEach((p, i) => newPlayers.push({ role: mainRole(p.position), overall: p.overall, league: slug, stats: players[i]!.stats as unknown as Record<string, number> }));
     const econ = deriveClubEconomy(club.reputation, tier, clubFits, tierMult);
     newSummary.push({ tier, budget: econ.finances.budget, capacity: econ.capacity });
     const colors: [string, string] = club.colorBg && club.colorFg ? [club.colorBg, club.colorFg] : ["#555555", "#FFFFFF"];
@@ -271,6 +276,21 @@ const roleMeans = (ps: Array<{ role: string; stats: Record<string, number> }>) =
 };
 const tlPlayers = Object.values(tlSquads).flat().flatMap((s) => s.players.map((p) => ({ role: p.positions[0]!, stats: p.stats as unknown as Record<string, number> })));
 const overalls = newPlayers.map((p) => p.overall);
+const outfieldMean = (ps: Array<{ role: string; stats: Record<string, number> }>) => {
+  const rs = ps.filter((p) => p.role !== "GK");
+  return rs.reduce((s, p) => s + STAT_KEYS.reduce((t, k) => t + p.stats[k]!, 0) / STAT_KEYS.length, 0) / rs.length;
+};
+// Calibration fit check: re-derive every seed player of each TL-overlap league with the fitted coeffs.
+const tlSeedSlug = Object.fromEntries(Object.entries(OVERLAP).map(([s, t]) => [t, s]));
+const rederived = (tlLeague: string) => {
+  const s = tlSeedSlug[tlLeague];
+  if (!s) return NaN;
+  const ps = (clubsByLeague.get(s) ?? []).flatMap((c) => (playersByClub.get(c.id) ?? []).filter((p) => p.age <= MAX_AGE))
+    .map((p) => ({ role: mainRole(p.position), stats: derivePlayer(p, "check", coeffs, leagueRepOf(s)).stats as unknown as Record<string, number> }));
+  return ps.length ? outfieldMean(ps) : NaN;
+};
+const repFloor = coeffs.repMin - REP_FLOOR_MARGIN;
+const SAMPLE_NEW = ["of_championship", "of_eredivisie", "of_portuguese_primeira_liga", "of_spanish_second_division", "of_uruguayan_second_division", "of_italian_serie_c_a", "of_albanian_superleague", "of_fijian_premier_league"];
 
 console.log("── open-football import ──");
 console.log(`calibration pairs: players ${statPairs.length}, clubs ${totalClubPairs} (economy fit: ${econPairs.length} top-flight clubs, repMax ${clubFits.repMax})`);
@@ -280,6 +300,20 @@ console.log(`leagues: ${kept.length}   clubs: ${newSummary.length}   players: ${
 console.log(`OVR range (new): ${Math.min(...overalls)}–${Math.max(...overalls)}`);
 console.log("mean of 13 attributes by role — new leagues:", roleMeans(newPlayers));
 console.log("mean of 13 attributes by role — TL leagues: ", roleMeans(tlPlayers));
+console.log(`league-rep covariate: calibration range ${coeffs.repMin}–${coeffs.repMax}, floor ${repFloor.toFixed(1)} (repMin − ${REP_FLOOR_MARGIN}); ${kept.filter((l) => l.reputation / 1000 < repFloor).length} new leagues clamped up to the floor`);
+console.log("outfield mean 13-stat average per league (TL actual | TL re-derived from seed):");
+for (const l of Object.keys(TL_LEAGUES)) {
+  const actual = outfieldMean(tlSquads[l]!.flatMap((s) => s.players.map((p) => ({ role: p.positions[0]!, stats: p.stats as unknown as Record<string, number> }))));
+  const re = rederived(l);
+  const rs = tlSeedSlug[l] ? ` rep ${leagueRepOf(tlSeedSlug[l]!).toFixed(2)}` : "";
+  console.log(`  ${l.padEnd(34)} ${f2(actual)} | ${Number.isNaN(re) ? "  — " : f2(re)}${rs}`);
+}
+console.log("outfield mean 13-stat average per league (new, sample):");
+for (const l of SAMPLE_NEW) {
+  const sl = kept.find((k) => leagueSlug(k.slug) === l);
+  if (!sl) { console.log(`  ${l.padEnd(34)} (not generated)`); continue; }
+  console.log(`  ${l.padEnd(34)} ${f2(outfieldMean(newPlayers.filter((p) => p.league === l)))}  rep ${(sl.reputation / 1000).toFixed(2)} tier ${tierOf(sl)}`);
+}
 console.log("tier multipliers:");
 for (const k of ECON_FIELDS) console.log(`  ${k.padEnd(13)} t2 ${tierMult[k][2]!.toFixed(3)}  t3 ${tierMult[k][3]!.toFixed(3)}`);
 console.log("economy medians (budget / capacity):");
