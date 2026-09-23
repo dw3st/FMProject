@@ -31,6 +31,26 @@ function makeSquad(id: string, level: number): Squad {
   return { id, name: id, colors: ["#000", "#fff"], money: 0, players };
 }
 
+/** Squad of a single GK — exercises the uniform-pick fallback when scorerWeight totals 0. */
+function makeGkOnlySquad(id: string, level: number): Squad {
+  const player: RosterPlayer = {
+    id: `${id}-p0`,
+    name: `${id} GK 0`,
+    age: 25,
+    squadId: id,
+    preferredFoot: "right",
+    positions: ["GK"],
+    stats: {
+      passing: level, vision: level, finishing: level, dribbling: level,
+      speed: level, acceleration: level, tackling: level, pressing: level,
+      stamina: level, heading: level, strength: level, reflex: level, jump: level,
+    },
+    profile: { summary: "", archetype: "" },
+    seasonLog: emptySeasonLog(),
+  };
+  return { id, name: id, colors: ["#000", "#fff"], money: 0, players: [player] };
+}
+
 const lineupOf = (s: Squad) => s.players.map((p) => p.id);
 
 function run(home: Squad, away: Squad, seed: number) {
@@ -134,6 +154,45 @@ describe("quickSimMatch", () => {
     }
     expect(strongWins / 500).toBeGreaterThan(0.6);
   });
+
+  test("XI apenas com GK: scorerWeight zerado cai no fallback uniforme e os gols batem com o placar", () => {
+    const gkOnly = makeGkOnlySquad("g", 4);
+    const normal = makeSquad("n", 4);
+    for (let seed = 0; seed < 200; seed++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: "f", home: gkOnly, away: normal, homeLineup: lineupOf(gkOnly), awayLineup: lineupOf(normal) },
+        mulberry32(seed),
+      );
+      const homeGoals = Object.entries(recording.playerStats)
+        .filter(([id]) => id.startsWith("g-"))
+        .reduce((acc, [, s]) => acc + s.goals, 0);
+      const awayGoals = Object.entries(recording.playerStats)
+        .filter(([id]) => id.startsWith("n-"))
+        .reduce((acc, [, s]) => acc + s.goals, 0);
+      expect(homeGoals).toBe(recording.score.home);
+      expect(awayGoals).toBe(recording.score.away);
+    }
+  });
+});
+
+describe("calibração de notas", () => {
+  test("elencos nível 5 iguais: média de linha (sem goleiro) em [6.2, 7.2] e poucas notas >= 8.5", () => {
+    const h = makeSquad("h", 5);
+    const a = makeSquad("a", 5);
+    const ratings: number[] = [];
+    for (let seed = 0; seed < 1000; seed++) {
+      const { recording } = run(h, a, seed);
+      for (const [id, r] of Object.entries(recording.playerRatings)) {
+        if (id.endsWith("-p0")) continue; // goalkeeper (ROLES[0] === "GK")
+        ratings.push(r);
+      }
+    }
+    const mean = ratings.reduce((x, y) => x + y, 0) / ratings.length;
+    const share85 = ratings.filter((r) => r >= 8.5).length / ratings.length;
+    expect(mean).toBeGreaterThanOrEqual(6.2);
+    expect(mean).toBeLessThanOrEqual(7.2);
+    expect(share85).toBeLessThan(0.08);
+  });
 });
 
 describe("ratingFromStats", () => {
@@ -141,5 +200,11 @@ describe("ratingFromStats", () => {
     const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };
     expect(ratingFromStats(zero)).toBe(6);
     expect(ratingFromStats({ ...zero, goals: 1, shots: 1 })).toBeCloseTo(7.7, 5);
+  });
+
+  test("tacklesFailed é opcional (default 0) e reduz a nota via TACKLE_FAILED quando informado", () => {
+    const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };
+    expect(ratingFromStats(zero, 0)).toBe(ratingFromStats(zero));
+    expect(ratingFromStats(zero, 1)).toBeCloseTo(5.8, 5);
   });
 });

@@ -1,11 +1,14 @@
 /**
  * quickSim — statistical match resolution for leagues the player is not following.
- * Pure: same inputs + same rng → same output. Produces a PlayedMatchRecording so the
- * normal post-match pipeline (seasonLog, energy, development) applies unchanged.
+ * Pure given its rng: the same inputs + the same rng produce the same output. Determinism
+ * (e.g. for tests) requires passing a seeded rng — the default `Math.random` is intentionally
+ * non-deterministic for production call sites. Produces a PlayedMatchRecording so the normal
+ * post-match pipeline (seasonLog, energy, development) applies unchanged.
  */
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import {
   ATTACKING_MID_ROLES,
   DEFENSIVE_MID_ROLES,
@@ -14,6 +17,9 @@ import {
   type LineGroup,
 } from "@/GameEngine/Configs/QuickSimConfig";
 import { RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
+
+const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
+const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
 
 export type Rng = () => number;
 
@@ -59,9 +65,12 @@ function stat(p: RosterPlayer, key: string): number {
   return (p.stats as unknown as Record<string, number | undefined>)[key] ?? 0;
 }
 
+function startFitness(p: RosterPlayer): number {
+  return ensureSeasonLog(p).seasonLog!.fitness;
+}
+
 function fitnessFactor(p: RosterPlayer): number {
-  const fitness = p.seasonLog?.fitness ?? 100;
-  return 1 - C.FATIGUE_PENALTY * (1 - fitness / 100);
+  return 1 - C.FATIGUE_PENALTY * (1 - startFitness(p) / 100);
 }
 
 function lineValue(players: RosterPlayer[], keys: readonly string[], fallback: RosterPlayer[]): number {
@@ -71,13 +80,12 @@ function lineValue(players: RosterPlayer[], keys: readonly string[], fallback: R
 
 export function teamStrength(xi: RosterPlayer[]): TeamStrength {
   const outfield = xi.filter((p) => lineGroupOf(p) !== "GK");
-  const role = (p: RosterPlayer) => mainRole(p);
   const attackers = xi.filter(
-    (p) => lineGroupOf(p) === "FWD" || (ATTACKING_MID_ROLES as readonly string[]).includes(role(p)),
+    (p) => lineGroupOf(p) === "FWD" || ATTACKING_MID_SET.has(mainRole(p)),
   );
   const mids = xi.filter((p) => lineGroupOf(p) === "MID");
   const defenders = xi.filter(
-    (p) => lineGroupOf(p) === "DEF" || (DEFENSIVE_MID_ROLES as readonly string[]).includes(role(p)),
+    (p) => lineGroupOf(p) === "DEF" || DEFENSIVE_MID_SET.has(mainRole(p)),
   );
   const keepers = xi.filter((p) => lineGroupOf(p) === "GK");
   return {
@@ -93,6 +101,10 @@ export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, is
   return C.BASE_GOALS * Math.pow(ratio, C.STRENGTH_EXPONENT) * (isHome ? C.HOME_ADVANTAGE : 1);
 }
 
+/**
+ * Knuth's algorithm — O(lambda) draws per sample. Accurate and fast enough for the
+ * small, per-player, per-match rates used here (< ~20); not suitable for large lambda.
+ */
 export function samplePoisson(lambda: number, rng: Rng): number {
   const limit = Math.exp(-lambda);
   let k = 0;
@@ -116,6 +128,12 @@ function weightedPick<T>(items: T[], weight: (t: T) => number, rng: Rng): T | nu
   return items[items.length - 1]!;
 }
 
+function uniformPick<T>(items: T[], rng: Rng): T | null {
+  if (items.length === 0) return null;
+  const idx = Math.min(items.length - 1, Math.floor(rng() * items.length));
+  return items[idx]!;
+}
+
 function emptyStats(): MatchPlayerStats {
   return {
     passesAttempted: 0, passesCompleted: 0, passesFailed: 0,
@@ -123,7 +141,12 @@ function emptyStats(): MatchPlayerStats {
   };
 }
 
-export function ratingFromStats(s: MatchPlayerStats): number {
+/**
+ * `tacklesFailed` is not part of `MatchPlayerStats` (shared with the live engine's
+ * recording shape) — quickSim tracks it separately and passes it in explicitly.
+ * Defaults to 0 so existing single-arg call sites remain valid.
+ */
+export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0): number {
   const W = RATING_WEIGHTS;
   const raw =
     W.BASELINE +
@@ -133,6 +156,7 @@ export function ratingFromStats(s: MatchPlayerStats): number {
     s.passesCompleted * W.PASS_COMPLETED +
     s.passesFailed * W.PASS_FAILED +
     s.tackles * W.TACKLE_WON +
+    tacklesFailed * W.TACKLE_FAILED +
     s.interceptions * W.INTERCEPTION;
   return Math.round(clamp(raw, 0, 10) * 10) / 10;
 }
@@ -152,13 +176,14 @@ function fillSide(
   goals: number,
   xg: number,
   stats: Record<string, MatchPlayerStats>,
+  tacklesFailed: Record<string, number>,
   rng: Rng,
 ): void {
-  const scorerWeight = (p: RosterPlayer) => C.ROLE_GOAL_WEIGHT[lineGroupOf(p)] * (0.5 + stat(p, "finishing"));
-  const assistWeight = (p: RosterPlayer) => C.ROLE_ASSIST_WEIGHT[lineGroupOf(p)] * (0.5 + stat(p, "passing"));
+  const scorerWeight = (p: RosterPlayer) => C.ROLE_GOAL_WEIGHT[lineGroupOf(p)] * (0.5 + stat(p, "finishing") / 10);
+  const assistWeight = (p: RosterPlayer) => C.ROLE_ASSIST_WEIGHT[lineGroupOf(p)] * (0.5 + stat(p, "passing") / 10);
 
   for (let g = 0; g < goals; g++) {
-    const scorer = weightedPick(xi, scorerWeight, rng);
+    const scorer = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
     if (!scorer) break;
     stats[scorer.id]!.goals++;
     stats[scorer.id]!.shots++;
@@ -170,7 +195,7 @@ function fillSide(
 
   const extraShots = samplePoisson(xg * C.SHOTS_PER_XG, rng);
   for (let i = 0; i < extraShots; i++) {
-    const shooter = weightedPick(xi, scorerWeight, rng);
+    const shooter = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
     if (shooter) stats[shooter.id]!.shots++;
   }
 
@@ -185,6 +210,7 @@ function fillSide(
     s.passesCompleted = completed;
     s.passesFailed = attempts - completed;
     s.tackles = samplePoisson(C.TACKLES_PER_MATCH[group] * (0.5 + stat(p, "tackling") / 10), rng);
+    tacklesFailed[p.id] = samplePoisson(C.TACKLES_PER_MATCH[group] * C.TACKLE_FAIL_RATIO, rng);
     s.interceptions = samplePoisson(C.INTERCEPTIONS_PER_MATCH[group] * (0.5 + stat(p, "pressing") / 10), rng);
   }
 }
@@ -211,19 +237,22 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const away = teamStrength(awayXI);
   const xgHome = expectedGoals(home, away, true);
   const xgAway = expectedGoals(away, home, false);
-  const goalsHome = samplePoisson(xgHome, rng);
-  const goalsAway = samplePoisson(xgAway, rng);
+  // An empty XI can't score — force 0 so recording.score always agrees with the sum of
+  // per-player goals (an XI can be empty if a lineup is entirely blank/unknown ids).
+  const goalsHome = homeXI.length > 0 ? samplePoisson(xgHome, rng) : 0;
+  const goalsAway = awayXI.length > 0 ? samplePoisson(xgAway, rng) : 0;
 
   const playerStats: Record<string, MatchPlayerStats> = {};
+  const tacklesFailed: Record<string, number> = {};
   for (const p of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
-  fillSide(homeXI, goalsHome, xgHome, playerStats, rng);
-  fillSide(awayXI, goalsAway, xgAway, playerStats, rng);
+  fillSide(homeXI, goalsHome, xgHome, playerStats, tacklesFailed, rng);
+  fillSide(awayXI, goalsAway, xgAway, playerStats, tacklesFailed, rng);
 
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
   for (const p of [...homeXI, ...awayXI]) {
-    playerRatings[p.id] = ratingFromStats(playerStats[p.id]!);
-    const startEnergy = p.seasonLog?.fitness ?? 100;
+    playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0);
+    const startEnergy = startFitness(p);
     const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (stat(p, "stamina") / 10));
     playerEnergy[p.id] = clamp(startEnergy - drain, 0, 100);
   }
