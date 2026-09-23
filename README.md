@@ -52,6 +52,11 @@ before the first run:
 cp -R src/example_data src/Data
 ```
 
+Most leagues (`of_*`) are generated from the open-football dataset; see
+[`.claude/rules/data/openfootball-import.md`](.claude/rules/data/openfootball-import.md)
+for how to regenerate them and [`data_process/openfootball/NOTICE.md`](data_process/openfootball/NOTICE.md)
+for attribution and license.
+
 The auth database (`touchlines.db`) and the dev email log are **not** part of the
 snapshot — they are created automatically on first run.
 
