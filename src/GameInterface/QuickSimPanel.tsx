@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { quickSimMatch, type QuickSimResult } from "@/Domain/advanceDay/quickSim";
-import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
+import { autoLineupDefaultFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { DEFAULT_SIM_FORMATION_ID, formationForSimId } from "@/Domain/matchFormations";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import manUtdSquad from "@/Data/squads/premier_league/33.json";
@@ -26,6 +27,8 @@ function squadFrom(raw: RawSquadFile): Squad {
 
 const HOME = squadFrom(manUtdSquad as RawSquadFile);
 const AWAY = squadFrom(newcastleSquad as RawSquadFile);
+/** Both sides play the default formation — same as non-followed league fixtures. */
+const ROLES = slotRoles(formationForSimId(DEFAULT_SIM_FORMATION_ID));
 
 function runOnce(): QuickSimResult {
   return quickSimMatch({
@@ -34,6 +37,8 @@ function runOnce(): QuickSimResult {
     away: AWAY,
     homeLineup: autoLineupDefaultFormation(HOME),
     awayLineup: autoLineupDefaultFormation(AWAY),
+    homeRoles: ROLES,
+    awayRoles: ROLES,
   });
 }
 
