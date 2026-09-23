@@ -153,7 +153,8 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/squads/${leagueSlug}`;
     await mkdir(dir, { recursive: true });
-    await Bun.write(squadPath(saveId, leagueSlug, clubSlug), JSON.stringify(squad, null, 2));
+    // Compact: squads are the bulk of per-day writes; other (small) files stay pretty-printed.
+    await Bun.write(squadPath(saveId, leagueSlug, clubSlug), JSON.stringify(squad));
   }
 
   async squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean> {
