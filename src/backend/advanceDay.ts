@@ -64,7 +64,7 @@ type LeagueDataEntry = {
 
 let _leagueDataCache: LeagueDataEntry[] | null = null;
 
-async function getLeagueData(): Promise<LeagueDataEntry[]> {
+export async function getLeagueData(): Promise<LeagueDataEntry[]> {
   if (_leagueDataCache) return _leagueDataCache;
   const file = Bun.file(`${DATA_DIR}/leagueData.json`);
   if (!(await file.exists())) return [];

@@ -5,6 +5,8 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
+import { getLeagueData } from "@/backend/advanceDay";
+import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import {
   recordSaveOwnership,
   deleteSaveOwnership,
@@ -125,6 +127,14 @@ export const saveRoutes = {
         if (ti !== "light" && ti !== "normal" && ti !== "heavy")
           return Response.json({ error: "invalid training_intensity" }, { status: 400 });
         patch.training_intensity = ti as TrainingIntensity;
+      }
+      if (body.followedLeagues !== undefined) {
+        const leagues = await getLeagueData();
+        patch.followedLeagues = sanitizeFollowedLeagues(
+          body.followedLeagues,
+          new Set(leagues.map((l) => l.slug)),
+          existing.leagueSlug,
+        );
       }
 
       // Apply defaults for tactical fields that weren't set yet on the existing meta
