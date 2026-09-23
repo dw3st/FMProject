@@ -340,6 +340,13 @@
     "noProfileData": "No profile data available.",
     "squadRating": "Squad Rating",
     "reputation": "Reputation",
+    "reputationLevel": {
+      "1": "Local Outfit",
+      "2": "Regional Side",
+      "3": "National Power",
+      "4": "Continental Force",
+      "5": "World Elite"
+    },
     "selectClubDetail": "Select a club to view details",
     "top": "Top",
     "squadStrength": "Squad Strength",

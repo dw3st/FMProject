@@ -1209,7 +1209,7 @@ function ClubSelector({
                         ))}
                       </div>
                       <p className="text-xs font-semibold uppercase text-primary">
-                        {profile.reputationLabel}
+                        {t(`newGame.reputationLevel.${profile.reputation}`, { defaultValue: profile.reputationLabel })}
                       </p>
                     </div>
                   </div>
@@ -1437,7 +1437,9 @@ function ConfirmSelection({
               ))}
             </div>
             <p className="text-xs text-muted-foreground uppercase mt-1">
-              {profile?.reputationLabel ?? t("newGame.reputation")}
+              {profile
+                ? t(`newGame.reputationLevel.${profile.reputation}`, { defaultValue: profile.reputationLabel })
+                : t("newGame.reputation")}
             </p>
           </div>
           <div className="text-center p-4 rounded-xl bg-card/50">
