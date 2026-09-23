@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trophy, Dumbbell, Moon, X, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type {
@@ -14,9 +14,21 @@ import type {
 import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
+import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { getMainRole } from "@/GameInterface/positionHelpers";
+import { Icon } from "@/GameInterface/Icons";
+import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
+
+/** One team's identity, resolved once per league set so per-match lookups are O(1). */
+interface TeamLookup {
+  name:       string;
+  slug?:      string;
+  colors:     [string, string];
+  leagueSlug: string;
+}
+
+type TFunc = (key: string, options?: Record<string, unknown>) => string;
 
 interface Props {
   dayLog:    DayLog;
@@ -202,30 +214,42 @@ function SquadTrainingRestCard({
   );
 }
 
-function lookupTeam(squadId: string, leagues: LeagueData[]) {
+/** Builds a squadId → team identity map once per league set (replaces the old per-call linear scan). */
+function buildTeamsById(leagues: LeagueData[]): Map<string, TeamLookup> {
+  const map = new Map<string, TeamLookup>();
   for (const league of leagues) {
-    const row = league.standings.find((s) => s.squadId === squadId);
-    if (row) return { row, leagueSlug: league.slug };
+    for (const row of league.standings) {
+      if (!map.has(row.squadId)) {
+        map.set(row.squadId, { name: row.name, slug: row.slug, colors: row.colors, leagueSlug: league.slug });
+      }
+    }
   }
-  return null;
+  return map;
 }
 
-function MatchCard({ event, leagues, t }: { event: MatchEvent; leagues: LeagueData[]; t: (key: string) => string }) {
-  const homeName = teamDisplayNameFromLeagues(event.home, leagues);
-  const awayName = teamDisplayNameFromLeagues(event.away, leagues);
-  const homeTeam = lookupTeam(event.home, leagues);
-  const awayTeam = lookupTeam(event.away, leagues);
-  const homeLogoUrl = squadLogoUrl(event.home, homeTeam?.leagueSlug ?? event.competition, homeTeam?.row.slug);
-  const awayLogoUrl = squadLogoUrl(event.away, awayTeam?.leagueSlug ?? event.competition, awayTeam?.row.slug);
-  const homeColors = homeTeam?.row.colors ?? ["#555", "#888"];
-  const awayColors = awayTeam?.row.colors ?? ["#555", "#888"];
+function MatchCard({
+  event, leagues, teamsById, t,
+}: {
+  event: MatchEvent;
+  leagues: LeagueData[];
+  teamsById: Map<string, TeamLookup>;
+  t: TFunc;
+}) {
+  const homeTeam = teamsById.get(event.home);
+  const awayTeam = teamsById.get(event.away);
+  const homeName = homeTeam?.name ?? fallbackTeamNameFromSquadId(event.home);
+  const awayName = awayTeam?.name ?? fallbackTeamNameFromSquadId(event.away);
+  const homeLogoUrl = squadLogoUrl(event.home, homeTeam?.leagueSlug ?? event.competition, homeTeam?.slug);
+  const awayLogoUrl = squadLogoUrl(event.away, awayTeam?.leagueSlug ?? event.competition, awayTeam?.slug);
+  const homeColors = homeTeam?.colors ?? ["#555", "#888"];
+  const awayColors = awayTeam?.colors ?? ["#555", "#888"];
 
   return (
     <div className="card-arcade rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/20">
         <Trophy className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          {event.competition.replace(/_/g, " ")} &middot; Round {event.round}
+          {t("daySummary.matchRound", { competition: competitionName(event.competition, leagues), round: event.round })}
         </span>
       </div>
 
@@ -296,6 +320,60 @@ function StatCell({ label, home, away }: { label: string; home: number; away: nu
   );
 }
 
+/** One text line for a match outside the player's own/followed leagues — no ClubLogo, so hundreds render cheaply. */
+function OtherLeagueLine({
+  event, leagues, teamsById,
+}: {
+  event: MatchEvent;
+  leagues: LeagueData[];
+  teamsById: Map<string, TeamLookup>;
+}) {
+  const homeName = teamsById.get(event.home)?.name ?? fallbackTeamNameFromSquadId(event.home);
+  const awayName = teamsById.get(event.away)?.name ?? fallbackTeamNameFromSquadId(event.away);
+  return (
+    <div className="flex items-center gap-3 px-3 py-1.5 text-xs">
+      <span className="shrink-0 w-36 truncate text-muted-foreground/70 font-semibold uppercase tracking-wide text-[10px]">
+        {competitionName(event.competition, leagues)}
+      </span>
+      <span className="truncate text-foreground/80">
+        {homeName} {event.score.home} – {event.score.away} {awayName}
+      </span>
+    </div>
+  );
+}
+
+/** Collapsed-by-default block for matches outside the player's own/followed leagues. */
+function OtherLeaguesSection({
+  matches, leagues, teamsById, t,
+}: {
+  matches: MatchEvent[];
+  leagues: LeagueData[];
+  teamsById: Map<string, TeamLookup>;
+  t: TFunc;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-secondary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-colors cursor-pointer"
+      >
+        <span>{t("daySummary.otherLeagues", { count: matches.length })}</span>
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
+      </button>
+      {open && (
+        <div className="mt-2 rounded-xl border border-border/40 divide-y divide-border/30 overflow-hidden">
+          {matches.map((e) => (
+            <OtherLeagueLine key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function formatStatName(stat: string): string {
   return stat
     .replace(/([A-Z])/g, " $1")
@@ -346,10 +424,17 @@ function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t:
   );
 }
 
-function EventCard({ event, leagues, t }: { event: DayEvent; leagues: LeagueData[]; t: (key: string) => string }) {
+function EventCard({
+  event, leagues, teamsById, t,
+}: {
+  event: DayEvent;
+  leagues: LeagueData[];
+  teamsById: Map<string, TeamLookup>;
+  t: TFunc;
+}) {
   switch (event.kind) {
     case "match":
-      return <MatchCard event={event} leagues={leagues} t={t} />;
+      return <MatchCard event={event} leagues={leagues} teamsById={teamsById} t={t} />;
     default:
       return null;
   }
@@ -357,7 +442,7 @@ function EventCard({ event, leagues, t }: { event: DayEvent; leagues: LeagueData
 
 export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props) {
   const { t } = useTranslation();
-  const { squad, save } = useGameSave();
+  const { squad, save, session } = useGameSave();
   const playerById = useMemo(() => {
     const m = new Map<string, RosterPlayer>();
     if (squad?.players) {
@@ -365,9 +450,15 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
     }
     return m;
   }, [squad]);
+  const teamsById = useMemo(() => buildTeamsById(leagues), [leagues]);
 
   const matchEvents = dayLog.events.filter((e): e is MatchEvent => e.kind === "match");
   const myMatch = matchEvents.find((e) => e.home === mySquadId || e.away === mySquadId);
+  const ownLeague = session?.leagueSlug ?? "";
+  const followedLeagues = session?.followedLeagues ?? [];
+  const { primary: primaryMatches, others: otherMatches } = partitionDayMatches(
+    matchEvents, ownLeague, followedLeagues,
+  );
   const trainingEvents = dayLog.events.filter(
     (e): e is TrainingEvent => e.kind === "training" && e.squadId === mySquadId,
   );
@@ -421,17 +512,21 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
 
         {/* Body — scrolls when content exceeds available space */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-8">
-          {matchEvents.length > 0 && (
+          {primaryMatches.length > 0 && (
             <section>
               <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3 font-display">
-                {t("daySummary.matches", { count: matchEvents.length })}
+                {t("daySummary.matches", { count: primaryMatches.length })}
               </h3>
               <div className="space-y-3">
-                {matchEvents.map((e) => (
-                  <EventCard key={e.fixtureId} event={e} leagues={leagues} t={t} />
+                {primaryMatches.map((e) => (
+                  <EventCard key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} t={t} />
                 ))}
               </div>
             </section>
+          )}
+
+          {otherMatches.length > 0 && (
+            <OtherLeaguesSection matches={otherMatches} leagues={leagues} teamsById={teamsById} t={t} />
           )}
 
           {myDevChanges.length > 0 && (

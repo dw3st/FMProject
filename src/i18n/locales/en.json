@@ -1323,6 +1323,7 @@
     "title": "Day Summary",
     "matches": "Matches ({{count}})",
     "matchRound": "{{competition}} • Round {{round}}",
+    "otherLeagues": "Other leagues ({{count}})",
     "playerDevelopment": "Player Development",
     "shots": "Shots",
     "passes": "Passes",

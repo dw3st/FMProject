@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, groupCountriesByContinent, leagueLabel,
-  matchesCountryQuery, sortLeaguesForCountry,
+  matchesCountryQuery, partitionDayMatches, sortLeaguesForCountry,
 } from "@/Domain/world/labels";
 import type { CountryEntry } from "@/types/worldTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -61,6 +61,19 @@ describe("continentI18nKey", () => {
     expect(continentI18nKey("South America")).toBe("south_america");
     expect(continentI18nKey("Europe")).toBe("europe");
     expect(continentI18nKey("Other")).toBe("other");
+  });
+});
+
+describe("partitionDayMatches", () => {
+  test("liga própria e seguida vão para primary; o resto vai para others", () => {
+    const matches = [
+      { fixtureId: "1", competition: "premier_league" },
+      { fixtureId: "2", competition: "of_eredivisie" },
+      { fixtureId: "3", competition: "of_liga_mx" },
+    ];
+    const { primary, others } = partitionDayMatches(matches, "premier_league", ["of_eredivisie"]);
+    expect(primary.map((m) => m.fixtureId)).toEqual(["1", "2"]);
+    expect(others.map((m) => m.fixtureId)).toEqual(["3"]);
   });
 });
 

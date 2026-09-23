@@ -1323,6 +1323,7 @@
     "title": "Resumo do Dia",
     "matches": "Partidas ({{count}})",
     "matchRound": "{{competition}} • Rodada {{round}}",
+    "otherLeagues": "Outras ligas ({{count}})",
     "playerDevelopment": "Evolução do Jogador",
     "shots": "Finalizações",
     "passes": "Passes",
