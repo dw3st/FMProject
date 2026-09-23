@@ -458,6 +458,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
   const followedLeagues = session?.followedLeagues ?? [];
   const { primary: primaryMatches, others: otherMatches } = partitionDayMatches(
     matchEvents, ownLeague, followedLeagues,
+    (m) => m.home === mySquadId || m.away === mySquadId,
   );
   const trainingEvents = dayLog.events.filter(
     (e): e is TrainingEvent => e.kind === "training" && e.squadId === mySquadId,

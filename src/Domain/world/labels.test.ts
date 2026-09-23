@@ -75,6 +75,26 @@ describe("partitionDayMatches", () => {
     expect(primary.map((m) => m.fixtureId)).toEqual(["1", "2"]);
     expect(others.map((m) => m.fixtureId)).toEqual(["3"]);
   });
+
+  test("isOwnMatch força a partida do usuário para primary mesmo com liga da sessão ausente/obsoleta", () => {
+    const matches = [
+      { fixtureId: "1", competition: "of_liga_mx", home: "my_squad", away: "other_squad" },
+      { fixtureId: "2", competition: "of_liga_mx", home: "x", away: "y" },
+    ];
+    const { primary, others } = partitionDayMatches(
+      matches, "", [],
+      (m) => m.home === "my_squad" || m.away === "my_squad",
+    );
+    expect(primary.map((m) => m.fixtureId)).toEqual(["1"]);
+    expect(others.map((m) => m.fixtureId)).toEqual(["2"]);
+  });
+
+  test("sem isOwnMatch continua o comportamento anterior", () => {
+    const matches = [{ fixtureId: "1", competition: "of_liga_mx" }];
+    const { primary, others } = partitionDayMatches(matches, "premier_league", []);
+    expect(primary).toEqual([]);
+    expect(others.map((m) => m.fixtureId)).toEqual(["1"]);
+  });
 });
 
 describe("matchesCountryQuery", () => {
