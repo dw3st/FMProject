@@ -267,3 +267,79 @@ describe("BufferingSaveDAL squad reads", () => {
     expect(inner.written.sort()).toEqual(["lg/34:City v2", "lg/99:Newcomer"]);
   });
 });
+
+describe("BufferingSaveDAL edge cases", () => {
+  const files: SquadFile[] = [
+    { leagueSlug: "lg", clubSlug: "33", squad: squad("33", "United") },
+    { leagueSlug: "lg", clubSlug: "34", squad: squad("34", "City") },
+  ];
+
+  test("a second flush retries only the writes that failed", async () => {
+    let failing = true;
+    const inner = fakeInner({ failWrite: (club) => failing && (club === "c1" || club === "c4") });
+    const buf = new BufferingSaveDAL(inner.dal);
+    for (let i = 0; i < 6; i++) await buf.writeSquad(SAVE, "lg", `c${i}`, squad(`c${i}`));
+
+    await expect(buf.flush()).rejects.toBeInstanceOf(AggregateError);
+    expect(inner.written.sort()).toEqual(["lg/c0:c0", "lg/c2:c2", "lg/c3:c3", "lg/c5:c5"]);
+
+    failing = false;
+    await buf.flush();
+    expect(inner.written.slice(4).sort()).toEqual(["lg/c1:c1", "lg/c4:c4"]);
+    expect(inner.written).toHaveLength(6);
+  });
+
+  test("a resource re-buffered while its flush write is in flight stays pending", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let startedResolve!: () => void;
+    const started = new Promise<void>((r) => (startedResolve = r));
+    const inner = fakeInner({
+      gateWrite: (club) => {
+        if (club !== "c0") return undefined;
+        startedResolve();
+        return gate;
+      },
+    });
+    const buf = new BufferingSaveDAL(inner.dal);
+    await buf.writeSquad(SAVE, "lg", "c0", squad("c0", "v1"));
+
+    const flushing = buf.flush();
+    await started; // v1 is now in flight
+    await buf.writeSquad(SAVE, "lg", "c0", squad("c0", "v2"));
+    release();
+    await flushing;
+
+    expect(inner.written).toEqual(["lg/c0:v1"]);
+    await buf.flush(); // v2 was not dropped
+    expect(inner.written).toEqual(["lg/c0:v1", "lg/c0:v2"]);
+    await buf.flush(); // and is now clean
+    expect(inner.written).toHaveLength(2);
+  });
+
+  test("a failed listSquadFiles load is not cached — the next read retries it", async () => {
+    const inner = fakeInner({ files, failListSquadFiles: 1 });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await expect(buf.readSquad(SAVE, "lg", "33")).rejects.toThrow("EIO");
+    expect((await buf.readSquad(SAVE, "lg", "33"))?.name).toBe("United");
+    expect((await buf.listAllSquads(SAVE)).map((s) => s.id)).toEqual(["33", "34"]);
+    expect(inner.calls.filter((c) => c === "listSquadFiles")).toHaveLength(2);
+  });
+
+  test("listSquadFiles overlays buffered edits (in place) and appends new files", async () => {
+    const inner = fakeInner({ files });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.writeSquad(SAVE, "lg", "33", squad("33", "United v2"));
+    await buf.writeSquad(SAVE, "new_lg", "77", squad("77", "Newcomer"));
+
+    const listed = await buf.listSquadFiles(SAVE);
+    expect(listed.map((f) => `${f.leagueSlug}/${f.clubSlug}:${f.squad.name}`)).toEqual([
+      "lg/33:United v2",
+      "lg/34:City",
+      "new_lg/77:Newcomer",
+    ]);
+    expect(inner.calls.filter((c) => c === "listSquadFiles")).toHaveLength(1);
+  });
+});
