@@ -69,3 +69,20 @@ export function buildCountryEntry(code: string, name: string) {
     headline: `In ${name}, every match writes a new story.</br>Build your club and take on the league.`,
   };
 }
+
+/** Promotion/relegation flags for a league at `tier` given every tier present in its country. */
+export function levelFlags(tier: number, countryTiers: number[]): { hasAbove: boolean; hasBelow: boolean } {
+  return { hasAbove: countryTiers.some((t) => t < tier), hasBelow: countryTiers.some((t) => t > tier) };
+}
+
+/**
+ * Serializes leagueSchedules.json in its hand-aligned one-entry-per-line style
+ * (slug padded to 17, crossYear to 6, matchDays to 10), so the original TL lines stay byte-identical.
+ */
+export function formatSchedules(entries: LeagueScheduleConfig[]): string {
+  const line = (e: LeagueScheduleConfig) =>
+    `  { "slug": ${`${JSON.stringify(e.slug)},`.padEnd(17)} "seasonStartMMDD": ${JSON.stringify(e.seasonStartMMDD)}, ` +
+    `"seasonEndMMDD": ${JSON.stringify(e.seasonEndMMDD)}, "crossYear": ${`${e.crossYear},`.padEnd(6)} ` +
+    `"matchDays": ${`[${e.matchDays.join(", ")}],`.padEnd(10)} "baseWeekOffset": ${e.baseWeekOffset} }`;
+  return `[\n${entries.map(line).join(",\n")}\n]\n`;
+}
