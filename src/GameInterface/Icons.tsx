@@ -25,8 +25,14 @@ import {
   Upload,
   X,
   Globe,
+  Star,
 } from "lucide-react";
 import type { SVGProps } from "react";
+
+/** Star icon rendered filled (solid) — used for an active "followed" toggle. */
+function StarFilled(props: SVGProps<SVGSVGElement>) {
+  return <Star {...props} fill="currentColor" />;
+}
 
 export type IconName =
   | "play"
@@ -55,7 +61,9 @@ export type IconName =
   | "save"
   | "upload"
   | "close"
-  | "globe";
+  | "globe"
+  | "star"
+  | "star-filled";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -87,6 +95,8 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "upload":       Upload,
   "close":        X,
   "globe":        Globe,
+  "star":         Star,
+  "star-filled":  StarFilled,
 };
 
 export interface IconProps {

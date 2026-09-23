@@ -1063,6 +1063,21 @@
     "searchLeaguesPlaceholder": "Pesquisar ligas…",
     "loadingLeagues": "Carregando ligas...",
     "quickSimNoDetail": "Detalhe dos jogadores indisponível — esta liga é simulada.",
+    "followLeague": "Seguir liga",
+    "unfollowLeague": "Deixar de seguir",
+    "followOwnLeague": "Sua liga",
+    "followLimit": "Você pode seguir até 3 ligas",
+    "simulatedBadge": "Simulada",
+    "simulatedBadgeTooltip": "Esta liga roda em segundo plano sem detalhe de partida — siga-a para ver as estatísticas completas dos jogadores.",
+    "zones": {
+      "ucl": "Liga dos Campeões",
+      "uel": "Liga Europa",
+      "uecl": "Liga Conferência",
+      "rel": "Rebaixamento",
+      "prom": "Promoção",
+      "lib": "Libertadores",
+      "sud": "Sul-Americana"
+    },
     "playerTable": {
       "player": "Jogador",
       "rating": "Avaliação",
