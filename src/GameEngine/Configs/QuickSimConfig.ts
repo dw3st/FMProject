@@ -22,8 +22,8 @@ export const DEFENSIVE_MID_ROLES = ["CDM", "DM"] as const;
 
 export const QUICK_SIM_CONFIG = {
   /** Expected goals for one side when both teams are equal, before home advantage. */
-  BASE_GOALS: 1.04,
-  HOME_ADVANTAGE: 1.02,
+  BASE_GOALS: 1.06,
+  HOME_ADVANTAGE: 1.01,
   /** Exponent on (atk × mid) / (def × gk). < 1 compresses mismatches. */
   STRENGTH_EXPONENT: 0.5,
   /**
@@ -35,7 +35,7 @@ export const QUICK_SIM_CONFIG = {
    * σ of the per-match "dominance" d ~ N(0, σ): home xG × e^(d−σ²/2), away xG × e^(−d−σ²/2).
    * Anti-correlates the two sides' chances → more lopsided results, fewer draws. 0 disables.
    */
-  DOMINANCE_SIGMA: 0.6,
+  DOMINANCE_SIGMA: 0.35,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
   /** Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100). */
