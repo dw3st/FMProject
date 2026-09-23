@@ -31,6 +31,22 @@ export function competitionName(slug: string, leagues: LeagueData[]): string {
   return titleCase(slug.replace(/^of_/, ""));
 }
 
+/** i18n key segment for a continent, e.g. "South America" → "south_america". */
+export function continentI18nKey(continent: Continent): string {
+  return continent.toLowerCase().replace(/\s+/g, "_");
+}
+
+function normalizeForSearch(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+/** Case- and accent-insensitive match: query matches if any part contains it. Empty query always matches. */
+export function matchesCountryQuery(query: string, parts: string[]): boolean {
+  const q = normalizeForSearch(query.trim());
+  if (!q) return true;
+  return parts.some((p) => normalizeForSearch(p).includes(q));
+}
+
 export interface ContinentGroup { continent: Continent; countries: CountryEntry[] }
 
 export function groupCountriesByContinent(countries: CountryEntry[], displayName: (c: CountryEntry) => string): ContinentGroup[] {

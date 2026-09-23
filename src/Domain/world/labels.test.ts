@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-  CONTINENT_ORDER, competitionName, countryDisplayName, groupCountriesByContinent, leagueLabel, sortLeaguesForCountry,
+  CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, groupCountriesByContinent, leagueLabel,
+  matchesCountryQuery, sortLeaguesForCountry,
 } from "@/Domain/world/labels";
 import type { CountryEntry } from "@/types/worldTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -52,5 +53,29 @@ describe("sortLeaguesForCountry", () => {
   test("mantém a ordem do leagueData (nível), filtrando pelo país", () => {
     const ls = [L("a", "A", "Italy"), L("b", "B", "Spain"), L("c", "C", "Italy")];
     expect(sortLeaguesForCountry(ls, "Italy").map((l) => l.slug)).toEqual(["a", "c"]);
+  });
+});
+
+describe("continentI18nKey", () => {
+  test("minúsculo com underscore no lugar do espaço", () => {
+    expect(continentI18nKey("South America")).toBe("south_america");
+    expect(continentI18nKey("Europe")).toBe("europe");
+    expect(continentI18nKey("Other")).toBe("other");
+  });
+});
+
+describe("matchesCountryQuery", () => {
+  test("query vazia sempre bate", () => {
+    expect(matchesCountryQuery("", ["Qualquer coisa"])).toBe(true);
+    expect(matchesCountryQuery("   ", ["Qualquer coisa"])).toBe(true);
+  });
+  test("bate sem diferenciar maiúsculas e ignorando acento", () => {
+    expect(matchesCountryQuery("alem", ["Alemanha"])).toBe(true);
+    expect(matchesCountryQuery("europa", ["Brasil", "América do Sul", "Europa"])).toBe(true);
+    expect(matchesCountryQuery("sao", ["São Paulo"])).toBe(true);
+    expect(matchesCountryQuery("ARG", ["Argentina"])).toBe(true);
+  });
+  test("não bate quando nenhuma parte contém a query", () => {
+    expect(matchesCountryQuery("xyz", ["Brasil", "América do Sul"])).toBe(false);
   });
 });
