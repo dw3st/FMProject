@@ -56,7 +56,7 @@ export const apiRoutes = {
     if (await png.exists())
       return new Response(png, { headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" } });
 
-    return new Response("not found", { status: 404 });
+    return new Response("Not found", { status: 404, headers: { "Cache-Control": "public, max-age=3600" } });
   },
 
   "/api/formations": async () => {
