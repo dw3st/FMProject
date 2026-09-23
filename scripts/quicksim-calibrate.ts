@@ -13,7 +13,7 @@
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
-import { quickSimMatch, resolveRole } from "@/Domain/advanceDay/quickSim";
+import { quickSimMatch, resolveRole, teamLevel, teamStrength } from "@/Domain/advanceDay/quickSim";
 import { autoLineupDefaultFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
 import { ROLE_GROUP, type LineGroup } from "@/GameEngine/Configs/QuickSimConfig";
@@ -97,6 +97,8 @@ const roles = slotRoles(formation);
 const cached: Acc | null = CACHE && (await Bun.file(CACHE).exists()) ? await Bun.file(CACHE).json() : null;
 const full = cached ?? newAcc();
 const quick = newAcc();
+/** Mean over matches of the two XIs' overall level (mean of the 4 line strengths). */
+let levelSum = 0;
 
 for (let i = 0; i < PAIRS; i++) {
   const home = squads[Math.floor(pickRng() * squads.length)]!;
@@ -115,6 +117,13 @@ for (let i = 0; i < PAIRS; i++) {
       if (p && !quickRole.has(id)) quickRole.set(id, resolveRole(p, roles[i]));
     });
   }
+
+  const level = (squad: Squad, lineup: string[]) => {
+    const byId = new Map(squad.players.map((p) => [p.id, p]));
+    const idx = lineup.map((id, i) => [byId.get(id), i] as const).filter(([p]) => p);
+    return teamLevel(teamStrength(idx.map(([p]) => p!), idx.map(([, i]) => roles[i]!)));
+  };
+  levelSum += (level(home, hl) + level(away, al)) / 2;
 
   for (let r = 0; r < REPEATS; r++) {
     if (!cached) {
@@ -179,7 +188,7 @@ const statRows = (label: string, a: Acc) => Object.fromEntries(GROUPS.map((g) =>
 
 const F = fmt(full);
 const Q = fmt(quick);
-console.log(`${league} — ${PAIRS} pares × ${REPEATS}${cached ? " (motor do cache)" : ""}`);
+console.log(`${league} — ${PAIRS} pares × ${REPEATS}${cached ? " (motor do cache)" : ""} — nível médio ${(levelSum / PAIRS).toFixed(3)}`);
 console.table({ motor: F, quickSim: Q });
 const FL = lines(full.all) as Record<string, number>;
 const QL = lines(quick.all) as Record<string, number>;
