@@ -21,6 +21,7 @@ import { MAIN_ROLE_ABBR, getPositionColor } from "@/GameInterface/positionHelper
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
+import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -31,14 +32,6 @@ import {
 import { addOneDay } from "@/Domain/advanceDay/date";
 
 // ── Helpers (aligned with MatchPreviewScreen) ───────────────────────────────
-
-function formatCompetition(s: string): string {
-  return s
-    .replace(/_/g, " ")
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 function roleLabel(role: string): string {
   if (role in MAIN_ROLE_ABBR) return MAIN_ROLE_ABBR[role as keyof typeof MAIN_ROLE_ABBR];
@@ -466,7 +459,7 @@ export function MatchResultScreen() {
   const awayLogoUrl = `/api/logos/${session.leagueSlug}/${awaySlug}`;
 
   const { weather, referee, venue } = getMatchMeta(resolvedDate, session.clubName, isHome);
-  const competition = formatCompetition(matchEvent.competition);
+  const competition = competitionName(matchEvent.competition, leagues);
   const th = matchEvent.teamStats.home;
   const ta = matchEvent.teamStats.away;
   const homePrimary = squadPrimaryColor(homeSquad, FALLBACK_HOME_ACCENT);

@@ -65,3 +65,14 @@ export function groupCountriesByContinent(countries: CountryEntry[], displayName
 export function sortLeaguesForCountry(leagues: LeagueData[], countryName: string): LeagueData[] {
   return leagues.filter((l) => l.country === countryName);
 }
+
+/** Splits day matches into the player's own league + followed leagues (primary) vs. the rest (others). */
+export function partitionDayMatches<T extends { competition: string }>(
+  matches: T[], ownLeague: string, followed: string[],
+): { primary: T[]; others: T[] } {
+  const keep = new Set([ownLeague, ...followed]);
+  return {
+    primary: matches.filter((m) => keep.has(m.competition)),
+    others: matches.filter((m) => !keep.has(m.competition)),
+  };
+}
