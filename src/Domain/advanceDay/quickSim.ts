@@ -103,7 +103,7 @@ export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, is
 
 /**
  * Knuth's algorithm — O(lambda) draws per sample. Accurate and fast enough for the
- * small, per-player, per-match rates used here (< ~20); not suitable for large lambda.
+ * small, per-player, per-match rates used here (< ~50); not suitable for large lambda.
  */
 export function samplePoisson(lambda: number, rng: Rng): number {
   const limit = Math.exp(-lambda);
