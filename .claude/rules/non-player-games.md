@@ -243,4 +243,6 @@ desenvolvimento) é o mesmo do motor.
   `passesFailed` sempre 0, o que parece bug de contagem. As taxas por jogador do quickSim foram
   calibradas contra esses números, então as notas acompanham o motor (DEF/MID ~6,1, FWD ~6,6).
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
-  "Midfielder", "Forward"), e não o papel detalhado. `ROLE_GROUP` aceita os dois formatos.
+  "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
+  formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa
+  `positions[0]` quando o slot não tem papel conhecido. `ROLE_GROUP` aceita os dois formatos.
