@@ -68,6 +68,11 @@ export interface MatchEvent {
   /** Attribute level-ups/downs that occurred this match. */
   developmentChanges: PlayerDevelopmentChange[];
   durationMs:    number;
+  /**
+   * true when resolved by quickSim (league not followed): playerStats / playerRatings /
+   * developmentChanges are empty to keep the day log small. UI must not expect player rows.
+   */
+  compact?: true;
 }
 
 // ── Training event ─────────────────────────────────────────────────────────
