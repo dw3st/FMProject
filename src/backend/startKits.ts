@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { readdir, stat, mkdir } from "fs/promises";
 import { saveService } from "@/backend/SaveService";
 import type { Squad, StandingRow } from "@/types/playerTypes";
@@ -16,7 +17,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
  * calendars/standings + transfers + market). Player-specific state (meta, tactics,
  * inbox) is NOT in the kit — the new save keeps its own.
  */
-const KITS_DIR = new URL("../Data/startKits", import.meta.url).pathname;
+const KITS_DIR = fileURLToPath(new URL("../Data/startKits", import.meta.url));
 
 interface KitWorld {
   squads: Array<{ league: string; club: string; squad: Squad }>;
