@@ -26,14 +26,18 @@ describe("ids", () => {
     const xs = Array.from({ length: 5000 }, (_, i) => gaussianFromKey(`k${i}`));
     const mean = xs.reduce((a, b) => a + b, 0) / xs.length;
     const sd = Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length);
-    // Note: FNV-1a hashes of `${key}#1` and `${key}#2` share a common prefix state
-    // (only the trailing "1"/"2" char differs), which correlates u1/u2 slightly and
-    // biases the Box-Muller mean away from 0. Deterministic for these exact keys
-    // (k0..k4999): computed mean ≈ 0.0589, stable across sample sizes 1k-50k (not
-    // sampling noise). 0.05 is too tight for this hash construction; 0.08 still
-    // catches a genuinely broken/reversed distribution.
-    expect(Math.abs(mean)).toBeLessThan(0.08);
+    expect(Math.abs(mean)).toBeLessThan(0.05);
     expect(sd).toBeGreaterThan(0.9);
     expect(sd).toBeLessThan(1.1);
+  });
+
+  test("unitHash(k#1) e unitHash(k#2) são aproximadamente independentes", () => {
+    const n = 5000;
+    const u1s = Array.from({ length: n }, (_, i) => unitHash(`k${i}#1`));
+    const u2s = Array.from({ length: n }, (_, i) => unitHash(`k${i}#2`));
+    const mean1 = u1s.reduce((a, b) => a + b, 0) / n;
+    const mean2 = u2s.reduce((a, b) => a + b, 0) / n;
+    const cov = u1s.reduce((a, u1, i) => a + (u1 - mean1) * (u2s[i]! - mean2), 0) / n;
+    expect(Math.abs(cov)).toBeLessThan(0.02);
   });
 });
