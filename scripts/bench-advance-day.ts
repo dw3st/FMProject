@@ -101,7 +101,7 @@ const inflight = Object.fromEntries(IO_CATS.map((c) => [c, { n: 0, since: 0 }]))
 function ioCategory(method: string): IoCat {
   if (method === "readSquad" || method === "squadExists") return "squadRead";
   if (method === "writeSquad") return "squadWrite";
-  if (method === "listAllSquads" || method === "listSquadsInLeague") return "squadList";
+  if (method === "listAllSquads" || method === "listSquadsInLeague" || method === "listSquadFiles") return "squadList";
   if (method === "readRound" || method === "writeRound") return "rounds";
   if (method === "readDayLog" || method === "writeDayLog") return "dayLog";
   return "other";
@@ -123,9 +123,9 @@ function countingDAL(inner: ISaveDAL): ISaveDAL {
             if (result) io.squadReads++;
             else io.squadReadMisses++;
           } else if (method === "writeSquad") io.squadWrites++;
-          else if (method === "listAllSquads" || method === "listSquadsInLeague") {
+          else if (method === "listAllSquads" || method === "listSquadsInLeague" || method === "listSquadFiles") {
             io.squadReads += (result as unknown[]).length;
-            if (method === "listAllSquads") io.listAllSquads++;
+            if (method !== "listSquadsInLeague") io.listAllSquads++;
           }
           return result;
         } finally {

@@ -1,4 +1,4 @@
-import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
+import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
@@ -196,6 +196,23 @@ export class FileSystemDAL implements ISaveDAL {
       );
     }
     return squads;
+  }
+
+  async listSquadFiles(saveId: string): Promise<SquadFile[]> {
+    const dir = `${SAVES_DIR}/${saveId}/squads`;
+    const glob = new Bun.Glob("*/*.json");
+    const files: SquadFile[] = [];
+    try {
+      for await (const path of glob.scan(dir)) {
+        const [leagueSlug, file] = path.split(/[\\/]/) as [string, string];
+        const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+        files.push({ leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...raw, leagueSlug } });
+      }
+    } catch (e) {
+      // A save without a squads dir has no squads (mirrors listLeagues).
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    }
+    return files;
   }
 
   // ── Tactics ───────────────────────────────────────────────────────────────
