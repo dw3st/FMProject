@@ -187,7 +187,8 @@ export class FileSystemDAL implements ISaveDAL {
     const squads: Squad[] = [];
     for await (const path of glob.scan(dir)) {
       const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
-      const segs = path.replace(/\.json$/i, "").split("/");
+      // Bun.Glob yields "\"-separated paths on Windows.
+      const segs = path.replace(/\.json$/i, "").split(/[\\/]/);
       const leagueFromPath = segs.length >= 2 ? segs[0]! : undefined;
       squads.push(
         leagueFromPath ? { ...raw, leagueSlug: leagueFromPath } : raw,

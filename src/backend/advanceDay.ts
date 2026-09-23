@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService } from "@/backend/SaveService";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
@@ -38,7 +39,7 @@ import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { debugLog, logSeason, LOG_NS_SEASON } from "@/Logger";
 
-const DATA_DIR = new URL("../Data", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 function withDefaultFinances(s: Squad): Squad {
   if (s.finances) return s;

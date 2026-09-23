@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
@@ -18,7 +19,7 @@ import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/type
 import type { InboxMessage } from "@/types/inboxTypes";
 import { squadFileStemFromClubParam } from "@/backend/squadIdResolve";
 
-const DATA_DIR = new URL("../Data", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 let leagueStandingsByLeague: Map<string, Array<{ squadId: string; slug?: string }>> | null = null;
 
