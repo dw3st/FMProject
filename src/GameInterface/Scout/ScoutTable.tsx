@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronUp, ChevronDown, UserPlus, Tag } from "lucide-react";
 import type { ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
-import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
+import { filterScoutPlayers, sortScoutPlayers } from "@/Domain/scout/scoutQuery";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -45,41 +45,15 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
     }
   };
 
-  const filteredPlayers = useMemo(() => {
-    return players.filter((player) => {
-      if (filters.onlyForSale && !sellListedIds.has(player.id)) return false;
-      if (filters.name && !player.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
-      if (filters.position !== "all" && getMainRole(player.pos) !== filters.position) return false;
-      if (player.age < filters.minAge || player.age > filters.maxAge) return false;
-      if (player.avg < filters.minAvg || player.avg > filters.maxAvg) return false;
-      if (player.valueMillions < filters.minPriceM || player.valueMillions > filters.maxPriceM)
-        return false;
-      if (filters.league !== "all" && player.leagueSlug !== filters.league) return false;
-      if (filters.nationality !== "all" && player.nationality !== filters.nationality) return false;
-      for (const attr of ATTRIBUTE_LIST) {
-        const range = filters.attributeRanges[attr.id];
-        if (!range) continue;
-        if (range.min <= 0 && range.max >= 10) continue;
-        const v = player.stats[attr.id];
-        if (v < range.min || v > range.max) return false;
-      }
-      return true;
-    });
-  }, [filters, players, sellListedIds]);
+  const filteredPlayers = useMemo(
+    () => filterScoutPlayers(players, filters, sellListedIds),
+    [filters, players, sellListedIds],
+  );
 
-  const sortedPlayers = useMemo(() => {
-    return [...filteredPlayers].sort((a, b) => {
-      const aVal = a[sortKey as keyof DisplayPlayer];
-      const bVal = b[sortKey as keyof DisplayPlayer];
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
-      }
-      return 0;
-    });
-  }, [filteredPlayers, sortKey, sortDir]);
+  const sortedPlayers = useMemo(
+    () => sortScoutPlayers(filteredPlayers, sortKey, sortDir),
+    [filteredPlayers, sortKey, sortDir],
+  );
 
   if (loading) {
     return (
