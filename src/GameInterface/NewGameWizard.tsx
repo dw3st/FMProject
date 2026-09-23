@@ -27,11 +27,13 @@ import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
+import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import {
   continentI18nKey,
   countryDisplayName,
   groupCountriesByContinent,
   matchesCountryQuery,
+  sortLeaguesForCountry,
 } from "@/Domain/world/labels";
 import countriesRaw from "@/Data/countries.json";
 import databasesRaw from "@/Data/databases.json";
@@ -1051,6 +1053,18 @@ function CountrySelector({
 // Club step
 // ──────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Average squad strength computed from whatever the club row already carries — never fetched
+ * per club. `LeagueData.standings` currently has no player data (see `LeagueTeam` in
+ * playerTypes.ts), so this resolves to `null` today and the club card shows only the name.
+ */
+function averageSquadStrength(club: LeagueTeam): number | null {
+  const players = (club as LeagueTeam & { players?: Array<{ ovr?: number }> }).players;
+  if (!players || players.length === 0) return null;
+  const total = players.reduce((sum, p) => sum + (p.ovr ?? 0), 0);
+  return Math.round(total / players.length);
+}
+
 function ClubSelector({
   country,
   leagues,
@@ -1075,6 +1089,7 @@ function ClubSelector({
   activeLeague:       LeagueData | null;
 }) {
   const { t } = useTranslation();
+  const countryLeagues = sortLeaguesForCountry(leagues, country.name);
   return (
     <div className="p-8 flex gap-8">
       {/* Left: list */}
@@ -1090,27 +1105,40 @@ function ClubSelector({
           {t(`newGame.countries.${country.slug}.name`, { defaultValue: country.name })}
         </h1>
 
-        {leagues.length > 1 && (
-          <div className="flex gap-1 p-1 bg-card/50 rounded-lg border border-border/40 mb-4">
-            {leagues.map((l) => (
-              <button
-                key={l.slug}
-                onClick={() => onSelectLeague(l.slug)}
-                className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
-                  l.slug === selectedLeagueSlug
-                    ? "bg-primary text-primary-foreground glow-primary-sm"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                }`}
-              >
-                {l.name}
-              </button>
-            ))}
-          </div>
+        {countryLeagues.length > 1 && (
+          countryLeagues.length <= 3 ? (
+            <div className="flex gap-1 p-1 bg-card/50 rounded-lg border border-border/40 mb-4">
+              {countryLeagues.map((l) => (
+                <button
+                  key={l.slug}
+                  onClick={() => onSelectLeague(l.slug)}
+                  title={l.name}
+                  className={`flex-1 min-w-0 truncate px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
+                    l.slug === selectedLeagueSlug
+                      ? "bg-primary text-primary-foreground glow-primary-sm"
+                      : "text-muted-foreground hover:text-foreground bg-transparent"
+                  }`}
+                >
+                  {l.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mb-4">
+              <SelectCombobox
+                label={t("newGame.division")}
+                value={selectedLeagueSlug}
+                onChange={onSelectLeague}
+                options={countryLeagues.map((l) => ({ value: l.slug, label: l.name }))}
+              />
+            </div>
+          )
         )}
 
         <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-          {teams.map((club, index) => {
+          {teams.map((club) => {
             const isSelected = selectedTeam?.squadId === club.squadId;
+            const avgStrength = averageSquadStrength(club);
             return (
               <button
                 key={club.squadId}
@@ -1135,15 +1163,12 @@ function ClubSelector({
                   >
                     {club.name}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase">
-                    #{index + 1} · {activeLeague?.name ?? ""}
-                  </p>
+                  {avgStrength !== null && (
+                    <p className="text-[10px] text-muted-foreground uppercase">
+                      {t("newGame.squadRating")} {avgStrength}
+                    </p>
+                  )}
                 </div>
-                {index === 0 && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase bg-yellow-500/20 text-yellow-400 rounded">
-                    {t("common.top")}
-                  </span>
-                )}
               </button>
             );
           })}
