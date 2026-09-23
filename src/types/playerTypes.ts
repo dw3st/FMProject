@@ -177,6 +177,8 @@ export interface LeagueData {
   season: string;
   standings: LeagueTeam[];
   zones?: LeagueZone[];
+  iso2?: string;
+  source?: string;
 }
 
 export function isAttributeId(key: string): key is AttributeId {
