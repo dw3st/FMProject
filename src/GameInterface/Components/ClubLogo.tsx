@@ -36,7 +36,11 @@ export function ClubLogo({
   className?: string;
   imgClassName?: string;
 }) {
-  const [failed, setFailed] = useState(() => !!logoUrl && failedLogoUrls.has(logoUrl));
+  // Tracks only the specific URL that errored on this instance — derived (not mount-time) so a
+  // reused instance whose `logoUrl` prop changes (e.g. a virtualized list row) doesn't keep
+  // showing the fallback for a URL that never actually failed.
+  const [failedUrl, setFailedUrl] = useState<string | undefined>(undefined);
+  const failed = !!logoUrl && (failedLogoUrls.has(logoUrl) || failedUrl === logoUrl);
 
   if (logoUrl && !failed) {
     return (
@@ -47,7 +51,7 @@ export function ClubLogo({
           className={imgClassName}
           onError={() => {
             failedLogoUrls.add(logoUrl);
-            setFailed(true);
+            setFailedUrl(logoUrl);
           }}
         />
       </div>

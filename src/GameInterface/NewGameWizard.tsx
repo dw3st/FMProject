@@ -33,7 +33,6 @@ import {
   countryDisplayName,
   groupCountriesByContinent,
   matchesCountryQuery,
-  sortLeaguesForCountry,
 } from "@/Domain/world/labels";
 import countriesRaw from "@/Data/countries.json";
 import databasesRaw from "@/Data/databases.json";
@@ -1077,7 +1076,8 @@ function ClubSelector({
   activeLeague:       LeagueData | null;
 }) {
   const { t } = useTranslation();
-  const countryLeagues = sortLeaguesForCountry(leagues, country.name);
+  // `leagues` is already filtered to this country by the caller (NewGameWizard's `countryLeagues`).
+  const countryLeagues = leagues;
   return (
     <div className="p-8 flex gap-8">
       {/* Left: list */}

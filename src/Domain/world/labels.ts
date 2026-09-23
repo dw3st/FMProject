@@ -5,13 +5,29 @@ export const CONTINENT_ORDER: Continent[] = ["Europe", "South America", "North A
 
 type TFn = (key: string, opts: { defaultValue: string }) => string;
 
+/** One `Intl.DisplayNames` instance per language — construction is relatively expensive and this
+ *  is called for every country in every render of the country picker. */
+const displayNamesByLang = new Map<string, Intl.DisplayNames>();
+
+function regionDisplayNames(lang: string): Intl.DisplayNames | null {
+  const cached = displayNamesByLang.get(lang);
+  if (cached) return cached;
+  try {
+    const instance = new Intl.DisplayNames([lang], { type: "region" });
+    displayNamesByLang.set(lang, instance);
+    return instance;
+  } catch {
+    return null;
+  }
+}
+
 /** i18n key first (curated names/headlines), then Intl.DisplayNames by ISO, then the raw English name. */
 export function countryDisplayName(country: CountryEntry, lang: string, t: TFn): string {
   let fallback = country.name;
   // GB maps to "United Kingdom" in Intl — the game's country is England; only translate non-GB codes.
   if (country.iso2 && country.iso2.toUpperCase() !== "GB") {
     try {
-      fallback = new Intl.DisplayNames([lang], { type: "region" }).of(country.iso2.toUpperCase()) ?? country.name;
+      fallback = regionDisplayNames(lang)?.of(country.iso2.toUpperCase()) ?? country.name;
     } catch {
       fallback = country.name;
     }
@@ -62,7 +78,7 @@ export function groupCountriesByContinent(countries: CountryEntry[], displayName
 }
 
 /** leagueData is already written country → tier by the importer; keep that order. */
-export function sortLeaguesForCountry(leagues: LeagueData[], countryName: string): LeagueData[] {
+export function leaguesOfCountry(leagues: LeagueData[], countryName: string): LeagueData[] {
   return leagues.filter((l) => l.country === countryName);
 }
 

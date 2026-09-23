@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, groupCountriesByContinent, leagueLabel,
-  matchesCountryQuery, partitionDayMatches, sortLeaguesForCountry,
+  leaguesOfCountry, matchesCountryQuery, partitionDayMatches,
 } from "@/Domain/world/labels";
 import type { CountryEntry } from "@/types/worldTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -49,10 +49,10 @@ describe("groupCountriesByContinent", () => {
   });
 });
 
-describe("sortLeaguesForCountry", () => {
+describe("leaguesOfCountry", () => {
   test("mantém a ordem do leagueData (nível), filtrando pelo país", () => {
     const ls = [L("a", "A", "Italy"), L("b", "B", "Spain"), L("c", "C", "Italy")];
-    expect(sortLeaguesForCountry(ls, "Italy").map((l) => l.slug)).toEqual(["a", "c"]);
+    expect(leaguesOfCountry(ls, "Italy").map((l) => l.slug)).toEqual(["a", "c"]);
   });
 });
 
