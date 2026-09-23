@@ -116,6 +116,23 @@ export function samplePoisson(lambda: number, rng: Rng): number {
   return k - 1;
 }
 
+/** Standard normal sample (Box–Muller). */
+function gaussian(rng: Rng): number {
+  return Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
+}
+
+/**
+ * Goals as Binomial(GOAL_CHANCES, xg / GOAL_CHANCES): same mean as Poisson(xg) but
+ * under-dispersed (fewer 0-0s), closer to the full engine's scoreline distribution.
+ */
+function sampleGoals(xg: number, rng: Rng): number {
+  const n = C.GOAL_CHANCES;
+  const p = clamp(xg / n, 0, 1);
+  let goals = 0;
+  for (let i = 0; i < n; i++) if (rng() < p) goals++;
+  return goals;
+}
+
 function weightedPick<T>(items: T[], weight: (t: T) => number, rng: Rng): T | null {
   const weights = items.map(weight);
   const total = weights.reduce((a, b) => a + b, 0);
@@ -239,14 +256,21 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const xgAway = expectedGoals(away, home, false);
   // An empty XI can't score — force 0 so recording.score always agrees with the sum of
   // per-player goals (an XI can be empty if a lineup is entirely blank/unknown ids).
-  const goalsHome = homeXI.length > 0 ? samplePoisson(xgHome, rng) : 0;
-  const goalsAway = awayXI.length > 0 ? samplePoisson(xgAway, rng) : 0;
+  // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,
+  // mean-1 lognormal factors). The full engine's results are more lopsided than two
+  // independent Poisson draws around xG. `breakdown` keeps the pre-dominance xG.
+  const d = C.DOMINANCE_SIGMA * gaussian(rng);
+  const shrink = (C.DOMINANCE_SIGMA * C.DOMINANCE_SIGMA) / 2;
+  const xgHomeDay = xgHome * Math.exp(d - shrink);
+  const xgAwayDay = xgAway * Math.exp(-d - shrink);
+  const goalsHome = homeXI.length > 0 ? sampleGoals(xgHomeDay, rng) : 0;
+  const goalsAway = awayXI.length > 0 ? sampleGoals(xgAwayDay, rng) : 0;
 
   const playerStats: Record<string, MatchPlayerStats> = {};
   const tacklesFailed: Record<string, number> = {};
   for (const p of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
-  fillSide(homeXI, goalsHome, xgHome, playerStats, tacklesFailed, rng);
-  fillSide(awayXI, goalsAway, xgAway, playerStats, tacklesFailed, rng);
+  fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, rng);
+  fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, rng);
 
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};

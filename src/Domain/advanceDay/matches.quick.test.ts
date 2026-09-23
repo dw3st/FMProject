@@ -28,9 +28,9 @@ describe("buildQuickMatchEvent", () => {
     const fixture = { id: "fx1", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
     const sim = { homeLineup: home.players.map((p) => p.id), awayLineup: away.players.map((p) => p.id) };
 
-    // Seed 11 produces at least one goal for this fixed 11v11 setup — verified rather than
+    // Seed 5 produces at least one goal for this fixed 11v11 setup — verified rather than
     // assumed, so the scorer-map assertions below always exercise a non-empty scorers array.
-    const r = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(11));
+    const r = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(5));
     expect(r.event.score.home + r.event.score.away).toBeGreaterThan(0);
 
     expect(r.event.compact).toBe(true);
