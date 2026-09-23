@@ -10,7 +10,7 @@
 
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
-import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
+import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { emptySeasonLog } from "@/types/playerTypes";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
@@ -122,6 +122,12 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamTacticsConfig("B", variantB.tacticalStyle);
     applyTeamAttackConfig("B", variantB.tacticalStyle);
 
+    // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
+    const quickLineupA = autoLineupForFormation(squadA, formationA);
+    const quickLineupB = autoLineupForFormation(squadB, formationB);
+    const quickRolesA = slotRoles(formationA);
+    const quickRolesB = slotRoles(formationB);
+
     const start = performance.now();
     const teamA = emptyTeamRaw();
     const teamB = emptyTeamRaw();
@@ -133,8 +139,10 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
           fixtureId: `lab-${m}`,
           home: squadA,
           away: squadB,
-          homeLineup: autoLineupDefaultFormation(squadA),
-          awayLineup: autoLineupDefaultFormation(squadB),
+          homeLineup: quickLineupA,
+          awayLineup: quickLineupB,
+          homeRoles: quickRolesA,
+          awayRoles: quickRolesB,
         });
         const hA = q.recording.teamStats.home;
         const hB = q.recording.teamStats.away;

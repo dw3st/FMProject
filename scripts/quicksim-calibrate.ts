@@ -13,8 +13,8 @@
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
-import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
-import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
+import { quickSimMatch, resolveRole } from "@/Domain/advanceDay/quickSim";
+import { autoLineupDefaultFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
 import { ROLE_GROUP, type LineGroup } from "@/GameEngine/Configs/QuickSimConfig";
 import { RATING_WEIGHTS as W } from "@/GameEngine/Configs/PlayerRatingConfig";
@@ -93,6 +93,7 @@ function addStats(acc: Acc, g: LineGroup | undefined, s: MatchPlayerStats | unde
 const pickRng = mulberry32(2026); // pair selection — independent of quickSim's draws
 const qsRng = mulberry32(7);
 const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
+const roles = slotRoles(formation);
 const cached: Acc | null = CACHE && (await Bun.file(CACHE).exists()) ? await Bun.file(CACHE).json() : null;
 const full = cached ?? newAcc();
 const quick = newAcc();
@@ -105,6 +106,15 @@ for (let i = 0; i < PAIRS; i++) {
   const al = autoLineupDefaultFormation(away);
   const rosterRole = new Map<string, string | undefined>();
   for (const p of [...home.players, ...away.players]) rosterRole.set(p.id, p.positions[0]);
+  // quickSim side groups by the same slot role the engine plays (resolved as quickSim does).
+  const quickRole = new Map<string, string>();
+  for (const [squad, lineup] of [[home, hl], [away, al]] as const) {
+    const byId = new Map(squad.players.map((p) => [p.id, p]));
+    lineup.forEach((id, i) => {
+      const p = byId.get(id);
+      if (p && !quickRole.has(id)) quickRole.set(id, resolveRole(p, roles[i]));
+    });
+  }
 
   for (let r = 0; r < REPEATS; r++) {
     if (!cached) {
@@ -132,10 +142,10 @@ for (let i = 0; i < PAIRS; i++) {
     }
     for (let k = 0; k < QUICK_REPEATS; k++) {
       const t = performance.now();
-      const q = quickSimMatch({ fixtureId: "c", home, away, homeLineup: hl, awayLineup: al }, qsRng);
+      const q = quickSimMatch({ fixtureId: "c", home, away, homeLineup: hl, awayLineup: al, homeRoles: roles, awayRoles: roles }, qsRng);
       add(quick, q.recording.score.home, q.recording.score.away, performance.now() - t);
       for (const [id, rating] of Object.entries(q.recording.playerRatings)) {
-        const role = rosterRole.get(id);
+        const role = quickRole.get(id);
         const g = role ? ROLE_GROUP[role] : undefined;
         addRating(quick.all, g, rating);
         addRating(quick.starters, g, rating);

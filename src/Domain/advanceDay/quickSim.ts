@@ -43,6 +43,13 @@ export interface QuickSimInput {
   away: Squad;
   homeLineup: string[];
   awayLineup: string[];
+  /**
+   * Detailed slot role per lineup index (e.g. "LW", "CDM"), aligned with `homeLineup`.
+   * Real squads store only main roles in `positions[0]`; the engine plays a player by his
+   * slot role, so quickSim does too. Missing / unknown entries fall back to `positions[0]`.
+   */
+  homeRoles?: string[];
+  awayRoles?: string[];
 }
 
 export interface QuickSimResult {
@@ -53,13 +60,23 @@ export interface QuickSimResult {
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-function mainRole(p: RosterPlayer): string {
+/** An XI player with the role he plays this match (slot role, else roster `positions[0]`). */
+interface XIPlayer {
+  p: RosterPlayer;
+  role: string;
+}
+
+/** Slot role if provided and known to ROLE_GROUP, else the roster's `positions[0]`. */
+export function resolveRole(p: RosterPlayer, slotRole?: string): string {
+  if (slotRole && ROLE_GROUP[slotRole]) return slotRole;
   return p.positions[0] ?? "CM";
 }
 
-export function lineGroupOf(p: RosterPlayer): LineGroup {
-  return ROLE_GROUP[mainRole(p)] ?? "MID";
+export function lineGroupOfRole(role: string): LineGroup {
+  return ROLE_GROUP[role] ?? "MID";
 }
+
+const groupOf = (x: XIPlayer) => lineGroupOfRole(x.role);
 
 function stat(p: RosterPlayer, key: string): number {
   return (p.stats as unknown as Record<string, number | undefined>)[key] ?? 0;
@@ -73,21 +90,22 @@ function fitnessFactor(p: RosterPlayer): number {
   return 1 - C.FATIGUE_PENALTY * (1 - startFitness(p) / 100);
 }
 
-function lineValue(players: RosterPlayer[], keys: readonly string[], fallback: RosterPlayer[]): number {
+function lineValue(players: XIPlayer[], keys: readonly string[], fallback: XIPlayer[]): number {
   const pool = players.length ? players : fallback;
-  return avg(pool.map((p) => avg(keys.map((k) => stat(p, k))) * fitnessFactor(p))) + C.STRENGTH_FLOOR;
+  return avg(pool.map(({ p }) => avg(keys.map((k) => stat(p, k))) * fitnessFactor(p))) + C.STRENGTH_FLOOR;
 }
 
-export function teamStrength(xi: RosterPlayer[]): TeamStrength {
-  const outfield = xi.filter((p) => lineGroupOf(p) !== "GK");
-  const attackers = xi.filter(
-    (p) => lineGroupOf(p) === "FWD" || ATTACKING_MID_SET.has(mainRole(p)),
-  );
-  const mids = xi.filter((p) => lineGroupOf(p) === "MID");
-  const defenders = xi.filter(
-    (p) => lineGroupOf(p) === "DEF" || DEFENSIVE_MID_SET.has(mainRole(p)),
-  );
-  const keepers = xi.filter((p) => lineGroupOf(p) === "GK");
+/** `roles`, when given, is aligned with `players` (the slot role each one plays). */
+export function teamStrength(players: RosterPlayer[], roles?: string[]): TeamStrength {
+  return strengthOf(players.map((p, i) => ({ p, role: resolveRole(p, roles?.[i]) })));
+}
+
+function strengthOf(xi: XIPlayer[]): TeamStrength {
+  const outfield = xi.filter((x) => groupOf(x) !== "GK");
+  const attackers = xi.filter((x) => groupOf(x) === "FWD" || ATTACKING_MID_SET.has(x.role));
+  const mids = xi.filter((x) => groupOf(x) === "MID");
+  const defenders = xi.filter((x) => groupOf(x) === "DEF" || DEFENSIVE_MID_SET.has(x.role));
+  const keepers = xi.filter((x) => groupOf(x) === "GK");
   return {
     attack: lineValue(attackers, C.ATTACK_KEYS, outfield),
     midfield: lineValue(mids, C.MIDFIELD_KEYS, outfield),
@@ -178,46 +196,48 @@ export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0): number 
   return Math.round(clamp(raw, 0, 10) * 10) / 10;
 }
 
-function resolveXI(squad: Squad, lineup: string[]): RosterPlayer[] {
+/** Skips empty / unknown / duplicate ids; each kept player takes the role of his own slot index. */
+function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[] {
   const byId = new Map(squad.players.map((p) => [p.id, p]));
-  const xi: RosterPlayer[] = [];
-  for (const id of lineup) {
+  const xi: XIPlayer[] = [];
+  lineup.forEach((id, i) => {
     const p = id ? byId.get(id) : undefined;
-    if (p && !xi.includes(p)) xi.push(p);
-  }
+    if (p && !xi.some((x) => x.p === p)) xi.push({ p, role: resolveRole(p, roles?.[i]) });
+  });
   return xi;
 }
 
 function fillSide(
-  xi: RosterPlayer[],
+  xi: XIPlayer[],
   goals: number,
   xg: number,
   stats: Record<string, MatchPlayerStats>,
   tacklesFailed: Record<string, number>,
   rng: Rng,
 ): void {
-  const scorerWeight = (p: RosterPlayer) => C.ROLE_GOAL_WEIGHT[lineGroupOf(p)] * (0.5 + stat(p, "finishing") / 10);
-  const assistWeight = (p: RosterPlayer) => C.ROLE_ASSIST_WEIGHT[lineGroupOf(p)] * (0.5 + stat(p, "passing") / 10);
+  const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
+  const assistWeight = (x: XIPlayer) => C.ROLE_ASSIST_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "passing") / 10);
 
   for (let g = 0; g < goals; g++) {
     const scorer = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
     if (!scorer) break;
-    stats[scorer.id]!.goals++;
-    stats[scorer.id]!.shots++;
+    stats[scorer.p.id]!.goals++;
+    stats[scorer.p.id]!.shots++;
     if (rng() >= C.NO_ASSIST_RATE) {
-      const assister = weightedPick(xi.filter((p) => p.id !== scorer.id), assistWeight, rng);
-      if (assister) stats[assister.id]!.assists++;
+      const assister = weightedPick(xi.filter((x) => x.p.id !== scorer.p.id), assistWeight, rng);
+      if (assister) stats[assister.p.id]!.assists++;
     }
   }
 
   const extraShots = samplePoisson(xg * C.SHOTS_PER_XG, rng);
   for (let i = 0; i < extraShots; i++) {
     const shooter = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
-    if (shooter) stats[shooter.id]!.shots++;
+    if (shooter) stats[shooter.p.id]!.shots++;
   }
 
-  for (const p of xi) {
-    const group = lineGroupOf(p);
+  for (const x of xi) {
+    const p = x.p;
+    const group = groupOf(x);
     const s = stats[p.id]!;
     const attempts = samplePoisson(C.PASSES_PER_MATCH[group], rng);
     const rate = C.PASS_COMPLETION_BASE + C.PASS_COMPLETION_SKILL * (stat(p, "passing") / 10);
@@ -232,9 +252,9 @@ function fillSide(
   }
 }
 
-function sumTeamStats(xi: RosterPlayer[], stats: Record<string, MatchPlayerStats>): MatchTeamStats {
+function sumTeamStats(xi: XIPlayer[], stats: Record<string, MatchPlayerStats>): MatchTeamStats {
   const t: MatchTeamStats = { shots: 0, passesCompleted: 0, passesAttempted: 0, tackles: 0, interceptions: 0 };
-  for (const p of xi) {
+  for (const { p } of xi) {
     const s = stats[p.id]!;
     t.shots += s.shots;
     t.passesCompleted += s.passesCompleted;
@@ -247,15 +267,13 @@ function sumTeamStats(xi: RosterPlayer[], stats: Record<string, MatchPlayerStats
 
 export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): QuickSimResult {
   const start = performance.now();
-  const homeXI = resolveXI(input.home, input.homeLineup);
-  const awayXI = resolveXI(input.away, input.awayLineup);
+  const homeXI = resolveXI(input.home, input.homeLineup, input.homeRoles);
+  const awayXI = resolveXI(input.away, input.awayLineup, input.awayRoles);
 
-  const home = teamStrength(homeXI);
-  const away = teamStrength(awayXI);
+  const home = strengthOf(homeXI);
+  const away = strengthOf(awayXI);
   const xgHome = expectedGoals(home, away, true);
   const xgAway = expectedGoals(away, home, false);
-  // An empty XI can't score — force 0 so recording.score always agrees with the sum of
-  // per-player goals (an XI can be empty if a lineup is entirely blank/unknown ids).
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,
   // mean-1 lognormal factors). The full engine's results are more lopsided than two
   // independent Poisson draws around xG. `breakdown` keeps the pre-dominance xG.
@@ -263,18 +281,20 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const shrink = (C.DOMINANCE_SIGMA * C.DOMINANCE_SIGMA) / 2;
   const xgHomeDay = xgHome * Math.exp(d - shrink);
   const xgAwayDay = xgAway * Math.exp(-d - shrink);
+  // An empty XI can't score — force 0 so recording.score always agrees with the sum of
+  // per-player goals (an XI can be empty if a lineup is entirely blank/unknown ids).
   const goalsHome = homeXI.length > 0 ? sampleGoals(xgHomeDay, rng) : 0;
   const goalsAway = awayXI.length > 0 ? sampleGoals(xgAwayDay, rng) : 0;
 
   const playerStats: Record<string, MatchPlayerStats> = {};
   const tacklesFailed: Record<string, number> = {};
-  for (const p of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
+  for (const { p } of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
   fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, rng);
   fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, rng);
 
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
-  for (const p of [...homeXI, ...awayXI]) {
+  for (const { p } of [...homeXI, ...awayXI]) {
     playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0);
     const startEnergy = startFitness(p);
     const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (stat(p, "stamina") / 10));

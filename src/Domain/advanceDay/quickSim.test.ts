@@ -84,6 +84,91 @@ describe("teamStrength / expectedGoals", () => {
   });
 });
 
+/** Squad with real-data main roles in `positions[0]` and a per-player attribute level. */
+function makeMainRoleSquad(id: string, spec: { pos: string; level: number }[]): Squad {
+  const players: RosterPlayer[] = spec.map(({ pos, level }, i) => ({
+    id: `${id}-p${i}`,
+    name: `${id} ${pos} ${i}`,
+    age: 25,
+    squadId: id,
+    preferredFoot: "right",
+    positions: [pos],
+    stats: {
+      passing: level, vision: level, finishing: level, dribbling: level,
+      speed: level, acceleration: level, tackling: level, pressing: level,
+      stamina: level, heading: level, strength: level, reflex: level, jump: level,
+    },
+    profile: { summary: "", archetype: "" },
+    seasonLog: emptySeasonLog(),
+  }));
+  return { id, name: id, colors: ["#000", "#fff"], money: 0, players };
+}
+
+describe("slot roles", () => {
+  test("papel do slot muda a força: meia em slot CAM conta no ataque", () => {
+    // Midfielders are much stronger than the forwards, so pulling one into the attack line
+    // (via a CAM slot) must raise attack strength vs grouping by main role alone.
+    const squad = makeMainRoleSquad("m", [
+      { pos: "GK", level: 4 },
+      ...Array.from({ length: 4 }, () => ({ pos: "Defender", level: 4 })),
+      ...Array.from({ length: 3 }, () => ({ pos: "Midfielder", level: 8 })),
+      ...Array.from({ length: 3 }, () => ({ pos: "Forward", level: 3 })),
+    ]);
+    const roles = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CAM", "LW", "ST", "RW"];
+    const withoutRoles = teamStrength(squad.players);
+    const withRoles = teamStrength(squad.players, roles);
+    expect(withRoles.attack).toBeGreaterThan(withoutRoles.attack);
+    expect(withRoles.defense).toBeGreaterThan(withoutRoles.defense); // CDM joins the defense
+  });
+
+  test("Midfielder no slot ST recebe peso de atacante e marca mais gols", () => {
+    const squad = makeMainRoleSquad("h", [
+      { pos: "GK", level: 5 },
+      ...Array.from({ length: 10 }, () => ({ pos: "Midfielder", level: 5 })),
+    ]);
+    const away = makeSquad("a", 5);
+    const roles = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CM", "CM", "ST", "CM"];
+    const goals = new Map<string, number>();
+    for (let seed = 0; seed < 500; seed++) {
+      const { recording } = quickSimMatch(
+        {
+          fixtureId: "f", home: squad, away,
+          homeLineup: lineupOf(squad), awayLineup: lineupOf(away), homeRoles: roles,
+        },
+        mulberry32(seed),
+      );
+      for (const [id, s] of Object.entries(recording.playerStats)) {
+        if (id.startsWith("h-")) goals.set(id, (goals.get(id) ?? 0) + s.goals);
+      }
+    }
+    const stGoals = goals.get("h-p9") ?? 0;
+    const others = [...goals.entries()].filter(([id]) => id !== "h-p9").map(([, g]) => g);
+    expect(stGoals).toBeGreaterThan(0);
+    for (const g of others) expect(stGoals).toBeGreaterThan(g * 3);
+  });
+
+  test("vagas puladas não desalinham os papéis", () => {
+    // Blank slot 0 is skipped; the player in slot 9 must still get the slot-9 role (ST).
+    const squad = makeMainRoleSquad("h", [
+      { pos: "GK", level: 5 },
+      ...Array.from({ length: 10 }, () => ({ pos: "Midfielder", level: 5 })),
+    ]);
+    const away = makeSquad("a", 5);
+    const lineup = ["", ...lineupOf(squad).slice(1)];
+    const roles = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CM", "CM", "ST", "CM"];
+    let stGoals = 0, total = 0;
+    for (let seed = 0; seed < 300; seed++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: "f", home: squad, away, homeLineup: lineup, awayLineup: lineupOf(away), homeRoles: roles },
+        mulberry32(seed),
+      );
+      stGoals += recording.playerStats["h-p9"]?.goals ?? 0;
+      total += recording.score.home;
+    }
+    expect(stGoals / total).toBeGreaterThan(0.5);
+  });
+});
+
 describe("quickSimMatch", () => {
   test("determinístico com a mesma semente", () => {
     const h = makeSquad("h", 4);

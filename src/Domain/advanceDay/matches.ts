@@ -13,6 +13,7 @@ import { applyDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/Game
 import rolesData from "@/Data/roles.json";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
+import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 
 export interface MatchSimResult {
   event: MatchEvent;
@@ -374,7 +375,13 @@ export function buildQuickMatchEvent(
   fixture: Fixture,
   homeSquad: Squad,
   awaySquad: Squad,
-  sim: { homeLineup: string[]; awayLineup: string[] },
+  sim: {
+    homeLineup: string[];
+    awayLineup: string[];
+    /** When given, each lineup slot plays its formation slot role (as in the engine). */
+    homeFormation?: Formation;
+    awayFormation?: Formation;
+  },
   rng: Rng = Math.random,
 ): MatchSimResult {
   const { recording } = quickSimMatch(
@@ -384,6 +391,8 @@ export function buildQuickMatchEvent(
       away: awaySquad,
       homeLineup: sim.homeLineup,
       awayLineup: sim.awayLineup,
+      homeRoles: sim.homeFormation ? slotRoles(sim.homeFormation) : undefined,
+      awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
     },
     rng,
   );
