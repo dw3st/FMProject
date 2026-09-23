@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { saveRoutes } from "@/backend/saves";
 import { advanceDayRoutes } from "@/backend/advanceDay";
 import { transferRoutes } from "@/backend/transfers";
@@ -13,12 +14,33 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/backend/squadIdResolve";
+import { clubProfileStem } from "@/backend/clubProfile";
 import { authRoutes } from "@/backend/auth/routes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
+import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 
-const DATA_DIR       = new URL("../Data",            import.meta.url).pathname;
-const FORMATIONS_DIR = new URL("../Data/formations", import.meta.url).pathname;
+// fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
+// `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
+// Bun.file() read under DATA_DIR silently reports not-found.
+const DATA_DIR       = fileURLToPath(new URL("../Data",            import.meta.url));
+const FORMATIONS_DIR = fileURLToPath(new URL("../Data/formations", import.meta.url));
+
+type ClubProfileLeagueEntry = {
+  slug: string;
+  standings?: Array<{ squadId: string; slug?: string }>;
+};
+
+let _clubProfileLeagueDataCache: ClubProfileLeagueEntry[] | null = null;
+
+/** Cached leagueData.json read — /api/club-profile is hit repeatedly while the wizard is open. */
+async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
+  if (_clubProfileLeagueDataCache) return _clubProfileLeagueDataCache;
+  const file = Bun.file(`${DATA_DIR}/leagueData.json`);
+  if (!(await file.exists())) return [];
+  _clubProfileLeagueDataCache = (await file.json()) as ClubProfileLeagueEntry[];
+  return _clubProfileLeagueDataCache;
+}
 
 export const apiRoutes = {
   ...authRoutes,
@@ -56,7 +78,7 @@ export const apiRoutes = {
     if (await png.exists())
       return new Response(png, { headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" } });
 
-    return new Response("not found", { status: 404 });
+    return new Response("Not found", { status: 404, headers: { "Cache-Control": "public, max-age=3600" } });
   },
 
   "/api/formations": async () => {
@@ -99,24 +121,17 @@ export const apiRoutes = {
     req: Request & { params: Record<string, string> },
   ) => {
     const league = req.params.league!;
-    let clubFile = req.params.club!;
+    const clubParam = req.params.club!;
 
-    // Resolve numeric squadId to file slug
-    if (/^\d+$/.test(clubFile)) {
-      const leagueFile = Bun.file(`${DATA_DIR}/leagueData.json`);
-      if (await leagueFile.exists()) {
-        const leagues = (await leagueFile.json()) as Array<{
-          slug: string;
-          standings?: Array<{ squadId: string; slug?: string }>;
-        }>;
-        const row = leagues
-          .find((l) => l.slug === league)
-          ?.standings?.find((s) => s.squadId === clubFile);
-        if (row?.slug) clubFile = row.slug;
-      }
+    // Resolve squadId or slug to the on-disk squad file stem (squad files are named by squadId).
+    const leagues = await loadClubProfileLeagueData();
+    const standings = leagues.find((l) => l.slug === league)?.standings;
+    const stem = clubProfileStem(standings, clubParam);
+    if (!stem) {
+      return Response.json({ error: "club not found" }, { status: 404 });
     }
 
-    const file = Bun.file(`${DATA_DIR}/squads/${league}/${clubFile}.json`);
+    const file = Bun.file(`${DATA_DIR}/squads/${league}/${stem}.json`);
     if (!(await file.exists())) {
       return Response.json({ error: "club not found" }, { status: 404 });
     }
@@ -222,6 +237,26 @@ export const apiRoutes = {
     if (squads.length === 0)
       return Response.json({ error: "save squads not found" }, { status: 404 });
     return Response.json(squads);
+  },
+
+  /** Scout database: filter / sort / paginate every squad's players server-side (body: ScoutQuery). */
+  "/api/saves/:saveId/scout-search": async (
+    req: Request & { params: Record<string, string> },
+  ) => {
+    if (req.method !== "POST")
+      return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: "invalid json" }, { status: 400 });
+    }
+    const result = await searchScout(saveId!, parseScoutQuery(body));
+    if (!result) return Response.json({ error: "save not found" }, { status: 404 });
+    return Response.json(result);
   },
 
   "/api/saves/:saveId/import-squads": async (

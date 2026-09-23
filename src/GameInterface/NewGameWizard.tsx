@@ -21,10 +21,19 @@ import {
   Plus,
 } from "lucide-react";
 import type { LeagueData, LeagueTeam } from "@/types/playerTypes";
+import type { CountryEntry } from "@/types/worldTypes";
 import { createGameSave } from "@/GameInterface/gameSession";
 import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { Icon } from "@/GameInterface/Icons";
+import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
+import {
+  continentI18nKey,
+  countryDisplayName,
+  groupCountriesByContinent,
+  matchesCountryQuery,
+} from "@/Domain/world/labels";
 import countriesRaw from "@/Data/countries.json";
 import databasesRaw from "@/Data/databases.json";
 import {
@@ -32,15 +41,6 @@ import {
   MANAGER_NATIONALITIES,
   type ManagerBackground,
 } from "@/Data/managerBackgrounds";
-
-type CountryEntry = {
-  slug:     string;
-  name:     string;
-  flag:     string;
-  iso2:     string;
-  playable: boolean;
-  headline: string;
-};
 
 type DatabaseEntry = {
   id:                string;
@@ -113,7 +113,7 @@ const OUTLINE_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-transparent text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all font-bold uppercase tracking-wider cursor-pointer";
 
 export function NewGameWizard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedDatabase, setSelectedDatabase] = useState<DatabaseEntry | null>(
     databases.find((d) => d.playable) ?? null,
@@ -173,11 +173,13 @@ export function NewGameWizard() {
     };
   }, [selectedTeam, selectedLeagueSlug]);
 
-  const filteredCountries = searchQuery.trim()
-    ? countries.filter((c) =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : countries;
+  const filteredCountries = countries.filter((c) => {
+    const displayName = countryDisplayName(c, i18n.language, t);
+    const continentName = t(`newGame.continents.${continentI18nKey(c.continent ?? "Other")}`, {
+      defaultValue: c.continent ?? "Other",
+    });
+    return matchesCountryQuery(searchQuery, [displayName, c.name, continentName]);
+  });
 
   const countryLeagues = selectedCountry
     ? leagues.filter((l) => l.country === selectedCountry.name)
@@ -855,7 +857,15 @@ function CountrySelector({
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const displayName = (country: CountryEntry) => countryDisplayName(country, i18n.language, t);
+  const headlineFor = (country: CountryEntry): string => {
+    const key = `newGame.countries.${country.slug}.headline`;
+    const hasCurated = !!i18n.getResource(i18n.language, "translation", key);
+    if (hasCurated) return t(key, { defaultValue: country.headline });
+    if (i18n.language !== "en") return t("newGame.genericHeadline", { country: displayName(country) });
+    return country.headline;
+  };
   const teamsForCountry = (country: CountryEntry) =>
     leagues
       .filter((l) => l.country === country.name)
@@ -869,6 +879,8 @@ function CountrySelector({
         divisions: divisionsForCountry(selected),
       }
     : null;
+
+  const groups = groupCountriesByContinent(countries, displayName);
 
   return (
     <div className="p-8 flex gap-8">
@@ -899,58 +911,74 @@ function CountrySelector({
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 max-w-3xl">
-          {countries.map((country) => {
-            const isSelected = selected?.slug === country.slug;
-            return (
-              <button
-                key={country.slug}
-                onClick={() => country.playable && onSelect(country)}
-                disabled={!country.playable}
-                title={!country.playable ? "Coming Soon" : undefined}
-                className={`relative p-5 rounded-xl border-2 transition-all text-center bg-card/50 cursor-pointer ${
-                  isSelected
-                    ? "border-primary bg-primary/10"
-                    : country.playable
-                      ? "border-border/50 hover:border-primary/50 hover:bg-card"
-                      : "border-border/30 bg-card/20 opacity-50 cursor-not-allowed"
-                }`}
-              >
-                {isSelected && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-bold uppercase bg-primary text-primary-foreground rounded">
-                    {t("common.active")}
-                  </span>
-                )}
-                {!country.playable && (
-                  <Lock className="absolute top-3 right-3 w-4 h-4 text-muted-foreground" />
-                )}
+        <div className="space-y-8 max-w-3xl">
+          {groups.map((group) => (
+            <div key={group.continent}>
+              <div className="flex items-center gap-2 mb-3">
+                <Icon name="globe" size={11} className="text-white/30" strokeWidth={2} />
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-white/40">
+                  {t(`newGame.continents.${continentI18nKey(group.continent)}`, { defaultValue: group.continent })}
+                </h3>
+                <span className="text-[11px] font-semibold text-white/25">
+                  {t("newGame.countriesCount", { count: group.countries.length })}
+                </span>
+              </div>
 
-                <div className="w-20 h-14 rounded-lg overflow-hidden mx-auto mb-3 border border-border/30 shadow-lg">
-                  <span
-                    className={`fi fi-${country.flag}`}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      height: "100%",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  />
-                </div>
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {group.countries.map((country) => {
+                  const isSelected = selected?.slug === country.slug;
+                  return (
+                    <button
+                      key={country.slug}
+                      onClick={() => country.playable && onSelect(country)}
+                      disabled={!country.playable}
+                      title={!country.playable ? t("newGame.soon") : undefined}
+                      className={`relative p-3 rounded-lg border-2 transition-all text-center bg-card/50 cursor-pointer ${
+                        isSelected
+                          ? "border-primary bg-primary/10"
+                          : country.playable
+                            ? "border-border/50 hover:border-primary/50 hover:bg-card"
+                            : "border-border/30 bg-card/20 opacity-50 cursor-not-allowed"
+                      }`}
+                    >
+                      {isSelected && (
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 text-[9px] font-bold uppercase bg-primary text-primary-foreground rounded">
+                          {t("common.active")}
+                        </span>
+                      )}
+                      {!country.playable && (
+                        <Lock className="absolute top-2 right-2 w-3.5 h-3.5 text-muted-foreground" />
+                      )}
 
-                <div className="flex items-center justify-center gap-2">
-                  {isSelected && <span className="w-2 h-2 rounded-full bg-primary" />}
-                  <span
-                    className={`font-bold uppercase text-sm ${
-                      isSelected ? "text-primary" : ""
-                    }`}
-                  >
-                    {t(`newGame.countries.${country.slug}.name`, { defaultValue: country.name })}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+                      <div className="w-12 h-8 rounded overflow-hidden mx-auto mb-2 border border-border/30 shadow">
+                        <span
+                          className={`fi fi-${country.flag}`}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            height: "100%",
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-center gap-1">
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                        <span
+                          className={`font-bold uppercase text-xs truncate ${
+                            isSelected ? "text-primary" : ""
+                          }`}
+                        >
+                          {displayName(country)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -973,7 +1001,7 @@ function CountrySelector({
                 </div>
                 <div>
                   <h3 className="font-black font-display uppercase text-lg">
-                    {t(`newGame.countries.${selected.slug}.name`, { defaultValue: selected.name })}
+                    {displayName(selected)}
                   </h3>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">
                     {t("newGame.territoryProfile")}
@@ -1003,7 +1031,7 @@ function CountrySelector({
                 {t("newGame.theSpirit")}
               </h4>
               <p className="text-sm text-muted-foreground leading-relaxed italic">
-                "{stripHtml(t(`newGame.countries.${selected.slug}.headline`, { defaultValue: selected.headline }))}"
+                "{stripHtml(headlineFor(selected))}"
               </p>
             </div>
           </div>
@@ -1048,6 +1076,8 @@ function ClubSelector({
   activeLeague:       LeagueData | null;
 }) {
   const { t } = useTranslation();
+  // `leagues` is already filtered to this country by the caller (NewGameWizard's `countryLeagues`).
+  const countryLeagues = leagues;
   return (
     <div className="p-8 flex gap-8">
       {/* Left: list */}
@@ -1063,26 +1093,38 @@ function ClubSelector({
           {t(`newGame.countries.${country.slug}.name`, { defaultValue: country.name })}
         </h1>
 
-        {leagues.length > 1 && (
-          <div className="flex gap-1 p-1 bg-card/50 rounded-lg border border-border/40 mb-4">
-            {leagues.map((l) => (
-              <button
-                key={l.slug}
-                onClick={() => onSelectLeague(l.slug)}
-                className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
-                  l.slug === selectedLeagueSlug
-                    ? "bg-primary text-primary-foreground glow-primary-sm"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                }`}
-              >
-                {l.name}
-              </button>
-            ))}
-          </div>
+        {countryLeagues.length > 1 && (
+          countryLeagues.length <= 3 ? (
+            <div className="flex gap-1 p-1 bg-card/50 rounded-lg border border-border/40 mb-4">
+              {countryLeagues.map((l) => (
+                <button
+                  key={l.slug}
+                  onClick={() => onSelectLeague(l.slug)}
+                  title={l.name}
+                  className={`flex-1 min-w-0 truncate px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
+                    l.slug === selectedLeagueSlug
+                      ? "bg-primary text-primary-foreground glow-primary-sm"
+                      : "text-muted-foreground hover:text-foreground bg-transparent"
+                  }`}
+                >
+                  {l.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mb-4">
+              <SelectCombobox
+                label={t("newGame.division")}
+                value={selectedLeagueSlug}
+                onChange={onSelectLeague}
+                options={countryLeagues.map((l) => ({ value: l.slug, label: l.name }))}
+              />
+            </div>
+          )
         )}
 
         <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-          {teams.map((club, index) => {
+          {teams.map((club) => {
             const isSelected = selectedTeam?.squadId === club.squadId;
             return (
               <button
@@ -1108,15 +1150,7 @@ function ClubSelector({
                   >
                     {club.name}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase">
-                    #{index + 1} · {activeLeague?.name ?? ""}
-                  </p>
                 </div>
-                {index === 0 && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase bg-yellow-500/20 text-yellow-400 rounded">
-                    {t("common.top")}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -1209,7 +1243,7 @@ function ClubSelector({
                         ))}
                       </div>
                       <p className="text-xs font-semibold uppercase text-primary">
-                        {profile.reputationLabel}
+                        {t(`newGame.reputationLevel.${profile.reputation}`, { defaultValue: profile.reputationLabel })}
                       </p>
                     </div>
                   </div>
@@ -1437,7 +1471,9 @@ function ConfirmSelection({
               ))}
             </div>
             <p className="text-xs text-muted-foreground uppercase mt-1">
-              {profile?.reputationLabel ?? t("newGame.reputation")}
+              {profile
+                ? t(`newGame.reputationLevel.${profile.reputation}`, { defaultValue: profile.reputationLabel })
+                : t("newGame.reputation")}
             </p>
           </div>
           <div className="text-center p-4 rounded-xl bg-card/50">

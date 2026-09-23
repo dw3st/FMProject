@@ -1,9 +1,7 @@
-import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronUp, ChevronDown, UserPlus, Tag } from "lucide-react";
-import type { ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
+import { Icon } from "@/GameInterface/Icons";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
-import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -22,64 +20,34 @@ const columns = [
 ];
 
 interface Props {
-  filters: ScoutFilterState;
-  players: DisplayPlayer[];
+  /** Current page of already filtered + sorted rows (server-side scout search). */
+  rows: DisplayPlayer[];
+  total: number;
+  /** 0-based page index. */
+  page: number;
+  pageSize: number;
+  sortKey: string;
+  sortDir: "asc" | "desc";
+  onSort: (key: string) => void;
+  onPageChange: (page: number) => void;
   loading: boolean;
   filtering?: boolean;
   mySquadId?: string;
   onOffer?: (player: DisplayPlayer) => void;
+  /** Sell-listed ids among `rows`. */
   sellListedIds?: Set<string>;
+  /** True when the last search request failed (server error, network error, non-OK response). */
+  error?: boolean;
+  /** Called when the user clicks the retry button in the error state. */
+  onRetry?: () => void;
 }
 
-export function ScoutTable({ filters, players, loading, filtering, mySquadId, onOffer, sellListedIds = new Set() }: Props) {
+export function ScoutTable({
+  rows, total, page, pageSize, sortKey, sortDir, onSort, onPageChange,
+  loading, filtering, mySquadId, onOffer, sellListedIds = new Set(), error, onRetry,
+}: Props) {
   const { t } = useTranslation();
-  const [sortKey, setSortKey] = useState<string>("avg");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
-  };
-
-  const filteredPlayers = useMemo(() => {
-    return players.filter((player) => {
-      if (filters.onlyForSale && !sellListedIds.has(player.id)) return false;
-      if (filters.name && !player.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
-      if (filters.position !== "all" && getMainRole(player.pos) !== filters.position) return false;
-      if (player.age < filters.minAge || player.age > filters.maxAge) return false;
-      if (player.avg < filters.minAvg || player.avg > filters.maxAvg) return false;
-      if (player.valueMillions < filters.minPriceM || player.valueMillions > filters.maxPriceM)
-        return false;
-      if (filters.league !== "all" && player.leagueSlug !== filters.league) return false;
-      if (filters.nationality !== "all" && player.nationality !== filters.nationality) return false;
-      for (const attr of ATTRIBUTE_LIST) {
-        const range = filters.attributeRanges[attr.id];
-        if (!range) continue;
-        if (range.min <= 0 && range.max >= 10) continue;
-        const v = player.stats[attr.id];
-        if (v < range.min || v > range.max) return false;
-      }
-      return true;
-    });
-  }, [filters, players, sellListedIds]);
-
-  const sortedPlayers = useMemo(() => {
-    return [...filteredPlayers].sort((a, b) => {
-      const aVal = a[sortKey as keyof DisplayPlayer];
-      const bVal = b[sortKey as keyof DisplayPlayer];
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-      if (typeof aVal === "number" && typeof bVal === "number") {
-        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
-      }
-      return 0;
-    });
-  }, [filteredPlayers, sortKey, sortDir]);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   if (loading) {
     return (
@@ -89,28 +57,30 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
     );
   }
 
-  if (filtering) {
-    return (
-      <div className="flex-1 card-arcade rounded-xl flex flex-col items-center justify-center gap-3 p-12">
-        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        <p className="text-muted-foreground text-sm m-0">{t("scout.table.applyingFilters")}</p>
-      </div>
-    );
-  }
+  const showUpdating = filtering && rows.length > 0;
 
   return (
     <div className="flex-1 card-arcade rounded-xl overflow-hidden flex flex-col">
       <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between">
         <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-          {t("scout.table.foundPlayers", { count: filteredPlayers.length })}
+          {t("scout.table.foundPlayers", { count: total })}
         </span>
+        {showUpdating && (
+          <span
+            className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider"
+            title={t("scout.table.applyingFilters")}
+          >
+            <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            {t("scout.table.applyingFilters")}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center bg-muted/30 border-b border-border text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
         {columns.map((col) => (
           <button
             key={col.key}
-            onClick={() => handleSort(col.key)}
+            onClick={() => onSort(col.key)}
             className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
           >
             {col.label}
@@ -125,13 +95,26 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
         <div className="w-20 px-3 py-3 text-center">{t("scout.table.action")}</div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {sortedPlayers.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-sm font-medium">
-            {t("scout.table.noPlayersFound")}
+      <div className={`flex-1 overflow-y-auto transition-opacity ${showUpdating ? "opacity-50 pointer-events-none" : ""}`}>
+        {rows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-32 gap-3 text-muted-foreground text-sm font-medium">
+            {error ? (
+              <>
+                <span>{t("scout.table.loadError")}</span>
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/40 cursor-pointer"
+                >
+                  {t("scout.table.retry")}
+                </button>
+              </>
+            ) : (
+              !filtering && t("scout.table.noPlayersFound")
+            )}
           </div>
         ) : (
-          sortedPlayers.map((player, index) => (
+          rows.map((player, index) => (
             <div
               key={player.id}
               className={`flex items-center text-xs border-b border-border/30 transition-all ${
@@ -213,6 +196,30 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
             </div>
           ))
         )}
+      </div>
+
+      <div className="px-4 py-2.5 bg-muted/20 border-t border-border flex items-center justify-between gap-3">
+        <button
+          type="button"
+          disabled={page <= 0}
+          onClick={() => onPageChange(page - 1)}
+          className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Icon name="chevron-left" size={12} />
+          {t("scout.table.previousPage")}
+        </button>
+        <span className="text-xs text-muted-foreground font-semibold">
+          {t("scout.table.pageOf", { page: page + 1, pages: pageCount })}
+        </span>
+        <button
+          type="button"
+          disabled={page + 1 >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+          className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {t("scout.table.nextPage")}
+          <Icon name="chevron-right" size={12} />
+        </button>
       </div>
     </div>
   );

@@ -1,13 +1,21 @@
 import { useState } from "react";
 import { Shield } from "lucide-react";
 
+/** URLs that already 404'd this page load — avoid re-requesting them from every mounted instance. */
+const failedLogoUrls = new Set<string>();
+
 /** Returns the URL for a club's SVG logo. */
 export function clubLogoUrl(league: string, club: string): string {
   return `/api/logos/${league}/${club}`;
 }
 
-/** Logo URL from calendar/standings squad id. Prefers the club slug (how logos are filed on disk); falls back to squadId. */
-export function squadLogoUrl(squadId: string, leagueSlug: string, clubSlug?: string): string {
+/**
+ * Logo URL from calendar/standings squad id. Prefers the club slug (how logos are filed on
+ * disk); falls back to squadId. Returns undefined for `of_*` leagues — the open-football import
+ * has no crest files for them, so we skip the request entirely instead of hitting a guaranteed 404.
+ */
+export function squadLogoUrl(squadId: string, leagueSlug: string, clubSlug?: string): string | undefined {
+  if (leagueSlug.startsWith("of_")) return undefined;
   return clubLogoUrl(leagueSlug, clubSlug ?? squadId);
 }
 
@@ -28,12 +36,24 @@ export function ClubLogo({
   className?: string;
   imgClassName?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  // Tracks only the specific URL that errored on this instance — derived (not mount-time) so a
+  // reused instance whose `logoUrl` prop changes (e.g. a virtualized list row) doesn't keep
+  // showing the fallback for a URL that never actually failed.
+  const [failedUrl, setFailedUrl] = useState<string | undefined>(undefined);
+  const failed = !!logoUrl && (failedLogoUrls.has(logoUrl) || failedUrl === logoUrl);
 
   if (logoUrl && !failed) {
     return (
       <div className={`${className} flex items-center justify-center overflow-hidden`}>
-        <img src={logoUrl} alt="" className={imgClassName} onError={() => setFailed(true)} />
+        <img
+          src={logoUrl}
+          alt=""
+          className={imgClassName}
+          onError={() => {
+            failedLogoUrls.add(logoUrl);
+            setFailedUrl(logoUrl);
+          }}
+        />
       </div>
     );
   }

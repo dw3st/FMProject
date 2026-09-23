@@ -7,11 +7,20 @@ import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import type { LeagueData, LeagueTeam, LeagueZone, LeagueZoneColor, StandingRow } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { DayLog, MatchEvent } from "@/types/dayLogTypes";
+import type { CountryEntry } from "@/types/worldTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { clubSlugFromSquadId } from "@/backend/squadIdResolve";
 import { computeStandings } from "@/Domain/season";
+import { countryDisplayName, leagueLabel } from "@/Domain/world/labels";
+import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
+import { updateFollowedLeagues } from "@/GameInterface/gameSession";
+import { Icon } from "@/GameInterface/Icons";
+import countriesRaw from "@/Data/countries.json";
+
+const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
+const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
 
 const resultColors: Record<string, string> = {
   W: "bg-emerald-500 text-white",
@@ -489,8 +498,8 @@ function MatchStatsModal({
 }
 
 export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
-  const { t } = useTranslation();
-  const { session, currentDate } = useGameSave();
+  const { t, i18n } = useTranslation();
+  const { session, currentDate, mergeSession } = useGameSave();
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [activeSlug, setActiveSlug] = useState(
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
@@ -500,6 +509,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
   const [leagueFixtures, setLeagueFixtures] = useState<Fixture[]>([]);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/leagues")
@@ -551,6 +561,50 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     }
   }
 
+  // Country-qualified labels ("Premier League · Armênia") so the combobox search also matches by country.
+  const leagueOptions = leagues.map((l) => {
+    const country = COUNTRY_BY_NAME.get(l.country);
+    const countryName = country ? countryDisplayName(country, i18n.language, t) : l.country;
+    return { value: l.slug, label: leagueLabel(l, countryName) };
+  });
+
+  // Filter out the user's own league defensively — it should never occupy a follow slot, even if
+  // a stale session (e.g. from before followedLeagues synced from the server) carries it.
+  const followedLeagues = (session?.followedLeagues ?? []).filter((slug) => slug !== session?.leagueSlug);
+  const isOwnLeague = !!session && activeSlug === session.leagueSlug;
+  const isFollowed = followedLeagues.includes(activeSlug);
+  const atFollowLimit = !isFollowed && followedLeagues.length >= MAX_FOLLOWED_LEAGUES;
+  const followDisabled = isOwnLeague || atFollowLimit || followBusy || !session;
+  const followTooltip = isOwnLeague
+    ? t("leagues.followOwnLeague")
+    : atFollowLimit
+      ? t("leagues.followLimit")
+      : isFollowed
+        ? t("leagues.unfollowLeague")
+        : t("leagues.followLeague");
+
+  const simMode = session
+    ? resolveSimMode(activeSlug, { leagueSlug: session.leagueSlug, followedLeagues })
+    : "full";
+
+  const handleToggleFollow = async () => {
+    if (!session || followDisabled) return;
+    const previous = followedLeagues;
+    const next = isFollowed
+      ? previous.filter((s) => s !== activeSlug)
+      : [...previous, activeSlug];
+    mergeSession({ followedLeagues: next });
+    setFollowBusy(true);
+    try {
+      const saved = await updateFollowedLeagues(session.saveId, next);
+      mergeSession({ followedLeagues: saved });
+    } catch {
+      mergeSession({ followedLeagues: previous });
+    } finally {
+      setFollowBusy(false);
+    }
+  };
+
   if (loading) {
     return <p className="text-muted-foreground text-sm p-6">{t("leagues.loadingLeagues")}</p>;
   }
@@ -594,16 +648,41 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
         </PageHeadline>
 
         {leagues.length > 0 && (
-          <SelectCombobox
-            label={t("leagues.selectLeague")}
-            labelId="league-table-league"
-            value={activeSlug}
-            onChange={setActiveSlug}
-            options={leagues.map((l) => ({ value: l.slug, label: l.name }))}
-            leadingIcon={<Trophy className="w-4 h-4 text-primary shrink-0" aria-hidden />}
-            placeholder={t("leagues.searchLeaguesPlaceholder")}
-            className="w-full max-w-sm"
-          />
+          <div className="flex items-end gap-2">
+            <SelectCombobox
+              label={t("leagues.selectLeague")}
+              labelId="league-table-league"
+              value={activeSlug}
+              onChange={setActiveSlug}
+              options={leagueOptions}
+              leadingIcon={<Trophy className="w-4 h-4 text-primary shrink-0" aria-hidden />}
+              placeholder={t("leagues.searchLeaguesPlaceholder")}
+              className="w-full max-w-sm"
+            />
+            <button
+              type="button"
+              onClick={() => void handleToggleFollow()}
+              disabled={followDisabled}
+              title={followTooltip}
+              aria-label={followTooltip}
+              aria-pressed={isFollowed}
+              className="shrink-0 p-2 rounded-lg border border-border bg-secondary/10 hover:bg-secondary/20 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Icon
+                name={isFollowed ? "star-filled" : "star"}
+                size={18}
+                className={isFollowed ? "text-amber-400" : "text-muted-foreground"}
+              />
+            </button>
+            {simMode === "fast" && (
+              <span
+                title={t("leagues.simulatedBadgeTooltip")}
+                className="shrink-0 inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400"
+              >
+                {t("leagues.simulatedBadge")}
+              </span>
+            )}
+          </div>
         )}
 
         {active && (
@@ -649,7 +728,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                     {active!.zones!.map(z => (
                       <div key={z.id} className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${ZONE_DOT[z.color]}`} />
-                        <span>{z.label}</span>
+                        <span>{t(`leagues.zones.${z.id}`, { defaultValue: z.label })}</span>
                       </div>
                     ))}
                   </div>

@@ -20,12 +20,21 @@ import {
   ArrowLeft,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Palette,
   Save,
   Upload,
   X,
+  Globe,
+  Star,
 } from "lucide-react";
 import type { SVGProps } from "react";
+
+/** Star icon rendered filled (solid) — used for an active "followed" toggle. */
+function StarFilled(props: SVGProps<SVGSVGElement>) {
+  return <Star {...props} fill="currentColor" />;
+}
 
 export type IconName =
   | "play"
@@ -50,10 +59,15 @@ export type IconName =
   | "arrow-left"
   | "chevron-up"
   | "chevron-down"
+  | "chevron-left"
+  | "chevron-right"
   | "palette"
   | "save"
   | "upload"
-  | "close";
+  | "close"
+  | "globe"
+  | "star"
+  | "star-filled";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -80,10 +94,15 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "arrow-left":   ArrowLeft,
   "chevron-up":   ChevronUp,
   "chevron-down": ChevronDown,
+  "chevron-left":  ChevronLeft,
+  "chevron-right": ChevronRight,
   "palette":      Palette,
   "save":         Save,
   "upload":       Upload,
   "close":        X,
+  "globe":        Globe,
+  "star":         Star,
+  "star-filled":  StarFilled,
 };
 
 export interface IconProps {

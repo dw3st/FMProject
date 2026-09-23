@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Search, RotateCcw, Tag } from "lucide-react";
 import { SelectListbox, formSelectBoxClass } from "@/GameInterface/Components/SelectListbox";
+import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { ScoutAttributeFiltersDisclosure } from "@/GameInterface/Scout/ScoutAttributeFiltersDisclosure";
 import {
   createDefaultScoutFilters,
@@ -164,7 +165,8 @@ export function ScoutFilters({
           </div>
         </div>
 
-        <SelectListbox
+        {/* League — searchable: ~84 options labelled "League · Country" */}
+        <SelectCombobox
           label={t("scout.filters.league")}
           value={filters.league}
           onChange={(v) => setFilters({ ...filters, league: v })}
