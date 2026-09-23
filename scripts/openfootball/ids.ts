@@ -3,8 +3,14 @@ export const leagueSlug = (seedSlug: string) => toId(seedSlug);
 export const clubId = (seedClubId: string) => toId(seedClubId);
 export const playerId = (seedPlayerId: string) => toId(seedPlayerId);
 
+/** Letters NFKD does not decompose into base + mark; transliterated before stripping. */
+const TRANSLIT: Record<string, string> = {
+  ø: "o", Ø: "o", ł: "l", Ł: "l", ß: "ss", æ: "ae", Æ: "ae", đ: "d", Đ: "d", œ: "oe", Œ: "oe", þ: "th", Þ: "th",
+};
+
 export function normName(s: string): string {
   return s
+    .replace(/[øØłŁßæÆđĐœŒþÞ]/g, (c) => TRANSLIT[c] ?? c)
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/ı/g, "i")

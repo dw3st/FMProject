@@ -13,6 +13,13 @@ describe("ids", () => {
     expect(normName("A. Bayındır")).toBe("a bayindir");
   });
 
+  test("normName translitera letras sem decomposição", () => {
+    expect(normName("Martin Ødegaard")).toBe("martin odegaard");
+    expect(normName("Łukasz Fabiański")).toBe("lukasz fabianski");
+    expect(normName("Großkreutz")).toBe("grosskreutz");
+    expect(normName("Æbelø Đorđević Œuvre Þór")).toBe("aebelo dordevic oeuvre thor");
+  });
+
   test("unitHash é determinístico e em [0,1)", () => {
     expect(unitHash("x")).toBe(unitHash("x"));
     expect(unitHash("x")).not.toBe(unitHash("y"));
