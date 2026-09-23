@@ -52,14 +52,7 @@ export function ScoutTable({
     );
   }
 
-  if (filtering) {
-    return (
-      <div className="flex-1 card-arcade rounded-xl flex flex-col items-center justify-center gap-3 p-12">
-        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        <p className="text-muted-foreground text-sm m-0">{t("scout.table.applyingFilters")}</p>
-      </div>
-    );
-  }
+  const showUpdating = filtering && rows.length > 0;
 
   return (
     <div className="flex-1 card-arcade rounded-xl overflow-hidden flex flex-col">
@@ -67,6 +60,15 @@ export function ScoutTable({
         <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
           {t("scout.table.foundPlayers", { count: total })}
         </span>
+        {showUpdating && (
+          <span
+            className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider"
+            title={t("scout.table.applyingFilters")}
+          >
+            <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            {t("scout.table.applyingFilters")}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center bg-muted/30 border-b border-border text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -88,10 +90,10 @@ export function ScoutTable({
         <div className="w-20 px-3 py-3 text-center">{t("scout.table.action")}</div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto transition-opacity ${showUpdating ? "opacity-50 pointer-events-none" : ""}`}>
         {rows.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground text-sm font-medium">
-            {t("scout.table.noPlayersFound")}
+            {filtering ? "" : t("scout.table.noPlayersFound")}
           </div>
         ) : (
           rows.map((player, index) => (

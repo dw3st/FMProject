@@ -1053,18 +1053,6 @@ function CountrySelector({
 // Club step
 // ──────────────────────────────────────────────────────────────────────────────
 
-/**
- * Average squad strength computed from whatever the club row already carries — never fetched
- * per club. `LeagueData.standings` currently has no player data (see `LeagueTeam` in
- * playerTypes.ts), so this resolves to `null` today and the club card shows only the name.
- */
-function averageSquadStrength(club: LeagueTeam): number | null {
-  const players = (club as LeagueTeam & { players?: Array<{ ovr?: number }> }).players;
-  if (!players || players.length === 0) return null;
-  const total = players.reduce((sum, p) => sum + (p.ovr ?? 0), 0);
-  return Math.round(total / players.length);
-}
-
 function ClubSelector({
   country,
   leagues,
@@ -1138,7 +1126,6 @@ function ClubSelector({
         <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
           {teams.map((club) => {
             const isSelected = selectedTeam?.squadId === club.squadId;
-            const avgStrength = averageSquadStrength(club);
             return (
               <button
                 key={club.squadId}
@@ -1163,11 +1150,6 @@ function ClubSelector({
                   >
                     {club.name}
                   </p>
-                  {avgStrength !== null && (
-                    <p className="text-[10px] text-muted-foreground uppercase">
-                      {t("newGame.squadRating")} {avgStrength}
-                    </p>
-                  )}
                 </div>
               </button>
             );
