@@ -236,9 +236,14 @@ desenvolvimento) é o mesmo do motor.
 
 ### Limitações conhecidas (calibração de 2026-09-23)
 
-- **Força absoluta:** o xG do quickSim depende só da razão `(ataque×meio)/(defesa×goleiro)` e
-  ignora o nível absoluto dos elencos. No motor, a Premier League faz 2,37 gols/jogo e o
-  Brasileirão A faz 1,59; no quickSim, as duas ficam em ~2,2.
+- **Nível absoluto:** o xG é multiplicado por `(nívelDoJogo / LEVEL_REF)^LEVEL_EXPONENT`
+  (`LEVEL_REF = 5`, `LEVEL_EXPONENT = 1.2`, `BASE_GOALS = 0.94`). O nível do jogo é a média do
+  `teamLevel` dos dois times, e `teamLevel` é a média das 4 linhas. Medido contra o motor
+  (440 jogos por liga), em gols/jogo: Premier 2,31 → 2,16 (−7%), Brasileirão A 1,68 → 1,71
+  (+2%), Série C 0,80 → 0,73 (−9%), Serie A +6%, Ligue 1 +10%, La Liga +13%, Série B +20% e
+  Bundesliga +21%. O termo de nível não separa ligas de nível parecido: as ligas europeias têm
+  nível ~5,05–5,18, mas no motor vão de 1,65 (Bundesliga) a 2,31 (Premier). O ruído do motor
+  também pesa: duas amostras da mesma liga diferiram até 15%.
 - **Contagem de eventos do motor:** o motor registra ~1–2,5 passes por jogador por partida e
   `passesFailed` sempre 0, o que parece bug de contagem. As taxas por jogador do quickSim foram
   calibradas contra esses números, então as notas acompanham o motor (DEF/MID ~6,1, FWD ~6,6).
