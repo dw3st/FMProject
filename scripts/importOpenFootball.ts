@@ -247,6 +247,32 @@ for (const l of leagueData) {
     worldPlayers += s.players.length;
   }
   if (!countries[l.country]) throw new Error(`integrity: league ${l.slug} country ${l.country} missing from countries.json`);
+  if (!schedules.some((s) => s.slug === l.slug)) throw new Error(`integrity: league ${l.slug} has no schedule in leagueSchedules.json`);
+
+  // Zones must fit the league: top ranges inside 1..clubs, bottom ranges inside the
+  // table, and no position in both a top zone and a bottom zone.
+  const clubs = l.standings.length;
+  const zones = (l.zones ?? []) as Array<{ id: string; from?: number; to?: number; fromEnd?: number }>;
+  let lastTop = 0;
+  let firstBottom = clubs + 1;
+  for (const z of zones) {
+    if (z.fromEnd !== undefined) {
+      if (!Number.isInteger(z.fromEnd) || z.fromEnd < 1 || z.fromEnd > clubs)
+        throw new Error(`integrity: ${l.slug} zone ${z.id} fromEnd ${z.fromEnd} outside 1..${clubs}`);
+      firstBottom = Math.min(firstBottom, clubs - z.fromEnd + 1);
+    } else {
+      const { from, to } = z;
+      if (!Number.isInteger(from) || !Number.isInteger(to) || from! < 1 || to! < from! || to! > clubs)
+        throw new Error(`integrity: ${l.slug} zone ${z.id} range ${from}..${to} outside 1..${clubs}`);
+      lastTop = Math.max(lastTop, to!);
+    }
+  }
+  if (lastTop >= firstBottom)
+    throw new Error(`integrity: ${l.slug} top zones reach ${lastTop} but bottom zones start at ${firstBottom} (${clubs} clubs)`);
+}
+for (const [name, c] of Object.entries(countries)) {
+  if (typeof c.flag !== "string" || c.flag === "") throw new Error(`integrity: country ${name} has no flag`);
+  if (typeof c.continent !== "string" || c.continent === "") throw new Error(`integrity: country ${name} has no continent`);
 }
 
 const dbPath = join(DATA, "databases.json");
