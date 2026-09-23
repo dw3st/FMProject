@@ -441,16 +441,20 @@ function MatchStatsModal({
           </div>
 
           {/* Player stats */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 pl-3">{homeName}</p>
-              <PlayerTable players={homePlayers} side="home" />
+          {event.compact ? (
+            <p className="text-xs text-white/40 m-0">{t("leagues.quickSimNoDetail")}</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 pl-3">{homeName}</p>
+                <PlayerTable players={homePlayers} side="home" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 pl-3">{awayName}</p>
+                <PlayerTable players={awayPlayers} side="away" />
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 pl-3">{awayName}</p>
-              <PlayerTable players={awayPlayers} side="away" />
-            </div>
-          </div>
+          )}
 
           {/* Substitutions */}
           {event.substitutions && event.substitutions.length > 0 && (

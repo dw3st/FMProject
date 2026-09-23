@@ -1043,6 +1043,7 @@
     "selectLeague": "Liga",
     "searchLeaguesPlaceholder": "Pesquisar ligas…",
     "loadingLeagues": "Carregando ligas...",
+    "quickSimNoDetail": "Detalhe dos jogadores indisponível — esta liga é simulada. Siga a liga nas Configurações para ter os dados completos da partida.",
     "playerTable": {
       "player": "Jogador",
       "rating": "Avaliação",
