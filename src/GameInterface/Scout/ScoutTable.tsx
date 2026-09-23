@@ -1,9 +1,6 @@
-import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronUp, ChevronDown, UserPlus, Tag } from "lucide-react";
-import type { ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, UserPlus, Tag } from "lucide-react";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
-import { filterScoutPlayers, sortScoutPlayers } from "@/Domain/scout/scoutQuery";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -22,38 +19,30 @@ const columns = [
 ];
 
 interface Props {
-  filters: ScoutFilterState;
-  players: DisplayPlayer[];
+  /** Current page of already filtered + sorted rows (server-side scout search). */
+  rows: DisplayPlayer[];
+  total: number;
+  /** 0-based page index. */
+  page: number;
+  pageSize: number;
+  sortKey: string;
+  sortDir: "asc" | "desc";
+  onSort: (key: string) => void;
+  onPageChange: (page: number) => void;
   loading: boolean;
   filtering?: boolean;
   mySquadId?: string;
   onOffer?: (player: DisplayPlayer) => void;
+  /** Sell-listed ids among `rows`. */
   sellListedIds?: Set<string>;
 }
 
-export function ScoutTable({ filters, players, loading, filtering, mySquadId, onOffer, sellListedIds = new Set() }: Props) {
+export function ScoutTable({
+  rows, total, page, pageSize, sortKey, sortDir, onSort, onPageChange,
+  loading, filtering, mySquadId, onOffer, sellListedIds = new Set(),
+}: Props) {
   const { t } = useTranslation();
-  const [sortKey, setSortKey] = useState<string>("avg");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
-  };
-
-  const filteredPlayers = useMemo(
-    () => filterScoutPlayers(players, filters, sellListedIds),
-    [filters, players, sellListedIds],
-  );
-
-  const sortedPlayers = useMemo(
-    () => sortScoutPlayers(filteredPlayers, sortKey, sortDir),
-    [filteredPlayers, sortKey, sortDir],
-  );
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   if (loading) {
     return (
@@ -76,7 +65,7 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
     <div className="flex-1 card-arcade rounded-xl overflow-hidden flex flex-col">
       <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between">
         <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-          {t("scout.table.foundPlayers", { count: filteredPlayers.length })}
+          {t("scout.table.foundPlayers", { count: total })}
         </span>
       </div>
 
@@ -84,7 +73,7 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
         {columns.map((col) => (
           <button
             key={col.key}
-            onClick={() => handleSort(col.key)}
+            onClick={() => onSort(col.key)}
             className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
           >
             {col.label}
@@ -100,12 +89,12 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {sortedPlayers.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground text-sm font-medium">
             {t("scout.table.noPlayersFound")}
           </div>
         ) : (
-          sortedPlayers.map((player, index) => (
+          rows.map((player, index) => (
             <div
               key={player.id}
               className={`flex items-center text-xs border-b border-border/30 transition-all ${
@@ -187,6 +176,30 @@ export function ScoutTable({ filters, players, loading, filtering, mySquadId, on
             </div>
           ))
         )}
+      </div>
+
+      <div className="px-4 py-2.5 bg-muted/20 border-t border-border flex items-center justify-between gap-3">
+        <button
+          type="button"
+          disabled={page <= 0}
+          onClick={() => onPageChange(page - 1)}
+          className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          {t("scout.table.previousPage")}
+        </button>
+        <span className="text-xs text-muted-foreground font-semibold">
+          {t("scout.table.pageOf", { page: page + 1, pages: pageCount })}
+        </span>
+        <button
+          type="button"
+          disabled={page + 1 >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+          className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {t("scout.table.nextPage")}
+          <ChevronRight className="w-3 h-3" />
+        </button>
       </div>
     </div>
   );

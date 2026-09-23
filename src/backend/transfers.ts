@@ -5,6 +5,7 @@ import { isPlayerSquadId } from "@/Domain/clubLookup";
 import type { TransferRecord, TransfersSplitResponse } from "@/types/transferTypes";
 import type { TransferRef } from "@/types/dayLogTypes";
 import type { SellCandidate } from "@/types/transferMarketTypes";
+import { collectSellListedIds } from "@/Domain/scout/scoutQuery";
 import {
   evaluateTransferOffer,
   squadsAfterAcceptedTransfer,
@@ -260,23 +261,8 @@ export const transferRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
-    const rawMarket = await saveService.getMarket(saveId);
-    const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
-
-    const ids: string[] = [];
-
-    // Collect from all AI profiles
-    if (market) {
-      for (const profile of Object.values(market.profiles)) {
-        for (const c of profile.sellList ?? []) {
-          ids.push(c.playerId);
-        }
-      }
-      // Collect human sell list
-      for (const c of market.playerSellList) {
-        ids.push(c.playerId);
-      }
-    }
+    // Same source as the scout search `onlyForSale` filter: every AI sell list + the human one.
+    const ids = collectSellListedIds(await saveService.getMarket(saveId));
 
     return Response.json(ids);
   },

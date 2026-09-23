@@ -10,6 +10,7 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import { mkdir, readdir, rm, unlink } from "fs/promises";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { runPool } from "@/backend/dal/pool";
+import { bumpSaveDataVersion } from "@/backend/dal/saveDataVersion";
 
 const SAVES_DIR = `${RUNTIME_DATA_DIR}/saves`;
 
@@ -159,6 +160,7 @@ export class FileSystemDAL implements ISaveDAL {
     await mkdir(dir, { recursive: true });
     // Compact: squads are the bulk of per-day writes; other (small) files stay pretty-printed.
     await Bun.write(squadPath(saveId, leagueSlug, clubSlug), JSON.stringify(squad));
+    bumpSaveDataVersion(saveId);
   }
 
   async squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean> {
@@ -240,6 +242,7 @@ export class FileSystemDAL implements ISaveDAL {
   async writeMarket(saveId: string, market: MarketState): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(marketPath(saveId), JSON.stringify(market, null, 2));
+    bumpSaveDataVersion(saveId);
   }
 
   // ── Inbox ─────────────────────────────────────────────────────────────────

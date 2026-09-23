@@ -1462,6 +1462,9 @@
       "foundPlayers": "Found {{count}} players",
       "loadingPlayers": "Loading players...",
       "applyingFilters": "Applying filters…",
+      "previousPage": "Previous",
+      "nextPage": "Next",
+      "pageOf": "Page {{page}} of {{pages}}",
       "noPlayersFound": "No players found matching your criteria",
       "action": "Action",
       "offer": "Offer"
