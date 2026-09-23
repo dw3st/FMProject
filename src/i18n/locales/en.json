@@ -1063,6 +1063,21 @@
     "searchLeaguesPlaceholder": "Search leagues…",
     "loadingLeagues": "Loading leagues...",
     "quickSimNoDetail": "Player detail unavailable — this league is simulated.",
+    "followLeague": "Follow league",
+    "unfollowLeague": "Unfollow league",
+    "followOwnLeague": "Your league",
+    "followLimit": "You can follow up to 3 leagues",
+    "simulatedBadge": "Simulated",
+    "simulatedBadgeTooltip": "This league runs in the background without match detail — follow it to see full player stats.",
+    "zones": {
+      "ucl": "Champions League",
+      "uel": "Europa League",
+      "uecl": "Conference League",
+      "rel": "Relegation",
+      "prom": "Promotion",
+      "lib": "Libertadores",
+      "sud": "Sudamericana"
+    },
     "playerTable": {
       "player": "Player",
       "rating": "Rating",
