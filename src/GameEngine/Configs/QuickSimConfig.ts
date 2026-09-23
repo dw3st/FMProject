@@ -38,13 +38,15 @@ export const QUICK_SIM_CONFIG = {
   ROLE_ASSIST_WEIGHT: { GK: 0.02, DEF: 0.3,  MID: 1.0, FWD: 0.8 } as Record<LineGroup, number>,
   NO_ASSIST_RATE: 0.3,
   /** Non-goal shots per unit of xG. */
-  SHOTS_PER_XG: 8,
+  SHOTS_PER_XG: 5,
 
   PASSES_PER_MATCH:        { GK: 15, DEF: 35, MID: 40, FWD: 20 } as Record<LineGroup, number>,
   PASS_COMPLETION_BASE: 0.6,
   PASS_COMPLETION_SKILL: 0.3,
-  TACKLES_PER_MATCH:       { GK: 0, DEF: 2.0, MID: 1.5, FWD: 0.5 } as Record<LineGroup, number>,
-  INTERCEPTIONS_PER_MATCH: { GK: 0, DEF: 1.5, MID: 1.0, FWD: 0.3 } as Record<LineGroup, number>,
+  TACKLES_PER_MATCH:       { GK: 0, DEF: 1.0, MID: 0.7, FWD: 0.25 } as Record<LineGroup, number>,
+  INTERCEPTIONS_PER_MATCH: { GK: 0, DEF: 0.7, MID: 0.5, FWD: 0.12 } as Record<LineGroup, number>,
+  /** Failed tackles sampled as Poisson(TACKLES_PER_MATCH[group] × TACKLE_FAIL_RATIO), independent of the won-tackle roll. */
+  TACKLE_FAIL_RATIO: 0.9,
 
   /** Energy spent over 90' for an average-stamina player. */
   ENERGY_DRAIN: 35,
