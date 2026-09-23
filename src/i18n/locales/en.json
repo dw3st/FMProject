@@ -1043,6 +1043,7 @@
     "selectLeague": "League",
     "searchLeaguesPlaceholder": "Search leagues…",
     "loadingLeagues": "Loading leagues...",
+    "quickSimNoDetail": "Player detail unavailable — this league is simulated.",
     "playerTable": {
       "player": "Player",
       "rating": "Rating",

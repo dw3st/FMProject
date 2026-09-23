@@ -20,10 +20,12 @@ import {
   addOneDay,
   buildMatchEvent,
   buildMatchEventFromRecording,
+  buildQuickMatchEvent,
   buildRestEvent,
   buildTrainingEvent,
   computeAdvanceDayMoneyDelta,
   resolvePlayerSquadId,
+  resolveSimMode,
   resolveTrainingPolicy,
   type PlayedMatchRecording,
 } from "@/Domain/advanceDay";
@@ -220,7 +222,11 @@ export async function advanceOneDay(
             playedMatchOverride = null;
           } else {
             const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics);
-            const r = buildMatchEvent(fixture, homeSquad, awaySquad, sim);
+            const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
+            const mode = userPlays ? "full" : resolveSimMode(leagueSlug, meta);
+            const r = mode === "full"
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
+              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
             dayEvents.push(r.event);
             squadWrites.push({ league: leagueSlug, club: homeClub, squad: r.updatedHome });
             squadWrites.push({ league: leagueSlug, club: awayClub, squad: r.updatedAway });

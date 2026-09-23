@@ -2,9 +2,11 @@ export { addOneDay } from "@/Domain/advanceDay/date";
 export {
   buildMatchEvent,
   buildMatchEventFromRecording,
+  buildQuickMatchEvent,
   type MatchSimResult,
   type PlayedMatchRecording,
 } from "@/Domain/advanceDay/matches";
+export { resolveSimMode, MAX_FOLLOWED_LEAGUES, type SimMode } from "@/Domain/advanceDay/simMode";
 export {
   autoLineupDefaultFormation,
   computeMatchSimulationLineups,

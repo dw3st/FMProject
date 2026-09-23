@@ -18,10 +18,19 @@ function resolveUserLineup(squad: Squad, formation: Formation, savedLineup: stri
   return aligned.map((p) => p?.id ?? "");
 }
 
+/** Detailed role per formation slot — index i is slot i, aligned with a slot-ordered lineup. */
+export function slotRoles(formation: Formation): string[] {
+  return slotsFor(formation).map((s) => s.role);
+}
+
+/** autoFillLineup for a given formation's slots. */
+export function autoLineupForFormation(squad: Squad, formation: Formation): string[] {
+  return autoFillLineup(slotsFor(formation), squad.players);
+}
+
 /** Default 4-3-3 + autoFillLineup — same as AI opponents in league matches and /simulate. */
 export function autoLineupDefaultFormation(squad: Squad): string[] {
-  const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
-  return autoFillLineup(slotsFor(formation), squad.players);
+  return autoLineupForFormation(squad, formationForSimId(DEFAULT_SIM_FORMATION_ID));
 }
 
 /**

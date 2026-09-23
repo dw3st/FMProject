@@ -24,6 +24,7 @@ const DEFAULT_VARIANT = (id: string, formation: string): Variant => ({
 
 export function ScenarioBuilder({ formations, draft, onRun }: Props) {
   const [matchesPerPair, setMatches] = useState<number>(draft?.matchesPerPair ?? 50);
+  const [simEngine, setSimEngine] = useState<"full" | "quick">(draft?.simEngine ?? "full");
   const supported = formations.supported.length > 0 ? formations.supported : [FALLBACK_FORMATION];
   const initialFormation = supported.includes(FALLBACK_FORMATION) ? FALLBACK_FORMATION : supported[0]!;
 
@@ -109,7 +110,7 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Field label="Name">
             <div className="flex gap-1">
               <input
@@ -140,6 +141,16 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
               onChange={(e) => setMatches(parseInt(e.target.value) || 1)}
               className="bg-black/40 border border-white/10 rounded px-2 py-1 text-sm w-full"
             />
+          </Field>
+          <Field label="Engine">
+            <select
+              value={simEngine}
+              onChange={(e) => setSimEngine(e.target.value as "full" | "quick")}
+              className="bg-white/[0.03] border border-white/10 rounded px-2 py-1 text-sm"
+            >
+              <option value="full">Full engine</option>
+              <option value="quick">quickSim</option>
+            </select>
           </Field>
         </div>
 
@@ -180,6 +191,7 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
             onRun({
               name: name.trim(),
               matchesPerPair,
+              simEngine,
               variants,
             })
           }
