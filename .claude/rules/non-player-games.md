@@ -212,3 +212,35 @@ Later the system can add:
 • parallel simulations
 
 But for now the goal is **simple, correct, and identical to the playable engine**.
+
+---
+
+## quickSim (ligas não seguidas)
+
+As ligas que o jogador não acompanha não rodam o motor tick a tick. Quem resolve a partida é
+`quickSimMatch` (`src/Domain/advanceDay/quickSim.ts`): calcula a força de cada setor, gera o xG
+e sorteia os gols com uma binomial (`GOAL_CHANCES`), aplicando o fator de domínio
+`DOMINANCE_SIGMA`. O resultado é um `PlayedMatchRecording`, e o pós-jogo (seasonLog, energia,
+desenvolvimento) é o mesmo do motor.
+
+- **Modo:** definido por `resolveSimMode` (`simMode.ts`). Usam o motor completo a liga do
+  jogador e até 3 `followedLeagues`. As partidas do clube do jogador são sempre no motor completo.
+- **Log do dia:** os eventos saem com `compact: true`, sem estatísticas por jogador.
+- **Constantes:** ficam em `QuickSimConfig.ts`. Para calibrar, rode
+  `bun scripts/quicksim-calibrate.ts <liga> <pares> <repetições>`; a meta é ficar a ±10% do motor.
+  Use `QS_QUICK_REPEATS=50` para reduzir o ruído do quickSim e `QS_ENGINE_CACHE=<arquivo>` para
+  reaproveitar as partidas do motor entre execuções.
+- **Custo medido:** o motor leva ~0,6–0,9 s por partida; o quickSim, ~0,04 ms.
+- **Onde aparece:** no `/lab`, escolha "quickSim" no ScenarioBuilder. No `/test`, clique no
+  botão "QuickSim".
+
+### Limitações conhecidas (calibração de 2026-09-23)
+
+- **Força absoluta:** o xG do quickSim depende só da razão `(ataque×meio)/(defesa×goleiro)` e
+  ignora o nível absoluto dos elencos. No motor, a Premier League faz 2,37 gols/jogo e o
+  Brasileirão A faz 1,59; no quickSim, as duas ficam em ~2,2.
+- **Contagem de eventos do motor:** o motor registra ~1–2,5 passes por jogador por partida e
+  `passesFailed` sempre 0, o que parece bug de contagem. As taxas por jogador do quickSim foram
+  calibradas contra esses números, então as notas acompanham o motor (DEF/MID ~6,1, FWD ~6,6).
+- **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
+  "Midfielder", "Forward"), e não o papel detalhado. `ROLE_GROUP` aceita os dois formatos.
