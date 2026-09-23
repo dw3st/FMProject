@@ -81,7 +81,6 @@ Tudo fica em `data_process/openfootball/calibration.json`: pares, coeficientes, 
 - **Jovens de preenchimento.** O seed tem clubes com só 7 jogadores. O `roster.ts` gera jovens para cumprir os mínimos por papel (GK 3, DEF 7, MID 7, FWD 4) e completar até 18 jogadores. O máximo é 30.
 - **Serie A e Ligue 1.** As re-derivações desses elencos saem mais baixas que os valores nativos. Isso afeta só a checagem de calibração, porque os elencos nativos não são substituídos.
 - **`ScoutScreen`.** Ele carrega todos os elencos (`/api/saves/:id/all-squads`), o que fica pesado com 1227 clubes. Está anotado para o plano 4.
-- **Inbox fora do buffer.** A inbox ignora o `BufferingSaveDAL` e grava direto no disco durante o avanço de dia.
 - **Caminhos no Windows.** Ainda há `new URL(...).pathname` em `routes.ts`, em `lab/` e em `emailLog`, que quebram no Windows nativo (`/C:/...`). `SaveService`, `advanceDay`, `startKits`, `runtimeDir` e `scripts/generateStartKits.ts` já usam `fileURLToPath`.
 
 ---
@@ -97,6 +96,8 @@ bun scripts/bench-advance-day.ts [--days 14] [--buffered] [--compare]
 - sem flag: cada dia roda direto no `FileSystemDAL`;
 - `--buffered`: cada dia roda num `BufferingSaveDAL`, gravado ao fim do dia, como faz `POST /api/advance-day/:saveId`;
 - `--compare`: roda as duas versões a partir do mesmo snapshot e compara os resultados determinísticos.
+
+Na rota ao vivo, o dia inteiro é uma unidade de trabalho: `advanceOneDay` recebe o serviço do dia, e a inbox (`emitInboxMessage(..., service)`) também passa por ele. O `flush` grava tudo e deixa o `meta` (com o `currentDate`) por último. Se alguma gravação falhar, o `meta` não é gravado, o dia não conta como avançado e a rota responde 500.
 
 Números com o mundo inteiro:
 

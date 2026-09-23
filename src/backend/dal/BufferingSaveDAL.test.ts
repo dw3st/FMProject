@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { BufferingSaveDAL, FLUSH_CONCURRENCY } from "@/backend/dal/BufferingSaveDAL";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { Squad } from "@/types/playerTypes";
+import type { SaveMeta } from "@/backend/SaveService";
+import type { InboxMessage } from "@/types/inboxTypes";
 
 const SAVE = "save-1";
 
@@ -16,18 +18,48 @@ function squad(id: string, name = id): Squad {
 function fakeInner(opts: {
   files?: SquadFile[];
   writeDelayMs?: number;
+  /** Checked at write time, so a test can flip it between flushes. */
   failWrite?: (clubSlug: string) => boolean;
+  /** Holds a squad write in flight until the returned promise resolves. */
+  gateWrite?: (clubSlug: string) => Promise<void> | undefined;
+  /** Number of initial listSquadFiles calls that reject. */
+  failListSquadFiles?: number;
 } = {}) {
   const calls: string[] = [];
   const written: string[] = [];
+  /** Completed writes of any resource, in completion order ("squad:lg/c1", "meta:save-1", "inbox"). */
+  const order: string[] = [];
+  const inboxWrites: InboxMessage[][] = [];
   let inFlight = 0;
   let maxInFlight = 0;
+  let listFailures = opts.failListSquadFiles ?? 0;
   const disk = new Map((opts.files ?? []).map((f) => [`${f.leagueSlug}/${f.clubSlug}`, f]));
 
   const impl: Partial<ISaveDAL> = {
     async listSquadFiles() {
       calls.push("listSquadFiles");
+      await Bun.sleep(0);
+      if (listFailures > 0) {
+        listFailures--;
+        throw new Error("EIO: squads dir unreadable");
+      }
       return Array.from(disk.values());
+    },
+    async readMeta() {
+      return null;
+    },
+    async writeMeta(meta) {
+      await Bun.sleep(opts.writeDelayMs ?? 1);
+      order.push(`meta:${meta.id}`);
+    },
+    async readInbox() {
+      calls.push("readInbox");
+      return [];
+    },
+    async writeInbox(_s, messages) {
+      await Bun.sleep(opts.writeDelayMs ?? 1);
+      inboxWrites.push(messages);
+      order.push("inbox");
     },
     async listAllSquads() {
       calls.push("listAllSquads");
@@ -50,8 +82,10 @@ function fakeInner(opts: {
       maxInFlight = Math.max(maxInFlight, inFlight);
       try {
         await Bun.sleep(opts.writeDelayMs ?? 1);
+        await opts.gateWrite?.(club);
         if (opts.failWrite?.(club)) throw new Error(`disk full: ${club}`);
         written.push(`${league}/${club}:${sq.name}`);
+        order.push(`squad:${league}/${club}`);
       } finally {
         inFlight--;
       }
@@ -66,8 +100,62 @@ function fakeInner(opts: {
       };
     },
   }) as ISaveDAL;
-  return { dal, calls, written, maxInFlight: () => maxInFlight };
+  return { dal, calls, written, order, inboxWrites, maxInFlight: () => maxInFlight };
 }
+
+const meta = (id: string) => ({ id, currentDate: "2024-08-16" }) as unknown as SaveMeta;
+const message = (id: string) => ({ id, subject: id }) as unknown as InboxMessage;
+
+describe("BufferingSaveDAL.flush — meta last", () => {
+  test("save meta is written only after every other pending write has completed", async () => {
+    const inner = fakeInner({ writeDelayMs: 3 });
+    const buf = new BufferingSaveDAL(inner.dal);
+    await buf.writeMeta(meta(SAVE)); // buffered FIRST, still written last
+    for (let i = 0; i < 40; i++) await buf.writeSquad(SAVE, "lg", `c${i}`, squad(`c${i}`));
+    await buf.appendInboxMessage(SAVE, message("m1"));
+
+    await buf.flush();
+
+    expect(inner.order).toHaveLength(42);
+    expect(inner.order.at(-1)).toBe(`meta:${SAVE}`);
+    expect(inner.order.indexOf(`meta:${SAVE}`)).toBe(41);
+  });
+
+  test("when a non-meta write fails, meta is not written and stays pending", async () => {
+    let failing = true;
+    const inner = fakeInner({ failWrite: (club) => failing && club === "c2" });
+    const buf = new BufferingSaveDAL(inner.dal);
+    await buf.writeMeta(meta(SAVE));
+    for (let i = 0; i < 5; i++) await buf.writeSquad(SAVE, "lg", `c${i}`, squad(`c${i}`));
+
+    await expect(buf.flush()).rejects.toBeInstanceOf(AggregateError);
+    expect(inner.order).not.toContain(`meta:${SAVE}`);
+    expect(inner.written).toHaveLength(4);
+
+    // Still pending: once the disk recovers, the next flush writes c2 and THEN meta.
+    failing = false;
+    await buf.flush();
+    expect(inner.order.slice(-2)).toEqual(["squad:lg/c2", `meta:${SAVE}`]);
+  });
+});
+
+describe("BufferingSaveDAL inbox", () => {
+  test("several appends in one unit of work accumulate and flush as one list", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendInboxMessage(SAVE, message("m1"));
+    await buf.appendInboxMessage(SAVE, message("m2"));
+    await buf.appendInboxMessage(SAVE, message("m3"));
+
+    expect((await buf.readInbox(SAVE)).map((m) => m.id)).toEqual(["m1", "m2", "m3"]);
+    expect(inner.calls.filter((c) => c === "readInbox")).toHaveLength(1);
+    expect(inner.inboxWrites).toHaveLength(0);
+
+    await buf.flush();
+    expect(inner.inboxWrites.map((l) => l.map((m) => m.id))).toEqual([["m1", "m2", "m3"]]);
+  });
+});
 
 describe("BufferingSaveDAL.flush", () => {
   test("writes every pending resource exactly once, with only its final value", async () => {

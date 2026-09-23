@@ -1,4 +1,5 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
+import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type {
@@ -16,15 +17,6 @@ import type { InboxMessage } from "@/types/inboxTypes";
 
 /** Max buffered writes in flight during `flush()`. */
 export const FLUSH_CONCURRENCY = 32;
-
-/** Run `worker` over `items` with at most `limit` in flight. `worker` must not reject. */
-async function runPool<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
-  let next = 0;
-  const lane = async () => {
-    while (next < items.length) await worker(items[next++]!);
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, lane));
-}
 
 function squadKey(leagueSlug: string, clubSlug: string): string {
   return `${leagueSlug}/${clubSlug}`;
@@ -46,7 +38,15 @@ function squadKey(leagueSlug: string, clubSlug: string): string {
  *  - Writes update the cache and register a flush thunk keyed by resource. Writing
  *    the same resource again replaces the thunk, so only the final value is
  *    persisted.
- *  - `flush()` runs every pending thunk (bounded parallelism), then clears them.
+ *  - `flush()` runs every pending thunk (bounded parallelism), save meta last,
+ *    then clears them — see `flush()`.
+ *
+ * Aliasing: reads within one unit of work return SHARED objects — the same
+ * instance to every caller (a squad from `readSquad` is the one inside
+ * `listAllSquads`, a buffered write is returned as-is to later reads). Callers
+ * must treat what they read as immutable (build a new object and write it), or
+ * write the object back after mutating it; an in-place mutation that is never
+ * written is visible to the rest of the unit of work but never persisted.
  *
  * Squads are different: every squad file is loaded once, in bulk, on first squad
  * access, and every squad read (single, per league, all) is served from that one
@@ -65,12 +65,26 @@ export class BufferingSaveDAL implements ISaveDAL {
 
   /**
    * Persist every buffered write (the final value per resource) to the underlying
-   * DAL, at most FLUSH_CONCURRENCY at a time. Every write is attempted; if any
-   * fail, the successful ones are cleared, the failed ones stay pending (a later
-   * flush retries them), and one AggregateError is thrown after all have settled.
+   * DAL, in two phases:
+   *
+   *  1. every non-meta resource, at most FLUSH_CONCURRENCY at a time;
+   *  2. only if phase 1 fully succeeded, the save meta (`meta:*`).
+   *
+   * Meta carries `currentDate`, so writing it last keeps the invariant that a save
+   * is never recorded as advanced unless everything else of that unit of work was
+   * persisted. Within a phase every write is attempted; successful ones are
+   * cleared, failed ones stay pending (a later flush retries them), and one
+   * AggregateError is thrown after all have settled. If phase 1 fails, meta is
+   * left pending and unwritten.
    */
   async flush(): Promise<void> {
     const entries = Array.from(this.pending.entries());
+    const isMeta = ([key]: [string, unknown]) => key.startsWith("meta:");
+    await this.flushPhase(entries.filter((e) => !isMeta(e)));
+    await this.flushPhase(entries.filter(isMeta));
+  }
+
+  private async flushPhase(entries: Array<[string, () => Promise<void>]>): Promise<void> {
     const errors: unknown[] = [];
     await runPool(entries, FLUSH_CONCURRENCY, async ([key, write]) => {
       try {

@@ -37,7 +37,7 @@ import { runSeasonTransition } from "@/Domain/season";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
-import { debugLog, logSeason, LOG_NS_SEASON } from "@/Logger";
+import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -89,8 +89,11 @@ type AdvanceDayOutcome =
  * To avoid the per-day disk churn (re-reading/writing every squad for ~130 days),
  * the whole catch-up runs against a BufferingSaveDAL: every read is cached and every
  * write is held in memory, then flushed to disk once at the end. The on-disk
- * currentDate is only mutated by that flush, so an interrupted run leaves a clean
- * (un-caught-up) save rather than a half-written world.
+ * currentDate is only mutated by that flush, and the flush writes the save meta
+ * last — only after every other file was persisted. A run interrupted before the
+ * flush leaves the save untouched; a flush that fails part-way may leave some
+ * world files written but never records the save as caught up (currentDate stays
+ * at the player's start).
  *
  * Idempotent enough for safety: if worldStart >= playerStart there is nothing to do.
  */
@@ -302,6 +305,7 @@ export async function advanceOneDay(
             playerName,
             changes: net,
           }),
+          saveService,
         );
       }
     }
@@ -503,6 +507,7 @@ export async function advanceOneDay(
             fromClub:   tx.sellerSquad.name,
             feeEuros:   tx.fee,
           }),
+          saveService,
         );
       } else if (isSellerPlayer) {
         await emitInboxMessage(
@@ -515,6 +520,7 @@ export async function advanceOneDay(
             toClub:     tx.buyerSquad.name,
             feeEuros:   tx.fee,
           }),
+          saveService,
         );
       }
     }
@@ -801,7 +807,14 @@ export const advanceDayRoutes = {
     const dayService = new SaveService(buffer);
     const outcome = await advanceOneDay(dayService, req.params.saveId!, playedMatchOverride);
     if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-    await buffer.flush();
+    try {
+      await buffer.flush();
+    } catch (err) {
+      // flush() writes meta last, so on failure currentDate was not advanced.
+      const errors = err instanceof AggregateError ? err.errors : [err];
+      for (const e of errors) logError("advance-day", `failed to persist day for save ${req.params.saveId}`, e);
+      return Response.json({ error: "failed to persist day" }, { status: 500 });
+    }
     return Response.json(outcome.payload);
   },
 
