@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { saveService } from "@/backend/SaveService";
+import { saveService, type SaveService } from "@/backend/SaveService";
 import type {
   DevelopmentInboxChange,
   DevelopmentInboxMessage,
@@ -8,11 +8,17 @@ import type {
   TransferOutInboxMessage,
 } from "@/types/inboxTypes";
 
+/**
+ * Append a message to the save's inbox. Pass the unit of work's service (e.g. the
+ * buffered day service in advanceOneDay) so the message is persisted — or not —
+ * together with the rest of that unit of work.
+ */
 export async function emitInboxMessage(
   saveId: string,
   message: InboxMessage,
+  service: SaveService = saveService,
 ): Promise<void> {
-  await saveService.appendInbox(saveId, message);
+  await service.appendInbox(saveId, message);
 }
 
 export function buildDevelopmentMessage(args: {

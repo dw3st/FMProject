@@ -23,3 +23,9 @@ export function logSeason(message: string, detail?: Record<string, unknown>): vo
     console.log("[season]", message);
   }
 }
+
+/** Always-on error log for server-side failures (e.g. a day that could not be persisted). */
+export function logError(scope: string, message: string, detail?: unknown): void {
+  if (detail !== undefined) console.error(`[${scope}]`, message, detail);
+  else console.error(`[${scope}]`, message);
+}

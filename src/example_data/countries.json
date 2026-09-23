@@ -4,7 +4,8 @@
         "name": "England",
         "flag": "gb-eng",
         "iso2": "GB",
-        "playable": false,
+        "playable": true,
+        "continent": "Europe",
         "headline": "In England, football is tradition.</br>Built on structure, discipline, and respect for the game.<br>Every pass has purpose, every role is defined.<br>From muddy pitches to grand stadiums, the spirit endures.<br>the game belongs to those who honor its roots."
     },
     "France": {
@@ -12,7 +13,8 @@
         "name": "France",
         "flag": "fr",
         "iso2": "FR",
-        "playable": false,
+        "playable": true,
+        "continent": "Europe",
         "headline": "In France, football is balance.</br>Technique meets physical power, flair meets control.<br>Players are shaped with precision and intelligence.<br>Strength and elegance move as one.<br>the game belongs to those who master both body and mind."
     },
     "Germany": {
@@ -20,7 +22,8 @@
         "name": "Germany",
         "flag": "de",
         "iso2": "DE",
-        "playable": false,
+        "playable": true,
+        "continent": "Europe",
         "headline": "In Germany, football is efficiency.</br>Every action is calculated, every movement optimized.<br>Discipline drives the team forward, together as one.<br>No wasted effort, no lost focus.<br>the game belongs to those who execute without error."
     },
     "Italy": {
@@ -28,7 +31,8 @@
         "name": "Italy",
         "flag": "it",
         "iso2": "IT",
-        "playable": false,
+        "playable": true,
+        "continent": "Europe",
         "headline": "In Italy, football is strategy.</br>The game is read, studied, and controlled.<br>Defense is an art, patience is a weapon.<br>Moments are chosen, not forced.<br>the game belongs to those who think before they act."
     },
     "Spain": {
@@ -36,7 +40,8 @@
         "name": "Spain",
         "flag": "es",
         "iso2": "ES",
-        "playable": false,
+        "playable": true,
+        "continent": "Europe",
         "headline": "In Spain, football is rhythm.</br>The ball moves, the team flows, space is created.<br>Short passes, constant motion, quiet control.<br>The game is dictated, not chased.<br>the game belongs to those who never let it stop."
     },
     "Brazil": {
@@ -45,6 +50,547 @@
         "flag": "br",
         "iso2": "BR",
         "playable": true,
+        "continent": "South America",
         "headline": "In Brazil, football is not learned—it is felt.</br>It lives in the streets, in the noise, in the rhythm of everyday life.<br>From simple beginnings came a style built on creativity and freedom.<br>Not just to win—but to play beautifully.<br>the game belongs to those who dare to play it with joy."
+    },
+    "United Arab Emirates": {
+        "slug": "united_arab_emirates",
+        "name": "United Arab Emirates",
+        "flag": "ae",
+        "iso2": "AE",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In United Arab Emirates, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Albania": {
+        "slug": "albania",
+        "name": "Albania",
+        "flag": "al",
+        "iso2": "AL",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Albania, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Armenia": {
+        "slug": "armenia",
+        "name": "Armenia",
+        "flag": "am",
+        "iso2": "AM",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Armenia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Argentina": {
+        "slug": "argentina",
+        "name": "Argentina",
+        "flag": "ar",
+        "iso2": "AR",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Argentina, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Austria": {
+        "slug": "austria",
+        "name": "Austria",
+        "flag": "at",
+        "iso2": "AT",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Austria, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Australia": {
+        "slug": "australia",
+        "name": "Australia",
+        "flag": "au",
+        "iso2": "AU",
+        "playable": true,
+        "continent": "Oceania",
+        "headline": "In Australia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Belgium": {
+        "slug": "belgium",
+        "name": "Belgium",
+        "flag": "be",
+        "iso2": "BE",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Belgium, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Bulgaria": {
+        "slug": "bulgaria",
+        "name": "Bulgaria",
+        "flag": "bg",
+        "iso2": "BG",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Bulgaria, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Belarus": {
+        "slug": "belarus",
+        "name": "Belarus",
+        "flag": "by",
+        "iso2": "BY",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Belarus, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Switzerland": {
+        "slug": "switzerland",
+        "name": "Switzerland",
+        "flag": "ch",
+        "iso2": "CH",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Switzerland, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Chile": {
+        "slug": "chile",
+        "name": "Chile",
+        "flag": "cl",
+        "iso2": "CL",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Chile, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Cameroon": {
+        "slug": "cameroon",
+        "name": "Cameroon",
+        "flag": "cm",
+        "iso2": "CM",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In Cameroon, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Colombia": {
+        "slug": "colombia",
+        "name": "Colombia",
+        "flag": "co",
+        "iso2": "CO",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Colombia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Cyprus": {
+        "slug": "cyprus",
+        "name": "Cyprus",
+        "flag": "cy",
+        "iso2": "CY",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Cyprus, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Czech Republic": {
+        "slug": "czech_republic",
+        "name": "Czech Republic",
+        "flag": "cz",
+        "iso2": "CZ",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Czech Republic, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Denmark": {
+        "slug": "denmark",
+        "name": "Denmark",
+        "flag": "dk",
+        "iso2": "DK",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Denmark, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Algeria": {
+        "slug": "algeria",
+        "name": "Algeria",
+        "flag": "dz",
+        "iso2": "DZ",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In Algeria, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Egypt": {
+        "slug": "egypt",
+        "name": "Egypt",
+        "flag": "eg",
+        "iso2": "EG",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In Egypt, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Finland": {
+        "slug": "finland",
+        "name": "Finland",
+        "flag": "fi",
+        "iso2": "FI",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Finland, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Fiji": {
+        "slug": "fiji",
+        "name": "Fiji",
+        "flag": "fj",
+        "iso2": "FJ",
+        "playable": true,
+        "continent": "Oceania",
+        "headline": "In Fiji, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Georgia": {
+        "slug": "georgia",
+        "name": "Georgia",
+        "flag": "ge",
+        "iso2": "GE",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Georgia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Ghana": {
+        "slug": "ghana",
+        "name": "Ghana",
+        "flag": "gh",
+        "iso2": "GH",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In Ghana, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Greece": {
+        "slug": "greece",
+        "name": "Greece",
+        "flag": "gr",
+        "iso2": "GR",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Greece, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Croatia": {
+        "slug": "croatia",
+        "name": "Croatia",
+        "flag": "hr",
+        "iso2": "HR",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Croatia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Hungary": {
+        "slug": "hungary",
+        "name": "Hungary",
+        "flag": "hu",
+        "iso2": "HU",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Hungary, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Indonesia": {
+        "slug": "indonesia",
+        "name": "Indonesia",
+        "flag": "id",
+        "iso2": "ID",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Indonesia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Israel": {
+        "slug": "israel",
+        "name": "Israel",
+        "flag": "il",
+        "iso2": "IL",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Israel, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Iran": {
+        "slug": "iran",
+        "name": "Iran",
+        "flag": "ir",
+        "iso2": "IR",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Iran, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Iceland": {
+        "slug": "iceland",
+        "name": "Iceland",
+        "flag": "is",
+        "iso2": "IS",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Iceland, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Japan": {
+        "slug": "japan",
+        "name": "Japan",
+        "flag": "jp",
+        "iso2": "JP",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Japan, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Kenya": {
+        "slug": "kenya",
+        "name": "Kenya",
+        "flag": "ke",
+        "iso2": "KE",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In Kenya, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Kazakhstan": {
+        "slug": "kazakhstan",
+        "name": "Kazakhstan",
+        "flag": "kz",
+        "iso2": "KZ",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Kazakhstan, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Malta": {
+        "slug": "malta",
+        "name": "Malta",
+        "flag": "mt",
+        "iso2": "MT",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Malta, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Mexico": {
+        "slug": "mexico",
+        "name": "Mexico",
+        "flag": "mx",
+        "iso2": "MX",
+        "playable": true,
+        "continent": "North America",
+        "headline": "In Mexico, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Nigeria": {
+        "slug": "nigeria",
+        "name": "Nigeria",
+        "flag": "ng",
+        "iso2": "NG",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In Nigeria, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Netherlands": {
+        "slug": "netherlands",
+        "name": "Netherlands",
+        "flag": "nl",
+        "iso2": "NL",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Netherlands, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Norway": {
+        "slug": "norway",
+        "name": "Norway",
+        "flag": "no",
+        "iso2": "NO",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Norway, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Peru": {
+        "slug": "peru",
+        "name": "Peru",
+        "flag": "pe",
+        "iso2": "PE",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Peru, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Poland": {
+        "slug": "poland",
+        "name": "Poland",
+        "flag": "pl",
+        "iso2": "PL",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Poland, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Portugal": {
+        "slug": "portugal",
+        "name": "Portugal",
+        "flag": "pt",
+        "iso2": "PT",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Portugal, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Paraguay": {
+        "slug": "paraguay",
+        "name": "Paraguay",
+        "flag": "py",
+        "iso2": "PY",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Paraguay, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Serbia": {
+        "slug": "serbia",
+        "name": "Serbia",
+        "flag": "rs",
+        "iso2": "RS",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Serbia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Russia": {
+        "slug": "russia",
+        "name": "Russia",
+        "flag": "ru",
+        "iso2": "RU",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Russia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Saudi Arabia": {
+        "slug": "saudi_arabia",
+        "name": "Saudi Arabia",
+        "flag": "sa",
+        "iso2": "SA",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Saudi Arabia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Sweden": {
+        "slug": "sweden",
+        "name": "Sweden",
+        "flag": "se",
+        "iso2": "SE",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Sweden, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Slovenia": {
+        "slug": "slovenia",
+        "name": "Slovenia",
+        "flag": "si",
+        "iso2": "SI",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Slovenia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Slovakia": {
+        "slug": "slovakia",
+        "name": "Slovakia",
+        "flag": "sk",
+        "iso2": "SK",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Slovakia, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Turkey": {
+        "slug": "turkey",
+        "name": "Turkey",
+        "flag": "tr",
+        "iso2": "TR",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Turkey, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Ukraine": {
+        "slug": "ukraine",
+        "name": "Ukraine",
+        "flag": "ua",
+        "iso2": "UA",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Ukraine, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "USA": {
+        "slug": "usa",
+        "name": "USA",
+        "flag": "us",
+        "iso2": "US",
+        "playable": true,
+        "continent": "North America",
+        "headline": "In USA, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Uruguay": {
+        "slug": "uruguay",
+        "name": "Uruguay",
+        "flag": "uy",
+        "iso2": "UY",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Uruguay, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Uzbekistan": {
+        "slug": "uzbekistan",
+        "name": "Uzbekistan",
+        "flag": "uz",
+        "iso2": "UZ",
+        "playable": true,
+        "continent": "Asia",
+        "headline": "In Uzbekistan, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "Venezuela": {
+        "slug": "venezuela",
+        "name": "Venezuela",
+        "flag": "ve",
+        "iso2": "VE",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Venezuela, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
+    },
+    "South Africa": {
+        "slug": "south_africa",
+        "name": "South Africa",
+        "flag": "za",
+        "iso2": "ZA",
+        "playable": true,
+        "continent": "Africa",
+        "headline": "In South Africa, every match writes a new story.</br>Build your club and take on the league.",
+        "source": "open-football"
     }
 }
