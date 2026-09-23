@@ -7,6 +7,12 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 
+export interface SquadFile {
+  leagueSlug: string;
+  clubSlug: string;
+  squad: Squad;
+}
+
 export interface ISaveDAL {
   // ── Save meta ─────────────────────────────────────────────────────────────
   listSaves(): Promise<SaveMeta[]>;
@@ -33,6 +39,8 @@ export interface ISaveDAL {
   listLeagues(saveId: string): Promise<string[]>;
   listSquadsInLeague(saveId: string, leagueSlug: string): Promise<Squad[]>;
   listAllSquads(saveId: string): Promise<Squad[]>;
+  /** Every squad with the league + club file stem it is stored under (what readSquad/writeSquad address). */
+  listSquadFiles(saveId: string): Promise<SquadFile[]>;
 
   // ── Tactics ───────────────────────────────────────────────────────────────
   readTactics(saveId: string): Promise<TacticsSave | null>;
