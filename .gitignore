@@ -1,0 +1,57 @@
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store
+
+# Generated data
+src/Data/teams
+src/Data/squads
+src/Data/leagueData.json
+src/Data/*
+
+# Auth / runtime artifacts must never ship in the committed starter data —
+# they regenerate on first run and would leak emails, login codes, and tokens.
+src/example_data/touchlines.db
+src/example_data/email-log.json
+
+data_process/to_process/*
+data_process/.envrc
+data_process/__pycache__/*
+
+debug/results.json
+
+debug/*
+results.json
+.claude/worktrees/*
+# runtime local (saves + touchlines.db)
+persistent/

@@ -1,0 +1,2216 @@
+[
+  {
+    "position": 1,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Flamengo",
+    "state": "RJ",
+    "points": 13992,
+    "pointsDiff": 0
+  },
+  {
+    "position": 2,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Corinthians",
+    "state": "SP",
+    "points": 13386,
+    "pointsDiff": 606
+  },
+  {
+    "position": 3,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Palmeiras",
+    "state": "SP",
+    "points": 12440,
+    "pointsDiff": 946
+  },
+  {
+    "position": 4,
+    "trend": "up",
+    "positionChange": 3,
+    "club": "Botafogo",
+    "state": "RJ",
+    "points": 12144,
+    "pointsDiff": 296
+  },
+  {
+    "position": 5,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "São Paulo",
+    "state": "SP",
+    "points": 12082,
+    "pointsDiff": 62
+  },
+  {
+    "position": 6,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "Atlético",
+    "state": "MG",
+    "points": 12040,
+    "pointsDiff": 42
+  },
+  {
+    "position": 7,
+    "trend": "up",
+    "positionChange": 2,
+    "club": "Bahia",
+    "state": "BA",
+    "points": 11916,
+    "pointsDiff": 124
+  },
+  {
+    "position": 8,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "Fluminense",
+    "state": "RJ",
+    "points": 11754,
+    "pointsDiff": 162
+  },
+  {
+    "position": 9,
+    "trend": "down",
+    "positionChange": 1,
+    "club": "Athletico",
+    "state": "PR",
+    "points": 11408,
+    "pointsDiff": 346
+  },
+  {
+    "position": 10,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Vasco",
+    "state": "RJ",
+    "points": 11260,
+    "pointsDiff": 148
+  },
+  {
+    "position": 11,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Cruzeiro",
+    "state": "MG",
+    "points": 10955,
+    "pointsDiff": 305
+  },
+  {
+    "position": 12,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Grêmio",
+    "state": "RS",
+    "points": 10205,
+    "pointsDiff": 750
+  },
+  {
+    "position": 13,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Internacional",
+    "state": "RS",
+    "points": 9877,
+    "pointsDiff": 328
+  },
+  {
+    "position": 14,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Red Bull Bragantino",
+    "state": "SP",
+    "points": 9768,
+    "pointsDiff": 109
+  },
+  {
+    "position": 15,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Santos",
+    "state": "SP",
+    "points": 8752,
+    "pointsDiff": 1016
+  },
+  {
+    "position": 16,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Fortaleza",
+    "state": "CE",
+    "points": 8604,
+    "pointsDiff": 148
+  },
+  {
+    "position": 17,
+    "trend": "up",
+    "positionChange": 3,
+    "club": "Vitória",
+    "state": "BA",
+    "points": 8150,
+    "pointsDiff": 454
+  },
+  {
+    "position": 18,
+    "trend": "down",
+    "positionChange": 1,
+    "club": "Juventude",
+    "state": "RS",
+    "points": 7778,
+    "pointsDiff": 372
+  },
+  {
+    "position": 19,
+    "trend": "up",
+    "positionChange": 5,
+    "club": "Coritiba",
+    "state": "PR",
+    "points": 7331,
+    "pointsDiff": 447
+  },
+  {
+    "position": 20,
+    "trend": "up",
+    "positionChange": 8,
+    "club": "Mirassol",
+    "state": "SP",
+    "points": 7154,
+    "pointsDiff": 177
+  },
+  {
+    "position": 21,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Atlético",
+    "state": "GO",
+    "points": 6716,
+    "pointsDiff": 438
+  },
+  {
+    "position": 22,
+    "trend": "down",
+    "positionChange": 1,
+    "club": "Ceará",
+    "state": "CE",
+    "points": 6704,
+    "pointsDiff": 12
+  },
+  {
+    "position": 23,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Goiás",
+    "state": "GO",
+    "points": 6268,
+    "pointsDiff": 436
+  },
+  {
+    "position": 24,
+    "trend": "up",
+    "positionChange": 2,
+    "club": "CRB",
+    "state": "AL",
+    "points": 6229,
+    "pointsDiff": 39
+  },
+  {
+    "position": 25,
+    "trend": "up",
+    "positionChange": 8,
+    "club": "Chapecoense",
+    "state": "SC",
+    "points": 5847,
+    "pointsDiff": 382
+  },
+  {
+    "position": 26,
+    "trend": "down",
+    "positionChange": 1,
+    "club": "Sport",
+    "state": "PE",
+    "points": 5837,
+    "pointsDiff": 10
+  },
+  {
+    "position": 27,
+    "trend": "down",
+    "positionChange": 8,
+    "club": "América",
+    "state": "MG",
+    "points": 5833,
+    "pointsDiff": 4
+  },
+  {
+    "position": 28,
+    "trend": "up",
+    "positionChange": 9,
+    "club": "Remo",
+    "state": "PA",
+    "points": 5651,
+    "pointsDiff": 182
+  },
+  {
+    "position": 29,
+    "trend": "down",
+    "positionChange": 7,
+    "club": "Cuiabá",
+    "state": "MT",
+    "points": 5531,
+    "pointsDiff": 120
+  },
+  {
+    "position": 30,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Criciúma",
+    "state": "SC",
+    "points": 5242,
+    "pointsDiff": 289
+  },
+  {
+    "position": 31,
+    "trend": "down",
+    "positionChange": 1,
+    "club": "Operário",
+    "state": "PR",
+    "points": 5171,
+    "pointsDiff": 71
+  },
+  {
+    "position": 32,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Vila Nova",
+    "state": "GO",
+    "points": 4708,
+    "pointsDiff": 463
+  },
+  {
+    "position": 33,
+    "trend": "down",
+    "positionChange": 1,
+    "club": "Novorizontino",
+    "state": "SP",
+    "points": 4689,
+    "pointsDiff": 19
+  },
+  {
+    "position": 34,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Paysandu",
+    "state": "PA",
+    "points": 4352,
+    "pointsDiff": 337
+  },
+  {
+    "position": 35,
+    "trend": "down",
+    "positionChange": 4,
+    "club": "Avaí",
+    "state": "SC",
+    "points": 4166,
+    "pointsDiff": 186
+  },
+  {
+    "position": 36,
+    "trend": "up",
+    "positionChange": 15,
+    "club": "Athletic",
+    "state": "MG",
+    "points": 4054,
+    "pointsDiff": 112
+  },
+  {
+    "position": 37,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Ponte",
+    "state": "SP",
+    "points": 4009,
+    "pointsDiff": 45
+  },
+  {
+    "position": 38,
+    "trend": "down",
+    "positionChange": 4,
+    "club": "Botafogo",
+    "state": "SP",
+    "points": 3899,
+    "pointsDiff": 110
+  },
+  {
+    "position": 39,
+    "trend": "up",
+    "positionChange": 9,
+    "club": "Londrina",
+    "state": "PR",
+    "points": 3391,
+    "pointsDiff": 508
+  },
+  {
+    "position": 40,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Amazonas",
+    "state": "AM",
+    "points": 3317,
+    "pointsDiff": 74
+  },
+  {
+    "position": 41,
+    "trend": "up",
+    "positionChange": 2,
+    "club": "Volta Redonda",
+    "state": "RJ",
+    "points": 3230,
+    "pointsDiff": 87
+  },
+  {
+    "position": 42,
+    "trend": "up",
+    "positionChange": 2,
+    "club": "Náutico",
+    "state": "PE",
+    "points": 3167,
+    "pointsDiff": 63
+  },
+  {
+    "position": 43,
+    "trend": "down",
+    "positionChange": 7,
+    "club": "Brusque",
+    "state": "SC",
+    "points": 3088,
+    "pointsDiff": 79
+  },
+  {
+    "position": 44,
+    "trend": "up",
+    "positionChange": 13,
+    "club": "São Bernardo",
+    "state": "SP",
+    "points": 3086,
+    "pointsDiff": 2
+  },
+  {
+    "position": 45,
+    "trend": "up",
+    "positionChange": 8,
+    "club": "Confiança",
+    "state": "SE",
+    "points": 3081,
+    "pointsDiff": 5
+  },
+  {
+    "position": 46,
+    "trend": "down",
+    "positionChange": 7,
+    "club": "CSA",
+    "state": "AL",
+    "points": 2796,
+    "pointsDiff": 285
+  },
+  {
+    "position": 47,
+    "trend": "down",
+    "positionChange": 6,
+    "club": "Ituano",
+    "state": "SP",
+    "points": 2735,
+    "pointsDiff": 61
+  },
+  {
+    "position": 48,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Guarani",
+    "state": "SP",
+    "points": 2667,
+    "pointsDiff": 68
+  },
+  {
+    "position": 49,
+    "trend": "up",
+    "positionChange": 7,
+    "club": "Maringá",
+    "state": "PR",
+    "points": 2623,
+    "pointsDiff": 44
+  },
+  {
+    "position": 50,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Ypiranga",
+    "state": "RS",
+    "points": 2576,
+    "pointsDiff": 47
+  },
+  {
+    "position": 51,
+    "trend": "down",
+    "positionChange": 9,
+    "club": "Tombense",
+    "state": "MG",
+    "points": 2568,
+    "pointsDiff": 8
+  },
+  {
+    "position": 52,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Botafogo",
+    "state": "PB",
+    "points": 2411,
+    "pointsDiff": 157
+  },
+  {
+    "position": 53,
+    "trend": "down",
+    "positionChange": 4,
+    "club": "Retrô",
+    "state": "PE",
+    "points": 2355,
+    "pointsDiff": 56
+  },
+  {
+    "position": 54,
+    "trend": "up",
+    "positionChange": 5,
+    "club": "Figueirense",
+    "state": "SC",
+    "points": 2318,
+    "pointsDiff": 37
+  },
+  {
+    "position": 55,
+    "trend": "down",
+    "positionChange": 9,
+    "club": "ABC",
+    "state": "RN",
+    "points": 2280,
+    "pointsDiff": 38
+  },
+  {
+    "position": 56,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "Ferroviária",
+    "state": "SP",
+    "points": 2138,
+    "pointsDiff": 142
+  },
+  {
+    "position": 57,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Caxias",
+    "state": "RS",
+    "points": 2130,
+    "pointsDiff": 8
+  },
+  {
+    "position": 58,
+    "trend": "up",
+    "positionChange": 41,
+    "club": "Barra",
+    "state": "SC",
+    "points": 2093,
+    "pointsDiff": 37
+  },
+  {
+    "position": 59,
+    "trend": "down",
+    "positionChange": 12,
+    "club": "Sampaio",
+    "state": "MA",
+    "points": 2033,
+    "pointsDiff": 60
+  },
+  {
+    "position": 60,
+    "trend": "up",
+    "positionChange": 6,
+    "club": "Nova Iguaçu",
+    "state": "RJ",
+    "points": 1879,
+    "pointsDiff": 154
+  },
+  {
+    "position": 61,
+    "trend": "up",
+    "positionChange": 8,
+    "club": "Anápolis",
+    "state": "GO",
+    "points": 1830,
+    "pointsDiff": 49
+  },
+  {
+    "position": 62,
+    "trend": "up",
+    "positionChange": 5,
+    "club": "Águia de Marabá",
+    "state": "PA",
+    "points": 1814,
+    "pointsDiff": 16
+  },
+  {
+    "position": 63,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "Floresta",
+    "state": "CE",
+    "points": 1774,
+    "pointsDiff": 40
+  },
+  {
+    "position": 64,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "América",
+    "state": "RN",
+    "points": 1719,
+    "pointsDiff": 55
+  },
+  {
+    "position": 65,
+    "trend": "down",
+    "positionChange": 10,
+    "club": "Aparecidense",
+    "state": "GO",
+    "points": 1694,
+    "pointsDiff": 25
+  },
+  {
+    "position": 66,
+    "trend": "up",
+    "positionChange": 28,
+    "club": "Jacuipense",
+    "state": "BA",
+    "points": 1692,
+    "pointsDiff": 2
+  },
+  {
+    "position": 67,
+    "trend": "up",
+    "positionChange": 18,
+    "club": "Maranhão",
+    "state": "MA",
+    "points": 1548,
+    "pointsDiff": 144
+  },
+  {
+    "position": 68,
+    "trend": "down",
+    "positionChange": 4,
+    "club": "Manaus",
+    "state": "AM",
+    "points": 1545,
+    "pointsDiff": 3
+  },
+  {
+    "position": 69,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Sousa",
+    "state": "PB",
+    "points": 1476,
+    "pointsDiff": 69
+  },
+  {
+    "position": 70,
+    "trend": "down",
+    "positionChange": 10,
+    "club": "Ferroviário",
+    "state": "CE",
+    "points": 1474,
+    "pointsDiff": 2
+  },
+  {
+    "position": 71,
+    "trend": "up",
+    "positionChange": 13,
+    "club": "Itabaiana",
+    "state": "SE",
+    "points": 1414,
+    "pointsDiff": 60
+  },
+  {
+    "position": 72,
+    "trend": "down",
+    "positionChange": 9,
+    "club": "São José",
+    "state": "RS",
+    "points": 1397,
+    "pointsDiff": 17
+  },
+  {
+    "position": 73,
+    "trend": "down",
+    "positionChange": 8,
+    "club": "Altos",
+    "state": "PI",
+    "points": 1358,
+    "pointsDiff": 39
+  },
+  {
+    "position": 74,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Porto Velho",
+    "state": "RO",
+    "points": 1324,
+    "pointsDiff": 34
+  },
+  {
+    "position": 75,
+    "trend": "up",
+    "positionChange": 4,
+    "club": "Inter de Limeira",
+    "state": "SP",
+    "points": 1291,
+    "pointsDiff": 33
+  },
+  {
+    "position": 76,
+    "trend": "up",
+    "positionChange": 10,
+    "club": "Santa Cruz",
+    "state": "PE",
+    "points": 1245,
+    "pointsDiff": 46
+  },
+  {
+    "position": 77,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Portuguesa",
+    "state": "RJ",
+    "points": 1237,
+    "pointsDiff": 8
+  },
+  {
+    "position": 78,
+    "trend": "down",
+    "positionChange": 7,
+    "club": "Tocantinópolis",
+    "state": "TO",
+    "points": 1231,
+    "pointsDiff": 6
+  },
+  {
+    "position": 79,
+    "trend": "down",
+    "positionChange": 5,
+    "club": "ASA",
+    "state": "AL",
+    "points": 1229,
+    "pointsDiff": 2
+  },
+  {
+    "position": 80,
+    "trend": "up",
+    "positionChange": 7,
+    "club": "Tuna Luso",
+    "state": "PA",
+    "points": 1194,
+    "pointsDiff": 35
+  },
+  {
+    "position": 81,
+    "trend": "down",
+    "positionChange": 4,
+    "club": "Ceilândia",
+    "state": "DF",
+    "points": 1159,
+    "pointsDiff": 35
+  },
+  {
+    "position": 82,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "Trem",
+    "state": "AP",
+    "points": 1140,
+    "pointsDiff": 19
+  },
+  {
+    "position": 83,
+    "trend": "up",
+    "positionChange": 6,
+    "club": "Maracanã",
+    "state": "CE",
+    "points": 1137,
+    "pointsDiff": 3
+  },
+  {
+    "position": 84,
+    "trend": "up",
+    "positionChange": 11,
+    "club": "Capital",
+    "state": "DF",
+    "points": 1109,
+    "pointsDiff": 28
+  },
+  {
+    "position": 85,
+    "trend": "down",
+    "positionChange": 13,
+    "club": "FC Cascavel",
+    "state": "PR",
+    "points": 1092,
+    "pointsDiff": 17
+  },
+  {
+    "position": 86,
+    "trend": "up",
+    "positionChange": 7,
+    "club": "Operário",
+    "state": "MS",
+    "points": 1086,
+    "pointsDiff": 6
+  },
+  {
+    "position": 87,
+    "trend": "up",
+    "positionChange": 34,
+    "club": "Portuguesa",
+    "state": "SP",
+    "points": 1083,
+    "pointsDiff": 3
+  },
+  {
+    "position": 88,
+    "trend": "down",
+    "positionChange": 20,
+    "club": "Brasil",
+    "state": "RS",
+    "points": 1075,
+    "pointsDiff": 8
+  },
+  {
+    "position": 89,
+    "trend": "down",
+    "positionChange": 13,
+    "club": "Pouso Alegre",
+    "state": "MG",
+    "points": 1058,
+    "pointsDiff": 17
+  },
+  {
+    "position": 90,
+    "trend": "up",
+    "positionChange": 13,
+    "club": "Manauara",
+    "state": "AM",
+    "points": 1019,
+    "pointsDiff": 39
+  },
+  {
+    "position": 91,
+    "trend": "down",
+    "positionChange": 11,
+    "club": "Humaitá",
+    "state": "AC",
+    "points": 1015,
+    "pointsDiff": 4
+  },
+  {
+    "position": 92,
+    "trend": "up",
+    "positionChange": 5,
+    "club": "Fluminense",
+    "state": "PI",
+    "points": 986,
+    "pointsDiff": 29
+  },
+  {
+    "position": 93,
+    "trend": "down",
+    "positionChange": 20,
+    "club": "Brasiliense",
+    "state": "DF",
+    "points": 970,
+    "pointsDiff": 16
+  },
+  {
+    "position": 94,
+    "trend": "down",
+    "positionChange": 4,
+    "club": "Cianorte",
+    "state": "PR",
+    "points": 957,
+    "pointsDiff": 13
+  },
+  {
+    "position": 95,
+    "trend": "down",
+    "positionChange": 13,
+    "club": "Sergipe",
+    "state": "SE",
+    "points": 944,
+    "pointsDiff": 13
+  },
+  {
+    "position": 96,
+    "trend": "down",
+    "positionChange": 5,
+    "club": "Iguatu",
+    "state": "CE",
+    "points": 937,
+    "pointsDiff": 7
+  },
+  {
+    "position": 97,
+    "trend": "up",
+    "positionChange": 19,
+    "club": "Guarany",
+    "state": "RS",
+    "points": 909,
+    "pointsDiff": 28
+  },
+  {
+    "position": 98,
+    "trend": "up",
+    "positionChange": 21,
+    "club": "Mixto",
+    "state": "MT",
+    "points": 890,
+    "pointsDiff": 19
+  },
+  {
+    "position": 99,
+    "trend": "down",
+    "positionChange": 16,
+    "club": "Juazeirense",
+    "state": "BA",
+    "points": 888,
+    "pointsDiff": 2
+  },
+  {
+    "position": 100,
+    "trend": "down",
+    "positionChange": 2,
+    "club": "São Luiz",
+    "state": "RS",
+    "points": 885,
+    "pointsDiff": 3
+  },
+  {
+    "position": 101,
+    "trend": "down",
+    "positionChange": 13,
+    "club": "São Raimundo",
+    "state": "RR",
+    "points": 861,
+    "pointsDiff": 24
+  },
+  {
+    "position": 102,
+    "trend": "same",
+    "positionChange": 0,
+    "club": "Operário",
+    "state": "MT",
+    "points": 841,
+    "pointsDiff": 20
+  },
+  {
+    "position": 103,
+    "trend": "up",
+    "positionChange": 1,
+    "club": "Água Santa",
+    "state": "SP",
+    "points": 762,
+    "pointsDiff": 79
+  },
+  {
+    "position": 104,
+    "trend": "down",
+    "positionChange": 12,
+    "club": "União Rond.",
+    "state": "MT",
+    "points": 760,
+    "pointsDiff": 2
+  },
+  {
+    "position": 105,
+    "trend": "up",
+    "positionChange": 8,
+    "club": "GAS",
+    "state": "RR",
+    "points": 759,
+    "pointsDiff": 1
+  },
+  {
+    "position": 106,
+    "trend": "down",
+    "positionChange": 10,
+    "club": "Real Noroeste",
+    "state": "ES",
+    "points": 746,
+    "pointsDiff": 13
+  },
+  {
+    "position": 107,
+    "trend": "down",
+    "positionChange": 7,
+    "club": "Treze",
+    "state": "PB",
+    "points": 738,
+    "pointsDiff": 8
+  },
+  {
+    "position": 108,
+    "trend": "up",
+    "positionChange": 3,
+    "club": "Azuriz",
+    "state": "PR",
+    "points": 736,
+    "pointsDiff": 2
+  },
+  {
+    "position": 109,
+    "trend": "up",
+    "positionChange": 3,
+    "club": "Rio Branco",
+    "state": "ES",
+    "points": 728,
+    "pointsDiff": 8
+  },
+  {
+    "position": 110,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Parnahyba",
+    "state": "PI",
+    "points": 711,
+    "pointsDiff": 17
+  },
+  {
+    "position": 111,
+    "trend": "up",
+    "positionChange": 32,
+    "club": "Uberlândia",
+    "state": "MG",
+    "points": 709,
+    "pointsDiff": 2
+  },
+  {
+    "position": 112,
+    "trend": "up",
+    "positionChange": 24,
+    "club": "Joinville",
+    "state": "SC",
+    "points": 709,
+    "pointsDiff": 0
+  },
+  {
+    "position": 113,
+    "trend": "down",
+    "positionChange": 8,
+    "club": "Marcílio Dias",
+    "state": "SC",
+    "points": 685,
+    "pointsDiff": 24
+  },
+  {
+    "position": 114,
+    "trend": "up",
+    "positionChange": 18,
+    "club": "Independência",
+    "state": "AC",
+    "points": 684,
+    "pointsDiff": 1
+  },
+  {
+    "position": 115,
+    "trend": "up",
+    "positionChange": 12,
+    "club": "Lagarto",
+    "state": "SE",
+    "points": 674,
+    "pointsDiff": 10
+  },
+  {
+    "position": 116,
+    "trend": "down",
+    "positionChange": 15,
+    "club": "Atlético",
+    "state": "CE",
+    "points": 640,
+    "pointsDiff": 34
+  },
+  {
+    "position": 117,
+    "trend": "up",
+    "positionChange": 27,
+    "club": "Imperatriz",
+    "state": "MA",
+    "points": 616,
+    "pointsDiff": 24
+  },
+  {
+    "position": 118,
+    "trend": "up",
+    "positionChange": 5,
+    "club": "Atlético",
+    "state": "BA",
+    "points": 608,
+    "pointsDiff": 8
+  },
+  {
+    "position": 119,
+    "trend": "down",
+    "positionChange": 13,
+    "club": "Moto",
+    "state": "MA",
+    "points": 596,
+    "pointsDiff": 12
+  },
+  {
+    "position": 120,
+    "trend": "up",
+    "positionChange": 8,
+    "club": "CSE",
+    "state": "AL",
+    "points": 559,
+    "pointsDiff": 37
+  },
+  {
+    "position": 121,
+    "trend": "up",
+    "positionChange": 25,
+    "club": "Goiatuba",
+    "state": "GO",
+    "points": 519,
+    "pointsDiff": 40
+  },
+  {
+    "position": 122,
+    "trend": "up",
+    "positionChange": 16,
+    "club": "CRAC",
+    "state": "GO",
+    "points": 513,
+    "pointsDiff": 6
+  },
+  {
+    "position": 123,
+    "trend": "up",
+    "positionChange": 62,
+    "club": "Nacional",
+    "state": "AM",
+    "points": 510,
+    "pointsDiff": 3
+  },
+  {
+    "position": 124,
+    "trend": "up",
+    "positionChange": 93,
+    "club": "Madureira",
+    "state": "RJ",
+    "points": 505,
+    "pointsDiff": 5
+  },
+  {
+    "position": 125,
+    "trend": "down",
+    "positionChange": 125,
+    "club": "Santa Catarina",
+    "state": "SC",
+    "points": 505,
+    "pointsDiff": 0
+  },
+  {
+    "position": 126,
+    "trend": "up",
+    "positionChange": 15,
+    "club": "Central",
+    "state": "PE",
+    "points": 495,
+    "pointsDiff": 10
+  },
+  {
+    "position": 127,
+    "trend": "up",
+    "positionChange": 26,
+    "club": "Maricá",
+    "state": "RJ",
+    "points": 484,
+    "pointsDiff": 11
+  },
+  {
+    "position": 128,
+    "trend": "up",
+    "positionChange": 70,
+    "club": "Oratório",
+    "state": "AP",
+    "points": 480,
+    "pointsDiff": 4
+  },
+  {
+    "position": 129,
+    "trend": "up",
+    "positionChange": 22,
+    "club": "Luverdense",
+    "state": "MT",
+    "points": 467,
+    "pointsDiff": 13
+  },
+  {
+    "position": 130,
+    "trend": "down",
+    "positionChange": 20,
+    "club": "Santa Cruz",
+    "state": "RN",
+    "points": 457,
+    "pointsDiff": 10
+  },
+  {
+    "position": 131,
+    "trend": "down",
+    "positionChange": 23,
+    "club": "Concórdia",
+    "state": "SC",
+    "points": 455,
+    "pointsDiff": 2
+  },
+  {
+    "position": 132,
+    "trend": "down",
+    "positionChange": 19,
+    "club": "Boavista",
+    "state": "RJ",
+    "points": 429,
+    "pointsDiff": 26
+  },
+  {
+    "position": 133,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Capital",
+    "state": "TO",
+    "points": 428,
+    "pointsDiff": 1
+  },
+  {
+    "position": 134,
+    "trend": "up",
+    "positionChange": 36,
+    "club": "Democrata GV",
+    "state": "MG",
+    "points": 411,
+    "pointsDiff": 17
+  },
+  {
+    "position": 135,
+    "trend": "up",
+    "positionChange": 38,
+    "club": "Vitória",
+    "state": "ES",
+    "points": 407,
+    "pointsDiff": 4
+  },
+  {
+    "position": 136,
+    "trend": "down",
+    "positionChange": 20,
+    "club": "União",
+    "state": "TO",
+    "points": 404,
+    "pointsDiff": 3
+  },
+  {
+    "position": 137,
+    "trend": "down",
+    "positionChange": 137,
+    "club": "Velo Clube",
+    "state": "SP",
+    "points": 380,
+    "pointsDiff": 24
+  },
+  {
+    "position": 138,
+    "trend": "down",
+    "positionChange": 138,
+    "club": "Betim",
+    "state": "MG",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 139,
+    "trend": "down",
+    "positionChange": 139,
+    "club": "Porto",
+    "state": "BA",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 140,
+    "trend": "down",
+    "positionChange": 140,
+    "club": "Tirol",
+    "state": "CE",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 141,
+    "trend": "down",
+    "positionChange": 141,
+    "club": "Maguary",
+    "state": "PE",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 142,
+    "trend": "down",
+    "positionChange": 142,
+    "club": "Primavera",
+    "state": "MT",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 143,
+    "trend": "up",
+    "positionChange": 74,
+    "club": "Gama",
+    "state": "DF",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 144,
+    "trend": "down",
+    "positionChange": 144,
+    "club": "Ivinhema",
+    "state": "MS",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 145,
+    "trend": "down",
+    "positionChange": 145,
+    "club": "Guaporé",
+    "state": "RO",
+    "points": 380,
+    "pointsDiff": 0
+  },
+  {
+    "position": 146,
+    "trend": "up",
+    "positionChange": 43,
+    "club": "XV de Piracicaba",
+    "state": "SP",
+    "points": 357,
+    "pointsDiff": 23
+  },
+  {
+    "position": 147,
+    "trend": "up",
+    "positionChange": 42,
+    "club": "São Joseense",
+    "state": "PR",
+    "points": 357,
+    "pointsDiff": 0
+  },
+  {
+    "position": 148,
+    "trend": "up",
+    "positionChange": 13,
+    "club": "Penedense",
+    "state": "AL",
+    "points": 329,
+    "pointsDiff": 28
+  },
+  {
+    "position": 149,
+    "trend": "up",
+    "positionChange": 12,
+    "club": "Porto Vitória",
+    "state": "ES",
+    "points": 329,
+    "pointsDiff": 0
+  },
+  {
+    "position": 150,
+    "trend": "up",
+    "positionChange": 20,
+    "club": "Castanhal",
+    "state": "PA",
+    "points": 326,
+    "pointsDiff": 3
+  },
+  {
+    "position": 151,
+    "trend": "down",
+    "positionChange": 26,
+    "club": "Princesa do Soli",
+    "state": "AM",
+    "points": 317,
+    "pointsDiff": 9
+  },
+  {
+    "position": 152,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "Rio Branco",
+    "state": "AC",
+    "points": 317,
+    "pointsDiff": 0
+  },
+  {
+    "position": 153,
+    "trend": "down",
+    "positionChange": 38,
+    "club": "Santo Andre",
+    "state": "SP",
+    "points": 306,
+    "pointsDiff": 11
+  },
+  {
+    "position": 154,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "Iporá",
+    "state": "GO",
+    "points": 306,
+    "pointsDiff": 0
+  },
+  {
+    "position": 155,
+    "trend": "down",
+    "positionChange": 155,
+    "club": "Sampaio Corrêa",
+    "state": "RJ",
+    "points": 305,
+    "pointsDiff": 1
+  },
+  {
+    "position": 156,
+    "trend": "down",
+    "positionChange": 156,
+    "club": "IAPE",
+    "state": "MA",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 157,
+    "trend": "down",
+    "positionChange": 157,
+    "club": "Serra Branca",
+    "state": "PB",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 158,
+    "trend": "down",
+    "positionChange": 158,
+    "club": "Laguna",
+    "state": "RN",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 159,
+    "trend": "down",
+    "positionChange": 159,
+    "club": "Piauí",
+    "state": "PI",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 160,
+    "trend": "up",
+    "positionChange": 57,
+    "club": "Galvez",
+    "state": "AC",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 161,
+    "trend": "down",
+    "positionChange": 161,
+    "club": "Araguaína",
+    "state": "TO",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 162,
+    "trend": "down",
+    "positionChange": 162,
+    "club": "Monte Roraima",
+    "state": "RR",
+    "points": 305,
+    "pointsDiff": 0
+  },
+  {
+    "position": 163,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Jequié",
+    "state": "BA",
+    "points": 304,
+    "pointsDiff": 1
+  },
+  {
+    "position": 164,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "Barcelona",
+    "state": "BA",
+    "points": 304,
+    "pointsDiff": 0
+  },
+  {
+    "position": 165,
+    "trend": "down",
+    "positionChange": 42,
+    "club": "Costa Rica",
+    "state": "MS",
+    "points": 304,
+    "pointsDiff": 0
+  },
+  {
+    "position": 166,
+    "trend": "down",
+    "positionChange": 36,
+    "club": "Petrolina",
+    "state": "PE",
+    "points": 303,
+    "pointsDiff": 1
+  },
+  {
+    "position": 167,
+    "trend": "down",
+    "positionChange": 38,
+    "club": "Real Brasília",
+    "state": "DF",
+    "points": 303,
+    "pointsDiff": 0
+  },
+  {
+    "position": 168,
+    "trend": "down",
+    "positionChange": 59,
+    "club": "Campinense",
+    "state": "PB",
+    "points": 285,
+    "pointsDiff": 18
+  },
+  {
+    "position": 169,
+    "trend": "down",
+    "positionChange": 27,
+    "club": "Olaria",
+    "state": "RJ",
+    "points": 275,
+    "pointsDiff": 10
+  },
+  {
+    "position": 170,
+    "trend": "down",
+    "positionChange": 44,
+    "club": "Patrocinense",
+    "state": "MG",
+    "points": 275,
+    "pointsDiff": 0
+  },
+  {
+    "position": 171,
+    "trend": "down",
+    "positionChange": 53,
+    "club": "Bahia de Feira",
+    "state": "BA",
+    "points": 271,
+    "pointsDiff": 4
+  },
+  {
+    "position": 172,
+    "trend": "down",
+    "positionChange": 37,
+    "club": "Hercílio Luz",
+    "state": "SC",
+    "points": 265,
+    "pointsDiff": 6
+  },
+  {
+    "position": 173,
+    "trend": "down",
+    "positionChange": 36,
+    "club": "Potiguar",
+    "state": "RN",
+    "points": 261,
+    "pointsDiff": 4
+  },
+  {
+    "position": 174,
+    "trend": "down",
+    "positionChange": 174,
+    "club": "Noroeste",
+    "state": "SP",
+    "points": 255,
+    "pointsDiff": 6
+  },
+  {
+    "position": 175,
+    "trend": "down",
+    "positionChange": 175,
+    "club": "América",
+    "state": "RJ",
+    "points": 255,
+    "pointsDiff": 0
+  },
+  {
+    "position": 176,
+    "trend": "down",
+    "positionChange": 37,
+    "club": "Novo Hamburgo",
+    "state": "RS",
+    "points": 255,
+    "pointsDiff": 0
+  },
+  {
+    "position": 177,
+    "trend": "down",
+    "positionChange": 177,
+    "club": "Blumenau",
+    "state": "SC",
+    "points": 255,
+    "pointsDiff": 0
+  },
+  {
+    "position": 178,
+    "trend": "down",
+    "positionChange": 178,
+    "club": "Inhumas",
+    "state": "GO",
+    "points": 255,
+    "pointsDiff": 0
+  },
+  {
+    "position": 179,
+    "trend": "down",
+    "positionChange": 179,
+    "club": "ABECAT",
+    "state": "GO",
+    "points": 255,
+    "pointsDiff": 0
+  },
+  {
+    "position": 180,
+    "trend": "down",
+    "positionChange": 180,
+    "club": "Decisão",
+    "state": "PE",
+    "points": 255,
+    "pointsDiff": 0
+  },
+  {
+    "position": 181,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Itabuna",
+    "state": "BA",
+    "points": 237,
+    "pointsDiff": 18
+  },
+  {
+    "position": 182,
+    "trend": "down",
+    "positionChange": 27,
+    "club": "Audax",
+    "state": "RJ",
+    "points": 228,
+    "pointsDiff": 9
+  },
+  {
+    "position": 183,
+    "trend": "down",
+    "positionChange": 28,
+    "club": "River",
+    "state": "PI",
+    "points": 228,
+    "pointsDiff": 0
+  },
+  {
+    "position": 184,
+    "trend": "down",
+    "positionChange": 36,
+    "club": "Camboriú",
+    "state": "SC",
+    "points": 216,
+    "pointsDiff": 12
+  },
+  {
+    "position": 185,
+    "trend": "down",
+    "positionChange": 24,
+    "club": "Monte Azul",
+    "state": "SP",
+    "points": 204,
+    "pointsDiff": 12
+  },
+  {
+    "position": 186,
+    "trend": "down",
+    "positionChange": 25,
+    "club": "Itabirito",
+    "state": "MG",
+    "points": 204,
+    "pointsDiff": 0
+  },
+  {
+    "position": 187,
+    "trend": "down",
+    "positionChange": 26,
+    "club": "Goiânia",
+    "state": "GO",
+    "points": 204,
+    "pointsDiff": 0
+  },
+  {
+    "position": 188,
+    "trend": "down",
+    "positionChange": 43,
+    "club": "Goianésia",
+    "state": "GO",
+    "points": 204,
+    "pointsDiff": 0
+  },
+  {
+    "position": 189,
+    "trend": "down",
+    "positionChange": 28,
+    "club": "Horizonte",
+    "state": "CE",
+    "points": 204,
+    "pointsDiff": 0
+  },
+  {
+    "position": 190,
+    "trend": "down",
+    "positionChange": 50,
+    "club": "Globo",
+    "state": "RN",
+    "points": 203,
+    "pointsDiff": 1
+  },
+  {
+    "position": 191,
+    "trend": "down",
+    "positionChange": 44,
+    "club": "Rio Branco VN",
+    "state": "ES",
+    "points": 200,
+    "pointsDiff": 3
+  },
+  {
+    "position": 192,
+    "trend": "up",
+    "positionChange": 17,
+    "club": "Ji-Paraná",
+    "state": "RO",
+    "points": 200,
+    "pointsDiff": 0
+  },
+  {
+    "position": 193,
+    "trend": "down",
+    "positionChange": 44,
+    "club": "Nova Venécia",
+    "state": "ES",
+    "points": 185,
+    "pointsDiff": 15
+  },
+  {
+    "position": 194,
+    "trend": "down",
+    "positionChange": 42,
+    "club": "Aimoré",
+    "state": "RS",
+    "points": 157,
+    "pointsDiff": 28
+  },
+  {
+    "position": 195,
+    "trend": "down",
+    "positionChange": 17,
+    "club": "São José",
+    "state": "SP",
+    "points": 153,
+    "pointsDiff": 4
+  },
+  {
+    "position": 196,
+    "trend": "down",
+    "positionChange": 18,
+    "club": "Democrata SL",
+    "state": "MG",
+    "points": 153,
+    "pointsDiff": 0
+  },
+  {
+    "position": 197,
+    "trend": "down",
+    "positionChange": 19,
+    "club": "Ipatinga",
+    "state": "MG",
+    "points": 153,
+    "pointsDiff": 0
+  },
+  {
+    "position": 198,
+    "trend": "down",
+    "positionChange": 20,
+    "club": "Avenida",
+    "state": "RS",
+    "points": 153,
+    "pointsDiff": 0
+  },
+  {
+    "position": 199,
+    "trend": "down",
+    "positionChange": 38,
+    "club": "Pacajus",
+    "state": "CE",
+    "points": 153,
+    "pointsDiff": 0
+  },
+  {
+    "position": 200,
+    "trend": "down",
+    "positionChange": 22,
+    "club": "Cametá",
+    "state": "PA",
+    "points": 153,
+    "pointsDiff": 0
+  },
+  {
+    "position": 201,
+    "trend": "down",
+    "positionChange": 23,
+    "club": "Serra",
+    "state": "ES",
+    "points": 153,
+    "pointsDiff": 0
+  },
+  {
+    "position": 202,
+    "trend": "down",
+    "positionChange": 29,
+    "club": "Resende",
+    "state": "RJ",
+    "points": 152,
+    "pointsDiff": 1
+  },
+  {
+    "position": 203,
+    "trend": "down",
+    "positionChange": 46,
+    "club": "Caucaia",
+    "state": "CE",
+    "points": 152,
+    "pointsDiff": 0
+  },
+  {
+    "position": 204,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Falcon",
+    "state": "SE",
+    "points": 152,
+    "pointsDiff": 0
+  },
+  {
+    "position": 205,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "Cordino",
+    "state": "MA",
+    "points": 152,
+    "pointsDiff": 0
+  },
+  {
+    "position": 206,
+    "trend": "down",
+    "positionChange": 33,
+    "club": "São Francisco",
+    "state": "AC",
+    "points": 152,
+    "pointsDiff": 0
+  },
+  {
+    "position": 207,
+    "trend": "down",
+    "positionChange": 38,
+    "club": "Real desportivo",
+    "state": "RO",
+    "points": 152,
+    "pointsDiff": 0
+  },
+  {
+    "position": 208,
+    "trend": "down",
+    "positionChange": 24,
+    "club": "Villa Nova",
+    "state": "MG",
+    "points": 150,
+    "pointsDiff": 2
+  },
+  {
+    "position": 209,
+    "trend": "down",
+    "positionChange": 51,
+    "club": "Murici",
+    "state": "AL",
+    "points": 150,
+    "pointsDiff": 0
+  },
+  {
+    "position": 210,
+    "trend": "down",
+    "positionChange": 210,
+    "club": "Primavera",
+    "state": "SP",
+    "points": 125,
+    "pointsDiff": 25
+  },
+  {
+    "position": 211,
+    "trend": "down",
+    "positionChange": 211,
+    "club": "Desportiva",
+    "state": "ES",
+    "points": 125,
+    "pointsDiff": 0
+  },
+  {
+    "position": 212,
+    "trend": "down",
+    "positionChange": 3,
+    "club": "Independente",
+    "state": "AP",
+    "points": 125,
+    "pointsDiff": 0
+  },
+  {
+    "position": 213,
+    "trend": "down",
+    "positionChange": 27,
+    "club": "Nacional de Patos",
+    "state": "PB",
+    "points": 120,
+    "pointsDiff": 5
+  },
+  {
+    "position": 214,
+    "trend": "down",
+    "positionChange": 25,
+    "club": "Cruzeiro de Arapiraca",
+    "state": "AL",
+    "points": 102,
+    "pointsDiff": 18
+  },
+  {
+    "position": 215,
+    "trend": "down",
+    "positionChange": 26,
+    "club": "Interporto",
+    "state": "TO",
+    "points": 102,
+    "pointsDiff": 0
+  },
+  {
+    "position": 216,
+    "trend": "down",
+    "positionChange": 48,
+    "club": "Caldense",
+    "state": "MG",
+    "points": 101,
+    "pointsDiff": 1
+  },
+  {
+    "position": 217,
+    "trend": "down",
+    "positionChange": 19,
+    "club": "Votuporanguense",
+    "state": "SP",
+    "points": 100,
+    "pointsDiff": 1
+  },
+  {
+    "position": 218,
+    "trend": "down",
+    "positionChange": 46,
+    "club": "Nova Mutum",
+    "state": "MT",
+    "points": 100,
+    "pointsDiff": 0
+  },
+  {
+    "position": 219,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Tuntum",
+    "state": "MA",
+    "points": 100,
+    "pointsDiff": 0
+  },
+  {
+    "position": 220,
+    "trend": "down",
+    "positionChange": 22,
+    "club": "Dourados",
+    "state": "MS",
+    "points": 100,
+    "pointsDiff": 0
+  },
+  {
+    "position": 221,
+    "trend": "down",
+    "positionChange": 23,
+    "club": "Barcelona",
+    "state": "RO",
+    "points": 100,
+    "pointsDiff": 0
+  },
+  {
+    "position": 222,
+    "trend": "down",
+    "positionChange": 69,
+    "club": "Paraná",
+    "state": "PR",
+    "points": 84,
+    "pointsDiff": 16
+  },
+  {
+    "position": 223,
+    "trend": "down",
+    "positionChange": 63,
+    "club": "Oeste",
+    "state": "SP",
+    "points": 76,
+    "pointsDiff": 8
+  },
+  {
+    "position": 224,
+    "trend": "down",
+    "positionChange": 30,
+    "club": "URT",
+    "state": "MG",
+    "points": 76,
+    "pointsDiff": 0
+  },
+  {
+    "position": 225,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Grêmio Anápolis",
+    "state": "GO",
+    "points": 76,
+    "pointsDiff": 0
+  },
+  {
+    "position": 226,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "ICASA",
+    "state": "CE",
+    "points": 76,
+    "pointsDiff": 0
+  },
+  {
+    "position": 227,
+    "trend": "down",
+    "positionChange": 33,
+    "club": "São Raimundo",
+    "state": "AM",
+    "points": 76,
+    "pointsDiff": 0
+  },
+  {
+    "position": 228,
+    "trend": "down",
+    "positionChange": 19,
+    "club": "Portuguesa Santista",
+    "state": "SP",
+    "points": 75,
+    "pointsDiff": 1
+  },
+  {
+    "position": 229,
+    "trend": "down",
+    "positionChange": 27,
+    "club": "Pérolas Negras",
+    "state": "RJ",
+    "points": 51,
+    "pointsDiff": 24
+  },
+  {
+    "position": 230,
+    "trend": "down",
+    "positionChange": 28,
+    "club": "Próspera",
+    "state": "SC",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 231,
+    "trend": "down",
+    "positionChange": 42,
+    "club": "Juventus",
+    "state": "SC",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 232,
+    "trend": "down",
+    "positionChange": 30,
+    "club": "Crato",
+    "state": "CE",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 233,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Afogados",
+    "state": "PE",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 234,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "Ação",
+    "state": "MT",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 235,
+    "trend": "down",
+    "positionChange": 48,
+    "club": "Juventude",
+    "state": "MA",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 236,
+    "trend": "down",
+    "positionChange": 34,
+    "club": "São Paulo Crystal",
+    "state": "PB",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 237,
+    "trend": "down",
+    "positionChange": 78,
+    "club": "Quatro de Julho",
+    "state": "PI",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 238,
+    "trend": "down",
+    "positionChange": 36,
+    "club": "Náutico",
+    "state": "RR",
+    "points": 51,
+    "pointsDiff": 0
+  },
+  {
+    "position": 239,
+    "trend": "down",
+    "positionChange": 239,
+    "club": "América de Propriá",
+    "state": "SE",
+    "points": 50,
+    "pointsDiff": 1
+  },
+  {
+    "position": 240,
+    "trend": "down",
+    "positionChange": 31,
+    "club": "Marília",
+    "state": "SP",
+    "points": 50,
+    "pointsDiff": 1
+  },
+  {
+    "position": 241,
+    "trend": "down",
+    "positionChange": 32,
+    "club": "Glória",
+    "state": "RS",
+    "points": 50,
+    "pointsDiff": 0
+  },
+  {
+    "position": 242,
+    "trend": "down",
+    "positionChange": 242,
+    "club": "Bragantino",
+    "state": "PA",
+    "points": 50,
+    "pointsDiff": 0
+  },
+  {
+    "position": 243,
+    "trend": "down",
+    "positionChange": 243,
+    "club": "Vasco",
+    "state": "AC",
+    "points": 50,
+    "pointsDiff": 0
+  },
+  {
+    "position": 244,
+    "trend": "down",
+    "positionChange": 244,
+    "club": "FC Pantanal",
+    "state": "MS",
+    "points": 50,
+    "pointsDiff": 0
+  },
+  {
+    "position": 245,
+    "trend": "down",
+    "positionChange": 245,
+    "club": "Baré",
+    "state": "RR",
+    "points": 50,
+    "pointsDiff": 0
+  },
+  {
+    "position": 246,
+    "trend": "down",
+    "positionChange": 21,
+    "club": "Salgueiro",
+    "state": "PE",
+    "points": 25,
+    "pointsDiff": 25
+  }
+]

@@ -1,0 +1,1444 @@
+{
+  "common": {
+    "continue": "Continuar",
+    "back": "Voltar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "loading": "Carregando...",
+    "simulating": "Simulando...",
+    "active": "Ativo",
+    "comingSoon": "Em breve",
+    "yes": "Sim",
+    "no": "Não",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "select": "Selecionar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "all": "Todos",
+    "none": "Nenhum",
+    "total": "TOTAL",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "tomorrow": "Amanhã",
+    "minute_short": "min",
+    "minute_apostrophe": "'",
+    "vs": "vs",
+    "and": "e",
+    "or": "ou",
+    "average": "Média",
+    "market": "Mercado",
+    "min": "Mín",
+    "max": "Máx",
+    "load": "Carregar",
+    "remove": "Remover",
+    "broadcast": "Transmissão",
+    "team": "Time",
+    "database": "Base de Dados",
+    "manager": "Técnico",
+    "territory": "Território",
+    "top": "Topo",
+    "season": "Temporada",
+    "club": "Clube",
+    "finances": "Finanças",
+    "shots": "Finalizações",
+    "passes": "Passes",
+    "tackles": "Desarmes",
+    "interceptions": "Interceptações",
+    "noGoalsScored": "Nenhum gol marcado",
+    "noMatchResult": "Sem resultado de partida",
+    "cannotStartMatch": "Não é possível iniciar a partida",
+    "loadingMatch": "Carregando partida…",
+    "loadingMatchResult": "Carregando resultado da partida…",
+    "redirectingToDashboard": "Redirecionando para o painel…",
+    "backToDashboard": "Voltar ao painel",
+    "sizingPitch": "Dimensionando campo…",
+    "waitingForAction": "Aguardando ação…",
+    "saveLimitReached": "Limite de salvamentos atingido. Delete um jogo antigo para começar uma nova carreira.",
+    "signedInAs": "Conectado como",
+    "signOut": "Desconectar",
+    "useADifferentEmail": "Usar um email diferente",
+    "version": "v0.1.0 ALPHA",
+    "loadingLeagues": "Carregando ligas...",
+    "headlessEngine": "Engine sem interface · sem renderização · mesmas regras",
+    "simulation": "Simulação",
+    "teamStats": "ESTATÍSTICAS DO TIME",
+    "topRatings": "MELHORES NOTAS",
+    "scorers": "ARTILHEIROS",
+    "touchlines": "TOUCH LINES",
+    "sentTo": "Enviado para",
+    "avgSkill": "Média de Habilidade",
+    "heatmapMode": "Modo Mapa de Calor",
+    "falloff": "Queda",
+    "include": "Incluir",
+    "nearAtk": "Perto do Ataque",
+    "nearDef": "Perto da Defesa",
+    "clickAnywhereOnPitch": "Clique em qualquer lugar do campo para avaliar esse ponto.",
+    "round": "Rodada",
+    "foot": "pé",
+    "pts": "PTS",
+    "substitutedIn": "Substituído entrando",
+    "removeFromSaleList": "Remover da lista de vendas",
+    "ftMs": "FT",
+    "teamA": "Time A",
+    "teamB": "Time B",
+    "attack": "Ataque",
+    "defense": "Defesa",
+    "crowd": "Multidão",
+    "linear": "Linear",
+    "exp": "Exp",
+    "radius": "Raio",
+    "clear": "Limpar",
+    "milliseconds": "ms"
+  },
+  "landing": {
+    "navHome": "Início",
+    "navPlay": "Jogar",
+    "navFeatures": "Recursos",
+    "navFaq": "FAQ",
+    "playNow": "Jogar Agora",
+    "heroBadge": "O Arcade da Gestão de Futebol",
+    "freeOpenSource": "Gratuito e Open Source",
+    "starOnGithub": "GitHub",
+    "freeTagline": "100% gratuito — sem paywalls, sem anúncios. Open source sob a licença AGPL-3.0.",
+    "heroHeadline1": "TouchLines: Arcade",
+    "heroHeadline2": "Gestão Renascida",
+    "heroSubtitle": "Esqueça as planilhas. Esqueça os 90 minutos de espera. Escolha um clube, escolha uma tática, dê o play — e sinta o jogo na velocidade arcade.",
+    "startYourLegacy": "Comece Seu Legado",
+    "viewTrailer": "Ver Trailer",
+    "managersOnline": "Duração da Partida",
+    "transferVolume": "Estilos Táticos",
+    "simEfficiency": "Formações",
+    "matchSpeed": "Velocidade",
+    "tacticaldominance": "Dominação Tática",
+    "dominanceSubtitle": "Veja a simulação desenrolar. Destaques em velocidade hiper e ajustes táticos instantâneos redefinidos.",
+    "tacticalDominance1": "Dominação",
+    "tacticalDominance2": "Tática",
+    "tacticalDescription": "Mude de tática na hora. Veja seu time reagir na hora. Cada partida acontece de um jeito — e termina antes do que demoraria seu aquecimento.",
+    "liveMatchEngine": "Live_Match_Engine_V5.3",
+    "featureManage": "Gerencie Seu Clube dos Sonhos",
+    "featureManageDesc": "Assuma o controle de qualquer clube e leve-o à glória através de aulas magistrais de tática e crescimento estratégico.",
+    "featureManageTitle": "Escolha sua Tática",
+    "featureManageDescription": "Contra-ataque, pressão, posse, direto, equilibrado. Escolha um estilo e veja funcionar. Troque no intervalo se não estiver dando certo.",
+    "featureScout": "Explore e Desenvolva Talentos",
+    "featureScoutDesc": "Descubra futuras estrelas e veja-as evoluir através de treinamento intensivo e experiência crucial em partidas.",
+    "featureScoutTitle": "Cace a Próxima Estrela",
+    "featureScoutDescription": "Encontre jovens talentos antes de qualquer outro. Contrate, escale, e veja-os virarem lenda.",
+    "featureFinance": "Estratégia Financeira",
+    "featureFinanceDesc": "Equilibre as contas, navegue pelo mercado de transferências e construa um império de futebol sustentável.",
+    "featureFinanceTitle": "Construa Sua Dinastia",
+    "featureFinanceDescription": "Leve um azarão ao topo, ou defenda um gigante da queda. Cada clube tem uma história — escreva a sua.",
+    "featureArcade": "Simulação Arcade",
+    "featureArcadeDesc": "Experimente resultados de partidas acelerados com destaques visuais de alta adrenalina que pulam o tédio.",
+    "featureArcadeTitle": "Sem Grind",
+    "featureArcadeDescription": "Uma partida inteira em minutos, não horas. Pule o que é chato. Fique pelos gols.",
+    "faqBase": "A Base da Intel",
+    "faqBaseSub": "Tudo que você precisa saber antes do apito inicial.",
+    "faqTitle1": "Central de",
+    "faqTitle2": "Inteligência",
+    "faqSubtitle": "Respostas rápidas antes do apito inicial.",
+    "faqQ1": "O que torna o TouchLines diferente?",
+    "faqA1": "É um arcade de gestão de futebol. Sem planilhas, sem 90 minutos de espera — só partidas rápidas, decisões diretas, e a parte divertida de comandar um clube.",
+    "faqQ2": "Quanto dura uma partida?",
+    "faqA2": "Cerca de sete minutos do apito inicial ao final. Você termina uma temporada antes dos outros terminarem a pré-temporada.",
+    "faqQ3": "Preciso microgerenciar tudo?",
+    "faqA3": "Não. Escolha uma tática, escale o time, dê o play. Ajuste quando importar — não desperdiçamos seu tempo.",
+    "faqQ4": "Posso comandar qualquer clube?",
+    "faqA4": "Escolha um gigante, um azarão, ou reerga um clube em queda. Pela Europa e América do Sul — sua história, do seu jeito.",
+    "faqQ5": "Como os jogadores evoluem?",
+    "faqA5": "Joga bem e treina certo, evolui. Veteranos chegam ao auge e caem. Sem números escondidos — o que você vê é o que tem.",
+    "faqQ6": "Tem multiplayer?",
+    "faqA6": "Ainda não. O foco é a carreira solo. Vamos juntar os jogadores quando o modo single-player estiver no auge.",
+    "readyKick": "Pronto Para o Chute Definitivo?",
+    "readyKick1": "Pronto pro",
+    "readyKick2": "Apito Inicial",
+    "joinArcadeRevolution": "Escolha um clube. Escolha uma tática. Escreva sua história. Grátis, no seu navegador.",
+    "readySubtitle": "Junte-se à revolução arcade hoje e defina o futuro da gestão de futebol digital.",
+    "startPlayingFree": "Comece a Jogar Grátis",
+    "availableOn": "Disponível em:",
+    "soon": "Em breve",
+    "mobileComingSoon": "Suporte para celular em breve",
+    "footerText": "© 2026 TouchLines",
+    "openSourceNote": "Gratuito e de código aberto.",
+    "viewSource": "Ver código-fonte",
+    "licensedUnder": "Licenciado sob",
+    "termsOfService": "Termos de Serviço",
+    "privacyPolicy": "Política de Privacidade",
+    "support": "Suporte",
+    "pressKit": "Kit de Imprensa"
+  },
+  "unsupportedScreen": {
+    "badge": "Em breve",
+    "title": "Tamanho de tela não suportado",
+    "description": "O TouchLines foi feito para telas maiores no momento. Suporte para celular e telas pequenas está chegando — volte em um computador ou redimensione a janela.",
+    "minimum": "Mínimo",
+    "current": "Atual"
+  },
+  "startScreen": {
+    "footballSimulation": "Simulação de Futebol",
+    "newGame": "Novo Jogo",
+    "loadGame": "Carregar Jogo",
+    "settings": "Configurações",
+    "savedGames": "Jogos Salvos",
+    "backButton": "Voltar",
+    "noSavedGames": "Nenhum jogo salvo encontrado.",
+    "load": "Carregar",
+    "delete": "Excluir",
+    "back": "Voltar"
+  },
+  "newGame": {
+    "startDate": "Data Inicial",
+    "creator": "Criador",
+    "lastUpdated": "Última atualização",
+    "official": "Oficial",
+    "territoryProfile": "Perfil do Território",
+    "established": "Fund. {{year}}",
+    "establishedUnknown": "Fund. —",
+    "yourName": "Seu Nome",
+    "databases": {
+      "official-2024": {
+        "name": "Oficial 2024/25",
+        "description": "Base de dados oficial completa, com dados verificados de jogadores e composições de elenco precisas.",
+        "creator": "Time TOUCHLINES"
+      },
+      "official-2023": {
+        "name": "Oficial 2023/24",
+        "description": "Base da temporada passada para quem quer reescrever a história.",
+        "creator": "Time TOUCHLINES"
+      },
+      "community-legends": {
+        "name": "Base de Lendas",
+        "description": "Jogadores clássicos das eras de ouro. Comande elencos lendários com notas históricas.",
+        "creator": "FutLegends"
+      },
+      "community-realistic": {
+        "name": "Realismo Total",
+        "description": "Base curada pela comunidade com notas realistas e atributos detalhados.",
+        "creator": "RealisticFC"
+      }
+    },
+    "countries": {
+      "england": {
+        "name": "Inglaterra",
+        "headline": "Na Inglaterra, futebol é tradição.</br>Construído sobre estrutura, disciplina e respeito ao jogo.<br>Cada passe tem propósito, cada função é definida.<br>De campos enlameados a grandes estádios, o espírito permanece.<br>o jogo pertence a quem honra suas raízes."
+      },
+      "france": {
+        "name": "França",
+        "headline": "Na França, futebol é equilíbrio.</br>Técnica encontra força física, talento encontra controle.<br>Os jogadores são moldados com precisão e inteligência.<br>Força e elegância se movem juntas.<br>o jogo pertence a quem domina corpo e mente."
+      },
+      "germany": {
+        "name": "Alemanha",
+        "headline": "Na Alemanha, futebol é eficiência.</br>Cada ação é calculada, cada movimento otimizado.<br>A disciplina leva a equipe adiante, unida como uma só.<br>Sem esforço desperdiçado, sem perder o foco.<br>o jogo pertence a quem executa sem erros."
+      },
+      "italy": {
+        "name": "Itália",
+        "headline": "Na Itália, futebol é estratégia.</br>O jogo é lido, estudado e controlado.<br>A defesa é uma arte, a paciência é uma arma.<br>Os momentos são escolhidos, não forçados.<br>o jogo pertence a quem pensa antes de agir."
+      },
+      "spain": {
+        "name": "Espanha",
+        "headline": "Na Espanha, futebol é ritmo.</br>A bola se move, o time flui, o espaço se cria.<br>Passes curtos, movimento constante, controle silencioso.<br>O jogo é ditado, não perseguido.<br>o jogo pertence a quem nunca deixa a bola parar."
+      },
+      "brazil": {
+        "name": "Brasil",
+        "headline": "No Brasil, futebol não se aprende — se sente.</br>Vive nas ruas, no barulho, no ritmo do dia a dia.<br>De começos simples nasceu um estilo de criatividade e liberdade.<br>Não é só vencer — é jogar bonito.<br>o jogo pertence a quem ousa jogá-lo com alegria."
+      }
+    },
+    "backgrounds": {
+      "former-player": {
+        "name": "Ex-jogador",
+        "description": "Uma carreira premiada nos gramados te deu visão tática e respeito dos jogadores. Você conhece o jogo por dentro.",
+        "bonuses": ["Reputação inicial alta", "Melhor relação com jogadores", "Conhecimento tático"]
+      },
+      "young-prodigy": {
+        "name": "Jovem Promessa",
+        "description": "Recém-saído da escola de treinadores, cheio de ideias modernas e táticas inovadoras. Você tem tudo a provar.",
+        "bonuses": ["Métodos modernos de treino", "Bônus de desenvolvimento de jovens", "Aprendizado mais rápido"]
+      },
+      "journeyman": {
+        "name": "Treinador Veterano",
+        "description": "Anos de experiência em vários clubes e divisões. Você já viu de tudo e se adaptou a cada situação.",
+        "bonuses": ["Táticas versáteis", "Experiência em adversidade", "Gestão financeira"]
+      },
+      "club-legend": {
+        "name": "Lenda do Clube",
+        "description": "Você subiu degrau por degrau no clube do coração, do time de base ao profissional. Esse é o seu destino.",
+        "bonuses": ["Confiança máxima da diretoria", "Apoio da torcida", "Conhecimento do clube"]
+      },
+      "analyst": {
+        "name": "Analista de Dados",
+        "description": "Os números não mentem. Sua abordagem analítica revolucionou como você monta e gerencia equipes.",
+        "bonuses": ["Olheiros avançados", "Insights estatísticos", "Vantagem no mercado de transferências"]
+      }
+    },
+    "nationalities": {
+      "br": "Brasileiro",
+      "pt": "Português",
+      "es": "Espanhol",
+      "it": "Italiano",
+      "de": "Alemão",
+      "fr": "Francês",
+      "gb": "Inglês",
+      "ar": "Argentino",
+      "nl": "Holandês",
+      "us": "Americano"
+    },
+    "phase01": "Fase 01: Origem",
+    "matchPrep": "Preparação",
+    "step": "Passo {{current}} de {{total}}",
+    "selectDatabase": "Selecionar Banco de Dados",
+    "createManager": "Criar Técnico",
+    "selectTerritory": "Selecionar Território",
+    "chooseClub": "Escolher Clube",
+    "confirmStart": "Confirmar e Iniciar",
+    "confirmSelection": "Confirmar Seleção",
+    "startCareer": "Começar Carreira",
+    "creatingSeave": "Criando Jogo...",
+    "preparingTitle": "Preparando seu mundo",
+    "preparingSubtitle": "Simulando as ligas que começaram antes da sua temporada para que as tabelas estejam atualizadas quando você começar…",
+    "dataSourceTerminal": "Terminal de Fonte de Dados",
+    "selectDatabaseTitle": "Selecionar",
+    "databaseDescription": "Escolha sua fonte de dados. Cada banco de dados contém diferentes elencos de jogadores, classificações e estruturas de competição.",
+    "recommended": "Recomendado",
+    "soon": "Em Breve",
+    "countriesStat": "Países",
+    "moreDatabasesSoon": "Mais bancos de dados em breve",
+    "createDatabase": "Criar um novo banco de dados",
+    "databaseContents": "Conteúdo do Banco de Dados",
+    "totalCountries": "Total de Países",
+    "playableCountries": "Países Jogáveis",
+    "totalLeagues": "Total de Ligas",
+    "playableLeagues": "Ligas Jogáveis",
+    "totalPlayers": "Total de Jogadores",
+    "selectDatabaseDetail": "Selecione um banco de dados para ver detalhes",
+    "identityConfiguration": "Configuração de Identidade",
+    "createManagerTitle": "Criar Seu Técnico",
+    "managerDescription": "Defina sua identidade técnica. Seu histórico influenciará seus atributos iniciais e como os jogadores e a diretoria o perceberão.",
+    "managerName": "Nome do Técnico",
+    "enterName": "Digite seu nome...",
+    "nationality": "Nacionalidade",
+    "careerBackground": "Histórico de Carreira",
+    "background": "Histórico",
+    "startingBonuses": "Bônus Iniciais",
+    "selectBackgroundDetail": "Selecione um histórico para ver seus bônus",
+    "regionalSelection": "Terminal de Seleção Regional",
+    "chooseTerritory": "Escolha Seu Território",
+    "territoryDescription": "Defina a base de sua dinastia. Selecione uma nação para desbloquear divisões profissionais locais e comece sua ascensão tática.",
+    "searchTerritory": "Buscar território...",
+    "territoryProfile": "Perfil do Território",
+    "teams": "Clubes",
+    "divisions": "Divisões",
+    "theSpirit": "O Espírito",
+    "selectTerritoryDetail": "Selecione um território para ver detalhes",
+    "selectionPhase": "Fase de Seleção",
+    "clubProfile": "Perfil do Clube",
+    "city": "Cidade",
+    "stadium": "Estádio",
+    "founded": "Fundado",
+    "league": "Liga",
+    "noProfileData": "Nenhum dado de perfil disponível.",
+    "squadRating": "Classificação do Elenco",
+    "reputation": "Reputação",
+    "selectClubDetail": "Selecione um clube para ver detalhes",
+    "top": "Topo",
+    "squadStrength": "Força do Elenco",
+    "keyPlayers": "Jogadores Chave",
+    "noData": "Sem dados.",
+    "attack": "Ataque",
+    "midfield": "Meio de campo",
+    "defense": "Defesa",
+    "position": "Posição",
+    "age": "Idade",
+    "ovr": "OVR",
+    "finalConfirmation": "Confirmação Final",
+    "readyBegin": "Pronto para Começar?",
+    "reviewSelection": "Revise suas seleções antes de iniciar sua jornada como técnico.",
+    "database": "Banco de Dados",
+    "manager": "Técnico",
+    "startDate": "Data de Início",
+    "leagueSeason": "Temporada da Liga",
+    "currently": "Selecionando Atualmente",
+    "readyToBegin": "Pronto para",
+    "begin": "Começar?",
+    "reviewSelectionsBeforeStart": "Revise suas seleções antes de iniciar sua jornada como técnico.",
+    "userRank": "Classificação do Usuário",
+    "eliteTactician": "Técnico de Elite",
+    "back": "Voltar",
+    "est": "Fund.",
+    "userRankTitle": "Classificação do Usuário",
+    "noSelection": "Por favor, faça uma seleção antes de continuar.",
+    "leagues": "Ligas",
+    "players": "Jogadores"
+  },
+  "seasonEnd": {
+    "seasonComplete": "Temporada Concluída",
+    "champions": "Campeões!",
+    "bestPlayer": "Melhor Jogador",
+    "topScorer": "Maior Artilheiro",
+    "mostAssists": "Mais Assistências",
+    "avgRating": "Classificação Média",
+    "goals": "Gols",
+    "assists": "Assistências",
+    "yourSeasonSummary": "Resumo de Sua Temporada",
+    "finalPosition": "Posição Final",
+    "matches": "Partidas",
+    "wins": "Vitórias",
+    "draws": "Empates",
+    "losses": "Derrotas",
+    "viewFullStandings": "Ver Classificação Completa",
+    "continueNextSeason": "Continuar para Próxima Temporada",
+    "2ndPlace": "2º Lugar",
+    "3rdPlace": "3º Lugar",
+    "champion": "Campeão",
+    "pts": "PTS"
+  },
+  "fired": {
+    "youveFired": "Você Foi Demitido!",
+    "boardTerminated": "A diretoria de {{club}} decidiu rescindir seu contrato.",
+    "boardTerminated2": "A diretoria de {{club}} decidiu rescindir seu contrato.",
+    "chairmanQuote": "- Presidente do Clube",
+    "tenure": "Tempo de Serviço",
+    "matches": "Partidas",
+    "winRate": "Percentual de Vitórias",
+    "finalPosition": "Posição Final",
+    "wins": "Vitórias",
+    "draws": "Empates",
+    "losses": "Derrotas",
+    "achievementsDuringTenure": "Conquistas Durante Seu Período",
+    "returnToMenu": "Voltar ao Menu",
+    "findNewClub": "Encontrar Novo Clube"
+  },
+  "comingSoon": {
+    "comingSoonTitle": "Em Breve",
+    "comingSoon": "Em Breve",
+    "underDevelopment": "Este recurso ainda está sendo desenvolvido. Volte mais tarde!",
+    "stillBeingBuilt": "Este recurso ainda está sendo desenvolvido. Volte mais tarde!",
+    "tactics": "Táticas",
+    "tacticsDesc": "Configure seu plano de jogo, gatilhos de marcação e instruções de posse.",
+    "formation": "Formação",
+    "formationDesc": "Arraste jogadores para a posição e crie formações personalizadas.",
+    "finances": "Finanças",
+    "financesDesc": "Gerencie o orçamento do seu clube, patrocínios e fluxos de receita.",
+    "staff": "Comissão",
+    "staffDesc": "Contrate técnicos, fisioterapeutas e olheiros para melhorar seu clube.",
+    "stats": "Estatísticas",
+    "statsDesc": "Mergulhe em análises aprofundadas de desempenho de jogadores e equipe."
+  },
+  "playerScreen": {
+    "loadingPlayer": "Carregando jogador...",
+    "playerNotFound": "Jogador não encontrado.",
+    "currentTeam": "Clube atual",
+    "openSquadPage": "Abrir página do elenco →",
+    "makeOffer": "Fazer Oferta",
+    "backToSquad": "Voltar ao elenco"
+  },
+  "nav": {
+    "squad": "Elenco",
+    "tactics": "Táticas",
+    "formation": "Formação",
+    "development": "Evolução",
+    "finances": "Finanças",
+    "staff": "Comissão",
+    "leagues": "Ligas",
+    "transfers": "Transferências",
+    "scout": "Olheiro",
+    "stats": "Estatísticas",
+    "inbox": "Mensagens",
+    "settings": "Configurações",
+    "training": "Treino",
+    "restDay": "Dia de Folga",
+    "vsOpponent": "vs {{opponent}}"
+  },
+  "settings": {
+    "title": "Configurações",
+    "subtitle": "Configure as preferências do jogo",
+    "language": "Idioma",
+    "languageDescription": "Escolha o idioma usado em todo o jogo.",
+    "english": "English",
+    "portugueseBrazil": "Português (Brasil)",
+    "mainMenu": "Menu Principal",
+    "mainMenuDescription": "Volte ao menu para carregar outro jogo salvo."
+  },
+  "status": {
+    "budget": "Orçamento",
+    "unread": "Não lidas",
+    "players": "Jogadores"
+  },
+  "tactics": {
+    "tacticalStyle": "Estilo Tático",
+    "selectStyle": "Selecione um estilo tático",
+    "buildUp": "Construção",
+    "pressing": "Marcação",
+    "defensiveLine": "Linha Defensiva",
+    "width": "Amplitude",
+    "offsideTrap": "Linha de Impedimento",
+    "strengths": "Pontos fortes",
+    "weaknesses": "Pontos fracos",
+    "styles": {
+      "counter_attack": {
+        "label": "Contra-ataque",
+        "description": "Recue, absorva a pressão e parta rápido para o ataque assim que recuperar a posse.",
+        "strengths": [
+          "Solidez defensiva",
+          "Perigoso no contragolpe",
+          "Baixo risco de erros"
+        ],
+        "weaknesses": [
+          "Pouca posse de bola",
+          "Cede território",
+          "Precisa de velocidade no ataque"
+        ]
+      },
+      "high_press": {
+        "label": "Pressão Alta",
+        "description": "Persiga a bola no campo de ataque. Recupere a posse perto do gol adversário.",
+        "strengths": [
+          "Recupera a bola em zonas perigosas",
+          "Atrapalha a saída de bola"
+        ],
+        "weaknesses": [
+          "Vulnerável a bolas longas",
+          "Exige muita resistência",
+          "Linha defensiva arriscada"
+        ]
+      },
+      "possession": {
+        "label": "Posse de Bola",
+        "description": "Mantenha a bola, troque passes com paciência e busque os espaços. Jogo posicional curto e centralizado.",
+        "strengths": [
+          "Retenção de bola",
+          "Controla o ritmo",
+          "Passes de baixo risco"
+        ],
+        "weaknesses": [
+          "Demora para criar",
+          "Vulnerável a contra-ataques"
+        ]
+      },
+      "direct_play": {
+        "label": "Jogo Direto",
+        "description": "Avance rápido com passes longos e ataques pelas pontas. Estique o adversário.",
+        "strengths": [
+          "Transições rápidas",
+          "Explora as laterais",
+          "Difícil de pressionar"
+        ],
+        "weaknesses": [
+          "Baixo aproveitamento de passes",
+          "Pode isolar o atacante",
+          "Cede o meio-campo"
+        ]
+      },
+      "balanced": {
+        "label": "Equilibrado",
+        "description": "Sem extremos. Boa estrutura defensiva, construção ponderada e amplitude ofensiva consistente.",
+        "strengths": [
+          "Poucos pontos fracos evidentes",
+          "Adapta-se a qualquer adversário"
+        ],
+        "weaknesses": [
+          "Nenhuma fase se destaca",
+          "Raramente domina alguma área"
+        ]
+      }
+    },
+    "buildUpStyles": {
+      "possession": "Posse",
+      "balanced": "Equilibrado",
+      "direct": "Direto"
+    },
+    "pressingStyles": {
+      "low_block": "Bloco Baixo",
+      "mid_block": "Bloco Médio",
+      "high_press": "Pressão Alta"
+    },
+    "defensiveLines": {
+      "deep": "Recuada",
+      "normal": "Normal",
+      "high": "Adiantada"
+    },
+    "widths": {
+      "narrow": "Fechada",
+      "normal": "Normal",
+      "wide": "Aberta"
+    }
+  },
+  "formations": {
+    "title": "Formação",
+    "subtitle": "Formação e Táticas",
+    "subtitleTactics": "e Táticas",
+    "subtitleHelp": "A formação define onde os jogadores atuam; as táticas definem como eles se comportam. Clique em Salvar para gravar no seu arquivo de jogo.",
+    "selectFormation": "Selecionar Formação",
+    "formationInfo": "Informações da Formação",
+    "formationPicker": "Escolher Formação",
+    "autoFill": "Preencher automaticamente",
+    "autoPosition": "Posicionar automaticamente",
+    "playerSwap": "Trocar jogadores",
+    "backToSquad": "Voltar ao elenco",
+    "noFormations": "Nenhuma formação carregada.",
+    "saving": "Salvando…",
+    "saved": "Salvo!",
+    "starting11": "Time titular",
+    "bench": "Banco",
+    "selectPlayerForSlot": "Selecione um jogador para a posição",
+    "currentStartingLineup": "Escalação atual",
+    "clickSlotHint": "Clique em uma posição no campo e escolha um jogador",
+    "emptySlotTapToFill": "Vaga aberta — clique para preencher",
+    "noBenchPlayers": "Nenhum jogador no banco",
+    "playersInStartingLineup": "{{count}} jogadores escalados",
+    "playersOnBench": "{{count}} jogadores no banco",
+    "preview": "Pré-visualização",
+    "clickPositionHint": "Clique em uma posição para trocar de jogador",
+    "outOfPosition": "Fora de posição",
+    "outOfPositionPrimary": "Fora de posição — principal: {{position}} ({{role}})",
+    "rating": "Nota",
+    "energy": "Energia",
+    "blurbs": {
+      "4-3-3": "Três atacantes na frente, com controle no meio e estabilidade defensiva.",
+      "4-4-2": "Dupla de ataque apoiada por uma linha equilibrada de quatro no meio.",
+      "3-5-2": "Cinco meio-campistas dominam a posse, com alas dando amplitude."
+    }
+  },
+  "attributes": {
+    "title": "Atributos do jogador",
+    "groups": {
+      "technical": "Técnico",
+      "mental": "Mental",
+      "physical": "Físico",
+      "gk": "GOL"
+    },
+    "passing": {
+      "label": "Passe",
+      "description": "Precisão na entrega de passes curtos e médios."
+    },
+    "dribbling": {
+      "label": "Drible",
+      "description": "Habilidade de conduzir a bola e vencer no 1 contra 1."
+    },
+    "finishing": {
+      "label": "Finalização",
+      "description": "Capacidade de transformar chances em gols."
+    },
+    "vision": {
+      "label": "Visão",
+      "description": "Identifica oportunidades de ataque e escolhe o passe certo."
+    },
+    "pressing": {
+      "label": "Marcação",
+      "description": "Antecipação e agressividade na perseguição da bola."
+    },
+    "speed": {
+      "label": "Velocidade",
+      "description": "Velocidade máxima em campo."
+    },
+    "acceleration": {
+      "label": "Aceleração",
+      "description": "Rapidez para atingir a velocidade máxima."
+    },
+    "stamina": {
+      "label": "Resistência",
+      "description": "Reservas de energia ao longo de uma partida inteira."
+    },
+    "strength": {
+      "label": "Força",
+      "description": "Potência física em duelos e disputas."
+    },
+    "tackling": {
+      "label": "Desarme",
+      "description": "Eficiência em desarmes e recuperações de bola."
+    },
+    "reflex": {
+      "label": "Reflexos",
+      "description": "Reações do goleiro em finalizações de curta distância."
+    },
+    "jump": {
+      "label": "Salto",
+      "description": "Alcance do goleiro em saídas e bolas aéreas."
+    },
+    "heading": {
+      "label": "Cabeceio",
+      "description": "Disputas aéreas e finalizações de cabeça."
+    }
+  },
+  "roles": {
+    "main": {
+      "GK": "Goleiro",
+      "Defender": "Zagueiro",
+      "Midfielder": "Meio-campista",
+      "Forward": "Atacante"
+    },
+    "abbr": {
+      "GK": "GOL",
+      "Defender": "DEF",
+      "Midfielder": "MEI",
+      "Forward": "ATA"
+    },
+    "groups": {
+      "GK": "Goleiros",
+      "Defender": "Defensores",
+      "Midfielder": "Meio-campistas",
+      "Forward": "Atacantes"
+    }
+  },
+  "stats": {
+    "matchStatistics": "Estatísticas da Partida",
+    "team": "Time {{team}}",
+    "headers": {
+      "G": "Gols",
+      "SH": "Finalizações",
+      "PA": "Passes Tentados",
+      "PC": "Passes Certos",
+      "ACC": "Aproveitamento de Passe",
+      "TB": "Bolas em Profundidade",
+      "TBC": "Bolas em Profundidade Certas",
+      "TBPCT": "Aproveitamento em Profundidade %",
+      "TK": "Desarmes",
+      "IN": "Interceptações",
+      "POS": "Pos",
+      "NAME": "Nome",
+      "AGE": "Idade",
+      "AVG": "Média",
+      "SALARY": "Salário",
+      "VALUE": "Valor",
+      "RATING": "Nota"
+    },
+    "lab": {
+      "avgGoals": "Gols (média)",
+      "avgXG": "xG (média)",
+      "avgShots": "Finalizações (média)",
+      "avgAssists": "Assistências (média)",
+      "avgTackles": "Desarmes (média)",
+      "avgIntercept": "Interceptações (média)",
+      "dribblesWon": "Dribles ganhos",
+      "dribblesLost": "Dribles perdidos",
+      "looseBallsWon": "Bolas divididas ganhas",
+      "throughBalls": "Bolas em profundidade",
+      "throughBallCompletion": "Aproveitamento em profundidade %"
+    },
+    "subbedOff": "Substituído aos {{minute}}'"
+  },
+  "match": {
+    "lastMinuteSubs": "Substituições de Última Hora",
+    "shots": "Finalizações",
+    "tackles": "Desarmes",
+    "interceptions": "Interceptações",
+    "venue": "Local",
+    "noActiveSave": "Nenhum jogo carregado.",
+    "play": "Jogar",
+    "pause": "Pausar",
+    "subs": "Substituições",
+    "debug": "Debug",
+    "loadError": "Falha ao carregar resultado da partida.",
+    "noMatchOnDate": "Nenhuma partida agendada para esta data."
+  },
+  "broadcast": {
+    "teamLabel": "Time {{team}}",
+    "kickoff": {
+      "firstHalf": [
+        "Bola rolando — {{team}} dá o pontapé inicial do primeiro tempo.",
+        "Estamos ao vivo — {{team}} começa a partida do meio-campo.",
+        "Lá vamos nós — {{team}} dá o pontapé inicial.",
+        "Apito do árbitro — {{team}} inicia a partida."
+      ],
+      "secondHalf": [
+        "Começa o segundo tempo — {{team}} reinicia do meio-campo.",
+        "Bola rolando de volta — {{team}} dá o pontapé.",
+        "Os times retornam para o segundo tempo — {{team}} põe a bola em jogo.",
+        "Início do segundo tempo — {{team}} sai do meio."
+      ],
+      "afterGoal": [
+        "{{team}} reinicia do meio-campo.",
+        "{{team}} sai do círculo central.",
+        "Jogo retomado — {{team}} dá o pontapé.",
+        "Gol confirmado — {{team}} reinicia."
+      ]
+    },
+    "passAttempted": {
+      "long": [
+        "Lançamento de {{passer}} buscando {{receiver}}.",
+        "{{passer}} chuta longo — procurando {{receiver}}.",
+        "{{passer}} levanta — {{receiver}} é o alvo.",
+        "Inversão de {{passer}} para {{receiver}}."
+      ],
+      "short": [
+        "Belo passe de {{passer}} para {{receiver}}.",
+        "{{passer}} desliza a bola para {{receiver}}.",
+        "{{passer}} encontra {{receiver}} com um passe preciso.",
+        "{{passer}} acha {{receiver}}.",
+        "{{passer}} para {{receiver}} — boa construção."
+      ]
+    },
+    "passCompleted": [
+      "{{name}} fica com a bola.",
+      "{{name}} domina com tranquilidade.",
+      "{{name}} recebe limpinho.",
+      "A bola está com {{name}}.",
+      "{{name}} agora com a bola."
+    ],
+    "passFailed": [
+      "Passe de {{name}} é interceptado.",
+      "Cortado — era a bola de {{name}}.",
+      "{{name}} é interceptado no caminho.",
+      "O passe em profundidade de {{name}} não chega."
+    ],
+    "possessionStale": [
+      "{{name}} ainda controla a bola.",
+      "{{name}} segue com a posse.",
+      "{{name}} tem tempo — ainda com a bola.",
+      "Ainda com {{name}} — calmo na posse."
+    ],
+    "shot": {
+      "closeIn": {
+        "dangerous": [
+          "{{name}} finaliza de pertinho — o goleiro se atrapalha!",
+          "Finalização à queima-roupa de {{name}} — bem no meio do perigo.",
+          "{{name}} arrisca o chute de pertinho."
+        ],
+        "speculative": [
+          "{{name}} chuta de curta distância.",
+          "Chute rápido de {{name}} — abafado.",
+          "{{name}} arrisca o chute de pertinho."
+        ]
+      },
+      "edge": {
+        "golden": [
+          "{{name}} arrisca da entrada da área.",
+          "Chute de {{name}} — chance real.",
+          "{{name}} solta o pé da entrada da área."
+        ],
+        "speculative": [
+          "{{name}} arrisca da entrada da área.",
+          "{{name}} parte para o gol — ambicioso.",
+          "{{name}} solta o pé da entrada da área."
+        ],
+        "default": [
+          "{{name}} arrisca da entrada da área.",
+          "Chute de {{name}} — o goleiro precisa estar atento.",
+          "{{name}} solta o pé da entrada da área."
+        ]
+      },
+      "distance": {
+        "dangerous": [
+          "{{name}} de longe — perigoso.",
+          "Chute de {{name}} — preocupando o goleiro.",
+          "{{name}} de muito longe — em direção ao gol."
+        ],
+        "golden": [
+          "{{name}} de longe — perigoso.",
+          "Chute de {{name}} — preocupando o goleiro.",
+          "{{name}} de muito longe — com veneno inesperado."
+        ],
+        "speculative": [
+          "{{name}} arrisca de longa distância.",
+          "Chute de {{name}} — fácil para o goleiro.",
+          "{{name}} de muito longe — em direção ao gol."
+        ]
+      }
+    },
+    "shotWide": [
+      "{{name}} manda para fora.",
+      "Para fora — {{name}} pegou na trave.",
+      "{{name}} arrasta para fora.",
+      "Sem trabalho para o goleiro — {{name}} errou o alvo."
+    ],
+    "shotSaved": [
+      "Que defesa! {{name}} foi parado.",
+      "O goleiro segura — {{name}} frustrado.",
+      "Defesa fantástica — {{name}} foi parado.",
+      "Travado! {{name}} não consegue vencer o goleiro."
+    ],
+    "goal": [
+      "GOL! {{name}} para o {{team}}. {{scoreA}}–{{scoreB}}.",
+      "{{name}} marca! {{team}} vence por {{scoreA}}–{{scoreB}}.",
+      "Marcaram! {{name}} — {{scoreA}}–{{scoreB}}.",
+      "É gol — {{name}} faz {{scoreA}}–{{scoreB}}."
+    ],
+    "tackle": {
+      "won": [
+        "{{tackler}} desarma {{target}}.",
+        "{{tackler}} sai com a bola contra {{target}}.",
+        "Forte dividida — {{tackler}} rouba de {{target}}.",
+        "{{tackler}} desarma {{target}}."
+      ],
+      "lost": [
+        "{{tackler}} parte para a dividida, mas {{target}} segue com a bola.",
+        "{{target}} aguenta a entrada de {{tackler}}.",
+        "{{tackler}} não chega — {{target}} segue com a posse.",
+        "{{target}} protege bem da marcação de {{tackler}}."
+      ]
+    },
+    "interception": {
+      "won": [
+        "{{name}} antecipa e intercepta.",
+        "{{name}} aparece para roubar a bola.",
+        "Interceptado — atenção de {{name}}.",
+        "{{name}} corta o passe."
+      ],
+      "lost": [
+        "{{name}} não chega no passe.",
+        "Quase para {{name}}.",
+        "{{name}} arrisca, mas erra a linha de passe."
+      ]
+    },
+    "dribble": {
+      "won": [
+        "{{attacker}} passa por {{defender}}.",
+        "{{attacker}} deixa {{defender}} para trás.",
+        "Belos pés — {{attacker}} dribla {{defender}}.",
+        "{{attacker}} vence {{defender}} no 1 contra 1."
+      ],
+      "lost": [
+        "{{defender}} segura firme contra {{attacker}}.",
+        "{{defender}} ganha o duelo com {{attacker}}.",
+        "{{attacker}} não consegue passar por {{defender}}.",
+        "{{defender}} barra {{attacker}}."
+      ]
+    },
+    "offside": [
+      "Bandeira levantada — {{name}} estava em impedimento pelo {{team}}.",
+      "Impedimento — {{name}} saiu cedo demais pelo {{team}}.",
+      "Bandeira do auxiliar — {{name}} além do último zagueiro.",
+      "{{name}} flagrado em impedimento pelo {{team}}."
+    ]
+  },
+  "transfers": {
+    "title": "Transferências",
+    "incoming": "Contratações",
+    "outgoing": "Vendas",
+    "makeOffer": "Fazer proposta",
+    "yourPlayer": "Seu jogador",
+    "complete": "Concluída",
+    "rejected": "Recusada",
+    "offerAccepted": "Proposta aceita",
+    "offerRejected": "Proposta recusada",
+    "fee": "Valor",
+    "wage": "Salário",
+    "contract": "Contrato",
+    "rejectReasons": {
+      "squadDepth": "Elenco insuficiente para liberar o jogador",
+      "playerImportant": "O jogador é importante para o time",
+      "offerTooLow": "Proposta muito baixa",
+      "clubRejected": "O clube recusou a proposta"
+    },
+    "acceptReasons": {
+      "strongOffer": "Proposta muito atrativa",
+      "willingToSell": "O clube estava disposto a vender o jogador",
+      "financial": "O clube aceitou pela situação financeira"
+    },
+    "availableBudget": "Orçamento disponível",
+    "estValue": "Valor estimado",
+    "insufficientBudget": "Orçamento insuficiente para fazer uma proposta. Venda jogadores ou aumente a receita.",
+    "sendOffer": "Enviar Proposta",
+    "sending": "Enviando…",
+    "acceptedSummary": "{{name}} se juntou ao seu elenco por {{fee}}.",
+    "myTransfers": "Minhas Transferências",
+    "worldTransfers": "Transferências Mundiais",
+    "forSale": "À venda",
+    "loadingTransfers": "Carregando transferências…",
+    "noTransfers": "Nenhuma atividade de transferência envolvendo seu clube ainda. Estude jogadores, faça propostas ou coloque jogadores à venda.",
+    "totalSpent": "Total Gasto",
+    "totalEarned": "Total Arrecadado",
+    "netBalance": "Saldo Líquido",
+    "mySellList": {
+      "title": "Minha Lista de Vendas",
+      "listForSale": "Colocar à venda",
+      "listedForSale": "Colocado à venda",
+      "sellingPriority": "Prioridade de venda",
+      "loadingError": "Algo deu errado ao carregar sua lista.",
+      "updateError": "Não foi possível atualizar a lista. Tente novamente.",
+      "noSaveLoaded": "Nenhum jogo carregado.",
+      "loading": "Carregando sua lista de vendas…",
+      "retry": "Tentar Novamente",
+      "instructions": {
+        "part1": "Nenhum jogador colocado à venda. Abra o painel, escolha um jogador do seu elenco e use",
+        "listForSale": "Colocar à venda",
+        "part2": "para adicioná-lo aqui."
+      }
+    },
+    "worldTransfersCard": "Clubes de IA e outros"
+  },
+  "inbox": {
+    "title": "Mensagens",
+    "noMessages": "Nenhuma mensagem ainda.",
+    "noMessagesInView": "Nenhuma mensagem nesta visualização.",
+    "selectMessage": "Selecione uma mensagem para ler.",
+    "loadingMessages": "Carregando mensagens…",
+    "emptyState": "Sem mensagens ainda — volte depois de avançar os dias.",
+    "unread": "Não lidas",
+    "markAllRead": "Marcar todas como lidas",
+    "signedFrom": "Contratado de",
+    "soldTo": "Vendido para",
+    "transferInBody": "{{player}} se juntou ao clube em {{date}}.",
+    "transferOutBody": "{{player}} deixou o clube em {{date}}.",
+    "categories": {
+      "development": "Evolução",
+      "transfer_in": "Contratação",
+      "transfer_out": "Venda"
+    },
+    "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
+    "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje."
+  },
+  "finances": {
+    "alerts": "Alertas Financeiros",
+    "warnings": {
+      "negativeBudgetTitle": "Orçamento Negativo",
+      "negativeBudget": "Seu clube está endividado. Considere vender jogadores ou reduzir despesas.",
+      "heavyLossesTitle": "Perdas Significativas",
+      "heavyLosses": "As perdas semanais previstas são significativas. Revise a folha salarial.",
+      "weeklyLossTitle": "Perda Semanal Prevista",
+      "weeklyLoss": "Despesas superam a receita prevista. Acompanhe de perto.",
+      "highWagesTitle": "Folha Alta",
+      "highWages": "Os salários representam {{ratio}}% da receita anual. Considere se desfazer de jogadores caros."
+    }
+  },
+  "warnings": {
+    "finances": {
+      "inDebt": "Seu clube está endividado. Considere vender jogadores ou reduzir despesas.",
+      "weeklyLosses": "As perdas semanais previstas são significativas. Revise a folha salarial.",
+      "expensesExceed": "Despesas superam a receita prevista. Acompanhe de perto."
+    },
+    "development": {
+      "ageDecline": "Atributos físicos em queda devido à idade",
+      "reduceLoad": "Considere reduzir a carga de jogos",
+      "lowMorale": "Moral baixa atrapalha a evolução",
+      "poorFitness": "Condicionamento ruim — risco de lesão e evolução mais lenta",
+      "noMatchTime": "Sem minutos em jogo — evolução estagnada"
+    },
+    "errors": {
+      "loadFailed": "Falha ao carregar",
+      "saveFailed": "Falha ao salvar"
+    }
+  },
+  "squad": {
+    "title": "Elenco",
+    "fit": "Apto",
+    "injured": "Lesionado",
+    "suspended": "Suspenso",
+    "averageRating": "Nota média",
+    "totalSalary": "Folha total",
+    "totalValue": "Valor total"
+  },
+  "leagues": {
+    "title": "Ligas",
+    "table": "Tabela",
+    "fixtures": "Jogos",
+    "results": "Resultados",
+    "position": "Pos",
+    "club": "Clube",
+    "played": "J",
+    "won": "V",
+    "drawn": "E",
+    "lost": "D",
+    "goalsFor": "GP",
+    "goalsAgainst": "GC",
+    "goalDifference": "SG",
+    "points": "Pts",
+    "rank": "#",
+    "matches": "J",
+    "lastFive": "Últimos 5",
+    "noFixtureData": "Nenhum dado de jogos disponível para esta liga.",
+    "matchday": "Rodada {{round}}",
+    "vs": "x",
+    "selectLeague": "Liga",
+    "searchLeaguesPlaceholder": "Pesquisar ligas…",
+    "loadingLeagues": "Carregando ligas...",
+    "playerTable": {
+      "player": "Jogador",
+      "rating": "Avaliação",
+      "goals": "G",
+      "assists": "A",
+      "shots": "Chutes",
+      "passAccuracy": "Passes%",
+      "tackles": "Roubadas",
+      "interceptions": "Interceptações"
+    },
+    "substitutions": "Substituições"
+  },
+  "development": {
+    "title": "Evolução",
+    "subtitle": "Acompanhe o progresso dos seus jogadores",
+    "trainingIntensity": "Intensidade do treino",
+    "minEnergyToTrain": "Energia mínima para treinar",
+    "statusTitle": "Status",
+    "noConcerns": "Sem preocupações no momento",
+    "progressingExpected": "A evolução está conforme o esperado",
+    "warningsTitle": "Alertas",
+    "intensities": {
+      "low": "Leve",
+      "normal": "Normal",
+      "high": "Intenso"
+    },
+    "attributesTitle": "Atributos",
+    "attributesPrimary": "Principal",
+    "attributesSecondary": "Secundário",
+    "developmentProgress": "Desenvolvimento",
+    "profileAge": "Idade",
+    "profilePhase": "Fase",
+    "profileStatus": "Status de Desenvolvimento",
+    "phaseLabels": {
+      "developing": "Em Desenvolvimento",
+      "approachingPeak": "Próximo do Auge",
+      "atPeak": "No Auge",
+      "declining": "Em Declínio"
+    },
+    "statusLabels": {
+      "improving": "Melhorando",
+      "stable": "Estável",
+      "declining": "Em Declínio"
+    },
+    "summaryTitle": "Resumo de Desenvolvimento",
+    "roleFocusTitle": "Foco da Função",
+    "roleFocusPrimary": "Principal",
+    "roleFocusSecondary": "Secundário",
+    "roleFocusLimited": "Limitado",
+    "recentFormTitle": "Forma Recente",
+    "trendingUpward": "Tendência de Melhora",
+    "holdingSteady": "Mantendo-se Estável",
+    "trendingDownward": "Tendência de Queda",
+    "trainingSetupTitle": "Configuração de Treinamento",
+    "trainingSetupDescription": "Aplica-se ao seu clube nos dias de descanso: apenas jogadores com energia acima do limite participam da sessão; a intensidade escala ganhos e fadiga.",
+    "minEnergyLabel": "Energia mínima para treinar",
+    "minEnergyHint": "0–100 de resistência · jogadores abaixo pulam a sessão",
+    "intensityLabel": "Intensidade",
+    "intensityLight": "Leve",
+    "intensityLightHint": "Carga baixa, ganhos suaves",
+    "intensityNormal": "Normal",
+    "intensityNormalHint": "Equilibrado",
+    "intensityHeavy": "Pesado",
+    "intensityHeavyHint": "Ganhos mais fortes, mais fadiga",
+    "trainingDpHint": "Jogadores abaixo de 21 anos recebem desenvolvimento total no treino; entre 21 e 30 recebem metade; acima de 30 não recebem. Intensidade pesada rende mais.",
+    "unsavedChanges": "Você tem alterações não salvas.",
+    "savedToFile": "Salvo no arquivo de carreira.",
+    "savingButton": "Salvando…",
+    "saveButton": "Salvar"
+  },
+  "dashboard": {
+    "playerCard": {
+      "value": "Valor",
+      "salary": "Salário",
+      "energy": "Energia",
+      "attributes": "Atributos",
+      "attack": "Ataque",
+      "speed": "Velocidade",
+      "passing": "Passe",
+      "defense": "Defesa",
+      "goalkeeping": "Goleiragem",
+      "rightFoot": "Destro",
+      "leftFoot": "Canhoto",
+      "yearsOld": "anos"
+    },
+    "squadTable": {
+      "noSquadData": "Nenhum dado de elenco disponível.",
+      "pos": "Pos",
+      "name": "Nome",
+      "age": "Idade",
+      "avg": "Média",
+      "energy": "Energia",
+      "phase": "Fase",
+      "train": "Treino",
+      "moral": "Moral",
+      "salary": "Salário",
+      "value": "Valor",
+      "goals": "G",
+      "assists": "A",
+      "rating": "Nota",
+      "bad": "Ruim",
+      "poor": "Fraco",
+      "ok": "OK",
+      "good": "Bom",
+      "top": "Ótimo",
+      "fit": "Apto",
+      "injured": "Lesionado",
+      "suspended": "Suspenso"
+    },
+    "assistsLabel": "assistências",
+    "clubSidebar": {
+      "manager": "Técnico",
+      "board": "Diretoria",
+      "fans": "Torcida",
+      "removeFromSale": "Remover da Venda",
+      "listForSale": "Colocar à Venda",
+      "budget": "Orçamento",
+      "squad": "Elenco",
+      "nextMatch": "Próxima Partida",
+      "noMatchScheduled": "Nenhuma partida agendada",
+      "viewFullSquad": "Ver Elenco Completo",
+      "players": "jogadores",
+      "home": "Casa",
+      "away": "Visitante"
+    },
+    "squadRosterTable": {
+      "noPlayers": "Nenhum jogador neste elenco.",
+      "pos": "Pos",
+      "name": "Nome",
+      "age": "Idade",
+      "avg": "Média",
+      "salary": "Salário",
+      "value": "Valor",
+      "goals": "G",
+      "rating": "Nota",
+      "action": "Ação",
+      "offer": "Oferta",
+      "yourPlayer": "Seu jogador",
+      "makeOffer": "Fazer oferta",
+      "players": "jogadores",
+      "fit": "Apto",
+      "injured": "Lesionado",
+      "suspended": "Suspenso"
+    }
+  },
+  "squadScreen": {
+    "loadingSquad": "Carregando elenco...",
+    "squadNotFound": "Elenco não encontrado.",
+    "players": "jogadores"
+  },
+  "matchPreview": {
+    "title": "Pré-jogo",
+    "venue": "Local",
+    "weather": "Clima",
+    "kickoff": "Pontapé Inicial",
+    "kickoffTime": "20:00 GMT",
+    "officials": "Árbitros",
+    "referee": "Árbitro",
+    "startingXI": "XI Inicial",
+    "bench": "Banco",
+    "substitutes": "Substituto",
+    "noLineupSet": "Nenhuma formação definida",
+    "noBenchPlayers": "Nenhum jogador no banco disponível.",
+    "style": "Estilo",
+    "lastMinuteSubs": "Substituições de última hora",
+    "loadingMatchPreview": "Carregando pré-jogo…",
+    "cannotLoadMatchSetup": "Não foi possível carregar a formação",
+    "noMatchToday": "Nenhuma partida hoje",
+    "redirectingToDashboard": "Redirecionando para o painel…",
+    "noTacticsTitle": "Táticas ainda não definidas",
+    "noTacticsSubtitle": "Levando você para Formação e Táticas para escolher sua escalação…",
+    "goToTacticsNow": "Definir agora",
+    "editTactics": "Editar Táticas",
+    "sendAssistant": "Enviar assistente",
+    "startGame": "Iniciar jogo",
+    "simulating": "Simulando…",
+    "changes": "mudanças",
+    "changesThisSession": "Mudanças nesta sessão",
+    "chooseABench": "Escolha um jogador no banco à direita.",
+    "chooseStarter": "Toque em um titular (à esquerda), depois escolha do banco (à direita).",
+    "out": "Saída",
+    "in": "Entrada",
+    "tapAPlayer": "Toque em um jogador no banco →",
+    "fitness": "Condicionamento",
+    "rating": "nota",
+    "cancelSelection": "Cancelar seleção",
+    "change": "mudança"
+  },
+  "matchResult": {
+    "title": "Resultado da partida",
+    "matchdayRound": "Rodada {{round}} • {{competition}}",
+    "matchRatings": "Avaliações da partida",
+    "squadPerformance": "Desempenho do elenco",
+    "noPlayerData": "Sem dados de jogadores",
+    "goal": "gol",
+    "goals": "gols",
+    "assist": "assistência",
+    "assists": "assistências",
+    "matchStatistics": "Estatísticas da partida",
+    "passesCompleted": "Passes completados",
+    "venue": "Local",
+    "weather": "Tempo",
+    "date": "Data",
+    "officials": "Árbitros",
+    "back": "Voltar ao painel"
+  },
+  "substitutionPanel": {
+    "title": "Substituições",
+    "xiAvg": "Média XI",
+    "benchAvg": "Média banco",
+    "remaining": "{{remaining}}/5 restantes",
+    "pending": "{{count}} pendentes",
+    "playerSwap": "Troca de jogador",
+    "formation": "Formação",
+    "pendingSubstitutions": "Pendentes (próximo evento)",
+    "chooseBench": "Escolha um jogador do banco à direita.",
+    "chooseStarter": "Toque em um titular (esquerda), depois escolha do banco (direita).",
+    "noSubsRemaining": "Sem substituições restantes.",
+    "out": "Saída",
+    "in": "Entrada",
+    "off": "Fora",
+    "rating": "nota",
+    "energy": "Energia",
+    "startingXi": "XI inicial",
+    "bench": "Banco",
+    "noAvailable": "Nenhum jogador do banco disponível.",
+    "selectBench": "Toque em um jogador no banco →",
+    "cancelSelection": "Cancelar seleção",
+    "changeFormationHint": "Mude de formação durante a partida. Os jogadores mantêm suas posições e se adaptam à nova estrutura."
+  },
+  "scoreBar": {},
+  "matchOverlay": {
+    "halfTime": "Intervalo",
+    "fullTime": "Fim de Jogo",
+    "secondHalfStarting": "Segundo tempo iniciando em breve…",
+    "matchOver": "Partida encerrada"
+  },
+  "goalOverlay": {
+    "goal": "GOL!",
+    "scores": "{{team}} marca"
+  },
+  "daySummary": {
+    "title": "Resumo do Dia",
+    "matches": "Partidas ({{count}})",
+    "matchRound": "{{competition}} • Rodada {{round}}",
+    "playerDevelopment": "Evolução do Jogador",
+    "shots": "Finalizações",
+    "passes": "Passes",
+    "tackles": "Desarmes",
+    "restDay": "Dia de folga",
+    "trainingDay": "Dia de treino",
+    "fitness": "Condicionamento",
+    "training": "Treino",
+    "noPlayersInSession": "Nenhum jogador nesta sessão.",
+    "fullMatchReport": "Relatório completo da partida",
+    "yourSquad": "SEU ELENCO",
+    "goalkeeper": "Goleiro",
+    "striker": "Atacante",
+    "defender": "Defensor",
+    "midfielder": "Meio-campista",
+    "forward": "Ponta",
+    "noChange": "Sem mudanças",
+    "lightFatigue": "Leve cansaço",
+    "fatigued": "Cansado",
+    "drained": "Exausto",
+    "flat": "Sem melhora",
+    "smallImprovement": "Pequena melhora",
+    "goodProgress": "Bom progresso",
+    "greatProgress": "Ótimo progresso",
+    "hugeImprovement": "Progresso excepcional",
+    "refreshed": "Recuperado",
+    "recovery": "Recuperação",
+    "strongRecovery": "Forte recuperação",
+    "sharpnessHeld": "Precisão mantida",
+    "minorRust": "Leve enferrujamento",
+    "sharpnessFaded": "Precisão diminuída"
+  },
+  "weekCalendar": {
+    "weekSchedule": "Calendário da Semana",
+    "restDay": "Dia de Folga",
+    "training": "Treino",
+    "match": "Partida",
+    "today": "Hoje",
+    "switchToTraining": "Mudar para Treino",
+    "switchToRest": "Mudar para Folga",
+    "tapToSwitch": "toque para alternar",
+    "collapse": "Recolher",
+    "expand": "Expandir"
+  },
+  "financesScreen": {
+    "budget": "Orçamento",
+    "weeklyProfitLoss": "Lucro/Prejuízo Semanal Est.",
+    "seasonRevenue": "Receita da Temporada",
+    "followers": "Seguidores",
+    "revenueBreakdown": "Receita da Temporada",
+    "annualBasis": "Base anual",
+    "broadcasting": "Transmissão",
+    "seasonPayment": "pagamento da temporada",
+    "commercial": "Patrocínio",
+    "stadium": "Estádio",
+    "homeGames": "~{{count}} jogos em casa",
+    "transfersIn": "Transferências Recebidas",
+    "playerSales": "vendas de jogadores",
+    "noSales": "sem vendas",
+    "seasonTotal": "Total da Temporada",
+    "expenses": "Despesas",
+    "playerSalaries": "Salários de Jogadores",
+    "weekly": "/sem",
+    "operational": "Operacional (10%)",
+    "transfersOut": "Transferências Realizadas",
+    "playerPurchases": "compras de jogadores",
+    "noPurchases": "sem compras",
+    "weeklyOutgoing": "Saída semanal",
+    "estWeeklyRevenue": "Receita Semanal Est.",
+    "revenue": "Receita",
+    "profit": "Lucro",
+    "stadiumHeader": "Estádio",
+    "capacity": "Capacidade",
+    "ticket": "Ingresso",
+    "estAttendanceNextGame": "Presença Est. Próximo Jogo",
+    "homeAway": "Casa ~{{home}} Visitante ~{{away}}",
+    "formLastFive": "Forma (últimas 5)",
+    "leaguePosition": "Posição na Liga",
+    "fanBase": "Torcida",
+    "matchRevenueEst": "Receita de jogo est.",
+    "noStadiumData": "Sem dados do estádio",
+    "playMatchesToSeeAttendance": "Jogue partidas para ver estimativa de presença.",
+    "expand": "Expandir",
+    "comingSoon": "Em breve",
+    "loading": "Carregando..."
+  },
+  "developmentScreen": {
+    "playerDevelopment": "Desenvolvimento do Jogador",
+    "squad": "Elenco",
+    "searchPlayers": "Buscar jogadores…",
+    "noPlayersMatch": "Nenhum jogador corresponde a \"{{query}}\"",
+    "loading": "Carregando...",
+    "noSquadData": "Nenhum dado do elenco encontrado.",
+    "agePhases": {
+      "developing": "Em Desenvolvimento",
+      "approachingPeak": "Aproximando do Auge",
+      "atPeak": "No Auge",
+      "declining": "Declínio"
+    },
+    "devStatuses": {
+      "improving": "melhorando",
+      "stable": "estável",
+      "declining": "declinando"
+    }
+  },
+  "scout": {
+    "title": "Olheiro",
+    "database": "Base de Dados",
+    "allLeagues": "Todas as ligas",
+    "allNationalities": "Todas as nacionalidades",
+    "filters": {
+      "searchFilters": "Filtros de Busca",
+      "reset": "Redefinir",
+      "playerName": "Nome do Jogador",
+      "searchByName": "Buscar por nome...",
+      "position": "Posição",
+      "ageRange": "Faixa Etária",
+      "minMaxPlaceholder": "Mín",
+      "maxPlaceholder": "Máx",
+      "league": "Liga",
+      "nationality": "Nacionalidade",
+      "allLeagues": "Todas as ligas",
+      "allNationalities": "Todas as nacionalidades",
+      "forSaleOnly": "Apenas à Venda"
+    },
+    "attributeFilters": {
+      "attributes": "Filtros de atributos",
+      "description": "Clique na faixa para definir mín–máx (0–10)",
+      "clearAll": "Limpar todos os atributos",
+      "any": "qualquer"
+    },
+    "table": {
+      "forSale": "À venda",
+      "yourPlayer": "Seu jogador",
+      "makeAnOffer": "Fazer oferta",
+      "foundPlayers": "Encontrados {{count}} jogadores",
+      "loadingPlayers": "Carregando jogadores...",
+      "applyingFilters": "Aplicando filtros…",
+      "noPlayersFound": "Nenhum jogador encontrado com os critérios selecionados",
+      "action": "Ação",
+      "offer": "Oferta"
+    },
+    "statusBadges": {
+      "bad": "Ruim",
+      "poor": "Fraco",
+      "ok": "OK",
+      "good": "Bom",
+      "top": "Topo"
+    },
+    "screen": {
+      "database": "Banco de Dados"
+    }
+  }
+}

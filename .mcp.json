@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "touchlines-engine": {
+      "command": "bun",
+      "args": ["src/mcp/server.ts"]
+    }
+  }
+}

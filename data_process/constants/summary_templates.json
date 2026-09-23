@@ -1,0 +1,37 @@
+{
+  "GK": [
+    "Reliable keeper with good reflexes and presence in the box.",
+    "Commanding goalkeeper who organises the back line effectively.",
+    "Agile shot-stopper comfortable playing out from the back."
+  ],
+  "CB": [
+    "Composed centre-back who reads the game well and is strong in the air.",
+    "Athletic defender comfortable bringing the ball out of defence.",
+    "No-nonsense centre-back who clears danger and dominates duels."
+  ],
+  "FB": [
+    "Energetic full-back who contributes at both ends of the pitch.",
+    "Solid defender who gets forward to support attacks when possible.",
+    "Quick full-back who overlaps and delivers crosses into the box."
+  ],
+  "MF": [
+    "All-round midfielder who links defence and attack. Covers a lot of ground.",
+    "Tenacious midfielder who breaks up play and recycles possession.",
+    "Composed passer who controls the tempo from a central position."
+  ],
+  "AM": [
+    "Creative attacker who drifts into pockets of space to unlock defences.",
+    "Playmaker who finds key passes and dictates the final third.",
+    "Skilful number 10 who combines vision with technique."
+  ],
+  "WG": [
+    "Direct winger who takes on defenders and creates chances from wide areas.",
+    "Pacy wide player who stretches defences with off-the-ball runs.",
+    "Skilful winger who combines dribbling ability with end product."
+  ],
+  "FW": [
+    "Clinical striker who thrives inside the penalty area.",
+    "Mobile forward who can play across the front line.",
+    "Powerful striker who holds the ball up and brings others into play."
+  ]
+}

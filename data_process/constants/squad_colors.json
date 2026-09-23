@@ -1,0 +1,628 @@
+{
+  "Arsenal": [
+    "#EF0107",
+    "#FFFFFF"
+  ],
+  "Aston Villa": [
+    "#670E36",
+    "#95BFE5"
+  ],
+  "Bournemouth": [
+    "#DA291C",
+    "#000000"
+  ],
+  "Brentford": [
+    "#E30613",
+    "#FFB81C"
+  ],
+  "Brighton": [
+    "#0057B8",
+    "#FFFFFF"
+  ],
+  "Burnley": [
+    "#6C1D45",
+    "#99D6EA"
+  ],
+  "Chelsea": [
+    "#034694",
+    "#FFFFFF"
+  ],
+  "Crystal Palace": [
+    "#1B458F",
+    "#C4122E"
+  ],
+  "Everton": [
+    "#003399",
+    "#FFFFFF"
+  ],
+  "Fulham": [
+    "#FFFFFF",
+    "#000000"
+  ],
+  "Liverpool": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "Luton Town": [
+    "#F78F1E",
+    "#002D62"
+  ],
+  "Manchester City": [
+    "#6CABDD",
+    "#FFFFFF"
+  ],
+  "Manchester Utd": [
+    "#DA291C",
+    "#FFE500"
+  ],
+  "Newcastle Utd": [
+    "#241F20",
+    "#FFFFFF"
+  ],
+  "Nott'ham Forest": [
+    "#DD0000",
+    "#FFFFFF"
+  ],
+  "Sheffield Utd": [
+    "#EE2737",
+    "#FFFFFF"
+  ],
+  "Tottenham": [
+    "#132257",
+    "#FFFFFF"
+  ],
+  "West Ham": [
+    "#7A263A",
+    "#1BB1E7"
+  ],
+  "Wolves": [
+    "#FDB913",
+    "#231F20"
+  ],
+  "Augsburg": [
+    "#BA3733",
+    "#FFFFFF"
+  ],
+  "Bayern Munich": [
+    "#DC052D",
+    "#0066B2"
+  ],
+  "Bochum": [
+    "#005BA5",
+    "#FFFFFF"
+  ],
+  "Darmstadt 98": [
+    "#004E9E",
+    "#FFFFFF"
+  ],
+  "Dortmund": [
+    "#FDE100",
+    "#000000"
+  ],
+  "Eint Frankfurt": [
+    "#E1000F",
+    "#000000"
+  ],
+  "Freiburg": [
+    "#E2001A",
+    "#000000"
+  ],
+  "Gladbach": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Heidenheim": [
+    "#E30613",
+    "#004B91"
+  ],
+  "Hoffenheim": [
+    "#1961B5",
+    "#FFFFFF"
+  ],
+  "Köln": [
+    "#ED1C24",
+    "#FFFFFF"
+  ],
+  "Leverkusen": [
+    "#E32221",
+    "#000000"
+  ],
+  "Mainz 05": [
+    "#ED1C24",
+    "#FFFFFF"
+  ],
+  "RB Leipzig": [
+    "#DD0741",
+    "#001F47"
+  ],
+  "Stuttgart": [
+    "#E32219",
+    "#FFFFFF"
+  ],
+  "Union Berlin": [
+    "#EB1923",
+    "#FDE100"
+  ],
+  "Werder Bremen": [
+    "#1D9053",
+    "#FFFFFF"
+  ],
+  "Wolfsburg": [
+    "#65B32E",
+    "#FFFFFF"
+  ],
+  "Alavés": [
+    "#003DA5",
+    "#FFFFFF"
+  ],
+  "Almería": [
+    "#ED1C24",
+    "#FFFFFF"
+  ],
+  "Athletic Club": [
+    "#EE2523",
+    "#FFFFFF"
+  ],
+  "Atlético Madrid": [
+    "#272E61",
+    "#CE3524"
+  ],
+  "Barcelona": [
+    "#A50044",
+    "#004D98"
+  ],
+  "Betis": [
+    "#00954C",
+    "#FFFFFF"
+  ],
+  "Celta Vigo": [
+    "#8AC3EE",
+    "#FFFFFF"
+  ],
+  "Cádiz": [
+    "#FDE607",
+    "#004D98"
+  ],
+  "Getafe": [
+    "#004FA3",
+    "#FFFFFF"
+  ],
+  "Girona": [
+    "#CD2534",
+    "#FFFFFF"
+  ],
+  "Granada": [
+    "#C4122E",
+    "#FFFFFF"
+  ],
+  "Las Palmas": [
+    "#FFE114",
+    "#004F9F"
+  ],
+  "Mallorca": [
+    "#E20613",
+    "#000000"
+  ],
+  "Osasuna": [
+    "#D91A2A",
+    "#00205B"
+  ],
+  "Rayo Vallecano": [
+    "#FFFFFF",
+    "#E30613"
+  ],
+  "Real Madrid": [
+    "#FFFFFF",
+    "#FEBE10"
+  ],
+  "Real Sociedad": [
+    "#143C8B",
+    "#FFFFFF"
+  ],
+  "Sevilla": [
+    "#FFFFFF",
+    "#D4002A"
+  ],
+  "Valencia": [
+    "#FFFFFF",
+    "#EE8707"
+  ],
+  "Villarreal": [
+    "#FFE114",
+    "#005187"
+  ],
+  "Brest": [
+    "#E2001A",
+    "#FFFFFF"
+  ],
+  "Clermont Foot": [
+    "#A3155A",
+    "#1D1D1B"
+  ],
+  "Le Havre": [
+    "#004A9B",
+    "#75C4E4"
+  ],
+  "Lens": [
+    "#ED1C24",
+    "#FDE607"
+  ],
+  "Lille": [
+    "#E2001A",
+    "#FFFFFF"
+  ],
+  "Lorient": [
+    "#F26522",
+    "#000000"
+  ],
+  "Lyon": [
+    "#FFFFFF",
+    "#003DA5"
+  ],
+  "Marseille": [
+    "#2FAEE0",
+    "#FFFFFF"
+  ],
+  "Metz": [
+    "#811331",
+    "#FFFFFF"
+  ],
+  "Monaco": [
+    "#E7001B",
+    "#FFFFFF"
+  ],
+  "Montpellier": [
+    "#003DA5",
+    "#F26522"
+  ],
+  "Nantes": [
+    "#FCDD09",
+    "#2E8B57"
+  ],
+  "Nice": [
+    "#000000",
+    "#E10600"
+  ],
+  "Paris S-G": [
+    "#004170",
+    "#DA291C"
+  ],
+  "Reims": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "Rennes": [
+    "#E2001A",
+    "#000000"
+  ],
+  "Strasbourg": [
+    "#004A9B",
+    "#FFFFFF"
+  ],
+  "Toulouse": [
+    "#5B2C86",
+    "#FFFFFF"
+  ],
+  "Atalanta": [
+    "#1E71B8",
+    "#000000"
+  ],
+  "Bologna": [
+    "#1A2F48",
+    "#A2191F"
+  ],
+  "Cagliari": [
+    "#A61E2E",
+    "#1A2F6B"
+  ],
+  "Empoli": [
+    "#004B93",
+    "#FFFFFF"
+  ],
+  "Fiorentina": [
+    "#482E92",
+    "#FFFFFF"
+  ],
+  "Frosinone": [
+    "#FFDD00",
+    "#004B93"
+  ],
+  "Genoa": [
+    "#A61E2E",
+    "#003D79"
+  ],
+  "Hellas Verona": [
+    "#003DA5",
+    "#FFD700"
+  ],
+  "Inter": [
+    "#009FE3",
+    "#000000"
+  ],
+  "Juventus": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Lazio": [
+    "#87D8F7",
+    "#FFFFFF"
+  ],
+  "Lecce": [
+    "#FFDD00",
+    "#E2001A"
+  ],
+  "Milan": [
+    "#FB090B",
+    "#000000"
+  ],
+  "Monza": [
+    "#C70101",
+    "#FFFFFF"
+  ],
+  "Napoli": [
+    "#004B87",
+    "#FFFFFF"
+  ],
+  "Roma": [
+    "#A8193E",
+    "#F2A900"
+  ],
+  "Salernitana": [
+    "#811331",
+    "#FFFFFF"
+  ],
+  "Sassuolo": [
+    "#00A651",
+    "#000000"
+  ],
+  "Torino": [
+    "#811331",
+    "#FFFFFF"
+  ],
+  "Udinese": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Flamengo": [
+    "#C8102E",
+    "#000000"
+  ],
+  "Fluminense": [
+    "#8B1A2E",
+    "#FFFFFF"
+  ],
+  "Botafogo": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Vasco da Gama": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Corinthians": [
+    "#FFFFFF",
+    "#000000"
+  ],
+  "Palmeiras": [
+    "#006437",
+    "#FFFFFF"
+  ],
+  "São Paulo": [
+    "#E31E24",
+    "#FFFFFF"
+  ],
+  "Santos": [
+    "#FFFFFF",
+    "#000000"
+  ],
+  "Grêmio": [
+    "#001F5B",
+    "#7EC8E3"
+  ],
+  "Internacional": [
+    "#E52020",
+    "#FFFFFF"
+  ],
+  "Atlético Mineiro": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Atlético PR": [
+    "#000000",
+    "#C10000"
+  ],
+  "Cruzeiro": [
+    "#003087",
+    "#FFFFFF"
+  ],
+  "Bahia": [
+    "#003087",
+    "#E61E25"
+  ],
+  "Bragantino": [
+    "#D10A18",
+    "#FFFFFF"
+  ],
+  "Vitória": [
+    "#C8102E",
+    "#000000"
+  ],
+  "Mirassol": [
+    "#FFD700",
+    "#003087"
+  ],
+  "Coritiba": [
+    "#007A33",
+    "#FFFFFF"
+  ],
+  "Chapecoense": [
+    "#007A33",
+    "#FFFFFF"
+  ],
+  "Remo": [
+    "#001F5B",
+    "#FFFFFF"
+  ],
+  "Fortaleza": [
+    "#0033A0",
+    "#C8102E"
+  ],
+  "Ceará": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Sport": [
+    "#C8102E",
+    "#000000"
+  ],
+  "América": [
+    "#007A33",
+    "#FFFFFF"
+  ],
+  "Juventude": [
+    "#007A33",
+    "#FFFFFF"
+  ],
+  "Goiás": [
+    "#007A33",
+    "#FFFFFF"
+  ],
+  "CRB": [
+    "#C8102E",
+    "#000000"
+  ],
+  "Cuiabá": [
+    "#FFD700",
+    "#007A33"
+  ],
+  "Criciúma": [
+    "#FFD700",
+    "#000000"
+  ],
+
+  "Amazonas": [
+    "#FF6600",
+    "#000000"
+  ],
+  "América Mineiro": [
+    "#006837",
+    "#FFFFFF"
+  ],
+  "Atlético GO": [
+    "#E10600",
+    "#FFFFFF"
+  ],
+  "Avaí": [
+    "#003DA5",
+    "#FFFFFF"
+  ],
+  "Botafogo SP": [
+    "#000000",
+    "#C10000"
+  ],
+  "Ferroviária": [
+    "#C8102E",
+    "#000000"
+  ],
+  "Novorizontino": [
+    "#000000",
+    "#FFD700"
+  ],
+  "Operário PR": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Paysandu": [
+    "#003087",
+    "#FFFFFF"
+  ],
+  "Vila Nova": [
+    "#C8102E",
+    "#000000"
+  ],
+  "Volta Redonda": [
+    "#CC0000",
+    "#000000"
+  ],
+
+  "ABC": [
+    "#CC0000",
+    "#FFFFFF"
+  ],
+  "Anápolis": [
+    "#006837",
+    "#FFFFFF"
+  ],
+  "Botafogo PB": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Brusque": [
+    "#003DA5",
+    "#FFFFFF"
+  ],
+  "CSA": [
+    "#003DA5",
+    "#FFFFFF"
+  ],
+  "Caxias": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "Confiança": [
+    "#003DA5",
+    "#FFFFFF"
+  ],
+  "Figueirense": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Floresta": [
+    "#006837",
+    "#FFFFFF"
+  ],
+  "Guarani": [
+    "#006837",
+    "#FFFFFF"
+  ],
+  "Itabaiana": [
+    "#FFD700",
+    "#000000"
+  ],
+  "Ituano": [
+    "#C8102E",
+    "#000000"
+  ],
+  "Londrina": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "Maringá": [
+    "#003DA5",
+    "#FFFFFF"
+  ],
+  "Náutico": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "Ponte Preta": [
+    "#000000",
+    "#FFFFFF"
+  ],
+  "Retrô": [
+    "#F47920",
+    "#000000"
+  ],
+  "São Bernardo": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "Tombense": [
+    "#000000",
+    "#C10000"
+  ],
+  "Ypiranga Erechim": [
+    "#FFD700",
+    "#000000"
+  ]
+}

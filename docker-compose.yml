@@ -1,0 +1,15 @@
+services:
+  touchlines:
+    build: .
+    image: touchlines:local
+    container_name: touchlines
+    restart: unless-stopped
+    ports:
+      - "9400:3000"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      RUNTIME_DATA_DIR: /app/persistent
+    volumes:
+      - ./persistent:/app/persistent

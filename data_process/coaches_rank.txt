@@ -1,0 +1,476 @@
+#    Points  Name                      Nationality     Current Team
+--------------------------------------------------------------------------------
+1      92.6  A. Wenger                 France          — unattached —
+2      86.8  Luis Enrique              Spain           PSG
+3      30.8  M. Almeyda                Argentina       Sevilla
+4      29.8  Elano                     Brazil          — unattached —
+5      26.8  Cuca                      Brazil          Atlético Mineiro
+6      24.8  E. Coudet                 Argentina       Alaves
+7      22.8  C. Ranieri                Italy           Roma
+8      13.2  Marcão                    Brazil          Fluminense
+9      11.6  R. Di Matteo              Italy           — unattached —
+10      9.8  Márcio Fernandes          Brazil          Botafogo PB
+11      9.6  Guto Ferreira             Brazil          Cuiabá
+12      7.0  W. Mazzarri               Italy           — unattached —
+13      6.4  F. Funkel                 Germany         FC Cologne
+14      6.2  Mazola Júnior             Brazil          Ituano
+15      4.6  L. Baines                 England         Everton
+16      4.6  A. Kantari                Morocco         Nantes
+17      4.0  Luiz Fernando Iubel       Brazil          Cuiabá
+18      3.8  Ivan Baitello             Brazil          Mirassol
+19      3.2  Javi Gracia               Spain           — unattached —
+20      2.8  Odair Hellmann            Brazil          Atletico Paranaense
+21      2.8  Eder Sarabia              Spain           Elche
+22      2.6  P. Le Guen                France          — unattached —
+23      2.6  José Bordalás             Spain           Getafe
+24      2.0  A. Pawlak                 Germany         Köln
+25      1.4  R. Sanchez                Ecuador         Barcelona
+26      1.0  Marcio                    Brazil          Amazonas
+27      1.0  Ricardinho                Brazil          — unattached —
+28      0.8  Luis García               Spain           Alaves
+29      0.4  A. Bertoldi               Uruguay         Liverpool
+30      0.0  A. Dupont                 France          — unattached —
+31      0.0  E. Roy                    France          Brest
+32      0.0  Luiz Felipe Scolari       Brazil          — unattached —
+33      0.0  Lucas Gonçalves           Brazil          Atlético Mineiro
+34      0.0  C. Pélissier              France          Auxerre
+35      0.0  C. Daury                  France          Auxerre
+36      0.0  F. Gillot                 France          Auxerre
+37      0.0  Christophe Pelissier      Unknown         Auxerre
+38      0.0  Adilson Batista           Brazil          Amazonas
+39      0.0  Guilherme Alves           Brazil          Amazonas
+40      0.0  Aderbal                   Brazil          Amazonas
+41      0.0  Aderbal Lana              Unknown         Amazonas
+42      0.0  D. Digard                 France          Le Havre
+43      0.0  L. Bölöni                 Romania         Metz
+44      0.0  J. Pinot                  France          — unattached —
+45      0.0  S. Le Mignan              France          Metz
+46      0.0  Benoit Tavenot            Unknown         Metz
+47      0.0  S. Gilli                  France          Paris FC
+48      0.0  R. Girard                 France          — unattached —
+49      0.0  Antoine Kombouare         Unknown         Paris FC
+50      0.0  E. Sikora                 France          Lens
+51      0.0  P. Sage                   France          Lens
+52      0.0  Rogério Ceni              Brazil          Bahia
+53      0.0  Cláudio Prates            Brazil          Bahia
+54      0.0  Bruno Lopes               Portugal        — unattached —
+55      0.0  Preto Casagrande          Brazil          — unattached —
+56      0.0  Ceni Rogerio              Unknown         Bahia
+57      0.0  Roger Machado             Brazil          Internacional
+58      0.0  Falcão                    Unknown         Internacional
+59      0.0  Pablo Fernandez           Brazil          Internacional
+60      0.0  Paulo Pezzolano           Unknown         Internacional
+61      0.0  Eduardo Barros            Brazil          Cuiaba
+62      0.0  Bernardo Franco           Brazil          Cuiabá
+63      0.0  Antônio Carlos Zago       Brazil          Botafogo PB
+64      0.0  Rodrigo Santana           Brazil          Remo
+65      0.0  Daniel Paulista           Brazil          Remo
+66      0.0  Paulo Bonamigo            Brazil          — unattached —
+67      0.0  Juan Osorio               Unknown         remo
+68      0.0  Bruno Lazaroni            Brazil          Botafogo
+69      0.0  Renato Paiva              Portugal        Botafogo
+70      0.0  Ricardo Resende           Brazil          — unattached —
+71      0.0  Flávio Tenius             Brazil          — unattached —
+72      0.0  Carlos Leiria             Brazil          Botafogo
+73      0.0  Davide Ancelotti          Unknown         Botafogo
+74      0.0  Martin Anselmi            Unknown         Botafogo
+75      0.0  Ademir Fesan              Brazil          Inter de Limeira
+76      0.0  Coelho                    Brazil          — unattached —
+77      0.0  Elton Macaé               Brazil          Inter de Limeira
+78      0.0  Ademir Fesan              Brazil          Inter de Limeira
+79      0.0  Abel Ferreira             Portugal        Palmeiras
+80      0.0  Andrey Lopes              Brazil          — unattached —
+81      0.0  Filipe Gouveia            Portugal        Brusque
+82      0.0  Matheus Costa             Brazil          Ypiranga RS
+83      0.0  Círio Quadros             Brazil          — unattached —
+84      0.0  Guilherme Macuglia        Brazil          Ypiranga-RS
+85      0.0  Cabral Raul               Unknown         Ypiranga-RS
+86      0.0  Sandro Forner             Brazil          — unattached —
+87      0.0  Bruno Pivetti             Brazil          Operário PR
+88      0.0  Alex                      Brazil          Operario-PR
+89      0.0  Lopes Luizinho            Unknown         Operario-PR
+90      0.0  Pepa                      Portugal        Sport Recife
+91      0.0  Mílton Cruz               Brazil          Sport Recife
+92      0.0  César Lucena              Brazil          Sport Recife
+93      0.0  António Oliveira          Portugal        Sport Recife
+94      0.0  Silva Roger               Unknown         Sport Recife
+95      0.0  Renato Gaúcho             Brazil          Fluminense
+96      0.0  Abel Braga                Brazil          — unattached —
+97      0.0  L. Zubeldía               Argentina       Fluminense
+98      0.0  Oswaldo de Oliveira       Brazil          — unattached —
+99      0.0  Marcão                    Brazil          Fluminense
+100     0.0  Alberto Valentim          Brazil          America Mineiro
+101     0.0  Givanildo Oliveira        Brazil          — unattached —
+102     0.0  Lisca                     Brazil          América Mineiro
+103     0.0  Diogo Giacomini           Brazil          America Mineiro
+104     0.0  William Batista           Brazil          América Mineiro
+105     0.0  William Batista           Brazil          América Mineiro
+106     0.0  Valentim Alberto          Unknown         America Mineiro
+107     0.0  Marcelo Salles            Brazil          Flamengo
+108     0.0  Jayme de Almeida          Brazil          Flamengo
+109     0.0  Filipe Luís               Brazil          Flamengo
+110     0.0  J. Vojvoda                Argentina       Santos
+111     0.0  Pedro Caixinha            Portugal        Santos
+112     0.0  Serginho Chulapa          Brazil          — unattached —
+113     0.0  Leandro Zago              Brazil          Santos
+114     0.0  César Sampaio             Brazil          Santos
+115     0.0  Cléber Xavier             Brazil          Santos
+116     0.0  Leonardo Condé            Brazil          Ceará
+117     0.0  Daniel Azambuja           Unknown         Ceara
+118     0.0  Pedro Sotero              Brazil          — unattached —
+119     0.0  Mozart                    Unknown         Ceara
+120     0.0  Mano Menezes              Brazil          Grêmio
+121     0.0  James Freitas             Brazil          Grêmio
+122     0.0  Cesinha                   Brazil          — unattached —
+123     0.0  Luis Castro               Unknown         Gremio
+124     0.0  Vanderlei Luxemburgo      Brazil          — unattached —
+125     0.0  Dorival Júnior            Brazil          Corinthians
+126     0.0  R. Díaz                   Argentina       Corinthians
+127     0.0  Fernando Lázaro           Brazil          — unattached —
+128     0.0  Orlando Ribeiro           Brazil          Corinthians
+129     0.0  Danilo                    Brazil          — unattached —
+130     0.0  Raphael Laruccia          Brazil          Corinthians
+131     0.0  Bolívar                   Brazil          — unattached —
+132     0.0  Gilmar Dall Pozzo         Brazil          Chapecoense
+133     0.0  Caio Júnior               Unknown         Chapecoense-sc
+134     0.0  Yan                       Brazil          — unattached —
+135     0.0  Fernando Diniz            Brazil          Vasco da Gama
+136     0.0  Fábio Carille             Brazil          Vasco da Gama
+137     0.0  Marcos Valadares          Brazil          — unattached —
+138     0.0  Felipe                    Brazil          Vasco DA Gama
+139     0.0  Emílio                    Brazil          Vasco DA Gama
+140     0.0  Rafael Paiva              Brazil          Vasco da Gama
+141     0.0  Maurício Barbieri         Brazil          Athletico Paranaense
+142     0.0  L. González               Argentina       Athletico Paranaense
+143     0.0  Juca                      Brazil          Athletico Paranaense
+144     0.0  João Correia              Portugal        Athletico Paranaense
+145     0.0  Leonardo Jardim           Portugal        Cruzeiro
+146     0.0  Tite                      Brazil          Cruzeiro
+147     0.0  Carlos Amadeu             Brazil          — unattached —
+148     0.0  Thiago Carpini            Brazil          Vitória
+149     0.0  Geninho                   Brazil          — unattached —
+150     0.0  Carpegiani                Brazil          — unattached —
+151     0.0  Flavio Tanajura           Brazil          Vitória
+152     0.0  D. Petkovic               Serbia          Vitória
+153     0.0  Ventura Jair              Unknown         Vitoria
+154     0.0  Pintado                   Brazil          Figueirense
+155     0.0  Cristóvão Borges          Brazil          — unattached —
+156     0.0  Thiago Carvalho           Brazil          Figueirense
+157     0.0  Dias Waguinho             Unknown         Figueirense
+158     0.0  Marco Antônio             Brazil          — unattached —
+159     0.0  Fernando Díaz             Spain           Guaraní
+160     0.0  Moisés Moura              Brazil          Guarani Campinas
+161     0.0  Marcelo Fernandes         Brazil          Guarani SP
+162     0.0  Marcelo Cordeiro          Brazil          Guarani Campinas
+163     0.0  Elano                     Unknown         Guarani Campinas
+164     0.0  Nelsinho Baptista         Brazil          Ponte Preta
+165     0.0  João Brigatti             Brazil          Ponte Preta
+166     0.0  Marcelo Oliveira          Brazil          — unattached —
+167     0.0  Fabio Moreno              Brazil          Ponte Preta
+168     0.0  Ivo Secchi                Brazil          — unattached —
+169     0.0  Edson                     Brazil          Ponte Preta
+170     0.0  Nenê Santana              Brazil          Ponte Preta
+171     0.0  Fernandes Marcelo         Unknown         Ponte Preta
+172     0.0  Rui Duarte                Portugal        Athletic Club
+173     0.0  Roger                     Brazil          Athletic Club MG
+174     0.0  Rui Duarte                Unknown         Athletic Club
+175     0.0  Eduardo Baptista          Brazil          Criciúma
+176     0.0  Wilsão                    Brazil          — unattached —
+177     0.0  Zé Ricardo                Brazil          Criciúma
+178     0.0  Barzotto                  Brazil          Criciúma
+179     0.0  Deivid                    Brazil          — unattached —
+180     0.0  Eduardo Alexandre Baptista Unknown         Criciuma
+181     0.0  Rafael Lacerda            Brazil          Vila Nova
+182     0.0  Guilherme Alves           Unknown         Vila Nova
+183     0.0  Paulo Turra               Brazil          Vila Nova
+184     0.0  Louzer Umberto            Unknown         Vila Nova
+185     0.0  João Paulo Sanches        Brazil          — unattached —
+186     0.0  Fábio Matias              Brazil          Atlético Goianiense
+187     0.0  Anderson Gomes            Brazil          Atletico Goianiense
+188     0.0  Lacerda Rafael            Unknown         Atletico Goianiense
+189     0.0  Evando                    Brazil          — unattached —
+190     0.0  Augusto Inácio            Portugal        — unattached —
+191     0.0  Jair Ventura              Brazil          Avaí
+192     0.0  Fabrício                  Brazil          — unattached —
+193     0.0  Marquinhos                Brazil          Avaí
+194     0.0  Almeida Cauan de          Unknown         Avai
+195     0.0  Eduardo Barroca           Brazil          CRB
+196     0.0  Jorginho                  Brazil          Coritiba
+197     0.0  Robson Gomes              Brazil          Coritiba
+198     0.0  Pachequinho               Brazil          Coritiba
+199     0.0  Marcio Goiano             Unknown         Coritiba
+200     0.0  Mozart                    Brazil          Coritiba
+201     0.0  Thiago Kosloski           Brazil          Coritiba
+202     0.0  Seabra Fernando           Unknown         Coritiba
+203     0.0  Alemão                    Brazil          Londrina
+204     0.0  Claudinei Oliveira        Brazil          Londrina
+205     0.0  Paulo César Gusmão        Brazil          — unattached —
+206     0.0  Alexandre Gallo           Brazil          — unattached —
+207     0.0  Franco Muller             Brazil          — unattached —
+208     0.0  Edinho                    Brazil          — unattached —
+209     0.0  Allan Aal                 Unknown         Londrina
+210     0.0  Aylton Costa              Brazil          — unattached —
+211     0.0  Luizinho Lopes            Brazil          Paysandu
+212     0.0  Ignacio Alvares           Unknown         Paysandu
+213     0.0  Thiago Larghi             Brazil          — unattached —
+214     0.0  Augusto                   Brazil          — unattached —
+215     0.0  Paulista Daniel           Unknown         Goias
+216     0.0  Cláudio Tencati           Brazil          Juventude
+217     0.0  Lucas                     Brazil          — unattached —
+218     0.0  Celso Roth                Brazil          — unattached —
+219     0.0  Adaílton                  Brazil          — unattached —
+220     0.0  Barbieri Mauricio         Unknown         Juventude
+221     0.0  Marconne Montenegro       Brazil          — unattached —
+222     0.0  Carpini Thiago            Unknown         Fortaleza EC
+223     0.0  J. Heynckes               Germany         — unattached —
+224     0.0  V. Kompany                Belgium         Bayern Munich
+225     0.0  C. Streich                Germany         Freiburg
+226     0.0  J. Schuster               Germany         Freiburg
+227     0.0  R. Hasenhüttl             Austria         Wolfsburg
+228     0.0  D. Bauer                  Germany         Wolfsburg
+229     0.0  P. Simonis                Netherlands     VfL Wolfsburg
+230     0.0  O. Werner                 Germany         Werder Bremen
+231     0.0  T. Schaaf                 Germany         — unattached —
+232     0.0  Daniel Thioune            Unknown         Werder Bremen
+233     0.0  G. Seoane                 Switzerland     Borussia M'gladbach
+234     0.0  U. Fischer                Switzerland     FSV Mainz 05
+235     0.0  B. Henriksen              Denmark         Mainz
+236     0.0  J. Lichte                 Germany         — unattached —
+237     0.0  N. Kovač                  Croatia         Borussia Dortmund
+238     0.0  E. Terzić                 Germany         Borussia Dortmund
+239     0.0  C. Ilzer                  Austria         Hoffenheim
+240     0.0  P. Matarazzo              USA             Hoffenheim
+241     0.0  K. Hjulmand               Denmark         Bayer Leverkusen
+242     0.0  D. Toppmöller             Germany         Eintracht Frankfurt
+243     0.0  Albert Riera              Unknown         Eintracht Frankfurt
+244     0.0  J. Thorup                 Denmark         Augsburg
+245     0.0  M. Schmidt                Switzerland     Augsburg
+246     0.0  T. Strobl                 Germany         Augsburg II
+247     0.0  S. Wagner                 Germany         FC Augsburg
+248     0.0  S. Hoeneb                 Germany         Stuttgart
+249     0.0  B. Labbadia               Germany         — unattached —
+250     0.0  A. Beierlorzer            Germany         — unattached —
+251     0.0  Z. Löw                    Hungary         RB Leipzig
+252     0.0  M. Polzin                 Germany         Hamburg
+253     0.0  F. Schmidt                Germany         Heidenheim
+254     0.0  B. Svensson               Denmark         Union Berlin
+255     0.0  S. Baumgart               Germany         Union Berlin
+256     0.0  A. Hofschneider           Germany         — unattached —
+257     0.0  Dorita                    Brazil          Barra
+258     0.0  Rafael Piccinin           Brazil          Barra
+259     0.0  Renan Brito               Brazil          Barra
+260     0.0  Souza Eduardo             Unknown         Barra
+261     0.0  A. Blessin                Germany         St. Pauli
+262     0.0  E. Lienen                 Germany         — unattached —
+263     0.0  Roberto Cavalo            Brazil          Itabaiana
+264     0.0  Washington                Brazil          Itabaiana
+265     0.0  Ferreira                  Brazil          AO Itabaiana
+266     0.0  Cavalo Roberto            Unknown         AO Itabaiana
+267     0.0  Paulo Gomes               Portugal        Botafogo SP
+268     0.0  Tencati Claudio           Unknown         Botafogo SP
+269     0.0  E. ten Hag                Netherlands     Manchester United
+270     0.0  Ruben Amorim              Portugal        Manchester United
+271     0.0  Michael Carrick           Unknown         Manchester United
+272     0.0  E. Howe                   England         Newcastle United
+273     0.0  G. Jones                  England         Newcastle
+274     0.0  J. Woodgate               England         — unattached —
+275     0.0  Andoni Iraola             Spain           AFC Bournemouth
+276     0.0  J. Tindall                England         Bournemouth
+277     0.0  Marco Silva               Portugal        Fulham
+278     0.0  Vítor Pereira             Portugal        Wolverhampton Wanderers
+279     0.0  S. Davis                  England         — unattached —
+280     0.0  G. O'Neil                 England         Wolverhampton Wanderers
+281     0.0  Rob Edwards               Unknown         Wolves
+282     0.0  J. Klopp                  Germany         Liverpool
+283     0.0  A. Slot                   Netherlands     Liverpool
+284     0.0  F. Ljungberg              Sweden          — unattached —
+285     0.0  Mikel Arteta              Spain           Arsenal
+286     0.0  S. Parker                 England         Burnley
+287     0.0  M. Jackson                England         Burnley U23
+288     0.0  D. Moyes                  Scotland        Everton
+289     0.0  T. Frank                  Denmark         Tottenham
+290     0.0  Igor Tudor                Unknown         Tottenham
+291     0.0  G. Potter                 England         West Ham United
+292     0.0  Nuno Espírito Santo       Portugal        West Ham
+293     0.0  M. Sarri                  Italy           — unattached —
+294     0.0  F. Grosso                 Italy           Sassuolo
+295     0.0  D. Ballardini             Italy           Sassuolo
+296     0.0  M. Allegri                Italy           AC Milan
+297     0.0  Marco Landucci            Unknown         AC Milan
+298     0.0  E. Maresca                Italy           Chelsea
+299     0.0  L. Rosenior               England         Chelsea
+300     0.0  A. Conte                  Italy           Napoli
+301     0.0  F. Calzona                Italy           Slovakia
+302     0.0  G. Cioffi                 Italy           Udinese
+303     0.0  K. Runjaic                Germany         Udinese
+304     0.0  P. Vieira                 France          Genoa
+305     0.0  A. Shevchenko             Ukraine         — unattached —
+306     0.0  D. De Rossi               Italy           Genoa
+307     0.0  I. Tudor                  Croatia         Juventus
+308     0.0  T. Motta                  Italy           Juventus
+309     0.0  Luciano Spalletti         Unknown         Juventus
+310     0.0  G. Gasperini              Italy           AS Roma
+311     0.0  I. Juric                  Croatia         Atalanta
+312     0.0  R. Palladino              Italy           Atalanta
+313     0.0  Guardiola                 Spain           Manchester City
+314     0.0  V. Italiano               Italy           Bologna
+315     0.0  S. Mihajlović             Serbia          — unattached —
+316     0.0  L. Vigiani                Italy           — unattached —
+317     0.0  C. Prandelli              Italy           — unattached —
+318     0.0  P. Vanoli                 Italy           Fiorentina
+319     0.0  M. Baroni                 Italy           Torino
+320     0.0  Leonardo Colucci          Unknown         Torino
+321     0.0  P. Zanetti                Italy           Verona
+322     0.0  Paolo Sammarco            Unknown         Hellas Verona
+323     0.0  C. Chivu                  Romania         Inter
+324     0.0  F. Hürzeler               Germany         Brighton & Hove Albion
+325     0.0  R. Hodgson                England         — unattached —
+326     0.0  O. Glasner                Austria         Crystal Palace
+327     0.0  E. Corini                 Italy           Cremonese
+328     0.0  D. Nicola                 Italy           Cremonese
+329     0.0  F. Pecchia                Italy           Parma
+330     0.0  L. Apolloni               Unknown         Parma
+331     0.0  S. Morrone                Unknown         Parma
+332     0.0  Carlos Cuesta García      Unknown         Parma
+333     0.0  Xavi                      Spain           Barcelona
+334     0.0  H. Flick                  Germany         Barcelona
+335     0.0  D. Simeone                Argentina       Atletico Madrid
+336     0.0  Ernesto Valverde          Spain           Athletic Bilbao
+337     0.0  Celades                   Spain           — unattached —
+338     0.0  Rubén Baraja              Spain           Valencia
+339     0.0  Carolina Miranda          Spain           — unattached —
+340     0.0  Voro                      Spain           — unattached —
+341     0.0  Carlos Corberan           Spain           Valencia
+342     0.0  Carlos Corberan           Unknown         Valencia
+343     0.0  Marcelino                 Spain           Villarreal
+344     0.0  Quique Sánchez Flores     Spain           Sevilla
+345     0.0  Joaquín Caparrós          Spain           Sevilla
+346     0.0  García Pimienta           Spain           Sevilla
+347     0.0  Claudio Giráldez          Spain           Celta Vigo
+348     0.0  Claudio Giraldez          Unknown         Celta Vigo
+349     0.0  Julián Calero             Spain           Levante
+350     0.0  Felipe                    Spain           Levante
+351     0.0  Álvaro del Moral          Spain           Levante
+352     0.0  Luis Castro               Unknown         Levante
+353     0.0  Manolo González           Spain           Espanyol
+354     0.0  Manolo Gonzalez           Unknown         Espanyol
+355     0.0  Z. Zidane                 France          — unattached —
+356     0.0  Xabi Alonso               Spain           Real Madrid
+357     0.0  Alvaro Arbeloa            Unknown         Real Madrid
+358     0.0  Juan Muñiz                Spain           — unattached —
+359     0.0  Javier Cabello            Spain           — unattached —
+360     0.0  M. Pellegrini             Chile           Real Betis
+361     0.0  Alexis Trujillo           Spain           — unattached —
+362     0.0  Rubén Reyes               Spain           — unattached —
+363     0.0  Míchel                    Spain           Girona
+364     0.0  Unzué                     Spain           Girona
+365     0.0  Eusebio Sacristán         Spain           — unattached —
+366     0.0  Michel                    Spain           Girona
+367     0.0  Sergio Francisco          Spain           Real Sociedad
+368     0.0  Pellegrino Matarazzo      Unknown         Real Sociedad
+369     0.0  Keith Andrews             Unknown         Brentford
+370     0.0  D. Farke                  Germany         Leeds United
+371     0.0  S. Allardyce              England         — unattached —
+372     0.0  S. Dyche                  England         Nottingham Forest
+373     0.0  A. Postecoglou            Australia       Nottingham Forest
+374     0.0  M. O'Neill                Northern Ireland — unattached —
+375     0.0  S. Ireland                England         Nottingham Forest
+376     0.0  G. Brazil                 England         Nottingham Forest
+377     0.0  S. Reid                   Republic of Ireland — unattached —
+378     0.0  Vitor Pereira             Unknown         Nottingham Forest
+379     0.0  Unai Emery                Spain           Aston Villa
+380     0.0  V. Paunovic               Serbia          Real Oviedo
+381     0.0  Roberto Aguirre           Spain           Real Oviedo II
+382     0.0  Vallori                   Spain           — unattached —
+383     0.0  Guillermo Almada Alves Jorge Unknown         Oviedo
+384     0.0  P. Vasiljević             Serbia          — unattached —
+385     0.0  A. Lisci                  Italy           Osasuna
+386     0.0  Iñigo Pérez               Spain           Rayo Vallecano
+387     0.0  Inigo Perez               Unknown         Rayo Vallecano
+388     0.0  R. Le Bris                France          Sunderland
+389     0.0  M. Beale                  England         — unattached —
+390     0.0  Itamar Schülle            Brazil          Santa Cruz
+391     0.0  Marcelo Cabo              Brazil          Santa Cruz
+392     0.0  Cabo Marcelo              Unknown         Santa Cruz
+393     0.0  Fabio Cortez              Unknown         Santa Cruz
+394     0.0  Hélio dos Anjos           Brazil          Náutico
+395     0.0  Dudu Capixaba             Brazil          Nautico Recife
+396     0.0  Anjos Helio dos           Unknown         Nautico Recife
+397     0.0  A. Bouhazama              France          — unattached —
+398     0.0  A. Dujeux                 France          Angers
+399     0.0  Júnior Rocha              Brazil          Caxias do Sul
+400     0.0  Marchiori Fernando        Unknown         Caxias
+401     0.0  Luizinho Vieira           Brazil          Confiança
+402     0.0  Vieira Luizinho           Unknown         Confiança
+403     0.0  Marcelo Chamusca          Brazil          Floresta
+404     0.0  Leston Júnior             Brazil          Floresta
+405     0.0  Raimundinho               Brazil          Floresta
+406     0.0  Daniel Rocha              Brazil          — unattached —
+407     0.0  Marcinho                  Brazil          — unattached —
+408     0.0  Douglas                   Brazil          Ituano
+409     0.0  Chico Elias               Brazil          Ituano
+410     0.0  Rogerio Correa            Brazil          Volta Redonda
+411     0.0  Neto Colucci              Brazil          — unattached —
+412     0.0  Diogo Siston              Brazil          Volta Redonda
+413     0.0  Carmine Colucci Neto      Unknown         Volta Redonda
+414     0.0  Vinícius Bergantin        Brazil          Ferroviária
+415     0.0  Marcinho Guerreiro        Brazil          Maranhão
+416     0.0  Flávio Araújo             Brazil          Maranhão
+417     0.0  Vinícius Saldanha         Brazil          Maranhão
+418     0.0  Sandow                    Brazil          Maranhão
+419     0.0  Marcos Soares             Brazil          — unattached —
+420     0.0  Jorge Luiz                Brazil          Maringá
+421     0.0  Chipp Rodrigo             Unknown         Maringá
+422     0.0  Umberto Louzer            Brazil          Novorizontino
+423     0.0  Enderson Moreira          Brazil          Novorizontino
+424     0.0  Ito Roque                 Brazil          — unattached —
+425     0.0  Julio Cesar               Brazil          — unattached —
+426     0.0  Moreira Enderson          Unknown         Novorizontino
+427     0.0  Rafael Guanaes            Brazil          Mirassol
+428     0.0  Ângelo                    Brazil          Anápolis
+429     0.0  Luiz Angelo               Unknown         Anápolis
+430     0.0  Marcelo Veiga             Brazil          — unattached —
+431     0.0  Ricardo Catalá            Brazil          São Bernardo
+432     0.0  Catala Ricardo            Unknown         São Bernardo
+433     0.0  B. Génésio                France          Lille
+434     0.0  Bruno Genesio             Unknown         Lille
+435     0.0  Vágner Mancini            Brazil          RB Bragantino
+436     0.0  Fernando Seabra           Brazil          RB Bragantino
+437     0.0  Mantecón                  Spain           — unattached —
+438     0.0  Arrasate                  Spain           Mallorca
+439     0.0  Martin Demichelis         Unknown         Mallorca
+440     0.0  Paulo Fonseca             Portugal        Lyon
+441     0.0  Jorge Maciel              Portugal        Lyon
+442     0.0  A. Gilardino              Italy           Pisa
+443     0.0  G. Colonnello             Unknown         Pisa
+444     0.0  Oscar Hiljemark           Unknown         Pisa
+445     0.0  André Villas-Boas         Portugal        — unattached —
+446     0.0  R. De Zerbi               Italy           Marseille
+447     0.0  N. Larguet                Morocco         — unattached —
+448     0.0  Habib Beye                Unknown         Marseille
+449     0.0  C. Gourcuff               France          — unattached —
+450     0.0  Luís Castro               Portugal        Nantes
+451     0.0  P. Aristouy               France          — unattached —
+452     0.0  A. Kombouare              France          Nantes
+453     0.0  R. Domenech               France          — unattached —
+454     0.0  L. Favre                  Switzerland     — unattached —
+455     0.0  Claude Puel               Unknown         Nice
+456     0.0  E. Di Francesco           Italy           Lecce
+457     0.0  M. Giampaolo              Italy           Lecce
+458     0.0  L. Gotti                  Italy           Lecce
+459     0.0  R. Rizzo                  Italy           — unattached —
+460     0.0  P. Maragliulo             Italy           — unattached —
+461     0.0  Cesc Fàbregas             Spain           Como
+462     0.0  O. Roberts                Wales           Como
+463     0.0  A. Hütter                 Austria         Monaco
+464     0.0  J. Sampaoli               Argentina       Rennes
+465     0.0  S. Tambouret              France          Rennes II
+466     0.0  F. Haise                  France          Rennes
+467     0.0  H. Beye                   Senegal         Rennes
+468     0.0  F. Antonetti              France          — unattached —
+469     0.0  Gary O'Neil               Unknown         Strasbourg
+470     0.0  P. Montanier              France          — unattached —
+471     0.0  M. Debeve                 France          Toulouse
+472     0.0  Carles Martínez           Spain           Toulouse
+473     0.0  O. Pantaloni              France          Lorient
+474     0.0  M. Landreau               France          — unattached —
