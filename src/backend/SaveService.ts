@@ -81,6 +81,8 @@ export interface SaveMeta {
   training_intensity?: TrainingIntensity;
   /** State for all active leagues in this save. */
   activeLeagues?: LeagueSeasonState[];
+  /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
+  followedLeagues?: string[];
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────
