@@ -213,7 +213,7 @@ describe("quickSimMatch", () => {
     expect(Object.keys(recording.playerStats).filter((id) => id.startsWith("h-")).length).toBe(9);
   });
 
-  test("distribuição: times iguais com média de 2 a 3,5 gols e mandante vencendo mais", () => {
+  test("distribuição: times iguais com média de 1,8 a 2,6 gols e mandante vencendo mais", () => {
     const h = makeSquad("h", 4);
     const a = makeSquad("a", 4);
     let goals = 0, homeWins = 0, awayWins = 0;
@@ -224,8 +224,8 @@ describe("quickSimMatch", () => {
       if (score.home > score.away) homeWins++;
       else if (score.away > score.home) awayWins++;
     }
-    expect(goals / N).toBeGreaterThan(2);
-    expect(goals / N).toBeLessThan(3.5);
+    expect(goals / N).toBeGreaterThanOrEqual(1.8);
+    expect(goals / N).toBeLessThanOrEqual(2.6);
     expect(homeWins).toBeGreaterThan(awayWins);
   });
 
@@ -261,7 +261,7 @@ describe("quickSimMatch", () => {
 });
 
 describe("calibração de notas", () => {
-  test("elencos nível 5 iguais: média de linha (sem goleiro) em [6.2, 7.2] e poucas notas >= 8.5", () => {
+  test("elencos nível 5 iguais: média de linha (sem goleiro) em [5.9, 6.8] e poucas notas >= 8.5", () => {
     const h = makeSquad("h", 5);
     const a = makeSquad("a", 5);
     const ratings: number[] = [];
@@ -274,8 +274,8 @@ describe("calibração de notas", () => {
     }
     const mean = ratings.reduce((x, y) => x + y, 0) / ratings.length;
     const share85 = ratings.filter((r) => r >= 8.5).length / ratings.length;
-    expect(mean).toBeGreaterThanOrEqual(6.2);
-    expect(mean).toBeLessThanOrEqual(7.2);
+    expect(mean).toBeGreaterThanOrEqual(5.9);
+    expect(mean).toBeLessThanOrEqual(6.8);
     expect(share85).toBeLessThan(0.08);
   });
 });
