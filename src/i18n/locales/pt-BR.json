@@ -340,6 +340,13 @@
     "noProfileData": "Nenhum dado de perfil disponível.",
     "squadRating": "Classificação do Elenco",
     "reputation": "Reputação",
+    "reputationLevel": {
+      "1": "Time Local",
+      "2": "Time Regional",
+      "3": "Potência Nacional",
+      "4": "Força Continental",
+      "5": "Elite Mundial"
+    },
     "selectClubDetail": "Selecione um clube para ver detalhes",
     "top": "Topo",
     "squadStrength": "Força do Elenco",
