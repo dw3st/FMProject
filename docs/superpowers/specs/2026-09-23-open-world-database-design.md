@@ -127,11 +127,9 @@ empates. Meta: o `quickSim` fica a ±10% do motor nas três métricas.
 
 ### Modo por liga
 
-- `meta.activeLeagues[i].simMode: "full" | "fast"`.
-- Fica `full` a liga do clube do jogador e as ligas em `meta.followedLeagues` (até 3). Todas
-  as outras ficam `fast`.
-- O modo é recalculado quando o jogador troca de liga (acesso, rebaixamento ou mudança de clube)
-  e quando ele muda as ligas seguidas.
+- O modo é **derivado** por `resolveSimMode(leagueSlug, meta)` (`src/Domain/advanceDay/simMode.ts`), nunca gravado.
+- É `full` a liga do clube do jogador e as primeiras 3 ligas de `meta.followedLeagues`. As outras são `fast`.
+- Jogos do clube do jogador são sempre `full`.
 
 ### Log do dia
 
