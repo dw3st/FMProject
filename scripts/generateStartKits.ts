@@ -10,7 +10,7 @@
  *
  * Run:  bun run kits:generate [count]   (default 5)   — or: bun scripts/generateStartKits.ts [count]
  *
- * NOTE: each kit takes minutes to simulate; 5 kits ≈ 25-35 min. This is a one-time
+ * NOTE: each kit takes ~50 s to simulate with the full world; 5 kits ≈ 4 min. This is a one-time
  * offline build step — commit the resulting src/Data/startKits/ directory.
  */
 import { mkdir } from "fs/promises";
