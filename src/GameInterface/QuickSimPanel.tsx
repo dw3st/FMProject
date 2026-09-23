@@ -3,17 +3,29 @@ import { quickSimMatch, type QuickSimResult } from "@/Domain/advanceDay/quickSim
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import playersJson from "@/Data/players.json";
+import manUtdSquad from "@/Data/squads/premier_league/33.json";
+import newcastleSquad from "@/Data/squads/premier_league/34.json";
 
-function squadFrom(squadId: string, name: string): Squad {
-  const players = (playersJson as unknown as RosterPlayer[])
-    .filter((p) => p.squadId === squadId)
-    .map((p) => ({ ...p, seasonLog: emptySeasonLog() }));
-  return { id: squadId, name, colors: ["#3b82f6", "#ffffff"], money: 0, players };
+interface RawSquadFile {
+  id: string;
+  name: string;
+  colors: string[];
+  players: RosterPlayer[];
 }
 
-const HOME = squadFrom("team_red", "Red");
-const AWAY = squadFrom("team_blue", "Blue");
+function squadFrom(raw: RawSquadFile): Squad {
+  const players = raw.players.map((p) => ({ ...p, seasonLog: emptySeasonLog() }));
+  return {
+    id: raw.id,
+    name: raw.name,
+    colors: [raw.colors[0] ?? "#3b82f6", raw.colors[1] ?? "#ffffff"],
+    money: 0,
+    players,
+  };
+}
+
+const HOME = squadFrom(manUtdSquad as RawSquadFile);
+const AWAY = squadFrom(newcastleSquad as RawSquadFile);
 
 function runOnce(): QuickSimResult {
   return quickSimMatch({
