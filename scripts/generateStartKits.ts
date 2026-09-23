@@ -14,17 +14,18 @@
  * offline build step — commit the resulting src/Data/startKits/ directory.
  */
 import { mkdir } from "fs/promises";
+import { fileURLToPath } from "node:url";
 import { saveService } from "@/backend/SaveService";
 import { presimulatePreStart } from "@/backend/advanceDay";
 import { snapshotSaveToKit } from "@/backend/startKits";
 
-const KITS_DIR = new URL("../src/Data/startKits", import.meta.url).pathname;
+const KITS_DIR = fileURLToPath(new URL("../src/Data/startKits", import.meta.url));
 const COUNT = Math.max(1, parseInt(process.argv[2] ?? "5", 10) || 5);
 
 // A real Brazilian club so currentDate resolves to the Brazilian season start.
 // The kit world is club-agnostic apart from this one club being excluded from AI
 // transfer-out during the pre-period (negligible across 150+ clubs).
-const leagueData = (await Bun.file(new URL("../src/Data/leagueData.json", import.meta.url).pathname).json()) as Array<{
+const leagueData = (await Bun.file(fileURLToPath(new URL("../src/Data/leagueData.json", import.meta.url))).json()) as Array<{
   slug: string; name: string; standings: Array<{ squadId: string; name?: string; colors?: [string, string] }>;
 }>;
 const braA = leagueData.find((l) => l.slug === "brazil_serie_a");
