@@ -24,6 +24,7 @@ import {
   Save,
   Upload,
   X,
+  Globe,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -53,7 +54,8 @@ export type IconName =
   | "palette"
   | "save"
   | "upload"
-  | "close";
+  | "close"
+  | "globe";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -84,6 +86,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "save":         Save,
   "upload":       Upload,
   "close":        X,
+  "globe":        Globe,
 };
 
 export interface IconProps {

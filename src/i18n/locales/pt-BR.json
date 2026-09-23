@@ -326,6 +326,17 @@
     "chooseTerritory": "Escolha Seu Território",
     "territoryDescription": "Defina a base de sua dinastia. Selecione uma nação para desbloquear divisões profissionais locais e comece sua ascensão tática.",
     "searchTerritory": "Buscar território...",
+    "countriesCount": "{{count}} países",
+    "continents": {
+      "europe": "Europa",
+      "south_america": "América do Sul",
+      "north_america": "América do Norte",
+      "asia": "Ásia",
+      "africa": "África",
+      "oceania": "Oceania",
+      "other": "Outros"
+    },
+    "genericHeadline": "Em {{country}}, cada partida escreve um novo capítulo na história do jogo.",
     "territoryProfile": "Perfil do Território",
     "teams": "Clubes",
     "divisions": "Divisões",

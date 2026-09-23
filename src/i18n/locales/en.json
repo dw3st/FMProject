@@ -326,6 +326,17 @@
     "chooseTerritory": "Choose Your Territory",
     "territoryDescription": "Define the foundation of your dynasty. Select a host nation to unlock local professional divisions and begin your tactical ascent.",
     "searchTerritory": "Search territory...",
+    "countriesCount": "{{count}} countries",
+    "continents": {
+      "europe": "Europe",
+      "south_america": "South America",
+      "north_america": "North America",
+      "asia": "Asia",
+      "africa": "Africa",
+      "oceania": "Oceania",
+      "other": "Other"
+    },
+    "genericHeadline": "In {{country}}, every match writes a new chapter in the story of the game.",
     "territoryProfile": "Territory Profile",
     "teams": "Teams",
     "divisions": "Divisions",
