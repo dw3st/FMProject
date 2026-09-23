@@ -568,7 +568,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     return { value: l.slug, label: leagueLabel(l, countryName) };
   });
 
-  const followedLeagues = session?.followedLeagues ?? [];
+  // Filter out the user's own league defensively — it should never occupy a follow slot, even if
+  // a stale session (e.g. from before followedLeagues synced from the server) carries it.
+  const followedLeagues = (session?.followedLeagues ?? []).filter((slug) => slug !== session?.leagueSlug);
   const isOwnLeague = !!session && activeSlug === session.leagueSlug;
   const isFollowed = followedLeagues.includes(activeSlug);
   const atFollowLimit = !isFollowed && followedLeagues.length >= MAX_FOLLOWED_LEAGUES;
