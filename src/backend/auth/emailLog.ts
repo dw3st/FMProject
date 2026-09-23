@@ -1,6 +1,7 @@
+import { fileURLToPath } from "node:url";
 import type { OutgoingEmail } from "@/backend/auth/sendEmail";
 
-const DATA_DIR = new URL("../../Data", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../../Data", import.meta.url));
 const LOG_PATH = `${DATA_DIR}/email-log.json`;
 
 interface LoggedEmail extends OutgoingEmail {

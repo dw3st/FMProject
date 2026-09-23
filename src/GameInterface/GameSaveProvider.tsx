@@ -60,6 +60,7 @@ function sessionFromSaveJson(s: GameSession, raw: GameSaveApiResponse): GameSess
       (raw.training_intensity as TrainingIntensity | undefined) ??
       s.training_intensity ??
       DEFAULT_TRAINING_INTENSITY,
+    followedLeagues: (raw.followedLeagues as string[] | undefined) ?? s.followedLeagues,
   };
 }
 

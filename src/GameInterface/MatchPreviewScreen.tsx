@@ -28,6 +28,7 @@ import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES 
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineup } from "@/Domain/lineupHelpers";
+import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -53,14 +54,6 @@ function squadIdToName(squadId: string, leagueSlug: string): string {
     : squadId;
   return clubSlug
     .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-function formatCompetition(s: string): string {
-  return s
-    .replace(/_/g, " ")
-    .split(" ")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
@@ -822,7 +815,9 @@ export function MatchPreviewScreen() {
 
   const currentDate = session.currentDate ?? "";
   const { weather, referee, venue } = getMatchMeta(currentDate, session.clubName, isHome);
-  const competition = fixture ? formatCompetition(fixture.competition) : "Premier Division";
+  const competition = fixture
+    ? competitionName(fixture.competition, activeLeagueData ? [activeLeagueData] : [])
+    : "Premier Division";
   const matchday = fixture?.round ?? 1;
 
   const myLogoUrl  = `/api/logos/${session.leagueSlug}/${session.clubId}`;

@@ -80,8 +80,19 @@ Tudo fica em `data_process/openfootball/calibration.json`: pares, coeficientes, 
 - **Sem escudos.** Os clubes `of_*` não têm arquivo em `Data/logos/`. O `ClubLogo` desenha o brasão com as cores do clube.
 - **Jovens de preenchimento.** O seed tem clubes com só 7 jogadores. O `roster.ts` gera jovens para cumprir os mínimos por papel (GK 3, DEF 7, MID 7, FWD 4) e completar até 18 jogadores. O máximo é 30.
 - **Serie A e Ligue 1.** As re-derivações desses elencos saem mais baixas que os valores nativos. Isso afeta só a checagem de calibração, porque os elencos nativos não são substituídos.
-- **`ScoutScreen`.** Ele carrega todos os elencos (`/api/saves/:id/all-squads`), o que fica pesado com 1227 clubes. Está anotado para o plano 4.
 - **Caminhos no Windows.** Ainda há `new URL(...).pathname` em `routes.ts`, em `lab/` e em `emailLog`, que quebram no Windows nativo (`/C:/...`). `SaveService`, `advanceDay`, `startKits`, `runtimeDir` e `scripts/generateStartKits.ts` já usam `fileURLToPath`.
+
+---
+
+## Olheiros (`ScoutScreen`)
+
+O `ScoutScreen` não carrega mais todos os elencos. Ele chama `POST /api/saves/:id/scout-search`
+(`src/Domain/scout/scoutQuery.ts` + `src/backend/scoutSearch.ts`), que filtra, ordena e pagina no
+servidor: 100 linhas por página, cerca de 59 KB por página, contra os ~24,7 MB do antigo
+`/api/saves/:id/all-squads`. As linhas, nacionalidades e ids na lista de venda ficam num cache por
+save, com chave `currentDate` mais a versão de escrita de `src/backend/dal/saveDataVersion.ts`
+(`bumpSaveDataVersion`, chamado a cada gravação de elenco/mercado), então transferências e edições
+na lista de venda no meio do dia invalidam o cache.
 
 ---
 

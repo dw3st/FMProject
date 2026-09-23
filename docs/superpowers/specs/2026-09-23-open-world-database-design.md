@@ -211,8 +211,9 @@ de tier de orçamento (`finance.md`).
   - passo Clube com abas por divisão/grupo, lidas de `pyramids.json`;
   - cards de clube com cores, escudo ou brasão e força média.
 - **Classificação (`LeagueTableScreen.tsx`):** seletor em dois níveis (país → divisão), que abre
-  na liga do jogador. Zonas coloridas e selo `rápida` nas ligas `fast`.
-- **Configurações:** seção "Ligas seguidas", com até 3 ligas.
+  na liga do jogador. Zonas coloridas e selo `rápida` nas ligas `fast`. Estrela de seguir no
+  cabeçalho (até 3 ligas, nunca a própria) — não há uma seção "Ligas seguidas" em Configurações,
+  porque `SettingsOverlay` não tem sessão de save; a estrela fica onde a liga já está selecionada.
 - **Escudos:** sem `logo`, `squadLogoUrl` devolve `undefined` e `ClubIdentity` desenha o
   brasão com as cores. Implementar o fallback se ainda não existir.
 - **i18n:** países e ligas via `t(key, { defaultValue })`. `pt-BR.json` ganha os nomes dos

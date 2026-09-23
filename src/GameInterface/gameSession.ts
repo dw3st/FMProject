@@ -24,6 +24,8 @@ export interface GameSession {
   currentDate?: string;
   min_energy_to_train?: number;
   training_intensity?: TrainingIntensity;
+  /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
+  followedLeagues?: string[];
 }
 
 function sessionFromSave(save: Record<string, unknown>): GameSession {
@@ -46,6 +48,7 @@ function sessionFromSave(save: Record<string, unknown>): GameSession {
         : DEFAULT_MIN_ENERGY_TO_TRAIN,
     training_intensity:
       (save.training_intensity as TrainingIntensity | undefined) ?? DEFAULT_TRAINING_INTENSITY,
+    followedLeagues: save.followedLeagues as string[] | undefined,
   };
 }
 
@@ -217,6 +220,21 @@ export async function updateSaveDevelopmentTraining(
     min_energy_to_train: meta.min_energy_to_train ?? DEFAULT_MIN_ENERGY_TO_TRAIN,
     training_intensity: meta.training_intensity ?? DEFAULT_TRAINING_INTENSITY,
   };
+}
+
+/** Persist followed leagues (server sanitizes: known slugs, not own league, max 3). */
+export async function updateFollowedLeagues(saveId: string, leagues: string[]): Promise<string[]> {
+  const res = await fetch(`/api/saves/${saveId}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ followedLeagues: leagues }),
+  });
+  if (!res.ok) throw new Error("Failed to save followed leagues");
+  const meta = (await res.json()) as SaveMeta;
+  const followedLeagues = meta.followedLeagues ?? [];
+  const session = loadSession();
+  if (session) saveSession({ ...session, followedLeagues });
+  return followedLeagues;
 }
 
 export async function deleteGameSave(saveId: string): Promise<void> {
