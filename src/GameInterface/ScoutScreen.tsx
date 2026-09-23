@@ -27,29 +27,10 @@ import type { LeagueData } from "@/types/playerTypes";
 import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
 import { loadSession } from "@/GameInterface/gameSession";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
-import { toDisplayPlayer, resolveSquadIdFromLeagues } from "@/GameInterface/playerHelpers";
+import { mapSquadsToScoutPlayers } from "@/Domain/scout/scoutQuery";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { Squad } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-
-function mapSquadsToScoutPlayers(squads: Squad[], leagueSlugs: string[]): DisplayPlayer[] {
-  const players: DisplayPlayer[] = [];
-  for (const squad of squads) {
-    const resolved = resolveSquadIdFromLeagues(squad.id, leagueSlugs);
-    const leagueSlug = resolved?.leagueSlug ?? squad.leagueSlug;
-    const clubSlug = resolved?.clubSlug ?? squad.slug;
-    const squadCountry = squad.country ?? null;
-    for (const p of squad.players) {
-      const dp = toDisplayPlayer(p, squad.name, { squadCountry });
-      players.push(
-        leagueSlug && clubSlug
-          ? { ...dp, leagueSlug, clubSlug }
-          : dp,
-      );
-    }
-  }
-  return players;
-}
 
 function useDebounced<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
