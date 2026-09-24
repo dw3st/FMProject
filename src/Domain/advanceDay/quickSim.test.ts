@@ -82,6 +82,22 @@ describe("teamStrength / expectedGoals", () => {
     const s = teamStrength(makeSquad("a", 4).players);
     expect(expectedGoals(s, s, true)).toBeGreaterThan(expectedGoals(s, s, false));
   });
+
+  test("atacantes mais rápidos que a defesa adversária aumentam o xG (pace edge)", () => {
+    const base = makeSquad("b", 4);
+    const fast = makeSquad("f", 4);
+    for (const p of fast.players) {
+      if (["LW", "ST", "RW"].includes(p.positions[0]!)) p.stats.speed = 8;
+    }
+    const opp = teamStrength(makeSquad("o", 4).players);
+    const sBase = teamStrength(base.players);
+    const sFast = teamStrength(fast.players);
+    expect(sFast.forwardPace).toBeCloseTo(7, 5); // (3·8 + 4) / 4
+    expect(sFast.defensePace).toBeCloseTo(sBase.defensePace, 5);
+    const ratio = expectedGoals(sFast, opp, false) / expectedGoals(sBase, opp, false);
+    // Speed also feeds the attack strength, so the lift is at least the pace-edge factor.
+    expect(ratio).toBeGreaterThan(Math.exp(0.1 * 3));
+  });
 });
 
 /** Squad with real-data main roles in `positions[0]` and a per-player attribute level. */

@@ -22,13 +22,22 @@ export const DEFENSIVE_MID_ROLES = ["CDM", "DM"] as const;
 
 export const QUICK_SIM_CONFIG = {
   /** Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage. */
-  BASE_GOALS: 0.78,
-  HOME_ADVANTAGE: 1.06,
+  BASE_GOALS: 0.74,
+  HOME_ADVANTAGE: 1.07,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
    * have defence/GK strong vs attack, and the engine scores far less there than level alone predicts.
+   * Refitted jointly with PACE_EDGE_WEIGHT (the pace edge took over part of what this carried).
    */
-  STRENGTH_EXPONENT: 1.0,
+  STRENGTH_EXPONENT: 0.54,
+  /**
+   * xG × e^(PACE_EDGE_WEIGHT × (attacker forward-line pace − defender back-line pace)), pace =
+   * (3·speed + acceleration)/4 on raw 0–10 attributes. The engine's goal spread between leagues of
+   * equal level follows this edge (Premier League +0.94 → many goals, Bundesliga +0.10 → few): it
+   * drives chance volume via through-ball races, not conversion. Fitted with
+   * `bun scripts/quicksim-spread.ts analyze`. 0 disables.
+   */
+  PACE_EDGE_WEIGHT: 0.26,
   /**
    * Goals per side ~ Binomial(GOAL_CHANCES, xG / GOAL_CHANCES). Fewer chances → less variance
    * than Poisson → fewer 0-0s (the full engine is under-dispersed). Also caps goals/side.
@@ -48,13 +57,14 @@ export const QUICK_SIM_CONFIG = {
    * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
    * teams than between weak ones at the same strength ratio. 0 disables.
    */
-  LEVEL_EXPONENT: 1.1,
+  LEVEL_EXPONENT: 0.8,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
   /** Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100). */
   FATIGUE_PENALTY: 0.3,
 
-  ATTACK_KEYS:     ["finishing", "dribbling", "speed", "acceleration"],
+  /** No finishing: in the engine it only nudges conversion (shooterEffect 0.85–1.2); it still picks the scorer (fillSide). */
+  ATTACK_KEYS:     ["dribbling", "speed", "acceleration"],
   MIDFIELD_KEYS:   ["passing", "vision", "pressing"],
   DEFENSE_KEYS:    ["tackling", "pressing", "strength", "heading"],
   GOALKEEPER_KEYS: ["reflex", "jump", "pressing"],
