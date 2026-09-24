@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>FMProject</title>
+  <!-- Shield in the royal-blue theme (oklch 0.60 0.18 262 ≈ #407aea) with a thin dark rim. -->
+  <path d="M32 1.5 L61 9.5 V30 C61 46 49 57 32 62.5 C15 57 3 46 3 30 V9.5 Z" fill="#407aea"/>
+  <path d="M32 5 L57.5 12 V30 C57.5 44 47 54 32 59 C17 54 6.5 44 6.5 30 V12 Z" fill="none" stroke="#0b121d" stroke-width="2.5" stroke-linejoin="round"/>
+  <text x="32" y="42" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900" font-size="29" letter-spacing="-1.5" fill="#ffffff">FM</text>
+</svg>
