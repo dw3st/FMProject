@@ -35,14 +35,6 @@ export function keptLeagues(leagues: SeedLeague[], clubCounts: Map<string, numbe
 
 export interface Zone { id: string; label: string; color: string; from?: number; to?: number; fromEnd?: number }
 
-export function zonesFor(o: { clubs: number; hasAbove: boolean; hasBelow: boolean }): Zone[] {
-  const n = o.clubs >= 16 ? 3 : 2;
-  const zones: Zone[] = [];
-  if (o.hasAbove) zones.push({ id: "prom", label: "Promotion", color: "green", from: 1, to: n });
-  if (o.hasBelow) zones.push({ id: "rel", label: "Relegation", color: "red", fromEnd: n });
-  return zones;
-}
-
 export function scheduleFor(slug: string, countryCode: string, clubs: number, indexInCountry: number): LeagueScheduleConfig {
   const rounds = 2 * (clubs - 1 + (clubs % 2));
   const calendarYear = CALENDAR_YEAR.has(countryCode);
@@ -68,11 +60,6 @@ export function buildCountryEntry(code: string, name: string) {
     continent: CONTINENT[code] ?? "Other",
     headline: `In ${name}, every match writes a new story.</br>Build your club and take on the league.`,
   };
-}
-
-/** Promotion/relegation flags for a league at `tier` given every tier present in its country. */
-export function levelFlags(tier: number, countryTiers: number[]): { hasAbove: boolean; hasBelow: boolean } {
-  return { hasAbove: countryTiers.some((t) => t < tier), hasBelow: countryTiers.some((t) => t > tier) };
 }
 
 /**

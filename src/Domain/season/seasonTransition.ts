@@ -2,39 +2,34 @@ import type { SeasonArchive, SeasonData, SeasonTitle, LeagueCalendarResult } fro
 import type { LeagueTeam, PlayerSeasonLog, Squad } from "@/types/playerTypes";
 import { emptyDevelopmentProgress, emptySeasonLog } from "@/types/playerTypes";
 import { computeStandings } from "@/Domain/season/computeStandings";
-import { generateCalendar } from "@/Domain/season/generateCalendar";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
-import { generateRestDays } from "@/Domain/season/generateRestDays";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 
 export interface SeasonTransitionInput {
   endingSeason: SeasonData;
   leagueSlug: string;
+  /** The league's clubs during the ENDING season (old membership): archive standings use them. */
   leagueTeams: LeagueTeam[];
   squadsInLeague: Squad[];
   playerClubSquadId: string;
-  /** If provided, next season uses this config for schedule; otherwise falls back to Aug-May European default */
-  leagueConfig?: LeagueScheduleConfig;
 }
 
+/**
+ * A reset squad to persist. Addressed by id only: the caller writes it wherever the club currently
+ * lives (`SaveService.saveSquadById`), so a club moved by promotion/relegation is never written back
+ * into its old league.
+ */
 export interface SquadSaveRef {
-  leagueSlug: string;
-  clubSlug:   string;
-  squad:      Squad;
+  squadId: string;
+  squad:   Squad;
 }
 
 export interface SeasonTransitionResult {
   archive: SeasonArchive;
-  newSeason: SeasonData;  // kept for backward compat
-  newLeagueCalendar: LeagueCalendarResult;  // use this for writing round files
-  /** Squads to write after transition (same league as input). */
+  /** Squads to write after transition, by id (see SquadSaveRef). */
   squadsToSave: SquadSaveRef[];
   /** Credit to squad budget for the human club (annual broadcasting). */
   playerBroadcastingCredit: number;
-}
-
-function clubFileSlug(s: Squad): string {
-  return s.slug ?? s.id;
 }
 
 function snapshotPlayerLogs(squads: Squad[]): Record<string, PlayerSeasonLog> {
@@ -101,10 +96,13 @@ function resetSquadForNewSeason(squad: Squad, isPlayerClub: boolean): { squad: S
 }
 
 /**
- * Pure season rollover: archive ending season, compute champion, reset rosters, build next calendar.
+ * Pure close of a league season: archive the ending season (standings, champion, player logs) and
+ * reset the rosters (age + 1, seasonLog/progress cleared, AI broadcasting into budget), all on the
+ * ENDING season's membership. The next calendar is built separately (`buildNextSeasonCalendar`)
+ * because promotion/relegation changes the team list between the two steps.
  */
 export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransitionResult {
-  const { endingSeason, leagueSlug, leagueTeams, squadsInLeague, playerClubSquadId, leagueConfig } = input;
+  const { endingSeason, leagueSlug, leagueTeams, squadsInLeague, playerClubSquadId } = input;
 
   const standings = computeStandings(leagueTeams, endingSeason.calendar, leagueSlug);
   const championRow = standings[0];
@@ -121,36 +119,6 @@ export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransit
     playerLogs: snapshotPlayerLogs(squadsInLeague),
   };
 
-  const nextYear = endingSeason.year + 1;
-  const teamIds = leagueTeams.map((t) => t.squadId);
-
-  // Generate next season with round-based calendar
-  let newLeagueCalendar: LeagueCalendarResult;
-  if (leagueConfig) {
-    newLeagueCalendar = generateLeagueCalendar(leagueConfig, teamIds, nextYear);
-  } else {
-    // Fallback: use a synthetic config with European defaults for leagues not in LEAGUE_SCHEDULE_CONFIGS
-    const fallbackConfig: LeagueScheduleConfig = {
-      slug: leagueSlug,
-      seasonStartMMDD: "08-15",
-      seasonEndMMDD: "05-20",
-      crossYear: true,
-      matchDays: [6, 0],
-      baseWeekOffset: 0,
-    };
-    newLeagueCalendar = generateLeagueCalendar(fallbackConfig, teamIds, nextYear);
-  }
-
-  // Build SeasonData from new calendar (for backward compat)
-  const allNewFixtures = newLeagueCalendar.rounds.flatMap((r) => r.fixtures);
-  const newSeason: SeasonData = {
-    year: newLeagueCalendar.meta.year,
-    start: newLeagueCalendar.meta.start,
-    end: newLeagueCalendar.meta.end,
-    calendar: allNewFixtures,
-    restDays: newLeagueCalendar.meta.restDays,
-  };
-
   let playerBroadcastingCredit = 0;
   const squadsToSave: SquadSaveRef[] = [];
 
@@ -158,20 +126,32 @@ export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransit
     const isPlayer = s.id === playerClubSquadId;
     const { squad: updated, playerBroadcasting } = resetSquadForNewSeason(s, isPlayer);
     playerBroadcastingCredit += playerBroadcasting;
-    squadsToSave.push({
-      leagueSlug,
-      clubSlug: clubFileSlug(s),
-      squad: updated,
-    });
+    squadsToSave.push({ squadId: s.id, squad: updated });
   }
 
-  return {
-    archive,
-    newSeason,
-    newLeagueCalendar,
-    squadsToSave,
-    playerBroadcastingCredit,
+  return { archive, squadsToSave, playerBroadcastingCredit };
+}
+
+/**
+ * Pure: the round-based calendar of `year` for the given clubs (the NEW membership after
+ * promotion/relegation). Leagues without a schedule config use a European Aug–May default.
+ */
+export function buildNextSeasonCalendar(args: {
+  leagueSlug: string;
+  teamIds: string[];
+  year: number;
+  leagueConfig?: LeagueScheduleConfig;
+}): LeagueCalendarResult {
+  const { leagueSlug, teamIds, year, leagueConfig } = args;
+  const config: LeagueScheduleConfig = leagueConfig ?? {
+    slug: leagueSlug,
+    seasonStartMMDD: "08-15",
+    seasonEndMMDD: "05-20",
+    crossYear: true,
+    matchDays: [6, 0],
+    baseWeekOffset: 0,
   };
+  return generateLeagueCalendar(config, teamIds, year);
 }
 
 /**

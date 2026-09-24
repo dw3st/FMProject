@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X } from "lucide-react";
+import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 
@@ -30,6 +30,13 @@ const CATEGORY_META: Record<
     bg: "bg-amber-500/15",
     border: "border-amber-500/30",
     Icon: ArrowUpRight,
+  },
+  season: {
+    labelKey: "inbox.categories.season",
+    color: "text-yellow-400",
+    bg: "bg-yellow-500/15",
+    border: "border-yellow-500/30",
+    Icon: Trophy,
   },
 };
 
@@ -334,6 +341,9 @@ function MessageDetail({ message }: { message: InboxMessage }) {
             fee={message.feeEuros}
             date={message.date}
           />
+        )}
+        {message.category === "season" && (
+          <p className="text-sm text-foreground m-0">{message.preview}</p>
         )}
       </div>
     </div>

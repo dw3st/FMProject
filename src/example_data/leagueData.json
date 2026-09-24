@@ -1753,12 +1753,6 @@
         "color": "green",
         "from": 1,
         "to": 4
-      },
-      {
-        "id": "rel",
-        "label": "Relegation",
-        "color": "red",
-        "fromEnd": 4
       }
     ],
     "standings": [
@@ -4314,7 +4308,7 @@
         "id": "rel",
         "label": "Relegation",
         "color": "red",
-        "fromEnd": 3
+        "fromEnd": 2
       }
     ],
     "standings": [
@@ -7756,7 +7750,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 3
+        "to": 1
       }
     ],
     "standings": [
@@ -7965,7 +7959,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 3
+        "to": 1
       }
     ],
     "standings": [
@@ -8164,7 +8158,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 3
+        "to": 1
       }
     ],
     "standings": [
@@ -10710,7 +10704,7 @@
         "id": "rel",
         "label": "Relegation",
         "color": "red",
-        "fromEnd": 3
+        "fromEnd": 2
       }
     ],
     "standings": [
@@ -10909,7 +10903,13 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 2
+        "to": 1
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 2
       }
     ],
     "standings": [
@@ -11028,7 +11028,13 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 2
+        "to": 1
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 1
       }
     ],
     "standings": [
@@ -11127,7 +11133,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 2
+        "to": 1
       }
     ],
     "standings": [
@@ -11246,7 +11252,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 2
+        "to": 1
       }
     ],
     "standings": [
@@ -11355,7 +11361,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 2
+        "to": 1
       }
     ],
     "standings": [
@@ -13042,7 +13048,7 @@
         "id": "rel",
         "label": "Relegation",
         "color": "red",
-        "fromEnd": 3
+        "fromEnd": 2
       }
     ],
     "standings": [

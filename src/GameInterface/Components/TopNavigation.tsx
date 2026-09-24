@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { Icon } from "@/GameInterface/Icons";
 import type { LeagueData } from "@/types/playerTypes";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
@@ -41,11 +42,13 @@ const navItems: NavItem[] = [
 
 interface Props {
   onAdvanceDay?: () => void;
+  /** Present only when the next player match is more than 2 days away. */
+  onFastForward?: () => void;
   advancing?: boolean;
   leagues?: LeagueData[];
 }
 
-export function TopNavigation({ onAdvanceDay, advancing, leagues = [] }: Props = {}) {
+export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues = [] }: Props = {}) {
   const { t } = useTranslation();
   const { currentDate, session, squad, fixtures, restDays } = useGameSave();
 
@@ -126,6 +129,19 @@ export function TopNavigation({ onAdvanceDay, advancing, leagues = [] }: Props =
               )}
               {nextEventLabel}
             </div>
+          )}
+
+          {onFastForward && (
+            <button
+              type="button"
+              onClick={onFastForward}
+              disabled={advancing}
+              title={t("fastForward.button")}
+              className="flex items-center gap-1.5 px-3 py-1.5 xl:px-4 xl:py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs xl:text-sm font-bold uppercase tracking-wider transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Icon name="fast-forward" size={16} />
+              <span className="hidden xl:inline">{t("fastForward.button")}</span>
+            </button>
           )}
 
           {onAdvanceDay && (

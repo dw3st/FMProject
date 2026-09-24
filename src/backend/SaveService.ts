@@ -83,8 +83,13 @@ export class SaveService {
   /** Bumped by `dropSquadIndex`, so a build that was listing across a drop is not cached. */
   private readonly squadIndexGen = new Map<string, number>();
 
-  /** Forget the cached (and any in-flight) index of a save after a membership change. */
-  private dropSquadIndex(saveId: string): void {
+  /**
+   * Forget the cached (and any in-flight) index of a save after a membership change, so the next
+   * `getSquadIndex` re-lists the squad folders. `moveSquad`/`saveSquad` already call it; it is
+   * public for callers that change membership in bulk (e.g. the promotion/relegation step of the
+   * season rollover) and need a guaranteed fresh index afterwards.
+   */
+  dropSquadIndex(saveId: string): void {
     this.squadIndexGen.set(saveId, (this.squadIndexGen.get(saveId) ?? 0) + 1);
     this.squadIndexCache.delete(saveId);
     this.squadIndexInFlight.delete(saveId);
@@ -317,6 +322,18 @@ export class SaveService {
     } else {
       this.dropSquadIndex(saveId);
     }
+  }
+
+  /**
+   * Write a squad at the place its club currently lives (league folder + file stem from
+   * `index.byId(squad.id)`), ignoring any league the squad object itself carries. Used by the
+   * season rollover, whose reset squads may belong to clubs just moved by promotion/relegation.
+   * Throws when the id is not in the save (nothing is written).
+   */
+  async saveSquadById(saveId: string, squad: Squad): Promise<void> {
+    const e = (await this.getSquadIndex(saveId)).byId(squad.id);
+    if (!e) throw new Error(`saveSquadById: squad ${squad.id} not found in save ${saveId}`);
+    await this.saveSquad(saveId, e.leagueSlug, e.stem, { ...squad, leagueSlug: e.leagueSlug });
   }
 
   async squadExists(saveId: string, leagueSlug: string, clubParam: string): Promise<boolean> {
