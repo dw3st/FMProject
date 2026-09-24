@@ -1,0 +1,402 @@
+{
+  "Argentina": {
+    "country": "Argentina",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_argentine_premier_division",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_argentine_second_division_group_a",
+            "promote": 3,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 3,
+        "groups": [
+          {
+            "leagueSlug": "of_argentine_second_division_group_b",
+            "promote": 3,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Belarus": {
+    "country": "Belarus",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_belarusian_highest_league",
+            "promote": 0,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_belarusian_first_league",
+            "promote": 2,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Brazil": {
+    "country": "Brazil",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "brazil_serie_a",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "brazil_serie_b",
+            "promote": 3,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 3,
+        "groups": [
+          {
+            "leagueSlug": "brazil_serie_c",
+            "promote": 3,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Colombia": {
+    "country": "Colombia",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_colombian_first_division",
+            "promote": 0,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_colombian_second_division",
+            "promote": 2,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Croatia": {
+    "country": "Croatia",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_croatian_first_league",
+            "promote": 0,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_croatian_second_league",
+            "promote": 2,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "England": {
+    "country": "England",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "premier_league",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_championship",
+            "promote": 3,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "France": {
+    "country": "France",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "ligue_1",
+            "promote": 0,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_ligue_2",
+            "promote": 2,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Italy": {
+    "country": "Italy",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "serie_a",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_italian_serie_b",
+            "promote": 3,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 3,
+        "groups": [
+          {
+            "leagueSlug": "of_italian_serie_c_a",
+            "promote": 1,
+            "relegate": 0
+          },
+          {
+            "leagueSlug": "of_italian_serie_c_b",
+            "promote": 1,
+            "relegate": 0
+          },
+          {
+            "leagueSlug": "of_italian_serie_c_c",
+            "promote": 1,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Russia": {
+    "country": "Russia",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_russian_premier_league",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_russian_first_division",
+            "promote": 3,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 3,
+        "groups": [
+          {
+            "leagueSlug": "of_russian_second_division_a_gold",
+            "promote": 1,
+            "relegate": 2
+          },
+          {
+            "leagueSlug": "of_russian_second_division_a_silver",
+            "promote": 1,
+            "relegate": 1
+          }
+        ]
+      },
+      {
+        "tier": 4,
+        "groups": [
+          {
+            "leagueSlug": "of_russian_second_division_b_group_2",
+            "promote": 1,
+            "relegate": 0
+          },
+          {
+            "leagueSlug": "of_russian_second_division_b_group_3",
+            "promote": 1,
+            "relegate": 0
+          },
+          {
+            "leagueSlug": "of_russian_second_division_b_group_4",
+            "promote": 1,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Saudi Arabia": {
+    "country": "Saudi Arabia",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_saudi_professional_league",
+            "promote": 0,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_saudi_first_division",
+            "promote": 2,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Spain": {
+    "country": "Spain",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "la_liga",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_spanish_second_division",
+            "promote": 3,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Ukraine": {
+    "country": "Ukraine",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_ukrainian_premier_league",
+            "promote": 0,
+            "relegate": 3
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_ukrainian_first_league",
+            "promote": 3,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  },
+  "Uruguay": {
+    "country": "Uruguay",
+    "levels": [
+      {
+        "tier": 1,
+        "groups": [
+          {
+            "leagueSlug": "of_uruguayan_first_division",
+            "promote": 0,
+            "relegate": 2
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "groups": [
+          {
+            "leagueSlug": "of_uruguayan_second_division",
+            "promote": 2,
+            "relegate": 0
+          }
+        ]
+      }
+    ]
+  }
+}
