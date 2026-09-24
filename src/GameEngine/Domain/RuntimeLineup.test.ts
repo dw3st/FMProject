@@ -20,6 +20,7 @@ const sampleBase: PlayerStats = {
     vision: 0.6,
     firstTouch: 0.55,
     dribbling: 0.6,
+    strength: 0.5,
   },
   withoutBall: {
     pressRange: 8,
@@ -32,6 +33,7 @@ const sampleBase: PlayerStats = {
     gkPositioning: 0,
     gkReflex: 0,
     gkDiving: 0,
+    strength: 0.5,
   },
 };
 

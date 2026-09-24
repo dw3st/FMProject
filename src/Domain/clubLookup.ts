@@ -17,7 +17,7 @@ export function isPlayerSquad(squad: Squad, meta: MetaRef): boolean {
 }
 
 /** True when the given squad id is the human player's club. */
-export function isPlayerSquadId(squadId: string, meta: MetaRef): boolean {
+export function isPlayerSquadId(squadId: string, meta: Pick<MetaRef, "clubId">): boolean {
   return squadId === meta.clubId;
 }
 

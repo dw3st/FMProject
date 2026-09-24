@@ -25,7 +25,7 @@ function getTdTexts(row: string): string[] {
     // Extract inner text, handling softmerge-inner divs
     const softmerge = td.match(/<div class="softmerge-inner"[^>]*>([\s\S]*?)<\/div>/);
     if (softmerge) {
-      cells.push(softmerge[1].trim());
+      cells.push(softmerge[1]!.trim());
     } else {
       // Strip all tags, decode entities
       const text = td
@@ -55,22 +55,24 @@ const results: ClubRanking[] = [];
 for (const row of rowMatches) {
   const cells = getTdTexts(row);
   if (cells.length < 6) continue;
+  const [posCell, trendCell, changeCell, clubCell, pointsCell, diffCell] =
+    cells as [string, string, string, string, string, string];
 
-  const posRaw = cells[0].trim();
+  const posRaw = posCell.trim();
   const position = parseInt(posRaw, 10);
   if (isNaN(position)) continue;
 
-  const trend = parseTrend(cells[1]);
-  const positionChange = parseInt(cells[2], 10) || 0;
+  const trend = parseTrend(trendCell);
+  const positionChange = parseInt(changeCell, 10) || 0;
 
-  const clubFull = cells[3].trim();
+  const clubFull = clubCell.trim();
   // Split "Flamengo - RJ" into club and state
   const clubMatch = clubFull.match(/^(.+?)\s*-\s*([A-Z]{2})$/);
-  const club = clubMatch ? clubMatch[1].trim() : clubFull;
-  const state = clubMatch ? clubMatch[2] : "";
+  const club = clubMatch ? clubMatch[1]!.trim() : clubFull;
+  const state = clubMatch ? clubMatch[2]! : "";
 
-  const points = parsePoints(cells[4]);
-  const pointsDiff = parsePoints(cells[5]) || 0;
+  const points = parsePoints(pointsCell);
+  const pointsDiff = parsePoints(diffCell) || 0;
 
   if (isNaN(points)) continue;
 
