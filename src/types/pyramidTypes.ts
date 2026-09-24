@@ -9,3 +9,6 @@ export interface PyramidLevel { tier: number; groups: PyramidGroup[] }
 export interface CountryPyramid { country: string; levels: PyramidLevel[] }
 /** Keyed by leagueData `country` name (same key as countries.json). */
 export type Pyramids = Record<string, CountryPyramid>;
+
+/** One club changing division at a country's season rollover. */
+export interface ClubMove { squadId: string; from: string; to: string; kind: "promoted" | "relegated" }
