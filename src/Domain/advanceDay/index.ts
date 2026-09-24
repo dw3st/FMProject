@@ -18,7 +18,7 @@ export {
   type TrainingResult,
 } from "@/Domain/advanceDay/dailyTraining";
 export { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
-export { computeAdvanceDayMoneyDelta, resolvePlayerSquadId } from "@/Domain/advanceDay/financial";
+export { computeAdvanceDayMoneyDelta } from "@/Domain/advanceDay/financial";
 export {
   buildRestEvent,
   rollRestOutcome,

@@ -2,7 +2,7 @@ export { generateCalendar, generateLeagueCalendar } from "@/Domain/season/genera
 export { generateRestDays } from "@/Domain/season/generateRestDays";
 export { parseSeasonDates } from "@/Domain/season/parseSeasonDates";
 export { computeStandings } from "@/Domain/season/computeStandings";
-export { runSeasonTransition } from "@/Domain/season/seasonTransition";
+export { applyPlayerBroadcastingCredit, runSeasonTransition } from "@/Domain/season/seasonTransition";
 export type { SeasonTransitionInput, SeasonTransitionResult, SquadSaveRef } from "@/Domain/season/seasonTransition";
 export type {
   Fixture,
