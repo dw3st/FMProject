@@ -236,28 +236,80 @@ desenvolvimento) é o mesmo do motor.
 
 ### Limitações conhecidas (calibração de 2026-09-23)
 
-- **Volume de gols (recalibrado em 2026-09-24, com 12 ligas):**
-  `xG = BASE_GOALS × ratio^STRENGTH_EXPONENT × (nível/LEVEL_REF)^LEVEL_EXPONENT × mando`.
+- **Volume de gols (recalibrado em 2026-09-24, 26 ligas, motor com `PASS_STRONG_RAW = 0.8`):**
+  `xG = BASE_GOALS × ratio^STRENGTH_EXPONENT × (nível/LEVEL_REF)^LEVEL_EXPONENT × e^(PACE_EDGE_WEIGHT × paceEdge) × mando`.
   - `ratio = (ataque × meio) / (defesa × goleiro)`. O nível do jogo é a média do `teamLevel` dos
     dois times, e `teamLevel` é a média das 4 linhas.
-  - Valores: `BASE_GOALS = 0.78`, `STRENGTH_EXPONENT = 1.0`, `LEVEL_EXPONENT = 1.1`,
-    `HOME_ADVANTAGE = 1.06` (antes 0.94 / 0.5 / 1.2 / 1.01).
-  - **Por que mudou:** a calibração antiga só usava as 8 ligas nativas. Nas ligas `of_*` o
-    quickSim fazia +26% a +42% de gols. Os elencos derivados têm defesa e goleiro fortes em
-    relação ao ataque (ex.: liga russa com ataque 1,8 e reflexo do goleiro 4,3), e o motor marca
-    bem menos ali do que o nível sozinho prevê. O `ratio` com expoente 1 captura isso.
-  - **Resultado:** o rms do erro de gols/jogo nas 12 ligas foi de 21% para 9%. Fora da amostra,
-    o erro ficou em +8% (`of_championship`), +7% (`of_allsvenskan`) e −11% (`of_kenyan`), contra
-    +26% / +33% / +31% antes. No agregado, casa, fora e empate batem com o motor
-    (31,8/29,0/39,2% × 31,3/29,0/39,6%).
-  - **Ainda sobra:** Premier −11%, Serie A −10% e Ekstraklasa +23%. As 5 grandes têm nível quase
-    igual e no motor vão de 1,68 (Bundesliga) a 2,28 (Premier). Um modelo com expoente por linha
-    melhorou pouco (rms 7,6%) e zerava o peso do goleiro, então foi descartado como sobreajuste.
-  - **Como recalibrar:** rode `quicksim-calibrate.ts` com `QS_ENGINE_CACHE` por liga (motor uma
-    vez, ~400 jogos) para um conjunto de ligas de níveis variados, nativas **e** `of_*`. Depois
-    ajuste as constantes contra os caches. A média de gols do quickSim é analítica
-    (`Σ xgHome + xgAway`), então dá para ajustar `BASE_GOALS` em forma fechada. O ruído do motor
-    com 400 jogos é de ±4% nos gols.
+  - `paceEdge = forwardPace(atacante) − defensePace(defensor)`: média de pace da linha de ataque
+    (LW/ST/RW…) menos a da linha de defesa adversária (CB/LB/RB/WB), com
+    `pace = (3·speed + acceleration) / 4` em atributos crus 0–10. É a escala do sprint do motor
+    (≈ 5 + 0,45·speed + 0,15·acceleration jardas/s).
+  - `ATTACK_KEYS` perdeu `finishing` (agora `dribbling, speed, acceleration`). No motor, a
+    finalização só mexe na conversão (`shooterEffect` 0,85–1,2). No quickSim ela continua
+    escolhendo quem marca (`fillSide`).
+  - Valores: `BASE_GOALS = 0.74`, `STRENGTH_EXPONENT = 0.54`, `LEVEL_EXPONENT = 0.8`,
+    `PACE_EDGE_WEIGHT = 0.26`, `HOME_ADVANTAGE = 1.07` (antes 0.78 / 1.0 / 1.1 / — / 1.06).
+  - **O que explica o espalhamento:** a vantagem de velocidade dos atacantes sobre os zagueiros
+    adversários. Nas 5 grandes (nível ~5,1 em todas) o `paceEdge` médio vai de +0,10 (Bundesliga,
+    1,74 gol/jogo no motor) a +0,94 (Premier, 2,54). Numa regressão de Poisson jogo a jogo sobre
+    o resíduo do quickSim, os dois primeiros termos escolhidos entre ~120 atributos por linha
+    foram `FWD.speed` (próprio) e `DEF.speed` (adversário), com sinais opostos. Nada de finishing,
+    goleiro, drible × desarme ou formação (as IAs jogam todas no 4-3-3). O efeito é no volume de
+    chances: r = 0,39 com chutes e 0,41 com o xG do motor, mas só 0,11 com gols por chute. Isso
+    bate com as corridas de through ball, decididas pelo sprint. O termo apareceu igual antes e
+    depois da mudança de passe do motor (0,275 e 0,26).
+  - **Validação fora da amostra:**
+    - ajustado sem as 5 grandes, prevê as 5 grandes com rms de 6,9% (pior 10,1%), contra 14,4%
+      (pior 25%) sem o termo;
+    - com 8 ligas `of_*` de fora, as ligas de fora ficam com rms de 6,5% (pior 14,7%).
+    - Com um expoente por linha, o goleiro fica em ~0,27–0,38 (não zera), mas o rms cai pouco
+      (6,0% contra 6,3%), então ficou a fórmula de um termo. Somar um termo de `finishing` não
+      melhora o rms por liga e derruba o `LEVEL_EXPONENT` para 0,2 (colinear), então foi descartado.
+  - **Resultado (26 ligas, 400 jogos de motor cada):** rms 10,8% → 6,5%, pior liga 27% → 12%.
+    Notas por linha seguem dentro das metas (Premier, Bundesliga, Ekstraklasa, Quênia). Casa/empate/fora
+    batem na Bundesliga e no Quênia; na Premier o empate fica 3 p.p. abaixo (25,5% × 28,5%).
+
+    | Liga | motor | quick antes | erro antes | quick depois | erro depois |
+    |---|---|---|---|---|---|
+    | premier_league | 2,54 | 2,05 | −19,3% | 2,31 | −9,4% |
+    | serie_a | 1,99 | 1,78 | −10,5% | 2,01 | +0,9% |
+    | la_liga | 2,04 | 2,02 | −0,7% | 2,09 | +2,9% |
+    | ligue_1 | 1,91 | 1,83 | −3,8% | 2,09 | +9,5% |
+    | bundesliga | 1,74 | 1,73 | −0,2% | 1,64 | −5,7% |
+    | brazil_serie_a | 1,66 | 1,51 | −8,9% | 1,62 | −2,4% |
+    | brazil_serie_b | 1,16 | 1,12 | −4,1% | 1,25 | +7,3% |
+    | brazil_serie_c | 0,92 | 0,81 | −12,2% | 0,94 | +1,8% |
+    | of_ekstraklasa | 0,99 | 1,15 | +15,7% | 1,11 | +11,4% |
+    | of_championship | 1,23 | 1,32 | +7,9% | 1,34 | +9,3% |
+    | of_allsvenskan | 0,88 | 0,97 | +9,8% | 0,99 | +12,1% |
+    | of_argentine_premier_division | 1,45 | 1,43 | −1,3% | 1,38 | −4,3% |
+    | of_danish_superliga | 1,10 | 1,13 | +3,0% | 1,11 | +0,7% |
+    | of_eredivisie | 1,33 | 1,46 | +9,7% | 1,37 | +2,6% |
+    | of_greek_super_league | 1,04 | 1,00 | −3,7% | 1,07 | +2,4% |
+    | of_italian_serie_c_a | 0,76 | 0,71 | −6,8% | 0,79 | +4,6% |
+    | of_j_league | 1,13 | 1,03 | −8,7% | 1,06 | −6,4% |
+    | of_kenyan_premier_division | 0,64 | 0,47 | −26,8% | 0,58 | −9,2% |
+    | of_liga_mx | 1,42 | 1,44 | +1,4% | 1,41 | −0,8% |
+    | of_major_league_soccer | 1,20 | 1,22 | +1,9% | 1,21 | +1,5% |
+    | of_portuguese_primeira_liga | 1,43 | 1,32 | −7,1% | 1,38 | −3,3% |
+    | of_russian_second_division_b_group_2 | 0,55 | 0,40 | −27,1% | 0,49 | −11,1% |
+    | of_saudi_professional_league | 1,05 | 1,14 | +8,2% | 1,11 | +5,7% |
+    | of_spanish_second_division | 1,30 | 1,29 | −0,8% | 1,28 | −1,2% |
+    | of_turkish_super_league | 1,25 | 1,33 | +6,2% | 1,23 | −1,8% |
+    | of_uzbek_super_league | 0,65 | 0,68 | +4,9% | 0,71 | +9,3% |
+
+  - **Ainda sobra:** Premier −9% (a liga de maior `paceEdge`, talvez o efeito não seja linear lá
+    em cima), Allsvenskan +12%, Ekstraklasa +11%. O ruído do motor com 400 jogos é de ±3% (Premier)
+    a ±7% (ligas de pouco gol), então o que passa de ~8% é real.
+  - **Como recalibrar** (depois de qualquer mudança no motor):
+    1. `bun scripts/quicksim-spread.ts collect <liga> 200 2 <dir>/<liga>.json` para um conjunto
+       variado de ligas nativas **e** `of_*`. Cada liga leva ~5 min, então rode várias em paralelo.
+       O cache guarda cada jogo (ids, placar, chutes, xG).
+    2. `bun scripts/quicksim-spread.ts analyze <dir> [--holdout a,b]` mostra o erro por liga com
+       as constantes atuais, as correlações e o stepwise do resíduo, e os candidatos com mecanismo.
+       A seção 8 reajusta a fórmula inteira (`c`→`BASE_GOALS = e^c`, `home`→`HOME_ADVANTAGE = e^h`,
+       `ratio`, `level`, `pace`) direto nas unidades de `QuickSimConfig`.
+    3. `quicksim-calibrate.ts` continua valendo para placares, casa/empate/fora e notas.
 - **Contagem de passes do motor (corrigida em 2026-09-24):** o through ball emitia
   `passAttempted` sem nunca emitir `passCompleted`/`passFailed`, o que derrubava o aproveitamento
   para ~47%. Agora ele só conta na família própria (`throughBalls*`), e todo `passAttempted`
