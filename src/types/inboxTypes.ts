@@ -1,4 +1,4 @@
-export type InboxCategory = "development" | "transfer_in" | "transfer_out";
+export type InboxCategory = "development" | "transfer_in" | "transfer_out" | "season";
 
 export interface InboxMessageBase {
   id:        string;
@@ -41,7 +41,21 @@ export interface TransferOutInboxMessage extends InboxMessageBase {
   feeEuros:   number;
 }
 
+/** End-of-season news for the human club: promotion, relegation or a league title. */
+export interface SeasonInboxMessage extends InboxMessageBase {
+  category:   "season";
+  kind:       "promoted" | "relegated" | "champion";
+  /** League the message is about: the new league for promoted/relegated, the won league for champion. */
+  leagueSlug: string;
+  leagueName: string;
+  /** League the club left (promoted/relegated only). */
+  fromLeagueSlug?: string;
+  /** Season year that just ended. */
+  seasonYear: number;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
-  | TransferOutInboxMessage;
+  | TransferOutInboxMessage
+  | SeasonInboxMessage;

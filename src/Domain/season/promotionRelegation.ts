@@ -1,8 +1,8 @@
 import { addOneDay } from "@/Domain/advanceDay/date";
-import type { CountryPyramid, PyramidGroup } from "@/types/pyramidTypes";
+import type { ClubMove, CountryPyramid, PyramidGroup } from "@/types/pyramidTypes";
 import type { StandingRow } from "@/types/playerTypes";
 
-export interface ClubMove { squadId: string; from: string; to: string; kind: "promoted" | "relegated" }
+export type { ClubMove };
 
 const byStr = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
