@@ -96,8 +96,8 @@ export function LoginScreen() {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <div className="text-center mb-12">
           <h1 className="text-6xl md:text-8xl font-black tracking-tight font-display">
-            <span className="text-foreground">TOUCH</span>
-            <span className="text-primary glow-text">LINES</span>
+            <span className="text-foreground">FM</span>
+            <span className="text-primary glow-text">PROJECT</span>
           </h1>
           <p className="mt-4 text-sm md:text-base tracking-[0.4em] text-muted-foreground uppercase font-medium">
             {stage === "email" ? "Sign in to your account" : "Enter the 6-digit code"}
