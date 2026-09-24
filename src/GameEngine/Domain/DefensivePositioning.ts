@@ -20,7 +20,7 @@ import type { GamePlayer, Formation, TeamId, TeamIntent } from '@/GameEngine/typ
 import { resolveBasePosition } from '@/GameEngine/FormationSlots';
 import { getDefenseConfig, getDefenseTacticKeys } from '@/GameEngine/Configs/DefenseConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { mainRoleOf, roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import {
@@ -262,8 +262,8 @@ export function assignMarkTargets(
 
   // Sort defenders by main-role priority so back-line picks before mids/forwards
   const sortedDefenders = [...defenders].sort((a, b) => {
-    const pa = MARK_ROLE_PRIORITY[a.mainRole] ?? 9;
-    const pb = MARK_ROLE_PRIORITY[b.mainRole] ?? 9;
+    const pa = MARK_ROLE_PRIORITY[mainRoleOf(a.role)] ?? 9;
+    const pb = MARK_ROLE_PRIORITY[mainRoleOf(b.role)] ?? 9;
     return pa - pb;
   });
 

@@ -34,8 +34,13 @@ export interface RoleEngineTuning {
   };
 }
 
-const roles = rolesJson as Record<PlayerRole, { engine: RoleEngineTuning }>;
+const roles = rolesJson as Record<PlayerRole, { mainRole: string; engine: RoleEngineTuning }>;
 
 export function roleEngine(role: PlayerRole): RoleEngineTuning {
   return roles[role].engine;
+}
+
+/** Main role ("GK" | "Defender" | "Midfielder" | "Forward") of a detailed role, from roles.json. */
+export function mainRoleOf(role: PlayerRole): string {
+  return roles[role].mainRole;
 }
