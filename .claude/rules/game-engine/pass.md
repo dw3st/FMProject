@@ -327,9 +327,89 @@ per-line action scores and raw pass components). Per player per match, 4-3-3 bot
 | Shots / match | 7.1 / 6.8 | 7.0 / 6.4 |
 | Goals / match | 2.83 / 2.39 | 2.89 / 2.23 |
 
-MIDs still pass less than DEFs (CB↔CB circulation is the biggest flow, ~11.5 completed
+MIDs still passed less than DEFs (CB↔FB/CB circulation was the biggest flow, ~11.5 completed
 DEF→DEF passes per match). Pushing further (0.75) gives MID ≈ 2.6 but costs ~8% of shots.
 Weaker leagues lose more goals: `of_championship` went 1.65 → 1.40 goals/match (300 matches after).
+The role-targeted change below closed the remaining gap.
+
+---
+
+# Midfield as the Circulation Hub (role-targeted, 2026-09-24)
+
+## Why defenders recycled instead of playing into midfield
+
+`bun scripts/passing-mix-diagnostic.ts premier_league 100 --receivers` scores every teammate
+at the moment each regular pass is played. From a CB, the best full-back scored 0.66 and the
+best CM 0.57–0.61. The CM wins on progress (0.78 vs 0.50) but loses on lane (0.60–0.66 vs 0.94),
+receiver space (0.67–0.70 vs 0.89) and the lane-gated player modifier. Opposing midfielders
+`track_mark` onto the ball→CM lane by design, while full-backs stand wide and unmarked. So the
+CB↔FB pass was always the safer top-scored option, and nothing in the scoring said "a midfielder is
+a better place for the ball than the other CB". MID holders also rarely passed: carry
+(raw 0.82) and through ball (0.81) beat their pass (0.75).
+
+## The three role levers (all per role in `roles.json`, no tactic logic in consumers)
+
+| Lever | Where | Effect |
+|---|---|---|
+| **`passTargetWeight`** (receiver, 0..1, 0.5 = neutral) | `PassLanes.getReceiverRoleScore` → `receiverRoleBonus = (w − 0.5) × RECEIVER_ROLE_WEIGHT × routingGate` | Picks **which** teammate gets the ball. Centred, so it reorders receivers instead of inflating every pass. It only enters the selection `score`; the pass **action** uses `quality` (the score without it). |
+| **`passBias`** (holder, −1..1, 0 = neutral) | `DecisionTree.evalPass`: `raw = quality + passBias × PASS_CONFIG.ROLE_BIAS_WEIGHT` | The pass mirror of `carryBias`: decides **whether** to pass instead of carrying or playing a through ball. |
+| **`offBallIntentWeights`** (CM 1.10 / 0.35 / 0.30, CAM 1.00 / 0.30 / 0.55 offer/hold/run) | `OffBallMovement.selectOffBallIntent` | CM/CAM show for the ball more often, so their lanes open up (CB→CM lane 0.66 → 0.73). |
+
+- `routingGate = clamp((progressScore − 0.3) / 0.2, 0, 1)`: full on lateral and forward passes, fading
+  to 0 over the first 12 yds backward. A winger doesn't lay the ball back into midfield
+  instead of finding the striker.
+- `RECEIVER_ROLE_WEIGHT` is a team pass weight per `build_up`: possession 0.14, balanced 0.10,
+  direct 0.06. `PASS_CONFIG.ROLE_BIAS_WEIGHT = 0.10`.
+- Off-ball movement reads `scorePassQuality` (no role bonus), because the receiver's role must not
+  inflate the answer to "am I open?".
+- Debug: the pass breakdown in `/test` → Decision Scores shows `rcv` (receiverRoleBonus) and `bias`
+  (holder roleBias). `rawScore` is what the pass action compresses.
+- All three levers were needed. passBias alone got MID 2.3 vs DEF 2.5. passBias + routing got
+  2.6 vs 2.3, and passBias + off-ball got 2.7 vs 2.6 (premier_league, 300 matches).
+
+| Role | passTargetWeight | passBias |
+|---|---|---|
+| GK | 0.00 | 0 |
+| CB | 0.20 | −0.30 |
+| LB / RB | 0.40 | −0.30 |
+| LWB / RWB | 0.45 | 0 |
+| CDM / CM | 1.00 | 0.80 |
+| CAM | 0.90 | 0.50 |
+| LM / RM | 0.70 | 0.40 |
+| LW / RW / ST | 0.50 | 0 |
+
+## Measured (4-3-3 both sides, balanced)
+
+Line passes are per player per match; flows and totals are per match. 400 matches per league
+(`of_championship` is the weaker `of_*` league). "Before" is commit 35e8985.
+
+| Metric | premier_league before → after | serie_a before → after | of_championship before → after |
+|---|---|---|---|
+| MID regular passes | 1.69 → **3.14** | 1.77 → **3.14** | 1.22 → **2.55** |
+| DEF regular passes | 3.00 → 2.36 | 3.20 → 2.45 | 3.03 → 2.39 |
+| FWD regular passes | 1.45 → 1.53 | 1.26 → 1.26 | 0.98 → 0.99 |
+| DEF→DEF completed | 11.5 → 6.8 | 12.3 → 6.8 | 11.6 → 7.0 |
+| DEF→MID completed | 6.0 → 7.5 | 6.6 → 8.2 | 6.2 → 7.6 |
+| MID→MID completed | 2.5 → 6.9 | 2.9 → 7.2 | 1.9 → 5.5 |
+| MID→FWD completed | 4.9 → 7.6 | 4.8 → 7.3 | 3.4 → 6.1 |
+| Regular passes | 49.1 → 52.7 | 49.8 → 51.7 | 42.6 → 45.1 |
+| Through balls | 19.6 → 19.3 | 19.3 → 18.8 | 18.8 → 19.1 |
+| Shots | 6.86 → 7.17 | 6.19 → 6.41 | 5.01 → 4.97 |
+| Goals | 2.88 → 2.97 | 2.25 → 2.25 | 1.51 → 1.53 |
+
+Other set-ups (premier_league, 300 matches):
+
+| Set-up | MID / DEF passes before → after | Shots | Goals |
+|---|---|---|---|
+| 4-2-3-1 (CDM pair) | 1.20 / 2.25 → 2.20 / 1.91 | 6.83 → 6.90 | 2.87 → 2.97 |
+| possession (both teams) | 3.32 / 7.38 → 5.52 / 6.17 (105.5 → 108.3 passes/match) | 6.12 → 5.61 | 2.48 → 2.29 |
+| direct_play (both teams) | 0.53 / 1.77 → 1.19 / 1.52 (31.1 → 32.8 passes/match) | 7.12 → 7.41 | 2.94 → 3.14 |
+
+Possession circulates the most, as intended. But its MIDs now pass where they used to play a
+through ball (MID TB 0.62 → 0.44 per player, and TB completion in that style is ~67%), which costs
+~6–8% of shots. `RECEIVER_ROLE_WEIGHT` is not the cause (0.06, 0.10 and 0.14 give the same shots);
+`passBias` is. Lowering the CM passBias to 0.6 recovers about half of it, but it leaves MID ≈ DEF in the
+weaker league and in 4-2-3-1.
 
 ---
 
