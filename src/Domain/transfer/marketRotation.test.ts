@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import { mulberry32 } from "@/Domain/rng";
 import {
   dailyMarketTick,
   initMarketState,
@@ -133,5 +134,52 @@ describe("dailyMarketTick", () => {
     });
     expect(updatedMarket.profiles["human"]).toBeUndefined();
     expect(updatedMarket.profiles["ai"]).toBeDefined();
+  });
+});
+
+describe("dailyMarketTick — frozenSquadIds", () => {
+  async function loadLeague(slug: string): Promise<Squad[]> {
+    const out: Squad[] = [];
+    for await (const f of new Bun.Glob(`src/example_data/squads/${slug}/*.json`).scan(".")) {
+      out.push({ ...(await Bun.file(f).json()), leagueSlug: slug } as Squad);
+    }
+    return out;
+  }
+
+  /** Runs `days` market ticks and returns every completed transfer as [sellerId, buyerId]. */
+  function runTicks(squads: Squad[], days: number, frozen?: ReadonlySet<string>): Array<[string, string]> {
+    const rng = mulberry32(2026);
+    let market = initMarketState(squads, rng);
+    let world = squads;
+    const moves: Array<[string, string]> = [];
+    for (let d = 0; d < days; d++) {
+      const { updatedMarket, completedTransfers } = dailyMarketTick(market, world, "2024-09-01", rng, {
+        frozenSquadIds: frozen,
+      });
+      market = updatedMarket;
+      const byId = new Map(world.map((s) => [s.id, s] as const));
+      for (const tx of completedTransfers) {
+        moves.push([tx.sellerSquad.id, tx.buyerSquad.id]);
+        byId.set(tx.updatedSeller.id, tx.updatedSeller);
+        byId.set(tx.updatedBuyer.id, tx.updatedBuyer);
+      }
+      world = [...byId.values()];
+    }
+    return moves;
+  }
+
+  test("clubes congelados não compram nem vendem; o resto do mercado continua", async () => {
+    const england = await loadLeague("premier_league");
+    const brazil = await loadLeague("brazil_serie_a");
+    const squads = [...england, ...brazil];
+    const brazilIds = new Set(brazil.map((s) => s.id));
+
+    // Sem congelar, o mercado mexe em clubes brasileiros (senão o teste não prova nada).
+    const free = runTicks(squads, 60);
+    expect(free.some(([s, b]) => brazilIds.has(s) || brazilIds.has(b))).toBe(true);
+
+    const frozen = runTicks(squads, 60, brazilIds);
+    expect(frozen.length).toBeGreaterThan(0);
+    expect(frozen.filter(([s, b]) => brazilIds.has(s) || brazilIds.has(b))).toEqual([]);
   });
 });
