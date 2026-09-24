@@ -5,6 +5,9 @@
  *   baseScore      = laneScore + progressScore + receiverSpaceScore + goalProximityBonus − distancePenalty
  *   playerModifier = passingSkill + vision + receiverControl
  *   tacticalModifier = 0 (reserved for future tactics system)
+ *   receiverRoleBonus = (receiver role's passTargetWeight − 0.5) × RECEIVER_ROLE_WEIGHT × routingGate
+ *   quality = base + player + tactical + passTarget   (what the pass ACTION competes with)
+ *   score   = quality + receiverRoleBonus              (what picks the receiver)
  *
  * Source of truth: .claude/rules/game-engine/pass.md
  *
@@ -20,6 +23,7 @@ import { getTeamPassConfig, getTeamWidth } from '@/GameEngine/Configs/AttackConf
 import { applyPassIntent, getPassTargetBias } from '@/GameEngine/Configs/IntentConfig';
 import { computeOpenAngle, MAX_OPEN_ANGLE } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
+import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 
 export interface PassLaneInfo {
   toId: number;
@@ -37,6 +41,13 @@ export interface PassLaneInfo {
    * without re-deriving the geometry.
    */
   switchPass: boolean;
+  /**
+   * Pass quality without the receiver-role routing preference. `score` (quality
+   * + receiverRoleBonus) picks WHICH teammate gets the ball; the pass ACTION
+   * score in DecisionTree.evalPass compresses `quality`, so the pass vs carry /
+   * through-ball balance is judged on pass quality alone.
+   */
+  quality: number;
 }
 
 // ── Scoring components ────────────────────────────────────────────────────────
@@ -212,6 +223,21 @@ function getFarFlankScore(holder: GamePlayer, receiver: GamePlayer): number {
   return Math.min(1, Math.abs(receiverFromCentre) / (PITCH_WIDTH / 2));
 }
 
+/**
+ * Receiver role fit — −0.5..+0.5 from the receiver role's `passTargetWeight`
+ * (roles.json, 0.5 = neutral). Midfielders are the team's circulation hub
+ * (> 0.5), centre-backs and the GK are last-resort recycling targets (< 0.5),
+ * forwards are neutral so final-third passing is unchanged.
+ *
+ * Centred on 0.5 so it reorders receivers: a defender's pass to midfield gains
+ * what its pass to the other centre-back loses. It only enters the selection
+ * `score`, never `quality`, so the pass-vs-carry / through-ball balance is
+ * unchanged (the holder-side tendency is roles.json `passBias`, in evalPass).
+ */
+function getReceiverRoleScore(receiver: GamePlayer): number {
+  return roleEngine(receiver.role).passTargetWeight - 0.5;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -239,6 +265,11 @@ export interface PassBreakdown {
   playerModifier:     number;
   tacticalModifier:   number;
   passTargetBonus:    number;
+  /** Receiver-role fit × RECEIVER_ROLE_WEIGHT — positive for midfield hubs, negative for CB/GK. */
+  receiverRoleBonus:  number;
+  /** Pass quality: everything except receiverRoleBonus (clamped ≥ 0). */
+  quality:            number;
+  /** Receiver-selection score: quality + receiverRoleBonus (clamped ≥ 0). */
   score:              number;
 }
 
@@ -289,12 +320,38 @@ export function scorePassToReceiverBreakdown(
     passTargetBonus = getFarFlankScore(holder, receiver) * passTargetBias.weight;
   }
 
+  // Role-targeted receiver preference — midfielders are the circulation hub.
+  // Weight is per build_up style (possession routes more through midfield).
+  // Applies to lateral and forward passes only; fades to 0 over the first
+  // 12 yds backward (progress 0.5 → 0.3). The hub preference is about build-up
+  // routing, not about a winger laying the ball back into midfield instead of
+  // finding the striker.
+  const routingGate = Math.max(0, Math.min(1, (progressScore - 0.3) / 0.2));
+  const receiverRoleBonus = getReceiverRoleScore(receiver) * cfg.RECEIVER_ROLE_WEIGHT * routingGate;
+
+  const qualityRaw = baseScore + playerModifier + tacticalModifier + passTargetBonus;
   return {
     laneScore, progressScore, receiverSpaceScore,
     distancePenalty, goalProximityBonus, visionRangePenalty,
-    baseScore, playerModifier, tacticalModifier, passTargetBonus,
-    score: Math.max(0, baseScore + playerModifier + tacticalModifier + passTargetBonus),
+    baseScore, playerModifier, tacticalModifier, passTargetBonus, receiverRoleBonus,
+    quality: Math.max(0, qualityRaw),
+    score:   Math.max(0, qualityRaw + receiverRoleBonus),
   };
+}
+
+/**
+ * Pass quality to `receiver` WITHOUT the receiver-role routing preference —
+ * "how good an option is this player right now". Used by off-ball movement
+ * (am I open? which cell is a good receiving spot?), where the receiver's role
+ * must not inflate the answer.
+ */
+export function scorePassQuality(
+  holder:    GamePlayer,
+  receiver:  GamePlayer,
+  opponents: GamePlayer[],
+  intent:    TeamIntent = 'balanced',
+): number {
+  return scorePassToReceiverBreakdown(holder, receiver, opponents, intent).quality;
 }
 
 export function scorePassToReceiver(
@@ -328,6 +385,7 @@ export function evaluatePassLanes(
       open:       bd.score >= cfg.MIN_PASS_SCORE,
       score:      bd.score,
       switchPass: bd.passTargetBonus > 0,
+      quality:    bd.quality,
     };
   });
 }

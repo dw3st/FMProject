@@ -12,6 +12,8 @@
     "engine": {
       "ballSupportScale": 0.10, "yRange":  8, "bounds": { "minX":  2, "maxX":  16 },
       "carryBias": 0, "offBallBias": 0,
+      "passBias": 0.00,
+      "passTargetWeight": 0.00,
       "offBallCarryDeltas": { "clearance": 0, "progress": 0, "angle": 0, "crowd": 0, "dropLaneBias": 0, "widthBias": 0 },
       "offBallIntentWeights": { "offer_support": 0.00, "hold_space": 0.00, "make_run": 0.00 },
       "defensiveIntentWeights": { "hold_shape": 0.00, "track_mark": 0.00, "press_holder": 0.00, "step_into_carry_lane": 0.00 }
@@ -30,6 +32,8 @@
     "engine": {
       "ballSupportScale": 0.20, "yRange": 14, "bounds": { "minX":  8, "maxX":  50 },
       "carryBias": 0.15, "offBallBias": 0.1,
+      "passBias": -0.30,
+      "passTargetWeight": 0.20,
       "offBallCarryDeltas": { "clearance": 0.18, "progress": -0.22, "angle": -0.05, "crowd": 0.12, "dropLaneBias": 0, "widthBias": 0 },
       "offBallIntentWeights": { "offer_support": 0.30, "hold_space": 0.80, "make_run": 0.05 },
       "defensiveIntentWeights": { "hold_shape": 0.7, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -48,6 +52,8 @@
     "engine": {
       "ballSupportScale": 0.10, "yRange": 50, "bounds": { "minX":  5, "maxX":  65 },
       "carryBias": 0.4, "offBallBias": 0.15,
+      "passBias": -0.30,
+      "passTargetWeight": 0.40,
       "offBallCarryDeltas": { "clearance": 0.15, "progress": -0.20, "angle": -0.05, "crowd": 0.10, "dropLaneBias": 0.05, "widthBias": 0.15 },
       "offBallIntentWeights": { "offer_support": 0.45, "hold_space": 0.55, "make_run": 0.20 },
       "defensiveIntentWeights": { "hold_shape": 0.7, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -66,6 +72,8 @@
     "engine": {
       "ballSupportScale": 0.10, "yRange": 28, "bounds": { "minX":  5, "maxX":  65 },
       "carryBias": 0.4, "offBallBias": 0.15,
+      "passBias": -0.30,
+      "passTargetWeight": 0.40,
       "offBallCarryDeltas": { "clearance": 0.15, "progress": -0.20, "angle": -0.05, "crowd": 0.10, "dropLaneBias": 0.05, "widthBias": 0.15 },
       "offBallIntentWeights": { "offer_support": 0.45, "hold_space": 0.55, "make_run": 0.20 },
       "defensiveIntentWeights": { "hold_shape": 0.7, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -84,6 +92,8 @@
     "engine": {
       "ballSupportScale": 0.20, "yRange": 32, "bounds": { "minX":  5, "maxX":  90 },
       "carryBias": 0.6, "offBallBias": 0.25,
+      "passBias": 0.00,
+      "passTargetWeight": 0.45,
       "offBallCarryDeltas": { "clearance": 0.12, "progress": -0.15, "angle": -0.05, "crowd": 0.08, "dropLaneBias": 0.05, "widthBias": 0.30 },
       "offBallIntentWeights": { "offer_support": 0.40, "hold_space": 0.60, "make_run": 0.30 },
       "defensiveIntentWeights": { "hold_shape": 0.7, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -102,6 +112,8 @@
     "engine": {
       "ballSupportScale": 0.20, "yRange": 32, "bounds": { "minX":  5, "maxX":  90 },
       "carryBias": 0.6, "offBallBias": 0.25,
+      "passBias": 0.00,
+      "passTargetWeight": 0.45,
       "offBallCarryDeltas": { "clearance": 0.12, "progress": -0.15, "angle": -0.05, "crowd": 0.08, "dropLaneBias": 0.05, "widthBias": 0.30 },
       "offBallIntentWeights": { "offer_support": 0.40, "hold_space": 0.60, "make_run": 0.30 },
       "defensiveIntentWeights": { "hold_shape": 0.7, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -120,6 +132,8 @@
     "engine": {
       "ballSupportScale": 0.20, "yRange": 18, "bounds": { "minX": 18, "maxX":  68 },
       "carryBias": 0.3, "offBallBias": 0.3,
+      "passBias": 0.80,
+      "passTargetWeight": 1.00,
       "offBallCarryDeltas": { "clearance": 0.15, "progress": -0.15, "angle": -0.05, "crowd": 0.10, "dropLaneBias": 0.95, "widthBias": 0 },
       "offBallIntentWeights": { "offer_support": 0.70, "hold_space": 0.65, "make_run": 0.10 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.7, "step_into_carry_lane": 0.5 }
@@ -138,8 +152,10 @@
     "engine": {
       "ballSupportScale": 0.35, "yRange": 28, "bounds": { "minX": 22, "maxX":  85 },
       "carryBias": 0.5, "offBallBias": 0.6,
+      "passBias": 0.80,
+      "passTargetWeight": 1.00,
       "offBallCarryDeltas": { "clearance": 0.12, "progress": -0.10, "angle": -0.05, "crowd": 0.05, "dropLaneBias": 0.80, "widthBias": 0 },
-      "offBallIntentWeights": { "offer_support": 0.70, "hold_space": 0.50, "make_run": 0.30 },
+      "offBallIntentWeights": { "offer_support": 1.10, "hold_space": 0.35, "make_run": 0.30 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.7, "step_into_carry_lane": 0.5 }
     }
   },
@@ -156,8 +172,10 @@
     "engine": {
       "ballSupportScale": 0.40, "yRange": 24, "bounds": { "minX": 28, "maxX":  90 },
       "carryBias": 0.5, "offBallBias": 0.8,
+      "passBias": 0.50,
+      "passTargetWeight": 0.90,
       "offBallCarryDeltas": { "clearance": 0, "progress": 0.05, "angle": 0, "crowd": 0, "dropLaneBias": 0.50, "widthBias": 0 },
-      "offBallIntentWeights": { "offer_support": 0.55, "hold_space": 0.40, "make_run": 0.55 },
+      "offBallIntentWeights": { "offer_support": 1.00, "hold_space": 0.30, "make_run": 0.55 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
     }
   },
@@ -174,6 +192,8 @@
     "engine": {
       "ballSupportScale": 0.35, "yRange": 20, "bounds": { "minX": 16, "maxX":  75 },
       "carryBias": 0.8, "offBallBias": 0.7,
+      "passBias": 0.40,
+      "passTargetWeight": 0.70,
       "offBallCarryDeltas": { "clearance": 0.10, "progress": -0.08, "angle": -0.05, "crowd": 0.05, "dropLaneBias": 0.15, "widthBias": 0.20 },
       "offBallIntentWeights": { "offer_support": 0.55, "hold_space": 0.55, "make_run": 0.40 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -192,6 +212,8 @@
     "engine": {
       "ballSupportScale": 0.35, "yRange": 20, "bounds": { "minX": 16, "maxX":  75 },
       "carryBias": 0.8, "offBallBias": 0.7,
+      "passBias": 0.40,
+      "passTargetWeight": 0.70,
       "offBallCarryDeltas": { "clearance": 0.10, "progress": -0.08, "angle": -0.05, "crowd": 0.05, "dropLaneBias": 0.15, "widthBias": 0.20 },
       "offBallIntentWeights": { "offer_support": 0.55, "hold_space": 0.55, "make_run": 0.40 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -210,6 +232,8 @@
     "engine": {
       "ballSupportScale": 0.10, "yRange": 22, "bounds": { "minX": 35, "maxX": 105 },
       "carryBias": 0.9, "offBallBias": 0.9,
+      "passBias": 0.00,
+      "passTargetWeight": 0.50,
       "offBallCarryDeltas": { "clearance": -0.05, "progress": 0.10, "angle": -0.05, "crowd": -0.05, "dropLaneBias": 0.05, "widthBias": 0.35 },
       "offBallIntentWeights": { "offer_support": 0.40, "hold_space": 0.55, "make_run": 0.65 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -228,6 +252,8 @@
     "engine": {
       "ballSupportScale": 0.10, "yRange": 22, "bounds": { "minX": 35, "maxX": 105 },
       "carryBias": 0.9, "offBallBias": 0.9,
+      "passBias": 0.00,
+      "passTargetWeight": 0.50,
       "offBallCarryDeltas": { "clearance": -0.05, "progress": 0.10, "angle": -0.05, "crowd": -0.05, "dropLaneBias": 0.05, "widthBias": 0.35 },
       "offBallIntentWeights": { "offer_support": 0.40, "hold_space": 0.55, "make_run": 0.65 },
       "defensiveIntentWeights": { "hold_shape": 0.5, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }
@@ -246,6 +272,8 @@
     "engine": {
       "ballSupportScale": 0.50, "yRange": 22, "bounds": { "minX": 40, "maxX": 110 },
       "carryBias": 0.6, "offBallBias": 1.0,
+      "passBias": 0.00,
+      "passTargetWeight": 0.50,
       "offBallCarryDeltas": { "clearance": -0.10, "progress": 0.15, "angle": 0.05, "crowd": -0.05, "dropLaneBias": 0, "widthBias": 0 },
       "offBallIntentWeights": { "offer_support": 0.30, "hold_space": 0.40, "make_run": 0.80 },
       "defensiveIntentWeights": { "hold_shape": 0.1, "track_mark": 0.5, "press_holder": 0.5, "step_into_carry_lane": 0.5 }

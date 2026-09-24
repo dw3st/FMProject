@@ -20,6 +20,22 @@ export const PASS_CONFIG = {
   DISTANCE_PENALTY_WEIGHT: 0.13,
   GOAL_PROXIMITY_WEIGHT:   0.26,
 
+  // ── Receiver role weight ─────────────────────────────────────────────────
+  /**
+   * Scales the receiver role fit (roles.json `passTargetWeight` − 0.5, so
+   * −0.5..+0.5). 0.10 → a pass to a CM gets +0.05, to a CB −0.03, to the GK
+   * −0.05, to a forward 0. Makes midfield the circulation hub instead of
+   * CB↔FB recycling. Per build_up style in AttackConfig.BUILD_UP_PASS.
+   */
+  RECEIVER_ROLE_WEIGHT:    0.10,
+
+  /**
+   * Scales the HOLDER role's pass tendency (roles.json `passBias`, −1..1) added
+   * to the pass action raw score in DecisionTree.evalPass — the pass mirror of
+   * CARRY_CONFIG.ROLE_BIAS_WEIGHT × carryBias. CM +0.08, CB −0.03.
+   */
+  ROLE_BIAS_WEIGHT:        0.10,
+
   // ── Player modifier weights ──────────────────────────────────────────────
   PASSING_SKILL_WEIGHT:    0.15,
   VISION_WEIGHT:           0.15,
