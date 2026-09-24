@@ -16,8 +16,9 @@
 
 | Peça | O que faz |
 |---|---|
-| `squadIndex.ts` → `buildSquadIndex(files)` | Índice puro: `byId(id)` → `{leagueSlug, stem, slug, nome, cores}`, `inLeague(liga)` (ordenado por id), `resolve(liga, param)` (id, stem ou slug → stem), `leagues()` |
-| `SaveService.getSquadIndex(saveId)` | Monta o índice a partir de `listSquadFiles`, com cache por versão do save |
+| `squadIndex.ts` → `buildSquadIndex(files, { strict? })` | Índice puro: `byId(id)` → `{leagueSlug, stem, slug, nome, cores}`, `inLeague(liga)` (ordenado por id, numérico), `resolve(liga, param)` (id, stem ou slug → stem), `resolveEntry`, `leagues()`, `duplicates()` |
+| `SaveService.getSquadIndex(saveId)` | Monta o índice a partir de `listSquadFiles`, com cache por versão do save e build em andamento compartilhado |
+| `SaveService.addNewSquads(saveId, candidatos)` | Grava em lote squads novos no save (usado pelo `/import-squads`) |
 | `getSquad` / `saveSquad` / `squadExists` | Resolvem o clube pelo índice dentro da liga dada |
 | `getSquadById(saveId, id)` | Lê o squad onde quer que ele esteja |
 | `moveSquad(saveId, id, liga)` | Grava o arquivo na liga nova (mesmo stem, `leagueSlug` atualizado) e chama `deleteSquad` na antiga |
@@ -26,6 +27,23 @@
 | `squadRouteResolve.ts` | A rota `/api/saves/:id/squad/:league/:club` tenta o clube na liga e depois o id em qualquer liga. O `/import-squads` nunca ressuscita um clube que já existe no save com o mesmo id |
 
 `advanceDay`, `match-setup` e os kits iniciais usam o índice ou `getSquadById`. Nada disso lê `leagueData.standings`.
+
+## Guardas de consistência
+
+- **`saveSquad` recusa gravações que duplicariam um clube.** Se o param não resolve na liga dada mas o `squad.id` existe em outra liga, lança `saveSquad: squad X lives in L, not M — use moveSquad`. Também lança se o stem resolvido (ou o stem `squad.id` de um squad novo) pertence a outro `squadId`. Trocar de liga é só com `moveSquad`.
+- **`getSquad` / `squadExists` confiam só no índice.** Não há mais leitura direta pelo param cru; fora do índice é `null` / `false`.
+- **Índice leniente.** Por padrão `buildSquadIndex` não lança em `squadId` duplicado: mantém uma cópia e reporta as outras em `duplicates()`. `getSquadIndex` registra os duplicados com `logError("squadIndex", …)`. A cópia mantida é, nesta ordem: o maior `squad.membershipRev`; a pasta igual ao `squad.leagueSlug` gravado; a primeira em ordem de chave `liga/stem`. `{ strict: true }` mantém o comportamento antigo (lança).
+- **`membershipRev`.** `moveSquad` incrementa `squad.membershipRev`. O `FileSystemDAL` sempre normaliza `leagueSlug` para a pasta ao listar, então só o rev distingue a cópia movida da cópia velha que sobrou.
+- **Ordem do `flush` do `BufferingSaveDAL`:** (1) todas as escritas exceto meta, (2) os deletes de squad (tombstones), (3) meta. Cada fase só roda se a anterior deu certo; as falhas ficam pendentes para o próximo `flush`. Um `moveSquad` que falha no meio deixa duas cópias do clube, nunca zero, e o dia não conta como avançado (meta não é gravada). Isso vale para o plano 3b, que move muitos clubes num único dia bufferizado.
+- **`listSquadFiles` tolera arquivo sumido.** Se um arquivo some entre o glob e a leitura (`ENOENT`), ele é pulado.
+- **Ordem numérica.** `inLeague` ordena por id com `localeCompare(…, { numeric: true })`: `"33"` vem antes de `"1359"`.
+- **`/import-squads`** junta os candidatos e chama `SaveService.addNewSquads` uma vez: lê o índice uma vez, pula ids que já existem em qualquer liga (ou repetidos no próprio import) e descarta o índice uma vez no fim.
+
+## Cache do índice e o contador de versão
+
+- `getSquadIndex` guarda o índice por instância de `SaveService`, carimbado com `getSaveDataVersion(saveId)`. O `FileSystemDAL` incrementa esse contador a cada escrita ou delete de squad/mercado. Chamadas concorrentes na mesma versão compartilham uma única listagem em andamento; ela sai do mapa quando termina, com sucesso ou falha.
+- **O contador é local ao processo** (`src/backend/dal/saveDataVersion.ts`). Um script que edita o save em outro processo enquanto o servidor roda não incrementa o contador do servidor. O índice do singleton `saveService` do servidor fica velho até reiniciar. Reinicie o servidor depois de mexer em `squads/` por fora.
+- O `advanceDay` não é afetado: cada dia cria um `SaveService` novo sobre um `BufferingSaveDAL` novo, que monta o índice do zero.
 
 ## Frontend
 

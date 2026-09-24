@@ -278,10 +278,11 @@ export const apiRoutes = {
       .map((d) => d.name);
 
     const squadGlob = new Bun.Glob("*.json");
-    let copied = 0;
     // Skip any catalogue squad whose id already lives ANYWHERE in the save — a club
-    // that moved leagues must not be resurrected in its old folder.
+    // that moved leagues must not be resurrected in its old folder. addNewSquads
+    // re-checks each candidate and drops the index once, not once per file.
     const index = await saveService.getSquadIndex(saveId);
+    const candidates: Array<{ leagueSlug: string; stem: string; squad: Squad }> = [];
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
@@ -299,11 +300,11 @@ export const apiRoutes = {
             seasonLog: pl.seasonLog ?? emptySeasonLog(),
           })),
         };
-        await saveService.saveSquad(saveId, league, clubSlug, squad);
-        copied++;
+        candidates.push({ leagueSlug: league, stem: clubSlug, squad });
       }
     }
 
+    const copied = await saveService.addNewSquads(saveId, candidates);
     return Response.json({ ok: true, copied });
   },
 

@@ -14,7 +14,7 @@ function squad(id: string, slug?: string, name = id): Squad {
 /** In-memory ISaveDAL covering the squad surface; any other method throws. */
 function memoryDAL(
   files: SquadFile[],
-  opts: { failDelete?: () => boolean } = {},
+  opts: { failDelete?: () => boolean; failList?: () => boolean } = {},
 ): { dal: ISaveDAL; disk: Map<string, SquadFile>; lists: () => number } {
   let listCalls = 0;
   const disk = new Map(files.map((f) => [`${f.leagueSlug}/${f.clubSlug}`, f]));
@@ -36,6 +36,8 @@ function memoryDAL(
     },
     async listSquadFiles() {
       listCalls++;
+      await Bun.sleep(1);
+      if (opts.failList?.()) throw new Error("EIO: squads dir unreadable");
       return Array.from(disk.values());
     },
     async listLeagues() {
@@ -256,5 +258,90 @@ describe("SaveService squad index with a duplicated squad file", () => {
     } finally {
       err.mockRestore();
     }
+  });
+});
+
+describe("SaveService.getSquadIndex — shared in-flight build", () => {
+  test("concurrent callers share one listing and get the same index", async () => {
+    const mem = memoryDAL(files());
+    const svc = new SaveService(mem.dal);
+    const [a, b, c] = await Promise.all([svc.getSquadIndex(SAVE), svc.getSquadIndex(SAVE), svc.getSquadIndex(SAVE)]);
+    expect(mem.lists()).toBe(1);
+    expect(b).toBe(a);
+    expect(c).toBe(a);
+    await svc.getSquadIndex(SAVE); // cached afterwards
+    expect(mem.lists()).toBe(1);
+  });
+
+  test("parallel saveSquad calls of indexed squads list once", async () => {
+    const mem = memoryDAL(files());
+    const svc = new SaveService(mem.dal);
+    const united = mem.disk.get("premier_league/33")!.squad;
+    const pool = mem.disk.get("premier_league/40")!.squad;
+    await Promise.all([
+      svc.saveSquad(SAVE, "premier_league", "33", { ...united }),
+      svc.saveSquad(SAVE, "premier_league", "40", { ...pool }),
+    ]);
+    expect(mem.lists()).toBe(1);
+  });
+
+  test("a failed build is not shared or cached — the next call retries", async () => {
+    let failing = true;
+    const mem = memoryDAL(files(), { failList: () => failing });
+    const svc = new SaveService(mem.dal);
+    const both = await Promise.allSettled([svc.getSquadIndex(SAVE), svc.getSquadIndex(SAVE)]);
+    expect(both.map((r) => r.status)).toEqual(["rejected", "rejected"]);
+    expect(mem.lists()).toBe(1);
+
+    failing = false;
+    expect((await svc.getSquadIndex(SAVE)).byId("33")?.leagueSlug).toBe("premier_league");
+    expect(mem.lists()).toBe(2);
+  });
+
+  test("a build that was listing when the index was dropped is not cached", async () => {
+    const mem = memoryDAL(files());
+    const svc = new SaveService(new BufferingSaveDAL(mem.dal)); // buffered: no version bump on write
+    const stale = svc.getSquadIndex(SAVE);
+    await svc.saveSquad(SAVE, "premier_league", "newcastle", squad("34", "newcastle")); // drops the index
+    await stale;
+    expect((await svc.getSquadIndex(SAVE)).byId("34")?.leagueSlug).toBe("premier_league");
+  });
+});
+
+describe("SaveService.addNewSquads (/import-squads)", () => {
+  test("writes only squads new to the save, and lists the save once before + once after", async () => {
+    const mem = memoryDAL(files());
+    const svc = new SaveService(mem.dal);
+    await svc.moveSquad(SAVE, "33", "championship");
+    const listsBefore = mem.lists();
+
+    const written = await svc.addNewSquads(SAVE, [
+      { leagueSlug: "premier_league", stem: "33", squad: squad("33", "manchester_united") }, // moved → not resurrected
+      { leagueSlug: "premier_league", stem: "40", squad: squad("40", "liverpool") }, // already there
+      { leagueSlug: "premier_league", stem: "34", squad: squad("34", "newcastle") },
+      { leagueSlug: "la_liga", stem: "34", squad: squad("34", "newcastle") }, // same id twice in the import
+      { leagueSlug: "la_liga", stem: "541", squad: squad("541", "real_madrid") },
+    ]);
+
+    expect(written).toBe(2);
+    expect(mem.lists() - listsBefore).toBe(1);
+    expect([...mem.disk.keys()].sort()).toEqual([
+      "championship/33",
+      "la_liga/541",
+      "of_x/of_club",
+      "premier_league/34",
+      "premier_league/40",
+    ]);
+    const index = await svc.getSquadIndex(SAVE);
+    expect(mem.lists() - listsBefore).toBe(2);
+    expect(index.byId("541")?.leagueSlug).toBe("la_liga");
+  });
+
+  test("nothing new keeps the cached index", async () => {
+    const mem = memoryDAL(files());
+    const svc = new SaveService(mem.dal);
+    expect(await svc.addNewSquads(SAVE, [{ leagueSlug: "premier_league", stem: "40", squad: squad("40") }])).toBe(0);
+    await svc.getSquadIndex(SAVE);
+    expect(mem.lists()).toBe(1);
   });
 });

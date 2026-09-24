@@ -29,6 +29,11 @@ describe("buildSquadIndex", () => {
     expect(idx.byId("nope")).toBeUndefined();
   });
 
+  test("inLeague orders numeric ids numerically (33 before 1359), then alphabetic ids", () => {
+    const idx = buildSquadIndex([file("lg", "1359", "1359"), file("lg", "of_a", "of_a"), file("lg", "33", "33"), file("lg", "400", "400")]);
+    expect(idx.inLeague("lg").map((t) => t.squadId)).toEqual(["33", "400", "1359", "of_a"]);
+  });
+
   test("slug defaults to the id when the squad has none", () => {
     const idx = buildSquadIndex([file("lg", "7", "7")]);
     expect(idx.byId("7")?.slug).toBe("7");

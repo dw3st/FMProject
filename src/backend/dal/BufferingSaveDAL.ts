@@ -170,9 +170,8 @@ export class BufferingSaveDAL implements ISaveDAL {
   // All squad access goes through ONE per-save store keyed by file identity
   // (`league/clubStem`), bulk-loaded with a single inner `listSquadFiles` on first
   // use. Once loaded the store is authoritative for which squad files exist, so
-  // `readSquad` / `squadExists` never touch the inner DAL — including the slug
-  // probe misses of `SaveService.getSquad` (`{slug}.json` absent → null, from
-  // memory) — and `listAllSquads` is served from the same objects.
+  // `readSquad` / `squadExists` never touch the inner DAL — a miss is answered
+  // from memory — and `listAllSquads` is served from the same objects.
   //
   // Buffered writes live in `squadEdits` (same key) and overlay the store for every
   // read path; a write never forces the store to load. A buffered delete is a
