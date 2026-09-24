@@ -804,12 +804,12 @@ function startPass(state: GameState): GameState {
   const k       = PASS_CONFIG.PASS_SELECTION_EXPONENT;
   const weights = top3.map(l => Math.pow(Math.max(0, l.score), k));
   const total   = weights.reduce((s, w) => s + w, 0);
-  let chosen    = top3[0]; // fallback: best lane
+  let chosen    = top3[0]!; // fallback: best lane (teammates non-empty ⇒ lanes non-empty)
   if (total > 0) {
     let roll = Math.random() * total;
     for (let i = 0; i < top3.length; i++) {
-      roll -= weights[i];
-      if (roll <= 0) { chosen = top3[i]; break; }
+      roll -= weights[i]!;
+      if (roll <= 0) { chosen = top3[i]!; break; }
     }
   }
   const to     = state.players.find(p => p.id === chosen.toId)!;
@@ -982,7 +982,8 @@ function startThroughBall(
 
   const distance = Math.sqrt((landingX - holder.x) ** 2 + (landingY - holder.y) ** 2);
 
-  gameBus.emit('passAttempted', { player: holder.id, toId: holder.id, distance });
+  // Through balls are their own stat family (throughBallStarted → Completed / LostIn*) — they
+  // never emit passAttempted, which only counts passes that end in passCompleted / passFailed.
   gameBus.emit('throughBallStarted', {
     player:           holder.id,
     toX:              landingX,

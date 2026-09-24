@@ -77,11 +77,13 @@ function makePlayer(
   const energy = 100;
   return {
     id, name, team, role,
+    rosterId:         String(id),
     attackDir:        (team === 'A' ? 1 : -1) as 1 | -1,
     x, y,
     baseStats,
     runtimeStats:     getRuntimeLineup(baseStats, { energy }),
     energy,
+    startEnergy:      energy,
     stamina:          attrs.stamina,
     ballSupportScale: roleEng.ballSupportScale,
     slotIndex:        0,
@@ -89,6 +91,7 @@ function makePlayer(
     targetPosition:   { x, y },
     bounds,
     recoveryTime:     0,
+    justReceivedTicks: 0,
     decisionMemory:   EMPTY_DECISION_MEMORY,
   };
 }

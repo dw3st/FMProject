@@ -788,6 +788,17 @@
         "{{passer}} to {{receiver}} — tidy build-up."
       ]
     },
+    "throughBall": {
+      "toRunner": [
+        "{{passer}} threads it in behind for {{runner}}!",
+        "Through ball from {{passer}} — {{runner}} is off!",
+        "{{passer}} plays {{runner}} into space."
+      ],
+      "intoSpace": [
+        "{{passer}} slips a ball into space.",
+        "{{passer}} plays it in behind the line."
+      ]
+    },
     "passCompleted": [
       "{{name}} takes possession.",
       "{{name}} brings it under control.",

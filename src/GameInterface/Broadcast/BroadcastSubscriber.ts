@@ -136,6 +136,14 @@ gameBus.on('passAttempted', e => {
   }
 });
 
+gameBus.on('throughBallStarted', e => {
+  const passer = pl(e.player)?.name ?? String(e.player);
+  const runner = e.intendedRunnerId != null ? pl(e.intendedRunnerId)?.name : undefined;
+  broadcastLine(runner
+    ? pickT('broadcast.throughBall.toRunner', { passer, runner })
+    : pickT('broadcast.throughBall.intoSpace', { passer }));
+});
+
 gameBus.on('passCompleted', e => {
   const receiver = pl(e.toId);
   const name = receiver?.name ?? String(e.toId);

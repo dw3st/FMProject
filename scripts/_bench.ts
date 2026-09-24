@@ -2,8 +2,9 @@ import { simulateMatch } from '@/GameEngine/Domain/SimulateMatch';
 import { emptySeasonLog } from '@/types/playerTypes';
 import type { Formation } from '@/GameEngine/types';
 import type { Squad, RosterPlayer } from '@/types/playerTypes';
+import { fileURLToPath } from "node:url";
 
-const FORMATIONS_DIR = new URL('../src/Data/formations', import.meta.url).pathname;
+const FORMATIONS_DIR = fileURLToPath(new URL('../src/Data/formations', import.meta.url));
 const [fA, fB] = await Promise.all([
   Bun.file(`${FORMATIONS_DIR}/4-3-3.json`).json() as Promise<Formation>,
   Bun.file(`${FORMATIONS_DIR}/4-4-2.json`).json() as Promise<Formation>,
@@ -38,6 +39,6 @@ for (let m = 0; m < N; m++) {
 }
 const total = performance.now() - start;
 console.error(`\nTotal: ${total.toFixed(0)}ms for ${N} matches = ${(total/N).toFixed(1)}ms/match`);
-console.error(`Per-match min=${Math.min(...times).toFixed(0)} max=${Math.max(...times).toFixed(0)} median=${[...times].sort((a,b)=>a-b)[Math.floor(N/2)].toFixed(0)}`);
-const slowest = times.map((t,i)=>[t,i]).sort((a,b)=>b[0]-a[0]).slice(0,5);
-console.error(`Slowest 5 matches: ${slowest.map(([t,i])=>`#${i+1}=${Math.round(t as number)}ms`).join(', ')}`);
+console.error(`Per-match min=${Math.min(...times).toFixed(0)} max=${Math.max(...times).toFixed(0)} median=${[...times].sort((a,b)=>a-b)[Math.floor(N/2)]!.toFixed(0)}`);
+const slowest = times.map((t,i): [number, number] => [t,i]).sort((a,b)=>b[0]-a[0]).slice(0,5);
+console.error(`Slowest 5 matches: ${slowest.map(([t,i])=>`#${i+1}=${Math.round(t)}ms`).join(', ')}`);

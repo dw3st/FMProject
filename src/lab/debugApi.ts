@@ -9,8 +9,9 @@
 import type { Squad } from "@/types/playerTypes";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { squadFileStemFromClubParam, type StandingLike } from "@/backend/squadIdResolve";
+import { fileURLToPath } from "node:url";
 
-const DATA_DIR = new URL("../Data", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 /**
  * Resolve a club param (slug like "manchester_united" OR numeric squadId
@@ -95,7 +96,7 @@ export const debugApiRoutes = {
    * Example: GET /api/debug/squad/premier_league/arsenal
    */
   "/api/debug/squad/:league/:club": async (
-    req: Request & { params: Record<string, string> },
+    req: Request & { params: { league: string; club: string } },
   ) => {
     const { league, club } = req.params;
     const stem = await resolveSquadFileStem(league, club);

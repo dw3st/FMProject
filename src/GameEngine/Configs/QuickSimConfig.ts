@@ -62,9 +62,11 @@ export const QUICK_SIM_CONFIG = {
   /** Non-goal shots per unit of xG. */
   SHOTS_PER_XG: 1.5,
 
-  PASSES_PER_MATCH:        { GK: 2.4, DEF: 1.6, MID: 1.1, FWD: 1.1 } as Record<LineGroup, number>,
-  PASS_COMPLETION_BASE: 0.3,
-  PASS_COMPLETION_SKILL: 0.4,
+  /** Regular passes only — the engine counts through balls in their own family, not as passes. */
+  PASSES_PER_MATCH:        { GK: 2.4, DEF: 0.8, MID: 0.1, FWD: 0.6 } as Record<LineGroup, number>,
+  /** Engine completion is ~96% (only interceptions/offside fail a regular pass). */
+  PASS_COMPLETION_BASE: 0.92,
+  PASS_COMPLETION_SKILL: 0.08,
   TACKLES_PER_MATCH:       { GK: 0, DEF: 0.26, MID: 0.12, FWD: 0.22 } as Record<LineGroup, number>,
   INTERCEPTIONS_PER_MATCH: { GK: 0, DEF: 0.08, MID: 0.09, FWD: 0.09 } as Record<LineGroup, number>,
   /** Failed tackles sampled as Poisson(TACKLES_PER_MATCH[group] × TACKLE_FAIL_RATIO), independent of the won-tackle roll. */

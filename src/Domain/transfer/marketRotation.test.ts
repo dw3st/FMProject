@@ -88,6 +88,7 @@ describe("dailyMarketTick", () => {
       shuffledTeamIds: squads.map((s) => s.id),
       rotationIndex: 0,
       profiles: {},
+      playerSellList: [],
     };
     const { updatedMarket } = dailyMarketTick(market, squads, "2025-01-01", () => 0.5);
     expect(updatedMarket.rotationIndex).toBe(TEAMS_PER_DAY_NEEDS);
@@ -102,6 +103,7 @@ describe("dailyMarketTick", () => {
       shuffledTeamIds: squads.map((s) => s.id),
       rotationIndex: 4,
       profiles: {},
+      playerSellList: [],
     };
     const { updatedMarket } = dailyMarketTick(market, squads, "2025-01-01", () => 0.5);
     expect(updatedMarket.rotationIndex).toBeLessThan(squads.length);

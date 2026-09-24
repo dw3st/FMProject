@@ -64,7 +64,7 @@ export interface GameEvents {
 
   // ── Statistics events ─────────────────────────────────────────────────────
   /** Emitted after any stat change. Payload is a full snapshot of all player stats. */
-  statsUpdated: Record<number, import('./Statistics').PlayerStats>;
+  statsUpdated: Record<number, import('@/GameEngine/Domain/Statistics').PlayerStats>;
 
   // ── Offside event ─────────────────────────────────────────────────────────
   /** Emitted when a pass completion is cancelled due to the receiver being offside. */

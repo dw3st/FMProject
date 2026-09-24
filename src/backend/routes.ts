@@ -59,7 +59,7 @@ export const apiRoutes = {
     return Response.json({ posthog: key ? { key, host } : null });
   },
 
-  "/api/logos/:league/:club": async (req: Request & { params: Record<string, string> }) => {
+  "/api/logos/:league/:club": async (req: Request & { params: { league: string; club: string } }) => {
     const { league } = req.params;
     let club = req.params.club;
     // Resolve numeric team IDs (e.g. "157") to slug (e.g. "bayern_munchen") via leagueData.json

@@ -197,7 +197,7 @@ export const transferRoutes = {
       const ref: TransferRef = { kind: "transfer_ref", transferId };
       await saveService.appendDayEvent(saveId, date, ref);
 
-      const newBudget = accepted ? (buyerSquad.finances?.budget ?? 0) : (meta.budget ?? 0);
+      const newBudget = buyerSquad.finances?.budget ?? 0;
       return Response.json({ record, newBudget });
     }
 

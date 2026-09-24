@@ -131,7 +131,7 @@ describe("findCandidates", () => {
       positions: ["ST"],
       stats: Object.fromEntries(
         Object.keys(basePlayer({ id: "x", name: "x" }).stats).map((k) => [k, 18]),
-      ) as RosterPlayer["stats"],
+      ) as unknown as RosterPlayer["stats"],
     });
     const seller = makeSquad("sell", [expensive]);
     const price = new Player(playerOverallRating(expensive), expensive.age).price;
@@ -173,7 +173,7 @@ describe("findCandidates", () => {
       positions: ["ST"],
       stats: Object.fromEntries(
         Object.keys(basePlayer({ id: "x", name: "x" }).stats).map((k) => [k, 18]),
-      ) as RosterPlayer["stats"],
+      ) as unknown as RosterPlayer["stats"],
     });
     const seller = makeSquad("sell", [expensive]);
     const need = {
@@ -249,6 +249,7 @@ describe("processTeamTransferAttempt", () => {
     const profile = {
       squadId: buyer.id,
       lastUpdateDay: "2025-01-01",
+      sellList: [],
       needs: [
         {
           position: "Forward" as const,
@@ -274,7 +275,7 @@ describe("processTeamTransferAttempt", () => {
       positions: ["ST"],
       stats: Object.fromEntries(
         Object.keys(basePlayer({ id: "x", name: "x" }).stats).map((k) => [k, 18]),
-      ) as RosterPlayer["stats"],
+      ) as unknown as RosterPlayer["stats"],
     });
     const seller = makeSquad("sell", [star]);
     const buyer = makeSquad(
@@ -316,6 +317,7 @@ describe("processTeamTransferAttempt", () => {
     const profile = {
       squadId: buyer.id,
       lastUpdateDay: "2025-01-01",
+      sellList: [],
       needs: [
         {
           position: "Forward" as const,

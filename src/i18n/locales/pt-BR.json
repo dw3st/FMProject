@@ -788,6 +788,17 @@
         "{{passer}} para {{receiver}} — boa construção."
       ]
     },
+    "throughBall": {
+      "toRunner": [
+        "{{passer}} enfia a bola nas costas para {{runner}}!",
+        "Passe em profundidade de {{passer}} — {{runner}} dispara!",
+        "{{passer}} lança {{runner}} no espaço."
+      ],
+      "intoSpace": [
+        "{{passer}} enfia a bola no espaço.",
+        "{{passer}} joga a bola nas costas da defesa."
+      ]
+    },
     "passCompleted": [
       "{{name}} fica com a bola.",
       "{{name}} domina com tranquilidade.",

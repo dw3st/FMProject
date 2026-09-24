@@ -17,7 +17,7 @@ export const KEYBINDS = {
 } as const;
 
 type Screen = keyof typeof KEYBINDS;
-type ActionsFor<S extends Screen> = (typeof KEYBINDS)[S][keyof (typeof KEYBINDS)[S]];
+type ActionsFor<S extends Screen> = Extract<(typeof KEYBINDS)[S][keyof (typeof KEYBINDS)[S]], string>;
 
 /**
  * Registers keyboard shortcuts for the given screen.

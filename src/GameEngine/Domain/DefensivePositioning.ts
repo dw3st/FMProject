@@ -20,7 +20,7 @@ import type { GamePlayer, Formation, TeamId, TeamIntent } from '@/GameEngine/typ
 import { resolveBasePosition } from '@/GameEngine/FormationSlots';
 import { getDefenseConfig, getDefenseTacticKeys } from '@/GameEngine/Configs/DefenseConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { mainRoleOf, roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import {
@@ -262,8 +262,8 @@ export function assignMarkTargets(
 
   // Sort defenders by main-role priority so back-line picks before mids/forwards
   const sortedDefenders = [...defenders].sort((a, b) => {
-    const pa = MARK_ROLE_PRIORITY[a.mainRole] ?? 9;
-    const pb = MARK_ROLE_PRIORITY[b.mainRole] ?? 9;
+    const pa = MARK_ROLE_PRIORITY[mainRoleOf(a.role)] ?? 9;
+    const pb = MARK_ROLE_PRIORITY[mainRoleOf(b.role)] ?? 9;
     return pa - pb;
   });
 
@@ -311,10 +311,10 @@ export function assignMarkTargets(
     passCount++;
     for (let i = 0; i < defIds.length; i++) {
       for (let j = i + 1; j < defIds.length; j++) {
-        const defA = playerById.get(defIds[i])!;
-        const defB = playerById.get(defIds[j])!;
-        const oppAId = assignments.get(defIds[i])!;
-        const oppBId = assignments.get(defIds[j])!;
+        const defA = playerById.get(defIds[i]!)!;
+        const defB = playerById.get(defIds[j]!)!;
+        const oppAId = assignments.get(defIds[i]!)!;
+        const oppBId = assignments.get(defIds[j]!)!;
         const oppA = playerById.get(oppAId)!;
         const oppB = playerById.get(oppBId)!;
 
@@ -326,8 +326,8 @@ export function assignMarkTargets(
         // Require a minimum improvement to avoid oscillation from float noise.
         // 1e-6 yards² is ~1 micrometer — orders of magnitude below gameplay scale.
         if (swappedCost < currentCost - 1e-6) {
-          assignments.set(defIds[i], oppBId);
-          assignments.set(defIds[j], oppAId);
+          assignments.set(defIds[i]!, oppBId);
+          assignments.set(defIds[j]!, oppAId);
           improved = true;
         }
       }
