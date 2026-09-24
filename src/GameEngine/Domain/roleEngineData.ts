@@ -19,6 +19,20 @@ export interface RoleEngineTuning {
     dropLaneBias: number;
     widthBias: number;
   };
+  /**
+   * −1..1 — tendency to pass when on the ball (DecisionTree.evalPass), the pass
+   * mirror of carryBias. × PASS_CONFIG.ROLE_BIAS_WEIGHT is added to the pass
+   * action raw score. Midfielders circulate (> 0); centre-backs / full-backs
+   * recycle less and carry or play forward instead (< 0). 0 = neutral.
+   */
+  passBias: number;
+  /**
+   * 0..1 — how much this role is a preferred pass target (PassLanes receiver
+   * role fit). 0.5 = neutral; midfielders > 0.5 are the circulation hub, CB/GK
+   * < 0.5 are last-resort recycling targets. Scaled by the team's
+   * RECEIVER_ROLE_WEIGHT (build_up style).
+   */
+  passTargetWeight: number;
   /** Base weights for off-ball intent selection — scaled by tactic multipliers and context. */
   offBallIntentWeights: {
     offer_support: number;

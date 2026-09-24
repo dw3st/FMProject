@@ -259,6 +259,8 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
                           <BdItem label="mod"   value={b.playerModifier} />
                           <BdItem label="tac"   value={b.tacticalModifier} />
                           <BdItem label="far"   value={b.passTargetBonus} />
+                          <BdItem label="rcv"   value={b.receiverRoleBonus} />
+                          <BdItem label="bias"  value={b.roleBias} />
                         </div>
                         <div className="text-[9px] tabular-nums text-muted-foreground/50">
                           base {b.baseScore.toFixed(2)}
