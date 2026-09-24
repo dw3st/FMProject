@@ -24,7 +24,7 @@ export interface SquadIndexDuplicate {
  */
 export interface SquadIndex {
   byId(squadId: string): SquadIndexEntry | undefined;
-  /** Teams currently stored in the league folder, sorted by squadId for determinism. */
+  /** Teams currently stored in the league folder, sorted by squadId (numeric-aware) for determinism. */
   inLeague(leagueSlug: string): LeagueTeam[];
   /** Resolve a club param (squadId, stem or slug) inside a league to its file stem; null when not in that league. */
   resolve(leagueSlug: string, clubParam: string): string | null;
@@ -40,7 +40,8 @@ export interface BuildSquadIndexOptions {
   strict?: boolean;
 }
 
-const byNumericId = (a: string, b: string) => a.localeCompare(b);
+/** "33" before "1359": ids (and file keys) compare digit runs as numbers. */
+const byNumericId = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 const fileKey = (f: SquadFile) => `${f.leagueSlug}/${f.clubSlug}`;
 
 /**

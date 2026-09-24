@@ -1062,6 +1062,7 @@
     "selectLeague": "League",
     "searchLeaguesPlaceholder": "Search leagues…",
     "loadingLeagues": "Loading leagues...",
+    "loadingStandings": "Loading table…",
     "quickSimNoDetail": "Player detail unavailable — this league is simulated.",
     "followLeague": "Follow league",
     "unfollowLeague": "Unfollow league",

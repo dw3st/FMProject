@@ -515,6 +515,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const [tab, setTab] = useState<"table" | "fixtures">("table");
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
+  // True while the save's standings are in flight — the catalog fallback would show the
+  // wrong clubs for a league whose membership changed in this save.
+  const [standingsLoading, setStandingsLoading] = useState(false);
   const [leagueFixtures, setLeagueFixtures] = useState<Fixture[]>([]);
   const [followBusy, setFollowBusy] = useState(false);
 
@@ -539,10 +542,20 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   // Fetch live standings from the backend (new multi-league format)
   useEffect(() => {
     if (!session?.saveId || !activeSlug) return;
+    let cancelled = false;
     setLiveStandings(null);
+    setStandingsLoading(true);
     fetch(`/api/saves/${session.saveId}/leagues/${activeSlug}/standings`)
       .then((r) => (r.ok ? (r.json() as Promise<StandingRow[]>) : null))
-      .then((rows) => setLiveStandings(rows ?? null));
+      .catch(() => null)
+      .then((rows) => {
+        if (cancelled) return;
+        setLiveStandings(rows ?? null);
+        setStandingsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [session?.saveId, activeSlug]);
 
   // Fetch fixtures for the selected league
@@ -557,9 +570,10 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const active = leagues.find((l) => l.slug === activeSlug);
   const catalog = useMemo(() => catalogLeagueBySquadId(leagues), [leagues]);
   const hasFixtures = leagueFixtures.length > 0;
-  // Prefer live standings from backend; fall back to client-side computation for old saves
+  // Prefer live standings from backend; fall back to client-side computation only once the
+  // request has finished without data (old saves / no save), never while it is loading.
   const standings = liveStandings
-    ?? (active ? computeStandings(active.standings, leagueFixtures, activeSlug) : []);
+    ?? (standingsLoading || !active ? [] : computeStandings(active.standings, leagueFixtures, activeSlug));
 
   // Cross-league squadId lookup so the match modal can resolve teams from any league
   const allTeams = new Map<string, { name: string; slug?: string; colors: [string, string] }>();
@@ -724,13 +738,17 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
 
             {tab === "table" ? (
               <>
-                <StandingsTable
-                  standings={standings}
-                  leagueSlug={activeSlug}
-                  catalog={catalog}
-                  zones={active?.zones ?? []}
-                  onClickSquad={handleClickSquad}
-                />
+                {standingsLoading ? (
+                  <p className="text-muted-foreground text-sm p-6">{t("leagues.loadingStandings")}</p>
+                ) : (
+                  <StandingsTable
+                    standings={standings}
+                    leagueSlug={activeSlug}
+                    catalog={catalog}
+                    zones={active?.zones ?? []}
+                    onClickSquad={handleClickSquad}
+                  />
+                )}
 
                 {(active?.zones?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-6 text-xs text-muted-foreground flex-wrap">
