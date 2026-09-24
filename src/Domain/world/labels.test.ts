@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, groupCountriesByContinent, leagueLabel,
+  CONTINENT_ORDER, catalogLeagueBySquadId, competitionName, continentI18nKey, countryDisplayName, groupCountriesByContinent, leagueLabel,
   leaguesOfCountry, matchesCountryQuery, partitionDayMatches,
 } from "@/Domain/world/labels";
 import type { CountryEntry } from "@/types/worldTypes";
@@ -110,5 +110,27 @@ describe("matchesCountryQuery", () => {
   });
   test("não bate quando nenhuma parte contém a query", () => {
     expect(matchesCountryQuery("xyz", ["Brasil", "América do Sul"])).toBe(false);
+  });
+});
+
+describe("catalogLeagueBySquadId", () => {
+  const row = (squadId: string) => ({ squadId, name: squadId, colors: ["#000", "#fff"] as [string, string] });
+  test("mapeia cada squadId para a liga de origem no catálogo", () => {
+    const leagues: LeagueData[] = [
+      { ...L("premier_league", "Premier League", "England"), standings: [row("33"), row("40")] },
+      { ...L("of_championship", "Championship", "England"), standings: [row("of_leeds"), row("of_hull")] },
+    ];
+    const m = catalogLeagueBySquadId(leagues);
+    expect(m.get("33")).toBe("premier_league");
+    expect(m.get("of_hull")).toBe("of_championship");
+    expect(m.get("nope")).toBeUndefined();
+    expect(m.size).toBe(4);
+  });
+  test("primeira ocorrência vence", () => {
+    const leagues: LeagueData[] = [
+      { ...L("a", "A", "X"), standings: [row("1")] },
+      { ...L("b", "B", "X"), standings: [row("1")] },
+    ];
+    expect(catalogLeagueBySquadId(leagues).get("1")).toBe("a");
   });
 });

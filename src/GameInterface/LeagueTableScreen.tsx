@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Trophy, X, Star, ArrowRightLeft } from "lucide-react";
 import { Modal } from "@/GameInterface/Components/Modal";
@@ -13,7 +13,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { clubSlugFromSquadId } from "@/backend/squadIdResolve";
 import { computeStandings } from "@/Domain/season";
-import { countryDisplayName, leagueLabel } from "@/Domain/world/labels";
+import { catalogLeagueBySquadId, countryDisplayName, leagueLabel } from "@/Domain/world/labels";
 import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
@@ -61,11 +61,14 @@ function getZone(rank: number, total: number, zones: LeagueZone[]): LeagueZone |
 function StandingsTable({
   standings,
   leagueSlug,
+  catalog,
   zones,
   onClickSquad,
 }: {
   standings: StandingRow[];
   leagueSlug: string;
+  /** squadId → catalog (origin) league — crest files are filed by origin league. */
+  catalog: Map<string, string>;
   zones: LeagueZone[];
   onClickSquad: (row: StandingRow) => void;
 }) {
@@ -103,7 +106,7 @@ function StandingsTable({
 
               <div className="flex items-center gap-3">
                 <ClubLogo
-                  logoUrl={squadLogoUrl(row.squadId, leagueSlug, row.slug)}
+                  logoUrl={squadLogoUrl(row.squadId, catalog.get(row.squadId) ?? leagueSlug, row.slug)}
                   primaryColor={row.colors[0]}
                   secondaryColor={row.colors[1]}
                   className="w-6 h-6 rounded shrink-0"
@@ -146,12 +149,14 @@ function FixturesPanel({
   fixtures,
   activeLeagueSlug,
   standings,
+  catalog,
   currentDate,
   onClickFixture,
 }: {
   fixtures: Fixture[];
   activeLeagueSlug: string;
   standings: StandingRow[];
+  catalog: Map<string, string>;
   currentDate: string;
   onClickFixture: (fixture: Fixture) => void;
 }) {
@@ -244,7 +249,7 @@ function FixturesPanel({
               <div className="flex items-center gap-3 justify-end">
                 <span className="font-semibold text-foreground text-sm">{teamName(f.home)}</span>
                 <ClubLogo
-                  logoUrl={squadLogoUrl(f.home, activeLeagueSlug, clubSlugForFixture(f.home))}
+                  logoUrl={squadLogoUrl(f.home, catalog.get(f.home) ?? activeLeagueSlug, clubSlugForFixture(f.home))}
                   primaryColor={teamColors(f.home)[0]}
                   secondaryColor={teamColors(f.home)[1]}
                   className="w-6 h-6 rounded shrink-0"
@@ -266,7 +271,7 @@ function FixturesPanel({
               {/* Away */}
               <div className="flex items-center gap-3">
                 <ClubLogo
-                  logoUrl={squadLogoUrl(f.away, activeLeagueSlug, clubSlugForFixture(f.away))}
+                  logoUrl={squadLogoUrl(f.away, catalog.get(f.away) ?? activeLeagueSlug, clubSlugForFixture(f.away))}
                   primaryColor={teamColors(f.away)[0]}
                   secondaryColor={teamColors(f.away)[1]}
                   className="w-6 h-6 rounded shrink-0"
@@ -309,12 +314,14 @@ function MatchStatsModal({
   standings,
   allTeams,
   leagueSlug,
+  catalog,
   onClose,
 }: {
   event: MatchEvent;
   standings: StandingRow[];
   allTeams: Map<string, { name: string; slug?: string; colors: [string, string] }>;
   leagueSlug: string;
+  catalog: Map<string, string>;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -410,7 +417,7 @@ function MatchStatsModal({
             <div className="flex items-center gap-3 flex-1 justify-end">
               <span className="font-black text-lg text-foreground">{homeName}</span>
               <ClubLogo
-                logoUrl={squadLogoUrl(event.home, event.competition || leagueSlug, clubSlugForEvent(event.home))}
+                logoUrl={squadLogoUrl(event.home, catalog.get(event.home) ?? (event.competition || leagueSlug), clubSlugForEvent(event.home))}
                 primaryColor={teamColors(event.home)[0]}
                 secondaryColor={teamColors(event.home)[1]}
                 className="w-8 h-8 rounded shrink-0"
@@ -424,7 +431,7 @@ function MatchStatsModal({
             </div>
             <div className="flex items-center gap-3 flex-1 justify-start">
               <ClubLogo
-                logoUrl={squadLogoUrl(event.away, event.competition || leagueSlug, clubSlugForEvent(event.away))}
+                logoUrl={squadLogoUrl(event.away, catalog.get(event.away) ?? (event.competition || leagueSlug), clubSlugForEvent(event.away))}
                 primaryColor={teamColors(event.away)[0]}
                 secondaryColor={teamColors(event.away)[1]}
                 className="w-8 h-8 rounded shrink-0"
@@ -548,6 +555,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   }, [session?.saveId, activeSlug]);
 
   const active = leagues.find((l) => l.slug === activeSlug);
+  const catalog = useMemo(() => catalogLeagueBySquadId(leagues), [leagues]);
   const hasFixtures = leagueFixtures.length > 0;
   // Prefer live standings from backend; fall back to client-side computation for old saves
   const standings = liveStandings
@@ -719,6 +727,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 <StandingsTable
                   standings={standings}
                   leagueSlug={activeSlug}
+                  catalog={catalog}
                   zones={active?.zones ?? []}
                   onClickSquad={handleClickSquad}
                 />
@@ -739,6 +748,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 fixtures={leagueFixtures}
                 activeLeagueSlug={activeSlug}
                 standings={standings}
+                catalog={catalog}
                 currentDate={currentDate}
                 onClickFixture={handleClickFixture}
               />
@@ -754,6 +764,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
           standings={standings}
           allTeams={allTeams}
           leagueSlug={activeSlug}
+          catalog={catalog}
           onClose={() => setMatchEvent(null)}
         />
       )}

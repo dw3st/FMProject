@@ -9,11 +9,10 @@ import {
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { GameSession } from "@/GameInterface/gameSession";
-import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
+import type { Squad, RosterPlayer, StandingRow } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import { Player } from "@/Domain/Player";
-import { computeStandings } from "@/Domain/season";
 
 // ── Salary estimation ────────────────────────────────────────────────────────
 
@@ -173,7 +172,7 @@ export function FinancesScreen() {
   const { t } = useTranslation();
   const { session, squad, loading: saveLoading, refresh, fixtures } = useGameSave();
 
-  const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  const [standings, setStandings] = useState<StandingRow[] | null>(null);
   const [transferIn, setTransferIn] = useState(0);
   const [transferOut, setTransferOut] = useState(0);
 
@@ -181,12 +180,14 @@ export function FinancesScreen() {
     if (!saveLoading && !session) window.location.href = "/new-game";
   }, [saveLoading, session]);
 
+  // Live table from the save — membership lives in the save's squad folders, not in leagueData.
   useEffect(() => {
-    fetch("/api/leagues")
-      .then((r) => r.json())
-      .then((d: LeagueData[]) => setLeagues(d))
-      .catch(() => {});
-  }, []);
+    if (!session?.saveId || !session.leagueSlug) return;
+    fetch(`/api/saves/${session.saveId}/leagues/${session.leagueSlug}/standings`)
+      .then((r) => (r.ok ? (r.json() as Promise<StandingRow[]>) : null))
+      .then((d) => setStandings(Array.isArray(d) ? d : null))
+      .catch(() => setStandings(null));
+  }, [session?.saveId, session?.leagueSlug, session?.currentDate]);
 
   useEffect(() => {
     if (!session?.saveId) return;
@@ -212,10 +213,8 @@ export function FinancesScreen() {
     const capacity = squad.venue?.capacity ?? 0;
     if (!capacity) return null;
 
-    const leagueEntry = leagues.find((l) => l.slug === session.leagueSlug);
-    if (!leagueEntry) return null;
+    if (!standings || standings.length === 0) return null;
 
-    const standings = computeStandings(leagueEntry.standings, fixtures, session.leagueSlug);
     const myRow = standings.find((r) => r.squadId === squad.id);
     if (!myRow) return null;
 
@@ -230,7 +229,7 @@ export function FinancesScreen() {
       : homeFollowers * 0.5;
 
     return computeAttendance(form, position, totalTeams, homeFollowers, capacity, leagueAvgFollowers);
-  }, [session, squad, leagues, fixtures]);
+  }, [session, squad, standings]);
 
   // Count home games this season (must be before early return — hooks rule)
   const homeGames = useMemo(

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Shield, Zap, Tag, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { GameSession } from "@/GameInterface/gameSession";
@@ -10,6 +10,8 @@ import { ClubIdentity, ClubGradientAccent } from "@/GameInterface/Components/Clu
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import type { LeagueData } from "@/types/playerTypes";
 import { loadSession } from "@/GameInterface/gameSession";
+import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { catalogLeagueBySquadId } from "@/Domain/world/labels";
 
 interface Props {
   session: GameSession;
@@ -60,6 +62,10 @@ export function ClubSidebar({
   const isHome = nextFixture ? nextFixture.home === mySquadId : false;
   const opponentId = nextFixture ? (isHome ? nextFixture.away : nextFixture.home) : "";
   const opponentName = nextFixture ? teamDisplayNameFromLeagues(opponentId, leagues) : "";
+  // Crests are filed by the club's catalog (origin) league, not its current league.
+  const catalogLeague = useMemo(() => catalogLeagueBySquadId(leagues), [leagues]);
+  const crestId = mySquadId || session.clubId;
+  const myLogoUrl = squadLogoUrl(crestId, catalogLeague.get(crestId) ?? session.leagueSlug, mySquadId ? undefined : session.clubId);
   const venueLabel = nextFixture ? (isHome ? t("dashboard.clubSidebar.home") : t("dashboard.clubSidebar.away")) : "";
 
   const [sellListIds, setSellListIds] = useState<Set<string>>(new Set());
@@ -106,7 +112,7 @@ export function ClubSidebar({
           divisionName={session.leagueName}
           primaryColor={session.clubColors[0]}
           secondaryColor={session.clubColors[1]}
-          logoUrl={`/api/logos/${session.leagueSlug}/${session.clubId}`}
+          logoUrl={myLogoUrl}
         />
         <div className="mt-2 text-center">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest m-0">
