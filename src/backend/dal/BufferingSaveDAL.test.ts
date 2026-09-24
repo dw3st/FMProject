@@ -27,6 +27,7 @@ function fakeInner(opts: {
 } = {}) {
   const calls: string[] = [];
   const written: string[] = [];
+  const writtenSquads: SquadFile[] = [];
   /** Completed writes of any resource, in completion order ("squad:lg/c1", "meta:save-1", "inbox"). */
   const order: string[] = [];
   const inboxWrites: InboxMessage[][] = [];
@@ -77,6 +78,15 @@ function fakeInner(opts: {
       calls.push(`squadExists:${league}/${club}`);
       return disk.has(`${league}/${club}`);
     },
+    async deleteSquad(_s, league, club) {
+      await Bun.sleep(opts.writeDelayMs ?? 1);
+      calls.push(`deleteSquad:${league}/${club}`);
+      order.push(`delete:${league}/${club}`);
+    },
+    async listLeagues() {
+      calls.push("listLeagues");
+      return [...new Set(Array.from(disk.values()).map((f) => f.leagueSlug))];
+    },
     async writeSquad(_s, league, club, sq) {
       inFlight++;
       maxInFlight = Math.max(maxInFlight, inFlight);
@@ -85,6 +95,7 @@ function fakeInner(opts: {
         await opts.gateWrite?.(club);
         if (opts.failWrite?.(club)) throw new Error(`disk full: ${club}`);
         written.push(`${league}/${club}:${sq.name}`);
+        writtenSquads.push({ leagueSlug: league, clubSlug: club, squad: sq });
         order.push(`squad:${league}/${club}`);
       } finally {
         inFlight--;
@@ -100,7 +111,7 @@ function fakeInner(opts: {
       };
     },
   }) as ISaveDAL;
-  return { dal, calls, written, order, inboxWrites, maxInFlight: () => maxInFlight };
+  return { dal, calls, written, writtenSquads, order, inboxWrites, maxInFlight: () => maxInFlight };
 }
 
 const meta = (id: string) => ({ id, currentDate: "2024-08-16" }) as unknown as SaveMeta;
@@ -341,5 +352,99 @@ describe("BufferingSaveDAL edge cases", () => {
       "new_lg/77:Newcomer",
     ]);
     expect(inner.calls.filter((c) => c === "listSquadFiles")).toHaveLength(1);
+  });
+});
+
+describe("BufferingSaveDAL.deleteSquad (tombstones)", () => {
+  const files: SquadFile[] = [
+    { leagueSlug: "A", clubSlug: "33", squad: squad("33", "United") },
+    { leagueSlug: "A", clubSlug: "34", squad: squad("34", "City") },
+  ];
+  const keys = (fs: SquadFile[]) => fs.map((f) => `${f.leagueSlug}/${f.clubSlug}`);
+
+  test("a tombstone hides the key from every read path", async () => {
+    const inner = fakeInner({ files });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.deleteSquad(SAVE, "A", "33");
+
+    expect(await buf.readSquad(SAVE, "A", "33")).toBeNull();
+    expect(await buf.squadExists(SAVE, "A", "33")).toBe(false);
+    expect(keys(await buf.listSquadFiles(SAVE))).toEqual(["A/34"]);
+    expect((await buf.listAllSquads(SAVE)).map((s) => s.id)).toEqual(["34"]);
+    expect((await buf.listSquadsInLeague(SAVE, "A")).map((s) => s.id)).toEqual(["34"]);
+  });
+
+  test("move (write in B + delete in A) lists the key only in B, with leagueSlug B", async () => {
+    const inner = fakeInner({ files });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    const s = (await buf.readSquad(SAVE, "A", "33"))!;
+    await buf.writeSquad(SAVE, "B", "33", s);
+    await buf.deleteSquad(SAVE, "A", "33");
+
+    const listed = await buf.listSquadFiles(SAVE);
+    expect(keys(listed)).toEqual(["A/34", "B/33"]);
+    expect(listed.find((f) => f.clubSlug === "33")!.squad.leagueSlug).toBe("B");
+    expect((await buf.readSquad(SAVE, "B", "33"))?.leagueSlug).toBe("B");
+    expect((await buf.listSquadsInLeague(SAVE, "B")).map((x) => x.leagueSlug)).toEqual(["B"]);
+
+    await buf.flush();
+    expect(inner.writtenSquads.map((f) => [f.leagueSlug, f.clubSlug, f.squad.leagueSlug])).toEqual([["B", "33", "B"]]);
+    expect(inner.calls.filter((c) => c.startsWith("deleteSquad"))).toEqual(["deleteSquad:A/33"]);
+  });
+
+  test("a write after a delete restores the key and replaces the pending delete", async () => {
+    const inner = fakeInner({ files });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.deleteSquad(SAVE, "A", "33");
+    await buf.writeSquad(SAVE, "A", "33", squad("33", "United v2"));
+
+    expect((await buf.readSquad(SAVE, "A", "33"))?.name).toBe("United v2");
+    expect(await buf.squadExists(SAVE, "A", "33")).toBe(true);
+    expect(keys(await buf.listSquadFiles(SAVE))).toEqual(["A/33", "A/34"]);
+
+    await buf.flush();
+    expect(inner.calls.filter((c) => c.startsWith("deleteSquad"))).toEqual([]);
+    expect(inner.written).toEqual(["A/33:United v2"]);
+  });
+
+  test("flush calls inner.deleteSquad exactly once, before meta", async () => {
+    const inner = fakeInner({ files, writeDelayMs: 3 });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.writeMeta(meta(SAVE));
+    await buf.deleteSquad(SAVE, "A", "33");
+    await buf.deleteSquad(SAVE, "A", "33"); // idempotent re-delete
+    await buf.writeSquad(SAVE, "A", "34", squad("34", "City v2"));
+
+    await buf.flush();
+    await buf.flush();
+
+    expect(inner.calls.filter((c) => c.startsWith("deleteSquad"))).toEqual(["deleteSquad:A/33"]);
+    expect(inner.order.at(-1)).toBe(`meta:${SAVE}`);
+    expect(inner.order.indexOf("delete:A/33")).toBeLessThan(inner.order.indexOf(`meta:${SAVE}`));
+  });
+
+  test("writeSquad stores the squad with leagueSlug set to the league it was written to", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.writeSquad(SAVE, "B", "77", { ...squad("77"), leagueSlug: "A" } as Squad);
+
+    expect((await buf.readSquad(SAVE, "B", "77"))?.leagueSlug).toBe("B");
+    await buf.flush();
+    expect(inner.writtenSquads[0]!.squad.leagueSlug).toBe("B");
+  });
+
+  test("listLeagues unions inner leagues with buffered ones; tombstones do not add a league", async () => {
+    const inner = fakeInner({ files });
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.writeSquad(SAVE, "B", "77", squad("77"));
+    await buf.deleteSquad(SAVE, "C", "88");
+
+    expect((await buf.listLeagues(SAVE)).sort()).toEqual(["A", "B"]);
   });
 });

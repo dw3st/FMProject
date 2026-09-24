@@ -43,7 +43,8 @@ function squadKey(leagueSlug: string, clubSlug: string): string {
  *
  * Aliasing: reads within one unit of work return SHARED objects — the same
  * instance to every caller (a squad from `readSquad` is the one inside
- * `listAllSquads`, a buffered write is returned as-is to later reads). Callers
+ * `listAllSquads`, a buffered write is returned as-is to later reads — unless its
+ * `leagueSlug` differed from the league it was written to, then a normalized copy). Callers
  * must treat what they read as immutable (build a new object and write it), or
  * write the object back after mutating it; an in-place mutation that is never
  * written is visible to the rest of the unit of work but never persisted.
@@ -59,7 +60,8 @@ export class BufferingSaveDAL implements ISaveDAL {
   private readonly cache = new Map<string, unknown>();
   private readonly pending = new Map<string, () => Promise<void>>();
   private readonly squadStores = new Map<string, Promise<Map<string, SquadFile>>>();
-  private readonly squadEdits = new Map<string, Map<string, SquadFile>>();
+  /** Buffered squad writes by file key; `null` is a tombstone (buffered delete). */
+  private readonly squadEdits = new Map<string, Map<string, SquadFile | null>>();
 
   constructor(private readonly inner: ISaveDAL) {}
 
@@ -164,7 +166,10 @@ export class BufferingSaveDAL implements ISaveDAL {
   // memory) — and `listAllSquads` is served from the same objects.
   //
   // Buffered writes live in `squadEdits` (same key) and overlay the store for every
-  // read path; a write never forces the store to load.
+  // read path; a write never forces the store to load. A buffered delete is a
+  // tombstone (`null`) in the same map: it hides the key from every read path and
+  // flushes as `inner.deleteSquad` in the non-meta phase. A later write on the same
+  // key replaces both the tombstone and its pending delete.
 
   private squadStore(saveId: string): Promise<Map<string, SquadFile>> {
     let store = this.squadStores.get(saveId);
@@ -182,7 +187,7 @@ export class BufferingSaveDAL implements ISaveDAL {
     return store;
   }
 
-  private edits(saveId: string): Map<string, SquadFile> {
+  private edits(saveId: string): Map<string, SquadFile | null> {
     let m = this.squadEdits.get(saveId);
     if (!m) this.squadEdits.set(saveId, (m = new Map()));
     return m;
@@ -193,29 +198,46 @@ export class BufferingSaveDAL implements ISaveDAL {
     const store = await this.squadStore(saveId);
     const edits = this.edits(saveId);
     const out: SquadFile[] = [];
-    for (const [key, f] of store) out.push(edits.get(key) ?? f);
-    for (const [key, f] of edits) if (!store.has(key)) out.push(f);
+    for (const [key, f] of store) {
+      if (!edits.has(key)) out.push(f);
+      else {
+        const edited = edits.get(key);
+        if (edited) out.push(edited); // null = tombstone → omitted
+      }
+    }
+    for (const [key, f] of edits) if (f && !store.has(key)) out.push(f);
     return out;
   }
 
   async readSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null> {
     const key = squadKey(leagueSlug, clubSlug);
-    const edited = this.edits(saveId).get(key);
-    if (edited) return edited.squad;
+    const edits = this.edits(saveId);
+    if (edits.has(key)) return edits.get(key)?.squad ?? null;
     return (await this.squadStore(saveId)).get(key)?.squad ?? null;
   }
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
     const key = squadKey(leagueSlug, clubSlug);
-    this.edits(saveId).set(key, { leagueSlug, clubSlug, squad });
-    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.writeSquad(saveId, leagueSlug, clubSlug, squad));
+    // Normalize like FileSystemDAL's read path: the folder is the league. Copy only
+    // when it differs, so the common case keeps returning the written instance.
+    const stored: Squad = squad.leagueSlug === leagueSlug ? squad : { ...squad, leagueSlug };
+    this.edits(saveId).set(key, { leagueSlug, clubSlug, squad: stored });
+    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.writeSquad(saveId, leagueSlug, clubSlug, stored));
   }
   async squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean> {
     const key = squadKey(leagueSlug, clubSlug);
-    if (this.edits(saveId).has(key)) return true;
+    const edits = this.edits(saveId);
+    if (edits.has(key)) return edits.get(key) !== null;
     return (await this.squadStore(saveId)).has(key);
   }
-  listLeagues(saveId: string): Promise<string[]> {
-    return this.inner.listLeagues(saveId);
+  async deleteSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<void> {
+    const key = squadKey(leagueSlug, clubSlug);
+    this.edits(saveId).set(key, null);
+    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.deleteSquad(saveId, leagueSlug, clubSlug));
+  }
+  async listLeagues(saveId: string): Promise<string[]> {
+    const leagues = new Set(await this.inner.listLeagues(saveId));
+    for (const f of this.edits(saveId).values()) if (f) leagues.add(f.leagueSlug);
+    return [...leagues];
   }
   async listSquadFiles(saveId: string): Promise<SquadFile[]> {
     return this.squadFilesView(saveId);
