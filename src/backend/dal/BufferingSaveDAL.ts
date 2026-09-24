@@ -38,8 +38,8 @@ function squadKey(leagueSlug: string, clubSlug: string): string {
  *  - Writes update the cache and register a flush thunk keyed by resource. Writing
  *    the same resource again replaces the thunk, so only the final value is
  *    persisted.
- *  - `flush()` runs every pending thunk (bounded parallelism), save meta last,
- *    then clears them — see `flush()`.
+ *  - `flush()` runs every pending thunk (bounded parallelism): writes, then squad
+ *    deletes, then save meta — see `flush()`.
  *
  * Aliasing: reads within one unit of work return SHARED objects — the same
  * instance to every caller (a squad from `readSquad` is the one inside
@@ -62,27 +62,36 @@ export class BufferingSaveDAL implements ISaveDAL {
   private readonly squadStores = new Map<string, Promise<Map<string, SquadFile>>>();
   /** Buffered squad writes by file key; `null` is a tombstone (buffered delete). */
   private readonly squadEdits = new Map<string, Map<string, SquadFile | null>>();
+  /** Pending thunks that are squad deletes — flushed after every write, before meta. */
+  private readonly deleteThunks = new WeakSet<() => Promise<void>>();
 
   constructor(private readonly inner: ISaveDAL) {}
 
   /**
    * Persist every buffered write (the final value per resource) to the underlying
-   * DAL, in two phases:
+   * DAL, in three phases, each only if the previous one fully succeeded:
    *
-   *  1. every non-meta resource, at most FLUSH_CONCURRENCY at a time;
-   *  2. only if phase 1 fully succeeded, the save meta (`meta:*`).
+   *  1. every write except meta (squads and all other resources), at most
+   *     FLUSH_CONCURRENCY at a time;
+   *  2. every buffered squad delete (tombstone);
+   *  3. the save meta (`meta:*`).
    *
+   * Writes before deletes: a `moveSquad` is a write in the new league plus a
+   * delete in the old one, so a failure mid-flush can leave two copies of a club
+   * (the squad index keeps the moved one — see `membershipRev`) but never zero.
    * Meta carries `currentDate`, so writing it last keeps the invariant that a save
    * is never recorded as advanced unless everything else of that unit of work was
-   * persisted. Within a phase every write is attempted; successful ones are
+   * persisted. Within a phase every operation is attempted; successful ones are
    * cleared, failed ones stay pending (a later flush retries them), and one
-   * AggregateError is thrown after all have settled. If phase 1 fails, meta is
-   * left pending and unwritten.
+   * AggregateError is thrown after all have settled. A failed phase leaves every
+   * later phase pending and untouched.
    */
   async flush(): Promise<void> {
     const entries = Array.from(this.pending.entries());
     const isMeta = ([key]: [string, unknown]) => key.startsWith("meta:");
-    await this.flushPhase(entries.filter((e) => !isMeta(e)));
+    const isDelete = ([, run]: [string, () => Promise<void>]) => this.deleteThunks.has(run);
+    await this.flushPhase(entries.filter((e) => !isMeta(e) && !isDelete(e)));
+    await this.flushPhase(entries.filter(isDelete));
     await this.flushPhase(entries.filter(isMeta));
   }
 
@@ -168,7 +177,7 @@ export class BufferingSaveDAL implements ISaveDAL {
   // Buffered writes live in `squadEdits` (same key) and overlay the store for every
   // read path; a write never forces the store to load. A buffered delete is a
   // tombstone (`null`) in the same map: it hides the key from every read path and
-  // flushes as `inner.deleteSquad` in the non-meta phase. A later write on the same
+  // flushes as `inner.deleteSquad` in the delete phase (after every write). A later write on the same
   // key replaces both the tombstone and its pending delete.
 
   private squadStore(saveId: string): Promise<Map<string, SquadFile>> {
@@ -232,7 +241,9 @@ export class BufferingSaveDAL implements ISaveDAL {
   async deleteSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<void> {
     const key = squadKey(leagueSlug, clubSlug);
     this.edits(saveId).set(key, null);
-    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.deleteSquad(saveId, leagueSlug, clubSlug));
+    const run = () => this.inner.deleteSquad(saveId, leagueSlug, clubSlug);
+    this.deleteThunks.add(run);
+    this.pending.set(`squad:${saveId}:${key}`, run);
   }
   async listLeagues(saveId: string): Promise<string[]> {
     const leagues = new Set(await this.inner.listLeagues(saveId));

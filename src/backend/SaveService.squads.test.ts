@@ -12,7 +12,10 @@ function squad(id: string, slug?: string, name = id): Squad {
 }
 
 /** In-memory ISaveDAL covering the squad surface; any other method throws. */
-function memoryDAL(files: SquadFile[]): { dal: ISaveDAL; disk: Map<string, SquadFile>; lists: () => number } {
+function memoryDAL(
+  files: SquadFile[],
+  opts: { failDelete?: () => boolean } = {},
+): { dal: ISaveDAL; disk: Map<string, SquadFile>; lists: () => number } {
   let listCalls = 0;
   const disk = new Map(files.map((f) => [`${f.leagueSlug}/${f.clubSlug}`, f]));
   const impl: Partial<ISaveDAL> = {
@@ -27,6 +30,7 @@ function memoryDAL(files: SquadFile[]): { dal: ISaveDAL; disk: Map<string, Squad
       return disk.has(`${league}/${club}`);
     },
     async deleteSquad(_s, league, club) {
+      if (opts.failDelete?.()) throw new Error(`EPERM: ${league}/${club}`);
       disk.delete(`${league}/${club}`);
       bumpSaveDataVersion(SAVE);
     },
@@ -92,6 +96,39 @@ describe("SaveService squads via per-save index", () => {
 
     await buf.flush();
     expect([...disk.keys()].sort()).toEqual(["championship/33", "of_x/of_club", "premier_league/40"]);
+  });
+
+  test("a buffered move whose delete fails leaves both copies; the index keeps the moved one", async () => {
+    // Promotion: championship → premier_league. The stale copy sorts FIRST and its
+    // leagueSlug matches its folder (as FileSystemDAL's listing always reports), so
+    // only membershipRev tells the moved copy apart.
+    const promoted: SquadFile = {
+      leagueSlug: "championship",
+      clubSlug: "33",
+      squad: { ...squad("33", "manchester_united", "United"), leagueSlug: "championship" },
+    };
+    const { dal, disk } = memoryDAL([promoted, files()[1]!], { failDelete: () => true });
+    const buf = new BufferingSaveDAL(dal);
+    await new SaveService(buf).moveSquad(SAVE, "33", "premier_league");
+    await expect(buf.flush()).rejects.toBeInstanceOf(AggregateError);
+
+    // Two copies on disk, never zero.
+    expect([...disk.keys()].filter((k) => k.endsWith("/33")).sort()).toEqual(["championship/33", "premier_league/33"]);
+    const err = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const svc = new SaveService(dal);
+      const index = await svc.getSquadIndex(SAVE);
+      expect(index.byId("33")?.leagueSlug).toBe("premier_league");
+      expect(index.duplicates()).toEqual([
+        { squadId: "33", kept: { leagueSlug: "premier_league", stem: "33" }, dropped: [{ leagueSlug: "championship", stem: "33" }] },
+      ]);
+      expect(index.inLeague("championship")).toEqual([]);
+      expect(await svc.getSquad(SAVE, "championship", "manchester_united")).toBeNull();
+      expect((await svc.getSquad(SAVE, "premier_league", "manchester_united"))?.membershipRev).toBe(1);
+      expect(err).toHaveBeenCalledTimes(1);
+    } finally {
+      err.mockRestore();
+    }
   });
 
   test("moveSquad into the league it is already in is a no-op", async () => {
