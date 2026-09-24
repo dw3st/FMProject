@@ -6,7 +6,8 @@
  * Reads data_process/openfootball/seed-real.json plus the TL squads, calibrates player attributes and
  * club economy against the clubs/players present in both, then (idempotently) rewrites every
  * open-football league: squads/of_*, leagueData.json, leagueSchedules.json, countries.json,
- * databases.json and data_process/openfootball/calibration.json. All logic lives in scripts/openfootball/.
+ * databases.json, pyramids.json and data_process/openfootball/calibration.json. TL leagues are kept
+ * byte-for-byte except their `zones`, whose prom/rel entries are regenerated from the country pyramid. All logic lives in scripts/openfootball/.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -20,8 +21,9 @@ import {
   type ClubFits, type EconSample,
 } from "@/../scripts/openfootball/derive";
 import {
-  CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, levelFlags, scheduleFor, seasonLabel, zonesFor,
+  CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, scheduleFor, seasonLabel, type Zone,
 } from "@/../scripts/openfootball/leagues";
+import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type PyramidLeague } from "@/../scripts/openfootball/pyramid";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 import type { RosterPlayer } from "@/types/playerTypes";
 
@@ -34,7 +36,7 @@ const SOURCE = "open-football";
 /** Include brazil_serie_b in the player/club matching (calibration only; economy fits stay top-flight). */
 const MATCH_SERIE_B = true;
 
-/** TL leagues: country code and tier, for the zones of new leagues in the same country. */
+/** TL leagues: country code and tier (pyramid level; also used by the economy calibration). */
 const TL_LEAGUES: Record<string, { code: string; tier: number }> = {
   premier_league: { code: "gb", tier: 1 }, bundesliga: { code: "de", tier: 1 }, la_liga: { code: "es", tier: 1 },
   serie_a: { code: "it", tier: 1 }, ligue_1: { code: "fr", tier: 1 }, brazil_serie_a: { code: "br", tier: 1 },
@@ -75,6 +77,13 @@ const econOf = (s: TLSquad): EconSample => ({
 const seed = readJson<Seed>(join(OF_DIR, "seed-real.json"));
 const tierOverrides = readJson<Record<string, number>>(join(OF_DIR, "tierOverrides.json"));
 const tierOf = (l: SeedLeague) => tierOverrides[l.slug] ?? l.tier;
+/**
+ * Pyramid-only level corrections keyed by leagueData slug (e.g. Russia's B groups sit one level below
+ * the A groups). tierOverrides.json (seed slug) still applies first and also drives the economy tier;
+ * pyramidOverrides.json only moves a league within the pyramid, so squad economies are unchanged.
+ */
+const pyramidOverrides = readJson<Record<string, { tier: number }>>(join(OF_DIR, "pyramidOverrides.json"));
+const pyramidTierOf = (slug: string, tier: number) => pyramidOverrides[slug]?.tier ?? tier;
 
 const clubsByLeague = new Map<string, SeedClub[]>();
 for (const c of seed.clubs) clubsByLeague.set(c.league, [...(clubsByLeague.get(c.league) ?? []), c]);
@@ -147,7 +156,7 @@ writeJson(join(OF_DIR, "calibration.json"), {
 // ── 3. Clean previous runs ──────────────────────────────────────────────────
 for (const d of sortedDir(SQUADS)) if (d.startsWith("of_")) rmSync(join(SQUADS, d), { recursive: true, force: true });
 const isOF = (x: { slug: string; source?: string }) => x.slug.startsWith("of_") || x.source === SOURCE;
-type LeagueEntry = { slug: string; country: string; source?: string; standings: Array<{ squadId: string }> } & Record<string, unknown>;
+type LeagueEntry = { slug: string; country: string; source?: string; zones?: Zone[]; standings: Array<{ squadId: string }> } & Record<string, unknown>;
 type CountryEntry = { slug: string; name: string; iso2: string; source?: string; headline: string } & Record<string, unknown>;
 const leagueData = readJson<LeagueEntry[]>(join(DATA, "leagueData.json")).filter((l) => !isOF(l));
 const schedules = readJson<Array<LeagueScheduleConfig & { source?: string }>>(join(DATA, "leagueSchedules.json")).filter((s) => !isOF(s));
@@ -166,6 +175,11 @@ let youthCount = 0;
 let missingPools = 0;
 const indexInCountry = new Map<string, number>();
 for (const { code } of Object.values(TL_LEAGUES)) indexInCountry.set(code, (indexInCountry.get(code) ?? 0) + 1);
+const pyramidInput: PyramidLeague[] = leagueData.map((l) => {
+  const tl = TL_LEAGUES[l.slug];
+  if (!tl) throw new Error(`TL league ${l.slug} missing from TL_LEAGUES`);
+  return { slug: l.slug, country: l.country, clubs: l.standings.length, tier: pyramidTierOf(l.slug, tl.tier) };
+});
 
 for (const league of kept) {
   const slug = leagueSlug(league.slug);
@@ -197,17 +211,24 @@ for (const league of kept) {
     writeFileSync(join(SQUADS, slug, `${id}.json`), JSON.stringify(squad));
     standings.push({ squadId: id, slug: id, name: club.name, colors, country: countryName });
   }
-  const countryTiers = [
-    ...kept.filter((l) => l.country === code).map(tierOf),
-    ...Object.values(TL_LEAGUES).filter((t) => t.code === code).map((t) => t.tier),
-  ];
+  pyramidInput.push({ slug, country: countryName, clubs: clubs.length, tier: pyramidTierOf(slug, tier) });
   leagueData.push({
     slug, name: league.name, country: countryName, iso2: code.toUpperCase(), season: seasonLabel(code),
-    zones: zonesFor({ clubs: clubs.length, ...levelFlags(tier, countryTiers) }), standings, source: SOURCE,
+    zones: [], standings, source: SOURCE,
   });
   const idx = indexInCountry.get(code) ?? 0;
   indexInCountry.set(code, idx + 1);
   schedules.push(scheduleFor(slug, code, clubs.length, idx));
+}
+
+// ── 5. Pyramids + display zones ─────────────────────────────────────────────
+const unknownOverrides = Object.keys(pyramidOverrides).filter((s) => !pyramidInput.some((l) => l.slug === s));
+if (unknownOverrides.length) throw new Error(`pyramidOverrides.json: unknown league slugs ${unknownOverrides.join(", ")}`);
+const pyramids = buildPyramid(pyramidInput);
+// Only prom/rel change; continental zones (ucl/uel/uecl/lib/sud) of TL leagues are kept as they are.
+for (const l of leagueData) {
+  const g = pyramidGroupOf(pyramids, l.slug);
+  if (g) l.zones = zonesFromPyramid(g, l.zones ?? []);
 }
 
 // ── 6. Countries ────────────────────────────────────────────────────────────
@@ -226,6 +247,7 @@ for (const [code, name] of [...countryNames].sort((a, b) => byStr(a[0], b[0]))) 
 writeJson(join(DATA, "leagueData.json"), leagueData, 2);
 writeFileSync(join(DATA, "leagueSchedules.json"), formatSchedules(schedules.map(({ source: _s, ...e }) => e)));
 writeJson(join(DATA, "countries.json"), countries, 4);
+writeJson(join(DATA, "pyramids.json"), pyramids, 2);
 
 // Integrity checks (also collect world totals).
 const squadIds = new Set<string>();
@@ -269,6 +291,28 @@ for (const l of leagueData) {
   }
   if (lastTop >= firstBottom)
     throw new Error(`integrity: ${l.slug} top zones reach ${lastTop} but bottom zones start at ${firstBottom} (${clubs} clubs)`);
+
+  // prom/rel zones must be exactly the pyramid's counts (none when the country has no pyramid, except
+  // TL leagues outside any pyramid, which keep their hand-authored zones).
+  const g = pyramidGroupOf(pyramids, l.slug);
+  const prom = zones.filter((z) => z.id === "prom");
+  const rel = zones.filter((z) => z.id === "rel");
+  if (g) {
+    const promOk = g.promote > 0 ? prom.length === 1 && prom[0]!.from === 1 && prom[0]!.to === g.promote : prom.length === 0;
+    const relOk = g.relegate > 0 ? rel.length === 1 && rel[0]!.fromEnd === g.relegate : rel.length === 0;
+    if (!promOk || !relOk) throw new Error(`integrity: ${l.slug} prom/rel zones differ from pyramid (${g.promote}/${g.relegate})`);
+  } else if (l.source === SOURCE && (prom.length || rel.length)) {
+    throw new Error(`integrity: ${l.slug} has prom/rel zones but its country has no pyramid`);
+  }
+}
+for (const p of Object.values(pyramids)) {
+  for (let i = 0; i + 1 < p.levels.length; i++) {
+    const down = p.levels[i]!.groups.reduce((s, g) => s + g.relegate, 0);
+    const up = p.levels[i + 1]!.groups.reduce((s, g) => s + g.promote, 0);
+    if (down !== up) throw new Error(`integrity: ${p.country} tier ${p.levels[i]!.tier} relegates ${down} but tier ${p.levels[i + 1]!.tier} promotes ${up}`);
+    for (const g of p.levels[i + 1]!.groups)
+      if (!leagueData.some((l) => l.slug === g.leagueSlug)) throw new Error(`integrity: pyramid group ${g.leagueSlug} has no league`);
+  }
 }
 for (const [name, c] of Object.entries(countries)) {
   if (typeof c.flag !== "string" || c.flag === "") throw new Error(`integrity: country ${name} has no flag`);
@@ -351,6 +395,16 @@ for (const t of [...new Set(newSummary.map((x) => x.tier))].sort()) {
 for (const l of ["brazil_serie_a", "brazil_serie_b", "brazil_serie_c"]) {
   const es = tlSquads[l]!.map(econOf);
   console.log(`  TL ${l.padEnd(15)}(${String(es.length).padStart(3)} clubs)  ${fmtM(median(es.map((x) => x.budget))).padStart(7)} / ${Math.round(median(es.map((x) => x.capacity)))}`);
+}
+console.log("pyramids (league promote/relegate per level; ✓ = boundary sums match):");
+for (const p of Object.values(pyramids)) {
+  console.log(`  ${p.country}`);
+  p.levels.forEach((lv, i) => {
+    const next = p.levels[i + 1];
+    const down = lv.groups.reduce((s, g) => s + g.relegate, 0);
+    const mark = next ? (down === next.groups.reduce((s, g) => s + g.promote, 0) ? " ✓" : " ✗") : "";
+    console.log(`    tier ${lv.tier}: ${lv.groups.map((g) => `${g.leagueSlug} ↑${g.promote} ↓${g.relegate}`).join(", ")}${mark}`);
+  });
 }
 console.log(`world: ${leagueData.length} leagues, ${squadIds.size} squads, ${worldPlayers} players, ${Object.keys(countries).length} countries`);
 console.log("integrity checks passed");

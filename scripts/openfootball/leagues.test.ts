@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CALENDAR_YEAR, CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, levelFlags, scheduleFor, zonesFor } from "@/../scripts/openfootball/leagues";
+import { CALENDAR_YEAR, CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, scheduleFor } from "@/../scripts/openfootball/leagues";
 import type { SeedLeague } from "@/../scripts/openfootball/types";
 
 const L = (slug: string, country: string, tier: number, countryName = country): SeedLeague =>
@@ -11,19 +11,6 @@ describe("keptLeagues", () => {
     const counts = new Map([["premier-league", 18], ["championship", 19], ["tiny", 3]]);
     expect(keptLeagues(leagues, counts).map((l) => l.slug)).toEqual(["championship"]);
     expect(OVERLAP["premier-league"]).toBe("premier_league");
-  });
-});
-
-describe("zonesFor", () => {
-  test("nível do meio ganha prom e rel; topo sem nível abaixo não ganha nada", () => {
-    expect(zonesFor({ clubs: 20, hasAbove: true, hasBelow: true })).toEqual([
-      { id: "prom", label: "Promotion", color: "green", from: 1, to: 3 },
-      { id: "rel", label: "Relegation", color: "red", fromEnd: 3 },
-    ]);
-    expect(zonesFor({ clubs: 12, hasAbove: false, hasBelow: true })).toEqual([
-      { id: "rel", label: "Relegation", color: "red", fromEnd: 2 },
-    ]);
-    expect(zonesFor({ clubs: 12, hasAbove: false, hasBelow: false })).toEqual([]);
   });
 });
 
@@ -52,14 +39,6 @@ describe("buildCountryEntry / CONTINENT", () => {
     for (const code of ["ae","al","am","ar","at","au","be","bg","br","by","ch","cl","cm","co","cy","cz","de","dk","dz","eg","es","fi","fj","fr","gb","ge","gh","gr","hr","hu","id","il","ir","is","it","jp","ke","kz","mt","mx","ng","nl","no","pe","pl","pt","py","rs","ru","sa","se","si","sk","tr","ua","us","uy","uz","ve","za"]) {
       expect(CONTINENT[code]).toBeDefined();
     }
-  });
-});
-
-describe("levelFlags", () => {
-  test("acima/abaixo pelos níveis do país", () => {
-    expect(levelFlags(2, [1, 2, 3])).toEqual({ hasAbove: true, hasBelow: true });
-    expect(levelFlags(1, [1, 1])).toEqual({ hasAbove: false, hasBelow: false });
-    expect(levelFlags(3, [1, 2, 3, 3])).toEqual({ hasAbove: true, hasBelow: false });
   });
 });
 
