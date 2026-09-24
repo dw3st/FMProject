@@ -267,10 +267,15 @@ desenvolvimento) é o mesmo do motor.
     passes normais, mais ~24 through balls por partida.
   - **O `passesFailed` perto de 0 também é real:** só interceptação e impedimento derrubam um
     passe normal, e o acerto fica em ~96%.
-  - O MID quase não faz passe normal (usa through ball). É questão de balanceamento, não de
-    contagem.
-  - As taxas de passe do quickSim (`PASSES_PER_MATCH`, `PASS_COMPLETION_*`) foram recalibradas
-    contra esses números. As notas continuam acompanhando o motor (DEF/MID ~6,1, FWD ~6,7).
+  - O MID quase não fazia passe normal (usava through ball). Era balanceamento, não contagem.
+    **Rebalanceado em 2026-09-24:** `PASS_STRONG_RAW` 1,0 → 0,8 em `DecisionTree.ts` (ver
+    `game-engine/pass.md` → "Action Compression"). Por jogador e por partida agora: GK ~3,0,
+    DEF ~3,0, MID ~1,7 e FWD ~1,4 passes normais, ~49 passes e ~19 through balls por partida,
+    acerto ~96,6%. Gols/partida: Premier 2,83 → 2,89, Serie A 2,39 → 2,23,
+    `of_championship` 1,65 → 1,40. Medido com `bun scripts/passing-mix-diagnostic.ts`.
+  - As taxas de passe do quickSim (`PASSES_PER_MATCH`, `PASS_COMPLETION_*`) e o volume de gols
+    (`BASE_GOALS`) foram calibrados **antes** desse rebalanceamento e precisam ser recalibrados
+    contra o motor novo.
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa

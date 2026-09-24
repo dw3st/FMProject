@@ -210,6 +210,11 @@ full `0.4 + 0.6 × proximity`.
 maps to score 0.632 — comparable to a "great pass" or "great carry" via the same
 calibration system used by other actions in `decideBallHolder`.
 
+Pass compresses at `PASS_STRONG_RAW = 0.8` (was 1.0 until 2026-09-24). At 1.0 the through
+ball out-scored the short to-feet pass almost every time a midfielder had the ball (~27 TB
+vs ~25 regular passes per match, MID ~0.15 regular passes each). After the change it's ~19
+TB vs ~49 passes per match. See `pass.md` → "Action Compression".
+
 ### Dispatch — TB fires immediately
 
 Through balls fire **before** the post-reception burst in `gameState.tickState`.

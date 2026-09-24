@@ -102,7 +102,7 @@ export const THROUGH_BALL_CONFIG = {
   SPACE_DENSITY_SAT: 30,
 
   // ── Final compression ─────────────────────────────────────────────────────
-  /** Raw cell score that maps to compressed score 0.632 (matches PASS_STRONG_RAW = 1). */
+  /** Raw cell score that maps to compressed score 0.632 (PASS_STRONG_RAW = 0.8, CARRY_STRONG_RAW = 0.8). */
   THROUGH_BALL_STRONG_RAW: 0.9,
   /** Top-N candidate cells surfaced for debug overlay / event payload. */
   MAX_CANDIDATES: 30,
