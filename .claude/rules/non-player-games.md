@@ -298,9 +298,57 @@ desenvolvimento) é o mesmo do motor.
     | of_turkish_super_league | 1,25 | 1,33 | +6,2% | 1,23 | −1,8% |
     | of_uzbek_super_league | 0,65 | 0,68 | +4,9% | 0,71 | +9,3% |
 
-  - **Ainda sobra:** Premier −9% (a liga de maior `paceEdge`, talvez o efeito não seja linear lá
-    em cima), Allsvenskan +12%, Ekstraklasa +11%. O ruído do motor com 400 jogos é de ±3% (Premier)
-    a ±7% (ligas de pouco gol), então o que passa de ~8% é real.
+  - **Resíduos revisitados (2026-09-24, caches novos de 400 jogos, 26 ligas):** o "Ainda sobra"
+    anterior (Premier −9%, Allsvenskan +12%, Ekstraklasa +11%) era em parte ruído de cache: com
+    caches novos do mesmo motor deram −7,1%, +4,9% e +12,9%, e apareceram outros do mesmo tamanho
+    (Argentina −9%, Eredivisie −8%, Turquia −8%).
+    - **Quase tudo é ruído do motor.** O rms por liga (6,0%) fica perto do piso de ruído do
+      motor (4,7%, só Poisson), então o erro real do modelo é ~3,6%.
+    - **Forma do termo de pace:** testada com validação deixando uma liga de fora (seção 9 do
+      `analyze`, fórmula inteira reajustada). Nenhuma forma ganha fora da amostra: linear 6,4%,
+      quadrático 6,6% (β² ≈ −0,02), saturado `w·tanh(edge/w)` com w = 1/2/3 6,4%, pace+/pace−
+      separados 6,7%. Nenhum candidato com mecanismo ajuda (drible × desarme, visão/passe do MID,
+      pace do MID adversário, reflexo do goleiro: 6,3–6,5%), e nível² piora (7,3%). O stepwise
+      por jogo só acha ruído (`FWD.finishing`, +17 de logLik em 20.800 lados, rms igual).
+  - **Motor com o meio-campo como eixo de passe (commit `a341233`):** o volume de gols quase não
+    mudou no agregado (gols/lado 0,639 → 0,656), mas mexeu em ligas de nível igual em sentidos
+    opostos (Bundesliga 1,56 → 1,88, Serie A 1,94 → 1,83). Nenhum atributo explica isso: as duas
+    ligas têm nível e `paceEdge` quase iguais. O reajuste da fórmula inteira contra o motor novo
+    só baixa o rms de 6,5% para 6,2% dentro da amostra (pior 12,9% → 13,2%), e nenhuma forma de
+    pace ganha fora da amostra (linear 7,0%, saturado w = 1 6,6%). Por isso **o modelo de gols
+    ficou como estava**. Erro por liga, com as mesmas constantes:
+
+    | Liga | motor antigo | erro | motor novo | erro |
+    |---|---|---|---|---|
+    | premier_league | 2,48 | −7,1% | 2,44 | −5,4% |
+    | serie_a | 1,94 | +3,6% | 1,83 | +9,9% |
+    | la_liga | 2,01 | +4,3% | 2,13 | −1,7% |
+    | ligue_1 | 1,93 | +8,2% | 2,12 | −1,7% |
+    | bundesliga | 1,56 | +4,7% | 1,88 | −12,9% |
+    | brazil_serie_a | 1,69 | −4,4% | 1,72 | −5,9% |
+    | brazil_serie_b | 1,18 | +5,5% | 1,22 | +2,2% |
+    | brazil_serie_c | 0,94 | +0,2% | 0,88 | +7,1% |
+    | of_ekstraklasa | 0,98 | +12,9% | 1,04 | +5,8% |
+    | of_championship | 1,25 | +6,7% | 1,26 | +6,3% |
+    | of_allsvenskan | 0,94 | +4,9% | 0,94 | +5,2% |
+    | of_argentine_premier_division | 1,52 | −9,2% | 1,55 | −10,9% |
+    | of_danish_superliga | 1,07 | +3,3% | 1,12 | −1,3% |
+    | of_eredivisie | 1,49 | −8,1% | 1,54 | −11,1% |
+    | of_greek_super_league | 1,02 | +4,9% | 0,98 | +8,6% |
+    | of_italian_serie_c_a | 0,74 | +6,7% | 0,79 | +0,3% |
+    | of_j_league | 1,09 | −3,4% | 1,10 | −3,8% |
+    | of_kenyan_premier_division | 0,60 | −3,2% | 0,61 | −4,4% |
+    | of_liga_mx | 1,40 | +0,7% | 1,39 | +1,7% |
+    | of_major_league_soccer | 1,15 | +5,3% | 1,20 | +1,1% |
+    | of_portuguese_primeira_liga | 1,41 | −2,1% | 1,50 | −8,2% |
+    | of_russian_second_division_b_group_2 | 0,53 | −6,9% | 0,56 | −11,9% |
+    | of_saudi_professional_league | 1,07 | +3,9% | 1,12 | −0,7% |
+    | of_spanish_second_division | 1,22 | +5,7% | 1,27 | +1,2% |
+    | of_turkish_super_league | 1,34 | −8,0% | 1,25 | −1,4% |
+    | of_uzbek_super_league | 0,68 | +4,8% | 0,68 | +5,2% |
+
+    O quickSim não muda entre as colunas (1,62 … 2,31). rms 6,0% → 6,5% (piso de ruído 4,7%).
+    Além de 2σ no motor novo: Bundesliga −12,9%, Argentina −10,9%, Eredivisie −11,1%, Serie A +9,9%.
   - **Como recalibrar** (depois de qualquer mudança no motor):
     1. `bun scripts/quicksim-spread.ts collect <liga> 200 2 <dir>/<liga>.json` para um conjunto
        variado de ligas nativas **e** `of_*`. Cada liga leva ~5 min, então rode várias em paralelo.
@@ -310,6 +358,8 @@ desenvolvimento) é o mesmo do motor.
        A seção 8 reajusta a fórmula inteira (`c`→`BASE_GOALS = e^c`, `home`→`HOME_ADVANTAGE = e^h`,
        `ratio`, `level`, `pace`) direto nas unidades de `QuickSimConfig`.
     3. `quicksim-calibrate.ts` continua valendo para placares, casa/empate/fora e notas.
+    4. `bun scripts/quicksim-spread.ts events <dir> --apply` (3 vezes) recalibra os eventos por vaga
+       e as notas (ver "Eventos por vaga de titular" abaixo).
 - **Contagem de passes do motor (corrigida em 2026-09-24):** o through ball emitia
   `passAttempted` sem nunca emitir `passCompleted`/`passFailed`, o que derrubava o aproveitamento
   para ~47%. Agora ele só conta na família própria (`throughBalls*`), e todo `passAttempted`
@@ -325,27 +375,90 @@ desenvolvimento) é o mesmo do motor.
     DEF ~3,0, MID ~1,7 e FWD ~1,4 passes normais, ~49 passes e ~19 through balls por partida,
     acerto ~96,6%. Gols/partida: Premier 2,83 → 2,89, Serie A 2,39 → 2,23,
     `of_championship` 1,65 → 1,40. Medido com `bun scripts/passing-mix-diagnostic.ts`.
+  - **Meio-campo como eixo de passe (commit `a341233`, 2026-09-24):** alavancas de passe por papel
+    (`roles.json`). Por vaga de titular: GK ~2,4, DEF ~2,0, MID ~2,4 e FWD ~1,3 passes normais na
+    Premier; acerto ~97,5%.
   - O volume de gols (`BASE_GOALS` e cia.) já foi recalibrado contra o motor novo (ver
     "Volume de gols" acima).
-- **Passes do quickSim (recalibrados em 2026-09-24, motor com `PASS_STRONG_RAW = 0.8`):**
-  `passes ~ Poisson(PASSES_PER_MATCH[linha] × (nívelDoTime / LEVEL_REF)^PASS_LEVEL_EXPONENT[linha])`,
-  com o nível do **próprio** time (`teamLevel`). Acerto = `PASS_COMPLETION_BASE (0.94) +
-  PASS_COMPLETION_SKILL × passing/10`; o motor acerta ~97%.
+- **Eventos por vaga de titular (recalibrados em 2026-09-24, motor `a341233`, 26 ligas, 400 jogos
+  cada):** passes, desarmes, interceptações, desarmes errados, chutes e assistências.
   - **Meta por vaga de titular, não por jogador que entrou.** O motor faz ~5 substituições por
     time, então há 1,2–1,6 jogadores por vaga nas linhas de campo (GK 1,0). O quickSim não tem
-    reservas: o titular precisa carregar o total da linha. Por isso a tabela "Eventos" do
-    `quicksim-calibrate.ts` agora divide pelo número de titulares (antes dividia por todos que
-    jogaram e subestimava o motor).
-  - Valores: `PASSES_PER_MATCH` GK 2,47 / DEF 2,58 / MID 1,28 / FWD 1,16;
-    `PASS_LEVEL_EXPONENT` GK 0,75 / DEF 0,16 / MID 2,16 / FWD 0,96. O meio-campo é o que mais cai
-    com o nível: por vaga, o motor faz MID 1,31 na Premier (nível 5,19), 0,93 na `of_championship`
-    (4,20) e 0,38 no Quênia (2,86). A defesa quase não muda (2,56 → 2,36).
-  - Ajustado em Premier, Serie A, `of_championship` e Quênia (200 jogos de motor cada); os
-    passes por linha ficam a ±0,1 do motor nas quatro, e as notas por linha seguem dentro das
-    metas (DEF sobe ~0,03 porque cada passe certo vale +0,02).
-  - **Pendência:** na mesma visão por vaga, desarmes (DEF 0,26 × 0,50 do motor), interceptações e
-    assistências do quickSim ficam abaixo do motor. Foram calibrados com a divisão antiga. Mexer
-    neles muda as notas, então precisa recalibrar junto o `TACKLE_FAIL_RATIO`.
+    reservas: o titular carrega o total da linha (total ÷ titulares). A calibração antiga dividia
+    por todos que jogaram e deixava desarmes, interceptações e assistências baixos (desarme DEF
+    0,26 contra 0,50 do motor).
+  - **Ferramenta:** `bun scripts/quicksim-spread.ts collect` agora guarda, por lado e por linha,
+    os totais de eventos (os desarmes errados vêm direto do evento `tackle` do barramento, não da
+    nota) e as notas de titulares e de todos. `bun scripts/quicksim-spread.ts events <dir>
+    [--quick k] [--apply]` compara motor × quickSim por liga, ajusta as taxas (Poisson, nível do
+    próprio time × do adversário) e imprime as constantes. `--apply` grava em `QuickSimConfig.ts`;
+    rode 3 vezes (as partilhas de gol/assistência e os desarmes errados convergem).
+  - **Fórmulas** (nível = `teamLevel` do próprio time; `lv(e) = (nível / LEVEL_REF)^e`):
+    - passes ~ Poisson(`PASSES_PER_MATCH[linha]` × lv(`PASS_LEVEL_EXPONENT`)); acerto =
+      `PASS_COMPLETION_BASE + PASS_COMPLETION_SKILL × passing/10`;
+    - desarmes ~ Poisson(`TACKLES_PER_MATCH` × lv(`TACKLE_LEVEL_EXPONENT`) × (0,5 + tackling/10));
+    - interceptações ~ Poisson(`INTERCEPTIONS_PER_MATCH` × lv(`INTERCEPTION_LEVEL_EXPONENT`) ×
+      (0,5 + pressing/10));
+    - desarmes errados ~ Poisson(`TACKLES_FAILED_PER_MATCH` × lv(`TACKLE_FAIL_LEVEL_EXPONENT`)).
+      Substitui o `TACKLE_FAIL_RATIO`. Os expoentes vêm do motor; as taxas são o botão que iguala
+      a nota média dos titulares por linha (o titular do quickSim carrega também os eventos do
+      reserva, então elas ficam acima da contagem por vaga do motor no FWD);
+    - chutes sem gol ~ Poisson(xG do dia × `SHOTS_PER_XG` × (nível da partida / LEVEL_REF)^
+      `SHOTS_LEVEL_EXPONENT`). No motor, as ligas fracas chutam bem mais por gol (expoente ≈ −1).
+    - Quem marca/chuta e quem dá assistência continuam por `ROLE_GOAL_WEIGHT` /
+      `ROLE_ASSIST_WEIGHT` (partilhas dentro do time, ajustadas às partilhas por linha do motor) e
+      `NO_ASSIST_RATE` = 1 − assistências por gol do motor.
+  - **Valores:**
+
+    | Constante | GK | DEF | MID | FWD |
+    |---|---|---|---|---|
+    | `PASSES_PER_MATCH` | 2,095 | 2,124 | 2,387 | 1,102 |
+    | `PASS_LEVEL_EXPONENT` | 0,23 | 0,34 | 1,01 | 0,72 |
+    | `TACKLES_PER_MATCH` | 0 | 0,54 | 0,189 | 0,369 |
+    | `TACKLE_LEVEL_EXPONENT` | 0 | −0,20 | −0,74 | −0,09 |
+    | `INTERCEPTIONS_PER_MATCH` | 0 | 0,124 | 0,152 | 0,161 |
+    | `INTERCEPTION_LEVEL_EXPONENT` | 0 | 0,60 | 1,04 | 1,24 |
+    | `TACKLES_FAILED_PER_MATCH` | 0 | 1,068 | 0,364 | 1,076 |
+    | `TACKLE_FAIL_LEVEL_EXPONENT` | 0 | −0,39 | −0,82 | −0,30 |
+    | `ROLE_GOAL_WEIGHT` | 0 | 0 | 0,113 | 1,533 |
+    | `ROLE_ASSIST_WEIGHT` | 0,015 | 0,219 | 0,284 | 0,544 |
+
+    Escalares: `PASS_COMPLETION_BASE` 0,973, `PASS_COMPLETION_SKILL` 0,004 (o motor acerta
+    97,5%, e o passe do jogador quase não pesa), `SHOTS_PER_XG` 1,922, `SHOTS_LEVEL_EXPONENT`
+    −1,03, `NO_ASSIST_RATE` 0,143.
+  - **Motor com o meio-campo como eixo de passe:** por vaga, o MID agora passa 2,36 na Premier,
+    1,99 na `of_championship` e 1,32 no Quênia (antes 1,30 / 0,94 / 0,42), e a DEF caiu para
+    ~2,0. O expoente de nível do MID caiu de 2,16 para 1,01.
+  - **Antes → depois, eventos por vaga** (motor | quick antes → quick depois):
+
+    | Liga (nível) | DEF desarmes | DEF interc. | MID passes | MID desarmes | FWD desarmes | FWD assist. | FWD chutes |
+    |---|---|---|---|---|---|---|---|
+    | Premier (5,20) | 0,50 \| 0,26 → 0,54 | 0,12 \| 0,07 → 0,11 | 2,36 \| 1,41 → 2,45 | 0,13 \| 0,11 → 0,17 | 0,23 \| 0,14 → 0,25 | 0,15 \| 0,09 → 0,13 | 0,95 \| 0,89 → 1,03 |
+    | Championship (4,20) | 0,53 \| 0,26 → 0,56 | 0,10 \| 0,07 → 0,10 | 1,99 \| 0,87 → 2,03 | 0,19 \| 0,10 → 0,18 | 0,24 \| 0,14 → 0,23 | 0,06 \| 0,04 → 0,06 | 0,69 \| 0,51 → 0,68 |
+    | Allsvenskan (3,65) | 0,55 \| 0,23 → 0,50 | 0,08 \| 0,07 → 0,08 | 1,75 \| 0,65 → 1,73 | 0,19 \| 0,11 → 0,20 | 0,24 \| 0,13 → 0,24 | 0,05 \| 0,03 → 0,05 | 0,55 \| 0,37 → 0,56 |
+    | Quênia (2,85) | 0,49 \| 0,21 → 0,49 | 0,06 \| 0,06 → 0,06 | 1,32 \| 0,39 → 1,36 | 0,25 \| 0,09 → 0,21 | 0,24 \| 0,13 → 0,24 | 0,02 \| 0,02 → 0,03 | 0,45 \| 0,22 → 0,39 |
+
+  - **Notas dos titulares por linha** (motor | quick depois):
+
+    | Liga | GK | DEF | MID | FWD |
+    |---|---|---|---|---|
+    | Premier | 6,06 \| 6,04 | 6,14 \| 6,16 | 6,22 \| 6,26 | 6,77 \| 6,82 |
+    | Championship | 6,04 \| 6,03 | 6,10 \| 6,11 | 6,14 \| 6,15 | 6,39 \| 6,43 |
+    | Allsvenskan | 6,03 \| 6,03 | 6,07 \| 6,05 | 6,11 \| 6,11 | 6,28 \| 6,29 |
+    | Quênia | 6,03 \| 6,03 | 6,02 \| 6,00 | 6,07 \| 6,06 | 6,18 \| 6,12 |
+    | 26 ligas | 6,040 \| 6,032 | 6,080 \| 6,079 | 6,137 \| 6,138 | 6,412 \| 6,411 |
+
+    rms por liga da diferença de nota: GK 0,009, DEF 0,014 (antes 0,037), MID 0,014 (antes
+    0,033), FWD 0,043 (pior +0,13).
+  - **Limitações que ficam:**
+    - **Notas ≥ 8,5:** 0,82% no motor, 0,87% antes e 1,03% depois, quase todas de FWD (Premier
+      9,5% × 7,4%). O titular carrega os gols e assistências da vaga inteira, e os desarmes
+      errados extras acertam a média mas não a cauda. Não achei correção com princípio que
+      mantenha a regra por vaga.
+    - **Desarme × atributo:** no motor a DEF desarma menos em proporção ao `tackling` do que o
+      fator `0,5 + tackling/10` supõe (potência livre 0,39, não 1). Dá ±0,05 por vaga entre ligas.
+    - **Chutes do MID:** 10% dos chutes sem gol no motor e 8% no quickSim (sem peso de chute
+      separado).
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa
