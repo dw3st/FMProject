@@ -75,10 +75,18 @@ export const QUICK_SIM_CONFIG = {
   /** Non-goal shots per unit of xG. */
   SHOTS_PER_XG: 1.5,
 
-  /** Regular passes only — the engine counts through balls in their own family, not as passes. */
-  PASSES_PER_MATCH:        { GK: 2.4, DEF: 0.8, MID: 0.1, FWD: 0.6 } as Record<LineGroup, number>,
-  /** Engine completion is ~96% (only interceptions/offside fail a regular pass). */
-  PASS_COMPLETION_BASE: 0.92,
+  /**
+   * Regular passes per starting slot at team level LEVEL_REF — the engine counts through balls in
+   * their own family, not as passes. quickSim has no substitutes, so the target is the engine's
+   * line total / starting slots (not per player who appeared). Scaled by
+   * (ownTeamLevel / LEVEL_REF)^PASS_LEVEL_EXPONENT[group]. Fitted against the engine with
+   * PASS_STRONG_RAW = 0.8 (Premier, Serie A, of_championship, Kenya).
+   */
+  PASSES_PER_MATCH:        { GK: 2.47, DEF: 2.58, MID: 1.28, FWD: 1.16 } as Record<LineGroup, number>,
+  /** Weak teams pass much less in the engine, mostly in midfield (Kenya MID 0.38 vs Premier 1.31 per slot). */
+  PASS_LEVEL_EXPONENT:     { GK: 0.75, DEF: 0.16, MID: 2.16, FWD: 0.96 } as Record<LineGroup, number>,
+  /** Engine completion is ~97% (only interceptions/offside fail a regular pass). */
+  PASS_COMPLETION_BASE: 0.94,
   PASS_COMPLETION_SKILL: 0.08,
   TACKLES_PER_MATCH:       { GK: 0, DEF: 0.26, MID: 0.12, FWD: 0.22 } as Record<LineGroup, number>,
   INTERCEPTIONS_PER_MATCH: { GK: 0, DEF: 0.08, MID: 0.09, FWD: 0.09 } as Record<LineGroup, number>,
