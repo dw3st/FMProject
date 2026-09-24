@@ -982,7 +982,8 @@ function startThroughBall(
 
   const distance = Math.sqrt((landingX - holder.x) ** 2 + (landingY - holder.y) ** 2);
 
-  gameBus.emit('passAttempted', { player: holder.id, toId: holder.id, distance });
+  // Through balls are their own stat family (throughBallStarted → Completed / LostIn*) — they
+  // never emit passAttempted, which only counts passes that end in passCompleted / passFailed.
   gameBus.emit('throughBallStarted', {
     player:           holder.id,
     toX:              landingX,

@@ -244,9 +244,19 @@ desenvolvimento) é o mesmo do motor.
   Bundesliga +21%. O termo de nível não separa ligas de nível parecido: as ligas europeias têm
   nível ~5,05–5,18, mas no motor vão de 1,65 (Bundesliga) a 2,31 (Premier). O ruído do motor
   também pesa: duas amostras da mesma liga diferiram até 15%.
-- **Contagem de eventos do motor:** o motor registra ~1–2,5 passes por jogador por partida e
-  `passesFailed` sempre 0, o que parece bug de contagem. As taxas por jogador do quickSim foram
-  calibradas contra esses números, então as notas acompanham o motor (DEF/MID ~6,1, FWD ~6,6).
+- **Contagem de passes do motor (corrigida em 2026-09-24):** o through ball emitia
+  `passAttempted` sem nunca emitir `passCompleted`/`passFailed`, o que derrubava o aproveitamento
+  para ~47%. Agora ele só conta na família própria (`throughBalls*`), e todo `passAttempted`
+  termina em `passCompleted` ou `passFailed`, garantido por `SimulateMatch.test.ts`.
+  - **O volume baixo é real, não bug:** o relógio é comprimido, e a partida tem ~7 min de jogo
+    efetivo. Por jogador e por partida o motor registra GK ~2,4, DEF ~0,8, MID ~0,1 e FWD ~0,6
+    passes normais, mais ~24 through balls por partida.
+  - **O `passesFailed` perto de 0 também é real:** só interceptação e impedimento derrubam um
+    passe normal, e o acerto fica em ~96%.
+  - O MID quase não faz passe normal (usa through ball). É questão de balanceamento, não de
+    contagem.
+  - As taxas de passe do quickSim (`PASSES_PER_MATCH`, `PASS_COMPLETION_*`) foram recalibradas
+    contra esses números. As notas continuam acompanhando o motor (DEF/MID ~6,1, FWD ~6,7).
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa
