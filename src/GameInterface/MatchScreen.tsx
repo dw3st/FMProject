@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
-import type { Squad } from "@/types/playerTypes";
+import type { LeagueData, Squad } from "@/types/playerTypes";
 import { Pause, Play, BarChart3, Settings, ArrowRightLeft } from "lucide-react";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
 import { createMatchState, changeFormation } from "@/GameEngine/Domain/gameState";
@@ -27,7 +27,9 @@ import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { TeamPanel } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
-import { clubLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { catalogLeagueBySquadId } from "@/Domain/world/labels";
+import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 
 // Dev-only: DebugPanel pulls in react-json-view-lite (and its CSS, a side-effect
@@ -92,6 +94,9 @@ export function MatchScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [teamAMeta, setTeamAMeta] = useState<TeamMeta | undefined>();
   const [teamBMeta, setTeamBMeta] = useState<TeamMeta | undefined>();
+  /** Squad ids behind the scoreboard crests — URLs are derived once the league catalog loads. */
+  const [crestIds, setCrestIds] = useState<{ league: string; a: string; b?: string } | null>(null);
+  const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
   const [debug, setDebug] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -150,6 +155,12 @@ export function MatchScreen() {
     }
 
     const url = `/api/match-setup?saveId=${encodeURIComponent(session.saveId)}`;
+
+    // Static catalog, only for crests: logo files are filed by the club's origin league.
+    fetch("/api/leagues")
+      .then((r) => (r.ok ? (r.json() as Promise<LeagueData[]>) : []))
+      .then((data) => setCatalogLeagues(Array.isArray(data) ? data : []))
+      .catch(() => setCatalogLeagues([]));
 
     fetch(url)
       .then(async (r) => {
@@ -221,17 +232,15 @@ export function MatchScreen() {
           name: data.save.clubName,
           primaryColor: data.save.clubColors[0],
           secondaryColor: data.save.clubColors[1],
-          logoUrl: clubLogoUrl(data.save.leagueSlug, data.save.clubId),
         });
         if (data.opponentSquad) {
-          const oppStem = data.opponentSquad.slug ?? data.opponentSquad.id;
           setTeamBMeta({
             name: data.opponentSquad.name,
             primaryColor: data.opponentSquad.colors[0],
             secondaryColor: data.opponentSquad.colors[1],
-            logoUrl: clubLogoUrl(data.save.leagueSlug, oppStem),
           });
         }
+        setCrestIds({ league: data.save.leagueSlug, a: data.mySquadId, b: data.opponentSquad?.id });
       })
       .catch((e: unknown) => {
         setLoadError(e instanceof Error ? e.message : String(e));
@@ -392,6 +401,17 @@ export function MatchScreen() {
     [teamAMeta, teamBMeta],
   );
 
+  const [teamAWithCrest, teamBWithCrest] = useMemo(() => {
+    if (!crestIds) return [teamAMeta, teamBMeta];
+    const originLeague = catalogLeagueBySquadId(catalogLeagues);
+    const slugs = squadIdToClubSlugMap(catalogLeagues.flatMap((l) => l.standings));
+    const crest = (id: string) => squadLogoUrl(id, originLeague.get(id) ?? crestIds.league, slugs.get(id));
+    return [
+      teamAMeta && { ...teamAMeta, logoUrl: crest(crestIds.a) },
+      teamBMeta && crestIds.b ? { ...teamBMeta, logoUrl: crest(crestIds.b) } : teamBMeta,
+    ];
+  }, [teamAMeta, teamBMeta, crestIds, catalogLeagues]);
+
   if (loadError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -449,8 +469,8 @@ export function MatchScreen() {
             scoreB={score.B}
             matchTime={gameState.matchTime ?? 0}
             matchPhase={gameState.matchPhase ?? "preMatch"}
-            teamA={teamAMeta}
-            teamB={teamBMeta}
+            teamA={teamAWithCrest}
+            teamB={teamBWithCrest}
             scoreColorA={matchKitColors.teamA}
             scoreColorB={matchKitColors.teamB}
           />
