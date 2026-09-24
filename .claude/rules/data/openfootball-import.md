@@ -118,7 +118,7 @@ Tudo fica em `data_process/openfootball/calibration.json`: pares, coeficientes, 
 - **Sem escudos.** Os clubes `of_*` não têm arquivo em `Data/logos/`. O `ClubLogo` desenha o brasão com as cores do clube.
 - **Jovens de preenchimento.** O seed tem clubes com só 7 jogadores. O `roster.ts` gera jovens para cumprir os mínimos por papel (GK 3, DEF 7, MID 7, FWD 4) e completar até 18 jogadores. O máximo é 30.
 - **Serie A e Ligue 1.** As re-derivações desses elencos saem mais baixas que os valores nativos. Isso afeta só a checagem de calibração, porque os elencos nativos não são substituídos.
-- **Caminhos no Windows.** Ainda há `new URL(...).pathname` em `routes.ts`, em `lab/` e em `emailLog`, que quebram no Windows nativo (`/C:/...`). `SaveService`, `advanceDay`, `startKits`, `runtimeDir` e `scripts/generateStartKits.ts` já usam `fileURLToPath`.
+- **Caminhos no Windows.** Resolvido: todo caminho de dados usa `fileURLToPath`, nunca `new URL(...).pathname`, que gera `/C:/...` no Windows nativo. Mantenha esse padrão em código novo.
 
 ---
 
