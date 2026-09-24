@@ -4,6 +4,7 @@ import type {
   DevelopmentInboxChange,
   DevelopmentInboxMessage,
   InboxMessage,
+  SeasonInboxMessage,
   TransferInInboxMessage,
   TransferOutInboxMessage,
 } from "@/types/inboxTypes";
@@ -108,6 +109,43 @@ export function buildTransferOutMessage(args: {
     playerName,
     toClub,
     feeEuros,
+  };
+}
+
+/**
+ * Season news for the human club. `promoted`/`relegated` name the NEW league (and carry the one
+ * left); `champion` names the league just won.
+ */
+export function buildSeasonMessage(args: {
+  date:            string;
+  kind:            SeasonInboxMessage["kind"];
+  leagueSlug:      string;
+  leagueName:      string;
+  fromLeagueSlug?: string;
+  seasonYear:      number;
+}): SeasonInboxMessage {
+  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear } = args;
+  const subject =
+    kind === "champion" ? `Champion of ${leagueName}` :
+    kind === "promoted" ? `Promoted to ${leagueName}` :
+    `Relegated to ${leagueName}`;
+  const preview =
+    kind === "champion" ? `The club won the ${leagueName} ${seasonYear} title.` :
+    kind === "promoted" ? `Next season the club plays in ${leagueName}.` :
+    `Next season the club drops to ${leagueName}.`;
+  return {
+    id:        `season-${date}-${kind}-${leagueSlug}-${randomUUID()}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "season",
+    subject,
+    preview:   preview.slice(0, 120),
+    kind,
+    leagueSlug,
+    leagueName,
+    ...(fromLeagueSlug ? { fromLeagueSlug } : {}),
+    seasonYear,
   };
 }
 

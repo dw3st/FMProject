@@ -163,50 +163,117 @@ que exibem detalhes tratam esse caso ("Resumo indisponível — liga simulada").
 
 ### `pyramids.json`
 
+Gerado pelo importador em `src/example_data/pyramids.json` (copiado para `src/Data/`), com chave
+pelo nome do país em `leagueData`:
+
 ```json
 {
-  "italy": [
-    ["serie_a"],
-    ["it_serie_b"],
-    ["it_serie_c_a", "it_serie_c_b", "it_serie_c_c"]
-  ]
+  "Italy": {
+    "country": "Italy",
+    "levels": [
+      { "tier": 1, "groups": [{ "leagueSlug": "serie_a", "promote": 0, "relegate": 3 }] },
+      { "tier": 2, "groups": [{ "leagueSlug": "of_italian_serie_b", "promote": 3, "relegate": 3 }] },
+      { "tier": 3, "groups": [
+        { "leagueSlug": "of_italian_serie_c_a", "promote": 1, "relegate": 0 },
+        { "leagueSlug": "of_italian_serie_c_b", "promote": 1, "relegate": 0 },
+        { "leagueSlug": "of_italian_serie_c_c", "promote": 1, "relegate": 0 }
+      ] }
+    ]
+  }
 }
 ```
 
-- Cada nível tem uma ou mais ligas (grupos).
-- Correções manuais ficam em `data_process/openfootball/pyramidOverrides.json`. Exemplo: a
-  "Second Division B" argentina é o nível 3.
-- As ligas sobrepostas entram na pirâmide com o slug do TouchLines. Exemplo:
-  `england: [["premier_league"], ["gb_championship"]]`.
+- Cada nível tem uma ou mais ligas (grupos). Só entram países com dois níveis ou mais.
+- As ligas nativas entram com o slug do TouchLines (`premier_league`, `serie_a`,
+  `brazil_serie_b`…), as importadas com o slug `of_*`.
+- Correções manuais ficam em `data_process/openfootball/pyramidOverrides.json`:
+  - nível por liga (hoje: os grupos B da Rússia no nível 4);
+  - `boundaries`: contagem de uma fronteira por país (hoje: Brasil 4 sobem / 4 descem).
+- As zonas `prom`/`rel` de exibição de **todas** as ligas são regeneradas a partir da
+  pirâmide (as zonas continentais, como `ucl` e `lib`, ficam como estavam).
 
 ### Regra de troca
 
-- A soma dos rebaixados do nível N é igual à soma dos promovidos do nível N+1. O importador
-  ajusta as `zones` para garantir isso: com K grupos no nível N+1, o nível N rebaixa K times e
-  cada grupo promove o seu campeão (K ≥ 2). Com um grupo só, mantém a quantidade da zona `rel`
-  original.
-- Se o valor de `rel` na fonte for incoerente com o de `prom`, vale o menor dos dois.
-- Os rebaixados são distribuídos um por vez, sempre para o grupo com menos clubes naquele
-  momento. Isso preserva o tamanho dos grupos.
-- O nível mais baixo não tem zona `rel`. Países com um único nível não trocam nada.
+- Entre o nível N e o N+1 as duas contagens são sempre iguais (`scripts/openfootball/pyramid.ts`):
+  - N+1 com um grupo só: `min(base(N), base(N+1))` clubes em cada sentido, com `base` = 3 para
+    ligas de 16 clubes ou mais e 2 abaixo disso;
+  - N+1 com K ≥ 2 grupos: cada grupo promove o campeão e o nível N rebaixa K no total,
+    repartidos entre os grupos de N o mais igual possível;
+  - nenhum grupo sobe ou desce mais que metade dos seus clubes;
+  - `boundaries` em `pyramidOverrides.json` substitui a contagem de uma fronteira.
+- `planPromotionRelegation(pirâmide, tabelas finais)` (`src/Domain/season/promotionRelegation.ts`,
+  puro) devolve a lista de `ClubMove` (`squadId`, `from`, `to`, `promoted | relegated`):
+  - os `relegate` últimos de cada grupo descem e os `promote` primeiros sobem;
+  - cada clube que muda é mandado para o grupo mais "em falta" do nível de destino (saldo de
+    chegadas − saídas, depois menos clubes, depois slug). Assim cada grupo recebe tantos quanto
+    perde e mantém o tamanho (Itália: os 3 rebaixados da B vão um para cada grupo da C).
+- O nível mais baixo não rebaixa. Países com um único nível não trocam nada.
 
 ### Momento da troca
 
-- A transição de um país roda uma vez, quando a última liga dele termina a temporada.
-- Até lá, as ligas que já terminaram ficam paradas, esperando.
-- A transição:
-  1. calcula quem sobe e quem desce;
-  2. move os arquivos `saves/{id}/squads/{de}/{clube}.json` para a nova liga;
-  3. o `SquadIndex` reflete a nova composição sozinho (a pasta é a verdade);
-  4. roda o `runSeasonTransition` de cada liga com a nova composição e gera os calendários.
-- Se o clube do jogador trocou de divisão, `meta.leagueSlug` é atualizado, o `simMode` é
-  recalculado e o jogador recebe um evento no inbox (`promoted` ou `relegated`).
+- A virada é **por país** (`src/Domain/season/countryRollover.ts`, puro, chamado por
+  `advanceOneDay`):
+  - `findDueRollovers` decide, depois de jogado o dia, quais ligas viram. Uma liga terminou quando
+    `addOneDay(data) > end`;
+  - um país da pirâmide só vira no dia em que a **última** liga dele termina
+    (`countryReadyForTransition`). Até lá as ligas que já terminaram ficam paradas, sem jogos
+    (Itália: B e C terminam em 05-17, a A em 05-18, e o país inteiro vira em 05-18);
+  - uma liga fora de qualquer pirâmide vira sozinha, no dia do seu próprio fim.
+- Ordem da virada de um país, tudo dentro do mesmo dia bufferizado:
+  1. **tabelas finais** de cada liga na composição antiga;
+  2. **plano**: `planCountryRollover` → `planPromotionRelegation`, as mudanças de nível e a
+     composição esperada de cada liga;
+  3. **reset**: `runSeasonTransition` de cada liga com a composição **antiga** (arquivo da
+     temporada, título, `playerLogs`, idade + 1, `seasonLog` zerado, TV das IAs). Os squads
+     resetados são gravados por id onde estão (`saveSquadById`), e o clube que troca de nível já
+     recebe as receitas do nível novo aqui;
+  4. **mudanças**: `moveSquad` de cada clube do plano;
+  5. **índice**: `dropSquadIndex` + `getSquadIndex` relê a nova composição (a pasta é a verdade);
+  6. **calendário novo** (`buildNextSeasonCalendar`) e tabela zerada de cada liga, já com a
+     composição **nova**;
+  7. `activeLeagues` recebe o ano, o início e o fim da próxima temporada.
+- **Idempotência:** uma liga virada tem o `year`/`end` da próxima temporada em `activeLeagues`,
+  então não conta mais como terminada. Se a virada foi gravada mas a meta não, o ano do
+  `league meta` em disco denuncia e só o estado é ressincronizado.
+- **Clube do jogador:** se ele trocou de divisão, `meta.leagueSlug`, `leagueName` e
+  `followedLeagues` seguem o clube. Quando o país do jogador vira, as transferências são arquivadas
+  por liga e limpas, e a inbox é limpa. Depois entram as mensagens da categoria `season` (`champion`, `promoted`,
+  `relegated`). A resposta do dia traz `seasonEnded`, `archiveYear`, `moves`, `playerMove` e
+  `playerChampionOf`.
+- **Sem pulo de data.** `currentDate` avança sempre um dia. Não existe mais o salto para o início
+  da próxima temporada, que deixava rodadas de outras ligas no passado sem jogar. Para atravessar
+  a entressafra existe o **avanço rápido**.
+- **Janela da temporada.** O gerador de calendário (`generateLeagueCalendar`) garante que toda
+  rodada fica dentro de `[start, end]` (`fitRoundsToWindow`). Uma rodada depois do `end` nunca
+  seria jogada, porque o país vira no `end`.
+
+### Avanço rápido
+
+- `POST /api/saves/:id/advance-until` com corpo opcional `{ "maxDays": n }` (padrão 7, máximo 14)
+  (`src/backend/advanceUntil.ts`).
+- Cada dia é exatamente a unidade de trabalho de `POST /api/advance-day`: `runBufferedDay`, com um
+  `BufferingSaveDAL` próprio e um `flush` no fim. A data nunca pula.
+- O alvo é o **próximo dia de jogo do jogador**, e o avanço **para nesse dia**: a véspera foi
+  simulada e a partida não. O jogador segue pelo fluxo normal de dia de jogo (pré-jogo).
+  Com o calendário do jogador esgotado, o alvo é o dia seguinte à virada do país, e depois o alvo
+  é recalculado a partir do calendário novo.
+- **Trava por dia:** `withSaveLock` envolve a checagem da posição e o dia, não o lote inteiro.
+  Um lote pode levar uns 20 s, e o "Parar" do frontend ou um `advance-day` normal não esperam o
+  lote todo. Checar o alvo dentro da mesma trava impede que outro avanço empurre o save para o
+  dia de jogo entre a checagem e o dia.
+- Resposta: `newDate`, `daysAdvanced`, `target`, `matchDate`, `done` e `seasonEvents` (uma
+  entrada por virada do país do jogador dentro do lote). O frontend (`useAdvanceDay`) repete a
+  chamada até `done`, mostra a barra de progresso e, se houve virada, o aviso de fim de temporada
+  antes do pré-jogo.
+- Custo: ~1,5–2 s por dia comum e ~6,5 s num dia de rodada do jogador (motor completo).
 
 ### Finanças
 
-Troca de divisão aplica um multiplicador de receita de TV por nível (`TIER_BROADCAST_MULT` em
-`FinancialService`: nível 1 = 1,0, nível 2 = 0,35, nível 3 = 0,12). Clubes da IA também mudam
-de tier de orçamento (`finance.md`).
+- Troca de divisão multiplica `broadcasting` e `commercial` do clube por
+  `TIER_BROADCAST_MULT[novo] / TIER_BROADCAST_MULT[antigo]` (`src/Domain/advanceDay/tierFinances.ts`:
+  nível 1 = 1, 2 = 0,35, 3 = 0,12, 4 = 0,05). `total` volta a ser a soma. `budget` e `followers`
+  não mudam.
+- Vale para o jogador e para as IAs, no reset da virada (passo 3).
 
 ## 4. Telas
 
@@ -242,6 +309,7 @@ de tier de orçamento (`finance.md`).
   a implementação; se não bater, abrir otimização antes de seguir.
 - `quickSim` a ±10% do motor em gols/jogo, % de vitória do mandante e % de empates.
 - Ao fim da temporada, times sobem e descem, e as ligas mantêm o tamanho.
+- A data nunca pula; o avanço rápido atravessa a entressafra dia a dia e para no dia de jogo.
 - As 8 ligas atuais continuam com os mesmos dados.
 
 ## Fora de escopo

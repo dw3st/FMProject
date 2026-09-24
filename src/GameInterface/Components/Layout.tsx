@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { TopNavigation } from "@/GameInterface/Components/TopNavigation";
 import { StatusBar } from "@/GameInterface/Components/StatusBar";
 import { DaySummaryModal } from "@/GameInterface/Components/DaySummaryModal";
+import { FastForwardModal, SeasonNoticeModal } from "@/GameInterface/Components/SeasonNoticeModal";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { InboxScreen } from "@/GameInterface/InboxScreen";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
@@ -11,7 +12,11 @@ import type { LeagueData } from "@/types/playerTypes";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { session, squad } = useGameSave();
-  const { handleAdvanceDay, advancing, dayLog, dismissDayLog } = useAdvanceDay();
+  const {
+    handleAdvanceDay, advancing, dayLog, dismissDayLog,
+    canFastForward, handleFastForward, fastForward, stopFastForward, dismissFastForward,
+    seasonNotice, dismissSeasonNotice,
+  } = useAdvanceDay();
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -29,6 +34,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="h-screen overflow-hidden bg-background">
       <TopNavigation
         onAdvanceDay={handleAdvanceDay}
+        onFastForward={canFastForward ? handleFastForward : undefined}
         advancing={advancing}
         leagues={leagues}
       />
@@ -63,6 +69,20 @@ export function Layout({ children }: { children: ReactNode }) {
           onDismiss={dismissDayLog}
           mySquadId={mySquadId}
           leagues={leagues}
+        />
+      )}
+
+      {fastForward && (
+        <FastForwardModal progress={fastForward} onStop={stopFastForward} onDismiss={dismissFastForward} />
+      )}
+
+      {/* Rendered last so it stacks above the day summary. */}
+      {seasonNotice && !fastForward && (
+        <SeasonNoticeModal
+          notice={seasonNotice}
+          leagues={leagues}
+          currentLeagueName={session?.leagueName ?? ""}
+          onDismiss={dismissSeasonNotice}
         />
       )}
     </div>

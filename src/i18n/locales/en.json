@@ -993,7 +993,8 @@
     "categories": {
       "development": "Development",
       "transfer_in": "Transfer In",
-      "transfer_out": "Transfer Out"
+      "transfer_out": "Transfer Out",
+      "season": "Season"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today."
@@ -1482,5 +1483,25 @@
     "screen": {
       "database": "Database"
     }
+  },
+  "fastForward": {
+    "button": "To next match",
+    "title": "Fast-forwarding to the next match",
+    "progress": "Day {{done}} of {{total}}",
+    "currentDate": "Current date: {{date}}",
+    "stop": "Stop",
+    "stopping": "Stopping…",
+    "error": "Fast-forward stopped: {{error}}"
+  },
+  "seasonNotice": {
+    "title": "Season over",
+    "titleYear": "Season {{year}} over",
+    "promoted": "Your club was promoted to {{league}}!",
+    "relegated": "Your club was relegated to {{league}}.",
+    "champion": "Your club are champions of {{league}}!",
+    "stayed": "Your club stays in {{league}}.",
+    "moves_one": "{{count}} club changed division in your country.",
+    "moves_other": "{{count}} clubs changed division in your country.",
+    "ok": "OK"
   }
 }

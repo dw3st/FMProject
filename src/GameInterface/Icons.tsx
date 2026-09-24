@@ -28,6 +28,9 @@ import {
   X,
   Globe,
   Star,
+  FastForward,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -67,7 +70,10 @@ export type IconName =
   | "close"
   | "globe"
   | "star"
-  | "star-filled";
+  | "star-filled"
+  | "fast-forward"
+  | "trend-up"
+  | "trend-down";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -103,6 +109,9 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "globe":        Globe,
   "star":         Star,
   "star-filled":  StarFilled,
+  "fast-forward": FastForward,
+  "trend-up":     TrendingUp,
+  "trend-down":   TrendingDown,
 };
 
 export interface IconProps {

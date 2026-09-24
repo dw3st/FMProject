@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { LeagueTeam, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
-import { applyPlayerBroadcastingCredit, runSeasonTransition } from "@/Domain/season/seasonTransition";
+import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 
 function minimalSquad(
   id: string,
@@ -91,16 +91,17 @@ describe("runSeasonTransition", () => {
     expect(result.archive.titles[0]!.coachName).toBe("Coach A");
     expect(result.archive.playerLogs["p_a"]!.goals).toBe(3);
 
-    expect(result.newSeason.year).toBe(2026);
-    expect(result.newSeason.calendar.length).toBeGreaterThan(0);
     expect(result.playerBroadcastingCredit).toBe(10_000_000);
 
-    const alphaOut = result.squadsToSave.find((r) => r.clubSlug === "alpha")!;
+    const alphaOut = result.squadsToSave.find((r) => r.squadId === "a")!;
+    // Refs are addressed by id only (written wherever the club lives now).
+    expect(Object.keys(alphaOut).sort()).toEqual(["squad", "squadId"]);
+    expect(result.squadsToSave.map((r) => r.squadId)).toEqual(["a", "b"]);
     expect(alphaOut.squad.players[0]!.age).toBe(25);
     expect(alphaOut.squad.players[0]!.seasonLog!.goals).toBe(0);
     expect(alphaOut.squad.finances?.budget).toBe(5_000_000);
 
-    const betaOut = result.squadsToSave.find((r) => r.clubSlug === "beta")!;
+    const betaOut = result.squadsToSave.find((r) => r.squadId === "b")!;
     expect(betaOut.squad.finances?.budget ?? 0).toBe(0);
   });
 
@@ -147,6 +148,30 @@ describe("runSeasonTransition", () => {
     const bOut = result.squadsToSave.find((r) => r.squad.id === "b")!;
     expect(bOut.squad.finances!.budget).toBe(3_000_000);
     expect(result.playerBroadcastingCredit).toBe(0);
+  });
+});
+
+describe("buildNextSeasonCalendar", () => {
+  test("double round robin of the given team list (n even)", () => {
+    const ids = ["a", "b", "c", "d"];
+    const cal = buildNextSeasonCalendar({ leagueSlug: "x", teamIds: ids, year: 2026 });
+    expect(cal.meta.year).toBe(2026);
+    expect(cal.meta.totalRounds).toBe(6);
+    const fixtures = cal.rounds.flatMap((r) => r.fixtures);
+    for (const id of ids) expect(fixtures.filter((f) => f.home === id || f.away === id).length).toBe(6);
+  });
+
+  test("odd team count: each club still plays 2×(n−1)", () => {
+    const ids = ["a", "b", "c", "d", "e"];
+    const fixtures = buildNextSeasonCalendar({ leagueSlug: "x", teamIds: ids, year: 2026 }).rounds.flatMap((r) => r.fixtures);
+    for (const id of ids) expect(fixtures.filter((f) => f.home === id || f.away === id).length).toBe(8);
+    expect(fixtures.some((f) => f.home === "__bye__" || f.away === "__bye__")).toBe(false);
+  });
+
+  test("calendar team list is independent of the reset membership", () => {
+    const cal = buildNextSeasonCalendar({ leagueSlug: "x", teamIds: ["new1", "b"], year: 2026 });
+    const ids = new Set(cal.rounds.flatMap((r) => r.fixtures.flatMap((f) => [f.home, f.away])));
+    expect([...ids].sort()).toEqual(["b", "new1"]);
   });
 });
 
@@ -197,7 +222,7 @@ describe("applyPlayerBroadcastingCredit", () => {
   });
 
   test("player squad without finances gets a default finances block holding the credit", () => {
-    const refs = [{ leagueSlug: "x", clubSlug: "a", squad: minimalSquad("a", "a", "A", {}) }];
+    const refs = [{ squadId: "a", squad: minimalSquad("a", "a", "A", {}) }];
     const out = applyPlayerBroadcastingCredit(refs, "a", 7);
     expect(out[0]!.squad.finances!.budget).toBe(7);
   });

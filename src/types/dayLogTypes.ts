@@ -1,3 +1,5 @@
+import type { ClubMove } from "@/types/pyramidTypes";
+
 // ── Match event ────────────────────────────────────────────────────────────
 
 export interface MatchTeamStats {
@@ -153,4 +155,19 @@ export interface DayLog {
   saveId: string;
   date:   string;
   events: DayEvent[];
+}
+
+/** `POST /api/advance-day/:saveId` response. */
+export interface AdvanceDayResponse extends DayLog {
+  newDate: string;
+  /** Present (true) on the day the PLAYER's country rolled its season over. */
+  seasonEnded?: true;
+  /** Season year that was closed. */
+  archiveYear?: number;
+  /** Every promotion/relegation of the player's country (seasonEnded days only). */
+  moves?: ClubMove[];
+  /** The human club's own move, or null when it stayed (seasonEnded days only). */
+  playerMove?: ClubMove | null;
+  /** League the human club won, or null (seasonEnded days only). */
+  playerChampionOf?: string | null;
 }

@@ -49,6 +49,10 @@ const GameSaveContext = createContext<GameSaveContextValue | null>(null);
 function sessionFromSaveJson(s: GameSession, raw: GameSaveApiResponse): GameSession {
   return {
     ...s,
+    // The career follows the club across promotion/relegation: league + club come from the server.
+    leagueSlug: raw.leagueSlug ?? s.leagueSlug,
+    leagueName: raw.leagueName ?? s.leagueName,
+    clubId: raw.clubId ?? s.clubId,
     currentDate: raw.currentDate ?? s.currentDate,
     formation: raw.formation ?? s.formation,
     tactical_style: raw.tactical_style ?? s.tactical_style,
