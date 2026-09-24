@@ -91,6 +91,8 @@ O pertencimento só muda em um momento: na virada de temporada de um país com p
 2. Plano (`planCountryRollover`).
 3. Arquivo + reset de cada liga com a composição **antiga**. Os squads resetados são gravados
    por id (`saveSquadById`), onde estão; o clube que muda de nível já recebe as receitas novas.
+   Os clubes da IA passam depois por `applyAISeasonReaction` (seguidores, `financialTier`, piso de
+   orçamento; ver `.claude/rules/AI-clubs/finance.md`).
 4. `moveSquad` de cada mudança.
 5. `dropSquadIndex` + `getSquadIndex`: o índice do dia é relido. É o único ponto em que o
    pertencimento muda no meio de um dia.

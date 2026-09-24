@@ -1,4 +1,5 @@
 import { Player } from "@/Domain/Player";
+import { aiClubFinance, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import type { MainRole } from "@/GameInterface/positionHelpers";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
@@ -380,6 +381,10 @@ export interface TransferAttemptResult {
 /**
  * Picks highest-urgency need, scores candidates, returns best bid if buyer can afford fee.
  * `sellerSellLists` maps squad id → sell list for sell-score boosting during scoring.
+ *
+ * Wage control (AI finances, `src/Domain/aiFinance`): a buyer over its wage cap does not hire; a
+ * buyer near the cap only fills `cover_need`s with cheap players; every signing must keep the wage
+ * bill within the cap. The budget-tier price caps of `findCandidates` still apply on top.
  */
 export function processTeamTransferAttempt(
   buyerSquad: Squad,
@@ -391,9 +396,16 @@ export function processTeamTransferAttempt(
 ): TransferAttemptResult | null {
   if (!profile?.needs.length) return null;
 
+  const finance = aiClubFinance(buyerSquad);
+  if (finance.hiring === "frozen") return null;
+  const needs = finance.hiring === "tight"
+    ? profile.needs.filter((n) => n.intentType === "cover_need")
+    : profile.needs;
+  if (needs.length === 0) return null;
+
   const buyerBudget = buyerSquad.finances?.budget ?? 0;
   const buyerAvg = teamAvgRating(buyerSquad);
-  const need = [...profile.needs].sort((a, b) => b.urgency - a.urgency)[0]!;
+  const need = [...needs].sort((a, b) => b.urgency - a.urgency)[0]!;
   const candidates = findCandidates(need, allSquads, buyerSquad.id, excludePlayerClubSquadId);
   if (candidates.length === 0) return null;
 
@@ -408,6 +420,7 @@ export function processTeamTransferAttempt(
     const fairPrice = new Player(rating, player.age).price;
     const fee = Math.round(fairPrice * (0.9 + rng() * 0.25));
     if (fee > buyerBudget) continue;
+    if (!passesWageGate(finance, estimateWeeklyWage(player), fee)) continue;
     const sellerSquadId = squadByPlayerId.get(player.id) ?? "";
     const sellList = sellerSellLists[sellerSquadId] ?? [];
     const score = scoreCandidate(player, need, fee, buyerBudget, rng, sellList, buyerAvg);

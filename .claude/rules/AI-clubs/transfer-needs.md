@@ -240,6 +240,10 @@ Called once per game day from `advanceDay.ts`.
 - Calculate fee (fairPrice × random multiplier)
 - If fee ≤ buyer's budget: attempt offer → evaluate → complete if accepted
 
+**Wage control:** before scoring, the buyer's AI finances (`aiClubFinance`, see `finance.md` →
+Implementation) gate the attempt: `frozen` → no attempt, `tight` → only `cover_need` and cheap
+fees, and every candidate's weekly wage must fit under `maxWageBudget`.
+
 **Phase 3 — Human sell list matching** (checked daily):
 - Tries to find an AI buyer for any player the human has listed
 - Same evaluation path as Phase 2
