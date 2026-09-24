@@ -200,6 +200,44 @@ describe("SaveService squads via per-save index", () => {
     expect(await svc.getSquadById(SAVE, "nope")).toBeNull();
   });
 
+  test("saveSquadById writes where the club lives now (after a move), at its indexed stem", async () => {
+    const { dal, disk } = memoryDAL([
+      ...files(),
+      { leagueSlug: "brazil_serie_a", clubSlug: "legacy_stem", squad: squad("77", "flamengo", "Flamengo") },
+    ]);
+    const svc = new SaveService(dal);
+    await svc.moveSquad(SAVE, "33", "championship");
+
+    // A squad object still carrying its old league must not land back in premier_league.
+    const reset = { ...(await svc.getSquadById(SAVE, "33"))!, leagueSlug: "premier_league", players: [] };
+    await svc.saveSquadById(SAVE, reset);
+    expect([...disk.keys()].filter((k) => k.endsWith("/33"))).toEqual(["championship/33"]);
+    expect(disk.get("championship/33")!.squad.leagueSlug).toBe("championship");
+
+    await svc.saveSquadById(SAVE, { ...squad("77", "flamengo", "Flamengo"), money: 5 } as Squad);
+    expect(disk.get("brazil_serie_a/legacy_stem")!.squad.money).toBe(5);
+    expect(disk.has("brazil_serie_a/77")).toBe(false);
+  });
+
+  test("saveSquadById of an unknown id throws and writes nothing", async () => {
+    const { dal, disk } = memoryDAL(files());
+    const svc = new SaveService(dal);
+    const before = [...disk.keys()].sort();
+    await expect(svc.saveSquadById(SAVE, squad("nope"))).rejects.toThrow(/nope/);
+    expect([...disk.keys()].sort()).toEqual(before);
+  });
+
+  test("dropSquadIndex forces the next read to re-list the save", async () => {
+    const mem = memoryDAL(files());
+    const svc = new SaveService(mem.dal);
+    await svc.getSquadIndex(SAVE);
+    await svc.getSquadIndex(SAVE);
+    expect(mem.lists()).toBe(1);
+    svc.dropSquadIndex(SAVE);
+    await svc.getSquadIndex(SAVE);
+    expect(mem.lists()).toBe(2);
+  });
+
   test("resolveSquadId returns league + file stem", async () => {
     const svc = new SaveService(memoryDAL(files()).dal);
     expect(await svc.resolveSquadId(SAVE, "33")).toEqual({ leagueSlug: "premier_league", clubSlug: "33" });

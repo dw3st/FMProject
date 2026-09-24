@@ -17,24 +17,24 @@ export interface SeasonTransitionInput {
   leagueConfig?: LeagueScheduleConfig;
 }
 
+/**
+ * A reset squad to persist. Addressed by id only: the caller writes it wherever the club currently
+ * lives (`SaveService.saveSquadById`), so a club moved by promotion/relegation is never written back
+ * into its old league.
+ */
 export interface SquadSaveRef {
-  leagueSlug: string;
-  clubSlug:   string;
-  squad:      Squad;
+  squadId: string;
+  squad:   Squad;
 }
 
 export interface SeasonTransitionResult {
   archive: SeasonArchive;
   newSeason: SeasonData;  // kept for backward compat
   newLeagueCalendar: LeagueCalendarResult;  // use this for writing round files
-  /** Squads to write after transition (same league as input). */
+  /** Squads to write after transition, by id (see SquadSaveRef). */
   squadsToSave: SquadSaveRef[];
   /** Credit to squad budget for the human club (annual broadcasting). */
   playerBroadcastingCredit: number;
-}
-
-function clubFileSlug(s: Squad): string {
-  return s.slug ?? s.id;
 }
 
 function snapshotPlayerLogs(squads: Squad[]): Record<string, PlayerSeasonLog> {
@@ -158,11 +158,7 @@ export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransit
     const isPlayer = s.id === playerClubSquadId;
     const { squad: updated, playerBroadcasting } = resetSquadForNewSeason(s, isPlayer);
     playerBroadcastingCredit += playerBroadcasting;
-    squadsToSave.push({
-      leagueSlug,
-      clubSlug: clubFileSlug(s),
-      squad: updated,
-    });
+    squadsToSave.push({ squadId: s.id, squad: updated });
   }
 
   return {
