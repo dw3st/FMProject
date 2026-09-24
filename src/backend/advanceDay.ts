@@ -166,11 +166,17 @@ export async function presimulatePreStart(
   // full daily pipeline forward until we reach the player's start date.
   await service.updateMeta(saveId, { currentDate: worldStart });
 
+  // Leagues that kick off on or after the player's start date are the ones a kit career
+  // can pick: their clubs stay out of the transfer market so they start intact.
+  const marketFrozenLeagues = new Set(
+    activeLeagues.filter((l) => l.start >= playerStart).map((l) => l.leagueSlug),
+  );
+
   let days = 0;
   for (let guard = 0; guard < 2000; guard++) {
     const current = (await service.getMeta(saveId))?.currentDate;
     if (!current || current >= playerStart) break;
-    const outcome = await advanceOneDay(service, saveId);
+    const outcome = await advanceOneDay(service, saveId, null, { marketFrozenLeagues });
     if (!outcome.ok) break;
     days++;
   }
@@ -181,6 +187,15 @@ export async function presimulatePreStart(
     days,
     leagues: activeLeagues.filter((l) => l.start < playerStart).map((l) => l.leagueSlug),
   };
+}
+
+export interface AdvanceOneDayOptions {
+  /**
+   * Leagues whose clubs sit out the transfer market today (no buying, no selling). Only the
+   * start-kit pre-simulation sets it: clubs of leagues that have not kicked off can still be
+   * picked for a career and must start with their real squad.
+   */
+  marketFrozenLeagues?: ReadonlySet<string>;
 }
 
 /**
@@ -197,6 +212,7 @@ export async function advanceOneDay(
   saveService: SaveService,
   saveId: string,
   playedMatchOverride: PlayedMatchRecording | null = null,
+  options: AdvanceOneDayOptions = {},
 ): Promise<AdvanceDayOutcome> {
     // ── Load core state ──────────────────────────────────────────────────────
     const meta = await saveService.getMeta(saveId);
@@ -423,6 +439,13 @@ export async function advanceOneDay(
       : initMarketState(allSquadsMarket);
     const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
     const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
+    let frozenSquadIds: Set<string> | undefined;
+    if (options.marketFrozenLeagues?.size) {
+      const index = await saveService.getSquadIndex(saveId);
+      frozenSquadIds = new Set(
+        [...options.marketFrozenLeagues].flatMap((slug) => index.inLeague(slug).map((t) => t.squadId)),
+      );
+    }
 
     const { updatedMarket, completedTransfers } = dailyMarketTick(
       marketForTick,
@@ -431,6 +454,7 @@ export async function advanceOneDay(
       defaultRng,
       {
         excludePlayerSquadId: resolvedPlayerSquadId,
+        frozenSquadIds,
         playerSellList: marketForTick.playerSellList,
         playerSquad: playerSquadForMarket,
       },

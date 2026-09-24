@@ -250,6 +250,14 @@ Called once per game day from `advanceDay.ts`.
 Implementation) gate the attempt: `frozen` → no attempt, `tight` → only `cover_need` and cheap
 fees, and every candidate's weekly wage must fit under `maxWageBudget`.
 
+**Frozen clubs (`frozenSquadIds`):** clubs in this set skip needs refresh, never buy, are never
+candidate sellers and never buy from the human sell list. Only the start-kit pre-simulation
+(`presimulatePreStart` → `advanceOneDay(..., { marketFrozenLeagues })`) uses it: it freezes every
+league that kicks off on or after the career start date (the calendar-year leagues a kit career
+can pick). Without it, clubs like São Paulo sold their stars during the kit's Aug–Feb catch-up and
+a new career started with them already gone. The human club is still excluded separately
+(`excludePlayerSquadId`) in live play.
+
 **Phase 3 — Human sell list matching** (checked daily):
 - Tries to find an AI buyer for any player the human has listed
 - Same evaluation path as Phase 2
