@@ -130,7 +130,7 @@ export function ScoutTable({
               </div>
               <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
                 {sellListedIds.has(player.id) && (
-                  <Tag className="w-3 h-3 text-primary shrink-0" title={t("scout.table.forSale")} />
+                  <span title={t("scout.table.forSale")} className="shrink-0"><Tag className="w-3 h-3 text-primary" /></span>
                 )}
                 {player.leagueSlug && player.clubSlug ? (
                   <a

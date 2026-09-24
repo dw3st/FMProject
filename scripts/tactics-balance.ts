@@ -36,7 +36,7 @@ const args = process.argv.slice(2);
 
 function getArg(flag: string, defaultValue: string): string {
   const idx = args.indexOf(flag);
-  return idx !== -1 && args[idx + 1] ? args[idx + 1] : defaultValue;
+  return (idx !== -1 ? args[idx + 1] : undefined) || defaultValue;
 }
 
 const matchesPerPair = parseInt(getArg('--matches', '10'), 10);
@@ -67,7 +67,7 @@ const FORMATION = '4-3-3';
 const pairs: [TacticalStyle, TacticalStyle][] = [];
 for (let i = 0; i < STYLES.length; i++) {
   for (let j = i + 1; j < STYLES.length; j++) {
-    pairs.push([STYLES[i], STYLES[j]]);
+    pairs.push([STYLES[i]!, STYLES[j]!]);
   }
 }
 

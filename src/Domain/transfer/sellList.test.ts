@@ -59,7 +59,7 @@ describe("minBandDepth", () => {
 
 describe("generateSellList", () => {
   test("empty squad returns empty list", () => {
-    expect(generateSellList(makeSquad([]), 0)).toHaveLength(0);
+    expect(generateSellList(makeSquad([]))).toHaveLength(0);
   });
 
   test("surplus player in bottom half of oversized band appears on list", () => {

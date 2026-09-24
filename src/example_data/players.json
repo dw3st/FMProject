@@ -19,7 +19,12 @@
       "speed": 6,
       "acceleration": 7,
       "firstTouch": 8,
-      "dribbling": 7
+      "dribbling": 7,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Energetic midfielder with good passing and pressing. Better at creating play than finishing.",
@@ -45,7 +50,12 @@
       "speed": 5,
       "acceleration": 6,
       "firstTouch": 7,
-      "dribbling": 4
+      "dribbling": 4,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Reliable shot-stopper with good distribution. Commands his area.",
@@ -71,7 +81,12 @@
       "speed": 6,
       "acceleration": 5,
       "firstTouch": 7,
-      "dribbling": 4
+      "dribbling": 4,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Composed centre-back who reads the game well. Strong in the air and in the tackle.",
@@ -98,7 +113,12 @@
       "speed": 7,
       "acceleration": 7,
       "firstTouch": 6,
-      "dribbling": 5
+      "dribbling": 5,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Athletic defender who can step into midfield. Quick to close down and recover.",
@@ -125,7 +145,12 @@
       "speed": 8,
       "acceleration": 9,
       "firstTouch": 8,
-      "dribbling": 8
+      "dribbling": 8,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Direct winger with explosive pace. Cuts inside to shoot or create.",
@@ -152,7 +177,12 @@
       "speed": 7,
       "acceleration": 7,
       "firstTouch": 8,
-      "dribbling": 7
+      "dribbling": 7,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Creative wide player who links play and delivers from the flank.",
@@ -179,7 +209,12 @@
       "speed": 6,
       "acceleration": 6,
       "firstTouch": 8,
-      "dribbling": 6
+      "dribbling": 6,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Tenacious defensive midfielder who breaks up play and recycles possession.",
@@ -206,7 +241,12 @@
       "speed": 6,
       "acceleration": 7,
       "firstTouch": 9,
-      "dribbling": 8
+      "dribbling": 8,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Playmaker who finds pockets of space and threads passes. Dictates tempo.",
@@ -233,7 +273,12 @@
       "speed": 7,
       "acceleration": 6,
       "firstTouch": 8,
-      "dribbling": 7
+      "dribbling": 7,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Clinical striker who thrives in the box. Holds the ball up and brings others in.",
@@ -260,7 +305,12 @@
       "speed": 9,
       "acceleration": 9,
       "firstTouch": 7,
-      "dribbling": 8
+      "dribbling": 8,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Rapid forward who runs in behind. Raw but dangerous in space.",
@@ -287,7 +337,12 @@
       "speed": 8,
       "acceleration": 8,
       "firstTouch": 7,
-      "dribbling": 6
+      "dribbling": 6,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Overlapping full-back who contributes in attack. Solid defensively.",
@@ -314,7 +369,12 @@
       "speed": 7,
       "acceleration": 7,
       "firstTouch": 7,
-      "dribbling": 6
+      "dribbling": 6,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Balanced full-back who supports the winger and tucks inside when needed.",
@@ -340,7 +400,12 @@
       "speed": 4,
       "acceleration": 5,
       "firstTouch": 6,
-      "dribbling": 3
+      "dribbling": 3,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Experienced keeper with excellent reflexes. Good at saving penalties and organising the back line.",
@@ -366,7 +431,12 @@
       "speed": 5,
       "acceleration": 5,
       "firstTouch": 6,
-      "dribbling": 4
+      "dribbling": 4,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "No-nonsense defender who clears his lines. Strong in the air and in one-v-one situations.",
@@ -393,7 +463,12 @@
       "speed": 7,
       "acceleration": 7,
       "firstTouch": 7,
-      "dribbling": 5
+      "dribbling": 5,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Quick centre-back who steps up to intercept. Comfortable bringing the ball out.",
@@ -420,7 +495,12 @@
       "speed": 8,
       "acceleration": 8,
       "firstTouch": 6,
-      "dribbling": 6
+      "dribbling": 6,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Attack-minded full-back who gets forward and delivers early crosses.",
@@ -447,7 +527,12 @@
       "speed": 7,
       "acceleration": 6,
       "firstTouch": 7,
-      "dribbling": 6
+      "dribbling": 6,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Solid left-back who defends first but supports attacks when safe.",
@@ -474,7 +559,12 @@
       "speed": 6,
       "acceleration": 6,
       "firstTouch": 7,
-      "dribbling": 5
+      "dribbling": 5,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Screening midfielder who shields the defence and keeps the ball moving.",
@@ -501,7 +591,12 @@
       "speed": 6,
       "acceleration": 6,
       "firstTouch": 8,
-      "dribbling": 7
+      "dribbling": 7,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "All-round midfielder who links defence and attack. Can shoot from distance.",
@@ -528,7 +623,12 @@
       "speed": 8,
       "acceleration": 8,
       "firstTouch": 7,
-      "dribbling": 8
+      "dribbling": 8,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Skilful winger who takes on defenders and creates chances.",
@@ -555,7 +655,12 @@
       "speed": 9,
       "acceleration": 9,
       "firstTouch": 7,
-      "dribbling": 8
+      "dribbling": 8,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Lightning-quick winger who stretches defences and finishes when through.",
@@ -582,7 +687,12 @@
       "speed": 6,
       "acceleration": 6,
       "firstTouch": 8,
-      "dribbling": 7
+      "dribbling": 7,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Poacher who comes alive in the box. Times runs and finishes clinically.",
@@ -609,7 +719,12 @@
       "speed": 7,
       "acceleration": 7,
       "firstTouch": 8,
-      "dribbling": 8
+      "dribbling": 8,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Creative attacker who drifts inside to find space and play key passes.",
@@ -636,7 +751,12 @@
       "speed": 5,
       "acceleration": 5,
       "firstTouch": 7,
-      "dribbling": 4
+      "dribbling": 4,
+      "stamina": 5,
+      "heading": 5,
+      "strength": 5,
+      "reflex": 5,
+      "jump": 5
     },
     "profile": {
       "summary": "Versatile defender who can slot into midfield. Reads the game and breaks up attacks.",

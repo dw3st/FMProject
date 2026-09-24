@@ -95,7 +95,7 @@ export const debugApiRoutes = {
    * Example: GET /api/debug/squad/premier_league/arsenal
    */
   "/api/debug/squad/:league/:club": async (
-    req: Request & { params: Record<string, string> },
+    req: Request & { params: { league: string; club: string } },
   ) => {
     const { league, club } = req.params;
     const stem = await resolveSquadFileStem(league, club);

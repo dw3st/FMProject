@@ -19,7 +19,7 @@ import "@/GameEngine/Suport/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import { TEST_SCENARIOS } from "@/GameEngine/Suport/TestCases";
 import type { TestScenario } from "@/GameEngine/Suport/TestCases";
-import { createMatchState } from "@/GameEngine/Domain/gameState";
+import { createMatchState, getBallPos } from "@/GameEngine/Domain/gameState";
 import { teamLineup } from "@/GameEngine/Domain/TeamLineup";
 import { getRuntimeLineup, normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
@@ -600,7 +600,7 @@ export function TestScreen() {
     const snapshot = {
       timestamp: new Date().toISOString(),
       ballHolder: holder ? { id: holder.id, name: holder.name, team: holder.team, x: holder.x, y: holder.y, role: holder.role } : null,
-      ball: { x: s.ball?.x ?? null, y: s.ball?.y ?? null },
+      ball: getBallPos(s),
       score: s.score,
       matchTime: s.matchTime,
       players: s.players.map(p => ({
@@ -608,7 +608,6 @@ export function TestScreen() {
         name:       p.name,
         team:       p.team,
         role:       p.role,
-        mainRole:   p.mainRole,
         x:          p.x,
         y:          p.y,
         attackDir:  p.attackDir,

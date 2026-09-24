@@ -311,10 +311,10 @@ export function assignMarkTargets(
     passCount++;
     for (let i = 0; i < defIds.length; i++) {
       for (let j = i + 1; j < defIds.length; j++) {
-        const defA = playerById.get(defIds[i])!;
-        const defB = playerById.get(defIds[j])!;
-        const oppAId = assignments.get(defIds[i])!;
-        const oppBId = assignments.get(defIds[j])!;
+        const defA = playerById.get(defIds[i]!)!;
+        const defB = playerById.get(defIds[j]!)!;
+        const oppAId = assignments.get(defIds[i]!)!;
+        const oppBId = assignments.get(defIds[j]!)!;
         const oppA = playerById.get(oppAId)!;
         const oppB = playerById.get(oppBId)!;
 
@@ -326,8 +326,8 @@ export function assignMarkTargets(
         // Require a minimum improvement to avoid oscillation from float noise.
         // 1e-6 yards² is ~1 micrometer — orders of magnitude below gameplay scale.
         if (swappedCost < currentCost - 1e-6) {
-          assignments.set(defIds[i], oppBId);
-          assignments.set(defIds[j], oppAId);
+          assignments.set(defIds[i]!, oppBId);
+          assignments.set(defIds[j]!, oppAId);
           improved = true;
         }
       }

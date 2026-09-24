@@ -843,7 +843,7 @@ export function MatchPreviewScreen() {
   const homeSquad        = isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const awaySquad        = isHome ? opponentSquad          : matchSetup?.mySquad ?? null;
   const oppAutoLineup = opponentSquad
-    ? autoFillLineup(oppFormationSlots as { role: string; x?: number; y?: number }[], opponentSquad.players)
+    ? autoFillLineup(oppFormationSlots as Parameters<typeof autoFillLineup>[0], opponentSquad.players)
     : [];
   const homeLineup       = isHome ? myLineup               : oppAutoLineup;
   const awayLineup       = isHome ? oppAutoLineup           : myLineup;

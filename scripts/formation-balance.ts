@@ -33,7 +33,7 @@ const args = process.argv.slice(2);
 
 function getArg(flag: string, defaultValue: string): string {
   const idx = args.indexOf(flag);
-  return idx !== -1 && args[idx + 1] ? args[idx + 1] : defaultValue;
+  return (idx !== -1 ? args[idx + 1] : undefined) || defaultValue;
 }
 
 const matchesPerPair = parseInt(getArg('--matches', '10'), 10);
@@ -62,7 +62,7 @@ const formationIds = Object.keys(ACTIVE_FORMATIONS);
 const pairs: [string, string][] = [];
 for (let i = 0; i < formationIds.length; i++) {
   for (let j = i + 1; j < formationIds.length; j++) {
-    pairs.push([formationIds[i], formationIds[j]]);
+    pairs.push([formationIds[i]!, formationIds[j]!]);
   }
 }
 
@@ -198,8 +198,8 @@ const formationSummary: Record<string, FormationTotals> = {};
 for (const id of formationIds) formationSummary[id] = emptyFormationTotals();
 
 for (const pt of results) {
-  addInto(formationSummary[pt.formationA], pt.teamA, pt.teamB, pt.draws, pt.matches);
-  addInto(formationSummary[pt.formationB], pt.teamB, pt.teamA, pt.draws, pt.matches);
+  addInto(formationSummary[pt.formationA]!, pt.teamA, pt.teamB, pt.draws, pt.matches);
+  addInto(formationSummary[pt.formationB]!, pt.teamB, pt.teamA, pt.draws, pt.matches);
 }
 
 const summary = Object.entries(formationSummary).map(([id, s]) => {

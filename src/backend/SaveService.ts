@@ -431,6 +431,7 @@ export class SaveService {
 
     const events = stored.events
       .map((e): DayLog["events"][number] | null => {
+        if (e.kind === "training" || e.kind === "rest") return { ...e, effects: [] }; // effects are not stored
         if (e.kind !== "transfer_ref") return e;
         const rec = transferMap.get(e.transferId);
         if (!rec) return null;
