@@ -28,6 +28,10 @@ export interface TeamStrength {
   midfield: number;
   defense: number;
   goalkeeper: number;
+  /** Mean pace (`paceOf`) of the forward line (LW/ST/RW…). Not part of `teamLevel`. */
+  forwardPace: number;
+  /** Mean pace of the defensive line (CB/LB/RB/WB). Not part of `teamLevel`. */
+  defensePace: number;
 }
 
 export interface QuickSimBreakdown {
@@ -90,6 +94,20 @@ function fitnessFactor(p: RosterPlayer): number {
   return 1 - C.FATIGUE_PENALTY * (1 - startFitness(p) / 100);
 }
 
+/**
+ * A player's pace on the engine's sprint-speed scale (0–10): the engine sprints at
+ * ≈ 5 + 0.45·speed + 0.15·acceleration yds/s, so speed weighs 3× acceleration. Raw attributes,
+ * no fitness factor (that is how PACE_EDGE_WEIGHT was fitted).
+ */
+function paceOf(p: RosterPlayer): number {
+  return (3 * stat(p, "speed") + stat(p, "acceleration")) / 4;
+}
+
+function linePace(players: XIPlayer[], fallback: XIPlayer[]): number {
+  const pool = players.length ? players : fallback;
+  return avg(pool.map(({ p }) => paceOf(p)));
+}
+
 function lineValue(players: XIPlayer[], keys: readonly string[], fallback: XIPlayer[]): number {
   const pool = players.length ? players : fallback;
   return avg(pool.map(({ p }) => avg(keys.map((k) => stat(p, k))) * fitnessFactor(p))) + C.STRENGTH_FLOOR;
@@ -111,6 +129,8 @@ function strengthOf(xi: XIPlayer[]): TeamStrength {
     midfield: lineValue(mids, C.MIDFIELD_KEYS, outfield),
     defense: lineValue(defenders, C.DEFENSE_KEYS, outfield),
     goalkeeper: keepers.length ? lineValue(keepers, C.GOALKEEPER_KEYS, keepers) : C.STRENGTH_FLOOR,
+    forwardPace: linePace(xi.filter((x) => groupOf(x) === "FWD"), attackers.length ? attackers : outfield),
+    defensePace: linePace(xi.filter((x) => groupOf(x) === "DEF"), defenders.length ? defenders : outfield),
   };
 }
 
@@ -123,14 +143,18 @@ export function teamLevel(s: TeamStrength): number {
  * xG for `attacker` vs `defender`. The strength ratio decides who is favoured; the match
  * level (mean of both teams' `teamLevel`) scales the goal rate, since in the full engine
  * strong-vs-strong matches produce more goals than weak-vs-weak ones at the same ratio.
+ * The pace edge (attacker's forward line vs defender's back line) scales the chance volume:
+ * the engine's through-ball races are decided by sprint speed.
  */
 export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, isHome: boolean): number {
   const ratio = (attacker.attack * attacker.midfield) / (defender.defense * defender.goalkeeper);
   const matchLevel = (teamLevel(attacker) + teamLevel(defender)) / 2;
+  const paceEdge = attacker.forwardPace - defender.defensePace;
   return (
     C.BASE_GOALS *
     Math.pow(ratio, C.STRENGTH_EXPONENT) *
     Math.pow(matchLevel / C.LEVEL_REF, C.LEVEL_EXPONENT) *
+    Math.exp(C.PACE_EDGE_WEIGHT * paceEdge) *
     (isHome ? C.HOME_ADVANTAGE : 1)
   );
 }
