@@ -7,15 +7,15 @@ import { inboxRoutes } from "@/backend/inbox";
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import { readdir } from "fs/promises";
-import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import type { Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
-import { getMainRole } from "@/GameInterface/positionHelpers";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
-import { clubProfileStem } from "@/backend/clubProfile";
+import { clubLineRating, clubProfileStem, reputationStars } from "@/backend/clubProfile";
+import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
 import { authRoutes } from "@/backend/auth/routes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
@@ -144,16 +144,6 @@ export const apiRoutes = {
       venue?: { name?: string; city?: string; capacity?: number };
     };
 
-    const ratingByMain = (main: "Defender" | "Midfielder" | "Forward"): number => {
-      const players = squad.players.filter(
-        (p: RosterPlayer) => getMainRole(p.positions[0] ?? "CM") === main,
-      );
-      if (players.length === 0) return 0;
-      const sum = players.reduce((s, p) => s + Player.overallAvg(p), 0);
-      // Map 0–10 player rating space → 0–100 ratings shown in UI
-      return Math.round((sum / players.length) * 10);
-    };
-
     const sortedPlayers = [...squad.players].sort(
       (a, b) => Player.overallAvg(b) - Player.overallAvg(a),
     );
@@ -165,13 +155,7 @@ export const apiRoutes = {
       ovr:      Math.round(Player.overallAvg(p) * 10),
     }));
 
-    const teamAvg = squad.players.length
-      ? squad.players.reduce((s, p) => s + Player.overallAvg(p), 0) / squad.players.length
-      : 5;
-    // Reputation: 1–5 stars derived from team average rating.
-    // 5★ at avg ≥ 7.5, 4★ at ≥ 6.8, 3★ at ≥ 6.0, 2★ at ≥ 5.2, else 1★
-    const reputation =
-      teamAvg >= 7.5 ? 5 : teamAvg >= 6.8 ? 4 : teamAvg >= 6.0 ? 3 : teamAvg >= 5.2 ? 2 : 1;
+    const reputation = reputationStars(popularityOf(squad));
     const reputationLabels = [
       "Local Outfit",
       "Regional Side",
@@ -188,9 +172,9 @@ export const apiRoutes = {
       founded:    squad.founded ?? null,
       stadium:    squad.venue?.name ?? null,
       city:       squad.venue?.city ?? null,
-      attack:     ratingByMain("Forward"),
-      midfield:   ratingByMain("Midfielder"),
-      defense:    ratingByMain("Defender"),
+      attack:     clubLineRating(squad.players, "Forward"),
+      midfield:   clubLineRating(squad.players, "Midfielder"),
+      defense:    clubLineRating(squad.players, "Defender"),
       keyPlayers,
       reputation,
       reputationLabel: reputationLabels[reputation - 1],
