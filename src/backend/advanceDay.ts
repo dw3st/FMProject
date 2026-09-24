@@ -37,6 +37,7 @@ import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotati
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
 import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
+import { aiSeasonOutcome, applyAISeasonReaction } from "@/Domain/aiFinance/seasonReaction";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
@@ -641,9 +642,14 @@ export async function advanceOneDay(
 
         // The human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
         const refs = applyPlayerBroadcastingCredit(transition.squadsToSave, playerClubSquadId, transition.playerBroadcastingCredit);
+        // AI clubs then react to their season (followers, financial tier, budget floor).
         for (const { squad } of refs) {
           const tc = plan.tierChanges[squad.id];
-          await saveService.saveSquadById(saveId, tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad);
+          let next = tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad;
+          if (squad.id !== playerClubSquadId) {
+            next = applyAISeasonReaction(next, aiSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves));
+          }
+          await saveService.saveSquadById(saveId, next);
         }
       }
 

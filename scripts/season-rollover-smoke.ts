@@ -291,6 +291,14 @@ try {
       const expectedNews = (payload.playerChampionOf ? 1 : 0) + (payload.playerMove ? 1 : 0);
       check(season.length === expectedNews, `inbox season messages: ${season.length} (expected ${expectedNews})`);
       if (obsPlayer) check(metaAfter.leagueSlug === obsPlayer.to, `meta.leagueSlug follows the club (${metaAfter.leagueSlug})`);
+      // AI finances: every AI club of the country got a financial tier; the human club did not.
+      for (const slug of playerCountrySlugs) {
+        const squads = await plain().getSquadsInLeague(saveId, slug);
+        const missing = squads.filter((s) => s.id !== playerSquadId && !s.financialTier).length;
+        check(missing === 0, `${slug}: AI clubs have a financial tier after the rollover (${missing} missing)`);
+      }
+      const humanAfter = await plain().getSquadById(saveId, playerSquadId);
+      check(!humanAfter?.financialTier, "human club has no AI financial tier");
       await checkFiles(saveId, `after rollover ${date}`);
     } else if (playerRollDay) {
       daysAfterRoll++;
