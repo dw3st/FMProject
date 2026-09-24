@@ -3,7 +3,8 @@ import type { MainRole } from "@/GameInterface/positionHelpers";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type { SellCandidate, TransferBudgetTier } from "@/types/transferMarketTypes";
-import { budgetTierFromBudget, playerOverallRating, teamAvgRating } from "@/Domain/transfer/transferNeeds";
+import { playerOverallRating, teamAvgRating } from "@/Domain/transfer/transferNeeds";
+import { transferBudgetTierOf } from "@/Domain/aiFinance/aiClubFinance";
 
 const MAX_SELL_LIST = 5;
 const SELL_ABOVE_AVG_PROTECTION = 0.5;
@@ -44,8 +45,7 @@ export function generateSellList(
   if (squad.players.length === 0) return [];
 
   const teamAvg = teamAvgRating(squad);
-  const budget = squad.finances?.budget ?? 0;
-  const tier = budgetTierFromBudget(budget);
+  const tier = transferBudgetTierOf(squad);
   const financialBonus = tier === "low" ? 0.2 : tier === "mid" ? 0.1 : 0;
 
   const candidates: SellCandidate[] = [];

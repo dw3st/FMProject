@@ -3,7 +3,7 @@
  *
  * Money sources of truth:
  *   Player's club  → squad.finances.budget  (overall balance)
- *   AI clubs       → squad.finances.budget  (their available funds)
+ *   AI clubs       → squad.aiTransferBudget (seasonal, tier-derived; src/Domain/aiFinance)
  *
  * All monetary mutations go through this module. Never write budget
  * directly from route handlers or domain functions.
@@ -12,7 +12,7 @@
 import { saveService, SaveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad } from "@/types/playerTypes";
-import { estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
+import { applyAITransferSale, applyAITransferSpend, estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ export const HOME_FILL_RATE = 0.65;
 
 // ── Balance getters ───────────────────────────────────────────────────────────
 
-/** Club budget from squad.finances. Works for both player and AI clubs. */
+/** Club budget from squad.finances (the human club's balance; AI clubs use aiTransferBudget). */
 export function getClubBudget(squad: Squad): number {
   return squad.finances?.budget ?? 0;
 }
@@ -86,7 +86,9 @@ type ClubRef = {
 /**
  * Move a transfer fee from the buyer to the seller and persist all changes.
  *
- * Both player and AI clubs use squad.finances.budget as their unified money pool.
+ * The human club pays / receives on `finances.budget` (its real balance). AI clubs keep no balance:
+ * an AI buyer's fee comes out of its seasonal transfer budget and an AI seller gets part of the fee
+ * back into it (`applyAITransferSpend` / `applyAITransferSale`, src/Domain/aiFinance).
  *
  * Returns the updated SaveMeta.
  */
@@ -98,33 +100,27 @@ export async function executeTransferFee(
   fee: number,
   service: SaveService = saveService,
 ): Promise<SaveMeta> {
-  const squadSaves: Promise<void>[] = [];
-
-  // ── Debit buyer ────────────────────────────────────────────────────────────
-  if (buyer.squad.finances) {
-    const currentBudget = buyer.squad.finances.budget ?? 0;
-    squadSaves.push(
-      service.saveSquad(saveId, buyer.leagueSlug, buyer.clubSlug, {
-        ...buyer.squad,
-        finances: { ...buyer.squad.finances, budget: Math.max(0, currentBudget - fee) },
-      }),
-    );
-  }
-
-  // ── Credit seller ──────────────────────────────────────────────────────────
-  if (seller.squad.finances) {
-    const currentBudget = seller.squad.finances.budget ?? 0;
-    squadSaves.push(
-      service.saveSquad(saveId, seller.leagueSlug, seller.clubSlug, {
-        ...seller.squad,
-        finances: {
-          ...seller.squad.finances,
-          budget: currentBudget + fee,
-        },
-      }),
-    );
-  }
-
-  await Promise.all(squadSaves);
+  const { buyer: paid, seller: credited } = transferFeeSquads(buyer, seller, fee);
+  await Promise.all([
+    service.saveSquad(saveId, buyer.leagueSlug, buyer.clubSlug, paid),
+    service.saveSquad(saveId, seller.leagueSlug, seller.clubSlug, credited),
+  ]);
   return meta;
+}
+
+/**
+ * Pure: both squads with the fee applied (see `executeTransferFee`). Always returns both squads,
+ * which the caller persists as the final state of the transfer (roster + money).
+ */
+export function transferFeeSquads(
+  buyer: Pick<ClubRef, "squad" | "isPlayerClub">,
+  seller: Pick<ClubRef, "squad" | "isPlayerClub">,
+  fee: number,
+): { buyer: Squad; seller: Squad } {
+  const humanDelta = (s: Squad, delta: number): Squad =>
+    s.finances ? { ...s, finances: { ...s.finances, budget: Math.max(0, (s.finances.budget ?? 0) + delta) } } : s;
+  return {
+    buyer: buyer.isPlayerClub ? humanDelta(buyer.squad, -fee) : applyAITransferSpend(buyer.squad, fee),
+    seller: seller.isPlayerClub ? humanDelta(seller.squad, fee) : applyAITransferSale(seller.squad, fee),
+  };
 }

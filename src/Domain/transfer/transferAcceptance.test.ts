@@ -21,9 +21,9 @@ function makePlayer(id: string, statVal = 7, age = 26, pos = "CM"): RosterPlayer
   };
 }
 
-function makeSquad(players: RosterPlayer[], budget = 5_000_000): Squad {
+function makeSquad(players: RosterPlayer[], budget = 5_000_000, financialTier?: Squad["financialTier"]): Squad {
   return {
-    id: "s", name: "Club", colors: ["#fff", "#000"], money: 0, players,
+    id: "s", name: "Club", colors: ["#fff", "#000"], money: 0, players, financialTier,
     finances: {
       broadcasting: 0, commercial: 0, total: 0,
       budget: budget, followers: 0,
@@ -61,7 +61,7 @@ describe("evaluateTransferOffer", () => {
     // Use a player whose offer would normally be rejected (low offerScore, typical squad)
     const player = makePlayer("mid", 7, 27, "CM");
     const players = [player, ...Array.from({ length: 15 }, (_, i) => makePlayer(`extra${i}`, 7, 26, "CM"))];
-    const squad = makeSquad(players, 100_000_000); // high budget = low financial pressure
+    const squad = makeSquad(players, 0, "ELITE"); // ELITE tier = low financial pressure
     const rating = playerOverallRating(player);
     const fair = new Player(rating, player.age).price;
 
@@ -81,7 +81,7 @@ describe("evaluateTransferOffer", () => {
   test("accepted reason reflects sell list when applicable", () => {
     const player = makePlayer("listed", 5, 27, "CM");
     const players = [player, ...Array.from({ length: 15 }, (_, i) => makePlayer(`p${i}`, 8, 26, "CM"))];
-    const squad = makeSquad(players, 1_000_000); // low budget → high financial pressure
+    const squad = makeSquad(players, 0, "LOW"); // LOW tier → high financial pressure
     const rating = playerOverallRating(player);
     const fair = new Player(rating, player.age).price;
 
@@ -93,5 +93,16 @@ describe("evaluateTransferOffer", () => {
         reason === "financial",
       ).toBe(true);
     }
+  });
+
+  test("AI seller pressure comes from its tier; a human seller's from its budget", () => {
+    const player = makePlayer("avg", 7, 26, "CM");
+    const players = [player, ...Array.from({ length: 15 }, (_, i) => makePlayer(`q${i}`, 7, 26, "CM"))];
+    const fair = new Player(playerOverallRating(player), player.age).price;
+    // offerScore 1, relativeStrength 0 → 0.6 + pressure × 0.3 vs the 0.8 threshold
+    expect(evaluateTransferOffer(player, makeSquad(players, 999_000_000, "LOW"), fair).accepted).toBe(true);
+    expect(evaluateTransferOffer(player, makeSquad(players, 0, "ELITE"), fair).accepted).toBe(false);
+    expect(evaluateTransferOffer(player, makeSquad(players, 1_000_000, "ELITE"), fair, undefined, { humanSeller: true }).accepted).toBe(true);
+    expect(evaluateTransferOffer(player, makeSquad(players, 100_000_000, "LOW"), fair, undefined, { humanSeller: true }).accepted).toBe(false);
   });
 });
