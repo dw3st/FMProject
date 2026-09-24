@@ -12,10 +12,12 @@
 | `calibration.ts` | Casamento seed ↔ TouchLines e regressões |
 | `derive.ts` | Atributos, perfil, finanças, estádio, técnico |
 | `leagues.ts` | Filtro de ligas, zonas, países, calendários |
+| `pyramid.ts` | Pirâmide por país e zonas `prom`/`rel` derivadas dela |
 
 As saídas vão para `src/example_data/`:
 - `squads/of_*/`;
-- entradas novas em `leagueData.json`, `countries.json`, `databases.json` e `leagueSchedules.json`.
+- entradas novas em `leagueData.json`, `countries.json`, `databases.json` e `leagueSchedules.json`;
+- `pyramids.json` (pirâmide por país).
 
 A calibração é gravada em `data_process/openfootball/calibration.json`.
 
@@ -54,8 +56,44 @@ O calendário de todas as ligas fica em `src/example_data/leagueSchedules.json`,
 
 - **Ligas de ano civil** (América do Sul, Escandinávia, etc.) usam `season: "2025"` e começam em **02-05**.
 - **Ligas europeias** usam `season: "2024-25"` e começam em **08-15**, cruzando o ano.
+- Toda rodada fica dentro de `[início, fim]` da liga: `generateLeagueCalendar` puxa para dentro as rodadas que o `baseWeekOffset` e o encaixe no dia de jogo empurrariam para fora (`fitRoundsToWindow`). O país vira no fim, então uma rodada depois dele nunca seria jogada.
 
 O motivo são os startKits. Um kit pré-simula o mundo, dia a dia, do início mais cedo (08-15, as europeias) até **2025-02-05**, a data de início do Brasileirão. Uma carreira nova cuja liga começa depois do início do mundo recebe um kit aleatório (`src/backend/startKits.ts`). Se uma liga de ano civil começasse antes de 02-05, a carreira nasceria com rodadas dessa liga no passado sem jogar. Por isso todas as ligas de ano civil começam exatamente em 02-05, e só as europeias têm rodadas jogadas dentro do kit.
+
+---
+
+## Pirâmide e zonas derivadas
+
+O importador também grava `src/example_data/pyramids.json`: por país com dois níveis ou mais, os
+níveis, os grupos e quantos sobem (`promote`) e caem (`relegate`) em cada grupo. É a fonte do
+acesso e rebaixamento no jogo (`.claude/rules/game/membership.md`).
+
+- **Módulo:** `scripts/openfootball/pyramid.ts` (+ teste). `buildPyramid(ligas, { boundaries })`
+  monta a pirâmide, `pyramidGroupOf` acha o grupo de uma liga e `zonesFromPyramid` gera as zonas.
+- **Entrada:** toda liga do `leagueData` (nativas e `of_*`) com país, número de clubes e nível. O
+  nível vem de `TL_LEAGUES` para as nativas e de `tierOf` (com `tierOverrides.json`) para as do
+  seed. Depois `pyramidOverrides.json` pode mudar o nível **só na pirâmide**, sem mexer nas
+  finanças calibradas.
+- **Contagens coerentes:** entre N e N+1 os dois lados somam igual.
+  - N+1 com um grupo: `min(base(N), base(N+1))`, com `base` = 3 para ligas de 16 clubes ou mais e
+    2 abaixo disso.
+  - N+1 com K ≥ 2 grupos: cada grupo promove 1 e N rebaixa K, repartidos o mais igual possível.
+  - Nenhum grupo passa de metade dos seus clubes; o importador avisa quando corta.
+- **`data_process/openfootball/pyramidOverrides.json`:**
+  - `{ "<slug>": { "tier": n } }` muda o nível de uma liga na pirâmide (hoje os grupos 2, 3 e 4 da
+    Rússia B ficam no nível 4);
+  - `boundaries: { "<País>": { "1-2": n, "2-3": n } }` fixa a contagem de uma fronteira (hoje o
+    Brasil sobe e desce 4). Num nível de baixo com K ≥ 2 grupos a contagem tem que ser K.
+  - Slug ou país desconhecido faz o importador falhar.
+- **Zonas derivadas:** as zonas `prom`/`rel` de todas as ligas (inclusive as nativas, que de resto
+  ficam intactas) são regeneradas a partir da pirâmide. Zonas continentais (`ucl`, `lib`…) ficam
+  como estavam. A checagem de integridade falha se alguma zona de acesso/rebaixamento divergir da
+  pirâmide, ou se uma liga de país sem pirâmide tiver essas zonas (exceto as nativas fora de
+  pirâmide, que mantêm as zonas escritas à mão).
+- O fim do importador imprime cada pirâmide com `✓` quando as fronteiras batem.
+
+Mudou a pirâmide ou os overrides? Rode o importador de novo, copie para `src/Data/` e regenere os
+startKits (a pirâmide e as zonas não ficam nos kits, mas o `leagueData` e o mundo mudam juntos).
 
 ---
 
