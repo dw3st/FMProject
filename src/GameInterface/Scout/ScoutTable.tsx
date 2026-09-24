@@ -11,7 +11,7 @@ const columns = [
   { key: "name", label: "Name", width: "flex-1 min-w-[140px]" },
   { key: "age", label: "Age", width: "w-12" },
   { key: "club", label: "Club", width: "w-32" },
-  { key: "avg", label: "Avg", width: "w-14" },
+  { key: "avg", label: "OVR", width: "w-14" },
   { key: "phase", label: "Phase", width: "w-16" },
   { key: "training", label: "Train", width: "w-16" },
   { key: "moral", label: "Moral", width: "w-16" },
