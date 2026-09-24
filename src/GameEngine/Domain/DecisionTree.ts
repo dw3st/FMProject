@@ -108,9 +108,10 @@ export const COMMIT_TICKS: Record<PlayerDecision['type'], number> = {
  * This normalises action types with different raw ranges so they compete fairly.
  *
  * Per-action calibration (what raw=strongRaw means):
- *   SHOOT (1.5) — ST at xg/threshold=1.5 → xG=0.375 at threshold=0.25 — a clear good chance
- *   CARRY (0.9) — clear lane with decent player — a solid advancing opportunity
+ *   SHOOT (1.8) — ST at xg/threshold=1.8 — a clear good chance
+ *   CARRY (0.8) — clear lane with decent player — a solid advancing opportunity
  *   PASS  (0.8) — open lane to a good receiver — a quality passing option
+ *   TB    (0.9) — a won race into open space with a clear path
  *
  * Reference points at each STRONG_RAW:
  *   shoot: xg/thr=0.5→0.28  1.0→0.49  1.5→0.63  2.5→0.81  3.8→0.92
@@ -123,7 +124,14 @@ function compress(raw: number, strongRaw: number = 1.0): number {
 
 const SHOOT_STRONG_RAW   = 1.8;
 const CARRY_STRONG_RAW   = 0.8;
-const PASS_STRONG_RAW    = 1;
+/**
+ * 0.8, not 1.0: a to-feet pass is structurally capped (lateral/short passes score
+ * progress ≈ 0.5, no goal bonus, always some distance penalty), so a typical good
+ * midfield pass sits at raw ≈ 0.75. At 1.0 that compressed to ~0.52 and lost to
+ * carry (0.8) and through ball (0.9) on almost every tick — MIDs made ~0.15 regular
+ * passes per match. See .claude/rules/game-engine/pass.md → "Action compression".
+ */
+const PASS_STRONG_RAW    = 0.8;
 /**
  * Dribble raw = roleTendency×0.6 + forwardBlock×0.4, max 1.0.
  * A winger (carryBias≈0.7) with defender fully ahead → raw≈0.82 → score 0.632.
@@ -457,7 +465,7 @@ function evalCarry(
   const lane = getBestCarryLane(player, outfieldOpponents, allPlayers, defendingOutfield, intent);
   if (!lane) return { type: 'carry', score: 0, carryBreakdown: null };
 
-  // CARRY_STRONG_RAW=0.9: a clear lane with a solid player (raw≈0.9) scores 0.632.
+  // CARRY_STRONG_RAW=0.8: a clear lane with a solid player (raw≈0.9) scores 0.632.
   const score = compress(lane.score, CARRY_STRONG_RAW);
   const b = lane.breakdown;
   return {
