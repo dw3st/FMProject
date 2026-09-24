@@ -261,6 +261,20 @@ describe("quickSimMatch", () => {
     expect(avgGoals(7)).toBeGreaterThan(avgGoals(3));
   });
 
+  test("passes seguem o nível do próprio time: meio-campo fraco passa bem menos", () => {
+    const strong = makeSquad("s", 7);
+    const weak = makeSquad("w", 3);
+    const mids = new Set(["CDM", "CM"]);
+    let strongPasses = 0;
+    let weakPasses = 0;
+    for (let seed = 0; seed < 500; seed++) {
+      const { playerStats } = run(strong, weak, seed).recording;
+      for (const p of strong.players) if (mids.has(p.positions[0]!)) strongPasses += playerStats[p.id]!.passesAttempted;
+      for (const p of weak.players) if (mids.has(p.positions[0]!)) weakPasses += playerStats[p.id]!.passesAttempted;
+    }
+    expect(strongPasses).toBeGreaterThan(weakPasses * 3);
+  });
+
   test("forte vence o fraco na maioria", () => {
     const strong = makeSquad("s", 7);
     const weak = makeSquad("w", 2);

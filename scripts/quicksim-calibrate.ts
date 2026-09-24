@@ -178,8 +178,10 @@ const lines = (r: RatingAcc) => ({
   "n notas": r.total,
   "sem papel": r.skipped,
 });
+// Per starting slot (line total / starters), not per player who appeared: quickSim has no subs,
+// so dividing the engine by everyone who played (~1.2–1.6 per slot) would understate its rates.
 const statRows = (label: string, a: Acc) => Object.fromEntries(GROUPS.map((g) => {
-  const n = Math.max(1, a.all.n[g]);
+  const n = Math.max(1, a.starters.n[g]);
   const st = a.stats[g];
   return [`${label} ${g}`, Object.fromEntries(
     (Object.keys(st) as (keyof GroupStats)[]).map((k) => [k, +(st[k] / n).toFixed(2)]),
@@ -196,7 +198,7 @@ console.log("Nota média por linha — todos que jogaram (motor inclui reservas 
 console.table({ motor: FL, quickSim: QL });
 console.log("Nota média por linha — só titulares (motor inclui quem saiu substituído):");
 console.table({ motor: lines(full.starters), quickSim: lines(quick.starters) });
-console.log("Eventos médios por jogador (tacklesFailed do motor inferido da nota):");
+console.log("Eventos por vaga de titular — total da linha ÷ titulares (tacklesFailed do motor inferido da nota):");
 console.table({ ...statRows("motor", full), ...statRows("quick", quick) });
 const scoreRow = (a: Acc) => {
   const pct = (k: string) => +(((a.scores[k] ?? 0) / a.n) * 100).toFixed(1);
