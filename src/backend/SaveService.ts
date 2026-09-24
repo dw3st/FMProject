@@ -19,6 +19,7 @@ import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/type
 import type { InboxMessage } from "@/types/inboxTypes";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
+import { logError } from "@/Logger";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -225,6 +226,10 @@ export class SaveService {
     const cached = this.squadIndexCache.get(saveId);
     if (cached && cached.version === version) return cached.index;
     const index = buildSquadIndex(await this.dal.listSquadFiles(saveId));
+    const dups = index.duplicates();
+    if (dups.length > 0) {
+      logError("squadIndex", `save ${saveId}: ${dups.length} squadId(s) stored in more than one file`, dups);
+    }
     this.squadIndexCache.set(saveId, { version, index });
     return index;
   }
@@ -241,10 +246,31 @@ export class SaveService {
     return e ? this.dal.readSquad(saveId, e.leagueSlug, e.stem) : null;
   }
 
-  /** Write a squad; an existing file is addressed via the index, a new one is stored under `squad.id`. */
+  /**
+   * Write a squad; an existing file is addressed via the index, a new one is stored
+   * under `squad.id`. Refuses writes that would put a second copy of a club in the
+   * save (the club lives in another league → use `moveSquad`) or overwrite another
+   * club's file.
+   */
   async saveSquad(saveId: string, leagueSlug: string, clubParam: string, squad: Squad): Promise<void> {
     const index = await this.getSquadIndex(saveId);
-    const resolved = index.resolve(leagueSlug, clubParam);
+    const hit = index.resolveEntry(leagueSlug, clubParam);
+    if (hit && hit.squadId !== squad.id) {
+      throw new Error(
+        `saveSquad: ${leagueSlug}/${clubParam} is squad ${hit.squadId}'s file (${hit.leagueSlug}/${hit.stem}), not ${squad.id}`,
+      );
+    }
+    if (!hit) {
+      const home = index.byId(squad.id);
+      if (home && home.leagueSlug !== leagueSlug) {
+        throw new Error(`saveSquad: squad ${squad.id} lives in ${home.leagueSlug}, not ${leagueSlug} — use moveSquad`);
+      }
+      const clash = index.resolveEntry(leagueSlug, squad.id);
+      if (clash && clash.squadId !== squad.id) {
+        throw new Error(`saveSquad: ${leagueSlug}/${squad.id} is squad ${clash.squadId}'s file, not ${squad.id}`);
+      }
+    }
+    const resolved = hit?.stem ?? null;
     const stem = resolved ?? squad.id;
     const before = getSaveDataVersion(saveId);
     await this.dal.writeSquad(saveId, leagueSlug, stem, squad);
@@ -277,7 +303,11 @@ export class SaveService {
     const squad = await this.dal.readSquad(saveId, e.leagueSlug, e.stem);
     if (!squad) throw new Error(`moveSquad: squad file ${e.leagueSlug}/${e.stem} missing in save ${saveId}`);
     this.squadIndexCache.delete(saveId);
-    await this.dal.writeSquad(saveId, toLeague, e.stem, { ...squad, leagueSlug: toLeague });
+    await this.dal.writeSquad(saveId, toLeague, e.stem, {
+      ...squad,
+      leagueSlug: toLeague,
+      membershipRev: (squad.membershipRev ?? 0) + 1,
+    });
     await this.dal.deleteSquad(saveId, e.leagueSlug, e.stem);
     this.squadIndexCache.delete(saveId);
   }
