@@ -67,7 +67,7 @@
     "teamStats": "ESTATÍSTICAS DO TIME",
     "topRatings": "MELHORES NOTAS",
     "scorers": "ARTILHEIROS",
-    "touchlines": "TOUCH LINES",
+    "appName": "FM PROJECT",
     "sentTo": "Enviado para",
     "avgSkill": "Média de Habilidade",
     "heatmapMode": "Modo Mapa de Calor",
@@ -103,20 +103,16 @@
     "freeOpenSource": "Gratuito e Open Source",
     "starOnGithub": "GitHub",
     "freeTagline": "100% gratuito — sem paywalls, sem anúncios. Open source sob a licença AGPL-3.0.",
-    "heroHeadline1": "TouchLines: Arcade",
+    "heroHeadline1": "FMProject: Arcade",
     "heroHeadline2": "Gestão Renascida",
     "heroSubtitle": "Esqueça as planilhas. Esqueça os 90 minutos de espera. Escolha um clube, escolha uma tática, dê o play — e sinta o jogo na velocidade arcade.",
     "startYourLegacy": "Comece Seu Legado",
-    "viewTrailer": "Ver Trailer",
     "managersOnline": "Duração da Partida",
     "transferVolume": "Estilos Táticos",
     "simEfficiency": "Formações",
     "matchSpeed": "Velocidade",
     "tacticaldominance": "Dominação Tática",
     "dominanceSubtitle": "Veja a simulação desenrolar. Destaques em velocidade hiper e ajustes táticos instantâneos redefinidos.",
-    "tacticalDominance1": "Dominação",
-    "tacticalDominance2": "Tática",
-    "tacticalDescription": "Mude de tática na hora. Veja seu time reagir na hora. Cada partida acontece de um jeito — e termina antes do que demoraria seu aquecimento.",
     "liveMatchEngine": "Live_Match_Engine_V5.3",
     "featureManage": "Gerencie Seu Clube dos Sonhos",
     "featureManageDesc": "Assuma o controle de qualquer clube e leve-o à glória através de aulas magistrais de tática e crescimento estratégico.",
@@ -139,7 +135,7 @@
     "faqTitle1": "Central de",
     "faqTitle2": "Inteligência",
     "faqSubtitle": "Respostas rápidas antes do apito inicial.",
-    "faqQ1": "O que torna o TouchLines diferente?",
+    "faqQ1": "O que torna o FMProject diferente?",
     "faqA1": "É um arcade de gestão de futebol. Sem planilhas, sem 90 minutos de espera — só partidas rápidas, decisões diretas, e a parte divertida de comandar um clube.",
     "faqQ2": "Quanto dura uma partida?",
     "faqA2": "Cerca de sete minutos do apito inicial ao final. Você termina uma temporada antes dos outros terminarem a pré-temporada.",
@@ -160,7 +156,7 @@
     "availableOn": "Disponível em:",
     "soon": "Em breve",
     "mobileComingSoon": "Suporte para celular em breve",
-    "footerText": "© 2026 TouchLines",
+    "footerText": "© 2026 FMProject · baseado em TouchLines (AGPL-3.0)",
     "openSourceNote": "Gratuito e de código aberto.",
     "viewSource": "Ver código-fonte",
     "licensedUnder": "Licenciado sob",
@@ -172,7 +168,7 @@
   "unsupportedScreen": {
     "badge": "Em breve",
     "title": "Tamanho de tela não suportado",
-    "description": "O TouchLines foi feito para telas maiores no momento. Suporte para celular e telas pequenas está chegando — volte em um computador ou redimensione a janela.",
+    "description": "O FMProject foi feito para telas maiores no momento. Suporte para celular e telas pequenas está chegando — volte em um computador ou redimensione a janela.",
     "minimum": "Mínimo",
     "current": "Atual"
   },
@@ -201,12 +197,12 @@
       "official-2024": {
         "name": "Oficial 2024/25",
         "description": "Base de dados oficial completa, com dados verificados de jogadores e composições de elenco precisas.",
-        "creator": "Time TOUCHLINES"
+        "creator": "Time FMPROJECT"
       },
       "official-2023": {
         "name": "Oficial 2023/24",
         "description": "Base da temporada passada para quem quer reescrever a história.",
-        "creator": "Time TOUCHLINES"
+        "creator": "Time FMPROJECT"
       },
       "community-legends": {
         "name": "Base de Lendas",

@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/brenosss/touchlines.git"
+    "url": "git+https://github.com/dw3st/FMProject.git"
   },
   "type": "module",
   "scripts": {

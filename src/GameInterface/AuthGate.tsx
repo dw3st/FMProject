@@ -50,7 +50,7 @@ export async function logout(): Promise<void> {
   } finally {
     await resetAnalytics().catch(() => {});
     try {
-      localStorage.removeItem("touchlines:session");
+      localStorage.removeItem("fmproject:session");
     } catch {}
     window.location.href = "/login";
   }

@@ -1,5 +1,5 @@
 /**
- * Imports the open-football seed into TouchLines' native data format.
+ * Imports the open-football seed into FMProject' native data format.
  *
  *   bun scripts/importOpenFootball.ts
  *

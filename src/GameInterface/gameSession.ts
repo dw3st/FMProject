@@ -4,7 +4,7 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { SaveMeta, SaveDatabase, SaveManager } from "@/backend/SaveService";
 
-const STORAGE_KEY = "touchlines:session";
+const STORAGE_KEY = "fmproject:session";
 
 export interface GameSession {
   saveId: string;

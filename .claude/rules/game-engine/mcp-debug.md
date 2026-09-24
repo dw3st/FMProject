@@ -1,6 +1,6 @@
 # Engine Debugging — Use the MCP
 
-When you need to inspect engine values from a debug snapshot (`debug/*.json`), **use the `touchlines-engine` MCP tools** instead of writing a Python/JS replay script. The MCP runs the actual engine code against the snapshot, so you get real engine values — not an approximation that may drift from current code.
+When you need to inspect engine values from a debug snapshot (`debug/*.json`), **use the `fmproject-engine` MCP tools** instead of writing a Python/JS replay script. The MCP runs the actual engine code against the snapshot, so you get real engine values — not an approximation that may drift from current code.
 
 ---
 

@@ -24,7 +24,7 @@ export interface Scenario {
   state: GameState;
 }
 
-const STORAGE_KEY = "touchlines-promo-scenarios";
+const STORAGE_KEY = "fmproject-promo-scenarios";
 
 function splitMeta(raw: unknown): Scenario {
   const obj = raw as Record<string, unknown> & {

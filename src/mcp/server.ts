@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * TouchLines Engine MCP Server
+ * FMProject Engine MCP Server
  *
  * Stdio MCP server that loads a debug snapshot (produced by TestScreen → POST
  * /api/debug/snapshot) and exposes engine scoring functions as tools so an LLM
@@ -66,7 +66,7 @@ async function withSnapshot<T>(
 }
 
 const server = new McpServer({
-  name: 'touchlines-engine',
+  name: 'fmproject-engine',
   version: '0.1.0',
 });
 

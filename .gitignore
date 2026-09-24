@@ -41,7 +41,7 @@ src/Data/*
 
 # Auth / runtime artifacts must never ship in the committed starter data —
 # they regenerate on first run and would leak emails, login codes, and tokens.
-src/example_data/touchlines.db
+src/example_data/fmproject.db
 src/example_data/email-log.json
 
 data_process/to_process/*
@@ -53,5 +53,5 @@ debug/results.json
 debug/*
 results.json
 .claude/worktrees/*
-# runtime local (saves + touchlines.db)
+# runtime local (saves + fmproject.db)
 persistent/
