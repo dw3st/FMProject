@@ -366,7 +366,7 @@ export function NewGameWizard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <header className="h-14 border-b border-border/30 flex items-center justify-between px-6">
-          <span className="font-black font-display text-lg italic">{t("common.touchlines").split(" ")[0]}<span className="text-primary">{t("common.touchlines").split(" ")[1]}</span></span>
+          <span className="font-black font-display text-lg italic">{t("common.appName").split(" ")[0]}<span className="text-primary">{t("common.appName").split(" ")[1]}</span></span>
           <span className="text-xs text-muted-foreground uppercase tracking-wider">
             {t("newGame.step", { current: currentStep + 1, total: steps.length })}
           </span>

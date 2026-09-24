@@ -10,7 +10,7 @@ export const SUPPORTED_LANGUAGES: { code: SupportedLanguage; label: string; flag
   { code: "pt-BR", label: "Português (Brasil)", flag: "br" },
 ];
 
-const STORAGE_KEY = "touchlines:lang";
+const STORAGE_KEY = "fmproject:lang";
 
 function detectBrowserLanguage(): SupportedLanguage {
   if (typeof navigator === "undefined") return "en";

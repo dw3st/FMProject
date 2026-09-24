@@ -49,7 +49,7 @@ const EXCLUDE = [
 const TEXT_ATTRS = ["title", "placeholder", "aria-label", "alt", "label", "tooltip"];
 
 // Bare tokens that are never translated (brand, separators, etc.).
-const ALLOW = new Set(["futsim", "fut", "sim", "touchlines", "vs", "ok"]);
+const ALLOW = new Set(["futsim", "fut", "sim", "fmproject", "vs", "ok"]);
 
 // i18next plural suffixes — `t("k", {count})` resolves to `k_one`/`k_other`/…
 const PLURAL_SUFFIXES = ["_zero", "_one", "_two", "_few", "_many", "_other"];

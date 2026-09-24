@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
-  Play,
   Shield,
   Search,
   BarChart3,
@@ -86,11 +85,8 @@ const OUTLINE_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-transparent text-foreground font-bold uppercase tracking-wider transition-all hover:border-foreground/50 hover:bg-card/30 no-underline cursor-pointer";
 
 // Public source repository. AGPL-3.0 requires network users be able to obtain the source.
-const SOURCE_REPO_URL = "https://github.com/brenosss/touchlines";
+const SOURCE_REPO_URL = "https://github.com/dw3st/FMProject";
 const LICENSE_URL = "https://www.gnu.org/licenses/agpl-3.0.html";
-// Promo video, served from Cloudflare R2.
-const PROMO_VIDEO_URL =
-  "https://pub-4082975a6d4d4fa8b72dbaa31298f847.r2.dev/touchlines-promo.mp4";
 
 export function LandingScreen() {
   const { t } = useTranslation();
@@ -110,7 +106,7 @@ export function LandingScreen() {
             href="/"
             className="text-xl font-black font-display tracking-wider no-underline text-foreground"
           >
-{t("common.touchlines").split(" ")[0]}<span className="text-primary">{t("common.touchlines").split(" ")[1]}</span>
+{t("common.appName").split(" ")[0]}<span className="text-primary">{t("common.appName").split(" ")[1]}</span>
           </a>
 
           <div className="hidden md:flex items-center gap-8">
@@ -156,7 +152,7 @@ export function LandingScreen() {
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black font-display uppercase leading-tight mb-6">
-            {t("common.touchlines").split(" ")[0]}<span className="text-primary glow-text">{t("common.touchlines").split(" ")[1]}</span>
+            {t("common.appName").split(" ")[0]}<span className="text-primary glow-text">{t("common.appName").split(" ")[1]}</span>
           </h1>
 
           {/* Subtitle */}
@@ -168,10 +164,6 @@ export function LandingScreen() {
           <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
             <a href="/start" className={`${PRIMARY_BUTTON} h-11 px-8`}>
               {t("landing.startYourLegacy")}
-            </a>
-            <a href="#trailer" className={`${OUTLINE_BUTTON} h-11 px-8`}>
-              <Play className="w-4 h-4 mr-2 fill-current" />
-              {t("landing.viewTrailer")}
             </a>
             <a
               href={SOURCE_REPO_URL}
@@ -201,33 +193,6 @@ export function LandingScreen() {
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Video Demo Section */}
-      <section id="trailer" className="relative py-24 px-6 scroll-mt-20">
-        <div className="max-w-6xl mx-auto">
-          {/* Section Header */}
-          <div className="mb-8">
-            <h2 className="text-3xl lg:text-4xl font-black font-display uppercase mb-3">
-              {t("landing.tacticalDominance1")} <span className="text-primary italic">{t("landing.tacticalDominance2")}</span>
-            </h2>
-            <p className="text-muted-foreground text-sm max-w-lg">
-              {t("landing.tacticalDescription")}
-            </p>
-          </div>
-
-          {/* Video Player */}
-          <div className="relative rounded-xl overflow-hidden border border-border/30 bg-black glow-primary">
-            <video
-              className="w-full aspect-video bg-black"
-              controls
-              playsInline
-              preload="metadata"
-            >
-              <source src={PROMO_VIDEO_URL} type="video/mp4" />
-            </video>
           </div>
         </div>
       </section>
@@ -387,7 +352,7 @@ export function LandingScreen() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col md:flex-row items-center gap-3">
             <span className="font-black font-display text-sm tracking-wider">
-              {t("common.touchlines")}
+              {t("common.appName")}
             </span>
             <span className="text-[10px] text-muted-foreground/60">
               {t("landing.footerText")}

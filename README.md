@@ -1,14 +1,8 @@
-# TouchLines
+# FMProject
 
 An arcade-flavoured football management simulation. Pick a club, set your formation and tactics, manage transfers and player development across a living, multi-league world, then watch your matches play out in a custom 2D match engine — or simulate them instantly.
 
 > Status: prototype / work in progress. Save files are not backward-compatible between versions.
-
-## Demo
-
-▶ **[Watch the promo video](https://pub-4082975a6d4d4fa8b72dbaa31298f847.r2.dev/touchlines-promo.mp4)**
-
-<video src="https://pub-4082975a6d4d4fa8b72dbaa31298f847.r2.dev/touchlines-promo.mp4" controls width="100%"></video>
 
 ## Features
 
@@ -33,8 +27,8 @@ An arcade-flavoured football management simulation. Pick a club, set your format
 Clone the repository:
 
 ```bash
-git clone https://github.com/brenosss/touchlines.git
-cd touchlines
+git clone https://github.com/dw3st/FMProject.git
+cd FMProject
 ```
 
 Install dependencies:
@@ -57,7 +51,7 @@ Most leagues (`of_*`) are generated from the open-football dataset; see
 for how to regenerate them and [`data_process/openfootball/NOTICE.md`](data_process/openfootball/NOTICE.md)
 for attribution and license.
 
-The auth database (`touchlines.db`) and the dev email log are **not** part of the
+The auth database (`fmproject.db`) and the dev email log are **not** part of the
 snapshot — they are created automatically on first run.
 
 Run the development server (hot reload):
@@ -137,5 +131,8 @@ src/
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+FMProject is a fork of [TouchLines](https://github.com/brenosss/touchlines) (AGPL-3.0); the
+original copyright and license notices are preserved.
 
 See the [LICENSE](LICENSE) file for details.

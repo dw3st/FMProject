@@ -10,7 +10,7 @@ alwaysApply: true
 
 ## Directory layout
 ```
-TouchLines/
+FMProject/
 ├── src/
 │   ├── GameEngine/          # Pure game logic (no Pixi, no DOM, no React)
 │   │   ├── types.ts         # Shared types (GameState, GamePlayer, PassState…)
