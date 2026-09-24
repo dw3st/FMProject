@@ -68,7 +68,7 @@
           {
             "leagueSlug": "brazil_serie_a",
             "promote": 0,
-            "relegate": 3
+            "relegate": 4
           }
         ]
       },
@@ -77,8 +77,8 @@
         "groups": [
           {
             "leagueSlug": "brazil_serie_b",
-            "promote": 3,
-            "relegate": 3
+            "promote": 4,
+            "relegate": 4
           }
         ]
       },
@@ -87,7 +87,7 @@
         "groups": [
           {
             "leagueSlug": "brazil_serie_c",
-            "promote": 3,
+            "promote": 4,
             "relegate": 0
           }
         ]

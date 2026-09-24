@@ -1270,7 +1270,7 @@
         "id": "rel",
         "label": "Relegation",
         "color": "red",
-        "fromEnd": 3
+        "fromEnd": 4
       }
     ],
     "standings": [
@@ -1508,13 +1508,13 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 3
+        "to": 4
       },
       {
         "id": "rel",
         "label": "Relegation",
         "color": "red",
-        "fromEnd": 3
+        "fromEnd": 4
       }
     ],
     "standings": [
@@ -1752,7 +1752,7 @@
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 3
+        "to": 4
       }
     ],
     "standings": [
