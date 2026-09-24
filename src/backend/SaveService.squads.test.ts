@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { SaveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
@@ -107,7 +107,7 @@ describe("SaveService squads via per-save index", () => {
     await expect(svc.moveSquad(SAVE, "nope", "championship")).rejects.toThrow(/nope/);
   });
 
-  test("saveSquad of a moved club does not create a duplicate file", async () => {
+  test("saveSquad of a moved club, addressed in its new league, overwrites the moved file", async () => {
     const { dal } = memoryDAL(files());
     const svc = new SaveService(dal);
     await svc.moveSquad(SAVE, "33", "championship");
@@ -117,6 +117,34 @@ describe("SaveService squads via per-save index", () => {
 
     const listed = (await dal.listSquadFiles(SAVE)).filter((f) => f.squad.id === "33");
     expect(listed.map((f) => `${f.leagueSlug}/${f.clubSlug}:${f.squad.name}`)).toEqual(["championship/33:United v2"]);
+  });
+
+  test("saveSquad of a moved club addressed in its OLD league throws and writes nothing", async () => {
+    const { dal, disk } = memoryDAL(files());
+    const svc = new SaveService(dal);
+    const s = (await svc.getSquad(SAVE, "premier_league", "manchester_united"))!;
+    await svc.moveSquad(SAVE, "33", "championship");
+
+    await expect(svc.saveSquad(SAVE, "premier_league", "manchester_united", s)).rejects.toThrow(
+      "saveSquad: squad 33 lives in championship, not premier_league — use moveSquad",
+    );
+    await expect(svc.saveSquad(SAVE, "premier_league", "33", s)).rejects.toThrow(/use moveSquad/);
+    expect([...disk.keys()].filter((k) => k.endsWith("/33"))).toEqual(["championship/33"]);
+  });
+
+  test("saveSquad refuses to write a squad into another club's file", async () => {
+    const { dal, disk } = memoryDAL(files());
+    const svc = new SaveService(dal);
+    const liverpool = disk.get("premier_league/40")!.squad;
+    // "manchester_united" resolves to 33's file; writing squad 40 there would clobber it.
+    await expect(svc.saveSquad(SAVE, "premier_league", "manchester_united", liverpool)).rejects.toThrow(
+      /premier_league\/manchester_united is squad 33's file/,
+    );
+    // A new squad whose id is another club's stem is refused too.
+    const legacy = { leagueSlug: "lg", clubSlug: "77", squad: squad("legacy_id", "legacy") };
+    const svc2 = new SaveService(memoryDAL([legacy]).dal);
+    await expect(svc2.saveSquad(SAVE, "lg", "newbie", squad("77", "newbie"))).rejects.toThrow(/lg\/77 is squad legacy_id's file/);
+    expect(disk.get("premier_league/33")!.squad.id).toBe("33");
   });
 
   test("saveSquad of a new squad uses squad.id as the stem, never the slug", async () => {
@@ -172,5 +200,24 @@ describe("SaveService squad index cache", () => {
 
     expect(await reader.getSquad(SAVE, "premier_league", "manchester_united")).toBeNull();
     expect((await reader.getSquad(SAVE, "championship", "manchester_united"))?.id).toBe("33");
+  });
+});
+
+describe("SaveService squad index with a duplicated squad file", () => {
+  test("the save still loads, the duplicate is logged, and reads use the kept copy", async () => {
+    const dup = files();
+    dup.push({ leagueSlug: "championship", clubSlug: "33", squad: squad("33", "manchester_united", "United (stray)") });
+    const err = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const svc = new SaveService(memoryDAL(dup).dal);
+      const index = await svc.getSquadIndex(SAVE);
+      expect(index.byId("33")?.leagueSlug).toBe("championship"); // sorted first: championship/33
+      expect(index.duplicates().map((d) => d.squadId)).toEqual(["33"]);
+      expect(err).toHaveBeenCalledTimes(1);
+      expect(String(err.mock.calls[0]![0])).toBe("[squadIndex]");
+      expect((await svc.getSquadById(SAVE, "40"))?.name).toBe("Liverpool");
+    } finally {
+      err.mockRestore();
+    }
   });
 });

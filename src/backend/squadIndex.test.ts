@@ -61,8 +61,41 @@ describe("buildSquadIndex", () => {
     expect(idx.resolve("lg", "club99")).toBe("legacy_stem");
   });
 
-  test("duplicate squadId throws", () => {
-    expect(() => buildSquadIndex([file("a", "33", "33"), file("b", "33", "33")])).toThrow(/duplicate squadId 33/);
+  test("strict mode throws on a duplicate squadId", () => {
+    expect(() => buildSquadIndex([file("a", "33", "33"), file("b", "33", "33")], { strict: true })).toThrow(
+      /duplicate squadId 33/,
+    );
+  });
+
+  test("lenient (default) keeps one copy per id and reports the duplicates", () => {
+    const idx = buildSquadIndex([file("b", "33", "33"), file("a", "33", "33"), file("a", "40", "40")]);
+    // Neither copy is preferred → the first in sorted file-key order ("a/33").
+    expect(idx.byId("33")).toMatchObject({ leagueSlug: "a", stem: "33" });
+    expect(idx.inLeague("a").map((t) => t.squadId)).toEqual(["33", "40"]);
+    expect(idx.inLeague("b")).toEqual([]);
+    expect(idx.resolve("b", "33")).toBeNull();
+    expect(idx.duplicates()).toEqual([
+      { squadId: "33", kept: { leagueSlug: "a", stem: "33" }, dropped: [{ leagueSlug: "b", stem: "33" }] },
+    ]);
+    expect(buildSquadIndex(files).duplicates()).toEqual([]);
+  });
+
+  test("lenient prefers the copy whose folder matches its stored leagueSlug", () => {
+    const stray = file("a", "33", "33");
+    stray.squad = { ...stray.squad, leagueSlug: "b" }; // a copy of b/33 dropped into a/
+    const home = file("b", "33", "33");
+    home.squad = { ...home.squad, leagueSlug: "b" };
+    expect(buildSquadIndex([stray, home]).byId("33")?.leagueSlug).toBe("b");
+  });
+
+  test("lenient prefers the higher membershipRev over folder match and file order", () => {
+    const stale = file("a", "33", "33");
+    stale.squad = { ...stale.squad, leagueSlug: "a" };
+    const moved = file("b", "33", "33");
+    moved.squad = { ...moved.squad, leagueSlug: "b", membershipRev: 1 };
+    const idx = buildSquadIndex([stale, moved]);
+    expect(idx.byId("33")?.leagueSlug).toBe("b");
+    expect(idx.duplicates()[0]!.dropped).toEqual([{ leagueSlug: "a", stem: "33" }]);
   });
 
   test("leagues() is sorted", () => {

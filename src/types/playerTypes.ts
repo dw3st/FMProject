@@ -125,6 +125,11 @@ export interface Squad {
   slug?: string;
   /** Set when listing squads from save paths (…/squads/{leagueSlug}/…). */
   leagueSlug?: string;
+  /**
+   * Bumped by every `SaveService.moveSquad`. If a move's delete of the old file
+   * fails, both copies exist; the squad index keeps the one with the higher rev.
+   */
+  membershipRev?: number;
   /** Club country from squad data; used as nationality fallback in scout. */
   country?: string;
   finances?: ClubFinances;
