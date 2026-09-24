@@ -290,6 +290,49 @@ If the best pass does not exceed the minimum pass score threshold, passing shoul
 
 ---
 
+# Action Compression (pass vs carry vs through ball)
+
+The best pass competes with shoot / carry / dribble / through ball in `decideBallHolder`
+(`DecisionTree.ts`). Each raw score goes through `compress(raw, STRONG_RAW) = 1 − e^(−raw/STRONG_RAW)`,
+so `STRONG_RAW` sets how much raw quality an action needs to look "strong" (0.632).
+
+| Action | `STRONG_RAW` |
+|---|---|
+| shoot | 1.8 |
+| carry | 0.8 |
+| **pass** | **0.8** |
+| dribble | 0.8 |
+| through ball | 0.9 |
+
+**Why pass is 0.8 (changed 2026-09-24, was 1.0).** A to-feet pass has a low structural
+ceiling: the short lateral pass a midfielder plays scores progress ≈ 0.57, almost no goal
+proximity and always some distance penalty, so a good MID pass sits at raw ≈ 0.74 (lane
+clearance is not the problem — mean lane score is 0.96). At 1.0 that compressed to ~0.52,
+below carry (raw 0.82 → 0.64) and through ball (raw 0.80 → 0.59), and the pass won only
+~1% of MID holder decisions. MIDs made ~0.15 regular passes per match and lived on carries,
+dribbles and through balls.
+
+Measured with `bun scripts/passing-mix-diagnostic.ts <league> 150` (add `--scores` for the
+per-line action scores and raw pass components). Per player per match, 4-3-3 both sides:
+
+| Metric (premier_league / serie_a, 150 matches each) | before (1.0) | after (0.8) |
+|---|---|---|
+| MID regular passes | 0.15 / 0.15 | 1.69 / 1.72 |
+| DEF regular passes | 1.44 / 1.50 | 2.97 / 3.12 |
+| FWD regular passes | 0.99 / 0.93 | 1.47 / 1.24 |
+| GK regular passes | 3.06 / 3.10 | 3.03 / 3.18 |
+| Regular passes / match | 24.5 / 24.7 | 48.7 / 49.0 |
+| Pass completion | 95.8% / 96.0% | 96.6% / 96.6% |
+| Through balls / match | 27.0 / 27.1 | 19.8 / 19.0 |
+| Shots / match | 7.1 / 6.8 | 7.0 / 6.4 |
+| Goals / match | 2.83 / 2.39 | 2.89 / 2.23 |
+
+MIDs still pass less than DEFs (CB↔CB circulation is the biggest flow, ~11.5 completed
+DEF→DEF passes per match). Pushing further (0.75) gives MID ≈ 2.6 but costs ~8% of shots.
+Weaker leagues lose more goals: `of_championship` went 1.65 → 1.40 goals/match (300 matches after).
+
+---
+
 # Spatial Preference Calculation
 
 Spatial preference is determined using the horizontal pitch position.
