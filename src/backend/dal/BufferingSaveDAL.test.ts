@@ -22,6 +22,8 @@ function fakeInner(opts: {
   failWrite?: (clubSlug: string) => boolean;
   /** Holds a squad write in flight until the returned promise resolves. */
   gateWrite?: (clubSlug: string) => Promise<void> | undefined;
+  /** Checked at delete time. */
+  failDelete?: (clubSlug: string) => boolean;
   /** Number of initial listSquadFiles calls that reject. */
   failListSquadFiles?: number;
 } = {}) {
@@ -81,6 +83,7 @@ function fakeInner(opts: {
     async deleteSquad(_s, league, club) {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       calls.push(`deleteSquad:${league}/${club}`);
+      if (opts.failDelete?.(club)) throw new Error(`EPERM: ${league}/${club}`);
       order.push(`delete:${league}/${club}`);
     },
     async listLeagues() {
@@ -352,6 +355,60 @@ describe("BufferingSaveDAL edge cases", () => {
       "new_lg/77:Newcomer",
     ]);
     expect(inner.calls.filter((c) => c === "listSquadFiles")).toHaveLength(1);
+  });
+});
+
+describe("BufferingSaveDAL.flush — writes, then deletes, then meta", () => {
+  const files: SquadFile[] = [{ leagueSlug: "A", clubSlug: "33", squad: squad("33", "United") }];
+
+  async function bufferedMove(inner: ReturnType<typeof fakeInner>) {
+    const buf = new BufferingSaveDAL(inner.dal);
+    await buf.writeMeta(meta(SAVE));
+    await buf.deleteSquad(SAVE, "A", "33"); // buffered before the write, still flushed after it
+    await buf.writeSquad(SAVE, "B", "33", squad("33", "United"));
+    for (let i = 0; i < 40; i++) await buf.writeSquad(SAVE, "lg", `c${i}`, squad(`c${i}`));
+    return buf;
+  }
+
+  test("every delete runs after every write, and meta after both", async () => {
+    const inner = fakeInner({ files, writeDelayMs: 2 });
+    const buf = await bufferedMove(inner);
+    await buf.flush();
+    const del = inner.order.indexOf("delete:A/33");
+    expect(inner.order.filter((o) => o.startsWith("squad:")).every((o) => inner.order.indexOf(o) < del)).toBe(true);
+    expect(inner.order.at(-1)).toBe(`meta:${SAVE}`);
+    expect(inner.order).toHaveLength(43);
+  });
+
+  test("a move whose write fails leaves A intact, the delete pending and meta unwritten", async () => {
+    let failing = true;
+    const inner = fakeInner({ files, failWrite: (club) => failing && club === "33" });
+    const buf = await bufferedMove(inner);
+
+    await expect(buf.flush()).rejects.toBeInstanceOf(AggregateError);
+    expect(inner.calls.filter((c) => c.startsWith("deleteSquad"))).toEqual([]); // A/33 untouched on disk
+    expect(inner.order).not.toContain(`meta:${SAVE}`);
+    expect(inner.written).toHaveLength(40); // the other writes landed
+
+    // Once the disk recovers: the write, then the delete, then meta.
+    failing = false;
+    await buf.flush();
+    expect(inner.order.slice(-3)).toEqual(["squad:B/33", "delete:A/33", `meta:${SAVE}`]);
+  });
+
+  test("a move whose delete fails leaves both copies written and meta unwritten; a retry finishes it", async () => {
+    let failing = true;
+    const inner = fakeInner({ files, failDelete: () => failing });
+    const buf = await bufferedMove(inner);
+
+    await expect(buf.flush()).rejects.toBeInstanceOf(AggregateError);
+    expect(inner.written).toContain("B/33:United");
+    expect(inner.order).not.toContain("delete:A/33");
+    expect(inner.order).not.toContain(`meta:${SAVE}`);
+
+    failing = false;
+    await buf.flush();
+    expect(inner.order.slice(-2)).toEqual(["delete:A/33", `meta:${SAVE}`]);
   });
 });
 
