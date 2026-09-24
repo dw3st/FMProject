@@ -57,6 +57,38 @@ describe("buildPyramid", () => {
     expectCoherent(p);
   });
 
+  test("override de fronteira: Brasil 4/4 em A↔B e B↔C", () => {
+    const leagues = [L("a", "Brazil", 20, 1), L("b", "Brazil", 20, 2), L("c", "Brazil", 20, 3), L("pl", "England", 20, 1), L("ch", "England", 19, 2)];
+    const ps = buildPyramid(leagues, { boundaries: { Brazil: { "1-2": 4, "2-3": 4 } } });
+    expect(counts(ps.Brazil!)).toEqual([["a:0/4"], ["b:4/4"], ["c:4/0"]]);
+    expectCoherent(ps.Brazil!);
+    expect(counts(ps.England!)).toEqual([["pl:0/3"], ["ch:3/0"]]);
+  });
+
+  test("override de fronteira ainda respeita o limite de metade dos clubes", () => {
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    const p = buildPyramid([L("big", "X", 20, 1), L("small", "X", 6, 2)], { boundaries: { X: { "1-2": 5 } } }).X!;
+    expect(counts(p)).toEqual([["big:0/3"], ["small:3/0"]]);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test("override numa fronteira K≥2: igual a K funciona, diferente lança erro", () => {
+    const italy = [
+      L("sa", "Italy", 20, 1), L("sb", "Italy", 20, 2),
+      L("sc_a", "Italy", 19, 3), L("sc_b", "Italy", 18, 3), L("sc_c", "Italy", 19, 3),
+    ];
+    expect(counts(buildPyramid(italy, { boundaries: { Italy: { "2-3": 3 } } }).Italy!)[2])
+      .toEqual(["sc_a:1/0", "sc_b:1/0", "sc_c:1/0"]);
+    expect(() => buildPyramid(italy, { boundaries: { Italy: { "2-3": 4 } } })).toThrow(/Italy.*2-3.*3 groups/);
+  });
+
+  test("override de fronteira inexistente lança erro", () => {
+    const br = [L("a", "Brazil", 20, 1), L("b", "Brazil", 20, 2)];
+    expect(() => buildPyramid(br, { boundaries: { Brazil: { "2-3": 4 } } })).toThrow(/Brazil.*2-3/);
+    expect(() => buildPyramid(br, { boundaries: { Narnia: { "1-2": 4 } } })).toThrow(/Narnia/);
+  });
+
   test("país com um nível fica fora", () => {
     const ps = buildPyramid([L("x", "Germany", 18, 1), L("y", "Chile", 16, 1), L("z", "Chile", 12, 1)]);
     expect(ps).toEqual({});

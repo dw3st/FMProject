@@ -23,7 +23,7 @@ import {
 import {
   CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, scheduleFor, seasonLabel, type Zone,
 } from "@/../scripts/openfootball/leagues";
-import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type PyramidLeague } from "@/../scripts/openfootball/pyramid";
+import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides, type PyramidLeague } from "@/../scripts/openfootball/pyramid";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 import type { RosterPlayer } from "@/types/playerTypes";
 
@@ -81,8 +81,13 @@ const tierOf = (l: SeedLeague) => tierOverrides[l.slug] ?? l.tier;
  * Pyramid-only level corrections keyed by leagueData slug (e.g. Russia's B groups sit one level below
  * the A groups). tierOverrides.json (seed slug) still applies first and also drives the economy tier;
  * pyramidOverrides.json only moves a league within the pyramid, so squad economies are unchanged.
+ * Its top-level "boundaries" field overrides boundary counts per country ("upperTier-lowerTier"),
+ * e.g. Brazil's 4 up / 4 down (see BoundaryOverrides in scripts/openfootball/pyramid.ts).
  */
-const pyramidOverrides = readJson<Record<string, { tier: number }>>(join(OF_DIR, "pyramidOverrides.json"));
+const pyramidOverridesFile = readJson<Record<string, unknown>>(join(OF_DIR, "pyramidOverrides.json"));
+const { boundaries, ...tierEntries } = pyramidOverridesFile;
+const boundaryOverrides = (boundaries ?? {}) as BoundaryOverrides;
+const pyramidOverrides = tierEntries as Record<string, { tier: number }>;
 const pyramidTierOf = (slug: string, tier: number) => pyramidOverrides[slug]?.tier ?? tier;
 
 const clubsByLeague = new Map<string, SeedClub[]>();
@@ -224,7 +229,7 @@ for (const league of kept) {
 // ── 5. Pyramids + display zones ─────────────────────────────────────────────
 const unknownOverrides = Object.keys(pyramidOverrides).filter((s) => !pyramidInput.some((l) => l.slug === s));
 if (unknownOverrides.length) throw new Error(`pyramidOverrides.json: unknown league slugs ${unknownOverrides.join(", ")}`);
-const pyramids = buildPyramid(pyramidInput);
+const pyramids = buildPyramid(pyramidInput, { boundaries: boundaryOverrides });
 // Only prom/rel change; continental zones (ucl/uel/uecl/lib/sud) of TL leagues are kept as they are.
 for (const l of leagueData) {
   const g = pyramidGroupOf(pyramids, l.slug);

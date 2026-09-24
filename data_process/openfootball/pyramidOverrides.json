@@ -1,5 +1,8 @@
 {
   "of_russian_second_division_b_group_2": { "tier": 4 },
   "of_russian_second_division_b_group_3": { "tier": 4 },
-  "of_russian_second_division_b_group_4": { "tier": 4 }
+  "of_russian_second_division_b_group_4": { "tier": 4 },
+  "boundaries": {
+    "Brazil": { "1-2": 4, "2-3": 4 }
+  }
 }
