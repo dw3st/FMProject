@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
-import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
+import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { generateRestDays, parseSeasonDates } from "@/Domain/season";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
@@ -284,6 +284,11 @@ export class SaveService {
 
   getSquadsInLeague(saveId: string, leagueSlug: string): Promise<Squad[]> {
     return this.dal.listSquadsInLeague(saveId, leagueSlug);
+  }
+
+  /** Every squad file in the save with the league folder + file stem it is stored under. */
+  listSquadFiles(saveId: string): Promise<SquadFile[]> {
+    return this.dal.listSquadFiles(saveId);
   }
 
   getAllSquads(saveId: string): Promise<Squad[]> {
