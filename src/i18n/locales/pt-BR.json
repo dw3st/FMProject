@@ -1483,5 +1483,25 @@
     "screen": {
       "database": "Banco de Dados"
     }
+  },
+  "fastForward": {
+    "button": "Avançar até o próximo jogo",
+    "title": "Avançando até o próximo jogo",
+    "progress": "Dia {{done}} de {{total}}",
+    "currentDate": "Data atual: {{date}}",
+    "stop": "Parar",
+    "stopping": "Parando…",
+    "error": "Avanço interrompido: {{error}}"
+  },
+  "seasonNotice": {
+    "title": "Temporada encerrada",
+    "titleYear": "Temporada {{year}} encerrada",
+    "promoted": "Seu clube subiu para {{league}}!",
+    "relegated": "Seu clube caiu para {{league}}.",
+    "champion": "Seu clube é campeão da {{league}}!",
+    "stayed": "Seu clube continua na {{league}}.",
+    "moves_one": "{{count}} clube mudou de divisão no seu país.",
+    "moves_other": "{{count}} clubes mudaram de divisão no seu país.",
+    "ok": "OK"
   }
 }
