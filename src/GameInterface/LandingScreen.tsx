@@ -81,9 +81,6 @@ const getFaqs = (t: any) => [
 const PRIMARY_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98] glow-primary no-underline border-0 cursor-pointer";
 
-const OUTLINE_BUTTON =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-transparent text-foreground font-bold uppercase tracking-wider transition-all hover:border-foreground/50 hover:bg-card/30 no-underline cursor-pointer";
-
 // Public source repository. AGPL-3.0 requires network users be able to obtain the source.
 const SOURCE_REPO_URL = "https://github.com/dw3st/FMProject";
 const LICENSE_URL = "https://www.gnu.org/licenses/agpl-3.0.html";
@@ -141,10 +138,6 @@ export function LandingScreen() {
         <div className="relative z-10 text-center max-w-4xl mx-auto">
           {/* Badge */}
           <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-6">
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary/20 border border-primary/50 rounded text-xs font-bold uppercase tracking-widest text-primary">
-              <Github className="w-3.5 h-3.5" />
-              {t("landing.freeOpenSource")}
-            </span>
             <span className="px-4 py-1.5 bg-card/40 border border-border/60 rounded text-xs font-bold uppercase tracking-widest text-muted-foreground">
               {t("landing.heroBadge")}
             </span>
@@ -164,15 +157,6 @@ export function LandingScreen() {
           <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
             <a href="/start" className={`${PRIMARY_BUTTON} h-11 px-8`}>
               {t("landing.startYourLegacy")}
-            </a>
-            <a
-              href={SOURCE_REPO_URL}
-              target="_blank"
-              rel="noreferrer"
-              className={`${OUTLINE_BUTTON} h-11 px-8`}
-            >
-              <Github className="w-4 h-4 mr-2" />
-              {t("landing.starOnGithub")}
             </a>
           </div>
 
