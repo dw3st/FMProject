@@ -167,6 +167,15 @@ export class FileSystemDAL implements ISaveDAL {
     return Bun.file(squadPath(saveId, leagueSlug, clubSlug)).exists();
   }
 
+  async deleteSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<void> {
+    try {
+      await unlink(squadPath(saveId, leagueSlug, clubSlug));
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    }
+    bumpSaveDataVersion(saveId);
+  }
+
   async listLeagues(saveId: string): Promise<string[]> {
     const dir = `${SAVES_DIR}/${saveId}/squads`;
     try {

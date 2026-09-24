@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "crypto";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { Squad } from "@/types/playerTypes";
+import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 
 const dal = new FileSystemDAL();
 const created: string[] = [];
@@ -36,5 +37,27 @@ describe("FileSystemDAL squad listing", () => {
 
     const all = await dal.listAllSquads(saveId);
     expect(all.map((s) => `${s.leagueSlug}/${s.id}`)).toEqual(files.map((f) => `${f.leagueSlug}/${f.clubSlug}`));
+  });
+});
+
+describe("FileSystemDAL.deleteSquad", () => {
+  test("removes the file; listSquadFiles no longer lists it; version bumps", async () => {
+    const saveId = `test-delete-${randomUUID()}`;
+    created.push(saveId);
+    await dal.writeSquad(saveId, "lg", "33", { id: "33", name: "United", players: [] } as unknown as Squad);
+    await dal.writeSquad(saveId, "lg", "34", { id: "34", name: "City", players: [] } as unknown as Squad);
+    const before = getSaveDataVersion(saveId);
+
+    await dal.deleteSquad(saveId, "lg", "33");
+
+    expect(await dal.squadExists(saveId, "lg", "33")).toBe(false);
+    expect(await dal.readSquad(saveId, "lg", "33")).toBeNull();
+    expect((await dal.listSquadFiles(saveId)).map((f) => f.clubSlug)).toEqual(["34"]);
+    expect(getSaveDataVersion(saveId)).toBeGreaterThan(before);
+  });
+
+  test("deleting a missing squad does not throw", async () => {
+    const saveId = `test-delete-missing-${randomUUID()}`;
+    await dal.deleteSquad(saveId, "lg", "nope");
   });
 });
