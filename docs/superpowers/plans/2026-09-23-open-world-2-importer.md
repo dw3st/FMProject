@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Gerar, a partir do `seed-real.json` do open-football, 75 ligas novas (60 países) no formato nativo do TouchLines, jogáveis e simuladas pelo quickSim, mantendo o `Continuar` abaixo de 2 s por dia.
+**Goal:** Gerar, a partir do `seed-real.json` do open-football, 75 ligas novas (60 países) no formato nativo do FMProject, jogáveis e simuladas pelo quickSim, mantendo o `Continuar` abaixo de 2 s por dia.
 
 **Architecture:** O importador é um script offline (`scripts/importOpenFootball.ts`) montado a partir de módulos puros e testados em `scripts/openfootball/`. Ele:
 - calibra atributos e finanças contra os jogadores e clubes que existem nos dois datasets;
@@ -40,7 +40,7 @@ O jogo passa a ler o calendário de um JSON em vez do array em código. O avanç
 | `scripts/openfootball/types.ts` | criar | Tipos do seed |
 | `scripts/openfootball/ids.ts` | criar | Normalização de nomes, ids, slugs, hash determinístico |
 | `scripts/openfootball/roster.ts` | criar | Mapeamento de posição, corte de elenco, jovens de preenchimento |
-| `scripts/openfootball/calibration.ts` | criar | Casamento seed↔TouchLines, regressões |
+| `scripts/openfootball/calibration.ts` | criar | Casamento seed↔FMProject, regressões |
 | `scripts/openfootball/derive.ts` | criar | Atributos, perfil, finanças, estádio, técnico |
 | `scripts/openfootball/leagues.ts` | criar | Filtro de ligas, zonas, países, calendários |
 | `scripts/openfootball/*.test.ts` | criar | Testes de cada módulo |
@@ -90,7 +90,7 @@ Expected: arquivo com cerca de 13,8 MB; `python -c "import json;d=json.load(open
 via SportsManagerInterativo (dw3st). Licença: Apache License 2.0.
 
 Uso aqui: fonte de ligas, clubes e jogadores para `scripts/importOpenFootball.ts`. Os atributos do
-TouchLines são **derivados** (calibrados contra os elencos da API-Football que o TouchLines já tem);
+FMProject são **derivados** (calibrados contra os elencos da API-Football que o FMProject já tem);
 não são dados originais do open-football.
 ```
 
@@ -399,7 +399,7 @@ git commit -m "feat(import): roster role mapping, trim and youth fill"
 - Test: `scripts/openfootball/calibration.test.ts`
 
 Duas regressões:
-- **Atributos:** para cada `(papel principal, atributo)`, ajustar `stat = a + b × OVR` por mínimos quadrados sobre os pares, guardando o desvio-padrão do resíduo `sd`. Um par é jogador do TouchLines ↔ jogador do seed no mesmo clube, casado por nome normalizado completo ou pelo último sobrenome, desde que ele seja único no clube.
+- **Atributos:** para cada `(papel principal, atributo)`, ajustar `stat = a + b × OVR` por mínimos quadrados sobre os pares, guardando o desvio-padrão do resíduo `sd`. Um par é jogador do FMProject ↔ jogador do seed no mesmo clube, casado por nome normalizado completo ou pelo último sobrenome, desde que ele seja único no clube.
 - **Clube:** para cada campo de finanças (`budget`, `broadcasting`, `commercial`, `followers`) e para `venue.capacity`, ajustar `ln(y) = a + b × reputação do clube no seed`. Os pares de clube saem do casamento por nome normalizado, igual ou um contido no outro, dentro da liga sobreposta.
 
 - [ ] **Step 1: Testes**
@@ -538,7 +538,7 @@ Expected: PASS (6 testes).
 
 ```bash
 git add scripts/openfootball/calibration.ts scripts/openfootball/calibration.test.ts
-git commit -m "feat(import): calibration fits and seed↔TouchLines matching"
+git commit -m "feat(import): calibration fits and seed↔FMProject matching"
 ```
 
 ---
@@ -588,7 +588,7 @@ const coeffs: PlayerCoeffs = {
 const seedP: SeedPlayer = { id: "uy-x-1", name: "Juan Pérez", position: "ATT", overall: 70, potential: 72, age: 24, country: "uy", foot: "L", value: 0, clubId: "uy-x" };
 
 describe("derivePlayer", () => {
-  test("formato do elenco do TouchLines", () => {
+  test("formato do elenco do FMProject", () => {
     const p = derivePlayer(seedP, "of_uy_x", coeffs);
     expect(p.id).toBe("of_uy_x_1");
     expect(p.squadId).toBe("of_uy_x");
@@ -740,7 +740,7 @@ git commit -m "feat(import): derive player attributes, profile, club economy, co
 Regras:
 - **Ligas sobrepostas (ficam de fora):**
 
-  | Slug no seed | Slug no TouchLines |
+  | Slug no seed | Slug no FMProject |
   |---|---|
   | `premier-league` | `premier_league` |
   | `bundesliga` | `bundesliga` |
@@ -755,7 +755,7 @@ Regras:
   - Se o país tem um nível abaixo, a liga ganha `rel` com `fromEnd: n`, onde `n = clubes ≥ 16 ? 3 : 2`.
   - Se o país tem um nível acima, a liga ganha `prom` com `from: 1, to: n`.
   - Cores e rótulos iguais aos atuais: `{ id: "prom", label: "Promotion", color: "green" }` e `{ id: "rel", label: "Relegation", color: "red" }`.
-  - O nível "acima" e "abaixo" considera também as ligas do TouchLines do mesmo país. Exemplo: Inglaterra tem `premier_league` no nível 1 e `of_championship` no nível 2, então a Championship ganha `prom`.
+  - O nível "acima" e "abaixo" considera também as ligas do FMProject do mesmo país. Exemplo: Inglaterra tem `premier_league` no nível 1 e `of_championship` no nível 2, então a Championship ganha `prom`.
 - **Calendário de ano civil:**
   - Países: `br, ar, cl, uy, py, pe, co, ve, us, jp, no, se, fi, is, kz, by`.
   - `seasonStartMMDD "02-05"`, `seasonEndMMDD "11-30"`, `crossYear false`, `season "2025"`.
@@ -1017,12 +1017,12 @@ O CLI usa só os módulos das Tasks 2 a 6 e segue esta ordem:
    - Escreva o squad com `id` e `slug` iguais a `clubId(club.id)`, `name`, `colors` (`[colorBg, colorFg]`; se faltarem, `["#555555", "#FFFFFF"]`), `country: countryName` e `venue: { name: \`${name} Stadium\`, city: null, capacity, surface: "grass" }`.
    - O `coach` recebe `{ id, name: coachName(...), firstname: null, lastname: null, age: null, nationality: null, points: 0 }`, onde `id = Math.floor(unitHash(club.id) * 1e9)`. As finanças vêm de `deriveClubEconomy`. Inclua `source: "open-football"` e os `players`.
    - Grave em **JSON compacto** (`JSON.stringify(squad)`), em `src/example_data/squads/{leagueSlug}/{clubId}.json`.
-   - Acrescente ao `leagueData.json`: `{ slug, name, country: countryName, iso2, season: seasonLabel(code), zones, standings, source: "open-football" }`. As `zones` vêm de `zonesFor`; para calcular `hasAbove` e `hasBelow`, considere o nível das ligas mantidas **e** das ligas do TouchLines do mesmo país (tabela do Step 5 abaixo). Os `standings` são `[{ squadId, slug, name, colors, country }]`.
+   - Acrescente ao `leagueData.json`: `{ slug, name, country: countryName, iso2, season: seasonLabel(code), zones, standings, source: "open-football" }`. As `zones` vêm de `zonesFor`; para calcular `hasAbove` e `hasBelow`, considere o nível das ligas mantidas **e** das ligas do FMProject do mesmo país (tabela do Step 5 abaixo). Os `standings` são `[{ squadId, slug, name, colors, country }]`.
    - Acrescente `scheduleFor(...)` ao `leagueSchedules.json`.
-5. **Níveis das ligas existentes do TouchLines**, para as zonas: `premier_league` (gb, 1), `bundesliga` (de, 1), `la_liga` (es, 1), `serie_a` (it, 1), `ligue_1` (fr, 1), `brazil_serie_a` (br, 1), `brazil_serie_b` (br, 2), `brazil_serie_c` (br, 3). As zonas das 8 ligas do TouchLines **não mudam** neste plano.
+5. **Níveis das ligas existentes do FMProject**, para as zonas: `premier_league` (gb, 1), `bundesliga` (de, 1), `la_liga` (es, 1), `serie_a` (it, 1), `ligue_1` (fr, 1), `brazil_serie_a` (br, 1), `brazil_serie_b` (br, 2), `brazil_serie_c` (br, 3). As zonas das 8 ligas do FMProject **não mudam** neste plano.
 6. **Países.** Mescle em `countries.json`: os 6 existentes ganham `playable: true` e `continent`. Os novos saem de `buildCountryEntry` com `source: "open-football"`. Mantenha a chave pelo nome.
 7. **`databases.json`.** Atualize os contadores do banco `official-2024`: `countries`, `playableCountries`, `leagues`, `playableLeagues` e `players` a partir do mundo resultante (8 ligas atuais + as novas).
-8. **Resumo.** Imprima ligas, clubes, jogadores, jovens gerados, a faixa de OVR e a média dos 13 atributos por papel nas ligas novas, e a mesma média nas ligas do TouchLines, para comparar.
+8. **Resumo.** Imprima ligas, clubes, jogadores, jovens gerados, a faixa de OVR e a média dos 13 atributos por papel nas ligas novas, e a mesma média nas ligas do FMProject, para comparar.
 
 - [ ] **Step 1: Implementar o CLI** conforme a lista acima. Nenhuma lógica nova fora dos módulos: o CLI só lê, chama e grava.
 
@@ -1032,7 +1032,7 @@ Run: `bun scripts/importOpenFootball.ts`
 Expected:
 - 75 ligas, cerca de 1.000 clubes e cerca de 25.000 jogadores;
 - pares de jogadores ≥ 2.500 e pares de clubes ≥ 90;
-- a média de atributos por papel nas ligas novas fica **abaixo** da média das ligas do TouchLines, porque o seed tem ligas menores.
+- a média de atributos por papel nas ligas novas fica **abaixo** da média das ligas do FMProject, porque o seed tem ligas menores.
 
 Rode duas vezes seguidas e confirme que `git status --short src/example_data | wc -l` é igual nas duas, o que prova a idempotência.
 

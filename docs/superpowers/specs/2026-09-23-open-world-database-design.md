@@ -5,7 +5,7 @@
 
 ## Objetivo
 
-Ampliar o mundo do TouchLines de 8 ligas para cerca de 80, com os clubes e jogadores do
+Ampliar o mundo do FMProject de 8 ligas para cerca de 80, com os clubes e jogadores do
 `seed-real.json` do SportsManagerInterativo (dataset open-football: 91 ligas, 1236 clubes,
 54 423 jogadores). O mundo fica mais aberto:
 
@@ -21,7 +21,7 @@ Ampliar o mundo do TouchLines de 8 ligas para cerca de 80, com os clubes e jogad
 | Jogáveis | Todas as ligas importadas |
 | Acesso/rebaixamento | Entra neste trabalho |
 | Forma de importar | Importador offline que gera arquivos no formato nativo (abordagem A) |
-| Ligas que já existem | As 8 atuais ficam como estão (dados reais da API-Football). O seed só entra onde o TouchLines não tem nada |
+| Ligas que já existem | As 8 atuais ficam como estão (dados reais da API-Football). O seed só entra onde o FMProject não tem nada |
 | Compatibilidade de save | Nenhuma. Saves antigos ficam inválidos (regra do CLAUDE.md) |
 
 ## 1. Importador e derivação de atributos
@@ -36,8 +36,8 @@ nova execução substitui apenas esses arquivos.
 ### Filtros
 
 - Descarta ligas com menos de 8 clubes.
-- Pula as ligas que o TouchLines já tem. Um mapa explícito em
-  `data_process/openfootball/overlap.json` liga o slug do seed ao slug do TouchLines (Premier
+- Pula as ligas que o FMProject já tem. Um mapa explícito em
+  `data_process/openfootball/overlap.json` liga o slug do seed ao slug do FMProject (Premier
   League, Bundesliga, La Liga, Serie A, Ligue 1, Brasileirão A/B). Não há casamento por nome.
 - Elenco com no máximo 30 jogadores. Primeiro garante 3 goleiros e a profundidade mínima por
   setor da tabela do tier `low` em `sellList` (GK 3, DEF 7, MID 7, FWD 4); o resto das vagas
@@ -45,12 +45,12 @@ nova execução substitui apenas esses arquivos.
 
 ### Calibração
 
-A média dos 13 atributos de um jogador de linha no TouchLines fica entre 1,5 e 4,1 em 10 (do
+A média dos 13 atributos de um jogador de linha no FMProject fica entre 1,5 e 4,1 em 10 (do
 10º ao 90º percentil). Não dá pra usar escala linear a partir do OVR.
 
-1. Nas ligas sobrepostas, casa os jogadores do seed com os do TouchLines pelo nome normalizado
+1. Nas ligas sobrepostas, casa os jogadores do seed com os do FMProject pelo nome normalizado
    (sem acento, minúsculo), dentro do mesmo clube.
-2. Para cada papel do TouchLines e cada atributo, ajusta uma reta `atributo = a + b × OVR` por
+2. Para cada papel do FMProject e cada atributo, ajusta uma reta `atributo = a + b × OVR` por
    mínimos quadrados.
 3. Se um papel tiver menos de 30 pares, usa os coeficientes do papel-irmão do mesmo setor
    (por exemplo, LWB usa LB).
@@ -62,7 +62,7 @@ A média dos 13 atributos de um jogador de linha no TouchLines fica entre 1,5 e 
 - `atributo = clamp(round(a + b × OVR + ruído), 0, 10)`. O `ruído` fica em ±0,5, com semente
   no hash de `playerId + atributo`: é determinístico e evita que jogadores com o mesmo OVR
   saiam idênticos.
-- As posições do seed (`DL`, `WBL`, `AML`…) viram os papéis do TouchLines (`LB`, `LWB`,
+- As posições do seed (`DL`, `WBL`, `AML`…) viram os papéis do FMProject (`LB`, `LWB`,
   `LW`…) por uma tabela fixa no script, ordenadas pelo nível de proficiência do seed.
 - Idade, pé e nome vêm do seed. `potential` é descartado, porque o sistema de desenvolvimento
   não usa potencial oculto.
@@ -184,7 +184,7 @@ pelo nome do país em `leagueData`:
 ```
 
 - Cada nível tem uma ou mais ligas (grupos). Só entram países com dois níveis ou mais.
-- As ligas nativas entram com o slug do TouchLines (`premier_league`, `serie_a`,
+- As ligas nativas entram com o slug do FMProject (`premier_league`, `serie_a`,
   `brazil_serie_b`…), as importadas com o slug `of_*`.
 - Correções manuais ficam em `data_process/openfootball/pyramidOverrides.json`:
   - nível por liga (hoje: os grupos B da Rússia no nível 4);

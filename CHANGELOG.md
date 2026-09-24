@@ -1,4 +1,13 @@
-# Changelog — TouchLines (homelab)
+# Changelog — FMProject (homelab)
+
+## [homelab-1.1.0] — 2026-09-24
+### Alterado
+- Nome do jogo: TouchLines → **FMProject** em toda a interface (logo, títulos das abas, landing, e-mail de login, FAQ). O rodapé credita o TouchLines original (AGPL-3.0) e o link do código aponta para `dw3st/FMProject`.
+- Nomes internos: banco de login `touchlines.db` → `fmproject.db`; serviço, imagem e container Docker `touchlines` → `fmproject`; chaves do `localStorage` `touchlines:*` → `fmproject:*` (todo mundo precisa entrar de novo); servidor MCP `touchlines-engine` → `fmproject-engine`.
+- **Ao atualizar o deploy:** renomeie `persistent/touchlines.db` para `persistent/fmproject.db` antes de subir, senão os logins começam do zero. O container antigo `touchlines` precisa ser removido (`docker compose down` antes do pull).
+
+### Removido
+- Seção de vídeo demo da landing, botão "Ver trailer" e o projeto Remotion `promo-video/`.
 
 ## [homelab-1.0.0] — 2026-09-21
 ### Adicionado

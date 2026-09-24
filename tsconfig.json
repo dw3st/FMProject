@@ -36,5 +36,5 @@
     "noPropertyAccessFromIndexSignature": false
   },
 
-  "exclude": ["dist", "node_modules", "promo-video"]
+  "exclude": ["dist", "node_modules"]
 }

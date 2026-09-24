@@ -1,8 +1,8 @@
 services:
-  touchlines:
+  fmproject:
     build: .
-    image: touchlines:local
-    container_name: touchlines
+    image: fmproject:local
+    container_name: fmproject
     restart: unless-stopped
     ports:
       - "9400:3000"

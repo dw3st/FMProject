@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "TouchLines Dev Server",
+      "name": "FMProject Dev Server",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["--hot", "src/index.ts"],
       "port": 3000

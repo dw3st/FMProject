@@ -104,7 +104,7 @@ function stateKeyFromSearch(search: string): string {
   const p = new URLSearchParams(search.replace(/^\?/, ''));
   const sorted = [...p.entries()].sort(([a], [b]) => a.localeCompare(b));
   const str = sorted.map(([k, v]) => `${k}=${v}`).join('&');
-  return str ? `touchlines-test-state:${str}` : 'touchlines-test-state';
+  return str ? `fmproject-test-state:${str}` : 'fmproject-test-state';
 }
 
 const DECISION_BADGE: Record<PlayerDecision["type"], { label: string; cls: string }> = {
@@ -323,7 +323,7 @@ export function TestScreen() {
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
   const [debugOverlays, setDebugOverlays] = useState<DebugOverlays>(() => {
     try {
-      const s = localStorage.getItem('touchlines-debug-overlays');
+      const s = localStorage.getItem('fmproject-debug-overlays');
       return s ? { ...DEFAULT_DEBUG_OVERLAYS, ...JSON.parse(s) as Partial<DebugOverlays> } : DEFAULT_DEBUG_OVERLAYS;
     } catch { return DEFAULT_DEBUG_OVERLAYS; }
   });
@@ -331,19 +331,19 @@ export function TestScreen() {
   // ── Crowd overlay state ─────────────────────────────────────────────────
   const [crowdEnabled, setCrowdEnabled] = useState<boolean>(() => {
     try {
-      const s = localStorage.getItem('touchlines-crowd-enabled');
+      const s = localStorage.getItem('fmproject-crowd-enabled');
       return s === 'true';
     } catch { return false; }
   });
   const [crowdMode, setCrowdMode] = useState<CrowdMode>(() => {
     try {
-      const s = localStorage.getItem('touchlines-crowd-mode');
+      const s = localStorage.getItem('fmproject-crowd-mode');
       return s === 'attack' || s === 'defense' || s === 'crowd' ? s : 'crowd';
     } catch { return 'crowd'; }
   });
   const [evalConfig, setEvalConfig] = useState<EvaluationConfig>(() => {
     try {
-      const s = localStorage.getItem('touchlines-crowd-eval-config');
+      const s = localStorage.getItem('fmproject-crowd-eval-config');
       return s ? { ...DEFAULT_EVAL_CONFIG, ...JSON.parse(s) as Partial<EvaluationConfig> } : DEFAULT_EVAL_CONFIG;
     } catch { return DEFAULT_EVAL_CONFIG; }
   });
@@ -654,7 +654,7 @@ export function TestScreen() {
   const toggleOverlay = useCallback((key: keyof DebugOverlays) => {
     setDebugOverlays(prev => {
       const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem('touchlines-debug-overlays', JSON.stringify(next));
+      localStorage.setItem('fmproject-debug-overlays', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -662,19 +662,19 @@ export function TestScreen() {
   const toggleCrowdOverlay = useCallback(() => {
     setCrowdEnabled(prev => {
       const next = !prev;
-      localStorage.setItem('touchlines-crowd-enabled', String(next));
+      localStorage.setItem('fmproject-crowd-enabled', String(next));
       return next;
     });
   }, []);
 
   const handleCrowdModeChange = useCallback((m: CrowdMode) => {
     setCrowdMode(m);
-    localStorage.setItem('touchlines-crowd-mode', m);
+    localStorage.setItem('fmproject-crowd-mode', m);
   }, []);
 
   const handleEvalConfigChange = useCallback((next: EvaluationConfig) => {
     setEvalConfig(next);
-    localStorage.setItem('touchlines-crowd-eval-config', JSON.stringify(next));
+    localStorage.setItem('fmproject-crowd-eval-config', JSON.stringify(next));
     // Recompute immediately so sliders update the panel without re-clicking.
     const s = liveStateRef.current;
     const pos = pitchClickPosRef.current;

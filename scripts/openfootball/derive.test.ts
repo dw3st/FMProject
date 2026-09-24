@@ -20,7 +20,7 @@ const REP = 7;
 const seedP: SeedPlayer = { id: "uy-x-1", name: "Juan Pérez", position: "ATT", overall: 70, potential: 72, age: 24, country: "uy", foot: "L", value: 0, clubId: "uy-x" };
 
 describe("derivePlayer", () => {
-  test("formato do elenco do TouchLines", () => {
+  test("formato do elenco do FMProject", () => {
     const p = derivePlayer(seedP, "of_uy_x", coeffs, REP);
     expect(p.id).toBe("of_uy_x_1");
     expect(p.squadId).toBe("of_uy_x");
@@ -35,7 +35,7 @@ describe("derivePlayer", () => {
     expect(p.profile.archetype.length).toBeGreaterThan(0);
     expect(p.nationality).toBe("Uruguay");
   });
-  test("código gb vira England, como no TouchLines", () => {
+  test("código gb vira England, como no FMProject", () => {
     expect(derivePlayer({ ...seedP, country: "gb" }, "s", coeffs, REP).nationality).toBe("England");
   });
   test("pé B vira right; código de país inválido não gera nacionalidade", () => {

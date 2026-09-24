@@ -1,6 +1,6 @@
 import type { OutgoingEmail } from "@/backend/auth/sendEmail";
 
-const APP_NAME = "TouchLines";
+const APP_NAME = "FMProject";
 
 /** Builds the login-code email (subject + plain-text + HTML) for a magic code. */
 export function buildLoginCodeEmail(code: string, ttlMinutes: number): Omit<OutgoingEmail, "to"> {

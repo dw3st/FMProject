@@ -2,14 +2,14 @@
 
 ## O que é
 
-`scripts/importOpenFootball.ts` é um script **offline**. Ele converte o `data_process/openfootball/seed-real.json` do projeto open-football (Apache-2.0; ver `data_process/openfootball/NOTICE.md`) em ligas, clubes e jogadores no formato nativo do TouchLines. A lógica fica em módulos puros e testados em `scripts/openfootball/`:
+`scripts/importOpenFootball.ts` é um script **offline**. Ele converte o `data_process/openfootball/seed-real.json` do projeto open-football (Apache-2.0; ver `data_process/openfootball/NOTICE.md`) em ligas, clubes e jogadores no formato nativo do FMProject. A lógica fica em módulos puros e testados em `scripts/openfootball/`:
 
 | Módulo | Responsabilidade |
 |---|---|
 | `types.ts` | Tipos do seed |
 | `ids.ts` | Normalização de nomes, ids, slugs, hash determinístico |
 | `roster.ts` | Mapeamento de posição, corte de elenco, jovens de preenchimento |
-| `calibration.ts` | Casamento seed ↔ TouchLines e regressões |
+| `calibration.ts` | Casamento seed ↔ FMProject e regressões |
 | `derive.ts` | Atributos, perfil, finanças, estádio, técnico |
 | `leagues.ts` | Filtro de ligas, zonas, países, calendários |
 | `pyramid.ts` | Pirâmide por país e zonas `prom`/`rel` derivadas dela |
@@ -99,7 +99,7 @@ startKits (a pirâmide e as zonas não ficam nos kits, mas o `leagueData` e o mu
 
 ## Calibração
 
-Os atributos e as finanças são **derivados**, não originais. O seed só traz `overall`, posição, idade, pé e reputação. Os 13 atributos de 0 a 10 do TouchLines são estimados por regressão.
+Os atributos e as finanças são **derivados**, não originais. O seed só traz `overall`, posição, idade, pé e reputação. Os 13 atributos de 0 a 10 do FMProject são estimados por regressão.
 
 - **Pares.** O casamento por nome encontra cerca de 2.900 jogadores e cerca de 109 clubes que existem nos dois datasets (Brasil A/B e as 5 grandes).
 - **Atributos.** Para cada papel e atributo há uma regressão `stat = a + b·overall + c·leagueRep`, com ruído determinístico de `sd` residual.

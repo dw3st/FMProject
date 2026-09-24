@@ -1,4 +1,4 @@
-# TouchLines Engine MCP Server
+# FMProject Engine MCP Server
 
 A stdio-based [Model Context Protocol](https://modelcontextprotocol.io) server that
 loads a debug snapshot (produced by `TestScreen` → `POST /api/debug/snapshot`) and
@@ -23,10 +23,10 @@ Add to `.mcp.json` at the repo root:
 ```json
 {
   "mcpServers": {
-    "touchlines-engine": {
+    "fmproject-engine": {
       "command": "bun",
       "args": ["run", "mcp"],
-      "cwd": "/absolute/path/to/touchlines"
+      "cwd": "/absolute/path/to/fmproject"
     }
   }
 }
@@ -39,10 +39,10 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "touchlines-engine": {
+    "fmproject-engine": {
       "command": "bun",
       "args": ["run", "mcp"],
-      "cwd": "/absolute/path/to/touchlines"
+      "cwd": "/absolute/path/to/fmproject"
     }
   }
 }

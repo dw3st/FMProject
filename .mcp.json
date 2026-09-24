@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "touchlines-engine": {
+    "fmproject-engine": {
       "command": "bun",
       "args": ["src/mcp/server.ts"]
     }
