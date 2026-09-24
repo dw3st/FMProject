@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import {
-  budgetTierFromTransferBudget,
+  budgetTierFromBudget,
   findCandidates,
   generateTransferNeeds,
   playerOverallRating,
@@ -51,18 +51,18 @@ function makeSquad(id: string, players: RosterPlayer[], finances?: Squad["financ
   };
 }
 
-describe("budgetTierFromTransferBudget", () => {
+describe("budgetTierFromBudget", () => {
   test("high >= 50M", () => {
-    expect(budgetTierFromTransferBudget(50_000_000)).toBe("high");
-    expect(budgetTierFromTransferBudget(100_000_000)).toBe("high");
+    expect(budgetTierFromBudget(50_000_000)).toBe("high");
+    expect(budgetTierFromBudget(100_000_000)).toBe("high");
   });
   test("mid 15M–50M", () => {
-    expect(budgetTierFromTransferBudget(15_000_000)).toBe("mid");
-    expect(budgetTierFromTransferBudget(40_000_000)).toBe("mid");
+    expect(budgetTierFromBudget(15_000_000)).toBe("mid");
+    expect(budgetTierFromBudget(40_000_000)).toBe("mid");
   });
   test("low < 15M", () => {
-    expect(budgetTierFromTransferBudget(14_999_999)).toBe("low");
-    expect(budgetTierFromTransferBudget(0)).toBe("low");
+    expect(budgetTierFromBudget(14_999_999)).toBe("low");
+    expect(budgetTierFromBudget(0)).toBe("low");
   });
 });
 
