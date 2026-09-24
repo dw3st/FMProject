@@ -16,7 +16,8 @@
  *
  * Known limitation: the current season's calendar still has the old league's ids.
  * The moved clubs keep playing their old fixtures because matches load squads by id,
- * which is exactly the robustness this proves. A new calendar is plan 3b's job.
+ * which is exactly the robustness this proves. At a real rollover the new calendar is built from
+ * the new membership (see scripts/season-rollover-smoke.ts).
  *
  * Run:  bun scripts/membership-smoke.ts
  */
