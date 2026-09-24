@@ -32,7 +32,7 @@ export function SquadTable({
     { key: "training", label: t("dashboard.squadTable.train"), width: "w-20" },
     { key: "moral", label: t("dashboard.squadTable.moral"), width: "w-20" },
     { key: "salary", label: t("dashboard.squadTable.salary"), width: "w-20" },
-    { key: "value", label: t("dashboard.squadTable.value"), width: "w-16" },
+    { key: "valueMillions", label: t("dashboard.squadTable.value"), width: "w-16" },
     { key: "goals", label: t("dashboard.squadTable.goals"), width: "w-10" },
     { key: "assists", label: t("dashboard.squadTable.assists"), width: "w-10" },
     { key: "avgRating", label: t("dashboard.squadTable.rating"), width: "w-20" },
