@@ -236,14 +236,28 @@ desenvolvimento) é o mesmo do motor.
 
 ### Limitações conhecidas (calibração de 2026-09-23)
 
-- **Nível absoluto:** o xG é multiplicado por `(nívelDoJogo / LEVEL_REF)^LEVEL_EXPONENT`
-  (`LEVEL_REF = 5`, `LEVEL_EXPONENT = 1.2`, `BASE_GOALS = 0.94`). O nível do jogo é a média do
-  `teamLevel` dos dois times, e `teamLevel` é a média das 4 linhas. Medido contra o motor
-  (440 jogos por liga), em gols/jogo: Premier 2,31 → 2,16 (−7%), Brasileirão A 1,68 → 1,71
-  (+2%), Série C 0,80 → 0,73 (−9%), Serie A +6%, Ligue 1 +10%, La Liga +13%, Série B +20% e
-  Bundesliga +21%. O termo de nível não separa ligas de nível parecido: as ligas europeias têm
-  nível ~5,05–5,18, mas no motor vão de 1,65 (Bundesliga) a 2,31 (Premier). O ruído do motor
-  também pesa: duas amostras da mesma liga diferiram até 15%.
+- **Volume de gols (recalibrado em 2026-09-24, com 12 ligas):**
+  `xG = BASE_GOALS × ratio^STRENGTH_EXPONENT × (nível/LEVEL_REF)^LEVEL_EXPONENT × mando`.
+  - `ratio = (ataque × meio) / (defesa × goleiro)`. O nível do jogo é a média do `teamLevel` dos
+    dois times, e `teamLevel` é a média das 4 linhas.
+  - Valores: `BASE_GOALS = 0.78`, `STRENGTH_EXPONENT = 1.0`, `LEVEL_EXPONENT = 1.1`,
+    `HOME_ADVANTAGE = 1.06` (antes 0.94 / 0.5 / 1.2 / 1.01).
+  - **Por que mudou:** a calibração antiga só usava as 8 ligas nativas. Nas ligas `of_*` o
+    quickSim fazia +26% a +42% de gols. Os elencos derivados têm defesa e goleiro fortes em
+    relação ao ataque (ex.: liga russa com ataque 1,8 e reflexo do goleiro 4,3), e o motor marca
+    bem menos ali do que o nível sozinho prevê. O `ratio` com expoente 1 captura isso.
+  - **Resultado:** o rms do erro de gols/jogo nas 12 ligas foi de 21% para 9%. Fora da amostra,
+    o erro ficou em +8% (`of_championship`), +7% (`of_allsvenskan`) e −11% (`of_kenyan`), contra
+    +26% / +33% / +31% antes. No agregado, casa, fora e empate batem com o motor
+    (31,8/29,0/39,2% × 31,3/29,0/39,6%).
+  - **Ainda sobra:** Premier −11%, Serie A −10% e Ekstraklasa +23%. As 5 grandes têm nível quase
+    igual e no motor vão de 1,68 (Bundesliga) a 2,28 (Premier). Um modelo com expoente por linha
+    melhorou pouco (rms 7,6%) e zerava o peso do goleiro, então foi descartado como sobreajuste.
+  - **Como recalibrar:** rode `quicksim-calibrate.ts` com `QS_ENGINE_CACHE` por liga (motor uma
+    vez, ~400 jogos) para um conjunto de ligas de níveis variados, nativas **e** `of_*`. Depois
+    ajuste as constantes contra os caches. A média de gols do quickSim é analítica
+    (`Σ xgHome + xgAway`), então dá para ajustar `BASE_GOALS` em forma fechada. O ruído do motor
+    com 400 jogos é de ±4% nos gols.
 - **Contagem de passes do motor (corrigida em 2026-09-24):** o through ball emitia
   `passAttempted` sem nunca emitir `passCompleted`/`passFailed`, o que derrubava o aproveitamento
   para ~47%. Agora ele só conta na família própria (`throughBalls*`), e todo `passAttempted`
