@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { LeagueTeam, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
-import { applyPlayerBroadcastingCredit, runSeasonTransition } from "@/Domain/season/seasonTransition";
+import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 
 function minimalSquad(
   id: string,
@@ -91,8 +91,6 @@ describe("runSeasonTransition", () => {
     expect(result.archive.titles[0]!.coachName).toBe("Coach A");
     expect(result.archive.playerLogs["p_a"]!.goals).toBe(3);
 
-    expect(result.newSeason.year).toBe(2026);
-    expect(result.newSeason.calendar.length).toBeGreaterThan(0);
     expect(result.playerBroadcastingCredit).toBe(10_000_000);
 
     const alphaOut = result.squadsToSave.find((r) => r.squadId === "a")!;
@@ -150,6 +148,30 @@ describe("runSeasonTransition", () => {
     const bOut = result.squadsToSave.find((r) => r.squad.id === "b")!;
     expect(bOut.squad.finances!.budget).toBe(3_000_000);
     expect(result.playerBroadcastingCredit).toBe(0);
+  });
+});
+
+describe("buildNextSeasonCalendar", () => {
+  test("double round robin of the given team list (n even)", () => {
+    const ids = ["a", "b", "c", "d"];
+    const cal = buildNextSeasonCalendar({ leagueSlug: "x", teamIds: ids, year: 2026 });
+    expect(cal.meta.year).toBe(2026);
+    expect(cal.meta.totalRounds).toBe(6);
+    const fixtures = cal.rounds.flatMap((r) => r.fixtures);
+    for (const id of ids) expect(fixtures.filter((f) => f.home === id || f.away === id).length).toBe(6);
+  });
+
+  test("odd team count: each club still plays 2×(n−1)", () => {
+    const ids = ["a", "b", "c", "d", "e"];
+    const fixtures = buildNextSeasonCalendar({ leagueSlug: "x", teamIds: ids, year: 2026 }).rounds.flatMap((r) => r.fixtures);
+    for (const id of ids) expect(fixtures.filter((f) => f.home === id || f.away === id).length).toBe(8);
+    expect(fixtures.some((f) => f.home === "__bye__" || f.away === "__bye__")).toBe(false);
+  });
+
+  test("calendar team list is independent of the reset membership", () => {
+    const cal = buildNextSeasonCalendar({ leagueSlug: "x", teamIds: ["new1", "b"], year: 2026 });
+    const ids = new Set(cal.rounds.flatMap((r) => r.fixtures.flatMap((f) => [f.home, f.away])));
+    expect([...ids].sort()).toEqual(["b", "new1"]);
   });
 });
 
