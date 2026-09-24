@@ -2,13 +2,13 @@ import { useState, useCallback } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
 import { useKeybinds } from "@/GameInterface/useKeybinds";
-import type { DayLog } from "@/types/dayLogTypes";
+import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 
 export function useAdvanceDay() {
   const { session, squad, fixtures, currentDate: simDate, refresh } = useGameSave();
 
   const [advancing, setAdvancing] = useState(false);
-  const [dayLog, setDayLog] = useState<(DayLog & { newDate: string }) | null>(null);
+  const [dayLog, setDayLog] = useState<AdvanceDayResponse | null>(null);
 
   const handleAdvanceDay = useCallback(async () => {
     if (!session || advancing) return;
@@ -29,7 +29,7 @@ export function useAdvanceDay() {
     try {
       const res = await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to advance day");
-      const log = (await res.json()) as DayLog & { newDate: string };
+      const log = (await res.json()) as AdvanceDayResponse;
       setDayLog(log);
     } catch {
       // silently fail for now
