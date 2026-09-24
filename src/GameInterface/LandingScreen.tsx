@@ -261,7 +261,7 @@ export function LandingScreen() {
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.3) 1px, transparent 0)`,
+              backgroundImage: `radial-gradient(circle at 2px 2px, oklch(0.75 0.18 var(--team-hue) / 0.3) 1px, transparent 0)`,
               backgroundSize: "24px 24px",
             }}
           />
