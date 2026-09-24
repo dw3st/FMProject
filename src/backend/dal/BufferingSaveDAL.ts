@@ -38,12 +38,13 @@ function squadKey(leagueSlug: string, clubSlug: string): string {
  *  - Writes update the cache and register a flush thunk keyed by resource. Writing
  *    the same resource again replaces the thunk, so only the final value is
  *    persisted.
- *  - `flush()` runs every pending thunk (bounded parallelism), save meta last,
- *    then clears them — see `flush()`.
+ *  - `flush()` runs every pending thunk (bounded parallelism): writes, then squad
+ *    deletes, then save meta — see `flush()`.
  *
  * Aliasing: reads within one unit of work return SHARED objects — the same
  * instance to every caller (a squad from `readSquad` is the one inside
- * `listAllSquads`, a buffered write is returned as-is to later reads). Callers
+ * `listAllSquads`, a buffered write is returned as-is to later reads — unless its
+ * `leagueSlug` differed from the league it was written to, then a normalized copy). Callers
  * must treat what they read as immutable (build a new object and write it), or
  * write the object back after mutating it; an in-place mutation that is never
  * written is visible to the rest of the unit of work but never persisted.
@@ -59,28 +60,38 @@ export class BufferingSaveDAL implements ISaveDAL {
   private readonly cache = new Map<string, unknown>();
   private readonly pending = new Map<string, () => Promise<void>>();
   private readonly squadStores = new Map<string, Promise<Map<string, SquadFile>>>();
-  private readonly squadEdits = new Map<string, Map<string, SquadFile>>();
+  /** Buffered squad writes by file key; `null` is a tombstone (buffered delete). */
+  private readonly squadEdits = new Map<string, Map<string, SquadFile | null>>();
+  /** Pending thunks that are squad deletes — flushed after every write, before meta. */
+  private readonly deleteThunks = new WeakSet<() => Promise<void>>();
 
   constructor(private readonly inner: ISaveDAL) {}
 
   /**
    * Persist every buffered write (the final value per resource) to the underlying
-   * DAL, in two phases:
+   * DAL, in three phases, each only if the previous one fully succeeded:
    *
-   *  1. every non-meta resource, at most FLUSH_CONCURRENCY at a time;
-   *  2. only if phase 1 fully succeeded, the save meta (`meta:*`).
+   *  1. every write except meta (squads and all other resources), at most
+   *     FLUSH_CONCURRENCY at a time;
+   *  2. every buffered squad delete (tombstone);
+   *  3. the save meta (`meta:*`).
    *
+   * Writes before deletes: a `moveSquad` is a write in the new league plus a
+   * delete in the old one, so a failure mid-flush can leave two copies of a club
+   * (the squad index keeps the moved one — see `membershipRev`) but never zero.
    * Meta carries `currentDate`, so writing it last keeps the invariant that a save
    * is never recorded as advanced unless everything else of that unit of work was
-   * persisted. Within a phase every write is attempted; successful ones are
+   * persisted. Within a phase every operation is attempted; successful ones are
    * cleared, failed ones stay pending (a later flush retries them), and one
-   * AggregateError is thrown after all have settled. If phase 1 fails, meta is
-   * left pending and unwritten.
+   * AggregateError is thrown after all have settled. A failed phase leaves every
+   * later phase pending and untouched.
    */
   async flush(): Promise<void> {
     const entries = Array.from(this.pending.entries());
     const isMeta = ([key]: [string, unknown]) => key.startsWith("meta:");
-    await this.flushPhase(entries.filter((e) => !isMeta(e)));
+    const isDelete = ([, run]: [string, () => Promise<void>]) => this.deleteThunks.has(run);
+    await this.flushPhase(entries.filter((e) => !isMeta(e) && !isDelete(e)));
+    await this.flushPhase(entries.filter(isDelete));
     await this.flushPhase(entries.filter(isMeta));
   }
 
@@ -159,12 +170,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   // All squad access goes through ONE per-save store keyed by file identity
   // (`league/clubStem`), bulk-loaded with a single inner `listSquadFiles` on first
   // use. Once loaded the store is authoritative for which squad files exist, so
-  // `readSquad` / `squadExists` never touch the inner DAL — including the slug
-  // probe misses of `SaveService.getSquad` (`{slug}.json` absent → null, from
-  // memory) — and `listAllSquads` is served from the same objects.
+  // `readSquad` / `squadExists` never touch the inner DAL — a miss is answered
+  // from memory — and `listAllSquads` is served from the same objects.
   //
   // Buffered writes live in `squadEdits` (same key) and overlay the store for every
-  // read path; a write never forces the store to load.
+  // read path; a write never forces the store to load. A buffered delete is a
+  // tombstone (`null`) in the same map: it hides the key from every read path and
+  // flushes as `inner.deleteSquad` in the delete phase (after every write). A later write on the same
+  // key replaces both the tombstone and its pending delete.
 
   private squadStore(saveId: string): Promise<Map<string, SquadFile>> {
     let store = this.squadStores.get(saveId);
@@ -182,7 +195,7 @@ export class BufferingSaveDAL implements ISaveDAL {
     return store;
   }
 
-  private edits(saveId: string): Map<string, SquadFile> {
+  private edits(saveId: string): Map<string, SquadFile | null> {
     let m = this.squadEdits.get(saveId);
     if (!m) this.squadEdits.set(saveId, (m = new Map()));
     return m;
@@ -193,29 +206,48 @@ export class BufferingSaveDAL implements ISaveDAL {
     const store = await this.squadStore(saveId);
     const edits = this.edits(saveId);
     const out: SquadFile[] = [];
-    for (const [key, f] of store) out.push(edits.get(key) ?? f);
-    for (const [key, f] of edits) if (!store.has(key)) out.push(f);
+    for (const [key, f] of store) {
+      if (!edits.has(key)) out.push(f);
+      else {
+        const edited = edits.get(key);
+        if (edited) out.push(edited); // null = tombstone → omitted
+      }
+    }
+    for (const [key, f] of edits) if (f && !store.has(key)) out.push(f);
     return out;
   }
 
   async readSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null> {
     const key = squadKey(leagueSlug, clubSlug);
-    const edited = this.edits(saveId).get(key);
-    if (edited) return edited.squad;
+    const edits = this.edits(saveId);
+    if (edits.has(key)) return edits.get(key)?.squad ?? null;
     return (await this.squadStore(saveId)).get(key)?.squad ?? null;
   }
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
     const key = squadKey(leagueSlug, clubSlug);
-    this.edits(saveId).set(key, { leagueSlug, clubSlug, squad });
-    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.writeSquad(saveId, leagueSlug, clubSlug, squad));
+    // Normalize like FileSystemDAL's read path: the folder is the league. Copy only
+    // when it differs, so the common case keeps returning the written instance.
+    const stored: Squad = squad.leagueSlug === leagueSlug ? squad : { ...squad, leagueSlug };
+    this.edits(saveId).set(key, { leagueSlug, clubSlug, squad: stored });
+    this.pending.set(`squad:${saveId}:${key}`, () => this.inner.writeSquad(saveId, leagueSlug, clubSlug, stored));
   }
   async squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean> {
     const key = squadKey(leagueSlug, clubSlug);
-    if (this.edits(saveId).has(key)) return true;
+    const edits = this.edits(saveId);
+    if (edits.has(key)) return edits.get(key) !== null;
     return (await this.squadStore(saveId)).has(key);
   }
-  listLeagues(saveId: string): Promise<string[]> {
-    return this.inner.listLeagues(saveId);
+  async deleteSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<void> {
+    const key = squadKey(leagueSlug, clubSlug);
+    this.edits(saveId).set(key, null);
+    const run = () => this.inner.deleteSquad(saveId, leagueSlug, clubSlug);
+    this.deleteThunks.add(run);
+    this.pending.set(`squad:${saveId}:${key}`, run);
+  }
+  async listLeagues(saveId: string): Promise<string[]> {
+    const leagues = new Set(await this.inner.listLeagues(saveId));
+    for (const f of this.edits(saveId).values()) if (f) leagues.add(f.leagueSlug);
+    return [...leagues];
   }
   async listSquadFiles(saveId: string): Promise<SquadFile[]> {
     return this.squadFilesView(saveId);

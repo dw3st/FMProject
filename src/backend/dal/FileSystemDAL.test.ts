@@ -1,7 +1,9 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
+import { unlinkSync } from "fs";
 import { randomUUID } from "crypto";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { Squad } from "@/types/playerTypes";
+import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 
 const dal = new FileSystemDAL();
 const created: string[] = [];
@@ -36,5 +38,52 @@ describe("FileSystemDAL squad listing", () => {
 
     const all = await dal.listAllSquads(saveId);
     expect(all.map((s) => `${s.leagueSlug}/${s.id}`)).toEqual(files.map((f) => `${f.leagueSlug}/${f.clubSlug}`));
+  });
+});
+
+describe("FileSystemDAL.listSquadFiles — vanished file", () => {
+  test("a file deleted between the scan and the read is skipped, not an error", async () => {
+    const saveId = `test-vanish-${randomUUID()}`;
+    created.push(saveId);
+    await dal.writeSquad(saveId, "lg", "33", { id: "33", name: "United", players: [] } as unknown as Squad);
+    await dal.writeSquad(saveId, "lg", "34", { id: "34", name: "City", players: [] } as unknown as Squad);
+
+    const realFile = Bun.file.bind(Bun);
+    // Delete 33.json right before it is opened for reading — after the glob listed it.
+    const spy = spyOn(Bun, "file").mockImplementation(((path: string, opts?: BlobPropertyBag) => {
+      if (typeof path === "string" && /[\\/]lg[\\/]33\.json$/.test(path)) {
+        try {
+          unlinkSync(path);
+        } catch {}
+      }
+      return realFile(path, opts);
+    }) as typeof Bun.file);
+    try {
+      expect((await dal.listSquadFiles(saveId)).map((f) => f.clubSlug)).toEqual(["34"]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe("FileSystemDAL.deleteSquad", () => {
+  test("removes the file; listSquadFiles no longer lists it; version bumps", async () => {
+    const saveId = `test-delete-${randomUUID()}`;
+    created.push(saveId);
+    await dal.writeSquad(saveId, "lg", "33", { id: "33", name: "United", players: [] } as unknown as Squad);
+    await dal.writeSquad(saveId, "lg", "34", { id: "34", name: "City", players: [] } as unknown as Squad);
+    const before = getSaveDataVersion(saveId);
+
+    await dal.deleteSquad(saveId, "lg", "33");
+
+    expect(await dal.squadExists(saveId, "lg", "33")).toBe(false);
+    expect(await dal.readSquad(saveId, "lg", "33")).toBeNull();
+    expect((await dal.listSquadFiles(saveId)).map((f) => f.clubSlug)).toEqual(["34"]);
+    expect(getSaveDataVersion(saveId)).toBeGreaterThan(before);
+  });
+
+  test("deleting a missing squad does not throw", async () => {
+    const saveId = `test-delete-missing-${randomUUID()}`;
+    await dal.deleteSquad(saveId, "lg", "nope");
   });
 });

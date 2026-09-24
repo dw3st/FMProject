@@ -13,7 +13,7 @@ import { getMainRole } from "@/GameInterface/positionHelpers";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
-import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/backend/squadIdResolve";
+import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
 import { clubProfileStem } from "@/backend/clubProfile";
 import { authRoutes } from "@/backend/auth/routes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
@@ -200,18 +200,22 @@ export const apiRoutes = {
     const { saveId, league, club } = req.params;
     const auth = requireSaveOwner(req, saveId!);
     if (auth instanceof Response) return auth;
+    // The club param is resolved inside :league first, then as a squadId anywhere in
+    // the save (a club that moved leagues keeps answering on its id).
+    const loc = resolveSquadRoute(await saveService.getSquadIndex(saveId!), league!, club!);
+    const found = loc ? await saveService.getSquad(saveId!, loc.leagueSlug, loc.stem) : null;
+    if (!loc || !found) return Response.json({ error: "save squad not found" }, { status: 404 });
+    let squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
     if (req.method === "PUT") {
-      const squad = await saveService.getSquad(saveId!, league!, club!);
-      if (!squad) return Response.json({ error: "save squad not found" }, { status: 404 });
       const body = await req.json() as { finances?: Partial<import("@/types/playerTypes").ClubFinances> };
       if (body.finances) {
-        squad.finances = { ...squad.finances, ...body.finances } as import("@/types/playerTypes").ClubFinances;
+        squad = {
+          ...squad,
+          finances: { ...squad.finances, ...body.finances } as import("@/types/playerTypes").ClubFinances,
+        };
       }
-      await saveService.saveSquad(saveId!, league!, club!, squad);
-      return Response.json(squad);
+      await saveService.saveSquad(saveId!, loc.leagueSlug, loc.stem, squad);
     }
-    const squad = await saveService.getSquad(saveId!, league!, club!);
-    if (!squad) return Response.json({ error: "save squad not found" }, { status: 404 });
     return Response.json(squad);
   },
 
@@ -274,15 +278,21 @@ export const apiRoutes = {
       .map((d) => d.name);
 
     const squadGlob = new Bun.Glob("*.json");
-    let copied = 0;
+    // Skip any catalogue squad whose id already lives ANYWHERE in the save — a club
+    // that moved leagues must not be resurrected in its old folder. addNewSquads
+    // re-checks each candidate and drops the index once, not once per file.
+    const index = await saveService.getSquadIndex(saveId);
+    const candidates: Array<{ leagueSlug: string; stem: string; squad: Squad }> = [];
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
       for await (const p of squadGlob.scan(srcDir)) {
         const clubSlug = p.replace(".json", "");
-        if (await saveService.squadExists(saveId, league, clubSlug)) continue;
+        // File stems are squadIds: skip without reading when the stem is already known.
+        if (isSquadInSave(index, league, clubSlug, clubSlug)) continue;
 
         const raw   = (await Bun.file(`${srcDir}/${p}`).json()) as Squad;
+        if (isSquadInSave(index, league, clubSlug, raw.id)) continue;
         const squad: Squad = {
           ...raw,
           players: raw.players.map((pl) => ({
@@ -290,11 +300,11 @@ export const apiRoutes = {
             seasonLog: pl.seasonLog ?? emptySeasonLog(),
           })),
         };
-        await saveService.saveSquad(saveId, league, clubSlug, squad);
-        copied++;
+        candidates.push({ leagueSlug: league, stem: clubSlug, squad });
       }
     }
 
+    const copied = await saveService.addNewSquads(saveId, candidates);
     return Response.json({ ok: true, copied });
   },
 
@@ -325,17 +335,9 @@ export const apiRoutes = {
       if (!save) return Response.json({ error: "no save found" }, { status: 404 });
     }
 
-    const mySquad = await saveService.getSquad(save.id, save.leagueSlug, save.clubId);
+    const mySquad = await saveService.getSquadById(save.id, save.clubId);
     if (!mySquad) return Response.json({ error: "squad not found" }, { status: 404 });
-
-    const leagueFile = Bun.file(`${DATA_DIR}/leagueData.json`);
-    const leagues    = (await leagueFile.json()) as Array<{
-      slug: string;
-      standings: Array<{ squadId: string; slug?: string }>;
-    }>;
-    const league    = leagues.find((l) => l.slug === save.leagueSlug);
     const myInternalId = mySquad.id;
-    const idToClubSlug = league ? squadIdToClubSlugMap(league.standings) : undefined;
 
     let opponentSquad: Squad | null = null;
     let matchFixture: Fixture | null = null;
@@ -345,25 +347,13 @@ export const apiRoutes = {
       if (!currentDate) {
         return Response.json({ error: "save has no currentDate" }, { status: 400 });
       }
-      // Try per-league round files first (new format), then fall back to season.json
-      let todayFixture: Fixture | undefined;
-      const todayFixturesNew = await saveService.getFixturesForDate(save.id, currentDate);
-      todayFixture = todayFixturesNew.find(
+      const todayFixtures = await saveService.getFixturesForDate(save.id, currentDate);
+      const todayFixture = todayFixtures.find(
         (f) =>
           f.competition === save.leagueSlug &&
           (f.home === myInternalId || f.away === myInternalId) &&
           !f.played,
       );
-      if (!todayFixture) {
-        const season = await saveService.getSeason(save.id);
-        const calendar = season?.calendar ?? [];
-        todayFixture = calendar.find(
-          (f) =>
-            f.date === currentDate &&
-            (f.home === myInternalId || f.away === myInternalId) &&
-            !f.played,
-        );
-      }
       if (!todayFixture) {
         return Response.json(
           { error: "no unplayed match for your club on the current date" },
@@ -371,21 +361,15 @@ export const apiRoutes = {
         );
       }
       const oppId = todayFixture.home === myInternalId ? todayFixture.away : todayFixture.home;
-      const oppSlug = clubSlugFromSquadId(oppId, save.leagueSlug, idToClubSlug);
-      if (!oppSlug) {
-        return Response.json({ error: "could not resolve opponent club" }, { status: 400 });
-      }
-      opponentSquad = await saveService.getSquad(save.id, save.leagueSlug, oppSlug);
+      opponentSquad = await saveService.getSquadById(save.id, oppId);
       if (!opponentSquad) {
         return Response.json({ error: "opponent squad not found" }, { status: 404 });
       }
       matchFixture = todayFixture;
     } else {
-      const oppRow = league?.standings.find((s) => s.squadId !== myInternalId);
-      const oppSlug = oppRow ? clubSlugFromSquadId(oppRow.squadId, save.leagueSlug, idToClubSlug) : null;
-      if (oppSlug) {
-        opponentSquad = await saveService.getSquad(save.id, save.leagueSlug, oppSlug);
-      }
+      const index = await saveService.getSquadIndex(save.id);
+      const oppRow = index.inLeague(save.leagueSlug).find((t) => t.squadId !== myInternalId);
+      if (oppRow) opponentSquad = await saveService.getSquadById(save.id, oppRow.squadId);
     }
 
     const tacticsRaw = await saveService.getTactics(save.id);

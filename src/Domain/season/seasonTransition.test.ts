@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { LeagueTeam, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
-import { runSeasonTransition } from "@/Domain/season/seasonTransition";
+import { applyPlayerBroadcastingCredit, runSeasonTransition } from "@/Domain/season/seasonTransition";
 
 function minimalSquad(
   id: string,
@@ -147,5 +147,58 @@ describe("runSeasonTransition", () => {
     const bOut = result.squadsToSave.find((r) => r.squad.id === "b")!;
     expect(bOut.squad.finances!.budget).toBe(3_000_000);
     expect(result.playerBroadcastingCredit).toBe(0);
+  });
+});
+
+describe("applyPlayerBroadcastingCredit", () => {
+  const leagueTeams: LeagueTeam[] = [
+    { squadId: "a", name: "Alpha", colors: ["#000", "#fff"] },
+    { squadId: "b", name: "Beta", colors: ["#111", "#eee"] },
+  ];
+  const endingSeason: SeasonData = { year: 2025, start: "2025-08-15", end: "2026-05-20", calendar: [] };
+  const transition = () =>
+    runSeasonTransition({
+      endingSeason,
+      leagueSlug: "test_league",
+      leagueTeams,
+      squadsInLeague: [
+        minimalSquad("a", "alpha", "Alpha", {
+          finances: { broadcasting: 10_000_000, commercial: 0, total: 0, budget: 5_000_000, followers: 0 },
+        }),
+        minimalSquad("b", "beta", "Beta", {
+          finances: { broadcasting: 2_000_000, commercial: 0, total: 0, budget: 1_000_000, followers: 0 },
+        }),
+      ],
+      playerClubSquadId: "a",
+    });
+
+  test("credits the reset player squad: aged, seasonLog cleared, budget += credit", () => {
+    const t = transition();
+    const out = applyPlayerBroadcastingCredit(t.squadsToSave, "a", t.playerBroadcastingCredit);
+    const alpha = out.find((r) => r.squad.id === "a")!;
+    expect(alpha.squad.players[0]!.age).toBe(25);
+    expect(alpha.squad.players[0]!.seasonLog!.goals).toBe(0);
+    expect(alpha.squad.players[0]!.seasonLog!.appearances).toBe(0);
+    expect(alpha.squad.finances!.budget).toBe(15_000_000);
+    // AI club untouched by the player credit
+    expect(out.find((r) => r.squad.id === "b")!.squad.finances!.budget).toBe(3_000_000);
+  });
+
+  test("does not mutate the input refs", () => {
+    const t = transition();
+    applyPlayerBroadcastingCredit(t.squadsToSave, "a", t.playerBroadcastingCredit);
+    expect(t.squadsToSave.find((r) => r.squad.id === "a")!.squad.finances!.budget).toBe(5_000_000);
+  });
+
+  test("zero credit or absent player squad returns refs unchanged", () => {
+    const t = transition();
+    expect(applyPlayerBroadcastingCredit(t.squadsToSave, "a", 0)).toEqual(t.squadsToSave);
+    expect(applyPlayerBroadcastingCredit(t.squadsToSave, "zzz", 1_000)).toEqual(t.squadsToSave);
+  });
+
+  test("player squad without finances gets a default finances block holding the credit", () => {
+    const refs = [{ leagueSlug: "x", clubSlug: "a", squad: minimalSquad("a", "a", "A", {}) }];
+    const out = applyPlayerBroadcastingCredit(refs, "a", 7);
+    expect(out[0]!.squad.finances!.budget).toBe(7);
   });
 });

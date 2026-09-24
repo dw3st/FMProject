@@ -38,25 +38,3 @@ export function computeAdvanceDayMoneyDelta(args: {
 
   return moneyDelta;
 }
-
-/**
- * Resolve the human-controlled club's squad id from league standings.
- *
- * `playerClubSlug` is save meta `clubId`, which may be the numeric `squadId` (e.g. "135")
- * or the standings text slug (e.g. "cruzeiro"). Older code only compared the map value
- * (always the text slug) to meta — so numeric ids never matched and league sims ignored
- * user tactics.
- */
-export function resolvePlayerSquadId(
-  standingsForLeague: Array<{ squadId: string; slug?: string }> | undefined,
-  idToClubSlug: Map<string, string> | undefined,
-  playerClubSlug: string,
-): string | undefined {
-  if (!standingsForLeague?.length) return undefined;
-  for (const row of standingsForLeague) {
-    if (row.squadId === playerClubSlug) return row.squadId;
-    if (row.slug === playerClubSlug) return row.squadId;
-    if (idToClubSlug?.get(row.squadId) === playerClubSlug) return row.squadId;
-  }
-  return undefined;
-}

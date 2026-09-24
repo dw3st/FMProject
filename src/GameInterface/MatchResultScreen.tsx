@@ -15,13 +15,13 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
 import type { MatchEvent } from "@/types/dayLogTypes";
 import type { DayLog } from "@/types/dayLogTypes";
-import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/backend/squadIdResolve";
+import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import type { Fixture } from "@/types/calendarTypes";
 import { MAIN_ROLE_ABBR, getPositionColor } from "@/GameInterface/positionHelpers";
-import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
-import { competitionName } from "@/Domain/world/labels";
+import { catalogLeagueBySquadId, competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -320,9 +320,6 @@ export function MatchResultScreen() {
     void (async () => {
       try {
         const qDate = parseDateQuery();
-        const leagueRows = leagues.find((l) => l.slug === session.leagueSlug) ?? null;
-        const idToClubSlug = leagueRows ? squadIdToClubSlugMap(leagueRows.standings) : undefined;
-
         const date =
           qDate ??
           latestPlayedFixtureDate(fixtures, mySquadId) ??
@@ -371,14 +368,12 @@ export function MatchResultScreen() {
           return;
         }
 
-        const homeSlug = clubSlugFromSquadId(ev.home, session.leagueSlug, idToClubSlug);
-        const awaySlug = clubSlugFromSquadId(ev.away, session.leagueSlug, idToClubSlug);
-
+        // The squad route resolves by squadId anywhere in the save — no static slug mapping needed.
         const [hs, as] = await Promise.all([
-          fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${homeSlug}`).then((r) =>
+          fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.home)}`).then((r) =>
             r.ok ? (r.json() as Promise<Squad>) : null,
           ),
-          fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${awaySlug}`).then((r) =>
+          fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.away)}`).then((r) =>
             r.ok ? (r.json() as Promise<Squad>) : null,
           ),
         ]);
@@ -398,9 +393,11 @@ export function MatchResultScreen() {
     return () => {
       cancelled = true;
     };
-  }, [saveLoading, session, fixtures, mySquadId, leagues, simCurrentDate, t]);
+  }, [saveLoading, session, fixtures, mySquadId, simCurrentDate, t]);
 
-  const leagueData = useMemo(() => leagues.find((l) => l.slug === session?.leagueSlug), [leagues, session?.leagueSlug]);
+  // Crests are filed by the club's catalog (origin) league, not its current league.
+  const catalogLeague = useMemo(() => catalogLeagueBySquadId(leagues), [leagues]);
+  const catalogSlugs = useMemo(() => squadIdToClubSlugMap(leagues.flatMap((l) => l.standings)), [leagues]);
 
   if (saveLoading || !session) {
     return (
@@ -452,11 +449,8 @@ export function MatchResultScreen() {
   const isHome = matchEvent.home === mySquadId;
   const homeName = teamDisplayNameFromLeagues(matchEvent.home, leagues);
   const awayName = teamDisplayNameFromLeagues(matchEvent.away, leagues);
-  const standingIdMap = leagueData ? squadIdToClubSlugMap(leagueData.standings) : undefined;
-  const homeSlug = clubSlugFromSquadId(matchEvent.home, session.leagueSlug, standingIdMap);
-  const awaySlug = clubSlugFromSquadId(matchEvent.away, session.leagueSlug, standingIdMap);
-  const homeLogoUrl = `/api/logos/${session.leagueSlug}/${homeSlug}`;
-  const awayLogoUrl = `/api/logos/${session.leagueSlug}/${awaySlug}`;
+  const homeLogoUrl = squadLogoUrl(matchEvent.home, catalogLeague.get(matchEvent.home) ?? session.leagueSlug, catalogSlugs.get(matchEvent.home));
+  const awayLogoUrl = squadLogoUrl(matchEvent.away, catalogLeague.get(matchEvent.away) ?? session.leagueSlug, catalogSlugs.get(matchEvent.away));
 
   const { weather, referee, venue } = getMatchMeta(resolvedDate, session.clubName, isHome);
   const competition = competitionName(matchEvent.competition, leagues);
