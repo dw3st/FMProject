@@ -11,8 +11,8 @@
 
 import { saveService, SaveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import { Player } from "@/Domain/Player";
+import type { Squad } from "@/types/playerTypes";
+import { estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -20,11 +20,6 @@ export const TICKET_PRICE = 25;
 export const HOME_FILL_RATE = 0.65;
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
-
-function estimateWeeklyWage(p: RosterPlayer): number {
-  const rating = Player.overallAvg(p);
-  return Math.round(Math.pow(rating, 2.2) * 50);
-}
 
 // ── Balance getters ───────────────────────────────────────────────────────────
 

@@ -98,6 +98,9 @@ export interface ClubFinances {
   followers: number;
 }
 
+/** AI club financial tier (`src/Domain/aiFinance`). Never set on the human club. */
+export type FinancialTier = "LOW" | "MEDIUM" | "HIGH" | "ELITE";
+
 export interface ClubVenue {
   name: string;
   city: string;
@@ -133,6 +136,12 @@ export interface Squad {
   /** Club country from squad data; used as nationality fallback in scout. */
   country?: string;
   finances?: ClubFinances;
+  /**
+   * AI clubs only: financial tier, written at each season rollover (performance + promotion /
+   * relegation). Until the club's first rollover it is absent and the tier is derived from income
+   * (`financialTierOf`).
+   */
+  financialTier?: FinancialTier;
   venue?: ClubVenue;
   /** Head coach from data pipeline; use `id` for identity when present. */
   coach?: ClubCoach;

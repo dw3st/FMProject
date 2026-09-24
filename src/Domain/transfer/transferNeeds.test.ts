@@ -38,6 +38,12 @@ function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" |
   };
 }
 
+function flat(v: number): RosterPlayer["stats"] {
+  return Object.fromEntries(
+    Object.keys(basePlayer({ id: "x", name: "x" }).stats).map((k) => [k, v]),
+  ) as unknown as RosterPlayer["stats"];
+}
+
 function makeSquad(id: string, players: RosterPlayer[], finances?: Squad["finances"]): Squad {
   return {
     id,
@@ -232,15 +238,16 @@ describe("processTeamTransferAttempt", () => {
     const sellerPlayer = basePlayer({ id: "sp", name: "Sell", positions: ["ST"], squadId: "sell" });
     const fair = new Player(playerOverallRating(sellerPlayer), sellerPlayer.age).price;
     const seller = makeSquad("sell", [sellerPlayer]);
+    // Modest roster + HIGH-tier income so the signing fits under the AI wage cap.
     const buyer = makeSquad(
       "buy",
       Array.from({ length: 20 }, (_, j) =>
-        basePlayer({ id: `b${j}`, name: `B${j}`, positions: ["CM"] }),
+        basePlayer({ id: `b${j}`, name: `B${j}`, positions: ["CM"], stats: flat(3) }),
       ),
       {
-        broadcasting: 0,
+        broadcasting: 100_000_000,
         commercial: 0,
-        total: 0,
+        total: 100_000_000,
         budget: 200_000_000,
         followers: 0,
       },
@@ -337,5 +344,67 @@ describe("processTeamTransferAttempt", () => {
 describe("teamAvgRating", () => {
   test("empty squad returns 5", () => {
     expect(teamAvgRating(makeSquad("e", []))).toBe(5);
+  });
+});
+
+describe("processTeamTransferAttempt — AI wage control", () => {
+  const rng = () => 0.5;
+  const target = basePlayer({ id: "sp", name: "Sell", positions: ["ST"], squadId: "sell", stats: flat(4) });
+  const rating = playerOverallRating(target);
+  const seller = makeSquad("sell", [target]);
+  const need = (intentType: "cover_need" | "improvement") => ({
+    squadId: "buy",
+    lastUpdateDay: "2025-01-01",
+    sellList: [],
+    needs: [{
+      position: "Forward" as const,
+      targetMin: rating - 0.5,
+      targetMax: rating + 0.5,
+      urgency: 1,
+      budgetTier: "high" as const,
+      intentType,
+    }],
+  });
+  const buyerWith = (n: number, stats: number) =>
+    makeSquad(
+      "buy",
+      Array.from({ length: n }, (_, j) => basePlayer({ id: `b${j}`, name: `B${j}`, positions: ["CM"], stats: flat(stats) })),
+      { broadcasting: 100_000_000, commercial: 0, total: 100_000_000, budget: 500_000_000, followers: 0 },
+    );
+
+  test("open buyer under the cap signs", () => {
+    expect(processTeamTransferAttempt(buyerWith(10, 3), need("cover_need"), [seller], rng)).not.toBeNull();
+  });
+
+  test("buyer over its wage cap does not hire", () => {
+    // 20 players of rating 10 ≈ 158k/week, far over a HIGH club's ~29k cap.
+    expect(processTeamTransferAttempt(buyerWith(20, 10), need("cover_need"), [seller], rng)).toBeNull();
+  });
+
+  test("signing that would push the bill past the cap is skipped", () => {
+    // HIGH, popularity 0: cap 29 400/week. Rating-4 target ≈ 1 050/week; 5 players of rating 8 ≈ 24 k.
+    const buyer = buyerWith(5, 8);
+    const heavy = basePlayer({ id: "hv", name: "Heavy", positions: ["ST"], squadId: "sell", stats: flat(9) });
+    const r = playerOverallRating(heavy);
+    const profile = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: r - 0.1, targetMax: r + 0.1 }] };
+    expect(processTeamTransferAttempt(buyer, profile, [makeSquad("sell", [heavy])], rng)).toBeNull();
+  });
+
+  test("tight buyer: only cheap cover signings", () => {
+    // 13 players of rating 5.5 ≈ 27.6k/week: in [0.9, 1.0) of the 29.4k cap → tight.
+    const buyer = buyerWith(13, 5.5);
+    const cap = 29_400;
+    const bill = buyer.players.reduce((s, p) => s + Math.round(Math.pow(playerOverallRating(p), 2.2) * 50), 0);
+    expect(bill).toBeGreaterThanOrEqual(cap * 0.9);
+    expect(bill).toBeLessThan(cap);
+    // improvement needs are dropped while tight
+    expect(processTeamTransferAttempt(buyer, need("improvement"), [seller], rng)).toBeNull();
+    // rating-4 target costs ≈ €13M > HIGH cheap cap (€12M)
+    expect(processTeamTransferAttempt(buyer, need("cover_need"), [seller], rng)).toBeNull();
+    // a cheap rating-2 forward (≈ €3M) is fine
+    const cheap = basePlayer({ id: "ch", name: "Cheap", positions: ["ST"], squadId: "sell", stats: flat(2) });
+    const r = playerOverallRating(cheap);
+    const profile = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: r - 0.1, targetMax: r + 0.1 }] };
+    expect(processTeamTransferAttempt(buyer, profile, [makeSquad("sell", [cheap])], rng)).not.toBeNull();
   });
 });
