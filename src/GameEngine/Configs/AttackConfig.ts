@@ -90,6 +90,8 @@ export interface TeamPassWeights {
   GOAL_PROXIMITY_WEIGHT:   number;
   /** Minimum score a pass must reach to be selected over other actions. */
   MIN_PASS_SCORE:          number;
+  /** How much the receiver's role (roles.json passTargetWeight) steers the pass — midfield hub preference. */
+  RECEIVER_ROLE_WEIGHT:    number;
 }
 
 const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
@@ -99,6 +101,7 @@ const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
   DISTANCE_PENALTY_WEIGHT: PASS_CONFIG.DISTANCE_PENALTY_WEIGHT,
   GOAL_PROXIMITY_WEIGHT:   PASS_CONFIG.GOAL_PROXIMITY_WEIGHT,
   MIN_PASS_SCORE:          PASS_CONFIG.MIN_PASS_SCORE,
+  RECEIVER_ROLE_WEIGHT:    PASS_CONFIG.RECEIVER_ROLE_WEIGHT,
 };
 
 /**
@@ -122,6 +125,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     DISTANCE_PENALTY_WEIGHT: 0.19,
     GOAL_PROXIMITY_WEIGHT:   0.12,
     MIN_PASS_SCORE:          0.38,
+    // Patient build-up routes through midfield more.
+    RECEIVER_ROLE_WEIGHT:    0.14,
   },
   balanced: { ...PASS_WEIGHT_DEFAULTS },
   direct: {
@@ -133,6 +138,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     DISTANCE_PENALTY_WEIGHT: 0.04,
     GOAL_PROXIMITY_WEIGHT:   0.30,
     MIN_PASS_SCORE:          0.26,
+    // Direct play skips midfield more readily.
+    RECEIVER_ROLE_WEIGHT:    0.06,
   },
 };
 
