@@ -17,6 +17,8 @@ import { catalogLeagueBySquadId, countryDisplayName, leagueLabel } from "@/Domai
 import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
+import { ClubFinancesTable } from "@/GameInterface/Components/ClubFinancesTable";
+import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
 import countriesRaw from "@/Data/countries.json";
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
@@ -512,7 +514,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
   );
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"table" | "fixtures">("table");
+  const [tab, setTab] = useState<"table" | "fixtures" | "finances">("table");
+  // Club finances of the selected league — fetched only while the Finances tab is open.
+  const [financeRows, setFinanceRows] = useState<ClubFinanceRow[] | null>(null);
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
   // True while the save's standings are in flight — the catalog fallback would show the
@@ -566,6 +570,21 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
       .then((r) => (r.ok ? (r.json() as Promise<Fixture[]>) : null))
       .then((data) => setLeagueFixtures(data ?? []));
   }, [session?.saveId, activeSlug]);
+
+  useEffect(() => {
+    if (tab !== "finances" || !session?.saveId || !activeSlug) return;
+    let cancelled = false;
+    setFinanceRows(null);
+    fetch(`/api/saves/${session.saveId}/leagues/${activeSlug}/ai-finances`)
+      .then((r) => (r.ok ? (r.json() as Promise<ClubFinanceRow[]>) : []))
+      .catch(() => [] as ClubFinanceRow[])
+      .then((rows) => {
+        if (!cancelled) setFinanceRows(rows);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, session?.saveId, activeSlug, currentDate]);
 
   const active = leagues.find((l) => l.slug === activeSlug);
   const catalog = useMemo(() => catalogLeagueBySquadId(leagues), [leagues]);
@@ -647,7 +666,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
       });
   };
 
-  const handleClickSquad = (row: StandingRow) => {
+  const handleClickSquad = (row: Pick<StandingRow, "squadId" | "slug">) => {
     const clubPart =
       row.slug ??
       clubSlugFromSquadId(row.squadId, activeSlug);
@@ -734,6 +753,18 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               >
                 {t("leagues.fixtures")}
               </button>
+              <button
+                type="button"
+                onClick={() => setTab("finances")}
+                disabled={!session}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  tab === "finances"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground bg-transparent"
+                }`}
+              >
+                {t("leagues.finances.tab")}
+              </button>
             </div>
 
             {tab === "table" ? (
@@ -761,6 +792,20 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   </div>
                 )}
               </>
+            ) : tab === "finances" ? (
+              financeRows === null ? (
+                <p className="text-muted-foreground text-sm p-6">{t("leagues.finances.loading")}</p>
+              ) : (
+                <div className="space-y-3">
+                  <ClubFinancesTable
+                    rows={financeRows}
+                    leagueSlug={activeSlug}
+                    catalog={catalog}
+                    onClickSquad={handleClickSquad}
+                  />
+                  <p className="text-xs text-muted-foreground m-0">{t("leagues.finances.note")}</p>
+                </div>
+              )
             ) : (
               <FixturesPanel
                 fixtures={leagueFixtures}

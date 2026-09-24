@@ -142,6 +142,12 @@ export interface Squad {
    * (`financialTierOf`).
    */
   financialTier?: FinancialTier;
+  /**
+   * AI clubs only: transfer money left this season (€). Granted from tier + popularity at each
+   * rollover, reduced by fees, partly refilled by sales. Absent = the full seasonal grant
+   * (`aiTransferBudgetOf`). AI clubs never use `finances.budget`; the human club only uses that.
+   */
+  aiTransferBudget?: number;
   venue?: ClubVenue;
   /** Head coach from data pipeline; use `id` for identity when present. */
   coach?: ClubCoach;

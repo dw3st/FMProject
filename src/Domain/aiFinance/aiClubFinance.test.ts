@@ -2,6 +2,12 @@ import { describe, expect, test } from "bun:test";
 import type { ClubFinances, RosterPlayer, Squad } from "@/types/playerTypes";
 import {
   aiClubFinance,
+  aiFinancialPressure,
+  aiTransferBudgetOf,
+  applyAITransferSale,
+  applyAITransferSpend,
+  seasonalTransferBudgetFor,
+  transferBudgetTierOf,
   estimateWeeklyWage,
   financialTierOf,
   hiringStateFor,
@@ -104,7 +110,7 @@ describe("wage gate", () => {
     expect(f.wageBill).toBe(estimateWeeklyWage(player("a", 4)));
     expect(f.hiring).toBe("open");
   });
-  const base = { tier: "HIGH" as const, popularity: 0, weeklyBudget: 0, maxWageBudget: 10_000 };
+  const base = { tier: "HIGH" as const, popularity: 0, weeklyBudget: 0, maxWageBudget: 10_000, transferBudget: 0, seasonalTransferBudget: 0 };
   test("open: any fee, as long as the wage fits", () => {
     const f = { ...base, wageBill: 5_000, hiring: "open" as const };
     expect(passesWageGate(f, 5_000, 90_000_000)).toBe(true);
@@ -119,5 +125,46 @@ describe("wage gate", () => {
   });
   test("frozen: never", () => {
     expect(passesWageGate({ ...base, wageBill: 10_000, hiring: "frozen" }, 0, 0)).toBe(false);
+  });
+});
+
+describe("AI transfer budget (from the tier, no balance)", () => {
+  const c = AI_FINANCE_CONFIG;
+  test("seasonal grant = base × (1 + popularity/100) × soft balance", () => {
+    expect(seasonalTransferBudgetFor("HIGH", 0)).toBe(c.TRANSFER_BUDGET.BASE_SEASONAL.HIGH);
+    expect(seasonalTransferBudgetFor("MEDIUM", 50))
+      .toBe(Math.round(c.TRANSFER_BUDGET.BASE_SEASONAL.MEDIUM * 1.5 * c.SOFT_BALANCE.MEDIUM));
+    expect(seasonalTransferBudgetFor("ELITE", 0)).toBeGreaterThan(seasonalTransferBudgetFor("HIGH", 100) * 0.9);
+  });
+  test("absent = full grant; finances.budget is ignored for AI", () => {
+    const s = squad(fin(100_000_000, 0, 999_000_000));
+    expect(aiTransferBudgetOf(s)).toBe(seasonalTransferBudgetFor("HIGH", 0));
+    expect(aiTransferBudgetOf({ ...s, aiTransferBudget: 1_234 })).toBe(1_234);
+  });
+  test("spending reduces it, never below 0", () => {
+    const s = squad(fin(100_000_000), [], { aiTransferBudget: 10_000_000 });
+    expect(applyAITransferSpend(s, 4_000_000).aiTransferBudget).toBe(6_000_000);
+    expect(applyAITransferSpend(s, 40_000_000).aiTransferBudget).toBe(0);
+    expect(applyAITransferSpend(s, 1).finances).toEqual(s.finances);
+  });
+  test("a sale gives back part of the fee, capped", () => {
+    const seasonal = seasonalTransferBudgetFor("HIGH", 0);
+    const s = squad(fin(100_000_000), [], { aiTransferBudget: 0 });
+    expect(applyAITransferSale(s, 10_000_000).aiTransferBudget).toBe(10_000_000 * c.TRANSFER_BUDGET.SALE_RETURN_RATIO);
+    const rich = { ...s, aiTransferBudget: seasonal };
+    expect(applyAITransferSale(rich, 1_000_000_000).aiTransferBudget).toBe(Math.round(seasonal * c.TRANSFER_BUDGET.MAX_BALANCE_RATIO));
+  });
+  test("market band and financial pressure key off the tier", () => {
+    expect(transferBudgetTierOf(squad(fin(0)))).toBe("low");
+    expect(transferBudgetTierOf(squad(fin(20_000_000)))).toBe("mid");
+    expect(transferBudgetTierOf(squad(fin(100_000_000)))).toBe("high");
+    expect(transferBudgetTierOf(squad(fin(0), [], { financialTier: "ELITE" }))).toBe("high");
+    expect(aiFinancialPressure(squad(fin(0)))).toBe(c.FINANCIAL_PRESSURE.LOW);
+    expect(aiFinancialPressure(squad(fin(300_000_000)))).toBe(c.FINANCIAL_PRESSURE.ELITE);
+  });
+  test("aiClubFinance reports the transfer budget", () => {
+    const f = aiClubFinance(squad(fin(20_000_000), [], { aiTransferBudget: 5 }));
+    expect(f.transferBudget).toBe(5);
+    expect(f.seasonalTransferBudget).toBe(seasonalTransferBudgetFor("MEDIUM", 0));
   });
 });

@@ -70,34 +70,16 @@ function resetSquadForNewSeason(squad: Squad, isPlayerClub: boolean): { squad: S
     progress: emptyDevelopmentProgress(),
   }));
 
-  if (isPlayerClub) {
-    return {
-      squad: { ...squad, players },
-      playerBroadcasting: broadcasting,
-    };
-  }
-
-  const baseFin = squad.finances ?? {
-    broadcasting: 0,
-    commercial: 0,
-    total: 0,
-    budget: 0,
-    followers: 0,
-  };
-  const finances = {
-    ...baseFin,
-    budget: baseFin.budget + broadcasting,
-  };
-
+  // AI clubs get no TV money: their transfer budget comes from their tier (src/Domain/aiFinance).
   return {
-    squad: { ...squad, players, finances },
-    playerBroadcasting: 0,
+    squad: { ...squad, players },
+    playerBroadcasting: isPlayerClub ? broadcasting : 0,
   };
 }
 
 /**
  * Pure close of a league season: archive the ending season (standings, champion, player logs) and
- * reset the rosters (age + 1, seasonLog/progress cleared, AI broadcasting into budget), all on the
+ * reset the rosters (age + 1, seasonLog/progress cleared), all on the
  * ENDING season's membership. The next calendar is built separately (`buildNextSeasonCalendar`)
  * because promotion/relegation changes the team list between the two steps.
  */

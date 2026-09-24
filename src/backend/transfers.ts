@@ -165,7 +165,8 @@ export const transferRoutes = {
           playerId,
         );
 
-        // Exchange money via FinancialService
+        // Exchange money via FinancialService — it also persists both squads (roster + money).
+        // Saving `selling` / `buying` again here would overwrite the fee exchange.
         const isSellerPlayerClub = isPlayerSquadId(fromSquadId, meta);
         updatedMeta = await executeTransferFee(
           saveId,
@@ -174,11 +175,6 @@ export const transferRoutes = {
           { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
           fee,
         );
-
-        await Promise.all([
-          saveService.saveSquad(saveId, sellerResolved.leagueSlug, sellerResolved.clubSlug, selling),
-          saveService.saveSquad(saveId, buyerResolved.leagueSlug, buyerResolved.clubSlug, buying),
-        ]);
 
         // Remove the sold player from the seller's sell list in the market profile
         if (market && sellerProfile) {
@@ -197,7 +193,8 @@ export const transferRoutes = {
       const ref: TransferRef = { kind: "transfer_ref", transferId };
       await saveService.appendDayEvent(saveId, date, ref);
 
-      const newBudget = buyerSquad.finances?.budget ?? 0;
+      const oldBudget = buyerSquad.finances?.budget ?? 0;
+      const newBudget = accepted ? Math.max(0, oldBudget - fee) : oldBudget;
       return Response.json({ record, newBudget });
     }
 

@@ -1,10 +1,12 @@
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
-import { financialTierOf, naturalFinancialTier, tierAt, tierIndex } from "@/Domain/aiFinance/aiClubFinance";
+import {
+  financialTierOf, naturalFinancialTier, popularityFromFollowers, seasonalTransferBudgetFor, tierAt, tierIndex,
+} from "@/Domain/aiFinance/aiClubFinance";
 import type { FinancialTier, Squad, StandingRow } from "@/types/playerTypes";
 import type { ClubMove } from "@/types/pyramidTypes";
 
 /** How an AI club's season went, from its league's final table. */
-export interface AISeasonOutcome {
+export interface ClubSeasonOutcome {
   /** 1 = champion. */
   rank: number;
   leagueSize: number;
@@ -16,14 +18,14 @@ export interface AISeasonOutcome {
 /**
  * Performance in [-1, 1]: +1 champion, 0 mid-table, -1 last. 0 when there is no table.
  */
-export function seasonPerformance(o: AISeasonOutcome): number {
+export function seasonPerformance(o: ClubSeasonOutcome): number {
   if (!o.played || o.leagueSize < 2) return 0;
   const frac = (o.rank - 1) / (o.leagueSize - 1);
   return 1 - 2 * Math.max(0, Math.min(1, frac));
 }
 
 /** Relative followers change for the season (e.g. 0.08 = +8%), with soft balancing by tier. */
-export function followersChange(o: AISeasonOutcome, tier: FinancialTier): number {
+export function followersChange(o: ClubSeasonOutcome, tier: FinancialTier): number {
   const s = AI_FINANCE_CONFIG.season;
   const perf = seasonPerformance(o);
   let gain = perf > 0 ? perf * s.FOLLOWERS_GOOD_GAIN : 0;
@@ -41,7 +43,7 @@ export function followersChange(o: AISeasonOutcome, tier: FinancialTier): number
  * The result is clamped to `MAX_DRIFT_FROM_NATURAL` steps around the natural tier of the club's
  * (new) income, so tiers stay anchored to the league the club plays in and self-correct.
  */
-export function nextFinancialTier(current: FinancialTier, natural: FinancialTier, o: AISeasonOutcome): FinancialTier {
+export function nextFinancialTier(current: FinancialTier, natural: FinancialTier, o: ClubSeasonOutcome): FinancialTier {
   const s = AI_FINANCE_CONFIG.season;
   let step = 0;
   if (o.move === "promoted") step = 1;
@@ -58,33 +60,53 @@ export function nextFinancialTier(current: FinancialTier, natural: FinancialTier
   return tierAt(Math.max(nat - d, Math.min(nat + d, idx)));
 }
 
+/** Followers after the season's reaction (soft-balanced by `tier`), floored. */
+export function reactFollowers(followers: number, outcome: ClubSeasonOutcome, tier: FinancialTier): number {
+  return Math.max(
+    AI_FINANCE_CONFIG.season.FOLLOWERS_FLOOR,
+    Math.round(followers * (1 + followersChange(outcome, tier))),
+  );
+}
+
 /**
  * Season rollover reaction of an AI club. Call on the RESET squad, after the tier income change
  * (`applyTierFinanceChange`) so the natural tier reflects the new division. Updates followers,
- * stores the new `financialTier` and floors the transfer budget (AI clubs never go bankrupt).
- * Pure; a squad without finances only gets a tier.
+ * stores the new `financialTier` and grants next season's transfer budget from the new tier +
+ * popularity (replacing whatever was left: AI money never accumulates, so no club stays broke).
+ * Pure; a squad without finances gets a tier and a budget from popularity 0.
  */
-export function applyAISeasonReaction(squad: Squad, outcome: AISeasonOutcome): Squad {
-  const s = AI_FINANCE_CONFIG.season;
+export function applyAISeasonReaction(squad: Squad, outcome: ClubSeasonOutcome): Squad {
   const current = financialTierOf(squad);
   const natural = naturalFinancialTier(squad.finances);
   const financialTier = nextFinancialTier(current, natural, outcome);
-  if (!squad.finances) return { ...squad, financialTier };
+  const finances = squad.finances
+    ? { ...squad.finances, followers: reactFollowers(squad.finances.followers, outcome, current) }
+    : undefined;
+  const aiTransferBudget = seasonalTransferBudgetFor(financialTier, popularityFromFollowers(finances?.followers ?? 0));
+  return { ...squad, financialTier, aiTransferBudget, ...(finances ? { finances } : {}) };
+}
 
-  const followers = Math.max(
-    s.FOLLOWERS_FLOOR,
-    Math.round(squad.finances.followers * (1 + followersChange(outcome, current))),
-  );
-  const budget = Math.max(squad.finances.budget, s.MIN_BUDGET[financialTier]);
-  return { ...squad, financialTier, finances: { ...squad.finances, followers, budget } };
+/**
+ * Season reaction of the HUMAN club: followers only (same performance / title / move rules and
+ * soft balancing, using the natural tier of its income). No financial tier, no AI budget; the
+ * full financial system is untouched. Returns the updated squad and the followers before/after.
+ */
+export function applyHumanSeasonReaction(
+  squad: Squad,
+  outcome: ClubSeasonOutcome,
+): { squad: Squad; followersBefore: number; followersAfter: number } {
+  const before = squad.finances?.followers ?? 0;
+  if (!squad.finances) return { squad, followersBefore: before, followersAfter: before };
+  const after = reactFollowers(before, outcome, naturalFinancialTier(squad.finances));
+  return { squad: { ...squad, finances: { ...squad.finances, followers: after } }, followersBefore: before, followersAfter: after };
 }
 
 /** An AI club's outcome from its league's final table (old membership) and the rollover moves. */
-export function aiSeasonOutcome(
+export function clubSeasonOutcome(
   table: StandingRow[],
   squadId: string,
   moves: ReadonlyArray<Pick<ClubMove, "squadId" | "kind">>,
-): AISeasonOutcome {
+): ClubSeasonOutcome {
   const idx = table.findIndex((r) => r.squadId === squadId);
   const row = idx >= 0 ? table[idx]! : null;
   return {

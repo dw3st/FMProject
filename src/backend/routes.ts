@@ -20,6 +20,7 @@ import { authRoutes } from "@/backend/auth/routes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
+import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -468,6 +469,18 @@ export const apiRoutes = {
     const standings = await saveService.getLeagueStandings(saveId!, leagueSlug!);
     if (!standings) return Response.json({ error: "standings not found" }, { status: 404 });
     return Response.json(standings);
+  },
+
+  // League "Finances" view: AI club tier / budgets / wages, computed server-side (one small row per club).
+  "/api/saves/:saveId/leagues/:leagueSlug/ai-finances": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId, leagueSlug } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const meta = await saveService.getMeta(saveId!);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const squads = await saveService.getSquadsInLeague(saveId!, leagueSlug!);
+    return Response.json(buildClubFinanceRows(squads, meta.clubId));
   },
 
   "/api/saves/:saveId/leagues/:leagueSlug/fixtures": async (req: Request & { params: Record<string, string> }) => {

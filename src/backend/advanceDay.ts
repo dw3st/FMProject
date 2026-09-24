@@ -37,7 +37,7 @@ import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotati
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
 import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
-import { aiSeasonOutcome, applyAISeasonReaction } from "@/Domain/aiFinance/seasonReaction";
+import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
@@ -568,6 +568,7 @@ export async function advanceOneDay(
     let playerMove: ClubMove | null = null;
     let playerChampionOf: string | null = null;
     const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
+    let playerFollowersChange: { before: number; after: number; leagueSlug: string } | null = null;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -642,12 +643,20 @@ export async function advanceOneDay(
 
         // The human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
         const refs = applyPlayerBroadcastingCredit(transition.squadsToSave, playerClubSquadId, transition.playerBroadcastingCredit);
-        // AI clubs then react to their season (followers, financial tier, budget floor).
+        // Then every club reacts to its season: AI clubs get followers + financial tier + next
+        // season's transfer budget; the human club only its followers.
         for (const { squad } of refs) {
           const tc = plan.tierChanges[squad.id];
           let next = tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad;
+          const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves);
           if (squad.id !== playerClubSquadId) {
-            next = applyAISeasonReaction(next, aiSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves));
+            next = applyAISeasonReaction(next, outcome);
+          } else {
+            const human = applyHumanSeasonReaction(next, outcome);
+            next = human.squad;
+            if (human.followersAfter !== human.followersBefore) {
+              playerFollowersChange = { before: human.followersBefore, after: human.followersAfter, leagueSlug: slug };
+            }
           }
           await saveService.saveSquadById(saveId, next);
         }
@@ -711,6 +720,13 @@ export async function advanceOneDay(
           seasonMessages.push({
             date: currentDate, kind: plan.playerMove.kind, leagueSlug: plan.playerMove.to,
             leagueName: nameOf(plan.playerMove.to), fromLeagueSlug: plan.playerMove.from, seasonYear: archiveYear!,
+          });
+        }
+        if (playerFollowersChange) {
+          seasonMessages.push({
+            date: currentDate, kind: "followers", leagueSlug: playerFollowersChange.leagueSlug,
+            leagueName: nameOf(playerFollowersChange.leagueSlug), seasonYear: archiveYear!,
+            followersBefore: playerFollowersChange.before, followersAfter: playerFollowersChange.after,
           });
         }
         debugLog(LOG_NS_SEASON, "Season rollover complete", {

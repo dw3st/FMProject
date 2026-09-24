@@ -123,15 +123,22 @@ export function buildSeasonMessage(args: {
   leagueName:      string;
   fromLeagueSlug?: string;
   seasonYear:      number;
+  followersBefore?: number;
+  followersAfter?:  number;
 }): SeasonInboxMessage {
-  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear } = args;
+  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear, followersBefore, followersAfter } = args;
+  const fb = followersBefore ?? 0;
+  const fa = followersAfter ?? 0;
+  const pct = fb > 0 ? Math.round(((fa - fb) / fb) * 100) : 0;
   const subject =
     kind === "champion" ? `Champion of ${leagueName}` :
     kind === "promoted" ? `Promoted to ${leagueName}` :
+    kind === "followers" ? (fa >= fb ? "Fan base grew" : "Fan base shrank") :
     `Relegated to ${leagueName}`;
   const preview =
     kind === "champion" ? `The club won the ${leagueName} ${seasonYear} title.` :
     kind === "promoted" ? `Next season the club plays in ${leagueName}.` :
+    kind === "followers" ? `After the ${seasonYear} season the club has ${formatCount(fa)} followers (${pct >= 0 ? "+" : ""}${pct}%).` :
     `Next season the club drops to ${leagueName}.`;
   return {
     id:        `season-${date}-${kind}-${leagueSlug}-${randomUUID()}`,
@@ -146,7 +153,14 @@ export function buildSeasonMessage(args: {
     leagueName,
     ...(fromLeagueSlug ? { fromLeagueSlug } : {}),
     seasonYear,
+    ...(kind === "followers" ? { followersBefore: fb, followersAfter: fa } : {}),
   };
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${Math.round(n / 1_000)}k`;
+  return `${n}`;
 }
 
 function formatFee(euros: number): string {
