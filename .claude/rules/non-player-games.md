@@ -326,9 +326,26 @@ desenvolvimento) é o mesmo do motor.
     acerto ~96,6%. Gols/partida: Premier 2,83 → 2,89, Serie A 2,39 → 2,23,
     `of_championship` 1,65 → 1,40. Medido com `bun scripts/passing-mix-diagnostic.ts`.
   - O volume de gols (`BASE_GOALS` e cia.) já foi recalibrado contra o motor novo (ver
-    "Volume de gols" acima). As taxas de passe do quickSim (`PASSES_PER_MATCH`,
-    `PASS_COMPLETION_*`) foram calibradas **antes** desse rebalanceamento e ainda precisam ser
-    recalibradas.
+    "Volume de gols" acima).
+- **Passes do quickSim (recalibrados em 2026-09-24, motor com `PASS_STRONG_RAW = 0.8`):**
+  `passes ~ Poisson(PASSES_PER_MATCH[linha] × (nívelDoTime / LEVEL_REF)^PASS_LEVEL_EXPONENT[linha])`,
+  com o nível do **próprio** time (`teamLevel`). Acerto = `PASS_COMPLETION_BASE (0.94) +
+  PASS_COMPLETION_SKILL × passing/10`; o motor acerta ~97%.
+  - **Meta por vaga de titular, não por jogador que entrou.** O motor faz ~5 substituições por
+    time, então há 1,2–1,6 jogadores por vaga nas linhas de campo (GK 1,0). O quickSim não tem
+    reservas: o titular precisa carregar o total da linha. Por isso a tabela "Eventos" do
+    `quicksim-calibrate.ts` agora divide pelo número de titulares (antes dividia por todos que
+    jogaram e subestimava o motor).
+  - Valores: `PASSES_PER_MATCH` GK 2,47 / DEF 2,58 / MID 1,28 / FWD 1,16;
+    `PASS_LEVEL_EXPONENT` GK 0,75 / DEF 0,16 / MID 2,16 / FWD 0,96. O meio-campo é o que mais cai
+    com o nível: por vaga, o motor faz MID 1,31 na Premier (nível 5,19), 0,93 na `of_championship`
+    (4,20) e 0,38 no Quênia (2,86). A defesa quase não muda (2,56 → 2,36).
+  - Ajustado em Premier, Serie A, `of_championship` e Quênia (200 jogos de motor cada); os
+    passes por linha ficam a ±0,1 do motor nas quatro, e as notas por linha seguem dentro das
+    metas (DEF sobe ~0,03 porque cada passe certo vale +0,02).
+  - **Pendência:** na mesma visão por vaga, desarmes (DEF 0,26 × 0,50 do motor), interceptações e
+    assistências do quickSim ficam abaixo do motor. Foram calibrados com a divisão antiga. Mexer
+    neles muda as notas, então precisa recalibrar junto o `TACKLE_FAIL_RATIO`.
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa

@@ -253,6 +253,7 @@ function fillSide(
   xg: number,
   stats: Record<string, MatchPlayerStats>,
   tacklesFailed: Record<string, number>,
+  level: number,
   rng: Rng,
 ): void {
   const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
@@ -279,7 +280,8 @@ function fillSide(
     const p = x.p;
     const group = groupOf(x);
     const s = stats[p.id]!;
-    const attempts = samplePoisson(C.PASSES_PER_MATCH[group], rng);
+    const passRate = C.PASSES_PER_MATCH[group] * Math.pow(level / C.LEVEL_REF, C.PASS_LEVEL_EXPONENT[group]);
+    const attempts = samplePoisson(passRate, rng);
     const rate = C.PASS_COMPLETION_BASE + C.PASS_COMPLETION_SKILL * (stat(p, "passing") / 10);
     let completed = 0;
     for (let i = 0; i < attempts; i++) if (rng() < rate) completed++;
@@ -329,8 +331,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const playerStats: Record<string, MatchPlayerStats> = {};
   const tacklesFailed: Record<string, number> = {};
   for (const { p } of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
-  fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, rng);
-  fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, rng);
+  fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, teamLevel(home), rng);
+  fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), rng);
 
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
