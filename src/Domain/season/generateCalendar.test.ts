@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { generateCalendar } from "@/Domain/season";
+import { generateCalendar, generateLeagueCalendar } from "@/Domain/season";
+import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 
 function pairKey(home: string, away: string): string {
   return [home, away].sort().join("|");
@@ -110,5 +111,46 @@ describe("generateCalendar", () => {
 
     // 3 teams: 3*2 = 6 fixtures
     expect(fixtures.length).toBe(6);
+  });
+});
+
+describe("generateLeagueCalendar season window", () => {
+  const dateOf = (d: string) => Date.parse(d + "T12:00:00Z");
+
+  // Regression (season-rollover smoke): baseWeekOffset + match-day snapping pushed the last rounds
+  // past the league's `end` (and Brazil's first round before `start`). The country rollover runs
+  // on `end`, so rounds dated after it were never played and silently lost.
+  test("every round of every configured league falls inside [start, end], in round order", () => {
+    const outside: string[] = [];
+    for (const config of LEAGUE_SCHEDULE_CONFIGS) {
+      for (const size of [8, 11, 16, 18, 19, 20, 22, 30]) {
+        for (const year of [2024, 2025, 2026]) {
+          const teams = Array.from({ length: size }, (_, i) => `t${i}`);
+          const { meta, rounds } = generateLeagueCalendar(config, teams, year);
+          let prev = "";
+          for (const r of rounds) {
+            const d = r.fixtures[0]!.date;
+            if (d < meta.start || d > meta.end || (prev && d <= prev)) {
+              outside.push(`${config.slug} ${year} n=${size} round ${r.round} ${d} (${meta.start}..${meta.end}, prev ${prev})`);
+            }
+            prev = d;
+          }
+          expect(rounds.length).toBe(2 * ((size % 2 ? size + 1 : size) - 1));
+        }
+      }
+    }
+    expect(outside.slice(0, 5)).toEqual([]);
+  });
+
+  test("Serie A 2024 ends by 2025-05-18 and Brazil 2024 starts on or after 2024-02-05", () => {
+    const serieA = LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === "serie_a")!;
+    const brazil = LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === "brazil_serie_a")!;
+    const teams = Array.from({ length: 20 }, (_, i) => `t${i}`);
+    const a = generateLeagueCalendar(serieA, teams, 2024).rounds.flatMap((r) => r.fixtures.map((f) => f.date)).sort();
+    const b = generateLeagueCalendar(brazil, teams, 2024).rounds.flatMap((r) => r.fixtures.map((f) => f.date)).sort();
+    expect(a.at(-1)! <= "2025-05-18").toBe(true);
+    expect(b[0]! >= "2024-02-05").toBe(true);
+    // Still spread over the season, not piled up at the end.
+    expect(dateOf(a.at(-1)!) - dateOf(a[0]!)).toBeGreaterThan(250 * 86_400_000);
   });
 });

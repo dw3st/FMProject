@@ -127,6 +127,44 @@ function snapToMatchDay(targetDate: Date, matchDays: number[]): Date {
   return snapped;
 }
 
+const DAY_MS = 86_400_000;
+const isoToMs = (d: string) => Date.parse(d + "T12:00:00Z");
+const msToIso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const shiftIso = (d: string, days: number) => msToIso(isoToMs(d) + days * DAY_MS);
+const isMatchDay = (d: string, matchDays: number[]) => matchDays.includes(new Date(isoToMs(d)).getUTCDay());
+
+/**
+ * Pure: pull round dates (ordered by round) into [start, end] and keep them strictly increasing.
+ * A date past its limit moves to the latest match day on or before the limit (the limit itself
+ * when no match day is within a week); a date before its floor moves to the earliest match day on
+ * or after the floor (the floor itself if that would overrun the next round). Dates already inside
+ * the window and in order are untouched.
+ */
+export function fitRoundsToWindow(dates: string[], start: string, end: string, matchDays: number[]): string[] {
+  const out = [...dates];
+  const latestMatchDayOnOrBefore = (limit: string) => {
+    for (let k = 0; k < 7; k++) if (isMatchDay(shiftIso(limit, -k), matchDays)) return shiftIso(limit, -k);
+    return limit;
+  };
+  const earliestMatchDayOnOrAfter = (floor: string) => {
+    for (let k = 0; k < 7; k++) if (isMatchDay(shiftIso(floor, k), matchDays)) return shiftIso(floor, k);
+    return floor;
+  };
+  for (let i = out.length - 1; i >= 0; i--) {
+    const cap = i === out.length - 1 ? end : shiftIso(out[i + 1]!, -1);
+    if (out[i]! > cap) out[i] = latestMatchDayOnOrBefore(cap);
+  }
+  for (let i = 0; i < out.length; i++) {
+    const floor = i === 0 ? start : shiftIso(out[i - 1]!, 1);
+    if (out[i]! < floor) {
+      const cap = i === out.length - 1 ? end : shiftIso(out[i + 1]!, -1);
+      const d = earliestMatchDayOnOrAfter(floor);
+      out[i] = d <= cap ? d : floor;
+    }
+  }
+  return out;
+}
+
 /**
  * Generate a multi-league calendar with per-round files and a date index.
  * Uses the league's schedule config to snap round dates to realistic match days
@@ -188,6 +226,16 @@ export function generateLeagueCalendar(
     return isoDate;
   }
 
+  // Every round date, in round order, kept inside [seasonStart, seasonEnd]: the offset and the
+  // match-day snap can push the last rounds past the end (or the first before the start), and a
+  // round dated after the end is never played — the season rolls over on its end date.
+  const roundDates = fitRoundsToWindow(
+    Array.from({ length: totalRounds }, (_, i) => roundDate(i + 1)),
+    seasonStart,
+    seasonEnd,
+    config.matchDays,
+  );
+
   // Build all fixtures grouped by round
   let seq = 0;
   const makeId = () => `fix_${(++seq).toString().padStart(4, "0")}`;
@@ -197,7 +245,7 @@ export function generateLeagueCalendar(
   // First leg
   for (let r = 0; r < roundsPerLeg; r++) {
     const roundNumber = r + 1;
-    const date = roundDate(roundNumber);
+    const date = roundDates[roundNumber - 1]!;
     const fixtures: Fixture[] = [];
     for (const [home, away] of firstLegPairings[r]!) {
       fixtures.push({ id: makeId(), date, competition: config.slug, round: roundNumber, home, away, played: false, result: null });
@@ -208,7 +256,7 @@ export function generateLeagueCalendar(
   // Second leg — reversed home/away
   for (let r = 0; r < roundsPerLeg; r++) {
     const roundNumber = roundsPerLeg + r + 1;
-    const date = roundDate(roundNumber);
+    const date = roundDates[roundNumber - 1]!;
     const fixtures: Fixture[] = [];
     for (const [away, home] of firstLegPairings[r]!) {
       fixtures.push({ id: makeId(), date, competition: config.slug, round: roundNumber, home, away, played: false, result: null });
