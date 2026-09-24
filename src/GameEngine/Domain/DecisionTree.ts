@@ -24,6 +24,7 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
 }
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
+import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { getTeamCarryConfig } from '@/GameEngine/Configs/AttackConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
@@ -351,6 +352,9 @@ interface CarryActionBreakdown {
 /** Pass breakdown attached to the pass ActionScore (best receiver only). */
 interface PassActionBreakdown extends PassBreakdown {
   toId:     number | null;
+  /** Holder role's pass tendency: roles.json passBias × PASS_CONFIG.ROLE_BIAS_WEIGHT. */
+  roleBias: number;
+  /** What the pass action compresses: max(0, quality + roleBias). */
   rawScore: number;
 }
 
@@ -425,7 +429,7 @@ function evalPass(player: GamePlayer, opponents: GamePlayer[], allPlayers: GameP
       passBreakdown: {
         toId: null, laneScore: 0, progressScore: 0, receiverSpaceScore: 0,
         distancePenalty: 0, goalProximityBonus: 0, visionRangePenalty: 0,
-        passTargetBonus: 0,
+        passTargetBonus: 0, receiverRoleBonus: 0, quality: 0, roleBias: 0,
         baseScore: 0, playerModifier: 0, tacticalModifier: 0,
         rawScore: 0, score: 0,
       },
@@ -440,16 +444,22 @@ function evalPass(player: GamePlayer, opponents: GamePlayer[], allPlayers: GameP
     : null;
 
   // PASS_STRONG_RAW=0.8: a clear lane to a good receiver (raw≈0.8) scores 0.632.
-  const score = compress(best.score, PASS_STRONG_RAW);
+  // The receiver is picked by `score` (quality + receiver-role routing), but the
+  // pass ACTION competes with carry / through ball on its quality plus the
+  // holder role's pass tendency (roles.json passBias — the pass mirror of
+  // carryBias): midfielders circulate, centre-backs recycle less.
+  const roleBias = roleEngine(player.role).passBias * PASS_CONFIG.ROLE_BIAS_WEIGHT;
+  const raw      = Math.max(0, best.quality + roleBias);
+  const score    = compress(raw, PASS_STRONG_RAW);
   return {
     type: 'pass', score, targetId: best.toId,
     passBreakdown: breakdown
-      ? { toId: best.toId, rawScore: best.score, ...breakdown }
+      ? { toId: best.toId, roleBias, rawScore: raw, ...breakdown }
       : {
           toId: best.toId, laneScore: 0, progressScore: 0, receiverSpaceScore: 0,
           distancePenalty: 0, goalProximityBonus: 0, visionRangePenalty: 0,
-          baseScore: 0, playerModifier: 0, tacticalModifier: 0, passTargetBonus: 0,
-          rawScore: best.score, score: best.score,
+          baseScore: 0, playerModifier: 0, tacticalModifier: 0, passTargetBonus: 0, receiverRoleBonus: 0,
+          quality: best.quality, roleBias, rawScore: raw, score: best.score,
         },
   };
 }
@@ -609,7 +619,7 @@ function decideBallHolder(
     const passBd    = ps.passBreakdown    ?? {
       toId: null, laneScore: 0, progressScore: 0, receiverSpaceScore: 0,
       distancePenalty: 0, goalProximityBonus: 0, visionRangePenalty: 0,
-      passTargetBonus: 0,
+      passTargetBonus: 0, receiverRoleBonus: 0, quality: 0, roleBias: 0,
       baseScore: 0, playerModifier: 0, tacticalModifier: 0,
       rawScore: 0, score: 0,
     };
