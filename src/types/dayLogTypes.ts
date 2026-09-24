@@ -168,4 +168,6 @@ export interface AdvanceDayResponse extends DayLog {
   moves?: ClubMove[];
   /** The human club's own move, or null when it stayed (seasonEnded days only). */
   playerMove?: ClubMove | null;
+  /** League the human club won, or null (seasonEnded days only). */
+  playerChampionOf?: string | null;
 }

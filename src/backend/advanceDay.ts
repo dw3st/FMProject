@@ -92,9 +92,34 @@ async function leagueNameResolver(states: LeagueSeasonState[]): Promise<(slug: s
     catalog.find((l) => l.slug === slug)?.name ?? states.find((l) => l.leagueSlug === slug)?.leagueName ?? slug;
 }
 
-type AdvanceDayOutcome =
+export type AdvanceDayOutcome =
   | { ok: false; status: number; error: string }
   | { ok: true; payload: Record<string, unknown> };
+
+/**
+ * One day as a unit of work: a fresh BufferingSaveDAL, `advanceOneDay` against it, then one
+ * flush (meta last). A failed day (`!ok`) flushes nothing; a flush error is a 500 and, since meta
+ * is written last, `currentDate` was not advanced. The caller holds `withSaveLock`.
+ * Shared by `POST /api/advance-day/:saveId` and `POST /api/saves/:saveId/advance-until`.
+ */
+export async function runBufferedDay(
+  saveId: string,
+  playedMatchOverride: PlayedMatchRecording | null = null,
+): Promise<AdvanceDayOutcome> {
+  // Each squad is read at most once and written once.
+  const buffer = new BufferingSaveDAL(new FileSystemDAL());
+  const dayService = new SaveService(buffer);
+  const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride);
+  if (!outcome.ok) return outcome;
+  try {
+    await buffer.flush();
+  } catch (err) {
+    const errors = err instanceof AggregateError ? err.errors : [err];
+    for (const e of errors) logError("advance-day", `failed to persist day for save ${saveId}`, e);
+    return { ok: false, status: 500, error: "failed to persist day" };
+  }
+  return outcome;
+}
 
 /**
  * Pre-simulate the world from the earliest league's kickoff up to the player's
@@ -540,6 +565,7 @@ export async function advanceOneDay(
     let archiveYear: number | undefined;
     let playerCountryMoves: ClubMove[] = [];
     let playerMove: ClubMove | null = null;
+    let playerChampionOf: string | null = null;
     const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
@@ -667,6 +693,7 @@ export async function advanceOneDay(
         archiveYear = closedYear.get(meta.leagueSlug);
         playerCountryMoves = plan.moves;
         playerMove = plan.playerMove;
+        playerChampionOf = plan.playerChampionOf;
         const nameOf = await leagueNameResolver(activeLeagues);
         if (plan.playerChampionOf) {
           seasonMessages.push({
@@ -723,7 +750,7 @@ export async function advanceOneDay(
         events: [...dayLog.events, ...transferEvents],
         newDate: updatedMeta.currentDate,
         ...(seasonEnded
-          ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove }
+          ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove, playerChampionOf }
           : {}),
       },
     };
@@ -798,20 +825,8 @@ export const advanceDayRoutes = {
     // first has flushed, so it reads the advanced state instead of racing it.
     const saveId = req.params.saveId!;
     return withSaveLock(saveId, async () => {
-      // One buffered unit of work per day: each squad is read at most once and written once.
-      // A failed day (!outcome.ok) flushes nothing.
-      const buffer = new BufferingSaveDAL(new FileSystemDAL());
-      const dayService = new SaveService(buffer);
-      const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride);
+      const outcome = await runBufferedDay(saveId, playedMatchOverride);
       if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-      try {
-        await buffer.flush();
-      } catch (err) {
-        // flush() writes meta last, so on failure currentDate was not advanced.
-        const errors = err instanceof AggregateError ? err.errors : [err];
-        for (const e of errors) logError("advance-day", `failed to persist day for save ${saveId}`, e);
-        return Response.json({ error: "failed to persist day" }, { status: 500 });
-      }
       return Response.json(outcome.payload);
     });
   },

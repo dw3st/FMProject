@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { saveRoutes } from "@/backend/saves";
 import { advanceDayRoutes } from "@/backend/advanceDay";
+import { advanceUntilRoutes } from "@/backend/advanceUntil";
 import { transferRoutes } from "@/backend/transfers";
 import { inboxRoutes } from "@/backend/inbox";
 import { saveService } from "@/backend/SaveService";
@@ -46,6 +47,7 @@ export const apiRoutes = {
   ...authRoutes,
   ...saveRoutes,
   ...advanceDayRoutes,
+  ...advanceUntilRoutes,
   ...transferRoutes,
   ...inboxRoutes,
 
