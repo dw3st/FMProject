@@ -4,8 +4,10 @@ import {
   quickSimMatch,
   ratingFromStats,
   samplePoisson,
+  teamLevel,
   teamStrength,
 } from "@/Domain/advanceDay/quickSim";
+import { QUICK_SIM_CONFIG as C } from "@/GameEngine/Configs/QuickSimConfig";
 import { mulberry32 } from "@/Domain/rng";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
@@ -267,12 +269,62 @@ describe("quickSimMatch", () => {
     const mids = new Set(["CDM", "CM"]);
     let strongPasses = 0;
     let weakPasses = 0;
-    for (let seed = 0; seed < 500; seed++) {
+    for (let seed = 0; seed < 2000; seed++) {
       const { playerStats } = run(strong, weak, seed).recording;
       for (const p of strong.players) if (mids.has(p.positions[0]!)) strongPasses += playerStats[p.id]!.passesAttempted;
       for (const p of weak.players) if (mids.has(p.positions[0]!)) weakPasses += playerStats[p.id]!.passesAttempted;
     }
-    expect(strongPasses).toBeGreaterThan(weakPasses * 3);
+    // MID pass rate ∝ (teamLevel / LEVEL_REF)^PASS_LEVEL_EXPONENT.MID (no attribute factor).
+    const expectedRatio = Math.pow(
+      teamLevel(teamStrength(strong.players)) / teamLevel(teamStrength(weak.players)),
+      C.PASS_LEVEL_EXPONENT.MID,
+    );
+    expect(expectedRatio).toBeGreaterThan(1.5);
+    expect(strongPasses / weakPasses).toBeGreaterThan(expectedRatio * 0.9);
+    expect(strongPasses / weakPasses).toBeLessThan(expectedRatio * 1.1);
+  });
+
+  test("desarmes e interceptações por vaga seguem taxa × (nível do time / LEVEL_REF)^expoente × fator de atributo", () => {
+    for (const level of [3, 7]) {
+      const h = makeSquad("h", level);
+      const a = makeSquad("a", 5);
+      const lvl = teamLevel(teamStrength(h.players));
+      const factor = 0.5 + level / 10;
+      const expected = (rate: number, exp: number) => rate * Math.pow(lvl / C.LEVEL_REF, exp) * factor;
+      const cms = h.players.filter((p) => p.positions[0] === "CM");
+      let tackles = 0;
+      let ints = 0;
+      const N = 3000;
+      for (let seed = 0; seed < N; seed++) {
+        const { playerStats } = run(h, a, seed).recording;
+        for (const p of cms) {
+          tackles += playerStats[p.id]!.tackles;
+          ints += playerStats[p.id]!.interceptions;
+        }
+      }
+      const n = N * cms.length;
+      expect(tackles / n).toBeCloseTo(expected(C.TACKLES_PER_MATCH.MID, C.TACKLE_LEVEL_EXPONENT.MID), 1);
+      expect(ints / n).toBeCloseTo(expected(C.INTERCEPTIONS_PER_MATCH.MID, C.INTERCEPTION_LEVEL_EXPONENT.MID), 1);
+    }
+  });
+
+  test("chutes sem gol = SHOTS_PER_XG × xG × (nível da partida / LEVEL_REF)^SHOTS_LEVEL_EXPONENT", () => {
+    for (const level of [3, 7]) {
+      const h = makeSquad("h", level);
+      const a = makeSquad("a", level);
+      const matchLevel = teamLevel(teamStrength(h.players));
+      let extra = 0;
+      let xg = 0;
+      for (let seed = 0; seed < 3000; seed++) {
+        const { recording, breakdown } = run(h, a, seed);
+        const shots = recording.teamStats.home.shots + recording.teamStats.away.shots;
+        extra += shots - recording.score.home - recording.score.away;
+        xg += breakdown.xgHome + breakdown.xgAway;
+      }
+      const perXg = C.SHOTS_PER_XG * Math.pow(matchLevel / C.LEVEL_REF, C.SHOTS_LEVEL_EXPONENT);
+      expect(extra / xg / perXg).toBeGreaterThan(0.93);
+      expect(extra / xg / perXg).toBeLessThan(1.07);
+    }
   });
 
   test("forte vence o fraco na maioria", () => {

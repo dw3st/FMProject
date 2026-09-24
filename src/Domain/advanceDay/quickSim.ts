@@ -254,6 +254,7 @@ function fillSide(
   stats: Record<string, MatchPlayerStats>,
   tacklesFailed: Record<string, number>,
   level: number,
+  matchLevel: number,
   rng: Rng,
 ): void {
   const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
@@ -270,7 +271,8 @@ function fillSide(
     }
   }
 
-  const extraShots = samplePoisson(xg * C.SHOTS_PER_XG, rng);
+  const shotsPerXg = C.SHOTS_PER_XG * Math.pow(matchLevel / C.LEVEL_REF, C.SHOTS_LEVEL_EXPONENT);
+  const extraShots = samplePoisson(xg * shotsPerXg, rng);
   for (let i = 0; i < extraShots; i++) {
     const shooter = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
     if (shooter) stats[shooter.p.id]!.shots++;
@@ -280,7 +282,8 @@ function fillSide(
     const p = x.p;
     const group = groupOf(x);
     const s = stats[p.id]!;
-    const passRate = C.PASSES_PER_MATCH[group] * Math.pow(level / C.LEVEL_REF, C.PASS_LEVEL_EXPONENT[group]);
+    const lv = (exp: Record<LineGroup, number>) => Math.pow(level / C.LEVEL_REF, exp[group]);
+    const passRate = C.PASSES_PER_MATCH[group] * lv(C.PASS_LEVEL_EXPONENT);
     const attempts = samplePoisson(passRate, rng);
     const rate = C.PASS_COMPLETION_BASE + C.PASS_COMPLETION_SKILL * (stat(p, "passing") / 10);
     let completed = 0;
@@ -288,9 +291,10 @@ function fillSide(
     s.passesAttempted = attempts;
     s.passesCompleted = completed;
     s.passesFailed = attempts - completed;
-    s.tackles = samplePoisson(C.TACKLES_PER_MATCH[group] * (0.5 + stat(p, "tackling") / 10), rng);
-    tacklesFailed[p.id] = samplePoisson(C.TACKLES_PER_MATCH[group] * C.TACKLE_FAIL_RATIO, rng);
-    s.interceptions = samplePoisson(C.INTERCEPTIONS_PER_MATCH[group] * (0.5 + stat(p, "pressing") / 10), rng);
+    s.tackles = samplePoisson(C.TACKLES_PER_MATCH[group] * lv(C.TACKLE_LEVEL_EXPONENT) * (0.5 + stat(p, "tackling") / 10), rng);
+    tacklesFailed[p.id] = samplePoisson(C.TACKLES_FAILED_PER_MATCH[group] * lv(C.TACKLE_FAIL_LEVEL_EXPONENT), rng);
+    s.interceptions = samplePoisson(
+      C.INTERCEPTIONS_PER_MATCH[group] * lv(C.INTERCEPTION_LEVEL_EXPONENT) * (0.5 + stat(p, "pressing") / 10), rng);
   }
 }
 
@@ -331,8 +335,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const playerStats: Record<string, MatchPlayerStats> = {};
   const tacklesFailed: Record<string, number> = {};
   for (const { p } of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
-  fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, teamLevel(home), rng);
-  fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), rng);
+  const matchLevel = (teamLevel(home) + teamLevel(away)) / 2;
+  fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, teamLevel(home), matchLevel, rng);
+  fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
 
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};

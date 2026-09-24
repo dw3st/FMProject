@@ -69,29 +69,54 @@ export const QUICK_SIM_CONFIG = {
   DEFENSE_KEYS:    ["tackling", "pressing", "strength", "heading"],
   GOALKEEPER_KEYS: ["reflex", "jump", "pressing"],
 
-  ROLE_GOAL_WEIGHT:   { GK: 0,    DEF: 0.01, MID: 0.15, FWD: 1.5 } as Record<LineGroup, number>,
-  ROLE_ASSIST_WEIGHT: { GK: 0.04, DEF: 0.3,  MID: 0.26, FWD: 0.39 } as Record<LineGroup, number>,
-  NO_ASSIST_RATE: 0.19,
-  /** Non-goal shots per unit of xG. */
-  SHOTS_PER_XG: 1.5,
+  /**
+   * Who scores / shoots (× (0.5 + finishing/10) per player) and who assists (× (0.5 + passing/10)).
+   * These are shares within the team, so they match the engine's line shares, subs included:
+   * quickSim has no subs, and each starter carries his whole slot.
+   */
+  ROLE_GOAL_WEIGHT:   { GK: 0, DEF: 0, MID: 0.113, FWD: 1.533 } as Record<LineGroup, number>,
+  ROLE_ASSIST_WEIGHT: { GK: 0.015, DEF: 0.219, MID: 0.284, FWD: 0.544 } as Record<LineGroup, number>,
+  /** 1 − the engine's assists per goal. */
+  NO_ASSIST_RATE: 0.143,
+  /**
+   * Non-goal shots per unit of (match-day) xG, at match level LEVEL_REF, scaled by
+   * (matchLevel / LEVEL_REF)^SHOTS_LEVEL_EXPONENT: the engine's weak leagues shoot more per goal
+   * (they convert less).
+   */
+  SHOTS_PER_XG: 1.922,
+  SHOTS_LEVEL_EXPONENT: -1.03,
 
   /**
    * Regular passes per starting slot at team level LEVEL_REF — the engine counts through balls in
    * their own family, not as passes. quickSim has no substitutes, so the target is the engine's
    * line total / starting slots (not per player who appeared). Scaled by
-   * (ownTeamLevel / LEVEL_REF)^PASS_LEVEL_EXPONENT[group]. Fitted against the engine with
-   * PASS_STRONG_RAW = 0.8 (Premier, Serie A, of_championship, Kenya).
+   * (ownTeamLevel / LEVEL_REF)^PASS_LEVEL_EXPONENT[group]. Fitted against the engine with the
+   * midfield passing-hub levers (26 leagues, `bun scripts/quicksim-spread.ts events`).
    */
-  PASSES_PER_MATCH:        { GK: 2.47, DEF: 2.58, MID: 1.28, FWD: 1.16 } as Record<LineGroup, number>,
-  /** Weak teams pass much less in the engine, mostly in midfield (Kenya MID 0.38 vs Premier 1.31 per slot). */
-  PASS_LEVEL_EXPONENT:     { GK: 0.75, DEF: 0.16, MID: 2.16, FWD: 0.96 } as Record<LineGroup, number>,
-  /** Engine completion is ~97% (only interceptions/offside fail a regular pass). */
-  PASS_COMPLETION_BASE: 0.94,
-  PASS_COMPLETION_SKILL: 0.08,
-  TACKLES_PER_MATCH:       { GK: 0, DEF: 0.26, MID: 0.12, FWD: 0.22 } as Record<LineGroup, number>,
-  INTERCEPTIONS_PER_MATCH: { GK: 0, DEF: 0.08, MID: 0.09, FWD: 0.09 } as Record<LineGroup, number>,
-  /** Failed tackles sampled as Poisson(TACKLES_PER_MATCH[group] × TACKLE_FAIL_RATIO), independent of the won-tackle roll. */
-  TACKLE_FAIL_RATIO: 2.1,
+  PASSES_PER_MATCH:        { GK: 2.095, DEF: 2.124, MID: 2.387, FWD: 1.102 } as Record<LineGroup, number>,
+  /** Weak teams pass less in the engine, mostly in midfield (Kenya MID 1.32 vs Premier 2.36 per slot). */
+  PASS_LEVEL_EXPONENT:     { GK: 0.23, DEF: 0.34, MID: 1.01, FWD: 0.72 } as Record<LineGroup, number>,
+  /** Engine completion is ~97.5% (only interceptions/offside fail a regular pass); passing barely moves it. */
+  PASS_COMPLETION_BASE: 0.973,
+  PASS_COMPLETION_SKILL: 0.004,
+  /**
+   * Won tackles / interceptions per starting slot (the engine's line total ÷ starting slots) at
+   * team level LEVEL_REF, per unit of the player factor (0.5 + tackling/10, resp. pressing/10).
+   * Scaled by (ownTeamLevel / LEVEL_REF)^…_LEVEL_EXPONENT[group]. Fitted with
+   * `bun scripts/quicksim-spread.ts events`.
+   */
+  TACKLES_PER_MATCH:            { GK: 0, DEF: 0.54, MID: 0.189, FWD: 0.369 } as Record<LineGroup, number>,
+  TACKLE_LEVEL_EXPONENT:        { GK: 0, DEF: -0.2, MID: -0.74, FWD: -0.09 } as Record<LineGroup, number>,
+  INTERCEPTIONS_PER_MATCH:      { GK: 0, DEF: 0.124, MID: 0.152, FWD: 0.161 } as Record<LineGroup, number>,
+  INTERCEPTION_LEVEL_EXPONENT:  { GK: 0, DEF: 0.6, MID: 1.04, FWD: 1.24 } as Record<LineGroup, number>,
+  /**
+   * Failed tackles per starting slot at LEVEL_REF, × (ownTeamLevel / LEVEL_REF)^TACKLE_FAIL_LEVEL_EXPONENT.
+   * Independent of the won-tackle roll. The exponents follow the engine; the rates are set so each
+   * line's mean starter rating matches the engine's (a quickSim starter also carries the events of
+   * the sub who would replace him, so the rates sit off the engine's per-slot counts).
+   */
+  TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 1.068, MID: 0.364, FWD: 1.076 } as Record<LineGroup, number>,
+  TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.39, MID: -0.82, FWD: -0.3 } as Record<LineGroup, number>,
 
   /** Energy spent over 90' for an average-stamina player. */
   ENERGY_DRAIN: 35,
