@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --team-hue: 240;
+  --team-hue: 262;
+  /* Lightness of the primary/accent colour; darker themes lower it and switch the on-primary text to white. */
+  --primary-l: 0.75;
+  --accent-l: 0.65;
 
   --background: oklch(0.12 0.02 var(--team-hue));
   --foreground: oklch(0.95 0 0);
@@ -12,7 +15,7 @@
   --popover: oklch(0.15 0.025 var(--team-hue));
   --popover-foreground: oklch(0.95 0 0);
 
-  --primary: oklch(0.75 0.18 var(--team-hue));
+  --primary: oklch(var(--primary-l) 0.18 var(--team-hue));
   --primary-foreground: oklch(0.15 0.02 var(--team-hue));
 
   --secondary: oklch(0.18 0.02 var(--team-hue));
@@ -21,7 +24,7 @@
   --muted: oklch(0.20 0.015 var(--team-hue));
   --muted-foreground: oklch(0.60 0.05 var(--team-hue));
 
-  --accent: oklch(0.65 0.15 var(--team-hue));
+  --accent: oklch(var(--accent-l) 0.15 var(--team-hue));
   --accent-foreground: oklch(0.12 0.02 var(--team-hue));
 
   --destructive: oklch(0.55 0.22 25);
@@ -29,9 +32,9 @@
 
   --border: oklch(0.25 0.03 var(--team-hue));
   --input: oklch(0.20 0.02 var(--team-hue));
-  --ring: oklch(0.75 0.18 var(--team-hue));
+  --ring: oklch(var(--primary-l) 0.18 var(--team-hue));
 
-  --chart-1: oklch(0.75 0.18 var(--team-hue));
+  --chart-1: oklch(var(--primary-l) 0.18 var(--team-hue));
   --chart-2: oklch(0.65 0.15 calc(var(--team-hue) + 30));
   --chart-3: oklch(0.55 0.12 calc(var(--team-hue) - 30));
   --chart-4: oklch(0.70 0.20 60);
@@ -41,16 +44,24 @@
 
   --sidebar: oklch(0.10 0.015 var(--team-hue));
   --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.75 0.18 var(--team-hue));
+  --sidebar-primary: oklch(var(--primary-l) 0.18 var(--team-hue));
   --sidebar-primary-foreground: oklch(0.12 0.02 var(--team-hue));
   --sidebar-accent: oklch(0.18 0.02 var(--team-hue));
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.25 0.03 var(--team-hue));
-  --sidebar-ring: oklch(0.75 0.18 var(--team-hue));
+  --sidebar-ring: oklch(var(--primary-l) 0.18 var(--team-hue));
 }
 
 [data-team="green"] { --team-hue: 160; }
-[data-team="blue"] { --team-hue: 240; }
+/* Darker royal blue: lower lightness, white text on primary/accent for contrast. */
+[data-team="blue"] {
+  --team-hue: 262;
+  --primary-l: 0.60;
+  --accent-l: 0.52;
+  --primary-foreground: oklch(0.98 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+}
 [data-team="red"] { --team-hue: 20; }
 [data-team="yellow"] { --team-hue: 85; }
 [data-team="purple"] { --team-hue: 290; }
@@ -110,19 +121,19 @@
 
 @layer utilities {
   .glow-primary {
-    box-shadow: 0 0 20px oklch(0.75 0.18 var(--team-hue) / 0.4),
-                0 0 40px oklch(0.75 0.18 var(--team-hue) / 0.2),
+    box-shadow: 0 0 20px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.4),
+                0 0 40px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.2),
                 inset 0 1px 0 oklch(1 0 0 / 0.1);
   }
 
   .glow-primary-sm {
-    box-shadow: 0 0 10px oklch(0.75 0.18 var(--team-hue) / 0.3),
-                0 0 20px oklch(0.75 0.18 var(--team-hue) / 0.15);
+    box-shadow: 0 0 10px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.3),
+                0 0 20px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.15);
   }
 
   .glow-text {
-    text-shadow: 0 0 10px oklch(0.75 0.18 var(--team-hue) / 0.5),
-                 0 0 20px oklch(0.75 0.18 var(--team-hue) / 0.3);
+    text-shadow: 0 0 10px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.5),
+                 0 0 20px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.3);
   }
 
   .card-arcade {
@@ -136,8 +147,8 @@
 
   .border-glow {
     border: 1px solid oklch(0.40 0.08 var(--team-hue));
-    box-shadow: 0 0 8px oklch(0.75 0.18 var(--team-hue) / 0.2),
-                inset 0 0 8px oklch(0.75 0.18 var(--team-hue) / 0.05);
+    box-shadow: 0 0 8px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.2),
+                inset 0 0 8px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.05);
   }
 
   .font-display {
