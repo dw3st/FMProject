@@ -2,8 +2,9 @@ import { simulateMatch } from '@/GameEngine/Domain/SimulateMatch';
 import { emptySeasonLog } from '@/types/playerTypes';
 import type { Formation } from '@/GameEngine/types';
 import type { Squad, RosterPlayer } from '@/types/playerTypes';
+import { fileURLToPath } from "node:url";
 
-const FORMATIONS_DIR = new URL('../src/Data/formations', import.meta.url).pathname;
+const FORMATIONS_DIR = fileURLToPath(new URL('../src/Data/formations', import.meta.url));
 const [fA, fB] = await Promise.all([
   Bun.file(`${FORMATIONS_DIR}/4-3-3.json`).json() as Promise<Formation>,
   Bun.file(`${FORMATIONS_DIR}/4-4-2.json`).json() as Promise<Formation>,

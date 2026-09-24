@@ -23,6 +23,7 @@ import { applyTeamAttackConfig }      from '@/GameEngine/Configs/AttackConfig';
 import type { Formation }             from '@/GameEngine/types';
 import type { Squad, RosterPlayer }   from '@/types/playerTypes';
 import type { TacticalStyle }         from '@/types/tacticsTypes';
+import { fileURLToPath } from "node:url";
 
 interface WorkerInput {
   styleA:    TacticalStyle;
@@ -58,7 +59,7 @@ export interface BatchRaw {
   teamB:      TeamRawStats;
 }
 
-const FORMATION_PATH = new URL('../src/Data/formations/4-3-3.json', import.meta.url).pathname;
+const FORMATION_PATH = fileURLToPath(new URL('../src/Data/formations/4-3-3.json', import.meta.url));
 
 const roleSlots: Array<[string, string[]]> = [
   ['GK1',  ['GK']],  ['LB1',  ['LB']],  ['RB1',  ['RB']],  ['LWB1', ['LWB']], ['RWB1', ['RWB']],

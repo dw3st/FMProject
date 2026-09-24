@@ -16,6 +16,7 @@ import { simulateMatch }           from '@/GameEngine/Domain/SimulateMatch';
 import { emptySeasonLog }          from '@/types/playerTypes';
 import type { Formation }          from '@/GameEngine/types';
 import type { Squad, RosterPlayer } from '@/types/playerTypes';
+import { fileURLToPath } from "node:url";
 
 interface WorkerInput {
   fAId:      string;
@@ -51,7 +52,7 @@ export interface BatchRaw {
   teamB:      TeamRawStats;
 }
 
-const FORMATIONS_DIR = new URL('../src/Data/formations', import.meta.url).pathname;
+const FORMATIONS_DIR = fileURLToPath(new URL('../src/Data/formations', import.meta.url));
 
 const roleSlots: Array<[string, string[]]> = [
   ['GK1',  ['GK']],  ['LB1',  ['LB']],  ['RB1',  ['RB']],  ['LWB1', ['LWB']], ['RWB1', ['RWB']],

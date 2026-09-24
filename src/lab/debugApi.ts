@@ -9,8 +9,9 @@
 import type { Squad } from "@/types/playerTypes";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { squadFileStemFromClubParam, type StandingLike } from "@/backend/squadIdResolve";
+import { fileURLToPath } from "node:url";
 
-const DATA_DIR = new URL("../Data", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 /**
  * Resolve a club param (slug like "manchester_united" OR numeric squadId

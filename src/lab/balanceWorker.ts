@@ -24,8 +24,9 @@ import type {
   SquadSpec,
   Variant,
 } from "@/lab/types";
+import { fileURLToPath } from "node:url";
 
-const FORMATIONS_DIR = new URL("../Data/formations/", import.meta.url).pathname;
+const FORMATIONS_DIR = fileURLToPath(new URL("../Data/formations/", import.meta.url));
 
 const ROLE_SLOTS: Array<[string, string[]]> = [
   ["GK1",  ["GK"]],  ["LB1",  ["LB"]],  ["RB1",  ["RB"]],  ["LWB1", ["LWB"]], ["RWB1", ["RWB"]],
