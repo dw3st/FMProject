@@ -325,9 +325,10 @@ desenvolvimento) é o mesmo do motor.
     DEF ~3,0, MID ~1,7 e FWD ~1,4 passes normais, ~49 passes e ~19 through balls por partida,
     acerto ~96,6%. Gols/partida: Premier 2,83 → 2,89, Serie A 2,39 → 2,23,
     `of_championship` 1,65 → 1,40. Medido com `bun scripts/passing-mix-diagnostic.ts`.
-  - As taxas de passe do quickSim (`PASSES_PER_MATCH`, `PASS_COMPLETION_*`) e o volume de gols
-    (`BASE_GOALS`) foram calibrados **antes** desse rebalanceamento e precisam ser recalibrados
-    contra o motor novo.
+  - O volume de gols (`BASE_GOALS` e cia.) já foi recalibrado contra o motor novo (ver
+    "Volume de gols" acima). As taxas de passe do quickSim (`PASSES_PER_MATCH`,
+    `PASS_COMPLETION_*`) foram calibradas **antes** desse rebalanceamento e ainda precisam ser
+    recalibradas.
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa
