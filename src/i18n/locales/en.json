@@ -1047,6 +1047,35 @@
     "totalValue": "Total value"
   },
   "leagues": {
+    "finances": {
+      "tab": "Finances",
+      "loading": "Loading club finances…",
+      "tier": "Tier",
+      "popularity": "Popularity",
+      "weeklyBudget": "Weekly budget",
+      "wages": "Wages / cap",
+      "hiring": "Hiring",
+      "transferBudget": "Transfer budget",
+      "perWeek": "/wk",
+      "yourClub": "Your club",
+      "tiers": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "ELITE": "Elite"
+      },
+      "hiringState": {
+        "open": "Open",
+        "tight": "Tight",
+        "frozen": "Frozen"
+      },
+      "hiringHint": {
+        "open": "Wage bill well under the cap: can sign players.",
+        "tight": "Near the wage cap: only cheap cover signings.",
+        "frozen": "At or over the wage cap: no signings."
+      },
+      "note": "AI clubs run on a budget model: tier and popularity set a weekly budget, a wage cap and a seasonal transfer budget. Your club uses the full financial system (see Finances)."
+    },
     "title": "Leagues",
     "table": "League Table",
     "fixtures": "Fixtures",

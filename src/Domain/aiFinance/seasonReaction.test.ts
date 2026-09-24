@@ -1,17 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import type { ClubFinances, Squad, StandingRow } from "@/types/playerTypes";
 import {
-  aiSeasonOutcome,
+  clubSeasonOutcome,
   applyAISeasonReaction,
+  applyHumanSeasonReaction,
   followersChange,
   nextFinancialTier,
   seasonPerformance,
-  type AISeasonOutcome,
+  type ClubSeasonOutcome,
 } from "@/Domain/aiFinance/seasonReaction";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
+import { popularityFromFollowers, seasonalTransferBudgetFor } from "@/Domain/aiFinance/aiClubFinance";
 
-const out = (rank: number, move: AISeasonOutcome["move"] = null, leagueSize = 20, played = true): AISeasonOutcome =>
+const out = (rank: number, move: ClubSeasonOutcome["move"] = null, leagueSize = 20, played = true): ClubSeasonOutcome =>
   ({ rank, leagueSize, played, move });
 
 const fin = (income: number, followers = 1_000_000, budget = 50_000_000): ClubFinances => ({
@@ -85,26 +87,52 @@ describe("applyAISeasonReaction", () => {
     expect(s.financialTier).toBe("MEDIUM");
     expect(s.finances!.followers).toBeLessThan(10_000_000);
   });
-  test("never bankrupt: budget floored per tier, followers floored", () => {
-    const s = applyAISeasonReaction(squad(fin(0, 0, 0)), out(10));
-    expect(s.finances!.budget).toBe(AI_FINANCE_CONFIG.season.MIN_BUDGET.LOW);
+  test("grants next season's transfer budget from the new tier (no carried balance)", () => {
+    const s = applyAISeasonReaction(squad(fin(0, 0, 0), { aiTransferBudget: 0 }), out(10));
+    expect(s.aiTransferBudget).toBe(seasonalTransferBudgetFor("LOW", 0));
+    expect(s.finances!.budget).toBe(0);
     expect(s.finances!.followers).toBe(AI_FINANCE_CONFIG.season.FOLLOWERS_FLOOR);
+    const champ = applyAISeasonReaction(squad(fin(100_000_000, 1_000_000), { aiTransferBudget: 1 }), out(1));
+    expect(champ.aiTransferBudget).toBe(seasonalTransferBudgetFor("ELITE", popularityFromFollowers(1_150_000)));
   });
-  test("a squad without finances only gets a tier", () => {
+  test("a squad without finances gets a tier and a budget", () => {
     const s = applyAISeasonReaction(squad(undefined), out(10));
     expect(s.financialTier).toBe("LOW");
+    expect(s.aiTransferBudget).toBe(seasonalTransferBudgetFor("LOW", 0));
     expect(s.finances).toBeUndefined();
   });
 });
 
-describe("aiSeasonOutcome", () => {
+describe("applyHumanSeasonReaction", () => {
+  test("followers only: no tier, no AI budget, money untouched", () => {
+    const s = squad(fin(100_000_000, 1_000_000, 7_000_000));
+    const r = applyHumanSeasonReaction(s, out(1));
+    expect(r.followersBefore).toBe(1_000_000);
+    expect(r.followersAfter).toBe(1_150_000);
+    expect(r.squad.finances).toEqual({ ...s.finances!, followers: 1_150_000 });
+    expect(r.squad.financialTier).toBeUndefined();
+    expect(r.squad.aiTransferBudget).toBeUndefined();
+  });
+  test("same soft balancing as AI clubs (natural tier of its income)", () => {
+    const low = applyHumanSeasonReaction(squad(fin(1_000_000, 1_000_000)), out(1));
+    expect(low.followersAfter).toBe(Math.round(1_000_000 * (1 + followersChange(out(1), "LOW"))));
+    const rel = applyHumanSeasonReaction(squad(fin(100_000_000, 1_000_000)), out(20, "relegated"));
+    expect(rel.followersAfter).toBeLessThan(1_000_000);
+  });
+  test("no finances: unchanged", () => {
+    const r = applyHumanSeasonReaction(squad(undefined), out(1));
+    expect(r.followersAfter).toBe(r.followersBefore);
+  });
+});
+
+describe("clubSeasonOutcome", () => {
   const row = (squadId: string, mp: number): StandingRow => ({
     squadId, name: squadId, colors: ["#000", "#fff"], mp, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0, form: [],
   });
   test("rank from the table, move from the plan", () => {
     const table = [row("a", 38), row("b", 38), row("c", 38)];
-    expect(aiSeasonOutcome(table, "b", [{ squadId: "b", kind: "relegated" }]))
+    expect(clubSeasonOutcome(table, "b", [{ squadId: "b", kind: "relegated" }]))
       .toEqual({ rank: 2, leagueSize: 3, played: true, move: "relegated" });
-    expect(aiSeasonOutcome([row("a", 0)], "a", []).played).toBe(false);
+    expect(clubSeasonOutcome([row("a", 0)], "a", []).played).toBe(false);
   });
 });

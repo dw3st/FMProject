@@ -1,5 +1,7 @@
 import { Player } from "@/Domain/Player";
-import { aiClubFinance, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
+import {
+  aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
+} from "@/Domain/aiFinance/aiClubFinance";
 import type { MainRole } from "@/GameInterface/positionHelpers";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
@@ -13,8 +15,6 @@ import type {
 
 const MAIN_BANDS: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
-const BUDGET_HIGH = 50_000_000;
-const BUDGET_MID = 15_000_000;
 export const PRICE_CAP_MID = 40_000_000;
 export const PRICE_CAP_LOW = 15_000_000;
 
@@ -35,12 +35,6 @@ export function teamAvgRating(squad: Squad): number {
   if (squad.players.length === 0) return 5;
   const sum = squad.players.reduce((s, p) => s + playerOverallRating(p), 0);
   return sum / squad.players.length;
-}
-
-export function budgetTierFromBudget(budget: number): TransferBudgetTier {
-  if (budget >= BUDGET_HIGH) return "high";
-  if (budget >= BUDGET_MID) return "mid";
-  return "low";
 }
 
 function playersInBand(squad: Squad, band: MainRole): RosterPlayer[] {
@@ -97,8 +91,7 @@ export function generateTransferNeeds(
   rng: () => number = defaultRng,
 ): SquadMarketProfile {
   const teamAvg = teamAvgRating(squad);
-  const budget = squad.finances?.budget ?? 0;
-  const tier = budgetTierFromBudget(budget);
+  const tier = transferBudgetTierOf(squad);
 
   type NeedCandidate = TransferNeed & { _bandUrgency: number };
   const coverCandidates: NeedCandidate[] = [];
@@ -379,7 +372,8 @@ export interface TransferAttemptResult {
 }
 
 /**
- * Picks highest-urgency need, scores candidates, returns best bid if buyer can afford fee.
+ * Picks highest-urgency need, scores candidates, returns best bid if the buyer's seasonal AI
+ * transfer budget (`aiTransferBudgetOf`) covers the fee.
  * `sellerSellLists` maps squad id → sell list for sell-score boosting during scoring.
  *
  * Wage control (AI finances, `src/Domain/aiFinance`): a buyer over its wage cap does not hire; a
@@ -403,7 +397,7 @@ export function processTeamTransferAttempt(
     : profile.needs;
   if (needs.length === 0) return null;
 
-  const buyerBudget = buyerSquad.finances?.budget ?? 0;
+  const buyerBudget = aiTransferBudgetOf(buyerSquad);
   const buyerAvg = teamAvgRating(buyerSquad);
   const need = [...needs].sort((a, b) => b.urgency - a.urgency)[0]!;
   const candidates = findCandidates(need, allSquads, buyerSquad.id, excludePlayerClubSquadId);

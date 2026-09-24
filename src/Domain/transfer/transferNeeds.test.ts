@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import {
-  budgetTierFromBudget,
   findCandidates,
   generateTransferNeeds,
   playerOverallRating,
@@ -57,21 +56,6 @@ function makeSquad(id: string, players: RosterPlayer[], finances?: Squad["financ
   };
 }
 
-describe("budgetTierFromBudget", () => {
-  test("high >= 50M", () => {
-    expect(budgetTierFromBudget(50_000_000)).toBe("high");
-    expect(budgetTierFromBudget(100_000_000)).toBe("high");
-  });
-  test("mid 15M–50M", () => {
-    expect(budgetTierFromBudget(15_000_000)).toBe("mid");
-    expect(budgetTierFromBudget(40_000_000)).toBe("mid");
-  });
-  test("low < 15M", () => {
-    expect(budgetTierFromBudget(14_999_999)).toBe("low");
-    expect(budgetTierFromBudget(0)).toBe("low");
-  });
-});
-
 describe("generateTransferNeeds", () => {
   test("GK depth < 2 produces high urgency need", () => {
     const rng = () => 0.5;
@@ -88,7 +72,7 @@ describe("generateTransferNeeds", () => {
     expect(gkNeed!.urgency).toBeGreaterThanOrEqual(0.3);
   });
 
-  test("low budget → lower targetMax than high budget (same rng)", () => {
+  test("LOW tier → lower targetMax than HIGH tier (same rng)", () => {
     const rng = () => 0.5;
     const players = [
       basePlayer({ id: "gk1", name: "G1", positions: ["GK"] }),
@@ -98,12 +82,12 @@ describe("generateTransferNeeds", () => {
       ),
     ];
     const low = generateTransferNeeds(
-      makeSquad("a", players, { budget: 5_000_000 } as Squad["finances"]),
+      { ...makeSquad("a", players), financialTier: "LOW" },
       "2025-01-01",
       rng,
     );
     const high = generateTransferNeeds(
-      makeSquad("b", players, { budget: 60_000_000 } as Squad["finances"]),
+      { ...makeSquad("b", players), financialTier: "HIGH" },
       "2025-01-01",
       rng,
     );
@@ -252,6 +236,7 @@ describe("processTeamTransferAttempt", () => {
         followers: 0,
       },
     );
+    buyer.aiTransferBudget = 200_000_000;
     const rating = playerOverallRating(sellerPlayer);
     const profile = {
       squadId: buyer.id,
@@ -298,6 +283,7 @@ describe("processTeamTransferAttempt", () => {
         followers: 0,
       },
     );
+    buyer.aiTransferBudget = 1_000;
     const profile = generateTransferNeeds(buyer, "2025-01-01", rng);
     const attempt = processTeamTransferAttempt(buyer, profile, [seller, buyer], rng);
     expect(attempt).toBeNull();
@@ -320,6 +306,7 @@ describe("processTeamTransferAttempt", () => {
         followers: 0,
       },
     );
+    buyer.aiTransferBudget = 200_000_000;
     const rating = playerOverallRating(sellerPlayer);
     const profile = {
       squadId: buyer.id,
@@ -369,21 +356,23 @@ describe("processTeamTransferAttempt — AI wage control", () => {
     makeSquad(
       "buy",
       Array.from({ length: n }, (_, j) => basePlayer({ id: `b${j}`, name: `B${j}`, positions: ["CM"], stats: flat(stats) })),
-      { broadcasting: 100_000_000, commercial: 0, total: 100_000_000, budget: 500_000_000, followers: 0 },
-    );
+      { broadcasting: 100_000_000, commercial: 0, total: 100_000_000, budget: 0, followers: 0 },
+    ) as Squad & { aiTransferBudget: number };
+  // Plenty of transfer money, so only the wage gate decides.
+  const buyerWithMoney = (n: number, stats: number): Squad => ({ ...buyerWith(n, stats), aiTransferBudget: 500_000_000 });
 
   test("open buyer under the cap signs", () => {
-    expect(processTeamTransferAttempt(buyerWith(10, 3), need("cover_need"), [seller], rng)).not.toBeNull();
+    expect(processTeamTransferAttempt(buyerWithMoney(10, 3), need("cover_need"), [seller], rng)).not.toBeNull();
   });
 
   test("buyer over its wage cap does not hire", () => {
     // 20 players of rating 10 ≈ 158k/week, far over a HIGH club's ~29k cap.
-    expect(processTeamTransferAttempt(buyerWith(20, 10), need("cover_need"), [seller], rng)).toBeNull();
+    expect(processTeamTransferAttempt(buyerWithMoney(20, 10), need("cover_need"), [seller], rng)).toBeNull();
   });
 
   test("signing that would push the bill past the cap is skipped", () => {
-    // HIGH, popularity 0: cap 29 400/week. Rating-4 target ≈ 1 050/week; 5 players of rating 8 ≈ 24 k.
-    const buyer = buyerWith(5, 8);
+    // HIGH, popularity 0: cap 33 600/week. 6 players of rating 8 ≈ 29.1k (open); a rating-9 signing ≈ 6.3k.
+    const buyer = buyerWithMoney(6, 8);
     const heavy = basePlayer({ id: "hv", name: "Heavy", positions: ["ST"], squadId: "sell", stats: flat(9) });
     const r = playerOverallRating(heavy);
     const profile = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: r - 0.1, targetMax: r + 0.1 }] };
@@ -391,9 +380,9 @@ describe("processTeamTransferAttempt — AI wage control", () => {
   });
 
   test("tight buyer: only cheap cover signings", () => {
-    // 13 players of rating 5.5 ≈ 27.6k/week: in [0.9, 1.0) of the 29.4k cap → tight.
-    const buyer = buyerWith(13, 5.5);
-    const cap = 29_400;
+    // 15 players of rating 5.5 ≈ 31.9k/week: in [0.9, 1.0) of the 33.6k cap → tight.
+    const buyer = buyerWithMoney(15, 5.5);
+    const cap = 33_600;
     const bill = buyer.players.reduce((s, p) => s + Math.round(Math.pow(playerOverallRating(p), 2.2) * 50), 0);
     expect(bill).toBeGreaterThanOrEqual(cap * 0.9);
     expect(bill).toBeLessThan(cap);
@@ -406,5 +395,23 @@ describe("processTeamTransferAttempt — AI wage control", () => {
     const r = playerOverallRating(cheap);
     const profile = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: r - 0.1, targetMax: r + 0.1 }] };
     expect(processTeamTransferAttempt(buyer, profile, [makeSquad("sell", [cheap])], rng)).not.toBeNull();
+  });
+});
+
+describe("processTeamTransferAttempt — AI transfer budget", () => {
+  test("fee must fit the seasonal AI transfer budget, not finances.budget", () => {
+    const rng = () => 0.5;
+    const target = basePlayer({ id: "sp", name: "Sell", positions: ["ST"], squadId: "sell", stats: flat(4) });
+    const rating = playerOverallRating(target);
+    const need = {
+      squadId: "buy", lastUpdateDay: "2025-01-01", sellList: [],
+      needs: [{ position: "Forward" as const, targetMin: rating - 0.5, targetMax: rating + 0.5, urgency: 1, budgetTier: "high" as const, intentType: "cover_need" as const }],
+    };
+    const roster = Array.from({ length: 10 }, (_, j) => basePlayer({ id: `b${j}`, name: `B${j}`, positions: ["CM"], stats: flat(3) }));
+    const fin = { broadcasting: 100_000_000, commercial: 0, total: 100_000_000, budget: 900_000_000, followers: 0 };
+    const broke = { ...makeSquad("buy", roster, fin), aiTransferBudget: 1_000_000 };
+    expect(processTeamTransferAttempt(broke, need, [makeSquad("sell", [target])], rng)).toBeNull();
+    const funded = { ...makeSquad("buy", roster, { ...fin, budget: 0 }), aiTransferBudget: 50_000_000 };
+    expect(processTeamTransferAttempt(funded, need, [makeSquad("sell", [target])], rng)).not.toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
+import { aiFinancialPressure } from "@/Domain/aiFinance/aiClubFinance";
 
 function playerOverallRating(player: RosterPlayer): number {
   return Player.overallAvg(player);
@@ -29,6 +30,7 @@ export type TransferAcceptReason =
 /**
  * Selling-club AI: accept or reject a bid based on squad depth, player importance, fee vs expected value, and finances.
  * `sellPriority` (0–1) — pass from the seller's sell list to boost acceptance for listed players.
+ * `opts.humanSeller` — the seller is the human club (financial pressure from its real budget).
  *
  * Returns a stable `reason` code that the UI maps to a translated string.
  */
@@ -37,6 +39,7 @@ export function evaluateTransferOffer(
   fromSquad: Squad,
   fee: number,
   sellPriority?: number,
+  opts: { humanSeller?: boolean } = {},
 ): { accepted: boolean; reason: TransferRejectReason | TransferAcceptReason } {
   if (fromSquad.players.length <= 14) {
     return { accepted: false, reason: "squadDepth" };
@@ -56,9 +59,15 @@ export function evaluateTransferOffer(
   const expectedValue = new Player(pRating, player.age).price;
   const offerScore = fee / expectedValue;
 
-  const aiBalance = fromSquad.finances?.budget ?? 0;
-  const financialPressure =
-    aiBalance < 10_000_000 ? 1.0 : aiBalance < 50_000_000 ? 0.5 : 0.1;
+  // AI sellers: pressure from their financial tier (they keep no balance). The human club's
+  // listed players are evaluated on its real budget.
+  let financialPressure: number;
+  if (opts.humanSeller) {
+    const balance = fromSquad.finances?.budget ?? 0;
+    financialPressure = balance < 10_000_000 ? 1.0 : balance < 50_000_000 ? 0.5 : 0.1;
+  } else {
+    financialPressure = aiFinancialPressure(fromSquad);
+  }
 
   let decisionScore = offerScore * 0.6 + financialPressure * 0.3 - relativeStrength * 0.5;
 

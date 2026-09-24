@@ -52,6 +52,8 @@ const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
 const { computeAdvanceDayMoneyDelta } = await import("@/Domain/advanceDay/financial");
 const { addOneDay } = await import("@/Domain/advanceDay/date");
+const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
+const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
@@ -288,17 +290,36 @@ try {
       // Inbox: season news for champion / move.
       const inbox = await plain().getInbox(saveId);
       const season = inbox.filter((m) => m.category === "season");
-      const expectedNews = (payload.playerChampionOf ? 1 : 0) + (payload.playerMove ? 1 : 0);
+      // Human followers react to the season (followers only; the rest of its finances is its own).
+      const humanAfter = await plain().getSquadById(saveId, playerSquadId);
+      const followersBefore = prePlayerSquad?.finances?.followers ?? 0;
+      const followersAfter = humanAfter?.finances?.followers ?? 0;
+      if (prePlayerSquad && humanAfter && archive) {
+        // advanceDay applies the tier income change first (soft balancing uses the new income).
+        const pyr = obsPlayer ? pyramids[playerCountry!]! : null;
+        const base = obsPlayer && pyr
+          ? applyTierFinanceChange(prePlayerSquad, tierOfLeague(pyr, obsPlayer.from)!, tierOfLeague(pyr, obsPlayer.to)!)
+          : prePlayerSquad;
+        const expected = applyHumanSeasonReaction(
+          base,
+          clubSeasonOutcome(archive.standings, playerSquadId, obsPlayer ? [obsPlayer] : []),
+        ).followersAfter;
+        check(followersAfter === expected, `human followers ${followersBefore} → ${followersAfter} (expected ${expected})`);
+      }
+      const followersNews = followersAfter !== followersBefore ? 1 : 0;
+      const expectedNews = (payload.playerChampionOf ? 1 : 0) + (payload.playerMove ? 1 : 0) + followersNews;
       check(season.length === expectedNews, `inbox season messages: ${season.length} (expected ${expectedNews})`);
+      check(season.filter((m) => m.kind === "followers").length === followersNews, "inbox has the followers season line");
       if (obsPlayer) check(metaAfter.leagueSlug === obsPlayer.to, `meta.leagueSlug follows the club (${metaAfter.leagueSlug})`);
-      // AI finances: every AI club of the country got a financial tier; the human club did not.
+      // AI finances: every AI club of the country got a financial tier and a fresh transfer budget;
+      // the human club got neither.
       for (const slug of playerCountrySlugs) {
         const squads = await plain().getSquadsInLeague(saveId, slug);
-        const missing = squads.filter((s) => s.id !== playerSquadId && !s.financialTier).length;
-        check(missing === 0, `${slug}: AI clubs have a financial tier after the rollover (${missing} missing)`);
+        const ai = squads.filter((s) => s.id !== playerSquadId);
+        const missing = ai.filter((s) => !s.financialTier || !(typeof s.aiTransferBudget === "number" && s.aiTransferBudget > 0)).length;
+        check(missing === 0, `${slug}: AI clubs have a financial tier + transfer budget after the rollover (${missing} missing)`);
       }
-      const humanAfter = await plain().getSquadById(saveId, playerSquadId);
-      check(!humanAfter?.financialTier, "human club has no AI financial tier");
+      check(!humanAfter?.financialTier && humanAfter?.aiTransferBudget === undefined, "human club has no AI financial tier / AI budget");
       await checkFiles(saveId, `after rollover ${date}`);
     } else if (playerRollDay) {
       daysAfterRoll++;

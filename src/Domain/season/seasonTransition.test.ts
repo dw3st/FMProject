@@ -105,7 +105,7 @@ describe("runSeasonTransition", () => {
     expect(betaOut.squad.finances?.budget ?? 0).toBe(0);
   });
 
-  test("AI club receives broadcasting into transfer budget", () => {
+  test("AI club gets no broadcasting money (its transfer budget comes from its tier)", () => {
     const leagueTeams: LeagueTeam[] = [
       { squadId: "a", name: "A", colors: ["#000", "#fff"] },
       { squadId: "b", name: "B", colors: ["#111", "#eee"] },
@@ -146,7 +146,7 @@ describe("runSeasonTransition", () => {
     });
 
     const bOut = result.squadsToSave.find((r) => r.squad.id === "b")!;
-    expect(bOut.squad.finances!.budget).toBe(3_000_000);
+    expect(bOut.squad.finances!.budget).toBe(1_000_000);
     expect(result.playerBroadcastingCredit).toBe(0);
   });
 });
@@ -206,7 +206,7 @@ describe("applyPlayerBroadcastingCredit", () => {
     expect(alpha.squad.players[0]!.seasonLog!.appearances).toBe(0);
     expect(alpha.squad.finances!.budget).toBe(15_000_000);
     // AI club untouched by the player credit
-    expect(out.find((r) => r.squad.id === "b")!.squad.finances!.budget).toBe(3_000_000);
+    expect(out.find((r) => r.squad.id === "b")!.squad.finances!.budget).toBe(1_000_000);
   });
 
   test("does not mutate the input refs", () => {

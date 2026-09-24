@@ -1047,6 +1047,35 @@
     "totalValue": "Valor total"
   },
   "leagues": {
+    "finances": {
+      "tab": "Finanças",
+      "loading": "Carregando finanças dos clubes…",
+      "tier": "Nível",
+      "popularity": "Popularidade",
+      "weeklyBudget": "Orçamento semanal",
+      "wages": "Salários / teto",
+      "hiring": "Contratações",
+      "transferBudget": "Verba de transferências",
+      "perWeek": "/sem",
+      "yourClub": "Seu clube",
+      "tiers": {
+        "LOW": "Baixo",
+        "MEDIUM": "Médio",
+        "HIGH": "Alto",
+        "ELITE": "Elite"
+      },
+      "hiringState": {
+        "open": "Aberto",
+        "tight": "Apertado",
+        "frozen": "Congelado"
+      },
+      "hiringHint": {
+        "open": "Folha salarial bem abaixo do teto: pode contratar.",
+        "tight": "Perto do teto salarial: só reforços baratos.",
+        "frozen": "No teto salarial ou acima: não contrata."
+      },
+      "note": "Os clubes da IA seguem um modelo de orçamento: nível e popularidade definem o orçamento semanal, o teto salarial e a verba de transferências da temporada. Seu clube usa o sistema financeiro completo (veja Finanças)."
+    },
     "title": "Ligas",
     "table": "Tabela",
     "fixtures": "Jogos",
