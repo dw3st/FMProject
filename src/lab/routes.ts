@@ -12,8 +12,9 @@ import {
 import { getRun, listRuns, startRun, subscribe } from "@/lab/runRegistry";
 import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
 import type { BalanceScenario } from "@/lab/types";
+import { fileURLToPath } from "node:url";
 
-const FORMATIONS_DIR = new URL("../Data/formations/", import.meta.url).pathname;
+const FORMATIONS_DIR = fileURLToPath(new URL("../Data/formations/", import.meta.url));
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {

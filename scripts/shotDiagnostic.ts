@@ -13,8 +13,9 @@ import { simulateMatch } from '@/GameEngine/Domain/SimulateMatch';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { Player } from '@/Domain/Player';
 import type { Squad } from '@/types/playerTypes';
+import { fileURLToPath } from "node:url";
 
-const DATA = new URL('../src/Data/squads', import.meta.url).pathname;
+const DATA = fileURLToPath(new URL('../src/Data/squads', import.meta.url));
 
 async function loadSquad(league: string, id: string): Promise<Squad> {
   return (await Bun.file(`${DATA}/${league}/${id}.json`).json()) as Squad;
