@@ -173,3 +173,21 @@ export function runSeasonTransition(input: SeasonTransitionInput): SeasonTransit
     playerBroadcastingCredit,
   };
 }
+
+/**
+ * Credit the human club's annual broadcasting to its budget on the RESET squad the
+ * transition produced (`squadsToSave`), so the new-season write carries both the
+ * reset roster and the credit. Pure: returns new refs, never mutates the input.
+ */
+export function applyPlayerBroadcastingCredit(
+  squadsToSave: SquadSaveRef[],
+  playerSquadId: string,
+  credit: number,
+): SquadSaveRef[] {
+  if (credit <= 0) return squadsToSave;
+  return squadsToSave.map((ref) => {
+    if (ref.squad.id !== playerSquadId) return ref;
+    const fin = ref.squad.finances ?? { broadcasting: 0, commercial: 0, total: 0, budget: 0, followers: 0 };
+    return { ...ref, squad: { ...ref.squad, finances: { ...fin, budget: (fin.budget ?? 0) + credit } } };
+  });
+}

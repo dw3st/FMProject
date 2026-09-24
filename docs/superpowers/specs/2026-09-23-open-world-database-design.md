@@ -150,12 +150,16 @@ que exibem detalhes tratam esse caso ("Resumo indisponível — liga simulada").
 
 ### Pertencimento por save
 
-- Arquivo novo `saves/{id}/leagueMembership.json`, no formato `{ [leagueSlug]: squadId[] }`,
-  criado a partir do `leagueData.json` na criação do save.
-- Uma função única em `src/Domain/clubLookup.ts` (`getLeagueClubs(saveId, leagueSlug)`)
-  substitui toda leitura de `leagueData.standings` usada para saber quem joga onde, em
-  `advanceDay.ts`, `routes.ts`, `SaveService.ts` e `squadIdToClubSlugMap`.
-- O `leagueData.json` continua como catálogo (nome, cores, logo, zonas).
+- A pasta `saves/{id}/squads/{liga}/` é a verdade: um clube joga na liga da pasta onde está
+  o arquivo dele. Não existe `leagueMembership.json` (seriam duas fontes que podem divergir).
+- O `SquadIndex` (`src/backend/squadIndex.ts`, via `SaveService.getSquadIndex`) resolve
+  pertencimento e localização: `byId`, `inLeague`, `resolve`. Ele substitui toda leitura de
+  `leagueData.standings` usada para saber quem joga onde, em `advanceDay.ts`, `routes.ts` e
+  `SaveService.ts`.
+- Mudar um clube de liga é `SaveService.moveSquad` (grava na liga nova, `deleteSquad` na
+  antiga; no `BufferingSaveDAL` a remoção vira tombstone até o flush).
+- O `leagueData.json` é só catálogo (nome, cores, zonas), incluindo a **liga de origem para
+  escudos**: os arquivos de escudo ficam em `Data/logos/{liga de origem}/`.
 
 ### `pyramids.json`
 
@@ -193,7 +197,7 @@ que exibem detalhes tratam esse caso ("Resumo indisponível — liga simulada").
 - A transição:
   1. calcula quem sobe e quem desce;
   2. move os arquivos `saves/{id}/squads/{de}/{clube}.json` para a nova liga;
-  3. atualiza o `leagueMembership.json`;
+  3. o `SquadIndex` reflete a nova composição sozinho (a pasta é a verdade);
   4. roda o `runSeasonTransition` de cada liga com a nova composição e gera os calendários.
 - Se o clube do jogador trocou de divisão, `meta.leagueSlug` é atualizado, o `simMode` é
   recalculado e o jogador recebe um evento no inbox (`promoted` ou `relegated`).

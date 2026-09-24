@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
-import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
+import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { generateRestDays, parseSeasonDates } from "@/Domain/season";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
@@ -17,31 +17,11 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
-import { squadFileStemFromClubParam } from "@/backend/squadIdResolve";
+import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
+import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
+import { logError } from "@/Logger";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
-
-let leagueStandingsByLeague: Map<string, Array<{ squadId: string; slug?: string }>> | null = null;
-
-async function standingsMapFromDisk(): Promise<Map<string, Array<{ squadId: string; slug?: string }>>> {
-  if (leagueStandingsByLeague) return leagueStandingsByLeague;
-  const file = Bun.file(`${DATA_DIR}/leagueData.json`);
-  if (!(await file.exists())) {
-    leagueStandingsByLeague = new Map();
-    return leagueStandingsByLeague;
-  }
-  const leagues = (await file.json()) as Array<{
-    slug: string;
-    standings?: Array<{ squadId: string; slug?: string }>;
-  }>;
-  leagueStandingsByLeague = new Map(leagues.map((l) => [l.slug, l.standings ?? []]));
-  return leagueStandingsByLeague;
-}
-
-async function resolveSquadFileStem(leagueSlug: string, clubParam: string): Promise<string | null> {
-  const map = await standingsMapFromDisk();
-  return squadFileStemFromClubParam(map.get(leagueSlug), clubParam);
-}
 
 // ── SaveMeta: the light metadata stored in {saveId}.json ────────────────────
 
@@ -90,6 +70,25 @@ export interface SaveMeta {
 
 export class SaveService {
   constructor(private readonly dal: ISaveDAL = new FileSystemDAL()) {}
+
+  /**
+   * Squad index per save, stamped with the save's data version. On FileSystemDAL
+   * every write bumps the version, so writes from other instances (a day flush)
+   * rebuild it; this instance's own membership-preserving writes re-stamp it
+   * (see `saveSquad`), membership changes drop it.
+   */
+  private readonly squadIndexCache = new Map<string, { version: number; index: SquadIndex }>();
+  /** In-flight index builds, shared by concurrent `getSquadIndex` callers at the same version. */
+  private readonly squadIndexInFlight = new Map<string, { version: number; promise: Promise<SquadIndex> }>();
+  /** Bumped by `dropSquadIndex`, so a build that was listing across a drop is not cached. */
+  private readonly squadIndexGen = new Map<string, number>();
+
+  /** Forget the cached (and any in-flight) index of a save after a membership change. */
+  private dropSquadIndex(saveId: string): void {
+    this.squadIndexGen.set(saveId, (this.squadIndexGen.get(saveId) ?? 0) + 1);
+    this.squadIndexCache.delete(saveId);
+    this.squadIndexInFlight.delete(saveId);
+  }
 
   // ── Meta ───────────────────────────────────────────────────────────────────
 
@@ -229,56 +228,163 @@ export class SaveService {
 
   // ── Squads ─────────────────────────────────────────────────────────────────
 
-  async getSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null> {
-    let s = await this.dal.readSquad(saveId, leagueSlug, clubSlug);
-    if (s) return s;
-    const stem = await resolveSquadFileStem(leagueSlug, clubSlug);
-    if (stem && stem !== clubSlug) s = await this.dal.readSquad(saveId, leagueSlug, stem);
-    return s ?? null;
+  /**
+   * Per-save membership index built from the save's squad files — the folder a
+   * squad file lives in is the league it plays in.
+   */
+  async getSquadIndex(saveId: string): Promise<SquadIndex> {
+    const version = getSaveDataVersion(saveId);
+    const cached = this.squadIndexCache.get(saveId);
+    if (cached && cached.version === version) return cached.index;
+    // Concurrent callers at the same version share one listing (e.g. the parallel
+    // saveSquad calls of a day). Removed once settled, success or failure.
+    const flight = this.squadIndexInFlight.get(saveId);
+    if (flight && flight.version === version) return flight.promise;
+    const entry = { version, promise: this.buildSquadIndexFor(saveId, version) };
+    this.squadIndexInFlight.set(saveId, entry);
+    const promise = entry.promise;
+    const clear = () => {
+      if (this.squadIndexInFlight.get(saveId) === entry) this.squadIndexInFlight.delete(saveId);
+    };
+    promise.then(clear, clear);
+    return promise;
   }
 
-  async saveSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
-    const stem = (await resolveSquadFileStem(leagueSlug, clubSlug)) ?? clubSlug;
-    return this.dal.writeSquad(saveId, leagueSlug, stem, squad);
+  private async buildSquadIndexFor(saveId: string, version: number): Promise<SquadIndex> {
+    const gen = this.squadIndexGen.get(saveId) ?? 0;
+    const index = buildSquadIndex(await this.dal.listSquadFiles(saveId));
+    const dups = index.duplicates();
+    if (dups.length > 0) {
+      logError("squadIndex", `save ${saveId}: ${dups.length} squadId(s) stored in more than one file`, dups);
+    }
+    // Cache only if no write landed and nothing dropped the index while we were listing.
+    if (getSaveDataVersion(saveId) === version && (this.squadIndexGen.get(saveId) ?? 0) === gen) {
+      this.squadIndexCache.set(saveId, { version, index });
+    }
+    return index;
   }
 
-  async squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean> {
-    if (await this.dal.squadExists(saveId, leagueSlug, clubSlug)) return true;
-    const stem = await resolveSquadFileStem(leagueSlug, clubSlug);
-    if (stem && stem !== clubSlug) return this.dal.squadExists(saveId, leagueSlug, stem);
-    return false;
+  /** Read a squad by league + club param (squadId, file stem or slug). */
+  async getSquad(saveId: string, leagueSlug: string, clubParam: string): Promise<Squad | null> {
+    const stem = (await this.getSquadIndex(saveId)).resolve(leagueSlug, clubParam);
+    return stem ? this.dal.readSquad(saveId, leagueSlug, stem) : null;
+  }
+
+  async getSquadById(saveId: string, squadId: string): Promise<Squad | null> {
+    const e = (await this.getSquadIndex(saveId)).byId(squadId);
+    return e ? this.dal.readSquad(saveId, e.leagueSlug, e.stem) : null;
+  }
+
+  /**
+   * Write a squad; an existing file is addressed via the index, a new one is stored
+   * under `squad.id`. Refuses writes that would put a second copy of a club in the
+   * save (the club lives in another league → use `moveSquad`) or overwrite another
+   * club's file.
+   */
+  async saveSquad(saveId: string, leagueSlug: string, clubParam: string, squad: Squad): Promise<void> {
+    const index = await this.getSquadIndex(saveId);
+    const hit = index.resolveEntry(leagueSlug, clubParam);
+    if (hit && hit.squadId !== squad.id) {
+      throw new Error(
+        `saveSquad: ${leagueSlug}/${clubParam} is squad ${hit.squadId}'s file (${hit.leagueSlug}/${hit.stem}), not ${squad.id}`,
+      );
+    }
+    if (!hit) {
+      const home = index.byId(squad.id);
+      if (home && home.leagueSlug !== leagueSlug) {
+        throw new Error(`saveSquad: squad ${squad.id} lives in ${home.leagueSlug}, not ${leagueSlug} — use moveSquad`);
+      }
+      const clash = index.resolveEntry(leagueSlug, squad.id);
+      if (clash && clash.squadId !== squad.id) {
+        throw new Error(`saveSquad: ${leagueSlug}/${squad.id} is squad ${clash.squadId}'s file, not ${squad.id}`);
+      }
+    }
+    const resolved = hit?.stem ?? null;
+    const stem = resolved ?? squad.id;
+    const before = getSaveDataVersion(saveId);
+    await this.dal.writeSquad(saveId, leagueSlug, stem, squad);
+    // Overwriting an indexed file with the same identity keeps the index valid:
+    // re-stamp it past our own version bump. Anything else (new file, changed
+    // id / slug / name / colors) drops it.
+    const e = resolved ? index.byId(squad.id) : undefined;
+    const unchanged =
+      !!e && e.stem === stem && e.leagueSlug === leagueSlug && e.slug === (squad.slug ?? squad.id) &&
+      e.name === squad.name && e.colors[0] === squad.colors?.[0] && e.colors[1] === squad.colors?.[1];
+    const cached = this.squadIndexCache.get(saveId);
+    const after = getSaveDataVersion(saveId);
+    if (unchanged && cached?.index === index && cached.version === before && after - before <= 1) {
+      cached.version = after;
+    } else {
+      this.dropSquadIndex(saveId);
+    }
+  }
+
+  async squadExists(saveId: string, leagueSlug: string, clubParam: string): Promise<boolean> {
+    return (await this.getSquadIndex(saveId)).resolve(leagueSlug, clubParam) !== null;
+  }
+
+  /**
+   * Add squads that are new to the save (e.g. `/import-squads`), each stored under
+   * `squad.id` in its league. A candidate is skipped when its id already lives in
+   * ANY league of the save (a moved club is never resurrected), when its path or id
+   * is already some club's file, or when an earlier candidate took the id or path.
+   * Reads the index once and drops it once at the end. Returns how many were written.
+   */
+  async addNewSquads(saveId: string, candidates: Array<{ leagueSlug: string; stem: string; squad: Squad }>): Promise<number> {
+    const index = await this.getSquadIndex(saveId);
+    const ids = new Set<string>();
+    const paths = new Set<string>();
+    let written = 0;
+    try {
+      for (const { leagueSlug, stem, squad } of candidates) {
+        const path = `${leagueSlug}/${squad.id}`;
+        if (index.byId(squad.id) || index.resolve(leagueSlug, stem) || index.resolve(leagueSlug, squad.id)) continue;
+        if (ids.has(squad.id) || paths.has(path)) continue;
+        await this.dal.writeSquad(saveId, leagueSlug, squad.id, squad);
+        ids.add(squad.id);
+        paths.add(path);
+        written++;
+      }
+    } finally {
+      if (written > 0) this.dropSquadIndex(saveId);
+    }
+    return written;
+  }
+
+  /** Move a squad file to another league folder (same stem). No-op when already there. */
+  async moveSquad(saveId: string, squadId: string, toLeague: string): Promise<void> {
+    const e = (await this.getSquadIndex(saveId)).byId(squadId);
+    if (!e) throw new Error(`moveSquad: squad ${squadId} not found in save ${saveId}`);
+    if (e.leagueSlug === toLeague) return;
+    const squad = await this.dal.readSquad(saveId, e.leagueSlug, e.stem);
+    if (!squad) throw new Error(`moveSquad: squad file ${e.leagueSlug}/${e.stem} missing in save ${saveId}`);
+    this.dropSquadIndex(saveId);
+    await this.dal.writeSquad(saveId, toLeague, e.stem, {
+      ...squad,
+      leagueSlug: toLeague,
+      membershipRev: (squad.membershipRev ?? 0) + 1,
+    });
+    await this.dal.deleteSquad(saveId, e.leagueSlug, e.stem);
+    this.dropSquadIndex(saveId);
   }
 
   getSquadsInLeague(saveId: string, leagueSlug: string): Promise<Squad[]> {
     return this.dal.listSquadsInLeague(saveId, leagueSlug);
   }
 
+  /** Every squad file in the save with the league folder + file stem it is stored under. */
+  listSquadFiles(saveId: string): Promise<SquadFile[]> {
+    return this.dal.listSquadFiles(saveId);
+  }
+
   getAllSquads(saveId: string): Promise<Squad[]> {
     return this.dal.listAllSquads(saveId);
   }
 
-  /**
-   * Resolve a squad reference to league + club file slug.
-   * Supports legacy `leagueSlug_clubSlug` ids and internal ids (e.g. `squad__001`) via squad JSON + save layout.
-   */
+  /** Resolve a squadId to the league folder + file stem it is stored under. */
   async resolveSquadId(saveId: string, squadId: string): Promise<{ leagueSlug: string; clubSlug: string } | null> {
-    const leagues = await this.dal.listLeagues(saveId);
-    leagues.sort((a, b) => b.length - a.length);
-    for (const league of leagues) {
-      const prefix = league + "_";
-      if (squadId.startsWith(prefix)) {
-        const clubSlug = squadId.slice(prefix.length);
-        if (await this.dal.squadExists(saveId, league, clubSlug)) {
-          return { leagueSlug: league, clubSlug };
-        }
-      }
-    }
-    const all = await this.dal.listAllSquads(saveId);
-    for (const s of all) {
-      if (s.id !== squadId) continue;
-      if (s.leagueSlug && s.slug) return { leagueSlug: s.leagueSlug, clubSlug: s.slug };
-    }
-    return null;
+    const e = (await this.getSquadIndex(saveId)).byId(squadId);
+    return e ? { leagueSlug: e.leagueSlug, clubSlug: e.stem } : null;
   }
 
   // ── Day logs ───────────────────────────────────────────────────────────────
@@ -567,6 +673,7 @@ export class SaveService {
         };
 
         await this.dal.writeSquad(id, league, clubSlug, squad);
+        this.squadIndexCache.delete(id);
         copied++;
       }
     }

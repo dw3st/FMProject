@@ -167,6 +167,15 @@ export class FileSystemDAL implements ISaveDAL {
     return Bun.file(squadPath(saveId, leagueSlug, clubSlug)).exists();
   }
 
+  async deleteSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<void> {
+    try {
+      await unlink(squadPath(saveId, leagueSlug, clubSlug));
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    }
+    bumpSaveDataVersion(saveId);
+  }
+
   async listLeagues(saveId: string): Promise<string[]> {
     const dir = `${SAVES_DIR}/${saveId}/squads`;
     try {
@@ -210,14 +219,21 @@ export class FileSystemDAL implements ISaveDAL {
       // A save without a squads dir has no squads (mirrors listLeagues).
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
     }
-    const files = new Array<SquadFile>(paths.length);
+    const files = new Array<SquadFile | undefined>(paths.length);
     await runPool(paths, SQUAD_READ_CONCURRENCY, async (path, i) => {
       // Bun.Glob yields "\"-separated paths on Windows.
       const [leagueSlug, file] = path.split(/[\\/]/) as [string, string];
-      const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+      let raw: Squad;
+      try {
+        raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+      } catch (e) {
+        // Deleted between the scan and the read (e.g. a concurrent moveSquad): no longer a squad file.
+        if ((e as NodeJS.ErrnoException).code === "ENOENT") return;
+        throw e;
+      }
       files[i] = { leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...raw, leagueSlug } };
     });
-    return files;
+    return files.filter((f): f is SquadFile => f !== undefined);
   }
 
   // ── Tactics ───────────────────────────────────────────────────────────────

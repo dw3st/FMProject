@@ -36,6 +36,8 @@ export interface ISaveDAL {
   readSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null>;
   writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void>;
   squadExists(saveId: string, leagueSlug: string, clubSlug: string): Promise<boolean>;
+  /** Remove a squad file. Idempotent: deleting a missing squad is a no-op. */
+  deleteSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<void>;
   listLeagues(saveId: string): Promise<string[]>;
   listSquadsInLeague(saveId: string, leagueSlug: string): Promise<Squad[]>;
   listAllSquads(saveId: string): Promise<Squad[]>;

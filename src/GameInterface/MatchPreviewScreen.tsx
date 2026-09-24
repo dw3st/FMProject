@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Cloud,
@@ -16,7 +16,7 @@ import {
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
-import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/backend/squadIdResolve";
+import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import { Player } from "@/Domain/Player";
 import type { Fixture } from "@/types/calendarTypes";
 import {
@@ -25,10 +25,10 @@ import {
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
-import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineup } from "@/Domain/lineupHelpers";
-import { competitionName } from "@/Domain/world/labels";
+import { catalogLeagueBySquadId, competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -580,6 +580,17 @@ export function MatchPreviewScreen() {
   const [mySquadId, setMySquadId] = useState<string>("");
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
   const [activeLeagueData, setActiveLeagueData] = useState<LeagueData | null>(null);
+  const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
+  // Static catalog lookups: origin league (crest folder) + club slug/name for any squadId.
+  const catalogLeague = useMemo(() => catalogLeagueBySquadId(catalogLeagues), [catalogLeagues]);
+  const catalogSlugs = useMemo(
+    () => squadIdToClubSlugMap(catalogLeagues.flatMap((l) => l.standings)),
+    [catalogLeagues],
+  );
+  const catalogNames = useMemo(
+    () => new Map(catalogLeagues.flatMap((l) => l.standings.map((row) => [row.squadId, row.name] as const))),
+    [catalogLeagues],
+  );
   const [loading, setLoading] = useState(true);
   const [noMatchDay, setNoMatchDay] = useState(false);
   const [needsTactics, setNeedsTactics] = useState(false);
@@ -614,7 +625,7 @@ export function MatchPreviewScreen() {
 
         const leagueRows = leaguesR.find((l) => l.slug === s.leagueSlug) ?? null;
         setActiveLeagueData(leagueRows);
-        const idToClubSlug = leagueRows ? squadIdToClubSlugMap(leagueRows.standings) : undefined;
+        setCatalogLeagues(leaguesR);
 
         let myInternalId: string;
         if (mySquadR.ok) {
@@ -655,10 +666,11 @@ export function MatchPreviewScreen() {
 
         const isHome = todayFixture.home === myInternalId;
         const oppId = isHome ? todayFixture.away : todayFixture.home;
-        const oppSlug = clubSlugFromSquadId(oppId, s.leagueSlug, idToClubSlug);
 
         try {
-          const oppR = await fetch(`/api/saves/${s.saveId}/squad/${s.leagueSlug}/${oppSlug}`);
+          // The squad route resolves the club by squadId anywhere in the save, so the opponent
+          // is found even if it changed league (membership lives in the save, not in leagueData).
+          const oppR = await fetch(`/api/saves/${s.saveId}/squad/${s.leagueSlug}/${encodeURIComponent(oppId)}`);
           if (oppR.ok) setOpponentSquad((await oppR.json()) as Squad);
           else setOpponentSquad(setupR.opponentSquad);
         } catch {
@@ -793,14 +805,11 @@ export function MatchPreviewScreen() {
 
   const isHome = fixture ? fixture.home === mySquadId : true;
   const opponentId = fixture ? (isHome ? fixture.away : fixture.home) : "";
-  const standingIdMap = activeLeagueData
-    ? squadIdToClubSlugMap(activeLeagueData.standings)
-    : undefined;
   const opponentFileSlug = opponentId
-    ? clubSlugFromSquadId(opponentId, session.leagueSlug, standingIdMap)
+    ? (catalogSlugs.get(opponentId) ?? opponentId)
     : undefined;
   const opponentName =
-    (opponentId && activeLeagueData?.standings.find((t) => t.squadId === opponentId)?.name) ??
+    (opponentId ? catalogNames.get(opponentId) : undefined) ??
     opponentSquad?.name ??
     (opponentId ? squadIdToName(opponentId, session.leagueSlug) : "Opponent");
 
@@ -820,9 +829,12 @@ export function MatchPreviewScreen() {
     : "Premier Division";
   const matchday = fixture?.round ?? 1;
 
-  const myLogoUrl  = `/api/logos/${session.leagueSlug}/${session.clubId}`;
-  const oppLogoUrl = opponentFileSlug
-    ? `/api/logos/${session.leagueSlug}/${opponentFileSlug}`
+  // Crests are filed by the club's catalog (origin) league, not its current league.
+  const myLogoUrl  = mySquadId
+    ? squadLogoUrl(mySquadId, catalogLeague.get(mySquadId) ?? session.leagueSlug, catalogSlugs.get(mySquadId) ?? session.clubId)
+    : squadLogoUrl(session.clubId, session.leagueSlug);
+  const oppLogoUrl = opponentId
+    ? squadLogoUrl(opponentId, catalogLeague.get(opponentId) ?? session.leagueSlug, opponentFileSlug)
     : undefined;
 
   // Assign home/away
