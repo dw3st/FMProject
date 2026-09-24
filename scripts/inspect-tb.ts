@@ -83,7 +83,7 @@ const passReceiver = state.players.find(p => p.id === bestPass.toId);
 const tbRaw     = cells[0]!.score;
 const tbComp    = 1 - Math.exp(-tbRaw / 0.9);              // THROUGH_BALL_STRONG_RAW = 0.9
 const passRaw   = bestPass.score;
-const passComp  = 1 - Math.exp(-passRaw / 1.0);            // PASS_STRONG_RAW = 1.0
+const passComp  = 1 - Math.exp(-passRaw / 0.8);            // PASS_STRONG_RAW = 0.8
 
 console.log('=== Decision-space comparison ===');
 console.log('               raw       compressed (decision space)');
