@@ -38,6 +38,6 @@ for (let m = 0; m < N; m++) {
 }
 const total = performance.now() - start;
 console.error(`\nTotal: ${total.toFixed(0)}ms for ${N} matches = ${(total/N).toFixed(1)}ms/match`);
-console.error(`Per-match min=${Math.min(...times).toFixed(0)} max=${Math.max(...times).toFixed(0)} median=${[...times].sort((a,b)=>a-b)[Math.floor(N/2)].toFixed(0)}`);
-const slowest = times.map((t,i)=>[t,i]).sort((a,b)=>b[0]-a[0]).slice(0,5);
-console.error(`Slowest 5 matches: ${slowest.map(([t,i])=>`#${i+1}=${Math.round(t as number)}ms`).join(', ')}`);
+console.error(`Per-match min=${Math.min(...times).toFixed(0)} max=${Math.max(...times).toFixed(0)} median=${[...times].sort((a,b)=>a-b)[Math.floor(N/2)]!.toFixed(0)}`);
+const slowest = times.map((t,i): [number, number] => [t,i]).sort((a,b)=>b[0]-a[0]).slice(0,5);
+console.error(`Slowest 5 matches: ${slowest.map(([t,i])=>`#${i+1}=${Math.round(t)}ms`).join(', ')}`);

@@ -674,7 +674,7 @@ export async function advanceOneDay(
         await saveService.writeDateIndex(saveId, slug, cal.dateIndex);
         await saveService.writeLeagueMeta(saveId, cal.meta);
         await saveService.writeLeagueStandings(saveId, slug, newTeams.map((t) => ({
-          ...t, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0, form: [] as string[],
+          ...t, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0, form: [],
         })));
         const i = stateIdx(slug);
         updatedActiveLeagues[i] = {

@@ -40,7 +40,7 @@ for (const w of wingers) {
       try {
         const result = queryOffBall(state, w.id, snap.storedScores);
         const decision = result.decision as { type: string; dx?: number; dy?: number };
-        console.log(`  off-ball decision: ${decision.type}${decision.dx != null ? ` dx=${decision.dx.toFixed(3)} dy=${decision.dy.toFixed(3)}` : ''}`);
+        console.log(`  off-ball decision: ${decision.type}${decision.dx != null ? ` dx=${decision.dx.toFixed(3)} dy=${decision.dy?.toFixed(3)}` : ''}`);
         if (result.storedScores) {
           const s = result.storedScores as { intent: string; intentScores: Record<string, number>; bestScore: number; currentPassScore: number };
           console.log(`  stored intent: ${s.intent} (best target score ${s.bestScore?.toFixed(3)}, currentPassScore ${s.currentPassScore?.toFixed(3)})`);
