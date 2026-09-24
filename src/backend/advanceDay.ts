@@ -10,7 +10,6 @@ import type { LeagueTeam, Squad } from "@/types/playerTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { Fixture, LeagueSeasonState } from "@/types/calendarTypes";
-import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
@@ -26,7 +25,6 @@ import {
   buildRestEvent,
   buildTrainingEvent,
   computeAdvanceDayMoneyDelta,
-  resolvePlayerSquadId,
   resolveSimMode,
   resolveTrainingPolicy,
   type PlayedMatchRecording,
@@ -34,7 +32,7 @@ import {
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
-import { runSeasonTransition } from "@/Domain/season";
+import { applyPlayerBroadcastingCredit, runSeasonTransition } from "@/Domain/season";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
@@ -159,7 +157,6 @@ export async function advanceOneDay(
 
     const currentDate = meta.currentDate;
     const nextDate = addOneDay(currentDate);
-    const leagueData = await getLeagueData();
     const activeLeagues = meta.activeLeagues ?? [];
 
     const dayEvents: Array<StoredDayLog["events"][number] | TrainingEvent | RestEvent> = [];
@@ -168,10 +165,13 @@ export async function advanceOneDay(
 
     const tactics = await saveService.getTactics(saveId);
 
-    // Identify the player's squad ID (from their league)
-    const playerLeagueData = leagueData.find((l) => l.slug === meta.leagueSlug);
-    const playerIdToClubSlug = playerLeagueData ? squadIdToClubSlugMap(playerLeagueData.standings) : undefined;
-    const playerSquadId = resolvePlayerSquadId(playerLeagueData?.standings, playerIdToClubSlug, meta.clubId);
+    // Membership comes from the save's squad folders. Built once: membership does not
+    // change within a day, and the buffered service overlays the day's own edits.
+    const index = await saveService.getSquadIndex(saveId);
+
+    // The player's squad: meta.clubId is the squadId.
+    const playerEntry = index.byId(meta.clubId);
+    const playerSquadId: string | undefined = playerEntry?.squadId;
 
     // ── Get today's fixtures across all leagues ──────────────────────────────
     const activeRoundsForDate = await saveService.getActiveRoundsForDate(saveId, currentDate);
@@ -180,11 +180,6 @@ export async function advanceOneDay(
     const roundUpdates = new Map<string, Map<number, Fixture[]>>();
 
     for (const [leagueSlug, roundNumbers] of activeRoundsForDate.entries()) {
-      const leagueEntry = leagueData.find((l) => l.slug === leagueSlug);
-      if (!leagueEntry) continue;
-
-      const idToClubSlug = squadIdToClubSlugMap(leagueEntry.standings);
-
       // Load all relevant round files for this league
       const roundDataArray = await Promise.all(
         roundNumbers.map((r) => saveService.getRound(saveId, leagueSlug, r)),
@@ -200,12 +195,13 @@ export async function advanceOneDay(
         const updatedFixtures = [...roundData.fixtures];
 
         for (const fixture of todayFixtures) {
-          const homeClub = clubSlugFromSquadId(fixture.home, leagueSlug, idToClubSlug);
-          const awayClub = clubSlugFromSquadId(fixture.away, leagueSlug, idToClubSlug);
+          const homeEntry = index.byId(fixture.home);
+          const awayEntry = index.byId(fixture.away);
+          if (!homeEntry || !awayEntry) continue;
 
           const [homeSquad, awaySquad] = await Promise.all([
-            saveService.getSquad(saveId, leagueSlug, homeClub),
-            saveService.getSquad(saveId, leagueSlug, awayClub),
+            saveService.getSquadById(saveId, fixture.home),
+            saveService.getSquadById(saveId, fixture.away),
           ]);
           if (!homeSquad || !awaySquad) continue;
 
@@ -217,8 +213,8 @@ export async function advanceOneDay(
           if (useRecording && playedMatchOverride) {
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
             dayEvents.push(r.event);
-            squadWrites.push({ league: leagueSlug, club: homeClub, squad: r.updatedHome });
-            squadWrites.push({ league: leagueSlug, club: awayClub, squad: r.updatedAway });
+            squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
+            squadWrites.push({ league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
 
@@ -233,8 +229,8 @@ export async function advanceOneDay(
               ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
             dayEvents.push(r.event);
-            squadWrites.push({ league: leagueSlug, club: homeClub, squad: r.updatedHome });
-            squadWrites.push({ league: leagueSlug, club: awayClub, squad: r.updatedAway });
+            squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
+            squadWrites.push({ league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
 
@@ -317,52 +313,22 @@ export async function advanceOneDay(
     const isRestDay = (playerLeagueState?.restDays ?? []).includes(currentDate);
 
     for (const leagueState of activeLeagues) {
-      const leagueEntry = leagueData.find((l) => l.slug === leagueState.leagueSlug);
-      if (!leagueEntry) continue;
-
-      const idToClubSlug = squadIdToClubSlugMap(leagueEntry.standings);
-
-      for (const row of leagueEntry.standings) {
+      const league = leagueState.leagueSlug;
+      for (const row of index.inLeague(league)) {
         if (teamsPlayingToday.has(row.squadId)) continue;
-        const club = clubSlugFromSquadId(row.squadId, leagueState.leagueSlug, idToClubSlug);
-        const squad = await saveService.getSquad(saveId, leagueState.leagueSlug, club);
+        const club = index.byId(row.squadId)!.stem;
+        const squad = await saveService.getSquad(saveId, league, club);
         if (!squad) continue;
 
         if (isRestDay) {
           const { event, updatedSquad } = buildRestEvent(row.squadId, squad);
           dayEvents.push(event);
-          squadWrites.push({ league: leagueState.leagueSlug, club, squad: updatedSquad });
+          squadWrites.push({ league, club, squad: updatedSquad });
         } else {
           const policy = resolveTrainingPolicy(meta, club, row.squadId);
           const { event, updatedSquad } = buildTrainingEvent(row.squadId, squad, policy);
           dayEvents.push(event);
-          squadWrites.push({ league: leagueState.leagueSlug, club, squad: updatedSquad });
-        }
-      }
-    }
-
-    // Fallback for saves without activeLeagues: handle the player's league the old way
-    if (activeLeagues.length === 0) {
-      const leagueEntry = leagueData.find((l) => l.slug === meta.leagueSlug);
-      if (leagueEntry) {
-        const idToClubSlug = squadIdToClubSlugMap(leagueEntry.standings);
-        const season = await saveService.getSeason(saveId);
-        const legacyRestDay = (season?.restDays ?? []).includes(currentDate);
-        for (const row of leagueEntry.standings) {
-          if (teamsPlayingToday.has(row.squadId)) continue;
-          const club = clubSlugFromSquadId(row.squadId, meta.leagueSlug, idToClubSlug);
-          const squad = await saveService.getSquad(saveId, meta.leagueSlug, club);
-          if (!squad) continue;
-          if (legacyRestDay) {
-            const { event, updatedSquad } = buildRestEvent(row.squadId, squad);
-            dayEvents.push(event);
-            squadWrites.push({ league: meta.leagueSlug, club, squad: updatedSquad });
-          } else {
-            const policy = resolveTrainingPolicy(meta, club, row.squadId);
-            const { event, updatedSquad } = buildTrainingEvent(row.squadId, squad, policy);
-            dayEvents.push(event);
-            squadWrites.push({ league: meta.leagueSlug, club, squad: updatedSquad });
-          }
+          squadWrites.push({ league, club, squad: updatedSquad });
         }
       }
     }
@@ -374,8 +340,7 @@ export async function advanceOneDay(
 
     // ── Write updated round files + recompute standings per league ────────────
     for (const [leagueSlug, rounds] of roundUpdates.entries()) {
-      const leagueEntry = leagueData.find((l) => l.slug === leagueSlug);
-      const leagueTeams = (leagueEntry?.standings ?? []) as LeagueTeam[];
+      const leagueTeams = index.inLeague(leagueSlug);
 
       for (const [roundNum, fixtures] of rounds.entries()) {
         await saveService.writeRound(saveId, leagueSlug, roundNum, { leagueSlug, round: roundNum, fixtures });
@@ -385,27 +350,6 @@ export async function advanceOneDay(
       const allFixtures = await saveService.getAllFixturesForLeague(saveId, leagueSlug);
       const updatedStandings = computeStandings(leagueTeams, allFixtures, leagueSlug);
       await saveService.writeLeagueStandings(saveId, leagueSlug, updatedStandings);
-    }
-
-    // Fallback for saves without activeLeagues: update old season.json
-    if (activeLeagues.length === 0) {
-      const season = await saveService.getSeason(saveId);
-      if (season) {
-        const todayFixtureIds = new Set<string>();
-        for (const [, rounds] of roundUpdates.entries()) {
-          for (const fixtures of rounds.values()) {
-            fixtures.filter((f) => f.date === currentDate && f.played).forEach((f) => todayFixtureIds.add(f.id));
-          }
-        }
-        if (todayFixtureIds.size > 0) {
-          const updatedCalendar = season.calendar.map((f) => {
-            if (!todayFixtureIds.has(f.id)) return f;
-            const played = Array.from(roundUpdates.values()).flatMap((m) => Array.from(m.values()).flat()).find((x) => x.id === f.id);
-            return played ?? f;
-          });
-          await saveService.writeSeason(saveId, { ...season, calendar: updatedCalendar });
-        }
-      }
     }
 
     // ── Write day log ────────────────────────────────────────────────────────
@@ -539,22 +483,13 @@ export async function advanceOneDay(
       }
     }
 
-    // Fallback for legacy saves
-    if (activeLeagues.length === 0) {
-      const season = await saveService.getSeason(saveId);
-      if (season) {
-        const legacyToday = season.calendar.filter((f) => f.date === currentDate);
-        playerLeagueTodayFixtures.push(...legacyToday);
-      }
-    }
-
     const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
     const isWeeklyTick = dayOfWeek === 1;
     const needsPlayerSquad =
       isWeeklyTick ||
       Boolean(playerSquadId && playerLeagueTodayFixtures.some((f) => f.home === playerSquadId));
-    const playerSquad = needsPlayerSquad
-      ? await saveService.getSquad(saveId, meta.leagueSlug, playerSquadId ?? meta.clubId)
+    const playerSquad = needsPlayerSquad && playerEntry
+      ? await saveService.getSquad(saveId, playerEntry.leagueSlug, playerEntry.stem)
       : null;
 
     const moneyDelta = computeAdvanceDayMoneyDelta({
@@ -565,15 +500,17 @@ export async function advanceOneDay(
     });
 
     // Apply money delta to player squad's budget
-    if (moneyDelta !== 0 && playerSquad && playerSquad.finances) {
-      playerSquad.finances.budget = Math.max(0, (playerSquad.finances.budget ?? 0) + moneyDelta);
-      await saveService.saveSquad(saveId, meta.leagueSlug, playerSquadId ?? meta.clubId, playerSquad);
+    if (moneyDelta !== 0 && playerEntry && playerSquad?.finances) {
+      const budget = Math.max(0, (playerSquad.finances.budget ?? 0) + moneyDelta);
+      await saveService.saveSquad(saveId, playerEntry.leagueSlug, playerEntry.stem, {
+        ...playerSquad,
+        finances: { ...playerSquad.finances, budget },
+      });
     }
 
     // ── Season transition check for all active leagues ───────────────────────
     let seasonEnded = false;
     let archiveYear: number | undefined;
-    let playerBroadcastingCredit = 0;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
 
@@ -588,8 +525,7 @@ export async function advanceOneDay(
         seasonEnd: leagueState.end,
       });
 
-      const leagueEntry = leagueData.find((l) => l.slug === leagueState.leagueSlug);
-      const leagueTeams = (leagueEntry?.standings ?? []) as LeagueTeam[];
+      const leagueTeams = index.inLeague(leagueState.leagueSlug);
       if (leagueTeams.length === 0) continue;
 
       const squadsInLeague = await saveService.getSquadsInLeague(saveId, leagueState.leagueSlug);
@@ -627,8 +563,14 @@ export async function advanceOneDay(
       await saveService.writeDateIndex(saveId, leagueState.leagueSlug, transition.newLeagueCalendar.dateIndex);
       await saveService.writeLeagueMeta(saveId, transition.newLeagueCalendar.meta);
 
-      // Write reset squads
-      for (const { leagueSlug: lg, clubSlug, squad } of transition.squadsToSave) {
+      // Write reset squads. The human club's annual broadcasting is credited onto its
+      // RESET squad here, so the new-season write carries both.
+      const squadsToSave = applyPlayerBroadcastingCredit(
+        transition.squadsToSave,
+        playerClubSquadId,
+        transition.playerBroadcastingCredit,
+      );
+      for (const { leagueSlug: lg, clubSlug, squad } of squadsToSave) {
         await saveService.saveSquad(saveId, lg, clubSlug, squad);
       }
 
@@ -651,7 +593,6 @@ export async function advanceOneDay(
       };
 
       if (leagueState.leagueSlug === meta.leagueSlug) {
-        playerBroadcastingCredit += transition.playerBroadcastingCredit;
         seasonEnded = true;
         archiveYear = transition.archive.year;
 
@@ -663,54 +604,8 @@ export async function advanceOneDay(
       }
     }
 
-    // Fallback for legacy saves without activeLeagues: old single-league season transition
-    if (activeLeagues.length === 0 && !seasonEnded) {
-      const season = await saveService.getSeason(saveId);
-      if (season && nextDate > season.end) {
-        logSeason("Legacy season end reached — evaluating rollover", { saveId, leagueSlug: meta.leagueSlug });
-
-        const leagueEntry = leagueData.find((l) => l.slug === meta.leagueSlug);
-        const leagueTeams: LeagueTeam[] = leagueEntry?.standings ?? [];
-        const squadsInLeague = await saveService.getAllSquads(saveId).then((all) =>
-          all.filter((s) => s.leagueSlug === meta.leagueSlug),
-        );
-
-        if (leagueTeams.length > 0) {
-          const transfersAtSeasonEnd = await saveService.getTransfers(saveId);
-          const leagueConfig = LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === meta.leagueSlug);
-          const transition = runSeasonTransition({
-            endingSeason: season,
-            leagueSlug: meta.leagueSlug,
-            leagueTeams,
-            squadsInLeague,
-            playerClubSquadId: playerSquadId ?? meta.clubId,
-            leagueConfig,
-          });
-
-          await saveService.writeSeasonArchive(saveId, transition.archive);
-          await saveService.writeTransfersArchive(saveId, transition.archive.year, transfersAtSeasonEnd);
-          await saveService.writeSeason(saveId, transition.newSeason);
-          for (const { leagueSlug: lg, clubSlug, squad } of transition.squadsToSave) {
-            await saveService.saveSquad(saveId, lg, clubSlug, squad);
-          }
-          await saveService.writeTransfers(saveId, []);
-          await saveService.clearInbox(saveId);
-
-          playerBroadcastingCredit += transition.playerBroadcastingCredit;
-          seasonEnded = true;
-          archiveYear = transition.archive.year;
-        }
-      }
-    }
-
-    // Apply broadcasting credit to player squad's budget
-    if (playerBroadcastingCredit > 0 && playerSquad?.finances) {
-      playerSquad.finances.budget = (playerSquad.finances.budget ?? 0) + playerBroadcastingCredit;
-      await saveService.saveSquad(saveId, meta.leagueSlug, playerSquadId ?? meta.clubId, playerSquad);
-    }
-
     // Only clear transfers after all leagues that transitioned have archived them
-    if (seasonEnded && activeLeagues.length > 0) {
+    if (seasonEnded) {
       await saveService.writeTransfers(saveId, []);
       await saveService.clearInbox(saveId);
     }
