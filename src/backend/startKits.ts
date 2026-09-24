@@ -54,10 +54,12 @@ async function buildKitWorld(saveId: string): Promise<KitWorld> {
   const meta = await saveService.getMeta(saveId);
   const leagueSlugs = (meta?.activeLeagues ?? []).map((l) => l.leagueSlug);
 
-  const allSquads = await saveService.getAllSquads(saveId);
-  const squads = allSquads
-    .filter((s) => s.leagueSlug && s.slug)
-    .map((s) => ({ league: s.leagueSlug!, club: s.slug!, squad: s }));
+  // Address each squad by its real file (league folder + stem), not by slug.
+  const squads = (await saveService.listSquadFiles(saveId)).map((f) => ({
+    league: f.leagueSlug,
+    club: f.clubSlug,
+    squad: f.squad,
+  }));
 
   const leagues: KitWorld["leagues"] = [];
   for (const slug of leagueSlugs) {
@@ -99,6 +101,11 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
   const world = JSON.parse(new TextDecoder().decode(Bun.gunzipSync(buf))) as KitWorld;
 
   for (const { league, club, squad } of world.squads) {
+    // The kit's folder is the club's league in that world: if the fresh save holds
+    // the club elsewhere, move it first so the write never leaves a duplicate.
+    const e = (await saveService.getSquadIndex(saveId)).byId(squad.id);
+    if (e && e.leagueSlug !== league) await saveService.moveSquad(saveId, squad.id, league);
+    // `club` is the file stem (older kits stored the slug; saveSquad resolves either).
     await saveService.saveSquad(saveId, league, club, squad);
   }
   for (const lg of world.leagues) {
