@@ -5,8 +5,11 @@ import { useKeybinds } from "@/GameInterface/useKeybinds";
 import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 import type { ClubMove } from "@/types/pyramidTypes";
 
-/** The fast-forward button only shows when the next player match is more than this many days away. */
-const FAST_FORWARD_MIN_DAYS = 2;
+/**
+ * The fast-forward button only shows when the next player match is more than this many days away
+ * (fast-forward stops ON the match day, so a match tomorrow is one plain Continuar).
+ */
+const FAST_FORWARD_MIN_DAYS = 1;
 const FAST_FORWARD_BATCH_DAYS = 7;
 
 /** One season rollover of the player's country, as the notice modal shows it. */
@@ -44,6 +47,11 @@ function previousDay(d: string): string {
   return new Date(Date.parse(d + "T00:00:00Z") - DAY_MS).toISOString().slice(0, 10);
 }
 
+/** What Continuar does when today is the player's match day. */
+function openMatchPreview(): void {
+  window.location.href = "/match-preview";
+}
+
 export function useAdvanceDay() {
   const { session, squad, fixtures, currentDate: simDate, refresh } = useGameSave();
 
@@ -52,6 +60,8 @@ export function useAdvanceDay() {
   const [fastForward, setFastForward] = useState<FastForwardProgress | null>(null);
   const [seasonNotice, setSeasonNotice] = useState<SeasonNotice | null>(null);
   const stopRequested = useRef(false);
+  /** Fast-forward landed on the match day behind a season notice: open the preview after OK. */
+  const previewAfterNotice = useRef(false);
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
 
@@ -79,7 +89,7 @@ export function useAdvanceDay() {
         !f.played,
     );
     if (todayFixture) {
-      window.location.href = "/match-preview";
+      openMatchPreview();
       return;
     }
 
@@ -107,7 +117,7 @@ export function useAdvanceDay() {
   const handleFastForward = useCallback(async () => {
     if (!session || advancing || fastForward || !simDate) return;
     stopRequested.current = false;
-    const initialTotal = nextMatchDate ? Math.max(1, daysBetween(simDate, nextMatchDate) - 1) : 1;
+    const initialTotal = nextMatchDate ? Math.max(1, daysBetween(simDate, nextMatchDate)) : 1;
     let progress: FastForwardProgress = {
       daysAdvanced: 0, totalDays: initialTotal, currentDate: simDate, stopping: false, error: null,
     };
@@ -115,6 +125,8 @@ export function useAdvanceDay() {
     setAdvancing(true);
 
     let lastDate = simDate;
+    let matchDate: string | null = null;
+    let reachedMatchDay = false;
     let notice: SeasonNotice | null = null;
     try {
       for (;;) {
@@ -126,21 +138,41 @@ export function useAdvanceDay() {
         const body = (await res.json().catch(() => null)) as AdvanceUntilResponse | null;
         if (!body) throw new Error(`HTTP ${res.status}`);
         if (body.newDate) lastDate = body.newDate;
+        matchDate = body.matchDate ?? null;
         const advanced = progress.daysAdvanced + (body.daysAdvanced ?? 0);
         const remaining = body.target && body.newDate ? Math.max(0, daysBetween(body.newDate, body.target)) : 0;
         progress = { ...progress, daysAdvanced: advanced, totalDays: advanced + remaining, currentDate: lastDate };
         setFastForward(progress);
         if (body.seasonEvents?.length) notice = body.seasonEvents[body.seasonEvents.length - 1]!;
         if (!res.ok || body.error) throw new Error(body.error ?? `HTTP ${res.status}`);
-        if (body.done || stopRequested.current || body.daysAdvanced === 0) break;
+        if (body.done) {
+          reachedMatchDay = matchDate !== null && lastDate === matchDate;
+          break;
+        }
+        if (stopRequested.current || body.daysAdvanced === 0) break;
       }
     } catch (err) {
       progress = { ...progress, error: err instanceof Error ? err.message : String(err) };
       setFastForward(progress);
     }
 
-    // Reload like Continuar does: day summary of the last simulated day, then the session.
     updateSessionCurrentDate(lastDate);
+
+    // Landed on the match day: continue exactly like Continuar on a match day (match preview),
+    // after the season notice if the batch crossed a rollover.
+    if (reachedMatchDay) {
+      if (notice) {
+        previewAfterNotice.current = true;
+        setSeasonNotice(notice);
+        setFastForward(null);
+        setAdvancing(false);
+        return;
+      }
+      openMatchPreview();
+      return;
+    }
+
+    // Stopped early (Stop / error): day summary of the last simulated day, then the session.
     if (progress.daysAdvanced > 0) {
       try {
         const res = await fetch(`/api/saves/${session.saveId}/days/${previousDay(lastDate)}`);
@@ -173,6 +205,11 @@ export function useAdvanceDay() {
 
   const dismissSeasonNotice = useCallback(() => {
     setSeasonNotice(null);
+    if (previewAfterNotice.current) {
+      previewAfterNotice.current = false;
+      openMatchPreview();
+      return;
+    }
     // The session picks up the new league / club from the server.
     void refresh();
   }, [refresh]);

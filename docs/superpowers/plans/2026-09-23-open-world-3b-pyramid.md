@@ -299,7 +299,7 @@ export function countryReadyForTransition(
 - **Função pura** `computeAdvanceTarget(currentDate, playerFixtureDates)`, com teste.
 - **Rota** `POST /api/saves/:saveId/advance-until`:
   - Corpo `{ maxDays?: number }`, padrão 7, limite 14.
-  - Avança até `maxDays` dias ou até chegar no alvo (o dia **anterior** ao jogo, para que o jogo do jogador aconteça pelo fluxo normal com pré-jogo), o que vier primeiro.
+  - Avança até `maxDays` dias ou até chegar no alvo (para no dia do jogo, sem simulá-lo; o jogo do jogador acontece pelo fluxo normal com pré-jogo), o que vier primeiro.
   - Cada dia usa o mesmo buffer e o mesmo `withSaveLock` da rota `advance-day`: reuse a mesma função interna.
   - Responde `{ newDate, daysAdvanced, target, done, seasonEvents }`, em que `seasonEvents` junta os `seasonEnded`, `moves` e `playerMove` dos dias do lote.
   - O primeiro dia com erro para o lote e é devolvido.

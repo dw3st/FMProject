@@ -6,8 +6,8 @@ import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRoll
 import type { ClubMove } from "@/types/pyramidTypes";
 
 /**
- * Fast-forward ("Avançar até o próximo jogo"): advance the save day by day until the day before the
- * player's next match, at most `maxDays` days per request. Every day is the exact unit of work of
+ * Fast-forward ("Avançar até o próximo jogo"): advance the save day by day until the player's next
+ * match day (stopping on it, without simulating it), at most `maxDays` days per request. Every day is the exact unit of work of
  * `POST /api/advance-day` (`runBufferedDay`: own BufferingSaveDAL + flush); the date never jumps.
  * The frontend repeats the call until `done`.
  */
@@ -25,8 +25,9 @@ export const daysBetween = (from: string, to: string) => Math.round((toUtc(to) -
 
 export interface AdvanceTarget {
   /**
-   * Last `currentDate` to stop at: advancing stops once `currentDate >= target`. It is the day
-   * BEFORE the player's match, so the match itself (and its eve) go through the normal flow.
+   * `currentDate` to stop at: advancing stops once `currentDate >= target`. It is the player's
+   * match day itself: the eve has been simulated, the match has NOT, and the next thing the
+   * player gets is the normal match-day flow (match preview).
    */
   target: string;
   /** The player's next match day, or null while waiting for the country's season rollover. */
@@ -48,7 +49,7 @@ export function computeAdvanceTarget(
   const next = playerFixtureDates
     .filter((d) => d >= currentDate && d <= horizon)
     .sort()[0];
-  if (next) return { target: shiftDate(next, -1), matchDate: next };
+  if (next) return { target: next, matchDate: next };
   if (rolloverDay && rolloverDay >= currentDate && rolloverDay <= horizon) {
     return { target: shiftDate(rolloverDay, 1), matchDate: null };
   }
@@ -114,6 +115,11 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
       result.matchDate = pos.matchDate;
       if (pos.currentDate >= pos.target) return { kind: "done" as const };
       if (result.daysAdvanced >= maxDays) return { kind: "limit" as const };
+      // Invariant: the day function only ever runs strictly before the target, so the player's
+      // match day (the target) is never simulated here.
+      if (!(pos.currentDate < pos.target)) {
+        return { kind: "error" as const, status: 500, message: `refusing to simulate ${pos.currentDate} (target ${pos.target})` };
+      }
       const outcome = await deps.runDay();
       if (!outcome.ok) return { kind: "error" as const, status: outcome.status, message: outcome.error };
       return { kind: "day" as const, date: pos.currentDate, payload: outcome.payload };

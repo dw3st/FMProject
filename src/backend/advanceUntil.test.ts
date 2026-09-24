@@ -9,22 +9,21 @@ import {
 import type { AdvanceDayOutcome } from "@/backend/advanceDay";
 
 describe("computeAdvanceTarget", () => {
-  test("targets the day before the next unplayed player fixture", () => {
+  test("targets the next unplayed player fixture day itself", () => {
     expect(computeAdvanceTarget("2025-08-01", ["2025-08-20", "2025-08-10", "2025-07-01"])).toEqual({
-      target: "2025-08-09",
+      target: "2025-08-10",
       matchDate: "2025-08-10",
     });
   });
 
-  test("a match today gives a target before today (nothing to advance)", () => {
-    const t = computeAdvanceTarget("2025-08-10", ["2025-08-10"]);
-    expect(t.target < "2025-08-10").toBe(true);
-    expect(t.matchDate).toBe("2025-08-10");
+  test("a match today is the target (nothing to advance)", () => {
+    expect(computeAdvanceTarget("2025-08-10", ["2025-08-10"])).toEqual({ target: "2025-08-10", matchDate: "2025-08-10" });
   });
 
   test("crosses month and year boundaries", () => {
-    expect(computeAdvanceTarget("2025-12-20", ["2026-01-01"]).target).toBe("2025-12-31");
-    expect(computeAdvanceTarget("2025-02-20", ["2025-03-01"]).target).toBe("2025-02-28");
+    expect(computeAdvanceTarget("2025-12-20", ["2026-01-01"]).target).toBe("2026-01-01");
+    expect(computeAdvanceTarget("2025-12-31", [], "2025-12-31").target).toBe("2026-01-01");
+    expect(computeAdvanceTarget("2025-02-28", [], "2025-02-28").target).toBe("2025-03-01");
   });
 
   test("calendar exhausted: waits for the country rollover (day after it)", () => {
@@ -54,7 +53,7 @@ function fakeDeps(opts: {
   const days: string[] = [];
   const deps: AdvanceBatchDeps = {
     async readPosition(): Promise<AdvancePosition> {
-      return { currentDate, target: opts.target(currentDate), matchDate: shiftDate(opts.target(currentDate), 1) };
+      return { currentDate, target: opts.target(currentDate), matchDate: opts.target(currentDate) };
     },
     async runDay(): Promise<AdvanceDayOutcome> {
       if (currentDate === opts.failOn) return { ok: false, status: 500, error: "failed to persist day" };
@@ -88,12 +87,20 @@ function fakeDeps(opts: {
 }
 
 describe("runAdvanceBatch", () => {
-  test("stops at the target (currentDate = day before the match)", async () => {
+  test("stops ON the match day without simulating it", async () => {
     const f = fakeDeps({ start: "2025-08-01", target: () => "2025-08-04" });
     const r = await runAdvanceBatch(7, f.deps);
     expect(r).toMatchObject({ daysAdvanced: 3, done: true, newDate: "2025-08-04", target: "2025-08-04" });
     expect(f.days).toEqual(["2025-08-01", "2025-08-02", "2025-08-03"]);
+    expect(f.days).not.toContain("2025-08-04");
     expect(f.maxConcurrent).toBe(1);
+  });
+
+  test("never runs the day function at or past the target, even from past it", async () => {
+    const f = fakeDeps({ start: "2025-08-06", target: () => "2025-08-04" });
+    const r = await runAdvanceBatch(7, f.deps);
+    expect(r).toMatchObject({ daysAdvanced: 0, done: true });
+    expect(f.days).toEqual([]);
   });
 
   test("stops at maxDays with done=false", async () => {
