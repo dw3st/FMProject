@@ -570,8 +570,8 @@ export async function advanceOneDay(
         playerClubSquadId,
         transition.playerBroadcastingCredit,
       );
-      for (const { leagueSlug: lg, clubSlug, squad } of squadsToSave) {
-        await saveService.saveSquad(saveId, lg, clubSlug, squad);
+      for (const { squad } of squadsToSave) {
+        await saveService.saveSquadById(saveId, squad);
       }
 
       // Reset standings

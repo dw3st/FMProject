@@ -95,12 +95,15 @@ describe("runSeasonTransition", () => {
     expect(result.newSeason.calendar.length).toBeGreaterThan(0);
     expect(result.playerBroadcastingCredit).toBe(10_000_000);
 
-    const alphaOut = result.squadsToSave.find((r) => r.clubSlug === "alpha")!;
+    const alphaOut = result.squadsToSave.find((r) => r.squadId === "a")!;
+    // Refs are addressed by id only (written wherever the club lives now).
+    expect(Object.keys(alphaOut).sort()).toEqual(["squad", "squadId"]);
+    expect(result.squadsToSave.map((r) => r.squadId)).toEqual(["a", "b"]);
     expect(alphaOut.squad.players[0]!.age).toBe(25);
     expect(alphaOut.squad.players[0]!.seasonLog!.goals).toBe(0);
     expect(alphaOut.squad.finances?.budget).toBe(5_000_000);
 
-    const betaOut = result.squadsToSave.find((r) => r.clubSlug === "beta")!;
+    const betaOut = result.squadsToSave.find((r) => r.squadId === "b")!;
     expect(betaOut.squad.finances?.budget ?? 0).toBe(0);
   });
 
@@ -197,7 +200,7 @@ describe("applyPlayerBroadcastingCredit", () => {
   });
 
   test("player squad without finances gets a default finances block holding the credit", () => {
-    const refs = [{ leagueSlug: "x", clubSlug: "a", squad: minimalSquad("a", "a", "A", {}) }];
+    const refs = [{ squadId: "a", squad: minimalSquad("a", "a", "A", {}) }];
     const out = applyPlayerBroadcastingCredit(refs, "a", 7);
     expect(out[0]!.squad.finances!.budget).toBe(7);
   });
