@@ -29,7 +29,7 @@ export const AI_FINANCE_CONFIG = {
   /** Hidden balancing: weak clubs get a small boost, strong clubs a small limit. */
   SOFT_BALANCE: { LOW: 1.1, MEDIUM: 1.03, HIGH: 1.0, ELITE: 0.95 } as Record<FinancialTier, number>,
   /** `maxWageBudget = weeklyBudget × WAGE_RATIO` (design range 0.6–0.8). */
-  WAGE_RATIO: 0.7,
+  WAGE_RATIO: 0.8,
 
   /** Estimated weekly wage of a player: `rating^WAGE_EXPONENT × WAGE_SCALE` (shared with FinancialService). */
   WAGE_EXPONENT: 2.2,
@@ -39,6 +39,21 @@ export const AI_FINANCE_CONFIG = {
   NEAR_LIMIT_RATIO: 0.9,
   /** Max fee (€) of a "cheap" signing while tight. */
   CHEAP_FEE_CAP: { LOW: 2_000_000, MEDIUM: 5_000_000, HIGH: 12_000_000, ELITE: 25_000_000 } as Record<FinancialTier, number>,
+
+  /**
+   * AI transfer money comes from the tier, never from an accumulated balance.
+   * `seasonal = BASE_SEASONAL[tier] × (1 + popularity/100) × SOFT_BALANCE[tier]` (€), granted at
+   * every rollover (and implied at world start). Fees paid reduce it within the season; a sale gives
+   * back `SALE_RETURN_RATIO × fee`, never lifting it above `MAX_BALANCE_RATIO × seasonal`.
+   */
+  TRANSFER_BUDGET: {
+    BASE_SEASONAL: { LOW: 3_000_000, MEDIUM: 12_000_000, HIGH: 40_000_000, ELITE: 100_000_000 } as Record<FinancialTier, number>,
+    SALE_RETURN_RATIO: 0.5,
+    MAX_BALANCE_RATIO: 1.5,
+  },
+
+  /** AI seller's willingness to cash in (evaluateTransferOffer `financialPressure`), by tier. */
+  FINANCIAL_PRESSURE: { LOW: 1.0, MEDIUM: 0.5, HIGH: 0.25, ELITE: 0.1 } as Record<FinancialTier, number>,
 
   season: {
     /** Final-table fraction (0 = champion, 1 = last) at or below which the season is "good". */
@@ -57,7 +72,5 @@ export const AI_FINANCE_CONFIG = {
     FOLLOWERS_FLOOR: 1_000,
     /** A club's tier never drifts more than this many steps from its natural (income) tier. */
     MAX_DRIFT_FROM_NATURAL: 1,
-    /** No bankruptcy: an AI club starts every season with at least this transfer budget (€). */
-    MIN_BUDGET: { LOW: 500_000, MEDIUM: 2_000_000, HIGH: 8_000_000, ELITE: 25_000_000 } as Record<FinancialTier, number>,
   },
 } as const;

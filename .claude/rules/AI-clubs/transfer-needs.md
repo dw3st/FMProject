@@ -55,19 +55,23 @@ interface MarketState {
 
 ## Budget Tiers
 
+The market band comes from the AI club's **financial tier** (`transferBudgetTierOf`,
+`src/Domain/aiFinance`, see `finance.md` > Implementation), not from a money balance:
+
 ```
-budget >= €50M → "high"
-budget >= €15M → "mid"
-otherwise      → "low"
+LOW -> "low", MEDIUM -> "mid", HIGH / ELITE -> "high"
 ```
+
+The money an AI club can spend is its **seasonal transfer budget** (`aiTransferBudgetOf`):
+granted from tier + popularity at each rollover, reduced by fees, 50% of sale fees returned.
 
 Price caps per tier when buying:
 
 | Tier | Price cap |
 |------|-----------|
 | `high` | None |
-| `mid` | €40M |
-| `low` | €15M |
+| `mid` | EUR 40M |
+| `low` | EUR 15M |
 
 ---
 
@@ -209,7 +213,9 @@ Negotiated fee = `fairPrice × (0.9 + rng() × 0.25)` — AI pays 90–115% of f
 ```
 offerScore      = fee / expectedValue
 relativeStrength = playerRating - teamAvg
-financialPressure:
+financialPressure (AI seller, from its financial tier):
+  LOW 1.0 / MEDIUM 0.5 / HIGH 0.25 / ELITE 0.1
+financialPressure (human seller, opts.humanSeller, from its real budget):
   budget < €10M → 1.0
   budget < €50M → 0.5
   otherwise     → 0.1
@@ -238,7 +244,7 @@ Called once per game day from `advanceDay.ts`.
 - Pick highest-urgency need
 - Score all candidates across other squads
 - Calculate fee (fairPrice × random multiplier)
-- If fee ≤ buyer's budget: attempt offer → evaluate → complete if accepted
+- If fee ≤ buyer's seasonal AI transfer budget: attempt offer → evaluate → complete if accepted
 
 **Wage control:** before scoring, the buyer's AI finances (`aiClubFinance`, see `finance.md` →
 Implementation) gate the attempt: `frozen` → no attempt, `tight` → only `cover_need` and cheap
@@ -254,8 +260,6 @@ fees, and every candidate's weekly wage must fit under `maxWageBudget`.
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
-| `BUDGET_HIGH` | €50M | High-tier threshold |
-| `BUDGET_MID` | €15M | Mid-tier threshold |
 | `PRICE_CAP_MID` | €40M | Max price for mid-tier AI |
 | `PRICE_CAP_LOW` | €15M | Max price for low-tier AI |
 | `TEAMS_PER_DAY_NEEDS` | 10 | Profiles refreshed per day |

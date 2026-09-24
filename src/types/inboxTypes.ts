@@ -41,10 +41,13 @@ export interface TransferOutInboxMessage extends InboxMessageBase {
   feeEuros:   number;
 }
 
-/** End-of-season news for the human club: promotion, relegation or a league title. */
+/** End-of-season news for the human club: promotion, relegation, a league title or the fan base change. */
 export interface SeasonInboxMessage extends InboxMessageBase {
   category:   "season";
-  kind:       "promoted" | "relegated" | "champion";
+  kind:       "promoted" | "relegated" | "champion" | "followers";
+  /** Followers before / after the season reaction (kind "followers" only). */
+  followersBefore?: number;
+  followersAfter?:  number;
   /** League the message is about: the new league for promoted/relegated, the won league for champion. */
   leagueSlug: string;
   leagueName: string;
