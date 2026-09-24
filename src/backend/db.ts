@@ -4,7 +4,7 @@ import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 
 mkdirSync(RUNTIME_DATA_DIR, { recursive: true });
 
-export const db = new Database(`${RUNTIME_DATA_DIR}/touchlines.db`);
+export const db = new Database(`${RUNTIME_DATA_DIR}/fmproject.db`);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

@@ -144,9 +144,9 @@ export type Pyramids = Record<string, CountryPyramid>;
 - A Argentina já é corrigida pelo `tierOverrides.json`. Reuse ou mescle os dois arquivos, lendo ambos sem duplicar lógica. Registre no relatório qual caminho escolheu.
 
 **Zonas de exibição a partir da pirâmide**
-- `zonesFromPyramid(group)` gera `prom` (1..promote) e `rel` (`fromEnd: relegate`) para **todas** as ligas de países com pirâmide, **inclusive as 8 do TouchLines**.
-- Nas ligas do TouchLines, preserve as zonas continentais existentes (`ucl`, `uel`, `uecl`, `lib`, `sud`) e troque só `prom`/`rel`.
-- O importador **deixa de preservar byte a byte** as entradas do TouchLines, mas só no campo `zones`. Todo o resto continua idêntico.
+- `zonesFromPyramid(group)` gera `prom` (1..promote) e `rel` (`fromEnd: relegate`) para **todas** as ligas de países com pirâmide, **inclusive as 8 do FMProject**.
+- Nas ligas do FMProject, preserve as zonas continentais existentes (`ucl`, `uel`, `uecl`, `lib`, `sud`) e troque só `prom`/`rel`.
+- O importador **deixa de preservar byte a byte** as entradas do FMProject, mas só no campo `zones`. Todo o resto continua idêntico.
 - Ajuste a checagem de integridade do importador: agora ela exige que as zonas sejam iguais às da pirâmide.
 
 **Saída:** `src/example_data/pyramids.json`, e depois `cp -R src/example_data/. src/Data/`.

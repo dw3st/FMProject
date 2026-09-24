@@ -67,7 +67,7 @@
     "teamStats": "TEAM STATS",
     "topRatings": "TOP RATINGS",
     "scorers": "SCORERS",
-    "touchlines": "TOUCH LINES",
+    "appName": "FM PROJECT",
     "sentTo": "Sent to",
     "avgSkill": "Avg Skill",
     "heatmapMode": "Heatmap Mode",
@@ -103,20 +103,16 @@
     "freeOpenSource": "Free & Open Source",
     "starOnGithub": "Star on GitHub",
     "freeTagline": "100% free — no paywalls, no ads. Open source under AGPL-3.0.",
-    "heroHeadline1": "TouchLines: Arcade",
+    "heroHeadline1": "FMProject: Arcade",
     "heroHeadline2": "Management Reborn",
     "heroSubtitle": "Forget the spreadsheets. Forget the 90-minute waits. Pick a club, pick a tactic, hit play — and feel the game move at arcade speed.",
     "startYourLegacy": "Start Your Legacy",
-    "viewTrailer": "View Trailer",
     "managersOnline": "Match Length",
     "transferVolume": "Tactical Styles",
     "simEfficiency": "Formations",
     "matchSpeed": "Match Speed",
     "tacticaldominance": "Tactical Dominance",
     "dominanceSubtitle": "Watch the simulation unfold. Hyper-speed highlights and instant tactical adjustments redefined.",
-    "tacticalDominance1": "Tactical",
-    "tacticalDominance2": "Dominance",
-    "tacticalDescription": "Switch tactics on the fly. See your team change instantly. Every match plays out different — and it's over before you'd usually finish the warmup.",
     "liveMatchEngine": "Live_Match_Engine_V5.3",
     "featureManage": "Manage Your Dream Club",
     "featureManageDesc": "Take the reins of any club and lead them to glory through tactical masterclasses and strategic growth.",
@@ -139,7 +135,7 @@
     "faqTitle1": "The Intel",
     "faqTitle2": "Base",
     "faqSubtitle": "Quick answers before kick-off.",
-    "faqQ1": "What makes TouchLines different?",
+    "faqQ1": "What makes FMProject different?",
     "faqA1": "It's a football management arcade. No spreadsheets, no 90-minute waits — just fast matches, snappy decisions, and the fun parts of running a club.",
     "faqQ2": "How long does a match take?",
     "faqA2": "Around seven minutes from kickoff to full time. You'll finish a season before others finish pre-season.",
@@ -160,7 +156,7 @@
     "availableOn": "Available on:",
     "soon": "Soon",
     "mobileComingSoon": "Mobile support coming soon",
-    "footerText": "© 2026 TouchLines",
+    "footerText": "© 2026 FMProject · based on TouchLines (AGPL-3.0)",
     "openSourceNote": "Free and open source.",
     "viewSource": "View source",
     "licensedUnder": "Licensed under",
@@ -172,7 +168,7 @@
   "unsupportedScreen": {
     "badge": "Coming Soon",
     "title": "Screen size not supported",
-    "description": "TouchLines is currently designed for larger displays. Mobile and small-screen support is coming soon — please return on a desktop or resize your window.",
+    "description": "FMProject is currently designed for larger displays. Mobile and small-screen support is coming soon — please return on a desktop or resize your window.",
     "minimum": "Minimum",
     "current": "Current"
   },
@@ -214,12 +210,12 @@
       "official-2024": {
         "name": "Official 2024/25",
         "description": "The complete official database with verified player data and accurate squad compositions.",
-        "creator": "TOUCHLINES Team"
+        "creator": "FMPROJECT Team"
       },
       "official-2023": {
         "name": "Official 2023/24",
         "description": "Last season's database for those who want to rewrite history.",
-        "creator": "TOUCHLINES Team"
+        "creator": "FMPROJECT Team"
       },
       "community-legends": {
         "name": "Legends Database",

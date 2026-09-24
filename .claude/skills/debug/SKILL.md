@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Diagnose engine behaviour from a captured match snapshot. Use whenever the user says "debug", "do the debug", "debug this", or asks why a player/ball did something on the pitch. Reads the latest snapshot in debug/ (state.json + pitch.png) and answers using the touchlines-engine MCP — never a hand-rolled replay script.
+description: Diagnose engine behaviour from a captured match snapshot. Use whenever the user says "debug", "do the debug", "debug this", or asks why a player/ball did something on the pitch. Reads the latest snapshot in debug/ (state.json + pitch.png) and answers using the fmproject-engine MCP — never a hand-rolled replay script.
 ---
 
 # Engine Debug from a Snapshot
@@ -8,7 +8,7 @@ description: Diagnose engine behaviour from a captured match snapshot. Use whene
 When the user asks you to "debug" a situation, they have just clicked the **Debug**
 button on the `/test` screen. That captured the live match state. Your job is to
 load that capture, look at the rendered pitch, and explain the engine's behaviour
-using the **`touchlines-engine` MCP** — not by reading or replaying engine code.
+using the **`fmproject-engine` MCP** — not by reading or replaying engine code.
 
 ## Snapshot layout
 
