@@ -4,7 +4,7 @@
  * distribute their on-ball actions over headless full-engine matches.
  *
  * Usage:
- *   bun scripts/passing-mix-diagnostic.ts [league=premier_league] [matches=100] [--scores]
+ *   bun scripts/passing-mix-diagnostic.ts [league=premier_league] [matches=100] [--scores] [--receivers] [--style=<TacticalStyle>] [--formation=<id>]
  *
  * Reports per match:
  *   - goals, shots, pass completion, through balls
@@ -25,8 +25,12 @@ import { initRatings } from "@/GameEngine/Domain/PlayerRating";
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from "@/GameEngine/Domain/AiSubstitution";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Suport/DebugLog";
-import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
+import { autoLineupForFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
+import { scorePassToReceiverBreakdown } from "@/GameEngine/Domain/PassLanes";
+import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
+import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
+import type { TacticalStyle } from "@/types/tacticsTypes";
 import type { GameState } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
 import "@/GameEngine/Domain/Statistics";
@@ -36,6 +40,13 @@ const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const league = args[0] ?? "premier_league";
 const MATCHES = Number(args[1] ?? 100);
 const WITH_SCORES = process.argv.includes("--scores");
+/** --receivers: at every regular pass, score each teammate (by role group) and report why the receiver won. */
+const WITH_RECEIVERS = process.argv.includes("--receivers");
+/** --style=<TacticalStyle>: apply this tactical style to both teams (e.g. possession, direct_play). */
+const STYLE = process.argv.find((a) => a.startsWith("--style="))?.split("=")[1] as TacticalStyle | undefined;
+if (STYLE) {
+  for (const t of ["A", "B"] as const) { applyTeamTacticsConfig(t, STYLE); applyTeamAttackConfig(t, STYLE); }
+}
 
 type Line = "GK" | "DEF" | "MID" | "FWD";
 const LINES: Line[] = ["GK", "DEF", "MID", "FWD"];
@@ -49,7 +60,9 @@ const LINE_OF: Record<string, Line> = {
 const dir = fileURLToPath(new URL(`../src/Data/squads/${league}/`, import.meta.url));
 const files = (await readdir(dir)).filter((f) => f.endsWith(".json")).sort();
 const squads: Squad[] = await Promise.all(files.map((f) => Bun.file(`${dir}${f}`).json() as Promise<Squad>));
-const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
+/** --formation=<id>: both teams play this formation (default 4-3-3). */
+const FORMATION_ID = process.argv.find((a) => a.startsWith("--formation="))?.split("=")[1] ?? DEFAULT_SIM_FORMATION_ID;
+const formation = formationForSimId(FORMATION_ID);
 
 // ── Accumulators ─────────────────────────────────────────────────────────────
 const perLine = <T>(f: () => T) => ({ GK: f(), DEF: f(), MID: f(), FWD: f() }) as Record<Line, T>;
@@ -64,6 +77,22 @@ const rawSum = perLine(() => ({
 let goals = 0, shots = 0, passAtt = 0, passDone = 0, passFail = 0, tbs = 0, tbDone = 0;
 
 let roleOf = new Map<number, Line>();
+/** Finer role grouping for the role-level pass matrix. */
+type RG = "GK" | "CB" | "FB" | "DM" | "CM" | "AM" | "W" | "ST";
+const RGS: RG[] = ["GK", "CB", "FB", "DM", "CM", "AM", "W", "ST"];
+const RG_OF: Record<string, RG> = {
+  GK: "GK", CB: "CB", LB: "FB", RB: "FB", LWB: "FB", RWB: "FB",
+  CDM: "DM", DM: "DM", CM: "CM", LM: "CM", RM: "CM", CAM: "AM", AM: "AM",
+  LW: "W", RW: "W", ST: "ST", CF: "ST",
+};
+let rgOf = new Map<number, RG>();
+const perRG = <T>(f: () => T) => Object.fromEntries(RGS.map((r) => [r, f()])) as Record<RG, T>;
+const rgMatrix = perRG(() => perRG(() => 0));
+/** Receiver-role stats at pass time, keyed by passer group → receiver group. */
+const recv = perRG(() => perRG(() => ({ n: 0, chosen: 0, top: 0, score: 0, lane: 0, prog: 0, space: 0, dist: 0 })));
+let prevState: GameState | null = null;
+/** Off-ball intent mix keyed "holderGroup>playerGroup" (debug --scores only). */
+const offBall: Record<string, { n: number; offer_support: number; hold_space: number; make_run: number; cps: number }> = {};
 const lineOf = (id: number): Line | undefined => roleOf.get(id);
 
 gameBus.on("passAttempted", (e) => { const l = lineOf(e.player); if (l) ev[l].pass++; });
@@ -74,7 +103,41 @@ gameBus.on("passCompleted", (e) => {
   if (l) ev[l].passDone++;
   const r = lineOf(e.toId);
   if (l && r) passMatrix[l][r]++;
+  const a = rgOf.get(e.player), b = rgOf.get(e.toId);
+  if (a && b) rgMatrix[a][b]++;
 });
+if (WITH_RECEIVERS) {
+  gameBus.on("passAttempted", (e) => {
+    const s = prevState;
+    if (!s) return;
+    const holder = s.players.find((p) => p.id === e.player);
+    const pg = rgOf.get(e.player);
+    if (!holder || !pg) return;
+    const opp = s.players.filter((p) => p.team !== holder.team);
+    const intent = s.teamIntent[holder.team];
+    // best receiver per role group
+    const best = perRG(() => null as null | { score: number; lane: number; prog: number; space: number; dist: number });
+    let top: RG | null = null, topScore = -1;
+    for (const r of s.players) {
+      if (r.team !== holder.team || r.id === holder.id) continue;
+      const g = rgOf.get(r.id)!;
+      const bd = scorePassToReceiverBreakdown(holder, r, opp, intent);
+      if (!best[g] || bd.score > best[g]!.score) {
+        best[g] = { score: bd.score, lane: bd.laneScore, prog: bd.progressScore, space: bd.receiverSpaceScore, dist: bd.distancePenalty };
+      }
+      if (bd.score > topScore) { topScore = bd.score; top = g; }
+    }
+    const chosen = rgOf.get(e.toId);
+    for (const g of RGS) {
+      const b = best[g];
+      if (!b) continue;
+      const a = recv[pg][g];
+      a.n++; a.score += b.score; a.lane += b.lane; a.prog += b.prog; a.space += b.space; a.dist += b.dist;
+      if (chosen === g) a.chosen++;
+      if (top === g) a.top++;
+    }
+  });
+}
 gameBus.on("throughBallStarted", (e) => { const l = lineOf(e.player); if (l) ev[l].tb++; });
 gameBus.on("throughBallCompleted", (e) => { const l = lineOf(e.player); if (l) ev[l].tbDone++; });
 gameBus.on("shot", (e) => { const l = lineOf(e.player); if (l) ev[l].shot++; });
@@ -95,6 +158,15 @@ if (WITH_SCORES) {
     r.goal += pb.goalProximityBonus; r.dist += pb.distancePenalty; r.vis += pb.visionRangePenalty; r.mod += pb.playerModifier;
     if (e.breakdowns.carry) { r.carryN++; r.carryRaw += e.breakdowns.carry.score; }
   });
+  gameBus.on("offBallScores", (e) => {
+    const g = rgOf.get(e.playerId);
+    const hs = prevState;
+    const hg = hs?.ballHolderId != null ? rgOf.get(hs.ballHolderId) : undefined;
+    if (!g || !hg) return;
+    const key = `${hg}>${g}`;
+    const a = (offBall[key] ??= { n: 0, offer_support: 0, hold_space: 0, make_run: 0, cps: 0 });
+    a.n++; a[e.intent]++; a.cps += e.currentPassScore;
+  });
   gameBus.on("throughBallScores", (e) => {
     const l = lineOf(e.playerId);
     if (!l || e.cells.length === 0) return;
@@ -107,8 +179,8 @@ const t0 = performance.now();
 for (let m = 0; m < MATCHES; m++) {
   const home = squads[(m * 2) % squads.length]!;
   const away = squads[(m * 2 + 1 + Math.floor(m / squads.length)) % squads.length]!;
-  const hl = autoLineupDefaultFormation(home);
-  const al = autoLineupDefaultFormation(away);
+  const hl = autoLineupForFormation(home, formation);
+  const al = autoLineupForFormation(away, formation);
   let s: GameState = {
     ...createMatchState(home.players, formation, away.players, formation, hl, al),
     matchPhase: "firstHalf",
@@ -117,6 +189,7 @@ for (let m = 0; m < MATCHES; m++) {
   initStats(s.players.map((p) => ({ id: p.id, team: p.team })));
   initRatings(s.players.map((p) => p.id));
   roleOf = new Map(s.players.map((p) => [p.id, LINE_OF[p.role] ?? "MID"]));
+  rgOf = new Map(s.players.map((p) => [p.id, RG_OF[p.role] ?? "CM"]));
   for (const p of s.players) ev[LINE_OF[p.role] ?? "MID"].playerMatches++;
 
   let ticks = 0;
@@ -126,9 +199,13 @@ for (let m = 0; m < MATCHES; m++) {
       const subsA = evaluateAiSubstitutions(s, "A");
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
+    prevState = s;
     s = tickState(s, 0.2).state;
     ticks++;
-    for (const p of s.players) if (!roleOf.has(p.id)) roleOf.set(p.id, LINE_OF[p.role] ?? "MID");
+    for (const p of s.players) {
+      if (!roleOf.has(p.id)) roleOf.set(p.id, LINE_OF[p.role] ?? "MID");
+      if (!rgOf.has(p.id)) rgOf.set(p.id, RG_OF[p.role] ?? "CM");
+    }
     if (!s.pass && !s.shot && !s.looseBall && s.ballHolderId != null) {
       const holder = s.players.find((p) => p.id === s.ballHolderId);
       const dec = s.decisions[s.ballHolderId];
@@ -167,6 +244,25 @@ console.log(`\nCompleted passes per match, passer line (rows) → receiver line 
 console.log(`       ${LINES.map((l) => l.padStart(6)).join("")}`);
 for (const l of LINES) console.log(`${l.padEnd(5)}  ${LINES.map((r) => f(passMatrix[l][r] / MATCHES).padStart(6)).join("")}`);
 
+console.log(`\nCompleted passes per match by role group (rows passer → cols receiver; FB=LB/RB/WB, DM=CDM, CM=CM/LM/RM, AM=CAM, W=LW/RW):`);
+console.log(`       ${RGS.map((r) => r.padStart(6)).join("")}`);
+for (const a of RGS) console.log(`${a.padEnd(5)}  ${RGS.map((b) => f(rgMatrix[a][b] / MATCHES).padStart(6)).join("")}`);
+
+if (WITH_RECEIVERS) {
+  console.log(`\nAt pass time: best receiver of each role group (mean raw score + components), % chosen, % top-scored:`);
+  for (const a of RGS) {
+    const row = RGS.filter((b) => recv[a][b].n > 0);
+    if (row.length === 0) continue;
+    console.log(`${a} passing:`);
+    for (const b of row) {
+      const x = recv[a][b];
+      const n = x.n;
+      console.log(`   → ${b.padEnd(3)} score ${f(x.score / n)} lane ${f(x.lane / n)} prog ${f(x.prog / n)} space ${f(x.space / n)} dist ${f(x.dist / n)}  ` +
+        `chosen ${f((100 * x.chosen) / n, 0)}%  top ${f((100 * x.top) / n, 0)}%`);
+    }
+  }
+}
+
 console.log(`\nHolder decision ticks (share of ball-held ticks per line):`);
 for (const l of LINES) {
   const d = decTicks[l];
@@ -193,5 +289,18 @@ Mean RAW scores (pass = best receiver; carry/TB only when a candidate exists):`)
       `goal ${f(r.goal / n)} dist ${f(r.dist / n)} vis ${f(r.vis / n)} mod ${f(r.mod / n)}]  ` +
       `carry raw ${f(r.carryRaw / Math.max(1, r.carryN))} (${f((100 * r.carryN) / n, 0)}% avail)  ` +
       `TB raw ${f(r.tbRaw / Math.max(1, r.tbN))} (${f((100 * r.tbN) / n, 0)}% avail)`);
+  }
+}
+
+if (WITH_SCORES) {
+  console.log(`
+Off-ball intent mix when a CB/FB holds the ball (player group: offer/hold/run %, mean current pass score):`);
+  for (const hg of ["CB", "FB"] as RG[]) {
+    for (const g of ["CM", "AM", "DM", "W", "ST", "CB", "FB"] as RG[]) {
+      const a = offBall[`${hg}>${g}`];
+      if (!a) continue;
+      console.log(`  ${hg} holds, ${g.padEnd(2)}: offer ${f((100 * a.offer_support) / a.n, 0)}%  hold ${f((100 * a.hold_space) / a.n, 0)}%  ` +
+        `run ${f((100 * a.make_run) / a.n, 0)}%  cps ${f(a.cps / a.n)}  (n=${a.n})`);
+    }
   }
 }

@@ -1,6 +1,6 @@
 import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
 import type { PlayerDecision } from '@/GameEngine/Domain/DecisionTree';
-import { scorePassToReceiver } from '@/GameEngine/Domain/PassLanes';
+import { scorePassQuality } from '@/GameEngine/Domain/PassLanes';
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
 import {
@@ -98,7 +98,7 @@ function buildContext(
   return {
     player, ballHolder, allPlayers, opponents, offsideLine, intent,
     teammatesGrid, opponentsGrid,
-    currentPassScore: scorePassToReceiver(ballHolder, player, opponents, intent),
+    currentPassScore: scorePassQuality(ballHolder, player, opponents, intent),
     isAheadOfBall,
     relativeAdvance,
     localPressure,
@@ -359,7 +359,7 @@ function scoreCell(
 
 /**
  * Lightweight pass quality from `from` to a target *cell* (not a real teammate).
- * Builds a synthetic receiver-like object so we can reuse `scorePassToReceiver`
+ * Builds a synthetic receiver-like object so we can reuse `scorePassQuality`
  * without spreading pass-scoring logic into this file.
  */
 function scorePassToCell(
@@ -380,7 +380,7 @@ function scorePassToCell(
       withBall: { ...from.runtimeStats.withBall, firstTouch: 0.5 },
     },
   } as GamePlayer;
-  return scorePassToReceiver(from, synthetic, opponents, intent);
+  return scorePassQuality(from, synthetic, opponents, intent);
 }
 
 // ── Fallback ──────────────────────────────────────────────────────────────────

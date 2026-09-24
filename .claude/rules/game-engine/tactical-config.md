@@ -96,6 +96,14 @@ Positive weights (PROGRESS + LANE + SPACE + GOAL) sum to exactly **1.0** per sty
 
 **direct** — progressive play. Forward progress dominates. Tight lanes and long balls are acceptable. Lower bar to attempt a pass.
 
+`RECEIVER_ROLE_WEIGHT` (also a `TeamPassWeights` field) scales the receiver-role routing term (roles.json `passTargetWeight`, see pass.md → "Midfield as the Circulation Hub"):
+
+| Style      | RECEIVER_ROLE_WEIGHT |
+|------------|----------------------|
+| possession | 0.14 — routes the most through midfield |
+| balanced   | 0.10 |
+| direct     | 0.06 — skips midfield more readily |
+
 ### `build_up` → carry lane weights
 
 | Style      | CLEARANCE_WEIGHT | PROGRESS_WEIGHT | ANGLE_WEIGHT | CROWD_PENALTY_WEIGHT | MIN_TOTAL_SCORE |

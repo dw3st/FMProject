@@ -103,6 +103,9 @@ export interface GameEvents {
         goalProximityBonus: number;
         visionRangePenalty: number;
         passTargetBonus:    number;
+        receiverRoleBonus:  number;
+        quality:            number;
+        roleBias:           number;
         baseScore:          number;
         playerModifier:     number;
         tacticalModifier:   number;
