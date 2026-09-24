@@ -77,7 +77,7 @@ function AvgRing({ value, size = "sm" }: { value: number; size?: "sm" | "lg" }) 
         transform={`rotate(-90 ${cx} ${cy})`}
       />
       <text x={cx} y={ty} textAnchor="middle" fontSize={fs} fontWeight="900" fill={color} fontFamily="monospace">
-        {value.toFixed(1)}
+        {Math.round(value * 10)}
       </text>
     </svg>
   );
