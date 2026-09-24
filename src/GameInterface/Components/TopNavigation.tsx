@@ -85,8 +85,8 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
       <nav className="h-full flex items-center justify-between gap-2 px-2 xl:px-4">
         <a href="/dashboard" className="flex items-center gap-2 no-underline shrink-0">
           <span className="text-xl 2xl:text-2xl font-black font-display tracking-tight">
-            <span className="text-foreground">TOUCH</span>
-            <span className="text-primary glow-text">LINES</span>
+            <span className="text-foreground">FM</span>
+            <span className="text-primary glow-text">PROJECT</span>
           </span>
         </a>
 
