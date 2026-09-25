@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   LayoutGrid,
@@ -19,7 +19,7 @@ import {
 import type { ComponentType, SVGProps } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
-import { fetchCurrentUser } from "@/GameInterface/AuthGate";
+import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 import type { LeagueData } from "@/types/playerTypes";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
@@ -58,16 +58,9 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
 
   const restDaySet = useMemo(() => new Set(restDays), [restDays]);
 
-  const [isTester, setIsTester] = useState(false);
+  const currentUser = useCurrentUser();
+  const isTester = !!currentUser?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchCurrentUser().then((user) => {
-      if (!cancelled) setIsTester(!!user?.isTester);
-    });
-    return () => { cancelled = true; };
-  }, []);
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -126,6 +119,7 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
               onClick={() => setReportOpen(true)}
               className="group flex flex-col items-center gap-1 px-2 py-1.5 xl:px-3 xl:py-2 2xl:px-4 rounded-lg transition-all hover:bg-primary/10 cursor-pointer bg-transparent border-0"
               title={t("nav.report")}
+              aria-label={t("nav.report")}
             >
               <Icon
                 name="report"

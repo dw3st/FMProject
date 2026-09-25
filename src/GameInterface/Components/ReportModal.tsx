@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DialogTitle } from "@headlessui/react";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -9,6 +10,15 @@ type ReportType = (typeof REPORT_TYPES)[number];
 
 const DESCRIPTION_MIN = 5;
 const DESCRIPTION_MAX = 2000;
+
+/** Status codes with a dedicated, translated message — anything else falls back to the
+ *  server's raw `error` text (still useful for a genuinely unexpected failure) or errorGeneric. */
+const STATUS_MESSAGE_KEYS: Partial<Record<number, string>> = {
+  400: "reports.error400",
+  403: "reports.error403",
+  413: "reports.error413",
+  429: "reports.error429",
+};
 
 interface Props {
   open: boolean;
@@ -36,12 +46,20 @@ export function ReportModal({ open, onClose }: Props) {
     setSubmitting(false);
   }, [open]);
 
+  // Latest onClose, read from a ref inside the auto-close timeout below — so a parent re-render
+  // that passes a new onClose closure (e.g. an inline arrow function) can't reset/postpone a
+  // timer already counting down toward the auto-close.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   // Auto-close a moment after a successful send, so the confirmation is still visible.
   useEffect(() => {
     if (!success) return;
-    const timer = setTimeout(onClose, 1400);
+    const timer = setTimeout(() => onCloseRef.current(), 1400);
     return () => clearTimeout(timer);
-  }, [success, onClose]);
+  }, [success]);
 
   const trimmedLength = description.trim().length;
   const descriptionValid =
@@ -64,8 +82,13 @@ export function ReportModal({ open, onClose }: Props) {
         }),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? t("reports.errorGeneric"));
+        const messageKey = STATUS_MESSAGE_KEYS[res.status];
+        if (messageKey) {
+          setError(t(messageKey));
+        } else {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          setError(body.error ?? t("reports.errorGeneric"));
+        }
         return;
       }
       setSuccess(true);
@@ -86,9 +109,12 @@ export function ReportModal({ open, onClose }: Props) {
     <Modal open={open} onClose={onClose} size="sm">
       <div className="flex flex-col">
         <div className="px-6 py-4 border-b border-border bg-card/50">
-          <h2 className="text-lg font-black font-display text-foreground uppercase tracking-wider m-0">
+          <DialogTitle
+            as="h2"
+            className="text-lg font-black font-display text-foreground uppercase tracking-wider m-0"
+          >
             {t("reports.title")}
-          </h2>
+          </DialogTitle>
           <p className="text-xs text-muted-foreground m-0 mt-0.5">
             {t("reports.subtitle")}
           </p>
@@ -101,19 +127,14 @@ export function ReportModal({ open, onClose }: Props) {
                 <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
                   {t("reports.type")}
                 </span>
-                <div
-                  role="radiogroup"
-                  aria-label={t("reports.type")}
-                  className="flex flex-wrap gap-1.5"
-                >
+                <div className="flex flex-wrap gap-1.5">
                   {TYPE_OPTIONS.map((opt) => {
                     const active = type === opt.value;
                     return (
                       <button
                         key={opt.value}
                         type="button"
-                        role="radio"
-                        aria-checked={active}
+                        aria-pressed={active}
                         disabled={submitting}
                         onClick={() => setType(opt.value)}
                         className={`text-[10px] font-black uppercase tracking-wide px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${

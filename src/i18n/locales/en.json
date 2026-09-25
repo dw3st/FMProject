@@ -487,7 +487,11 @@
     "send": "Send",
     "sending": "Sending...",
     "success": "Thanks! Your report was sent.",
-    "errorGeneric": "Could not send the report. Please try again."
+    "errorGeneric": "Could not send the report. Please try again.",
+    "error400": "Something in your report wasn't valid. Please check it and try again.",
+    "error403": "You don't have access to send reports.",
+    "error413": "Your report is too long. Please shorten the description and try again.",
+    "error429": "You've sent a lot of reports recently. Please wait a bit and try again."
   },
   "status": {
     "budget": "Budget",
