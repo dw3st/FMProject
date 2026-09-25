@@ -51,4 +51,22 @@ describe("planLineup", () => {
     ];
     expect(() => planLineup(leagues, new Map([["a", ["k"]], ["b", ["k"]]]))).toThrow(/two leagues/);
   });
+
+  test("applied referencing an unknown league slug throws", () => {
+    const leagues: LeagueRef[] = [{ slug: "a", country: "X", tier: 1, members: ["a1"] }];
+    expect(() => planLineup(leagues, new Map([["ghost", ["a1"]]]))).toThrow(/unknown league/);
+  });
+
+  test("does not sort the caller's applied array in place", () => {
+    const leagues: LeagueRef[] = [{ slug: "a", country: "X", tier: 1, members: ["z", "a1"] }];
+    const callerList = ["z", "a1"];
+    const r = planLineup(leagues, new Map([["a", callerList]]));
+    expect(callerList).toEqual(["z", "a1"]);
+    expect(r.members.get("a")).toEqual(["a1", "z"]);
+  });
+
+  test("a repeated id inside one applied list throws its own message", () => {
+    const leagues: LeagueRef[] = [{ slug: "a", country: "X", tier: 1, members: [] }];
+    expect(() => planLineup(leagues, new Map([["a", ["k", "k"]]]))).toThrow(/twice in/);
+  });
 });
