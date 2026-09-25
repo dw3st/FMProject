@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
-import { DEFAULT_TEAM_KIT_HEX } from "@/GameInterface/matchTeamColors";
+import { DEFAULT_TEAM_KIT_HEX, readableOnDark } from "@/GameInterface/matchTeamColors";
 
 interface Props {
   scoringTeam: TeamId | null;
@@ -13,8 +13,8 @@ export function GoalOverlay({ scoringTeam, score, kitColorA, kitColorB }: Props)
   const { t } = useTranslation();
   if (!scoringTeam) return null;
 
-  const a = kitColorA ?? DEFAULT_TEAM_KIT_HEX.A;
-  const b = kitColorB ?? DEFAULT_TEAM_KIT_HEX.B;
+  const a = readableOnDark(kitColorA ?? DEFAULT_TEAM_KIT_HEX.A);
+  const b = readableOnDark(kitColorB ?? DEFAULT_TEAM_KIT_HEX.B);
   const color = scoringTeam === "A" ? a : b;
   const teamLabel = scoringTeam === "A" ? "Team A" : "Team B";
 
