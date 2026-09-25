@@ -214,16 +214,6 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
 }
 const totalClubPairs = Object.values(pairCounts).reduce((s, x) => s + x.clubs, 0);
 const coeffs = fitPlayerCoeffs(collectStatPoints(statPairs));
-/**
- * "Shadow of_*" overall per recal pair: the overall a REAL of_* player would get from this exact
- * seed record (same `derivePlayer` + `coeffs` every of_* player in the world is derived with).
- * Used as the quantile-target VALUE pool in section 3.5, replacing the native player's own
- * pre-existing overall — see the "ceiling" note there for why the native pool is unusable as a
- * value source (only as the z-model's fit target, for ranking).
- */
-const shadowOverallOf = new Map<string, number>(
-  recalPairs.map((p) => [p.player.id, Player.computeOverallAvg(derivePlayer(p.seedPlayer, "shadow", coeffs, p.leagueRep, { noise: false }))]),
-);
 const clubFits: ClubFits = {
   ...(Object.fromEntries(ECON_FIELDS.map((k) => [k, fitLogLine(econPairs.map((p) => [p.rep, p.econ[k]]))])) as Omit<ClubFits, "repMax">),
   repMax: Math.max(...econPairs.map((p) => p.rep)),
@@ -255,28 +245,12 @@ cpSync(join(NATIVE, "squads"), SQUADS, { recursive: true });
 // with a seed player, keeping their native attribute PROFILE. See
 // docs/superpowers/specs/2026-09-25-native-star-recalibration-design.md.
 //
-// Ceiling note (2026-09-25 second follow-up): the quantile step (below) redistributes an existing
-// overall MULTISET by z-rank — it never invents a value the multiset doesn't already contain. The
-// z-model (fit against the native players' own pre-existing overall) correctly ranks them: verified
-// the top-5 by z per role are the actually-elite seed players (Mbappé/Saka/Haaland/Kane at Forward,
-// Van Dijk/Saliba at Defender, Salah/Rice/Rodri at Midfielder, Courtois/Donnarumma/Oblak at GK). But
-// the VALUES being redistributed — if sourced from the natives' own pre-recal overall — are capped
-// at whatever the single highest pre-existing native overall in that role happens to be, and that
-// ceiling is an artifact of the OLD (pre-recalibration, seed-blind) attribute generation: e.g. it
-// used to be held by "Yan Diomande" (seedOverall 85) among Forwards purely because his native
-// attribute profile scored well under the weighted quadratic mean, nothing to do with real quality
-// (he's the same player the original bug report flagged as wrongly ranked #1 in the world). Using
-// that pool as the VALUE source would silently re-import the exact bias this feature exists to
-// remove, and — since different roles' old ceilings differ for equally arbitrary reasons — would
-// also distort cross-role world-ranking comparisons (a correctly-#1-by-z defender capped lower than
-// a correctly-#4-by-z forward, for no footballing reason). Fixed below: the quantile VALUE pool is
-// `shadowOverallOf` — a "shadow of_*" overall computed via the exact same `derivePlayer` + `coeffs`
-// every real of_* player in the world already gets from their seed record — so the ceiling reflects
-// this dataset's own seed-calibrated scale instead of the old scheme's noise. The z-model's fit
-// still regresses against the native players' own pre-existing overall (kept as-is): even though
-// each INDIVIDUAL native overall is an unreliable point estimate, the fitted trend across ~700-1000
-// pairs per role still correctly separates elite from average seed players (verified above), so it
-// remains a sound RANKING signal — only the old pool's use as a VALUE source was the bug.
+// Tried and reverted (2026-09-25): sourcing the quantile VALUE pool from each pair's "shadow of_*"
+// overall (derivePlayer + coeffs, noise-free) instead of the natives' own pre-recal overall. The
+// z-model correctly ranks elite seed players either way (verified top-5 by z per role), but the
+// shadow-pool version compressed the whole world's top end and pushed marquee names down (Mbappé
+// #3 → #34) in favor of a theoretically cleaner but user-worse result. Reverted to the native-overall
+// pool below, which is what the approved design (and the user) wants.
 const ROLE_ATTR_WEIGHTS = ROLES_JSON as Record<string, { attrWeights?: Record<string, number> }>;
 const recalByRole = new Map<MainRole, RecalPair[]>();
 for (const p of recalPairs) recalByRole.set(p.role, [...(recalByRole.get(p.role) ?? []), p]);
@@ -297,7 +271,7 @@ for (const [role, group] of recalByRole) {
   recalReport.push({ role, n: group.length, fit: fit ? { a: fit.a, b: fit.b, c: fit.c, sd: fit.sd } : undefined });
   if (!fit) continue; // fewer than 3 pairs for this role — leave these native players untouched
   const quantileInput: QuantileInput[] = group.map((p) => ({
-    id: p.player.id, z: predictLevel(fit, p.seedOverall, p.leagueRep), currentOverall: shadowOverallOf.get(p.player.id)!,
+    id: p.player.id, z: predictLevel(fit, p.seedOverall, p.leagueRep), currentOverall: Player.computeOverallAvg(p.player),
   }));
   const targets = quantileTargets(quantileInput);
   for (const p of group) {

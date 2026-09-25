@@ -152,28 +152,20 @@ Mbappé era o 137º por overall). Ver
      jogo (`Player.computeOverallAvg`) do nativo **antes** de qualquer mudança. Papel com menos de
      3 pares fica sem previsor e seus jogadores não são tocados.
   2. **Escala por quantis:** dentro do papel, ordena os pares por `z` (desempate pelo id) e
-     devolve a cada um, na mesma ordem, um valor de um multiset de referência — do maior para o
-     menor. A ordem (quem recebe qual nota) vem do `z` do seed; a ESCALA vem do multiset.
-     **O multiset é o overall "of_* sombra"** de cada jogador do par — `derivePlayer(seedPlayer,
-     ..., coeffs, leagueRep, { noise: false })` (o mesmo `derivePlayer` que gera todo `of_*` real,
-     só sem o termo de ruído gaussiano por atributo) — não o overall nativo pré-recalibração.
-     *Por quê não o nativo:* o teto de cada papel (o maior valor do multiset, dado a quem tiver o
-     maior `z`) ficava preso a qualquer valor nativo pré-existente mais alto daquele papel — e
-     esse valor não tinha nenhuma relação com o seed. Na 1ª rodada da recalibração (só nativo como
-     multiset) o teto de Ataque (6,74) era do "Yan Diomande" (seedOverall 85, exatamente o jogador
-     que o bug original relatava como 1º errado do mundo), enquanto o teto de Defesa (6,25) e de
-     Meio (6,39) eram de outros nomes pouco conhecidos — nada a ver com quem o `z` realmente
-     escolhia como melhor do papel (conferido à parte: os 5 melhores por `z` de cada papel SÃO os
-     verdadeiros craques do seed — Courtois/Donnarumma/Oblak no gol, Van Dijk/Saliba na defesa,
-     Salah/Rice/Rodri no meio, Mbappé/Saka/Haaland/Kane no ataque — o previsor de nível funciona; o
-     problema era só a escala do alvo). Usar o "of_* sombra" tira esse viés: o teto passa a vir da
-     MESMA regressão `seedOverall/leagueRep → atributo` que gera o resto do mundo, então um
-     seedOverall 99 tem, por construção, um teto compatível com um `of_*` real de seedOverall 99.
-     `{ noise: false }` é essencial — com o ruído normal do `derivePlayer` ligado, um craque
-     específico podia cair mal na distribuição aleatória (ex.: Kane saiu com `finishing` baixo e
-     `passing` alto num sorteio, um perfil às avessas para um centroavante) e o teto do papel virava
-     de novo um acidente, só que do ruído em vez do nativo velho. Sem ruído, o valor é a reta de
-     regressão pura — determinístico e sem essa loteria por jogador.
+     devolve a cada um o overall atual do MESMO grupo, do maior para o menor, na mesma ordem. A
+     multiset de alvos é exatamente a multiset atual (média e espalhamento do papel não mudam);
+     só a atribuição (quem recebe qual nota) muda, guiada pelo `z` do seed.
+     **Tentativa revertida (2026-09-25):** trocar o multiset pelo overall "of_* sombra" de cada
+     jogador do par (`derivePlayer(seedPlayer, ..., coeffs, leagueRep, { noise: false })`, o mesmo
+     `derivePlayer` que gera todo `of_*` real, sem o termo de ruído) — a ideia era que o teto de
+     cada papel (o maior valor do multiset, dado a quem tiver o maior `z`) parava de ficar preso a
+     um valor nativo pré-existente sem relação com o seed (no mundo nativo puro o teto de Ataque
+     era do "Yan Diomande", seedOverall 85, o mesmo jogador do bug original). Tecnicamente correto
+     (os 5 melhores por `z` de cada papel são mesmo os craques certos — Courtois/Donnarumma/Oblak
+     no gol, Van Dijk/Saliba na defesa, Salah/Rice/Rodri no meio, Mbappé/Saka/Haaland/Kane no
+     ataque), mas comprimiu o topo do mundo inteiro e derrubou os craques mais conhecidos (Mbappé
+     3º → 34º) — pior para quem joga o jogo, que é o que importa. Revertido para o multiset
+     nativo, que é o que o design aprovado e o usuário querem.
   3. **Deslocamento único:** acha a posição específica onde o jogador rende mais
      (`Player.bestSpecificRole` sobre os atributos nativos originais) e soma um único `s` a todo
      atributo com peso > 0 no `attrWeights` dessa posição (`src/Data/roles.json`), contínuo,
@@ -194,17 +186,15 @@ Mbappé era o 137º por overall). Ver
 - **Nenhuma rescisão sem par continua sem mudar.** Kane e Bellingham (assim como Van Dijk e Rodri,
   abaixo) sempre tiveram par — o gargalo era outro em cada caso; ver `.claude/rules/data/espn-import.md`
   para os casos de jogador sumindo no `importEspn` (Salah, Rodri).
-- **Resultado (rodada com `clubOverrides` + teto "of_* sombra", ~2026-09-25):** Mbappé 137º (mundo
-  nativo original) → 34º; Kane, que nunca tinha par porque o clube (Bayern München/Munich) não
-  casava, agora casa e recalibra (ver acima); Van Dijk é o #1 por `z` entre 1019 zagueiros e recebe
-  o teto do papel; Rodri é o #3 por `z` entre 1064 meio-campistas. O `z` acerta quem é craque; a
-  posição final no mundo (não apenas dentro do papel) ainda reflete: (a) quantos outros craques de
-  `seedOverall` parecido competem pelo mesmo teto de papel (o Meio tem 5 jogadores com
-  `seedOverall ≥ 95` disputando a faixa alta — Salah, Rice, Rodri, Bruno Fernandes, Ødegaard —
-  então até o 3º colocado fica numa nota moderada), e (b) o envelhecimento do `importEspn` (Van
-  Dijk e Kane, ambos com 30+ anos, perdem nota na fase de idade — ver espn-import.md — depois de já
-  terem sido corretamente recalibrados). Isso é esperado e aceito pelo design (opção "100% do seed"
-  aprovada); o previsor de nível e a escala por quantis fazem o que devem.
+- **Resultado (rodada com `clubOverrides`, multiset nativo, ~2026-09-25):** topo do mundo
+  Saka/Yamal/Mbappé/Saliba/Haaland (6,94 a 6,69), como o design original pretendia. Mbappé 137º
+  (mundo nativo original) → 3º; Kane, que nunca tinha par porque o clube (Bayern München/Munich)
+  não casava, agora casa, recalibra e vai para 112º (era intocado antes); Salah 15º; Rodri 25º
+  (Barcelona, ver espn-import.md); Bellingham 176º; Van Dijk 213º — os dois últimos com `z` no topo
+  do próprio papel (Van Dijk é #1 por `z` entre 1019 zagueiros) mas fora do top 100 do mundo por
+  causa do envelhecimento do `importEspn` (30+ anos) depois de já corretamente recalibrados, e por
+  quantos outros craques de `seedOverall` parecido disputam a mesma faixa do multiset nativo do
+  papel. Isso é esperado e aceito pelo design (opção "100% do seed" aprovada).
 
 ---
 
@@ -214,6 +204,25 @@ Mbappé era o 137º por overall). Ver
 - **Jovens de preenchimento.** O seed tem clubes com só 7 jogadores. O `roster.ts` gera jovens para cumprir os mínimos por papel (GK 3, DEF 7, MID 7, FWD 4) e completar até 18 jogadores. O máximo é 30.
 - **Serie A e Ligue 1.** As re-derivações desses elencos saem mais baixas que os valores nativos. Isso afeta só a checagem de calibração, porque os elencos nativos não são substituídos.
 - **Caminhos no Windows.** Resolvido: todo caminho de dados usa `fileURLToPath`, nunca `new URL(...).pathname`, que gera `/C:/...` no Windows nativo. Mantenha esse padrão em código novo.
+- **Ruído do `derivePlayer` cria `of_*` fora da curva.** `derivePlayer` soma um resíduo gaussiano
+  independente por atributo (`f.sd * NOISE_SCALE * gaussianFromKey(...)`) a cada um dos 13
+  atributos. Como `Player.computeOverallAvg` usa média quadrática (pesa mais os atributos altos),
+  um jogador de `seedOverall` só mediano pode sortear vários atributos favoráveis ao mesmo tempo e
+  sair com overall de craque — top 50 do mundo (rodada de 2026-09-25) tinha 3 `of_*`: "Matteo Dams"
+  (seedOverall 77, DEF, 6,56), "Diego Segovia" (seedOverall 71, GK, 6,37) e "Gustavo Calderari"
+  (seedOverall 66, GK, 6,32) — os dois goleiros batem isso porque o ajuste de GK tem o maior `sd`
+  (0,74 no previsor de nível, ver seção acima) entre os quatro papéis. Não corrigido ainda; ideias
+  para quando for a hora (nenhuma implementada):
+  1. Baixar `NOISE_SCALE` (hoje 1,0) para ~0,5–0,7 — reduz a chance de vários sorteios favoráveis
+     ao mesmo tempo, mantendo alguma variação entre jogadores de overall parecido.
+  2. Trocar o ruído independente por atributo por um "fator de sorte" único por jogador
+     (`gaussianFromKey(sp.id)`, não `sp.id:k`) somado a um jitter pequeno por atributo — a variação
+     entre atributos do mesmo jogador cai, mas o viés de "vários sorteios bons ao mesmo tempo" some.
+  3. Um teto suave pós-derivação: se `Player.computeOverallAvg` do `of_*` passar do que o
+     `fitLevelPredictor`/`predictLevel` (o mesmo previsor da recalibração dos nativos, seção acima)
+     prevê pra aquele `seedOverall`/`leagueRep` por mais de ~2 desvios (`sd` do previsor), encolhe o
+     ruído e regenera os atributos desse jogador (mesma ideia de "não deixar o multiset ficar preso
+     a um acidente", só que aplicada a um jogador individual em vez do topo do papel inteiro).
 
 ---
 

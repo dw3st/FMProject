@@ -78,15 +78,6 @@ describe("derivePlayer", () => {
   test("determinístico", () => {
     expect(derivePlayer(seedP, "s", coeffs, REP)).toEqual(derivePlayer(seedP, "s", coeffs, REP));
   });
-  test("opts.noise: false segue a reta exata (sem o termo gaussiano); default (sem opts) preserva o ruído", () => {
-    const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.09, 0, 1.5)])) } };
-    const withNoise = derivePlayer(seedP, "s", c, REP);
-    const noNoise = derivePlayer(seedP, "s", c, REP, { noise: false });
-    expect(noNoise.stats.passing).toBe(Math.round(-3 + 0.09 * 70)); // exact regression line, no residual
-    expect(withNoise).toEqual(derivePlayer(seedP, "s", c, REP)); // default behaviour is unchanged
-    // With sd=1.5 the residual is virtually always nonzero for this seed id.
-    expect(withNoise.stats.passing).not.toBe(noNoise.stats.passing);
-  });
   test("playerProfile names the archetype of the strongest stat", () => {
     const s = { passing: 9, vision: 2, finishing: 1, dribbling: 3, speed: 3, acceleration: 3, tackling: 3,
       pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 0, jump: 0 };
