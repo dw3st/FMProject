@@ -3,7 +3,7 @@ import { identifyUser, resetAnalytics } from "@/analytics";
 
 type GateState = "loading" | "authed" | "redirecting";
 
-export interface CurrentUser { id: string; email: string }
+export interface CurrentUser { id: string; email: string; isTester?: boolean }
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>("loading");

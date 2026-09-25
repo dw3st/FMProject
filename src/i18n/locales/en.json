@@ -457,6 +457,7 @@
     "transfers": "Transfers",
     "scout": "Scout",
     "stats": "Stats",
+    "report": "Report",
     "inbox": "Inbox",
     "settings": "Settings",
     "training": "Training",
@@ -472,6 +473,21 @@
     "portugueseBrazil": "Português (Brasil)",
     "mainMenu": "Main Menu",
     "mainMenuDescription": "Return to the menu to load a different save."
+  },
+  "reports": {
+    "title": "Send a report",
+    "subtitle": "Tell us about a bug, an improvement idea, or a small tweak.",
+    "type": "Type",
+    "typeBug": "Bug",
+    "typeImprovement": "Improvement",
+    "typeTweak": "Tweak",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What happened? What did you expect?",
+    "descriptionHint": "{{min}} to {{max}} characters.",
+    "send": "Send",
+    "sending": "Sending...",
+    "success": "Thanks! Your report was sent.",
+    "errorGeneric": "Could not send the report. Please try again."
   },
   "status": {
     "budget": "Budget",

@@ -10,6 +10,7 @@ import {
   readSessionCookie,
 } from "@/backend/auth/cookie";
 import { getAuth } from "@/backend/auth/middleware";
+import { isTesterEmail } from "@/backend/auth/testers";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DEV_LOGIN_EMAIL = "dev@localhost";
@@ -109,7 +110,11 @@ export const authRoutes = {
   "/api/auth/me": async (req: Request) => {
     const auth = getAuth(req);
     if (!auth) return Response.json({ error: "unauthorized" }, { status: 401 });
-    return Response.json({ id: auth.userId, email: auth.email });
+    return Response.json({
+      id: auth.userId,
+      email: auth.email,
+      isTester: isTesterEmail(auth.email),
+    });
   },
 
   "/api/auth/dev-login": async (req: Request, server: RequestIPServer) => {
