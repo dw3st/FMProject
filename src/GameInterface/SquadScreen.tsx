@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import type { Squad } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { ClubLogo, clubLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
@@ -94,7 +94,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         >
           <span className="inline-flex items-center gap-3">
             <ClubLogo
-              logoUrl={clubLogoUrl(league, club)}
+              logoUrl={squadLogoUrl(squad.id)}
               primaryColor={squad.colors[0]}
               secondaryColor={squad.colors[1]}
               className="w-10 h-10 rounded-full shrink-0"

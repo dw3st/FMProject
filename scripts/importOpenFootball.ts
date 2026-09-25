@@ -3,13 +3,16 @@
  *
  *   bun scripts/importOpenFootball.ts
  *
- * Reads data_process/openfootball/seed-real.json plus the TL squads, calibrates player attributes and
- * club economy against the clubs/players present in both, then (idempotently) rewrites every
- * open-football league: squads/of_*, leagueData.json, leagueSchedules.json, countries.json,
- * databases.json, pyramids.json and data_process/openfootball/calibration.json. TL leagues are kept
- * byte-for-byte except their `zones`, whose prom/rel entries are regenerated from the country pyramid. All logic lives in scripts/openfootball/.
+ * Reads data_process/openfootball/seed-real.json plus the native squads, calibrates player attributes
+ * and club economy against the clubs/players present in both, then wipes squads/ and rewrites it from
+ * scratch: the native leagues are copied byte-for-byte from data_process/native (only their `zones`
+ * prom/rel entries are regenerated from the country pyramid), and every open-football league is
+ * (re)derived on top — squads/of_*, leagueData.json, leagueSchedules.json, countries.json,
+ * databases.json, pyramids.json and data_process/openfootball/calibration.json. This produces an
+ * intermediate 2024/25 world; scripts/importEspn.ts then moves it to the 2026/27 season (see
+ * .claude/rules/data/espn-import.md). All logic lives in scripts/openfootball/.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Seed, SeedClub, SeedLeague, SeedPlayer } from "@/../scripts/openfootball/types";
@@ -26,9 +29,11 @@ import {
 import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides, type PyramidLeague } from "@/../scripts/openfootball/pyramid";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 import type { RosterPlayer } from "@/types/playerTypes";
+import { checkWorldIntegrity } from "@/../scripts/world/integrity";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const OF_DIR = join(ROOT, "data_process", "openfootball");
+const NATIVE = join(ROOT, "data_process", "native");
 const DATA = join(ROOT, "src", "example_data");
 const SQUADS = join(DATA, "squads");
 const SOURCE = "open-football";
@@ -62,10 +67,9 @@ const median = (xs: number[]) => {
 };
 
 function readTLSquads(league: string): TLSquad[] {
-  const dir = join(SQUADS, league);
+  const dir = join(NATIVE, "squads", league);
   return sortedDir(dir).filter((f) => f.endsWith(".json"))
-    .map((f) => readJson<TLSquad>(join(dir, f)))
-    .filter((s) => s.source !== SOURCE);
+    .map((f) => readJson<TLSquad>(join(dir, f)));
 }
 
 const econOf = (s: TLSquad): EconSample => ({
@@ -159,13 +163,15 @@ writeJson(join(OF_DIR, "calibration.json"), {
 }, 2);
 
 // ── 3. Clean previous runs ──────────────────────────────────────────────────
-for (const d of sortedDir(SQUADS)) if (d.startsWith("of_")) rmSync(join(SQUADS, d), { recursive: true, force: true });
-const isOF = (x: { slug: string; source?: string }) => x.slug.startsWith("of_") || x.source === SOURCE;
+// src/example_data/squads is pure output: wipe it and start from the native sources.
+if (!existsSync(join(NATIVE, "squads"))) throw new Error(`native sources missing: ${join(NATIVE, "squads")}`);
+for (const d of sortedDir(SQUADS)) rmSync(join(SQUADS, d), { recursive: true, force: true });
+cpSync(join(NATIVE, "squads"), SQUADS, { recursive: true });
 type LeagueEntry = { slug: string; country: string; source?: string; zones?: Zone[]; standings: Array<{ squadId: string }> } & Record<string, unknown>;
 type CountryEntry = { slug: string; name: string; iso2: string; source?: string; headline: string } & Record<string, unknown>;
-const leagueData = readJson<LeagueEntry[]>(join(DATA, "leagueData.json")).filter((l) => !isOF(l));
-const schedules = readJson<Array<LeagueScheduleConfig & { source?: string }>>(join(DATA, "leagueSchedules.json")).filter((s) => !isOF(s));
-const countriesIn = readJson<Record<string, CountryEntry>>(join(DATA, "countries.json"));
+const leagueData = readJson<LeagueEntry[]>(join(NATIVE, "leagueData.json"));
+const schedules = readJson<Array<LeagueScheduleConfig & { source?: string }>>(join(NATIVE, "leagueSchedules.json"));
+const countriesIn = readJson<Record<string, CountryEntry>>(join(NATIVE, "countries.json"));
 
 // ── 4. Generate leagues ─────────────────────────────────────────────────────
 const clubCounts = new Map([...clubsByLeague].map(([k, v]) => [k, v.length]));
@@ -254,75 +260,12 @@ writeFileSync(join(DATA, "leagueSchedules.json"), formatSchedules(schedules.map(
 writeJson(join(DATA, "countries.json"), countries, 4);
 writeJson(join(DATA, "pyramids.json"), pyramids, 2);
 
-// Integrity checks (also collect world totals).
-const squadIds = new Set<string>();
-const playerIds = new Set<string>();
-let worldPlayers = 0;
-for (const l of leagueData) {
-  for (const st of l.standings) {
-    const f = join(SQUADS, l.slug, `${st.squadId}.json`);
-    if (!existsSync(f)) throw new Error(`integrity: ${l.slug} standings squadId ${st.squadId} has no file`);
-  }
-  for (const f of sortedDir(join(SQUADS, l.slug))) {
-    const s = readJson<TLSquad>(join(SQUADS, l.slug, f));
-    if (squadIds.has(s.id)) throw new Error(`integrity: duplicate squad id ${s.id}`);
-    squadIds.add(s.id);
-    for (const p of s.players) {
-      if (playerIds.has(p.id)) throw new Error(`integrity: duplicate player id ${p.id} (${l.slug}/${s.id})`);
-      playerIds.add(p.id);
-    }
-    worldPlayers += s.players.length;
-  }
-  if (!countries[l.country]) throw new Error(`integrity: league ${l.slug} country ${l.country} missing from countries.json`);
-  if (!schedules.some((s) => s.slug === l.slug)) throw new Error(`integrity: league ${l.slug} has no schedule in leagueSchedules.json`);
-
-  // Zones must fit the league: top ranges inside 1..clubs, bottom ranges inside the
-  // table, and no position in both a top zone and a bottom zone.
-  const clubs = l.standings.length;
-  const zones = (l.zones ?? []) as Array<{ id: string; from?: number; to?: number; fromEnd?: number }>;
-  let lastTop = 0;
-  let firstBottom = clubs + 1;
-  for (const z of zones) {
-    if (z.fromEnd !== undefined) {
-      if (!Number.isInteger(z.fromEnd) || z.fromEnd < 1 || z.fromEnd > clubs)
-        throw new Error(`integrity: ${l.slug} zone ${z.id} fromEnd ${z.fromEnd} outside 1..${clubs}`);
-      firstBottom = Math.min(firstBottom, clubs - z.fromEnd + 1);
-    } else {
-      const { from, to } = z;
-      if (!Number.isInteger(from) || !Number.isInteger(to) || from! < 1 || to! < from! || to! > clubs)
-        throw new Error(`integrity: ${l.slug} zone ${z.id} range ${from}..${to} outside 1..${clubs}`);
-      lastTop = Math.max(lastTop, to!);
-    }
-  }
-  if (lastTop >= firstBottom)
-    throw new Error(`integrity: ${l.slug} top zones reach ${lastTop} but bottom zones start at ${firstBottom} (${clubs} clubs)`);
-
-  // prom/rel zones must be exactly the pyramid's counts (none when the country has no pyramid, except
-  // TL leagues outside any pyramid, which keep their hand-authored zones).
-  const g = pyramidGroupOf(pyramids, l.slug);
-  const prom = zones.filter((z) => z.id === "prom");
-  const rel = zones.filter((z) => z.id === "rel");
-  if (g) {
-    const promOk = g.promote > 0 ? prom.length === 1 && prom[0]!.from === 1 && prom[0]!.to === g.promote : prom.length === 0;
-    const relOk = g.relegate > 0 ? rel.length === 1 && rel[0]!.fromEnd === g.relegate : rel.length === 0;
-    if (!promOk || !relOk) throw new Error(`integrity: ${l.slug} prom/rel zones differ from pyramid (${g.promote}/${g.relegate})`);
-  } else if (l.source === SOURCE && (prom.length || rel.length)) {
-    throw new Error(`integrity: ${l.slug} has prom/rel zones but its country has no pyramid`);
-  }
-}
-for (const p of Object.values(pyramids)) {
-  for (let i = 0; i + 1 < p.levels.length; i++) {
-    const down = p.levels[i]!.groups.reduce((s, g) => s + g.relegate, 0);
-    const up = p.levels[i + 1]!.groups.reduce((s, g) => s + g.promote, 0);
-    if (down !== up) throw new Error(`integrity: ${p.country} tier ${p.levels[i]!.tier} relegates ${down} but tier ${p.levels[i + 1]!.tier} promotes ${up}`);
-    for (const g of p.levels[i + 1]!.groups)
-      if (!leagueData.some((l) => l.slug === g.leagueSlug)) throw new Error(`integrity: pyramid group ${g.leagueSlug} has no league`);
-  }
-}
-for (const [name, c] of Object.entries(countries)) {
-  if (typeof c.flag !== "string" || c.flag === "") throw new Error(`integrity: country ${name} has no flag`);
-  if (typeof c.continent !== "string" || c.continent === "") throw new Error(`integrity: country ${name} has no continent`);
-}
+const totals = checkWorldIntegrity({
+  leagueData, schedules, countries,
+  pyramids, squadsDir: SQUADS,
+  mayHaveHandZones: (l) => l.source !== SOURCE,
+});
+const worldPlayers = totals.players;
 
 const dbPath = join(DATA, "databases.json");
 const databases = readJson<Array<Record<string, unknown>>>(dbPath);
@@ -411,5 +354,5 @@ for (const p of Object.values(pyramids)) {
     console.log(`    tier ${lv.tier}: ${lv.groups.map((g) => `${g.leagueSlug} ↑${g.promote} ↓${g.relegate}`).join(", ")}${mark}`);
   });
 }
-console.log(`world: ${leagueData.length} leagues, ${squadIds.size} squads, ${worldPlayers} players, ${Object.keys(countries).length} countries`);
+console.log(`world: ${leagueData.length} leagues, ${totals.squads} squads, ${worldPlayers} players, ${Object.keys(countries).length} countries`);
 console.log("integrity checks passed");

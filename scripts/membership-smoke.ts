@@ -42,7 +42,7 @@ const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { apiRoutes } = await import("@/backend/routes");
 
-const EXPECTED_SQUAD_FILES = 1227;
+const EXPECTED_SQUAD_FILES = 1273; // world size after the 2026/27 ESPN season import
 const DAYS = 3;
 const PL = "premier_league";
 const CHAMP = "of_championship";

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Cloud,
@@ -15,13 +15,12 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
 import type { MatchEvent } from "@/types/dayLogTypes";
 import type { DayLog } from "@/types/dayLogTypes";
-import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import type { Fixture } from "@/types/calendarTypes";
 import { MAIN_ROLE_ABBR, getPositionColor } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
-import { catalogLeagueBySquadId, competitionName } from "@/Domain/world/labels";
+import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -395,10 +394,6 @@ export function MatchResultScreen() {
     };
   }, [saveLoading, session, fixtures, mySquadId, simCurrentDate, t]);
 
-  // Crests are filed by the club's catalog (origin) league, not its current league.
-  const catalogLeague = useMemo(() => catalogLeagueBySquadId(leagues), [leagues]);
-  const catalogSlugs = useMemo(() => squadIdToClubSlugMap(leagues.flatMap((l) => l.standings)), [leagues]);
-
   if (saveLoading || !session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -449,8 +444,8 @@ export function MatchResultScreen() {
   const isHome = matchEvent.home === mySquadId;
   const homeName = teamDisplayNameFromLeagues(matchEvent.home, leagues);
   const awayName = teamDisplayNameFromLeagues(matchEvent.away, leagues);
-  const homeLogoUrl = squadLogoUrl(matchEvent.home, catalogLeague.get(matchEvent.home) ?? session.leagueSlug, catalogSlugs.get(matchEvent.home));
-  const awayLogoUrl = squadLogoUrl(matchEvent.away, catalogLeague.get(matchEvent.away) ?? session.leagueSlug, catalogSlugs.get(matchEvent.away));
+  const homeLogoUrl = squadLogoUrl(matchEvent.home);
+  const awayLogoUrl = squadLogoUrl(matchEvent.away);
 
   const { weather, referee, venue } = getMatchMeta(resolvedDate, session.clubName, isHome);
   const competition = competitionName(matchEvent.competition, leagues);

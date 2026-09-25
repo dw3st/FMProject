@@ -1,22 +1,17 @@
 import { useState } from "react";
 import { Shield } from "lucide-react";
+import LOGO_INDEX from "@/Data/logoIndex.json";
+import { logoUrlFromIndex } from "@/Domain/world/logos";
 
 /** URLs that already 404'd this page load — avoid re-requesting them from every mounted instance. */
 const failedLogoUrls = new Set<string>();
 
-/** Returns the URL for a club's SVG logo. */
-export function clubLogoUrl(league: string, club: string): string {
-  return `/api/logos/${league}/${club}`;
-}
-
 /**
- * Logo URL from calendar/standings squad id. Prefers the club slug (how logos are filed on
- * disk); falls back to squadId. Returns undefined for `of_*` leagues — the open-football import
- * has no crest files for them, so we skip the request entirely instead of hitting a guaranteed 404.
+ * Crest URL for a squad from the generated logo index (native SVG/PNG or the ESPN crest).
+ * Returns undefined when the club has no crest, so the UI draws the colour shield without a request.
  */
-export function squadLogoUrl(squadId: string, leagueSlug: string, clubSlug?: string): string | undefined {
-  if (leagueSlug.startsWith("of_")) return undefined;
-  return clubLogoUrl(leagueSlug, clubSlug ?? squadId);
+export function squadLogoUrl(squadId: string): string | undefined {
+  return logoUrlFromIndex(LOGO_INDEX as Record<string, string>, squadId);
 }
 
 /**

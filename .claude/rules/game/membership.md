@@ -47,7 +47,7 @@
 
 ## Frontend
 
-- **Escudos pela liga de origem.** Os arquivos ficam em `Data/logos/{liga de origem}/`. Use `catalogLeagueBySquadId(leagues)` (`src/Domain/world/labels.ts`) e passe `catalog.get(id) ?? ligaAtual` para `squadLogoUrl`. `squadLogoUrl` devolve `undefined` para ligas `of_*`.
+- **Escudos pelo índice.** `squadLogoUrl(squadId)` lê `logoIndex.json` (ver `ui-world.md`); a liga de catálogo não entra mais na URL do escudo.
 - **Adversário por id.** Busque `/api/saves/:id/squad/:league/:squadId` com o squadId direto, sem mapear slug pelo `leagueData`.
 - **Tabela pelo save.** Posição e classificação vêm de `GET /api/saves/:id/leagues/:slug/standings`.
 
