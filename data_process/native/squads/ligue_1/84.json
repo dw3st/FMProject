@@ -1,0 +1,1179 @@
+{
+  "id": "84",
+  "slug": "nice",
+  "name": "Nice",
+  "colors": [
+    "#000000",
+    "#E10600"
+  ],
+  "logo": "logos/ligue_1/nice.svg",
+  "apiId": 84,
+  "code": "NIC",
+  "country": "France",
+  "founded": 1904,
+  "venue": {
+    "name": "Allianz Riviera",
+    "city": "Nice",
+    "capacity": 35624,
+    "surface": "grass"
+  },
+  "coach": {
+    "id": 25730,
+    "name": "Claude Puel",
+    "firstname": null,
+    "lastname": null,
+    "age": null,
+    "nationality": null,
+    "points": 0
+  },
+  "players": [
+    {
+      "id": "player_4121",
+      "name": "T. Bruyère",
+      "fullName": "Théo Bruyère",
+      "age": 19,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 1,
+        "reflex": 4,
+        "jump": 4
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Sweeper-keeper"
+      }
+    },
+    {
+      "id": "player_4122",
+      "name": "Y. Diouf",
+      "fullName": "Yehvann Diouf",
+      "age": 26,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 3,
+        "heading": 3,
+        "strength": 2,
+        "reflex": 4,
+        "jump": 6
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Sweeper-keeper"
+      }
+    },
+    {
+      "id": "player_4123",
+      "name": "M. Dupé",
+      "fullName": "Maxime Dupé",
+      "age": 32,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 4,
+        "jump": 3
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Sweeper-keeper"
+      }
+    },
+    {
+      "id": "player_4124",
+      "name": "B. Żelazowski",
+      "fullName": "Bartosz Żelazowski",
+      "age": 20,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 4,
+        "jump": 4
+      },
+      "profile": {
+        "summary": "Commanding goalkeeper who organises the back line effectively.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_4125",
+      "name": "A. Abdi",
+      "fullName": "Ali El Abdi",
+      "age": 32,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 6,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 3,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Energetic full-back who contributes at both ends of the pitch.",
+        "archetype": "Modern full-back"
+      }
+    },
+    {
+      "id": "player_4126",
+      "name": "Abdulay Bah",
+      "fullName": "Abdulai Juma Bah",
+      "age": 19,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Athletic defender comfortable bringing the ball out of defence.",
+        "archetype": "No-nonsense defender"
+      }
+    },
+    {
+      "id": "player_4127",
+      "name": "M. Bard",
+      "fullName": "Melvin Michel Maxence Bard",
+      "age": 25,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 6,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 6,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Athletic defender comfortable bringing the ball out of defence.",
+        "archetype": "Modern centre-back"
+      }
+    },
+    {
+      "id": "player_4128",
+      "name": "M. Lumpungu",
+      "fullName": "Moïse Bombito Lumpungu",
+      "age": 25,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 7,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4129",
+      "name": "J. Clauss",
+      "fullName": "Jonathan Clauss",
+      "age": 33,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 7,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 3,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Overlapping full-back"
+      }
+    },
+    {
+      "id": "player_4130",
+      "name": "Dante",
+      "fullName": "Dante Bonfim Costa Santos",
+      "age": 42,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 7,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Athletic defender comfortable bringing the ball out of defence.",
+        "archetype": "Modern centre-back"
+      }
+    },
+    {
+      "id": "player_4131",
+      "name": "Brad-Hamilton Mantsounga",
+      "fullName": "Brad-Hamilton Mantsounga",
+      "age": 18,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "Modern centre-back"
+      }
+    },
+    {
+      "id": "player_4132",
+      "name": "A. Mendy",
+      "fullName": "Antoine Mendy",
+      "age": 21,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 5,
+        "pressing": 5,
+        "stamina": 5,
+        "heading": 8,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Stopper"
+      }
+    },
+    {
+      "id": "player_4133",
+      "name": "L. Monteiro Alvarenga",
+      "fullName": "Laurenzo Monteiro Alvarenga",
+      "age": 21,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Quick full-back who overlaps and delivers crosses into the box.",
+        "archetype": "Attacking wing-back"
+      }
+    },
+    {
+      "id": "player_4134",
+      "name": "K. Peprah Oppong",
+      "fullName": "Kojo Peprah Oppong",
+      "age": 21,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 6,
+        "pressing": 5,
+        "stamina": 4,
+        "heading": 7,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "No-nonsense defender"
+      }
+    },
+    {
+      "id": "player_4135",
+      "name": "Yanis Sofikitis",
+      "fullName": "Yanis Sofikitis",
+      "age": 18,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Modern full-back"
+      }
+    },
+    {
+      "id": "player_4136",
+      "name": "M. Youssouf",
+      "fullName": "Mousslim Youssouf",
+      "age": 19,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "No-nonsense defender"
+      }
+    },
+    {
+      "id": "player_4137",
+      "name": "S. Abdul Samed",
+      "fullName": "Salis Abdul Samed",
+      "age": 25,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 5,
+        "stamina": 5,
+        "heading": 4,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Defensive midfielder"
+      }
+    },
+    {
+      "id": "player_4138",
+      "name": "G. Bernardeau",
+      "fullName": "Gabin Bernardeau",
+      "age": 19,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 5,
+        "finishing": 6,
+        "dribbling": 6,
+        "speed": 6,
+        "acceleration": 6,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Wide forward"
+      }
+    },
+    {
+      "id": "player_4139",
+      "name": "H. Boudaoui",
+      "fullName": "Hicham Boudaoui",
+      "age": 26,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 7,
+        "vision": 5,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 7,
+        "heading": 3,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_4140",
+      "name": "M. Brignone",
+      "fullName": "M. Brignone",
+      "age": 18,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Inside forward"
+      }
+    },
+    {
+      "id": "player_4141",
+      "name": "D. Coulibaly",
+      "fullName": "Djibril Coulibaly",
+      "age": 17,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 2,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_4142",
+      "name": "T. Louchet",
+      "fullName": "Tom Alexis Louchet",
+      "age": 22,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 5,
+        "dribbling": 6,
+        "speed": 5,
+        "acceleration": 6,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Direct winger"
+      }
+    },
+    {
+      "id": "player_4143",
+      "name": "Y. Ndayishimiye",
+      "fullName": "Youssouf Nyange Ndayishimiye",
+      "age": 27,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 5,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "Modern centre-back"
+      }
+    },
+    {
+      "id": "player_4144",
+      "name": "T. Ndombélé",
+      "fullName": "Tanguy Ndombélé Alvaro",
+      "age": 29,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 6,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Wide midfielder"
+      }
+    },
+    {
+      "id": "player_4145",
+      "name": "E. Pereira",
+      "fullName": "Everton Pereira da Silva",
+      "age": 18,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Ball-winning midfielder"
+      }
+    },
+    {
+      "id": "player_4146",
+      "name": "M. Sanson",
+      "fullName": "Morgan Stéphane Sanson",
+      "age": 31,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 4,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Engine room"
+      }
+    },
+    {
+      "id": "player_4147",
+      "name": "C. Vanhoutte",
+      "fullName": "Charles Vanhoutte",
+      "age": 27,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 1,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 4,
+        "tackling": 6,
+        "pressing": 6,
+        "stamina": 6,
+        "heading": 5,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed passer who controls the tempo from a central position.",
+        "archetype": "Defensive midfielder"
+      }
+    },
+    {
+      "id": "player_4148",
+      "name": "Kéfren Ali",
+      "fullName": "Kéfren Ali",
+      "age": 18,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Fox in the box"
+      }
+    },
+    {
+      "id": "player_4149",
+      "name": "Enguerrand Bouard",
+      "fullName": "Enguerrand Bouard",
+      "age": 18,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_4150",
+      "name": "K. Boudache",
+      "fullName": "Kaïl Boudache",
+      "age": 17,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 5,
+        "stamina": 4,
+        "heading": 5,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Fox in the box"
+      }
+    },
+    {
+      "id": "player_4151",
+      "name": "M. Cho",
+      "fullName": "Mohamed-Ali Cho",
+      "age": 21,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 5,
+        "dribbling": 7,
+        "speed": 6,
+        "acceleration": 8,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inside forward"
+      }
+    },
+    {
+      "id": "player_4152",
+      "name": "Z. Diallo",
+      "fullName": "Zoumana Diallo",
+      "age": 20,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 5,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 5,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_4153",
+      "name": "S. Diop",
+      "fullName": "Sofiane Diop",
+      "age": 25,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 5,
+        "finishing": 4,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 4,
+        "pressing": 5,
+        "stamina": 6,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_4154",
+      "name": "Tiago Gouveia",
+      "fullName": "Tiago Maria Antunes Gouveia",
+      "age": 24,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 5,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Target man"
+      }
+    },
+    {
+      "id": "player_4155",
+      "name": "I. Jansson",
+      "fullName": "Isak Alexander Jansson",
+      "age": 23,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 6,
+        "speed": 5,
+        "acceleration": 6,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Pacy wide player who stretches defences with off-the-ball runs.",
+        "archetype": "Inside forward"
+      }
+    },
+    {
+      "id": "player_4156",
+      "name": "Kevin Carlos",
+      "fullName": "Kevin Carlos Omoruyi Benjamin",
+      "age": 24,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Fox in the box"
+      }
+    },
+    {
+      "id": "player_4157",
+      "name": "J. Telusson",
+      "fullName": "J. Telusson",
+      "age": 17,
+      "squadId": "84",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_4158",
+      "name": "E. Wahi",
+      "fullName": "Sepe Elye Wahi",
+      "age": 22,
+      "squadId": "84",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 6,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 4,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Target man"
+      }
+    }
+  ],
+  "finances": {
+    "score": 0.6348,
+    "broadcasting": 70561350,
+    "commercial": 51953392,
+    "total": 122514742,
+    "budget": 101710236,
+    "followers": 10761353
+  }
+}

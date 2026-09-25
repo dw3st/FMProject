@@ -1,0 +1,1981 @@
+[
+  {
+    "slug": "premier_league",
+    "name": "Premier League",
+    "country": "England",
+    "iso2": "GB",
+    "season": "2024-25",
+    "zones": [
+      {
+        "id": "ucl",
+        "label": "Champions League",
+        "color": "blue",
+        "from": 1,
+        "to": 4
+      },
+      {
+        "id": "uel",
+        "label": "Europa League",
+        "color": "orange",
+        "from": 5,
+        "to": 5
+      },
+      {
+        "id": "uecl",
+        "label": "Conference League",
+        "color": "cyan",
+        "from": 6,
+        "to": 6
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 3
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "33",
+        "slug": "manchester_united",
+        "name": "Manchester United",
+        "colors": [
+          "#DA291C",
+          "#FFE500"
+        ],
+        "logo": "logos/premier_league/manchester_united.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "34",
+        "slug": "newcastle",
+        "name": "Newcastle",
+        "colors": [
+          "#241F20",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/newcastle.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "35",
+        "slug": "bournemouth",
+        "name": "Bournemouth",
+        "colors": [
+          "#DA291C",
+          "#000000"
+        ],
+        "logo": "logos/premier_league/bournemouth.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "36",
+        "slug": "fulham",
+        "name": "Fulham",
+        "colors": [
+          "#FFFFFF",
+          "#000000"
+        ],
+        "logo": "logos/premier_league/fulham.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "39",
+        "slug": "wolves",
+        "name": "Wolves",
+        "colors": [
+          "#FDB913",
+          "#231F20"
+        ],
+        "logo": "logos/premier_league/wolves.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "40",
+        "slug": "liverpool",
+        "name": "Liverpool",
+        "colors": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/liverpool.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "42",
+        "slug": "arsenal",
+        "name": "Arsenal",
+        "colors": [
+          "#EF0107",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/arsenal.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "44",
+        "slug": "burnley",
+        "name": "Burnley",
+        "colors": [
+          "#6C1D45",
+          "#99D6EA"
+        ],
+        "logo": "logos/premier_league/burnley.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "45",
+        "slug": "everton",
+        "name": "Everton",
+        "colors": [
+          "#003399",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/everton.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "47",
+        "slug": "tottenham",
+        "name": "Tottenham",
+        "colors": [
+          "#132257",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/tottenham.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "48",
+        "slug": "west_ham",
+        "name": "West Ham",
+        "colors": [
+          "#7A263A",
+          "#1BB1E7"
+        ],
+        "logo": "logos/premier_league/west_ham.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "49",
+        "slug": "chelsea",
+        "name": "Chelsea",
+        "colors": [
+          "#034694",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/chelsea.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "50",
+        "slug": "manchester_city",
+        "name": "Manchester City",
+        "colors": [
+          "#6CABDD",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/manchester_city.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "51",
+        "slug": "brighton",
+        "name": "Brighton",
+        "colors": [
+          "#0057B8",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/brighton.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "52",
+        "slug": "crystal_palace",
+        "name": "Crystal Palace",
+        "colors": [
+          "#1B458F",
+          "#C4122E"
+        ],
+        "logo": "logos/premier_league/crystal_palace.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "55",
+        "slug": "brentford",
+        "name": "Brentford",
+        "colors": [
+          "#E30613",
+          "#FFB81C"
+        ],
+        "logo": "logos/premier_league/brentford.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "63",
+        "slug": "leeds",
+        "name": "Leeds",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/leeds.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "65",
+        "slug": "nottingham_forest",
+        "name": "Nottingham Forest",
+        "colors": [
+          "#DD0000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/nottingham_forest.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "66",
+        "slug": "aston_villa",
+        "name": "Aston Villa",
+        "colors": [
+          "#670E36",
+          "#95BFE5"
+        ],
+        "logo": "logos/premier_league/aston_villa.svg",
+        "country": "England"
+      },
+      {
+        "squadId": "746",
+        "slug": "sunderland",
+        "name": "Sunderland",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/premier_league/sunderland.svg",
+        "country": "England"
+      }
+    ]
+  },
+  {
+    "slug": "bundesliga",
+    "name": "Bundesliga",
+    "country": "Germany",
+    "iso2": "DE",
+    "season": "2024-25",
+    "zones": [
+      {
+        "id": "ucl",
+        "label": "Champions League",
+        "color": "blue",
+        "from": 1,
+        "to": 4
+      },
+      {
+        "id": "uel",
+        "label": "Europa League",
+        "color": "orange",
+        "from": 5,
+        "to": 5
+      },
+      {
+        "id": "uecl",
+        "label": "Conference League",
+        "color": "cyan",
+        "from": 6,
+        "to": 6
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 2
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "157",
+        "slug": "bayern_munchen",
+        "name": "Bayern München",
+        "colors": [
+          "#DC052D",
+          "#0066B2"
+        ],
+        "logo": "logos/bundesliga/bayern_munchen.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "160",
+        "slug": "sc_freiburg",
+        "name": "SC Freiburg",
+        "colors": [
+          "#E2001A",
+          "#000000"
+        ],
+        "logo": "logos/bundesliga/sc_freiburg.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "161",
+        "slug": "vfl_wolfsburg",
+        "name": "VfL Wolfsburg",
+        "colors": [
+          "#65B32E",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/vfl_wolfsburg.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "162",
+        "slug": "werder_bremen",
+        "name": "Werder Bremen",
+        "colors": [
+          "#1D9053",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/werder_bremen.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "163",
+        "slug": "borussia_monchengladbach",
+        "name": "Borussia Mönchengladbach",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/borussia_monchengladbach.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "164",
+        "slug": "fsv_mainz_05",
+        "name": "FSV Mainz 05",
+        "colors": [
+          "#ED1C24",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/fsv_mainz_05.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "165",
+        "slug": "borussia_dortmund",
+        "name": "Borussia Dortmund",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/borussia_dortmund.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "167",
+        "slug": "1899_hoffenheim",
+        "name": "1899 Hoffenheim",
+        "colors": [
+          "#1961B5",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/1899_hoffenheim.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "168",
+        "slug": "bayer_leverkusen",
+        "name": "Bayer Leverkusen",
+        "colors": [
+          "#E32221",
+          "#000000"
+        ],
+        "logo": "logos/bundesliga/bayer_leverkusen.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "169",
+        "slug": "eintracht_frankfurt",
+        "name": "Eintracht Frankfurt",
+        "colors": [
+          "#E1000F",
+          "#000000"
+        ],
+        "logo": "logos/bundesliga/eintracht_frankfurt.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "170",
+        "slug": "fc_augsburg",
+        "name": "FC Augsburg",
+        "colors": [
+          "#BA3733",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/fc_augsburg.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "172",
+        "slug": "vfb_stuttgart",
+        "name": "VfB Stuttgart",
+        "colors": [
+          "#E32219",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/vfb_stuttgart.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "173",
+        "slug": "rb_leipzig",
+        "name": "RB Leipzig",
+        "colors": [
+          "#DD0741",
+          "#001F47"
+        ],
+        "logo": "logos/bundesliga/rb_leipzig.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "175",
+        "slug": "hamburger_sv",
+        "name": "Hamburger SV",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/hamburger_sv.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "180",
+        "slug": "1_fc_heidenheim",
+        "name": "1. FC Heidenheim",
+        "colors": [
+          "#E30613",
+          "#004B91"
+        ],
+        "logo": "logos/bundesliga/1_fc_heidenheim.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "182",
+        "slug": "union_berlin",
+        "name": "Union Berlin",
+        "colors": [
+          "#EB1923",
+          "#FDE100"
+        ],
+        "logo": "logos/bundesliga/union_berlin.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "186",
+        "slug": "fc_st_pauli",
+        "name": "FC St. Pauli",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/fc_st_pauli.svg",
+        "country": "Germany"
+      },
+      {
+        "squadId": "192",
+        "slug": "1_fc_koln",
+        "name": "1. FC Köln",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/bundesliga/1_fc_koln.svg",
+        "country": "Germany"
+      }
+    ]
+  },
+  {
+    "slug": "ligue_1",
+    "name": "Ligue 1",
+    "country": "France",
+    "iso2": "FR",
+    "season": "2024-25",
+    "zones": [
+      {
+        "id": "ucl",
+        "label": "Champions League",
+        "color": "blue",
+        "from": 1,
+        "to": 3
+      },
+      {
+        "id": "uel",
+        "label": "Europa League",
+        "color": "orange",
+        "from": 4,
+        "to": 4
+      },
+      {
+        "id": "uecl",
+        "label": "Conference League",
+        "color": "cyan",
+        "from": 5,
+        "to": 5
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 2
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "77",
+        "slug": "angers",
+        "name": "Angers",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/angers.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "79",
+        "slug": "lille",
+        "name": "Lille",
+        "colors": [
+          "#E2001A",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/lille.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "80",
+        "slug": "lyon",
+        "name": "Lyon",
+        "colors": [
+          "#FFFFFF",
+          "#003DA5"
+        ],
+        "logo": "logos/ligue_1/lyon.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "81",
+        "slug": "marseille",
+        "name": "Marseille",
+        "colors": [
+          "#2FAEE0",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/marseille.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "83",
+        "slug": "nantes",
+        "name": "Nantes",
+        "colors": [
+          "#FCDD09",
+          "#2E8B57"
+        ],
+        "logo": "logos/ligue_1/nantes.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "84",
+        "slug": "nice",
+        "name": "Nice",
+        "colors": [
+          "#000000",
+          "#E10600"
+        ],
+        "logo": "logos/ligue_1/nice.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "85",
+        "slug": "paris_saint_germain",
+        "name": "Paris Saint Germain",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/paris_saint_germain.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "91",
+        "slug": "monaco",
+        "name": "Monaco",
+        "colors": [
+          "#E7001B",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/monaco.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "94",
+        "slug": "rennes",
+        "name": "Rennes",
+        "colors": [
+          "#E2001A",
+          "#000000"
+        ],
+        "logo": "logos/ligue_1/rennes.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "95",
+        "slug": "strasbourg",
+        "name": "Strasbourg",
+        "colors": [
+          "#004A9B",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/strasbourg.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "96",
+        "slug": "toulouse",
+        "name": "Toulouse",
+        "colors": [
+          "#5B2C86",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/toulouse.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "97",
+        "slug": "lorient",
+        "name": "Lorient",
+        "colors": [
+          "#F26522",
+          "#000000"
+        ],
+        "logo": "logos/ligue_1/lorient.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "106",
+        "slug": "stade_brestois_29",
+        "name": "Stade Brestois 29",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/stade_brestois_29.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "108",
+        "slug": "auxerre",
+        "name": "Auxerre",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/auxerre.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "111",
+        "slug": "le_havre",
+        "name": "Le Havre",
+        "colors": [
+          "#004A9B",
+          "#75C4E4"
+        ],
+        "logo": "logos/ligue_1/le_havre.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "112",
+        "slug": "metz",
+        "name": "Metz",
+        "colors": [
+          "#811331",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/metz.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "114",
+        "slug": "paris_fc",
+        "name": "Paris FC",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/ligue_1/paris_fc.svg",
+        "country": "France"
+      },
+      {
+        "squadId": "116",
+        "slug": "lens",
+        "name": "Lens",
+        "colors": [
+          "#ED1C24",
+          "#FDE607"
+        ],
+        "logo": "logos/ligue_1/lens.svg",
+        "country": "France"
+      }
+    ]
+  },
+  {
+    "slug": "la_liga",
+    "name": "La Liga",
+    "country": "Spain",
+    "iso2": "ES",
+    "season": "2024-25",
+    "zones": [
+      {
+        "id": "ucl",
+        "label": "Champions League",
+        "color": "blue",
+        "from": 1,
+        "to": 4
+      },
+      {
+        "id": "uel",
+        "label": "Europa League",
+        "color": "orange",
+        "from": 5,
+        "to": 5
+      },
+      {
+        "id": "uecl",
+        "label": "Conference League",
+        "color": "cyan",
+        "from": 6,
+        "to": 6
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 3
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "529",
+        "slug": "barcelona",
+        "name": "Barcelona",
+        "colors": [
+          "#A50044",
+          "#004D98"
+        ],
+        "logo": "logos/la_liga/barcelona.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "530",
+        "slug": "atletico_madrid",
+        "name": "Atletico Madrid",
+        "colors": [
+          "#272E61",
+          "#CE3524"
+        ],
+        "logo": "logos/la_liga/atletico_madrid.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "531",
+        "slug": "athletic_club",
+        "name": "Athletic Club",
+        "colors": [
+          "#EE2523",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/athletic_club.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "532",
+        "slug": "valencia",
+        "name": "Valencia",
+        "colors": [
+          "#FFFFFF",
+          "#EE8707"
+        ],
+        "logo": "logos/la_liga/valencia.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "533",
+        "slug": "villarreal",
+        "name": "Villarreal",
+        "colors": [
+          "#FFE114",
+          "#005187"
+        ],
+        "logo": "logos/la_liga/villarreal.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "536",
+        "slug": "sevilla",
+        "name": "Sevilla",
+        "colors": [
+          "#FFFFFF",
+          "#D4002A"
+        ],
+        "logo": "logos/la_liga/sevilla.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "538",
+        "slug": "celta_vigo",
+        "name": "Celta Vigo",
+        "colors": [
+          "#8AC3EE",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/celta_vigo.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "539",
+        "slug": "levante",
+        "name": "Levante",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/levante.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "540",
+        "slug": "espanyol",
+        "name": "Espanyol",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/espanyol.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "541",
+        "slug": "real_madrid",
+        "name": "Real Madrid",
+        "colors": [
+          "#FFFFFF",
+          "#FEBE10"
+        ],
+        "logo": "logos/la_liga/real_madrid.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "542",
+        "slug": "alaves",
+        "name": "Alaves",
+        "colors": [
+          "#003DA5",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/alaves.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "543",
+        "slug": "real_betis",
+        "name": "Real Betis",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/real_betis.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "546",
+        "slug": "getafe",
+        "name": "Getafe",
+        "colors": [
+          "#004FA3",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/getafe.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "547",
+        "slug": "girona",
+        "name": "Girona",
+        "colors": [
+          "#CD2534",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/girona.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "548",
+        "slug": "real_sociedad",
+        "name": "Real Sociedad",
+        "colors": [
+          "#143C8B",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/real_sociedad.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "718",
+        "slug": "oviedo",
+        "name": "Oviedo",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/oviedo.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "727",
+        "slug": "osasuna",
+        "name": "Osasuna",
+        "colors": [
+          "#D91A2A",
+          "#00205B"
+        ],
+        "logo": "logos/la_liga/osasuna.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "728",
+        "slug": "rayo_vallecano",
+        "name": "Rayo Vallecano",
+        "colors": [
+          "#FFFFFF",
+          "#E30613"
+        ],
+        "logo": "logos/la_liga/rayo_vallecano.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "797",
+        "slug": "elche",
+        "name": "Elche",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/la_liga/elche.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "798",
+        "slug": "mallorca",
+        "name": "Mallorca",
+        "colors": [
+          "#E20613",
+          "#000000"
+        ],
+        "logo": "logos/la_liga/mallorca.svg",
+        "country": "Spain"
+      }
+    ]
+  },
+  {
+    "slug": "serie_a",
+    "name": "Serie A",
+    "country": "Italy",
+    "iso2": "IT",
+    "season": "2024-25",
+    "zones": [
+      {
+        "id": "ucl",
+        "label": "Champions League",
+        "color": "blue",
+        "from": 1,
+        "to": 4
+      },
+      {
+        "id": "uel",
+        "label": "Europa League",
+        "color": "orange",
+        "from": 5,
+        "to": 5
+      },
+      {
+        "id": "uecl",
+        "label": "Conference League",
+        "color": "cyan",
+        "from": 6,
+        "to": 6
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 3
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "487",
+        "slug": "lazio",
+        "name": "Lazio",
+        "colors": [
+          "#87D8F7",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/lazio.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "488",
+        "slug": "sassuolo",
+        "name": "Sassuolo",
+        "colors": [
+          "#00A651",
+          "#000000"
+        ],
+        "logo": "logos/serie_a/sassuolo.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "489",
+        "slug": "ac_milan",
+        "name": "AC Milan",
+        "colors": [
+          "#FB090B",
+          "#000000"
+        ],
+        "logo": "logos/serie_a/ac_milan.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "490",
+        "slug": "cagliari",
+        "name": "Cagliari",
+        "colors": [
+          "#A61E2E",
+          "#1A2F6B"
+        ],
+        "logo": "logos/serie_a/cagliari.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "492",
+        "slug": "napoli",
+        "name": "Napoli",
+        "colors": [
+          "#004B87",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/napoli.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "494",
+        "slug": "udinese",
+        "name": "Udinese",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/udinese.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "495",
+        "slug": "genoa",
+        "name": "Genoa",
+        "colors": [
+          "#A61E2E",
+          "#003D79"
+        ],
+        "logo": "logos/serie_a/genoa.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "496",
+        "slug": "juventus",
+        "name": "Juventus",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/juventus.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "497",
+        "slug": "as_roma",
+        "name": "AS Roma",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/as_roma.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "499",
+        "slug": "atalanta",
+        "name": "Atalanta",
+        "colors": [
+          "#1E71B8",
+          "#000000"
+        ],
+        "logo": "logos/serie_a/atalanta.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "500",
+        "slug": "bologna",
+        "name": "Bologna",
+        "colors": [
+          "#1A2F48",
+          "#A2191F"
+        ],
+        "logo": "logos/serie_a/bologna.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "502",
+        "slug": "fiorentina",
+        "name": "Fiorentina",
+        "colors": [
+          "#482E92",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/fiorentina.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "503",
+        "slug": "torino",
+        "name": "Torino",
+        "colors": [
+          "#811331",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/torino.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "504",
+        "slug": "hellas_verona",
+        "name": "Hellas Verona",
+        "colors": [
+          "#003DA5",
+          "#FFD700"
+        ],
+        "logo": "logos/serie_a/hellas_verona.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "505",
+        "slug": "inter",
+        "name": "Inter",
+        "colors": [
+          "#009FE3",
+          "#000000"
+        ],
+        "logo": "logos/serie_a/inter.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "520",
+        "slug": "cremonese",
+        "name": "Cremonese",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/cremonese.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "523",
+        "slug": "parma",
+        "name": "Parma",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/parma.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "801",
+        "slug": "pisa",
+        "name": "Pisa",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/pisa.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "867",
+        "slug": "lecce",
+        "name": "Lecce",
+        "colors": [
+          "#FFDD00",
+          "#E2001A"
+        ],
+        "logo": "logos/serie_a/lecce.svg",
+        "country": "Italy"
+      },
+      {
+        "squadId": "895",
+        "slug": "como",
+        "name": "Como",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/serie_a/como.svg",
+        "country": "Italy"
+      }
+    ]
+  },
+  {
+    "slug": "brazil_serie_a",
+    "name": "Brasileirão Série A",
+    "country": "Brazil",
+    "iso2": "BR",
+    "season": "2025",
+    "zones": [
+      {
+        "id": "lib",
+        "label": "Libertadores",
+        "color": "blue",
+        "from": 1,
+        "to": 6
+      },
+      {
+        "id": "sud",
+        "label": "Sudamericana",
+        "color": "orange",
+        "from": 7,
+        "to": 12
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 4
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "118",
+        "slug": "bahia",
+        "name": "Bahia",
+        "colors": [
+          "#003087",
+          "#E61E25"
+        ],
+        "logo": "logos/brazil_serie_a/bahia.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "119",
+        "slug": "internacional",
+        "name": "Internacional",
+        "colors": [
+          "#E52020",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/internacional.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "120",
+        "slug": "botafogo",
+        "name": "Botafogo",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/botafogo.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "121",
+        "slug": "palmeiras",
+        "name": "Palmeiras",
+        "colors": [
+          "#006437",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/palmeiras.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "124",
+        "slug": "fluminense",
+        "name": "Fluminense",
+        "colors": [
+          "#8B1A2E",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/fluminense.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "126",
+        "slug": "sao_paulo",
+        "name": "Sao Paulo",
+        "colors": [
+          "#E31E24",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/sao_paulo.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "127",
+        "slug": "flamengo",
+        "name": "Flamengo",
+        "colors": [
+          "#C8102E",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_a/flamengo.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "128",
+        "slug": "santos",
+        "name": "Santos",
+        "colors": [
+          "#FFFFFF",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_a/santos.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "130",
+        "slug": "gremio",
+        "name": "Gremio",
+        "colors": [
+          "#001F5B",
+          "#7EC8E3"
+        ],
+        "logo": "logos/brazil_serie_a/gremio.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "131",
+        "slug": "corinthians",
+        "name": "Corinthians",
+        "colors": [
+          "#FFFFFF",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_a/corinthians.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "132",
+        "slug": "chapecoense_sc",
+        "name": "Chapecoense-sc",
+        "colors": [
+          "#007A33",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/chapecoense_sc.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "133",
+        "slug": "vasco_da_gama",
+        "name": "Vasco DA Gama",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/vasco_da_gama.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "134",
+        "slug": "atletico_paranaense",
+        "name": "Atletico Paranaense",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/atletico_paranaense.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "135",
+        "slug": "cruzeiro",
+        "name": "Cruzeiro",
+        "colors": [
+          "#003087",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/cruzeiro.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "136",
+        "slug": "vitoria",
+        "name": "Vitoria",
+        "colors": [
+          "#C8102E",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_a/vitoria.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "147",
+        "slug": "coritiba",
+        "name": "Coritiba",
+        "colors": [
+          "#007A33",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/coritiba.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "794",
+        "slug": "rb_bragantino",
+        "name": "RB Bragantino",
+        "colors": [
+          "#D10A18",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/rb_bragantino.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1062",
+        "slug": "atletico_mg",
+        "name": "Atletico-MG",
+        "colors": [
+          "#EE2523",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/atletico_mg.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1198",
+        "slug": "remo",
+        "name": "Remo",
+        "colors": [
+          "#001F5B",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_a/remo.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7848",
+        "slug": "mirassol",
+        "name": "Mirassol",
+        "colors": [
+          "#FFD700",
+          "#003087"
+        ],
+        "logo": "logos/brazil_serie_a/mirassol.svg",
+        "country": "Brazil"
+      }
+    ]
+  },
+  {
+    "slug": "brazil_serie_b",
+    "name": "Brasileirão Série B",
+    "country": "Brazil",
+    "season": "2025",
+    "iso2": "BR",
+    "zones": [
+      {
+        "id": "prom",
+        "label": "Promotion",
+        "color": "green",
+        "from": 1,
+        "to": 4
+      },
+      {
+        "id": "rel",
+        "label": "Relegation",
+        "color": "red",
+        "fromEnd": 4
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "123",
+        "slug": "sport_recife",
+        "name": "Sport Recife",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/sport_recife.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "125",
+        "slug": "america_mineiro",
+        "name": "America Mineiro",
+        "colors": [
+          "#006837",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/america_mineiro.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "129",
+        "slug": "ceara",
+        "name": "Ceara",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/ceara.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "139",
+        "slug": "ponte_preta",
+        "name": "Ponte Preta",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/ponte_preta.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "140",
+        "slug": "criciuma",
+        "name": "Criciuma",
+        "colors": [
+          "#FFD700",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_b/criciuma.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "142",
+        "slug": "vila_nova",
+        "name": "Vila Nova",
+        "colors": [
+          "#C8102E",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_b/vila_nova.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "144",
+        "slug": "atletico_goianiense",
+        "name": "Atletico Goianiense",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/atletico_goianiense.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "145",
+        "slug": "avai",
+        "name": "Avai",
+        "colors": [
+          "#003DA5",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/avai.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "146",
+        "slug": "crb",
+        "name": "CRB",
+        "colors": [
+          "#C8102E",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_b/crb.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "148",
+        "slug": "londrina",
+        "name": "Londrina",
+        "colors": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/londrina.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "151",
+        "slug": "goias",
+        "name": "Goias",
+        "colors": [
+          "#007A33",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/goias.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "152",
+        "slug": "juventude",
+        "name": "Juventude",
+        "colors": [
+          "#007A33",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/juventude.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "154",
+        "slug": "fortaleza_ec",
+        "name": "Fortaleza EC",
+        "colors": [
+          "#0033A0",
+          "#C8102E"
+        ],
+        "logo": "logos/brazil_serie_b/fortaleza_ec.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "755",
+        "slug": "nautico_recife",
+        "name": "Nautico Recife",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/nautico_recife.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1193",
+        "slug": "cuiaba",
+        "name": "Cuiaba",
+        "colors": [
+          "#FFD700",
+          "#007A33"
+        ],
+        "logo": "logos/brazil_serie_b/cuiaba.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1223",
+        "slug": "operario_pr",
+        "name": "Operario-PR",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/operario_pr.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "2618",
+        "slug": "botafogo_sp",
+        "name": "Botafogo SP",
+        "colors": [
+          "#000000",
+          "#C10000"
+        ],
+        "logo": "logos/brazil_serie_b/botafogo_sp.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7834",
+        "slug": "novorizontino",
+        "name": "Novorizontino",
+        "colors": [
+          "#000000",
+          "#FFD700"
+        ],
+        "logo": "logos/brazil_serie_b/novorizontino.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7865",
+        "slug": "sao_bernardo",
+        "name": "São Bernardo",
+        "colors": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/sao_bernardo.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "13975",
+        "slug": "athletic_club",
+        "name": "Athletic Club",
+        "colors": [
+          "#EE2523",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_b/athletic_club.svg",
+        "country": "Brazil"
+      }
+    ]
+  },
+  {
+    "slug": "brazil_serie_c",
+    "name": "Brasileirão Série C",
+    "country": "Brazil",
+    "iso2": "BR",
+    "season": "2025",
+    "zones": [
+      {
+        "id": "prom",
+        "label": "Promotion",
+        "color": "green",
+        "from": 1,
+        "to": 4
+      }
+    ],
+    "standings": [
+      {
+        "squadId": "137",
+        "slug": "figueirense",
+        "name": "Figueirense",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/figueirense.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "138",
+        "slug": "guarani_campinas",
+        "name": "Guarani Campinas",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/guarani_campinas.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "149",
+        "slug": "paysandu",
+        "name": "Paysandu",
+        "colors": [
+          "#003087",
+          "#FFFFFF"
+        ],
+        "logo": "https://media.api-sports.io/football/teams/149.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "753",
+        "slug": "santa_cruz",
+        "name": "Santa Cruz",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/santa_cruz.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1197",
+        "slug": "botafogo_pb",
+        "name": "Botafogo PB",
+        "colors": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/botafogo_pb.svg",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1201",
+        "slug": "inter_de_limeira",
+        "name": "Inter De Limeira",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/inter_de_limeira.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1211",
+        "slug": "brusque",
+        "name": "Brusque",
+        "colors": [
+          "#003DA5",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/brusque.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "1221",
+        "slug": "ypiranga_rs",
+        "name": "Ypiranga-RS",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/ypiranga_rs.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "2204",
+        "slug": "ao_itabaiana",
+        "name": "AO Itabaiana",
+        "colors": [
+          "#FFD700",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_c/ao_itabaiana.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7770",
+        "slug": "caxias",
+        "name": "Caxias",
+        "colors": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/caxias.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7772",
+        "slug": "confianca",
+        "name": "Confiança",
+        "colors": [
+          "#003DA5",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/confianca.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7774",
+        "slug": "floresta",
+        "name": "Floresta",
+        "colors": [
+          "#006837",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/floresta.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7779",
+        "slug": "ituano",
+        "name": "Ituano",
+        "colors": [
+          "#C8102E",
+          "#000000"
+        ],
+        "logo": "https://media.api-sports.io/football/teams/7779.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7814",
+        "slug": "volta_redonda",
+        "name": "Volta Redonda",
+        "colors": [
+          "#CC0000",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_c/volta_redonda.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7826",
+        "slug": "ferroviaria",
+        "name": "Ferroviária",
+        "colors": [
+          "#C8102E",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_c/ferroviaria.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7832",
+        "slug": "maranhao",
+        "name": "Maranhão",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/maranhao.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7833",
+        "slug": "maringa",
+        "name": "Maringá",
+        "colors": [
+          "#003DA5",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/maringa.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "7852",
+        "slug": "anapolis",
+        "name": "Anápolis",
+        "colors": [
+          "#006837",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/anapolis.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "10862",
+        "slug": "amazonas",
+        "name": "Amazonas",
+        "colors": [
+          "#FF6600",
+          "#000000"
+        ],
+        "logo": "logos/brazil_serie_c/amazonas.png",
+        "country": "Brazil"
+      },
+      {
+        "squadId": "18271",
+        "slug": "barra",
+        "name": "Barra",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "logo": "logos/brazil_serie_c/barra.png",
+        "country": "Brazil"
+      }
+    ]
+  }
+]
