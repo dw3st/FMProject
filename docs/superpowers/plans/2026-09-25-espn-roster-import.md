@@ -2613,6 +2613,10 @@ Na seção "Escudos", troque o primeiro parágrafo por:
 da ESPN (`logos/espn/{squadId}.png`) depois. Clube fora do índice não gera requisição.
 ```
 
+- [ ] **Step 3b: Atualizar `.claude/rules/game/membership.md`**
+
+Na seção "Frontend", troque o item "Escudos pela liga de origem" por: `**Escudos pelo índice.** `squadLogoUrl(squadId)` lê `logoIndex.json` (ver `ui-world.md`); a liga de catálogo não entra mais na URL do escudo.` Acrescente `.claude/rules/game/membership.md` ao `git add` do Step 5.
+
 - [ ] **Step 4: Atualizar a memória do backlog**
 
 Em `C:\Users\Administrator\.claude\projects\C--projects-fmproject\memory\pending-next-steps.md`, troque o item 2 por: `2. (feito 2026-09-25) Elencos 2026/27 pela ESPN — ver .claude/rules/data/espn-import.md.`
