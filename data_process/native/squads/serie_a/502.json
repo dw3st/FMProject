@@ -1,0 +1,1029 @@
+{
+  "id": "502",
+  "slug": "fiorentina",
+  "name": "Fiorentina",
+  "colors": [
+    "#482E92",
+    "#FFFFFF"
+  ],
+  "logo": "logos/serie_a/fiorentina.svg",
+  "apiId": 502,
+  "code": "FIO",
+  "country": "Italy",
+  "founded": 1926,
+  "venue": {
+    "name": "Stadio Artemio Franchi",
+    "city": "Firenze",
+    "capacity": 43147,
+    "surface": "grass"
+  },
+  "coach": {
+    "id": 16723,
+    "name": "P. Vanoli",
+    "firstname": "Paolo",
+    "lastname": "Vanoli",
+    "age": 53,
+    "nationality": "Italy",
+    "points": 1
+  },
+  "players": [
+    {
+      "id": "player_4873",
+      "name": "O. Christensen",
+      "fullName": "Oliver Christensen",
+      "age": 26,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 3,
+        "heading": 3,
+        "strength": 3,
+        "reflex": 4,
+        "jump": 6
+      },
+      "profile": {
+        "summary": "Commanding goalkeeper who organises the back line effectively.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_4874",
+      "name": "P. Leonardelli",
+      "fullName": "Pietro Leonardelli",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 4,
+        "jump": 3
+      },
+      "profile": {
+        "summary": "Agile shot-stopper comfortable playing out from the back.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_4875",
+      "name": "L. Lezzerini",
+      "fullName": "Luca Lezzerini",
+      "age": 30,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 3,
+        "heading": 3,
+        "strength": 3,
+        "reflex": 3,
+        "jump": 5
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_4876",
+      "name": "Mattia Magalotti",
+      "fullName": "Mattia Magalotti",
+      "age": 17,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 4,
+        "jump": 4
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_4877",
+      "name": "David de Gea",
+      "fullName": "David de Gea Quintana",
+      "age": 35,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 3,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 7,
+        "jump": 5
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Shot-stopper"
+      }
+    },
+    {
+      "id": "player_4878",
+      "name": "L. Balbo",
+      "fullName": "L. Balbo",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Energetic full-back who contributes at both ends of the pitch.",
+        "archetype": "Inverted full-back"
+      }
+    },
+    {
+      "id": "player_4879",
+      "name": "P. Comuzzo",
+      "fullName": "Pietro Comuzzo",
+      "age": 20,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 6,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4880",
+      "name": "Dodô",
+      "fullName": "Domilson Cordeiro dos Santos",
+      "age": 27,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 5,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 6,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Quick full-back who overlaps and delivers crosses into the box.",
+        "archetype": "Defensive full-back"
+      }
+    },
+    {
+      "id": "player_4881",
+      "name": "N. Fortini",
+      "fullName": "Niccolò Fortini",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Quick full-back who overlaps and delivers crosses into the box.",
+        "archetype": "Inverted full-back"
+      }
+    },
+    {
+      "id": "player_4882",
+      "name": "E. Košpo",
+      "fullName": "Eman Košpo",
+      "age": 18,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Quick full-back who overlaps and delivers crosses into the box.",
+        "archetype": "Attacking wing-back"
+      }
+    },
+    {
+      "id": "player_4883",
+      "name": "E. Kouadio",
+      "fullName": "Eddy Nda Konan Kouadio",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 3,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4884",
+      "name": "F. Parisi",
+      "fullName": "Fabiano Parisi",
+      "age": 25,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 6,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 3,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_4885",
+      "name": "M. Pongračić",
+      "fullName": "Marin Pongračić",
+      "age": 28,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 8,
+        "strength": 8,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4886",
+      "name": "L. Ranieri",
+      "fullName": "Luca Ranieri",
+      "age": 26,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 6,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 7,
+        "strength": 8,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4887",
+      "name": "D. Rugani",
+      "fullName": "Daniele Rugani",
+      "age": 31,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 3,
+        "acceleration": 2,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 7,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Stopper"
+      }
+    },
+    {
+      "id": "player_4888",
+      "name": "E. Sadotti",
+      "fullName": "E. Sadotti",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 3,
+        "heading": 5,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Athletic defender comfortable bringing the ball out of defence.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4889",
+      "name": "P. Bonanno",
+      "fullName": "P. Bonanno",
+      "age": 18,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 5,
+        "stamina": 4,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Ball-winning midfielder"
+      }
+    },
+    {
+      "id": "player_4890",
+      "name": "M. Brescianini",
+      "fullName": "Marco Brescianini",
+      "age": 25,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 4,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Ball-winning midfielder"
+      }
+    },
+    {
+      "id": "player_4891",
+      "name": "L. Deli",
+      "fullName": "L. Deli",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Pacy wide player who stretches defences with off-the-ball runs.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_4892",
+      "name": "G. Fabbian",
+      "fullName": "Giovanni Fabbian",
+      "age": 22,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 3,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Box-to-box midfielder"
+      }
+    },
+    {
+      "id": "player_4893",
+      "name": "N. Fagioli",
+      "fullName": "Nicolò Fagioli",
+      "age": 24,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 7,
+        "vision": 4,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 6,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Box-to-box midfielder"
+      }
+    },
+    {
+      "id": "player_4894",
+      "name": "J. Fazzini",
+      "fullName": "Jacopo Fazzini",
+      "age": 22,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 6,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 6,
+        "tackling": 1,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 4,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_4895",
+      "name": "R. Gosens",
+      "fullName": "Robin Everardus Gosens",
+      "age": 31,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed passer who controls the tempo from a central position.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_4896",
+      "name": "R. Mandragora",
+      "fullName": "Rolando Mandragora",
+      "age": 28,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 7,
+        "vision": 5,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 6,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Box-to-box midfielder"
+      }
+    },
+    {
+      "id": "player_4897",
+      "name": "C. Ndour",
+      "fullName": "Cher Ndour",
+      "age": 21,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 6,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 4,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Traditional winger"
+      }
+    },
+    {
+      "id": "player_4898",
+      "name": "A. Sabiri",
+      "fullName": "Abdelhamid Sabiri",
+      "age": 29,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed passer who controls the tempo from a central position.",
+        "archetype": "Engine room"
+      }
+    },
+    {
+      "id": "player_4899",
+      "name": "G. Bertolini",
+      "fullName": "G. Bertolini",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 4,
+        "dribbling": 5,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 4,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Direct winger"
+      }
+    },
+    {
+      "id": "player_4900",
+      "name": "R. Braschi",
+      "fullName": "Riccardo Braschi",
+      "age": 19,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Complete forward"
+      }
+    },
+    {
+      "id": "player_4901",
+      "name": "A. Guðmundsson",
+      "fullName": "Albert Guðmundsson",
+      "age": 28,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 5,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 5,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Target man"
+      }
+    },
+    {
+      "id": "player_4902",
+      "name": "J. Harrison",
+      "fullName": "Jack David Harrison",
+      "age": 29,
+      "squadId": "502",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 5,
+        "dribbling": 7,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Pacy wide player who stretches defences with off-the-ball runs.",
+        "archetype": "Wide forward"
+      }
+    },
+    {
+      "id": "player_4903",
+      "name": "M. Kean",
+      "fullName": "Moise Bioty Kean",
+      "age": 25,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 8,
+        "dribbling": 5,
+        "speed": 5,
+        "acceleration": 6,
+        "tackling": 1,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 5,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Target man"
+      }
+    },
+    {
+      "id": "player_4904",
+      "name": "R. Piccoli",
+      "fullName": "Roberto Piccoli",
+      "age": 24,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 7,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Complete forward"
+      }
+    },
+    {
+      "id": "player_4905",
+      "name": "M. Solomon",
+      "fullName": "Manor Solomon",
+      "age": 26,
+      "squadId": "502",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 5,
+        "finishing": 4,
+        "dribbling": 8,
+        "speed": 7,
+        "acceleration": 8,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Inverted winger"
+      }
+    }
+  ],
+  "finances": {
+    "score": 0.7481,
+    "broadcasting": 100435271,
+    "commercial": 79971040,
+    "total": 180406311,
+    "budget": 151242796,
+    "followers": 18933076
+  }
+}

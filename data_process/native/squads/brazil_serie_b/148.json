@@ -1,0 +1,1059 @@
+{
+  "id": "148",
+  "slug": "londrina",
+  "name": "Londrina",
+  "colors": [
+    "#C8102E",
+    "#FFFFFF"
+  ],
+  "logo": "logos/brazil_serie_b/londrina.svg",
+  "apiId": 148,
+  "code": "LON",
+  "country": "Brazil",
+  "founded": 1956,
+  "venue": {
+    "name": "Estádio Municipal Jacy Scaff",
+    "city": "Londrina, Paraná",
+    "capacity": 31019,
+    "surface": "grass"
+  },
+  "coach": {
+    "id": 26328,
+    "name": "Allan Aal",
+    "firstname": null,
+    "lastname": null,
+    "age": null,
+    "nationality": null,
+    "points": 0
+  },
+  "players": [
+    {
+      "id": "player_1157",
+      "name": "Luan",
+      "fullName": "Luan Fernandes Ribeiro",
+      "age": 28,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 1,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 0,
+        "stamina": 1,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 2,
+        "jump": 2
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Ball-playing keeper"
+      }
+    },
+    {
+      "id": "player_1158",
+      "name": "Mauricio Kozlinski",
+      "fullName": "Mauricio Kozlinski",
+      "age": 34,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 1,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 0,
+        "stamina": 1,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 3,
+        "jump": 2
+      },
+      "profile": {
+        "summary": "Commanding goalkeeper who organises the back line effectively.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_1159",
+      "name": "Thiago Parente Apelbaum",
+      "fullName": "Thiago Parente Apelbaum",
+      "age": 18,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 1,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 1,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 2,
+        "jump": 2
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Ball-playing keeper"
+      }
+    },
+    {
+      "id": "player_1160",
+      "name": "Zanella",
+      "fullName": "Zanella",
+      "age": 21,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 1,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 1,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 2,
+        "jump": 2
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Sweeper-keeper"
+      }
+    },
+    {
+      "id": "player_1161",
+      "name": "André Dhominique Queiroz Santiago da Silva",
+      "fullName": "André Dhominique Queiroz Santiago da Silva",
+      "age": 22,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Modern full-back"
+      }
+    },
+    {
+      "id": "player_1162",
+      "name": "Gabriel Lacerda",
+      "fullName": "Gabriel Santos Cordeiro Lacerda",
+      "age": 26,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Attacking wing-back"
+      }
+    },
+    {
+      "id": "player_1163",
+      "name": "Heron",
+      "fullName": "Heron Crespo da Silva",
+      "age": 25,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 4,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Energetic full-back who contributes at both ends of the pitch.",
+        "archetype": "Wing-back"
+      }
+    },
+    {
+      "id": "player_1164",
+      "name": "João Vitor",
+      "fullName": "João Vitor Tavares da Mota",
+      "age": 21,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Ball-winning midfielder"
+      }
+    },
+    {
+      "id": "player_1165",
+      "name": "Kevyn",
+      "fullName": "Kevyn Lucas Ramos da Costa",
+      "age": 28,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 1,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Defensive full-back"
+      }
+    },
+    {
+      "id": "player_1166",
+      "name": "Mauricio Junior",
+      "fullName": "Mauricio Junior",
+      "age": 24,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Wing-back"
+      }
+    },
+    {
+      "id": "player_1167",
+      "name": "Murilo",
+      "fullName": "Francisco Murilo de Sousa Almeida",
+      "age": 19,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 2,
+        "finishing": 2,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 3,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Engine room"
+      }
+    },
+    {
+      "id": "player_1168",
+      "name": "Rafael Monteiro",
+      "fullName": "Rafael Monteiro Reis",
+      "age": 21,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Energetic full-back who contributes at both ends of the pitch.",
+        "archetype": "Modern full-back"
+      }
+    },
+    {
+      "id": "player_1169",
+      "name": "Wallace",
+      "fullName": "Wallace Reis da Silva",
+      "age": 38,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 3,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_1170",
+      "name": "Yago Lincoln",
+      "fullName": "Yago Lincoln Rocha Santos",
+      "age": 22,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 3,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "No-nonsense defender"
+      }
+    },
+    {
+      "id": "player_1171",
+      "name": "André Luiz",
+      "fullName": "André Luiz Guimarães Siqueira Junior",
+      "age": 30,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 3,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Defensive midfielder"
+      }
+    },
+    {
+      "id": "player_1172",
+      "name": "Caina",
+      "fullName": "Caina",
+      "age": 18,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 2,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Wide midfielder"
+      }
+    },
+    {
+      "id": "player_1173",
+      "name": "A. Cardoso",
+      "fullName": "A. Cardoso",
+      "age": 22,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 2,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_1174",
+      "name": "Chumbinho",
+      "fullName": "Chumbinho",
+      "age": 22,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Ball-winning midfielder"
+      }
+    },
+    {
+      "id": "player_1175",
+      "name": "Fabiano",
+      "fullName": "Fabiano",
+      "age": 20,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed passer who controls the tempo from a central position.",
+        "archetype": "Box-to-box midfielder"
+      }
+    },
+    {
+      "id": "player_1176",
+      "name": "Lucas Marques",
+      "fullName": "Lucas Marques",
+      "age": 30,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_1177",
+      "name": "Thalis",
+      "fullName": "Thalis Henrique Cantanhede",
+      "age": 29,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 3,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 4,
+        "tackling": 3,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 3,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Ball-winning midfielder"
+      }
+    },
+    {
+      "id": "player_1178",
+      "name": "Victor Hugo",
+      "fullName": "Victor Hugo de Faria Mota",
+      "age": 22,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 3,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Direct winger"
+      }
+    },
+    {
+      "id": "player_1179",
+      "name": "Bruno Santos",
+      "fullName": "Bruno Santos de Oliveira",
+      "age": 29,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 3,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_1180",
+      "name": "Caio Maia",
+      "fullName": "Caio Maia",
+      "age": 20,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Speed merchant"
+      }
+    },
+    {
+      "id": "player_1181",
+      "name": "Crysthyan Lucas",
+      "fullName": "Crysthyan Lucas",
+      "age": 21,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_1182",
+      "name": "Fabricio",
+      "fullName": "Fabricio",
+      "age": 21,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Target man"
+      }
+    },
+    {
+      "id": "player_1183",
+      "name": "Fernando",
+      "fullName": "Fernando",
+      "age": 19,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Speed merchant"
+      }
+    },
+    {
+      "id": "player_1184",
+      "name": "Gilberto",
+      "fullName": "Gilberto Oliveira Souza Júnior",
+      "age": 36,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 4,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Complete forward"
+      }
+    },
+    {
+      "id": "player_1185",
+      "name": "Iago Teles",
+      "fullName": "Iago Teles da Silva",
+      "age": 25,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 3,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inside forward"
+      }
+    },
+    {
+      "id": "player_1186",
+      "name": "João Pedro",
+      "fullName": "João Pedro da Cruz Oliveira",
+      "age": 22,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 4,
+        "speed": 3,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 3,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_1187",
+      "name": "K. Jonathan",
+      "fullName": "K. Jonathan",
+      "age": 18,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_1188",
+      "name": "Edivan",
+      "fullName": "Edivan Vitor da Silva Junior",
+      "age": 20,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 0,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Target man"
+      }
+    },
+    {
+      "id": "player_1189",
+      "name": "Paulinho Moccelin",
+      "fullName": "Paulo Roberto Moccelin",
+      "age": 31,
+      "squadId": "148",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 1,
+        "finishing": 2,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 0,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Target man"
+      }
+    },
+    {
+      "id": "player_1190",
+      "name": "Vitor Jacaré",
+      "fullName": "Francisco Vítor Silva Costa",
+      "age": 26,
+      "squadId": "148",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 1,
+        "vision": 2,
+        "finishing": 3,
+        "dribbling": 2,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Complete forward"
+      }
+    }
+  ],
+  "finances": {
+    "score": 0.4449,
+    "broadcasting": 7178164,
+    "commercial": 4482615,
+    "total": 11660779,
+    "budget": 9222647,
+    "followers": 18607225
+  }
+}

@@ -1,0 +1,10 @@
+[
+  { "slug": "premier_league", "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 0 },
+  { "slug": "bundesliga",     "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 1 },
+  { "slug": "la_liga",        "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [5, 6, 0], "baseWeekOffset": 2 },
+  { "slug": "serie_a",        "seasonStartMMDD": "08-16", "seasonEndMMDD": "05-18", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 3 },
+  { "slug": "ligue_1",        "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-16", "crossYear": true,  "matchDays": [5, 6, 0], "baseWeekOffset": 4 },
+  { "slug": "brazil_serie_a", "seasonStartMMDD": "02-05", "seasonEndMMDD": "12-07", "crossYear": false, "matchDays": [3, 6, 0], "baseWeekOffset": 0 },
+  { "slug": "brazil_serie_b", "seasonStartMMDD": "02-05", "seasonEndMMDD": "11-30", "crossYear": false, "matchDays": [3, 6, 0], "baseWeekOffset": 1 },
+  { "slug": "brazil_serie_c", "seasonStartMMDD": "02-05", "seasonEndMMDD": "11-23", "crossYear": false, "matchDays": [3, 6, 0], "baseWeekOffset": 2 }
+]

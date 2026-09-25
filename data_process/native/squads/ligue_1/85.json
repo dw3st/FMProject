@@ -1,0 +1,939 @@
+{
+  "id": "85",
+  "slug": "paris_saint_germain",
+  "name": "Paris Saint Germain",
+  "colors": [
+    "#888888",
+    "#FFFFFF"
+  ],
+  "logo": "logos/ligue_1/paris_saint_germain.svg",
+  "apiId": 85,
+  "code": "PAR",
+  "country": "France",
+  "founded": 1970,
+  "venue": {
+    "name": "Parc des Princes",
+    "city": "Paris",
+    "capacity": 47929,
+    "surface": "grass"
+  },
+  "coach": {
+    "id": 193,
+    "name": "Luis Enrique",
+    "firstname": "Luis Enrique",
+    "lastname": "Martínez García",
+    "age": 55,
+    "nationality": "Spain",
+    "points": 55.2
+  },
+  "players": [
+    {
+      "id": "player_4159",
+      "name": "L. Chevalier",
+      "fullName": "Lucas Chevalier",
+      "age": 24,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 0,
+        "dribbling": 1,
+        "speed": 2,
+        "acceleration": 2,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 3,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 7,
+        "jump": 5
+      },
+      "profile": {
+        "summary": "Agile shot-stopper comfortable playing out from the back.",
+        "archetype": "Shot-stopper"
+      }
+    },
+    {
+      "id": "player_4160",
+      "name": "M. James",
+      "fullName": "M. James",
+      "age": 17,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 1,
+        "strength": 1,
+        "reflex": 4,
+        "jump": 4
+      },
+      "profile": {
+        "summary": "Agile shot-stopper comfortable playing out from the back.",
+        "archetype": "Shot-stopper"
+      }
+    },
+    {
+      "id": "player_4161",
+      "name": "Renato Bellucci",
+      "fullName": "Renato Bellucci Marin",
+      "age": 19,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 0,
+        "pressing": 1,
+        "stamina": 2,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 4,
+        "jump": 3
+      },
+      "profile": {
+        "summary": "Commanding goalkeeper who organises the back line effectively.",
+        "archetype": "Ball-playing keeper"
+      }
+    },
+    {
+      "id": "player_4162",
+      "name": "M. Safonov",
+      "fullName": "Matvey Safonov",
+      "age": 26,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "GK"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 2,
+        "finishing": 0,
+        "dribbling": 0,
+        "speed": 1,
+        "acceleration": 1,
+        "tackling": 1,
+        "pressing": 1,
+        "stamina": 3,
+        "heading": 3,
+        "strength": 3,
+        "reflex": 3,
+        "jump": 6
+      },
+      "profile": {
+        "summary": "Reliable keeper with good reflexes and presence in the box.",
+        "archetype": "Traditional goalkeeper"
+      }
+    },
+    {
+      "id": "player_4163",
+      "name": "Beraldo",
+      "fullName": "Lucas Lopes Beraldo",
+      "age": 22,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 6,
+        "tackling": 7,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 8,
+        "strength": 8,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "Stopper"
+      }
+    },
+    {
+      "id": "player_4164",
+      "name": "D. Boly",
+      "fullName": "D. Boly",
+      "age": 16,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 2,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Solid defender who gets forward to support attacks when possible.",
+        "archetype": "Wing-back"
+      }
+    },
+    {
+      "id": "player_4165",
+      "name": "A. Hakimi",
+      "fullName": "Achraf Hakimi Mouh",
+      "age": 27,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 8,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 5,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 6,
+        "heading": 3,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Quick full-back who overlaps and delivers crosses into the box.",
+        "archetype": "Wing-back"
+      }
+    },
+    {
+      "id": "player_4166",
+      "name": "L. Hernández",
+      "fullName": "Lucas François Bernard Hernández",
+      "age": 29,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 1,
+        "dribbling": 4,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 6,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Quick full-back who overlaps and delivers crosses into the box.",
+        "archetype": "Inverted full-back"
+      }
+    },
+    {
+      "id": "player_4167",
+      "name": "Marquinhos",
+      "fullName": "Marcos Aoás Corrêa",
+      "age": 31,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 7,
+        "pressing": 4,
+        "stamina": 3,
+        "heading": 5,
+        "strength": 7,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Athletic defender comfortable bringing the ball out of defence.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4168",
+      "name": "Nuno Mendes",
+      "fullName": "Nuno Alexandre Tavares Mendes",
+      "age": 23,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 7,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 5,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 5,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 3,
+        "strength": 5,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Energetic full-back who contributes at both ends of the pitch.",
+        "archetype": "Wing-back"
+      }
+    },
+    {
+      "id": "player_4169",
+      "name": "W. Pacho",
+      "fullName": "Willian Joel Pacho Tenorio",
+      "age": 24,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 7,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 7,
+        "strength": 8,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "No-nonsense centre-back who clears danger and dominates duels.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4170",
+      "name": "I. Zabarnyi",
+      "fullName": "Illia Zabarnyi",
+      "age": 23,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "Defender"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 7,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 8,
+        "strength": 8,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed centre-back who reads the game well and is strong in the air.",
+        "archetype": "Ball-playing defender"
+      }
+    },
+    {
+      "id": "player_4171",
+      "name": "Pedro Fernández",
+      "fullName": "Pedro Fernández Sarmiento",
+      "age": 17,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 6,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 3,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_4172",
+      "name": "Y. Khafi",
+      "fullName": "Y. Khafi",
+      "age": 19,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 1,
+        "dribbling": 2,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 5,
+        "pressing": 5,
+        "stamina": 4,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Composed passer who controls the tempo from a central position.",
+        "archetype": "Deep-lying playmaker"
+      }
+    },
+    {
+      "id": "player_4173",
+      "name": "Lee Kang-In",
+      "fullName": "Kang-In Lee",
+      "age": 24,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 5,
+        "finishing": 5,
+        "dribbling": 7,
+        "speed": 7,
+        "acceleration": 7,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Inside forward"
+      }
+    },
+    {
+      "id": "player_4174",
+      "name": "Senny Mayulu",
+      "fullName": "Senny Mayulu",
+      "age": 19,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 6,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_4175",
+      "name": "João Neves",
+      "fullName": "João Pedro Gonçalves Neves",
+      "age": 21,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 5,
+        "dribbling": 6,
+        "speed": 5,
+        "acceleration": 8,
+        "tackling": 3,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inside forward"
+      }
+    },
+    {
+      "id": "player_4176",
+      "name": "N. Nsoki",
+      "fullName": "N. Nsoki",
+      "age": 18,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Engine room"
+      }
+    },
+    {
+      "id": "player_4177",
+      "name": "Fabián Ruiz",
+      "fullName": "Fabián Ruiz Peña",
+      "age": 29,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 5,
+        "vision": 5,
+        "finishing": 5,
+        "dribbling": 5,
+        "speed": 6,
+        "acceleration": 5,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 6,
+        "heading": 4,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_4178",
+      "name": "W. Slama",
+      "fullName": "Wassim Slama",
+      "age": 17,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 4,
+        "finishing": 2,
+        "dribbling": 3,
+        "speed": 3,
+        "acceleration": 3,
+        "tackling": 3,
+        "pressing": 4,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Tenacious midfielder who breaks up play and recycles possession.",
+        "archetype": "Central midfielder"
+      }
+    },
+    {
+      "id": "player_4179",
+      "name": "Vitinha",
+      "fullName": "Vítor Machado Ferreira",
+      "age": 25,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 8,
+        "vision": 5,
+        "finishing": 4,
+        "dribbling": 4,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 4,
+        "pressing": 4,
+        "stamina": 7,
+        "heading": 3,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "All-round midfielder who links defence and attack. Covers a lot of ground.",
+        "archetype": "Engine room"
+      }
+    },
+    {
+      "id": "player_4180",
+      "name": "W. Zaïre-Emery",
+      "fullName": "Warren Zaïre-Emery",
+      "age": 19,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Midfielder"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 4,
+        "finishing": 4,
+        "dribbling": 6,
+        "speed": 6,
+        "acceleration": 7,
+        "tackling": 3,
+        "pressing": 3,
+        "stamina": 6,
+        "heading": 2,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Pacy wide player who stretches defences with off-the-ball runs.",
+        "archetype": "Wide midfielder"
+      }
+    },
+    {
+      "id": "player_4181",
+      "name": "B. Barcola",
+      "fullName": "Bradley Barcola",
+      "age": 23,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 5,
+        "finishing": 6,
+        "dribbling": 8,
+        "speed": 7,
+        "acceleration": 8,
+        "tackling": 2,
+        "pressing": 3,
+        "stamina": 5,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Pacy wide player who stretches defences with off-the-ball runs.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_4182",
+      "name": "O. Dembélé",
+      "fullName": "Masour Ousmane Dembélé",
+      "age": 28,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 5,
+        "finishing": 8,
+        "dribbling": 5,
+        "speed": 6,
+        "acceleration": 6,
+        "tackling": 1,
+        "pressing": 4,
+        "stamina": 5,
+        "heading": 6,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Poacher"
+      }
+    },
+    {
+      "id": "player_4183",
+      "name": "D. Doué",
+      "fullName": "Désiré Doué",
+      "age": 20,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 5,
+        "finishing": 5,
+        "dribbling": 8,
+        "speed": 8,
+        "acceleration": 8,
+        "tackling": 2,
+        "pressing": 4,
+        "stamina": 6,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Pacy wide player who stretches defences with off-the-ball runs.",
+        "archetype": "Inverted winger"
+      }
+    },
+    {
+      "id": "player_4184",
+      "name": "Mathis Jangeal",
+      "fullName": "Mathis Jangeal",
+      "age": 17,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Powerful striker who holds the ball up and brings others into play.",
+        "archetype": "Complete forward"
+      }
+    },
+    {
+      "id": "player_4185",
+      "name": "K. Kvaratskhelia",
+      "fullName": "Khvicha Kvaratskhelia",
+      "age": 24,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 6,
+        "vision": 5,
+        "finishing": 5,
+        "dribbling": 8,
+        "speed": 6,
+        "acceleration": 8,
+        "tackling": 2,
+        "pressing": 2,
+        "stamina": 4,
+        "heading": 2,
+        "strength": 3,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Skilful winger who combines dribbling ability with end product.",
+        "archetype": "Wide forward"
+      }
+    },
+    {
+      "id": "player_4186",
+      "name": "I. Mbaye",
+      "fullName": "Ibrahim Mbaye",
+      "age": 17,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 3,
+        "vision": 3,
+        "finishing": 4,
+        "dribbling": 5,
+        "speed": 5,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 2,
+        "stamina": 4,
+        "heading": 1,
+        "strength": 2,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Direct winger who takes on defenders and creates chances from wide areas.",
+        "archetype": "Direct winger"
+      }
+    },
+    {
+      "id": "player_4187",
+      "name": "Quentin Ndjantou Mbitcha",
+      "fullName": "Quentin Ndjantou Mbitcha",
+      "age": 18,
+      "squadId": "85",
+      "preferredFoot": "left",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 2,
+        "vision": 3,
+        "finishing": 5,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 4,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 3,
+        "heading": 4,
+        "strength": 4,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Mobile forward who can play across the front line.",
+        "archetype": "Fox in the box"
+      }
+    },
+    {
+      "id": "player_4188",
+      "name": "Gonçalo Ramos",
+      "fullName": "Gonçalo Matias Ramos",
+      "age": 24,
+      "squadId": "85",
+      "preferredFoot": "right",
+      "positions": [
+        "Forward"
+      ],
+      "stats": {
+        "passing": 4,
+        "vision": 3,
+        "finishing": 7,
+        "dribbling": 3,
+        "speed": 4,
+        "acceleration": 5,
+        "tackling": 1,
+        "pressing": 3,
+        "stamina": 4,
+        "heading": 5,
+        "strength": 6,
+        "reflex": 1,
+        "jump": 1
+      },
+      "profile": {
+        "summary": "Clinical striker who thrives inside the penalty area.",
+        "archetype": "Fox in the box"
+      }
+    }
+  ],
+  "finances": {
+    "score": 0.9055,
+    "broadcasting": 93131909,
+    "commercial": 110578884,
+    "total": 203710793,
+    "budget": 180042681,
+    "followers": 187961170
+  }
+}
