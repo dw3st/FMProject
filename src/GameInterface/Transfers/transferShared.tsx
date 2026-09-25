@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, XCircle } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { LeagueData } from "@/types/playerTypes";
-import { catalogLeagueBySquadId } from "@/Domain/world/labels";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Popover } from "@/GameInterface/Components/Popover";
 import {
@@ -70,38 +68,10 @@ function playerHref(record: TransferRecord): string | null {
   return null;
 }
 
-/** squadId → catalog (origin) league, loaded once per page. Crest files are filed by origin
- *  league, while transfer records carry the club's *current* league (used for squad links). */
-let catalogLeaguePromise: Promise<Map<string, string>> | null = null;
-let catalogLeagueCache: Map<string, string> | null = null;
-
-function loadCatalogLeague(): Promise<Map<string, string>> {
-  catalogLeaguePromise ??= fetch("/api/leagues")
-    .then((r) => (r.ok ? (r.json() as Promise<LeagueData[]>) : []))
-    .then((leagues) => catalogLeagueBySquadId(Array.isArray(leagues) ? leagues : []))
-    .catch(() => new Map<string, string>())
-    .then((m) => (catalogLeagueCache = m));
-  return catalogLeaguePromise;
-}
-
-function useCatalogLeague(): Map<string, string> | null {
-  const [catalog, setCatalog] = useState(catalogLeagueCache);
-  useEffect(() => {
-    if (catalog) return;
-    let cancelled = false;
-    void loadCatalogLeague().then((m) => { if (!cancelled) setCatalog(m); });
-    return () => { cancelled = true; };
-  }, [catalog]);
-  return catalog;
-}
-
 function ClubLogo({ league, club, squadId }: { league?: string; club?: string; squadId?: string }) {
   const [failed, setFailed] = useState(false);
-  const catalog = useCatalogLeague();
-  // Wait for the catalog before requesting, so we never cache a failure for the wrong league.
-  const src = league && club && catalog
-    ? squadLogoUrl(club, (squadId && catalog.get(squadId)) || league)
-    : undefined;
+  const id = squadId ?? club;
+  const src = id ? squadLogoUrl(id) : undefined;
   if (!src || failed) {
     return <div className="w-7 h-7 rounded-md bg-muted/80 border border-border shrink-0" aria-hidden />;
   }

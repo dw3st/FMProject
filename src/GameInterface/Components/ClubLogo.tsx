@@ -6,11 +6,6 @@ import { logoUrlFromIndex } from "@/Domain/world/logos";
 /** URLs that already 404'd this page load — avoid re-requesting them from every mounted instance. */
 const failedLogoUrls = new Set<string>();
 
-/** Returns the URL for a club's SVG logo. */
-export function clubLogoUrl(league: string, club: string): string {
-  return `/api/logos/${league}/${club}`;
-}
-
 /**
  * Crest URL for a squad from the generated logo index (native SVG/PNG or the ESPN crest).
  * Returns undefined when the club has no crest, so the UI draws the colour shield without a request.
