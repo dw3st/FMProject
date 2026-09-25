@@ -1,5 +1,6 @@
 import type { MatchPhase } from "@/GameEngine/types";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
+import { readableOnDark } from "@/GameInterface/matchTeamColors";
 
 const HALF_DURATION = 2700;
 
@@ -51,8 +52,8 @@ export function ScoreBar({
   const clockStr = formatMatchClock(matchTime, matchPhase);
   const isSpecial = matchPhase === "halfTime" || matchPhase === "matchEnd";
 
-  const colorA = scoreColorA ?? teamA?.primaryColor ?? "#3b82f6";
-  const colorB = scoreColorB ?? teamB?.primaryColor ?? "#ef4444";
+  const colorA = readableOnDark(scoreColorA ?? teamA?.primaryColor ?? "#3b82f6");
+  const colorB = readableOnDark(scoreColorB ?? teamB?.primaryColor ?? "#ef4444");
   const nameA = teamA?.name ?? "Team A";
   const nameB = teamB?.name ?? "Team B";
 

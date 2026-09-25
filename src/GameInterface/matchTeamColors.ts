@@ -45,6 +45,38 @@ export function colorSimilarity(hex1: string, hex2: string): number {
   return 1 - distance / MAX_RGB_DISTANCE;
 }
 
+/** WCAG relative luminance (0 = black, 1 = white). */
+export function relativeLuminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex);
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/** Minimum luminance for team-coloured text on the dark app background (~4.5:1 contrast). */
+const MIN_TEXT_LUMINANCE_ON_DARK = 0.2;
+
+/**
+ * Team colour for text/glow on the dark background. Dark kits (black, navy, maroon) are lifted
+ * toward white until they reach a readable luminance; light kits come back unchanged.
+ */
+export function readableOnDark(hex: string): string {
+  if (relativeLuminance(hex) >= MIN_TEXT_LUMINANCE_ON_DARK) return hex;
+  const { r, g, b } = hexToRgb(hex);
+  for (let t = 0.05; t < 1; t += 0.05) {
+    const mixed = {
+      r: Math.round(r + (255 - r) * t),
+      g: Math.round(g + (255 - g) * t),
+      b: Math.round(b + (255 - b) * t),
+    };
+    const out = `#${((1 << 24) | (mixed.r << 16) | (mixed.g << 8) | mixed.b).toString(16).slice(1)}`;
+    if (relativeLuminance(out) >= MIN_TEXT_LUMINANCE_ON_DARK) return out;
+  }
+  return "#ffffff";
+}
+
 /** If home primary and away primary are this similar or more, away kit uses secondary instead. */
 const KIT_COLOR_SIMILARITY_TOO_CLOSE = 0.88;
 
