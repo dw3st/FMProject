@@ -44,6 +44,46 @@ describe("estimateStats", () => {
   });
 });
 
+describe("estimateStats — unbiased rounding", () => {
+  const N = 400;
+  const ids = Array.from({ length: N }, (_, i) => `es_round_${i}`);
+  const meanAll = (age: number, shift: number) => {
+    let sum = 0;
+    let count = 0;
+    for (const id of ids) {
+      for (const v of Object.values(estimateStats(id, age, st(5), shift))) { sum += v; count++; }
+    }
+    return sum / count;
+  };
+
+  test("age 22 averages ~0.5 below age 27 (fractional ageAdjust must move the mean)", () => {
+    const diff = meanAll(27, 0) - meanAll(22, 0);
+    expect(diff).toBeGreaterThan(0.35);
+    expect(diff).toBeLessThan(0.65);
+  });
+
+  test("age 33 averages ~0.3 below age 27", () => {
+    const diff = meanAll(27, 0) - meanAll(33, 0);
+    expect(diff).toBeGreaterThan(0.15);
+    expect(diff).toBeLessThan(0.45);
+  });
+
+  test("shift -0.3 averages ~0.3 below shift 0", () => {
+    const diff = meanAll(27, 0) - meanAll(27, -0.3);
+    expect(diff).toBeGreaterThan(0.15);
+    expect(diff).toBeLessThan(0.45);
+  });
+
+  test("every attribute stays within base ± 2 at age 27 shift 0", () => {
+    for (const id of ids) {
+      for (const v of Object.values(estimateStats(id, 27, st(5), 0))) {
+        expect(v).toBeGreaterThanOrEqual(3);
+        expect(v).toBeLessThanOrEqual(7);
+      }
+    }
+  });
+});
+
 describe("makePlayer", () => {
   test("main-role position, foot and profile", () => {
     const p = makePlayer({ id: "es_9", name: "Novo", age: 24, role: "Midfielder", squadId: "s", nationality: "Brazil", stats: st(5) }, 5);
@@ -51,6 +91,13 @@ describe("makePlayer", () => {
     expect(["left", "right"]).toContain(p.preferredFoot);
     expect(p.profile.summary).toMatch(/midfielder/);
     expect(p.nationality).toBe("Brazil");
+  });
+
+  test("adjective thresholds match the world's overall scale (median ~3.24, p95 ~4.84)", () => {
+    const solid = makePlayer({ id: "es_10", name: "X", age: 24, role: "Forward", squadId: "s", nationality: null, stats: st(5) }, 4);
+    expect(solid.profile.summary).toMatch(/^Solid/);
+    const developing = makePlayer({ id: "es_11", name: "Y", age: 24, role: "Forward", squadId: "s", nationality: null, stats: st(5) }, 2);
+    expect(developing.profile.summary).toMatch(/^Developing/);
   });
 });
 
@@ -63,6 +110,13 @@ describe("trimSquad", () => {
     const out = trimSquad(players, 30, overall);
     expect(out).toHaveLength(30);
     expect(out.filter((p) => p.positions[0] === "GK").map((p) => p.id).sort()).toEqual(["g2", "g3", "g4"]);
+  });
+
+  test("returns a copy (not the same reference) when no trimming is needed", () => {
+    const players = [pl("a", "GK", 5)];
+    const out = trimSquad(players, 30, overall);
+    expect(out).not.toBe(players);
+    expect(out).toEqual(players);
   });
 });
 
@@ -78,5 +132,10 @@ describe("fillSquad", () => {
     const youth = out.filter((p) => p.id.startsWith("es_youth_s_"));
     expect(youth.every((p) => p.age >= 17 && p.age <= 19)).toBe(true);
     expect(new Set(out.map((p) => p.id)).size).toBe(out.length);
+  });
+
+  test("deterministic — same inputs produce identical output", () => {
+    const run = () => fillSquad("s", [pl("a", "Forward", 5)], { first: ["Ana"], last: ["Lima"] }, "Brazil", () => st(4), overall);
+    expect(JSON.stringify(run())).toBe(JSON.stringify(run()));
   });
 });
