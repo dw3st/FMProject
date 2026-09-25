@@ -60,6 +60,18 @@ export class Player {
     return Player.scoreForRole(stats, position);
   }
 
+  /** Specific role (e.g. "ST", "CB") with the best weighted score inside `position`'s main role. */
+  static bestSpecificRole(stats: PlayerStatsRecord, position: string): string {
+    const specifics = MAIN_ROLE_TO_SPECIFICS[getMainRole(position)];
+    let best = specifics[0]!;
+    let bestScore = -1;
+    for (const role of specifics) {
+      const s = Player.scoreForRole(stats, role);
+      if (s > bestScore) { bestScore = s; best = role; }
+    }
+    return best;
+  }
+
   /** Computes a player's overall AVG — best weighted score across their main role's specifics. */
   static computeOverallAvg(player: RosterPlayer): number {
     const main = getMainRole(player.positions[0] ?? "CM");
