@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Application, Container, Graphics, Text, TextStyle } from "pixi.js";
 import { tickState, getBallPos } from "@/GameEngine/Domain/gameState";
+import { advanceSim } from "@/GameEngine/Domain/advanceSim";
+import { startSimClock } from "@/GraficsEngine/simClock";
 import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
@@ -441,6 +443,22 @@ export function PixiPitch({
         stateRef.current = normalizeGameState(s);
       });
 
+      // ── Simulation clock ──
+      // Drives tickState from its own pulse (Worker timer, or a main-thread
+      // setInterval fallback) instead of the Pixi ticker (rAF), so the match
+      // keeps advancing while the tab is backgrounded — rAF is frozen/throttled
+      // by the browser in that case, Worker timers are not. See simClock.ts and
+      // .claude/rules — spec: docs/superpowers/specs/2026-09-25-match-live-controls-design.md §3.
+      // The Pixi ticker below only renders `stateRef.current`; it never calls tickState.
+      const simClock = startSimClock((elapsedRealSeconds) => {
+        if (pausedRef.current) return;
+        const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
+        if (gameSeconds <= 0) return;
+        const { state: nextState } = advanceSim(stateRef.current, gameSeconds);
+        stateRef.current = nextState;
+        gameBus.emit('stateChanged', stateRef.current);
+      });
+
       // ── Through-ball cells cache ──
       // Engine emits `throughBallScores` from decideBallHolder when debug is on.
       // We cache the latest payload so the ticker can render the heatmap without
@@ -567,17 +585,11 @@ export function PixiPitch({
       app.canvas.addEventListener('click', handleCanvasClick);
 
       // ── Animation loop ──
-      app.ticker.add((ticker) => {
-        const dt = ticker.deltaMS / 1000;
-
-        // Only advance simulation when not paused; visuals always update so
-        // testCommand mutations (player moves, give-ball) are immediately visible.
-        if (!pausedRef.current) {
-          const { state: nextState } = tickState(stateRef.current, dt * gameSpeedRef.current);
-          stateRef.current = nextState;
-          gameBus.emit('stateChanged', stateRef.current);
-        }
-
+      // Rendering only — the simulation itself is advanced by simClock above,
+      // independent of this rAF-driven ticker. This ticker still runs (or is
+      // stopped on pause, see the paused/keepTickerAlive effect) purely to draw
+      // `stateRef.current` and to keep debug-overlay/testCommand visuals live.
+      app.ticker.add(() => {
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
         const currentPlayerIds = new Set(stateRef.current.players.map(p => p.id));
@@ -1073,6 +1085,7 @@ export function PixiPitch({
       });
 
       return () => {
+        simClock.destroy();
         unsubMatchStateSync();
         unsubTestCmd();
         unsubTactics();
