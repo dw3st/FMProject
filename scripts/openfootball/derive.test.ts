@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
+import { STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, playerProfile, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
 import type { SeedPlayer } from "@/../scripts/openfootball/types";
 
 const line = (a: number, b: number, sd = 0, n = 100) => ({ a, b, sd, n });
@@ -77,6 +77,11 @@ describe("derivePlayer", () => {
   });
   test("determinístico", () => {
     expect(derivePlayer(seedP, "s", coeffs, REP)).toEqual(derivePlayer(seedP, "s", coeffs, REP));
+  });
+  test("playerProfile names the archetype of the strongest stat", () => {
+    const s = { passing: 9, vision: 2, finishing: 1, dribbling: 3, speed: 3, acceleration: 3, tackling: 3,
+      pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 0, jump: 0 };
+    expect(playerProfile("Midfielder", s, "Solid")).toEqual({ archetype: "Playmaker", summary: "Solid midfielder, strongest at passing." });
   });
 });
 
