@@ -1827,10 +1827,10 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   // ── Players ──────────────────────────────────────────────────────────────
   const athletes: AthleteRef[] = [];
   for (const m of applied) for (const t of teamsOf(m.slug)) for (const a of [...t.athletes].sort((x, y) => byId(x.id, y.id)))
-    athletes.push({ espnId: a.id, displayName: a.displayName, fullName: a.fullName, age: a.age, role: espnRole(a.position), teamSquadId: clubMatch.get(t.id)!.squadId });
+    athletes.push({ espnId: a.id, displayName: a.displayName, fullName: a.fullName, age: a.age, role: espnRole(a.position), teamSquadId: clubMatch.get(t.id)!.squadId, teamCountry: leagueBySlug.get(m.slug)!.country });
   const playerMatch = matchPlayers(
     athletes,
-    [...playerById.values()].map((p) => ({ id: p.id, name: p.name, fullName: p.fullName, age: p.age, role: lineOf(p), squadId: p.squadId })),
+    [...playerById.values()].map((p) => ({ id: p.id, name: p.name, fullName: p.fullName, age: p.age, role: lineOf(p), squadId: p.squadId, country: leagueBySlug.get(leagueOfSquad.get(p.squadId)!)!.country })),
     opts.playerOverrides,
   );
   const claimedPlayers = new Set(playerMatch.values());
