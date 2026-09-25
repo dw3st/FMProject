@@ -43,4 +43,11 @@ describe("matchClubs", () => {
   test("override to an unknown squad throws", () => {
     expect(() => matchClubs([team("1", "X")], world, { "1": "nope" })).toThrow(/unknown squad/);
   });
+
+  test("a loose key shared by two ESPN clubs of the same country is not used", () => {
+    const w: WorldClubRef[] = [{ id: "u", name: "Man Utd", country: "England" }, { id: "c", name: "Manchester", country: "England" }];
+    const m = matchClubs([team("1", "Manchester United"), team("2", "Manchester City")], w, {});
+    expect(m.get("1")).toEqual({ squadId: null, via: "new" });
+    expect(m.get("2")).toEqual({ squadId: null, via: "new" });
+  });
 });

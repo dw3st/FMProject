@@ -23,7 +23,11 @@ const PASSES: Pass[] = [
 /**
  * ESPN club → squadId, per country. Order: override, then exact / loose / prefix passes (each pass
  * over every still-unmatched team; a hit must be unique among the unclaimed clubs of the country),
- * then "new". Throws when an override names an unknown squad or two teams hit the same squad in a pass.
+ * then "new". On the loose and prefix passes a hit is also dropped when another still-unmatched
+ * ESPN team of the same country matches the same candidate — those keys are approximate enough that
+ * two different ESPN clubs collapsing onto one candidate means neither should be resolved here.
+ * Throws when an override names an unknown squad, or when two teams hit the same squad on the exact
+ * pass (a genuine name clash worth surfacing rather than silently deferring to "new").
  */
 export function matchClubs(teams: EspnClubRef[], world: WorldClubRef[], overrides: Record<string, string>): Map<string, ClubMatch> {
   const byId = new Map(world.map((c) => [c.id, c]));
@@ -46,7 +50,20 @@ export function matchClubs(teams: EspnClubRef[], world: WorldClubRef[], override
       if (out.has(t.espnId)) continue;
       const cands = world.filter((c) => c.country === t.country && !claimed.has(c.id)
         && (pass.same(t.name, c.name) || pass.same(t.shortName, c.name)));
-      if (cands.length === 1) hits.set(t.espnId, cands[0]!.id);
+      if (cands.length !== 1) continue;
+      const cand = cands[0]!;
+      // Loose/prefix keys are approximate and often collapse two different ESPN clubs onto the
+      // same key (e.g. "Manchester United" and "Manchester City" both → loose "manchester"). When
+      // another still-unmatched ESPN team of the same country also matches this candidate, neither
+      // is safe to resolve here — skip both rather than pick one, or collide and throw. The exact
+      // pass keeps the stricter behaviour (collision throws below): an exact-name clash is rare
+      // enough that it signals a real data issue worth surfacing rather than silently deferring.
+      if (pass.via !== "exact") {
+        const sharedByOther = sorted.some((u) => u.espnId !== t.espnId && u.country === t.country && !out.has(u.espnId)
+          && (pass.same(u.name, cand.name) || pass.same(u.shortName, cand.name)));
+        if (sharedByOther) continue;
+      }
+      hits.set(t.espnId, cand.id);
     }
     const bySquad = new Map<string, string>();
     for (const [espnId, squadId] of hits) {
