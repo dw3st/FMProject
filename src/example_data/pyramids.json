@@ -178,7 +178,7 @@
           {
             "leagueSlug": "ligue_1",
             "promote": 0,
-            "relegate": 2
+            "relegate": 3
           }
         ]
       },
@@ -187,7 +187,7 @@
         "groups": [
           {
             "leagueSlug": "of_ligue_2",
-            "promote": 2,
+            "promote": 3,
             "relegate": 0
           }
         ]
