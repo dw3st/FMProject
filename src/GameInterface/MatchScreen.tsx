@@ -13,8 +13,8 @@ import "@/GameEngine/Suport/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
 import type { GameState, TeamId, Formation, PendingSub } from "@/GameEngine/types";
-import type { TacticsSave } from "@/types/tacticsTypes";
-import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
+import type { TacticsSave, TacticalStyle, Mentality } from "@/types/tacticsTypes";
+import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { autoFillLineup } from "@/Domain/lineupHelpers";
@@ -23,6 +23,8 @@ import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 
 const MATCH_END_TO_RESULT_MS = 3500;
+/** 1x / 2x / 4x — live match speed group (spec §4). */
+const GAME_SPEEDS = [1, 2, 4] as const;
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { TeamPanel } from "@/GameInterface/TeamPanel";
@@ -97,7 +99,11 @@ export function MatchScreen() {
   const [debug, setDebug] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [gameSpeed, setGameSpeed] = useState(1);
+  const [gameSpeed, setGameSpeed] = useState<number>(1);
+  /** Live-match mentality for team A (my club). Team B (AI) always stays balanced. Not saved. */
+  const [mentality, setMentality] = useState<Mentality>(DEFAULT_MENTALITY);
+  /** Team A's saved tactical style — set once from match-setup, read by mentality changes. */
+  const myTacticalStyleRef = useRef<TacticalStyle>(DEFAULT_TACTICAL_STYLE);
   const [showSubPanel, setShowSubPanel] = useState(false);
   const [goalFlash, setGoalFlash] = useState<{
     team: TeamId;
@@ -187,10 +193,11 @@ export function MatchScreen() {
         }
 
         const tactics = data.myTactics;
-        applyTeamTacticsConfig("A", tactics.tactical_style);
-        applyTeamAttackConfig("A", tactics.tactical_style);
-        applyTeamTacticsConfig("B", DEFAULT_TACTICAL_STYLE);
-        applyTeamAttackConfig("B", DEFAULT_TACTICAL_STYLE);
+        myTacticalStyleRef.current = tactics.tactical_style;
+        applyTeamTacticsConfig("A", tactics.tactical_style, DEFAULT_MENTALITY);
+        applyTeamAttackConfig("A", tactics.tactical_style, DEFAULT_MENTALITY);
+        applyTeamTacticsConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY);
+        applyTeamAttackConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY);
 
         const opponentPlayers = data.opponentSquad?.players ?? data.mySquad.players;
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
@@ -351,6 +358,12 @@ export function MatchScreen() {
     setDebugMode(debug);
   }, [debug]);
 
+  function handleMentalityChange(next: Mentality) {
+    setMentality(next);
+    applyTeamTacticsConfig("A", myTacticalStyleRef.current, next);
+    applyTeamAttackConfig("A", myTacticalStyleRef.current, next);
+  }
+
   function handleOpenSubPanel() {
     setPaused(true);
     setShowSubPanel(true);
@@ -451,7 +464,7 @@ export function MatchScreen() {
 
       {/* Scoreboard Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-3 shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
           <ScoreBar
             scoreA={score.A}
             scoreB={score.B}
@@ -463,7 +476,7 @@ export function MatchScreen() {
             scoreColorB={matchKitColors.teamB}
           />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setPaused((p) => !p)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
@@ -471,16 +484,36 @@ export function MatchScreen() {
               {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               {paused ? t("match.play") : t("match.pause")}
             </button>
-            <button
-              onClick={() => setGameSpeed((s) => (s === 1 ? 2 : 1))}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
-                gameSpeed === 2
-                  ? "bg-primary/20 text-primary border-primary/50"
-                  : "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
-              }`}
-            >
-              2×
-            </button>
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1">
+              {GAME_SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setGameSpeed(s)}
+                  className={`px-3 py-1.5 rounded-md font-semibold text-sm cursor-pointer transition-all ${
+                    gameSpeed === s
+                      ? "bg-primary/20 text-primary"
+                      : "text-foreground hover:text-primary"
+                  }`}
+                >
+                  {s}×
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1">
+              {MENTALITY_OPTIONS.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleMentalityChange(m)}
+                  className={`px-3 py-1.5 rounded-md font-semibold text-xs cursor-pointer transition-all ${
+                    mentality === m
+                      ? "bg-primary/20 text-primary"
+                      : "text-foreground hover:text-primary"
+                  }`}
+                >
+                  {t(`match.mentality.${m}`)}
+                </button>
+              ))}
+            </div>
             <button
               onClick={handleOpenSubPanel}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${

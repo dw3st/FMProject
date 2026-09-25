@@ -25,8 +25,8 @@ import { getRuntimeLineup, normalizeGameState } from "@/GameEngine/Domain/Runtim
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
-import { DEFAULT_TACTICAL_STYLE, TACTICAL_STYLE_OPTIONS } from "@/types/tacticsTypes";
-import type { TacticalStyle } from "@/types/tacticsTypes";
+import { DEFAULT_TACTICAL_STYLE, TACTICAL_STYLE_OPTIONS, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
 import type { GameState, GamePlayer, Formation, TeamIntent, TeamId } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
@@ -56,6 +56,12 @@ const SPEEDS = [
   { label: '1×',    value: 1    },
   { label: '2×',    value: 2    },
 ];
+
+const MENTALITY_LABEL: Record<Mentality, string> = {
+  attacking: 'Attack',
+  balanced:  'Balanced',
+  defensive: 'Defense',
+};
 
 // Pitch sizing (mirrors MatchScreen). Aspect derived from canvas-mapped pitch + margins.
 const PITCH_ASPECT = 124 / 80;
@@ -303,6 +309,13 @@ export function TestScreen() {
   const [tacticsB, setTacticsB]   = useState<TacticalStyle>(() => {
     const v = urlStr('Btac'); return (TACTICAL_STYLE_OPTIONS.some(o => o.value === v) ? v : DEFAULT_TACTICAL_STYLE) as TacticalStyle;
   });
+  // Live-match mentality shift per team (spec §1) — layered on top of the tactical style.
+  const [mentalityA, setMentalityA] = useState<Mentality>(() => {
+    const v = urlStr('Amen'); return (MENTALITY_OPTIONS as string[]).includes(v ?? '') ? (v as Mentality) : DEFAULT_MENTALITY;
+  });
+  const [mentalityB, setMentalityB] = useState<Mentality>(() => {
+    const v = urlStr('Bmen'); return (MENTALITY_OPTIONS as string[]).includes(v ?? '') ? (v as Mentality) : DEFAULT_MENTALITY;
+  });
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
   const [intentOverrideA, setIntentOverrideA] = useState<IntentOverride>('auto');
@@ -481,8 +494,8 @@ export function TestScreen() {
     setLivePlayer(null);
   }, [scenario, resetKey]);
 
-  useEffect(() => { applyTeamTacticsConfig('A', tacticsA); applyTeamAttackConfig('A', tacticsA); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA]);
-  useEffect(() => { applyTeamTacticsConfig('B', tacticsB); applyTeamAttackConfig('B', tacticsB); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB]);
+  useEffect(() => { applyTeamTacticsConfig('A', tacticsA, mentalityA); applyTeamAttackConfig('A', tacticsA, mentalityA); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA]);
+  useEffect(() => { applyTeamTacticsConfig('B', tacticsB, mentalityB); applyTeamAttackConfig('B', tacticsB, mentalityB); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB]);
 
   // When attr sliders change, patch live player stats immediately
   useEffect(() => {
@@ -552,13 +565,15 @@ export function TestScreen() {
       Bform:  formIdB !== '4-3-3' ? formIdB : null,
       Atac:   tacticsA !== DEFAULT_TACTICAL_STYLE ? tacticsA : null,
       Btac:   tacticsB !== DEFAULT_TACTICAL_STYLE ? tacticsB : null,
+      Amen:   mentalityA !== DEFAULT_MENTALITY ? mentalityA : null,
+      Bmen:   mentalityB !== DEFAULT_MENTALITY ? mentalityB : null,
       Aattr:  attrA !== 10 ? String(attrA) : null,
       Battr:  attrB !== 10 ? String(attrB) : null,
       scene:  mode === 'scenario' && scenario.id !== MINI_SCENARIOS[0]?.id ? scenario.id : null,
     });
     history.replaceState(null, '', search || window.location.pathname);
     setUrlSearch(search);
-  }, [mode, squadA, squadB, formIdA, formIdB, tacticsA, tacticsB, attrA, attrB, scenario]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mode, squadA, squadB, formIdA, formIdB, tacticsA, tacticsB, mentalityA, mentalityB, attrA, attrB, scenario]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Phase trigger countdown ───────────────────────────────────────────────
   useEffect(() => {
@@ -857,10 +872,10 @@ export function TestScreen() {
           <div className="grid grid-cols-2 gap-4">
             {(
               [
-                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
-                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
+                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, mentality: mentalityA, setMentality: setMentalityA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
+                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, mentality: mentalityB, setMentality: setMentalityB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
               ] as const
-            ).map(({ team, label, cls, tactics, setTactics: setT, intentOverride, setIntentOverride: setIO }) => {
+            ).map(({ team, label, cls, tactics, setTactics: setT, mentality, setMentality: setM, intentOverride, setIntentOverride: setIO }) => {
               const liveIntent = liveTeamIntent[team];
               const badge = INTENT_BADGE[liveIntent];
               return (
@@ -890,6 +905,25 @@ export function TestScreen() {
                         {opt.label}
                       </button>
                     ))}
+                  </div>
+                  {/* Mentality — live-match shift on top of the tactical style */}
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-bold text-muted-foreground tracking-widest uppercase">Mentality</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {MENTALITY_OPTIONS.map(m => (
+                        <button
+                          key={m}
+                          onClick={() => setM(m)}
+                          className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                            mentality === m
+                              ? 'bg-primary/20 border-primary/40 text-primary'
+                              : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {MENTALITY_LABEL[m]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {/* Intent override — debug knob to study scoring effect */}
                   <div className="space-y-1">

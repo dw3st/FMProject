@@ -146,3 +146,42 @@ Add the new tactic → weight row to the relevant table above.
 - **Do not add bias fields** (e.g. `PROGRESS_BIAS`) that sit on top of existing weights. Instead, directly change the weight that represents that dimension.
 - **Do not hardcode tactical logic in consumers** (PassLanes.ts, DecisionTree.ts, OffBallMovement.ts, etc.). All tactical influence belongs in the config mapping tables.
 - **Do not read from global base configs** (e.g. `PASS_CONFIG.PROGRESS_WEIGHT`) in places where team-specific tactics should apply. Use `getTeamPassConfig(team)` instead.
+
+---
+
+## Mentalidade (live-match shift)
+
+`Mentality = "attacking" | "balanced" | "defensive"` (`src/types/tacticsTypes.ts`) is a
+**temporary, unsaved** shift a user can flip mid-match on top of the team's chosen
+`TacticalStyle` — it never replaces the style. `axesWithMentality(style, mentality)` is the pure
+function that combines them into the `TacticalAxes` actually applied:
+
+| Mentality | pressing_style | defensive_line | width | build_up |
+|---|---|---|---|---|
+| `attacking` | one step up (saturates at `high_press`) | one step up (saturates at `high`) | forced `wide` | forced `direct` |
+| `balanced` | `axesFor(style)` — unchanged | unchanged | unchanged | unchanged |
+| `defensive` | one step down (saturates at `low_block`) | one step down (saturates at `deep`) | forced `narrow` | unchanged (keeps the style's build_up) |
+
+"Step" walks `["low_block", "mid_block", "high_press"]` / `["deep", "normal", "high"]` by one
+index in the given direction, clamped at the array ends — e.g. `high_press` style + `attacking`
+mentality stays at `high_press` (already at the top), and `counter_attack` style (`low_block`) +
+`attacking` mentality steps to `mid_block`, not straight to `high_press`.
+
+`applyTeamTacticsConfig(team, style, mentality = "balanced")` and
+`applyTeamAttackConfig(team, style, mentality = "balanced")` both take the optional `mentality`
+parameter and call `axesWithMentality` internally instead of `axesFor` directly. Every existing
+call site that only ever passed `style` keeps working unchanged (mentality defaults to
+`"balanced"`, a no-op).
+
+**The style, not the mentality, still drives team-intent detection.** `applyTeamAttackConfig`
+always records the *style* in `TEAM_TACTICAL_STYLE[team]` (read by `getTeamTacticalStyle` /
+`IntentDetection`) — mentality only reshapes the derived axes, it is invisible to intent gating.
+
+**Where it's wired up:**
+- `MatchScreen` — three buttons (attacking / balanced / defensive) apply to team A only; team B
+  (AI) always stays `balanced`. Resets to `balanced` every match; never saved.
+- `/test` (`TestScreen`) — a per-team mentality button row next to the tactical-style selector.
+- `/lab` — `Variant.mentality?: Mentality` (optional, default `balanced` when absent — this is lab
+  scenario config, not a game save, so no migration is needed for older saved scenarios). Set in
+  `VariantEditor`, applied in `balanceWorker.ts` alongside the style, shown in the auto-generated
+  variant label (`generateVariantLabel`) only when it isn't `balanced`.

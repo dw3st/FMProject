@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { TACTICAL_STYLE_OPTIONS } from "@/types/tacticsTypes";
-import type { TacticalStyle } from "@/types/tacticsTypes";
+import { TACTICAL_STYLE_OPTIONS, MENTALITY_OPTIONS, DEFAULT_MENTALITY } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
 import type { RawAttributes, Variant } from "@/lab/types";
 import { RAW_ATTRIBUTE_KEYS } from "@/lab/types";
 import type { FormationCatalog } from "@/lab/api";
@@ -18,12 +18,12 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
 
   function patch(p: Partial<Variant>) {
     const next = { ...variant, ...p };
-    // If formation or tactic changed (not label), and the current label is still
-    // the auto-generated one, keep it in sync.
-    if (('formation' in p || 'tacticalStyle' in p) && !('label' in p)) {
-      const autoNow = generateVariantLabel(variant.formation, variant.tacticalStyle);
+    // If formation, tactic or mentality changed (not label), and the current label is
+    // still the auto-generated one, keep it in sync.
+    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p) && !('label' in p)) {
+      const autoNow = generateVariantLabel(variant.formation, variant.tacticalStyle, variant.mentality);
       if (variant.label === autoNow) {
-        next.label = generateVariantLabel(next.formation, next.tacticalStyle);
+        next.label = generateVariantLabel(next.formation, next.tacticalStyle, next.mentality);
       }
     }
     onChange(next);
@@ -98,6 +98,19 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         >
           {TACTICAL_STYLE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20">Mentality</span>
+        <select
+          value={variant.mentality ?? DEFAULT_MENTALITY}
+          onChange={(e) => patch({ mentality: e.target.value as Mentality })}
+          className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs flex-1"
+        >
+          {MENTALITY_OPTIONS.map((m) => (
+            <option key={m} value={m}>{m}</option>
           ))}
         </select>
       </div>

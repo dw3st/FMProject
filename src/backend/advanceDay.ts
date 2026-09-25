@@ -166,17 +166,14 @@ export async function presimulatePreStart(
   // full daily pipeline forward until we reach the player's start date.
   await service.updateMeta(saveId, { currentDate: worldStart });
 
-  // Leagues that kick off on or after the player's start date are the ones a kit career
-  // can pick: their clubs stay out of the transfer market so they start intact.
-  const marketFrozenLeagues = new Set(
-    activeLeagues.filter((l) => l.start >= playerStart).map((l) => l.leagueSlug),
-  );
-
+  // Every club in every league is pickable for a new career (not just the one that kicks
+  // off on the player's start date), and the rosters are already current — so the whole
+  // transfer market sits out the pre-simulation. Only matches/training/development run.
   let days = 0;
   for (let guard = 0; guard < 2000; guard++) {
     const current = (await service.getMeta(saveId))?.currentDate;
     if (!current || current >= playerStart) break;
-    const outcome = await advanceOneDay(service, saveId, null, { marketFrozenLeagues });
+    const outcome = await advanceOneDay(service, saveId, null, { marketFrozen: true });
     if (!outcome.ok) break;
     days++;
   }
@@ -191,11 +188,11 @@ export async function presimulatePreStart(
 
 export interface AdvanceOneDayOptions {
   /**
-   * Leagues whose clubs sit out the transfer market today (no buying, no selling). Only the
-   * start-kit pre-simulation sets it: clubs of leagues that have not kicked off can still be
-   * picked for a career and must start with their real squad.
+   * The whole transfer market sits out today (no AI buying, no AI selling, no sell-list
+   * matching). Only the start-kit pre-simulation sets it: every club is pickable for a new
+   * career, so none of them may trade before the player ever gets to choose one.
    */
-  marketFrozenLeagues?: ReadonlySet<string>;
+  marketFrozen?: boolean;
 }
 
 /**
@@ -431,118 +428,114 @@ export async function advanceOneDay(
     await saveService.writeDayLog(saveId, currentDate, { saveId, date: currentDate, events: storedEvents });
 
     // ── Transfer market tick ─────────────────────────────────────────────────
-    let workingMeta = meta;
-    const allSquadsMarket = await saveService.getAllSquads(saveId);
-    const rawMarket = await saveService.getMarket(saveId);
-    const marketForTick = rawMarket
-      ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] }
-      : initMarketState(allSquadsMarket);
-    const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
-    const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
-    let frozenSquadIds: Set<string> | undefined;
-    if (options.marketFrozenLeagues?.size) {
-      const index = await saveService.getSquadIndex(saveId);
-      frozenSquadIds = new Set(
-        [...options.marketFrozenLeagues].flatMap((slug) => index.inLeague(slug).map((t) => t.squadId)),
-      );
-    }
+    // When the whole market is frozen (start-kit pre-simulation), dailyMarketTick would be a
+    // guaranteed no-op — skip loading every squad + the market file for it (~25 MB/day).
+    if (!options.marketFrozen) {
+      let workingMeta = meta;
+      const allSquadsMarket = await saveService.getAllSquads(saveId);
+      const rawMarket = await saveService.getMarket(saveId);
+      const marketForTick = rawMarket
+        ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] }
+        : initMarketState(allSquadsMarket);
+      const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
+      const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
 
-    const { updatedMarket, completedTransfers } = dailyMarketTick(
-      marketForTick,
-      allSquadsMarket,
-      currentDate,
-      defaultRng,
-      {
-        excludePlayerSquadId: resolvedPlayerSquadId,
-        frozenSquadIds,
-        playerSellList: marketForTick.playerSellList,
-        playerSquad: playerSquadForMarket,
-      },
-    );
-
-    for (const tx of completedTransfers) {
-      const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
-      const sellerResolved = await saveService.resolveSquadId(saveId, tx.sellerSquad.id);
-      if (!buyerResolved || !sellerResolved) continue;
-
-      const buying = withDefaultFinances(tx.updatedBuyer);
-      const selling = withDefaultFinances(tx.updatedSeller);
-
-      const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
-      const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
-
-      workingMeta = await executeTransferFee(
-        saveId,
-        workingMeta,
+      const { updatedMarket, completedTransfers } = dailyMarketTick(
+        marketForTick,
+        allSquadsMarket,
+        currentDate,
+        defaultRng,
         {
-          squad: buying,
-          leagueSlug: buyerResolved.leagueSlug,
-          clubSlug: buyerResolved.clubSlug,
-          isPlayerClub: isBuyerPlayer,
+          excludePlayerSquadId: resolvedPlayerSquadId,
+          playerSellList: marketForTick.playerSellList,
+          playerSquad: playerSquadForMarket,
         },
-        {
-          squad: selling,
-          leagueSlug: sellerResolved.leagueSlug,
-          clubSlug: sellerResolved.clubSlug,
-          isPlayerClub: isSellerPlayer,
-        },
-        tx.fee,
-        saveService,
       );
 
-      const transferId = randomUUID();
-      const record: TransferRecord = {
-        id: transferId,
-        date: currentDate,
-        playerId: tx.player.id,
-        playerName: tx.player.name,
-        playerPosition: tx.player.positions[0] ?? "—",
-        playerAge: tx.player.age,
-        fromSquadId: tx.sellerSquad.id,
-        fromSquadName: tx.sellerSquad.name,
-        toSquadId: tx.buyerSquad.id,
-        toSquadName: tx.buyerSquad.name,
-        fee: tx.fee,
-        direction: isBuyerPlayer ? "in" : isSellerPlayer ? "out" : "in",
-        status: "accepted",
-        reason: "AI transfer",
-      };
-      await saveService.appendTransfer(saveId, record);
-      await saveService.appendDayEvent(saveId, currentDate, {
-        kind: "transfer_ref",
-        transferId,
-      });
+      for (const tx of completedTransfers) {
+        const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
+        const sellerResolved = await saveService.resolveSquadId(saveId, tx.sellerSquad.id);
+        if (!buyerResolved || !sellerResolved) continue;
 
-      if (isBuyerPlayer) {
-        await emitInboxMessage(
+        const buying = withDefaultFinances(tx.updatedBuyer);
+        const selling = withDefaultFinances(tx.updatedSeller);
+
+        const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
+        const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
+
+        workingMeta = await executeTransferFee(
           saveId,
-          buildTransferInMessage({
-            date:       currentDate,
-            transferId,
-            playerId:   tx.player.id,
-            playerName: tx.player.name,
-            fromClub:   tx.sellerSquad.name,
-            feeEuros:   tx.fee,
-          }),
+          workingMeta,
+          {
+            squad: buying,
+            leagueSlug: buyerResolved.leagueSlug,
+            clubSlug: buyerResolved.clubSlug,
+            isPlayerClub: isBuyerPlayer,
+          },
+          {
+            squad: selling,
+            leagueSlug: sellerResolved.leagueSlug,
+            clubSlug: sellerResolved.clubSlug,
+            isPlayerClub: isSellerPlayer,
+          },
+          tx.fee,
           saveService,
         );
-      } else if (isSellerPlayer) {
-        await emitInboxMessage(
-          saveId,
-          buildTransferOutMessage({
-            date:       currentDate,
-            transferId,
-            playerId:   tx.player.id,
-            playerName: tx.player.name,
-            toClub:     tx.buyerSquad.name,
-            feeEuros:   tx.fee,
-          }),
-          saveService,
-        );
+
+        const transferId = randomUUID();
+        const record: TransferRecord = {
+          id: transferId,
+          date: currentDate,
+          playerId: tx.player.id,
+          playerName: tx.player.name,
+          playerPosition: tx.player.positions[0] ?? "—",
+          playerAge: tx.player.age,
+          fromSquadId: tx.sellerSquad.id,
+          fromSquadName: tx.sellerSquad.name,
+          toSquadId: tx.buyerSquad.id,
+          toSquadName: tx.buyerSquad.name,
+          fee: tx.fee,
+          direction: isBuyerPlayer ? "in" : isSellerPlayer ? "out" : "in",
+          status: "accepted",
+          reason: "AI transfer",
+        };
+        await saveService.appendTransfer(saveId, record);
+        await saveService.appendDayEvent(saveId, currentDate, {
+          kind: "transfer_ref",
+          transferId,
+        });
+
+        if (isBuyerPlayer) {
+          await emitInboxMessage(
+            saveId,
+            buildTransferInMessage({
+              date:       currentDate,
+              transferId,
+              playerId:   tx.player.id,
+              playerName: tx.player.name,
+              fromClub:   tx.sellerSquad.name,
+              feeEuros:   tx.fee,
+            }),
+            saveService,
+          );
+        } else if (isSellerPlayer) {
+          await emitInboxMessage(
+            saveId,
+            buildTransferOutMessage({
+              date:       currentDate,
+              transferId,
+              playerId:   tx.player.id,
+              playerName: tx.player.name,
+              toClub:     tx.buyerSquad.name,
+              feeEuros:   tx.fee,
+            }),
+            saveService,
+          );
+        }
       }
-    }
 
-    await saveService.saveMarket(saveId, updatedMarket);
+      await saveService.saveMarket(saveId, updatedMarket);
+    }
 
     // ── Financial updates ────────────────────────────────────────────────────
     // Load today's player league fixtures for ticket revenue

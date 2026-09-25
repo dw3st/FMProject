@@ -6,7 +6,7 @@
  * matches per pair in parallel workers, and aggregates the results.
  */
 
-import type { TacticalStyle } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
 
 // ── Squad spec — how to build the 20-player roster for a side ────────────────
 
@@ -69,6 +69,13 @@ export interface Variant {
   label: string;
   formation: string;        // "4-3-3", "4-4-2", …
   tacticalStyle: TacticalStyle;
+  /**
+   * Live-match mentality shift layered on top of `tacticalStyle` (see tacticsTypes.ts).
+   * Optional — absent (old saved scenarios) is treated as "balanced", the no-op value.
+   * This is lab config, not a game save, so no migration code is needed for the field
+   * to be missing; consumers must default it themselves.
+   */
+  mentality?: Mentality;
   squad: SquadSpec;
 }
 

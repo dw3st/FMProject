@@ -4,7 +4,10 @@ import { Icon } from "@/GameInterface/Icons";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
+import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
 const columns = [
   { key: "pos", label: "Pos", width: "w-14" },
@@ -47,6 +50,8 @@ export function ScoutTable({
   loading, filtering, mySquadId, onOffer, sellListedIds = new Set(), error, onRetry,
 }: Props) {
   const { t } = useTranslation();
+  const { session, currentDate } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId, currentDate);
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   if (loading) {
@@ -142,6 +147,7 @@ export function ScoutTable({
                 ) : (
                   <span className="text-foreground truncate">{player.name}</span>
                 )}
+                {starIds.has(player.id) && <StarBadge />}
               </div>
               <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
               <div className="px-3 py-2.5 w-32 truncate font-medium">

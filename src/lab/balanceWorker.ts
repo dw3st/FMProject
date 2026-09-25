@@ -14,6 +14,7 @@ import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimu
 import { emptySeasonLog } from "@/types/playerTypes";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
+import { DEFAULT_MENTALITY } from "@/types/tacticsTypes";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
@@ -118,10 +119,11 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     const squadB = prefixIds(buildSquad(variantB.squad, variantB.label), "B");
 
     // Apply per-team tactics ONCE — all N matches use them.
-    applyTeamTacticsConfig("A", variantA.tacticalStyle);
-    applyTeamAttackConfig("A", variantA.tacticalStyle);
-    applyTeamTacticsConfig("B", variantB.tacticalStyle);
-    applyTeamAttackConfig("B", variantB.tacticalStyle);
+    // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
+    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY);
+    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY);
+    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY);
+    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY);
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     const quickLineupA = autoLineupForFormation(squadA, formationA);

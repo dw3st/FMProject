@@ -3,6 +3,9 @@ import type { GamePlayer } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { ArrowRightLeft } from "lucide-react";
+import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
 const DECISION_BADGE: Record<PlayerDecision["type"], { label: string; className: string }> = {
   carry:                { label: "CARRY",   className: "text-emerald-400 border-emerald-400" },
@@ -70,6 +73,7 @@ function PlayerRow({
   isSelected,
   onSelect,
   isSubbedIn,
+  isStar,
 }: {
   player:      GamePlayer;
   accentColor: string;
@@ -82,6 +86,7 @@ function PlayerRow({
   isSelected?: boolean;
   onSelect?:   (id: number) => void;
   isSubbedIn?: boolean;
+  isStar?:     boolean;
 }) {
   const { t } = useTranslation();
   const color = accentColor;
@@ -105,8 +110,9 @@ function PlayerRow({
       <div className={`flex items-center gap-2 w-full ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className={`w-2 h-2 rounded-full shrink-0`} style={{ background: color }} />
         <span className="w-8 text-xs font-bold text-muted-foreground uppercase shrink-0">{player.role}</span>
-        <span className={`flex-1 min-w-0 text-sm font-medium text-foreground truncate ${isLeft ? "" : "text-right"}`}>
-          {player.name}
+        <span className={`flex-1 min-w-0 text-sm font-medium text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
+          <span className="truncate">{player.name}</span>
+          {isStar && <StarBadge />}
         </span>
         {isSubbedIn && (
           <ArrowRightLeft className="w-3 h-3 text-emerald-400 shrink-0" aria-label={t("common.substitutedIn")} />
@@ -159,6 +165,8 @@ export function TeamPanel({
 }) {
   const color = accentColor;
   const { t } = useTranslation();
+  const { session, currentDate } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId, currentDate);
   const side = team === "A" ? "left" : "right";
   const isLeft = side === "left";
 
@@ -202,6 +210,7 @@ export function TeamPanel({
             isSelected={selectedPlayerId === p.id}
             onSelect={onSelectPlayer}
             isSubbedIn={subbedInPlayerIds?.has(p.id)}
+            isStar={starIds.has(p.rosterId)}
           />
         ))}
       </div>

@@ -5,6 +5,7 @@ import {
   dailyMarketTick,
   initMarketState,
   TEAMS_PER_DAY_NEEDS,
+  type DailyMarketTickOptions,
 } from "@/Domain/transfer/marketRotation";
 
 function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" | "name">): RosterPlayer {
@@ -137,7 +138,7 @@ describe("dailyMarketTick", () => {
   });
 });
 
-describe("dailyMarketTick — frozenSquadIds", () => {
+describe("dailyMarketTick — marketFrozen / excludePlayerSquadId", () => {
   async function loadLeague(slug: string): Promise<Squad[]> {
     const out: Squad[] = [];
     for await (const f of new Bun.Glob(`src/example_data/squads/${slug}/*.json`).scan(".")) {
@@ -147,15 +148,17 @@ describe("dailyMarketTick — frozenSquadIds", () => {
   }
 
   /** Runs `days` market ticks and returns every completed transfer as [sellerId, buyerId]. */
-  function runTicks(squads: Squad[], days: number, frozen?: ReadonlySet<string>): Array<[string, string]> {
+  function runTicks(
+    squads: Squad[],
+    days: number,
+    opts?: DailyMarketTickOptions,
+  ): Array<[string, string]> {
     const rng = mulberry32(2026);
     let market = initMarketState(squads, rng);
     let world = squads;
     const moves: Array<[string, string]> = [];
     for (let d = 0; d < days; d++) {
-      const { updatedMarket, completedTransfers } = dailyMarketTick(market, world, "2024-09-01", rng, {
-        frozenSquadIds: frozen,
-      });
+      const { updatedMarket, completedTransfers } = dailyMarketTick(market, world, "2024-09-01", rng, opts);
       market = updatedMarket;
       const byId = new Map(world.map((s) => [s.id, s] as const));
       for (const tx of completedTransfers) {
@@ -168,18 +171,31 @@ describe("dailyMarketTick — frozenSquadIds", () => {
     return moves;
   }
 
-  test("clubes congelados não compram nem vendem; o resto do mercado continua", async () => {
+  test("marketFrozen: true stops every club from trading, and leaves the market untouched", async () => {
     const england = await loadLeague("premier_league");
     const brazil = await loadLeague("brazil_serie_a");
     const squads = [...england, ...brazil];
-    const brazilIds = new Set(brazil.map((s) => s.id));
 
-    // Sem congelar, o mercado mexe em clubes brasileiros (senão o teste não prova nada).
-    const free = runTicks(squads, 60);
-    expect(free.some(([s, b]) => brazilIds.has(s) || brazilIds.has(b))).toBe(true);
+    // Sanity: this pool trades freely without the flag (otherwise the assertion below is vacuous).
+    const free = runTicks(squads, 30);
+    expect(free.length).toBeGreaterThan(0);
 
-    const frozen = runTicks(squads, 60, brazilIds);
-    expect(frozen.length).toBeGreaterThan(0);
-    expect(frozen.filter(([s, b]) => brazilIds.has(s) || brazilIds.has(b))).toEqual([]);
+    const rng = mulberry32(2026);
+    const market = initMarketState(squads, rng);
+    const result = dailyMarketTick(market, squads, "2024-09-01", rng, { marketFrozen: true });
+
+    expect(result.completedTransfers).toEqual([]);
+    expect(result.updatedMarket).toBe(market);
+
+    const frozenMoves = runTicks(squads, 30, { marketFrozen: true });
+    expect(frozenMoves).toEqual([]);
+  });
+
+  test("human club never appears as a seller unless it lists a player (live-path exclusion)", async () => {
+    const england = await loadLeague("premier_league");
+    const humanId = england[0]!.id;
+
+    const moves = runTicks(england, 90, { excludePlayerSquadId: humanId });
+    expect(moves.some(([s, b]) => s === humanId || b === humanId)).toBe(false);
   });
 });
