@@ -56,10 +56,6 @@ function nationalityFor(code: string): string | undefined {
   }
 }
 
-/**
- * `leagueRep` is the seed league reputation / 1000. It is clamped to
- * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
- */
 /** Archetype from the strongest stat, and a one-line summary ("Solid defender, strongest at tackling."). */
 export function playerProfile(role: MainRole, stats: PlayerStatsRecord, adjective: string): RosterPlayer["profile"] {
   const top = [...STAT_KEYS].sort((a, b) => stats[b] - stats[a] || a.localeCompare(b))[0]!;
@@ -67,6 +63,10 @@ export function playerProfile(role: MainRole, stats: PlayerStatsRecord, adjectiv
   return { archetype: ARCHETYPES[role][top] ?? ARCHETYPES[role]._, summary: `${adjective} ${roleWord}, strongest at ${top}.` };
 }
 
+/**
+ * `leagueRep` is the seed league reputation / 1000. It is clamped to
+ * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
+ */
 export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number): RosterPlayer {
   const role = mainRole(sp.position);
   const rep = clamp(leagueRep, coeffs.repMin - REP_FLOOR_MARGIN, coeffs.repMax);
