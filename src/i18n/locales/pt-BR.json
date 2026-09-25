@@ -743,7 +743,12 @@
     "subs": "Substituições",
     "debug": "Debug",
     "loadError": "Falha ao carregar resultado da partida.",
-    "noMatchOnDate": "Nenhuma partida agendada para esta data."
+    "noMatchOnDate": "Nenhuma partida agendada para esta data.",
+    "mentality": {
+      "attacking": "Ataque total",
+      "balanced": "Equilibrado",
+      "defensive": "Defesa"
+    }
   },
   "broadcast": {
     "teamLabel": "Time {{team}}",
