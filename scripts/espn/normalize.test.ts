@@ -10,6 +10,10 @@ describe("clubKey", () => {
   test("keeps City / United in the strict key", () => {
     expect(clubKey("Manchester City")).toBe("manchester city");
   });
+
+  test("decodes HTML entities before normalizing", () => {
+    expect(clubKey("Newcastle &amp; District")).toBe(clubKey("Newcastle & District"));
+  });
 });
 
 describe("looseClubKey", () => {
@@ -24,5 +28,13 @@ describe("playerKey", () => {
   test("transliterates and lowercases", () => {
     expect(playerKey("Martin Ødegaard")).toBe("martin odegaard");
     expect(playerKey("  Vinícius   Júnior ")).toBe("vinicius junior");
+  });
+
+  test("decodes HTML entities before normalizing", () => {
+    expect(playerKey("M. O&apos;Riley")).toBe(playerKey("M. O'Riley"));
+    expect(playerKey("M. O&apos;Riley")).toBe("m o riley");
+    expect(playerKey("M&#39;Bappe")).toBe(playerKey("M'Bappe"));
+    expect(playerKey("Marks &amp; Spencer")).toBe(playerKey("Marks & Spencer"));
+    expect(playerKey('Quoted &quot;Nickname&quot;')).toBe(playerKey('Quoted "Nickname"'));
   });
 });

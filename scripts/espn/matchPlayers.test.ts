@@ -122,9 +122,10 @@ describe("matchPlayers", () => {
   });
 
   test("ambiguous tie in pass B skips the athlete", () => {
+    // EXPECTED_AGE_GAP is 1: gap 0 → |0-1| = 1, gap 2 → |2-1| = 1 (tie).
     const w = [
-      wp("q1", "Andre Costa", 23, "Forward", "clubA"), // gap 1 → |1-2| = 1
-      wp("q2", "Andre Costa", 21, "Forward", "clubB"), // gap 3 → |3-2| = 1 (tie)
+      wp("q1", "Andre Costa", 24, "Forward", "clubA"), // gap 0
+      wp("q2", "Andre Costa", 22, "Forward", "clubB"), // gap 2 (tie)
     ];
     // The athlete belongs to neither club, so pass A never resolves it — only pass B sees it, and ties.
     const m = matchPlayers([ath("a1", "Andre Costa", 24, "Forward", "elsewhere")], w, {});
@@ -132,10 +133,12 @@ describe("matchPlayers", () => {
   });
 
   test("pass A also skips on an identical-rank tie at the same club, and pass B never picks it up either", () => {
+    // EXPECTED_AGE_GAP is 1: gap 0 → |0-1| = 1, gap 2 → |2-1| = 1 (tie); q3's gap 1 would be the
+    // "perfect" pass-B match, but must never be reached since a1 already had a (ambiguous) club candidate.
     const w = [
-      wp("q1", "Bruno Lima", 24, "Forward", "home"), // gap 1 → |1-2| = 1
-      wp("q2", "Bruno Lima", 22, "Forward", "home"), // gap 3 → |3-2| = 1 (tie)
-      wp("q3", "Bruno Lima", 23, "Forward", "away"), // gap 2, a perfect pass-B match — must NOT be used
+      wp("q1", "Bruno Lima", 25, "Forward", "home"), // gap 0
+      wp("q2", "Bruno Lima", 23, "Forward", "home"), // gap 2 (tie)
+      wp("q3", "Bruno Lima", 24, "Forward", "away"), // gap 1, a perfect pass-B match — must NOT be used
     ];
     const m = matchPlayers([ath("a1", "Bruno Lima", 25, "Forward", "home")], w, {});
     expect(m.has("a1")).toBe(false);
@@ -187,5 +190,63 @@ describe("matchPlayers", () => {
     const w = [wp("q1", "Neymar Junior", 24, "Forward", "away")];
     const m = matchPlayers([ath("a1", "Neymar", 26, "Forward", "elsewhere", "Neymar Junior")], w, {});
     expect(m.get("a1")).toBe("q1");
+  });
+});
+
+describe("matchPlayers — pass A2 (club, surname fallback)", () => {
+  test("matches an abbreviated world name via surname + full first name in fullName", () => {
+    const w = [wp("q1", "T. Hübers", 29, "Defender", "home", "Timo Bernd Hübers")];
+    const m = matchPlayers([ath("a1", "Timo Hübers", 30, "Defender", "home")], w, {});
+    expect(m.get("a1")).toBe("q1");
+  });
+
+  test("matches a mononym world name via surname carried only in fullName", () => {
+    const w = [wp("q1", "Kepa", 31, "GK", "home", "Kepa Arrizabalaga Revuelta")];
+    const m = matchPlayers([ath("a1", "Kepa Arrizabalaga", 32, "GK", "home")], w, {});
+    expect(m.get("a1")).toBe("q1");
+  });
+
+  test("two same-club candidates sharing surname and first-name initial are left unmatched", () => {
+    const w = [
+      wp("q1", "M. Ferreira", 24, "Forward", "home", "Mateus Ferreira"),
+      wp("q2", "M. Ferreira", 23, "Forward", "home", "Miguel Ferreira"),
+    ];
+    const m = matchPlayers([ath("a1", "Marco Ferreira", 25, "Forward", "home")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("a null-age athlete never matches via A2", () => {
+    const w = [wp("q1", "Mateus Silva", 30, "Defender", "home")];
+    const m = matchPlayers(
+      [ath("a1", "Matheus Antonio Uchôa Da Silva", null, "Defender", "home")],
+      w,
+      {},
+    );
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("A2 never matches across clubs", () => {
+    const w = [wp("q1", "T. Hübers", 29, "Defender", "away", "Timo Bernd Hübers")];
+    const m = matchPlayers([ath("a1", "Timo Hübers", 30, "Defender", "home")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("a surname shorter than 3 characters is never used for A2", () => {
+    const w = [wp("q1", "J. Wu", 24, "Forward", "home", "Joanne Wu")];
+    const m = matchPlayers([ath("a1", "Jo Wu", 25, "Forward", "home")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("an athlete blocked by pass-A ambiguity is never retried in A2", () => {
+    // Two club-mates share the exact same normalized name key and tie under EXPECTED_AGE_GAP=1
+    // (gap 0 vs gap 2, both |gap-1|=1) → pass A is ambiguous and blocks a1. A distinct A2-only
+    // candidate (different key, matching surname/initial) must not rescue it.
+    const w = [
+      wp("q1", "Diego Ramos", 25, "Forward", "home"), // gap 0
+      wp("q2", "Diego Ramos", 23, "Forward", "home"), // gap 2 (tie)
+      wp("q3", "D. Ramos", 24, "Forward", "home", "Diego Ramos Extra"),
+    ];
+    const m = matchPlayers([ath("a1", "Diego Ramos", 25, "Forward", "home")], w, {});
+    expect(m.has("a1")).toBe(false);
   });
 });
