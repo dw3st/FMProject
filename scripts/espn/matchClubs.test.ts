@@ -50,4 +50,26 @@ describe("matchClubs", () => {
     expect(m.get("1")).toEqual({ squadId: null, via: "new" });
     expect(m.get("2")).toEqual({ squadId: null, via: "new" });
   });
+
+  test("loose/prefix never pick a sibling whose twin was already claimed", () => {
+    const w: WorldClubRef[] = [{ id: "bc", name: "Bristol City", country: "England" }, { id: "br", name: "Bristol Rovers", country: "England" }];
+    const m = matchClubs([team("1", "Bristol City"), team("2", "Bristol Wanderers")], w, {});
+    expect(m.get("1")).toEqual({ squadId: "bc", via: "exact" });
+    expect(m.get("2")).toEqual({ squadId: null, via: "new" });
+  });
+
+  test("prefix pass catches what exact and loose don't", () => {
+    const w: WorldClubRef[] = [{ id: "bha", name: "Brighton & Hove Albion", country: "England" }];
+    const m = matchClubs([team("1", "Brighton")], w, {});
+    expect(m.get("1")).toEqual({ squadId: "bha", via: "prefix" });
+  });
+
+  test("matches on shortName when the full name doesn't match", () => {
+    const w: WorldClubRef[] = [{ id: "rp", name: "River Plate", country: "Argentina" }];
+    const m = matchClubs(
+      [{ espnId: "1", name: "Club Atlético River Plate", shortName: "River Plate", country: "Argentina" }],
+      w, {},
+    );
+    expect(m.get("1")).toEqual({ squadId: "rp", via: "exact" });
+  });
 });
