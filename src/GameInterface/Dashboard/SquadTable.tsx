@@ -22,8 +22,8 @@ export function SquadTable({
   onSelectPlayer: (player: DisplayPlayer | null) => void;
 }) {
   const { t } = useTranslation();
-  const { session } = useGameSave();
-  const starIds = useStarPlayers(session?.saveId);
+  const { session, currentDate } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId, currentDate);
   const [sortKey, setSortKey] = useState<string>("pos");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 

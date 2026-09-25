@@ -94,8 +94,8 @@ export function PlayerCard({
   layout?: "narrow" | "wide";
 }) {
   const { t } = useTranslation();
-  const { session } = useGameSave();
-  const starIds = useStarPlayers(session?.saveId);
+  const { session, currentDate } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId, currentDate);
   const isStar = starIds.has(player.id);
   const mainRole = getMainRole(player.pos);
   const posColor = MAIN_ROLE_BADGE_CLASSES[mainRole] ?? "bg-muted/20 text-muted-foreground border-border";

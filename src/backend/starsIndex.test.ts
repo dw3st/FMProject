@@ -64,4 +64,51 @@ describe("getStarPlayerIds", () => {
       squadsSpy.mockRestore();
     }
   });
+
+  test("a slower build for an older key does not overwrite a newer cached entry", async () => {
+    const saveId = "save-race";
+    const squadOld: Squad = { id: "sOld", name: "Old", colors: ["#000", "#fff"], money: 0, players: [player("old", 5)] };
+    const squadNew: Squad = { id: "sNew", name: "New", colors: ["#000", "#fff"], money: 0, players: [player("new", 9)] };
+
+    const metaSpy = spyOn(saveService, "getMeta")
+      .mockResolvedValueOnce(meta(saveId, "2026-01-01"))
+      .mockResolvedValueOnce(meta(saveId, "2026-01-02"));
+
+    let resolveOld!: (v: Squad[]) => void;
+    let resolveNew!: (v: Squad[]) => void;
+    const oldPromise = new Promise<Squad[]>((res) => { resolveOld = res; });
+    const newPromise = new Promise<Squad[]>((res) => { resolveNew = res; });
+    const squadsSpy = spyOn(saveService, "getAllSquads")
+      .mockReturnValueOnce(oldPromise)
+      .mockReturnValueOnce(newPromise);
+
+    try {
+      // Two requests for the same save, one right after the other: an older key (started first,
+      // seq 0) and a newer key (started second, seq 1).
+      const pOld = getStarPlayerIds(saveId);
+      const pNew = getStarPlayerIds(saveId);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // The newer build finishes first; the older, slower build finishes after it —
+      // out-of-order completion is exactly the race this guards against.
+      resolveNew([squadNew]);
+      const newResult = await pNew;
+      resolveOld([squadOld]);
+      const oldResult = await pOld;
+
+      expect(newResult).toEqual(["new"]);
+      expect(oldResult).toEqual(["old"]);
+
+      // A later read for the newer key must hit the cache (no extra scan) and still see the
+      // newer data — the stale "old" result must not have clobbered it.
+      metaSpy.mockResolvedValue(meta(saveId, "2026-01-02"));
+      const finalResult = await getStarPlayerIds(saveId);
+      expect(finalResult).toEqual(["new"]);
+      expect(squadsSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      metaSpy.mockRestore();
+      squadsSpy.mockRestore();
+    }
+  });
 });
