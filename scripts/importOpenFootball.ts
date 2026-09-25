@@ -3,11 +3,14 @@
  *
  *   bun scripts/importOpenFootball.ts
  *
- * Reads data_process/openfootball/seed-real.json plus the TL squads, calibrates player attributes and
- * club economy against the clubs/players present in both, then (idempotently) rewrites every
- * open-football league: squads/of_*, leagueData.json, leagueSchedules.json, countries.json,
- * databases.json, pyramids.json and data_process/openfootball/calibration.json. TL leagues are kept
- * byte-for-byte except their `zones`, whose prom/rel entries are regenerated from the country pyramid. All logic lives in scripts/openfootball/.
+ * Reads data_process/openfootball/seed-real.json plus the native squads, calibrates player attributes
+ * and club economy against the clubs/players present in both, then wipes squads/ and rewrites it from
+ * scratch: the native leagues are copied byte-for-byte from data_process/native (only their `zones`
+ * prom/rel entries are regenerated from the country pyramid), and every open-football league is
+ * (re)derived on top — squads/of_*, leagueData.json, leagueSchedules.json, countries.json,
+ * databases.json, pyramids.json and data_process/openfootball/calibration.json. This produces an
+ * intermediate 2024/25 world; scripts/importEspn.ts then moves it to the 2026/27 season (see
+ * .claude/rules/data/espn-import.md). All logic lives in scripts/openfootball/.
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -263,7 +266,6 @@ const totals = checkWorldIntegrity({
   mayHaveHandZones: (l) => l.source !== SOURCE,
 });
 const worldPlayers = totals.players;
-const squadIds = { size: totals.squads };
 
 const dbPath = join(DATA, "databases.json");
 const databases = readJson<Array<Record<string, unknown>>>(dbPath);
@@ -352,5 +354,5 @@ for (const p of Object.values(pyramids)) {
     console.log(`    tier ${lv.tier}: ${lv.groups.map((g) => `${g.leagueSlug} ↑${g.promote} ↓${g.relegate}`).join(", ")}${mark}`);
   });
 }
-console.log(`world: ${leagueData.length} leagues, ${squadIds.size} squads, ${worldPlayers} players, ${Object.keys(countries).length} countries`);
+console.log(`world: ${leagueData.length} leagues, ${totals.squads} squads, ${worldPlayers} players, ${Object.keys(countries).length} countries`);
 console.log("integrity checks passed");

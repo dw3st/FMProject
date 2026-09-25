@@ -294,7 +294,9 @@ maxWageBudget = weeklyBudget x 0.8
 | HIGH | 42 000 | x1.00 | EUR 12M | 0.25 |
 | ELITE | 50 000 | x0.95 | EUR 25M | 0.1 |
 
-World start with `WAGE_RATIO = 0.8`: **92.3% open, 5.1% tight, 2.6% frozen** (1227 clubs).
+World start with `WAGE_RATIO = 0.8`: **92.3% open, 5.1% tight, 2.6% frozen** (1227 clubs). Measured on
+the intermediate 2024/25 world (see `.claude/rules/data/openfootball-import.md`); not re-measured
+since the world moved to 2026/27 via `importEspn` (1273 clubs, see `.claude/rules/data/espn-import.md`).
 
 ## Seasonal transfer budget (AI money comes from the tier)
 

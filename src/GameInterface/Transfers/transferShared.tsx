@@ -68,7 +68,7 @@ function playerHref(record: TransferRecord): string | null {
   return null;
 }
 
-function ClubLogo({ league, club, squadId }: { league?: string; club?: string; squadId?: string }) {
+function ClubLogo({ club, squadId }: { club?: string; squadId?: string }) {
   const [failed, setFailed] = useState(false);
   const id = squadId ?? club;
   const src = id ? squadLogoUrl(id) : undefined;
@@ -99,7 +99,7 @@ function ClubLink({
   const href = squadHref(league, club);
   const inner = (
     <>
-      <ClubLogo league={league} club={club} squadId={squadId} />
+      <ClubLogo club={club} squadId={squadId} />
       <span>{name}</span>
     </>
   );

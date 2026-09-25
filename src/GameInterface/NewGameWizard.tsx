@@ -1137,7 +1137,7 @@ function ClubSelector({
                 }`}
               >
                 <ClubLogo
-                  logoUrl={squadLogoUrl(club.squadId, selectedLeagueSlug, club.slug)}
+                  logoUrl={squadLogoUrl(club.squadId)}
                   primaryColor={club.colors[0]}
                   secondaryColor={club.colors[1]}
                   className="w-10 h-10 rounded-lg shrink-0 border border-border/60 bg-card/80"
@@ -1173,11 +1173,7 @@ function ClubSelector({
               <div className="lg:col-span-3 p-6 border-r border-border/30">
                 <div className="flex items-start gap-4 mb-6">
                   <ClubLogo
-                    logoUrl={squadLogoUrl(
-                      selectedTeam.squadId,
-                      selectedLeagueSlug,
-                      selectedTeam.slug,
-                    )}
+                    logoUrl={squadLogoUrl(selectedTeam.squadId)}
                     primaryColor={selectedTeam.colors[0]}
                     secondaryColor={selectedTeam.colors[1]}
                     className="w-16 h-16 rounded-xl shrink-0 shadow-lg bg-card/60 border border-border/30"
@@ -1428,11 +1424,7 @@ function ConfirmSelection({
       <div className="card-arcade rounded-2xl p-8 border-glow">
         <div className="flex items-center gap-6 mb-8">
           <ClubLogo
-            logoUrl={
-              activeLeague
-                ? squadLogoUrl(team.squadId, activeLeague.slug, team.slug)
-                : undefined
-            }
+            logoUrl={squadLogoUrl(team.squadId)}
             primaryColor={team.colors[0]}
             secondaryColor={team.colors[1]}
             className="w-20 h-20 rounded-xl shrink-0 bg-card/60 border border-border/30"

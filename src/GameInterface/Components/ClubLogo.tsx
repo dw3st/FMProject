@@ -9,9 +9,8 @@ const failedLogoUrls = new Set<string>();
 /**
  * Crest URL for a squad from the generated logo index (native SVG/PNG or the ESPN crest).
  * Returns undefined when the club has no crest, so the UI draws the colour shield without a request.
- * `leagueSlug` / `clubSlug` are kept for the existing call sites and no longer used.
  */
-export function squadLogoUrl(squadId: string, _leagueSlug?: string, _clubSlug?: string): string | undefined {
+export function squadLogoUrl(squadId: string): string | undefined {
   return logoUrlFromIndex(LOGO_INDEX as Record<string, string>, squadId);
 }
 

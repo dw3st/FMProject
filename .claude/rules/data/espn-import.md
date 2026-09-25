@@ -49,7 +49,7 @@ logos, depois `default`, depois a primeira disponível. Grava `snapshot.json` e 
 | `matchClubs` | Override → exato → solto → prefixo → novo (`es_<espnId>`), sempre dentro do país. Ver seção abaixo |
 | `matchPlayers` | Override → passe A (clube) → passe A2 (clube, sobrenome) → passe B (mundo inteiro). Ver seção abaixo |
 | `lineup` | Composição nova de cada liga coberta pela ESPN; quem sai de uma liga coberta sem aparecer em outra desce para o nível não coberto mais alto do país (o grupo com menos clubes, depois por slug) ou sai do mundo se não houver nível abaixo |
-| `aging` | Envelhece até 2 anos (`MAX_YEARS`) por curva de idade: delta médio por atributo por ano (16-21 +0,6 ... 35+ −0,6), repartido pelos `attrWeights` do melhor papel específico do jogador, com teto suave no crescimento (`1 − (v/10)²`) e o declínio pesando `speed`/`acceleration`/`stamina` em dobro |
+| `aging` | Envelhece até 2 anos (`MAX_YEARS`) por curva de idade: delta médio por atributo por ano (16-21 +0,6 ... 35+ −0,6), repartido pelos `attrWeights` do melhor papel específico do jogador, com teto suave no crescimento (`1 − (v/10)²`) e o declínio pesando `speed`/`acceleration`/`stamina` em dobro. Um jogador casado cujo gap de idade ESPN−mundo é 3 envelhece os 3 anos (`playerAge`), mas o drift de atributos fica limitado a `MAX_YEARS = 2` — de propósito, para não extrapolar a curva além do calibrado |
 | `estimate` | Jogador novo (sem par no mundo): base = mediana da linha (clube próprio se tiver ≥5 jogadores casados no total e ≥3 na linha, senão liga, senão mundo; clube novo sem base própria leva `NEW_CLUB_SHIFT = −0,3`), mais ajuste de idade e ruído determinístico. `fillSquad` completa mínimos por papel e `MIN_SQUAD` com jovens 17–19; `trimSquad` corta em `MAX_SQUAD = 30` |
 | `logos` | `buildLogoIndex`: `squadId → "pasta/stem"`, escudo nativo (`logos/{ligaNativa}/{slug\|id}`) vence o da ESPN (`logos/espn/{id}.png`); sem nenhum dos dois, o clube fica fora do índice |
 | `apply` | `applyEspn`: junta tudo (clubes, dedupe de atletas duplicados, jogadores, composição, tamanhos de elenco, metadados de clube novo), reconstrói pirâmide e zonas, ajusta o calendário e avança a temporada (+2 anos, `bumpSeason`) |
@@ -148,8 +148,8 @@ time da ESPN**. O(s) outro(s) somem do elenco e entram em `report.duplicateAthle
 `squadLogoUrl(squadId)` (`src/GameInterface/Components/ClubLogo.tsx`) chama `logoUrlFromIndex`
 (`src/Domain/world/logos.ts`) sobre `src/Data/logoIndex.json`: `squadId → "pasta/stem"`, servido em
 `/api/logos/{pasta}/{stem}`. Clube fora do índice devolve `undefined` e a UI nem tenta a requisição —
-cai direto no brasão de cores do `ClubLogo`. Os parâmetros antigos `leagueSlug`/`clubSlug` continuam na
-assinatura pelos call sites existentes, mas não são mais usados.
+cai direto no brasão de cores do `ClubLogo`. A função só recebe o `squadId`; os antigos parâmetros
+`leagueSlug`/`clubSlug` foram removidos da assinatura e de todos os call sites.
 
 ## Limites
 

@@ -15,15 +15,23 @@
 | `pyramid.ts` | Pirâmide por país e zonas `prom`/`rel` derivadas dela |
 
 As saídas vão para `src/example_data/`:
-- `squads/of_*/`;
-- entradas novas em `leagueData.json`, `countries.json`, `databases.json` e `leagueSchedules.json`;
+- `squads/`: o importador apaga a pasta inteira e a regrava — copia os elencos nativos de
+  `data_process/native/squads` e escreve por cima os elencos `of_*` derivados do seed;
+- `leagueData.json`, `countries.json`, `databases.json` e `leagueSchedules.json`: as entradas nativas
+  vêm de `data_process/native/`, as `of_*` são derivadas do seed;
 - `pyramids.json` (pirâmide por país).
 
 A calibração é gravada em `data_process/openfootball/calibration.json`.
 
-O script é **determinístico**, porque não usa `Math.random` e usa hash dos ids. Ao rodar de novo, ele apaga as saídas anteriores (`of_*` / `source` open-football) e as regrava. As ligas nativas (Brasil A/B/C e as 5 grandes europeias) não são tocadas. As 7 ligas do seed que se sobrepõem a elas servem só para calibrar.
+O script é **determinístico**, porque não usa `Math.random` e usa hash dos ids. As ligas nativas
+(Brasil A/B/C e as 5 grandes europeias) são copiadas byte-a-byte de `data_process/native`, exceto as
+`zones` de acesso/rebaixamento, sempre regeneradas a partir da pirâmide. As 7 ligas do seed que se
+sobrepõem a elas servem só para calibrar.
 
-O mundo atual tem 83 ligas, 1227 elencos e cerca de 36 mil jogadores.
+Este importador sozinho produz um mundo **intermediário**, na temporada 2024/25 (ver "Regra de
+calendário" abaixo): 83 ligas, 1227 elencos e cerca de 36 mil jogadores. Ele nunca roda isolado na
+cadeia real — `scripts/importEspn.ts` (`.claude/rules/data/espn-import.md`) roda logo depois e avança
+esse mundo para a temporada 2026/27, terminando com 1273 elencos.
 
 ### Convenção de ids (fixa)
 
@@ -53,7 +61,17 @@ O calendário de todas as ligas fica em `src/example_data/leagueSchedules.json`,
 - **Ligas europeias** usam `season: "2024-25"` e começam em **08-15**, cruzando o ano.
 - Toda rodada fica dentro de `[início, fim]` da liga: `generateLeagueCalendar` puxa para dentro as rodadas que o `baseWeekOffset` e o encaixe no dia de jogo empurrariam para fora (`fitRoundsToWindow`). O país vira no fim, então uma rodada depois dele nunca seria jogada.
 
-O motivo são os startKits. Um kit pré-simula o mundo, dia a dia, do início mais cedo (08-15, as europeias) até **2025-02-05**, a data de início do Brasileirão. Uma carreira nova cuja liga começa depois do início do mundo recebe um kit aleatório (`src/backend/startKits.ts`). Se uma liga de ano civil começasse antes de 02-05, a carreira nasceria com rodadas dessa liga no passado sem jogar. Por isso todas as ligas de ano civil começam exatamente em 02-05, e só as europeias têm rodadas jogadas dentro do kit.
+Essas datas ("2025"/"02-05", "2024-25"/"08-15") são do mundo **intermediário** que este importador
+produz sozinho. `scripts/importEspn.ts` roda em seguida e avança a temporada de todo o mundo em 2 anos
+(`bumpSeason`: "2024-25" → "2026-27", "2025" → "2027"), então o mundo final e os startKits gerados
+sobre ele usam 2026-27/2027, com a carreira começando em **2027-02-05**.
+
+O motivo das datas fixas são os startKits. Um kit pré-simula o mundo, dia a dia, do início mais cedo
+(08-15, as europeias, na temporada 2026-27) até a data de início do Brasileirão (**2027-02-05** no
+mundo final). Uma carreira nova cuja liga começa depois do início do mundo recebe um kit aleatório
+(`src/backend/startKits.ts`). Se uma liga de ano civil começasse antes de 02-05, a carreira nasceria
+com rodadas dessa liga no passado sem jogar. Por isso todas as ligas de ano civil começam exatamente
+em 02-05, e só as europeias têm rodadas jogadas dentro do kit.
 
 ---
 
