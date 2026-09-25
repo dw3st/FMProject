@@ -1,17 +1,27 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pyramidGroupOf } from "@/../scripts/openfootball/pyramid";
-import type { LeagueEntry, SquadFile } from "@/../scripts/world/types";
+import type { Zone } from "@/../scripts/openfootball/leagues";
+import type { SquadFile } from "@/../scripts/world/types";
 import type { Pyramids } from "@/types/pyramidTypes";
 
+/** The subset of a leagueData.json entry the integrity checker reads. */
+export interface IntegrityLeague {
+  slug: string;
+  country: string;
+  source?: string;
+  zones?: Zone[];
+  standings: Array<{ squadId: string }>;
+}
+
 export interface IntegrityInput {
-  leagueData: LeagueEntry[];
+  leagueData: IntegrityLeague[];
   schedules: Array<{ slug: string }>;
-  countries: Record<string, { flag?: unknown; continent?: unknown }>;
+  countries: Record<string, Record<string, unknown>>;
   pyramids: Pyramids;
   squadsDir: string;
   /** True for a league that may keep hand-written prom/rel zones while its country has no pyramid. */
-  mayHaveHandZones: (l: LeagueEntry) => boolean;
+  mayHaveHandZones: (l: IntegrityLeague) => boolean;
 }
 
 /** Throws on the first inconsistency. Returns world totals. */

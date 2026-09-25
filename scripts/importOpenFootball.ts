@@ -9,7 +9,7 @@
  * databases.json, pyramids.json and data_process/openfootball/calibration.json. TL leagues are kept
  * byte-for-byte except their `zones`, whose prom/rel entries are regenerated from the country pyramid. All logic lives in scripts/openfootball/.
  */
-import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Seed, SeedClub, SeedLeague, SeedPlayer } from "@/../scripts/openfootball/types";
@@ -66,8 +66,7 @@ const median = (xs: number[]) => {
 function readTLSquads(league: string): TLSquad[] {
   const dir = join(NATIVE, "squads", league);
   return sortedDir(dir).filter((f) => f.endsWith(".json"))
-    .map((f) => readJson<TLSquad>(join(dir, f)))
-    .filter((s) => s.source !== SOURCE);
+    .map((f) => readJson<TLSquad>(join(dir, f)));
 }
 
 const econOf = (s: TLSquad): EconSample => ({
@@ -162,13 +161,13 @@ writeJson(join(OF_DIR, "calibration.json"), {
 
 // ── 3. Clean previous runs ──────────────────────────────────────────────────
 // src/example_data/squads is pure output: wipe it and start from the native sources.
+if (!existsSync(join(NATIVE, "squads"))) throw new Error(`native sources missing: ${join(NATIVE, "squads")}`);
 for (const d of sortedDir(SQUADS)) rmSync(join(SQUADS, d), { recursive: true, force: true });
 cpSync(join(NATIVE, "squads"), SQUADS, { recursive: true });
-const isOF = (x: { slug: string; source?: string }) => x.slug.startsWith("of_") || x.source === SOURCE;
 type LeagueEntry = { slug: string; country: string; source?: string; zones?: Zone[]; standings: Array<{ squadId: string }> } & Record<string, unknown>;
 type CountryEntry = { slug: string; name: string; iso2: string; source?: string; headline: string } & Record<string, unknown>;
-const leagueData = readJson<LeagueEntry[]>(join(NATIVE, "leagueData.json")).filter((l) => !isOF(l));
-const schedules = readJson<Array<LeagueScheduleConfig & { source?: string }>>(join(NATIVE, "leagueSchedules.json")).filter((s) => !isOF(s));
+const leagueData = readJson<LeagueEntry[]>(join(NATIVE, "leagueData.json"));
+const schedules = readJson<Array<LeagueScheduleConfig & { source?: string }>>(join(NATIVE, "leagueSchedules.json"));
 const countriesIn = readJson<Record<string, CountryEntry>>(join(NATIVE, "countries.json"));
 
 // ── 4. Generate leagues ─────────────────────────────────────────────────────
@@ -259,8 +258,7 @@ writeJson(join(DATA, "countries.json"), countries, 4);
 writeJson(join(DATA, "pyramids.json"), pyramids, 2);
 
 const totals = checkWorldIntegrity({
-  leagueData: leagueData as unknown as import("@/../scripts/world/types").LeagueEntry[],
-  schedules, countries: countries as unknown as Record<string, { flag?: unknown; continent?: unknown }>,
+  leagueData, schedules, countries,
   pyramids, squadsDir: SQUADS,
   mayHaveHandZones: (l) => l.source !== SOURCE,
 });
