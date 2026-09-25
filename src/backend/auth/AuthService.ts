@@ -77,9 +77,14 @@ export function verifyLoginCode(
 /**
  * Dev-only auto login: finds or creates the given user and opens a session,
  * bypassing the magic-code flow entirely. Callers (the dev-login route) are
- * responsible for gating this to non-production, localhost-only use.
+ * responsible for gating this to development-only, loopback-only use — this
+ * function additionally refuses to run at all when NODE_ENV=production, as a
+ * belt-and-braces guard in case a caller's own gate is ever removed or bypassed.
  */
 export function devAutoLogin(email: string): { user: AuthUser; session: AuthSession } {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("devAutoLogin is disabled when NODE_ENV=production");
+  }
   const normalized = normalizeEmail(email);
   const user = findOrCreateUser(normalized);
   const session = createSession(user.id);
