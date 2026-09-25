@@ -114,7 +114,8 @@ startKits (a pirâmide e as zonas não ficam nos kits, mas o `leagueData` e o mu
 
 Os atributos e as finanças são **derivados**, não originais. O seed só traz `overall`, posição, idade, pé e reputação. Os 13 atributos de 0 a 10 do FMProject são estimados por regressão.
 
-- **Pares.** O casamento por nome encontra cerca de 2.900 jogadores e cerca de 109 clubes que existem nos dois datasets (Brasil A/B e as 5 grandes).
+- **Pares.** O casamento por nome encontra cerca de 3.075 jogadores e 114 clubes que existem nos dois datasets (Brasil A/B e as 5 grandes).
+- **Overrides de clube.** `data_process/openfootball/clubOverrides.json` (`squadId nativo → id do clube no seed`) corrige casos em que o mesmo clube existe nos dois datasets mas o nome nunca bate — nem por igualdade nem por conter um o outro — porque é uma grafia diferente da mesma cidade/clube (`"Bayern München"` × `"Bayern Munich"`: o NFKD de `normName` tira o trema e vira "munchen", uma palavra diferente de "munich"; `"Wolves"` × `"Wolverhampton Wanderers"`: nenhuma substring em comum). `matchClubsWithOverrides` (`scripts/openfootball/calibration.ts`) aplica os overrides antes do `matchClubs` de cada liga do seed, e só quando o clube do override pertence à MESMA liga do seed que está sendo casada — um clube nativo cujo único homônimo no seed está numa divisão diferente (`"Fulham"`/`"Leeds United"`: no seed da Premier League o seed não tem esses dois clubes, só na Championship, uma diferença real de temporada entre os dois datasets, não um problema de grafia) fica sem par, de propósito. Hoje 5 entradas: `39→gb-wolves`, `157→de-bayern-munich`, `531→es-athletic-bilbao`, `94→fr-rennes`, `1062→br-atletico-mineiro`. Efeito nos ajustes: pares de calibração 2.937→3.075 jogadores, 109→114 clubes; multiplicadores de tier e medianas de economia mudaram menos de 1% (5 clubes a mais entre ~110 usados no ajuste de finanças).
 - **Atributos.** Para cada papel e atributo há uma regressão `stat = a + b·overall + c·leagueRep`, com ruído determinístico de `sd` residual.
   - `leagueRep` é a reputação da liga no seed dividida por 1000. É a **covariável de reputação de liga**, necessária porque o OVR do seed é normalizado dentro de cada liga.
   - Na derivação, `leagueRep` é limitado ao intervalo de calibração. O **piso é 2,8** (`leagueRepFloor` = `repMin − REP_FLOOR_MARGIN`), para não extrapolar para ligas muito fracas.
@@ -126,12 +127,102 @@ Tudo fica em `data_process/openfootball/calibration.json`: pares, coeficientes, 
 
 ---
 
+## Recalibração dos nativos (nível do seed, perfil nativo)
+
+A calibração acima estima **atributos** dos jogadores `of_*` a partir do seed. A recalibração é
+diferente: ela corrige o **nível** dos jogadores **nativos** (`data_process/native/squads`) que
+têm par no seed, porque os atributos nativos originais classificam mal os craques (o seed já
+ordena bem: Kane e Mbappé 99, Dembélé 98, Saka/Salah/Haaland 97…, enquanto no mundo nativo puro o
+Mbappé era o 137º por overall). Ver
+`docs/superpowers/specs/2026-09-25-native-star-recalibration-design.md`.
+
+- **Módulo puro:** `scripts/openfootball/recalibrate.ts` (+ teste): `fitLevelPredictor`,
+  `predictLevel`, `quantileTargets`, `applyShift`/`findShift` e `shiftToOverall`. Não toca disco;
+  o importador é quem lê/escreve.
+- **Pares.** Parte dos mesmos pares nativos↔seed de `matchClubs`/`matchPlayers` (Série B incluída,
+  ~2.900 jogadores) — a calibração de atributos dos `of_*` continua só com esses. Só para a
+  recalibração, um passo extra (`matchPlayersByTokenSubset`, `scripts/openfootball/calibration.ts`)
+  acha pares adicionais dentro do mesmo clube: um jogador do seed casa com um nativo ainda sem par
+  quando todo token do nome do seed (2+ tokens) aparece no `name` ∪ `fullName` do nativo e as idades
+  diferem no máximo 1, exigindo par único dos dois lados. Cobre nativos abreviados com nome completo
+  cheio de nomes do meio — `"H. Kane"` / `fullName` `"Harry Edward Kane"` contra o seed `"Harry
+  Kane"` — que `matchPlayers` não casa porque as chaves normalizadas nunca são iguais.
+- **Regra, por papel principal (GK/DEF/MID/FWD), nesses pares:**
+  1. **Previsor de nível:** `z = a + b·seedOverall + c·leagueRep`, ajustado contra o overall do
+     jogo (`Player.computeOverallAvg`) do nativo **antes** de qualquer mudança. Papel com menos de
+     3 pares fica sem previsor e seus jogadores não são tocados.
+  2. **Escala por quantis:** dentro do papel, ordena os pares por `z` (desempate pelo id) e
+     devolve a cada um o overall atual do MESMO grupo, do maior para o menor, na mesma ordem. A
+     multiset de alvos é exatamente a multiset atual (média e espalhamento do papel não mudam);
+     só a atribuição (quem recebe qual nota) muda, guiada pelo `z` do seed.
+     **Tentativa revertida (2026-09-25):** trocar o multiset pelo overall "of_* sombra" de cada
+     jogador do par (`derivePlayer(seedPlayer, ..., coeffs, leagueRep, { noise: false })`, o mesmo
+     `derivePlayer` que gera todo `of_*` real, sem o termo de ruído) — a ideia era que o teto de
+     cada papel (o maior valor do multiset, dado a quem tiver o maior `z`) parava de ficar preso a
+     um valor nativo pré-existente sem relação com o seed (no mundo nativo puro o teto de Ataque
+     era do "Yan Diomande", seedOverall 85, o mesmo jogador do bug original). Tecnicamente correto
+     (os 5 melhores por `z` de cada papel são mesmo os craques certos — Courtois/Donnarumma/Oblak
+     no gol, Van Dijk/Saliba na defesa, Salah/Rice/Rodri no meio, Mbappé/Saka/Haaland/Kane no
+     ataque), mas comprimiu o topo do mundo inteiro e derrubou os craques mais conhecidos (Mbappé
+     3º → 34º) — pior para quem joga o jogo, que é o que importa. Revertido para o multiset
+     nativo, que é o que o design aprovado e o usuário querem.
+  3. **Deslocamento único:** acha a posição específica onde o jogador rende mais
+     (`Player.bestSpecificRole` sobre os atributos nativos originais) e soma um único `s` a todo
+     atributo com peso > 0 no `attrWeights` dessa posição (`src/Data/roles.json`), contínuo,
+     limitado a 0..10, achado por bisseção até `Player.computeOverallAvg` bater com o alvo
+     (tolerância 0,01). Depois arredonda cada atributo com hash do id do jogador — mesmo esquema
+     sem viés de `scripts/espn/estimate.ts` (`floor(v + unitHash(...))`). O perfil (a forma dos 13
+     atributos) continua o nativo; só o nível muda.
+  4. Nativo sem par no seed, ou de um papel sem previsor, não muda.
+- **Onde entra no importador:** depois de copiar `data_process/native/squads` para
+  `src/example_data/squads` (a calibração de atributos dos `of_*`, seção 2, já rodou e usa os
+  atributos nativos **originais** — não é afetada). A seção 3.5 recalibra e regrava só os arquivos
+  de elenco nativo que tiveram algum jogador mudado, no mesmo formato (indentação 2) dos arquivos
+  nativos; `overallAvg` em cache é removido dos jogadores mudados. `data_process/native` nunca é
+  tocado — é sempre a fonte original.
+- **Relatório no fim do importador:** pares e coeficientes do previsor por papel, jogadores
+  recalibrados, e depois (lendo o mundo inteiro já escrito, `of_*` incluído) o top 20 do mundo e a
+  posição de Mbappé, Kane, Haaland, Salah, Vini, Bellingham, Yamal, Wirtz, Doku e Diomande.
+- **Nenhuma rescisão sem par continua sem mudar.** Kane e Bellingham (assim como Van Dijk e Rodri,
+  abaixo) sempre tiveram par — o gargalo era outro em cada caso; ver `.claude/rules/data/espn-import.md`
+  para os casos de jogador sumindo no `importEspn` (Salah, Rodri).
+- **Resultado (rodada com `clubOverrides`, multiset nativo, ~2026-09-25):** topo do mundo
+  Saka/Yamal/Mbappé/Saliba/Haaland (6,94 a 6,69), como o design original pretendia. Mbappé 137º
+  (mundo nativo original) → 3º; Kane, que nunca tinha par porque o clube (Bayern München/Munich)
+  não casava, agora casa, recalibra e vai para 112º (era intocado antes); Salah 15º; Rodri 25º
+  (Barcelona, ver espn-import.md); Bellingham 176º; Van Dijk 213º — os dois últimos com `z` no topo
+  do próprio papel (Van Dijk é #1 por `z` entre 1019 zagueiros) mas fora do top 100 do mundo por
+  causa do envelhecimento do `importEspn` (30+ anos) depois de já corretamente recalibrados, e por
+  quantos outros craques de `seedOverall` parecido disputam a mesma faixa do multiset nativo do
+  papel. Isso é esperado e aceito pelo design (opção "100% do seed" aprovada).
+
+---
+
 ## Limitações conhecidas
 
 - **Escudos.** Os clubes cobertos pela ESPN têm escudo em `logos/espn/`; os demais `of_*` usam o brasão de cores. Ver `.claude/rules/data/espn-import.md`.
 - **Jovens de preenchimento.** O seed tem clubes com só 7 jogadores. O `roster.ts` gera jovens para cumprir os mínimos por papel (GK 3, DEF 7, MID 7, FWD 4) e completar até 18 jogadores. O máximo é 30.
 - **Serie A e Ligue 1.** As re-derivações desses elencos saem mais baixas que os valores nativos. Isso afeta só a checagem de calibração, porque os elencos nativos não são substituídos.
 - **Caminhos no Windows.** Resolvido: todo caminho de dados usa `fileURLToPath`, nunca `new URL(...).pathname`, que gera `/C:/...` no Windows nativo. Mantenha esse padrão em código novo.
+- **Ruído do `derivePlayer` cria `of_*` fora da curva.** `derivePlayer` soma um resíduo gaussiano
+  independente por atributo (`f.sd * NOISE_SCALE * gaussianFromKey(...)`) a cada um dos 13
+  atributos. Como `Player.computeOverallAvg` usa média quadrática (pesa mais os atributos altos),
+  um jogador de `seedOverall` só mediano pode sortear vários atributos favoráveis ao mesmo tempo e
+  sair com overall de craque — top 50 do mundo (rodada de 2026-09-25) tinha 3 `of_*`: "Matteo Dams"
+  (seedOverall 77, DEF, 6,56), "Diego Segovia" (seedOverall 71, GK, 6,37) e "Gustavo Calderari"
+  (seedOverall 66, GK, 6,32) — os dois goleiros batem isso porque o ajuste de GK tem o maior `sd`
+  (0,74 no previsor de nível, ver seção acima) entre os quatro papéis. Não corrigido ainda; ideias
+  para quando for a hora (nenhuma implementada):
+  1. Baixar `NOISE_SCALE` (hoje 1,0) para ~0,5–0,7 — reduz a chance de vários sorteios favoráveis
+     ao mesmo tempo, mantendo alguma variação entre jogadores de overall parecido.
+  2. Trocar o ruído independente por atributo por um "fator de sorte" único por jogador
+     (`gaussianFromKey(sp.id)`, não `sp.id:k`) somado a um jitter pequeno por atributo — a variação
+     entre atributos do mesmo jogador cai, mas o viés de "vários sorteios bons ao mesmo tempo" some.
+  3. Um teto suave pós-derivação: se `Player.computeOverallAvg` do `of_*` passar do que o
+     `fitLevelPredictor`/`predictLevel` (o mesmo previsor da recalibração dos nativos, seção acima)
+     prevê pra aquele `seedOverall`/`leagueRep` por mais de ~2 desvios (`sd` do previsor), encolhe o
+     ruído e regenera os atributos desse jogador (mesma ideia de "não deixar o multiset ficar preso
+     a um acidente", só que aplicada a um jogador individual em vez do topo do papel inteiro).
 
 ---
 

@@ -100,11 +100,53 @@ aberto do Leeds e do Fulham (o clube nativo vence, o `of_*` correspondente fica 
    "pedro" só casa no próprio clube, nos passes A/A2). Um candidato de outro país só entra quando a
    distância de linha é 0 (mesma linha, nunca linha vizinha). Ranqueado por mesmo país primeiro, depois
    distância de linha, depois `|gap − EXPECTED_AGE_GAP|`; empate entre os dois primeiros deixa sem casar.
+5. **Passe B2 (mundo inteiro, subconjunto de tokens no `fullName`)** — depois do passe B, para os mesmos
+   atletas elegíveis do passe B (ainda sem casar, sem candidato no próprio clube, idade e papel
+   conhecidos). Resolve o caso em que o `name` do mundo é abreviado e o `fullName` carrega tokens extras
+   que o `displayName`, mais curto, da ESPN nunca repete por inteiro como chave normalizada — por
+   exemplo mundo `"M. Salah"` / `fullName` `"Mohamed Salah Hamed Mahrous Ghaly"` contra o atleta
+   `"Mohamed Salah"`: o passe B precisa de uma chave igual e não encontra; o B2 olha só se todo token do
+   `displayName` do atleta (2+ tokens; um nome de um token nunca é elegível) está contido nos tokens do
+   `fullName` do jogador do mundo (nunca no `name` abreviado). Diferente do passe B, o papel tem que ser
+   **exatamente** igual (distância de linha 0, nunca linha vizinha) e o país não conta para nada. Sem
+   ranking: como no A2, as listas de candidatos são montadas para todos os elegíveis de uma vez contra o
+   que sobrou do passe B, e um par só é aceito quando é único dos dois lados.
 
 `typicalGap` (mediana de `espn.age − mundo.age` sobre os atletas casados com idade não nula) envelhece
 **o mundo inteiro** pelo mesmo valor: um atleta casado com idade nula na ESPN, e todo jogador que sobra
 em clubes não cobertos pela ESPN (para o mundo inteiro avançar no tempo de forma consistente, não só os
 clubes com dados novos).
+
+## Craques perdidos por casamento (dois casos corrigidos por `playerOverrides.json`)
+
+Um clube coberto pela ESPN tem o elenco **inteiro substituído** pelos atletas casados/criados a
+partir do snapshot daquele clube — um jogador nativo não casado por nenhum atleta do PRÓPRIO clube
+simplesmente some ("removidos, não casados em clube coberto"), mesmo que exista um atleta em OUTRO
+clube que seja claramente ele (uma transferência real refletida no snapshot). Os passes globais (B
+e B2) existem para pegar esse caso, mas dois craques específicos escapam das regras deles:
+
+- **Mohamed Salah → Trabzonspor** (`"173896": "player_2847"`). O atleta da ESPN é `"Mohamed
+  Salah"`/`"F"` (linha Ataque); o jogador do mundo é `"M. Salah"`/`fullName` `"Mohamed Salah Hamed
+  Mahrous Ghaly"`, mas com `positions: ["Midfielder"]` nos dados nativos (perfil "Inverted winger"
+  catalogado como meio, não ataque). `roleDistance(Forward, Midfielder) = 1` (linha vizinha, não
+  igual); o passe B só aceita linha vizinha quando o país é o mesmo (Inglaterra × Turquia não é), e
+  o B2 exige linha EXATA (`rd 0`) sempre — por especificação, sem exceção de país. Não é gap de
+  nome (o `name` já é `"Mohamed Salah"`, igual à ESPN) nem de token — é a linha cadastrada errado
+  no dado nativo (Midfielder em vez de Forward) combinada com países diferentes. Corrigido por
+  override, não por regra: mudar a regra para aceitar linha vizinha entre países diferentes
+  arriscaria casamentos errados noutros milhares de atletas.
+- **Rodri → Barcelona** (`"231828": "player_3065"`). O atleta da ESPN tem `displayName` E
+  `fullName` iguais a `"Rodri"` — um único token nos dois campos. Os passes B e B2 exigem 2+
+  tokens do lado do atleta (regra deliberada: um nome de uma palavra como `"Pedro"` ou `"Kepa"` só
+  pode casar no próprio clube, nunca no mundo inteiro — ver mais abaixo), então esse atleta nunca é
+  elegível para nenhum passe global, mesmo o jogador do mundo (`"Rodri"`/`fullName` `"Rodrigo
+  Hernández Cascante"`) tendo o nome idêntico. Mesmo diagnóstico do Salah (o jogador certo existia,
+  só não tinha como ser alcançado pela regra), fix igual.
+
+Nos dois casos o `id` nativo (`player_2847`, `player_3065`) é preservado — o jogador muda de clube
+mas continua o MESMO registro (perfil, atributos recalibrados pela seção 3.5 do `importOpenFootball`,
+histórico). Sem o override, a ESPN cria um clone novo (`es_<athleteId>`) com atributos estimados do
+zero (baixos, sem a recalibração), e o craque de verdade só some do mundo.
 
 ## Atletas duplicados
 
