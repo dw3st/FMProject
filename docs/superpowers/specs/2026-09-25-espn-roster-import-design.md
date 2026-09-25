@@ -56,9 +56,16 @@ Ligas da ESPN que não temos (League One, Escócia, China, Equador…) ficam for
 fetchEspn.ts ──► data_process/espn/snapshot.json   (rede, roda à mão)
                  data_process/espn/logos/<espnTeamId>.png
 
-importOpenFootball.ts ──► src/example_data   (mundo 2024/25, sem mudança)
+data_process/native/ ──► importOpenFootball.ts ──► src/example_data   (mundo 2024/25)
 importEspn.ts ──► lê snapshot + example_data ──► regrava example_data (mundo 2026/27)
 ```
+
+**Fonte nativa separada (decidido no plano):** hoje o `importOpenFootball` lê os elencos nativos do
+próprio `src/example_data` e só apaga as pastas `of_*`. Depois do overlay, rodar a cadeia de novo
+destruiria dados: o Wolves, por exemplo, desce para `of_championship` e seria apagado. Os 8 elencos
+nativos e as entradas nativas de `leagueData`, `leagueSchedules` e `countries` passam a ter fonte
+própria em `data_process/native/`, e `src/example_data/squads` vira saída pura, regenerada do zero a
+cada rodada. A mudança no `importOpenFootball` não altera a saída dele (verificado byte a byte).
 
 - `data_process/espn/leagueMap.json`: nosso slug ↔ código ESPN (a tabela acima).
 - **`scripts/fetchEspn.ts`** é o único passo com rede. Usa `curl` (o `fetch` do Bun falhou contra a
@@ -134,18 +141,19 @@ pede um override.
 
 ### Curva de idade (jogadores reconhecidos)
 
-Aplicada duas vezes, uma por ano, com a idade daquele ano (idade ESPN − 2, depois − 1).
+Aplicada uma vez por ano de diferença entre a idade da ESPN e a do mundo (normalmente 2, no máximo
+2), com a idade daquele ano.
 
 | Idade no ano | ≤ 21 | 22–25 | 26–27 | 28–29 | 30–31 | 32–34 | 35+ |
 |---|---|---|---|---|---|---|---|
 | Δ da média de atributos por ano | +0,6 | +0,3 | +0,1 | 0 | −0,2 | −0,4 | −0,6 |
 
-- **Crescimento:** o Δ vezes o número de atributos de campo vira um total de pontos, repartido
-  pelos `dpWeights` do papel (`roles.json`) nos atributos que eles alimentam, com o teto suave
-  `× (1 − (v/10)²)`.
+- **Pesos:** os `attrWeights` (`roles.json`) do papel específico em que o jogador rende mais
+  (`Player.bestSpecificRole`). Só os atributos com peso > 0 mudam, e isso cobre os goleiros
+  naturalmente (o GK pesa `reflex`, `jump` e `passing`).
+- **Crescimento:** o Δ vezes o número desses atributos vira um total de pontos, repartido pelos
+  pesos, com o teto suave `× (1 − (v/10)²)`.
 - **Declínio:** o total é repartido com peso dobrado em `speed`, `acceleration` e `stamina`.
-- **Goleiros:** usam os atributos de goleiro (`reflex`, `jump`, `pressing`, `acceleration`, `speed`)
-  no lugar dos de campo.
 - Os atributos ficam inteiros de 0 a 10. As frações são arredondadas com hash do id do jogador e do
   atributo (determinístico).
 - O importador imprime a média de overall por faixa de idade antes e depois, para mostrar que o
@@ -157,8 +165,8 @@ Aplicada duas vezes, uma por ano, com a idade daquele ano (idade ESPN − 2, dep
   (GK/DEF/MID/FWD) no clube, depois da curva de idade.
 - **Idade:** ≤ 20 anos −1,0, 21–23 −0,5, 24–31 0, 32+ −0,3, aplicado a todos os atributos.
 - **Ruído:** ±1 determinístico (hash) em até 4 atributos.
-- **Posição detalhada:** vem da linha, preenchendo o que falta no elenco (DEF → CB/LB/RB, MID →
-  CDM/CM/CAM, FWD → LW/ST/RW; GK → GK).
+- **Posição:** o papel principal da linha (`GK`, `Defender`, `Midfielder`, `Forward`), o mesmo
+  formato que os elencos do mundo já usam em `positions[0]`.
 - **Pé:** por hash, 75% destro.
 - **Perfil:** arquétipo e resumo pelo mesmo gerador do importador open-football.
 
@@ -166,8 +174,9 @@ Aplicada duas vezes, uma por ano, com a idade daquele ano (idade ESPN − 2, dep
 
 - **Base dos atributos:** o próprio clube se tiver 5 ou mais jogadores reconhecidos; senão, a
   mediana da linha na liga de destino, com −0,3 em todos os atributos.
-- **Finanças:** `deriveClubEconomy` do open-football, com a reputação estimada pelo nível da liga
-  (mediana dos clubes dela) e o tier da liga.
+- **Finanças:** mediana, campo a campo, das finanças dos clubes que já existiam na liga de destino
+  (o `deriveClubEconomy` precisa da reputação do seed, que um clube novo não tem). A capacidade do
+  estádio segue a mesma regra.
 - **Cores:** `color`/`alternateColor` da ESPN.
 - **Estádio:** da ESPN quando existir; senão, "Estádio {nome do clube}".
 - **Técnico:** o da ESPN (`coach`); senão, o `coachName`.
@@ -182,13 +191,15 @@ gerados quando faltar; máximo de 30, cortado pela mesma regra do open-football.
 
 - **Download:** o `fetchEspn` baixa a variante `dark` quando ela existe, senão a padrão, já em
   128 px pelo redimensionador do CDN (`a.espncdn.com/combiner/i?img=<caminho>&w=128&h=128`).
-- **Destino:** o importador copia para `src/example_data/logos/{liga de catálogo}/{slug}.png`, onde
-  a liga de catálogo é a do clube no `leagueData` gerado. A rota `/api/logos/:league/:club` já tenta
-  `.svg` e depois `.png`.
-- **Nativos:** clubes que já têm `.svg` mantêm o SVG. Só entram os que faltam.
-- **Front:** o importador gera `src/example_data/logoIndex.json` (squadIds com escudo). O
-  `squadLogoUrl` deixa de recusar todo `of_*` e passa a consultar esse índice, então a UI só pede o
-  escudo quando ele existe.
+- **Destino:** o importador copia para `src/example_data/logos/espn/{squadId}.png`. A rota
+  `/api/logos/:league/:club` já tenta `.svg` e depois `.png`, então `/api/logos/espn/{squadId}` funciona
+  sem mudar o servidor.
+- **Nativos:** clubes que já têm escudo nativo (`.svg` ou `.png` na pasta da sua liga nativa) mantêm
+  esse arquivo. O da ESPN só entra quando não há nativo.
+- **Front:** o importador gera `src/example_data/logoIndex.json`, que mapeia `squadId → "{pasta}/{stem}"`
+  para todo clube com escudo. O `squadLogoUrl` passa a montar a URL só por esse índice. Assim um
+  clube nativo que mudou de liga continua achando o próprio SVG, e um clube sem escudo não gera
+  requisição.
 - **Cores de clubes existentes:** ficam como estão, e só as da ESPN entram quando faltarem.
 
 ## Erros e relatório
