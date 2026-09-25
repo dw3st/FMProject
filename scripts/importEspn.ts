@@ -99,6 +99,11 @@ for (const dirent of readdirSync(LOGOS, { withFileTypes: true }).filter((d) => d
   if (d === ESPN_LOGO_DIR) continue;
   for (const f of readdirSync(join(LOGOS, d))) nativeFiles.add(`${d}/${f.replace(/\.(svg|png)$/i, "")}`);
 }
+const missingLogos = [...espnLogoOf.entries()].filter(([, file]) => !existsSync(join(ESPN, "logos", file)));
+if (missingLogos.length > 0) {
+  console.warn(`WARNING: ${missingLogos.length} club logoFile(s) set but missing on disk (data_process/espn/logos/):`);
+  for (const [id, file] of missingLogos) console.warn(`  ${id} → ${file}`);
+}
 const index = buildLogoIndex(
   allSquads.map((s) => ({ id: s.id, slug: s.slug, nativeLeague: nativeLeagueOf.get(s.id) ?? null })),
   nativeFiles,
@@ -111,13 +116,17 @@ for (const [id, path] of Object.entries(index))
 writeJson(join(DATA, "logoIndex.json"), index, 2);
 
 // ── Integrity ───────────────────────────────────────────────────────────────
-const countries = readJson<Record<string, { flag?: unknown; continent?: unknown }>>(join(DATA, "countries.json"));
+const countries = readJson<Record<string, { flag?: unknown; continent?: unknown; playable?: boolean }>>(join(DATA, "countries.json"));
 const totals = checkWorldIntegrity({
   leagueData: out.leagues, schedules: out.schedules, countries, pyramids: out.pyramids, squadsDir: SQUADS,
   mayHaveHandZones: (l) => l.source !== "open-football",
 });
 
 // ── databases.json ──────────────────────────────────────────────────────────
+/** "2026-09-25" → "Sep 25, 2026" — same human format the database has always used. UTC so a
+ *  date-only string doesn't shift a day depending on the machine's local timezone. */
+const humanDate = (isoDate: string) => new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+
 const dbPath = join(DATA, "databases.json");
 const databases = readJson<Array<Record<string, unknown>>>(dbPath);
 const official = databases.find((d) => d.id === "official-2024");
@@ -125,11 +134,11 @@ if (!official) throw new Error("databases.json: official-2024 missing");
 Object.assign(official, {
   name: "Official 2026/27",
   startDate: "July 1, 2026",
-  lastUpdated: snap.fetchedAt,
+  lastUpdated: humanDate(snap.fetchedAt),
   leagues: out.leagues.length,
   playableLeagues: out.leagues.filter((l) => out.schedules.some((s) => s.slug === l.slug)).length,
   countries: new Set(out.leagues.map((l) => l.country)).size,
-  playableCountries: new Set(out.leagues.map((l) => l.country)).size,
+  playableCountries: Object.values(countries).filter((c) => c.playable).length,
   players: totals.players,
 });
 writeJson(dbPath, databases, 2);

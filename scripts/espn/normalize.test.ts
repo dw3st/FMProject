@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { clubKey, looseClubKey, playerKey } from "@/../scripts/espn/normalize";
+import { clubKey, looseClubKey, normalizeNationality, playerKey } from "@/../scripts/espn/normalize";
 
 describe("clubKey", () => {
   test("drops club-type tokens and accents", () => {
@@ -36,5 +36,39 @@ describe("playerKey", () => {
     expect(playerKey("M&#39;Bappe")).toBe(playerKey("M'Bappe"));
     expect(playerKey("Marks &amp; Spencer")).toBe(playerKey("Marks & Spencer"));
     expect(playerKey('Quoted &quot;Nickname&quot;')).toBe(playerKey('Quoted "Nickname"'));
+  });
+});
+
+describe("normalizeNationality", () => {
+  const world = new Set(["USA", "Republic of Ireland", "South Korea", "Czechia", "Türkiye", "Congo DR", "Congo", "Italy", "France", "England"]);
+
+  test("maps known aliases onto the world's convention", () => {
+    expect(normalizeNationality("United States", world)).toBe("USA");
+    expect(normalizeNationality("Ireland", world)).toBe("Republic of Ireland");
+    expect(normalizeNationality("Korea, South", world)).toBe("South Korea");
+    expect(normalizeNationality("Czech Republic", world)).toBe("Czechia");
+    expect(normalizeNationality("Turkey", world)).toBe("Türkiye");
+    expect(normalizeNationality("DR Congo", world)).toBe("Congo DR");
+  });
+
+  test("is case-insensitive on the alias key", () => {
+    expect(normalizeNationality("united states", world)).toBe("USA");
+    expect(normalizeNationality("IRELAND", world)).toBe("Republic of Ireland");
+  });
+
+  test("passes through a value that already matches the world's convention", () => {
+    expect(normalizeNationality("England", world)).toBe("England");
+  });
+
+  test("rejects adjective forms instead of guessing", () => {
+    expect(normalizeNationality("Italian", world)).toBeNull();
+    expect(normalizeNationality("French", world)).toBeNull();
+    expect(normalizeNationality("Croatian", world)).toBeNull();
+  });
+
+  test("rejects unknown values and null/empty input", () => {
+    expect(normalizeNationality("Narnia", world)).toBeNull();
+    expect(normalizeNationality(null, world)).toBeNull();
+    expect(normalizeNationality("  ", world)).toBeNull();
   });
 });

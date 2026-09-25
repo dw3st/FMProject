@@ -8,7 +8,7 @@
  * data_process/espn/snapshot.json and data_process/espn/logos/{teamId}.png. Uses curl: Bun's fetch fails
  * against ESPN on Windows.
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { EspnAthlete, EspnLeague, EspnPos, EspnSnapshot, EspnTeam, LeagueMapEntry } from "@/../scripts/espn/types";
@@ -16,6 +16,9 @@ import type { EspnAthlete, EspnLeague, EspnPos, EspnSnapshot, EspnTeam, LeagueMa
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const DIR = join(ROOT, "data_process", "espn");
 const LOGOS = join(DIR, "logos");
+/** Crests download here first; swapped into `LOGOS` only once the whole fetch has succeeded, so a
+ *  failed run (network hiccup partway through) never leaves the previous snapshot's crests deleted. */
+const LOGOS_TMP = join(DIR, "logos.tmp");
 const API = "https://site.api.espn.com/apis/site/v2/sports/soccer";
 const CONCURRENCY = 8;
 
@@ -67,7 +70,7 @@ async function fetchTeam(code: string, t: any): Promise<EspnTeam> {
   const coach = roster.coach?.[0];
   const url = logoUrl(t);
   const file = `${t.id}.png`;
-  const ok = url ? await curlFile(url, join(LOGOS, file)) : false;
+  const ok = url ? await curlFile(url, join(LOGOS_TMP, file)) : false;
   return {
     id: String(t.id),
     name: String(t.displayName),
@@ -82,8 +85,8 @@ async function fetchTeam(code: string, t: any): Promise<EspnTeam> {
 }
 
 const map = JSON.parse(readFileSync(join(DIR, "leagueMap.json"), "utf-8")) as LeagueMapEntry[];
-rmSync(LOGOS, { recursive: true, force: true });
-mkdirSync(LOGOS, { recursive: true });
+rmSync(LOGOS_TMP, { recursive: true, force: true });
+mkdirSync(LOGOS_TMP, { recursive: true });
 
 const leagues: EspnLeague[] = [];
 for (const m of map) {
@@ -101,6 +104,10 @@ for (const m of map) {
   console.log(`${m.slug.padEnd(34)} ${m.code.padEnd(6)} clubs ${String(teams.length).padStart(3)}  players ${String(players).padStart(4)}  crests ${logos}`);
   if (skipped > 0) console.log(`  skipped ${skipped} placeholder team(s) (TBD)`);
 }
+
+// Everything succeeded — swap the freshly downloaded crests in for the previous set.
+rmSync(LOGOS, { recursive: true, force: true });
+renameSync(LOGOS_TMP, LOGOS);
 
 const snap: EspnSnapshot = { fetchedAt: new Date().toISOString().slice(0, 10), leagues };
 writeFileSync(join(DIR, "snapshot.json"), `${JSON.stringify(snap, null, 1)}\n`);
