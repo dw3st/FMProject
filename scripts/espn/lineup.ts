@@ -1,4 +1,14 @@
-export interface LeagueRef { slug: string; country: string; tier: number; members: string[] }
+export interface LeagueRef {
+  slug: string;
+  country: string;
+  /**
+   * Pyramid tier after `pyramidOverrides` (see `.claude/rules/data/openfootball-import.md`).
+   * A league of a single-level country has tier 1, and a displaced club then has no lower
+   * level to drop to — it leaves the world.
+   */
+  tier: number;
+  members: string[];
+}
 export interface ClubMove { squadId: string; from: string; to: string }
 export interface LineupResult { members: Map<string, string[]>; moves: ClubMove[]; removed: string[] }
 
@@ -12,12 +22,20 @@ const byId = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true 
  * lose the clubs claimed by covered leagues and receive the dropped ones. Lists come out sorted by id.
  */
 export function planLineup(leagues: LeagueRef[], applied: Map<string, string[]>): LineupResult {
+  const knownSlugs = new Set(leagues.map((l) => l.slug));
+  for (const slug of applied.keys()) {
+    if (!knownSlugs.has(slug)) throw new Error(`planLineup: unknown league ${slug}`);
+  }
+
   const leagueOf = new Map<string, string>();
   for (const l of leagues) for (const s of l.members) leagueOf.set(s, l.slug);
 
   const assigned = new Map<string, string>();
   for (const [slug, ids] of applied) {
+    const seenInList = new Set<string>();
     for (const id of ids) {
+      if (seenInList.has(id)) throw new Error(`planLineup: ${id} appears twice in ${slug}`);
+      seenInList.add(id);
       const prev = assigned.get(id);
       if (prev) throw new Error(`planLineup: ${id} listed in two leagues (${prev}, ${slug})`);
       assigned.set(id, slug);
@@ -25,7 +43,10 @@ export function planLineup(leagues: LeagueRef[], applied: Map<string, string[]>)
   }
 
   const members = new Map<string, string[]>();
-  for (const l of leagues) members.set(l.slug, applied.get(l.slug) ?? l.members.filter((s) => !assigned.has(s)));
+  for (const l of leagues) {
+    const ids = applied.get(l.slug);
+    members.set(l.slug, ids ? [...ids] : l.members.filter((s) => !assigned.has(s)));
+  }
 
   const removed: string[] = [];
   for (const l of [...leagues].sort((a, b) => a.tier - b.tier || byId(a.slug, b.slug))) {
