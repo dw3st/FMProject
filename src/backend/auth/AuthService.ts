@@ -25,6 +25,33 @@ export async function requestLoginCode(email: string): Promise<void> {
   await sendEmail({ to: normalized, ...message });
 }
 
+function findOrCreateUser(normalizedEmail: string): AuthUser {
+  let user = db
+    .prepare("SELECT id, email, created_at AS createdAt FROM users WHERE email = ?")
+    .get(normalizedEmail) as AuthUser | undefined;
+
+  if (!user) {
+    user = { id: randomUUID(), email: normalizedEmail, createdAt: Date.now() };
+    db.prepare(
+      "INSERT INTO users (id, email, created_at) VALUES (?, ?, ?)",
+    ).run(user.id, user.email, user.createdAt);
+  }
+  return user;
+}
+
+function createSession(userId: string): AuthSession {
+  const token = `${randomUUID()}${randomUUID().replace(/-/g, "")}`;
+  const session: AuthSession = {
+    token,
+    userId,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  };
+  db.prepare(
+    "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
+  ).run(session.token, session.userId, session.expiresAt);
+  return session;
+}
+
 export function verifyLoginCode(
   email: string,
   code: string,
@@ -41,27 +68,21 @@ export function verifyLoginCode(
 
   db.prepare("UPDATE magic_codes SET used = 1 WHERE rowid = ?").run(row.id);
 
-  let user = db
-    .prepare("SELECT id, email, created_at AS createdAt FROM users WHERE email = ?")
-    .get(normalized) as AuthUser | undefined;
+  const user = findOrCreateUser(normalized);
+  const session = createSession(user.id);
 
-  if (!user) {
-    user = { id: randomUUID(), email: normalized, createdAt: Date.now() };
-    db.prepare(
-      "INSERT INTO users (id, email, created_at) VALUES (?, ?, ?)",
-    ).run(user.id, user.email, user.createdAt);
-  }
+  return { user, session };
+}
 
-  const token = `${randomUUID()}${randomUUID().replace(/-/g, "")}`;
-  const session: AuthSession = {
-    token,
-    userId:    user.id,
-    expiresAt: Date.now() + SESSION_TTL_MS,
-  };
-  db.prepare(
-    "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
-  ).run(session.token, session.userId, session.expiresAt);
-
+/**
+ * Dev-only auto login: finds or creates the given user and opens a session,
+ * bypassing the magic-code flow entirely. Callers (the dev-login route) are
+ * responsible for gating this to non-production, localhost-only use.
+ */
+export function devAutoLogin(email: string): { user: AuthUser; session: AuthSession } {
+  const normalized = normalizeEmail(email);
+  const user = findOrCreateUser(normalized);
+  const session = createSession(user.id);
   return { user, session };
 }
 
