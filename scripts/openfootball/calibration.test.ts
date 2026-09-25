@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { collectStatPoints, fitLine, fitLogLine, fitPlane, fitPlayerCoeffs, matchClubs, matchPlayers } from "@/../scripts/openfootball/calibration";
+import {
+  collectStatPoints, fitLine, fitLogLine, fitPlane, fitPlayerCoeffs, matchClubs, matchClubsWithOverrides, matchPlayers,
+  matchPlayersByTokenSubset,
+} from "@/../scripts/openfootball/calibration";
 import { STAT_KEYS } from "@/../scripts/openfootball/derive";
 
 describe("fitLine", () => {
@@ -110,6 +113,113 @@ describe("matchClubs / matchPlayers", () => {
     expect(m.has("t1")).toBe(false);
     expect(m.has("t3")).toBe(false);
     expect(new Set(m.values()).size).toBe(m.size);
+  });
+});
+
+describe("matchPlayersByTokenSubset", () => {
+  test("Kane case: seed name tokens ⊆ tl name∪fullName, ages within 1", () => {
+    const tl = [{ id: "t1", name: "H. Kane", fullName: "Harry Edward Kane", age: 32 }];
+    const seed = [{ id: "s1", name: "Harry Kane", age: 32 }];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map());
+    expect(m.get("t1")).toBe("s1");
+  });
+
+  test("Bellingham case", () => {
+    const tl = [{ id: "t1", name: "J. Bellingham", fullName: "Jude Victor William Bellingham", age: 22 }];
+    const seed = [{ id: "s1", name: "Jude Bellingham", age: 21 }];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map());
+    expect(m.get("t1")).toBe("s1");
+  });
+
+  test("já pareados (dos dois lados) nunca entram como candidatos", () => {
+    const tl = [
+      { id: "t1", name: "H. Kane", fullName: "Harry Edward Kane", age: 32 },
+      { id: "t2", name: "Someone Else", age: 30 },
+    ];
+    const seed = [
+      { id: "s1", name: "Harry Kane", age: 32 },
+      { id: "s2", name: "Another Player", age: 30 },
+    ];
+    // t1 already paired to a different seed player, s1 already paired to a different tl player —
+    // neither should reappear as a candidate even though t1/s1 would otherwise satisfy the rule.
+    const m = matchPlayersByTokenSubset(tl, seed, new Map([["t1", "s2"], ["t2", "s1"]]));
+    expect(m.size).toBe(0);
+  });
+
+  test("nome do seed com menos de 2 tokens nunca é elegível", () => {
+    const tl = [{ id: "t1", name: "Neymar", fullName: "Neymar da Silva Santos Junior", age: 32 }];
+    const seed = [{ id: "s1", name: "Neymar", age: 32 }];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map());
+    expect(m.size).toBe(0);
+  });
+
+  test("diferença de idade maior que 1 rejeita", () => {
+    const tl = [{ id: "t1", name: "H. Kane", fullName: "Harry Edward Kane", age: 34 }];
+    const seed = [{ id: "s1", name: "Harry Kane", age: 32 }];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map());
+    expect(m.size).toBe(0);
+  });
+
+  test("ambíguo: dois candidatos tl para o mesmo jogador do seed não casam", () => {
+    const tl = [
+      { id: "t1", name: "M. Silva", fullName: "Marco Paulo Silva", age: 25 },
+      { id: "t2", name: "M. Silva", fullName: "Marco Andre Silva", age: 25 },
+    ];
+    const seed = [{ id: "s1", name: "Marco Silva", age: 25 }];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map());
+    expect(m.size).toBe(0);
+  });
+
+  test("bidirecional: um único candidato tl compartilhado por dois jogadores do seed não casa nenhum", () => {
+    const tl = [{ id: "t1", name: "M. Ferreira", fullName: "Marco Mateus Ferreira", age: 25 }];
+    const seed = [
+      { id: "s1", name: "Marco Ferreira", age: 25 },
+      { id: "s2", name: "Mateus Ferreira", age: 25 },
+    ];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map());
+    expect(m.size).toBe(0);
+  });
+
+  test("devolve só os pares NOVOS — não inclui o que já veio em `paired`", () => {
+    const tl = [{ id: "t1", name: "H. Kane", fullName: "Harry Edward Kane", age: 32 }];
+    const seed = [{ id: "s1", name: "Harry Kane", age: 32 }];
+    const m = matchPlayersByTokenSubset(tl, seed, new Map([["t9", "s9"]]));
+    expect([...m.entries()]).toEqual([["t1", "s1"]]);
+  });
+});
+
+describe("matchClubsWithOverrides", () => {
+  test("aplica o override mesmo quando os nomes normalizados nunca colidem (München × Munich)", () => {
+    const tl = [{ id: "157", name: "Bayern München" }];
+    const seed = [{ id: "de-bayern-munich", name: "Bayern Munich" }];
+    expect(matchClubs(tl, seed).size).toBe(0); // confirma que o normName puro não casa
+    const m = matchClubsWithOverrides(tl, seed, { "157": "de-bayern-munich" });
+    expect(m.get("157")).toBe("de-bayern-munich");
+  });
+
+  test("clube sem override continua casando por matchClubs normalmente", () => {
+    const tl = [{ id: "t1", name: "Manchester United" }, { id: "t2", name: "Bayern München" }];
+    const seed = [{ id: "s1", name: "Manchester United FC" }, { id: "de-bayern-munich", name: "Bayern Munich" }];
+    const m = matchClubsWithOverrides(tl, seed, { t2: "de-bayern-munich" });
+    expect(m.get("t1")).toBe("s1"); // via matchClubs, sem override
+    expect(m.get("t2")).toBe("de-bayern-munich"); // via override
+  });
+
+  test("override cujo seed id não está NESTA liga (fora do pool `seed`) é ignorado — sem cross-league", () => {
+    const tl = [{ id: "t1", name: "Some Club" }];
+    const seed = [{ id: "other-seed-id", name: "Unrelated Club" }];
+    const m = matchClubsWithOverrides(tl, seed, { t1: "seed-in-a-different-league" });
+    expect(m.has("t1")).toBe(false);
+  });
+
+  test("override e fuzzy nunca colidem: o par do override é removido dos dois pools antes do matchClubs", () => {
+    // Sem a remoção, "Wolves" (curto) poderia ser puxado por engano por outro candidato do pool.
+    const tl = [{ id: "39", name: "Wolves" }, { id: "t2", name: "Arsenal" }];
+    const seed = [{ id: "gb-wolves", name: "Wolverhampton Wanderers" }, { id: "s2", name: "Arsenal FC" }];
+    const m = matchClubsWithOverrides(tl, seed, { "39": "gb-wolves" });
+    expect(m.get("39")).toBe("gb-wolves");
+    expect(m.get("t2")).toBe("s2");
+    expect(m.size).toBe(2);
   });
 });
 

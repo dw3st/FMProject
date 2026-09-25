@@ -16,9 +16,11 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, write
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Seed, SeedClub, SeedLeague, SeedPlayer } from "@/../scripts/openfootball/types";
-import { clubId, leagueSlug, unitHash } from "@/../scripts/openfootball/ids";
+import { clubId, leagueSlug, normName, unitHash } from "@/../scripts/openfootball/ids";
 import { MAX_AGE, buildNamePools, mainRole, trimAndFill, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
-import { collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubs, matchPlayers } from "@/../scripts/openfootball/calibration";
+import {
+  collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubsWithOverrides, matchPlayers, matchPlayersByTokenSubset,
+} from "@/../scripts/openfootball/calibration";
 import {
   ECON_FIELDS, REP_FLOOR_MARGIN, STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer,
   type ClubFits, type EconSample,
@@ -27,8 +29,14 @@ import {
   CONTINENT, OVERLAP, buildCountryEntry, formatSchedules, keptLeagues, scheduleFor, seasonLabel, type Zone,
 } from "@/../scripts/openfootball/leagues";
 import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides, type PyramidLeague } from "@/../scripts/openfootball/pyramid";
+import {
+  fitLevelPredictor, predictLevel, quantileTargets, shiftToOverall, type LevelPair, type QuantileInput,
+} from "@/../scripts/openfootball/recalibrate";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
-import type { RosterPlayer } from "@/types/playerTypes";
+import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
+import { Player } from "@/Domain/Player";
+import { getMainRole } from "@/GameInterface/positionHelpers";
+import ROLES_JSON from "@/Data/roles.json";
 import { checkWorldIntegrity } from "@/../scripts/world/integrity";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -82,6 +90,16 @@ const seed = readJson<Seed>(join(OF_DIR, "seed-real.json"));
 const tierOverrides = readJson<Record<string, number>>(join(OF_DIR, "tierOverrides.json"));
 const tierOf = (l: SeedLeague) => tierOverrides[l.slug] ?? l.tier;
 /**
+ * Native squad id → seed club id, for genuine same-league name-format misses that `matchClubs`'s
+ * normalization can't bridge (e.g. native "Bayern München" vs seed "Bayern Munich" — normName
+ * strips the umlaut to "munchen", a different string from "munich"; native "Wolves" vs seed
+ * "Wolverhampton Wanderers" share no substring at all). Applied before `matchClubs` per league, for
+ * the same seed league the override's target club belongs to — never a cross-league/cross-tier fix
+ * (e.g. a native top-flight club whose only seed counterpart sits in a lower division is a genuine
+ * season/snapshot difference between the two datasets, not a naming gap, and is left unmatched).
+ */
+const clubOverrides = readJson<Record<string, string>>(join(OF_DIR, "clubOverrides.json"));
+/**
  * Pyramid-only level corrections keyed by leagueData slug (e.g. Russia's B groups sit one level below
  * the A groups). tierOverrides.json (seed slug) still applies first and also drives the economy tier;
  * pyramidOverrides.json only moves a league within the pyramid, so squad economies are unchanged.
@@ -103,8 +121,34 @@ for (const ps of playersByClub.values()) ps.sort((a, b) => byStr(a.id, b.id));
 
 const tlSquads = Object.fromEntries(Object.keys(TL_LEAGUES).map((l) => [l, readTLSquads(l)])) as Record<string, TLSquad[]>;
 
+// Validate clubOverrides.json: every native id and seed id must be real, and unknown native ids
+// (typos, a renamed squad file) or unknown seed ids must fail loudly rather than silently no-op.
+const allNativeSquadIds = new Set(Object.values(tlSquads).flat().map((s) => s.id));
+const allSeedClubIds = new Set(seed.clubs.map((c) => c.id));
+for (const [nativeId, seedId] of Object.entries(clubOverrides)) {
+  if (!allNativeSquadIds.has(nativeId)) throw new Error(`clubOverrides.json: unknown native squad id "${nativeId}"`);
+  if (!allSeedClubIds.has(seedId)) throw new Error(`clubOverrides.json: unknown seed club id "${seedId}" (native ${nativeId})`);
+}
+
 // ── 2. Calibrate ────────────────────────────────────────────────────────────
 const statPairs: Array<{ tl: { stats: Record<string, number> }; seed: SeedPlayer; leagueRep: number }> = [];
+/** Native↔seed player pairs kept for the star-level recalibration (section 3.5). One entry per
+ *  matched native player; `player` is a live reference into `tlSquads`, mutated in place there. */
+interface RecalPair {
+  role: MainRole;
+  seedOverall: number;
+  leagueRep: number;
+  player: RosterPlayer & { fullName?: string };
+  tlLeague: string;
+  squadFileId: string;
+  /** The paired seed player — used after `coeffs` is fitted to compute a "shadow of_*" overall
+   *  (same derivePlayer() a real of_* player of this exact seed record would get), the quantile
+   *  target pool's value source (see the "ceiling" note near section 3.5). */
+  seedPlayer: SeedPlayer;
+}
+const recalPairs: RecalPair[] = [];
+/** Extra recal-only pairs found by the token-subset fallback (never fed into statPairs), per role. */
+const tokenSubsetExtraByRole: Record<MainRole, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
 const seedLeagueBySlug = new Map(seed.leagues.map((l) => [l.slug, l]));
 /** Seed league reputation on the /1000 scale used as the second calibration covariate. */
 const leagueRepOf = (seedSlug: string) => seedLeagueBySlug.get(seedSlug)!.reputation / 1000;
@@ -118,7 +162,7 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
   const seedClubs = clubsByLeague.get(seedSlug) ?? [];
   const leagueRep = leagueRepOf(seedSlug);
   const seedById = new Map(seedClubs.map((c) => [c.id, c]));
-  const clubMap = matchClubs(tlSquads[tlLeague]!, seedClubs);
+  const clubMap = matchClubsWithOverrides(tlSquads[tlLeague]!, seedClubs, clubOverrides);
   let players = 0;
   clubPairNames[tlLeague] = [];
   for (const tl of tlSquads[tlLeague]!) {
@@ -135,8 +179,35 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
     );
     const tlById = new Map(tl.players.map((p) => [p.id, p]));
     for (const [tid, spid] of [...pm].sort((a, b) => byStr(a[0], b[0]))) {
-      statPairs.push({ tl: { stats: tlById.get(tid)!.stats as unknown as Record<string, number> }, seed: spById.get(spid)!, leagueRep });
+      const tlPlayer = tlById.get(tid)!;
+      const seedPlayer = spById.get(spid)!;
+      statPairs.push({ tl: { stats: tlPlayer.stats as unknown as Record<string, number> }, seed: seedPlayer, leagueRep });
+      recalPairs.push({
+        role: getMainRole(tlPlayer.positions[0] ?? "CM"),
+        seedOverall: seedPlayer.overall,
+        leagueRep,
+        player: tlPlayer,
+        tlLeague,
+        squadFileId: tl.id,
+        seedPlayer,
+      });
       players++;
+    }
+    // Recalibration-only fallback: never feeds statPairs (the of_* attribute fit stays on
+    // matchPlayers' exact-key pairs). Catches e.g. native "H. Kane" / fullName "Harry Edward Kane"
+    // against seed "Harry Kane" — every seed name token is present in the native's name∪fullName
+    // tokens, but the normalized keys never collide so matchPlayers never pairs them.
+    const extra = matchPlayersByTokenSubset(
+      tl.players.map((p) => ({ id: p.id, name: p.name, fullName: p.fullName, age: p.age })),
+      sps.map((p) => ({ id: p.id, name: p.name, age: p.age })),
+      pm,
+    );
+    for (const [tid, spid] of [...extra].sort((a, b) => byStr(a[0], b[0]))) {
+      const tlPlayer = tlById.get(tid)!;
+      const seedPlayer = spById.get(spid)!;
+      const role = getMainRole(tlPlayer.positions[0] ?? "CM");
+      recalPairs.push({ role, seedOverall: seedPlayer.overall, leagueRep, player: tlPlayer, tlLeague, squadFileId: tl.id, seedPlayer });
+      tokenSubsetExtraByRole[role]++;
     }
   }
   pairCounts[tlLeague] = { clubs: clubPairNames[tlLeague]!.length, players };
@@ -167,6 +238,61 @@ writeJson(join(OF_DIR, "calibration.json"), {
 if (!existsSync(join(NATIVE, "squads"))) throw new Error(`native sources missing: ${join(NATIVE, "squads")}`);
 for (const d of sortedDir(SQUADS)) rmSync(join(SQUADS, d), { recursive: true, force: true });
 cpSync(join(NATIVE, "squads"), SQUADS, { recursive: true });
+
+// ── 3.5. Recalibrate native stars from the seed ─────────────────────────────
+// The native attribute calibration above (statPairs) uses the ORIGINAL native attributes and is
+// unaffected by this step. This step only rewrites the level (overall) of native players paired
+// with a seed player, keeping their native attribute PROFILE. See
+// docs/superpowers/specs/2026-09-25-native-star-recalibration-design.md.
+//
+// Tried and reverted (2026-09-25): sourcing the quantile VALUE pool from each pair's "shadow of_*"
+// overall (derivePlayer + coeffs, noise-free) instead of the natives' own pre-recal overall. The
+// z-model correctly ranks elite seed players either way (verified top-5 by z per role), but the
+// shadow-pool version compressed the whole world's top end and pushed marquee names down (Mbappé
+// #3 → #34) in favor of a theoretically cleaner but user-worse result. Reverted to the native-overall
+// pool below, which is what the approved design (and the user) wants.
+const ROLE_ATTR_WEIGHTS = ROLES_JSON as Record<string, { attrWeights?: Record<string, number> }>;
+const recalByRole = new Map<MainRole, RecalPair[]>();
+for (const p of recalPairs) recalByRole.set(p.role, [...(recalByRole.get(p.role) ?? []), p]);
+
+const nativeOverallBefore = new Map(recalPairs.map((p) => [p.player.id, Player.computeOverallAvg(p.player)]));
+const levelPairs: LevelPair[] = recalPairs.map((p) => ({
+  role: p.role, seedOverall: p.seedOverall, leagueRep: p.leagueRep, nativeOverall: nativeOverallBefore.get(p.player.id)!,
+}));
+const levelFits = fitLevelPredictor(levelPairs);
+
+interface RecalRoleReport { role: MainRole; n: number; fit?: { a: number; b: number; c: number; sd: number } }
+const recalReport: RecalRoleReport[] = [];
+const changedSquads = new Set<string>(); // `${tlLeague}::${squadFileId}`
+let recalibratedCount = 0;
+
+for (const [role, group] of recalByRole) {
+  const fit = levelFits[role];
+  recalReport.push({ role, n: group.length, fit: fit ? { a: fit.a, b: fit.b, c: fit.c, sd: fit.sd } : undefined });
+  if (!fit) continue; // fewer than 3 pairs for this role — leave these native players untouched
+  const quantileInput: QuantileInput[] = group.map((p) => ({
+    id: p.player.id, z: predictLevel(fit, p.seedOverall, p.leagueRep), currentOverall: Player.computeOverallAvg(p.player),
+  }));
+  const targets = quantileTargets(quantileInput);
+  for (const p of group) {
+    const target = targets.get(p.player.id)!;
+    const specificRole = Player.bestSpecificRole(p.player.stats, p.player.positions[0] ?? "CM");
+    const weights = ROLE_ATTR_WEIGHTS[specificRole]?.attrWeights ?? ROLE_ATTR_WEIGHTS.CM!.attrWeights!;
+    const overallOf = (s: PlayerStatsRecord) => Player.computeOverallAvg({ ...p.player, stats: s });
+    const hashKey = `${p.tlLeague}:${p.squadFileId}:${p.player.id}`;
+    p.player.stats = shiftToOverall(hashKey, p.player.stats, weights, target, overallOf);
+    delete p.player.overallAvg;
+    changedSquads.add(`${p.tlLeague}::${p.squadFileId}`);
+    recalibratedCount++;
+  }
+}
+
+for (const key of changedSquads) {
+  const [tlLeague, squadFileId] = key.split("::") as [string, string];
+  const squad = tlSquads[tlLeague]!.find((s) => s.id === squadFileId)!;
+  writeJson(join(SQUADS, tlLeague, `${squadFileId}.json`), squad, 2);
+}
+
 type LeagueEntry = { slug: string; country: string; source?: string; zones?: Zone[]; standings: Array<{ squadId: string }> } & Record<string, unknown>;
 type CountryEntry = { slug: string; name: string; iso2: string; source?: string; headline: string } & Record<string, unknown>;
 const leagueData = readJson<LeagueEntry[]>(join(NATIVE, "leagueData.json"));
@@ -356,3 +482,55 @@ for (const p of Object.values(pyramids)) {
 }
 console.log(`world: ${leagueData.length} leagues, ${totals.squads} squads, ${worldPlayers} players, ${Object.keys(countries).length} countries`);
 console.log("integrity checks passed");
+
+// ── 9. Native star recalibration report ──────────────────────────────────────
+console.log("── native star recalibration ──");
+console.log("pairs per role (level predictor z = a + b·seedOverall + c·leagueRep, fit vs. native game overall):");
+for (const r of recalReport) {
+  const fitStr = r.fit ? `a=${r.fit.a.toFixed(4)} b=${r.fit.b.toFixed(4)} c=${r.fit.c.toFixed(4)} sd=${r.fit.sd.toFixed(3)}` : "(no predictor — fewer than 3 pairs)";
+  console.log(`  ${r.role.padEnd(11)} pairs ${String(r.n).padStart(4)}  ${fitStr}`);
+}
+console.log(`native players recalibrated: ${recalibratedCount}  (squad files rewritten: ${changedSquads.size})`);
+console.log("extra pairs from the recal-only token-subset fallback (matchPlayersByTokenSubset), per role:");
+for (const role of ["GK", "Defender", "Midfielder", "Forward"] as MainRole[]) console.log(`  ${role.padEnd(11)} +${tokenSubsetExtraByRole[role]}`);
+const pairedCheck = (needle: string) => {
+  // Token-containment, not substring — a native fullName carries extra middle names
+  // ("Jude Victor William Bellingham"), so a plain .includes("jude bellingham") never matches.
+  const needleTokens = normName(needle).split(" ").filter(Boolean);
+  const hit = recalPairs.find((p) => {
+    const tokens = new Set(normName(`${p.player.name} ${p.player.fullName ?? ""}`).split(" ").filter(Boolean));
+    return needleTokens.every((t) => tokens.has(t));
+  });
+  return hit ? `paired (seedOverall ${hit.seedOverall}, ${hit.player.name} / ${hit.player.fullName ?? ""})` : "NOT paired";
+};
+console.log(`  Harry Kane: ${pairedCheck("Harry Kane")}`);
+console.log(`  Jude Bellingham: ${pairedCheck("Jude Bellingham")}`);
+
+type WorldRankedPlayer = { id: string; name: string; club: string; league: string; overall: number };
+const worldRanked: WorldRankedPlayer[] = [];
+for (const leagueSlugDir of sortedDir(SQUADS)) {
+  const dirPath = join(SQUADS, leagueSlugDir);
+  for (const f of sortedDir(dirPath).filter((x) => x.endsWith(".json"))) {
+    const squad = readJson<{ id: string; name: string; players: Array<RosterPlayer & { fullName?: string }> }>(join(dirPath, f));
+    for (const p of squad.players) {
+      worldRanked.push({ id: p.id, name: p.fullName ?? p.name, club: squad.name, league: leagueSlugDir, overall: Player.computeOverallAvg(p) });
+    }
+  }
+}
+worldRanked.sort((a, b) => b.overall - a.overall || byStr(a.id, b.id));
+console.log(`top 20 of the world (after recalibration, ${worldRanked.length} players):`);
+worldRanked.slice(0, 20).forEach((p, i) => {
+  console.log(`  ${String(i + 1).padStart(2)}. ${p.name.padEnd(28)} ${p.club.padEnd(24)} ${p.overall.toFixed(2)}  (${p.league})`);
+});
+
+const findRank = (needle: string): string => {
+  const target = normName(needle);
+  const idx = worldRanked.findIndex((p) => normName(p.name).includes(target));
+  if (idx === -1) return "not found";
+  const p = worldRanked[idx]!;
+  return `#${idx + 1} (${p.name}, ${p.club}, ${p.overall.toFixed(2)})`;
+};
+console.log("named stars:");
+for (const name of ["Mbappé", "Kane", "Haaland", "Salah", "Vini", "Bellingham", "Yamal", "Wirtz", "Doku", "Diomande"]) {
+  console.log(`  ${name.padEnd(12)} ${findRank(name)}`);
+}

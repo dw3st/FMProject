@@ -226,7 +226,9 @@ describe("matchPlayers — pass A2 (club, surname fallback)", () => {
   });
 
   test("A2 never matches across clubs", () => {
-    const w = [wp("q1", "T. Hübers", 29, "Defender", "away", "Timo Bernd Hübers")];
+    // Age gap kept outside [0,3] so this fixture also can't be rescued by the global pass B2 below —
+    // the point here is specifically that A2 itself never reaches across clubs.
+    const w = [wp("q1", "T. Hübers", 20, "Defender", "away", "Timo Bernd Hübers")];
     const m = matchPlayers([ath("a1", "Timo Hübers", 30, "Defender", "home")], w, {});
     expect(m.has("a1")).toBe(false);
   });
@@ -282,5 +284,68 @@ describe("matchPlayers — pass A2 (club, surname fallback)", () => {
     );
     expect(m.has("a1")).toBe(false);
     expect(m.has("a2")).toBe(false);
+  });
+});
+
+describe("matchPlayers — pass B2 (global, fullName token subset)", () => {
+  test("Salah case: displayName tokens ⊆ fullName tokens, no exact key anywhere, different club", () => {
+    const w = [wp("q1", "M. Salah", 32, "Forward", "liverpool", "Mohamed Salah Hamed Mahrous Ghaly")];
+    const m = matchPlayers([ath("a1", "Mohamed Salah", 34, "Forward", "trabzonspor")], w, {});
+    expect(m.get("a1")).toBe("q1");
+  });
+
+  test("ambiguous: two world fullNames both contain the athlete's tokens → no match", () => {
+    const w = [
+      wp("q1", "M. Silva", 24, "Midfielder", "clubA", "Marco Paulo Silva"),
+      wp("q2", "M. Silva", 25, "Midfielder", "clubB", "Marco Andre Silva"),
+    ];
+    const m = matchPlayers([ath("a1", "Marco Silva", 26, "Midfielder", "clubC")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("two-sided uniqueness: one world fullName is the sole candidate of two athletes → neither matches", () => {
+    const w = [wp("q1", "M. Ferreira", 24, "Midfielder", "clubA", "Marco Mateus Ferreira")];
+    const m = matchPlayers(
+      [ath("a1", "Marco Ferreira", 25, "Midfielder", "clubB"), ath("a2", "Mateus Ferreira", 26, "Midfielder", "clubC")],
+      w,
+      {},
+    );
+    expect(m.has("a1")).toBe(false);
+    expect(m.has("a2")).toBe(false);
+  });
+
+  test("different line (adjacent, not exact) → no match even with a clean token subset", () => {
+    const w = [wp("q1", "M. Klein", 24, "Defender", "clubA", "Jonas Marius Klein")];
+    const m = matchPlayers([ath("a1", "Jonas Klein", 25, "Midfielder", "clubB")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("a single-token displayName is never eligible for B2", () => {
+    const w = [wp("q1", "Neymar", 32, "Forward", "clubA", "Neymar da Silva Santos Junior")];
+    const m = matchPlayers([ath("a1", "Neymar", 33, "Forward", "clubB")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("a world player without fullName is never a B2 candidate", () => {
+    const w = [wp("q1", "M. Salah", 32, "Forward", "liverpool")]; // no fullName
+    const m = matchPlayers([ath("a1", "Mohamed Salah", 34, "Forward", "trabzonspor")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("an athlete blocked by an ambiguous pass-A club tie is never rescued by B2", () => {
+    const w = [
+      wp("q1", "Mohamed Salah", 34, "Forward", "s1"), // gap 0
+      wp("q2", "Mohamed Salah", 32, "Forward", "s1"), // gap 2 — ties with q1 under |gap-1|=1
+      // A clean B2 candidate elsewhere — must NOT rescue a1, since a1 had a (tied) club candidate.
+      wp("q3", "M. Salah", 32, "Forward", "elsewhere", "Mohamed Salah Hamed Mahrous Ghaly"),
+    ];
+    const m = matchPlayers([ath("a1", "Mohamed Salah", 34, "Forward", "s1")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("age gap outside [0,3] rejects an otherwise clean B2 candidate", () => {
+    const w = [wp("q1", "M. Salah", 28, "Forward", "liverpool", "Mohamed Salah Hamed Mahrous Ghaly")]; // gap 6
+    const m = matchPlayers([ath("a1", "Mohamed Salah", 34, "Forward", "trabzonspor")], w, {});
+    expect(m.has("a1")).toBe(false);
   });
 });
