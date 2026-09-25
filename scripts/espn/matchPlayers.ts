@@ -105,6 +105,9 @@ function isAmbiguous(ranked: Candidate[]): boolean {
  * first, then roleDistance, then |gap − EXPECTED_AGE_GAP|; a tie between the top two is ambiguous and
  * the athlete is left unmatched.
  *
+ * Pass B2 ("global, fullName token subset"): see the doc comment above its implementation below —
+ * runs after pass B, for athletes still unmatched with no viable club candidate.
+ *
  * Overrides (espnId → playerId) are applied before all passes and must reference a real world player;
  * two overrides claiming the same player throw.
  */
@@ -238,6 +241,56 @@ export function matchPlayers(athletes: AthleteRef[], world: WorldPlayerRef[], ov
     const best = ranked[0]!;
     claimed.add(best.p.id);
     out.set(a.espnId, best.p.id);
+  }
+
+  // Pass B2 — global, fullName token subset: only athletes still unmatched after pass A/A2/B, with
+  // no viable club candidate (same `hadClubCandidate` gate as pass B), a non-null age and role.
+  // Fixes the case where a world player's `name` is abbreviated ("M. Salah") and their `fullName`
+  // carries extra middle/patronymic tokens ("Mohamed Salah Hamed Mahrous Ghaly") that ESPN's shorter
+  // displayName ("Mohamed Salah") never fully repeats as a normalized key, so pass B's exact-key
+  // lookup misses it. The source tokens are always the athlete's OWN displayName (≥ 2 tokens — a
+  // mononym is never eligible here, same spirit as pass B's multi-token-key rule); a world player is
+  // a candidate when its `fullName` (never the abbreviated `name`) tokenizes to a superset of those
+  // tokens. Unlike pass B, the role must match EXACTLY (roleDistance 0 — no adjacent line) and
+  // country is not considered at all. Two-sided uniqueness like A2: candidate lists are computed for
+  // every B2-eligible athlete against the pool left after pass B, frozen before any B2 match is made,
+  // and a pair is accepted only when the athlete has exactly one candidate AND that world player is a
+  // candidate for exactly one athlete.
+  interface B2Eligible { a: AthleteRef; age: number; role: MainRole; tokens: string[] }
+  const b2Eligible: B2Eligible[] = [];
+  for (const a of athletes) {
+    if (out.has(a.espnId) || a.age === null || a.role === null || hadClubCandidate.has(a.espnId)) continue;
+    const tokens = tokensOf(a.displayName);
+    if (tokens.length < 2) continue;
+    b2Eligible.push({ a, age: a.age, role: a.role, tokens });
+  }
+
+  const b2CandidatesByAthlete = new Map<string, WorldPlayerRef[]>();
+  const b2AthletesByCandidate = new Map<string, Set<string>>();
+  for (const e of b2Eligible) {
+    const candidates = world.filter((p) => {
+      if (claimed.has(p.id) || !p.fullName) return false;
+      const gap = e.age - p.age;
+      if (gap < MIN_AGE_GAP || gap > MAX_AGE_GAP) return false;
+      if (roleDistance(e.role, p.role) !== 0) return false;
+      const pTokens = new Set(tokensOf(p.fullName));
+      return e.tokens.every((t) => pTokens.has(t));
+    });
+    b2CandidatesByAthlete.set(e.a.espnId, candidates);
+    for (const c of candidates) {
+      let set = b2AthletesByCandidate.get(c.id);
+      if (!set) { set = new Set(); b2AthletesByCandidate.set(c.id, set); }
+      set.add(e.a.espnId);
+    }
+  }
+
+  for (const e of b2Eligible) {
+    const candidates = b2CandidatesByAthlete.get(e.a.espnId)!;
+    if (candidates.length !== 1) continue;
+    const best = candidates[0]!;
+    if ((b2AthletesByCandidate.get(best.id)?.size ?? 0) !== 1) continue;
+    claimed.add(best.id);
+    out.set(e.a.espnId, best.id);
   }
 
   return out;

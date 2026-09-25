@@ -138,8 +138,15 @@ Mbappé era o 137º por overall). Ver
 - **Módulo puro:** `scripts/openfootball/recalibrate.ts` (+ teste): `fitLevelPredictor`,
   `predictLevel`, `quantileTargets`, `applyShift`/`findShift` e `shiftToOverall`. Não toca disco;
   o importador é quem lê/escreve.
-- **Regra, por papel principal (GK/DEF/MID/FWD), nos mesmos pares nativos↔seed do
-  `matchClubs`/`matchPlayers` (Série B incluída, ~2.900 jogadores):**
+- **Pares.** Parte dos mesmos pares nativos↔seed de `matchClubs`/`matchPlayers` (Série B incluída,
+  ~2.900 jogadores) — a calibração de atributos dos `of_*` continua só com esses. Só para a
+  recalibração, um passo extra (`matchPlayersByTokenSubset`, `scripts/openfootball/calibration.ts`)
+  acha pares adicionais dentro do mesmo clube: um jogador do seed casa com um nativo ainda sem par
+  quando todo token do nome do seed (2+ tokens) aparece no `name` ∪ `fullName` do nativo e as idades
+  diferem no máximo 1, exigindo par único dos dois lados. Cobre nativos abreviados com nome completo
+  cheio de nomes do meio — `"H. Kane"` / `fullName` `"Harry Edward Kane"` contra o seed `"Harry
+  Kane"` — que `matchPlayers` não casa porque as chaves normalizadas nunca são iguais.
+- **Regra, por papel principal (GK/DEF/MID/FWD), nesses pares:**
   1. **Previsor de nível:** `z = a + b·seedOverall + c·leagueRep`, ajustado contra o overall do
      jogo (`Player.computeOverallAvg`) do nativo **antes** de qualquer mudança. Papel com menos de
      3 pares fica sem previsor e seus jogadores não são tocados.

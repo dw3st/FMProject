@@ -87,6 +87,77 @@ export function matchPlayers(
   return out;
 }
 
+/** Ages within this many years are considered compatible for the token-subset fallback below. */
+export const TOKEN_SUBSET_MAX_AGE_GAP = 1;
+
+/**
+ * Same-club fallback for the RECALIBRATION pairs only (`scripts/importOpenFootball.ts` §3.5) — never
+ * used for `matchPlayers`'s attribute-fit pairs. Fixes cases like a native "H. Kane" / fullName
+ * "Harry Edward Kane" against a seed "Harry Kane": `matchPlayers` needs an equal normalized name and
+ * never pairs them, but every seed name token does appear in the native player's name∪fullName
+ * tokens.
+ *
+ * For each seed player not already in `paired` (values), with a normalized name of at least 2
+ * tokens, a native (`tl`) player not already in `paired` (keys) at the same club is a candidate when
+ * its normalized name∪fullName token set is a superset of the seed's normalized name tokens, and
+ * `|seed.age − tl.age| ≤ TOKEN_SUBSET_MAX_AGE_GAP`. Two-sided uniqueness: candidate lists are
+ * computed for every eligible seed player up front, against the pool of unclaimed `tl` players, and
+ * a pair is accepted only when the seed player has exactly one candidate AND that candidate is a
+ * candidate for exactly one seed player. Returns only the NEW pairs (tl.id → seed.id) — `paired` is
+ * read, never mutated or merged into the result.
+ */
+export function matchPlayersByTokenSubset(
+  tl: Array<{ id: string; name: string; fullName?: string; age: number }>,
+  seed: Array<{ id: string; name: string; age: number }>,
+  paired: Map<string, string>,
+): Map<string, string> {
+  const pairedTl = new Set(paired.keys());
+  const pairedSeed = new Set(paired.values());
+  const unclaimedTl = tl.filter((t) => !pairedTl.has(t.id));
+  const unclaimedSeed = seed.filter((s) => !pairedSeed.has(s.id));
+
+  const tlTokenSet = (t: { name: string; fullName?: string }): Set<string> => {
+    const set = new Set(normName(t.name).split(" ").filter(Boolean));
+    if (t.fullName) for (const tok of normName(t.fullName).split(" ").filter(Boolean)) set.add(tok);
+    return set;
+  };
+
+  interface Eligible { s: (typeof unclaimedSeed)[number]; tokens: string[] }
+  const eligible: Eligible[] = [];
+  for (const s of unclaimedSeed) {
+    const tokens = normName(s.name).split(" ").filter(Boolean);
+    if (tokens.length < 2) continue;
+    eligible.push({ s, tokens });
+  }
+
+  const candidatesBySeed = new Map<string, string[]>();
+  const seedsByTl = new Map<string, Set<string>>();
+  for (const e of eligible) {
+    const candidates: string[] = [];
+    for (const t of unclaimedTl) {
+      if (Math.abs(e.s.age - t.age) > TOKEN_SUBSET_MAX_AGE_GAP) continue;
+      const tTokens = tlTokenSet(t);
+      if (e.tokens.every((tok) => tTokens.has(tok))) candidates.push(t.id);
+    }
+    candidatesBySeed.set(e.s.id, candidates);
+    for (const tid of candidates) {
+      let set = seedsByTl.get(tid);
+      if (!set) { set = new Set(); seedsByTl.set(tid, set); }
+      set.add(e.s.id);
+    }
+  }
+
+  const out = new Map<string, string>();
+  for (const e of eligible) {
+    const candidates = candidatesBySeed.get(e.s.id)!;
+    if (candidates.length !== 1) continue;
+    const tid = candidates[0]!;
+    if ((seedsByTl.get(tid)?.size ?? 0) !== 1) continue;
+    out.set(tid, e.s.id);
+  }
+  return out;
+}
+
 export interface PlaneFit { a: number; b: number; c: number; sd: number; n: number }
 
 /**
