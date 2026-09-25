@@ -16,6 +16,10 @@ export type ReportType = (typeof REPORT_TYPES)[number];
 const DESCRIPTION_MIN = 5;
 const DESCRIPTION_MAX = 2000;
 const PAGE_MAX = 200;
+const USER_AGENT_MAX = 300;
+const GAME_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const MAX_BODY_BYTES = 16 * 1024; // 16 KB
 
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
@@ -100,19 +104,33 @@ function validateReportBody(
     return { ok: false, error: `page is required and must be at most ${PAGE_MAX} characters` };
   }
 
+  // saveId is best-effort context, not a hard requirement: an unknown or not-owned saveId is
+  // stored as null rather than rejecting the whole report (the tester may be reporting from a
+  // stale tab, a save they just deleted, etc.) — only its own JSON type is enforced strictly.
   let saveId: string | null = null;
   if (body.saveId !== undefined && body.saveId !== null) {
-    if (typeof body.saveId !== "string" || !body.saveId.trim()) {
+    if (typeof body.saveId !== "string") {
       return { ok: false, error: "invalid saveId" };
     }
-    if (!isSaveOwner(body.saveId, userId)) {
-      return { ok: false, error: "invalid saveId" };
+    const trimmed = body.saveId.trim();
+    if (trimmed && isSaveOwner(trimmed, userId)) {
+      saveId = trimmed;
     }
-    saveId = body.saveId;
   }
 
-  const gameDate =
-    typeof body.gameDate === "string" && body.gameDate.trim() ? body.gameDate.trim() : null;
+  let gameDate: string | null = null;
+  if (body.gameDate !== undefined && body.gameDate !== null) {
+    if (typeof body.gameDate !== "string") {
+      return { ok: false, error: "invalid gameDate" };
+    }
+    const trimmed = body.gameDate.trim();
+    if (trimmed) {
+      if (!GAME_DATE_RE.test(trimmed)) {
+        return { ok: false, error: "gameDate must be YYYY-MM-DD" };
+      }
+      gameDate = trimmed;
+    }
+  }
 
   return {
     ok: true,
@@ -133,9 +151,31 @@ export const reportRoutes = {
       return Response.json({ error: "forbidden" }, { status: 403 });
     }
 
+    const contentType = req.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return Response.json({ error: "unsupported content type" }, { status: 415 });
+    }
+
+    // Content-Length is a fast, cheap rejection when present, but a client can omit or lie
+    // about it — the actual byte length of the body is checked below regardless.
+    const contentLengthHeader = req.headers.get("content-length");
+    if (contentLengthHeader && Number(contentLengthHeader) > MAX_BODY_BYTES) {
+      return Response.json({ error: "payload too large" }, { status: 413 });
+    }
+
+    let text: string;
+    try {
+      text = await req.text();
+    } catch {
+      return Response.json({ error: "invalid body" }, { status: 400 });
+    }
+    if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
+      return Response.json({ error: "payload too large" }, { status: 413 });
+    }
+
     let raw: RawReportBody;
     try {
-      raw = (await req.json()) as RawReportBody;
+      raw = JSON.parse(text) as RawReportBody;
     } catch {
       return Response.json({ error: "invalid body" }, { status: 400 });
     }
@@ -154,13 +194,16 @@ export const reportRoutes = {
     }
     recordSubmission(auth.userId, now);
 
+    const rawUserAgent = req.headers.get("user-agent");
+    const userAgent = rawUserAgent ? rawUserAgent.slice(0, USER_AGENT_MAX) : null;
+
     const record: ReportRecord = {
       id: randomUUID(),
       createdAt: new Date(now).toISOString(),
       userId: auth.userId,
       email: auth.email,
       ...validated.value,
-      userAgent: req.headers.get("user-agent"),
+      userAgent,
     };
 
     await mkdir(RUNTIME_DATA_DIR, { recursive: true });

@@ -1,52 +1,16 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "fs";
 import { randomUUID } from "node:crypto";
+import { reportRoutes, reportsFilePath, resetReportRateLimit } from "@/backend/reports";
+import { devAutoLogin } from "@/backend/auth/AuthService";
+import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
-// The auth DB and the reports file both read RUNTIME_DATA_DIR at import time, so it must be
-// set to an isolated temp directory before anything that transitively imports those modules
-// is imported — same pattern as devLogin.test.ts. Note this only takes effect if nothing else
-// in the whole test run has imported that chain first with a different RUNTIME_DATA_DIR (e.g. a
-// file that statically imports "@/backend/auth/middleware" at module scope) — the db connection
-// is a module-level singleton, bound to whichever directory won that race. To stay correct
-// either way, every saveId used below is randomly generated rather than a fixed literal, so a
-// PRIMARY KEY collision can never happen even if this file ends up sharing a real, persistent
-// sqlite file with another test file across repeated `bun test` runs.
-let tmpDir: string;
-let reportRoutes: typeof import("@/backend/reports").reportRoutes;
-let reportsFilePath: typeof import("@/backend/reports").reportsFilePath;
-let resetReportRateLimit: typeof import("@/backend/reports").resetReportRateLimit;
-let devAutoLogin: typeof import("@/backend/auth/AuthService").devAutoLogin;
-let recordSaveOwnership: typeof import("@/backend/auth/saveOwnership").recordSaveOwnership;
-
-const savedEnv: Record<string, string | undefined> = {};
-const ENV_KEYS = ["RUNTIME_DATA_DIR", "REPORT_TESTERS", "NODE_ENV"] as const;
-
-beforeAll(async () => {
-  for (const k of ENV_KEYS) savedEnv[k] = process.env[k];
-  tmpDir = mkdtempSync(join(tmpdir(), "fmproject-reports-"));
-  process.env.RUNTIME_DATA_DIR = tmpDir;
-  ({ reportRoutes, reportsFilePath, resetReportRateLimit } = await import("@/backend/reports"));
-  ({ devAutoLogin } = await import("@/backend/auth/AuthService"));
-  ({ recordSaveOwnership } = await import("@/backend/auth/saveOwnership"));
-});
-
-afterAll(async () => {
-  for (const k of ENV_KEYS) {
-    if (savedEnv[k] === undefined) delete process.env[k];
-    else process.env[k] = savedEnv[k];
-  }
-  // Deliberately does NOT close the db: bun test runs files concurrently in one process with
-  // a shared module registry (no --isolate by default), so "@/backend/db" is the same singleton
-  // devLogin.test.ts uses. Closing it here could break that file's still-running tests (and vice
-  // versa) — the process exit at the end of the run reclaims the handle either way.
-  try {
-    rmSync(tmpDir, { recursive: true, force: true });
-  } catch {
-    // The sqlite file handle is still open (see above) — best-effort cleanup only.
-  }
-});
+// RUNTIME_DATA_DIR is isolated to a disposable temp dir for the whole test run by the
+// `[test] preload` in bunfig.toml (scripts/testPreload.ts), which runs before this file (or
+// anything it imports, like the auth DB or reports.jsonl) loads — so plain static imports are
+// enough here, and every test in the suite shares one fresh temp dir for the run. Every saveId
+// used below is still randomly generated rather than a fixed literal, defensively: it costs
+// nothing and protects against `--rerun-each` or test retries reusing the same run's temp dir.
 
 beforeEach(() => {
   resetReportRateLimit();
@@ -75,11 +39,27 @@ function postReport(token: string | null, body: unknown): Request {
   });
 }
 
+/** Like postReport, but with full control over headers and the raw body string. */
+function postRaw(token: string, headers: Record<string, string>, rawBody: string): Request {
+  return new Request("http://localhost:3000/api/reports", {
+    method: "POST",
+    headers: { cookie: `fs_session=${token}`, ...headers },
+    body: rawBody,
+  });
+}
+
 const VALID_BODY = {
   type: "bug",
   description: "The pitch overlay flickers when I open the stats tab.",
   page: "/dashboard",
 };
+
+/** The most recently appended line in reports.jsonl, parsed. */
+function lastReportLine(): Record<string, unknown> {
+  const contents = readFileSync(reportsFilePath(), "utf8");
+  const lines = contents.trim().split("\n");
+  return JSON.parse(lines[lines.length - 1]!);
+}
 
 describe("POST /api/reports — auth gate", () => {
   test("401 with no session cookie", async () => {
@@ -192,6 +172,87 @@ describe("POST /api/reports — validation", () => {
     const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: "2027-03-14" }));
     expect(res.status).toBe(200);
   });
+
+  test("accepts a null gameDate", async () => {
+    const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: null }));
+    expect(res.status).toBe(200);
+  });
+
+  test.each([
+    "2027/03/14",
+    "14-03-2027",
+    "2027-3-14",
+    "not-a-date",
+    "2027-03-14T00:00:00.000Z",
+    "",
+  ])("rejects a malformed gameDate %p", async (gameDate) => {
+    const res = await handler()(postReport(token, { ...VALID_BODY, gameDate }));
+    if (gameDate === "") {
+      // An empty/blank gameDate is treated as "not provided", same as omitting it.
+      expect(res.status).toBe(200);
+    } else {
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as { error: string };
+      expect(body.error).toMatch(/gameDate/);
+    }
+  });
+
+  test("rejects a gameDate that is way too long (not just wrong-shaped)", async () => {
+    const res = await handler()(
+      postReport(token, { ...VALID_BODY, gameDate: "2027-03-14".repeat(50) }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test("rejects a non-string gameDate", async () => {
+    const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: 20270314 }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/reports — request shape (Content-Type, body size)", () => {
+  test("415 when Content-Type is not application/json", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const req = postRaw(token, { "content-type": "text/plain" }, JSON.stringify(VALID_BODY));
+    const res = await handler()(req);
+    expect(res.status).toBe(415);
+  });
+
+  test("415 when Content-Type is missing entirely", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const req = new Request("http://localhost:3000/api/reports", {
+      method: "POST",
+      headers: { cookie: `fs_session=${token}` },
+      body: JSON.stringify(VALID_BODY),
+    });
+    const res = await handler()(req);
+    expect(res.status).toBe(415);
+  });
+
+  test("413 when Content-Length header alone claims more than 16 KB, even though the body is small", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const req = postRaw(
+      token,
+      { "content-type": "application/json", "content-length": String(20 * 1024) },
+      JSON.stringify(VALID_BODY),
+    );
+    const res = await handler()(req);
+    expect(res.status).toBe(413);
+  });
+
+  test("413 when the actual body exceeds 16 KB regardless of headers (no Content-Length sent)", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const oversized = JSON.stringify({ ...VALID_BODY, description: "x".repeat(20_000) });
+    const req = postRaw(token, { "content-type": "application/json" }, oversized);
+    const res = await handler()(req);
+    expect(res.status).toBe(413);
+  });
+
+  test("a normal, well within 16 KB body is unaffected by the size gate", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const res = await handler()(postReport(token, VALID_BODY));
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("POST /api/reports — saveId ownership", () => {
@@ -203,20 +264,36 @@ describe("POST /api/reports — saveId ownership", () => {
     expect(res.status).toBe(200);
   });
 
-  test("rejects a saveId owned by a different user", async () => {
+  test("a saveId owned by a different user is accepted, but stored as null", async () => {
     const { userId: otherUserId } = sessionFor("someone-else@example.com");
     const saveId = `save-owned-by-someone-else-${randomUUID()}`;
     recordSaveOwnership(saveId, otherUserId);
     const { token } = sessionFor("tester@example.com");
     const res = await handler()(postReport(token, { ...VALID_BODY, saveId }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { id: string };
+
+    const last = lastReportLine();
+    expect(last.id).toBe(body.id);
+    expect(last.saveId).toBeNull();
   });
 
-  test("rejects a saveId that does not exist", async () => {
+  test("a saveId that does not exist is accepted, but stored as null", async () => {
     const { token } = sessionFor("tester@example.com");
     const res = await handler()(
       postReport(token, { ...VALID_BODY, saveId: `no-such-save-${randomUUID()}` }),
     );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { id: string };
+
+    const last = lastReportLine();
+    expect(last.id).toBe(body.id);
+    expect(last.saveId).toBeNull();
+  });
+
+  test("a non-string saveId is rejected (wrong JSON type, not an ownership question)", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const res = await handler()(postReport(token, { ...VALID_BODY, saveId: 12345 }));
     expect(res.status).toBe(400);
   });
 
@@ -281,10 +358,7 @@ describe("POST /api/reports — append format", () => {
     expect(body.ok).toBe(true);
     expect(typeof body.id).toBe("string");
 
-    const contents = readFileSync(reportsFilePath(), "utf8");
-    const lines = contents.trim().split("\n");
-    const last = JSON.parse(lines[lines.length - 1]!);
-
+    const last = lastReportLine();
     expect(last).toMatchObject({
       id: body.id,
       userId,
@@ -296,16 +370,14 @@ describe("POST /api/reports — append format", () => {
       gameDate: "2027-08-20",
     });
     expect(typeof last.createdAt).toBe("string");
-    expect(new Date(last.createdAt).toString()).not.toBe("Invalid Date");
+    expect(new Date(last.createdAt as string).toString()).not.toBe("Invalid Date");
   });
 
   test("saveId and gameDate are null (not undefined/missing) when omitted", async () => {
     const { token } = sessionFor("tester@example.com");
     await handler()(postReport(token, VALID_BODY));
 
-    const contents = readFileSync(reportsFilePath(), "utf8");
-    const lines = contents.trim().split("\n");
-    const last = JSON.parse(lines[lines.length - 1]!);
+    const last = lastReportLine();
     expect(last.saveId).toBeNull();
     expect(last.gameDate).toBeNull();
     expect("saveId" in last).toBe(true);
@@ -322,5 +394,40 @@ describe("POST /api/reports — append format", () => {
     for (const line of lines) {
       expect(() => JSON.parse(line)).not.toThrow();
     }
+  });
+
+  test("a description with embedded newlines and control chars stays one line and round-trips exactly", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const tricky = "Line one\nLine two\u001b[31mred\u001b[0m\ttabbed\rcarriage";
+
+    const before = readFileSync(reportsFilePath(), "utf8").trim().split("\n").filter(Boolean).length;
+    const res = await handler()(postReport(token, { ...VALID_BODY, description: tricky }));
+    expect(res.status).toBe(200);
+
+    const allLines = readFileSync(reportsFilePath(), "utf8").trim().split("\n").filter(Boolean);
+    expect(allLines).toHaveLength(before + 1); // exactly one new line, not split across several
+    const last = JSON.parse(allLines[allLines.length - 1]!);
+    expect(last.description).toBe(tricky); // round-trips byte-for-byte through JSON escaping
+  });
+
+  test("userAgent is capped to 300 characters", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const longUA = "Mozilla/5.0 ".repeat(40); // > 300 chars
+    expect(longUA.length).toBeGreaterThan(300);
+    const req = postReport(token, VALID_BODY);
+    req.headers.set("user-agent", longUA);
+    const res = await handler()(req);
+    expect(res.status).toBe(200);
+
+    const last = lastReportLine();
+    expect(last.userAgent).toBe(longUA.slice(0, 300));
+    expect((last.userAgent as string).length).toBe(300);
+  });
+
+  test("userAgent is null when the header is absent", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const res = await handler()(postReport(token, VALID_BODY)); // postReport never sets one
+    expect(res.status).toBe(200);
+    expect(lastReportLine().userAgent).toBeNull();
   });
 });

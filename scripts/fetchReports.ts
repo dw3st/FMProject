@@ -40,6 +40,35 @@ interface ReportRecord {
   userAgent: string | null;
 }
 
+// ASCII control chars (except \t, \n which the text view already indents/keeps readable),
+// C1 controls, and bidi override/isolate chars — untrusted report text (description, email,
+// page, ...) could otherwise spoof terminal output (CR overwrite, ANSI escapes, right-to-left
+// override tricks) or break the --json output's readability. Replaced with U+FFFD.
+const CONTROL_CHAR_RE = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F‪-‮⁦-⁩]/g;
+
+function sanitize(s: string): string {
+  return s.replace(CONTROL_CHAR_RE, "�");
+}
+
+function sanitizeNullable(s: string | null): string | null {
+  return s === null ? null : sanitize(s);
+}
+
+function sanitizeRecord(r: ReportRecord): ReportRecord {
+  return {
+    ...r,
+    id: sanitize(r.id),
+    createdAt: sanitize(r.createdAt),
+    userId: sanitize(r.userId),
+    email: sanitize(r.email),
+    description: sanitize(r.description),
+    saveId: sanitizeNullable(r.saveId),
+    page: sanitize(r.page),
+    gameDate: sanitizeNullable(r.gameDate),
+    userAgent: sanitizeNullable(r.userAgent),
+  };
+}
+
 function argValue(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
   return i >= 0 ? args[i + 1] : undefined;
@@ -76,7 +105,7 @@ function parseJsonl(contents: string): ReportRecord[] {
     try {
       records.push(JSON.parse(trimmed) as ReportRecord);
     } catch {
-      console.error(`Skipping malformed JSON on line ${i + 1}: ${trimmed.slice(0, 80)}`);
+      console.error(`Skipping malformed JSON on line ${i + 1}: ${sanitize(trimmed.slice(0, 80))}`);
     }
   }
   return records;
@@ -121,6 +150,7 @@ function main() {
   if (userFilter) records = records.filter((r) => r.email.toLowerCase().includes(userFilter));
 
   records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  records = records.map(sanitizeRecord);
 
   if (asJson) {
     console.log(JSON.stringify(records, null, 2));
