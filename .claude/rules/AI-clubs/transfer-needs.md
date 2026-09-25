@@ -250,13 +250,21 @@ Called once per game day from `advanceDay.ts`.
 Implementation) gate the attempt: `frozen` → no attempt, `tight` → only `cover_need` and cheap
 fees, and every candidate's weekly wage must fit under `maxWageBudget`.
 
-**Frozen clubs (`frozenSquadIds`):** clubs in this set skip needs refresh, never buy, are never
-candidate sellers and never buy from the human sell list. Only the start-kit pre-simulation
-(`presimulatePreStart` → `advanceOneDay(..., { marketFrozenLeagues })`) uses it: it freezes every
-league that kicks off on or after the career start date (the calendar-year leagues a kit career
-can pick). Without it, clubs like São Paulo sold their stars during the kit's Aug–Feb catch-up and
-a new career started with them already gone. The human club is still excluded separately
-(`excludePlayerSquadId`) in live play.
+**Whole-market freeze (`marketFrozen`):** `dailyMarketTick(..., { marketFrozen: true })` short-
+circuits before any needs refresh, buying, selling or sell-list matching and returns the market
+unchanged — every club sits out, not a listed set. Only the start-kit pre-simulation
+(`presimulatePreStart` → `advanceOneDay(..., { marketFrozen: true })`) uses it, and
+`advanceOneDay` skips the whole transfer-market block (loading every squad + the market file)
+in that case rather than calling `dailyMarketTick` just to get a no-op back. Every club in
+every league is pickable for a new career (not only the leagues that kick off on the career's
+start date), so the whole market must sit out the ~174-day Aug→Feb catch-up, not just the
+calendar-year leagues. An earlier version froze only leagues starting on/after the career start
+date (`marketFrozenLeagues`, since removed) — that left European clubs like Liverpool and
+Newcastle trading during the catch-up, so a Premier League career could start with a player
+already sold before anyone picked the club. A still-earlier, general-purpose per-club
+`frozenSquadIds` option (freeze a listed set of squads rather than the whole market) was removed
+once `marketFrozen` replaced its only caller. The human club is still excluded separately
+(`excludePlayerSquadId`) in live play, where the market is not frozen.
 
 **Phase 3 — Human sell list matching** (checked daily):
 - Tries to find an AI buyer for any player the human has listed
