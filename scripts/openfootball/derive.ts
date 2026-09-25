@@ -66,25 +66,16 @@ export function playerProfile(role: MainRole, stats: PlayerStatsRecord, adjectiv
 /**
  * `leagueRep` is the seed league reputation / 1000. It is clamped to
  * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
- *
- * `opts.noise` (default `true`, unchanged for every existing caller) adds the per-stat Gaussian
- * residual term that makes real of_* players vary player-to-player instead of all sharing the
- * exact regression line. Pass `{ noise: false }` for the DETERMINISTIC (expected-value) stats —
- * used by the native star recalibration's "shadow of_*" reference (see importOpenFootball.ts §3.5):
- * a single noisy draw per elite seed player would make the recalibration's target-value pool as
- * arbitrary as the native-overall pool it replaces, just for a different reason (residual noise
- * instead of the old scheme's disconnect from seedOverall).
  */
-export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number, opts?: { noise?: boolean }): RosterPlayer {
+export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number): RosterPlayer {
   const role = mainRole(sp.position);
   const rep = clamp(leagueRep, coeffs.repMin - REP_FLOOR_MARGIN, coeffs.repMax);
-  const noise = opts?.noise ?? true;
   const statOf = (k: StatKey): number => {
     const roleFit = coeffs.byRole[role]?.[k];
     const pooledFit = coeffs.pooled[k];
     const f = finiteFit(roleFit) && roleFit.n >= MIN_PAIRS ? roleFit : finiteFit(pooledFit) ? pooledFit : undefined;
     if (!f) throw new Error(`derivePlayer: missing/non-finite fit for ${role}.${k}`);
-    const raw = f.a + f.b * sp.overall + f.c * rep + (noise ? f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`) : 0);
+    const raw = f.a + f.b * sp.overall + f.c * rep + f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`);
     return clamp(Math.round(raw), 0, 10);
   };
   const stats: PlayerStatsRecord = {
