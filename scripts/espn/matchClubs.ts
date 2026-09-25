@@ -1,7 +1,7 @@
 import { clubKey, looseClubKey } from "@/../scripts/espn/normalize";
 
-export interface WorldClubRef { id: string; name: string; country: string }
-export interface EspnClubRef { espnId: string; name: string; shortName: string; country: string }
+export interface WorldClubRef { id: string; name: string; country: string; league: string }
+export interface EspnClubRef { espnId: string; name: string; shortName: string; country: string; league: string }
 export interface ClubMatch { squadId: string | null; via: "override" | "exact" | "loose" | "prefix" | "new" }
 
 type Pass = { via: "exact" | "loose" | "prefix"; same: (espn: string, ours: string) => boolean };
@@ -21,8 +21,35 @@ const PASSES: Pass[] = [
 ];
 
 /**
+ * Clubs of `t`'s country whose name matches `t.name` under `same`. `t.shortName` is only tried
+ * when `name` matches nothing at all — the old name∪shortName union let a clean name match get
+ * dragged into ambiguity by an unrelated shortName hit (e.g. ESPN "Real Sociedad" / short
+ * "Sociedad" no longer collides with a club literally named "Sociedad").
+ */
+function nameCandidates(t: EspnClubRef, world: WorldClubRef[], same: Pass["same"]): WorldClubRef[] {
+  const byName = world.filter((c) => c.country === t.country && same(t.name, c.name));
+  if (byName.length > 0) return byName;
+  return world.filter((c) => c.country === t.country && same(t.shortName, c.name));
+}
+
+/**
+ * When a candidate set has 2+ clubs, narrows it to the one(s) sharing `t`'s own league — but only
+ * takes effect when that narrows it to exactly one. This is what resolves a top-flight club against
+ * its own reserve/lower-division namesake (e.g. "Zenit" vs "Zenit 2") without an override.
+ */
+function preferSameLeague(cands: WorldClubRef[], t: EspnClubRef): WorldClubRef[] {
+  if (cands.length < 2) return cands;
+  const inLeague = cands.filter((c) => c.league === t.league);
+  return inLeague.length === 1 ? inLeague : cands;
+}
+
+/**
  * ESPN club → squadId, per country. Order: override, then exact / loose / prefix passes (each pass
  * over every still-unmatched team), then "new".
+ *
+ * Each pass tries the ESPN `name` first (see `nameCandidates`); when the resulting candidate set has
+ * 2 or more clubs it is narrowed by `preferSameLeague` to the one sharing the ESPN team's own league,
+ * if that leaves exactly one. Uniqueness (below) is always evaluated after this narrowing.
  *
  * The exact pass requires the candidate to be unique among the still-unclaimed clubs of the country.
  *
@@ -32,8 +59,9 @@ const PASSES: Pass[] = [
  * sibling (e.g. once "Bristol City" is claimed by the exact pass, ESPN "Bristol Wanderers" would be
  * the only remaining candidate for "Bristol Rovers" even though the loose key "bristol" is genuinely
  * ambiguous between the two clubs). These two passes also drop a hit when another still-unmatched
- * ESPN team of the same country matches the same candidate — those keys are approximate enough that
- * two different ESPN clubs collapsing onto one candidate means neither should be resolved here.
+ * ESPN team of the same country resolves (through the same name/shortName-fallback and same-league
+ * narrowing) to the same candidate — those keys are approximate enough that two different ESPN clubs
+ * collapsing onto one candidate means neither should be resolved here.
  *
  * Throws when an override names an unknown squad, or when two or more teams hit the same squad on
  * the exact pass (a genuine name clash worth surfacing rather than silently deferring to "new").
@@ -59,27 +87,29 @@ export function matchClubs(teams: EspnClubRef[], world: WorldClubRef[], override
     const hits = new Map<string, string>(); // espnId → squadId
     for (const t of sorted) {
       if (out.has(t.espnId)) continue;
-      const isSame = (c: WorldClubRef) => c.country === t.country && (pass.same(t.name, c.name) || pass.same(t.shortName, c.name));
 
       let cand: WorldClubRef | undefined;
       if (pass.via === "exact") {
-        const cands = world.filter((c) => isSame(c) && !claimed.has(c.id));
+        const cands = preferSameLeague(nameCandidates(t, world, pass.same), t).filter((c) => !claimed.has(c.id));
         cand = cands.length === 1 ? cands[0] : undefined;
       } else {
         // Uniqueness is checked across every club of the country, claimed or not, so a sibling
         // that is only "the last one left" because its twin was already claimed never matches.
-        const cands = world.filter(isSame);
+        const cands = preferSameLeague(nameCandidates(t, world, pass.same), t);
         cand = cands.length === 1 && !claimed.has(cands[0]!.id) ? cands[0] : undefined;
       }
       if (!cand) continue;
 
       // Loose/prefix keys are approximate and often collapse two different ESPN clubs onto the
       // same key (e.g. "Manchester United" and "Manchester City" both → loose "manchester"). When
-      // another still-unmatched ESPN team of the same country also matches this candidate, neither
-      // is safe to resolve here — skip both rather than pick one, or collide and throw.
+      // another still-unmatched ESPN team of the same country also resolves to this candidate,
+      // neither is safe to resolve here — skip both rather than pick one, or collide and throw.
       if (pass.via !== "exact") {
-        const sharedByOther = sorted.some((u) => u.espnId !== t.espnId && u.country === t.country && !out.has(u.espnId)
-          && (pass.same(u.name, cand!.name) || pass.same(u.shortName, cand!.name)));
+        const sharedByOther = sorted.some((u) => {
+          if (u.espnId === t.espnId || u.country !== t.country || out.has(u.espnId)) return false;
+          const uCands = preferSameLeague(nameCandidates(u, world, pass.same), u);
+          return uCands.some((c) => c.id === cand!.id);
+        });
         if (sharedByOther) continue;
       }
       hits.set(t.espnId, cand.id);

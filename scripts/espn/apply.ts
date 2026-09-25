@@ -3,7 +3,7 @@ import { estimateStats, fillSquad, lineMedians, makePlayer, trimSquad } from "@/
 import { planLineup, type LeagueRef } from "@/../scripts/espn/lineup";
 import { matchClubs } from "@/../scripts/espn/matchClubs";
 import { espnRole, matchPlayers, type AthleteRef } from "@/../scripts/espn/matchPlayers";
-import type { EspnSnapshot, EspnTeam, LeagueMapEntry } from "@/../scripts/espn/types";
+import type { EspnAthlete, EspnSnapshot, EspnTeam, LeagueMapEntry } from "@/../scripts/espn/types";
 import { unitHash } from "@/../scripts/openfootball/ids";
 import { coachName } from "@/../scripts/openfootball/derive";
 import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides } from "@/../scripts/openfootball/pyramid";
@@ -43,6 +43,30 @@ export interface EspnReport {
   playersByLeague: Array<{ league: string; matched: number; created: number }>;
   youthAdded: number;
   overallByAge: Array<{ band: string; before: number; after: number }>;
+  /** Same as `overallByAge`, restricted to players matched to an ESPN athlete (not created/youth). */
+  overallByAgeMatched: Array<{ band: string; before: number; after: number }>;
+  /** An ESPN athlete id listed at two (or more) teams — kept at `keptTeam`, dropped everywhere else. */
+  duplicateAthletes: Array<{ athleteId: string; keptTeam: string; droppedTeam: string }>;
+  /**
+   * A brand-new `es_` club where most of its matched players actually came from ONE world club that
+   * this run displaced (moved to a lower league) or removed — the signature of a club match that
+   * should have resolved but didn't (add a `clubOverrides` entry for it).
+   */
+  suspectNewClubs: Array<{ newId: string; espnName: string; league: string; fromSquadId: string; fromName: string; share: number }>;
+  /** Every club match resolved via the loose or prefix pass (worth a human glance, not necessarily wrong). */
+  fuzzyClubs: Array<{ espnId: string; espnName: string; squadId: string; worldName: string; league: string; via: "loose" | "prefix" }>;
+  /** Median (a.age − src.age) over matched athletes with a non-null ESPN age; used to age a null-age match. */
+  typicalGap: number;
+  /** age gap → number of matched athletes with that gap. */
+  ageGapHistogram: Record<number, number>;
+  playersRemoved: {
+    /** Original players of a covered club that no ESPN athlete on that club's roster matched to. */
+    unmatchedInCoveredClubs: number;
+    /** Original headcount of clubs that left the world entirely this run. */
+    inRemovedClubs: number;
+    /** Players dropped by `trimSquad` when a squad exceeded MAX_SQUAD. */
+    trimmed: number;
+  };
 }
 
 export interface ApplyResult {
@@ -58,6 +82,8 @@ export const NEW_CLUB_SHIFT = -0.3;
 export const MIN_MATCHED_FOR_CLUB_BASE = 5;
 export const MIN_LINE_FOR_CLUB_BASE = 3;
 export const NATIVE_LEAGUES = new Set(["premier_league", "bundesliga", "la_liga", "serie_a", "ligue_1", "brazil_serie_a", "brazil_serie_b", "brazil_serie_c"]);
+/** A new-club roster needs at least this share of matched players from one displaced/removed club to be flagged as a suspected missed club match. */
+export const SUSPECT_CLUB_SHARE = 0.5;
 const AGE_BANDS: Array<[string, number, number]> = [["≤21", 0, 21], ["22–25", 22, 25], ["26–29", 26, 29], ["30–33", 30, 33], ["34+", 34, 99]];
 
 const byId = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
@@ -69,6 +95,8 @@ const median = (xs: number[]) => {
   return s.length === 0 ? 0 : s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
 };
 const hex = (c: string | null, fallback: string) => (c && /^[0-9a-f]{6}$/i.test(c) ? `#${c.toLowerCase()}` : fallback);
+/** A team name that looks like a reserve/B side ("Real Sociedad II", "Barcelona B", "PSG 2"). */
+const isReserveTeam = (name: string) => /\b(?:II|B|2)$/.test(name) || name.endsWith(" II");
 
 /** "2024-25" → "2026-27", "2025" → "2027". */
 export function bumpSeason(season: string): string {
@@ -123,18 +151,65 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
 
   // ── Clubs ────────────────────────────────────────────────────────────────
   const clubMatch = matchClubs(
-    applied.flatMap((m) => teamsOf(m.slug).map((t) => ({ espnId: t.id, name: t.name, shortName: t.shortName, country: leagueBySlug.get(m.slug)!.country }))),
-    [...squadById.values()].map((s) => ({ id: s.id, name: s.name, country: leagueBySlug.get(leagueOfSquad.get(s.id)!)!.country })),
+    applied.flatMap((m) => teamsOf(m.slug).map((t) => ({ espnId: t.id, name: t.name, shortName: t.shortName, country: leagueBySlug.get(m.slug)!.country, league: m.slug }))),
+    [...squadById.values()].map((s) => ({ id: s.id, name: s.name, country: leagueBySlug.get(leagueOfSquad.get(s.id)!)!.country, league: leagueOfSquad.get(s.id)! })),
     opts.clubOverrides,
   );
   const squadIdOfTeam = (t: EspnTeam) => clubMatch.get(t.id)!.squadId ?? `es_${t.id}`;
   const clubsBy: Record<string, number> = {};
   for (const m of clubMatch.values()) clubsBy[m.via] = (clubsBy[m.via] ?? 0) + 1;
 
+  const espnTeamById = new Map<string, EspnTeam>();
+  for (const m of applied) for (const t of teamsOf(m.slug)) espnTeamById.set(t.id, t);
+  const fuzzyClubs: EspnReport["fuzzyClubs"] = [];
+  for (const [espnId, cm] of clubMatch) {
+    if ((cm.via === "loose" || cm.via === "prefix") && cm.squadId) {
+      fuzzyClubs.push({
+        espnId, espnName: espnTeamById.get(espnId)!.name, squadId: cm.squadId,
+        worldName: squadById.get(cm.squadId)!.name, league: leagueOfSquad.get(cm.squadId)!, via: cm.via,
+      });
+    }
+  }
+  fuzzyClubs.sort((a, b) => byId(a.espnId, b.espnId));
+
   // ── Players ──────────────────────────────────────────────────────────────
-  const athletes: AthleteRef[] = [];
+  // Dedupe ESPN athletes listed at more than one team (loans, reserve-side double-listing): keep the
+  // non-reserve team, then the higher tier, then the lower team id; drop the rest entirely.
+  interface AthleteEntry { a: EspnAthlete; team: EspnTeam; leagueSlug: string }
+  const allAthleteEntries: AthleteEntry[] = [];
   for (const m of applied) for (const t of teamsOf(m.slug)) for (const a of [...t.athletes].sort((x, y) => byId(x.id, y.id)))
-    athletes.push({ espnId: a.id, displayName: a.displayName, fullName: a.fullName, age: a.age, role: espnRole(a.position), teamSquadId: clubMatch.get(t.id)!.squadId, teamCountry: leagueBySlug.get(m.slug)!.country });
+    allAthleteEntries.push({ a, team: t, leagueSlug: m.slug });
+  const entriesByAthleteId = new Map<string, AthleteEntry[]>();
+  for (const e of allAthleteEntries) {
+    const arr = entriesByAthleteId.get(e.a.id);
+    if (arr) arr.push(e); else entriesByAthleteId.set(e.a.id, [e]);
+  }
+  const winnerTeamOf = new Map<string, string>(); // athleteId → winning ESPN team id
+  const duplicateAthletes: EspnReport["duplicateAthletes"] = [];
+  for (const [athleteId, entries] of entriesByAthleteId) {
+    if (entries.length === 1) { winnerTeamOf.set(athleteId, entries[0]!.team.id); continue; }
+    const ranked = [...entries].sort((x, y) => {
+      const rx = isReserveTeam(x.team.name) ? 1 : 0;
+      const ry = isReserveTeam(y.team.name) ? 1 : 0;
+      if (rx !== ry) return rx - ry;
+      const tx = pyramidTier(world.pyramids, x.leagueSlug);
+      const ty = pyramidTier(world.pyramids, y.leagueSlug);
+      if (tx !== ty) return tx - ty;
+      return byId(x.team.id, y.team.id);
+    });
+    const winner = ranked[0]!;
+    winnerTeamOf.set(athleteId, winner.team.id);
+    for (const loser of ranked.slice(1)) duplicateAthletes.push({ athleteId, keptTeam: winner.team.name, droppedTeam: loser.team.name });
+  }
+  duplicateAthletes.sort((x, y) => byId(x.athleteId, y.athleteId));
+
+  const athletes: AthleteRef[] = [...entriesByAthleteId.entries()].map(([athleteId, entries]) => {
+    const e = entries.find((x) => x.team.id === winnerTeamOf.get(athleteId))!;
+    return {
+      espnId: e.a.id, displayName: e.a.displayName, fullName: e.a.fullName, age: e.a.age, role: espnRole(e.a.position),
+      teamSquadId: clubMatch.get(e.team.id)!.squadId, teamCountry: leagueBySlug.get(e.leagueSlug)!.country,
+    };
+  });
   const playerMatch = matchPlayers(
     athletes,
     [...playerById.values()].map((p) => ({ id: p.id, name: p.name, fullName: p.fullName, age: p.age, role: lineOf(p), squadId: p.squadId, country: leagueBySlug.get(leagueOfSquad.get(p.squadId)!)!.country })),
@@ -142,20 +217,47 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   );
   const claimedPlayers = new Set(playerMatch.values());
 
+  // Typical ESPN−world age gap, from matched athletes with a known ESPN age. Used to age a matched
+  // athlete whose ESPN age is null, and to advance every player left in a non-covered club.
+  const gaps: number[] = [];
+  const ageGapHistogram: Record<number, number> = {};
+  for (const a of athletes) {
+    if (a.age === null) continue;
+    const pid = playerMatch.get(a.espnId);
+    if (!pid) continue;
+    const gap = a.age - playerById.get(pid)!.age;
+    gaps.push(gap);
+    ageGapHistogram[gap] = (ageGapHistogram[gap] ?? 0) + 1;
+  }
+  const typicalGap = gaps.length ? Math.round(median(gaps)) : 0;
+
   // ── Membership ───────────────────────────────────────────────────────────
   const leagueRefs: LeagueRef[] = world.leagues.map((l) => ({
     slug: l.slug, country: l.country, tier: pyramidTier(world.pyramids, l.slug),
     members: (world.squads.get(l.slug) ?? []).map((s) => s.id),
   }));
   const lineup = planLineup(leagueRefs, new Map(applied.map((m) => [m.slug, teamsOf(m.slug).map(squadIdOfTeam)])));
+  const finalMembers = lineup.members;
+  const removed = new Set(lineup.removed);
+  const leagueOfFinal = new Map<string, string>();
+  for (const [slug, ids] of finalMembers) for (const id of ids) leagueOfFinal.set(id, slug);
+  /** Squads that moved to a strictly higher (deeper) pyramid tier this run — a demotion. */
+  const movedDown = new Set<string>();
+  for (const mv of lineup.moves) {
+    if (pyramidTier(world.pyramids, mv.to) > pyramidTier(world.pyramids, mv.from)) movedDown.add(mv.squadId);
+  }
+  let inRemovedClubs = 0;
+  for (const id of removed) inRemovedClubs += squadById.get(id)?.players.length ?? 0;
 
   // ── Rebuild applied clubs ────────────────────────────────────────────────
   const built = new Map<string, SquadFile>();
   const espnLogoOf = new Map<string, string>();
   const newClubIds = new Set<string>();
+  const coveredOriginalSquadIds = new Set<string>();
   const matchedIn = new Map<string, RosterPlayer[]>(); // squadId → matched players (after aging)
+  const originCounts = new Map<string, Map<string, number>>(); // squadId → origin squadId → matched count
   const playersByLeague: EspnReport["playersByLeague"] = [];
-  const pending: Array<{ squadId: string; league: string; a: EspnTeam["athletes"][number] }> = [];
+  const pending: Array<{ squadId: string; league: string; a: EspnAthlete }> = [];
 
   for (const m of applied) {
     let matched = 0;
@@ -167,17 +269,18 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         id: sid, slug: sid, name: t.name, colors: [hex(t.color, "#555555"), hex(t.altColor, "#ffffff")],
         country: leagueBySlug.get(m.slug)!.country, source: "espn", players: [],
       };
-      if (!existing) newClubIds.add(sid);
+      if (!existing) newClubIds.add(sid); else coveredOriginalSquadIds.add(sid);
       if (t.coach) base.coach = { ...(base.coach ?? { id: Math.floor(unitHash(sid) * 1e9) }), name: t.coach };
       if (t.logoFile) espnLogoOf.set(sid, t.logoFile);
       base.players = [];
       const aged: RosterPlayer[] = [];
       for (const a of [...t.athletes].sort((x, y) => byId(x.id, y.id))) {
+        if (winnerTeamOf.get(a.id) !== t.id) continue; // dropped duplicate — belongs to another team
         const pid = playerMatch.get(a.id);
         if (!pid) { pending.push({ squadId: sid, league: m.slug, a }); created++; continue; }
         const src = playerById.get(pid)!;
         const p = clone(src);
-        const newAge = a.age ?? src.age;
+        const newAge = a.age ?? (src.age + typicalGap);
         p.stats = agePlayerStats(p.id, src.stats, src.age, newAge, opts.roleWeights(src));
         p.age = newAge;
         p.squadId = sid;
@@ -188,6 +291,9 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         base.players.push(p);
         aged.push(p);
         matched++;
+        const om = originCounts.get(sid) ?? new Map<string, number>();
+        om.set(src.squadId, (om.get(src.squadId) ?? 0) + 1);
+        originCounts.set(sid, om);
       }
       matchedIn.set(sid, aged);
       built.set(sid, base);
@@ -195,21 +301,51 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     playersByLeague.push({ league: m.slug, matched, created });
   }
 
-  // ── Non-covered clubs: keep their data, minus the players claimed by covered clubs ──
-  const finalMembers = lineup.members;
-  const removed = new Set(lineup.removed);
+  // A new club whose matched roster is mostly one displaced/removed world club is a likely missed
+  // club match — surfaced for a human to turn into a clubOverrides entry.
+  const suspectNewClubs: EspnReport["suspectNewClubs"] = [];
+  for (const sid of newClubIds) {
+    const om = originCounts.get(sid);
+    if (!om) continue;
+    const total = [...om.values()].reduce((a, b) => a + b, 0);
+    if (total === 0) continue;
+    let topOrigin = "";
+    let topCount = 0;
+    for (const [origin, count] of om) if (count > topCount) { topCount = count; topOrigin = origin; }
+    const share = topCount / total;
+    if (share >= SUSPECT_CLUB_SHARE && (movedDown.has(topOrigin) || removed.has(topOrigin))) {
+      suspectNewClubs.push({
+        newId: sid, espnName: built.get(sid)!.name, league: leagueOfFinal.get(sid)!,
+        fromSquadId: topOrigin, fromName: squadById.get(topOrigin)?.name ?? topOrigin, share,
+      });
+    }
+  }
+  suspectNewClubs.sort((a, b) => byId(a.newId, b.newId));
+
+  let unmatchedInCoveredClubs = 0;
+  for (const sid of coveredOriginalSquadIds) {
+    const orig = squadById.get(sid);
+    if (!orig) continue;
+    for (const p of orig.players) if (!claimedPlayers.has(p.id)) unmatchedInCoveredClubs++;
+  }
+
+  // ── Non-covered clubs: keep their data minus the players claimed by covered clubs, and age the rest
+  // by the same typicalGap so the whole world advances in time consistently ──
   for (const ids of finalMembers.values()) {
     for (const id of ids) {
       if (built.has(id)) continue;
       const s = clone(squadById.get(id)!);
-      s.players = s.players.filter((p) => !claimedPlayers.has(p.id));
+      s.players = s.players
+        .filter((p) => !claimedPlayers.has(p.id))
+        .map((p) => {
+          const newAge = p.age + typicalGap;
+          return { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p)) };
+        });
       built.set(id, s);
     }
   }
 
   // ── Bases for estimated players ──────────────────────────────────────────
-  const leagueOfFinal = new Map<string, string>();
-  for (const [slug, ids] of finalMembers) for (const id of ids) leagueOfFinal.set(id, slug);
   const allMatched = [...matchedIn.values()].flat();
   const worldBase = lineMedians(allMatched.length ? allMatched : [...playerById.values()]);
   const leagueBase = new Map<string, ReturnType<typeof lineMedians>>();
@@ -235,11 +371,20 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     built.get(squadId)!.players.push(makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality: a.citizenship, stats }, opts.overall(draft)));
   }
 
-  // ── New club metadata ────────────────────────────────────────────────────
+  // ── New club metadata: finances/capacity fall back league → country → world, never 0 ─────────
   for (const sid of newClubIds) {
     const s = built.get(sid)!;
-    const peers = (finalMembers.get(leagueOfFinal.get(sid)!) ?? []).filter((id) => !newClubIds.has(id)).map((id) => built.get(id)!);
-    const med = (f: (x: SquadFile) => number | undefined) => Math.round(median(peers.map(f).filter((v): v is number => typeof v === "number")));
+    const league = leagueOfFinal.get(sid)!;
+    const country = s.country ?? leagueBySlug.get(league)!.country;
+    const nonNewBuilt = [...built.values()].filter((x) => !newClubIds.has(x.id));
+    const countryOf = (x: SquadFile) => x.country ?? leagueBySlug.get(leagueOfFinal.get(x.id)!)?.country;
+    const leaguePeers = (finalMembers.get(league) ?? []).filter((id) => !newClubIds.has(id)).map((id) => built.get(id)!);
+    const countryPeers = nonNewBuilt.filter((x) => countryOf(x) === country);
+    const medOf = (peers: SquadFile[], f: (x: SquadFile) => number | undefined): number | undefined => {
+      const vals = peers.map(f).filter((v): v is number => typeof v === "number");
+      return vals.length ? Math.round(median(vals)) : undefined;
+    };
+    const med = (f: (x: SquadFile) => number | undefined) => medOf(leaguePeers, f) ?? medOf(countryPeers, f) ?? medOf(nonNewBuilt, f) ?? 0;
     const broadcasting = med((x) => x.finances?.broadcasting);
     const commercial = med((x) => x.finances?.commercial);
     s.finances = { broadcasting, commercial, total: broadcasting + commercial, budget: med((x) => x.finances?.budget), followers: med((x) => x.finances?.followers) };
@@ -253,11 +398,13 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   const pools = namePools([...playerById.values()]);
   const EMPTY: NamePool = { first: [], last: [] };
   let youthAdded = 0;
+  let trimmed = 0;
   for (const [id, s] of built) {
-    if (removed.has(id)) continue;
     const country = s.country ?? leagueBySlug.get(leagueOfFinal.get(id)!)!.country;
-    const trimmed = trimSquad(s.players, MAX_SQUAD, opts.overall);
-    const filled = fillSquad(id, trimmed, pools.get(country) ?? EMPTY, country, (line) => baseFor(id, line).stats, opts.overall);
+    const before = s.players.length;
+    const trimmedPlayers = trimSquad(s.players, MAX_SQUAD, opts.overall);
+    trimmed += before - trimmedPlayers.length;
+    const filled = fillSquad(id, trimmedPlayers, pools.get(country) ?? EMPTY, country, (line) => baseFor(id, line).stats, opts.overall);
     youthAdded += filled.filter((p) => p.id.startsWith(`es_youth_${id}_`)).length;
     s.players = filled as SquadFile["players"];
   }
@@ -277,6 +424,18 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
       return row;
     });
     l.season = bumpSeason(l.season);
+  }
+
+  // Final safety net: no player id may appear in two output squads.
+  {
+    const seenIds = new Map<string, string>();
+    const dupMessages: string[] = [];
+    for (const squads of squadsOut.values()) for (const sq of squads) for (const p of sq.players) {
+      const prevSquad = seenIds.get(p.id);
+      if (prevSquad) dupMessages.push(`${p.id} in both ${prevSquad} and ${sq.id}`);
+      else seenIds.set(p.id, sq.id);
+    }
+    if (dupMessages.length > 0) throw new Error(`applyEspn: duplicate player ids across output squads — ${dupMessages.slice(0, 5).join("; ")}`);
   }
 
   // ── Pyramids, zones, schedules ───────────────────────────────────────────
@@ -302,6 +461,8 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     const b = xs.filter((x) => x.age >= lo && x.age <= hi);
     return b.length ? b.reduce((s, x) => s + x.ovr, 0) / b.length : 0;
   };
+  const overallBeforeMatched = [...claimedPlayers].map((id) => playerById.get(id)!).map((p) => ({ age: p.age, ovr: opts.overall(p) }));
+  const overallAfterMatched = [...matchedIn.values()].flat().map((p) => ({ age: p.age, ovr: opts.overall(p) }));
   const report: EspnReport = {
     appliedLeagues: applied.map((m) => m.slug),
     skippedLeagues: skipped,
@@ -312,6 +473,13 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     playersByLeague,
     youthAdded,
     overallByAge: AGE_BANDS.map(([label, lo, hi]) => ({ band: label, before: band(overallBefore, lo, hi), after: band(after, lo, hi) })),
+    overallByAgeMatched: AGE_BANDS.map(([label, lo, hi]) => ({ band: label, before: band(overallBeforeMatched, lo, hi), after: band(overallAfterMatched, lo, hi) })),
+    duplicateAthletes,
+    suspectNewClubs,
+    fuzzyClubs,
+    typicalGap,
+    ageGapHistogram,
+    playersRemoved: { unmatchedInCoveredClubs, inRemovedClubs, trimmed },
   };
 
   return { world: { ...world, squads: squadsOut, pyramids }, report, espnLogoOf, nativeLeagueOf };

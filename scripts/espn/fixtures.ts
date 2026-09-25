@@ -52,6 +52,45 @@ const ath = (id: string, name: string, age: number, position: EspnAthlete["posit
 const team = (id: string, name: string, athletes: EspnAthlete[]): EspnTeam =>
   ({ id, name, shortName: name, location: name, color: "aa0000", altColor: "ffffff", logoFile: `${id}.png`, coach: "New Coach", athletes });
 
+// ── Reusable builders for ad-hoc fixtures (real-world edge case tests) ─────────────────────────
+
+/** A minimal squad with one player per role in `roles` (default GK/DEF/DEF/MID/MID/FWD), named `"<name> Player <i>"`. */
+export function buildSquad(id: string, name: string, level: number, opts: { country?: string; roles?: readonly string[] } = {}): SquadFile {
+  const country = opts.country ?? "England";
+  const roles = opts.roles ?? ROLES;
+  const players: RosterPlayer[] = roles.map((role, i) => ({
+    id: `${id}_p${i}`, name: `${name} Player ${i}`, age: 20 + i, squadId: id, preferredFoot: "right",
+    positions: [role], stats: st(level), profile: { archetype: "x", summary: "x" }, nationality: country,
+  }));
+  return {
+    id, slug: id, name, colors: ["#111111", "#ffffff"], country,
+    venue: { name: `${name} Park`, city: null, capacity: 20000 + level * 1000, surface: "grass" },
+    coach: { id: 1, name: "Coach" },
+    finances: { broadcasting: level * 1e6, commercial: level * 1e6, total: 2 * level * 1e6, budget: level * 1e6, followers: level * 1e5 },
+    players,
+  };
+}
+
+/** A single roster player with an explicit name/age/role, bypassing `buildSquad`'s numbered naming (useful when tests need distinct, non-colliding normalized name keys). */
+export function buildPlayer(id: string, name: string, age: number, role: string, squadId: string, level: number, country = "England"): RosterPlayer {
+  return { id, name, age, squadId, preferredFoot: "right", positions: [role], stats: st(level), profile: { archetype: "x", summary: "x" }, nationality: country };
+}
+
+export function buildAthlete(id: string, name: string, age: number | null, position: EspnAthlete["position"], citizenship: string | null = "England"): EspnAthlete {
+  return { id, displayName: name, fullName: name, age, position, citizenship };
+}
+
+export function buildTeam(
+  id: string, name: string, athletes: EspnAthlete[],
+  opts: Partial<Pick<EspnTeam, "shortName" | "location" | "color" | "altColor" | "logoFile" | "coach">> = {},
+): EspnTeam {
+  return {
+    id, name, shortName: opts.shortName ?? name, location: opts.location ?? name,
+    color: opts.color ?? "aa0000", altColor: opts.altColor ?? "ffffff",
+    logoFile: opts.logoFile ?? `${id}.png`, coach: opts.coach ?? "New Coach", athletes,
+  };
+}
+
 export function fixtureSnapshot(): EspnSnapshot {
   return {
     fetchedAt: "2026-09-25",
