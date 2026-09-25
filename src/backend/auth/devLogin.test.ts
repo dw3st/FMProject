@@ -1,36 +1,21 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
-import type { RequestIPServer } from "@/backend/auth/routes";
+import { authRoutes, type RequestIPServer } from "@/backend/auth/routes";
 
-// The auth DB path is read from RUNTIME_DATA_DIR at import time (src/backend/db.ts), so it
-// must be set to an isolated temp directory before anything that transitively imports the
-// db module is imported. A dynamic import after setting the env var achieves that.
-let tmpDir: string;
-let authRoutes: typeof import("@/backend/auth/routes").authRoutes;
-
+// RUNTIME_DATA_DIR is isolated to a disposable temp dir for the whole test run by the
+// `[test] preload` in bunfig.toml (scripts/testPreload.ts), which runs before this file (or
+// anything it imports, like the auth DB) loads — so a plain static import is enough here; no
+// per-file temp dir or db lifecycle management needed.
 const savedEnv: Record<string, string | undefined> = {};
-const ENV_KEYS = ["RUNTIME_DATA_DIR", "DEV_AUTO_LOGIN", "NODE_ENV"] as const;
+const ENV_KEYS = ["DEV_AUTO_LOGIN", "NODE_ENV"] as const;
 
-beforeAll(async () => {
+beforeAll(() => {
   for (const k of ENV_KEYS) savedEnv[k] = process.env[k];
-  tmpDir = mkdtempSync(join(tmpdir(), "fmproject-dev-login-"));
-  process.env.RUNTIME_DATA_DIR = tmpDir;
-  ({ authRoutes } = await import("@/backend/auth/routes"));
 });
 
-afterAll(async () => {
+afterAll(() => {
   for (const k of ENV_KEYS) {
     if (savedEnv[k] === undefined) delete process.env[k];
     else process.env[k] = savedEnv[k];
-  }
-  const { db } = await import("@/backend/db");
-  db.close();
-  try {
-    rmSync(tmpDir, { recursive: true, force: true });
-  } catch {
-    // Windows can briefly hold the sqlite file handle after close(); best-effort cleanup.
   }
 });
 
