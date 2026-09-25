@@ -60486,28 +60486,6 @@
        "citizenship": "Brazil"
       }
      ]
-    },
-    {
-     "id": "131554",
-     "name": "TBD Away",
-     "shortName": "TBD Away",
-     "location": "TBD Away",
-     "color": "000000",
-     "altColor": "C60000",
-     "logoFile": null,
-     "coach": null,
-     "athletes": []
-    },
-    {
-     "id": "131556",
-     "name": "TBD Home",
-     "shortName": "TBD Home",
-     "location": "TBD Home",
-     "color": "000000",
-     "altColor": "C60000",
-     "logoFile": null,
-     "coach": null,
-     "athletes": []
     }
    ]
   },

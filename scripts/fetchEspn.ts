@@ -89,7 +89,9 @@ const leagues: EspnLeague[] = [];
 for (const m of map) {
   const j = await curlJson(`${API}/${m.code}/teams`);
   const lg = j.sports?.[0]?.leagues?.[0];
-  const raw = (lg?.teams ?? []).map((x: any) => x.team);
+  const allRaw = (lg?.teams ?? []).map((x: any) => x.team);
+  const raw = allRaw.filter((t: any) => !/^TBD\b/i.test(String(t.displayName ?? "")));
+  const skipped = allRaw.length - raw.length;
   const teams = await pool(raw, CONCURRENCY, (t) => fetchTeam(m.code, t));
   teams.sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
   const season = String(lg?.season?.displayName ?? lg?.season?.year ?? "");
@@ -97,6 +99,7 @@ for (const m of map) {
   const players = teams.reduce((s, t) => s + t.athletes.length, 0);
   const logos = teams.filter((t) => t.logoFile).length;
   console.log(`${m.slug.padEnd(34)} ${m.code.padEnd(6)} clubs ${String(teams.length).padStart(3)}  players ${String(players).padStart(4)}  crests ${logos}`);
+  if (skipped > 0) console.log(`  skipped ${skipped} placeholder team(s) (TBD)`);
 }
 
 const snap: EspnSnapshot = { fetchedAt: new Date().toISOString().slice(0, 10), leagues };
