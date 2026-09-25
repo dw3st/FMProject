@@ -22,66 +22,93 @@ function makeNoopTick() {
 }
 
 describe("advanceSim", () => {
-  test("zero seconds is a no-op", () => {
+  test("zero seconds and zero carry is a no-op", () => {
     const state = fakeState();
     const { tick, calls } = makeNoopTick();
 
-    const result = advanceSim(state, 0, SIM_STEP, tick);
+    const result = advanceSim(state, 0, 0, SIM_STEP, tick);
 
     expect(result.state).toBe(state);
-    expect(result.consumedAll).toBe(true);
+    expect(result.carry).toBe(0);
     expect(result.stoppedBy).toBeUndefined();
     expect(calls).toHaveLength(0);
   });
 
-  test("negative seconds is also a no-op", () => {
+  test("negative seconds with no carry is also a no-op", () => {
     const state = fakeState();
     const { tick, calls } = makeNoopTick();
 
-    const result = advanceSim(state, -1, SIM_STEP, tick);
+    const result = advanceSim(state, -1, 0, SIM_STEP, tick);
 
     expect(result.state).toBe(state);
-    expect(result.consumedAll).toBe(true);
+    expect(result.carry).toBe(0);
     expect(calls).toHaveLength(0);
   });
 
-  test("consumes in fixed steps of `step`, exact multiple", () => {
+  // The exact scenario from the coordinator's review: two small pumps in a
+  // row, neither individually reaching a whole SIM_STEP on its own.
+  test("0.01s with no carry: no tick runs, and 0.01 comes back as carry", () => {
     const state = fakeState();
     const { tick, calls } = makeNoopTick();
 
-    const result = advanceSim(state, 3 * SIM_STEP, SIM_STEP, tick);
+    const result = advanceSim(state, 0.01, 0, SIM_STEP, tick);
 
-    expect(calls).toHaveLength(3);
-    for (const dt of calls) expect(dt).toBeCloseTo(SIM_STEP, 12);
-    expect(result.consumedAll).toBe(true);
+    expect(calls).toHaveLength(0);
+    expect(result.state).toBe(state); // same reference — nothing ticked
+    expect(result.carry).toBeCloseTo(0.01, 10);
     expect(result.stoppedBy).toBeUndefined();
   });
 
-  test("consumes a non-multiple amount with a smaller final step", () => {
+  test("feeding that carry back in with another 0.01s runs exactly one whole step", () => {
     const state = fakeState();
     const { tick, calls } = makeNoopTick();
 
-    const result = advanceSim(state, 2.5 * SIM_STEP, SIM_STEP, tick);
+    const first = advanceSim(state, 0.01, 0, SIM_STEP, tick);
+    const second = advanceSim(first.state, 0.01, first.carry, SIM_STEP, tick);
 
-    expect(calls).toHaveLength(3);
+    // total = 0.01 (carry) + 0.01 = 0.02 → one whole 1/60s step, dt is
+    // exactly SIM_STEP (never a partial step), remainder ≈ 0.02 - 1/60 ≈ 0.0033.
+    expect(calls).toHaveLength(1);
     expect(calls[0]).toBeCloseTo(SIM_STEP, 12);
-    expect(calls[1]).toBeCloseTo(SIM_STEP, 12);
-    expect(calls[2]).toBeCloseTo(0.5 * SIM_STEP, 12);
-    expect(result.consumedAll).toBe(true);
+    expect(second.carry).toBeCloseTo(0.02 - SIM_STEP, 10);
+    expect(second.carry).toBeCloseTo(0.0033, 3);
+    expect(second.stoppedBy).toBeUndefined();
   });
 
-  test("a large elapsed amount runs many fixed steps (e.g. background-tab pulse at 4x)", () => {
+  test("never runs a partial step: every tick call gets dt === step exactly", () => {
+    const state = fakeState();
+    const { tick, calls } = makeNoopTick();
+
+    // An amount that is not a whole multiple of step.
+    advanceSim(state, 2.5 * SIM_STEP, 0, SIM_STEP, tick);
+
+    expect(calls.length).toBeGreaterThan(0);
+    for (const dt of calls) expect(dt).toBe(SIM_STEP);
+  });
+
+  test("consumes an exact multiple of `step` with zero carry left over", () => {
+    const state = fakeState();
+    const { tick, calls } = makeNoopTick();
+
+    const result = advanceSim(state, 3 * SIM_STEP, 0, SIM_STEP, tick);
+
+    expect(calls).toHaveLength(3);
+    expect(result.carry).toBeCloseTo(0, 10);
+    expect(result.stoppedBy).toBeUndefined();
+  });
+
+  test("a large elapsed amount runs many whole steps (e.g. background-tab pulse at 4x)", () => {
     const state = fakeState();
     const { tick, calls } = makeNoopTick();
 
     // 5s real-time cap × 4x game speed = 20 game-seconds of accumulated time.
-    const result = advanceSim(state, 20, SIM_STEP, tick);
+    const result = advanceSim(state, 20, 0, SIM_STEP, tick);
 
-    expect(calls).toHaveLength(Math.round(20 / SIM_STEP));
-    expect(result.consumedAll).toBe(true);
+    expect(calls).toHaveLength(Math.floor(20 / SIM_STEP));
+    expect(result.stoppedBy).toBeUndefined();
   });
 
-  test("stops early the moment a step scores a goal, discarding the rest", () => {
+  test("stops early the moment a step scores a goal, discarding remaining whole steps and resetting carry to 0", () => {
     const state = fakeState();
     let n = 0;
     const tick = (s: GameState, _dt: number): TickResult => {
@@ -90,14 +117,14 @@ describe("advanceSim", () => {
       return { state: s, passCompleted: false, tackled: false, goalScored };
     };
 
-    const result = advanceSim(state, 10 * SIM_STEP, SIM_STEP, tick);
+    const result = advanceSim(state, 10 * SIM_STEP, 0.5 * SIM_STEP, SIM_STEP, tick);
 
     expect(n).toBe(2);
-    expect(result.consumedAll).toBe(false);
+    expect(result.carry).toBe(0);
     expect(result.stoppedBy).toBe("goal");
   });
 
-  test("stops early the moment a step changes matchPhase, discarding the rest", () => {
+  test("stops early the moment a step changes matchPhase, discarding remaining whole steps and resetting carry to 0", () => {
     const state = fakeState("firstHalf");
     let n = 0;
     const tick = (s: GameState, _dt: number): TickResult => {
@@ -106,10 +133,10 @@ describe("advanceSim", () => {
       return { state: nextState, passCompleted: false, tackled: false, goalScored: null };
     };
 
-    const result = advanceSim(state, 10 * SIM_STEP, SIM_STEP, tick);
+    const result = advanceSim(state, 10 * SIM_STEP, 0, SIM_STEP, tick);
 
     expect(n).toBe(3);
-    expect(result.consumedAll).toBe(false);
+    expect(result.carry).toBe(0);
     expect(result.stoppedBy).toBe("phase");
     expect(result.state.matchPhase).toBe("halfTime");
   });
@@ -120,10 +147,20 @@ describe("advanceSim", () => {
     // phase immediately before that step — so it should run to full completion.
     const { tick, calls } = makeNoopTick();
 
-    const result = advanceSim(state, 5 * SIM_STEP, SIM_STEP, tick);
+    const result = advanceSim(state, 5 * SIM_STEP, 0, SIM_STEP, tick);
 
     expect(calls).toHaveLength(5);
-    expect(result.consumedAll).toBe(true);
+    expect(result.stoppedBy).toBeUndefined();
+  });
+
+  test("returns the same state reference when nothing ticks (e.g. matchEnd noop)", () => {
+    const state = fakeState("matchEnd");
+    const tick = (s: GameState, _dt: number): TickResult =>
+      ({ state: s, passCompleted: false, tackled: false, goalScored: null }); // tickState's own matchEnd noop returns `s` unchanged
+
+    const result = advanceSim(state, 3 * SIM_STEP, 0, SIM_STEP, tick);
+
+    expect(result.state).toBe(state);
   });
 });
 
@@ -165,7 +202,7 @@ describe("advanceSim against the real engine", () => {
     ],
   };
 
-  test("advances a real match by an accumulated pulse without throwing, and reports consumedAll unless a goal/phase boundary was hit", () => {
+  test("advances a real match by an accumulated pulse without throwing, and reports a consistent stoppedBy/carry", () => {
     const squadA = loadSquad("33.json");
     const squadB = loadSquad("34.json");
     const initial: GameState = {
@@ -174,18 +211,18 @@ describe("advanceSim against the real engine", () => {
       presentationCountdown: 0,
     };
 
-    // Simulate one simClock pulse: 100ms real-time × 2x game speed × TIME_SCALE
-    // isn't relevant here — advanceSim takes game-seconds directly. A generous
-    // multi-second batch exercises many fixed steps, same as a coalesced
-    // background-tab pulse would.
+    // Simulate a generous multi-second batch — exercises many whole fixed
+    // steps, same as a coalesced background-tab pulse would.
     const result = advanceSim(initial, 8);
 
     expect(result.state).toBeTruthy();
     expect(["firstHalf", "halfTime", "secondHalf", "matchEnd"]).toContain(result.state.matchPhase);
-    if (result.consumedAll) {
-      expect(result.stoppedBy).toBeUndefined();
+    if (result.stoppedBy) {
+      expect(["goal", "phase"]).toContain(result.stoppedBy);
+      expect(result.carry).toBe(0);
     } else {
-      expect(["goal", "phase"]).toContain(result.stoppedBy ?? "");
+      expect(result.carry).toBeGreaterThanOrEqual(0);
+      expect(result.carry).toBeLessThan(SIM_STEP);
     }
   }, 30_000);
 });
