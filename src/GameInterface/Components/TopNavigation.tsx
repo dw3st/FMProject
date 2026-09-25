@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   LayoutGrid,
@@ -19,6 +19,8 @@ import {
 import type { ComponentType, SVGProps } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
+import { useCurrentUser } from "@/GameInterface/AuthGate";
+import { ReportModal } from "@/GameInterface/Components/ReportModal";
 import type { LeagueData } from "@/types/playerTypes";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
@@ -55,6 +57,10 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
 
   const restDaySet = useMemo(() => new Set(restDays), [restDays]);
+
+  const currentUser = useCurrentUser();
+  const isTester = !!currentUser?.isTester;
+  const [reportOpen, setReportOpen] = useState(false);
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -107,6 +113,24 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
               </a>
             );
           })}
+          {isTester && (
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="group flex flex-col items-center gap-1 px-2 py-1.5 xl:px-3 xl:py-2 2xl:px-4 rounded-lg transition-all hover:bg-primary/10 cursor-pointer bg-transparent border-0"
+              title={t("nav.report")}
+              aria-label={t("nav.report")}
+            >
+              <Icon
+                name="report"
+                size={20}
+                className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors"
+              />
+              <span className="hidden lg:block text-[9px] 2xl:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
+                {t("nav.report")}
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 xl:gap-3 shrink-0">
@@ -157,6 +181,10 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
           )}
         </div>
       </nav>
+
+      {isTester && (
+        <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
+      )}
     </header>
   );
 }

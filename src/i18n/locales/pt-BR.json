@@ -457,6 +457,7 @@
     "transfers": "Transferências",
     "scout": "Olheiro",
     "stats": "Estatísticas",
+    "report": "Reportar",
     "inbox": "Mensagens",
     "settings": "Configurações",
     "training": "Treino",
@@ -472,6 +473,25 @@
     "portugueseBrazil": "Português (Brasil)",
     "mainMenu": "Menu Principal",
     "mainMenuDescription": "Volte ao menu para carregar outro jogo salvo."
+  },
+  "reports": {
+    "title": "Enviar um relatório",
+    "subtitle": "Conte sobre um bug, uma ideia de melhoria ou um pequeno ajuste.",
+    "type": "Tipo",
+    "typeBug": "Bug",
+    "typeImprovement": "Melhoria",
+    "typeTweak": "Ajuste",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "O que aconteceu? O que você esperava?",
+    "descriptionHint": "De {{min}} a {{max}} caracteres.",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "success": "Obrigado! Seu relatório foi enviado.",
+    "errorGeneric": "Não foi possível enviar o relatório. Tente novamente.",
+    "error400": "Algo no seu relatório não é válido. Confira e tente de novo.",
+    "error403": "Você não tem acesso para enviar relatórios.",
+    "error413": "Seu relatório está muito longo. Diminua a descrição e tente de novo.",
+    "error429": "Você enviou muitos relatórios recentemente. Espere um pouco e tente de novo."
   },
   "status": {
     "budget": "Orçamento",
