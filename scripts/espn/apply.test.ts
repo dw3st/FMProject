@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { applyEspn, type World } from "@/../scripts/espn/apply";
-import { buildAthlete, buildTeam, fixtureSnapshot, fixtureWorld } from "@/../scripts/espn/fixtures";
+import { buildAthlete, buildPlayer, buildTeam, fixtureSnapshot, fixtureWorld } from "@/../scripts/espn/fixtures";
 import type { EspnSnapshot } from "@/../scripts/espn/types";
 import { MIN_BY_ROLE, MIN_SQUAD } from "@/../scripts/openfootball/roster";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { RosterPlayer } from "@/types/playerTypes";
+import type { SquadFile } from "@/../scripts/world/types";
 
 const allWeights = () => ({ passing: 1, vision: 1, finishing: 1, dribbling: 1, speed: 1, acceleration: 1, tackling: 1, pressing: 1, stamina: 1, heading: 1, strength: 1, reflex: 1, jump: 1 });
 const overall = (p: RosterPlayer) => Object.values(p.stats).reduce((a, b) => a + b, 0) / 13;
@@ -243,5 +244,146 @@ describe("applyEspn — suspect new clubs and fuzzy club matches", () => {
     const newClub = [...r5.world.squads.values()].flat().find((s) => s.id === "es_N1")!;
     expect(newClub.finances!.budget).toBe(8e6); // falls back to the country median (Big One), not 0
     expect(newClub.venue!.capacity).toBe(40000);
+  });
+});
+
+const mkSquad = (id: string, name: string, country: string, players: RosterPlayer[]): SquadFile => ({
+  id, slug: id, name, colors: ["#111111", "#ffffff"], country,
+  venue: { name: `${name} Park`, city: null, capacity: 10000, surface: "grass" }, coach: { id: 1, name: "Coach" },
+  finances: { broadcasting: 1e6, commercial: 1e6, total: 2e6, budget: 1e6, followers: 1e5 },
+  players,
+});
+
+describe("applyEspn — suspectNewClubs needs at least MIN_SUSPECT_MATCHED players", () => {
+  test("2/2 poached players from a removed club is not enough to flag; 3/4 is", () => {
+    const world: World = {
+      leagues: [{ slug: "test3_league", name: "Test3 League", country: "Testland3", season: "2024-25", standings: [
+        { squadId: "src2", slug: "src2", name: "Alpha Club", colors: ["#111111", "#ffffff"], country: "Testland3" },
+        { squadId: "src4", slug: "src4", name: "Beta Club", colors: ["#111111", "#ffffff"], country: "Testland3" },
+        { squadId: "srcOther", slug: "srcOther", name: "Gamma Club", colors: ["#111111", "#ffffff"], country: "Testland3" },
+      ] }],
+      squads: new Map([["test3_league", [
+        mkSquad("src2", "Alpha Club", "Testland3", [
+          buildPlayer("src2_gk", "Alpha Keeper", 24, "GK", "src2", 5, "Testland3"),
+          buildPlayer("src2_fw", "Alpha Striker", 24, "Forward", "src2", 5, "Testland3"),
+        ]),
+        mkSquad("src4", "Beta Club", "Testland3", [
+          buildPlayer("src4_gk", "Beta Keeper", 24, "GK", "src4", 5, "Testland3"),
+          buildPlayer("src4_def", "Beta Back", 24, "Defender", "src4", 5, "Testland3"),
+          buildPlayer("src4_mid", "Beta Mid", 24, "Midfielder", "src4", 5, "Testland3"),
+          buildPlayer("src4_fw", "Beta Front", 24, "Forward", "src4", 5, "Testland3"),
+        ]),
+        mkSquad("srcOther", "Gamma Club", "Testland3", [
+          buildPlayer("other_mid", "Gamma Mid", 24, "Midfielder", "srcOther", 5, "Testland3"),
+        ]),
+      ]]]),
+      schedules: [],
+      pyramids: {},
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [{ slug: "test3_league", code: "t3.1", name: "Test3 League", season: "2026-27", teams: [
+        buildTeam("New2FC", "Brand New Two FC", [
+          buildAthlete("a1", "Alpha Keeper", 26, "G", "Testland3"),
+          buildAthlete("a2", "Alpha Striker", 26, "F", "Testland3"),
+        ]),
+        buildTeam("New4FC", "Brand New Four FC", [
+          buildAthlete("a3", "Beta Keeper", 26, "G", "Testland3"),
+          buildAthlete("a4", "Beta Back", 26, "D", "Testland3"),
+          buildAthlete("a5", "Beta Mid", 26, "M", "Testland3"),
+          buildAthlete("a6", "Gamma Mid", 26, "M", "Testland3"),
+        ]),
+      ] }],
+    };
+    const testOpts = { leagueMap: [{ slug: "test3_league", code: "t3.1" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r6 = applyEspn(world, snap, testOpts);
+
+    // src2, src4 and srcOther all leave the (single-tier) world this run.
+    expect(r6.report.removedClubs).toEqual(["src2", "src4", "srcOther"]);
+    const suspectIds = r6.report.suspectNewClubs.map((s) => s.newId);
+    expect(suspectIds).not.toContain("es_New2FC"); // 2/2 matched — below MIN_SUSPECT_MATCHED
+    expect(suspectIds).toContain("es_New4FC"); // 3/4 matched — meets both thresholds
+    const four = r6.report.suspectNewClubs.find((s) => s.newId === "es_New4FC")!;
+    expect(four.fromSquadId).toBe("src4");
+    expect(four.share).toBe(0.75);
+  });
+});
+
+describe("applyEspn — reserve-team detection requires the stripped name to exist as another team", () => {
+  test("\"Real Sociedad II\" is a reserve side because \"Real Sociedad\" is also a team", () => {
+    const world: World = {
+      leagues: [{ slug: "resv_league", name: "Resv League", country: "Spainland", season: "2024-25", standings: [
+        { squadId: "rs1", slug: "rs1", name: "Real Sociedad", colors: ["#111111", "#ffffff"], country: "Spainland" },
+        { squadId: "rs2", slug: "rs2", name: "Real Sociedad II", colors: ["#111111", "#ffffff"], country: "Spainland" },
+      ] }],
+      squads: new Map([["resv_league", [
+        mkSquad("rs1", "Real Sociedad", "Spainland", [
+          buildPlayer("rs1_gk", "Sociedad One Keeper", 24, "GK", "rs1", 5, "Spainland"),
+          buildPlayer("rs1_def", "Sociedad One Back", 24, "Defender", "rs1", 5, "Spainland"),
+          buildPlayer("rs1_mid", "Sociedad One Mid", 24, "Midfielder", "rs1", 5, "Spainland"),
+          buildPlayer("rs1_fwd", "Sociedad One Fwd", 24, "Forward", "rs1", 5, "Spainland"),
+        ]),
+        mkSquad("rs2", "Real Sociedad II", "Spainland", [buildPlayer("rs2_gk", "Sociedad Two Keeper", 20, "GK", "rs2", 3, "Spainland")]),
+      ]]]),
+      schedules: [],
+      pyramids: {},
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [{ slug: "resv_league", code: "sp.9", name: "Resv League", season: "2026-27", teams: [
+        buildTeam("RS1", "Real Sociedad", [buildAthlete("dupRS", "Loan Player", 24, "F", "Spainland")]),
+        buildTeam("RS2", "Real Sociedad II", [buildAthlete("dupRS", "Loan Player", 24, "F", "Spainland")]),
+      ] }],
+    };
+    const testOpts = { leagueMap: [{ slug: "resv_league", code: "sp.9" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r7 = applyEspn(world, snap, testOpts);
+    expect(r7.report.duplicateAthletes).toEqual([{ athleteId: "dupRS", keptTeam: "Real Sociedad", droppedTeam: "Real Sociedad II" }]);
+  });
+
+  test("\"Willem II\" is not a reserve side — no team named just \"Willem\" exists", () => {
+    const world: World = {
+      leagues: [{ slug: "resv_league2", name: "Resv League 2", country: "Dutchland", season: "2024-25", standings: [
+        { squadId: "w1", slug: "w1", name: "Willem II", colors: ["#111111", "#ffffff"], country: "Dutchland" },
+        { squadId: "w2", slug: "w2", name: "Some Rival", colors: ["#111111", "#ffffff"], country: "Dutchland" },
+      ] }],
+      squads: new Map([["resv_league2", [
+        mkSquad("w1", "Willem II", "Dutchland", [
+          buildPlayer("w1_gk", "Willem Keeper", 24, "GK", "w1", 5, "Dutchland"),
+          buildPlayer("w1_def", "Willem Back", 24, "Defender", "w1", 5, "Dutchland"),
+          buildPlayer("w1_mid", "Willem Mid", 24, "Midfielder", "w1", 5, "Dutchland"),
+          buildPlayer("w1_fwd", "Willem Fwd", 24, "Forward", "w1", 5, "Dutchland"),
+        ]),
+        mkSquad("w2", "Some Rival", "Dutchland", [buildPlayer("w2_gk", "Rival Keeper", 24, "GK", "w2", 5, "Dutchland")]),
+      ]]]),
+      schedules: [],
+      pyramids: {},
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [{ slug: "resv_league2", code: "nl.9", name: "Resv League 2", season: "2026-27", teams: [
+        buildTeam("W1", "Willem II", [buildAthlete("dupW", "Loan Two", 24, "F", "Dutchland")]),
+        buildTeam("W2", "Some Rival", [buildAthlete("dupW", "Loan Two", 24, "F", "Dutchland")]),
+      ] }],
+    };
+    const testOpts = { leagueMap: [{ slug: "resv_league2", code: "nl.9" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r8 = applyEspn(world, snap, testOpts);
+    // Neither team is reserve (no plain "Willem" team exists) → falls to the tier/id tiebreak,
+    // where "W1" (Willem II) wins on the lower team id — proving "Willem II" was NOT penalised
+    // just for ending in "II".
+    expect(r8.report.duplicateAthletes).toEqual([{ athleteId: "dupW", keptTeam: "Willem II", droppedTeam: "Some Rival" }]);
+  });
+});
+
+describe("applyEspn — non-covered clubs drop any cached overallAvg when aged", () => {
+  test("a player left in a non-covered league loses its stale overallAvg cache after aging", () => {
+    const w = fixtureWorld();
+    const wolves = w.squads.get("premier_league")!.find((s) => s.id === "39")!;
+    (wolves.players[0] as RosterPlayer).overallAvg = 5.5;
+    const restrictedOpts = { ...opts, leagueMap: [opts.leagueMap[0]!] }; // only premier_league covered
+    const r9 = applyEspn(w, fixtureSnapshot(), restrictedOpts);
+    const outWolves = [...r9.world.squads.values()].flat().find((s) => s.id === "39")!;
+    const p0 = outWolves.players.find((p) => p.id === "39_p0")!;
+    expect(p0.age).toBe(22); // 20 + typicalGap(2), same as before
+    expect(p0.overallAvg).toBeUndefined();
   });
 });
