@@ -38,6 +38,42 @@ export function matchClubs(
   return out;
 }
 
+/**
+ * `matchClubs` plus a manual override table (native `tl.id` → seed club id) for genuine same-league
+ * name-format misses `normName` can't bridge — e.g. native "Bayern München" vs seed "Bayern Munich"
+ * (NFKD-strips the umlaut to "munchen", a different string from "munich"), or native "Wolves" vs
+ * seed "Wolverhampton Wanderers" (no shared substring at all).
+ *
+ * An override is applied only when its target seed id is present in THIS `seed` list — the caller
+ * scopes both `tl` and `seed` to one seed league per `matchClubs` call, so an override whose seed id
+ * belongs to a different league (a genuine tier/season mismatch between the datasets, not a naming
+ * gap) is silently skipped here; `overrides` is expected to be pre-validated (every id real) by the
+ * caller before this runs. Overridden pairs are removed from both pools before the normal
+ * `matchClubs` fuzzy pass runs on the remainder, so an override can never collide with a fuzzy match
+ * on either side.
+ */
+export function matchClubsWithOverrides(
+  tl: Array<{ id: string; name: string }>,
+  seed: Array<{ id: string; name: string }>,
+  overrides: Record<string, string>,
+): Map<string, string> {
+  const seedIds = new Set(seed.map((c) => c.id));
+  const out = new Map<string, string>();
+  const overriddenTl = new Set<string>();
+  const overriddenSeed = new Set<string>();
+  for (const t of tl) {
+    const ov = overrides[t.id];
+    if (ov && seedIds.has(ov)) {
+      out.set(t.id, ov);
+      overriddenTl.add(t.id);
+      overriddenSeed.add(ov);
+    }
+  }
+  const fuzzy = matchClubs(tl.filter((t) => !overriddenTl.has(t.id)), seed.filter((c) => !overriddenSeed.has(c.id)));
+  for (const [k, v] of fuzzy) out.set(k, v);
+  return out;
+}
+
 const lastToken = (s: string) => s.split(" ").at(-1) ?? s;
 const countBy = (keys: string[]) => {
   const m = new Map<string, number>();
