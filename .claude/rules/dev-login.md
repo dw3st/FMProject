@@ -27,6 +27,14 @@ When allowed, it finds-or-creates the `dev@localhost` user, opens a session the 
 DEV_AUTO_LOGIN=1 bun run dev
 ```
 
+**Windows: start it from the real path casing, `C:\Projects\FMProject`.** Starting `bun run dev`
+from `C:\projects\fmproject` makes Bun's HMR register modules under two casings, and every page
+fails with "Failed to load bundled module … bug in Bun's bundler". From PowerShell:
+
+```powershell
+$env:DEV_AUTO_LOGIN = "1"; Start-Process bun -ArgumentList "run","dev" -WorkingDirectory "C:\Projects\FMProject"
+```
+
 `bun run dev` sets `NODE_ENV=development` for you (see `package.json`). Then open
 `http://localhost:3000/api/auth/dev-login` in the browser — it logs you in and redirects to
 `/start`. If you start the server another way, set `NODE_ENV=development` explicitly.
