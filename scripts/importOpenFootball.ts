@@ -18,7 +18,9 @@ import { fileURLToPath } from "node:url";
 import type { Seed, SeedClub, SeedLeague, SeedPlayer } from "@/../scripts/openfootball/types";
 import { clubId, leagueSlug, normName, unitHash } from "@/../scripts/openfootball/ids";
 import { MAX_AGE, buildNamePools, mainRole, trimAndFill, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
-import { collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubs, matchPlayers, matchPlayersByTokenSubset } from "@/../scripts/openfootball/calibration";
+import {
+  collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubsWithOverrides, matchPlayers, matchPlayersByTokenSubset,
+} from "@/../scripts/openfootball/calibration";
 import {
   ECON_FIELDS, REP_FLOOR_MARGIN, STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer,
   type ClubFits, type EconSample,
@@ -88,6 +90,16 @@ const seed = readJson<Seed>(join(OF_DIR, "seed-real.json"));
 const tierOverrides = readJson<Record<string, number>>(join(OF_DIR, "tierOverrides.json"));
 const tierOf = (l: SeedLeague) => tierOverrides[l.slug] ?? l.tier;
 /**
+ * Native squad id → seed club id, for genuine same-league name-format misses that `matchClubs`'s
+ * normalization can't bridge (e.g. native "Bayern München" vs seed "Bayern Munich" — normName
+ * strips the umlaut to "munchen", a different string from "munich"; native "Wolves" vs seed
+ * "Wolverhampton Wanderers" share no substring at all). Applied before `matchClubs` per league, for
+ * the same seed league the override's target club belongs to — never a cross-league/cross-tier fix
+ * (e.g. a native top-flight club whose only seed counterpart sits in a lower division is a genuine
+ * season/snapshot difference between the two datasets, not a naming gap, and is left unmatched).
+ */
+const clubOverrides = readJson<Record<string, string>>(join(OF_DIR, "clubOverrides.json"));
+/**
  * Pyramid-only level corrections keyed by leagueData slug (e.g. Russia's B groups sit one level below
  * the A groups). tierOverrides.json (seed slug) still applies first and also drives the economy tier;
  * pyramidOverrides.json only moves a league within the pyramid, so squad economies are unchanged.
@@ -109,6 +121,15 @@ for (const ps of playersByClub.values()) ps.sort((a, b) => byStr(a.id, b.id));
 
 const tlSquads = Object.fromEntries(Object.keys(TL_LEAGUES).map((l) => [l, readTLSquads(l)])) as Record<string, TLSquad[]>;
 
+// Validate clubOverrides.json: every native id and seed id must be real, and unknown native ids
+// (typos, a renamed squad file) or unknown seed ids must fail loudly rather than silently no-op.
+const allNativeSquadIds = new Set(Object.values(tlSquads).flat().map((s) => s.id));
+const allSeedClubIds = new Set(seed.clubs.map((c) => c.id));
+for (const [nativeId, seedId] of Object.entries(clubOverrides)) {
+  if (!allNativeSquadIds.has(nativeId)) throw new Error(`clubOverrides.json: unknown native squad id "${nativeId}"`);
+  if (!allSeedClubIds.has(seedId)) throw new Error(`clubOverrides.json: unknown seed club id "${seedId}" (native ${nativeId})`);
+}
+
 // ── 2. Calibrate ────────────────────────────────────────────────────────────
 const statPairs: Array<{ tl: { stats: Record<string, number> }; seed: SeedPlayer; leagueRep: number }> = [];
 /** Native↔seed player pairs kept for the star-level recalibration (section 3.5). One entry per
@@ -120,6 +141,10 @@ interface RecalPair {
   player: RosterPlayer & { fullName?: string };
   tlLeague: string;
   squadFileId: string;
+  /** The paired seed player — used after `coeffs` is fitted to compute a "shadow of_*" overall
+   *  (same derivePlayer() a real of_* player of this exact seed record would get), the quantile
+   *  target pool's value source (see the "ceiling" note near section 3.5). */
+  seedPlayer: SeedPlayer;
 }
 const recalPairs: RecalPair[] = [];
 /** Extra recal-only pairs found by the token-subset fallback (never fed into statPairs), per role. */
@@ -137,7 +162,7 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
   const seedClubs = clubsByLeague.get(seedSlug) ?? [];
   const leagueRep = leagueRepOf(seedSlug);
   const seedById = new Map(seedClubs.map((c) => [c.id, c]));
-  const clubMap = matchClubs(tlSquads[tlLeague]!, seedClubs);
+  const clubMap = matchClubsWithOverrides(tlSquads[tlLeague]!, seedClubs, clubOverrides);
   let players = 0;
   clubPairNames[tlLeague] = [];
   for (const tl of tlSquads[tlLeague]!) {
@@ -164,6 +189,7 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
         player: tlPlayer,
         tlLeague,
         squadFileId: tl.id,
+        seedPlayer,
       });
       players++;
     }
@@ -180,7 +206,7 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
       const tlPlayer = tlById.get(tid)!;
       const seedPlayer = spById.get(spid)!;
       const role = getMainRole(tlPlayer.positions[0] ?? "CM");
-      recalPairs.push({ role, seedOverall: seedPlayer.overall, leagueRep, player: tlPlayer, tlLeague, squadFileId: tl.id });
+      recalPairs.push({ role, seedOverall: seedPlayer.overall, leagueRep, player: tlPlayer, tlLeague, squadFileId: tl.id, seedPlayer });
       tokenSubsetExtraByRole[role]++;
     }
   }
@@ -188,6 +214,16 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
 }
 const totalClubPairs = Object.values(pairCounts).reduce((s, x) => s + x.clubs, 0);
 const coeffs = fitPlayerCoeffs(collectStatPoints(statPairs));
+/**
+ * "Shadow of_*" overall per recal pair: the overall a REAL of_* player would get from this exact
+ * seed record (same `derivePlayer` + `coeffs` every of_* player in the world is derived with).
+ * Used as the quantile-target VALUE pool in section 3.5, replacing the native player's own
+ * pre-existing overall — see the "ceiling" note there for why the native pool is unusable as a
+ * value source (only as the z-model's fit target, for ranking).
+ */
+const shadowOverallOf = new Map<string, number>(
+  recalPairs.map((p) => [p.player.id, Player.computeOverallAvg(derivePlayer(p.seedPlayer, "shadow", coeffs, p.leagueRep, { noise: false }))]),
+);
 const clubFits: ClubFits = {
   ...(Object.fromEntries(ECON_FIELDS.map((k) => [k, fitLogLine(econPairs.map((p) => [p.rep, p.econ[k]]))])) as Omit<ClubFits, "repMax">),
   repMax: Math.max(...econPairs.map((p) => p.rep)),
@@ -218,12 +254,36 @@ cpSync(join(NATIVE, "squads"), SQUADS, { recursive: true });
 // unaffected by this step. This step only rewrites the level (overall) of native players paired
 // with a seed player, keeping their native attribute PROFILE. See
 // docs/superpowers/specs/2026-09-25-native-star-recalibration-design.md.
+//
+// Ceiling note (2026-09-25 second follow-up): the quantile step (below) redistributes an existing
+// overall MULTISET by z-rank — it never invents a value the multiset doesn't already contain. The
+// z-model (fit against the native players' own pre-existing overall) correctly ranks them: verified
+// the top-5 by z per role are the actually-elite seed players (Mbappé/Saka/Haaland/Kane at Forward,
+// Van Dijk/Saliba at Defender, Salah/Rice/Rodri at Midfielder, Courtois/Donnarumma/Oblak at GK). But
+// the VALUES being redistributed — if sourced from the natives' own pre-recal overall — are capped
+// at whatever the single highest pre-existing native overall in that role happens to be, and that
+// ceiling is an artifact of the OLD (pre-recalibration, seed-blind) attribute generation: e.g. it
+// used to be held by "Yan Diomande" (seedOverall 85) among Forwards purely because his native
+// attribute profile scored well under the weighted quadratic mean, nothing to do with real quality
+// (he's the same player the original bug report flagged as wrongly ranked #1 in the world). Using
+// that pool as the VALUE source would silently re-import the exact bias this feature exists to
+// remove, and — since different roles' old ceilings differ for equally arbitrary reasons — would
+// also distort cross-role world-ranking comparisons (a correctly-#1-by-z defender capped lower than
+// a correctly-#4-by-z forward, for no footballing reason). Fixed below: the quantile VALUE pool is
+// `shadowOverallOf` — a "shadow of_*" overall computed via the exact same `derivePlayer` + `coeffs`
+// every real of_* player in the world already gets from their seed record — so the ceiling reflects
+// this dataset's own seed-calibrated scale instead of the old scheme's noise. The z-model's fit
+// still regresses against the native players' own pre-existing overall (kept as-is): even though
+// each INDIVIDUAL native overall is an unreliable point estimate, the fitted trend across ~700-1000
+// pairs per role still correctly separates elite from average seed players (verified above), so it
+// remains a sound RANKING signal — only the old pool's use as a VALUE source was the bug.
 const ROLE_ATTR_WEIGHTS = ROLES_JSON as Record<string, { attrWeights?: Record<string, number> }>;
 const recalByRole = new Map<MainRole, RecalPair[]>();
 for (const p of recalPairs) recalByRole.set(p.role, [...(recalByRole.get(p.role) ?? []), p]);
 
+const nativeOverallBefore = new Map(recalPairs.map((p) => [p.player.id, Player.computeOverallAvg(p.player)]));
 const levelPairs: LevelPair[] = recalPairs.map((p) => ({
-  role: p.role, seedOverall: p.seedOverall, leagueRep: p.leagueRep, nativeOverall: Player.computeOverallAvg(p.player),
+  role: p.role, seedOverall: p.seedOverall, leagueRep: p.leagueRep, nativeOverall: nativeOverallBefore.get(p.player.id)!,
 }));
 const levelFits = fitLevelPredictor(levelPairs);
 
@@ -237,7 +297,7 @@ for (const [role, group] of recalByRole) {
   recalReport.push({ role, n: group.length, fit: fit ? { a: fit.a, b: fit.b, c: fit.c, sd: fit.sd } : undefined });
   if (!fit) continue; // fewer than 3 pairs for this role — leave these native players untouched
   const quantileInput: QuantileInput[] = group.map((p) => ({
-    id: p.player.id, z: predictLevel(fit, p.seedOverall, p.leagueRep), currentOverall: Player.computeOverallAvg(p.player),
+    id: p.player.id, z: predictLevel(fit, p.seedOverall, p.leagueRep), currentOverall: shadowOverallOf.get(p.player.id)!,
   }));
   const targets = quantileTargets(quantileInput);
   for (const p of group) {

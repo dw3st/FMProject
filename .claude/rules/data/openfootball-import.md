@@ -114,7 +114,8 @@ startKits (a pirâmide e as zonas não ficam nos kits, mas o `leagueData` e o mu
 
 Os atributos e as finanças são **derivados**, não originais. O seed só traz `overall`, posição, idade, pé e reputação. Os 13 atributos de 0 a 10 do FMProject são estimados por regressão.
 
-- **Pares.** O casamento por nome encontra cerca de 2.900 jogadores e cerca de 109 clubes que existem nos dois datasets (Brasil A/B e as 5 grandes).
+- **Pares.** O casamento por nome encontra cerca de 3.075 jogadores e 114 clubes que existem nos dois datasets (Brasil A/B e as 5 grandes).
+- **Overrides de clube.** `data_process/openfootball/clubOverrides.json` (`squadId nativo → id do clube no seed`) corrige casos em que o mesmo clube existe nos dois datasets mas o nome nunca bate — nem por igualdade nem por conter um o outro — porque é uma grafia diferente da mesma cidade/clube (`"Bayern München"` × `"Bayern Munich"`: o NFKD de `normName` tira o trema e vira "munchen", uma palavra diferente de "munich"; `"Wolves"` × `"Wolverhampton Wanderers"`: nenhuma substring em comum). `matchClubsWithOverrides` (`scripts/openfootball/calibration.ts`) aplica os overrides antes do `matchClubs` de cada liga do seed, e só quando o clube do override pertence à MESMA liga do seed que está sendo casada — um clube nativo cujo único homônimo no seed está numa divisão diferente (`"Fulham"`/`"Leeds United"`: no seed da Premier League o seed não tem esses dois clubes, só na Championship, uma diferença real de temporada entre os dois datasets, não um problema de grafia) fica sem par, de propósito. Hoje 5 entradas: `39→gb-wolves`, `157→de-bayern-munich`, `531→es-athletic-bilbao`, `94→fr-rennes`, `1062→br-atletico-mineiro`. Efeito nos ajustes: pares de calibração 2.937→3.075 jogadores, 109→114 clubes; multiplicadores de tier e medianas de economia mudaram menos de 1% (5 clubes a mais entre ~110 usados no ajuste de finanças).
 - **Atributos.** Para cada papel e atributo há uma regressão `stat = a + b·overall + c·leagueRep`, com ruído determinístico de `sd` residual.
   - `leagueRep` é a reputação da liga no seed dividida por 1000. É a **covariável de reputação de liga**, necessária porque o OVR do seed é normalizado dentro de cada liga.
   - Na derivação, `leagueRep` é limitado ao intervalo de calibração. O **piso é 2,8** (`leagueRepFloor` = `repMin − REP_FLOOR_MARGIN`), para não extrapolar para ligas muito fracas.
@@ -151,9 +152,28 @@ Mbappé era o 137º por overall). Ver
      jogo (`Player.computeOverallAvg`) do nativo **antes** de qualquer mudança. Papel com menos de
      3 pares fica sem previsor e seus jogadores não são tocados.
   2. **Escala por quantis:** dentro do papel, ordena os pares por `z` (desempate pelo id) e
-     devolve a cada um o overall atual do MESMO grupo, do maior para o menor, na mesma ordem. A
-     multiset de alvos é exatamente a multiset atual (média e espalhamento do papel não mudam);
-     só a atribuição (quem recebe qual nota) muda, guiada pelo `z` do seed.
+     devolve a cada um, na mesma ordem, um valor de um multiset de referência — do maior para o
+     menor. A ordem (quem recebe qual nota) vem do `z` do seed; a ESCALA vem do multiset.
+     **O multiset é o overall "of_* sombra"** de cada jogador do par — `derivePlayer(seedPlayer,
+     ..., coeffs, leagueRep, { noise: false })` (o mesmo `derivePlayer` que gera todo `of_*` real,
+     só sem o termo de ruído gaussiano por atributo) — não o overall nativo pré-recalibração.
+     *Por quê não o nativo:* o teto de cada papel (o maior valor do multiset, dado a quem tiver o
+     maior `z`) ficava preso a qualquer valor nativo pré-existente mais alto daquele papel — e
+     esse valor não tinha nenhuma relação com o seed. Na 1ª rodada da recalibração (só nativo como
+     multiset) o teto de Ataque (6,74) era do "Yan Diomande" (seedOverall 85, exatamente o jogador
+     que o bug original relatava como 1º errado do mundo), enquanto o teto de Defesa (6,25) e de
+     Meio (6,39) eram de outros nomes pouco conhecidos — nada a ver com quem o `z` realmente
+     escolhia como melhor do papel (conferido à parte: os 5 melhores por `z` de cada papel SÃO os
+     verdadeiros craques do seed — Courtois/Donnarumma/Oblak no gol, Van Dijk/Saliba na defesa,
+     Salah/Rice/Rodri no meio, Mbappé/Saka/Haaland/Kane no ataque — o previsor de nível funciona; o
+     problema era só a escala do alvo). Usar o "of_* sombra" tira esse viés: o teto passa a vir da
+     MESMA regressão `seedOverall/leagueRep → atributo` que gera o resto do mundo, então um
+     seedOverall 99 tem, por construção, um teto compatível com um `of_*` real de seedOverall 99.
+     `{ noise: false }` é essencial — com o ruído normal do `derivePlayer` ligado, um craque
+     específico podia cair mal na distribuição aleatória (ex.: Kane saiu com `finishing` baixo e
+     `passing` alto num sorteio, um perfil às avessas para um centroavante) e o teto do papel virava
+     de novo um acidente, só que do ruído em vez do nativo velho. Sem ruído, o valor é a reta de
+     regressão pura — determinístico e sem essa loteria por jogador.
   3. **Deslocamento único:** acha a posição específica onde o jogador rende mais
      (`Player.bestSpecificRole` sobre os atributos nativos originais) e soma um único `s` a todo
      atributo com peso > 0 no `attrWeights` dessa posição (`src/Data/roles.json`), contínuo,
@@ -171,11 +191,20 @@ Mbappé era o 137º por overall). Ver
 - **Relatório no fim do importador:** pares e coeficientes do previsor por papel, jogadores
   recalibrados, e depois (lendo o mundo inteiro já escrito, `of_*` incluído) o top 20 do mundo e a
   posição de Mbappé, Kane, Haaland, Salah, Vini, Bellingham, Yamal, Wirtz, Doku e Diomande.
-- **Resultado (rodada de 2026-09-25):** Mbappé 137º → 2º–3º, Vini 306º → 8º–9º, Doku → 10º–13º,
-  Diomande (antes o 1º, errado) → 400-500º. Kane e Bellingham melhoram bastante mas não entram no
-  top 10 — o `z` é um modelo linear com ruído residual (`sd`), então a ordem exata dentro de um
-  papel de ~700–1000 pares não é perfeita, só a tendência geral. Isso é esperado e aceito pelo
-  design (opção "100% do seed" aprovada).
+- **Nenhuma rescisão sem par continua sem mudar.** Kane e Bellingham (assim como Van Dijk e Rodri,
+  abaixo) sempre tiveram par — o gargalo era outro em cada caso; ver `.claude/rules/data/espn-import.md`
+  para os casos de jogador sumindo no `importEspn` (Salah, Rodri).
+- **Resultado (rodada com `clubOverrides` + teto "of_* sombra", ~2026-09-25):** Mbappé 137º (mundo
+  nativo original) → 34º; Kane, que nunca tinha par porque o clube (Bayern München/Munich) não
+  casava, agora casa e recalibra (ver acima); Van Dijk é o #1 por `z` entre 1019 zagueiros e recebe
+  o teto do papel; Rodri é o #3 por `z` entre 1064 meio-campistas. O `z` acerta quem é craque; a
+  posição final no mundo (não apenas dentro do papel) ainda reflete: (a) quantos outros craques de
+  `seedOverall` parecido competem pelo mesmo teto de papel (o Meio tem 5 jogadores com
+  `seedOverall ≥ 95` disputando a faixa alta — Salah, Rice, Rodri, Bruno Fernandes, Ødegaard —
+  então até o 3º colocado fica numa nota moderada), e (b) o envelhecimento do `importEspn` (Van
+  Dijk e Kane, ambos com 30+ anos, perdem nota na fase de idade — ver espn-import.md — depois de já
+  terem sido corretamente recalibrados). Isso é esperado e aceito pelo design (opção "100% do seed"
+  aprovada); o previsor de nível e a escala por quantis fazem o que devem.
 
 ---
 

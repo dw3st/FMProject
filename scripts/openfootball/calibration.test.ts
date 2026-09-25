@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-  collectStatPoints, fitLine, fitLogLine, fitPlane, fitPlayerCoeffs, matchClubs, matchPlayers, matchPlayersByTokenSubset,
+  collectStatPoints, fitLine, fitLogLine, fitPlane, fitPlayerCoeffs, matchClubs, matchClubsWithOverrides, matchPlayers,
+  matchPlayersByTokenSubset,
 } from "@/../scripts/openfootball/calibration";
 import { STAT_KEYS } from "@/../scripts/openfootball/derive";
 
@@ -184,6 +185,41 @@ describe("matchPlayersByTokenSubset", () => {
     const seed = [{ id: "s1", name: "Harry Kane", age: 32 }];
     const m = matchPlayersByTokenSubset(tl, seed, new Map([["t9", "s9"]]));
     expect([...m.entries()]).toEqual([["t1", "s1"]]);
+  });
+});
+
+describe("matchClubsWithOverrides", () => {
+  test("aplica o override mesmo quando os nomes normalizados nunca colidem (München × Munich)", () => {
+    const tl = [{ id: "157", name: "Bayern München" }];
+    const seed = [{ id: "de-bayern-munich", name: "Bayern Munich" }];
+    expect(matchClubs(tl, seed).size).toBe(0); // confirma que o normName puro não casa
+    const m = matchClubsWithOverrides(tl, seed, { "157": "de-bayern-munich" });
+    expect(m.get("157")).toBe("de-bayern-munich");
+  });
+
+  test("clube sem override continua casando por matchClubs normalmente", () => {
+    const tl = [{ id: "t1", name: "Manchester United" }, { id: "t2", name: "Bayern München" }];
+    const seed = [{ id: "s1", name: "Manchester United FC" }, { id: "de-bayern-munich", name: "Bayern Munich" }];
+    const m = matchClubsWithOverrides(tl, seed, { t2: "de-bayern-munich" });
+    expect(m.get("t1")).toBe("s1"); // via matchClubs, sem override
+    expect(m.get("t2")).toBe("de-bayern-munich"); // via override
+  });
+
+  test("override cujo seed id não está NESTA liga (fora do pool `seed`) é ignorado — sem cross-league", () => {
+    const tl = [{ id: "t1", name: "Some Club" }];
+    const seed = [{ id: "other-seed-id", name: "Unrelated Club" }];
+    const m = matchClubsWithOverrides(tl, seed, { t1: "seed-in-a-different-league" });
+    expect(m.has("t1")).toBe(false);
+  });
+
+  test("override e fuzzy nunca colidem: o par do override é removido dos dois pools antes do matchClubs", () => {
+    // Sem a remoção, "Wolves" (curto) poderia ser puxado por engano por outro candidato do pool.
+    const tl = [{ id: "39", name: "Wolves" }, { id: "t2", name: "Arsenal" }];
+    const seed = [{ id: "gb-wolves", name: "Wolverhampton Wanderers" }, { id: "s2", name: "Arsenal FC" }];
+    const m = matchClubsWithOverrides(tl, seed, { "39": "gb-wolves" });
+    expect(m.get("39")).toBe("gb-wolves");
+    expect(m.get("t2")).toBe("s2");
+    expect(m.size).toBe(2);
   });
 });
 
