@@ -1537,5 +1537,8 @@
     "moves_one": "{{count}} club changed division in your country.",
     "moves_other": "{{count}} clubs changed division in your country.",
     "ok": "OK"
+  },
+  "players": {
+    "star": "Current legend"
   }
 }

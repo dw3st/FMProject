@@ -7,7 +7,10 @@ import { toDisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
+import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
 export function SquadTable({
   squad,
@@ -19,6 +22,8 @@ export function SquadTable({
   onSelectPlayer: (player: DisplayPlayer | null) => void;
 }) {
   const { t } = useTranslation();
+  const { session } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId);
   const [sortKey, setSortKey] = useState<string>("pos");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -116,8 +121,9 @@ export function SquadTable({
             <div className={`px-3 py-2.5 font-black text-[11px] ${getPositionColor(player.pos)} w-24 min-w-[4.5rem]`} title={player.positions.join(", ")}>
               {MAIN_ROLE_ABBR[getMainRole(player.pos)]}
             </div>
-            <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
-              {player.name}
+            <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate flex items-center gap-1.5">
+              <span className="truncate">{player.name}</span>
+              {starIds.has(player.id) && <StarBadge />}
             </div>
             <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">
