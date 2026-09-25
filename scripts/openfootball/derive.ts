@@ -56,6 +56,13 @@ function nationalityFor(code: string): string | undefined {
   }
 }
 
+/** Archetype from the strongest stat, and a one-line summary ("Solid defender, strongest at tackling."). */
+export function playerProfile(role: MainRole, stats: PlayerStatsRecord, adjective: string): RosterPlayer["profile"] {
+  const top = [...STAT_KEYS].sort((a, b) => stats[b] - stats[a] || a.localeCompare(b))[0]!;
+  const roleWord = role === "GK" ? "goalkeeper" : role.toLowerCase();
+  return { archetype: ARCHETYPES[role][top] ?? ARCHETYPES[role]._, summary: `${adjective} ${roleWord}, strongest at ${top}.` };
+}
+
 /**
  * `leagueRep` is the seed league reputation / 1000. It is clamped to
  * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
@@ -77,9 +84,7 @@ export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoef
     tackling: statOf("tackling"), pressing: statOf("pressing"), stamina: statOf("stamina"),
     heading: statOf("heading"), strength: statOf("strength"), reflex: statOf("reflex"), jump: statOf("jump"),
   };
-  const top = [...STAT_KEYS].sort((a, b) => stats[b] - stats[a] || a.localeCompare(b))[0]!;
   const adjective = sp.overall >= 80 ? "Elite" : sp.overall >= 70 ? "Solid" : sp.overall >= 60 ? "Capable" : "Developing";
-  const roleWord = role === "GK" ? "goalkeeper" : role.toLowerCase();
   const player: RosterPlayer = {
     id: playerId(sp.id),
     name: sp.name,
@@ -90,10 +95,7 @@ export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoef
     preferredFoot: sp.foot === "L" ? "left" : "right",
     positions: [role],
     stats,
-    profile: {
-      archetype: ARCHETYPES[role][top] ?? ARCHETYPES[role]._,
-      summary: `${adjective} ${roleWord}, strongest at ${top}.`,
-    },
+    profile: playerProfile(role, stats, adjective),
   };
   const nationality = nationalityFor(sp.country);
   if (nationality) player.nationality = nationality;

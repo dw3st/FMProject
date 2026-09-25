@@ -39,14 +39,9 @@ const GRID = "grid grid-cols-[minmax(0,1fr)_80px_90px_100px_170px_80px_150px] ga
  */
 export function ClubFinancesTable({
   rows,
-  leagueSlug,
-  catalog,
   onClickSquad,
 }: {
   rows: ClubFinanceRow[];
-  leagueSlug: string;
-  /** squadId → catalog (origin) league — crest files are filed by origin league. */
-  catalog: Map<string, string>;
   onClickSquad: (row: ClubFinanceRow) => void;
 }) {
   const { t } = useTranslation();
@@ -74,7 +69,7 @@ export function ClubFinancesTable({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <ClubLogo
-                    logoUrl={squadLogoUrl(row.squadId, catalog.get(row.squadId) ?? leagueSlug, row.slug)}
+                    logoUrl={squadLogoUrl(row.squadId)}
                     primaryColor={row.colors[0]}
                     secondaryColor={row.colors[1]}
                     className="w-6 h-6 rounded shrink-0"

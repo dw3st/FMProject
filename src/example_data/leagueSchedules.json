@@ -33,7 +33,7 @@
   { "slug": "of_veikkausliiga", "seasonStartMMDD": "02-05", "seasonEndMMDD": "11-30", "crossYear": false, "matchDays": [6, 0],    "baseWeekOffset": 0 },
   { "slug": "of_fijian_premier_league", "seasonStartMMDD": "02-05", "seasonEndMMDD": "11-30", "crossYear": false, "matchDays": [6, 0],    "baseWeekOffset": 0 },
   { "slug": "of_ligue_2",     "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 1 },
-  { "slug": "of_championship", "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 1 },
+  { "slug": "of_championship", "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [3, 6, 0], "baseWeekOffset": 1 },
   { "slug": "of_georgian_erovnuli_liga", "seasonStartMMDD": "02-05", "seasonEndMMDD": "11-30", "crossYear": false, "matchDays": [6, 0],    "baseWeekOffset": 0 },
   { "slug": "of_ghanaian_premier_league", "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 0 },
   { "slug": "of_greek_super_league", "seasonStartMMDD": "08-15", "seasonEndMMDD": "05-17", "crossYear": true,  "matchDays": [6, 0],    "baseWeekOffset": 0 },

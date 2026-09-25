@@ -22,10 +22,8 @@ import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
 
 /** One team's identity, resolved once per league set so per-match lookups are O(1). */
 interface TeamLookup {
-  name:       string;
-  slug?:      string;
-  colors:     [string, string];
-  leagueSlug: string;
+  name:   string;
+  colors: [string, string];
 }
 
 type TFunc = (key: string, options?: Record<string, unknown>) => string;
@@ -220,7 +218,7 @@ function buildTeamsById(leagues: LeagueData[]): Map<string, TeamLookup> {
   for (const league of leagues) {
     for (const row of league.standings) {
       if (!map.has(row.squadId)) {
-        map.set(row.squadId, { name: row.name, slug: row.slug, colors: row.colors, leagueSlug: league.slug });
+        map.set(row.squadId, { name: row.name, colors: row.colors });
       }
     }
   }
@@ -239,8 +237,8 @@ function MatchCard({
   const awayTeam = teamsById.get(event.away);
   const homeName = homeTeam?.name ?? fallbackTeamNameFromSquadId(event.home);
   const awayName = awayTeam?.name ?? fallbackTeamNameFromSquadId(event.away);
-  const homeLogoUrl = squadLogoUrl(event.home, homeTeam?.leagueSlug ?? event.competition, homeTeam?.slug);
-  const awayLogoUrl = squadLogoUrl(event.away, awayTeam?.leagueSlug ?? event.competition, awayTeam?.slug);
+  const homeLogoUrl = squadLogoUrl(event.home);
+  const awayLogoUrl = squadLogoUrl(event.away);
   const homeColors = homeTeam?.colors ?? ["#555", "#888"];
   const awayColors = awayTeam?.colors ?? ["#555", "#888"];
 

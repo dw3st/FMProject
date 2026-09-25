@@ -1,17 +1,17 @@
 [
   {
     "id": "official-2024",
-    "name": "Official 2024/25",
+    "name": "Official 2026/27",
     "description": "The complete official database with verified player data and accurate squad compositions.",
     "creator": "FMPROJECT Team",
     "creatorType": "official",
-    "startDate": "July 1, 2024",
+    "startDate": "July 1, 2026",
     "countries": 60,
     "playableCountries": 60,
     "leagues": 83,
     "playableLeagues": 83,
-    "players": 36006,
-    "lastUpdated": "Oct 15, 2024",
+    "players": 36439,
+    "lastUpdated": "Sep 25, 2026",
     "version": "1.2.0",
     "isRecommended": true,
     "playable": true

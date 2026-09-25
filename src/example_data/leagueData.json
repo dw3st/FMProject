@@ -4,7 +4,7 @@
     "name": "Premier League",
     "country": "England",
     "iso2": "GB",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "ucl",
@@ -43,8 +43,8 @@
           "#DA291C",
           "#FFE500"
         ],
-        "logo": "logos/premier_league/manchester_united.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/manchester_united.svg"
       },
       {
         "squadId": "34",
@@ -54,8 +54,8 @@
           "#241F20",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/newcastle.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/newcastle.svg"
       },
       {
         "squadId": "35",
@@ -65,8 +65,8 @@
           "#DA291C",
           "#000000"
         ],
-        "logo": "logos/premier_league/bournemouth.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/bournemouth.svg"
       },
       {
         "squadId": "36",
@@ -76,19 +76,8 @@
           "#FFFFFF",
           "#000000"
         ],
-        "logo": "logos/premier_league/fulham.svg",
-        "country": "England"
-      },
-      {
-        "squadId": "39",
-        "slug": "wolves",
-        "name": "Wolves",
-        "colors": [
-          "#FDB913",
-          "#231F20"
-        ],
-        "logo": "logos/premier_league/wolves.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/fulham.svg"
       },
       {
         "squadId": "40",
@@ -98,8 +87,8 @@
           "#C8102E",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/liverpool.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/liverpool.svg"
       },
       {
         "squadId": "42",
@@ -109,19 +98,8 @@
           "#EF0107",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/arsenal.svg",
-        "country": "England"
-      },
-      {
-        "squadId": "44",
-        "slug": "burnley",
-        "name": "Burnley",
-        "colors": [
-          "#6C1D45",
-          "#99D6EA"
-        ],
-        "logo": "logos/premier_league/burnley.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/arsenal.svg"
       },
       {
         "squadId": "45",
@@ -131,8 +109,8 @@
           "#003399",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/everton.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/everton.svg"
       },
       {
         "squadId": "47",
@@ -142,19 +120,8 @@
           "#132257",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/tottenham.svg",
-        "country": "England"
-      },
-      {
-        "squadId": "48",
-        "slug": "west_ham",
-        "name": "West Ham",
-        "colors": [
-          "#7A263A",
-          "#1BB1E7"
-        ],
-        "logo": "logos/premier_league/west_ham.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/tottenham.svg"
       },
       {
         "squadId": "49",
@@ -164,8 +131,8 @@
           "#034694",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/chelsea.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/chelsea.svg"
       },
       {
         "squadId": "50",
@@ -175,8 +142,8 @@
           "#6CABDD",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/manchester_city.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/manchester_city.svg"
       },
       {
         "squadId": "51",
@@ -186,8 +153,8 @@
           "#0057B8",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/brighton.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/brighton.svg"
       },
       {
         "squadId": "52",
@@ -197,8 +164,8 @@
           "#1B458F",
           "#C4122E"
         ],
-        "logo": "logos/premier_league/crystal_palace.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/crystal_palace.svg"
       },
       {
         "squadId": "55",
@@ -208,8 +175,8 @@
           "#E30613",
           "#FFB81C"
         ],
-        "logo": "logos/premier_league/brentford.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/brentford.svg"
       },
       {
         "squadId": "63",
@@ -219,8 +186,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/leeds.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/leeds.svg"
       },
       {
         "squadId": "65",
@@ -230,8 +197,8 @@
           "#DD0000",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/nottingham_forest.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/nottingham_forest.svg"
       },
       {
         "squadId": "66",
@@ -241,8 +208,8 @@
           "#670E36",
           "#95BFE5"
         ],
-        "logo": "logos/premier_league/aston_villa.svg",
-        "country": "England"
+        "country": "England",
+        "logo": "logos/premier_league/aston_villa.svg"
       },
       {
         "squadId": "746",
@@ -252,7 +219,37 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/premier_league/sunderland.svg",
+        "country": "England",
+        "logo": "logos/premier_league/sunderland.svg"
+      },
+      {
+        "squadId": "es_388",
+        "slug": "es_388",
+        "name": "Coventry City",
+        "colors": [
+          "#87cced",
+          "#ffffff"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "of_gb_hull_city",
+        "slug": "of_gb_hull_city",
+        "name": "Hull City",
+        "colors": [
+          "#ff6600",
+          "#000000"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "of_gb_ipswich_town",
+        "slug": "of_gb_ipswich_town",
+        "name": "Ipswich Town",
+        "colors": [
+          "#003da5",
+          "#ffffff"
+        ],
         "country": "England"
       }
     ]
@@ -262,7 +259,7 @@
     "name": "Bundesliga",
     "country": "Germany",
     "iso2": "DE",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "ucl",
@@ -301,8 +298,8 @@
           "#DC052D",
           "#0066B2"
         ],
-        "logo": "logos/bundesliga/bayern_munchen.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/bayern_munchen.svg"
       },
       {
         "squadId": "160",
@@ -312,19 +309,8 @@
           "#E2001A",
           "#000000"
         ],
-        "logo": "logos/bundesliga/sc_freiburg.svg",
-        "country": "Germany"
-      },
-      {
-        "squadId": "161",
-        "slug": "vfl_wolfsburg",
-        "name": "VfL Wolfsburg",
-        "colors": [
-          "#65B32E",
-          "#FFFFFF"
-        ],
-        "logo": "logos/bundesliga/vfl_wolfsburg.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/sc_freiburg.svg"
       },
       {
         "squadId": "162",
@@ -334,8 +320,8 @@
           "#1D9053",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/werder_bremen.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/werder_bremen.svg"
       },
       {
         "squadId": "163",
@@ -345,8 +331,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/borussia_monchengladbach.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/borussia_monchengladbach.svg"
       },
       {
         "squadId": "164",
@@ -356,8 +342,8 @@
           "#ED1C24",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/fsv_mainz_05.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/fsv_mainz_05.svg"
       },
       {
         "squadId": "165",
@@ -367,8 +353,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/borussia_dortmund.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/borussia_dortmund.svg"
       },
       {
         "squadId": "167",
@@ -378,8 +364,8 @@
           "#1961B5",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/1899_hoffenheim.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/1899_hoffenheim.svg"
       },
       {
         "squadId": "168",
@@ -389,8 +375,8 @@
           "#E32221",
           "#000000"
         ],
-        "logo": "logos/bundesliga/bayer_leverkusen.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/bayer_leverkusen.svg"
       },
       {
         "squadId": "169",
@@ -400,8 +386,8 @@
           "#E1000F",
           "#000000"
         ],
-        "logo": "logos/bundesliga/eintracht_frankfurt.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/eintracht_frankfurt.svg"
       },
       {
         "squadId": "170",
@@ -411,8 +397,8 @@
           "#BA3733",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/fc_augsburg.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/fc_augsburg.svg"
       },
       {
         "squadId": "172",
@@ -422,8 +408,8 @@
           "#E32219",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/vfb_stuttgart.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/vfb_stuttgart.svg"
       },
       {
         "squadId": "173",
@@ -433,8 +419,8 @@
           "#DD0741",
           "#001F47"
         ],
-        "logo": "logos/bundesliga/rb_leipzig.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/rb_leipzig.svg"
       },
       {
         "squadId": "175",
@@ -444,19 +430,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/hamburger_sv.svg",
-        "country": "Germany"
-      },
-      {
-        "squadId": "180",
-        "slug": "1_fc_heidenheim",
-        "name": "1. FC Heidenheim",
-        "colors": [
-          "#E30613",
-          "#004B91"
-        ],
-        "logo": "logos/bundesliga/1_fc_heidenheim.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/hamburger_sv.svg"
       },
       {
         "squadId": "182",
@@ -466,19 +441,8 @@
           "#EB1923",
           "#FDE100"
         ],
-        "logo": "logos/bundesliga/union_berlin.svg",
-        "country": "Germany"
-      },
-      {
-        "squadId": "186",
-        "slug": "fc_st_pauli",
-        "name": "FC St. Pauli",
-        "colors": [
-          "#888888",
-          "#FFFFFF"
-        ],
-        "logo": "logos/bundesliga/fc_st_pauli.svg",
-        "country": "Germany"
+        "country": "Germany",
+        "logo": "logos/bundesliga/union_berlin.svg"
       },
       {
         "squadId": "192",
@@ -488,7 +452,37 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/bundesliga/1_fc_koln.svg",
+        "country": "Germany",
+        "logo": "logos/bundesliga/1_fc_koln.svg"
+      },
+      {
+        "squadId": "es_133",
+        "slug": "es_133",
+        "name": "Schalke 04",
+        "colors": [
+          "#0000dd",
+          "#ffffff"
+        ],
+        "country": "Germany"
+      },
+      {
+        "squadId": "es_3307",
+        "slug": "es_3307",
+        "name": "SC Paderborn 07",
+        "colors": [
+          "#0000dd",
+          "#ffffff"
+        ],
+        "country": "Germany"
+      },
+      {
+        "squadId": "es_10388",
+        "slug": "es_10388",
+        "name": "SV Elversberg",
+        "colors": [
+          "#000000",
+          "#ffffff"
+        ],
         "country": "Germany"
       }
     ]
@@ -498,7 +492,7 @@
     "name": "Ligue 1",
     "country": "France",
     "iso2": "FR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "ucl",
@@ -525,7 +519,7 @@
         "id": "rel",
         "label": "Relegation",
         "color": "red",
-        "fromEnd": 2
+        "fromEnd": 3
       }
     ],
     "standings": [
@@ -537,8 +531,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/angers.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/angers.svg"
       },
       {
         "squadId": "79",
@@ -548,8 +542,8 @@
           "#E2001A",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/lille.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/lille.svg"
       },
       {
         "squadId": "80",
@@ -559,8 +553,8 @@
           "#FFFFFF",
           "#003DA5"
         ],
-        "logo": "logos/ligue_1/lyon.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/lyon.svg"
       },
       {
         "squadId": "81",
@@ -570,19 +564,8 @@
           "#2FAEE0",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/marseille.svg",
-        "country": "France"
-      },
-      {
-        "squadId": "83",
-        "slug": "nantes",
-        "name": "Nantes",
-        "colors": [
-          "#FCDD09",
-          "#2E8B57"
-        ],
-        "logo": "logos/ligue_1/nantes.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/marseille.svg"
       },
       {
         "squadId": "84",
@@ -592,8 +575,8 @@
           "#000000",
           "#E10600"
         ],
-        "logo": "logos/ligue_1/nice.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/nice.svg"
       },
       {
         "squadId": "85",
@@ -603,8 +586,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/paris_saint_germain.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/paris_saint_germain.svg"
       },
       {
         "squadId": "91",
@@ -614,8 +597,8 @@
           "#E7001B",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/monaco.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/monaco.svg"
       },
       {
         "squadId": "94",
@@ -625,8 +608,8 @@
           "#E2001A",
           "#000000"
         ],
-        "logo": "logos/ligue_1/rennes.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/rennes.svg"
       },
       {
         "squadId": "95",
@@ -636,8 +619,8 @@
           "#004A9B",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/strasbourg.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/strasbourg.svg"
       },
       {
         "squadId": "96",
@@ -647,8 +630,8 @@
           "#5B2C86",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/toulouse.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/toulouse.svg"
       },
       {
         "squadId": "97",
@@ -658,8 +641,8 @@
           "#F26522",
           "#000000"
         ],
-        "logo": "logos/ligue_1/lorient.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/lorient.svg"
       },
       {
         "squadId": "106",
@@ -669,8 +652,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/stade_brestois_29.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/stade_brestois_29.svg"
       },
       {
         "squadId": "108",
@@ -680,8 +663,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/auxerre.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/auxerre.svg"
       },
       {
         "squadId": "111",
@@ -691,19 +674,8 @@
           "#004A9B",
           "#75C4E4"
         ],
-        "logo": "logos/ligue_1/le_havre.svg",
-        "country": "France"
-      },
-      {
-        "squadId": "112",
-        "slug": "metz",
-        "name": "Metz",
-        "colors": [
-          "#811331",
-          "#FFFFFF"
-        ],
-        "logo": "logos/ligue_1/metz.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/le_havre.svg"
       },
       {
         "squadId": "114",
@@ -713,8 +685,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/ligue_1/paris_fc.svg",
-        "country": "France"
+        "country": "France",
+        "logo": "logos/ligue_1/paris_fc.svg"
       },
       {
         "squadId": "116",
@@ -724,7 +696,27 @@
           "#ED1C24",
           "#FDE607"
         ],
-        "logo": "logos/ligue_1/lens.svg",
+        "country": "France",
+        "logo": "logos/ligue_1/lens.svg"
+      },
+      {
+        "squadId": "es_170",
+        "slug": "es_170",
+        "name": "Troyes",
+        "colors": [
+          "#0000bf",
+          "#fafafc"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_2697",
+        "slug": "es_2697",
+        "name": "Le Mans",
+        "colors": [
+          "#d62b11",
+          "#d62b11"
+        ],
         "country": "France"
       }
     ]
@@ -734,7 +726,7 @@
     "name": "La Liga",
     "country": "Spain",
     "iso2": "ES",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "ucl",
@@ -773,8 +765,8 @@
           "#A50044",
           "#004D98"
         ],
-        "logo": "logos/la_liga/barcelona.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/barcelona.svg"
       },
       {
         "squadId": "530",
@@ -784,8 +776,8 @@
           "#272E61",
           "#CE3524"
         ],
-        "logo": "logos/la_liga/atletico_madrid.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/atletico_madrid.svg"
       },
       {
         "squadId": "531",
@@ -795,8 +787,8 @@
           "#EE2523",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/athletic_club.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/athletic_club.svg"
       },
       {
         "squadId": "532",
@@ -806,8 +798,8 @@
           "#FFFFFF",
           "#EE8707"
         ],
-        "logo": "logos/la_liga/valencia.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/valencia.svg"
       },
       {
         "squadId": "533",
@@ -817,8 +809,8 @@
           "#FFE114",
           "#005187"
         ],
-        "logo": "logos/la_liga/villarreal.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/villarreal.svg"
       },
       {
         "squadId": "536",
@@ -828,8 +820,8 @@
           "#FFFFFF",
           "#D4002A"
         ],
-        "logo": "logos/la_liga/sevilla.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/sevilla.svg"
       },
       {
         "squadId": "538",
@@ -839,8 +831,8 @@
           "#8AC3EE",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/celta_vigo.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/celta_vigo.svg"
       },
       {
         "squadId": "539",
@@ -850,8 +842,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/levante.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/levante.svg"
       },
       {
         "squadId": "540",
@@ -861,8 +853,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/espanyol.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/espanyol.svg"
       },
       {
         "squadId": "541",
@@ -872,8 +864,8 @@
           "#FFFFFF",
           "#FEBE10"
         ],
-        "logo": "logos/la_liga/real_madrid.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/real_madrid.svg"
       },
       {
         "squadId": "542",
@@ -883,8 +875,8 @@
           "#003DA5",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/alaves.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/alaves.svg"
       },
       {
         "squadId": "543",
@@ -894,8 +886,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/real_betis.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/real_betis.svg"
       },
       {
         "squadId": "546",
@@ -905,19 +897,8 @@
           "#004FA3",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/getafe.svg",
-        "country": "Spain"
-      },
-      {
-        "squadId": "547",
-        "slug": "girona",
-        "name": "Girona",
-        "colors": [
-          "#CD2534",
-          "#FFFFFF"
-        ],
-        "logo": "logos/la_liga/girona.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/getafe.svg"
       },
       {
         "squadId": "548",
@@ -927,19 +908,8 @@
           "#143C8B",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/real_sociedad.svg",
-        "country": "Spain"
-      },
-      {
-        "squadId": "718",
-        "slug": "oviedo",
-        "name": "Oviedo",
-        "colors": [
-          "#888888",
-          "#FFFFFF"
-        ],
-        "logo": "logos/la_liga/oviedo.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/real_sociedad.svg"
       },
       {
         "squadId": "727",
@@ -949,8 +919,8 @@
           "#D91A2A",
           "#00205B"
         ],
-        "logo": "logos/la_liga/osasuna.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/osasuna.svg"
       },
       {
         "squadId": "728",
@@ -960,8 +930,8 @@
           "#FFFFFF",
           "#E30613"
         ],
-        "logo": "logos/la_liga/rayo_vallecano.svg",
-        "country": "Spain"
+        "country": "Spain",
+        "logo": "logos/la_liga/rayo_vallecano.svg"
       },
       {
         "squadId": "797",
@@ -971,18 +941,37 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/la_liga/elche.svg",
+        "country": "Spain",
+        "logo": "logos/la_liga/elche.svg"
+      },
+      {
+        "squadId": "of_es_deportivo",
+        "slug": "of_es_deportivo",
+        "name": "Deportivo La Coruña",
+        "colors": [
+          "#003da5",
+          "#ffffff"
+        ],
         "country": "Spain"
       },
       {
-        "squadId": "798",
-        "slug": "mallorca",
-        "name": "Mallorca",
+        "squadId": "of_es_malaga",
+        "slug": "of_es_malaga",
+        "name": "Málaga",
         "colors": [
-          "#E20613",
-          "#000000"
+          "#003da5",
+          "#ffffff"
         ],
-        "logo": "logos/la_liga/mallorca.svg",
+        "country": "Spain"
+      },
+      {
+        "squadId": "of_es_racing_santander",
+        "slug": "of_es_racing_santander",
+        "name": "Racing Santander",
+        "colors": [
+          "#195d48",
+          "#ffffff"
+        ],
         "country": "Spain"
       }
     ]
@@ -992,7 +981,7 @@
     "name": "Serie A",
     "country": "Italy",
     "iso2": "IT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "ucl",
@@ -1031,8 +1020,8 @@
           "#87D8F7",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/lazio.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/lazio.svg"
       },
       {
         "squadId": "488",
@@ -1042,8 +1031,8 @@
           "#00A651",
           "#000000"
         ],
-        "logo": "logos/serie_a/sassuolo.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/sassuolo.svg"
       },
       {
         "squadId": "489",
@@ -1053,8 +1042,8 @@
           "#FB090B",
           "#000000"
         ],
-        "logo": "logos/serie_a/ac_milan.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/ac_milan.svg"
       },
       {
         "squadId": "490",
@@ -1064,8 +1053,8 @@
           "#A61E2E",
           "#1A2F6B"
         ],
-        "logo": "logos/serie_a/cagliari.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/cagliari.svg"
       },
       {
         "squadId": "492",
@@ -1075,8 +1064,8 @@
           "#004B87",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/napoli.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/napoli.svg"
       },
       {
         "squadId": "494",
@@ -1086,8 +1075,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/udinese.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/udinese.svg"
       },
       {
         "squadId": "495",
@@ -1097,8 +1086,8 @@
           "#A61E2E",
           "#003D79"
         ],
-        "logo": "logos/serie_a/genoa.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/genoa.svg"
       },
       {
         "squadId": "496",
@@ -1108,8 +1097,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/juventus.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/juventus.svg"
       },
       {
         "squadId": "497",
@@ -1119,8 +1108,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/as_roma.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/as_roma.svg"
       },
       {
         "squadId": "499",
@@ -1130,8 +1119,8 @@
           "#1E71B8",
           "#000000"
         ],
-        "logo": "logos/serie_a/atalanta.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/atalanta.svg"
       },
       {
         "squadId": "500",
@@ -1141,8 +1130,8 @@
           "#1A2F48",
           "#A2191F"
         ],
-        "logo": "logos/serie_a/bologna.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/bologna.svg"
       },
       {
         "squadId": "502",
@@ -1152,8 +1141,8 @@
           "#482E92",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/fiorentina.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/fiorentina.svg"
       },
       {
         "squadId": "503",
@@ -1163,19 +1152,8 @@
           "#811331",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/torino.svg",
-        "country": "Italy"
-      },
-      {
-        "squadId": "504",
-        "slug": "hellas_verona",
-        "name": "Hellas Verona",
-        "colors": [
-          "#003DA5",
-          "#FFD700"
-        ],
-        "logo": "logos/serie_a/hellas_verona.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/torino.svg"
       },
       {
         "squadId": "505",
@@ -1185,19 +1163,8 @@
           "#009FE3",
           "#000000"
         ],
-        "logo": "logos/serie_a/inter.svg",
-        "country": "Italy"
-      },
-      {
-        "squadId": "520",
-        "slug": "cremonese",
-        "name": "Cremonese",
-        "colors": [
-          "#888888",
-          "#FFFFFF"
-        ],
-        "logo": "logos/serie_a/cremonese.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/inter.svg"
       },
       {
         "squadId": "523",
@@ -1207,19 +1174,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/parma.svg",
-        "country": "Italy"
-      },
-      {
-        "squadId": "801",
-        "slug": "pisa",
-        "name": "Pisa",
-        "colors": [
-          "#888888",
-          "#FFFFFF"
-        ],
-        "logo": "logos/serie_a/pisa.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/parma.svg"
       },
       {
         "squadId": "867",
@@ -1229,8 +1185,8 @@
           "#FFDD00",
           "#E2001A"
         ],
-        "logo": "logos/serie_a/lecce.svg",
-        "country": "Italy"
+        "country": "Italy",
+        "logo": "logos/serie_a/lecce.svg"
       },
       {
         "squadId": "895",
@@ -1240,7 +1196,37 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/serie_a/como.svg",
+        "country": "Italy",
+        "logo": "logos/serie_a/como.svg"
+      },
+      {
+        "squadId": "of_it_frosinone",
+        "slug": "of_it_frosinone",
+        "name": "Frosinone",
+        "colors": [
+          "#ffe000",
+          "#1641db"
+        ],
+        "country": "Italy"
+      },
+      {
+        "squadId": "of_it_monza",
+        "slug": "of_it_monza",
+        "name": "Monza",
+        "colors": [
+          "#ff5151",
+          "#111111"
+        ],
+        "country": "Italy"
+      },
+      {
+        "squadId": "of_it_venezia",
+        "slug": "of_it_venezia",
+        "name": "Venezia",
+        "colors": [
+          "#256503",
+          "#000000"
+        ],
         "country": "Italy"
       }
     ]
@@ -1250,7 +1236,7 @@
     "name": "Brasileirão Série A",
     "country": "Brazil",
     "iso2": "BR",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "lib",
@@ -1282,8 +1268,8 @@
           "#003087",
           "#E61E25"
         ],
-        "logo": "logos/brazil_serie_a/bahia.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/bahia.svg"
       },
       {
         "squadId": "119",
@@ -1293,8 +1279,8 @@
           "#E52020",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/internacional.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/internacional.svg"
       },
       {
         "squadId": "120",
@@ -1304,8 +1290,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/botafogo.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/botafogo.svg"
       },
       {
         "squadId": "121",
@@ -1315,8 +1301,8 @@
           "#006437",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/palmeiras.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/palmeiras.svg"
       },
       {
         "squadId": "124",
@@ -1326,8 +1312,8 @@
           "#8B1A2E",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/fluminense.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/fluminense.svg"
       },
       {
         "squadId": "126",
@@ -1337,8 +1323,8 @@
           "#E31E24",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/sao_paulo.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/sao_paulo.svg"
       },
       {
         "squadId": "127",
@@ -1348,8 +1334,8 @@
           "#C8102E",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_a/flamengo.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/flamengo.svg"
       },
       {
         "squadId": "128",
@@ -1359,8 +1345,8 @@
           "#FFFFFF",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_a/santos.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/santos.svg"
       },
       {
         "squadId": "130",
@@ -1370,8 +1356,8 @@
           "#001F5B",
           "#7EC8E3"
         ],
-        "logo": "logos/brazil_serie_a/gremio.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/gremio.svg"
       },
       {
         "squadId": "131",
@@ -1381,8 +1367,8 @@
           "#FFFFFF",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_a/corinthians.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/corinthians.svg"
       },
       {
         "squadId": "132",
@@ -1392,8 +1378,8 @@
           "#007A33",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/chapecoense_sc.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/chapecoense_sc.svg"
       },
       {
         "squadId": "133",
@@ -1403,8 +1389,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/vasco_da_gama.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/vasco_da_gama.svg"
       },
       {
         "squadId": "134",
@@ -1414,8 +1400,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/atletico_paranaense.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/atletico_paranaense.svg"
       },
       {
         "squadId": "135",
@@ -1425,8 +1411,8 @@
           "#003087",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/cruzeiro.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/cruzeiro.svg"
       },
       {
         "squadId": "136",
@@ -1436,8 +1422,8 @@
           "#C8102E",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_a/vitoria.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/vitoria.svg"
       },
       {
         "squadId": "147",
@@ -1447,8 +1433,8 @@
           "#007A33",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/coritiba.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/coritiba.svg"
       },
       {
         "squadId": "794",
@@ -1458,8 +1444,8 @@
           "#D10A18",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/rb_bragantino.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/rb_bragantino.svg"
       },
       {
         "squadId": "1062",
@@ -1469,8 +1455,8 @@
           "#EE2523",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/atletico_mg.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/atletico_mg.svg"
       },
       {
         "squadId": "1198",
@@ -1480,8 +1466,8 @@
           "#001F5B",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_a/remo.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/remo.svg"
       },
       {
         "squadId": "7848",
@@ -1491,8 +1477,8 @@
           "#FFD700",
           "#003087"
         ],
-        "logo": "logos/brazil_serie_a/mirassol.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_a/mirassol.svg"
       }
     ]
   },
@@ -1500,7 +1486,7 @@
     "slug": "brazil_serie_b",
     "name": "Brasileirão Série B",
     "country": "Brazil",
-    "season": "2025",
+    "season": "2027",
     "iso2": "BR",
     "zones": [
       {
@@ -1526,8 +1512,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/sport_recife.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/sport_recife.svg"
       },
       {
         "squadId": "125",
@@ -1537,8 +1523,8 @@
           "#006837",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/america_mineiro.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/america_mineiro.svg"
       },
       {
         "squadId": "129",
@@ -1548,8 +1534,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/ceara.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/ceara.svg"
       },
       {
         "squadId": "139",
@@ -1559,8 +1545,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/ponte_preta.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/ponte_preta.svg"
       },
       {
         "squadId": "140",
@@ -1570,8 +1556,8 @@
           "#FFD700",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_b/criciuma.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/criciuma.svg"
       },
       {
         "squadId": "142",
@@ -1581,8 +1567,8 @@
           "#C8102E",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_b/vila_nova.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/vila_nova.svg"
       },
       {
         "squadId": "144",
@@ -1592,8 +1578,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/atletico_goianiense.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/atletico_goianiense.svg"
       },
       {
         "squadId": "145",
@@ -1603,8 +1589,8 @@
           "#003DA5",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/avai.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/avai.svg"
       },
       {
         "squadId": "146",
@@ -1614,8 +1600,8 @@
           "#C8102E",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_b/crb.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/crb.svg"
       },
       {
         "squadId": "148",
@@ -1625,8 +1611,8 @@
           "#C8102E",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/londrina.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/londrina.svg"
       },
       {
         "squadId": "151",
@@ -1636,8 +1622,8 @@
           "#007A33",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/goias.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/goias.svg"
       },
       {
         "squadId": "152",
@@ -1647,8 +1633,8 @@
           "#007A33",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/juventude.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/juventude.svg"
       },
       {
         "squadId": "154",
@@ -1658,8 +1644,8 @@
           "#0033A0",
           "#C8102E"
         ],
-        "logo": "logos/brazil_serie_b/fortaleza_ec.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/fortaleza_ec.svg"
       },
       {
         "squadId": "755",
@@ -1669,8 +1655,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/nautico_recife.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/nautico_recife.svg"
       },
       {
         "squadId": "1193",
@@ -1680,8 +1666,8 @@
           "#FFD700",
           "#007A33"
         ],
-        "logo": "logos/brazil_serie_b/cuiaba.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/cuiaba.svg"
       },
       {
         "squadId": "1223",
@@ -1691,8 +1677,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/operario_pr.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/operario_pr.svg"
       },
       {
         "squadId": "2618",
@@ -1702,8 +1688,8 @@
           "#000000",
           "#C10000"
         ],
-        "logo": "logos/brazil_serie_b/botafogo_sp.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/botafogo_sp.svg"
       },
       {
         "squadId": "7834",
@@ -1713,8 +1699,8 @@
           "#000000",
           "#FFD700"
         ],
-        "logo": "logos/brazil_serie_b/novorizontino.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/novorizontino.svg"
       },
       {
         "squadId": "7865",
@@ -1724,8 +1710,8 @@
           "#C8102E",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/sao_bernardo.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/sao_bernardo.svg"
       },
       {
         "squadId": "13975",
@@ -1735,8 +1721,8 @@
           "#EE2523",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_b/athletic_club.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_b/athletic_club.svg"
       }
     ]
   },
@@ -1745,7 +1731,7 @@
     "name": "Brasileirão Série C",
     "country": "Brazil",
     "iso2": "BR",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "prom",
@@ -1764,8 +1750,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/figueirense.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/figueirense.svg"
       },
       {
         "squadId": "138",
@@ -1775,8 +1761,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/guarani_campinas.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/guarani_campinas.png"
       },
       {
         "squadId": "149",
@@ -1786,8 +1772,8 @@
           "#003087",
           "#FFFFFF"
         ],
-        "logo": "https://media.api-sports.io/football/teams/149.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "https://media.api-sports.io/football/teams/149.png"
       },
       {
         "squadId": "753",
@@ -1797,8 +1783,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/santa_cruz.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/santa_cruz.png"
       },
       {
         "squadId": "1197",
@@ -1808,8 +1794,8 @@
           "#000000",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/botafogo_pb.svg",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/botafogo_pb.svg"
       },
       {
         "squadId": "1201",
@@ -1819,8 +1805,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/inter_de_limeira.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/inter_de_limeira.png"
       },
       {
         "squadId": "1211",
@@ -1830,8 +1816,8 @@
           "#003DA5",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/brusque.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/brusque.png"
       },
       {
         "squadId": "1221",
@@ -1841,8 +1827,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/ypiranga_rs.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/ypiranga_rs.png"
       },
       {
         "squadId": "2204",
@@ -1852,8 +1838,8 @@
           "#FFD700",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_c/ao_itabaiana.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/ao_itabaiana.png"
       },
       {
         "squadId": "7770",
@@ -1863,8 +1849,8 @@
           "#C8102E",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/caxias.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/caxias.png"
       },
       {
         "squadId": "7772",
@@ -1874,8 +1860,8 @@
           "#003DA5",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/confianca.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/confianca.png"
       },
       {
         "squadId": "7774",
@@ -1885,8 +1871,8 @@
           "#006837",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/floresta.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/floresta.png"
       },
       {
         "squadId": "7779",
@@ -1896,8 +1882,8 @@
           "#C8102E",
           "#000000"
         ],
-        "logo": "https://media.api-sports.io/football/teams/7779.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "https://media.api-sports.io/football/teams/7779.png"
       },
       {
         "squadId": "7814",
@@ -1907,8 +1893,8 @@
           "#CC0000",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_c/volta_redonda.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/volta_redonda.png"
       },
       {
         "squadId": "7826",
@@ -1918,8 +1904,8 @@
           "#C8102E",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_c/ferroviaria.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/ferroviaria.png"
       },
       {
         "squadId": "7832",
@@ -1929,8 +1915,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/maranhao.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/maranhao.png"
       },
       {
         "squadId": "7833",
@@ -1940,8 +1926,8 @@
           "#003DA5",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/maringa.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/maringa.png"
       },
       {
         "squadId": "7852",
@@ -1951,8 +1937,8 @@
           "#006837",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/anapolis.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/anapolis.png"
       },
       {
         "squadId": "10862",
@@ -1962,8 +1948,8 @@
           "#FF6600",
           "#000000"
         ],
-        "logo": "logos/brazil_serie_c/amazonas.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/amazonas.png"
       },
       {
         "squadId": "18271",
@@ -1973,8 +1959,8 @@
           "#888888",
           "#FFFFFF"
         ],
-        "logo": "logos/brazil_serie_c/barra.png",
-        "country": "Brazil"
+        "country": "Brazil",
+        "logo": "logos/brazil_serie_c/barra.png"
       }
     ]
   },
@@ -1983,7 +1969,7 @@
     "name": "Pro League",
     "country": "United Arab Emirates",
     "iso2": "AE",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -2104,7 +2090,7 @@
     "name": "Superleague",
     "country": "Albania",
     "iso2": "AL",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -2195,7 +2181,7 @@
     "name": "Premier League",
     "country": "Armenia",
     "iso2": "AM",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -2306,7 +2292,7 @@
     "name": "Premier Division",
     "country": "Argentina",
     "iso2": "AR",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "rel",
@@ -2417,6 +2403,16 @@
         "country": "Argentina"
       },
       {
+        "squadId": "of_ar_estudiantes_de_rio_cuarto",
+        "slug": "of_ar_estudiantes_de_rio_cuarto",
+        "name": "Estudiantes",
+        "colors": [
+          "#6cace4",
+          "#ffffff"
+        ],
+        "country": "Argentina"
+      },
+      {
         "squadId": "of_ar_gimnasia_la_plata",
         "slug": "of_ar_gimnasia_la_plata",
         "name": "Gimnasia La Plata",
@@ -2427,12 +2423,12 @@
         "country": "Argentina"
       },
       {
-        "squadId": "of_ar_godoy_cruz",
-        "slug": "of_ar_godoy_cruz",
-        "name": "Godoy Cruz",
+        "squadId": "of_ar_gimnasia_y_esgrima_de_mendoza",
+        "slug": "of_ar_gimnasia_y_esgrima_de_mendoza",
+        "name": "Gimnasia y Esgrima",
         "colors": [
-          "#ffffff",
-          "#003da5"
+          "#000000",
+          "#ffffff"
         ],
         "country": "Argentina"
       },
@@ -2557,16 +2553,6 @@
         "country": "Argentina"
       },
       {
-        "squadId": "of_ar_san_martin_san_juan",
-        "slug": "of_ar_san_martin_san_juan",
-        "name": "San Martín SJ",
-        "colors": [
-          "#e2001a",
-          "#195d48"
-        ],
-        "country": "Argentina"
-      },
-      {
         "squadId": "of_ar_sarmiento",
         "slug": "of_ar_sarmiento",
         "name": "Sarmiento",
@@ -2624,7 +2610,7 @@
     "name": "Second Division A",
     "country": "Argentina",
     "iso2": "AR",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "prom",
@@ -2722,6 +2708,16 @@
         "country": "Argentina"
       },
       {
+        "squadId": "of_ar_godoy_cruz",
+        "slug": "of_ar_godoy_cruz",
+        "name": "Godoy Cruz",
+        "colors": [
+          "#ffffff",
+          "#003da5"
+        ],
+        "country": "Argentina"
+      },
+      {
         "squadId": "of_ar_guemes_de_santiago_del_estero",
         "slug": "of_ar_guemes_de_santiago_del_estero",
         "name": "Güemes",
@@ -2802,6 +2798,16 @@
         "country": "Argentina"
       },
       {
+        "squadId": "of_ar_san_martin_san_juan",
+        "slug": "of_ar_san_martin_san_juan",
+        "name": "San Martín SJ",
+        "colors": [
+          "#e2001a",
+          "#195d48"
+        ],
+        "country": "Argentina"
+      },
+      {
         "squadId": "of_ar_san_miguel",
         "slug": "of_ar_san_miguel",
         "name": "San Miguel",
@@ -2829,7 +2835,7 @@
     "name": "Second Division B",
     "country": "Argentina",
     "iso2": "AR",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "prom",
@@ -2931,31 +2937,11 @@
         "country": "Argentina"
       },
       {
-        "squadId": "of_ar_estudiantes_de_rio_cuarto",
-        "slug": "of_ar_estudiantes_de_rio_cuarto",
-        "name": "Estudiantes",
-        "colors": [
-          "#6cace4",
-          "#ffffff"
-        ],
-        "country": "Argentina"
-      },
-      {
         "squadId": "of_ar_gimnasia_y_esgrima_de_jujuy",
         "slug": "of_ar_gimnasia_y_esgrima_de_jujuy",
         "name": "Gimnasia y Esgrima",
         "colors": [
           "#6cace4",
-          "#ffffff"
-        ],
-        "country": "Argentina"
-      },
-      {
-        "squadId": "of_ar_gimnasia_y_esgrima_de_mendoza",
-        "slug": "of_ar_gimnasia_y_esgrima_de_mendoza",
-        "name": "Gimnasia y Esgrima",
-        "colors": [
-          "#000000",
           "#ffffff"
         ],
         "country": "Argentina"
@@ -3028,9 +3014,59 @@
     "name": "Bundesliga",
     "country": "Austria",
     "iso2": "AT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_4411",
+        "slug": "es_4411",
+        "name": "LASK Linz",
+        "colors": [
+          "#ffffff",
+          "#000000"
+        ],
+        "country": "Austria"
+      },
+      {
+        "squadId": "es_6907",
+        "slug": "es_6907",
+        "name": "TSV Hartberg",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Austria"
+      },
+      {
+        "squadId": "es_18794",
+        "slug": "es_18794",
+        "name": "WSG Swarovski Tirol",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Austria"
+      },
+      {
+        "squadId": "es_21540",
+        "slug": "es_21540",
+        "name": "Austria Lustenau",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Austria"
+      },
+      {
+        "squadId": "es_21846",
+        "slug": "es_21846",
+        "name": "Grazer AK",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Austria"
+      },
       {
         "squadId": "of_at_altach",
         "slug": "of_at_altach",
@@ -3047,16 +3083,6 @@
         "name": "Austria Wien",
         "colors": [
           "#7b1c7a",
-          "#ffffff"
-        ],
-        "country": "Austria"
-      },
-      {
-        "squadId": "of_at_grodig",
-        "slug": "of_at_grodig",
-        "name": "Grodig",
-        "colors": [
-          "#195d48",
           "#ffffff"
         ],
         "country": "Austria"
@@ -3119,7 +3145,7 @@
     "name": "A-League",
     "country": "Australia",
     "iso2": "AU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -3250,9 +3276,59 @@
     "name": "Pro League",
     "country": "Belgium",
     "iso2": "BE",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_3610",
+        "slug": "es_3610",
+        "name": "Cercle Brugge KSV",
+        "colors": [
+          "#048a28",
+          "#cccccc"
+        ],
+        "country": "Belgium"
+      },
+      {
+        "squadId": "es_5807",
+        "slug": "es_5807",
+        "name": "Union St.-Gilloise",
+        "colors": [
+          "#fcee33",
+          "#ffffff"
+        ],
+        "country": "Belgium"
+      },
+      {
+        "squadId": "es_17544",
+        "slug": "es_17544",
+        "name": "Antwerp",
+        "colors": [
+          "#c60000",
+          "#ffffff"
+        ],
+        "country": "Belgium"
+      },
+      {
+        "squadId": "es_22269",
+        "slug": "es_22269",
+        "name": "Lommel SK",
+        "colors": [
+          "#2d8322",
+          "#ffffff"
+        ],
+        "country": "Belgium"
+      },
+      {
+        "squadId": "es_131235",
+        "slug": "es_131235",
+        "name": "RAAL La Louvière",
+        "colors": [
+          "#287f45",
+          "#f8f9fa"
+        ],
+        "country": "Belgium"
+      },
       {
         "squadId": "of_be_anderlecht",
         "slug": "of_be_anderlecht",
@@ -3391,7 +3467,7 @@
     "name": "First League",
     "country": "Bulgaria",
     "iso2": "BG",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -3562,7 +3638,7 @@
     "name": "Highest League",
     "country": "Belarus",
     "iso2": "BY",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "rel",
@@ -3730,7 +3806,7 @@
     "name": "First League",
     "country": "Belarus",
     "iso2": "BY",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "prom",
@@ -3869,7 +3945,7 @@
     "name": "Super League",
     "country": "Switzerland",
     "iso2": "CH",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -3980,16 +4056,66 @@
     "name": "Primera Division",
     "country": "Chile",
     "iso2": "CL",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
-        "squadId": "of_cl_antofagasta",
-        "slug": "of_cl_antofagasta",
-        "name": "Antofagasta",
+        "squadId": "es_4129",
+        "slug": "es_4129",
+        "name": "Everton CD",
         "colors": [
-          "#ffd700",
-          "#003da5"
+          "#212121",
+          "#000000"
+        ],
+        "country": "Chile"
+      },
+      {
+        "squadId": "es_4137",
+        "slug": "es_4137",
+        "name": "La Serena",
+        "colors": [
+          "#c22222",
+          "#c22222"
+        ],
+        "country": "Chile"
+      },
+      {
+        "squadId": "es_7427",
+        "slug": "es_7427",
+        "name": "Ñublense",
+        "colors": [
+          "#c22222",
+          "#c22222"
+        ],
+        "country": "Chile"
+      },
+      {
+        "squadId": "es_8110",
+        "slug": "es_8110",
+        "name": "Deportes Concepcion",
+        "colors": [
+          "#800080",
+          "#ffffff"
+        ],
+        "country": "Chile"
+      },
+      {
+        "squadId": "es_8186",
+        "slug": "es_8186",
+        "name": "Coquimbo Unido",
+        "colors": [
+          "#000000",
+          "#fbe805"
+        ],
+        "country": "Chile"
+      },
+      {
+        "squadId": "es_19195",
+        "slug": "es_19195",
+        "name": "Deportes Limache",
+        "colors": [
+          "#000000",
+          "#c60000"
         ],
         "country": "Chile"
       },
@@ -4034,16 +4160,6 @@
         "country": "Chile"
       },
       {
-        "squadId": "of_cl_iquique",
-        "slug": "of_cl_iquique",
-        "name": "Iquique",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Chile"
-      },
-      {
         "squadId": "of_cl_ohiggins",
         "slug": "of_cl_ohiggins",
         "name": "O'Higgins",
@@ -4060,46 +4176,6 @@
         "colors": [
           "#ffffff",
           "#195d48"
-        ],
-        "country": "Chile"
-      },
-      {
-        "squadId": "of_cl_san_luis",
-        "slug": "of_cl_san_luis",
-        "name": "San Luis",
-        "colors": [
-          "#003da5",
-          "#e2001a"
-        ],
-        "country": "Chile"
-      },
-      {
-        "squadId": "of_cl_san_marcos_de_arica",
-        "slug": "of_cl_san_marcos_de_arica",
-        "name": "San Marcos de Arica",
-        "colors": [
-          "#195d48",
-          "#ffd700"
-        ],
-        "country": "Chile"
-      },
-      {
-        "squadId": "of_cl_santiago_wanderers",
-        "slug": "of_cl_santiago_wanderers",
-        "name": "Santiago Wanderers",
-        "colors": [
-          "#195d48",
-          "#ffffff"
-        ],
-        "country": "Chile"
-      },
-      {
-        "squadId": "of_cl_union_espanola",
-        "slug": "of_cl_union_espanola",
-        "name": "Union Espanola",
-        "colors": [
-          "#e2001a",
-          "#ffd700"
         ],
         "country": "Chile"
       },
@@ -4151,7 +4227,7 @@
     "name": "Elite One",
     "country": "Cameroon",
     "iso2": "CM",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -4302,7 +4378,7 @@
     "name": "Liga BetPlay",
     "country": "Colombia",
     "iso2": "CO",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "rel",
@@ -4312,6 +4388,46 @@
       }
     ],
     "standings": [
+      {
+        "squadId": "es_5480",
+        "slug": "es_5480",
+        "name": "Boyacá Chicó FC",
+        "colors": [
+          "#0202db",
+          "#000000"
+        ],
+        "country": "Colombia"
+      },
+      {
+        "squadId": "es_6101",
+        "slug": "es_6101",
+        "name": "Cúcuta Deportivo",
+        "colors": [
+          "#320101",
+          "#ff0000"
+        ],
+        "country": "Colombia"
+      },
+      {
+        "squadId": "es_7445",
+        "slug": "es_7445",
+        "name": "Internacional de Bogotá",
+        "colors": [
+          "#c5a065",
+          "#000000"
+        ],
+        "country": "Colombia"
+      },
+      {
+        "squadId": "es_9761",
+        "slug": "es_9761",
+        "name": "Alianza FC",
+        "colors": [
+          "#000000",
+          "#ffff00"
+        ],
+        "country": "Colombia"
+      },
       {
         "squadId": "of_co_aguilas_doradas",
         "slug": "of_co_aguilas_doradas",
@@ -4393,12 +4509,12 @@
         "country": "Colombia"
       },
       {
-        "squadId": "of_co_envigado",
-        "slug": "of_co_envigado",
-        "name": "Envigado",
+        "squadId": "of_co_fortaleza_ceif",
+        "slug": "of_co_fortaleza_ceif",
+        "name": "Fortaleza CEIF",
         "colors": [
-          "#ff6600",
-          "#195d48"
+          "#e2001a",
+          "#ffffff"
         ],
         "country": "Colombia"
       },
@@ -4433,6 +4549,16 @@
         "country": "Colombia"
       },
       {
+        "squadId": "of_co_llaneros_co",
+        "slug": "of_co_llaneros_co",
+        "name": "Llaneros",
+        "colors": [
+          "#195d48",
+          "#ffffff"
+        ],
+        "country": "Colombia"
+      },
+      {
         "squadId": "of_co_millonarios",
         "slug": "of_co_millonarios",
         "name": "Millonarios",
@@ -4453,32 +4579,12 @@
         "country": "Colombia"
       },
       {
-        "squadId": "of_co_patriotas",
-        "slug": "of_co_patriotas",
-        "name": "Patriotas",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Colombia"
-      },
-      {
         "squadId": "of_co_santa_fe",
         "slug": "of_co_santa_fe",
         "name": "Santa Fe",
         "colors": [
           "#e2001a",
           "#ffffff"
-        ],
-        "country": "Colombia"
-      },
-      {
-        "squadId": "of_co_union_magdalena",
-        "slug": "of_co_union_magdalena",
-        "name": "Union Magdalena",
-        "colors": [
-          "#e2001a",
-          "#003da5"
         ],
         "country": "Colombia"
       }
@@ -4490,7 +4596,7 @@
     "name": "Liga BetPlay 2",
     "country": "Colombia",
     "iso2": "CO",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "prom",
@@ -4542,12 +4648,12 @@
         "country": "Colombia"
       },
       {
-        "squadId": "of_co_fortaleza_ceif",
-        "slug": "of_co_fortaleza_ceif",
-        "name": "Fortaleza CEIF",
+        "squadId": "of_co_envigado",
+        "slug": "of_co_envigado",
+        "name": "Envigado",
         "colors": [
-          "#e2001a",
-          "#ffffff"
+          "#ff6600",
+          "#195d48"
         ],
         "country": "Colombia"
       },
@@ -4562,11 +4668,11 @@
         "country": "Colombia"
       },
       {
-        "squadId": "of_co_llaneros_co",
-        "slug": "of_co_llaneros_co",
-        "name": "Llaneros",
+        "squadId": "of_co_patriotas",
+        "slug": "of_co_patriotas",
+        "name": "Patriotas",
         "colors": [
-          "#195d48",
+          "#e2001a",
           "#ffffff"
         ],
         "country": "Colombia"
@@ -4600,6 +4706,16 @@
           "#003da5"
         ],
         "country": "Colombia"
+      },
+      {
+        "squadId": "of_co_union_magdalena",
+        "slug": "of_co_union_magdalena",
+        "name": "Union Magdalena",
+        "colors": [
+          "#e2001a",
+          "#003da5"
+        ],
+        "country": "Colombia"
       }
     ],
     "source": "open-football"
@@ -4609,7 +4725,7 @@
     "name": "First Division",
     "country": "Cyprus",
     "iso2": "CY",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -4760,7 +4876,7 @@
     "name": "First League",
     "country": "Czech Republic",
     "iso2": "CZ",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -4931,16 +5047,36 @@
     "name": "Superliga",
     "country": "Denmark",
     "iso2": "DK",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
-        "squadId": "of_dk_aalborg",
-        "slug": "of_dk_aalborg",
-        "name": "Aalborg",
+        "squadId": "es_607",
+        "slug": "es_607",
+        "name": "Silkeborg IF",
         "colors": [
-          "#e2001a",
-          "#ffffff"
+          "#000000",
+          "#000000"
+        ],
+        "country": "Denmark"
+      },
+      {
+        "squadId": "es_3585",
+        "slug": "es_3585",
+        "name": "AC Horsens",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Denmark"
+      },
+      {
+        "squadId": "es_7860",
+        "slug": "es_7860",
+        "name": "Lyngby Boldklub",
+        "colors": [
+          "#000000",
+          "#000000"
         ],
         "country": "Denmark"
       },
@@ -4961,16 +5097,6 @@
         "colors": [
           "#ffd700",
           "#003da5"
-        ],
-        "country": "Denmark"
-      },
-      {
-        "squadId": "of_dk_esbjerg",
-        "slug": "of_dk_esbjerg",
-        "name": "Esbjerg",
-        "colors": [
-          "#003da5",
-          "#ffffff"
         ],
         "country": "Denmark"
       },
@@ -5001,16 +5127,6 @@
         "colors": [
           "#e2001a",
           "#ffd700"
-        ],
-        "country": "Denmark"
-      },
-      {
-        "squadId": "of_dk_hobro",
-        "slug": "of_dk_hobro",
-        "name": "Hobro",
-        "colors": [
-          "#003da5",
-          "#e2001a"
         ],
         "country": "Denmark"
       },
@@ -5062,7 +5178,7 @@
     "name": "League 1",
     "country": "Algeria",
     "iso2": "DZ",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -5233,7 +5349,7 @@
     "name": "Premier League",
     "country": "Egypt",
     "iso2": "EG",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -5404,7 +5520,7 @@
     "name": "LIGA adelante",
     "country": "Spain",
     "iso2": "ES",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -5415,6 +5531,79 @@
       }
     ],
     "standings": [
+      {
+        "squadId": "547",
+        "slug": "girona",
+        "name": "Girona",
+        "colors": [
+          "#CD2534",
+          "#FFFFFF"
+        ],
+        "country": "Spain",
+        "logo": "logos/la_liga/girona.svg"
+      },
+      {
+        "squadId": "718",
+        "slug": "oviedo",
+        "name": "Oviedo",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "country": "Spain",
+        "logo": "logos/la_liga/oviedo.svg"
+      },
+      {
+        "squadId": "798",
+        "slug": "mallorca",
+        "name": "Mallorca",
+        "colors": [
+          "#E20613",
+          "#000000"
+        ],
+        "country": "Spain",
+        "logo": "logos/la_liga/mallorca.svg"
+      },
+      {
+        "squadId": "es_245",
+        "slug": "es_245",
+        "name": "Tenerife",
+        "colors": [
+          "#008bc4",
+          "#1a1a1a"
+        ],
+        "country": "Spain"
+      },
+      {
+        "squadId": "es_7320",
+        "slug": "es_7320",
+        "name": "Eldense",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Spain"
+      },
+      {
+        "squadId": "es_11487",
+        "slug": "es_11487",
+        "name": "CD Sabadell",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Spain"
+      },
+      {
+        "squadId": "es_131858",
+        "slug": "es_131858",
+        "name": "RC Celta Fortuna",
+        "colors": [
+          "#6cace4",
+          "#004996"
+        ],
+        "country": "Spain"
+      },
       {
         "squadId": "of_es_albacete",
         "slug": "of_es_albacete",
@@ -5486,26 +5675,6 @@
         "country": "Spain"
       },
       {
-        "squadId": "of_es_cultural_leonesa",
-        "slug": "of_es_cultural_leonesa",
-        "name": "Cultural Leonesa",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Spain"
-      },
-      {
-        "squadId": "of_es_deportivo",
-        "slug": "of_es_deportivo",
-        "name": "Deportivo La Coruña",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Spain"
-      },
-      {
         "squadId": "of_es_eibar",
         "slug": "of_es_eibar",
         "name": "Eibar",
@@ -5536,16 +5705,6 @@
         "country": "Spain"
       },
       {
-        "squadId": "of_es_huesca",
-        "slug": "of_es_huesca",
-        "name": "Huesca",
-        "colors": [
-          "#003da5",
-          "#e2001a"
-        ],
-        "country": "Spain"
-      },
-      {
         "squadId": "of_es_las_palmas",
         "slug": "of_es_las_palmas",
         "name": "Las Palmas",
@@ -5561,36 +5720,6 @@
         "name": "Leganés",
         "colors": [
           "#003da5",
-          "#ffffff"
-        ],
-        "country": "Spain"
-      },
-      {
-        "squadId": "of_es_malaga",
-        "slug": "of_es_malaga",
-        "name": "Málaga",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Spain"
-      },
-      {
-        "squadId": "of_es_mirandes",
-        "slug": "of_es_mirandes",
-        "name": "Mirandés",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Spain"
-      },
-      {
-        "squadId": "of_es_racing_santander",
-        "slug": "of_es_racing_santander",
-        "name": "Racing Santander",
-        "colors": [
-          "#195d48",
           "#ffffff"
         ],
         "country": "Spain"
@@ -5624,16 +5753,6 @@
           "#ffffff"
         ],
         "country": "Spain"
-      },
-      {
-        "squadId": "of_es_zaragoza",
-        "slug": "of_es_zaragoza",
-        "name": "Zaragoza",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Spain"
       }
     ],
     "source": "open-football"
@@ -5643,7 +5762,7 @@
     "name": "Veikkausliiga",
     "country": "Finland",
     "iso2": "FI",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -5774,7 +5893,7 @@
     "name": "Premier League",
     "country": "Fiji",
     "iso2": "FJ",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -5885,34 +6004,136 @@
     "name": "Ligue 2",
     "country": "France",
     "iso2": "FR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
         "label": "Promotion",
         "color": "green",
         "from": 1,
-        "to": 2
+        "to": 3
       }
     ],
     "standings": [
       {
-        "squadId": "of_fr_ajaccio",
-        "slug": "of_fr_ajaccio",
-        "name": "AC Ajaccio",
+        "squadId": "83",
+        "slug": "nantes",
+        "name": "Nantes",
         "colors": [
-          "#e2001a",
+          "#FCDD09",
+          "#2E8B57"
+        ],
+        "country": "France",
+        "logo": "logos/ligue_1/nantes.svg"
+      },
+      {
+        "squadId": "112",
+        "slug": "metz",
+        "name": "Metz",
+        "colors": [
+          "#811331",
+          "#FFFFFF"
+        ],
+        "country": "France",
+        "logo": "logos/ligue_1/metz.svg"
+      },
+      {
+        "squadId": "es_171",
+        "slug": "es_171",
+        "name": "Guingamp",
+        "colors": [
+          "#ef2f24",
+          "#1a1a1a"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_178",
+        "slug": "es_178",
+        "name": "Saint-Étienne",
+        "colors": [
+          "#51cc5f",
           "#ffffff"
         ],
         "country": "France"
       },
       {
-        "squadId": "of_fr_bourg_peronnas",
-        "slug": "of_fr_bourg_peronnas",
-        "name": "Bourg-Peronnas",
+        "squadId": "es_274",
+        "slug": "es_274",
+        "name": "Montpellier",
         "colors": [
-          "#e2001a",
-          "#003da5"
+          "#011f68",
+          "#ffffff"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_3243",
+        "slug": "es_3243",
+        "name": "Stade de Reims",
+        "colors": [
+          "#ef2f24",
+          "#0000bf"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_6994",
+        "slug": "es_6994",
+        "name": "Grenoble",
+        "colors": [
+          "#005da3",
+          "#000000"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_7719",
+        "slug": "es_7719",
+        "name": "Rodez Aveyron",
+        "colors": [
+          "#a5042b",
+          "#a5042b"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_7732",
+        "slug": "es_7732",
+        "name": "Dunkerque",
+        "colors": [
+          "#005a9c",
+          "#000000"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_7869",
+        "slug": "es_7869",
+        "name": "Boulogne",
+        "colors": [
+          "#fb2e29",
+          "#fb2e29"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_10678",
+        "slug": "es_10678",
+        "name": "Pau",
+        "colors": [
+          "#0070b1",
+          "#f3cf56"
+        ],
+        "country": "France"
+      },
+      {
+        "squadId": "es_18066",
+        "slug": "es_18066",
+        "name": "Annecy",
+        "colors": [
+          "#000000",
+          "#c60000"
         ],
         "country": "France"
       },
@@ -5920,16 +6141,6 @@
         "squadId": "of_fr_clermont",
         "slug": "of_fr_clermont",
         "name": "Clermont Foot",
-        "colors": [
-          "#e2001a",
-          "#003da5"
-        ],
-        "country": "France"
-      },
-      {
-        "squadId": "of_fr_creteil",
-        "slug": "of_fr_creteil",
-        "name": "US Creteil",
         "colors": [
           "#e2001a",
           "#003da5"
@@ -5967,16 +6178,6 @@
         "country": "France"
       },
       {
-        "squadId": "of_fr_nimes",
-        "slug": "of_fr_nimes",
-        "name": "Nimes",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "France"
-      },
-      {
         "squadId": "of_fr_red_star",
         "slug": "of_fr_red_star",
         "name": "Red Star",
@@ -5995,16 +6196,6 @@
           "#003da5"
         ],
         "country": "France"
-      },
-      {
-        "squadId": "of_fr_valenciennes",
-        "slug": "of_fr_valenciennes",
-        "name": "Valenciennes",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "France"
       }
     ],
     "source": "open-football"
@@ -6014,7 +6205,7 @@
     "name": "Championship",
     "country": "England",
     "iso2": "GB",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -6025,6 +6216,149 @@
       }
     ],
     "standings": [
+      {
+        "squadId": "39",
+        "slug": "wolves",
+        "name": "Wolves",
+        "colors": [
+          "#FDB913",
+          "#231F20"
+        ],
+        "country": "England",
+        "logo": "logos/premier_league/wolves.svg"
+      },
+      {
+        "squadId": "44",
+        "slug": "burnley",
+        "name": "Burnley",
+        "colors": [
+          "#6C1D45",
+          "#99D6EA"
+        ],
+        "country": "England",
+        "logo": "logos/premier_league/burnley.svg"
+      },
+      {
+        "squadId": "48",
+        "slug": "west_ham",
+        "name": "West Ham",
+        "colors": [
+          "#7A263A",
+          "#1BB1E7"
+        ],
+        "country": "England",
+        "logo": "logos/premier_league/west_ham.svg"
+      },
+      {
+        "squadId": "es_314",
+        "slug": "es_314",
+        "name": "Lincoln City",
+        "colors": [
+          "#c8142f",
+          "#c6d4db"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_318",
+        "slug": "es_318",
+        "name": "Swansea City",
+        "colors": [
+          "#ffffff",
+          "#1d428a"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_336",
+        "slug": "es_336",
+        "name": "Stoke City",
+        "colors": [
+          "#f42727",
+          "#1a1a1a"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_352",
+        "slug": "es_352",
+        "name": "Wrexham",
+        "colors": [
+          "#c8142f",
+          "#ffffff"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_376",
+        "slug": "es_376",
+        "name": "Southampton",
+        "colors": [
+          "#ed1a3b",
+          "#f1ee13"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_381",
+        "slug": "es_381",
+        "name": "Norwich City",
+        "colors": [
+          "#ffff00",
+          "#1d428a"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_383",
+        "slug": "es_383",
+        "name": "West Bromwich Albion",
+        "colors": [
+          "#091453",
+          "#ffff00"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_385",
+        "slug": "es_385",
+        "name": "Portsmouth",
+        "colors": [
+          "#0000fa",
+          "#1a1a1a"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_391",
+        "slug": "es_391",
+        "name": "Millwall",
+        "colors": [
+          "#091453",
+          "#007066"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_395",
+        "slug": "es_395",
+        "name": "Watford",
+        "colors": [
+          "#ffff00",
+          "#1d428a"
+        ],
+        "country": "England"
+      },
+      {
+        "squadId": "es_398",
+        "slug": "es_398",
+        "name": "Sheffield United",
+        "colors": [
+          "#f42727",
+          "#1d428a"
+        ],
+        "country": "England"
+      },
       {
         "squadId": "of_gb_birmingham_city",
         "slug": "of_gb_birmingham_city",
@@ -6096,72 +6430,12 @@
         "country": "England"
       },
       {
-        "squadId": "of_gb_fulham_ch",
-        "slug": "of_gb_fulham_ch",
-        "name": "Fulham",
-        "colors": [
-          "#ffffff",
-          "#000000"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_huddersfield",
-        "slug": "of_gb_huddersfield",
-        "name": "Huddersfield Town",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_hull_city",
-        "slug": "of_gb_hull_city",
-        "name": "Hull City",
-        "colors": [
-          "#ff6600",
-          "#000000"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_ipswich_town",
-        "slug": "of_gb_ipswich_town",
-        "name": "Ipswich Town",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_leeds_ch",
-        "slug": "of_gb_leeds_ch",
-        "name": "Leeds United",
-        "colors": [
-          "#ffffff",
-          "#1d428a"
-        ],
-        "country": "England"
-      },
-      {
         "squadId": "of_gb_middlesbrough",
         "slug": "of_gb_middlesbrough",
         "name": "Middlesbrough",
         "colors": [
           "#e2001a",
           "#ffffff"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_mk_dons",
-        "slug": "of_gb_mk_dons",
-        "name": "Milton Keynes Dons",
-        "colors": [
-          "#ffd700",
-          "#000000"
         ],
         "country": "England"
       },
@@ -6184,36 +6458,6 @@
           "#ffffff"
         ],
         "country": "England"
-      },
-      {
-        "squadId": "of_gb_reading",
-        "slug": "of_gb_reading",
-        "name": "Reading",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_rotherham",
-        "slug": "of_gb_rotherham",
-        "name": "Rotherham United",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "England"
-      },
-      {
-        "squadId": "of_gb_sheffield_wednesday",
-        "slug": "of_gb_sheffield_wednesday",
-        "name": "Sheffield Wednesday",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "England"
       }
     ],
     "source": "open-football"
@@ -6223,7 +6467,7 @@
     "name": "Erovnuli Liga",
     "country": "Georgia",
     "iso2": "GE",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -6344,7 +6588,7 @@
     "name": "Premier League",
     "country": "Ghana",
     "iso2": "GH",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -6435,9 +6679,29 @@
     "name": "Super League",
     "country": "Greece",
     "iso2": "GR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_2575",
+        "slug": "es_2575",
+        "name": "Iraklis",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Greece"
+      },
+      {
+        "squadId": "es_132429",
+        "slug": "es_132429",
+        "name": "Kalamata",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Greece"
+      },
       {
         "squadId": "of_gr_aek",
         "slug": "of_gr_aek",
@@ -6485,16 +6749,6 @@
         "colors": [
           "#195d48",
           "#ffffff"
-        ],
-        "country": "Greece"
-      },
-      {
-        "squadId": "of_gr_larisa",
-        "slug": "of_gr_larisa",
-        "name": "AEL Larisa",
-        "colors": [
-          "#e2001a",
-          "#000000"
         ],
         "country": "Greece"
       },
@@ -6549,16 +6803,6 @@
         "country": "Greece"
       },
       {
-        "squadId": "of_gr_panserraikos",
-        "slug": "of_gr_panserraikos",
-        "name": "Panserraikos",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Greece"
-      },
-      {
         "squadId": "of_gr_paok",
         "slug": "of_gr_paok",
         "name": "PAOK",
@@ -6586,7 +6830,7 @@
     "name": "Prva HNL",
     "country": "Croatia",
     "iso2": "HR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "rel",
@@ -6704,7 +6948,7 @@
     "name": "Druga HNL",
     "country": "Croatia",
     "iso2": "HR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -6813,7 +7057,7 @@
     "name": "NB I",
     "country": "Hungary",
     "iso2": "HU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -6934,7 +7178,7 @@
     "name": "Super League",
     "country": "Indonesia",
     "iso2": "ID",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -7125,7 +7369,7 @@
     "name": "Premier League",
     "country": "Israel",
     "iso2": "IL",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -7276,7 +7520,7 @@
     "name": "Persian Gulf Pro League",
     "country": "Iran",
     "iso2": "IR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -7387,7 +7631,7 @@
     "name": "Urvalsdeild",
     "country": "Iceland",
     "iso2": "IS",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -7518,7 +7762,7 @@
     "name": "Serie B",
     "country": "Italy",
     "iso2": "IT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -7536,6 +7780,59 @@
     ],
     "standings": [
       {
+        "squadId": "504",
+        "slug": "hellas_verona",
+        "name": "Hellas Verona",
+        "colors": [
+          "#003DA5",
+          "#FFD700"
+        ],
+        "country": "Italy",
+        "logo": "logos/serie_a/hellas_verona.svg"
+      },
+      {
+        "squadId": "520",
+        "slug": "cremonese",
+        "name": "Cremonese",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "country": "Italy",
+        "logo": "logos/serie_a/cremonese.svg"
+      },
+      {
+        "squadId": "801",
+        "slug": "pisa",
+        "name": "Pisa",
+        "colors": [
+          "#888888",
+          "#FFFFFF"
+        ],
+        "country": "Italy",
+        "logo": "logos/serie_a/pisa.svg"
+      },
+      {
+        "squadId": "of_it_arezzo",
+        "slug": "of_it_arezzo",
+        "name": "Arezzo",
+        "colors": [
+          "#600000",
+          "#c0c0c0"
+        ],
+        "country": "Italy"
+      },
+      {
+        "squadId": "of_it_ascoli",
+        "slug": "of_it_ascoli",
+        "name": "Ascoli",
+        "colors": [
+          "#c0c0c0",
+          "#000000"
+        ],
+        "country": "Italy"
+      },
+      {
         "squadId": "of_it_avellino",
         "slug": "of_it_avellino",
         "name": "Avellino",
@@ -7546,12 +7843,12 @@
         "country": "Italy"
       },
       {
-        "squadId": "of_it_bari",
-        "slug": "of_it_bari",
-        "name": "Bari",
+        "squadId": "of_it_benevento",
+        "slug": "of_it_benevento",
+        "name": "Benevento",
         "colors": [
-          "#ffffff",
-          "#dc0000"
+          "#c0a000",
+          "#a00000"
         ],
         "country": "Italy"
       },
@@ -7596,16 +7893,6 @@
         "country": "Italy"
       },
       {
-        "squadId": "of_it_frosinone",
-        "slug": "of_it_frosinone",
-        "name": "Frosinone",
-        "colors": [
-          "#ffe000",
-          "#1641db"
-        ],
-        "country": "Italy"
-      },
-      {
         "squadId": "of_it_juve_stabia",
         "slug": "of_it_juve_stabia",
         "name": "Juve Stabia",
@@ -7636,16 +7923,6 @@
         "country": "Italy"
       },
       {
-        "squadId": "of_it_monza",
-        "slug": "of_it_monza",
-        "name": "Monza",
-        "colors": [
-          "#ff5151",
-          "#111111"
-        ],
-        "country": "Italy"
-      },
-      {
         "squadId": "of_it_padova",
         "slug": "of_it_padova",
         "name": "Padova",
@@ -7666,42 +7943,12 @@
         "country": "Italy"
       },
       {
-        "squadId": "of_it_pescara",
-        "slug": "of_it_pescara",
-        "name": "Pescara",
-        "colors": [
-          "#496bff",
-          "#ffffff"
-        ],
-        "country": "Italy"
-      },
-      {
-        "squadId": "of_it_reggiana",
-        "slug": "of_it_reggiana",
-        "name": "Reggiana",
-        "colors": [
-          "#9d0707",
-          "#000000"
-        ],
-        "country": "Italy"
-      },
-      {
         "squadId": "of_it_sampdoria",
         "slug": "of_it_sampdoria",
         "name": "Sampdoria",
         "colors": [
           "#0d56ed",
           "#ffffff"
-        ],
-        "country": "Italy"
-      },
-      {
-        "squadId": "of_it_spezia",
-        "slug": "of_it_spezia",
-        "name": "Spezia",
-        "colors": [
-          "#ffffff",
-          "#000000"
         ],
         "country": "Italy"
       },
@@ -7716,12 +7963,12 @@
         "country": "Italy"
       },
       {
-        "squadId": "of_it_venezia",
-        "slug": "of_it_venezia",
-        "name": "Venezia",
+        "squadId": "of_it_vicenza",
+        "slug": "of_it_vicenza",
+        "name": "Vicenza",
         "colors": [
-          "#256503",
-          "#000000"
+          "#800000",
+          "#c0c0c0"
         ],
         "country": "Italy"
       },
@@ -7743,7 +7990,7 @@
     "name": "Italian Serie C/A",
     "country": "Italy",
     "iso2": "IT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -7885,6 +8132,16 @@
         "country": "Italy"
       },
       {
+        "squadId": "of_it_reggiana",
+        "slug": "of_it_reggiana",
+        "name": "Reggiana",
+        "colors": [
+          "#9d0707",
+          "#000000"
+        ],
+        "country": "Italy"
+      },
+      {
         "squadId": "of_it_renate",
         "slug": "of_it_renate",
         "name": "Renate",
@@ -7925,16 +8182,6 @@
         "country": "Italy"
       },
       {
-        "squadId": "of_it_vicenza",
-        "slug": "of_it_vicenza",
-        "name": "Vicenza",
-        "colors": [
-          "#800000",
-          "#c0c0c0"
-        ],
-        "country": "Italy"
-      },
-      {
         "squadId": "of_it_virtus_verona",
         "slug": "of_it_virtus_verona",
         "name": "Virtus Verona",
@@ -7952,7 +8199,7 @@
     "name": "Italian Serie C/B",
     "country": "Italy",
     "iso2": "IT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -7964,22 +8211,12 @@
     ],
     "standings": [
       {
-        "squadId": "of_it_arezzo",
-        "slug": "of_it_arezzo",
-        "name": "Arezzo",
+        "squadId": "of_it_bari",
+        "slug": "of_it_bari",
+        "name": "Bari",
         "colors": [
-          "#600000",
-          "#c0c0c0"
-        ],
-        "country": "Italy"
-      },
-      {
-        "squadId": "of_it_ascoli",
-        "slug": "of_it_ascoli",
-        "name": "Ascoli",
-        "colors": [
-          "#c0c0c0",
-          "#000000"
+          "#ffffff",
+          "#dc0000"
         ],
         "country": "Italy"
       },
@@ -8064,6 +8301,16 @@
         "country": "Italy"
       },
       {
+        "squadId": "of_it_pescara",
+        "slug": "of_it_pescara",
+        "name": "Pescara",
+        "colors": [
+          "#496bff",
+          "#ffffff"
+        ],
+        "country": "Italy"
+      },
+      {
         "squadId": "of_it_pianese",
         "slug": "of_it_pianese",
         "name": "Pianese",
@@ -8114,6 +8361,16 @@
         "country": "Italy"
       },
       {
+        "squadId": "of_it_spezia",
+        "slug": "of_it_spezia",
+        "name": "Spezia",
+        "colors": [
+          "#ffffff",
+          "#000000"
+        ],
+        "country": "Italy"
+      },
+      {
         "squadId": "of_it_ternana",
         "slug": "of_it_ternana",
         "name": "Ternana",
@@ -8151,7 +8408,7 @@
     "name": "Italian Serie C/C",
     "country": "Italy",
     "iso2": "IT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -8179,16 +8436,6 @@
         "colors": [
           "#c0a020",
           "#0040a0"
-        ],
-        "country": "Italy"
-      },
-      {
-        "squadId": "of_it_benevento",
-        "slug": "of_it_benevento",
-        "name": "Benevento",
-        "colors": [
-          "#c0a000",
-          "#a00000"
         ],
         "country": "Italy"
       },
@@ -8360,16 +8607,96 @@
     "name": "J1 League",
     "country": "Japan",
     "iso2": "JP",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
-        "squadId": "of_jp_albirex_niigata",
-        "slug": "of_jp_albirex_niigata",
-        "name": "Albirex Niigata",
+        "squadId": "es_3393",
+        "slug": "es_3393",
+        "name": "Tokyo Verdy 1969",
         "colors": [
-          "#ff6600",
-          "#003da5"
+          "#000000",
+          "#000000"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_7104",
+        "slug": "es_7104",
+        "name": "Shimizu S-Pulse",
+        "colors": [
+          "#ed561d",
+          "#eebe21"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_7109",
+        "slug": "es_7109",
+        "name": "Cerezo Osaka",
+        "colors": [
+          "#ffc0cb",
+          "#ffffff"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_7111",
+        "slug": "es_7111",
+        "name": "JEF United Ichihara-Chiba",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_19001",
+        "slug": "es_19001",
+        "name": "V-Varen Nagasaki",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_21361",
+        "slug": "es_21361",
+        "name": "Kyoto Sanga",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_22167",
+        "slug": "es_22167",
+        "name": "Machida Zelvia",
+        "colors": [
+          "#000000",
+          "#fafafc"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_22522",
+        "slug": "es_22522",
+        "name": "Fagiano Okayama",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Japan"
+      },
+      {
+        "squadId": "es_131701",
+        "slug": "es_131701",
+        "name": "Mito Hollyhock",
+        "colors": [
+          "#000000",
+          "#c60000"
         ],
         "country": "Japan"
       },
@@ -8400,16 +8727,6 @@
         "colors": [
           "#003da5",
           "#000000"
-        ],
-        "country": "Japan"
-      },
-      {
-        "squadId": "of_jp_jubilo_iwata",
-        "slug": "of_jp_jubilo_iwata",
-        "name": "Jubilo Iwata",
-        "colors": [
-          "#003da5",
-          "#ffffff"
         ],
         "country": "Japan"
       },
@@ -8454,41 +8771,11 @@
         "country": "Japan"
       },
       {
-        "squadId": "of_jp_omiya_ardija",
-        "slug": "of_jp_omiya_ardija",
-        "name": "Omiya Ardija",
-        "colors": [
-          "#ff6600",
-          "#ffffff"
-        ],
-        "country": "Japan"
-      },
-      {
-        "squadId": "of_jp_sagan_tosu",
-        "slug": "of_jp_sagan_tosu",
-        "name": "Sagan Tosu",
-        "colors": [
-          "#003da5",
-          "#ff69b4"
-        ],
-        "country": "Japan"
-      },
-      {
         "squadId": "of_jp_sanfrecce_hiroshima",
         "slug": "of_jp_sanfrecce_hiroshima",
         "name": "Sanfrecce Hiroshima",
         "colors": [
           "#7b1c7a",
-          "#ffffff"
-        ],
-        "country": "Japan"
-      },
-      {
-        "squadId": "of_jp_shonan_bellmare",
-        "slug": "of_jp_shonan_bellmare",
-        "name": "Shonan Bellmare",
-        "colors": [
-          "#195d48",
           "#ffffff"
         ],
         "country": "Japan"
@@ -8500,26 +8787,6 @@
         "colors": [
           "#e2001a",
           "#ffffff"
-        ],
-        "country": "Japan"
-      },
-      {
-        "squadId": "of_jp_vegalta_sendai",
-        "slug": "of_jp_vegalta_sendai",
-        "name": "Vegalta Sendai",
-        "colors": [
-          "#ffd700",
-          "#000000"
-        ],
-        "country": "Japan"
-      },
-      {
-        "squadId": "of_jp_ventforet_kofu",
-        "slug": "of_jp_ventforet_kofu",
-        "name": "Ventforet Kofu",
-        "colors": [
-          "#003da5",
-          "#e2001a"
         ],
         "country": "Japan"
       },
@@ -8551,7 +8818,7 @@
     "name": "Premier Division",
     "country": "Kenya",
     "iso2": "KE",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -8742,7 +9009,7 @@
     "name": "Premier League",
     "country": "Kazakhstan",
     "iso2": "KZ",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -8853,7 +9120,7 @@
     "name": "Premier League",
     "country": "Malta",
     "iso2": "MT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -8984,9 +9251,49 @@
     "name": "Liga MX",
     "country": "Mexico",
     "iso2": "MX",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_226",
+        "slug": "es_226",
+        "name": "Atlante",
+        "colors": [
+          "#022789",
+          "#022789"
+        ],
+        "country": "Mexico"
+      },
+      {
+        "squadId": "es_229",
+        "slug": "es_229",
+        "name": "Necaxa",
+        "colors": [
+          "#ef0107",
+          "#000000"
+        ],
+        "country": "Mexico"
+      },
+      {
+        "squadId": "es_15720",
+        "slug": "es_15720",
+        "name": "Atlético de San Luis",
+        "colors": [
+          "#ef0107",
+          "#dfa829"
+        ],
+        "country": "Mexico"
+      },
+      {
+        "squadId": "es_17851",
+        "slug": "es_17851",
+        "name": "FC Juarez",
+        "colors": [
+          "#89f442",
+          "#ffffff"
+        ],
+        "country": "Mexico"
+      },
       {
         "squadId": "of_mx_atlas",
         "slug": "of_mx_atlas",
@@ -8994,16 +9301,6 @@
         "colors": [
           "#e2001a",
           "#000000"
-        ],
-        "country": "Mexico"
-      },
-      {
-        "squadId": "of_mx_chiapas",
-        "slug": "of_mx_chiapas",
-        "name": "Chiapas",
-        "colors": [
-          "#ffd700",
-          "#195d48"
         ],
         "country": "Mexico"
       },
@@ -9024,16 +9321,6 @@
         "colors": [
           "#003da5",
           "#ffffff"
-        ],
-        "country": "Mexico"
-      },
-      {
-        "squadId": "of_mx_dorados",
-        "slug": "of_mx_dorados",
-        "name": "Dorados",
-        "colors": [
-          "#ffd700",
-          "#003da5"
         ],
         "country": "Mexico"
       },
@@ -9064,16 +9351,6 @@
         "colors": [
           "#003da5",
           "#ffffff"
-        ],
-        "country": "Mexico"
-      },
-      {
-        "squadId": "of_mx_morelia",
-        "slug": "of_mx_morelia",
-        "name": "Morelia",
-        "colors": [
-          "#ffd700",
-          "#e2001a"
         ],
         "country": "Mexico"
       },
@@ -9165,7 +9442,7 @@
     "name": "Premier League",
     "country": "Nigeria",
     "iso2": "NG",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -9376,9 +9653,49 @@
     "name": "Eredivisie",
     "country": "Netherlands",
     "iso2": "NL",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_143",
+        "slug": "es_143",
+        "name": "Fortuna Sittard",
+        "colors": [
+          "#fcee33",
+          "#ffffff"
+        ],
+        "country": "Netherlands"
+      },
+      {
+        "squadId": "es_151",
+        "slug": "es_151",
+        "name": "Sparta Rotterdam",
+        "colors": [
+          "#f31522",
+          "#84aee7"
+        ],
+        "country": "Netherlands"
+      },
+      {
+        "squadId": "es_3706",
+        "slug": "es_3706",
+        "name": "Go Ahead Eagles",
+        "colors": [
+          "#f80017",
+          "#8f0058"
+        ],
+        "country": "Netherlands"
+      },
+      {
+        "squadId": "es_3735",
+        "slug": "es_3735",
+        "name": "Telstar",
+        "colors": [
+          "#c60000",
+          "#fcee33"
+        ],
+        "country": "Netherlands"
+      },
       {
         "squadId": "of_nl_ado_den_haag",
         "slug": "of_nl_ado_den_haag",
@@ -9416,16 +9733,6 @@
         "colors": [
           "#ffd700",
           "#003da5"
-        ],
-        "country": "Netherlands"
-      },
-      {
-        "squadId": "of_nl_de_graafschap",
-        "slug": "of_nl_de_graafschap",
-        "name": "De Graafschap",
-        "colors": [
-          "#003da5",
-          "#ffffff"
         ],
         "country": "Netherlands"
       },
@@ -9480,16 +9787,6 @@
         "country": "Netherlands"
       },
       {
-        "squadId": "of_nl_heracles",
-        "slug": "of_nl_heracles",
-        "name": "Heracles",
-        "colors": [
-          "#000000",
-          "#ffffff"
-        ],
-        "country": "Netherlands"
-      },
-      {
         "squadId": "of_nl_nec",
         "slug": "of_nl_nec",
         "name": "NEC",
@@ -9520,32 +9817,12 @@
         "country": "Netherlands"
       },
       {
-        "squadId": "of_nl_roda_jc",
-        "slug": "of_nl_roda_jc",
-        "name": "Roda JC",
-        "colors": [
-          "#ffd700",
-          "#195d48"
-        ],
-        "country": "Netherlands"
-      },
-      {
         "squadId": "of_nl_sc_heerenveen",
         "slug": "of_nl_sc_heerenveen",
         "name": "SC Heerenveen",
         "colors": [
           "#003da5",
           "#ffffff"
-        ],
-        "country": "Netherlands"
-      },
-      {
-        "squadId": "of_nl_vitesse",
-        "slug": "of_nl_vitesse",
-        "name": "Vitesse",
-        "colors": [
-          "#ffd700",
-          "#000000"
         ],
         "country": "Netherlands"
       },
@@ -9567,9 +9844,59 @@
     "name": "Eliteserien",
     "country": "Norway",
     "iso2": "NO",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_620",
+        "slug": "es_620",
+        "name": "SK Brann",
+        "colors": [
+          "#ff0000",
+          "#32cd32"
+        ],
+        "country": "Norway"
+      },
+      {
+        "squadId": "es_3039",
+        "slug": "es_3039",
+        "name": "Fredrikstad",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Norway"
+      },
+      {
+        "squadId": "es_6672",
+        "slug": "es_6672",
+        "name": "Kristiansund BK",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Norway"
+      },
+      {
+        "squadId": "es_21380",
+        "slug": "es_21380",
+        "name": "Hamarkameratene",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Norway"
+      },
+      {
+        "squadId": "es_22165",
+        "slug": "es_22165",
+        "name": "KFUM Oslo",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Norway"
+      },
       {
         "squadId": "of_no_aalesund",
         "slug": "of_no_aalesund",
@@ -9591,16 +9918,6 @@
         "country": "Norway"
       },
       {
-        "squadId": "of_no_haugesund",
-        "slug": "of_no_haugesund",
-        "name": "Haugesund",
-        "colors": [
-          "#ffffff",
-          "#003da5"
-        ],
-        "country": "Norway"
-      },
-      {
         "squadId": "of_no_lillestrom",
         "slug": "of_no_lillestrom",
         "name": "Lillestrom",
@@ -9611,32 +9928,12 @@
         "country": "Norway"
       },
       {
-        "squadId": "of_no_mjondalen",
-        "slug": "of_no_mjondalen",
-        "name": "Mjondalen",
-        "colors": [
-          "#6b0010",
-          "#ffffff"
-        ],
-        "country": "Norway"
-      },
-      {
         "squadId": "of_no_molde",
         "slug": "of_no_molde",
         "name": "Molde",
         "colors": [
           "#003da5",
           "#ffffff"
-        ],
-        "country": "Norway"
-      },
-      {
-        "squadId": "of_no_odd",
-        "slug": "of_no_odd",
-        "name": "Odd",
-        "colors": [
-          "#ffffff",
-          "#000000"
         ],
         "country": "Norway"
       },
@@ -9671,32 +9968,12 @@
         "country": "Norway"
       },
       {
-        "squadId": "of_no_stabaek",
-        "slug": "of_no_stabaek",
-        "name": "Stabaek",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Norway"
-      },
-      {
         "squadId": "of_no_start",
         "slug": "of_no_start",
         "name": "IK Start",
         "colors": [
           "#ffd700",
           "#000000"
-        ],
-        "country": "Norway"
-      },
-      {
-        "squadId": "of_no_stromsgodset",
-        "slug": "of_no_stromsgodset",
-        "name": "Stromsgodset",
-        "colors": [
-          "#003da5",
-          "#ffffff"
         ],
         "country": "Norway"
       },
@@ -9738,9 +10015,109 @@
     "name": "Primera Division",
     "country": "Peru",
     "iso2": "PE",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_5570",
+        "slug": "es_5570",
+        "name": "Sport Boys",
+        "colors": [
+          "#ffadcc",
+          "#000000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_11995",
+        "slug": "es_11995",
+        "name": "Cusco FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_18153",
+        "slug": "es_18153",
+        "name": "Comerciantes Unidos",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_20293",
+        "slug": "es_20293",
+        "name": "Atlético Grau",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_21314",
+        "slug": "es_21314",
+        "name": "ADT",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_21819",
+        "slug": "es_21819",
+        "name": "Deportivo Garcilaso",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_22168",
+        "slug": "es_22168",
+        "name": "Los Chankas",
+        "colors": [
+          "#000000",
+          "#fafafc"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_22534",
+        "slug": "es_22534",
+        "name": "Juan Pablo II",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_131654",
+        "slug": "es_131654",
+        "name": "Deportivo Moquegua",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
+      {
+        "squadId": "es_131655",
+        "slug": "es_131655",
+        "name": "FC Cajamarca",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Peru"
+      },
       {
         "squadId": "of_pe_alianza_atletico",
         "slug": "of_pe_alianza_atletico",
@@ -9762,52 +10139,12 @@
         "country": "Peru"
       },
       {
-        "squadId": "of_pe_ayacucho",
-        "slug": "of_pe_ayacucho",
-        "name": "Ayacucho",
-        "colors": [
-          "#7b1c7a",
-          "#ffffff"
-        ],
-        "country": "Peru"
-      },
-      {
-        "squadId": "of_pe_cesar_vallejo",
-        "slug": "of_pe_cesar_vallejo",
-        "name": "Cesar Vallejo",
-        "colors": [
-          "#003da5",
-          "#e2001a"
-        ],
-        "country": "Peru"
-      },
-      {
         "squadId": "of_pe_cienciano",
         "slug": "of_pe_cienciano",
         "name": "Cienciano",
         "colors": [
           "#e2001a",
           "#ffffff"
-        ],
-        "country": "Peru"
-      },
-      {
-        "squadId": "of_pe_deportivo_municipal",
-        "slug": "of_pe_deportivo_municipal",
-        "name": "Deportivo Municipal",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Peru"
-      },
-      {
-        "squadId": "of_pe_juan_aurich",
-        "slug": "of_pe_juan_aurich",
-        "name": "Juan Aurich",
-        "colors": [
-          "#ffd700",
-          "#e2001a"
         ],
         "country": "Peru"
       },
@@ -9869,7 +10206,7 @@
     "name": "Ekstraklasa",
     "country": "Poland",
     "iso2": "PL",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -10030,9 +10367,59 @@
     "name": "Primeira Liga",
     "country": "Portugal",
     "iso2": "PT",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_3472",
+        "slug": "es_3472",
+        "name": "C.D. Nacional",
+        "colors": [
+          "#000000",
+          "#000099"
+        ],
+        "country": "Portugal"
+      },
+      {
+        "squadId": "es_3696",
+        "slug": "es_3696",
+        "name": "Moreirense",
+        "colors": [
+          "#288a00",
+          "#000000"
+        ],
+        "country": "Portugal"
+      },
+      {
+        "squadId": "es_21607",
+        "slug": "es_21607",
+        "name": "Académico de Viseu",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Portugal"
+      },
+      {
+        "squadId": "es_21610",
+        "slug": "es_21610",
+        "name": "Estrela",
+        "colors": [
+          "#3b8132",
+          "#de0a26"
+        ],
+        "country": "Portugal"
+      },
+      {
+        "squadId": "es_21613",
+        "slug": "es_21613",
+        "name": "Alverca",
+        "colors": [
+          "#0047ab",
+          "#c60000"
+        ],
+        "country": "Portugal"
+      },
       {
         "squadId": "of_pt_arouca",
         "slug": "of_pt_arouca",
@@ -10054,16 +10441,6 @@
         "country": "Portugal"
       },
       {
-        "squadId": "of_pt_boavista",
-        "slug": "of_pt_boavista",
-        "name": "Boavista",
-        "colors": [
-          "#000000",
-          "#ffffff"
-        ],
-        "country": "Portugal"
-      },
-      {
         "squadId": "of_pt_braga",
         "slug": "of_pt_braga",
         "name": "SC Braga",
@@ -10080,16 +10457,6 @@
         "colors": [
           "#195d48",
           "#ffffff"
-        ],
-        "country": "Portugal"
-      },
-      {
-        "squadId": "of_pt_chaves",
-        "slug": "of_pt_chaves",
-        "name": "GD Chaves",
-        "colors": [
-          "#e2001a",
-          "#003da5"
         ],
         "country": "Portugal"
       },
@@ -10130,26 +10497,6 @@
         "colors": [
           "#195d48",
           "#e2001a"
-        ],
-        "country": "Portugal"
-      },
-      {
-        "squadId": "of_pt_pacos_ferreira",
-        "slug": "of_pt_pacos_ferreira",
-        "name": "Pacos de Ferreira",
-        "colors": [
-          "#ffd700",
-          "#195d48"
-        ],
-        "country": "Portugal"
-      },
-      {
-        "squadId": "of_pt_portimonense",
-        "slug": "of_pt_portimonense",
-        "name": "Portimonense",
-        "colors": [
-          "#000000",
-          "#ffd700"
         ],
         "country": "Portugal"
       },
@@ -10202,16 +10549,6 @@
           "#000000"
         ],
         "country": "Portugal"
-      },
-      {
-        "squadId": "of_pt_vizela",
-        "slug": "of_pt_vizela",
-        "name": "Vizela",
-        "colors": [
-          "#808080",
-          "#ffffff"
-        ],
-        "country": "Portugal"
       }
     ],
     "source": "open-football"
@@ -10221,16 +10558,56 @@
     "name": "Primera Division",
     "country": "Paraguay",
     "iso2": "PY",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
-        "squadId": "of_py_12_de_octubre",
-        "slug": "of_py_12_de_octubre",
-        "name": "12 de Octubre",
+        "squadId": "es_6097",
+        "slug": "es_6097",
+        "name": "2 de Mayo",
         "colors": [
-          "#e2001a",
+          "#000000",
           "#000000"
+        ],
+        "country": "Paraguay"
+      },
+      {
+        "squadId": "es_10080",
+        "slug": "es_10080",
+        "name": "Rubio Ñú",
+        "colors": [
+          "#32cd32",
+          "#000000"
+        ],
+        "country": "Paraguay"
+      },
+      {
+        "squadId": "es_17671",
+        "slug": "es_17671",
+        "name": "Sportivo San Lorenzo",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Paraguay"
+      },
+      {
+        "squadId": "es_21313",
+        "slug": "es_21313",
+        "name": "Sportivo Ameliano",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Paraguay"
+      },
+      {
+        "squadId": "es_22517",
+        "slug": "es_22517",
+        "name": "Deportivo Recoleta",
+        "colors": [
+          "#000000",
+          "#c60000"
         ],
         "country": "Paraguay"
       },
@@ -10241,16 +10618,6 @@
         "colors": [
           "#003da5",
           "#e2001a"
-        ],
-        "country": "Paraguay"
-      },
-      {
-        "squadId": "of_py_general_diaz",
-        "slug": "of_py_general_diaz",
-        "name": "General Diaz",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
         ],
         "country": "Paraguay"
       },
@@ -10295,26 +10662,6 @@
         "country": "Paraguay"
       },
       {
-        "squadId": "of_py_river_plate_py",
-        "slug": "of_py_river_plate_py",
-        "name": "River Plate",
-        "colors": [
-          "#ffffff",
-          "#e2001a"
-        ],
-        "country": "Paraguay"
-      },
-      {
-        "squadId": "of_py_sol_de_america",
-        "slug": "of_py_sol_de_america",
-        "name": "Sol de America",
-        "colors": [
-          "#003da5",
-          "#ffffff"
-        ],
-        "country": "Paraguay"
-      },
-      {
         "squadId": "of_py_sportivo_luqueno",
         "slug": "of_py_sportivo_luqueno",
         "name": "Sportivo Luqueno",
@@ -10342,7 +10689,7 @@
     "name": "SuperLeague",
     "country": "Serbia",
     "iso2": "RS",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -10513,7 +10860,7 @@
     "name": "Premier League",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "rel",
@@ -10584,6 +10931,16 @@
         "country": "Russia"
       },
       {
+        "squadId": "of_ru_fakel",
+        "slug": "of_ru_fakel",
+        "name": "Fakel",
+        "colors": [
+          "#003da5",
+          "#ff8c00"
+        ],
+        "country": "Russia"
+      },
+      {
         "squadId": "of_ru_krasnodar",
         "slug": "of_ru_krasnodar",
         "name": "Krasnodar",
@@ -10624,12 +10981,12 @@
         "country": "Russia"
       },
       {
-        "squadId": "of_ru_pari_nn",
-        "slug": "of_ru_pari_nn",
-        "name": "Pari Nizhniy Novgorod",
+        "squadId": "of_ru_rodina",
+        "slug": "of_ru_rodina",
+        "name": "Rodina",
         "colors": [
-          "#231f20",
-          "#e31e24"
+          "#8b0000",
+          "#ffd700"
         ],
         "country": "Russia"
       },
@@ -10650,16 +11007,6 @@
         "colors": [
           "#8b0000",
           "#ffd700"
-        ],
-        "country": "Russia"
-      },
-      {
-        "squadId": "of_ru_sochi",
-        "slug": "of_ru_sochi",
-        "name": "Sochi",
-        "colors": [
-          "#3893fa",
-          "#ffffff"
         ],
         "country": "Russia"
       },
@@ -10691,7 +11038,7 @@
     "name": "First Division",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -10749,16 +11096,6 @@
         "country": "Russia"
       },
       {
-        "squadId": "of_ru_fakel",
-        "slug": "of_ru_fakel",
-        "name": "Fakel",
-        "colors": [
-          "#003da5",
-          "#ff8c00"
-        ],
-        "country": "Russia"
-      },
-      {
         "squadId": "of_ru_kamaz",
         "slug": "of_ru_kamaz",
         "name": "KAMAZ",
@@ -10779,12 +11116,12 @@
         "country": "Russia"
       },
       {
-        "squadId": "of_ru_rodina",
-        "slug": "of_ru_rodina",
-        "name": "Rodina",
+        "squadId": "of_ru_pari_nn",
+        "slug": "of_ru_pari_nn",
+        "name": "Pari Nizhniy Novgorod",
         "colors": [
-          "#8b0000",
-          "#ffd700"
+          "#231f20",
+          "#e31e24"
         ],
         "country": "Russia"
       },
@@ -10814,6 +11151,16 @@
         "name": "SKA Khabarovsk",
         "colors": [
           "#e30613",
+          "#ffffff"
+        ],
+        "country": "Russia"
+      },
+      {
+        "squadId": "of_ru_sochi",
+        "slug": "of_ru_sochi",
+        "name": "Sochi",
+        "colors": [
+          "#3893fa",
           "#ffffff"
         ],
         "country": "Russia"
@@ -10896,7 +11243,7 @@
     "name": "Second Division A Gold",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -11021,7 +11368,7 @@
     "name": "Second Division A Silver",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -11126,7 +11473,7 @@
     "name": "Second Division B2",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -11245,7 +11592,7 @@
     "name": "Second Division B3",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -11354,7 +11701,7 @@
     "name": "Second Division B4",
     "country": "Russia",
     "iso2": "RU",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -11453,7 +11800,7 @@
     "name": "Pro League",
     "country": "Saudi Arabia",
     "iso2": "SA",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "rel",
@@ -11464,12 +11811,62 @@
     ],
     "standings": [
       {
+        "squadId": "es_21833",
+        "slug": "es_21833",
+        "name": "Abha",
+        "colors": [
+          "#aed6f1",
+          "#0d47a1"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "es_22028",
+        "slug": "es_22028",
+        "name": "Al Kholood",
+        "colors": [
+          "#008000",
+          "#c60000"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "es_130899",
+        "slug": "es_130899",
+        "name": "Neom SC",
+        "colors": [
+          "#259eee",
+          "#ff9300"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
         "squadId": "of_sa_al_ahli",
         "slug": "of_sa_al_ahli",
         "name": "Al-Ahli",
         "colors": [
           "#006838",
           "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "of_sa_al_diriyah",
+        "slug": "of_sa_al_diriyah",
+        "name": "Al-Diriyah",
+        "colors": [
+          "#005baa",
+          "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "of_sa_al_ettifaq",
+        "slug": "of_sa_al_ettifaq",
+        "name": "Al-Ettifaq",
+        "colors": [
+          "#ffd200",
+          "#1b3a6b"
         ],
         "country": "Saudi Arabia"
       },
@@ -11490,6 +11887,26 @@
         "colors": [
           "#e30613",
           "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "of_sa_al_fayha",
+        "slug": "of_sa_al_fayha",
+        "name": "Al-Fayha",
+        "colors": [
+          "#fdb913",
+          "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "of_sa_al_hazem",
+        "slug": "of_sa_al_hazem",
+        "name": "Al-Hazem",
+        "colors": [
+          "#ffd200",
+          "#000000"
         ],
         "country": "Saudi Arabia"
       },
@@ -11544,12 +11961,12 @@
         "country": "Saudi Arabia"
       },
       {
-        "squadId": "of_sa_al_raed",
-        "slug": "of_sa_al_raed",
-        "name": "Al-Ra'ed",
+        "squadId": "of_sa_al_riyadh",
+        "slug": "of_sa_al_riyadh",
+        "name": "Al-Riyadh",
         "colors": [
-          "#fff000",
-          "#000000"
+          "#007a33",
+          "#ffffff"
         ],
         "country": "Saudi Arabia"
       },
@@ -11572,36 +11989,6 @@
           "#008542"
         ],
         "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_al_wehda",
-        "slug": "of_sa_al_wehda",
-        "name": "Al-Wehda",
-        "colors": [
-          "#e30613",
-          "#ffffff"
-        ],
-        "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_hajer",
-        "slug": "of_sa_hajer",
-        "name": "Hajer",
-        "colors": [
-          "#0066b3",
-          "#ffffff"
-        ],
-        "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_najran",
-        "slug": "of_sa_najran",
-        "name": "Najran",
-        "colors": [
-          "#fff000",
-          "#006838"
-        ],
-        "country": "Saudi Arabia"
       }
     ],
     "source": "open-football"
@@ -11611,7 +11998,7 @@
     "name": "First Division",
     "country": "Saudi Arabia",
     "iso2": "SA",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -11629,46 +12016,6 @@
         "colors": [
           "#005baa",
           "#ffd200"
-        ],
-        "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_al_diriyah",
-        "slug": "of_sa_al_diriyah",
-        "name": "Al-Diriyah",
-        "colors": [
-          "#005baa",
-          "#ffffff"
-        ],
-        "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_al_ettifaq",
-        "slug": "of_sa_al_ettifaq",
-        "name": "Al-Ettifaq",
-        "colors": [
-          "#ffd200",
-          "#1b3a6b"
-        ],
-        "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_al_fayha",
-        "slug": "of_sa_al_fayha",
-        "name": "Al-Fayha",
-        "colors": [
-          "#fdb913",
-          "#ffffff"
-        ],
-        "country": "Saudi Arabia"
-      },
-      {
-        "squadId": "of_sa_al_hazem",
-        "slug": "of_sa_al_hazem",
-        "name": "Al-Hazem",
-        "colors": [
-          "#ffd200",
-          "#000000"
         ],
         "country": "Saudi Arabia"
       },
@@ -11713,12 +12060,12 @@
         "country": "Saudi Arabia"
       },
       {
-        "squadId": "of_sa_al_riyadh",
-        "slug": "of_sa_al_riyadh",
-        "name": "Al-Riyadh",
+        "squadId": "of_sa_al_raed",
+        "slug": "of_sa_al_raed",
+        "name": "Al-Ra'ed",
         "colors": [
-          "#007a33",
-          "#ffffff"
+          "#fff000",
+          "#000000"
         ],
         "country": "Saudi Arabia"
       },
@@ -11753,12 +12100,42 @@
         "country": "Saudi Arabia"
       },
       {
+        "squadId": "of_sa_al_wehda",
+        "slug": "of_sa_al_wehda",
+        "name": "Al-Wehda",
+        "colors": [
+          "#e30613",
+          "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
         "squadId": "of_sa_damac",
         "slug": "of_sa_damac",
         "name": "Damac",
         "colors": [
           "#00a651",
           "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "of_sa_hajer",
+        "slug": "of_sa_hajer",
+        "name": "Hajer",
+        "colors": [
+          "#0066b3",
+          "#ffffff"
+        ],
+        "country": "Saudi Arabia"
+      },
+      {
+        "squadId": "of_sa_najran",
+        "slug": "of_sa_najran",
+        "name": "Najran",
+        "colors": [
+          "#fff000",
+          "#006838"
         ],
         "country": "Saudi Arabia"
       },
@@ -11780,25 +12157,85 @@
     "name": "Allsvenskan",
     "country": "Sweden",
     "iso2": "SE",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_8221",
+        "slug": "es_8221",
+        "name": "IF Brommapojkarna",
+        "colors": [
+          "#000000",
+          "#df1e1e"
+        ],
+        "country": "Sweden"
+      },
+      {
+        "squadId": "es_8222",
+        "slug": "es_8222",
+        "name": "GAIS",
+        "colors": [
+          "#009d58",
+          "#ee293c"
+        ],
+        "country": "Sweden"
+      },
+      {
+        "squadId": "es_8547",
+        "slug": "es_8547",
+        "name": "IK Sirius",
+        "colors": [
+          "#d62612",
+          "#000000"
+        ],
+        "country": "Sweden"
+      },
+      {
+        "squadId": "es_20301",
+        "slug": "es_20301",
+        "name": "Mjällby AIF",
+        "colors": [
+          "#231f20",
+          "#ffd400"
+        ],
+        "country": "Sweden"
+      },
+      {
+        "squadId": "es_20856",
+        "slug": "es_20856",
+        "name": "Degerfors IF",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Sweden"
+      },
+      {
+        "squadId": "es_22163",
+        "slug": "es_22163",
+        "name": "Västerås SK",
+        "colors": [
+          "#007948",
+          "#ffffff"
+        ],
+        "country": "Sweden"
+      },
+      {
+        "squadId": "es_131552",
+        "slug": "es_131552",
+        "name": "Örgryte IS",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Sweden"
+      },
       {
         "squadId": "of_se_aik",
         "slug": "of_se_aik",
         "name": "AIK",
         "colors": [
           "#000000",
-          "#ffd700"
-        ],
-        "country": "Sweden"
-      },
-      {
-        "squadId": "of_se_atvidaberg",
-        "slug": "of_se_atvidaberg",
-        "name": "Atvidaberg",
-        "colors": [
-          "#003da5",
           "#ffd700"
         ],
         "country": "Sweden"
@@ -11819,36 +12256,6 @@
         "name": "IF Elfsborg",
         "colors": [
           "#ffd700",
-          "#000000"
-        ],
-        "country": "Sweden"
-      },
-      {
-        "squadId": "of_se_falkenberg",
-        "slug": "of_se_falkenberg",
-        "name": "Falkenberg",
-        "colors": [
-          "#ffd700",
-          "#195d48"
-        ],
-        "country": "Sweden"
-      },
-      {
-        "squadId": "of_se_gefle",
-        "slug": "of_se_gefle",
-        "name": "Gefle",
-        "colors": [
-          "#ffffff",
-          "#003da5"
-        ],
-        "country": "Sweden"
-      },
-      {
-        "squadId": "of_se_gif_sundsvall",
-        "slug": "of_se_gif_sundsvall",
-        "name": "GIF Sundsvall",
-        "colors": [
-          "#e2001a",
           "#000000"
         ],
         "country": "Sweden"
@@ -11884,32 +12291,12 @@
         "country": "Sweden"
       },
       {
-        "squadId": "of_se_helsingborg",
-        "slug": "of_se_helsingborg",
-        "name": "Helsingborg",
-        "colors": [
-          "#e2001a",
-          "#003da5"
-        ],
-        "country": "Sweden"
-      },
-      {
         "squadId": "of_se_ifk_goteborg",
         "slug": "of_se_ifk_goteborg",
         "name": "IFK Goteborg",
         "colors": [
           "#003da5",
           "#ffffff"
-        ],
-        "country": "Sweden"
-      },
-      {
-        "squadId": "of_se_ifk_norrkoping",
-        "slug": "of_se_ifk_norrkoping",
-        "name": "IFK Norrkoping",
-        "colors": [
-          "#ffffff",
-          "#003da5"
         ],
         "country": "Sweden"
       },
@@ -11932,16 +12319,6 @@
           "#ffffff"
         ],
         "country": "Sweden"
-      },
-      {
-        "squadId": "of_se_orebro",
-        "slug": "of_se_orebro",
-        "name": "Orebro",
-        "colors": [
-          "#000000",
-          "#ffffff"
-        ],
-        "country": "Sweden"
       }
     ],
     "source": "open-football"
@@ -11951,7 +12328,7 @@
     "name": "Prva Liga",
     "country": "Slovenia",
     "iso2": "SI",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -12052,7 +12429,7 @@
     "name": "Super Liga",
     "country": "Slovakia",
     "iso2": "SK",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
@@ -12173,16 +12550,96 @@
     "name": "Super Lig",
     "country": "Turkey",
     "iso2": "TR",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
       {
-        "squadId": "of_tr_adana_demirspor",
-        "slug": "of_tr_adana_demirspor",
-        "name": "Adana Demirspor",
+        "squadId": "es_789",
+        "slug": "es_789",
+        "name": "Goztepe",
         "colors": [
-          "#003da5",
-          "#ffffff"
+          "#000000",
+          "#000000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_995",
+        "slug": "es_995",
+        "name": "Kocaelispor",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_996",
+        "slug": "es_996",
+        "name": "Genclerbirligi",
+        "colors": [
+          "#000000",
+          "#e91b23"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_7656",
+        "slug": "es_7656",
+        "name": "Caykur Rizespor",
+        "colors": [
+          "#000000",
+          "#000000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_11429",
+        "slug": "es_11429",
+        "name": "Samsunspor",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_19267",
+        "slug": "es_19267",
+        "name": "Erzurum BB",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_20729",
+        "slug": "es_20729",
+        "name": "Eyupspor",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_132334",
+        "slug": "es_132334",
+        "name": "Çorum FK",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Turkey"
+      },
+      {
+        "squadId": "es_132335",
+        "slug": "es_132335",
+        "name": "Amed SFK",
+        "colors": [
+          "#000000",
+          "#c60000"
         ],
         "country": "Turkey"
       },
@@ -12193,26 +12650,6 @@
         "colors": [
           "#ff6600",
           "#195d48"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_ankaragucu",
-        "slug": "of_tr_ankaragucu",
-        "name": "Ankaragucu",
-        "colors": [
-          "#003da5",
-          "#ffd700"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_antalyaspor",
-        "slug": "of_tr_antalyaspor",
-        "name": "Antalyaspor",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
         ],
         "country": "Turkey"
       },
@@ -12233,16 +12670,6 @@
         "colors": [
           "#000000",
           "#ffffff"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_fatih_karagumruk",
-        "slug": "of_tr_fatih_karagumruk",
-        "name": "Fatih Karagumruk",
-        "colors": [
-          "#e2001a",
-          "#000000"
         ],
         "country": "Turkey"
       },
@@ -12277,52 +12704,12 @@
         "country": "Turkey"
       },
       {
-        "squadId": "of_tr_giresunspor",
-        "slug": "of_tr_giresunspor",
-        "name": "Giresunspor",
-        "colors": [
-          "#195d48",
-          "#ffffff"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_hatayspor",
-        "slug": "of_tr_hatayspor",
-        "name": "Hatayspor",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_istanbulspor",
-        "slug": "of_tr_istanbulspor",
-        "name": "Istanbulspor",
-        "colors": [
-          "#ffd700",
-          "#000000"
-        ],
-        "country": "Turkey"
-      },
-      {
         "squadId": "of_tr_kasimpasa",
         "slug": "of_tr_kasimpasa",
         "name": "Kasimpasa",
         "colors": [
           "#003da5",
           "#ffffff"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_kayserispor",
-        "slug": "of_tr_kayserispor",
-        "name": "Kayserispor",
-        "colors": [
-          "#ffd700",
-          "#e2001a"
         ],
         "country": "Turkey"
       },
@@ -12337,32 +12724,12 @@
         "country": "Turkey"
       },
       {
-        "squadId": "of_tr_sivasspor",
-        "slug": "of_tr_sivasspor",
-        "name": "Sivasspor",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Turkey"
-      },
-      {
         "squadId": "of_tr_trabzonspor",
         "slug": "of_tr_trabzonspor",
         "name": "Trabzonspor",
         "colors": [
           "#6b0010",
           "#6caddf"
-        ],
-        "country": "Turkey"
-      },
-      {
-        "squadId": "of_tr_umraniyespor",
-        "slug": "of_tr_umraniyespor",
-        "name": "Umraniyespor",
-        "colors": [
-          "#e2001a",
-          "#003da5"
         ],
         "country": "Turkey"
       }
@@ -12374,7 +12741,7 @@
     "name": "Premier League",
     "country": "Ukraine",
     "iso2": "UA",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "rel",
@@ -12552,7 +12919,7 @@
     "name": "First League",
     "country": "Ukraine",
     "iso2": "UA",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [
       {
         "id": "prom",
@@ -12731,7 +13098,7 @@
     "name": "Major League Soccer",
     "country": "USA",
     "iso2": "US",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -13042,7 +13409,7 @@
     "name": "Primera Division",
     "country": "Uruguay",
     "iso2": "UY",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "rel",
@@ -13053,11 +13420,31 @@
     ],
     "standings": [
       {
+        "squadId": "of_uy_albion",
+        "slug": "of_uy_albion",
+        "name": "Albion",
+        "colors": [
+          "#e2001a",
+          "#ffffff"
+        ],
+        "country": "Uruguay"
+      },
+      {
         "squadId": "of_uy_boston_river",
         "slug": "of_uy_boston_river",
         "name": "Boston River",
         "colors": [
           "#ffd700",
+          "#003da5"
+        ],
+        "country": "Uruguay"
+      },
+      {
+        "squadId": "of_uy_central_espanol",
+        "slug": "of_uy_central_espanol",
+        "name": "Central Espanol",
+        "colors": [
+          "#e2001a",
           "#003da5"
         ],
         "country": "Uruguay"
@@ -13103,6 +13490,16 @@
         "country": "Uruguay"
       },
       {
+        "squadId": "of_uy_deportivo_maldonado",
+        "slug": "of_uy_deportivo_maldonado",
+        "name": "Deportivo Maldonado",
+        "colors": [
+          "#195d48",
+          "#ffffff"
+        ],
+        "country": "Uruguay"
+      },
+      {
         "squadId": "of_uy_juventud",
         "slug": "of_uy_juventud",
         "name": "Juventud",
@@ -13119,16 +13516,6 @@
         "colors": [
           "#063276",
           "#000000"
-        ],
-        "country": "Uruguay"
-      },
-      {
-        "squadId": "of_uy_miramar_misiones",
-        "slug": "of_uy_miramar_misiones",
-        "name": "Miramar Misiones",
-        "colors": [
-          "#195d48",
-          "#ffffff"
         ],
         "country": "Uruguay"
       },
@@ -13163,16 +13550,6 @@
         "country": "Uruguay"
       },
       {
-        "squadId": "of_uy_plaza_colonia",
-        "slug": "of_uy_plaza_colonia",
-        "name": "Plaza Colonia",
-        "colors": [
-          "#e2001a",
-          "#195d48"
-        ],
-        "country": "Uruguay"
-      },
-      {
         "squadId": "of_uy_progreso",
         "slug": "of_uy_progreso",
         "name": "Progreso",
@@ -13189,16 +13566,6 @@
         "colors": [
           "#6caddf",
           "#ffffff"
-        ],
-        "country": "Uruguay"
-      },
-      {
-        "squadId": "of_uy_river_plate_montevideo",
-        "slug": "of_uy_river_plate_montevideo",
-        "name": "River Plate",
-        "colors": [
-          "#ffffff",
-          "#e2001a"
         ],
         "country": "Uruguay"
       },
@@ -13220,7 +13587,7 @@
     "name": "Segunda Division",
     "country": "Uruguay",
     "iso2": "UY",
-    "season": "2025",
+    "season": "2027",
     "zones": [
       {
         "id": "prom",
@@ -13231,16 +13598,6 @@
       }
     ],
     "standings": [
-      {
-        "squadId": "of_uy_albion",
-        "slug": "of_uy_albion",
-        "name": "Albion",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Uruguay"
-      },
       {
         "squadId": "of_uy_artigas",
         "slug": "of_uy_artigas",
@@ -13258,16 +13615,6 @@
         "colors": [
           "#003da5",
           "#e2001a"
-        ],
-        "country": "Uruguay"
-      },
-      {
-        "squadId": "of_uy_central_espanol",
-        "slug": "of_uy_central_espanol",
-        "name": "Central Espanol",
-        "colors": [
-          "#e2001a",
-          "#003da5"
         ],
         "country": "Uruguay"
       },
@@ -13292,16 +13639,6 @@
         "country": "Uruguay"
       },
       {
-        "squadId": "of_uy_deportivo_maldonado",
-        "slug": "of_uy_deportivo_maldonado",
-        "name": "Deportivo Maldonado",
-        "colors": [
-          "#195d48",
-          "#ffffff"
-        ],
-        "country": "Uruguay"
-      },
-      {
         "squadId": "of_uy_fenix",
         "slug": "of_uy_fenix",
         "name": "Fenix",
@@ -13322,12 +13659,32 @@
         "country": "Uruguay"
       },
       {
+        "squadId": "of_uy_miramar_misiones",
+        "slug": "of_uy_miramar_misiones",
+        "name": "Miramar Misiones",
+        "colors": [
+          "#195d48",
+          "#ffffff"
+        ],
+        "country": "Uruguay"
+      },
+      {
         "squadId": "of_uy_oriental",
         "slug": "of_uy_oriental",
         "name": "Oriental",
         "colors": [
           "#000000",
           "#e2001a"
+        ],
+        "country": "Uruguay"
+      },
+      {
+        "squadId": "of_uy_plaza_colonia",
+        "slug": "of_uy_plaza_colonia",
+        "name": "Plaza Colonia",
+        "colors": [
+          "#e2001a",
+          "#195d48"
         ],
         "country": "Uruguay"
       },
@@ -13348,6 +13705,16 @@
         "colors": [
           "#1a1a6c",
           "#ffd700"
+        ],
+        "country": "Uruguay"
+      },
+      {
+        "squadId": "of_uy_river_plate_montevideo",
+        "slug": "of_uy_river_plate_montevideo",
+        "name": "River Plate",
+        "colors": [
+          "#ffffff",
+          "#e2001a"
         ],
         "country": "Uruguay"
       },
@@ -13379,7 +13746,7 @@
     "name": "Super League",
     "country": "Uzbekistan",
     "iso2": "UZ",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
@@ -13540,16 +13907,56 @@
     "name": "Primera Division",
     "country": "Venezuela",
     "iso2": "VE",
-    "season": "2025",
+    "season": "2027",
     "zones": [],
     "standings": [
       {
-        "squadId": "of_ve_aragua",
-        "slug": "of_ve_aragua",
-        "name": "Aragua",
+        "squadId": "es_6041",
+        "slug": "es_6041",
+        "name": "Monagas SC",
         "colors": [
-          "#ffd700",
-          "#e2001a"
+          "#212121",
+          "#000000"
+        ],
+        "country": "Venezuela"
+      },
+      {
+        "squadId": "es_10094",
+        "slug": "es_10094",
+        "name": "UCV FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Venezuela"
+      },
+      {
+        "squadId": "es_13783",
+        "slug": "es_13783",
+        "name": "Anzoátegui FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "Venezuela"
+      },
+      {
+        "squadId": "es_18995",
+        "slug": "es_18995",
+        "name": "Academia Puerto Cabello",
+        "colors": [
+          "#212121",
+          "#c60000"
+        ],
+        "country": "Venezuela"
+      },
+      {
+        "squadId": "es_21850",
+        "slug": "es_21850",
+        "name": "Rayo Zuliano",
+        "colors": [
+          "#0000ff",
+          "#fafafc"
         ],
         "country": "Venezuela"
       },
@@ -13584,16 +13991,6 @@
         "country": "Venezuela"
       },
       {
-        "squadId": "of_ve_deportivo_lara",
-        "slug": "of_ve_deportivo_lara",
-        "name": "Deportivo Lara",
-        "colors": [
-          "#e2001a",
-          "#ffffff"
-        ],
-        "country": "Venezuela"
-      },
-      {
         "squadId": "of_ve_deportivo_tachira",
         "slug": "of_ve_deportivo_tachira",
         "name": "Deportivo Tachira",
@@ -13620,16 +14017,6 @@
         "colors": [
           "#7b1c7a",
           "#ffffff"
-        ],
-        "country": "Venezuela"
-      },
-      {
-        "squadId": "of_ve_mineros_de_guayana",
-        "slug": "of_ve_mineros_de_guayana",
-        "name": "Mineros de Guayana",
-        "colors": [
-          "#000000",
-          "#ffd700"
         ],
         "country": "Venezuela"
       },
@@ -13671,9 +14058,109 @@
     "name": "Premier Soccer League",
     "country": "South Africa",
     "iso2": "ZA",
-    "season": "2024-25",
+    "season": "2026-27",
     "zones": [],
     "standings": [
+      {
+        "squadId": "es_7079",
+        "slug": "es_7079",
+        "name": "AmaZulu",
+        "colors": [
+          "#228b22",
+          "#000000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_13317",
+        "slug": "es_13317",
+        "name": "Marumo Gallants",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_18615",
+        "slug": "es_18615",
+        "name": "Stellenbosch",
+        "colors": [
+          "#a11b1b",
+          "#fee515"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_18825",
+        "slug": "es_18825",
+        "name": "Richards Bay FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_19298",
+        "slug": "es_19298",
+        "name": "TS Galaxy FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_20814",
+        "slug": "es_20814",
+        "name": "Sekhukhune United FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_21990",
+        "slug": "es_21990",
+        "name": "Milford FC",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_22348",
+        "slug": "es_22348",
+        "name": "Durban City",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_22350",
+        "slug": "es_22350",
+        "name": "Kruger United",
+        "colors": [
+          "#000000",
+          "#c60000"
+        ],
+        "country": "South Africa"
+      },
+      {
+        "squadId": "es_131361",
+        "slug": "es_131361",
+        "name": "Siwelele",
+        "colors": [
+          "#057932",
+          "#ffffff"
+        ],
+        "country": "South Africa"
+      },
       {
         "squadId": "of_za_chippa_united",
         "slug": "of_za_chippa_united",
@@ -13691,16 +14178,6 @@
         "colors": [
           "#ffd700",
           "#195d48"
-        ],
-        "country": "South Africa"
-      },
-      {
-        "squadId": "of_za_jomo_cosmos",
-        "slug": "of_za_jomo_cosmos",
-        "name": "Jomo Cosmos",
-        "colors": [
-          "#195d48",
-          "#ffd700"
         ],
         "country": "South Africa"
       },
@@ -13725,16 +14202,6 @@
         "country": "South Africa"
       },
       {
-        "squadId": "of_za_maritzburg_united",
-        "slug": "of_za_maritzburg_united",
-        "name": "Maritzburg United",
-        "colors": [
-          "#003da5",
-          "#ffd700"
-        ],
-        "country": "South Africa"
-      },
-      {
         "squadId": "of_za_orlando_pirates",
         "slug": "of_za_orlando_pirates",
         "name": "Orlando Pirates",
@@ -13751,16 +14218,6 @@
         "colors": [
           "#003da5",
           "#ffd700"
-        ],
-        "country": "South Africa"
-      },
-      {
-        "squadId": "of_za_university_of_pretoria",
-        "slug": "of_za_university_of_pretoria",
-        "name": "University of Pretoria",
-        "colors": [
-          "#7b1c3a",
-          "#ffffff"
         ],
         "country": "South Africa"
       }

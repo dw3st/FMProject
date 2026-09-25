@@ -7,7 +7,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { toDisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import { PlayerCard } from "@/GameInterface/Dashboard/PlayerCard";
-import { ClubLogo, clubLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import type { TransferRecord } from "@/types/transferTypes";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
@@ -24,6 +24,7 @@ export function PlayerScreen({
   const { t } = useTranslation();
   const { session, squad: mySquad, loading: saveLoading, refresh } = useGameSave();
   const [player, setPlayer] = useState<RosterPlayer | null>(null);
+  const [squadId, setSquadId] = useState("");
   const [squadName, setSquadName] = useState("");
   const [squadColors, setSquadColors] = useState<[string, string]>(["#555", "#888"]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,7 @@ export function PlayerScreen({
     if (isMyClub && mySquad) {
       const found = mySquad.players.find((p) => p.id === playerId) ?? null;
       setPlayer(found);
+      setSquadId(mySquad.id);
       setSquadName(mySquad.name);
       setSquadColors(mySquad.colors);
       setLoading(false);
@@ -50,6 +52,7 @@ export function PlayerScreen({
       .then((data: Squad) => {
         const found = data.players.find((p) => p.id === playerId) ?? null;
         setPlayer(found);
+        setSquadId(data.id);
         setSquadName(data.name);
         setSquadColors(data.colors);
         setLoading(false);
@@ -120,7 +123,7 @@ export function PlayerScreen({
           className="card-arcade rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4 md:gap-6 border border-border hover:border-primary/40 transition-colors no-underline group"
         >
           <ClubLogo
-            logoUrl={clubLogoUrl(league, club)}
+            logoUrl={squadLogoUrl(squadId)}
             primaryColor={squadColors[0]}
             secondaryColor={squadColors[1]}
             className="w-14 h-14 md:w-16 md:h-16 rounded-full shrink-0 border border-border/50"

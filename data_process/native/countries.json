@@ -1,0 +1,56 @@
+{
+    "England": {
+        "slug": "england",
+        "name": "England",
+        "flag": "gb-eng",
+        "iso2": "GB",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In England, football is tradition.</br>Built on structure, discipline, and respect for the game.<br>Every pass has purpose, every role is defined.<br>From muddy pitches to grand stadiums, the spirit endures.<br>the game belongs to those who honor its roots."
+    },
+    "France": {
+        "slug": "france",
+        "name": "France",
+        "flag": "fr",
+        "iso2": "FR",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In France, football is balance.</br>Technique meets physical power, flair meets control.<br>Players are shaped with precision and intelligence.<br>Strength and elegance move as one.<br>the game belongs to those who master both body and mind."
+    },
+    "Germany": {
+        "slug": "germany",
+        "name": "Germany",
+        "flag": "de",
+        "iso2": "DE",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Germany, football is efficiency.</br>Every action is calculated, every movement optimized.<br>Discipline drives the team forward, together as one.<br>No wasted effort, no lost focus.<br>the game belongs to those who execute without error."
+    },
+    "Italy": {
+        "slug": "italy",
+        "name": "Italy",
+        "flag": "it",
+        "iso2": "IT",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Italy, football is strategy.</br>The game is read, studied, and controlled.<br>Defense is an art, patience is a weapon.<br>Moments are chosen, not forced.<br>the game belongs to those who think before they act."
+    },
+    "Spain": {
+        "slug": "spain",
+        "name": "Spain",
+        "flag": "es",
+        "iso2": "ES",
+        "playable": true,
+        "continent": "Europe",
+        "headline": "In Spain, football is rhythm.</br>The ball moves, the team flows, space is created.<br>Short passes, constant motion, quiet control.<br>The game is dictated, not chased.<br>the game belongs to those who never let it stop."
+    },
+    "Brazil": {
+        "slug": "brazil",
+        "name": "Brazil",
+        "flag": "br",
+        "iso2": "BR",
+        "playable": true,
+        "continent": "South America",
+        "headline": "In Brazil, football is not learned—it is felt.</br>It lives in the streets, in the noise, in the rhythm of everyday life.<br>From simple beginnings came a style built on creativity and freedom.<br>Not just to win—but to play beautifully.<br>the game belongs to those who dare to play it with joy."
+    }
+}
