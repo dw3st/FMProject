@@ -28,7 +28,7 @@ import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES 
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineup } from "@/Domain/lineupHelpers";
-import { catalogLeagueBySquadId, competitionName } from "@/Domain/world/labels";
+import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -581,8 +581,7 @@ export function MatchPreviewScreen() {
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
   const [activeLeagueData, setActiveLeagueData] = useState<LeagueData | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
-  // Static catalog lookups: origin league (crest folder) + club slug/name for any squadId.
-  const catalogLeague = useMemo(() => catalogLeagueBySquadId(catalogLeagues), [catalogLeagues]);
+  // Static catalog lookups: club slug/name for any squadId.
   const catalogSlugs = useMemo(
     () => squadIdToClubSlugMap(catalogLeagues.flatMap((l) => l.standings)),
     [catalogLeagues],
@@ -829,13 +828,8 @@ export function MatchPreviewScreen() {
     : "Premier Division";
   const matchday = fixture?.round ?? 1;
 
-  // Crests are filed by the club's catalog (origin) league, not its current league.
-  const myLogoUrl  = mySquadId
-    ? squadLogoUrl(mySquadId, catalogLeague.get(mySquadId) ?? session.leagueSlug, catalogSlugs.get(mySquadId) ?? session.clubId)
-    : squadLogoUrl(session.clubId, session.leagueSlug);
-  const oppLogoUrl = opponentId
-    ? squadLogoUrl(opponentId, catalogLeague.get(opponentId) ?? session.leagueSlug, opponentFileSlug)
-    : undefined;
+  const myLogoUrl  = squadLogoUrl(mySquadId || session.clubId);
+  const oppLogoUrl = opponentId ? squadLogoUrl(opponentId) : undefined;
 
   // Assign home/away
   const homeSquadName    = isHome ? session.clubName       : opponentName;

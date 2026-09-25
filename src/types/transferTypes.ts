@@ -13,7 +13,7 @@ export interface TransferRecord {
   direction: "in" | "out"; // from the user-managed club's perspective
   status: "accepted" | "rejected";
   reason: string;
-  /** Set by GET /transfers — use with `/api/logos/:league/:club` */
+  /** Set by GET /transfers — used to build `/player/:league/:club/:id` links */
   fromLeagueSlug?: string;
   fromClubSlug?: string;
   toLeagueSlug?: string;

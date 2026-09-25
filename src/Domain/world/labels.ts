@@ -98,19 +98,3 @@ export function partitionDayMatches<T extends { competition: string }>(
     others: matches.filter((m) => !isPrimary(m)),
   };
 }
-
-/**
- * squadId → slug of the league where the club appears in the static `leagueData` catalog.
- * Crest files live under `Data/logos/{origin league}/`, so logo URLs must use this origin league
- * — never the club's current (per-save) league, which can differ once clubs move between leagues.
- * First occurrence wins.
- */
-export function catalogLeagueBySquadId(leagues: LeagueData[]): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const league of leagues) {
-    for (const row of league.standings) {
-      if (!m.has(row.squadId)) m.set(row.squadId, league.slug);
-    }
-  }
-  return m;
-}
