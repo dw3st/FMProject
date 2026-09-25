@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import type { Seed, SeedClub, SeedLeague, SeedPlayer } from "@/../scripts/openfootball/types";
 import { clubId, leagueSlug, normName, unitHash } from "@/../scripts/openfootball/ids";
 import { MAX_AGE, buildNamePools, mainRole, trimAndFill, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
-import { collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubs, matchPlayers } from "@/../scripts/openfootball/calibration";
+import { collectStatPoints, fitLogLine, fitPlayerCoeffs, matchClubs, matchPlayers, matchPlayersByTokenSubset } from "@/../scripts/openfootball/calibration";
 import {
   ECON_FIELDS, REP_FLOOR_MARGIN, STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer,
   type ClubFits, type EconSample,
@@ -122,6 +122,8 @@ interface RecalPair {
   squadFileId: string;
 }
 const recalPairs: RecalPair[] = [];
+/** Extra recal-only pairs found by the token-subset fallback (never fed into statPairs), per role. */
+const tokenSubsetExtraByRole: Record<MainRole, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
 const seedLeagueBySlug = new Map(seed.leagues.map((l) => [l.slug, l]));
 /** Seed league reputation on the /1000 scale used as the second calibration covariate. */
 const leagueRepOf = (seedSlug: string) => seedLeagueBySlug.get(seedSlug)!.reputation / 1000;
@@ -164,6 +166,22 @@ for (const seedSlug of Object.keys(OVERLAP).sort()) {
         squadFileId: tl.id,
       });
       players++;
+    }
+    // Recalibration-only fallback: never feeds statPairs (the of_* attribute fit stays on
+    // matchPlayers' exact-key pairs). Catches e.g. native "H. Kane" / fullName "Harry Edward Kane"
+    // against seed "Harry Kane" — every seed name token is present in the native's name∪fullName
+    // tokens, but the normalized keys never collide so matchPlayers never pairs them.
+    const extra = matchPlayersByTokenSubset(
+      tl.players.map((p) => ({ id: p.id, name: p.name, fullName: p.fullName, age: p.age })),
+      sps.map((p) => ({ id: p.id, name: p.name, age: p.age })),
+      pm,
+    );
+    for (const [tid, spid] of [...extra].sort((a, b) => byStr(a[0], b[0]))) {
+      const tlPlayer = tlById.get(tid)!;
+      const seedPlayer = spById.get(spid)!;
+      const role = getMainRole(tlPlayer.positions[0] ?? "CM");
+      recalPairs.push({ role, seedOverall: seedPlayer.overall, leagueRep, player: tlPlayer, tlLeague, squadFileId: tl.id });
+      tokenSubsetExtraByRole[role]++;
     }
   }
   pairCounts[tlLeague] = { clubs: clubPairNames[tlLeague]!.length, players };
@@ -439,6 +457,20 @@ for (const r of recalReport) {
   console.log(`  ${r.role.padEnd(11)} pairs ${String(r.n).padStart(4)}  ${fitStr}`);
 }
 console.log(`native players recalibrated: ${recalibratedCount}  (squad files rewritten: ${changedSquads.size})`);
+console.log("extra pairs from the recal-only token-subset fallback (matchPlayersByTokenSubset), per role:");
+for (const role of ["GK", "Defender", "Midfielder", "Forward"] as MainRole[]) console.log(`  ${role.padEnd(11)} +${tokenSubsetExtraByRole[role]}`);
+const pairedCheck = (needle: string) => {
+  // Token-containment, not substring — a native fullName carries extra middle names
+  // ("Jude Victor William Bellingham"), so a plain .includes("jude bellingham") never matches.
+  const needleTokens = normName(needle).split(" ").filter(Boolean);
+  const hit = recalPairs.find((p) => {
+    const tokens = new Set(normName(`${p.player.name} ${p.player.fullName ?? ""}`).split(" ").filter(Boolean));
+    return needleTokens.every((t) => tokens.has(t));
+  });
+  return hit ? `paired (seedOverall ${hit.seedOverall}, ${hit.player.name} / ${hit.player.fullName ?? ""})` : "NOT paired";
+};
+console.log(`  Harry Kane: ${pairedCheck("Harry Kane")}`);
+console.log(`  Jude Bellingham: ${pairedCheck("Jude Bellingham")}`);
 
 type WorldRankedPlayer = { id: string; name: string; club: string; league: string; overall: number };
 const worldRanked: WorldRankedPlayer[] = [];

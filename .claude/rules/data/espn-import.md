@@ -100,6 +100,17 @@ aberto do Leeds e do Fulham (o clube nativo vence, o `of_*` correspondente fica 
    "pedro" só casa no próprio clube, nos passes A/A2). Um candidato de outro país só entra quando a
    distância de linha é 0 (mesma linha, nunca linha vizinha). Ranqueado por mesmo país primeiro, depois
    distância de linha, depois `|gap − EXPECTED_AGE_GAP|`; empate entre os dois primeiros deixa sem casar.
+5. **Passe B2 (mundo inteiro, subconjunto de tokens no `fullName`)** — depois do passe B, para os mesmos
+   atletas elegíveis do passe B (ainda sem casar, sem candidato no próprio clube, idade e papel
+   conhecidos). Resolve o caso em que o `name` do mundo é abreviado e o `fullName` carrega tokens extras
+   que o `displayName`, mais curto, da ESPN nunca repete por inteiro como chave normalizada — por
+   exemplo mundo `"M. Salah"` / `fullName` `"Mohamed Salah Hamed Mahrous Ghaly"` contra o atleta
+   `"Mohamed Salah"`: o passe B precisa de uma chave igual e não encontra; o B2 olha só se todo token do
+   `displayName` do atleta (2+ tokens; um nome de um token nunca é elegível) está contido nos tokens do
+   `fullName` do jogador do mundo (nunca no `name` abreviado). Diferente do passe B, o papel tem que ser
+   **exatamente** igual (distância de linha 0, nunca linha vizinha) e o país não conta para nada. Sem
+   ranking: como no A2, as listas de candidatos são montadas para todos os elegíveis de uma vez contra o
+   que sobrou do passe B, e um par só é aceito quando é único dos dois lados.
 
 `typicalGap` (mediana de `espn.age − mundo.age` sobre os atletas casados com idade não nula) envelhece
 **o mundo inteiro** pelo mesmo valor: um atleta casado com idade nula na ESPN, e todo jogador que sobra
