@@ -53,7 +53,8 @@ interface Candidate { p: WorldPlayerRef; gap: number; rd: number; sameCountry: b
 /** True when the top two ranked candidates are indistinguishable (ignoring id) — an ambiguous match. */
 function isAmbiguous(ranked: Candidate[]): boolean {
   if (ranked.length < 2) return false;
-  const [x, y] = ranked;
+  const x = ranked[0]!;
+  const y = ranked[1]!;
   return x.sameCountry === y.sameCountry && x.rd === y.rd && Math.abs(x.gap - EXPECTED_AGE_GAP) === Math.abs(y.gap - EXPECTED_AGE_GAP);
 }
 
@@ -65,10 +66,13 @@ function isAmbiguous(ranked: Candidate[]): boolean {
  * against name or fullName) AND the athlete's own club (`p.squadId === a.teamSquadId`; skipped when
  * `teamSquadId` is null). Age window and role compatibility apply (null age / null role accepted, as a
  * neutral gap/roleDistance of 0). Ranked by roleDistance, then |gap − EXPECTED_AGE_GAP|; a tie between
- * the top two candidates (same club, same rank) is ambiguous and the athlete is left unmatched.
+ * the top two candidates (same club, same rank) is ambiguous and the athlete is left unmatched. An
+ * athlete who had at least one viable candidate at their own club (matched or ambiguous) is never
+ * considered in pass B, even unmatched — an ambiguous club-mate is not a license to reach elsewhere.
  *
- * Pass B ("global"): only athletes still unmatched after pass A. Requires a non-null age AND role, and
- * only considers name keys with ≥ 2 tokens (a one-token key such as "pedro" or "kepa" is only ever
+ * Pass B ("global"): only athletes still unmatched after pass A AND with no viable club candidate.
+ * Requires a non-null age AND role, and only considers name keys with ≥ 2 tokens (a one-token key
+ * such as "pedro" or "kepa" is only ever
  * matched at the athlete's own club, in pass A). A cross-country candidate (`p.country !== teamCountry`)
  * is only eligible when roleDistance is 0 (same line — never an adjacent one). Ranked by same-country
  * first, then roleDistance, then |gap − EXPECTED_AGE_GAP|; a tie between the top two is ambiguous and
@@ -92,6 +96,8 @@ export function matchPlayers(athletes: AthleteRef[], world: WorldPlayerRef[], ov
   const claimed = new Set<string>();
   const out = new Map<string, string>();
   const overrideTargets = new Set<string>();
+  /** Athletes with at least one viable pass-A candidate — barred from pass B even if left unmatched. */
+  const hadClubCandidate = new Set<string>();
 
   for (const a of athletes) {
     const o = overrides[a.espnId];
@@ -120,15 +126,17 @@ export function matchPlayers(athletes: AthleteRef[], world: WorldPlayerRef[], ov
         x.rd - y.rd
         || Math.abs(x.gap - EXPECTED_AGE_GAP) - Math.abs(y.gap - EXPECTED_AGE_GAP)
         || x.p.id.localeCompare(y.p.id));
-    if (ranked.length === 0 || isAmbiguous(ranked)) continue;
-    const best = ranked[0];
+    if (ranked.length === 0) continue;
+    hadClubCandidate.add(a.espnId);
+    if (isAmbiguous(ranked)) continue;
+    const best = ranked[0]!;
     claimed.add(best.p.id);
     out.set(a.espnId, best.p.id);
   }
 
-  // Pass B — global: only athletes still unmatched, only multi-token keys, country-aware.
+  // Pass B — global: only athletes still unmatched with no club candidate, only multi-token keys, country-aware.
   for (const a of athletes) {
-    if (out.has(a.espnId) || a.age === null || a.role === null) continue;
+    if (out.has(a.espnId) || a.age === null || a.role === null || hadClubCandidate.has(a.espnId)) continue;
     const age = a.age;
     const role = a.role;
     const pool = new Set<WorldPlayerRef>();
@@ -151,7 +159,7 @@ export function matchPlayers(athletes: AthleteRef[], world: WorldPlayerRef[], ov
         || Math.abs(x.gap - EXPECTED_AGE_GAP) - Math.abs(y.gap - EXPECTED_AGE_GAP)
         || x.p.id.localeCompare(y.p.id));
     if (ranked.length === 0 || isAmbiguous(ranked)) continue;
-    const best = ranked[0];
+    const best = ranked[0]!;
     claimed.add(best.p.id);
     out.set(a.espnId, best.p.id);
   }
