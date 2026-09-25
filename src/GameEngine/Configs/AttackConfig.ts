@@ -15,8 +15,8 @@
  */
 
 import type { TeamId } from '@/GameEngine/types';
-import type { TacticalStyle, BuildUpStyle, TeamWidth } from '@/types/tacticsTypes';
-import { axesFor } from '@/types/tacticsTypes';
+import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality } from '@/types/tacticsTypes';
+import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
 
@@ -272,9 +272,19 @@ export function getTeamTacticalStyle(team: TeamId): TacticalStyle {
   return TEAM_TACTICAL_STYLE[team];
 }
 
-/** Apply attack-side tactics (derived from a TacticalStyle) to the given team. */
-export function applyTeamAttackConfig(team: TeamId, style: TacticalStyle): void {
-  const axes = axesFor(style);
+/**
+ * Apply attack-side tactics (derived from a TacticalStyle) to the given team.
+ * `mentality` is a temporary live-match shift (see tacticsTypes.ts) layered on
+ * top of the style's axes. `TEAM_TACTICAL_STYLE` always records the style
+ * itself (never shifted by mentality) — `getTeamTacticalStyle` is what
+ * IntentDetection reads to gate team intents.
+ */
+export function applyTeamAttackConfig(
+  team: TeamId,
+  style: TacticalStyle,
+  mentality: Mentality = DEFAULT_MENTALITY,
+): void {
+  const axes = axesWithMentality(style, mentality);
   Object.assign(TEAM_PASS_WEIGHTS[team], BUILD_UP_PASS[axes.build_up]);
   Object.assign(TEAM_CARRY_WEIGHTS[team], BUILD_UP_CARRY[axes.build_up]);
   TEAM_ATTACK_WIDTH[team]    = WIDTH_ATTACK_WIDTH[axes.width];

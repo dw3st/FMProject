@@ -8,8 +8,8 @@
  */
 
 import type { TeamId } from '@/GameEngine/types';
-import type { PressingStyle, DefensiveLine, TeamWidth, TacticalStyle, TacticalAxes } from '@/types/tacticsTypes';
-import { axesFor } from '@/types/tacticsTypes';
+import type { PressingStyle, DefensiveLine, TeamWidth, TacticalStyle, TacticalAxes, Mentality } from '@/types/tacticsTypes';
+import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 
 // ── Default values ────────────────────────────────────────────────────────────
 
@@ -108,9 +108,20 @@ function mapAxesToDefense(t: TacticalAxes): Partial<DefenseConfigValues> {
   };
 }
 
-/** Apply defense-side tactics (derived from a TacticalStyle) to the given team. */
-export function applyTeamTacticsConfig(team: TeamId, style: TacticalStyle): void {
-  const axes = axesFor(style);
+/**
+ * Apply defense-side tactics (derived from a TacticalStyle) to the given team.
+ * `mentality` is a temporary live-match shift (see tacticsTypes.ts); it never
+ * changes what `getDefenseTacticKeys` reports as the team's pressing_style /
+ * defensive_line for intent-multiplier lookups other than the shifted values
+ * themselves — IntentDetection's own style gate reads `getTeamTacticalStyle`
+ * (AttackConfig.ts), which mentality does not touch.
+ */
+export function applyTeamTacticsConfig(
+  team: TeamId,
+  style: TacticalStyle,
+  mentality: Mentality = DEFAULT_MENTALITY,
+): void {
+  const axes = axesWithMentality(style, mentality);
   Object.assign(TEAM_CONFIGS[team], mapAxesToDefense(axes));
   TEAM_TACTIC_KEYS[team].pressingStyle = axes.pressing_style;
   TEAM_TACTIC_KEYS[team].defensiveLine = axes.defensive_line;
