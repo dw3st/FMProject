@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyEspn, type World } from "@/../scripts/espn/apply";
+import { applyEspn, PROMOTED_INCOME_FLOOR, type World } from "@/../scripts/espn/apply";
 import { buildAthlete, buildPlayer, buildSquad, buildTeam, fixtureSnapshot, fixtureWorld } from "@/../scripts/espn/fixtures";
 import type { EspnSnapshot } from "@/../scripts/espn/types";
 import { MIN_BY_ROLE, MIN_SQUAD } from "@/../scripts/openfootball/roster";
@@ -74,6 +74,8 @@ describe("applyEspn (fixture)", () => {
     expect(wolves.finances!.commercial).toBe(1750000);
     expect(wolves.finances!.total).toBe(3500000);
     const cov = squad("of_cov");
+    // Already well above PROMOTED_INCOME_FLOOR × the premier_league peers' min (33/47 at 6,000,000
+    // → floor 4,800,000) — the floor never kicks in here, Coventry stays at the plain scaled value.
     expect(cov.finances!.broadcasting).toBe(11428571); // 4,000,000 × (1 / 0.35), rounded
     expect(cov.finances!.commercial).toBe(11428571);
     expect(cov.finances!.total).toBe(cov.finances!.broadcasting + cov.finances!.commercial);
@@ -488,5 +490,83 @@ describe("applyEspn — schedule matchDays", () => {
     const finalLeague = r12.world.leagues.find((l) => l.slug === "grow_league")!;
     expect(finalLeague.standings.length).toBe(21);
     expect(r12.world.schedules.find((s) => s.slug === "grow_league")!.matchDays).toEqual([3, 6, 0]);
+  });
+});
+
+describe("applyEspn — promoted clubs never fall below PROMOTED_INCOME_FLOOR of their new league's peers", () => {
+  test("a promoted club scaled well below the floor is lifted to it; one already above the floor stays as scaled", () => {
+    const rich1 = mkSquad("rich1", "Rich One", "Flooria", [
+      buildPlayer("rich1_gk", "Rich One Keeper", 24, "GK", "rich1", 6, "Flooria"),
+      buildPlayer("rich1_def", "Rich One Back", 24, "Defender", "rich1", 6, "Flooria"),
+      buildPlayer("rich1_mid", "Rich One Mid", 24, "Midfielder", "rich1", 6, "Flooria"),
+      buildPlayer("rich1_fwd", "Rich One Fwd", 24, "Forward", "rich1", 6, "Flooria"),
+    ]);
+    rich1.finances = { broadcasting: 100000000, commercial: 100000000, total: 200000000, budget: 100000000, followers: 1000000 };
+    const rich2 = mkSquad("rich2", "Rich Two", "Flooria", [
+      buildPlayer("rich2_gk", "Rich Two Keeper", 24, "GK", "rich2", 6, "Flooria"),
+      buildPlayer("rich2_def", "Rich Two Back", 24, "Defender", "rich2", 6, "Flooria"),
+      buildPlayer("rich2_mid", "Rich Two Mid", 24, "Midfielder", "rich2", 6, "Flooria"),
+      buildPlayer("rich2_fwd", "Rich Two Fwd", 24, "Forward", "rich2", 6, "Flooria"),
+    ]);
+    rich2.finances = { broadcasting: 120000000, commercial: 90000000, total: 210000000, budget: 100000000, followers: 1000000 };
+    // Scaled (× 1/0.35 ≈ 2.857) lands far below PROMOTED_INCOME_FLOOR × the peers' min (rich1/rich2).
+    const poorClub = mkSquad("poorClub", "Poor Club", "Flooria", [
+      buildPlayer("poor_gk", "Poor Club Keeper", 24, "GK", "poorClub", 3, "Flooria"),
+      buildPlayer("poor_def", "Poor Club Back", 24, "Defender", "poorClub", 3, "Flooria"),
+      buildPlayer("poor_mid", "Poor Club Mid", 24, "Midfielder", "poorClub", 3, "Flooria"),
+      buildPlayer("poor_fwd", "Poor Club Fwd", 24, "Forward", "poorClub", 3, "Flooria"),
+    ]);
+    poorClub.finances = { broadcasting: 1000000, commercial: 1000000, total: 2000000, budget: 1000000, followers: 100000 };
+    // Scaled lands above the floor on both lines — should be left as the plain scaled value.
+    const midClub = mkSquad("midClub", "Mid Club", "Flooria", [
+      buildPlayer("mid_gk", "Mid Club Keeper", 24, "GK", "midClub", 5, "Flooria"),
+      buildPlayer("mid_def", "Mid Club Back", 24, "Defender", "midClub", 5, "Flooria"),
+      buildPlayer("mid_mid", "Mid Club Mid", 24, "Midfielder", "midClub", 5, "Flooria"),
+      buildPlayer("mid_fwd", "Mid Club Fwd", 24, "Forward", "midClub", 5, "Flooria"),
+    ]);
+    midClub.finances = { broadcasting: 35000000, commercial: 30000000, total: 65000000, budget: 30000000, followers: 500000 };
+
+    const world: World = {
+      leagues: [
+        { slug: "richTop", name: "Rich Top", country: "Flooria", season: "2024-25", standings: [
+          { squadId: "rich1", slug: "rich1", name: "Rich One", colors: ["#111111", "#ffffff"], country: "Flooria" },
+          { squadId: "rich2", slug: "rich2", name: "Rich Two", colors: ["#111111", "#ffffff"], country: "Flooria" },
+        ] },
+        { slug: "poorBottom", name: "Poor Bottom", country: "Flooria", season: "2024-25", standings: [
+          { squadId: "poorClub", slug: "poorClub", name: "Poor Club", colors: ["#111111", "#ffffff"], country: "Flooria" },
+          { squadId: "midClub", slug: "midClub", name: "Mid Club", colors: ["#111111", "#ffffff"], country: "Flooria" },
+        ] },
+      ],
+      squads: new Map([["richTop", [rich1, rich2]], ["poorBottom", [poorClub, midClub]]]),
+      schedules: [],
+      pyramids: { Flooria: { country: "Flooria", levels: [
+        { tier: 1, groups: [{ leagueSlug: "richTop", promote: 0, relegate: 2 }] },
+        { tier: 2, groups: [{ leagueSlug: "poorBottom", promote: 2, relegate: 0 }] },
+      ] } },
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [{ slug: "richTop", code: "ft.1", name: "Rich Top", season: "2026-27", teams: [
+        buildTeam("R1", "Rich One", []),
+        buildTeam("R2", "Rich Two", []),
+        buildTeam("PC", "Poor Club", []),
+        buildTeam("MC", "Mid Club", []),
+      ] }],
+    };
+    const testOpts = { leagueMap: [{ slug: "richTop", code: "ft.1" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r13 = applyEspn(world, snap, testOpts);
+    const out = (id: string) => [...r13.world.squads.values()].flat().find((s) => s.id === id)!;
+
+    expect(PROMOTED_INCOME_FLOOR).toBe(0.8);
+    // Floor = 0.8 × min(rich1, rich2) = 0.8 × 100,000,000 (broadcasting) / 0.8 × 90,000,000 (commercial).
+    const poor = out("poorClub");
+    expect(poor.finances!.broadcasting).toBe(80000000); // scaled 2,857,143 lifted to the floor
+    expect(poor.finances!.commercial).toBe(72000000);
+    expect(poor.finances!.total).toBe(152000000);
+
+    const mid = out("midClub");
+    expect(mid.finances!.broadcasting).toBe(100000000); // scaled 35,000,000 × (1/0.35), already above the floor
+    expect(mid.finances!.commercial).toBe(85714286); // scaled 30,000,000 × (1/0.35), already above the floor
+    expect(mid.finances!.total).toBe(mid.finances!.broadcasting + mid.finances!.commercial);
   });
 });
