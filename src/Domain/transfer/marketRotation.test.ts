@@ -138,7 +138,7 @@ describe("dailyMarketTick", () => {
   });
 });
 
-describe("dailyMarketTick — frozenSquadIds / marketFrozen", () => {
+describe("dailyMarketTick — marketFrozen / excludePlayerSquadId", () => {
   async function loadLeague(slug: string): Promise<Squad[]> {
     const out: Squad[] = [];
     for await (const f of new Bun.Glob(`src/example_data/squads/${slug}/*.json`).scan(".")) {
@@ -170,21 +170,6 @@ describe("dailyMarketTick — frozenSquadIds / marketFrozen", () => {
     }
     return moves;
   }
-
-  test("clubes congelados não compram nem vendem; o resto do mercado continua", async () => {
-    const england = await loadLeague("premier_league");
-    const brazil = await loadLeague("brazil_serie_a");
-    const squads = [...england, ...brazil];
-    const brazilIds = new Set(brazil.map((s) => s.id));
-
-    // Sem congelar, o mercado mexe em clubes brasileiros (senão o teste não prova nada).
-    const free = runTicks(squads, 60);
-    expect(free.some(([s, b]) => brazilIds.has(s) || brazilIds.has(b))).toBe(true);
-
-    const frozen = runTicks(squads, 60, { frozenSquadIds: brazilIds });
-    expect(frozen.length).toBeGreaterThan(0);
-    expect(frozen.filter(([s, b]) => brazilIds.has(s) || brazilIds.has(b))).toEqual([]);
-  });
 
   test("marketFrozen: true stops every club from trading, and leaves the market untouched", async () => {
     const england = await loadLeague("premier_league");

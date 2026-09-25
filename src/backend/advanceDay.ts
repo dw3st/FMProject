@@ -428,111 +428,114 @@ export async function advanceOneDay(
     await saveService.writeDayLog(saveId, currentDate, { saveId, date: currentDate, events: storedEvents });
 
     // ── Transfer market tick ─────────────────────────────────────────────────
-    let workingMeta = meta;
-    const allSquadsMarket = await saveService.getAllSquads(saveId);
-    const rawMarket = await saveService.getMarket(saveId);
-    const marketForTick = rawMarket
-      ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] }
-      : initMarketState(allSquadsMarket);
-    const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
-    const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
+    // When the whole market is frozen (start-kit pre-simulation), dailyMarketTick would be a
+    // guaranteed no-op — skip loading every squad + the market file for it (~25 MB/day).
+    if (!options.marketFrozen) {
+      let workingMeta = meta;
+      const allSquadsMarket = await saveService.getAllSquads(saveId);
+      const rawMarket = await saveService.getMarket(saveId);
+      const marketForTick = rawMarket
+        ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] }
+        : initMarketState(allSquadsMarket);
+      const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
+      const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
 
-    const { updatedMarket, completedTransfers } = dailyMarketTick(
-      marketForTick,
-      allSquadsMarket,
-      currentDate,
-      defaultRng,
-      {
-        excludePlayerSquadId: resolvedPlayerSquadId,
-        marketFrozen: options.marketFrozen,
-        playerSellList: marketForTick.playerSellList,
-        playerSquad: playerSquadForMarket,
-      },
-    );
-
-    for (const tx of completedTransfers) {
-      const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
-      const sellerResolved = await saveService.resolveSquadId(saveId, tx.sellerSquad.id);
-      if (!buyerResolved || !sellerResolved) continue;
-
-      const buying = withDefaultFinances(tx.updatedBuyer);
-      const selling = withDefaultFinances(tx.updatedSeller);
-
-      const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
-      const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
-
-      workingMeta = await executeTransferFee(
-        saveId,
-        workingMeta,
+      const { updatedMarket, completedTransfers } = dailyMarketTick(
+        marketForTick,
+        allSquadsMarket,
+        currentDate,
+        defaultRng,
         {
-          squad: buying,
-          leagueSlug: buyerResolved.leagueSlug,
-          clubSlug: buyerResolved.clubSlug,
-          isPlayerClub: isBuyerPlayer,
+          excludePlayerSquadId: resolvedPlayerSquadId,
+          playerSellList: marketForTick.playerSellList,
+          playerSquad: playerSquadForMarket,
         },
-        {
-          squad: selling,
-          leagueSlug: sellerResolved.leagueSlug,
-          clubSlug: sellerResolved.clubSlug,
-          isPlayerClub: isSellerPlayer,
-        },
-        tx.fee,
-        saveService,
       );
 
-      const transferId = randomUUID();
-      const record: TransferRecord = {
-        id: transferId,
-        date: currentDate,
-        playerId: tx.player.id,
-        playerName: tx.player.name,
-        playerPosition: tx.player.positions[0] ?? "—",
-        playerAge: tx.player.age,
-        fromSquadId: tx.sellerSquad.id,
-        fromSquadName: tx.sellerSquad.name,
-        toSquadId: tx.buyerSquad.id,
-        toSquadName: tx.buyerSquad.name,
-        fee: tx.fee,
-        direction: isBuyerPlayer ? "in" : isSellerPlayer ? "out" : "in",
-        status: "accepted",
-        reason: "AI transfer",
-      };
-      await saveService.appendTransfer(saveId, record);
-      await saveService.appendDayEvent(saveId, currentDate, {
-        kind: "transfer_ref",
-        transferId,
-      });
+      for (const tx of completedTransfers) {
+        const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
+        const sellerResolved = await saveService.resolveSquadId(saveId, tx.sellerSquad.id);
+        if (!buyerResolved || !sellerResolved) continue;
 
-      if (isBuyerPlayer) {
-        await emitInboxMessage(
+        const buying = withDefaultFinances(tx.updatedBuyer);
+        const selling = withDefaultFinances(tx.updatedSeller);
+
+        const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
+        const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
+
+        workingMeta = await executeTransferFee(
           saveId,
-          buildTransferInMessage({
-            date:       currentDate,
-            transferId,
-            playerId:   tx.player.id,
-            playerName: tx.player.name,
-            fromClub:   tx.sellerSquad.name,
-            feeEuros:   tx.fee,
-          }),
+          workingMeta,
+          {
+            squad: buying,
+            leagueSlug: buyerResolved.leagueSlug,
+            clubSlug: buyerResolved.clubSlug,
+            isPlayerClub: isBuyerPlayer,
+          },
+          {
+            squad: selling,
+            leagueSlug: sellerResolved.leagueSlug,
+            clubSlug: sellerResolved.clubSlug,
+            isPlayerClub: isSellerPlayer,
+          },
+          tx.fee,
           saveService,
         );
-      } else if (isSellerPlayer) {
-        await emitInboxMessage(
-          saveId,
-          buildTransferOutMessage({
-            date:       currentDate,
-            transferId,
-            playerId:   tx.player.id,
-            playerName: tx.player.name,
-            toClub:     tx.buyerSquad.name,
-            feeEuros:   tx.fee,
-          }),
-          saveService,
-        );
+
+        const transferId = randomUUID();
+        const record: TransferRecord = {
+          id: transferId,
+          date: currentDate,
+          playerId: tx.player.id,
+          playerName: tx.player.name,
+          playerPosition: tx.player.positions[0] ?? "—",
+          playerAge: tx.player.age,
+          fromSquadId: tx.sellerSquad.id,
+          fromSquadName: tx.sellerSquad.name,
+          toSquadId: tx.buyerSquad.id,
+          toSquadName: tx.buyerSquad.name,
+          fee: tx.fee,
+          direction: isBuyerPlayer ? "in" : isSellerPlayer ? "out" : "in",
+          status: "accepted",
+          reason: "AI transfer",
+        };
+        await saveService.appendTransfer(saveId, record);
+        await saveService.appendDayEvent(saveId, currentDate, {
+          kind: "transfer_ref",
+          transferId,
+        });
+
+        if (isBuyerPlayer) {
+          await emitInboxMessage(
+            saveId,
+            buildTransferInMessage({
+              date:       currentDate,
+              transferId,
+              playerId:   tx.player.id,
+              playerName: tx.player.name,
+              fromClub:   tx.sellerSquad.name,
+              feeEuros:   tx.fee,
+            }),
+            saveService,
+          );
+        } else if (isSellerPlayer) {
+          await emitInboxMessage(
+            saveId,
+            buildTransferOutMessage({
+              date:       currentDate,
+              transferId,
+              playerId:   tx.player.id,
+              playerName: tx.player.name,
+              toClub:     tx.buyerSquad.name,
+              feeEuros:   tx.fee,
+            }),
+            saveService,
+          );
+        }
       }
-    }
 
-    await saveService.saveMarket(saveId, updatedMarket);
+      await saveService.saveMarket(saveId, updatedMarket);
+    }
 
     // ── Financial updates ────────────────────────────────────────────────────
     // Load today's player league fixtures for ticket revenue

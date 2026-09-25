@@ -69,8 +69,6 @@ export interface DailyMarketTickResult {
 export interface DailyMarketTickOptions {
   /** Human-controlled club: excluded from AI needs refresh, buying, and selling in this tick. */
   excludePlayerSquadId?: string | null;
-  /** Clubs out of the market this tick: no needs refresh, no buying, no selling. */
-  frozenSquadIds?: ReadonlySet<string>;
   /**
    * The whole market sits out this tick: no needs refresh, no buying, no selling, no sell-list
    * matching, for every club. Used by the start-kit pre-simulation — every club is pickable for
@@ -198,8 +196,6 @@ export function dailyMarketTick(
   if (options?.marketFrozen) return { updatedMarket: market, completedTransfers: [] };
 
   const excludePlayerSquadId = options?.excludePlayerSquadId ?? null;
-  const frozen = options?.frozenSquadIds;
-  const isFrozen = (id: string) => frozen?.has(id) ?? false;
   const squadById = new Map(allSquads.map((s) => [s.id, s] as const));
   let shuffledTeamIds = [...market.shuffledTeamIds];
   let rotationIndex = market.rotationIndex;
@@ -219,7 +215,6 @@ export function dailyMarketTick(
       rotationIndex++;
       guard++;
       if (excludePlayerSquadId && candidate === excludePlayerSquadId) continue;
-      if (isFrozen(candidate)) continue;
       id = candidate;
       break;
     }
@@ -244,8 +239,7 @@ export function dailyMarketTick(
     .filter(
       (id) =>
         (profiles[id]?.needs?.length ?? 0) > 0 &&
-        (!excludePlayerSquadId || id !== excludePlayerSquadId) &&
-        !isFrozen(id),
+        (!excludePlayerSquadId || id !== excludePlayerSquadId),
     );
   const pickIdx = sampleIndices(poolIds.length, TEAMS_PER_DAY_ATTEMPTS, rng);
 
@@ -258,8 +252,7 @@ export function dailyMarketTick(
     if (!buyerSquad) continue;
 
     const profile = profiles[buyerId] ?? null;
-    // Frozen clubs are not candidate sellers either.
-    const latestList = Array.from(squads.values()).filter((s) => !isFrozen(s.id));
+    const latestList = Array.from(squads.values());
     const attempt = processTeamTransferAttempt(
       buyerSquad,
       profile,
@@ -342,7 +335,7 @@ export function dailyMarketTick(
       playerSellList,
       playerSquad,
       squads,
-      frozen ? Object.fromEntries(Object.entries(profiles).filter(([id]) => !isFrozen(id))) : profiles,
+      profiles,
       excludePlayerSquadId,
       rng,
     );
