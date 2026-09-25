@@ -4,7 +4,7 @@ import { planLineup, type LeagueRef } from "@/../scripts/espn/lineup";
 import { matchClubs } from "@/../scripts/espn/matchClubs";
 import { espnRole, matchPlayers, type AthleteRef } from "@/../scripts/espn/matchPlayers";
 import type { EspnAthlete, EspnSnapshot, EspnTeam, LeagueMapEntry } from "@/../scripts/espn/types";
-import { unitHash } from "@/../scripts/openfootball/ids";
+import { normName, unitHash } from "@/../scripts/openfootball/ids";
 import { coachName } from "@/../scripts/openfootball/derive";
 import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides } from "@/../scripts/openfootball/pyramid";
 import { MAX_SQUAD, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
@@ -84,6 +84,8 @@ export const MIN_LINE_FOR_CLUB_BASE = 3;
 export const NATIVE_LEAGUES = new Set(["premier_league", "bundesliga", "la_liga", "serie_a", "ligue_1", "brazil_serie_a", "brazil_serie_b", "brazil_serie_c"]);
 /** A new-club roster needs at least this share of matched players from one displaced/removed club to be flagged as a suspected missed club match. */
 export const SUSPECT_CLUB_SHARE = 0.5;
+/** ...and at least this many matched players from that one club (a 2/2 share of 1.0 is too thin a signal). */
+export const MIN_SUSPECT_MATCHED = 3;
 const AGE_BANDS: Array<[string, number, number]> = [["≤21", 0, 21], ["22–25", 22, 25], ["26–29", 26, 29], ["30–33", 30, 33], ["34+", 34, 99]];
 
 const byId = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
@@ -95,8 +97,18 @@ const median = (xs: number[]) => {
   return s.length === 0 ? 0 : s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
 };
 const hex = (c: string | null, fallback: string) => (c && /^[0-9a-f]{6}$/i.test(c) ? `#${c.toLowerCase()}` : fallback);
-/** A team name that looks like a reserve/B side ("Real Sociedad II", "Barcelona B", "PSG 2"). */
-const isReserveTeam = (name: string) => /\b(?:II|B|2)$/.test(name) || name.endsWith(" II");
+const RESERVE_SUFFIX_RE = /\s+(?:II|B|2)$/;
+/**
+ * A team name looks like a reserve/B side only when stripping the suffix leaves the (normalized)
+ * name of ANOTHER real team in the snapshot — e.g. "Real Sociedad II" is a reserve side because
+ * "Real Sociedad" is also a team, but "Willem II" or "Juan Pablo II" are not (no team named just
+ * "Willem" / "Juan Pablo" exists) — the suffix there is part of the club's actual identity.
+ */
+function isReserveTeam(name: string, otherTeamNames: ReadonlySet<string>): boolean {
+  const m = RESERVE_SUFFIX_RE.exec(name);
+  if (!m) return false;
+  return otherTeamNames.has(normName(name.slice(0, m.index)));
+}
 
 /** "2024-25" → "2026-27", "2025" → "2027". */
 export function bumpSeason(season: string): string {
@@ -175,6 +187,7 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   // ── Players ──────────────────────────────────────────────────────────────
   // Dedupe ESPN athletes listed at more than one team (loans, reserve-side double-listing): keep the
   // non-reserve team, then the higher tier, then the lower team id; drop the rest entirely.
+  const allSnapshotTeamNames = new Set(snap.leagues.flatMap((l) => l.teams).map((t) => normName(t.name)));
   interface AthleteEntry { a: EspnAthlete; team: EspnTeam; leagueSlug: string }
   const allAthleteEntries: AthleteEntry[] = [];
   for (const m of applied) for (const t of teamsOf(m.slug)) for (const a of [...t.athletes].sort((x, y) => byId(x.id, y.id)))
@@ -189,8 +202,8 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   for (const [athleteId, entries] of entriesByAthleteId) {
     if (entries.length === 1) { winnerTeamOf.set(athleteId, entries[0]!.team.id); continue; }
     const ranked = [...entries].sort((x, y) => {
-      const rx = isReserveTeam(x.team.name) ? 1 : 0;
-      const ry = isReserveTeam(y.team.name) ? 1 : 0;
+      const rx = isReserveTeam(x.team.name, allSnapshotTeamNames) ? 1 : 0;
+      const ry = isReserveTeam(y.team.name, allSnapshotTeamNames) ? 1 : 0;
       if (rx !== ry) return rx - ry;
       const tx = pyramidTier(world.pyramids, x.leagueSlug);
       const ty = pyramidTier(world.pyramids, y.leagueSlug);
@@ -313,7 +326,7 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     let topCount = 0;
     for (const [origin, count] of om) if (count > topCount) { topCount = count; topOrigin = origin; }
     const share = topCount / total;
-    if (share >= SUSPECT_CLUB_SHARE && (movedDown.has(topOrigin) || removed.has(topOrigin))) {
+    if (topCount >= MIN_SUSPECT_MATCHED && share >= SUSPECT_CLUB_SHARE && (movedDown.has(topOrigin) || removed.has(topOrigin))) {
       suspectNewClubs.push({
         newId: sid, espnName: built.get(sid)!.name, league: leagueOfFinal.get(sid)!,
         fromSquadId: topOrigin, fromName: squadById.get(topOrigin)?.name ?? topOrigin, share,
@@ -339,7 +352,9 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         .filter((p) => !claimedPlayers.has(p.id))
         .map((p) => {
           const newAge = p.age + typicalGap;
-          return { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p)) };
+          const aged: RosterPlayer & { fullName?: string } = { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p)) };
+          delete aged.overallAvg;
+          return aged;
         });
       built.set(id, s);
     }

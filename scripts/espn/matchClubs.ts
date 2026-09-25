@@ -90,6 +90,12 @@ export function matchClubs(teams: EspnClubRef[], world: WorldClubRef[], override
 
       let cand: WorldClubRef | undefined;
       if (pass.via === "exact") {
+        // preferSameLeague narrows over the FULL name-candidate set, before claimed clubs are
+        // filtered out. So if the same-league candidate is itself already claimed by an earlier
+        // ESPN team, filtering afterwards leaves zero candidates here — this team resolves to
+        // "new" rather than falling back to an other-league club that the narrowing step already
+        // discarded. Deliberately conservative: an other-league fallback would risk assigning the
+        // wrong club (e.g. a promoted/relegated namesake) rather than surfacing the miss.
         const cands = preferSameLeague(nameCandidates(t, world, pass.same), t).filter((c) => !claimed.has(c.id));
         cand = cands.length === 1 ? cands[0] : undefined;
       } else {
