@@ -249,4 +249,38 @@ describe("matchPlayers — pass A2 (club, surname fallback)", () => {
     const m = matchPlayers([ath("a1", "Diego Ramos", 25, "Forward", "home")], w, {});
     expect(m.has("a1")).toBe(false);
   });
+
+  test("matches via the initial alone when the world player has no fullName at all", () => {
+    const w = [wp("q1", "T. Hübers", 30, "Defender", "home")]; // no fullName — "timo" never appears anywhere
+    const m = matchPlayers([ath("a1", "Timo Hübers", 30, "Defender", "home")], w, {});
+    expect(m.get("a1")).toBe("q1");
+  });
+
+  test("A2 rejects a GK vs outfield candidate even with matching surname + initial", () => {
+    const w = [wp("q1", "T. Hübers", 29, "GK", "home", "Timo Bernd Hübers")];
+    const m = matchPlayers([ath("a1", "Timo Hübers", 30, "Defender", "home")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("A2 rejects a candidate whose age gap falls outside [0,3]", () => {
+    const w = [wp("q1", "T. Hübers", 26, "Defender", "home", "Timo Bernd Hübers")]; // gap 4
+    const m = matchPlayers([ath("a1", "Timo Hübers", 30, "Defender", "home")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("two-sided uniqueness: two athletes whose sole A2 candidate is the same world player match neither", () => {
+    // "Brothers" scenario: both athletes reduce to surname "ferreira" + initial "m" against the
+    // one abbreviated world record, so each one's OWN candidate list has exactly one entry — but
+    // that entry is shared, so a purely one-sided check would let whichever is processed first
+    // claim it. Ages are chosen so both fall inside the [0,3] age-gap window against the world
+    // player's age (21): Mateus gap 3, Marco gap 1.
+    const w = [wp("q1", "M. Ferreira", 21, "Midfielder", "home")];
+    const m = matchPlayers(
+      [ath("a1", "Mateus Ferreira", 24, "Midfielder", "home"), ath("a2", "Marco Ferreira", 22, "Midfielder", "home")],
+      w,
+      {},
+    );
+    expect(m.has("a1")).toBe(false);
+    expect(m.has("a2")).toBe(false);
+  });
 });
