@@ -3,6 +3,7 @@ import { Application, Container, Graphics, Text, TextStyle } from "pixi.js";
 import { tickState, getBallPos } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
+import { createPump, defaultNow } from "@/GraficsEngine/pump";
 import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
@@ -443,21 +444,28 @@ export function PixiPitch({
         stateRef.current = normalizeGameState(s);
       });
 
-      // ── Simulation clock ──
-      // Drives tickState from its own pulse (Worker timer, or a main-thread
-      // setInterval fallback) instead of the Pixi ticker (rAF), so the match
-      // keeps advancing while the tab is backgrounded — rAF is frozen/throttled
-      // by the browser in that case, Worker timers are not. See simClock.ts and
-      // .claude/rules — spec: docs/superpowers/specs/2026-09-25-match-live-controls-design.md §3.
-      // The Pixi ticker below only renders `stateRef.current`; it never calls tickState.
-      const simClock = startSimClock((elapsedRealSeconds) => {
-        if (pausedRef.current) return;
+      // ── Simulation pump ──
+      // `pump` is the single shared elapsed-time tracker (see pump.ts). It is
+      // called from BOTH the Pixi ticker (every rendered frame — smooth,
+      // ~60fps, while the tab is visible) and simClock (a Worker pulse —
+      // ~10fps, keeps firing while the tab is hidden and rAF is frozen).
+      // Sharing one pump instance means there's no double-counting: whichever
+      // caller runs first in a given real-time slice consumes it.
+      // Spec: docs/superpowers/specs/2026-09-25-match-live-controls-design.md §3.
+      const pump = createPump(defaultNow);
+
+      const pumpSimulation = () => {
+        const elapsedRealSeconds = pump(pausedRef.current);
+        if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
-        if (gameSeconds <= 0) return;
         const { state: nextState } = advanceSim(stateRef.current, gameSeconds);
         stateRef.current = nextState;
         gameBus.emit('stateChanged', stateRef.current);
-      });
+      };
+
+      // Keeps the match advancing while the tab is backgrounded — rAF is
+      // frozen/throttled by the browser in that case, Worker timers are not.
+      const simClock = startSimClock(pumpSimulation);
 
       // ── Through-ball cells cache ──
       // Engine emits `throughBallScores` from decideBallHolder when debug is on.
@@ -585,11 +593,15 @@ export function PixiPitch({
       app.canvas.addEventListener('click', handleCanvasClick);
 
       // ── Animation loop ──
-      // Rendering only — the simulation itself is advanced by simClock above,
-      // independent of this rAF-driven ticker. This ticker still runs (or is
-      // stopped on pause, see the paused/keepTickerAlive effect) purely to draw
-      // `stateRef.current` and to keep debug-overlay/testCommand visuals live.
+      // Pumps the simulation once per rendered frame (smooth ~60fps while the
+      // tab is visible — see pumpSimulation above) and then renders
+      // `stateRef.current`. While paused, `pumpSimulation()` is still called
+      // every frame — including when `keepTickerAlive` keeps the ticker
+      // running — but `pump(true)` returns 0, so it's a no-op that only
+      // advances the shared pump's internal clock (no backlog on resume).
       app.ticker.add(() => {
+        pumpSimulation();
+
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
         const currentPlayerIds = new Set(stateRef.current.players.map(p => p.id));
