@@ -83,6 +83,15 @@ export interface ApplyResult {
 export const NEW_CLUB_SHIFT = -0.3;
 export const MIN_MATCHED_FOR_CLUB_BASE = 5;
 export const MIN_LINE_FOR_CLUB_BASE = 3;
+/**
+ * A club promoted to a higher (numerically lower) pyramid tier never has its broadcasting or
+ * commercial income scaled below this share of the LOWEST value among its new league's own peers
+ * (clubs already there this run — not new, not themselves moved). Guards against a promoted club
+ * dragging in a calibration scale far below its destination league's (e.g. an openfootball
+ * second-division club promoted into a natively-calibrated top flight) — the tier ratio alone can
+ * leave it several times poorer than the division's actual bottom club.
+ */
+export const PROMOTED_INCOME_FLOOR = 0.8;
 export const NATIVE_LEAGUES = new Set(["premier_league", "bundesliga", "la_liga", "serie_a", "ligue_1", "brazil_serie_a", "brazil_serie_b", "brazil_serie_c"]);
 /** A new-club roster needs at least this share of matched players from one displaced/removed club to be flagged as a suspected missed club match. */
 export const SUSPECT_CLUB_SHARE = 0.5;
@@ -379,6 +388,7 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   // against the live-save `Squad`, not the pipeline's `SquadFile`. Only clubs already in the
   // world can appear in `lineup.moves` (a brand-new `es_` club has no `from` league), so this
   // never touches `newClubIds` — those get their finances from peer medians below.
+  const movedSquadIds = new Set(lineup.moves.map((mv) => mv.squadId));
   for (const mv of lineup.moves) {
     const s = built.get(mv.squadId);
     if (!s?.finances) continue;
@@ -386,8 +396,22 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     const newTier = pyramidTier(world.pyramids, mv.to);
     if (oldTier === newTier) continue;
     const ratio = tierIncomeRatio(oldTier, newTier);
-    const broadcasting = Math.round(s.finances.broadcasting * ratio);
-    const commercial = Math.round(s.finances.commercial * ratio);
+    let broadcasting = Math.round(s.finances.broadcasting * ratio);
+    let commercial = Math.round(s.finances.commercial * ratio);
+    if (newTier < oldTier) {
+      // Promoted — never below PROMOTED_INCOME_FLOOR of the lowest broadcasting/commercial among
+      // the destination league's own peers (clubs already there this run: not new, not moved).
+      const peers = (finalMembers.get(mv.to) ?? [])
+        .filter((id) => !newClubIds.has(id) && !movedSquadIds.has(id))
+        .map((id) => built.get(id))
+        .filter((x): x is SquadFile => !!x?.finances);
+      if (peers.length > 0) {
+        const floorBroadcasting = Math.round(Math.min(...peers.map((p) => p.finances!.broadcasting)) * PROMOTED_INCOME_FLOOR);
+        const floorCommercial = Math.round(Math.min(...peers.map((p) => p.finances!.commercial)) * PROMOTED_INCOME_FLOOR);
+        broadcasting = Math.max(broadcasting, floorBroadcasting);
+        commercial = Math.max(commercial, floorCommercial);
+      }
+    }
     s.finances = { ...s.finances, broadcasting, commercial, total: broadcasting + commercial };
   }
 
