@@ -8,7 +8,9 @@ import { normName, unitHash } from "@/../scripts/openfootball/ids";
 import { coachName } from "@/../scripts/openfootball/derive";
 import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides } from "@/../scripts/openfootball/pyramid";
 import { MAX_SQUAD, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
+import { normalizeNationality } from "@/../scripts/espn/normalize";
 import type { LeagueEntry, SquadFile, StandingRow } from "@/../scripts/world/types";
+import { tierIncomeRatio } from "@/Domain/advanceDay/tierFinances";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { Pyramids } from "@/types/pyramidTypes";
@@ -138,7 +140,10 @@ function namePools(players: RosterPlayer[]): Map<string, NamePool> {
 export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions): ApplyResult {
   if (input.leagues.some((l) => /^202[6-9]/.test(l.season)))
     throw new Error("applyEspn: the world is already on 2026+ — run importOpenFootball first");
-  const world: World = clone({ ...input, squads: new Map([...input.squads].map(([k, v]) => [k, v])) });
+  // `input.leagues` sizes, captured before anything is rebuilt — used to tell whether a league's
+  // club count actually changed this run (matchDays are only ever recomputed for those).
+  const origSizeOf = new Map(input.leagues.map((l) => [l.slug, l.standings.length]));
+  const world: World = clone(input); // structuredClone already deep-clones the Map (keys + values)
 
   // ── Index the input world ────────────────────────────────────────────────
   const leagueBySlug = new Map(world.leagues.map((l) => [l.slug, l]));
@@ -149,6 +154,8 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   const playerById = new Map<string, RosterPlayer & { fullName?: string }>();
   for (const s of squadById.values()) for (const p of s.players) playerById.set(p.id, p);
   const overallBefore = [...playerById.values()].map((p) => ({ age: p.age, ovr: opts.overall(p) }));
+  /** Nationalities already known to the world — the source of truth `normalizeNationality` matches ESPN's `citizenship` against. */
+  const worldNationalities = new Set([...playerById.values()].map((p) => p.nationality).filter((n): n is string => !!n));
 
   // ── Applied leagues ──────────────────────────────────────────────────────
   const snapBySlug = new Map(snap.leagues.map((l) => [l.slug, l]));
@@ -283,7 +290,9 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         country: leagueBySlug.get(m.slug)!.country, source: "espn", players: [],
       };
       if (!existing) newClubIds.add(sid); else coveredOriginalSquadIds.add(sid);
-      if (t.coach) base.coach = { ...(base.coach ?? { id: Math.floor(unitHash(sid) * 1e9) }), name: t.coach };
+      // ESPN's coach is just a name — replace the whole record rather than keeping stale fields
+      // (nationality, age, points…) from whoever the world previously had as coach.
+      if (t.coach) base.coach = { id: base.coach?.id ?? Math.floor(unitHash(sid) * 1e9), name: t.coach };
       if (t.logoFile) espnLogoOf.set(sid, t.logoFile);
       base.players = [];
       const aged: RosterPlayer[] = [];
@@ -297,7 +306,10 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         p.stats = agePlayerStats(p.id, src.stats, src.age, newAge, opts.roleWeights(src));
         p.age = newAge;
         p.squadId = sid;
-        if (a.citizenship) p.nationality = a.citizenship;
+        // Keep the world's own nationality when ESPN's citizenship doesn't normalize to a known
+        // country (adjective forms, aliases we don't recognise, etc.) — never overwrite with junk.
+        const nat = normalizeNationality(a.citizenship, worldNationalities);
+        if (nat) p.nationality = nat;
         const er = espnRole(a.position);
         if (er && er !== lineOf(src)) p.positions = [er];
         delete p.overallAvg;
@@ -360,6 +372,25 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     }
   }
 
+  // ── Tier finance changes for clubs that changed pyramid tier ─────────────
+  // Same scaling the season rollover applies (applyTierFinanceChange in
+  // src/Domain/advanceDay/tierFinances.ts) — broadcasting/commercial scaled by the tier ratio,
+  // budget/followers untouched. Applied directly (not via that function) because it's typed
+  // against the live-save `Squad`, not the pipeline's `SquadFile`. Only clubs already in the
+  // world can appear in `lineup.moves` (a brand-new `es_` club has no `from` league), so this
+  // never touches `newClubIds` — those get their finances from peer medians below.
+  for (const mv of lineup.moves) {
+    const s = built.get(mv.squadId);
+    if (!s?.finances) continue;
+    const oldTier = pyramidTier(world.pyramids, mv.from);
+    const newTier = pyramidTier(world.pyramids, mv.to);
+    if (oldTier === newTier) continue;
+    const ratio = tierIncomeRatio(oldTier, newTier);
+    const broadcasting = Math.round(s.finances.broadcasting * ratio);
+    const commercial = Math.round(s.finances.commercial * ratio);
+    s.finances = { ...s.finances, broadcasting, commercial, total: broadcasting + commercial };
+  }
+
   // ── Bases for estimated players ──────────────────────────────────────────
   const allMatched = [...matchedIn.values()].flat();
   const worldBase = lineMedians(allMatched.length ? allMatched : [...playerById.values()]);
@@ -382,16 +413,17 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     const id = `es_${a.id}`;
     const age = a.age ?? 25;
     const stats = estimateStats(id, age, b, shift);
-    const draft = makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality: a.citizenship, stats }, 0);
-    built.get(squadId)!.players.push(makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality: a.citizenship, stats }, opts.overall(draft)));
+    const nationality = normalizeNationality(a.citizenship, worldNationalities);
+    const draft = makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality, stats }, 0);
+    built.get(squadId)!.players.push(makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality, stats }, opts.overall(draft)));
   }
 
   // ── New club metadata: finances/capacity fall back league → country → world, never 0 ─────────
+  const nonNewBuilt = [...built.values()].filter((x) => !newClubIds.has(x.id));
   for (const sid of newClubIds) {
     const s = built.get(sid)!;
     const league = leagueOfFinal.get(sid)!;
     const country = s.country ?? leagueBySlug.get(league)!.country;
-    const nonNewBuilt = [...built.values()].filter((x) => !newClubIds.has(x.id));
     const countryOf = (x: SquadFile) => x.country ?? leagueBySlug.get(leagueOfFinal.get(x.id)!)?.country;
     const leaguePeers = (finalMembers.get(league) ?? []).filter((id) => !newClubIds.has(id)).map((id) => built.get(id)!);
     const countryPeers = nonNewBuilt.filter((x) => countryOf(x) === country);
@@ -415,7 +447,11 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   let youthAdded = 0;
   let trimmed = 0;
   for (const [id, s] of built) {
-    const country = s.country ?? leagueBySlug.get(leagueOfFinal.get(id)!)!.country;
+    const rawCountry = s.country ?? leagueBySlug.get(leagueOfFinal.get(id)!)!.country;
+    // leagueData's `country` (e.g. "Czech Republic", "Turkey") sometimes differs from the world's
+    // own nationality convention ("Czechia", "Türkiye") — normalize it before handing it to youth
+    // players as their nationality, so a filler player doesn't reintroduce the mismatch.
+    const country = normalizeNationality(rawCountry, worldNationalities) ?? rawCountry;
     const before = s.players.length;
     const trimmedPlayers = trimSquad(s.players, MAX_SQUAD, opts.overall);
     trimmed += before - trimmedPlayers.length;
@@ -462,12 +498,16 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     const g = pyramidGroupOf(pyramids, l.slug);
     if (g) l.zones = zonesFromPyramid(g, l.zones ?? []);
   }
+  // Only touch a hand-authored schedule (La Liga/Ligue 1's [5,6,0], Brazil's [3,6,0]…) when the
+  // league's club count actually changed this run, and then only to ADD a third match day once
+  // the round count needs it — never remove one a human already set.
   const sizeOf = new Map(world.leagues.map((l) => [l.slug, l.standings.length]));
   for (const sc of world.schedules) {
     const clubs = sizeOf.get(sc.slug);
-    if (clubs === undefined) continue;
+    const prevClubs = origSizeOf.get(sc.slug);
+    if (clubs === undefined || prevClubs === undefined || prevClubs === clubs) continue;
     const rounds = 2 * (clubs - 1 + (clubs % 2));
-    sc.matchDays = rounds > 40 ? [3, 6, 0] : sc.matchDays.length === 3 ? [6, 0] : sc.matchDays;
+    if (rounds > 40 && sc.matchDays.length < 3) sc.matchDays = [3, 6, 0];
   }
 
   // ── Report ───────────────────────────────────────────────────────────────

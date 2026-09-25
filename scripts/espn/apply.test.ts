@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { applyEspn, type World } from "@/../scripts/espn/apply";
-import { buildAthlete, buildPlayer, buildTeam, fixtureSnapshot, fixtureWorld } from "@/../scripts/espn/fixtures";
+import { buildAthlete, buildPlayer, buildSquad, buildTeam, fixtureSnapshot, fixtureWorld } from "@/../scripts/espn/fixtures";
 import type { EspnSnapshot } from "@/../scripts/espn/types";
 import { MIN_BY_ROLE, MIN_SQUAD } from "@/../scripts/openfootball/roster";
 import { getMainRole } from "@/GameInterface/positionHelpers";
@@ -62,6 +62,26 @@ describe("applyEspn (fixture)", () => {
     const ch = r.world.leagues.find((l) => l.slug === "of_championship")!;
     expect(ch.zones!.find((z) => z.id === "prom")).toEqual({ id: "prom", label: "Promotion", color: "green", from: 1, to: 1 });
     expect(r.world.leagues.find((l) => l.slug === "premier_league")!.zones!.some((z) => z.id === "ucl")).toBe(true);
+  });
+
+  test("a club demoted/promoted across pyramid tiers has broadcasting/commercial rescaled by the tier ratio", () => {
+    // Wolves ("39") is demoted premier_league (tier 1) → of_championship (tier 2) via clubOverrides;
+    // Coventry ("of_cov") is promoted the other way — both are genuine `lineup.moves` entries.
+    expect(r.report.movedClubs).toContainEqual({ squadId: "39", from: "premier_league", to: "of_championship" });
+    expect(r.report.movedClubs).toContainEqual({ squadId: "of_cov", from: "of_championship", to: "premier_league" });
+    const wolves = squad("39");
+    expect(wolves.finances!.broadcasting).toBe(1750000); // 5,000,000 × (0.35 / 1)
+    expect(wolves.finances!.commercial).toBe(1750000);
+    expect(wolves.finances!.total).toBe(3500000);
+    const cov = squad("of_cov");
+    expect(cov.finances!.broadcasting).toBe(11428571); // 4,000,000 × (1 / 0.35), rounded
+    expect(cov.finances!.commercial).toBe(11428571);
+    expect(cov.finances!.total).toBe(cov.finances!.broadcasting + cov.finances!.commercial);
+  });
+
+  test("a club that keeps its tier keeps its finances untouched", () => {
+    expect(squad("33").finances!.broadcasting).toBe(6000000); // unchanged — stays in premier_league
+    expect(squad("of_hull").finances!.broadcasting).toBe(4000000); // unchanged — stays in of_championship
   });
 
   test("ESPN crests and native leagues are reported", () => {
@@ -385,5 +405,88 @@ describe("applyEspn — non-covered clubs drop any cached overallAvg when aged",
     const p0 = outWolves.players.find((p) => p.id === "39_p0")!;
     expect(p0.age).toBe(22); // 20 + typicalGap(2), same as before
     expect(p0.overallAvg).toBeUndefined();
+  });
+});
+
+describe("applyEspn — tier finance change only fires on an actual tier change", () => {
+  test("a genuine move between two same-tier leagues (no pyramid entry — both default to tier 1) leaves finances unchanged", () => {
+    const world: World = {
+      leagues: [
+        { slug: "sideA", name: "Side A", country: "Sideland", season: "2024-25", standings: [
+          { squadId: "swapClub", slug: "swapClub", name: "Swap Club", colors: ["#111111", "#ffffff"], country: "Sideland" },
+        ] },
+        { slug: "sideB", name: "Side B", country: "Sideland", season: "2024-25", standings: [] },
+      ],
+      squads: new Map([
+        ["sideA", [mkSquad("swapClub", "Swap Club", "Sideland", [
+          buildPlayer("swap_gk", "Swap Keeper", 24, "GK", "swapClub", 5, "Sideland"),
+          buildPlayer("swap_def", "Swap Back", 24, "Defender", "swapClub", 5, "Sideland"),
+          buildPlayer("swap_mid", "Swap Mid", 24, "Midfielder", "swapClub", 5, "Sideland"),
+          buildPlayer("swap_fwd", "Swap Fwd", 24, "Forward", "swapClub", 5, "Sideland"),
+        ])]],
+        ["sideB", []],
+      ]),
+      schedules: [],
+      pyramids: {}, // no pyramid entries for Sideland → pyramidTier() defaults both leagues to tier 1
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [
+        { slug: "sideA", code: "sd.1", name: "Side A", season: "2026-27", teams: [] },
+        { slug: "sideB", code: "sd.2", name: "Side B", season: "2026-27", teams: [buildTeam("SB1", "Swap Club", [])] },
+      ],
+    };
+    const testOpts = { leagueMap: [{ slug: "sideA", code: "sd.1" }, { slug: "sideB", code: "sd.2" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r10 = applyEspn(world, snap, testOpts);
+    expect(r10.report.movedClubs).toEqual([{ squadId: "swapClub", from: "sideA", to: "sideB" }]);
+    const out = [...r10.world.squads.values()].flat().find((s) => s.id === "swapClub")!;
+    expect(out.finances!.broadcasting).toBe(1e6); // unchanged — same (default) tier on both sides
+    expect(out.finances!.commercial).toBe(1e6);
+  });
+});
+
+describe("applyEspn — schedule matchDays", () => {
+  test("an unchanged club count keeps a hand-authored 3-day schedule untouched", () => {
+    const world: World = {
+      leagues: [{ slug: "steady_league", name: "Steady League", country: "Steadyland", season: "2024-25", standings: [
+        { squadId: "st1", slug: "st1", name: "Steady One", colors: ["#111111", "#ffffff"], country: "Steadyland" },
+        { squadId: "st2", slug: "st2", name: "Steady Two", colors: ["#111111", "#ffffff"], country: "Steadyland" },
+      ] }],
+      squads: new Map([["steady_league", [
+        buildSquad("st1", "Steady One", 5, { country: "Steadyland" }),
+        buildSquad("st2", "Steady Two", 5, { country: "Steadyland" }),
+      ]]]),
+      schedules: [{ slug: "steady_league", seasonStartMMDD: "08-15", seasonEndMMDD: "05-17", crossYear: true, matchDays: [5, 6, 0], baseWeekOffset: 0 }],
+      pyramids: {},
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [{ slug: "steady_league", code: "sl.1", name: "Steady League", season: "2026-27", teams: [
+        buildTeam("SL1", "Steady One", []),
+        buildTeam("SL2", "Steady Two", []),
+      ] }],
+    };
+    const testOpts = { leagueMap: [{ slug: "steady_league", code: "sl.1" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r11 = applyEspn(world, snap, testOpts);
+    expect(r11.world.schedules.find((s) => s.slug === "steady_league")!.matchDays).toEqual([5, 6, 0]);
+  });
+
+  test("a club count that grows past 40 rounds gains a third match day", () => {
+    const N = 20;
+    const clubs = Array.from({ length: N }, (_, i) => buildSquad(`grow${i + 1}`, `Grow FC ${i + 1}`, 5, { country: "Growland" }));
+    const world: World = {
+      leagues: [{ slug: "grow_league", name: "Grow League", country: "Growland", season: "2024-25", standings: clubs.map((s) => ({ squadId: s.id, slug: s.slug, name: s.name, colors: s.colors, country: "Growland" })) }],
+      squads: new Map([["grow_league", clubs]]),
+      schedules: [{ slug: "grow_league", seasonStartMMDD: "08-15", seasonEndMMDD: "05-17", crossYear: true, matchDays: [6, 0], baseWeekOffset: 0 }],
+      pyramids: {},
+    };
+    const teams = clubs.map((s) => buildTeam(`E_${s.id}`, s.name, []));
+    teams.push(buildTeam("E_new", "Grow FC 21", []));
+    const snap: EspnSnapshot = { fetchedAt: "2026-09-25", leagues: [{ slug: "grow_league", code: "gl.1", name: "Grow League", season: "2026-27", teams }] };
+    const testOpts = { leagueMap: [{ slug: "grow_league", code: "gl.1" }], clubOverrides: {}, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall };
+    const r12 = applyEspn(world, snap, testOpts);
+    const finalLeague = r12.world.leagues.find((l) => l.slug === "grow_league")!;
+    expect(finalLeague.standings.length).toBe(21);
+    expect(r12.world.schedules.find((s) => s.slug === "grow_league")!.matchDays).toEqual([3, 6, 0]);
   });
 });
