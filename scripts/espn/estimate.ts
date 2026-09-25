@@ -31,18 +31,27 @@ export function ageAdjust(age: number): number {
   return age <= 20 ? -1 : age <= 23 ? -0.5 : age <= 31 ? 0 : -0.3;
 }
 
-/** base + ageAdjust(age) + shift on every attribute, ±1 on NOISE_ATTRS hash-picked attributes, rounded to 0..10. */
+/**
+ * base + ageAdjust(age) + shift on every attribute, ±1 on NOISE_ATTRS hash-picked attributes,
+ * clamped to 0..10. Uses unbiased hash-based stochastic rounding (`floor(v + hash)`) instead of
+ * `Math.round`, because with integer bases a plain round makes fractional adjustments
+ * (ageAdjust's -0.5/-0.3, and any fractional `shift`) vanish on every attribute that isn't hit by
+ * noise, and rounds x.5 medians up. `floor(v + u)` with `u` uniform in [0, 1) is unbiased in
+ * expectation (E[floor(v+u)] = v) and leaves already-integer `v` untouched, since u < 1.
+ */
 export function estimateStats(id: string, age: number, base: PlayerStatsRecord, shift: number): PlayerStatsRecord {
   const noisy = [...STAT_KEYS].sort((a, b) => unitHash(`${id}:pick:${a}`) - unitHash(`${id}:pick:${b}`)).slice(0, NOISE_ATTRS);
   const out = {} as PlayerStatsRecord;
   for (const k of STAT_KEYS) {
     const noise = noisy.includes(k) ? (unitHash(`${id}:sign:${k}`) < 0.5 ? -1 : 1) : 0;
-    out[k] = Math.max(0, Math.min(10, Math.round(base[k] + ageAdjust(age) + shift + noise)));
+    const v = base[k] + ageAdjust(age) + shift + noise;
+    out[k] = Math.max(0, Math.min(10, Math.floor(v + unitHash(`${id}:round:${k}`))));
   }
   return out;
 }
 
-const adjectiveFor = (overall: number) => (overall >= 5.5 ? "Elite" : overall >= 4.5 ? "Solid" : overall >= 3.5 ? "Capable" : "Developing");
+/** Thresholds on the world's actual overall (0..10) scale — median ≈ 3.24, p95 ≈ 4.84. */
+const adjectiveFor = (overall: number) => (overall >= 5.3 ? "Elite" : overall >= 3.5 ? "Solid" : overall >= 2.4 ? "Capable" : "Developing");
 
 export interface NewPlayerInput {
   id: string; name: string; fullName?: string; age: number; role: MainRole; squadId: string;
@@ -66,7 +75,7 @@ const lineOf = (p: RosterPlayer) => getMainRole(p.positions[0] ?? "");
 
 /** Keeps each line's minimum (best by `overall`), then the best remaining players, up to `max`. */
 export function trimSquad<P extends RosterPlayer>(players: P[], max: number, overall: (p: P) => number): P[] {
-  if (players.length <= max) return players;
+  if (players.length <= max) return [...players];
   const rank = (a: P, b: P) => overall(b) - overall(a) || a.id.localeCompare(b.id);
   const chosen = new Set<P>();
   for (const line of LINES) players.filter((p) => lineOf(p) === line).sort(rank).slice(0, MIN_BY_ROLE[line]).forEach((p) => chosen.add(p));
@@ -90,8 +99,9 @@ export function fillSquad<P extends RosterPlayer>(
     const last = pool.last[Math.floor(unitHash(`${id}:l`) * pool.last.length)] ?? "Silva";
     const age = 17 + Math.floor(unitHash(`${id}:a`) * 3);
     const stats = estimateStats(id, age, baseFor(line), 0);
-    const draft = makePlayer({ id, name: `${first} ${last}`, age, role: line, squadId, nationality: country, stats }, 0);
-    out.push(makePlayer({ id, name: draft.name, age, role: line, squadId, nationality: country, stats }, overall(draft)));
+    const p = makePlayer({ id, name: `${first} ${last}`, age, role: line, squadId, nationality: country, stats }, 0);
+    p.profile = playerProfile(line, stats, adjectiveFor(overall(p)));
+    out.push(p);
   };
   for (const line of LINES) {
     const have = out.filter((p) => lineOf(p) === line).length;
