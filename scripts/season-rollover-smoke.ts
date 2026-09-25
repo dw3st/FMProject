@@ -13,9 +13,9 @@
  *   - for every pyramid country that rolled: each group's bottom `relegate` clubs went one tier
  *     down, its top `promote` clubs one tier up, nobody else moved (tables from the archive);
  *   - the rollover payload (seasonEnded/moves/playerMove/playerChampionOf) matches what moved;
- *   - England: PL 20 / Championship 19, 3 down, 3 up; Italy: each Serie C group got exactly 1
+ *   - England: PL 20 / Championship 24, 3 down, 3 up; Italy: each Serie C group got exactly 1
  *     club from Serie B and sent its champion up;
- *   - 1227 squad files, no duplicate ids, no index duplicates;
+ *   - 1273 squad files, no duplicate ids, no index duplicates;
  *   - every rolled league: new calendar has exactly its new clubs, each with 2 × (n − 1) games,
  *     zeroed standings with the same clubs; the closed season had every fixture dated ≤ its end
  *     played, and no fixture dated after its end (it would be lost at the rollover);
@@ -40,7 +40,7 @@ const argValue = (name: string): string | undefined => {
 };
 const PLAYER_LEAGUE = args.includes("--italy") ? "serie_a" : argValue("--player-league") ?? "premier_league";
 const EXTRA_DAYS = 2;
-const EXPECTED_SQUAD_FILES = 1227;
+const EXPECTED_SQUAD_FILES = 1273; // world size after the 2026/27 ESPN season import
 const MAX_DAYS = 500;
 
 const { SaveService, saveService } = await import("@/backend/SaveService");
@@ -413,7 +413,7 @@ try {
 
     if (country === "England") {
       check(index.inLeague("premier_league").length === 20, `inLeague(premier_league) = ${index.inLeague("premier_league").length} (20)`);
-      check(index.inLeague("of_championship").length === 19, `inLeague(of_championship) = ${index.inLeague("of_championship").length} (19)`);
+      check(index.inLeague("of_championship").length === 24, `inLeague(of_championship) = ${index.inLeague("of_championship").length} (24)`);
       const down = moved.filter((m) => m.from === "premier_league" && m.to === "of_championship").length;
       const up = moved.filter((m) => m.from === "of_championship" && m.to === "premier_league").length;
       check(down === 3 && up === 3, `England: ${down} relegated, ${up} promoted (3/3)`);
@@ -435,7 +435,7 @@ try {
   check(rolledCountryNames.includes("England") && rolledCountryNames.includes("Italy"),
     `England and Italy rolled in range (rolled: ${rolledCountryNames.join(", ")})`);
   const italyRoll = rolledCountries.get("Italy")?.date;
-  check(italyRoll === "2025-05-18", `Italy rolled on ${italyRoll} (2025-05-18)`);
+  check(italyRoll === "2027-05-18", `Italy rolled on ${italyRoll} (2027-05-18)`);
 
   // Leagues that rolled alone must not have changed membership (single-league countries).
   const endMembership = await idMembership(saveId);
