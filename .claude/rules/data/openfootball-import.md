@@ -126,6 +126,52 @@ Tudo fica em `data_process/openfootball/calibration.json`: pares, coeficientes, 
 
 ---
 
+## Recalibração dos nativos (nível do seed, perfil nativo)
+
+A calibração acima estima **atributos** dos jogadores `of_*` a partir do seed. A recalibração é
+diferente: ela corrige o **nível** dos jogadores **nativos** (`data_process/native/squads`) que
+têm par no seed, porque os atributos nativos originais classificam mal os craques (o seed já
+ordena bem: Kane e Mbappé 99, Dembélé 98, Saka/Salah/Haaland 97…, enquanto no mundo nativo puro o
+Mbappé era o 137º por overall). Ver
+`docs/superpowers/specs/2026-09-25-native-star-recalibration-design.md`.
+
+- **Módulo puro:** `scripts/openfootball/recalibrate.ts` (+ teste): `fitLevelPredictor`,
+  `predictLevel`, `quantileTargets`, `applyShift`/`findShift` e `shiftToOverall`. Não toca disco;
+  o importador é quem lê/escreve.
+- **Regra, por papel principal (GK/DEF/MID/FWD), nos mesmos pares nativos↔seed do
+  `matchClubs`/`matchPlayers` (Série B incluída, ~2.900 jogadores):**
+  1. **Previsor de nível:** `z = a + b·seedOverall + c·leagueRep`, ajustado contra o overall do
+     jogo (`Player.computeOverallAvg`) do nativo **antes** de qualquer mudança. Papel com menos de
+     3 pares fica sem previsor e seus jogadores não são tocados.
+  2. **Escala por quantis:** dentro do papel, ordena os pares por `z` (desempate pelo id) e
+     devolve a cada um o overall atual do MESMO grupo, do maior para o menor, na mesma ordem. A
+     multiset de alvos é exatamente a multiset atual (média e espalhamento do papel não mudam);
+     só a atribuição (quem recebe qual nota) muda, guiada pelo `z` do seed.
+  3. **Deslocamento único:** acha a posição específica onde o jogador rende mais
+     (`Player.bestSpecificRole` sobre os atributos nativos originais) e soma um único `s` a todo
+     atributo com peso > 0 no `attrWeights` dessa posição (`src/Data/roles.json`), contínuo,
+     limitado a 0..10, achado por bisseção até `Player.computeOverallAvg` bater com o alvo
+     (tolerância 0,01). Depois arredonda cada atributo com hash do id do jogador — mesmo esquema
+     sem viés de `scripts/espn/estimate.ts` (`floor(v + unitHash(...))`). O perfil (a forma dos 13
+     atributos) continua o nativo; só o nível muda.
+  4. Nativo sem par no seed, ou de um papel sem previsor, não muda.
+- **Onde entra no importador:** depois de copiar `data_process/native/squads` para
+  `src/example_data/squads` (a calibração de atributos dos `of_*`, seção 2, já rodou e usa os
+  atributos nativos **originais** — não é afetada). A seção 3.5 recalibra e regrava só os arquivos
+  de elenco nativo que tiveram algum jogador mudado, no mesmo formato (indentação 2) dos arquivos
+  nativos; `overallAvg` em cache é removido dos jogadores mudados. `data_process/native` nunca é
+  tocado — é sempre a fonte original.
+- **Relatório no fim do importador:** pares e coeficientes do previsor por papel, jogadores
+  recalibrados, e depois (lendo o mundo inteiro já escrito, `of_*` incluído) o top 20 do mundo e a
+  posição de Mbappé, Kane, Haaland, Salah, Vini, Bellingham, Yamal, Wirtz, Doku e Diomande.
+- **Resultado (rodada de 2026-09-25):** Mbappé 137º → 2º–3º, Vini 306º → 8º–9º, Doku → 10º–13º,
+  Diomande (antes o 1º, errado) → 400-500º. Kane e Bellingham melhoram bastante mas não entram no
+  top 10 — o `z` é um modelo linear com ruído residual (`sd`), então a ordem exata dentro de um
+  papel de ~700–1000 pares não é perfeita, só a tendência geral. Isso é esperado e aceito pelo
+  design (opção "100% do seed" aprovada).
+
+---
+
 ## Limitações conhecidas
 
 - **Escudos.** Os clubes cobertos pela ESPN têm escudo em `logos/espn/`; os demais `of_*` usam o brasão de cores. Ver `.claude/rules/data/espn-import.md`.
