@@ -4,6 +4,7 @@ import { tickState, getBallPos } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
+import { reconcileMatchStateSync } from "@/GraficsEngine/matchStateSync";
 import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
@@ -250,9 +251,12 @@ interface Props {
   /** Team B (away) kit color — CSS hex. Falls back to red. */
   teamBColor?: string;
   /**
-   * Keep the Pixi ticker running while paused (renders every frame but skips tickState).
-   * Required for test-screen features like arrow-key player movement to appear immediately.
-   * In normal match mode this should be false (ticker stops on pause → no wasted CPU).
+   * Keep the Pixi ticker running while paused (renders every frame). The ticker still
+   * calls `pumpSimulation()` every frame in that case, but `pump(paused)` returns 0
+   * while paused, so no `tickState`/`advanceSim` call actually happens — it's a no-op
+   * beyond advancing the shared pump's internal clock. Required for test-screen
+   * features like arrow-key player movement to appear immediately. In normal match
+   * mode this should be false (ticker stops on pause → no wasted CPU).
    */
   keepTickerAlive?: boolean;
   /**
@@ -438,34 +442,70 @@ export function PixiPitch({
       // ── Game state ──
       const stateRef = { current: normalizeGameState(initialState!) };
 
-      // React (MatchScreen) is the source of truth for UI-driven fields (pending subs,
-      // benches, etc.). Keep the Pixi simulation ref aligned on every snapshot.
+      // React (MatchScreen) is the source of truth for UI-driven edits queued from a
+      // paused UI (substitution panel: pending subs, formation change) — see
+      // matchStateSync.ts for exactly which fields are UI-owned and why a snapshot
+      // that's behind `stateRef.current` must never be allowed to rewind
+      // simulation-owned fields (positions, ball, score, decisions, matchTime, …).
+      // MatchScreen's own `useEffect` re-emits `matchStateSync` on every `gameState`
+      // change — including the routine ones that just mirror what we ourselves last
+      // emitted via `stateChanged` — and because that's a React render + effect
+      // round-trip, the echo is very often already behind our own `stateRef.current`
+      // by the time it arrives (we pump far more often than a round-trip completes).
+      // Naively replacing `stateRef.current` with a stale echo would re-run ticks
+      // whose events (goals, tackles, …) Statistics already counted once.
       const unsubMatchStateSync = gameBus.on("matchStateSync", (s) => {
-        stateRef.current = normalizeGameState(s);
+        stateRef.current = reconcileMatchStateSync(stateRef.current, normalizeGameState(s));
       });
 
       // ── Simulation pump ──
-      // `pump` is the single shared elapsed-time tracker (see pump.ts). It is
-      // called from BOTH the Pixi ticker (every rendered frame — smooth,
-      // ~60fps, while the tab is visible) and simClock (a Worker pulse —
-      // ~10fps, keeps firing while the tab is hidden and rAF is frozen).
-      // Sharing one pump instance means there's no double-counting: whichever
-      // caller runs first in a given real-time slice consumes it.
+      // `pump` is the single shared elapsed-time tracker (see pump.ts). `carry` is the
+      // leftover game-time (always < SIM_STEP) that advanceSim couldn't fit into a
+      // whole fixed step last time — threading it through means every `tickState` call
+      // still gets exactly `SIM_STEP` of game-time, never a partial step, no matter how
+      // irregularly `pumpSimulation` itself gets called.
+      //
+      // Only ONE of the two pump sources below is actually live at a time (see
+      // `shouldWorkerPump`): the Pixi ticker pumps every rendered frame while the tab
+      // is visible (smooth, ~60fps), and simClock's Worker pulse (~10fps) takes over
+      // only once the ticker can no longer be trusted to keep firing (tab hidden, or
+      // stopped for some other reason while not paused). `pump`'s shared `last`
+      // timestamp would prevent double-counting even if both fired in the same
+      // instant, but keeping only one live avoids the wasted/racing work entirely.
+      //
       // Spec: docs/superpowers/specs/2026-09-25-match-live-controls-design.md §3.
       const pump = createPump(defaultNow);
+      const simCarryRef = { current: 0 };
 
       const pumpSimulation = () => {
         const elapsedRealSeconds = pump(pausedRef.current);
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
-        const { state: nextState } = advanceSim(stateRef.current, gameSeconds);
-        stateRef.current = nextState;
+        const prevState = stateRef.current;
+        const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
+        simCarryRef.current = result.carry;
+        // advanceSim returns the same reference when zero whole steps ran (not enough
+        // carried+elapsed time yet, or tickState's own noop paths — e.g. matchEnd, or
+        // a frozen presentation/set-piece countdown). Nothing changed: skip the emit.
+        if (result.state === prevState) return;
+        stateRef.current = result.state;
         gameBus.emit('stateChanged', stateRef.current);
       };
 
-      // Keeps the match advancing while the tab is backgrounded — rAF is
-      // frozen/throttled by the browser in that case, Worker timers are not.
-      const simClock = startSimClock(pumpSimulation);
+      // The Worker pulse only drives the simulation when the render loop can't be
+      // trusted to: the tab is hidden (rAF is frozen/throttled by the browser in that
+      // case, Worker timers are not), or the ticker has otherwise stopped while the
+      // match isn't actually paused (a defensive fallback — normally the ticker only
+      // stops via the paused/keepTickerAlive effect below, i.e. exactly when we don't
+      // want to pump anyway, but this keeps the match moving if it ever stops for any
+      // other reason).
+      const shouldWorkerPump = () =>
+        (typeof document !== 'undefined' && document.hidden) ||
+        (!app.ticker.started && !pausedRef.current);
+
+      const simClock = startSimClock(() => {
+        if (shouldWorkerPump()) pumpSimulation();
+      });
 
       // ── Through-ball cells cache ──
       // Engine emits `throughBallScores` from decideBallHolder when debug is on.
@@ -1076,7 +1116,8 @@ export function PixiPitch({
         gameBus.emit('stateChanged', stateRef.current);
 
         // Re-run the ball holder's decision so the debug panel scores update
-        // immediately even when paused (tickState doesn't run while paused).
+        // immediately even when paused (pumpSimulation's pump(paused) returns 0,
+        // so no tickState/advanceSim call happens on its own while paused).
         const s = stateRef.current;
         const holder = s.players.find(p => p.id === s.ballHolderId);
         if (holder) {
@@ -1089,7 +1130,8 @@ export function PixiPitch({
 
       // ── Tactics-change handler ───────────────────────────────────────────
       // Run a zero-dt tick so decisions + targetPositions are recomputed with
-      // the new weights even while paused (ticker skips tickState when paused).
+      // the new weights even while paused (pumpSimulation is a no-op while paused —
+      // see above — so nothing else would otherwise re-run tickState here).
       const unsubTactics = gameBus.on('tacticsChanged', () => {
         const { state: next } = tickState(stateRef.current, 0);
         stateRef.current = next;
