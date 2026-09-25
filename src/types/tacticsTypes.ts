@@ -131,6 +131,62 @@ export function axesFor(style: TacticalStyle): TacticalAxes {
   return STYLE_TO_AXES[style];
 }
 
+// ── Live match mentality ────────────────────────────────────────────────────
+//
+// Mentality is a temporary, unsaved shift applied on top of a team's chosen
+// TacticalStyle during a live match (see MatchScreen / TestScreen). The style
+// stays the reference for team-intent detection (`IntentDetection` reads the
+// style, never the mentality) — mentality only nudges the derived axes.
+
+export type Mentality = "attacking" | "balanced" | "defensive";
+
+export const DEFAULT_MENTALITY: Mentality = "balanced";
+
+export const MENTALITY_OPTIONS: Mentality[] = ["attacking", "balanced", "defensive"];
+
+const PRESSING_STEPS: PressingStyle[] = ["low_block", "mid_block", "high_press"];
+const DEFENSIVE_LINE_STEPS: DefensiveLine[] = ["deep", "normal", "high"];
+
+/** Moves `value` `delta` steps along `steps`, clamped (saturating) at both ends. */
+function step<T>(steps: T[], value: T, delta: number): T {
+  const i = steps.indexOf(value);
+  const next = Math.max(0, Math.min(steps.length - 1, i + delta));
+  return steps[next]!;
+}
+
+/**
+ * Applies a live-match mentality shift on top of a style's base axes.
+ *
+ * - `balanced`   → `axesFor(style)`, unchanged.
+ * - `attacking`  → pressing_style and defensive_line each step up one notch
+ *                  (saturating at high_press / high), width forced wide,
+ *                  build_up forced direct.
+ * - `defensive`  → pressing_style and defensive_line each step down one notch
+ *                  (saturating at low_block / deep), width forced narrow,
+ *                  build_up unchanged.
+ *
+ * Pure function — does not mutate any per-team config.
+ */
+export function axesWithMentality(style: TacticalStyle, mentality: Mentality): TacticalAxes {
+  const base = axesFor(style);
+  if (mentality === "balanced") return base;
+  if (mentality === "attacking") {
+    return {
+      pressing_style: step(PRESSING_STEPS, base.pressing_style, 1),
+      defensive_line: step(DEFENSIVE_LINE_STEPS, base.defensive_line, 1),
+      width: "wide",
+      build_up: "direct",
+    };
+  }
+  // defensive
+  return {
+    pressing_style: step(PRESSING_STEPS, base.pressing_style, -1),
+    defensive_line: step(DEFENSIVE_LINE_STEPS, base.defensive_line, -1),
+    width: "narrow",
+    build_up: base.build_up,
+  };
+}
+
 // ── Save shape ────────────────────────────────────────────────────────────────
 
 /** Full tactics save: style + formation + explicit starting lineup (playerIds in slot order). */
