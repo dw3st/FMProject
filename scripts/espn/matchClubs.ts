@@ -22,12 +22,23 @@ const PASSES: Pass[] = [
 
 /**
  * ESPN club → squadId, per country. Order: override, then exact / loose / prefix passes (each pass
- * over every still-unmatched team; a hit must be unique among the unclaimed clubs of the country),
- * then "new". On the loose and prefix passes a hit is also dropped when another still-unmatched
+ * over every still-unmatched team), then "new".
+ *
+ * The exact pass requires the candidate to be unique among the still-unclaimed clubs of the country.
+ *
+ * The loose and prefix passes require the candidate to be unique among ALL clubs of the country that
+ * satisfy `pass.same` — claimed or not — and only then checks it is still unclaimed. Otherwise, once
+ * a club is claimed by an earlier pass, an unrelated ESPN team can loose/prefix-match its unclaimed
+ * sibling (e.g. once "Bristol City" is claimed by the exact pass, ESPN "Bristol Wanderers" would be
+ * the only remaining candidate for "Bristol Rovers" even though the loose key "bristol" is genuinely
+ * ambiguous between the two clubs). These two passes also drop a hit when another still-unmatched
  * ESPN team of the same country matches the same candidate — those keys are approximate enough that
  * two different ESPN clubs collapsing onto one candidate means neither should be resolved here.
- * Throws when an override names an unknown squad, or when two teams hit the same squad on the exact
- * pass (a genuine name clash worth surfacing rather than silently deferring to "new").
+ *
+ * Throws when an override names an unknown squad, or when two or more teams hit the same squad on
+ * the exact pass (a genuine name clash worth surfacing rather than silently deferring to "new").
+ * Only the exact pass can still collide here: the ESPN-side uniqueness check above already stops the
+ * loose/prefix passes from ever assigning two teams to the same squad.
  */
 export function matchClubs(teams: EspnClubRef[], world: WorldClubRef[], overrides: Record<string, string>): Map<string, ClubMatch> {
   const byId = new Map(world.map((c) => [c.id, c]));
@@ -48,29 +59,48 @@ export function matchClubs(teams: EspnClubRef[], world: WorldClubRef[], override
     const hits = new Map<string, string>(); // espnId → squadId
     for (const t of sorted) {
       if (out.has(t.espnId)) continue;
-      const cands = world.filter((c) => c.country === t.country && !claimed.has(c.id)
-        && (pass.same(t.name, c.name) || pass.same(t.shortName, c.name)));
-      if (cands.length !== 1) continue;
-      const cand = cands[0]!;
+      const isSame = (c: WorldClubRef) => c.country === t.country && (pass.same(t.name, c.name) || pass.same(t.shortName, c.name));
+
+      let cand: WorldClubRef | undefined;
+      if (pass.via === "exact") {
+        const cands = world.filter((c) => isSame(c) && !claimed.has(c.id));
+        cand = cands.length === 1 ? cands[0] : undefined;
+      } else {
+        // Uniqueness is checked across every club of the country, claimed or not, so a sibling
+        // that is only "the last one left" because its twin was already claimed never matches.
+        const cands = world.filter(isSame);
+        cand = cands.length === 1 && !claimed.has(cands[0]!.id) ? cands[0] : undefined;
+      }
+      if (!cand) continue;
+
       // Loose/prefix keys are approximate and often collapse two different ESPN clubs onto the
       // same key (e.g. "Manchester United" and "Manchester City" both → loose "manchester"). When
       // another still-unmatched ESPN team of the same country also matches this candidate, neither
-      // is safe to resolve here — skip both rather than pick one, or collide and throw. The exact
-      // pass keeps the stricter behaviour (collision throws below): an exact-name clash is rare
-      // enough that it signals a real data issue worth surfacing rather than silently deferring.
+      // is safe to resolve here — skip both rather than pick one, or collide and throw.
       if (pass.via !== "exact") {
         const sharedByOther = sorted.some((u) => u.espnId !== t.espnId && u.country === t.country && !out.has(u.espnId)
-          && (pass.same(u.name, cand.name) || pass.same(u.shortName, cand.name)));
+          && (pass.same(u.name, cand!.name) || pass.same(u.shortName, cand!.name)));
         if (sharedByOther) continue;
       }
       hits.set(t.espnId, cand.id);
     }
-    const bySquad = new Map<string, string>();
+
+    const bySquad = new Map<string, string[]>();
     for (const [espnId, squadId] of hits) {
-      const prev = bySquad.get(squadId);
-      if (prev) throw new Error(`matchClubs: ESPN ${prev} and ${espnId} both match ${squadId} (${pass.via}) — add an override`);
-      bySquad.set(squadId, espnId);
+      const ids = bySquad.get(squadId);
+      if (ids) ids.push(espnId);
+      else bySquad.set(squadId, [espnId]);
     }
+    const collisions: string[] = [];
+    for (const [squadId, espnIds] of bySquad) {
+      for (let i = 0; i < espnIds.length; i++) {
+        for (let j = i + 1; j < espnIds.length; j++) {
+          collisions.push(`ESPN ${espnIds[i]} and ${espnIds[j]} both match ${squadId} (${pass.via})`);
+        }
+      }
+    }
+    if (collisions.length > 0) throw new Error(`matchClubs: ${collisions.join("; ")} — add an override`);
+
     for (const [espnId, squadId] of hits) {
       claimed.add(squadId);
       out.set(espnId, { squadId, via: pass.via });
