@@ -38,13 +38,8 @@ Os ids de squad e de jogador são únicos no mundo inteiro. O arquivo `squads/{l
 
 ## Como regenerar
 
-```bash
-bun scripts/importOpenFootball.ts          # regrava src/example_data (squads, leagueData, countries, schedules, calibration)
-cp -R src/example_data/. src/Data/         # sincroniza o runtime (src/Data é gitignored)
-bun run kits:generate 5                    # pré-simula 5 startKits em src/Data/startKits (~50 s por kit; 5 kits ≈ 4 min)
-rm -f src/example_data/startKits/*         # remove kits e manifests antigos
-cp src/Data/startKits/* src/example_data/startKits/   # copia os kits novos para commit
-```
+A cadeia completa (open-football + ESPN + startKits) está em `.claude/rules/data/espn-import.md`.
+Os elencos nativos vêm de `data_process/native/`; `src/example_data/squads` é só saída.
 
 Qualquer mudança no mundo (importador, calibração, calendário, elencos nativos) **invalida os startKits**. Eles guardam uma fotografia do mundo inteiro, por isso é preciso regenerá-los sempre. Nunca commite `src/Data/` nem saves.
 
@@ -115,7 +110,7 @@ Tudo fica em `data_process/openfootball/calibration.json`: pares, coeficientes, 
 
 ## Limitações conhecidas
 
-- **Sem escudos.** Os clubes `of_*` não têm arquivo em `Data/logos/`. O `ClubLogo` desenha o brasão com as cores do clube.
+- **Escudos.** Os clubes cobertos pela ESPN têm escudo em `logos/espn/`; os demais `of_*` usam o brasão de cores. Ver `.claude/rules/data/espn-import.md`.
 - **Jovens de preenchimento.** O seed tem clubes com só 7 jogadores. O `roster.ts` gera jovens para cumprir os mínimos por papel (GK 3, DEF 7, MID 7, FWD 4) e completar até 18 jogadores. O máximo é 30.
 - **Serie A e Ligue 1.** As re-derivações desses elencos saem mais baixas que os valores nativos. Isso afeta só a checagem de calibração, porque os elencos nativos não são substituídos.
 - **Caminhos no Windows.** Resolvido: todo caminho de dados usa `fileURLToPath`, nunca `new URL(...).pathname`, que gera `/C:/...` no Windows nativo. Mantenha esse padrão em código novo.

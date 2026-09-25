@@ -25,10 +25,13 @@ Chave i18n primeiro (`newGame.countries.{slug}.name`), depois `Intl.DisplayNames
 
 ## Escudos
 
-Ligas `of_*` (importação open-football) não têm arquivo de escudo em `Data/logos/`.
-`squadLogoUrl` devolve `undefined` para elas, então a UI nem tenta a requisição. O `ClubLogo`
-guarda em memória (`failedLogoUrls`) as URLs que já deram 404, para não pedir de novo a cada
-instância montada — cai no brasão gerado com as cores do clube.
+`squadLogoUrl(squadId)` consulta `logoIndex.json` (gerado pelo `importEspn`, helper puro em
+`src/Domain/world/logos.ts`): `squadId → "{pasta}/{stem}"`, com o SVG/PNG nativo primeiro e o escudo
+da ESPN (`logos/espn/{squadId}.png`) depois. Clube fora do índice não gera requisição.
+
+`squadLogoUrl` devolve `undefined` para clube sem escudo, então a UI nem tenta a requisição. O
+`ClubLogo` guarda em memória (`failedLogoUrls`) as URLs que já deram 404, para não pedir de novo a
+cada instância montada — cai no brasão gerado com as cores do clube. Ver `.claude/rules/data/espn-import.md`.
 
 ## Ligas seguidas
 
