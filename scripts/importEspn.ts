@@ -6,6 +6,10 @@
  * Reads data_process/espn/{snapshot,leagueMap,clubOverrides,playerOverrides}.json and src/example_data,
  * runs applyEspn (scripts/espn/apply.ts) and rewrites squads/, leagueData.json, leagueSchedules.json,
  * pyramids.json, databases.json, logoIndex.json and logos/espn/. Fails when the world is already on 2026+.
+ *
+ * Precondition: src/Data must already mirror src/example_data (`cp -R src/example_data/. src/Data/`) —
+ * Player reads roles.json from src/Data at runtime, and this script checks the two copies match before
+ * doing anything else. On failure, rerun the whole chain (importOpenFootball → importEspn).
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -32,6 +36,11 @@ const LOGOS = join(DATA, "logos");
 
 const readJson = <T>(p: string): T => JSON.parse(readFileSync(p, "utf-8")) as T;
 const writeJson = (p: string, v: unknown, indent: number) => writeFileSync(p, `${JSON.stringify(v, null, indent)}\n`);
+
+// ── Precondition: src/Data must mirror src/example_data ─────────────────────
+const runtimeRolesPath = join(ROOT, "src", "Data", "roles.json");
+if (!existsSync(runtimeRolesPath) || readFileSync(runtimeRolesPath, "utf-8") !== readFileSync(join(DATA, "roles.json"), "utf-8"))
+  throw new Error("src/Data is out of sync — run cp -R src/example_data/. src/Data/ first");
 
 // ── Load ────────────────────────────────────────────────────────────────────
 const snap = readJson<EspnSnapshot>(join(ESPN, "snapshot.json"));
@@ -63,6 +72,16 @@ const { world: out, report, espnLogoOf, nativeLeagueOf } = applyEspn(world, snap
   overall: (p) => Player.computeOverallAvg(p),
 });
 
+// ── Validate before writing anything (only needs `out`) ─────────────────────
+const allSquads = [...out.squads.values()].flat();
+for (const s of allSquads) {
+  if (s.players.length < MIN_SQUAD) throw new Error(`integrity: ${s.id} has ${s.players.length} players`);
+  for (const line of ["GK", "Defender", "Midfielder", "Forward"] as const) {
+    const n = s.players.filter((p) => getMainRole(p.positions[0] ?? "") === line).length;
+    if (n < MIN_BY_ROLE[line]) throw new Error(`integrity: ${s.id} has ${n} ${line}`);
+  }
+}
+
 // ── Write ───────────────────────────────────────────────────────────────────
 for (const d of readdirSync(SQUADS)) rmSync(join(SQUADS, d), { recursive: true, force: true });
 for (const [slug, ss] of out.squads) {
@@ -75,11 +94,11 @@ writeJson(join(DATA, "pyramids.json"), out.pyramids, 2);
 
 // Crests: logos/espn/{squadId}.png for clubs without a native crest, plus the index.
 const nativeFiles = new Set<string>();
-for (const d of readdirSync(LOGOS)) {
+for (const dirent of readdirSync(LOGOS, { withFileTypes: true }).filter((d) => d.isDirectory())) {
+  const d = dirent.name;
   if (d === ESPN_LOGO_DIR) continue;
   for (const f of readdirSync(join(LOGOS, d))) nativeFiles.add(`${d}/${f.replace(/\.(svg|png)$/i, "")}`);
 }
-const allSquads = [...out.squads.values()].flat();
 const index = buildLogoIndex(
   allSquads.map((s) => ({ id: s.id, slug: s.slug, nativeLeague: nativeLeagueOf.get(s.id) ?? null })),
   nativeFiles,
@@ -89,7 +108,7 @@ rmSync(join(LOGOS, ESPN_LOGO_DIR), { recursive: true, force: true });
 mkdirSync(join(LOGOS, ESPN_LOGO_DIR), { recursive: true });
 for (const [id, path] of Object.entries(index))
   if (path.startsWith(`${ESPN_LOGO_DIR}/`)) copyFileSync(join(ESPN, "logos", espnLogoOf.get(id)!), join(LOGOS, ESPN_LOGO_DIR, `${id}.png`));
-writeJson(join(DATA, "logoIndex.json"), index, 0);
+writeJson(join(DATA, "logoIndex.json"), index, 2);
 
 // ── Integrity ───────────────────────────────────────────────────────────────
 const countries = readJson<Record<string, { flag?: unknown; continent?: unknown }>>(join(DATA, "countries.json"));
@@ -97,13 +116,6 @@ const totals = checkWorldIntegrity({
   leagueData: out.leagues, schedules: out.schedules, countries, pyramids: out.pyramids, squadsDir: SQUADS,
   mayHaveHandZones: (l) => l.source !== "open-football",
 });
-for (const s of allSquads) {
-  if (s.players.length < MIN_SQUAD) throw new Error(`integrity: ${s.id} has ${s.players.length} players`);
-  for (const line of ["GK", "Defender", "Midfielder", "Forward"] as const) {
-    const n = s.players.filter((p) => getMainRole(p.positions[0] ?? "") === line).length;
-    if (n < MIN_BY_ROLE[line]) throw new Error(`integrity: ${s.id} has ${n} ${line}`);
-  }
-}
 
 // ── databases.json ──────────────────────────────────────────────────────────
 const dbPath = join(DATA, "databases.json");
@@ -116,6 +128,8 @@ Object.assign(official, {
   lastUpdated: snap.fetchedAt,
   leagues: out.leagues.length,
   playableLeagues: out.leagues.filter((l) => out.schedules.some((s) => s.slug === l.slug)).length,
+  countries: new Set(out.leagues.map((l) => l.country)).size,
+  playableCountries: new Set(out.leagues.map((l) => l.country)).size,
   players: totals.players,
 });
 writeJson(dbPath, databases, 2);
