@@ -26,8 +26,8 @@ export interface AthleteRef {
 
 export const MIN_AGE_GAP = 0;
 export const MAX_AGE_GAP = 3;
-/** The world is two seasons behind the snapshot. */
-export const EXPECTED_AGE_GAP = 2;
+/** The world is one season behind the snapshot. */
+export const EXPECTED_AGE_GAP = 1;
 
 export function espnRole(p: EspnPos | null): MainRole | null {
   return p === "G" ? "GK" : p === "D" ? "Defender" : p === "M" ? "Midfielder" : p === "F" ? "Forward" : null;
@@ -48,6 +48,17 @@ function nameKeys(a: AthleteRef): string[] {
   return [...new Set([playerKey(a.displayName), playerKey(a.fullName)])];
 }
 
+function tokensOf(s: string): string[] {
+  return playerKey(s).split(" ").filter((t) => t.length > 0);
+}
+
+/** Normalized name ∪ normalized fullName tokens, deduplicated. */
+function worldTokenSet(p: WorldPlayerRef): Set<string> {
+  const set = new Set(tokensOf(p.name));
+  if (p.fullName) for (const t of tokensOf(p.fullName)) set.add(t);
+  return set;
+}
+
 interface Candidate { p: WorldPlayerRef; gap: number; rd: number; sameCountry: boolean }
 
 /** True when the top two ranked candidates are indistinguishable (ignoring id) — an ambiguous match. */
@@ -59,8 +70,8 @@ function isAmbiguous(ranked: Candidate[]): boolean {
 }
 
 /**
- * ESPN athlete → world player id, resolved in two passes over the athletes (both in the given order —
- * the caller sorts them). Each world player is claimed at most once, across overrides and both passes.
+ * ESPN athlete → world player id, resolved in three passes over the athletes (all in the given order —
+ * the caller sorts them). Each world player is claimed at most once, across overrides and all passes.
  *
  * Pass A ("club"): candidates are world players sharing a normalized name key (display or full name,
  * against name or fullName) AND the athlete's own club (`p.squadId === a.teamSquadId`; skipped when
@@ -68,17 +79,30 @@ function isAmbiguous(ranked: Candidate[]): boolean {
  * neutral gap/roleDistance of 0). Ranked by roleDistance, then |gap − EXPECTED_AGE_GAP|; a tie between
  * the top two candidates (same club, same rank) is ambiguous and the athlete is left unmatched. An
  * athlete who had at least one viable candidate at their own club (matched or ambiguous) is never
- * considered in pass B, even unmatched — an ambiguous club-mate is not a license to reach elsewhere.
+ * considered in pass A2 or pass B, even unmatched — an ambiguous club-mate is not a license to reach
+ * elsewhere or to fall back to a looser same-club match.
  *
- * Pass B ("global"): only athletes still unmatched after pass A AND with no viable club candidate.
+ * Pass A2 ("club, surname"): only athletes still unmatched with no viable pass-A candidate, a non-null
+ * age, and a non-null role. Fixes the common case where a native world player is stored abbreviated
+ * ("T. Hübers" / fullName "Timo Bernd Hübers") against ESPN's spelled-out name ("Timo Hübers") — the
+ * normalized name keys never collide, but the surname and first name do once fullName is considered.
+ * The athlete's surname is the last token of their display name (falling back to their full name when
+ * the display name is a single token); the first name is the first token. The surname must be at least
+ * 3 characters. A candidate qualifies when it is at the athlete's own club, within the age window, role
+ * compatible, and its token set (normalized name ∪ normalized fullName) contains the surname AND either
+ * contains the first name outright or contains a single-letter token equal to the first name's initial
+ * (an abbreviated "T." from "T. Hübers" reads as Timo's initial). No ranking is applied — pass A2 only
+ * matches when exactly one candidate qualifies; two or more leaves the athlete unmatched.
+ *
+ * Pass B ("global"): only athletes still unmatched after pass A/A2 AND with no viable club candidate.
  * Requires a non-null age AND role, and only considers name keys with ≥ 2 tokens (a one-token key
  * such as "pedro" or "kepa" is only ever
- * matched at the athlete's own club, in pass A). A cross-country candidate (`p.country !== teamCountry`)
+ * matched at the athlete's own club, in pass A/A2). A cross-country candidate (`p.country !== teamCountry`)
  * is only eligible when roleDistance is 0 (same line — never an adjacent one). Ranked by same-country
  * first, then roleDistance, then |gap − EXPECTED_AGE_GAP|; a tie between the top two is ambiguous and
  * the athlete is left unmatched.
  *
- * Overrides (espnId → playerId) are applied before both passes and must reference a real world player;
+ * Overrides (espnId → playerId) are applied before all passes and must reference a real world player;
  * two overrides claiming the same player throw.
  */
 export function matchPlayers(athletes: AthleteRef[], world: WorldPlayerRef[], overrides: Record<string, string>): Map<string, string> {
@@ -132,6 +156,37 @@ export function matchPlayers(athletes: AthleteRef[], world: WorldPlayerRef[], ov
     const best = ranked[0]!;
     claimed.add(best.p.id);
     out.set(a.espnId, best.p.id);
+  }
+
+  // Pass A2 — club, surname: for athletes with no viable pass-A candidate, match via surname + first
+  // name (outright or initial) at the same club. No ranking — only an unambiguous single candidate matches.
+  for (const a of athletes) {
+    if (out.has(a.espnId) || a.teamSquadId === null || a.age === null || a.role === null || hadClubCandidate.has(a.espnId)) continue;
+    const age = a.age;
+    const role = a.role;
+
+    const dispTokens = tokensOf(a.displayName);
+    const tokens = dispTokens.length > 1 ? dispTokens : tokensOf(a.fullName);
+    if (tokens.length < 2) continue;
+    const first = tokens[0]!;
+    const surname = tokens[tokens.length - 1]!;
+    if (surname.length < 3) continue;
+
+    const candidates = world.filter((p) => {
+      if (claimed.has(p.id) || p.squadId !== a.teamSquadId) return false;
+      const gap = age - p.age;
+      if (gap < MIN_AGE_GAP || gap > MAX_AGE_GAP) return false;
+      if (roleDistance(role, p.role) === null) return false;
+      const pTokens = worldTokenSet(p);
+      if (!pTokens.has(surname)) return false;
+      if (pTokens.has(first)) return true;
+      for (const t of pTokens) if (t.length === 1 && t === first[0]) return true;
+      return false;
+    });
+    if (candidates.length !== 1) continue;
+    const best = candidates[0]!;
+    claimed.add(best.id);
+    out.set(a.espnId, best.id);
   }
 
   // Pass B — global: only athletes still unmatched with no club candidate, only multi-token keys, country-aware.
