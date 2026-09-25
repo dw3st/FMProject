@@ -13,18 +13,41 @@ import { getAuth } from "@/backend/auth/middleware";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DEV_LOGIN_EMAIL = "dev@localhost";
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const LOOPBACK_SOCKET_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
-function isDevAutoLoginAllowed(req: Request): boolean {
+/** Narrow shape of Bun's `Server` we depend on — easy to stub in tests, structurally
+ *  satisfied by the real `Server` Bun passes to every route handler. */
+export interface RequestIPServer {
+  requestIP(req: Request): { address: string } | null;
+}
+
+/**
+ * Dev-only auto login is gated on FOUR independent conditions, all required:
+ *  1. DEV_AUTO_LOGIN=1 (explicit opt-in)
+ *  2. NODE_ENV === "development" (fail closed — anything else, including unset, refuses)
+ *  3. the request's Host header resolves to a loopback hostname
+ *  4. the actual socket the request arrived on is a loopback address
+ * (3) alone is spoofable by any client setting its Host header; (4) is the real guarantee
+ * that the request physically originated on this machine (relevant behind a reverse proxy
+ * or in Docker, where a forwarded Host header could claim to be localhost).
+ */
+function isDevAutoLoginAllowed(req: Request, server: RequestIPServer): boolean {
   if (process.env.DEV_AUTO_LOGIN !== "1") return false;
-  if (process.env.NODE_ENV === "production") return false;
+  if (process.env.NODE_ENV !== "development") return false;
+
   let hostname: string;
   try {
     hostname = new URL(req.url).hostname;
   } catch {
     return false;
   }
-  return LOCAL_HOSTNAMES.has(hostname);
+  if (!LOCAL_HOSTNAMES.has(hostname)) return false;
+
+  const socketAddress = server.requestIP(req)?.address;
+  if (!socketAddress || !LOOPBACK_SOCKET_ADDRESSES.has(socketAddress)) return false;
+
+  return true;
 }
 
 export const authRoutes = {
@@ -89,8 +112,8 @@ export const authRoutes = {
     return Response.json({ id: auth.userId, email: auth.email });
   },
 
-  "/api/auth/dev-login": async (req: Request) => {
-    if (!isDevAutoLoginAllowed(req)) return new Response("Not Found", { status: 404 });
+  "/api/auth/dev-login": async (req: Request, server: RequestIPServer) => {
+    if (!isDevAutoLoginAllowed(req, server)) return new Response("Not Found", { status: 404 });
 
     const { session } = devAutoLogin(DEV_LOGIN_EMAIL);
     return new Response(null, {
