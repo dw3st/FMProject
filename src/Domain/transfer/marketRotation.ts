@@ -69,12 +69,15 @@ export interface DailyMarketTickResult {
 export interface DailyMarketTickOptions {
   /** Human-controlled club: excluded from AI needs refresh, buying, and selling in this tick. */
   excludePlayerSquadId?: string | null;
-  /**
-   * Clubs out of the market this tick: no needs refresh, no buying, no selling. The start-kit
-   * pre-simulation freezes every club a career can still pick (leagues that have not kicked off),
-   * so a new career never starts with its squad already sold off.
-   */
+  /** Clubs out of the market this tick: no needs refresh, no buying, no selling. */
   frozenSquadIds?: ReadonlySet<string>;
+  /**
+   * The whole market sits out this tick: no needs refresh, no buying, no selling, no sell-list
+   * matching, for every club. Used by the start-kit pre-simulation — every club is pickable for
+   * a new career, so none of them may trade before the player ever gets to choose one. Returns
+   * the market unchanged.
+   */
+  marketFrozen?: boolean;
   /** Human-managed sell list. When provided, a daily 10% roll can trigger an AI club to match against it. */
   playerSellList?: SellCandidate[];
   /** Squad object for the human's club (needed for sell-list matching). */
@@ -192,6 +195,8 @@ export function dailyMarketTick(
   rng: () => number = defaultRng,
   options?: DailyMarketTickOptions,
 ): DailyMarketTickResult {
+  if (options?.marketFrozen) return { updatedMarket: market, completedTransfers: [] };
+
   const excludePlayerSquadId = options?.excludePlayerSquadId ?? null;
   const frozen = options?.frozenSquadIds;
   const isFrozen = (id: string) => frozen?.has(id) ?? false;
