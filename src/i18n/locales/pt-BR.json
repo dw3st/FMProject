@@ -1537,5 +1537,8 @@
     "moves_one": "{{count}} clube mudou de divisão no seu país.",
     "moves_other": "{{count}} clubes mudaram de divisão no seu país.",
     "ok": "OK"
+  },
+  "players": {
+    "star": "Mito da atualidade"
   }
 }

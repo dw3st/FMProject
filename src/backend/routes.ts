@@ -20,6 +20,7 @@ import { authRoutes } from "@/backend/auth/routes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
+import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
@@ -474,6 +475,17 @@ export const apiRoutes = {
     if (auth instanceof Response) return auth;
     const fixtures = await saveService.getAllFixturesForLeague(saveId!, leagueSlug!);
     return Response.json(fixtures);
+  },
+
+  /** Ids of the world's top-50 players (by overall AVG) — used to badge them as "Current legend". */
+  "/api/saves/:saveId/stars": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const playerIds = await getStarPlayerIds(saveId!);
+    if (!playerIds) return Response.json({ error: "save not found" }, { status: 404 });
+    return Response.json({ playerIds });
   },
 
   "/api/saves/:saveId/leagues": async (req: Request & { params: Record<string, string> }) => {
