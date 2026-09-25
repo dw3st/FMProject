@@ -106,10 +106,14 @@ describe("matchPlayers", () => {
   });
 
   test("club pass removes order effects between two teams' athletes", () => {
-    const w = [wp("q1", "Carlos Souza", 24, "Defender", "teamX"), wp("q2", "Carlos Souza", 24, "Defender", "teamY")];
-    // teamX's athlete is processed first — it must not steal teamY's identically named player.
+    const w = [
+      wp("q1", "Carlos Souza", 24, "Defender", "teamX"), // gap 3 at aX's own club
+      wp("q2", "Carlos Souza", 25, "Defender", "teamY"), // gap 2, the numerically "better" match, but a different club
+    ];
+    // aX belongs to teamX and must match q1 despite q2 being a closer age match — club always wins,
+    // and processing aX first must not let it reach across and steal teamY's player either.
     const m = matchPlayers(
-      [ath("aX", "Carlos Souza", 26, "Defender", "teamX"), ath("aY", "Carlos Souza", 26, "Defender", "teamY")],
+      [ath("aX", "Carlos Souza", 27, "Defender", "teamX"), ath("aY", "Carlos Souza", 27, "Defender", "teamY")],
       w,
       {},
     );
@@ -127,10 +131,11 @@ describe("matchPlayers", () => {
     expect(m.has("a1")).toBe(false);
   });
 
-  test("pass A also skips on an identical-rank tie at the same club", () => {
+  test("pass A also skips on an identical-rank tie at the same club, and pass B never picks it up either", () => {
     const w = [
       wp("q1", "Bruno Lima", 24, "Forward", "home"), // gap 1 → |1-2| = 1
       wp("q2", "Bruno Lima", 22, "Forward", "home"), // gap 3 → |3-2| = 1 (tie)
+      wp("q3", "Bruno Lima", 23, "Forward", "away"), // gap 2, a perfect pass-B match — must NOT be used
     ];
     const m = matchPlayers([ath("a1", "Bruno Lima", 25, "Forward", "home")], w, {});
     expect(m.has("a1")).toBe(false);
@@ -165,5 +170,22 @@ describe("matchPlayers", () => {
       {},
     );
     expect(m.get("a1")).toBe("q2");
+  });
+
+  test("a one-token name at a foreign club is never matched (not even in pass B)", () => {
+    const m = matchPlayers([ath("a1", "Kepa", 32, "GK", "s9", "Kepa Arrizabalaga")], world, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("a null-role athlete is rejected in pass B", () => {
+    const w = [wp("q1", "Felipe Rocha", 24, "Forward", "away")];
+    const m = matchPlayers([ath("a1", "Felipe Rocha", 26, null, "elsewhere")], w, {});
+    expect(m.has("a1")).toBe(false);
+  });
+
+  test("a one-token displayName with a two-token fullName matches in pass B only via the fullName key", () => {
+    const w = [wp("q1", "Neymar Junior", 24, "Forward", "away")];
+    const m = matchPlayers([ath("a1", "Neymar", 26, "Forward", "elsewhere", "Neymar Junior")], w, {});
+    expect(m.get("a1")).toBe("q1");
   });
 });
