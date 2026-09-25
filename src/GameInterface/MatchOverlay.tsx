@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { DEFAULT_TEAM_KIT_HEX } from "@/GameInterface/matchTeamColors";
+import { DEFAULT_TEAM_KIT_HEX, readableOnDark } from "@/GameInterface/matchTeamColors";
 
 interface Props {
   kind: "halfTime" | "matchEnd" | null;
@@ -13,8 +13,8 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB }: Props) {
   const { t } = useTranslation();
   if (!kind) return null;
 
-  const a = kitColorA ?? DEFAULT_TEAM_KIT_HEX.A;
-  const b = kitColorB ?? DEFAULT_TEAM_KIT_HEX.B;
+  const a = readableOnDark(kitColorA ?? DEFAULT_TEAM_KIT_HEX.A);
+  const b = readableOnDark(kitColorB ?? DEFAULT_TEAM_KIT_HEX.B);
 
   const title = kind === "halfTime" ? t("matchOverlay.halfTime") : t("matchOverlay.fullTime");
   const subtitle = kind === "halfTime" ? t("matchOverlay.secondHalfStarting") : t("matchOverlay.matchOver");
