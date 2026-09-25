@@ -8,7 +8,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 
 /**
  * Start kits = pre-computed worlds where the early-starting (European) leagues have
- * been fully simulated up to the playable start date (Brazilian kickoff, 2025-02-05).
+ * been fully simulated up to the playable start date (Brazilian kickoff, 2027-02-05).
  * Running that catch-up live takes minutes; instead we generate a handful of kits
  * offline (see scripts/generateStartKits.ts) and copy one at random into each new
  * save — instant, with variety across playthroughs.

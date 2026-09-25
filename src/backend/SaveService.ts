@@ -27,7 +27,7 @@ const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 export interface SaveDatabase {
   id:        string;   // e.g. "official-2024"
-  name:      string;   // e.g. "Official 2024/25"
+  name:      string;   // e.g. "Official 2026/27"
   version:   string;
   startDate: string;   // ISO display date
 }

@@ -2,7 +2,7 @@
  * Offline start-kit generator.
  *
  * Builds N pre-computed worlds where the early-starting (European) leagues are fully
- * simulated up to the Brazilian kickoff (2025-02-05) — matches, AI training, transfers,
+ * simulated up to the Brazilian kickoff (2027-02-05) — matches, AI training, transfers,
  * development — using the SAME pipeline as a normal day advance (presimulatePreStart).
  * Each kit is snapshotted into src/Data/startKits/kit-{n}/ and a new Brazilian career
  * copies one at random (see src/backend/startKits.ts), so the world feels fully
