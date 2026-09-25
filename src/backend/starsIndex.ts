@@ -13,10 +13,23 @@ const cache = new Map<string, StarsIndex>();
 /** In-flight builds keyed by `saveId#key`, so concurrent requests share one `getAllSquads` scan. */
 const inFlight = new Map<string, Promise<StarsIndex>>();
 
-async function buildStarsIndex(saveId: string, key: string): Promise<StarsIndex> {
+/**
+ * Sequence number of the build most recently committed to `cache`, per save. A build started
+ * earlier (lower seq) can still finish after a later one (e.g. a slow `getAllSquads` scan racing
+ * a fast one for a newer key) — without this guard, its stale result would overwrite the newer
+ * cached entry once it resolves.
+ */
+const committedSeq = new Map<string, number>();
+let nextSeq = 0;
+
+async function buildStarsIndex(saveId: string, key: string, seq: number): Promise<StarsIndex> {
   const squads = await saveService.getAllSquads(saveId);
   const entry: StarsIndex = { key, playerIds: [...topPlayerIds(squads)] };
-  cache.set(saveId, entry);
+  // Only commit if nothing newer has landed in the meantime.
+  if (seq >= (committedSeq.get(saveId) ?? -1)) {
+    cache.set(saveId, entry);
+    committedSeq.set(saveId, seq);
+  }
   return entry;
 }
 
@@ -35,7 +48,8 @@ export async function getStarPlayerIds(saveId: string): Promise<string[] | null>
   const pending = inFlight.get(flightKey);
   if (pending) return (await pending).playerIds;
 
-  const promise = buildStarsIndex(saveId, key).finally(() => {
+  const seq = nextSeq++;
+  const promise = buildStarsIndex(saveId, key, seq).finally(() => {
     inFlight.delete(flightKey);
   });
   inFlight.set(flightKey, promise);

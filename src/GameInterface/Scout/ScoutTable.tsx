@@ -50,8 +50,8 @@ export function ScoutTable({
   loading, filtering, mySquadId, onOffer, sellListedIds = new Set(), error, onRetry,
 }: Props) {
   const { t } = useTranslation();
-  const { session } = useGameSave();
-  const starIds = useStarPlayers(session?.saveId);
+  const { session, currentDate } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId, currentDate);
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   if (loading) {

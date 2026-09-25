@@ -165,8 +165,8 @@ export function TeamPanel({
 }) {
   const color = accentColor;
   const { t } = useTranslation();
-  const { session } = useGameSave();
-  const starIds = useStarPlayers(session?.saveId);
+  const { session, currentDate } = useGameSave();
+  const starIds = useStarPlayers(session?.saveId, currentDate);
   const side = team === "A" ? "left" : "right";
   const isLeft = side === "left";
 
