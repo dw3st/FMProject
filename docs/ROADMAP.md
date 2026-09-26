@@ -1,7 +1,7 @@
 # FMProject — Roadmap
 
 Referência única do que está feito, do que vem a seguir e em que ordem. Atualizado a cada entrega
-(merge em `main`). Última atualização: 2026-09-25 (deploy `4e024cf`).
+(merge em `main`). Última atualização: 2026-09-26 (Etapa 1: copas nacionais).
 
 ---
 
@@ -28,6 +28,8 @@ Mudou o mundo (importadores, elencos, calendário)? Regenerar a cadeia inteira �
   escudos da ESPN nas 34 ligas cobertas; o resto vem do open-football. Pirâmides com acesso e
   rebaixamento por país. Carreira europeia começa em 15/08/2026; ano civil em 05/02/2027.
 - **Craques recalibrados:** nível dos nativos vem do seed (Mbappé 3º, Haaland 5º, Vini 10º).
+- **Copas nacionais:** uma por país (60), mata-mata em jogo único com prorrogação e pênaltis,
+  aba Copa na tela de ligas, inbox, virada com arquivo e copa nova. Ver `.claude/rules/game/cups.md`.
 - **Partida:** motor tick a tick com táticas por estilo, mentalidade ao vivo, 1×/2×/4×, roda com a
   aba em segundo plano. Ligas não seguidas usam o quickSim.
 - **Clube:** finanças do jogador (orçamento, receitas, estádio), IA com finanças por tier,
@@ -46,7 +48,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 
 | Etapa | Roadmap | Issue | Por que junto / por que agora |
 |---|---|---|---|
-| 1 | 1.1 Copas nacionais | #5 revisão + smoke da recalibração | Fechar a verificação do que já está em produção antes de construir em cima; o smoke de temporada vai ganhar as copas |
+| 1 ✅ | 1.1 Copas nacionais | #5 revisão + smoke da recalibração | Fechar a verificação do que já está em produção antes de construir em cima; o smoke de temporada vai ganhar as copas |
 | 2 | 1.2 Continentais | #2 quickSim × motor em gols | Continentais misturam clubes seguidos (motor) e não seguidos (quickSim): o quickSim precisa estar calibrado |
 | 3 | 1.3 Premiação e finanças | #12 salários fora de escala | Mesma área (finanças do clube); prêmios sem salários coerentes distorcem o caixa |
 | 4 | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
