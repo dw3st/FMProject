@@ -1387,7 +1387,8 @@
     "extraTime": "Prorrogação",
     "secondHalfStarting": "Segundo tempo iniciando em breve…",
     "extraTimeStarting": "Prorrogação começando em breve…",
-    "matchOver": "Partida encerrada"
+    "matchOver": "Partida encerrada",
+    "penaltiesScore": "Pênaltis {{a}}–{{b}}"
   },
   "goalOverlay": {
     "goal": "GOL!",

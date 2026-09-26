@@ -1387,7 +1387,8 @@
     "extraTime": "Extra time",
     "secondHalfStarting": "Second half starting soon…",
     "extraTimeStarting": "Extra time starting soon…",
-    "matchOver": "Match over"
+    "matchOver": "Match over",
+    "penaltiesScore": "Penalties {{a}}–{{b}}"
   },
   "goalOverlay": {
     "goal": "GOAL!",
