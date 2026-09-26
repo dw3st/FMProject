@@ -92,7 +92,7 @@ const ET_BREAK_RECOVERY_SCALE = 0.5;
 
 const LIVE_PHASES = new Set<MatchPhase>(['firstHalf', 'secondHalf', 'extraTimeFirst', 'extraTimeSecond']);
 const MINUTE_OFFSET: Partial<Record<MatchPhase, number>> = {
-  firstHalf: 0, secondHalf: 45, extraTimeFirst: 90, extraTimeSecond: 105,
+  firstHalf: 0, secondHalf: 45, extraTimeBreak: 45, extraTimeFirst: 90, extraTimeSecond: 105, penalties: 105,
 };
 
 /** True while the ball can be in play (the four clock-running periods). */
