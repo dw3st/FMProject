@@ -14,6 +14,7 @@ import rolesData from "@/Data/roles.json";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 
 export interface MatchSimResult {
   event: MatchEvent;
@@ -43,6 +44,7 @@ function finalizeSquadsAfterMatch(
   playerStats: Record<string, MatchPlayerStats>,
   playerRatings: Record<string, number>,
   playerEnergy: Record<string, number> | undefined,
+  isCup: boolean,
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -66,6 +68,14 @@ function finalizeSquadsAfterMatch(
           log.passesAttempted += ps.passesAttempted;
           log.tackles += ps.tackles;
           log.interceptions += ps.interceptions;
+          if (isCup) {
+            const c = log.cup ?? { appearances: 0, goals: 0, assists: 0 };
+            log.cup = {
+              appearances: c.appearances + 1,
+              goals: c.goals + ps.goals,
+              assists: c.assists + ps.assists,
+            };
+          }
           if (rating != null) {
             const prev = log.avgRating;
             log.avgRating =
@@ -177,6 +187,7 @@ export function buildMatchEventFromRecording(
     recording.playerStats,
     recording.playerRatings,
     recording.playerEnergy,
+    isCupSlug(fixture.competition),
   );
 
   const event: MatchEvent = {
@@ -313,7 +324,9 @@ export function buildMatchEvent(
   scorers.sort((a, b) => b.goals - a.goals);
 
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
-    finalizeSquadsAfterMatch(homeSquad, awaySquad, playerStats, playerRatings, playerEnergy);
+    finalizeSquadsAfterMatch(
+      homeSquad, awaySquad, playerStats, playerRatings, playerEnergy, isCupSlug(fixture.competition),
+    );
 
   const substitutions: import("@/types/dayLogTypes").MatchSubstitution[] = result.substitutions.map((sub) => ({
     team: sub.team === "A" ? "home" : "away",

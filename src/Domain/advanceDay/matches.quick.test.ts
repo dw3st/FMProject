@@ -108,4 +108,17 @@ describe("cup fixtures", () => {
     // should have no systematic home/away bias — the mean margin should sit close to 0.
     expect(Math.abs(neutralMarginSum / n)).toBeLessThan(0.08);
   });
+
+  test("cup ties also count in seasonLog.cup; league ties don't", () => {
+    const cupFixture = { ...fixture, competition: "cup_testland", knockout: true as const };
+    const afterCup = buildQuickMatchEvent(cupFixture, home, away, sim, mulberry32(1));
+    const playedCup = afterCup.updatedHome.players.find((p) => (p.seasonLog?.appearances ?? 0) > 0)!;
+    expect(playedCup.seasonLog!.cup?.appearances).toBe(1);
+
+    const afterLeague = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(1));
+    const playedLeague = afterLeague.updatedHome.players.find((p) => (p.seasonLog?.appearances ?? 0) > 0)!;
+    expect(playedLeague.seasonLog!.cup?.appearances ?? 0).toBe(0);
+    // League appearances/goals/assists are never routed into the cup sub-log.
+    expect(playedLeague.seasonLog!.appearances).toBe(1);
+  });
 });
