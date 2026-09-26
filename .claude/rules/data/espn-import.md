@@ -20,6 +20,7 @@ Spec: `docs/superpowers/specs/2026-09-25-espn-roster-import-design.md`.
 
 ```bash
 bun scripts/fetchEspn.ts            # único passo com rede (curl) — atualiza o snapshot
+cp src/example_data/roles.json src/Data/roles.json   # os dois importadores recusam roles.json fora de sincronia
 bun scripts/importOpenFootball.ts   # mundo base a partir de data_process/native + data_process/openfootball
 cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (ele confere isso)
 bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
@@ -28,7 +29,7 @@ bun run kits:generate 5
 rm -f src/example_data/startKits/* && cp src/Data/startKits/* src/example_data/startKits/
 ```
 
-`importEspn` recusa rodar se `src/Data/roles.json` não for byte-a-byte igual a `src/example_data/roles.json`
+`importOpenFootball` e `importEspn` recusam rodar se `src/Data/roles.json` não for byte-a-byte igual a `src/example_data/roles.json`
 (ele lê papéis do runtime para a curva de idade) e recusa um mundo cujas ligas já estão em `202[6-9]`
 (a temporada já avançou) — rode sempre a cadeia inteira a partir do `importOpenFootball`, nunca só o
 `importEspn` de novo em cima do resultado anterior.

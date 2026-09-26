@@ -46,6 +46,15 @@ const DATA = join(ROOT, "src", "example_data");
 const SQUADS = join(DATA, "squads");
 const SOURCE = "open-football";
 
+// ── Precondition: the recalibration reads attribute weights from src/Data/roles.json (via
+// Player.ts and ROLES_JSON). src/Data is gitignored, so a stale or locally tuned copy would
+// silently change the recalibrated world. Same check as scripts/importEspn.ts.
+{
+  const runtimeRoles = join(ROOT, "src", "Data", "roles.json");
+  if (!existsSync(runtimeRoles) || readFileSync(runtimeRoles, "utf-8") !== readFileSync(join(DATA, "roles.json"), "utf-8"))
+    throw new Error("src/Data/roles.json is out of sync — run cp -R src/example_data/. src/Data/ first");
+}
+
 /** Include brazil_serie_b in the player/club matching (calibration only; economy fits stay top-flight). */
 const MATCH_SERIE_B = true;
 
