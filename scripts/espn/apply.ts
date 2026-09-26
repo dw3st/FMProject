@@ -442,26 +442,34 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     built.get(squadId)!.players.push(makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality, stats }, opts.overall(draft)));
   }
 
-  // ── New club metadata: finances/capacity fall back league → country → world, never 0 ─────────
-  const nonNewBuilt = [...built.values()].filter((x) => !newClubIds.has(x.id));
+  // ── New club metadata: a brand-new `es_` club is, by definition, an arrival from outside our
+  // world (usually promoted) — it gets the same promoted-club income floor as a genuine
+  // lineup.move (see PROMOTED_INCOME_FLOOR above), not the league's median. Each money field is
+  // PROMOTED_INCOME_FLOOR × the MIN of that field among the destination league's existing peers
+  // (already there this run — not new, not themselves moved); capacity is the peers' min,
+  // unscaled. Falls back league → country → world (still MIN, never median), never 0. ─────────
+  const nonNewNonMovedBuilt = [...built.values()].filter((x) => !newClubIds.has(x.id) && !movedSquadIds.has(x.id));
   for (const sid of newClubIds) {
     const s = built.get(sid)!;
     const league = leagueOfFinal.get(sid)!;
     const country = s.country ?? leagueBySlug.get(league)!.country;
     const countryOf = (x: SquadFile) => x.country ?? leagueBySlug.get(leagueOfFinal.get(x.id)!)?.country;
-    const leaguePeers = (finalMembers.get(league) ?? []).filter((id) => !newClubIds.has(id)).map((id) => built.get(id)!);
-    const countryPeers = nonNewBuilt.filter((x) => countryOf(x) === country);
-    const medOf = (peers: SquadFile[], f: (x: SquadFile) => number | undefined): number | undefined => {
+    const leaguePeers = (finalMembers.get(league) ?? [])
+      .filter((id) => !newClubIds.has(id) && !movedSquadIds.has(id))
+      .map((id) => built.get(id)!);
+    const countryPeers = nonNewNonMovedBuilt.filter((x) => countryOf(x) === country);
+    const minOf = (peers: SquadFile[], f: (x: SquadFile) => number | undefined): number | undefined => {
       const vals = peers.map(f).filter((v): v is number => typeof v === "number");
-      return vals.length ? Math.round(median(vals)) : undefined;
+      return vals.length ? Math.min(...vals) : undefined;
     };
-    const med = (f: (x: SquadFile) => number | undefined) => medOf(leaguePeers, f) ?? medOf(countryPeers, f) ?? medOf(nonNewBuilt, f) ?? 0;
-    const broadcasting = med((x) => x.finances?.broadcasting);
-    const commercial = med((x) => x.finances?.commercial);
-    s.finances = { broadcasting, commercial, total: broadcasting + commercial, budget: med((x) => x.finances?.budget), followers: med((x) => x.finances?.followers) };
+    const peerMin = (f: (x: SquadFile) => number | undefined) => minOf(leaguePeers, f) ?? minOf(countryPeers, f) ?? minOf(nonNewNonMovedBuilt, f) ?? 0;
+    const floored = (f: (x: SquadFile) => number | undefined) => Math.round(PROMOTED_INCOME_FLOOR * peerMin(f));
+    const broadcasting = floored((x) => x.finances?.broadcasting);
+    const commercial = floored((x) => x.finances?.commercial);
+    s.finances = { broadcasting, commercial, total: broadcasting + commercial, budget: floored((x) => x.finances?.budget), followers: floored((x) => x.finances?.followers) };
     const team = [...teamLeague.keys()].find((tid) => `es_${tid}` === sid)!;
     const t = teamsOf(teamLeague.get(team)!).find((x) => x.id === team)!;
-    s.venue = { name: `${s.name} Stadium`, city: t.location || null, capacity: med((x) => x.venue?.capacity) || 10000, surface: "grass" };
+    s.venue = { name: `${s.name} Stadium`, city: t.location || null, capacity: peerMin((x) => x.venue?.capacity) || 10000, surface: "grass" };
     if (!s.coach) s.coach = { id: Math.floor(unitHash(sid) * 1e9), name: coachName(sid, { first: [], last: [] }) };
   }
 
