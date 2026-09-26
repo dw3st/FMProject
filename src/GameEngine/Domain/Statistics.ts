@@ -44,9 +44,17 @@ export interface PlayerStats {
   looseBallsWon:            number;
   /** Switch-of-play passes played (chosen lane earned a far-flank descriptor bonus). */
   switchPlays:              number;
+  /** Shootout kicks taken / scored (never counted as goals). */
+  penaltiesTaken:           number;
+  penaltiesScored:          number;
 }
 
-export type TeamStats = PlayerStats;
+export interface TeamStats extends PlayerStats {
+  /** 1 when the match went to extra time. */
+  extraTimePlayed: number;
+  /** 1 when this team won a penalty shootout. */
+  shootoutsWon:    number;
+}
 
 function emptyStats(): PlayerStats {
   return {
@@ -68,6 +76,8 @@ function emptyStats(): PlayerStats {
     throughBallsLostInDuel:   0,
     looseBallsWon:            0,
     switchPlays:              0,
+    penaltiesTaken:           0,
+    penaltiesScored:          0,
   };
 }
 
@@ -78,6 +88,12 @@ const store = new Map<number, PlayerStats>();
 
 /** Map from playerId → teamId — needed to derive team stats. */
 const playerTeam = new Map<number, TeamId>();
+
+/** Team-level knockout flags (not derivable from player sums). */
+const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number }> = {
+  A: { extraTimePlayed: 0, shootoutsWon: 0 },
+  B: { extraTimePlayed: 0, shootoutsWon: 0 },
+};
 
 function get(id: number): PlayerStats {
   if (!store.has(id)) store.set(id, emptyStats());
@@ -148,6 +164,23 @@ gameBus.on('switchPlayPass', e => {
   notify();
 });
 
+// ── Knockout stats ────────────────────────────────────────────────────────────
+gameBus.on('extraTimeStart', () => {
+  teamFlags.A.extraTimePlayed = 1;
+  teamFlags.B.extraTimePlayed = 1;
+  notify();
+});
+gameBus.on('penaltyKick', e => {
+  const s = get(e.takerId);
+  s.penaltiesTaken++;
+  if (e.scored) s.penaltiesScored++;
+  notify();
+});
+gameBus.on('shootoutEnd', e => {
+  teamFlags[e.winner].shootoutsWon = 1;
+  notify();
+});
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -157,6 +190,8 @@ gameBus.on('switchPlayPass', e => {
 export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   store.clear();
   playerTeam.clear();
+  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0 };
+  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0 };
   for (const { id, team } of players) {
     store.set(id, emptyStats());
     playerTeam.set(id, team);
@@ -170,7 +205,7 @@ export function getPlayerStats(id: number): PlayerStats {
 
 /** Team stats derived from the sum of all player stats for that team. */
 export function getTeamStats(team: TeamId): TeamStats {
-  const result: TeamStats = emptyStats();
+  const result: TeamStats = { ...emptyStats(), ...teamFlags[team] };
   for (const [id, stats] of store) {
     if (playerTeam.get(id) !== team) continue;
     result.passesAttempted += stats.passesAttempted;
@@ -191,6 +226,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.throughBallsLostInDuel   += stats.throughBallsLostInDuel;
     result.looseBallsWon            += stats.looseBallsWon;
     result.switchPlays              += stats.switchPlays;
+    result.penaltiesTaken           += stats.penaltiesTaken;
+    result.penaltiesScored          += stats.penaltiesScored;
   }
   return result;
 }
