@@ -60,9 +60,10 @@ function withDefaultFinances(s: Squad): Squad {
   };
 }
 
-type LeagueDataEntry = {
+export type LeagueDataEntry = {
   slug: string;
   name?: string;
+  country?: string;
   standings: LeagueTeam[];
 };
 
