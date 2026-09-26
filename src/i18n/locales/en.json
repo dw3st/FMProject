@@ -764,6 +764,7 @@
     "debug": "Debug",
     "loadError": "Failed to load match result.",
     "noMatchOnDate": "No match scheduled on this date.",
+    "penalties": "Penalties",
     "mentality": {
       "attacking": "All-out Attack",
       "balanced": "Balanced",
@@ -1383,7 +1384,9 @@
   "matchOverlay": {
     "halfTime": "Half Time",
     "fullTime": "Full Time",
+    "extraTime": "Extra time",
     "secondHalfStarting": "Second half starting soon…",
+    "extraTimeStarting": "Extra time starting soon…",
     "matchOver": "Match over"
   },
   "goalOverlay": {

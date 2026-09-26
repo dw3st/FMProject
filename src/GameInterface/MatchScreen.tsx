@@ -31,6 +31,7 @@ import { TeamPanel } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
+import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 
 // Dev-only: DebugPanel pulls in react-json-view-lite (and its CSS, a side-effect
 // import that prevents tree-shaking). Loading it via a lazy() guarded by
@@ -109,7 +110,7 @@ export function MatchScreen() {
     team: TeamId;
     score: { A: number; B: number };
   } | null>(null);
-  const [matchOverlay, setMatchOverlay] = useState<"halfTime" | "matchEnd" | null>(null);
+  const [matchOverlay, setMatchOverlay] = useState<"halfTime" | "extraTime" | "matchEnd" | null>(null);
   const [ratings, setRatings] = useState<Record<number, number>>(() => getAllRatings());
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
@@ -285,6 +286,14 @@ export function MatchScreen() {
     return gameBus.on("halfTime", () => {
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("halfTime");
+      overlayTimerRef.current = setTimeout(() => setMatchOverlay(null), 3500);
+    });
+  }, []);
+
+  useEffect(() => {
+    return gameBus.on("extraTimeStart", () => {
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      setMatchOverlay("extraTime");
       overlayTimerRef.current = setTimeout(() => setMatchOverlay(null), 3500);
     });
   }, []);
@@ -475,6 +484,14 @@ export function MatchScreen() {
             scoreColorA={matchKitColors.teamA}
             scoreColorB={matchKitColors.teamB}
           />
+
+          {gameState.shootout && (
+            <PenaltyShootoutStrip
+              shootout={gameState.shootout}
+              nameA={teamAWithCrest?.name ?? "A"}
+              nameB={teamBWithCrest?.name ?? "B"}
+            />
+          )}
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
