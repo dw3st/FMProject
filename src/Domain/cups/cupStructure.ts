@@ -23,6 +23,7 @@ export interface StagePlan {
  */
 export function planStages(n: number): StagePlan | null {
   if (n < 2) return null;
+  if (n > 256) throw new Error(`planStages: ${n} entrants exceeds the maximum of 256 (stageNameFor collapses beyond r128)`);
   const f = Math.ceil(Math.log2(n));
   const full = 2 ** f;
   const names: CupStageName[] = [];

@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { generateCup } from "@/Domain/cups/generateCup";
+import { drawNextStage, stageComplete } from "@/Domain/cups/cupProgress";
+import type { Fixture } from "@/types/calendarTypes";
 
 const clubs = Array.from({ length: 44 }, (_, i) => ({ id: `c${i}`, tier: i < 20 ? 1 : 2 }));
 const args = {
@@ -47,8 +49,28 @@ describe("generateCup", () => {
   });
 
   test("16 clubs: no preliminary, no byes, final is neutral when drawn", () => {
-    const r = generateCup({ ...args, clubs: clubs.slice(0, 16) })!;
+    let r = generateCup({ ...args, clubs: clubs.slice(0, 16) })!;
     expect(r.meta.cup!.byes).toEqual([]);
     expect(r.rounds[0]!.fixtures).toHaveLength(8);
+
+    // Play every stage through to the final and confirm it's drawn as a neutral-venue fixture.
+    let meta = r.meta;
+    let round = 1;
+    let fixtures: Fixture[] = r.rounds[0]!.fixtures;
+    for (;;) {
+      const played = fixtures.map((f) => ({ ...f, played: true, result: { home: 1, away: 0 } }));
+      expect(stageComplete(played)).toBe(true);
+      const next = drawNextStage(meta, round, played, args.seedKey);
+      if (!next) {
+        // Last stage played was the final.
+        expect(round).toBe(meta.cup!.stages.length);
+        expect(played).toHaveLength(1);
+        expect(played[0]!.neutral).toBe(true);
+        break;
+      }
+      meta = next.meta;
+      round = next.round.round;
+      fixtures = next.round.fixtures;
+    }
   });
 });

@@ -48,4 +48,11 @@ describe("cup progress", () => {
     expect(stageComplete(cup.rounds[0]!.fixtures)).toBe(false);
     expect(drawNextStage(cup.meta, 1, cup.rounds[0]!.fixtures, "k")).toBeNull();
   });
+
+  test("winner id missing from cup.tiers throws instead of defaulting", () => {
+    const cup = base();
+    const fixtures = playAll(cup.rounds[0]!.fixtures);
+    fixtures[0] = { ...fixtures[0]!, home: "ghost", result: { home: 1, away: 0 } };
+    expect(() => drawNextStage(cup.meta, 1, fixtures, "k")).toThrow(/ghost/);
+  });
 });

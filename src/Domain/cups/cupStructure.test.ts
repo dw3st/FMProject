@@ -19,6 +19,11 @@ describe("planStages", () => {
     expect(planStages(1)).toBeNull();
     expect(planStages(0)).toBeNull();
   });
+  test("more than 256 entrants: throws instead of duplicating r128", () => {
+    expect(() => planStages(257)).toThrow();
+    expect(() => planStages(300)).toThrow();
+    expect(planStages(256)).not.toBeNull();
+  });
   test("stage names by entrants", () => {
     expect(stageNameFor(2)).toBe("final");
     expect(stageNameFor(4)).toBe("sf");
