@@ -1,0 +1,33 @@
+import { describe, expect, test } from "bun:test";
+import { scheduleStageDates } from "@/Domain/cups/cupDates";
+
+const dow = (d: string) => new Date(`${d}T00:00:00Z`).getUTCDay();
+
+describe("scheduleStageDates", () => {
+  test("F dates, strictly increasing, inside the window, final ≥ 7 days before end", () => {
+    const dates = scheduleStageDates("2026-08-15", "2027-05-20", 6, new Set());
+    expect(dates).toHaveLength(6);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    expect(dates[0]! >= "2026-08-15").toBe(true);
+    expect(dates[5]! <= "2027-05-13").toBe(true);
+    for (const d of dates) expect(dow(d)).toBe(3); // Wednesday
+  });
+
+  test("avoids busy days and the day after a busy day", () => {
+    const free = scheduleStageDates("2026-08-15", "2027-05-20", 4, new Set());
+    const busy = new Set(free);                                    // block every chosen Wednesday
+    for (const d of free) busy.add(new Date(Date.parse(`${d}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10));
+    const dates = scheduleStageDates("2026-08-15", "2027-05-20", 4, busy);
+    for (const d of dates) {
+      expect(busy.has(d)).toBe(false);
+      const prev = new Date(Date.parse(`${d}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+      expect(busy.has(prev)).toBe(false);
+    }
+  });
+
+  test("calendar-year window", () => {
+    const dates = scheduleStageDates("2027-02-05", "2027-11-30", 3, new Set());
+    expect(dates[0]! >= "2027-02-05").toBe(true);
+    expect(dates[2]! <= "2027-11-23").toBe(true);
+  });
+});
