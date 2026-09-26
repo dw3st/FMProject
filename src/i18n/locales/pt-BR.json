@@ -1162,6 +1162,25 @@
     },
     "substitutions": "Substituições"
   },
+  "cups": {
+    "champion": "Campeão",
+    "notDrawn": "Ainda não sorteado",
+    "pens": "pên. {{home}}–{{away}}",
+    "aet": "prorr.",
+    "neutral": "campo neutro",
+    "loading": "Carregando…",
+    "knockoutNote": "Mata-mata: prorrogação e pênaltis se empatar",
+    "stage": {
+      "preliminary": "Fase preliminar",
+      "r128": "64 avos de final",
+      "r64": "32 avos de final",
+      "r32": "16 avos de final",
+      "r16": "Oitavas de final",
+      "qf": "Quartas de final",
+      "sf": "Semifinal",
+      "final": "Final"
+    }
+  },
   "development": {
     "title": "Evolução",
     "subtitle": "Acompanhe o progresso dos seus jogadores",

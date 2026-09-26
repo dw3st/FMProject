@@ -13,12 +13,14 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { clubSlugFromSquadId } from "@/backend/squadIdResolve";
 import { computeStandings } from "@/Domain/season";
-import { countryDisplayName, leagueLabel } from "@/Domain/world/labels";
+import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world/labels";
 import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
 import { ClubFinancesTable } from "@/GameInterface/Components/ClubFinancesTable";
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
+import { CupBracket, type CupBracketData } from "@/GameInterface/Components/CupBracket";
+import { cupSlugOf } from "@/Domain/cups/cupIds";
 import countriesRaw from "@/Data/countries.json";
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
@@ -498,9 +500,11 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
   );
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"table" | "fixtures" | "finances">("table");
+  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup">("table");
   // Club finances of the selected league — fetched only while the Finances tab is open.
   const [financeRows, setFinanceRows] = useState<ClubFinanceRow[] | null>(null);
+  // National cup bracket of the selected league's country — fetched only while the Cup tab is open.
+  const [cupData, setCupData] = useState<CupBracketData | null>(null);
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
   // True while the save's standings are in flight — the catalog fallback would show the
@@ -571,6 +575,25 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   }, [tab, session?.saveId, activeSlug, currentDate]);
 
   const active = leagues.find((l) => l.slug === activeSlug);
+  const cupSlug = active?.country ? cupSlugOf(active.country) : null;
+
+  // Fetch the national cup bracket for the selected league's country — reset whenever the
+  // league (and therefore the cup) changes.
+  useEffect(() => {
+    if (tab !== "cup" || !session?.saveId || !cupSlug) return;
+    let cancelled = false;
+    setCupData(null);
+    fetch(`/api/saves/${session.saveId}/cups/${cupSlug}`)
+      .then((r) => (r.ok ? (r.json() as Promise<CupBracketData>) : null))
+      .catch(() => null)
+      .then((data) => {
+        if (!cancelled) setCupData(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, session?.saveId, cupSlug]);
+
   const hasFixtures = leagueFixtures.length > 0;
   // Prefer live standings from backend; fall back to client-side computation only once the
   // request has finished without data (old saves / no save), never while it is loading.
@@ -748,6 +771,20 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               >
                 {t("leagues.finances.tab")}
               </button>
+              {cupSlug && (
+                <button
+                  type="button"
+                  onClick={() => setTab("cup")}
+                  disabled={!session}
+                  className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                    tab === "cup"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground bg-transparent"
+                  }`}
+                >
+                  {competitionName(cupSlug, leagues, i18n.language)}
+                </button>
+              )}
             </div>
 
             {tab === "table" ? (
@@ -784,6 +821,12 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   />
                   <p className="text-xs text-muted-foreground m-0">{t("leagues.finances.note")}</p>
                 </div>
+              )
+            ) : tab === "cup" ? (
+              cupData ? (
+                <CupBracket data={cupData} myClubId={session?.clubId ?? ""} />
+              ) : (
+                <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
               )
             ) : (
               <FixturesPanel
