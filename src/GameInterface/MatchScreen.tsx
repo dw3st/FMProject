@@ -203,14 +203,17 @@ export function MatchScreen() {
         const opponentPlayers = data.opponentSquad?.players ?? data.mySquad.players;
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
         const oppLineup = autoFillLineup(oppSlots, opponentPlayers);
-        const state = createMatchState(
-          data.mySquad.players,
-          data.myFormation,
-          opponentPlayers,
-          data.oppFormation,
-          data.myLineup,
-          oppLineup,
-        );
+        const state = {
+          ...createMatchState(
+            data.mySquad.players,
+            data.myFormation,
+            opponentPlayers,
+            data.oppFormation,
+            data.myLineup,
+            oppLineup,
+          ),
+          knockout: data.fixture.knockout === true,
+        };
         initRatings(state.players.map(p => p.id));
         initStats(state.players.map(p => ({ id: p.id, team: p.team })));
         setRatings(getAllRatings());

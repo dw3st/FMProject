@@ -3,6 +3,7 @@ import { withSaveLock } from "@/backend/saveLock";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { getPyramids, runBufferedDay, type AdvanceDayOutcome } from "@/backend/advanceDay";
 import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRollover";
+import { playerCupSlug } from "@/backend/cupWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
 
 /**
@@ -135,23 +136,31 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
   }
 }
 
-/** Dates of the player's unplayed fixtures from its current league's date-index + round files. */
-async function nextPlayerFixtureDate(
-  service: SaveService, saveId: string, leagueSlug: string, clubId: string, fromDate: string,
+/**
+ * Earliest date, across the given competitions (league and/or national cup), of an unplayed
+ * fixture involving `clubId`. Reads each competition's date-index + only the round files that
+ * could beat the best date found so far.
+ */
+export async function nextPlayerFixtureDate(
+  service: SaveService, saveId: string, competitions: string[], clubId: string, fromDate: string,
 ): Promise<string | null> {
-  const index = (await service.getDateIndex(saveId, leagueSlug)) ?? {};
-  const dates = Object.keys(index).filter((d) => d >= fromDate).sort();
-  const rounds = new Map<number, Awaited<ReturnType<SaveService["getRound"]>>>();
-  for (const date of dates) {
-    for (const r of index[date] ?? []) {
-      if (!rounds.has(r)) rounds.set(r, await service.getRound(saveId, leagueSlug, r));
-      const hit = rounds.get(r)?.fixtures.some(
-        (f) => f.date === date && !f.played && (f.home === clubId || f.away === clubId),
-      );
-      if (hit) return date;
+  let best: string | null = null;
+  for (const slug of competitions) {
+    const index = (await service.getDateIndex(saveId, slug)) ?? {};
+    const dates = Object.keys(index).filter((d) => d >= fromDate).sort();
+    const rounds = new Map<number, Awaited<ReturnType<SaveService["getRound"]>>>();
+    outer: for (const date of dates) {
+      if (best && date >= best) break;
+      for (const r of index[date] ?? []) {
+        if (!rounds.has(r)) rounds.set(r, await service.getRound(saveId, slug, r));
+        const hit = rounds.get(r)?.fixtures.some(
+          (f) => f.date === date && !f.played && (f.home === clubId || f.away === clubId),
+        );
+        if (hit) { best = date; break outer; }
+      }
     }
   }
-  return null;
+  return best;
 }
 
 /** Real position reader: the player's league/club/date come from the save meta, re-read every call. */
@@ -160,7 +169,10 @@ export async function readAdvancePosition(saveId: string, service: SaveService =
   if (!meta) throw new Error("save not found");
   if (!meta.currentDate) throw new Error("save has no currentDate");
   const currentDate = meta.currentDate;
-  const matchDate = await nextPlayerFixtureDate(service, saveId, meta.leagueSlug, meta.clubId, currentDate);
+  const cup = await playerCupSlug(meta.leagueSlug);
+  const matchDate = await nextPlayerFixtureDate(
+    service, saveId, cup ? [meta.leagueSlug, cup] : [meta.leagueSlug], meta.clubId, currentDate,
+  );
 
   let rolloverDay: string | null = null;
   if (!matchDate) {
