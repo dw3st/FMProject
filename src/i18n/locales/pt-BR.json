@@ -790,6 +790,16 @@
         "{{team}} sai do círculo central.",
         "Jogo retomado — {{team}} dá o pontapé.",
         "Gol confirmado — {{team}} reinicia."
+      ],
+      "extraTimeFirst": [
+        "Começa a prorrogação — {{team}} dá o pontapé inicial do primeiro tempo extra.",
+        "Vamos de novo — {{team}} inicia a prorrogação do meio-campo.",
+        "Mais trinta minutos se for preciso — {{team}} começa a prorrogação."
+      ],
+      "extraTimeSecond": [
+        "Segundo tempo da prorrogação — {{team}} reinicia do meio-campo.",
+        "Último período — {{team}} dá o pontapé.",
+        "A prorrogação é retomada — {{team}} põe a bola em jogo."
       ]
     },
     "passAttempted": {
