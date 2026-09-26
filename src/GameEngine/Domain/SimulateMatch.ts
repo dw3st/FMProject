@@ -10,8 +10,8 @@
  *   // result.score, result.teamStats, result.playerStats, result.playerRatings
  */
 
-import type { GameState, GamePlayer, Formation } from '@/GameEngine/types';
-import { tickState, createMatchState } from '@/GameEngine/Domain/gameState';
+import type { GameState, GamePlayer, Formation, KnockoutDecider } from '@/GameEngine/types';
+import { tickState, createMatchState, knockoutDecider } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
@@ -36,7 +36,14 @@ export interface MatchResult {
   players:       GamePlayer[];
   /** All substitutions made by either team during the match. */
   substitutions: import('@/GameEngine/types').SubstitutionRecord[];
+  /** Extra time / shootout outcome of a knockout match; null otherwise or when decided in 90'. */
+  decider:       KnockoutDecider | null;
   durationMs:    number;
+}
+
+export interface SimulateMatchOptions {
+  /** Knockout: a draw after 90' goes to extra time and penalties. */
+  knockout?: boolean;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -99,6 +106,7 @@ export function simulateMatch(
   formationB: Formation = DEFAULT_FORMATION,
   lineupA?: string[],
   lineupB?: string[],
+  options: SimulateMatchOptions = {},
 ): MatchResult {
   const startMs = performance.now();
 
@@ -107,6 +115,7 @@ export function simulateMatch(
     ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB),
     matchPhase:            'firstHalf',
     presentationCountdown: 0,
+    knockout:              options.knockout === true,
   };
 
   // Reset shared accumulators so live-game stats don't bleed in
@@ -120,7 +129,8 @@ export function simulateMatch(
       s = { ...s, presentationCountdown: 0 };
     }
     // In headless simulation both teams are AI-controlled — evaluate subs for Team A too
-    if (s.matchPhase === 'secondHalf' && shouldCheckAiSubs(s.matchTime, SIM_DT * (2700 / 150))) {
+    const subsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
+    if (subsWindow && shouldCheckAiSubs(s.matchTime, SIM_DT * (2700 / 150))) {
       const subsA = evaluateAiSubstitutions(s, 'A');
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
@@ -135,6 +145,7 @@ export function simulateMatch(
     playerRatings: getAllRatings(),
     players:       s.players,
     substitutions: s.substitutions,
+    decider:       knockoutDecider(s),
     durationMs:    performance.now() - startMs,
   };
 }
