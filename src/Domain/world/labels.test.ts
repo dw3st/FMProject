@@ -97,6 +97,29 @@ describe("partitionDayMatches", () => {
   });
 });
 
+describe("competitionName — cups", () => {
+  const cupLeagues = [
+    { slug: "premier_league", name: "Premier League", country: "England", iso2: "GB" },
+    { slug: "brazil_serie_a", name: "Brasileirão", country: "Brazil", iso2: "BR" },
+    { slug: "of_j_league", name: "J1 League", country: "Japan", iso2: "JP" },
+  ] as unknown as Parameters<typeof competitionName>[1];
+
+  test("named cups", () => {
+    expect(competitionName("cup_england", cupLeagues)).toBe("FA Cup");
+    expect(competitionName("cup_brazil", cupLeagues, "pt-BR")).toBe("Copa do Brasil");
+  });
+  test("generic cup by country, localised", () => {
+    expect(competitionName("cup_japan", cupLeagues, "en")).toBe("Japan Cup");
+    expect(competitionName("cup_japan", cupLeagues, "pt-BR")).toBe("Copa Japão");
+  });
+  test("unknown cup slug falls back to title case", () => {
+    expect(competitionName("cup_atlantis", cupLeagues)).toBe("Cup Atlantis");
+  });
+  test("leagues unchanged", () => {
+    expect(competitionName("premier_league", cupLeagues)).toBe("Premier League");
+  });
+});
+
 describe("matchesCountryQuery", () => {
   test("query vazia sempre bate", () => {
     expect(matchesCountryQuery("", ["Qualquer coisa"])).toBe(true);

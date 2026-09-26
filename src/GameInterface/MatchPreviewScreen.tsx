@@ -579,7 +579,6 @@ export function MatchPreviewScreen() {
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [mySquadId, setMySquadId] = useState<string>("");
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
-  const [activeLeagueData, setActiveLeagueData] = useState<LeagueData | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
   // Static catalog lookups: club slug/name for any squadId.
   const catalogSlugs = useMemo(
@@ -622,8 +621,6 @@ export function MatchPreviewScreen() {
 
         if (cancelled) return;
 
-        const leagueRows = leaguesR.find((l) => l.slug === s.leagueSlug) ?? null;
-        setActiveLeagueData(leagueRows);
         setCatalogLeagues(leaguesR);
 
         let myInternalId: string;
@@ -745,7 +742,7 @@ export function MatchPreviewScreen() {
 
   // ── Loading / guard states ────────────────────────────────────────────────
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (saveLoading || loading || !session) {
     return (
@@ -824,7 +821,7 @@ export function MatchPreviewScreen() {
   const currentDate = session.currentDate ?? "";
   const { weather, referee, venue } = getMatchMeta(currentDate, session.clubName, isHome);
   const competition = fixture
-    ? competitionName(fixture.competition, activeLeagueData ? [activeLeagueData] : [])
+    ? competitionName(fixture.competition, catalogLeagues, i18n.language)
     : "Premier Division";
   const matchday = fixture?.round ?? 1;
 

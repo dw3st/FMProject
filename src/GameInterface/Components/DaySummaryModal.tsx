@@ -226,12 +226,13 @@ function buildTeamsById(leagues: LeagueData[]): Map<string, TeamLookup> {
 }
 
 function MatchCard({
-  event, leagues, teamsById, t,
+  event, leagues, teamsById, t, lang,
 }: {
   event: MatchEvent;
   leagues: LeagueData[];
   teamsById: Map<string, TeamLookup>;
   t: TFunc;
+  lang: string;
 }) {
   const homeTeam = teamsById.get(event.home);
   const awayTeam = teamsById.get(event.away);
@@ -247,7 +248,7 @@ function MatchCard({
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/20">
         <Trophy className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          {t("daySummary.matchRound", { competition: competitionName(event.competition, leagues), round: event.round })}
+          {t("daySummary.matchRound", { competition: competitionName(event.competition, leagues, lang), round: event.round })}
         </span>
       </div>
 
@@ -320,18 +321,19 @@ function StatCell({ label, home, away }: { label: string; home: number; away: nu
 
 /** One text line for a match outside the player's own/followed leagues — no ClubLogo, so hundreds render cheaply. */
 function OtherLeagueLine({
-  event, leagues, teamsById,
+  event, leagues, teamsById, lang,
 }: {
   event: MatchEvent;
   leagues: LeagueData[];
   teamsById: Map<string, TeamLookup>;
+  lang: string;
 }) {
   const homeName = teamsById.get(event.home)?.name ?? fallbackTeamNameFromSquadId(event.home);
   const awayName = teamsById.get(event.away)?.name ?? fallbackTeamNameFromSquadId(event.away);
   return (
     <div className="flex items-center gap-3 px-3 py-1.5 text-xs">
       <span className="shrink-0 w-36 truncate text-muted-foreground/70 font-semibold uppercase tracking-wide text-[10px]">
-        {competitionName(event.competition, leagues)}
+        {competitionName(event.competition, leagues, lang)}
       </span>
       <span className="truncate text-foreground/80">
         {homeName} {event.score.home} – {event.score.away} {awayName}
@@ -342,12 +344,13 @@ function OtherLeagueLine({
 
 /** Collapsed-by-default block for matches outside the player's own/followed leagues. */
 function OtherLeaguesSection({
-  matches, leagues, teamsById, t,
+  matches, leagues, teamsById, t, lang,
 }: {
   matches: MatchEvent[];
   leagues: LeagueData[];
   teamsById: Map<string, TeamLookup>;
   t: TFunc;
+  lang: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -364,7 +367,7 @@ function OtherLeaguesSection({
       {open && (
         <div className="mt-2 rounded-xl border border-border/40 divide-y divide-border/30 overflow-hidden">
           {matches.map((e) => (
-            <OtherLeagueLine key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} />
+            <OtherLeagueLine key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} lang={lang} />
           ))}
         </div>
       )}
@@ -423,23 +426,24 @@ function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t:
 }
 
 function EventCard({
-  event, leagues, teamsById, t,
+  event, leagues, teamsById, t, lang,
 }: {
   event: DayEvent;
   leagues: LeagueData[];
   teamsById: Map<string, TeamLookup>;
   t: TFunc;
+  lang: string;
 }) {
   switch (event.kind) {
     case "match":
-      return <MatchCard event={event} leagues={leagues} teamsById={teamsById} t={t} />;
+      return <MatchCard event={event} leagues={leagues} teamsById={teamsById} t={t} lang={lang} />;
     default:
       return null;
   }
 }
 
 export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { squad, save, session } = useGameSave();
   const playerById = useMemo(() => {
     const m = new Map<string, RosterPlayer>();
@@ -518,14 +522,14 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
               </h3>
               <div className="space-y-3">
                 {primaryMatches.map((e) => (
-                  <EventCard key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} t={t} />
+                  <EventCard key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} t={t} lang={i18n.language} />
                 ))}
               </div>
             </section>
           )}
 
           {otherMatches.length > 0 && (
-            <OtherLeaguesSection matches={otherMatches} leagues={leagues} teamsById={teamsById} t={t} />
+            <OtherLeaguesSection matches={otherMatches} leagues={leagues} teamsById={teamsById} t={t} lang={i18n.language} />
           )}
 
           {myDevChanges.length > 0 && (

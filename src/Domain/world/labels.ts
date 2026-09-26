@@ -1,5 +1,6 @@
 import type { LeagueData } from "@/types/playerTypes";
 import type { Continent, CountryEntry } from "@/types/worldTypes";
+import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
 
 export const CONTINENT_ORDER: Continent[] = ["Europe", "South America", "North America", "Asia", "Africa", "Oceania", "Other"];
 
@@ -41,9 +42,35 @@ export function leagueLabel(league: LeagueData, countryName: string): string {
 
 const titleCase = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-export function competitionName(slug: string, leagues: LeagueData[]): string {
+/** Real names of the big national cups, keyed by leagueData country. */
+const CUP_NAMES: Record<string, string> = {
+  England: "FA Cup",
+  Brazil: "Copa do Brasil",
+  Spain: "Copa del Rey",
+  Germany: "DFB-Pokal",
+  Italy: "Coppa Italia",
+  France: "Coupe de France",
+};
+
+function cupName(slug: string, leagues: LeagueData[], lang: string): string | null {
+  const league = leagues.find((l) => l.country && cupSlugOf(l.country) === slug);
+  if (!league?.country) return null;
+  if (CUP_NAMES[league.country]) return CUP_NAMES[league.country]!;
+  let country = league.country;
+  const iso2 = league.iso2;
+  if (iso2) {
+    try {
+      country = new Intl.DisplayNames([lang], { type: "region" }).of(iso2) ?? country;
+    } catch { /* keep the raw name */ }
+  }
+  return lang.toLowerCase().startsWith("pt") ? `Copa ${country}` : `${country} Cup`;
+}
+
+/** Display name of a competition slug: league name, national cup name, or a title-cased slug. */
+export function competitionName(slug: string, leagues: LeagueData[], lang = "en"): string {
   const hit = leagues.find((l) => l.slug === slug);
   if (hit) return hit.name;
+  if (isCupSlug(slug)) return cupName(slug, leagues, lang) ?? titleCase(slug.replace(/^of_/, ""));
   return titleCase(slug.replace(/^of_/, ""));
 }
 
