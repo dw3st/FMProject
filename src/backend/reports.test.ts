@@ -213,6 +213,11 @@ describe("POST /api/reports — validation", () => {
     const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: "2027-02-30" }));
     expect(res.status).toBe(400);
   });
+
+  test("rejects a gameDate with an out-of-range month", async () => {
+    const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: "2027-13-01" }));
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("POST /api/reports — request shape (Content-Type, body size)", () => {

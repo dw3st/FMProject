@@ -7,9 +7,11 @@ interface Props {
   /** Resolved kit colours for overlays — same as pitch / placar */
   kitColorA?: string;
   kitColorB?: string;
+  /** Final shootout score — shown as the full-time subtitle when the match ended on penalties. */
+  penaltiesScore?: { A: number; B: number };
 }
 
-export function MatchOverlay({ kind, score, kitColorA, kitColorB }: Props) {
+export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore }: Props) {
   const { t } = useTranslation();
   if (!kind) return null;
 
@@ -23,6 +25,7 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB }: Props) {
   const subtitle =
     kind === "halfTime" ? t("matchOverlay.secondHalfStarting")
     : kind === "extraTime" ? t("matchOverlay.extraTimeStarting")
+    : penaltiesScore ? t("matchOverlay.penaltiesScore", { a: penaltiesScore.A, b: penaltiesScore.B })
     : t("matchOverlay.matchOver");
 
   return (

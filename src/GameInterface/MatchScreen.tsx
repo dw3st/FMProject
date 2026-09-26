@@ -469,6 +469,7 @@ export function MatchScreen() {
         score={score}
         kitColorA={matchKitColors.teamA}
         kitColorB={matchKitColors.teamB}
+        penaltiesScore={gameState.shootout?.finalScore}
       />
 
       {/* Scoreboard Header */}

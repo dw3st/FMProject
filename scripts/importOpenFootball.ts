@@ -52,7 +52,7 @@ const SOURCE = "open-football";
 {
   const runtimeRoles = join(ROOT, "src", "Data", "roles.json");
   if (!existsSync(runtimeRoles) || readFileSync(runtimeRoles, "utf-8") !== readFileSync(join(DATA, "roles.json"), "utf-8"))
-    throw new Error("src/Data/roles.json is out of sync — run cp -R src/example_data/. src/Data/ first");
+    throw new Error("src/Data/roles.json is out of sync — run cp src/example_data/roles.json src/Data/roles.json first");
 }
 
 /** Include brazil_serie_b in the player/club matching (calibration only; economy fits stay top-flight). */

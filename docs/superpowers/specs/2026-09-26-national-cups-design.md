@@ -75,18 +75,26 @@ issue #5).
 - Partida `knockout` empatada ao fim do `secondHalf` → prorrogação 2 × 15 min no mesmo relógio
   comprimido, com troca de lado, pontapé inicial e acréscimo 0–2 min. Gols e estatísticas normais.
 - Empate ao fim da prorrogação → `penalties`.
-- **`resolvePenaltyShootout(sideA, sideB, rng)`** (pura, `ActionOutcomes.ts`), usada por motor e
-  quickSim:
-  - batedores: jogadores em campo por `finishing` decrescente, goleiro por último; repete a ordem;
-  - 5 cobranças alternadas com parada antecipada; depois alternadas até a decisão;
-  - chance = `clamp(PEN_BASE × shooterEffect × gkPenaltyEffect, 0.55, 0.92)`, `PEN_BASE ≈ 0.76`
-    (calibrado para ~75% com times médios); constantes em `Configs/PenaltyConfig.ts`;
-  - retorna `{ kicks: {takerId, gkId, scored}[], score: {A, B}, winner }`.
+- **`resolvePenaltyShootout(sideA, sideB, rng)`** (pura, `Infrastructure/PenaltyShootout.ts`),
+  usada por motor e quickSim:
+  - batedores: jogadores em campo por `accuracy` (finishing) decrescente, goleiro por último;
+    repete a ordem;
+  - 5 cobranças alternadas com parada antecipada (assim que um lado não alcança mais o outro);
+    depois alternadas em morte súbita até a decisão;
+  - chance = `clamp(BASE × shooterEffect × gkEffect, MIN_CHANCE, MAX_CHANCE)`, com
+    `BASE = 0.85`, `shooterEffect` linear de `SHOOTER_MIN = 0.85` a `SHOOTER_MAX = 1.15` em
+    `accuracy` (0..0.95), `gkEffect = 1 − avg(reflex, diving) × GK_WEIGHT (0.25)`,
+    `MIN_CHANCE = 0.55`, `MAX_CHANCE = 0.92` — calibrado para ~75% com times médios; constantes em
+    `Configs/PenaltyConfig.ts`;
+  - retorna `{ kicks: {team, takerId, keeperId, scored, chance}[], score: {A, B}, winner }` — sempre
+    com um vencedor e placar não empatado (casos degenerados de time sem batedor viram uma cobrança
+    sintética).
 - No motor a fase `penalties` reproduz `kicks` um a um (evento `penaltyKick` a cada ~1,5 s real) e
   termina com `matchEnd`. O `decider` sai no resultado da partida.
-- **quickSim** `knockout`: empate → prorrogação com xG × 30/90 → pênaltis com os 11 titulares.
+- **quickSim** `knockout`: empate → prorrogação com xG × 30/90 → pênaltis com os 11 titulares; o
+  desgaste de energia da prorrogação é multiplicado por `4/3` (120' em vez de 90').
 - **Estatísticas** (`Statistics.ts`, via `gameBus`): por time `extraTimePlayed`, `penaltiesTaken`,
-  `penaltiesScored`, `shootoutWon`; por jogador `penaltiesTaken`, `penaltiesScored`. A disputa não
+  `penaltiesScored`, `shootoutsWon`; por jogador `penaltiesTaken`, `penaltiesScored`. A disputa não
   conta como gol nem mexe na nota.
 - **`/test`:** cenário `knockout-draw-90` (começa aos 90' empatado); painel de debug com placar e chance
   de cada cobrança; botão "QuickSim knockout".

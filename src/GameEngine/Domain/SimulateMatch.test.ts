@@ -38,6 +38,9 @@ describe("simulateMatch knockout", () => {
       // Same squad both sides → many level games after 90'.
       const r = simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { knockout: true });
       const d = r.decider;
+      let goalsFromPlayers = 0;
+      for (const s of r.playerStats.values()) goalsFromPlayers += s.goals;
+      expect(goalsFromPlayers).toBe(r.score.A + r.score.B); // shootout kicks are not goals
       if (!d) {
         expect(r.score.A).not.toBe(r.score.B);
         continue;
@@ -50,6 +53,7 @@ describe("simulateMatch knockout", () => {
         expect(r.score.A).not.toBe(r.score.B);
       }
       expect(r.teamStats.A.extraTimePlayed).toBe(1);
+      expect(r.teamStats.B.extraTimePlayed).toBe(1);
     }
   }, 120_000);
 
