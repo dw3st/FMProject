@@ -24,6 +24,7 @@ import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { playerCupSlug } from "@/backend/cupWorld";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -479,6 +480,23 @@ export const apiRoutes = {
     if (auth instanceof Response) return auth;
     const fixtures = await saveService.getAllFixturesForLeague(saveId!, leagueSlug!);
     return Response.json(fixtures);
+  },
+
+  /** National cup: meta (stages, champion), every fixture, and club names. */
+  "/api/saves/:saveId/cups/:cupSlug": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId, cupSlug } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    if (!isCupSlug(cupSlug!)) return Response.json({ error: "not a cup" }, { status: 400 });
+    const meta = await saveService.getLeagueMeta(saveId!, cupSlug!);
+    if (!meta?.cup) return Response.json({ error: "cup not found" }, { status: 404 });
+    const fixtures = await saveService.getAllFixturesForLeague(saveId!, cupSlug!);
+    const index = await saveService.getSquadIndex(saveId!);
+    const ids = new Set(fixtures.flatMap((f) => [f.home, f.away]));
+    if (meta.cup.championId) ids.add(meta.cup.championId);
+    const names = Object.fromEntries([...ids].map((id) => [id, index.byId(id)?.name ?? id]));
+    return Response.json({ meta, fixtures, names });
   },
 
   /** Ids of the world's top-50 players (by overall AVG) — used to badge them as "Current legend". */
