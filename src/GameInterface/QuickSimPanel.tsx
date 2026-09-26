@@ -43,7 +43,7 @@ function runOnce(knockout = false): QuickSimResult {
   });
 }
 
-interface Batch { n: number; goals: number; home: number; draw: number; away: number }
+interface Batch { n: number; goals: number; home: number; draw: number; away: number; extraTime: number; penalties: number }
 
 export function QuickSimPanel() {
   const [last, setLast] = useState<QuickSimResult | null>(null);
@@ -51,12 +51,17 @@ export function QuickSimPanel() {
   const [knockout, setKnockout] = useState(false);
 
   function runBatch(n: number) {
-    const b: Batch = { n, goals: 0, home: 0, draw: 0, away: 0 };
+    const b: Batch = { n, goals: 0, home: 0, draw: 0, away: 0, extraTime: 0, penalties: 0 };
     for (let i = 0; i < n; i++) {
-      const { score } = runOnce(knockout).recording;
+      const { score, decider } = runOnce(knockout).recording;
       b.goals += score.home + score.away;
-      if (score.home > score.away) b.home++;
-      else if (score.away > score.home) b.away++;
+      if (decider) b.extraTime++;
+      const pens = decider?.penalties;
+      if (pens) b.penalties++;
+      const homeWon = score.home > score.away || (pens !== undefined && pens.home > pens.away);
+      const awayWon = score.away > score.home || (pens !== undefined && pens.away > pens.home);
+      if (homeWon) b.home++;
+      else if (awayWon) b.away++;
       else b.draw++;
     }
     setBatch(b);
@@ -103,6 +108,8 @@ export function QuickSimPanel() {
         <div className="text-xs text-white/70 tabular-nums">
           {batch.n} jogos · {(batch.goals / batch.n).toFixed(2)} gols/jogo · casa {((batch.home / batch.n) * 100).toFixed(0)}% ·
           empate {((batch.draw / batch.n) * 100).toFixed(0)}% · fora {((batch.away / batch.n) * 100).toFixed(0)}%
+          {knockout &&
+            ` · prorr. ${((batch.extraTime / batch.n) * 100).toFixed(0)}% · pên. ${((batch.penalties / batch.n) * 100).toFixed(0)}%`}
         </div>
       )}
     </div>
