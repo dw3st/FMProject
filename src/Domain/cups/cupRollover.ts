@@ -1,0 +1,59 @@
+import type { LeagueSeasonMeta, SeasonArchive } from "@/types/calendarTypes";
+
+export interface CountryLeagueState { leagueSlug: string; country: string; year: number; start: string; end: string }
+
+export interface CupToRegenerate { country: string; year: number; window: { start: string; end: string } }
+
+/**
+ * Countries whose cup must be regenerated: the country has a cup (`cupYear`) and every league of the
+ * country is already in a later season. The new cup takes the earliest year and the widest window.
+ */
+export function countriesToRegenerate(
+  leagues: CountryLeagueState[],
+  cupYear: Record<string, number>,
+): CupToRegenerate[] {
+  const byCountry = new Map<string, CountryLeagueState[]>();
+  for (const l of leagues) byCountry.set(l.country, [...(byCountry.get(l.country) ?? []), l]);
+  const out: CupToRegenerate[] = [];
+  for (const [country, ls] of [...byCountry].sort(([a], [b]) => a.localeCompare(b))) {
+    const year = cupYear[country];
+    if (year === undefined || !ls.every((l) => l.year > year)) continue;
+    out.push({
+      country,
+      year: Math.min(...ls.map((l) => l.year)),
+      window: {
+        start: ls.map((l) => l.start).sort()[0]!,
+        end: ls.map((l) => l.end).sort().at(-1)!,
+      },
+    });
+  }
+  return out;
+}
+
+/** Season archive of a finished cup (no table; one title for the champion). */
+export function buildCupArchive(
+  meta: LeagueSeasonMeta,
+  clubInfo: (squadId: string) => { name: string; coachId: number | null; coachName: string },
+): SeasonArchive {
+  const champ = meta.cup?.championId ?? null;
+  return {
+    leagueSlug: meta.leagueSlug,
+    year: meta.year,
+    start: meta.start,
+    end: meta.end,
+    standings: [],
+    titles: champ
+      ? [(() => {
+          const info = clubInfo(champ);
+          return {
+            competition: meta.leagueSlug,
+            clubId: champ,
+            clubName: info.name,
+            coachId: info.coachId,
+            coachName: info.coachName,
+          };
+        })()]
+      : [],
+    playerLogs: {},
+  };
+}
