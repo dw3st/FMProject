@@ -764,6 +764,7 @@
     "debug": "Debug",
     "loadError": "Falha ao carregar resultado da partida.",
     "noMatchOnDate": "Nenhuma partida agendada para esta data.",
+    "penalties": "Pênaltis",
     "mentality": {
       "attacking": "Ataque total",
       "balanced": "Equilibrado",
@@ -1383,7 +1384,9 @@
   "matchOverlay": {
     "halfTime": "Intervalo",
     "fullTime": "Fim de Jogo",
+    "extraTime": "Prorrogação",
     "secondHalfStarting": "Segundo tempo iniciando em breve…",
+    "extraTimeStarting": "Prorrogação começando em breve…",
     "matchOver": "Partida encerrada"
   },
   "goalOverlay": {
