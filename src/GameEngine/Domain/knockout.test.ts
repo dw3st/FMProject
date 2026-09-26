@@ -79,6 +79,7 @@ describe("matchMinute", () => {
     const s = base(true, { A: 0, B: 0 });
     expect(matchMinute({ ...s, matchPhase: "firstHalf", matchTime: 600 })).toBe(10);
     expect(matchMinute({ ...s, matchPhase: "secondHalf", matchTime: 600 })).toBe(55);
+    expect(matchMinute({ ...s, matchPhase: "extraTimeBreak", matchTime: 2760 })).toBe(91);
     expect(matchMinute({ ...s, matchPhase: "extraTimeFirst", matchTime: 300 })).toBe(95);
     expect(matchMinute({ ...s, matchPhase: "extraTimeSecond", matchTime: 300 })).toBe(110);
   });
