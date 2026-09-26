@@ -7,6 +7,7 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
+import { playerCupSlug } from "@/backend/cupWorld";
 import {
   recordSaveOwnership,
   deleteSaveOwnership,
@@ -88,11 +89,17 @@ export const saveRoutes = {
         );
         if (playerLeagueState) {
           const calendar = await saveService.getAllFixturesForLeague(id, meta.leagueSlug);
+          const cupSlug = await playerCupSlug(meta.leagueSlug);
+          const myId = (await saveService.getSquadById(id, meta.clubId))?.id ?? meta.clubId;
+          const cupFixtures = cupSlug
+            ? (await saveService.getAllFixturesForLeague(id, cupSlug)).filter((f) => f.home === myId || f.away === myId)
+            : [];
+          const fullCalendar = [...calendar, ...cupFixtures].sort((a, b) => a.date.localeCompare(b.date));
           season = {
             year: playerLeagueState.year,
             start: playerLeagueState.start,
             end: playerLeagueState.end,
-            calendar,
+            calendar: fullCalendar,
             restDays: playerLeagueState.restDays ?? [],
           };
         }
