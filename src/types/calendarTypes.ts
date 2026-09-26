@@ -16,6 +16,12 @@ export interface Fixture {
   away:        string;          // squadId
   played:      boolean;
   result:      { home: number; away: number } | null;
+  /** Knockout fixture (cup): a draw after 90' goes to extra time and penalties. */
+  knockout?:   true;
+  /** Neutral venue (cup final): no home advantage. */
+  neutral?:    true;
+  /** Knockout only: extra-time goals / shootout. Absent when decided in 90'. */
+  decider?:    MatchDecider;
 }
 
 export interface SeasonData {
@@ -56,6 +62,30 @@ export interface SeasonArchive {
 
 // --- NEW MULTI-LEAGUE TYPES ---
 
+/** Stage keys, by number of entrants: preliminary, r128 … r16, qf, sf, final. */
+export type CupStageName = "preliminary" | "r128" | "r64" | "r32" | "r16" | "qf" | "sf" | "final";
+
+/** One knockout stage of a national cup. `round` is the RoundFixtures file number. */
+export interface CupStage {
+  round:    number;
+  name:     CupStageName;
+  date:     string;
+  /** Clubs in this stage once drawn (empty before the draw). */
+  entrants: string[];
+  drawn:    boolean;
+}
+
+export interface CupMetaData {
+  /** leagueData `country`. */
+  country:    string;
+  stages:     CupStage[];
+  /** Clubs that skip the preliminary stage and enter at stage 2 (empty when there is none). */
+  byes:       string[];
+  /** Club tier (1 = top) at generation time — decides who hosts. */
+  tiers:      Record<string, number>;
+  championId: string | null;
+}
+
 /** Lightweight season metadata for one league (replaces SeasonData as the per-league store) */
 export interface LeagueSeasonMeta {
   leagueSlug:   string;
@@ -65,6 +95,9 @@ export interface LeagueSeasonMeta {
   totalRounds:  number;
   /** Rest days for the player's league (shown in training calendar UI) */
   restDays?:    string[];
+  /** "cup" for a national cup; absent for a league. */
+  kind?:        "cup";
+  cup?:         CupMetaData;
 }
 
 /** All fixtures for a single round of one league */
