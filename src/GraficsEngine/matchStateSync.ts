@@ -47,7 +47,11 @@ const PHASE_ORDER: Record<MatchPhase, number> = {
   firstHalf: 1,
   halfTime: 2,
   secondHalf: 3,
-  matchEnd: 4,
+  extraTimeBreak: 4,
+  extraTimeFirst: 5,
+  extraTimeSecond: 6,
+  penalties: 7,
+  matchEnd: 8,
 };
 
 /** True when `a` represents an earlier point in the match than `b`. */

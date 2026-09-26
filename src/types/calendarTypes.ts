@@ -1,5 +1,12 @@
 import type { PlayerSeasonLog, StandingRow } from "@/types/playerTypes";
 
+/** How a knockout fixture was decided after 90 minutes, from the home/away point of view. */
+export interface MatchDecider {
+  /** Goals scored in extra time only (the fixture `result` already includes them). */
+  extraTime: { home: number; away: number };
+  penalties?: { home: number; away: number };
+}
+
 export interface Fixture {
   id:          string;          // e.g. "fix_0001"
   date:        string;
