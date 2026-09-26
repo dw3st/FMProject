@@ -703,6 +703,29 @@ export class SaveService {
 
     if (copied === 0) throw new Error("no squads found to copy");
 
+    // National cups: one per country, over the country's league window (membership = squad folders).
+    try {
+      const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
+      const { countryByLeague, createCountryCup } = await import("@/backend/cupWorld");
+      const catalog = await getLeagueData();
+      const countryOf = countryByLeague(catalog);
+      const index = await this.getSquadIndex(id);
+      const pyramids = await getPyramids();
+      const countries = [...new Set(countryOf.values())].sort();
+      for (const country of countries) {
+        const ls = activeLeagues.filter((l) => countryOf.get(l.leagueSlug) === country);
+        if (ls.length === 0) continue;
+        await createCountryCup({
+          service: this, saveId: id, country,
+          year: Math.min(...ls.map((l) => l.year)),
+          window: { start: ls.map((l) => l.start).sort()[0]!, end: ls.map((l) => l.end).sort().at(-1)! },
+          index, countryOf, pyramids,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to generate national cups:", e);
+    }
+
     return meta;
   }
 }
