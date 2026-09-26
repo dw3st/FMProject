@@ -84,6 +84,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInFlight: 0, throughBallsLostInRace: 0,
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
+    extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
   };
 }
 
@@ -108,7 +109,7 @@ function squadIdOf(side: "A" | "B", playerId: string): boolean {
 
 self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   try {
-    const { variantA, variantB, matches, simEngine = "full" } = e.data;
+    const { variantA, variantB, matches, simEngine = "full", knockout = false } = e.data;
 
     const [formationA, formationB] = await Promise.all([
       loadFormation(variantA.formation),
@@ -146,6 +147,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
           awayLineup: quickLineupB,
           homeRoles: quickRolesA,
           awayRoles: quickRolesB,
+          knockout,
         });
         const hA = q.recording.teamStats.home;
         const hB = q.recording.teamStats.away;
@@ -163,8 +165,15 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
         teamB.passesFailed += hB.passesAttempted - hB.passesCompleted;
         teamA.tackles += hA.tackles;             teamB.tackles += hB.tackles;
         teamA.interceptions += hA.interceptions; teamB.interceptions += hB.interceptions;
-        if (q.recording.score.home > q.recording.score.away) teamA.wins++;
-        else if (q.recording.score.away > q.recording.score.home) teamB.wins++;
+        // quickSim doesn't count individual shootout kicks — penaltiesTaken/Scored stay 0 for this engine.
+        const qd = q.recording.decider;
+        if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
+        const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
+        if (qd?.penalties) { if (qpA > qpB) teamA.shootoutsWon++; else teamB.shootoutsWon++; }
+        const homeWon = q.recording.score.home > q.recording.score.away || (qd?.penalties !== undefined && qpA > qpB);
+        const awayWon = q.recording.score.away > q.recording.score.home || (qd?.penalties !== undefined && qpB > qpA);
+        if (homeWon) teamA.wins++;
+        else if (awayWon) teamB.wins++;
         else draws++;
         if ((m + 1) % 10 === 0 || m + 1 === matches) {
           postMessage({ type: "progress", variantAId: variantA.id, variantBId: variantB.id, done: m + 1, total: matches });
@@ -172,7 +181,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
         continue;
       }
 
-      const r = simulateMatch(squadA, squadB, formationA, formationB);
+      const r = simulateMatch(squadA, squadB, formationA, formationB, undefined, undefined, { knockout });
       const sA = r.teamStats.A;
       const sB = r.teamStats.B;
 
@@ -194,9 +203,14 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       teamA.throughBallsLostInDuel   += sA.throughBallsLostInDuel;   teamB.throughBallsLostInDuel   += sB.throughBallsLostInDuel;
       teamA.looseBallsWon            += sA.looseBallsWon;            teamB.looseBallsWon            += sB.looseBallsWon;
       teamA.switchPlays              += sA.switchPlays;              teamB.switchPlays              += sB.switchPlays;
+      teamA.extraTimeMatches += sA.extraTimePlayed;  teamB.extraTimeMatches += sB.extraTimePlayed;
+      teamA.shootoutsWon     += sA.shootoutsWon;     teamB.shootoutsWon     += sB.shootoutsWon;
+      teamA.penaltiesTaken   += sA.penaltiesTaken;   teamB.penaltiesTaken   += sB.penaltiesTaken;
+      teamA.penaltiesScored  += sA.penaltiesScored;  teamB.penaltiesScored  += sB.penaltiesScored;
 
-      if (r.score.A > r.score.B) teamA.wins++;
-      else if (r.score.B > r.score.A) teamB.wins++;
+      const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
+      if (winner === "A") teamA.wins++;
+      else if (winner === "B") teamB.wins++;
       else draws++;
 
       if ((m + 1) % 10 === 0 || m + 1 === matches) {
