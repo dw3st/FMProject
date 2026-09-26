@@ -184,3 +184,105 @@ gameBus.emit('shotResolved', { player: shooter.id, xg: shot.xg, goalChance, isGo
 Track separately:
 - Player: `goals - xG` (overperformance/underperformance)
 - GK: `xG conceded - goals conceded` (saves above/below expected)
+
+---
+
+## 8. Penalty Shootout
+
+### Files
+
+| File | Role |
+|------|------|
+| `Configs/PenaltyConfig.ts` | Tuning constants |
+| `Infrastructure/PenaltyShootout.ts` | `penaltyChance`, `resolvePenaltyShootout` — pure, shared by the full engine and quickSim |
+
+A shootout is not shot-by-shot xG — it's a separate, simpler probability model (`penaltyChance`)
+tuned so two average sides convert ~75%, close to the real-world penalty conversion rate.
+
+### `penaltyChance(accuracy, keeper)`
+
+```ts
+shooter  = SHOOTER_MIN + (clamp(accuracy, 0, 0.95) / 0.95) * (SHOOTER_MAX - SHOOTER_MIN)
+keeperFx = keeper ? 1 - ((keeper.reflex + keeper.diving) / 2) * GK_WEIGHT : 1
+chance   = clamp(BASE * shooter * keeperFx, MIN_CHANCE, MAX_CHANCE)
+```
+
+`accuracy` is the taker's `runtimeStats.withBall.shootAccuracy` (engine) or
+`finishing / 10` capped at 0.95 (quickSim) — the same 0..0.95 scale used for open play. `keeper`
+is `null` for an empty goal (used only in the degenerate forfeit case below), otherwise the facing
+GK's `reflex`/`diving` (engine: `gkReflex`/`gkDiving`; quickSim: `reflex`/`jump` attributes ÷ 10).
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `ROUNDS` | 5 | Kicks per side before sudden death |
+| `MAX_SUDDEN_DEATH_ROUNDS` | 30 | Safety cap; after it the winner is a coin flip |
+| `BASE` | 0.85 | Calibrated so two average sides convert ~75% |
+| `SHOOTER_MIN` / `SHOOTER_MAX` | 0.85 / 1.15 | Shooter multiplier range, linear in `accuracy` |
+| `GK_WEIGHT` | 0.25 | Keeper multiplier = `1 − avg(reflex, diving) × GK_WEIGHT` → 0.75..1 |
+| `MIN_CHANCE` / `MAX_CHANCE` | 0.55 / 0.92 | Final clamp |
+
+Reference: average shooter (0.5) vs average keeper (0.5/0.5) → chance ≈ 0.85 × 1.0 × 0.875 ≈ 74%,
+within the calibrated 70–80% band measured over 10,000 shootouts.
+
+### `resolvePenaltyShootout(sideA, sideB, rng)`
+
+Generic over `Id` (`number` in the full engine, `string` in quickSim) so both callers share one
+implementation. The whole shootout is resolved **up front** in a single call — the caller (the
+engine's `startPenalties`, or quickSim directly) presents the returned kicks however it needs to
+(the engine reveals them one at a time on a countdown; quickSim just reads the final score).
+
+**Kick order** (`kickOrder`): outfield takers sorted by `accuracy` descending (best finisher
+first), goalkeeper(s) always last. Ties keep array order (stable sort).
+
+**Regulation** (`ROUNDS = 5`): kicks alternate strictly A, B, A, B… Each side's `taken`/`score`
+tally is checked after every single kick — the shootout stops the moment one side mathematically
+cannot catch up even if they scored every remaining kick:
+
+```ts
+decided = score.A + (ROUNDS - taken.A) < score.B || score.B + (ROUNDS - taken.B) < score.A
+```
+
+e.g. 3–0 after 6 kicks with B down to 2 remaining kicks (`0 + 2 < 3`) ends the shootout right
+there — it never plays out to a full 5 rounds each once the result is mathematically settled.
+
+**Sudden death**: once level after `ROUNDS`, kicks continue in A/B pairs (both take a kick every
+round — no early stop within a sudden-death round) until someone is ahead, capped at
+`MAX_SUDDEN_DEATH_ROUNDS = 30` pairs.
+
+**`rng()` is called exactly once per kick** — this determinism is relied on by tests and makes a
+shootout reproducible from a seed.
+
+**A shootout always produces a winner and a non-tied score.** Three degenerate cases, all
+practically unreachable (a shootout only ever follows 120 minutes with a full XI including a GK on
+both sides) but handled explicitly so the function's contract never breaks:
+- **Both sides have zero takers** — returns `kicks: []`, `score: { A: 1, B: 0 }`, winner `A`. The
+  only case where `score` does not equal the scored-kick counts in `kicks` (there is no player on
+  either side to attribute a synthetic kick to).
+- **Exactly one side has zero takers** — that side forfeits: a single synthetic scored kick
+  (`chance: 1`) is pushed for the other side's first taker in kick order, so `score` still equals
+  the scored-kick counts in `kicks`.
+- **Still level after `MAX_SUDDEN_DEATH_ROUNDS`** — a coin flip (`rng() < 0.5`) picks the winner,
+  who gets one more synthetic scored kick (`chance: 1`) appended so `score` keeps agreeing with
+  `kicks`.
+
+### `PenaltyKick<Id>` fields
+
+```ts
+{ team: "A" | "B"; takerId: Id; keeperId: Id | null; scored: boolean; chance: number }
+```
+
+`keeperId` is the *facing* keeper (the other side's GK), `null` only when that side has no GK on
+the pitch. `chance` is the exact `penaltyChance` used for that kick's roll (or `1` for a synthetic
+forfeit/coin-flip kick) — the engine's `/test` debug panel shows it per kick.
+
+### Where it's called
+
+- **Full engine** (`gameState.ts` → `startPenalties`): builds one `PenaltySide<number>` per team
+  from the 11 players on the pitch, calls `resolvePenaltyShootout(..., Math.random)` once, then
+  presents `result.kicks` one at a time via `GameState.shootout` (see
+  `.claude/rules/match-flow.md` → "Knockout Matches").
+- **quickSim** (`src/Domain/advanceDay/quickSim.ts` → `shootoutSide` + the `knockout` branch of
+  `quickSimMatch`): builds a `PenaltySide<string>` per side from the same starting XI used for the
+  match (`finishing`/`reflex`/`jump` attributes), calls `resolvePenaltyShootout` with the match's
+  own seeded `rng`, and reads only the final `score` — no kick-by-kick presentation. See
+  `.claude/rules/non-player-games.md` → "quickSim (ligas não seguidas)".

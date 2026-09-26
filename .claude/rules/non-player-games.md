@@ -233,6 +233,28 @@ desenvolvimento) é o mesmo do motor.
 - **Custo medido:** o motor leva ~0,6–0,9 s por partida; o quickSim, ~0,04 ms.
 - **Onde aparece:** no `/lab`, escolha "quickSim" no ScenarioBuilder. No `/test`, clique no
   botão "QuickSim".
+- **Mata-mata (`input.knockout`):** uma partida de mata-mata nunca termina empatada. Se
+  `goalsHome === goalsAway` depois dos gols normais, o quickSim soma prorrogação (30' extras) e,
+  se ainda empatado, resolve com a mesma disputa de pênaltis do motor completo:
+  - **Prorrogação:** gols extras vêm do mesmo xG do dia (`xgHomeDay`/`xgAwayDay`, já com o fator
+    de domínio) escalado por `30/90`, sorteados pela mesma `sampleGoals` e distribuídos pela mesma
+    `assignGoals` (extraída de `fillSide` para ser reaproveitada aqui — a ordem de consumo do
+    `rng` não muda em relação ao caminho sem mata-mata). `recording.decider.extraTime = { home,
+    away }` guarda só os gols marcados na prorrogação.
+  - **Pênaltis:** só entra se a prorrogação também terminar empatada. `shootoutSide(xi)` monta um
+    `PenaltySide<string>` a partir dos titulares: `accuracy = min(0.95, finishing/10)` para
+    jogadores de linha, o goleiro do XI vira o `keeper` (`reflex`/`jump` ÷ 10). Chama
+    `resolvePenaltyShootout` (`src/GameEngine/Infrastructure/PenaltyShootout.ts`, ver
+    `.claude/rules/game-engine/shot-and-save.md` → "Penalty shootout") com o mesmo `rng` seedado
+    da partida, e só lê o placar final — não há apresentação cobrança a cobrança no quickSim.
+    `recording.decider.penalties = { home, away }` (ausente quando a prorrogação já decidiu).
+  - **Energia:** a prorrogação alonga a partida em 1/3 (90' → 120'), então o desgaste de energia
+    de todo o XI é multiplicado por `4/3` (`extraTimeMult`) sempre que `decider?.extraTime`
+    existir — mesmo quando a prorrogação sozinha já decidiu, sem chegar aos pênaltis.
+  - `recording.decider` só existe quando `input.knockout` é verdadeiro e o jogo passou de 90'
+    empatado; ausente (não `null`) numa partida de liga comum, mesmo que termine empatada.
+  - A soma dos gols por jogador (`playerStats[...].goals`) sempre bate com `recording.score` —
+    cobranças de pênalti não contam como gol, só os gols de tempo normal e de prorrogação.
 
 ### Limitações conhecidas (calibração de 2026-09-23)
 
