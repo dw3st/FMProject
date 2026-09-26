@@ -1417,6 +1417,7 @@
     "title": "Day Summary",
     "matches": "Matches ({{count}})",
     "matchRound": "{{competition}} • Round {{round}}",
+    "cupMatch": "{{competition}}",
     "otherLeagues": "Other leagues ({{count}})",
     "playerDevelopment": "Player Development",
     "shots": "Shots",
