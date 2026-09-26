@@ -155,6 +155,39 @@ A ESPN às vezes lista o mesmo atleta em dois clubes (emprestado, ou clube reser
 bate com o nome de outro time do snapshot), depois **tier de pirâmide mais alto**, depois **menor id de
 time da ESPN**. O(s) outro(s) somem do elenco e entram em `report.duplicateAthletes`.
 
+## Finanças de clube novo (`es_*`)
+
+Um clube `es_<espnId>` recém-criado (nenhum clube do mundo casou com o time da ESPN) é, por
+definição, uma chegada de fora do nosso mundo — normalmente um promovido. Ele recebe o **mesmo piso
+de renda de promovido** (`PROMOTED_INCOME_FLOOR = 0,8`, `scripts/espn/apply.ts`) já usado para uma
+mudança de liga genuína (`lineup.moves`), e não a mediana da liga:
+
+```
+cada campo de dinheiro (broadcasting, commercial, budget, followers)
+  = round(0,8 × MIN daquele campo entre os pares já existentes na liga de destino
+          — clubes que já estavam lá nesta rodada, não novos, não movidos)
+
+total    = broadcasting + commercial
+capacity = MIN da capacidade dos mesmos pares, sem multiplicar por 0,8
+```
+
+Sem par na própria liga (todos os pares moveram ou também são novos), cai para o **mínimo do país**;
+sem par no país, cai para o **mínimo do mundo** — sempre mínimo, nunca mediana, e sempre excluindo
+clubes novos e movidos nesta rodada. Antes disso um clube novo pegava a MEDIANA da liga/país/mundo, o
+que inflava demais um clube recém-promovido (ex.: Coventry City virava clube ELITE da Premier League
+com orçamento de transferência de ~€149M só porque a mediana da Premier League é alta). Ver
+`.claude/rules/AI-clubs/finance.md` para tier/orçamento a partir das finanças.
+
+## Entidades HTML nos nomes
+
+`checkWorldIntegrity` (`scripts/world/integrity.ts`, chamado por `importOpenFootball` e
+`importEspn`) falha o build se qualquer nome (jogador, clube, técnico, estádio/cidade, ou o `name`
+de uma entrada de `standings`) ainda tiver uma entidade HTML não decodificada (`&apos;`, `&#39;`,
+`&quot;`, `&amp;`, `&lt;`, `&gt;`, `&#NNN;`, `&#xHH;`). Isso já aconteceu com nomes vindos direto do
+`data_process/native/squads` (`"N. O&apos;Reilly"`) e do `data_process/espn/snapshot.json`
+(`"Stefan Kova&#269;"`) — corrija na fonte (o arquivo em `data_process/`), nunca com decodificação
+espalhada pelo código do importador.
+
 ## Relatório (console do `importEspn`)
 
 | Seção | O que fazer com ela |
