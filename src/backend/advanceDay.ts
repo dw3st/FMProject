@@ -280,6 +280,12 @@ export async function advanceOneDay(
             userPlaysThis;
 
           if (useRecording && playedMatchOverride) {
+            if (fixture.knockout && playedMatchOverride.score.home === playedMatchOverride.score.away) {
+              const pens = playedMatchOverride.decider?.penalties;
+              if (!pens || pens.home === pens.away) {
+                return { ok: false, status: 400, error: "knockout recording without a winner" };
+              }
+            }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
             dayEvents.push(r.event);
             squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
@@ -782,7 +788,9 @@ export async function advanceOneDay(
     }
 
     // ── National cups: a country's cup is archived and regenerated once all its leagues rolled ──
-    if (due.units.length > 0) {
+    // Also runs on a resync-only day (a rollover already applied on disk, only activeLeagues was
+    // stale) — the cup must still regenerate then, not just on a day that itself ran the rollover.
+    if (due.units.length > 0 || due.resync.length > 0) {
       const catalog = await getLeagueData();
       const countryOf = countryByLeague(catalog);
       const cupYear: Record<string, number> = {};
