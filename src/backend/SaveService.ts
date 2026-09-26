@@ -495,6 +495,11 @@ export class SaveService {
     return this.dal.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers);
   }
 
+  /** Every competition folder under leagues/ (leagues and cups). */
+  listCompetitionSlugs(saveId: string): Promise<string[]> {
+    return this.dal.listActiveLeaguesSlugs(saveId);
+  }
+
   /**
    * Find all round numbers active on a given date across all leagues.
    * Returns Map<leagueSlug, roundNumbers[]>.
