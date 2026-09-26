@@ -19,6 +19,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { Icon } from "@/GameInterface/Icons";
 import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 
 /** One team's identity, resolved once per league set so per-match lookups are O(1). */
 interface TeamLookup {
@@ -248,7 +249,9 @@ function MatchCard({
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/20">
         <Trophy className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          {t("daySummary.matchRound", { competition: competitionName(event.competition, leagues, lang), round: event.round })}
+          {isCupSlug(event.competition)
+            ? t("daySummary.cupMatch", { competition: competitionName(event.competition, leagues, lang) })
+            : t("daySummary.matchRound", { competition: competitionName(event.competition, leagues, lang), round: event.round })}
         </span>
       </div>
 
