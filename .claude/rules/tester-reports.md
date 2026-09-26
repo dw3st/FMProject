@@ -67,7 +67,8 @@ One JSON object per line:
 
 ## Validation and limits (`src/backend/reports.ts`)
 
-- `Content-Type` must include `application/json`, else **415**.
+- `Content-Type` media type must be exactly `application/json` (case-insensitive; parameters such as
+  `charset` allowed; `application/json` hidden inside a parameter is rejected), else **415**.
 - Body capped at 16 KB: a `Content-Length` header claiming more is rejected immediately (**413**);
   the actual decoded byte length is checked too (`req.text()`, not `req.json()`, so this happens
   *before* `JSON.parse` — a client can't bypass the cap by lying about or omitting the header).
@@ -76,7 +77,8 @@ One JSON object per line:
 - `description`: trimmed, 5–2000 characters.
 - `page`: required, ≤ 200 characters.
 - `gameDate`: optional; `null`/omitted/blank stores `null`, otherwise must match
-  `/^\d{4}-\d{2}-\d{2}$/` (**400** if not — wrong shape, wrong type, or absurdly long all reject).
+  `/^\d{4}-\d{2}-\d{2}$/` **and** be a real calendar date (`2027-02-30`, `2027-13-01` reject) — **400** if
+  not (wrong shape, impossible date, wrong type, or absurdly long all reject).
 - `saveId`: optional context, not a hard requirement — a non-string value is a **400** (wrong JSON
   type), but a syntactically fine string that doesn't exist or isn't owned by the caller
   (`src/backend/auth/saveOwnership.ts` → `isSaveOwner`) is silently stored as `null` and the

@@ -1037,8 +1037,8 @@ export function TestScreen() {
             </>
           ) : (
             <>
-              {(liveGameState?.matchPhase ?? 'firstHalf') !== 'secondHalf' &&
-               (liveGameState?.matchPhase ?? 'firstHalf') !== 'matchEnd' && (
+              {((liveGameState?.matchPhase ?? 'firstHalf') === 'firstHalf' ||
+                liveGameState?.matchPhase === 'preMatch') && (
                 <button
                   onClick={() => setPhaseCountdown({ target: 'halfTime', remaining: 3 })}
                   className="px-2.5 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-colors cursor-pointer text-xs font-semibold">
