@@ -115,6 +115,10 @@ gameBus.on('kickOff', e => {
     broadcastLine(pickT('broadcast.kickoff.firstHalf', { team }));
   } else if (e.phase === 'secondHalf') {
     broadcastLine(pickT('broadcast.kickoff.secondHalf', { team }));
+  } else if (e.phase === 'extraTimeFirst') {
+    broadcastLine(pickT('broadcast.kickoff.extraTimeFirst', { team }));
+  } else if (e.phase === 'extraTimeSecond') {
+    broadcastLine(pickT('broadcast.kickoff.extraTimeSecond', { team }));
   } else {
     clearKickoffAfterGoalTimer();
     kickoffAfterGoalTimer = setTimeout(() => {

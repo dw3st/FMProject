@@ -14,6 +14,7 @@ import rolesData from "@/Data/roles.json";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 
 export interface MatchSimResult {
   event: MatchEvent;
@@ -33,6 +34,8 @@ export interface PlayedMatchRecording {
   /** Substitutions made during the match, in chronological order. */
   substitutions: import("@/types/dayLogTypes").MatchSubstitution[];
   durationMs: number;
+  /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
+  decider?: import("@/types/calendarTypes").MatchDecider;
 }
 
 function finalizeSquadsAfterMatch(
@@ -41,6 +44,7 @@ function finalizeSquadsAfterMatch(
   playerStats: Record<string, MatchPlayerStats>,
   playerRatings: Record<string, number>,
   playerEnergy: Record<string, number> | undefined,
+  isCup: boolean,
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -64,6 +68,14 @@ function finalizeSquadsAfterMatch(
           log.passesAttempted += ps.passesAttempted;
           log.tackles += ps.tackles;
           log.interceptions += ps.interceptions;
+          if (isCup) {
+            const c = log.cup ?? { appearances: 0, goals: 0, assists: 0 };
+            log.cup = {
+              appearances: c.appearances + 1,
+              goals: c.goals + ps.goals,
+              assists: c.assists + ps.assists,
+            };
+          }
           if (rating != null) {
             const prev = log.avgRating;
             log.avgRating =
@@ -175,6 +187,7 @@ export function buildMatchEventFromRecording(
     recording.playerStats,
     recording.playerRatings,
     recording.playerEnergy,
+    isCupSlug(fixture.competition),
   );
 
   const event: MatchEvent = {
@@ -194,6 +207,7 @@ export function buildMatchEventFromRecording(
     substitutions: recording.substitutions ?? [],
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
+    ...(recording.decider ? { decider: recording.decider } : {}),
   };
 
   return { event, updatedHome, updatedAway };
@@ -217,6 +231,7 @@ export function buildMatchEvent(
     sim.awayFormation,
     sim.homeLineup,
     sim.awayLineup,
+    { knockout: fixture.knockout === true },
   );
 
   const nameToRosterId = new Map<string, string>();
@@ -309,7 +324,9 @@ export function buildMatchEvent(
   scorers.sort((a, b) => b.goals - a.goals);
 
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
-    finalizeSquadsAfterMatch(homeSquad, awaySquad, playerStats, playerRatings, playerEnergy);
+    finalizeSquadsAfterMatch(
+      homeSquad, awaySquad, playerStats, playerRatings, playerEnergy, isCupSlug(fixture.competition),
+    );
 
   const substitutions: import("@/types/dayLogTypes").MatchSubstitution[] = result.substitutions.map((sub) => ({
     team: sub.team === "A" ? "home" : "away",
@@ -352,6 +369,16 @@ export function buildMatchEvent(
     substitutions,
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: result.durationMs,
+    ...(result.decider
+      ? {
+          decider: {
+            extraTime: { home: result.decider.extraTime.A, away: result.decider.extraTime.B },
+            ...(result.decider.penalties
+              ? { penalties: { home: result.decider.penalties.A, away: result.decider.penalties.B } }
+              : {}),
+          },
+        }
+      : {}),
   };
 
   return { event, updatedHome: devHome, updatedAway: devAway };
@@ -393,6 +420,8 @@ export function buildQuickMatchEvent(
       awayLineup: sim.awayLineup,
       homeRoles: sim.homeFormation ? slotRoles(sim.homeFormation) : undefined,
       awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
+      knockout: fixture.knockout === true,
+      neutral: fixture.neutral === true,
     },
     rng,
   );

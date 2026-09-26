@@ -208,6 +208,16 @@ describe("POST /api/reports — validation", () => {
     const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: 20270314 }));
     expect(res.status).toBe(400);
   });
+
+  test("rejects an impossible gameDate", async () => {
+    const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: "2027-02-30" }));
+    expect(res.status).toBe(400);
+  });
+
+  test("rejects a gameDate with an out-of-range month", async () => {
+    const res = await handler()(postReport(token, { ...VALID_BODY, gameDate: "2027-13-01" }));
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("POST /api/reports — request shape (Content-Type, body size)", () => {
@@ -251,6 +261,20 @@ describe("POST /api/reports — request shape (Content-Type, body size)", () => 
   test("a normal, well within 16 KB body is unaffected by the size gate", async () => {
     const { token } = sessionFor("tester@example.com");
     const res = await handler()(postReport(token, VALID_BODY));
+    expect(res.status).toBe(200);
+  });
+
+  test("415 when application/json only appears as a parameter", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const req = postRaw(token, { "content-type": "text/plain; x=application/json" }, JSON.stringify(VALID_BODY));
+    const res = await handler()(req);
+    expect(res.status).toBe(415);
+  });
+
+  test("accepts application/json with a charset parameter", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const req = postRaw(token, { "content-type": "Application/JSON; charset=utf-8" }, JSON.stringify(VALID_BODY));
+    const res = await handler()(req);
     expect(res.status).toBe(200);
   });
 });

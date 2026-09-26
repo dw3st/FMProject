@@ -62,3 +62,63 @@ describe("buildQuickMatchEvent", () => {
     expect(r.event.teamStats.away.shots).toBeGreaterThanOrEqual(r.event.score.away);
   });
 });
+
+describe("cup fixtures", () => {
+  // Same stats on every roster slot (see makeSquad) → home and away are exactly equal in
+  // force, so any scoreline asymmetry below comes only from the venue flags under test.
+  const home = makeSquad("h");
+  const away = makeSquad("a");
+  const fixture = { id: "fx1", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
+  const sim = { homeLineup: home.players.map((p) => p.id), awayLineup: away.players.map((p) => p.id) };
+
+  test("knockout fixture never ends level and carries the decider on the event", () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const knockoutFixture = { ...fixture, knockout: true as const };
+      const { event } = buildQuickMatchEvent(knockoutFixture, home, away, sim, mulberry32(seed));
+      const pens = event.decider?.penalties;
+      const level = event.score.home === event.score.away;
+      expect(level ? !!pens && pens.home !== pens.away : true).toBe(true);
+    }
+  });
+
+  test("neutral fixture removes home advantage", () => {
+    // A single pass at "average diff over N independent seeds" is noisy: quickSim's per-match
+    // score variance dwarfs the home-advantage signal (~0.05 goals/match) at any N that still
+    // runs fast, so an independent-sample test is either loose enough to pass regardless of a
+    // regression, or tight enough to flake. Instead, each seed drives BOTH a normal and a
+    // neutral fixture — same rng stream, so the shared randomness (dominance noise, the exact
+    // Bernoulli draws inside sampleGoals) mostly cancels out and only the effect of the venue
+    // flag on expected goals remains. Calibrated empirically: paired mean ~0.045, paired SE
+    // ~0.005 at n=2000 — a >8-sigma signal, so 0.02 is a safe, non-flaky threshold while still
+    // failing hard if `neutral` stops suppressing home advantage.
+    const n = 2000;
+    let diffSum = 0;
+    let neutralMarginSum = 0;
+    for (let seed = 1; seed <= n; seed++) {
+      const normal = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(seed));
+      const neutral = buildQuickMatchEvent({ ...fixture, neutral: true as const }, home, away, sim, mulberry32(seed));
+      const normalMargin = normal.event.score.home - normal.event.score.away;
+      const neutralMargin = neutral.event.score.home - neutral.event.score.away;
+      diffSum += normalMargin - neutralMargin;
+      neutralMarginSum += neutralMargin;
+    }
+    // Paired mean margin lost by removing home advantage — must be clearly positive.
+    expect(diffSum / n).toBeGreaterThan(0.02);
+    // With home and away exactly equal in force (see makeSquad), a neutral fixture on its own
+    // should have no systematic home/away bias — the mean margin should sit close to 0.
+    expect(Math.abs(neutralMarginSum / n)).toBeLessThan(0.08);
+  });
+
+  test("cup ties also count in seasonLog.cup; league ties don't", () => {
+    const cupFixture = { ...fixture, competition: "cup_testland", knockout: true as const };
+    const afterCup = buildQuickMatchEvent(cupFixture, home, away, sim, mulberry32(1));
+    const playedCup = afterCup.updatedHome.players.find((p) => (p.seasonLog?.appearances ?? 0) > 0)!;
+    expect(playedCup.seasonLog!.cup?.appearances).toBe(1);
+
+    const afterLeague = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(1));
+    const playedLeague = afterLeague.updatedHome.players.find((p) => (p.seasonLog?.appearances ?? 0) > 0)!;
+    expect(playedLeague.seasonLog!.cup?.appearances ?? 0).toBe(0);
+    // League appearances/goals/assists are never routed into the cup sub-log.
+    expect(playedLeague.seasonLog!.appearances).toBe(1);
+  });
+});

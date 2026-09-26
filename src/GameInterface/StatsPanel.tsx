@@ -57,6 +57,8 @@ const EMPTY_STATS: PlayerStats = {
   throughBallsLostInDuel: 0,
   looseBallsWon: 0,
   switchPlays: 0,
+  penaltiesTaken: 0,
+  penaltiesScored: 0,
 };
 
 function TeamTable({

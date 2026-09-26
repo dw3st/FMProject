@@ -30,3 +30,35 @@ describe("simulateMatch pass accounting", () => {
     expect(throughBalls).toBeGreaterThan(0);
   }, 30_000);
 });
+
+describe("simulateMatch knockout", () => {
+  test("never ends level; decider is consistent with the score", () => {
+    const squad = loadSquad("33.json");
+    for (let i = 0; i < 6; i++) {
+      // Same squad both sides → many level games after 90'.
+      const r = simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { knockout: true });
+      const d = r.decider;
+      let goalsFromPlayers = 0;
+      for (const s of r.playerStats.values()) goalsFromPlayers += s.goals;
+      expect(goalsFromPlayers).toBe(r.score.A + r.score.B); // shootout kicks are not goals
+      if (!d) {
+        expect(r.score.A).not.toBe(r.score.B);
+        continue;
+      }
+      if (d.penalties) {
+        expect(r.score.A).toBe(r.score.B);
+        expect(d.penalties.A).not.toBe(d.penalties.B);
+        expect(d.winner).toBe(d.penalties.A > d.penalties.B ? "A" : "B");
+      } else {
+        expect(r.score.A).not.toBe(r.score.B);
+      }
+      expect(r.teamStats.A.extraTimePlayed).toBe(1);
+      expect(r.teamStats.B.extraTimePlayed).toBe(1);
+    }
+  }, 120_000);
+
+  test("league match reports no decider", () => {
+    const r = simulateMatch(loadSquad("33.json"), loadSquad("34.json"));
+    expect(r.decider).toBeNull();
+  }, 30_000);
+});

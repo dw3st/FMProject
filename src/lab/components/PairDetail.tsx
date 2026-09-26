@@ -26,6 +26,17 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
   const winB = (pair.teamB.wins / pair.matches) * 100;
   const drawPct = (pair.draws / pair.matches) * 100;
 
+  // Knockout-only rows: hidden entirely for non-knockout / quickSim runs where
+  // neither side recorded any of the underlying events (all-zero on both sides).
+  const knockoutRowDefs: { stat: string; key: keyof PerMatchView; gateKey: keyof PerMatchView }[] = [
+    { stat: "Extra time%",       key: "extraTimePct",     gateKey: "extraTimePct" },
+    { stat: "Shootout wins%",    key: "shootoutWinPct",   gateKey: "shootoutWinPct" },
+    { stat: "Penalty conv%",     key: "penaltyConversionPct", gateKey: "avgPenaltiesTaken" },
+  ];
+  const knockoutRows = knockoutRowDefs.filter(
+    (r) => Number(pair.teamA[r.gateKey]) > 0 || Number(pair.teamB[r.gateKey]) > 0,
+  );
+
   const rows: { stat: string; key: keyof PerMatchView }[] = [
     { stat: "Avg goals",         key: "avgGoals" },
     { stat: "Avg xG",            key: "avgXg" },
@@ -38,6 +49,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "TB completion%",    key: "throughBallCompletionPct" },
     { stat: "Loose balls won",   key: "avgLooseBallsWon" },
     { stat: "Switch passes",     key: "avgSwitchPlays" },
+    ...knockoutRows,
     { stat: "Avg tackles",       key: "avgTackles" },
     { stat: "Avg intercept",     key: "avgInterceptions" },
     { stat: "Dribbles won",      key: "avgDribblesWon" },

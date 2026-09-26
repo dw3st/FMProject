@@ -44,6 +44,8 @@ function emptyTeam(): TeamStats {
     throughBallsLostInFlight: 0, throughBallsLostInRace: 0,
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
+    penaltiesTaken: 0, penaltiesScored: 0,
+    extraTimePlayed: 0, shootoutsWon: 0,
   };
 }
 

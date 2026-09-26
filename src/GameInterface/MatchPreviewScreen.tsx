@@ -18,7 +18,8 @@ import { capture } from "@/analytics";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
 import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import { Player } from "@/Domain/Player";
-import type { Fixture } from "@/types/calendarTypes";
+import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 import {
   DEFAULT_TACTICAL_STYLE,
   TACTICAL_STYLE_OPTIONS,
@@ -579,7 +580,6 @@ export function MatchPreviewScreen() {
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [mySquadId, setMySquadId] = useState<string>("");
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
-  const [activeLeagueData, setActiveLeagueData] = useState<LeagueData | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
   // Static catalog lookups: club slug/name for any squadId.
   const catalogSlugs = useMemo(
@@ -622,8 +622,6 @@ export function MatchPreviewScreen() {
 
         if (cancelled) return;
 
-        const leagueRows = leaguesR.find((l) => l.slug === s.leagueSlug) ?? null;
-        setActiveLeagueData(leagueRows);
         setCatalogLeagues(leaguesR);
 
         let myInternalId: string;
@@ -707,6 +705,26 @@ export function MatchPreviewScreen() {
     if (matchSetup?.myLineup) setLocalLineup(matchSetup.myLineup);
   }, [matchSetup?.myLineup]);
 
+  // Cup tie: fetch the cup's stage metadata so the header can show the stage name
+  // ("Quarter-finals") instead of a meaningless matchday number.
+  const [cupMeta, setCupMeta] = useState<LeagueSeasonMeta | null>(null);
+  useEffect(() => {
+    if (!session?.saveId || !fixture || !isCupSlug(fixture.competition)) {
+      setCupMeta(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/saves/${session.saveId}/cups/${fixture.competition}`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ meta: LeagueSeasonMeta }>) : null))
+      .catch(() => null)
+      .then((data) => {
+        if (!cancelled) setCupMeta(data?.meta ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.saveId, fixture]);
+
   async function handleLastMinuteSub(newLineup: string[]) {
     if (!session) return;
     setLocalLineup(newLineup);
@@ -745,7 +763,7 @@ export function MatchPreviewScreen() {
 
   // ── Loading / guard states ────────────────────────────────────────────────
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (saveLoading || loading || !session) {
     return (
@@ -822,11 +840,16 @@ export function MatchPreviewScreen() {
   const oppTactics: TacticalStyle = DEFAULT_TACTICAL_STYLE;
 
   const currentDate = session.currentDate ?? "";
-  const { weather, referee, venue } = getMatchMeta(currentDate, session.clubName, isHome);
+  const { weather, referee, venue: venueOrHost } = getMatchMeta(currentDate, session.clubName, isHome);
+  const venue = fixture?.neutral ? t("cups.neutral") : venueOrHost;
   const competition = fixture
-    ? competitionName(fixture.competition, activeLeagueData ? [activeLeagueData] : [])
+    ? competitionName(fixture.competition, catalogLeagues, i18n.language)
     : "Premier Division";
   const matchday = fixture?.round ?? 1;
+  const isCupTie = fixture ? isCupSlug(fixture.competition) : false;
+  const cupStageName = isCupTie
+    ? cupMeta?.cup?.stages.find((s) => s.round === fixture!.round)?.name
+    : undefined;
 
   const myLogoUrl  = squadLogoUrl(mySquadId || session.clubId);
   const oppLogoUrl = opponentId ? squadLogoUrl(opponentId) : undefined;
@@ -871,7 +894,9 @@ export function MatchPreviewScreen() {
             backgroundClip: "text",
           }}
         >
-          Matchday {matchday} &bull; {competition}
+          {isCupTie
+            ? (cupStageName ? <>{t(`cups.stage.${cupStageName}`)} &bull; {competition}</> : competition)
+            : <>{t("leagues.matchday", { round: matchday })} &bull; {competition}</>}
         </p>
         <h1 className="text-4xl font-black font-display text-foreground uppercase tracking-wider m-0">
           {t("matchPreview.title")}
@@ -931,6 +956,9 @@ export function MatchPreviewScreen() {
             <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value="20:00 GMT" />
             <InfoCell icon={User} label={t("matchPreview.officials")} value={referee} />
           </div>
+          {fixture?.knockout && (
+            <p className="text-xs text-muted-foreground text-center mt-3 mb-0">{t("cups.knockoutNote")}</p>
+          )}
         </div>
       </div>
 

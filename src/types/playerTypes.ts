@@ -36,6 +36,8 @@ export interface PlayerSeasonLog {
   trainingSessions: number;
   fitness:     number;
   morale:      number;
+  /** National-cup games only (the fields above are the season total, league + cup). */
+  cup?: { appearances: number; goals: number; assists: number };
 }
 
 export function emptySeasonLog(): PlayerSeasonLog {

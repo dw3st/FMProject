@@ -205,7 +205,7 @@ export interface GameEvents {
     | { type: 'movePlayer';    id: number; x: number; y: number }
     | { type: 'giveBall';      id: number }
     | { type: 'patchPlayers';  players: import('@/GameEngine/types').GamePlayer[] }
-    | { type: 'triggerPhase';  phase: 'halfTime' | 'matchEnd' }
+    | { type: 'triggerPhase';  phase: 'halfTime' | 'matchEnd' | 'endPeriod' }
     | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent };
 
   /**
@@ -233,13 +233,19 @@ export interface GameEvents {
   /**
    * Emitted when play restarts from the centre: opening kickoff, second half, or after a goal.
    */
-  kickOff: { team: TeamId; phase: 'firstHalf' | 'secondHalf' | 'afterGoal' };
+  kickOff: { team: TeamId; phase: 'firstHalf' | 'secondHalf' | 'extraTimeFirst' | 'extraTimeSecond' | 'afterGoal' };
   /** Emitted once when the match clock starts (preMatch countdown ends). */
   matchStart: { extraTime: number };
   /** Emitted when the first half clock expires. Engine will auto-switch sides. */
   halfTime: { score: { A: number; B: number }; extraTime: number };
   /** Emitted when the second half clock expires. Simulation freezes. */
-  matchEnd: { score: { A: number; B: number } };
+  matchEnd: { score: { A: number; B: number }; decider?: import('@/GameEngine/types').KnockoutDecider | null };
+  /** Knockout match level after 90': extra time begins after a short break. */
+  extraTimeStart: { score: { A: number; B: number } };
+  /** One presented kick of a penalty shootout; `score` includes this kick. */
+  penaltyKick: { team: TeamId; takerId: number; keeperId: number | null; scored: boolean; chance: number; score: { A: number; B: number } };
+  /** Emitted once, right before `matchEnd`, when a shootout decided the match. */
+  shootoutEnd: { winner: TeamId; score: { A: number; B: number } };
 
   /**
    * Full engine snapshot from React (MatchScreen) so PixiPitch can keep its internal

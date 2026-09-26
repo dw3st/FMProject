@@ -11,6 +11,8 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import type { LeagueData } from "@/types/playerTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { competitionName } from "@/Domain/world/labels";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 
 interface Props {
   session: GameSession;
@@ -54,7 +56,7 @@ export function ClubSidebar({
   mySquadId,
   leagues,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const money = `€${(session.budget / 1_000_000).toFixed(1)}M`;
   const playerCount = squad?.players.length ?? 0;
   const nextFixture = getNextFixture(fixtures, mySquadId, currentDate);
@@ -63,7 +65,13 @@ export function ClubSidebar({
   const opponentName = nextFixture ? teamDisplayNameFromLeagues(opponentId, leagues) : "";
   const crestId = mySquadId || session.clubId;
   const myLogoUrl = squadLogoUrl(crestId);
-  const venueLabel = nextFixture ? (isHome ? t("dashboard.clubSidebar.home") : t("dashboard.clubSidebar.away")) : "";
+  const venueLabel = nextFixture
+    ? nextFixture.neutral
+      ? t("cups.neutral")
+      : isHome
+        ? t("dashboard.clubSidebar.home")
+        : t("dashboard.clubSidebar.away")
+    : "";
 
   const [sellListIds, setSellListIds] = useState<Set<string>>(new Set());
   const [sellToggling, setSellToggling] = useState(false);
@@ -191,7 +199,9 @@ export function ClubSidebar({
                   {opponentName}
                 </p>
                 <p className="text-xs text-muted-foreground font-medium m-0">
-                  {nextFixture.competition} · {t("common.round")} {nextFixture.round}
+                  {isCupSlug(nextFixture.competition)
+                    ? competitionName(nextFixture.competition, leagues, i18n.language)
+                    : `${competitionName(nextFixture.competition, leagues, i18n.language)} · ${t("common.round")} ${nextFixture.round}`}
                 </p>
                 <p className="text-xs text-primary font-bold uppercase m-0">{venueLabel}</p>
               </div>

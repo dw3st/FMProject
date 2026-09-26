@@ -172,6 +172,10 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     throughBallCompletionPct: pct(t.throughBallsCompleted, t.throughBallsAttempted),
     avgLooseBallsWon: r2(t.looseBallsWon / matches),
     avgSwitchPlays: r2(t.switchPlays / matches),
+    extraTimePct: pct(t.extraTimeMatches, matches),
+    shootoutWinPct: pct(t.shootoutsWon, matches),
+    avgPenaltiesTaken: r2(t.penaltiesTaken / matches),
+    penaltyConversionPct: pct(t.penaltiesScored, t.penaltiesTaken),
   };
 }
 
@@ -195,6 +199,7 @@ function emptyTotals(): VariantTotals {
     throughBallsLostInFlight: 0, throughBallsLostInRace: 0,
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
+    extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -222,6 +227,10 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.throughBallsLostInDuel   += src.throughBallsLostInDuel;
   dst.looseBallsWon            += src.looseBallsWon;
   dst.switchPlays              += src.switchPlays;
+  dst.extraTimeMatches += src.extraTimeMatches;
+  dst.shootoutsWon     += src.shootoutsWon;
+  dst.penaltiesTaken   += src.penaltiesTaken;
+  dst.penaltiesScored  += src.penaltiesScored;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -260,6 +269,10 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     throughBallCompletionPct: pct(totals.throughBallsCompleted, totals.throughBallsAttempted),
     avgLooseBallsWon: r2(totals.looseBallsWon / games),
     avgSwitchPlays: r2(totals.switchPlays / games),
+    extraTimePct: pct(totals.extraTimeMatches, totals.games),
+    shootoutWinPct: pct(totals.shootoutsWon, totals.games),
+    avgPenaltiesTaken: r2(totals.penaltiesTaken / games),
+    penaltyConversionPct: pct(totals.penaltiesScored, totals.penaltiesTaken),
   };
 }
 
@@ -280,7 +293,13 @@ export async function runScenario(
   const limit = Math.max(1, opts.concurrency ?? pairs.length);
   const raw = await runWithConcurrency(pairs, limit, (p) =>
     runOnePair(
-      { variantA: p.variantA, variantB: p.variantB, matches: scenario.matchesPerPair, simEngine: scenario.simEngine ?? "full" },
+      {
+        variantA: p.variantA,
+        variantB: p.variantB,
+        matches: scenario.matchesPerPair,
+        simEngine: scenario.simEngine ?? "full",
+        knockout: scenario.knockout ?? false,
+      },
       opts.onProgress,
     ),
   );

@@ -11,7 +11,7 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 |---|---|
 | `countryDisplayName(country, lang, t)` | Nome do país: chave i18n primeiro, depois `Intl.DisplayNames` pelo ISO, por último o nome cru. `GB` fica "England", nunca "United Kingdom". |
 | `leagueLabel(league, countryName)` | Rótulo `"Nome da Liga · País"` usado em combobox e seletor de liga. |
-| `competitionName(slug, leagues)` | Nome de exibição de uma competição pelo slug; se não achar na lista, faz `titleCase` do slug (tira o prefixo `of_`). |
+| `competitionName(slug, leagues, lang)` | Nome de exibição de uma competição pelo slug. Liga: nome do catálogo. Copa (`cup_<país>`): nome próprio para as 6 grandes (`CUP_NAMES`), senão genérico localizado por `lang` a partir do `country` cru do `leagueData` ("<País> Cup" em inglês, "Copa nacional (<país>)" em português via `Intl.DisplayNames`). Slug desconhecido: `titleCase` (tira o prefixo `of_`). Ver `.claude/rules/game/cups.md` → "Interface". |
 | `groupCountriesByContinent(countries, displayName)` | Agrupa países por continente, na ordem de `CONTINENT_ORDER`, ordenado dentro do grupo pelo nome de exibição. |
 | `leaguesOfCountry(leagues, countryName)` | Filtra as ligas de um país, mantendo a ordem de tier já escrita pelo importador. |
 | `matchesCountryQuery(query, parts)` | Busca sem acento e sem caixa; string vazia sempre casa. |

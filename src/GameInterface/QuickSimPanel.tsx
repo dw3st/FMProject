@@ -30,7 +30,7 @@ const AWAY = squadFrom(newcastleSquad as RawSquadFile);
 /** Both sides play the default formation — same as non-followed league fixtures. */
 const ROLES = slotRoles(formationForSimId(DEFAULT_SIM_FORMATION_ID));
 
-function runOnce(): QuickSimResult {
+function runOnce(knockout = false): QuickSimResult {
   return quickSimMatch({
     fixtureId: "test",
     home: HOME,
@@ -39,22 +39,29 @@ function runOnce(): QuickSimResult {
     awayLineup: autoLineupDefaultFormation(AWAY),
     homeRoles: ROLES,
     awayRoles: ROLES,
+    knockout,
   });
 }
 
-interface Batch { n: number; goals: number; home: number; draw: number; away: number }
+interface Batch { n: number; goals: number; home: number; draw: number; away: number; extraTime: number; penalties: number }
 
 export function QuickSimPanel() {
   const [last, setLast] = useState<QuickSimResult | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
+  const [knockout, setKnockout] = useState(false);
 
   function runBatch(n: number) {
-    const b: Batch = { n, goals: 0, home: 0, draw: 0, away: 0 };
+    const b: Batch = { n, goals: 0, home: 0, draw: 0, away: 0, extraTime: 0, penalties: 0 };
     for (let i = 0; i < n; i++) {
-      const { score } = runOnce().recording;
+      const { score, decider } = runOnce(knockout).recording;
       b.goals += score.home + score.away;
-      if (score.home > score.away) b.home++;
-      else if (score.away > score.home) b.away++;
+      if (decider) b.extraTime++;
+      const pens = decider?.penalties;
+      if (pens) b.penalties++;
+      const homeWon = score.home > score.away || (pens !== undefined && pens.home > pens.away);
+      const awayWon = score.away > score.home || (pens !== undefined && pens.away > pens.home);
+      if (homeWon) b.home++;
+      else if (awayWon) b.away++;
       else b.draw++;
     }
     setBatch(b);
@@ -70,18 +77,25 @@ export function QuickSimPanel() {
 
   return (
     <div className="bg-white/[0.03] border border-white/10 rounded p-3 space-y-2 max-w-md">
-      <div className="flex gap-2">
-        <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => setLast(runOnce())}>
+      <div className="flex items-center gap-2">
+        <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => setLast(runOnce(knockout))}>
           Simular 1
         </button>
         <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => runBatch(500)}>
           Simular 500
         </button>
+        <label className="flex items-center gap-1 text-xs text-white/70">
+          <input type="checkbox" checked={knockout} onChange={(e) => setKnockout(e.target.checked)} />
+          Mata-mata
+        </label>
       </div>
       {last && (
         <div className="space-y-1">
           <div className="text-sm font-bold text-center">
             {HOME.name} {last.recording.score.home} × {last.recording.score.away} {AWAY.name}
+            {last.recording.decider?.penalties &&
+              ` (pên. ${last.recording.decider.penalties.home}–${last.recording.decider.penalties.away})`}
+            {last.recording.decider && !last.recording.decider.penalties && " (prorr.)"}
           </div>
           {row("Ataque", last.breakdown.home.attack, last.breakdown.away.attack)}
           {row("Meio", last.breakdown.home.midfield, last.breakdown.away.midfield)}
@@ -94,6 +108,8 @@ export function QuickSimPanel() {
         <div className="text-xs text-white/70 tabular-nums">
           {batch.n} jogos · {(batch.goals / batch.n).toFixed(2)} gols/jogo · casa {((batch.home / batch.n) * 100).toFixed(0)}% ·
           empate {((batch.draw / batch.n) * 100).toFixed(0)}% · fora {((batch.away / batch.n) * 100).toFixed(0)}%
+          {knockout &&
+            ` · prorr. ${((batch.extraTime / batch.n) * 100).toFixed(0)}% · pên. ${((batch.penalties / batch.n) * 100).toFixed(0)}%`}
         </div>
       )}
     </div>
