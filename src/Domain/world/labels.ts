@@ -56,14 +56,19 @@ function cupName(slug: string, leagues: LeagueData[], lang: string): string | nu
   const league = leagues.find((l) => l.country && cupSlugOf(l.country) === slug);
   if (!league?.country) return null;
   if (CUP_NAMES[league.country]) return CUP_NAMES[league.country]!;
+  // English: use the raw leagueData country name — Intl.DisplayNames can diverge from the
+  // name used elsewhere in the UI (e.g. iso2 "TR" → "Türkiye" while the game says "Turkey").
+  if (!lang.toLowerCase().startsWith("pt")) return `${league.country} Cup`;
+  // Portuguese: "Copa <country>" reads badly for most countries ("Copa Estados Unidos",
+  // "Copa Países Baixos") — use a generic "Copa nacional (<country>)" instead, localised
+  // via Intl.DisplayNames when possible.
   let country = league.country;
-  const iso2 = league.iso2;
-  if (iso2) {
+  if (league.iso2) {
     try {
-      country = new Intl.DisplayNames([lang], { type: "region" }).of(iso2) ?? country;
+      country = new Intl.DisplayNames(["pt-BR"], { type: "region" }).of(league.iso2) ?? country;
     } catch { /* keep the raw name */ }
   }
-  return lang.toLowerCase().startsWith("pt") ? `Copa ${country}` : `${country} Cup`;
+  return `Copa nacional (${country})`;
 }
 
 /** Display name of a competition slug: league name, national cup name, or a title-cased slug. */

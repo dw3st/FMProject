@@ -90,7 +90,7 @@ export const saveRoutes = {
         if (playerLeagueState) {
           const calendar = await saveService.getAllFixturesForLeague(id, meta.leagueSlug);
           const cupSlug = await playerCupSlug(meta.leagueSlug);
-          const myId = (await saveService.getSquadById(id, meta.clubId))?.id ?? meta.clubId;
+          const myId = meta.clubId;
           const cupFixtures = cupSlug
             ? (await saveService.getAllFixturesForLeague(id, cupSlug)).filter((f) => f.home === myId || f.away === myId)
             : [];

@@ -110,7 +110,7 @@ describe("competitionName — cups", () => {
   });
   test("generic cup by country, localised", () => {
     expect(competitionName("cup_japan", cupLeagues, "en")).toBe("Japan Cup");
-    expect(competitionName("cup_japan", cupLeagues, "pt-BR")).toBe("Copa Japão");
+    expect(competitionName("cup_japan", cupLeagues, "pt-BR")).toBe("Copa nacional (Japão)");
   });
   test("unknown cup slug falls back to title case", () => {
     expect(competitionName("cup_atlantis", cupLeagues)).toBe("Cup Atlantis");
