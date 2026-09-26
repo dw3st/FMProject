@@ -184,13 +184,113 @@ Além das checagens de liga/pirâmide já existentes, o smoke roda, no fim da te
 Rodar: `bun scripts/season-rollover-smoke.ts` (~15 min, ~455 dias, Inglaterra e Itália rolam no
 meio). O save é sempre apagado no fim, sucesso ou falha.
 
-## Fica para o Plano 3
+## Interface
 
-- Tela `/cups/:country`.
-- `useAdvanceDay`/`advance-until`/`match-setup`/prévia enxergando o jogo de copa do jogador (e a
-  partida ao vivo com `knockout`/`neutral` — UI de prorrogação/pênaltis).
-- `competitionName` (`.claude/rules/ui-world.md`) com os nomes das copas.
-- Inbox `cup` (sorteio, eliminação, título) — usando o retorno de `advanceCupStages`
-  (`cupChanges`, hoje descartado em `advanceDay.ts` com `void cupChanges`).
-- `seasonLog` por competição (hoje o `playerLogs` do `SeasonArchive` de liga não separa copa).
-- i18n dos nomes/textos de copa.
+O jogador enxerga e joga a copa do seu país sem nenhuma rota nova de tela — ela entra no
+calendário e nas telas que já existiam para a liga. **Não existe** `/cups/:country`: o chaveamento
+mora numa aba da tela de liga (ver abaixo), desvio consciente da spec original.
+
+### Calendário do jogador inclui a copa
+
+`GET /api/saves/:id` (`src/backend/saves.ts`) monta `season.calendar` juntando as fixtures da liga
+do jogador com as fixtures de `playerCupSlug(meta.leagueSlug)` (`src/backend/cupWorld.ts` —
+`país → cup_<país>` pelo `leagueData`) **filtradas pelo clube do jogador**, ordenado por data. Isso
+é suficiente para que `useAdvanceDay`, `TopNavigation`, `ClubSidebar` e `WeekCalendar` mostrem o
+jogo de copa sem nenhuma mudança própria — todos já leem `season.calendar`.
+
+### Avanço rápido para no jogo de copa
+
+`nextPlayerFixtureDate(service, saveId, competitions, clubId, fromDate)`
+(`src/backend/advanceUntil.ts`) aceita uma lista de competições, não só uma liga.
+`readAdvancePosition` passa `[meta.leagueSlug, cup]` (cup pode ser `null` se o país não tiver
+copa), então `POST /api/saves/:id/advance-until` para tanto num jogo de liga quanto de copa do
+clube do jogador — sem heurística nova, é a mesma varredura por `date-index` que já existia,
+aplicada a duas pastas de competição.
+
+### `match-setup` aceita a copa
+
+`POST /api/match-setup` (`src/backend/routes.ts`) já escolhia a fixture do dia pelo `date-index`;
+agora o filtro é `f.competition === save.leagueSlug || f.competition === cupSlug` (com `cupSlug =
+await playerCupSlug(save.leagueSlug)`), então uma fixture de copa do jogador no dia atual monta a
+partida normalmente — mesmo endpoint, mesma resposta (`fixture`, `myTactics`, etc.), sem campo
+novo além do que a `Fixture` já carrega (`knockout`, `neutral`).
+
+### Partida ao vivo em mata-mata
+
+`MatchScreen.tsx` lê `data.fixture.knockout === true` e grava `knockout` no `GameState` retornado
+por `createMatchState` — o motor de mata-mata (prorrogação, pênaltis) já existia do Plano 1; aqui
+só passa a ser acionado de verdade quando a fixture do dia é de copa.
+
+### Aba Copa na tela de ligas
+
+`LeagueTableScreen.tsx` ganha uma quarta aba (`"table" | "fixtures" | "finances" | "cup"`), ao lado
+das já existentes, no mesmo seletor de liga/país — não uma rota `/cups/:country` própria. A aba só
+aparece quando o país da liga selecionada tem copa (`cupSlug = cupSlugOf(country)`); ao trocar de
+liga, o estado da copa é resetado e a aba clicada mas sem copa (`!cupSlug`) volta para `"table"`.
+
+Dados: `GET /api/saves/:id/cups/:cupSlug` (`src/backend/routes.ts`) devolve `{ meta, fixtures,
+names }` — a meta da copa (fases, campeão), todas as fixtures da pasta, e um mapa `id → nome` dos
+clubes envolvidos (participantes das fixtures + o campeão, se houver). 400 se o slug não é copa
+(`isCupSlug`), 404 se a copa não existe nesse save (país sem copa nesta temporada — `cupMissing` no
+front, mensagem `cups.none`).
+
+`CupBracket.tsx` (`src/GameInterface/Components/`) renderiza fase por fase, da última para a
+primeira: faixa do campeão (se houver), e por fase o cabeçalho com nome/data, "ainda não sorteada"
+se `!stage.drawn`, senão a lista de confrontos com resultado (ou "vs" antes de jogar), prorrogação
+(`decider` sem `pens`) ou pênaltis (`decider.penalties`), "campo neutro" (`neutral`), e a linha do
+clube do jogador destacada.
+
+### Prévia da partida
+
+`MatchPreviewScreen.tsx` detecta `isCupSlug(fixture.competition)` e busca a mesma rota de copa só
+para ler `meta.cup.stages` e mostrar o nome da fase (`cups.stage.<nome>`) em vez do nome da
+competição sozinho. `fixture.neutral` troca o texto de mando por "campo neutro" (`cups.neutral`);
+`fixture.knockout` mostra uma nota fixa (`cups.knockoutNote`, "mata-mata: prorrogação e pênaltis se
+empatar").
+
+### Resumo do dia
+
+`DaySummaryModal.tsx` usa `isCupSlug(event.competition)` para rotular o jogo com o nome da
+competição (`competitionName`) em vez do texto genérico de liga (`daySummary.cupMatch`).
+
+### Inbox `cup`
+
+Categoria nova em `InboxCategory` (`src/types/inboxTypes.ts`): `CupInboxMessage` com `kind: "draw"
+| "eliminated" | "champion"`, `cupSlug`, `cupName`, `stage` (nome da fase), e para sorteio/
+eliminação `opponentName` + (sorteio) `tieDate`/`venue`. Emitida em `advanceDay.ts` a partir de
+duas fontes no mesmo dia:
+
+- **Eliminação/título:** entre as fixtures de copa jogadas hoje pelo clube do jogador
+  (`dayEvents`), lê o vencedor (`fixtureWinner`) e a fase pelo `round` — **nunca chuta "final"**
+  quando a fase não é encontrada na meta (`stageNameOf` devolve `null` e o evento é pulado, ver o
+  commit `fix(cups): skip inbox news for an unknown stage`). Vitória na final → `champion`; derrota
+  em qualquer fase → `eliminated`.
+- **Sorteio:** para cada `change` de `cupChanges` (retorno de `advanceCupStages`) com
+  `drawnRound` definido, se o clube do jogador está na fase recém-sorteada → `draw`, com o
+  adversário, a data e o mando (`neutral` na final).
+
+Essas mensagens nunca colidem com o `clearInbox` da virada de temporada porque nenhum confronto de
+copa cai no próprio dia da virada — toda janela de fase de copa termina pelo menos
+`FINAL_BEFORE_END_DAYS` (7) dias antes do fim da janela da liga (`src/Domain/cups/cupDates.ts`).
+
+`InboxScreen.tsx` renderiza cada `kind` com i18n próprio (`inbox.cup.champion/eliminated/draw`,
+mais `inbox.cup.venue.<home|away|neutral>`).
+
+### `seasonLog.cup`
+
+`PlayerSeasonLog.cup?: { appearances, goals, assists }` (`src/types/playerTypes.ts`) — só os jogos
+de copa; os campos de fora (`appearances`, `goals`, `assists`, …) continuam sendo o total da
+temporada (liga + copa). `finalizeSquadsAfterMatch`
+(`src/Domain/advanceDay/matches.ts`) recebe `isCup = isCupSlug(fixture.competition)` e, quando
+verdadeiro, também incrementa `log.cup` além dos campos normais.
+
+### Nomes das copas
+
+`competitionName(slug, leagues, lang)` (`src/Domain/world/labels.ts`, ver
+`.claude/rules/ui-world.md`) reconhece `cup_<país>`: nome próprio para as 6 grandes ligas
+(`CUP_NAMES` — Inglaterra "FA Cup", Brasil "Copa do Brasil", Espanha "Copa del Rey", Alemanha
+"DFB-Pokal", Itália "Coppa Italia", França "Coupe de France"); para as demais, um nome genérico a
+partir do `country` cru do `leagueData` (não do `Intl.DisplayNames`, para não divergir do nome
+usado no resto da UI) — em inglês `"<País> Cup"`, em português `"Copa nacional (<país>)"` com o
+país localizado por `Intl.DisplayNames` quando há `iso2`. Slug de copa desconhecido cai no
+`titleCase` genérico, igual a qualquer slug fora do catálogo.
