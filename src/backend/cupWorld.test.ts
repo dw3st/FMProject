@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
+import type { PlayedMatchRecording } from "@/Domain/advanceDay";
 
 describe("createSave generates national cups", () => {
   let saveId = "";
@@ -60,4 +61,54 @@ describe("advanceOneDay plays and draws a cup stage", () => {
     const round2 = await saveService.getRound(saveId, "cup_england", stage1.round);
     expect(round2!.fixtures.length).toBe(stage1.entrants.length / 2);
   }, 300_000);
+});
+
+describe("advanceOneDay rejects an undecided knockout recording", () => {
+  let saveId = "";
+  afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
+
+  test("level score with no penalty winner returns 400 and writes nothing", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+    });
+    saveId = meta.id;
+
+    const cup = await saveService.getLeagueMeta(saveId, "cup_england");
+    const stage0 = cup!.cup!.stages[0]!;
+    const round1 = await saveService.getRound(saveId, "cup_england", stage0.round);
+    const fixture = round1!.fixtures[0]!;
+    expect(fixture.knockout).toBe(true);
+
+    // Make the fixture's home club the "player" club so advanceOneDay treats the override as
+    // theirs, then force the current date to the cup's stage-1 date.
+    await saveService.updateMeta(saveId, { clubId: fixture.home, currentDate: stage0.date });
+
+    const recording: PlayedMatchRecording = {
+      fixtureId: fixture.id,
+      score: { home: 1, away: 1 },
+      teamStats: {
+        home: { shots: 0, passesCompleted: 0, passesAttempted: 0, tackles: 0, interceptions: 0 },
+        away: { shots: 0, passesCompleted: 0, passesAttempted: 0, tackles: 0, interceptions: 0 },
+      },
+      playerStats: {},
+      playerRatings: {},
+      playerEnergy: {},
+      substitutions: [],
+      durationMs: 0,
+      // No decider — a level score with no penalty shootout is not a valid knockout result.
+    };
+
+    const outcome = await advanceOneDay(saveService, saveId, recording);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) {
+      expect(outcome.status).toBe(400);
+      expect(outcome.error).toBe("knockout recording without a winner");
+    }
+
+    // Nothing should have been written: the fixture is still unplayed.
+    const round1After = await saveService.getRound(saveId, "cup_england", stage0.round);
+    const fixtureAfter = round1After!.fixtures.find((f) => f.id === fixture.id)!;
+    expect(fixtureAfter.played).toBe(false);
+  }, 120_000);
 });
