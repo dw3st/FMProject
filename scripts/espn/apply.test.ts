@@ -43,8 +43,17 @@ describe("applyEspn (fixture)", () => {
     expect(wrexham.name).toBe("Wrexham");
     expect(wrexham.colors).toEqual(["#aa0000", "#ffffff"]);
     expect(wrexham.coach!.name).toBe("New Coach");
-    expect(wrexham.finances!.budget).toBeGreaterThan(0);
     expect(wrexham.source).toBe("espn");
+    // es_999 lands in of_championship alongside "39" (Wolves, moved down this run — excluded as a
+    // peer) and "of_hull" (untouched, level 4: broadcasting/commercial/budget 4,000,000,
+    // followers 400,000, capacity 24,000). Its only usable peer is of_hull, so finances are
+    // PROMOTED_INCOME_FLOOR (0.8) × of_hull's fields, and capacity is of_hull's, unscaled.
+    expect(wrexham.finances!.broadcasting).toBe(3200000);
+    expect(wrexham.finances!.commercial).toBe(3200000);
+    expect(wrexham.finances!.total).toBe(6400000);
+    expect(wrexham.finances!.budget).toBe(3200000);
+    expect(wrexham.finances!.followers).toBe(320000);
+    expect(wrexham.venue!.capacity).toBe(24000);
   });
 
   test("every squad meets the minimums and ids are unique", () => {
@@ -230,7 +239,7 @@ describe("applyEspn — suspect new clubs and fuzzy club matches", () => {
     expect(r4.report.playersRemoved.inRemovedClubs).toBe(4);
   });
 
-  test("a new club with no peers in its own league falls back to the country median, never zero", () => {
+  test("a new club with no peers in its own league falls back to the country peers' minimum, never zero", () => {
     const world: World = {
       leagues: [
         { slug: "top_test", name: "Top Test", country: "Testland", season: "2024-25", standings: [
@@ -264,7 +273,13 @@ describe("applyEspn — suspect new clubs and fuzzy club matches", () => {
     const r5 = applyEspn(world, snap, testOpts);
 
     const newClub = [...r5.world.squads.values()].flat().find((s) => s.id === "es_N1")!;
-    expect(newClub.finances!.budget).toBe(8e6); // falls back to the country median (Big One), not 0
+    // Falls back to the country's only peer (Big One), never 0 — floored at PROMOTED_INCOME_FLOOR × 8,000,000.
+    expect(newClub.finances!.budget).toBe(6400000);
+    expect(newClub.finances!.broadcasting).toBe(6400000);
+    expect(newClub.finances!.commercial).toBe(6400000);
+    expect(newClub.finances!.total).toBe(12800000);
+    expect(newClub.finances!.followers).toBe(640000);
+    // Capacity is the peer's min, unscaled by PROMOTED_INCOME_FLOOR.
     expect(newClub.venue!.capacity).toBe(40000);
   });
 });
@@ -568,5 +583,66 @@ describe("applyEspn — promoted clubs never fall below PROMOTED_INCOME_FLOOR of
     expect(mid.finances!.broadcasting).toBe(100000000); // scaled 35,000,000 × (1/0.35), already above the floor
     expect(mid.finances!.commercial).toBe(85714286); // scaled 30,000,000 × (1/0.35), already above the floor
     expect(mid.finances!.total).toBe(mid.finances!.broadcasting + mid.finances!.commercial);
+  });
+});
+
+describe("applyEspn — a brand-new club gets the promoted-club income floor, not the league median", () => {
+  test("floor uses the peers' MIN (not median), and a peer that moved into the league this run is excluded", () => {
+    // topLeague already has peerA (level 5), peerB (level 8) and peerC (level 20) — median would be
+    // 8,000,000 but the min is 5,000,000. peerD starts in feederLeague (tier 2, level 1 — much
+    // poorer) and is promoted into topLeague this run via clubOverrides; if it were wrongly counted
+    // as a peer the floor would collapse to 800,000. es_TE is the brand-new, unmatched club.
+    const peerA = buildSquad("peerA", "Peer A", 5, { country: "Flooria" });
+    const peerB = buildSquad("peerB", "Peer B", 8, { country: "Flooria" });
+    const peerC = buildSquad("peerC", "Peer C", 20, { country: "Flooria" });
+    const peerD = buildSquad("peerD", "Peer D", 1, { country: "Flooria" });
+    const world: World = {
+      leagues: [
+        { slug: "topLeague", name: "Top League", country: "Flooria", season: "2024-25", standings: [
+          { squadId: "peerA", slug: "peerA", name: "Peer A", colors: ["#111111", "#ffffff"], country: "Flooria" },
+          { squadId: "peerB", slug: "peerB", name: "Peer B", colors: ["#111111", "#ffffff"], country: "Flooria" },
+          { squadId: "peerC", slug: "peerC", name: "Peer C", colors: ["#111111", "#ffffff"], country: "Flooria" },
+        ] },
+        { slug: "feederLeague", name: "Feeder League", country: "Flooria", season: "2024-25", standings: [
+          { squadId: "peerD", slug: "peerD", name: "Peer D", colors: ["#111111", "#ffffff"], country: "Flooria" },
+        ] },
+      ],
+      squads: new Map([["topLeague", [peerA, peerB, peerC]], ["feederLeague", [peerD]]]),
+      schedules: [],
+      pyramids: { Flooria: { country: "Flooria", levels: [
+        { tier: 1, groups: [{ leagueSlug: "topLeague", promote: 0, relegate: 1 }] },
+        { tier: 2, groups: [{ leagueSlug: "feederLeague", promote: 1, relegate: 0 }] },
+      ] } },
+    };
+    const snap: EspnSnapshot = {
+      fetchedAt: "2026-09-25",
+      leagues: [{ slug: "topLeague", code: "fl.1", name: "Top League", season: "2026-27", teams: [
+        buildTeam("TA", "Peer A", []),
+        buildTeam("TB", "Peer B", []),
+        buildTeam("TC", "Peer C", []),
+        buildTeam("TD", "Peer D", []), // clubOverrides maps this to peerD → a genuine promotion
+        buildTeam("TE", "Totally New FC", []), // unmatched → brand-new es_TE club
+      ] }],
+    };
+    const testOpts = {
+      leagueMap: [{ slug: "topLeague", code: "fl.1" }],
+      clubOverrides: { TD: "peerD" }, playerOverrides: {}, boundaries: {}, roleWeights: allWeights, overall,
+    };
+    const r14 = applyEspn(world, snap, testOpts);
+    const out = (id: string) => [...r14.world.squads.values()].flat().find((s) => s.id === id)!;
+
+    expect(r14.report.newClubs.map((c) => c.id)).toEqual(["es_TE"]);
+    expect(r14.report.movedClubs).toContainEqual({ squadId: "peerD", from: "feederLeague", to: "topLeague" });
+
+    const newClub = out("es_TE");
+    // Floor = PROMOTED_INCOME_FLOOR (0.8) × min(peerA, peerB, peerC) = 0.8 × 5,000,000 — never the
+    // median (8,000,000), and never dragged down by peerD (1,000,000, excluded as a mover).
+    expect(newClub.finances!.broadcasting).toBe(4000000);
+    expect(newClub.finances!.commercial).toBe(4000000);
+    expect(newClub.finances!.total).toBe(8000000);
+    expect(newClub.finances!.budget).toBe(4000000);
+    expect(newClub.finances!.followers).toBe(400000);
+    // Capacity is the peers' min, unscaled: peerA's 25,000 (20,000 + 5 × 1,000).
+    expect(newClub.venue!.capacity).toBe(25000);
   });
 });

@@ -11,7 +11,15 @@ export interface IntegrityLeague {
   country: string;
   source?: string;
   zones?: Zone[];
-  standings: Array<{ squadId: string }>;
+  standings: Array<{ squadId: string; name?: string }>;
+}
+
+/** Matches an undecoded HTML entity like `&apos;`, `&#39;` or `&#x27;`. */
+const HTML_ENTITY_RE = /&[a-z#0-9]+;/i;
+
+function assertNoHtmlEntity(where: string, value: string | null | undefined): void {
+  if (typeof value === "string" && HTML_ENTITY_RE.test(value))
+    throw new Error(`integrity: ${where} contains an undecoded HTML entity: "${value}"`);
 }
 
 export interface IntegrityInput {
@@ -33,14 +41,21 @@ export function checkWorldIntegrity(w: IntegrityInput): { squads: number; player
     for (const st of l.standings) {
       if (!existsSync(join(w.squadsDir, l.slug, `${st.squadId}.json`)))
         throw new Error(`integrity: ${l.slug} standings squadId ${st.squadId} has no file`);
+      assertNoHtmlEntity(`${l.slug} standings squadId ${st.squadId} name`, st.name);
     }
     for (const f of readdirSync(join(w.squadsDir, l.slug)).sort()) {
       const s = JSON.parse(readFileSync(join(w.squadsDir, l.slug, f), "utf-8")) as SquadFile;
       if (squadIds.has(s.id)) throw new Error(`integrity: duplicate squad id ${s.id}`);
       squadIds.add(s.id);
+      assertNoHtmlEntity(`${l.slug}/${s.id} name`, s.name);
+      assertNoHtmlEntity(`${l.slug}/${s.id} venue.name`, s.venue?.name);
+      assertNoHtmlEntity(`${l.slug}/${s.id} venue.city`, s.venue?.city);
+      assertNoHtmlEntity(`${l.slug}/${s.id} coach.name`, s.coach?.name);
       for (const p of s.players) {
         if (playerIds.has(p.id)) throw new Error(`integrity: duplicate player id ${p.id} (${l.slug}/${s.id})`);
         playerIds.add(p.id);
+        assertNoHtmlEntity(`${l.slug}/${s.id} player ${p.id} name`, p.name);
+        assertNoHtmlEntity(`${l.slug}/${s.id} player ${p.id} fullName`, p.fullName);
       }
       players += s.players.length;
     }
