@@ -14,7 +14,8 @@ Referência única do que está feito, do que vem a seguir e em que ordem. Atual
 4. **Verificação** antes do merge: `bunx tsc --noEmit -p .`, `bun test`, smokes
    (`membership-smoke`, `season-rollover-smoke` quando mexer em mundo/temporada), teste no Chrome
    (servidor local em modo produção para partidas, ver "Pendências técnicas").
-5. **Merge → push → deploy** na VMLOCAL (`fm.westlab.dev`). Atualizar este arquivo.
+5. **Merge → push → deploy** na VMLOCAL (`fm.westlab.dev`). Fechar os issues resolvidos (`fixes #N`) e
+   atualizar este arquivo.
 
 Mudou o mundo (importadores, elencos, calendário)? Regenerar a cadeia inteira — ver
 `.claude/rules/data/espn-import.md`.
@@ -96,24 +97,32 @@ com `/test` e `/lab` exibindo as novas estatísticas.
 ### Contínuo — Polimento e balanceamento
 
 - **Reports dos testers:** triagem semanal com `bun scripts/fetchReports.ts`.
-- **Pendências técnicas** (abaixo), atacadas entre as fases.
+- **Issues abertos** (abaixo), atacados entre as fases.
 
 ---
 
-## Pendências técnicas
+## Bugs, correções e apontamentos
 
-| # | Pendência | Onde |
-|---|---|---|
-| 1 | quickSim abaixo do motor após a recalibração: Bundesliga −17,5%, Premier −12,6% (meta ±15%) | `QuickSimConfig.ts`, `scripts/quicksim-spread.ts` |
-| 2 | Ruído da derivação `of_*` põe jogadores medianos no top 50 (Dams, Segovia, Calderari) | `scripts/openfootball/derive.ts` |
-| 3 | Partida quebra no servidor de desenvolvimento (Pixi + HMR do Bun 1.3.10 do `node_modules`); produção funciona | atualizar Bun do projeto ou investigar o bundler |
-| 4 | Recalibração dos craques foi para o ar sem revisão final Opus nem season-rollover-smoke | rodar sobre `main` |
-| 5 | Kane (112º), Bellingham (176º) e Van Dijk (213º) abaixo do esperado (idade e disputa na faixa) | `scripts/openfootball/recalibrate.ts` |
-| 6 | Bundesliga × Serie A: mesmo nível, volume de gols diferente no motor | motor / quickSim |
-| 7 | Estilo posse perdeu ~8% de chutes; alavancas LM/RM e LWB/RWB não testadas | `roles.json` |
-| 8 | quickSim: notas ≥ 8,5 demais para FWD (titular leva a produção do reserva) | `quickSim.ts` |
-| 9 | Compose da VMLOCAL exposto na rede local (proposta: escutar só em `127.0.0.1:9400`) | `docker-compose.yml` no servidor |
-| 10 | Ligas de ano civil começam 2027 com a composição de 2026 (refazer `fetchEspn` após a virada) | `data_process/espn/` |
+Ficam nos **GitHub Issues** do repositório (público — nunca colocar e-mail ou nome de tester):
+https://github.com/dw3st/FMProject/issues
+
+| Rótulo | Uso |
+|---|---|
+| `bug` | Algo quebrado |
+| `balanceamento` | Motor ou quickSim fora do esperado |
+| `dados` | Mundo, importadores, elencos |
+| `infra` | Servidor, deploy, ferramentas |
+| `verificacao` | Verificação que ficou pendente |
+| `tester-report` | Veio de um report de tester (triagem) |
+
+Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
+(`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
+
+Abertos em 2026-09-25: #2 quickSim × motor em gols · #3 ruído dos `of_*` · #4 partida quebra no
+servidor de desenvolvimento · #5 revisão final + smoke da recalibração · #6 Kane/Bellingham/Van Dijk ·
+#7 Bundesliga × Serie A · #8 estilo posse · #9 notas ≥ 8,5 no quickSim · #10 compose exposto na rede
+local · #11 ligas de ano civil com a composição de 2026 · #12 salários fora de escala · #13 nomes
+turcos com maiúscula estranha.
 
 ---
 

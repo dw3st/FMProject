@@ -137,3 +137,12 @@ unauthenticated, 403 non-tester), `Content-Type`/body-size gates (415/413), the 
 `saveId` behavior (owned/unowned/nonexistent/wrong-type), the exact append format (including a
 description with embedded newlines and control characters staying one JSONL line and round-
 tripping exactly), `userAgent` capping, and `/api/auth/me`'s `isTester` field.
+
+## Triage flow
+
+1. `bun scripts/fetchReports.ts --since <last triage date>` pulls the new reports from the homelab.
+2. Each useful report becomes a GitHub issue (repo is **public**): label `tester-report` plus the type
+   label (`bug`, `balanceamento`, `dados`, …). Put only the report content, page and game date —
+   never the tester's e-mail or name.
+3. Discard noise/duplicates. Record the triage date in the roadmap's "Bugs, correções e
+   apontamentos" section when useful. See `docs/ROADMAP.md`.
