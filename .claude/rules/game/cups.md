@@ -274,7 +274,11 @@ copa cai no próprio dia da virada — toda janela de fase de copa termina pelo 
 `FINAL_BEFORE_END_DAYS` (7) dias antes do fim da janela da liga (`src/Domain/cups/cupDates.ts`).
 
 `InboxScreen.tsx` renderiza cada `kind` com i18n próprio (`inbox.cup.champion/eliminated/draw`,
-mais `inbox.cup.venue.<home|away|neutral>`).
+mais `inbox.cup.venue.<home|away|neutral>`), traduzindo `cupName` com `competitionName(cupSlug,
+leagues, i18n.language)` (a mensagem guarda o nome em inglês só como fallback enquanto o catálogo
+de ligas não carregou). A primeira fase da temporada (sorteada na criação do save ou na
+regeneração da copa) não gera mensagem — ela só aparece no calendário; só sorteios feitos durante
+o avanço de dia (`advanceCupStages`) viram inbox.
 
 ### `seasonLog.cup`
 
