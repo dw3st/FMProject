@@ -13,6 +13,7 @@ import type { Squad, RosterPlayer, StandingRow } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import { Player } from "@/Domain/Player";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 
 // ── Salary estimation ────────────────────────────────────────────────────────
 
@@ -233,7 +234,7 @@ export function FinancesScreen() {
 
   // Count home games this season (must be before early return — hooks rule)
   const homeGames = useMemo(
-    () => fixtures.filter((f) => f.home === squad?.id).length || 19,
+    () => fixtures.filter((f) => f.home === squad?.id && !isCupSlug(f.competition)).length || 19,
     [fixtures, squad?.id],
   );
 

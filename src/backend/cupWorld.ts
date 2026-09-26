@@ -122,4 +122,11 @@ export async function advanceCupStages(
   return changes;
 }
 
+/** Cup slug of the player's country (from the leagueData catalog), or null. */
+export async function playerCupSlug(leagueSlug: string): Promise<string | null> {
+  const { getLeagueData } = await import("@/backend/advanceDay");
+  const country = (await getLeagueData()).find((l) => l.slug === leagueSlug)?.country;
+  return country ? cupSlugOf(country) : null;
+}
+
 export { cupSlugOf };
