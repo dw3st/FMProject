@@ -16,7 +16,7 @@ export function scheduleStageDates(start: string, end: string, stages: number, b
   const lo = toMs(start);
   const hi = toMs(end) - FINAL_BEFORE_END_DAYS * DAY;
   const span = Math.max(0, hi - lo);
-  const out: string[] = [];
+  const picks: number[] = [];
   let prev = -Infinity;
 
   const ok = (ms: number, wantWednesday: boolean) =>
@@ -32,9 +32,31 @@ export function scheduleStageDates(start: string, end: string, stages: number, b
     let pick: number | null = null;
     for (const o of OFFSETS) if (pick === null && ok(wed + o * 7 * DAY, true)) pick = wed + o * 7 * DAY;
     for (const o of OFFSETS) if (pick === null && ok(target + o * DAY, false)) pick = target + o * DAY;
-    if (pick === null) pick = Math.max(target, prev + DAY);
-    out.push(toIso(pick));
+    if (pick === null) {
+      // Fallback: no Wednesday/OFFSETS candidate satisfied the 3-day gap and busy-day rules —
+      // relax both and just clamp to the window, still never past `hi` and never before `prev`.
+      const clamped = Math.min(hi, Math.max(target, prev + DAY));
+      if (clamped > prev) {
+        pick = clamped;
+      } else {
+        // Degenerate: the window ran out of distinct days for even the 1-day-apart fallback —
+        // greedily consuming 1 day per stage since some earlier point left no room for this
+        // stage before `hi`. Relax the gap/busy rules further and walk backward, re-including
+        // however many already-placed stages are needed until the block fits, then pack that
+        // whole block one day apart ending exactly at `hi`. Still strictly increasing throughout
+        // and never past `hi` — the trade-off is some of those earlier stages move earlier too.
+        let windowStart = i;
+        let count = stages - i;
+        while (windowStart > 0 && hi - picks[windowStart - 1]! < count * DAY) {
+          windowStart--;
+          count++;
+        }
+        for (let k = 0; k < count; k++) picks[windowStart + k] = hi - (count - 1 - k) * DAY;
+        return picks.map(toIso);
+      }
+    }
+    picks.push(pick);
     prev = pick;
   }
-  return out;
+  return picks.map(toIso);
 }

@@ -36,7 +36,11 @@ export function drawNextStage(
 
   const winners = fixtures.map((f) => fixtureWinner(f)!);
   const entrantIds = round === 1 ? [...winners, ...cup.byes] : winners;
-  const entrants = entrantIds.map((id) => ({ id, tier: cup.tiers[id] ?? 99 }));
+  const entrants = entrantIds.map((id) => {
+    const tier = cup.tiers[id];
+    if (tier === undefined) throw new Error(`drawNextStage: unknown club id "${id}" — not in cup.tiers`);
+    return { id, tier };
+  });
   const ties = drawTies(entrants, mulberry32(seedFrom(`${seedKey}:${next.round}`)), next.name === "final");
 
   const drawnStage = { ...next, entrants: entrantIds, drawn: true };

@@ -88,20 +88,24 @@ describe("cup fixtures", () => {
     // regression, or tight enough to flake. Instead, each seed drives BOTH a normal and a
     // neutral fixture — same rng stream, so the shared randomness (dominance noise, the exact
     // Bernoulli draws inside sampleGoals) mostly cancels out and only the effect of the venue
-    // flag on expected goals remains. Calibrated empirically (scripts/_scratch_neutral_calib.ts,
-    // discarded): paired mean ~0.045, paired SE ~0.005 at n=2000 — a >8-sigma signal, so 0.02 is
-    // a safe, non-flaky threshold while still failing hard if `neutral` stops suppressing home
-    // advantage.
+    // flag on expected goals remains. Calibrated empirically: paired mean ~0.045, paired SE
+    // ~0.005 at n=2000 — a >8-sigma signal, so 0.02 is a safe, non-flaky threshold while still
+    // failing hard if `neutral` stops suppressing home advantage.
     const n = 2000;
     let diffSum = 0;
+    let neutralMarginSum = 0;
     for (let seed = 1; seed <= n; seed++) {
       const normal = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(seed));
       const neutral = buildQuickMatchEvent({ ...fixture, neutral: true as const }, home, away, sim, mulberry32(seed));
       const normalMargin = normal.event.score.home - normal.event.score.away;
       const neutralMargin = neutral.event.score.home - neutral.event.score.away;
       diffSum += normalMargin - neutralMargin;
+      neutralMarginSum += neutralMargin;
     }
     // Paired mean margin lost by removing home advantage — must be clearly positive.
     expect(diffSum / n).toBeGreaterThan(0.02);
+    // With home and away exactly equal in force (see makeSquad), a neutral fixture on its own
+    // should have no systematic home/away bias — the mean margin should sit close to 0.
+    expect(Math.abs(neutralMarginSum / n)).toBeLessThan(0.08);
   });
 });
