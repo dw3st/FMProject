@@ -23,6 +23,7 @@ import { createMatchState, getBallPos } from "@/GameEngine/Domain/gameState";
 import { teamLineup } from "@/GameEngine/Domain/TeamLineup";
 import { getRuntimeLineup, normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
+import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { DEFAULT_TACTICAL_STYLE, TACTICAL_STYLE_OPTIONS, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
@@ -1044,17 +1045,40 @@ export function TestScreen() {
                   → Half Time
                 </button>
               )}
-              {(liveGameState?.matchPhase === 'secondHalf') && (
+              {(liveGameState?.matchPhase === 'secondHalf' && !liveGameState?.knockout) && (
                 <button
                   onClick={() => setPhaseCountdown({ target: 'matchEnd', remaining: 3 })}
                   className="px-2.5 py-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer text-xs font-semibold">
                   → Match End
                 </button>
               )}
+              {liveGameState?.knockout &&
+                (liveGameState.matchPhase === 'secondHalf' ||
+                 liveGameState.matchPhase === 'extraTimeFirst' ||
+                 liveGameState.matchPhase === 'extraTimeSecond') && (
+                <button
+                  onClick={() => gameBus.emit('testCommand', { type: 'triggerPhase', phase: 'endPeriod' })}
+                  className="px-2.5 py-1.5 rounded-lg border border-violet-500/40 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 transition-colors cursor-pointer text-xs font-semibold">
+                  → End period ({liveGameState.matchPhase})
+                </button>
+              )}
+              {liveGameState?.shootout && (
+                <PenaltyShootoutStrip shootout={liveGameState.shootout} nameA="A" nameB="B" />
+              )}
             </>
           )}
         </div>
       </div>
+
+      {debug && liveGameState?.shootout && (
+        <div className="text-[10px] font-mono text-white/60 space-y-0.5">
+          {liveGameState.shootout.kicks.slice(0, liveGameState.shootout.shown).map((k, i) => (
+            <div key={i}>
+              {k.team} #{k.takerId} {(k.chance * 100).toFixed(0)}% {k.scored ? "✓" : "✗"}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Live broadcast (commentary ticker) ── */}
       <div className="card-arcade rounded-xl px-4 py-3 border border-primary/20 bg-primary/5">

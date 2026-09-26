@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Application, Container, Graphics, Text, TextStyle } from "pixi.js";
-import { tickState, getBallPos } from "@/GameEngine/Domain/gameState";
+import { tickState, getBallPos, endCurrentPeriod } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -1111,6 +1111,8 @@ export function PixiPitch({
           } else if (cmd.phase === 'matchEnd') {
             stateRef.current = { ...stateRef.current, matchPhase: 'matchEnd' };
             gameBus.emit('matchEnd', { score: stateRef.current.score });
+          } else if (cmd.phase === 'endPeriod') {
+            stateRef.current = endCurrentPeriod(stateRef.current);
           }
         }
         gameBus.emit('stateChanged', stateRef.current);
