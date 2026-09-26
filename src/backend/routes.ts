@@ -24,7 +24,6 @@ import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { playerCupSlug } from "@/backend/cupWorld";
-import { isCupSlug } from "@/Domain/cups/cupIds";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -488,7 +487,7 @@ export const apiRoutes = {
     const { saveId, cupSlug } = req.params;
     const auth = requireSaveOwner(req, saveId!);
     if (auth instanceof Response) return auth;
-    if (!isCupSlug(cupSlug!)) return Response.json({ error: "not a cup" }, { status: 400 });
+    if (!/^cup_[a-z0-9_]+$/.test(cupSlug!)) return Response.json({ error: "not a cup" }, { status: 400 });
     const meta = await saveService.getLeagueMeta(saveId!, cupSlug!);
     if (!meta?.cup) return Response.json({ error: "cup not found" }, { status: 404 });
     const fixtures = await saveService.getAllFixturesForLeague(saveId!, cupSlug!);

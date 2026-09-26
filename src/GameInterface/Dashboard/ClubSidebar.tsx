@@ -65,7 +65,13 @@ export function ClubSidebar({
   const opponentName = nextFixture ? teamDisplayNameFromLeagues(opponentId, leagues) : "";
   const crestId = mySquadId || session.clubId;
   const myLogoUrl = squadLogoUrl(crestId);
-  const venueLabel = nextFixture ? (isHome ? t("dashboard.clubSidebar.home") : t("dashboard.clubSidebar.away")) : "";
+  const venueLabel = nextFixture
+    ? nextFixture.neutral
+      ? t("cups.neutral")
+      : isHome
+        ? t("dashboard.clubSidebar.home")
+        : t("dashboard.clubSidebar.away")
+    : "";
 
   const [sellListIds, setSellListIds] = useState<Set<string>>(new Set());
   const [sellToggling, setSellToggling] = useState(false);
