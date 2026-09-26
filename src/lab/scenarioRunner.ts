@@ -173,7 +173,8 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgLooseBallsWon: r2(t.looseBallsWon / matches),
     avgSwitchPlays: r2(t.switchPlays / matches),
     extraTimePct: pct(t.extraTimeMatches, matches),
-    shootoutsWon: t.shootoutsWon,
+    shootoutWinPct: pct(t.shootoutsWon, matches),
+    avgPenaltiesTaken: r2(t.penaltiesTaken / matches),
     penaltyConversionPct: pct(t.penaltiesScored, t.penaltiesTaken),
   };
 }
@@ -269,7 +270,8 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgLooseBallsWon: r2(totals.looseBallsWon / games),
     avgSwitchPlays: r2(totals.switchPlays / games),
     extraTimePct: pct(totals.extraTimeMatches, totals.games),
-    shootoutsWon: totals.shootoutsWon,
+    shootoutWinPct: pct(totals.shootoutsWon, totals.games),
+    avgPenaltiesTaken: r2(totals.penaltiesTaken / games),
     penaltyConversionPct: pct(totals.penaltiesScored, totals.penaltiesTaken),
   };
 }
