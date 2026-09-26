@@ -31,6 +31,10 @@ describe("resolvePenaltyShootout", () => {
       const r = resolvePenaltyShootout(side("a", 0.5, 0.5), side("b", 0.5, 0.5), rng);
       expect(r.score.A).not.toBe(r.score.B);
       expect(r.winner).toBe(r.score.A > r.score.B ? "A" : "B");
+      // Invariant: score always equals the scored-kick counts per team.
+      const a = r.kicks.filter((k) => k.team === "A" && k.scored).length;
+      const b = r.kicks.filter((k) => k.team === "B" && k.scored).length;
+      expect({ A: a, B: b }).toEqual(r.score);
     }
   });
 
@@ -79,9 +83,29 @@ describe("resolvePenaltyShootout", () => {
     expect(rate).toBeLessThan(0.80);
   });
 
-  test("a side with no takers loses without kicks", () => {
+  test("a side with no takers loses on a synthetic 1-0 kick", () => {
     const r = resolvePenaltyShootout(side("a", 0.5, 0.5), { takers: [], keeper: null }, mulberry32(1));
     expect(r.winner).toBe("A");
-    expect(r.kicks).toEqual([]);
+    expect(r.score).toEqual({ A: 1, B: 0 });
+    expect(r.kicks).toHaveLength(1);
+    expect(r.kicks[0]).toMatchObject({ team: "A", scored: true, chance: 1, keeperId: null });
+  });
+
+  test("both sides with no takers still returns a non-tied score (documented no-kicks exception)", () => {
+    const r = resolvePenaltyShootout({ takers: [], keeper: null }, { takers: [], keeper: null }, mulberry32(1));
+    expect(r).toEqual({ kicks: [], score: { A: 1, B: 0 }, winner: "A" });
+  });
+
+  test("a side with no takers but a keeper still lends its keeper id to the opponent's synthetic kick", () => {
+    // Empty `takers` with a non-null `keeper` is structurally unusual (the shape allows it —
+    // `takers` and `keeper` are independent fields) but must still resolve keeperId from the
+    // loser's keeper, not force it to null.
+    const winnerSide = side("a", 0.5, 0.5);
+    const loserSide: PenaltySide<string> = { takers: [], keeper: { id: "b-lonegk", reflex: 0.6, diving: 0.6 } };
+    const r = resolvePenaltyShootout(winnerSide, loserSide, mulberry32(1));
+    expect(r.winner).toBe("A");
+    expect(r.score).toEqual({ A: 1, B: 0 });
+    expect(r.kicks).toHaveLength(1);
+    expect(r.kicks[0]).toMatchObject({ team: "A", scored: true, chance: 1, keeperId: "b-lonegk" });
   });
 });

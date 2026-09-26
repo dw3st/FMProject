@@ -61,8 +61,37 @@ export function resolvePenaltyShootout<Id>(
   sideB: PenaltySide<Id>,
   rng: () => number,
 ): ShootoutResult<Id> {
-  if (sideA.takers.length === 0 || sideB.takers.length === 0) {
-    return { kicks: [], score: { A: 0, B: 0 }, winner: sideA.takers.length > 0 ? "A" : "B" };
+  const aHasTakers = sideA.takers.length > 0;
+  const bHasTakers = sideB.takers.length > 0;
+
+  if (!aHasTakers && !bHasTakers) {
+    // Neither side has a taker — there is no possible kick at all. This is the only case
+    // where `score` cannot equal the scored-kick counts in `kicks` (kicks is necessarily
+    // empty), because there is no player to attribute a synthetic kick to on either side.
+    // Unreachable in practice: a shootout only ever follows 120 minutes with a full XI
+    // (including a goalkeeper) on both sides, so `takers` is never empty for both teams.
+    return { kicks: [], score: { A: 1, B: 0 }, winner: "A" };
+  }
+  if (!aHasTakers || !bHasTakers) {
+    // Exactly one side has no takers — that side forfeits. Award the other side a single
+    // synthetic scored kick (its first taker in kick order) so `score` still equals the
+    // scored-kick counts in `kicks`.
+    const winner: ShootoutTeam = aHasTakers ? "A" : "B";
+    const winnerSide = aHasTakers ? sideA : sideB;
+    const loserSide = aHasTakers ? sideB : sideA;
+    const taker = kickOrder(winnerSide.takers)[0]!;
+    const kick: PenaltyKick<Id> = {
+      team: winner,
+      takerId: taker.id,
+      keeperId: loserSide.keeper?.id ?? null,
+      scored: true,
+      chance: 1,
+    };
+    return {
+      kicks: [kick],
+      score: winner === "A" ? { A: 1, B: 0 } : { A: 0, B: 1 },
+      winner,
+    };
   }
   const order = { A: kickOrder(sideA.takers), B: kickOrder(sideB.takers) };
   const keeperFacing = { A: sideB.keeper, B: sideA.keeper };
@@ -97,8 +126,16 @@ export function resolvePenaltyShootout<Id>(
     kick("B");
   }
   if (score.A === score.B) {
-    // Degenerate safety net — practically unreachable.
-    score[rng() < 0.5 ? "A" : "B"]++;
+    // Safety net if still level after MAX_SUDDEN_DEATH_ROUNDS — practically unreachable (both
+    // sides would need to miss or match every sudden-death round that many times running).
+    // Push a synthetic scored kick for the coin-flip winner (their next taker in kick order)
+    // so `score` still equals the scored-kick counts in `kicks`.
+    const winner: ShootoutTeam = rng() < 0.5 ? "A" : "B";
+    const list = order[winner];
+    const taker = list[taken[winner] % list.length]!;
+    const keeper = keeperFacing[winner];
+    score[winner]++;
+    kicks.push({ team: winner, takerId: taker.id, keeperId: keeper?.id ?? null, scored: true, chance: 1 });
   }
   return { kicks, score, winner: score.A > score.B ? "A" : "B" };
 }

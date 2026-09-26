@@ -11,6 +11,7 @@ import { QUICK_SIM_CONFIG as C } from "@/GameEngine/Configs/QuickSimConfig";
 import { mulberry32 } from "@/Domain/rng";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
+import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 
 const ROLES = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CM", "LW", "ST", "RW"];
 
@@ -415,6 +416,58 @@ describe("quickSim knockout", () => {
       }
     }
     expect(shootouts).toBeGreaterThan(0);
+  });
+
+  test("extra time drains energy ×4/3 versus the 90' formula", () => {
+    // Energy drain is a pure function of the player's own stamina and start fitness — it never
+    // depends on rng draws or match events. That means we don't need to compare a knockout run
+    // against a non-knockout run of the same seed (which would be invalid anyway: extra time
+    // consumes extra samplePoisson/rng draws before goalsHome/goalsAway are even settled, so a
+    // non-knockout run of the same seed does not share the same rng call order). Instead we
+    // recompute the expected drain directly from QUICK_SIM_CONFIG and compare.
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let found = false;
+    for (let seed = 1; seed <= 3000 && !found; seed++) {
+      const { recording: r } = quickSimMatch(
+        { fixtureId: "et", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away), knockout: true },
+        mulberry32(seed),
+      );
+      if (!r.decider?.extraTime) continue;
+      found = true;
+      for (const p of [...home.players, ...away.players]) {
+        const startEnergy = ensureSeasonLog(p).seasonLog!.fitness;
+        const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (p.stats.stamina / 10)) * (4 / 3);
+        const expected = Math.max(0, Math.min(100, startEnergy - drain));
+        expect(r.playerEnergy[p.id]).toBeCloseTo(expected, 6);
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  test("a knockout match with an empty lineup still ends with an unlevel shootout", () => {
+    // Regresses the bug fixed in resolvePenaltyShootout: an empty home XI means `shootoutSide`
+    // returns no takers for home, so the shootout used to resolve as a 0-0 tie (no synthetic
+    // kick) — decider.penalties.home === decider.penalties.away. It must now always resolve
+    // with a winner.
+    // The away side is deliberately GK-only (floor-level attack/midfield, same as the empty
+    // home side's floor-level defense/GK): a full 11-man away side would have overwhelming
+    // attack strength against an empty defense and would score almost every match, making a
+    // 0-0-after-extra-time (the only path to a shootout) too rare to hit within a seed sweep.
+    const home = makeSquad("h", 6);
+    const away = makeGkOnlySquad("a", 4);
+    let sawShootout = false;
+    for (let seed = 1; seed <= 3000 && !sawShootout; seed++) {
+      const { recording: r } = quickSimMatch(
+        { fixtureId: "empty-ko", home, away, homeLineup: [], awayLineup: lineupOf(away), knockout: true },
+        mulberry32(seed),
+      );
+      expect(r.score.home).toBe(0);
+      if (!r.decider?.penalties) continue;
+      sawShootout = true;
+      expect(r.decider.penalties.home).not.toBe(r.decider.penalties.away);
+    }
+    expect(sawShootout).toBe(true);
   });
 
   test("without knockout, draws are still possible and no decider is set", () => {

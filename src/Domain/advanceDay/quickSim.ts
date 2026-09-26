@@ -374,12 +374,15 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     }
   }
 
+  // Extra time (30' on top of 90') drains the whole XI proportionally longer, same as the
+  // full engine's match-minute tracking treats 120' matches.
+  const extraTimeMult = decider?.extraTime ? 4 / 3 : 1;
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
   for (const { p } of [...homeXI, ...awayXI]) {
     playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0);
     const startEnergy = startFitness(p);
-    const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (stat(p, "stamina") / 10));
+    const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (stat(p, "stamina") / 10)) * extraTimeMult;
     playerEnergy[p.id] = clamp(startEnergy - drain, 0, 100);
   }
 
