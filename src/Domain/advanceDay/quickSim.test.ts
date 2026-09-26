@@ -391,3 +391,44 @@ describe("ratingFromStats", () => {
     expect(ratingFromStats(zero, 1)).toBeCloseTo(5.8, 5);
   });
 });
+
+describe("quickSim knockout", () => {
+  test("never ends level; decider consistent; goals match the score", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let shootouts = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const { recording: r } = quickSimMatch(
+        { fixtureId: "k", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away), knockout: true },
+        mulberry32(seed),
+      );
+      const goals = (side: "h" | "a") =>
+        Object.entries(r.playerStats).filter(([id]) => id.startsWith(`${side}-`)).reduce((n, [, s]) => n + s.goals, 0);
+      expect(goals("h")).toBe(r.score.home);
+      expect(goals("a")).toBe(r.score.away);
+      if (r.decider?.penalties) {
+        shootouts++;
+        expect(r.score.home).toBe(r.score.away);
+        expect(r.decider.penalties.home).not.toBe(r.decider.penalties.away);
+      } else {
+        expect(r.score.home).not.toBe(r.score.away);
+      }
+    }
+    expect(shootouts).toBeGreaterThan(0);
+  });
+
+  test("without knockout, draws are still possible and no decider is set", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let draws = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const { recording: r } = quickSimMatch(
+        { fixtureId: "l", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+        mulberry32(seed),
+      );
+      expect(r.decider).toBeUndefined();
+      if (r.score.home === r.score.away) draws++;
+    }
+    expect(draws).toBeGreaterThan(0);
+  });
+});

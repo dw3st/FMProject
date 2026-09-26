@@ -9,6 +9,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { resolvePenaltyShootout, type PenaltySide } from "@/GameEngine/Infrastructure/PenaltyShootout";
 import {
   ATTACKING_MID_ROLES,
   DEFENSIVE_MID_ROLES,
@@ -54,6 +55,8 @@ export interface QuickSimInput {
    */
   homeRoles?: string[];
   awayRoles?: string[];
+  /** Knockout: a level score after 90' goes to extra time (xG × 30/90) and then penalties. */
+  knockout?: boolean;
 }
 
 export interface QuickSimResult {
@@ -247,6 +250,21 @@ function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[]
   return xi;
 }
 
+function assignGoals(xi: XIPlayer[], goals: number, stats: Record<string, MatchPlayerStats>, rng: Rng): void {
+  const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
+  const assistWeight = (x: XIPlayer) => C.ROLE_ASSIST_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "passing") / 10);
+  for (let g = 0; g < goals; g++) {
+    const scorer = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
+    if (!scorer) break;
+    stats[scorer.p.id]!.goals++;
+    stats[scorer.p.id]!.shots++;
+    if (rng() >= C.NO_ASSIST_RATE) {
+      const assister = weightedPick(xi.filter((x) => x.p.id !== scorer.p.id), assistWeight, rng);
+      if (assister) stats[assister.p.id]!.assists++;
+    }
+  }
+}
+
 function fillSide(
   xi: XIPlayer[],
   goals: number,
@@ -258,18 +276,8 @@ function fillSide(
   rng: Rng,
 ): void {
   const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
-  const assistWeight = (x: XIPlayer) => C.ROLE_ASSIST_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "passing") / 10);
 
-  for (let g = 0; g < goals; g++) {
-    const scorer = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
-    if (!scorer) break;
-    stats[scorer.p.id]!.goals++;
-    stats[scorer.p.id]!.shots++;
-    if (rng() >= C.NO_ASSIST_RATE) {
-      const assister = weightedPick(xi.filter((x) => x.p.id !== scorer.p.id), assistWeight, rng);
-      if (assister) stats[assister.p.id]!.assists++;
-    }
-  }
+  assignGoals(xi, goals, stats, rng);
 
   const shotsPerXg = C.SHOTS_PER_XG * Math.pow(matchLevel / C.LEVEL_REF, C.SHOTS_LEVEL_EXPONENT);
   const extraShots = samplePoisson(xg * shotsPerXg, rng);
@@ -311,6 +319,18 @@ function sumTeamStats(xi: XIPlayer[], stats: Record<string, MatchPlayerStats>): 
   return t;
 }
 
+function shootoutSide(xi: XIPlayer[]): PenaltySide<string> {
+  const gk = xi.find((x) => groupOf(x) === "GK");
+  return {
+    takers: xi.map((x) => ({
+      id: x.p.id,
+      accuracy: groupOf(x) === "GK" ? 0 : Math.min(0.95, stat(x.p, "finishing") / 10),
+      isGK: groupOf(x) === "GK",
+    })),
+    keeper: gk ? { id: gk.p.id, reflex: stat(gk.p, "reflex") / 10, diving: stat(gk.p, "jump") / 10 } : null,
+  };
+}
+
 export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): QuickSimResult {
   const start = performance.now();
   const homeXI = resolveXI(input.home, input.homeLineup, input.homeRoles);
@@ -329,8 +349,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const xgAwayDay = xgAway * Math.exp(-d - shrink);
   // An empty XI can't score — force 0 so recording.score always agrees with the sum of
   // per-player goals (an XI can be empty if a lineup is entirely blank/unknown ids).
-  const goalsHome = homeXI.length > 0 ? sampleGoals(xgHomeDay, rng) : 0;
-  const goalsAway = awayXI.length > 0 ? sampleGoals(xgAwayDay, rng) : 0;
+  let goalsHome = homeXI.length > 0 ? sampleGoals(xgHomeDay, rng) : 0;
+  let goalsAway = awayXI.length > 0 ? sampleGoals(xgAwayDay, rng) : 0;
 
   const playerStats: Record<string, MatchPlayerStats> = {};
   const tacklesFailed: Record<string, number> = {};
@@ -338,6 +358,21 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const matchLevel = (teamLevel(home) + teamLevel(away)) / 2;
   fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, teamLevel(home), matchLevel, rng);
   fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
+
+  let decider: PlayedMatchRecording["decider"];
+  if (input.knockout && goalsHome === goalsAway) {
+    const etHome = homeXI.length > 0 ? sampleGoals(xgHomeDay * (30 / 90), rng) : 0;
+    const etAway = awayXI.length > 0 ? sampleGoals(xgAwayDay * (30 / 90), rng) : 0;
+    assignGoals(homeXI, etHome, playerStats, rng);
+    assignGoals(awayXI, etAway, playerStats, rng);
+    goalsHome += etHome;
+    goalsAway += etAway;
+    decider = { extraTime: { home: etHome, away: etAway } };
+    if (goalsHome === goalsAway) {
+      const so = resolvePenaltyShootout(shootoutSide(homeXI), shootoutSide(awayXI), rng);
+      decider.penalties = { home: so.score.A, away: so.score.B };
+    }
+  }
 
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
@@ -357,6 +392,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     playerEnergy,
     substitutions: [],
     durationMs: Math.round(performance.now() - start),
+    ...(decider ? { decider } : {}),
   };
 
   return { recording, breakdown: { home, away, xgHome, xgAway } };
