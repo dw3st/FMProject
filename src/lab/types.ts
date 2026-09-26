@@ -175,7 +175,10 @@ export interface PerMatchView {
   avgSwitchPlays: number;
   /** Share of matches that went to extra time (0–100). */
   extraTimePct: number;
-  shootoutsWon: number;
+  /** Shootout wins as a share of all matches (0–100). */
+  shootoutWinPct: number;
+  /** Penalties taken per match (raw count, used to gate the conv% row in the UI). */
+  avgPenaltiesTaken: number;
   /** Shootout conversion (0–100). */
   penaltyConversionPct: number;
 }
@@ -220,7 +223,10 @@ export interface VariantSummary {
   avgSwitchPlays: number;
   /** Share of matches that went to extra time (0–100). */
   extraTimePct: number;
-  shootoutsWon: number;
+  /** Shootout wins as a share of all matches (0–100). */
+  shootoutWinPct: number;
+  /** Penalties taken per match (raw count, used to gate the conv% row in the UI). */
+  avgPenaltiesTaken: number;
   /** Shootout conversion (0–100). */
   penaltyConversionPct: number;
 }

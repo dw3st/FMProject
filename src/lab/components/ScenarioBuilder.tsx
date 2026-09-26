@@ -111,7 +111,7 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Field label="Name">
             <div className="flex gap-1">
               <input
