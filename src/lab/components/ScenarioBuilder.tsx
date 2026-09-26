@@ -25,6 +25,7 @@ const DEFAULT_VARIANT = (id: string, formation: string): Variant => ({
 export function ScenarioBuilder({ formations, draft, onRun }: Props) {
   const [matchesPerPair, setMatches] = useState<number>(draft?.matchesPerPair ?? 50);
   const [simEngine, setSimEngine] = useState<"full" | "quick">(draft?.simEngine ?? "full");
+  const [knockout, setKnockout] = useState<boolean>(draft?.knockout ?? false);
   const supported = formations.supported.length > 0 ? formations.supported : [FALLBACK_FORMATION];
   const initialFormation = supported.includes(FALLBACK_FORMATION) ? FALLBACK_FORMATION : supported[0]!;
 
@@ -110,7 +111,7 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <Field label="Name">
             <div className="flex gap-1">
               <input
@@ -152,6 +153,12 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
               <option value="quick">quickSim</option>
             </select>
           </Field>
+          <Field label="Knockout">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={knockout} onChange={(e) => setKnockout(e.target.checked)} />
+              Extra time + penalties
+            </label>
+          </Field>
         </div>
 
         <div className="text-xs text-white/50">
@@ -192,6 +199,7 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
               name: name.trim(),
               matchesPerPair,
               simEngine,
+              knockout,
               variants,
             })
           }
