@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { readdir, stat, mkdir } from "fs/promises";
 import { saveService } from "@/backend/SaveService";
+import { isCupSlug } from "@/Domain/cups/cupIds";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -52,7 +53,9 @@ export async function listStartKits(): Promise<string[]> {
 /** Read a save's full world into a serialisable snapshot. */
 async function buildKitWorld(saveId: string): Promise<KitWorld> {
   const meta = await saveService.getMeta(saveId);
-  const leagueSlugs = (meta?.activeLeagues ?? []).map((l) => l.leagueSlug);
+  // Leagues from activeLeagues + every cup folder (cups are not league states).
+  const cupSlugs = (await saveService.listCompetitionSlugs(saveId)).filter((s) => isCupSlug(s));
+  const leagueSlugs = [...(meta?.activeLeagues ?? []).map((l) => l.leagueSlug), ...cupSlugs];
 
   // Address each squad by its real file (league folder + stem), not by slug.
   const squads = (await saveService.listSquadFiles(saveId)).map((f) => ({
