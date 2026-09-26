@@ -33,6 +33,8 @@ export interface PlayedMatchRecording {
   /** Substitutions made during the match, in chronological order. */
   substitutions: import("@/types/dayLogTypes").MatchSubstitution[];
   durationMs: number;
+  /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
+  decider?: import("@/types/calendarTypes").MatchDecider;
 }
 
 function finalizeSquadsAfterMatch(

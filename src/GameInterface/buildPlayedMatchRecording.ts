@@ -5,6 +5,7 @@ import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { getTeamStats, getPlayerStats } from "@/GameEngine/Domain/Statistics";
 import type { TeamStats } from "@/GameEngine/Domain/Statistics";
 import { getPlayerRating } from "@/GameEngine/Domain/PlayerRating";
+import { knockoutDecider } from "@/GameEngine/Domain/gameState";
 import type { MatchTeamStats } from "@/types/dayLogTypes";
 
 function toMatchTeamStats(t: TeamStats): MatchTeamStats {
@@ -109,6 +110,13 @@ export function buildPlayedMatchRecording(
     matchMinute:   sub.matchMinute,
   }));
 
+  const kd = knockoutDecider(gameState);
+  const side = <T extends { A: number; B: number }>(v: T) =>
+    ({ home: myIsHome ? v.A : v.B, away: myIsHome ? v.B : v.A });
+  const decider = kd
+    ? { extraTime: side(kd.extraTime), ...(kd.penalties ? { penalties: side(kd.penalties) } : {}) }
+    : undefined;
+
   return {
     fixtureId: fixture.id,
     score,
@@ -121,5 +129,6 @@ export function buildPlayedMatchRecording(
     playerEnergy,
     substitutions,
     durationMs,
+    ...(decider ? { decider } : {}),
   };
 }
