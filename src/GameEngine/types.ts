@@ -66,7 +66,39 @@ export interface Formation {
 }
 
 /** High-level match state machine. Controls simulation gating and clock display. */
-export type MatchPhase = 'preMatch' | 'firstHalf' | 'halfTime' | 'secondHalf' | 'matchEnd';
+export type MatchPhase =
+  | 'preMatch' | 'firstHalf' | 'halfTime' | 'secondHalf'
+  | 'extraTimeBreak' | 'extraTimeFirst' | 'extraTimeSecond' | 'penalties'
+  | 'matchEnd';
+
+/** One kick of a penalty shootout, in engine ids. */
+export interface ShootoutKick {
+  team: TeamId;
+  takerId: number;
+  keeperId: number | null;
+  scored: boolean;
+  chance: number;
+}
+
+/** Shootout resolved up front (`resolvePenaltyShootout`) and presented kick by kick. */
+export interface ShootoutState {
+  kicks: ShootoutKick[];
+  /** Score of the kicks already presented. */
+  score: { A: number; B: number };
+  /** Score once every kick is presented. */
+  finalScore: { A: number; B: number };
+  winner: TeamId;
+  /** How many kicks have been presented. */
+  shown: number;
+}
+
+/** How a knockout match was decided after regulation (engine sides). */
+export interface KnockoutDecider {
+  /** Goals scored in extra time only. */
+  extraTime: { A: number; B: number };
+  penalties: { A: number; B: number } | null;
+  winner: TeamId;
+}
 
 // ── Set pieces ────────────────────────────────────────────────────────────────
 
@@ -406,6 +438,15 @@ export interface GameState {
   extraTimeFirst: number;
   /** Extra game-seconds (stoppage time) for second half — set once at match start. */
   extraTimeSecond: number;
+  /** Knockout match: a draw after 90' goes to extra time and penalties. Absent/false = league. */
+  knockout?: boolean;
+  /** Score when the second half ended level in a knockout match (null/absent otherwise). */
+  scoreAtRegulation?: { A: number; B: number } | null;
+  /** Stoppage game-seconds for each extra-time half (0–2 min), drawn when extra time starts. */
+  etStoppageFirst?: number;
+  etStoppageSecond?: number;
+  /** Penalty shootout in progress / finished. */
+  shootout?: ShootoutState | null;
   /** Real-seconds remaining in a presentation freeze (preMatch / halfTime). */
   presentationCountdown: number;
   /** Seconds the current possessing team has held the ball continuously. Resets on possession change. */
