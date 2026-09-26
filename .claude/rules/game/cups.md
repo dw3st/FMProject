@@ -139,8 +139,8 @@ inconsistente (bug no cliente ou replay manual malformado).
 
 ## Virada (arquivo + regeneração)
 
-A copa não tem "fim de temporada" próprio — ela é arquivada e regenerada quando **todo país** já
-rolou para o ano seguinte, não quando ela mesma termina:
+A copa não tem "fim de temporada" próprio — ela é arquivada e regenerada quando **todas as ligas do país** já
+rolaram para o ano seguinte, não quando ela mesma termina:
 
 - `countriesToRegenerate(leagues, cupYear)` (`cupRollover.ts`): para cada país com copa
   (`cupYear[país]` conhecido), regenera quando **toda liga do país já está num ano maior** que o
@@ -172,7 +172,7 @@ meta/rodadas/date-index e pulava `standings.json` ausente, então não precisou 
 
 Além das checagens de liga/pirâmide já existentes, o smoke roda, no fim da temporada:
 
-1. `N` cópias geradas na criação da carreira (uma por país do `leagueData`).
+1. `N` copas geradas na criação da carreira (uma por país do `leagueData`).
 2. Toda pasta `cup_*` tem `meta.cup`; toda copa cujo ano avançou desde a criação (regenerada)
    arquivou a temporada anterior com **exatamente 1 título** (lido de volta pelo mesmo
    `readLeagueSeasonArchive` que as ligas usam, `saveId, cup_<país>, anoAntigo`).
