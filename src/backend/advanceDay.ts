@@ -265,7 +265,11 @@ export async function advanceOneDay(
         for (const fixture of todayFixtures) {
           const homeEntry = index.byId(fixture.home);
           const awayEntry = index.byId(fixture.away);
-          if (!homeEntry || !awayEntry) continue;
+          if (!homeEntry || !awayEntry) {
+            // A skipped cup tie never completes its stage — make the stall visible.
+            if (isCupSlug(leagueSlug)) logError("cups", `save ${saveId}: ${fixture.id} skipped — club missing from the world`, { home: fixture.home, away: fixture.away });
+            continue;
+          }
 
           const [homeSquad, awaySquad] = await Promise.all([
             saveService.getSquadById(saveId, fixture.home),
