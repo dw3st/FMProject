@@ -57,6 +57,8 @@ export interface QuickSimInput {
   awayRoles?: string[];
   /** Knockout: a level score after 90' goes to extra time (xG × 30/90) and then penalties. */
   knockout?: boolean;
+  /** Neutral venue: no home advantage for either side. */
+  neutral?: boolean;
 }
 
 export interface QuickSimResult {
@@ -338,7 +340,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
 
   const home = strengthOf(homeXI);
   const away = strengthOf(awayXI);
-  const xgHome = expectedGoals(home, away, true);
+  const xgHome = expectedGoals(home, away, !input.neutral);
   const xgAway = expectedGoals(away, home, false);
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,
   // mean-1 lognormal factors). The full engine's results are more lopsided than two
