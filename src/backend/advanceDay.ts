@@ -43,6 +43,9 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
+import { isCupSlug } from "@/Domain/cups/cupIds";
+import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
+import { advanceCupStages, countryByLeague, createCountryCup } from "@/backend/cupWorld";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -235,6 +238,9 @@ export async function advanceOneDay(
     const playerEntry = index.byId(meta.clubId);
     const playerSquadId: string | undefined = playerEntry?.squadId;
 
+    // Cup ties run in the full engine only when a club of the player's league is involved.
+    const playerLeagueClubs = new Set(index.inLeague(meta.leagueSlug).map((t) => t.squadId));
+
     // ── Get today's fixtures across all leagues ──────────────────────────────
     const activeRoundsForDate = await saveService.getActiveRoundsForDate(saveId, currentDate);
 
@@ -267,10 +273,11 @@ export async function advanceOneDay(
           ]);
           if (!homeSquad || !awaySquad) continue;
 
+          const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
           const useRecording =
             playedMatchOverride !== null &&
             playedMatchOverride.fixtureId === fixture.id &&
-            leagueSlug === meta.leagueSlug;
+            userPlaysThis;
 
           if (useRecording && playedMatchOverride) {
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
@@ -281,12 +288,19 @@ export async function advanceOneDay(
             teamsPlayingToday.add(fixture.away);
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-            if (idx !== -1) updatedFixtures[idx] = { ...updatedFixtures[idx]!, played: true, result: r.event.score };
+            if (idx !== -1) updatedFixtures[idx] = {
+              ...updatedFixtures[idx]!, played: true, result: r.event.score,
+              ...(r.event.decider ? { decider: r.event.decider } : {}),
+            };
             playedMatchOverride = null;
           } else {
             const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics);
             const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
-            const mode = userPlays ? "full" : resolveSimMode(leagueSlug, meta);
+            const mode = userPlays
+              ? "full"
+              : isCupSlug(leagueSlug)
+                ? (playerLeagueClubs.has(fixture.home) || playerLeagueClubs.has(fixture.away) ? "full" : "fast")
+                : resolveSimMode(leagueSlug, meta);
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
@@ -297,7 +311,10 @@ export async function advanceOneDay(
             teamsPlayingToday.add(fixture.away);
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-            if (idx !== -1) updatedFixtures[idx] = { ...updatedFixtures[idx]!, played: true, result: r.event.score };
+            if (idx !== -1) updatedFixtures[idx] = {
+              ...updatedFixtures[idx]!, played: true, result: r.event.score,
+              ...(r.event.decider ? { decider: r.event.decider } : {}),
+            };
           }
         }
 
@@ -408,11 +425,20 @@ export async function advanceOneDay(
         await saveService.writeRound(saveId, leagueSlug, roundNum, { leagueSlug, round: roundNum, fixtures });
       }
 
+      // Cups have no table — the draw/champion progression is handled below.
+      if (isCupSlug(leagueSlug)) continue;
+
       // Recompute standings from all rounds for accuracy
       const allFixtures = await saveService.getAllFixturesForLeague(saveId, leagueSlug);
       const updatedStandings = computeStandings(leagueTeams, allFixtures, leagueSlug);
       await saveService.writeLeagueStandings(saveId, leagueSlug, updatedStandings);
     }
+
+    // ── National cups: draw the next stage / crown the champion ──────────────
+    const cupPlayed = new Map<string, number[]>();
+    for (const [slug, rounds] of roundUpdates) if (isCupSlug(slug)) cupPlayed.set(slug, [...rounds.keys()]);
+    const cupChanges = await advanceCupStages(saveService, saveId, cupPlayed);
+    void cupChanges;
 
     // ── Write day log ────────────────────────────────────────────────────────
     // Strip per-player effects from training/rest events before persisting — effects
@@ -751,6 +777,35 @@ export async function advanceOneDay(
           archivedSeasonYear: archiveYear,
           moves: plan.moves.length,
           playerMove: plan.playerMove,
+        });
+      }
+    }
+
+    // ── National cups: a country's cup is archived and regenerated once all its leagues rolled ──
+    if (due.units.length > 0) {
+      const catalog = await getLeagueData();
+      const countryOf = countryByLeague(catalog);
+      const cupYear: Record<string, number> = {};
+      const oldCups = new Map<string, LeagueSeasonMeta>();
+      for (const slug of await saveService.listCompetitionSlugs(saveId)) {
+        if (!isCupSlug(slug)) continue;
+        const cm = await saveService.getLeagueMeta(saveId, slug);
+        if (cm?.cup) { cupYear[cm.cup.country] = cm.year; oldCups.set(cm.cup.country, cm); }
+      }
+      const states = updatedActiveLeagues
+        .filter((l) => countryOf.has(l.leagueSlug))
+        .map((l) => ({ leagueSlug: l.leagueSlug, country: countryOf.get(l.leagueSlug)!, year: l.year, start: l.start, end: l.end }));
+      const pyramids = await getPyramids();
+      for (const c of countriesToRegenerate(states, cupYear)) {
+        const old = oldCups.get(c.country)!;
+        const nameOf = (id: string) => {
+          const e = index.byId(id);
+          return { name: e?.name ?? id, coachId: null, coachName: "" };
+        };
+        await saveService.writeLeagueSeasonArchive(saveId, buildCupArchive(old, nameOf));
+        await createCountryCup({
+          service: saveService, saveId, country: c.country, year: c.year, window: c.window,
+          index, countryOf, pyramids,
         });
       }
     }
