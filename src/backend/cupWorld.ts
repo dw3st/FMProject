@@ -11,8 +11,9 @@ import type { LeagueDataEntry } from "@/backend/advanceDay";
 import { pyramidByLeague, tierOfLeague } from "@/Domain/season/countryRollover";
 import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
 import { generateCup } from "@/Domain/cups/generateCup";
-import { cupChampion, drawNextStage } from "@/Domain/cups/cupProgress";
+import { cupChampion, drawNextStage, stageComplete } from "@/Domain/cups/cupProgress";
 import type { CupEntrant } from "@/Domain/cups/cupDraw";
+import { logError } from "@/Logger";
 
 /** leagueSlug → country, from the leagueData catalog. */
 export function countryByLeague(catalog: LeagueDataEntry[]): Map<string, string> {
@@ -90,12 +91,18 @@ export async function advanceCupStages(
   playedRounds: Map<string, number[]>,
 ): Promise<Array<{ slug: string; drawnRound?: number; championId?: string }>> {
   const changes: Array<{ slug: string; drawnRound?: number; championId?: string }> = [];
-  for (const [slug, rounds] of playedRounds) {
+  for (const [slug, roundsUnsorted] of playedRounds) {
     if (!isCupSlug(slug)) continue;
     let meta = await service.getLeagueMeta(saveId, slug);
     if (!meta?.cup) continue;
+    const rounds = [...roundsUnsorted].sort((a, b) => a - b);
     for (const round of rounds) {
       const fixtures = (await service.getRound(saveId, slug, round))?.fixtures ?? [];
+      if (fixtures.length > 0 && fixtures.every((f) => f.played) && !stageComplete(fixtures)) {
+        logError("cups", `save ${saveId}: ${slug} round ${round} finished with a level, undecided tie`, {
+          fixtureIds: fixtures.filter((f) => f.result && f.result.home === f.result.away).map((f) => f.id),
+        });
+      }
       const next = drawNextStage(meta, round, fixtures, `${saveId}:${meta.year}:${meta.cup!.country}`);
       if (next) {
         meta = next.meta;
