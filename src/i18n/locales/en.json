@@ -790,6 +790,16 @@
         "{{team}} will take it from the centre circle.",
         "Play resumes — {{team}} with the restart.",
         "The goal stands — {{team}} kick off again."
+      ],
+      "extraTimeFirst": [
+        "Extra time begins — {{team}} kick off the first period.",
+        "We go again — {{team}} start extra time from the centre.",
+        "Thirty more minutes if needed — {{team}} get extra time underway."
+      ],
+      "extraTimeSecond": [
+        "Second half of extra time — {{team}} restart from the centre.",
+        "Final period — {{team}} with the kickoff.",
+        "Extra time resumes — {{team}} to put the ball in play."
       ]
     },
     "passAttempted": {
