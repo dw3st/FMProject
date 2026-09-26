@@ -764,6 +764,7 @@
     "debug": "Debug",
     "loadError": "Failed to load match result.",
     "noMatchOnDate": "No match scheduled on this date.",
+    "penalties": "Penalties",
     "mentality": {
       "attacking": "All-out Attack",
       "balanced": "Balanced",
@@ -790,6 +791,16 @@
         "{{team}} will take it from the centre circle.",
         "Play resumes — {{team}} with the restart.",
         "The goal stands — {{team}} kick off again."
+      ],
+      "extraTimeFirst": [
+        "Extra time begins — {{team}} kick off the first period.",
+        "We go again — {{team}} start extra time from the centre.",
+        "Thirty more minutes if needed — {{team}} get extra time underway."
+      ],
+      "extraTimeSecond": [
+        "Second half of extra time — {{team}} restart from the centre.",
+        "Final period — {{team}} with the kickoff.",
+        "Extra time resumes — {{team}} to put the ball in play."
       ]
     },
     "passAttempted": {
@@ -1024,10 +1035,21 @@
       "development": "Development",
       "transfer_in": "Transfer In",
       "transfer_out": "Transfer Out",
-      "season": "Season"
+      "season": "Season",
+      "cup": "Cup"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
-    "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today."
+    "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
+    "cup": {
+      "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
+      "eliminated": "Eliminated from the {{cup}} ({{stage}}) by {{opponent}}",
+      "champion": "Champions of the {{cup}}!",
+      "venue": {
+        "home": "at home",
+        "away": "away",
+        "neutral": "neutral venue"
+      }
+    }
   },
   "finances": {
     "alerts": "Financial Alerts",
@@ -1150,6 +1172,26 @@
       "interceptions": "Int"
     },
     "substitutions": "Substitutions"
+  },
+  "cups": {
+    "champion": "Champion",
+    "notDrawn": "Not drawn yet",
+    "none": "No national cup for this country this season",
+    "pens": "pens {{home}}–{{away}}",
+    "aet": "a.e.t.",
+    "neutral": "neutral venue",
+    "loading": "Loading…",
+    "knockoutNote": "Knockout: extra time and penalties if level",
+    "stage": {
+      "preliminary": "Preliminary round",
+      "r128": "Round of 128",
+      "r64": "Round of 64",
+      "r32": "Round of 32",
+      "r16": "Round of 16",
+      "qf": "Quarter-finals",
+      "sf": "Semi-finals",
+      "final": "Final"
+    }
   },
   "development": {
     "title": "Development",
@@ -1373,8 +1415,11 @@
   "matchOverlay": {
     "halfTime": "Half Time",
     "fullTime": "Full Time",
+    "extraTime": "Extra time",
     "secondHalfStarting": "Second half starting soon…",
-    "matchOver": "Match over"
+    "extraTimeStarting": "Extra time starting soon…",
+    "matchOver": "Match over",
+    "penaltiesScore": "Penalties {{a}}–{{b}}"
   },
   "goalOverlay": {
     "goal": "GOAL!",
@@ -1384,6 +1429,7 @@
     "title": "Day Summary",
     "matches": "Matches ({{count}})",
     "matchRound": "{{competition}} • Round {{round}}",
+    "cupMatch": "{{competition}}",
     "otherLeagues": "Other leagues ({{count}})",
     "playerDevelopment": "Player Development",
     "shots": "Shots",

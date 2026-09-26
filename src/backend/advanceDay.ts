@@ -6,7 +6,7 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee } from "@/backend/FinancialService";
-import type { LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
+import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -14,6 +14,7 @@ import type { Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calen
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
+  buildCupMessage,
   buildDevelopmentMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
@@ -43,6 +44,11 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
+import { isCupSlug } from "@/Domain/cups/cupIds";
+import { fixtureWinner } from "@/Domain/cups/cupProgress";
+import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
+import { advanceCupStages, countryByLeague, createCountryCup, playerCupSlug } from "@/backend/cupWorld";
+import { competitionName } from "@/Domain/world/labels";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -60,9 +66,10 @@ function withDefaultFinances(s: Squad): Squad {
   };
 }
 
-type LeagueDataEntry = {
+export type LeagueDataEntry = {
   slug: string;
   name?: string;
+  country?: string;
   standings: LeagueTeam[];
 };
 
@@ -234,6 +241,9 @@ export async function advanceOneDay(
     const playerEntry = index.byId(meta.clubId);
     const playerSquadId: string | undefined = playerEntry?.squadId;
 
+    // Cup ties run in the full engine only when a club of the player's league is involved.
+    const playerLeagueClubs = new Set(index.inLeague(meta.leagueSlug).map((t) => t.squadId));
+
     // ── Get today's fixtures across all leagues ──────────────────────────────
     const activeRoundsForDate = await saveService.getActiveRoundsForDate(saveId, currentDate);
 
@@ -258,7 +268,11 @@ export async function advanceOneDay(
         for (const fixture of todayFixtures) {
           const homeEntry = index.byId(fixture.home);
           const awayEntry = index.byId(fixture.away);
-          if (!homeEntry || !awayEntry) continue;
+          if (!homeEntry || !awayEntry) {
+            // A skipped cup tie never completes its stage — make the stall visible.
+            if (isCupSlug(leagueSlug)) logError("cups", `save ${saveId}: ${fixture.id} skipped — club missing from the world`, { home: fixture.home, away: fixture.away });
+            continue;
+          }
 
           const [homeSquad, awaySquad] = await Promise.all([
             saveService.getSquadById(saveId, fixture.home),
@@ -266,12 +280,19 @@ export async function advanceOneDay(
           ]);
           if (!homeSquad || !awaySquad) continue;
 
+          const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
           const useRecording =
             playedMatchOverride !== null &&
             playedMatchOverride.fixtureId === fixture.id &&
-            leagueSlug === meta.leagueSlug;
+            userPlaysThis;
 
           if (useRecording && playedMatchOverride) {
+            if (fixture.knockout && playedMatchOverride.score.home === playedMatchOverride.score.away) {
+              const pens = playedMatchOverride.decider?.penalties;
+              if (!pens || pens.home === pens.away) {
+                return { ok: false, status: 400, error: "knockout recording without a winner" };
+              }
+            }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
             dayEvents.push(r.event);
             squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
@@ -280,12 +301,19 @@ export async function advanceOneDay(
             teamsPlayingToday.add(fixture.away);
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-            if (idx !== -1) updatedFixtures[idx] = { ...updatedFixtures[idx]!, played: true, result: r.event.score };
+            if (idx !== -1) updatedFixtures[idx] = {
+              ...updatedFixtures[idx]!, played: true, result: r.event.score,
+              ...(r.event.decider ? { decider: r.event.decider } : {}),
+            };
             playedMatchOverride = null;
           } else {
             const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics);
             const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
-            const mode = userPlays ? "full" : resolveSimMode(leagueSlug, meta);
+            const mode = userPlays
+              ? "full"
+              : isCupSlug(leagueSlug)
+                ? (playerLeagueClubs.has(fixture.home) || playerLeagueClubs.has(fixture.away) ? "full" : "fast")
+                : resolveSimMode(leagueSlug, meta);
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
@@ -296,7 +324,10 @@ export async function advanceOneDay(
             teamsPlayingToday.add(fixture.away);
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-            if (idx !== -1) updatedFixtures[idx] = { ...updatedFixtures[idx]!, played: true, result: r.event.score };
+            if (idx !== -1) updatedFixtures[idx] = {
+              ...updatedFixtures[idx]!, played: true, result: r.event.score,
+              ...(r.event.decider ? { decider: r.event.decider } : {}),
+            };
           }
         }
 
@@ -407,10 +438,92 @@ export async function advanceOneDay(
         await saveService.writeRound(saveId, leagueSlug, roundNum, { leagueSlug, round: roundNum, fixtures });
       }
 
+      // Cups have no table — the draw/champion progression is handled below.
+      if (isCupSlug(leagueSlug)) continue;
+
       // Recompute standings from all rounds for accuracy
       const allFixtures = await saveService.getAllFixturesForLeague(saveId, leagueSlug);
       const updatedStandings = computeStandings(leagueTeams, allFixtures, leagueSlug);
       await saveService.writeLeagueStandings(saveId, leagueSlug, updatedStandings);
+    }
+
+    // ── National cups: draw the next stage / crown the champion ──────────────
+    const cupPlayed = new Map<string, number[]>();
+    for (const [slug, rounds] of roundUpdates) if (isCupSlug(slug)) cupPlayed.set(slug, [...rounds.keys()]);
+    const cupChanges = await advanceCupStages(saveService, saveId, cupPlayed);
+
+    // ── National cup inbox news for the human club ────────────────────────────
+    // These messages are emitted on the same day the tie/draw happens, before the "Transfers +
+    // inbox are cleared" block further down (only runs when `seasonEnded`). They never collide
+    // with that clear because no cup tie can fall on the rollover day itself: every cup stage's
+    // date window ends at least FINAL_BEFORE_END_DAYS (7) days before the league window end
+    // (src/Domain/cups/cupDates.ts), so the final is always played and read well before the
+    // season rolls.
+    if (playerSquadId) {
+      const myCup = await playerCupSlug(meta.leagueSlug);
+      const cupMeta = myCup ? await saveService.getLeagueMeta(saveId, myCup) : null;
+      if (myCup && cupMeta?.cup) {
+        const catalogForCups = await getLeagueData();
+        const cupDisplayName = competitionName(myCup, catalogForCups as unknown as LeagueData[], "en");
+        // Returns null when the round isn't in this cup's stage list (should not happen, but a
+        // silent "final" fallback here would risk a false champion/eliminated message for the
+        // wrong stage) — callers skip the event rather than guess.
+        const stageNameOf = (round: number): string | null => cupMeta.cup!.stages.find((s) => s.round === round)?.name ?? null;
+
+        // Elimination / champion: from today's played fixtures in the player's cup.
+        for (const event of dayEvents) {
+          if (event.kind !== "match" || event.competition !== myCup) continue;
+          if (event.home !== playerSquadId && event.away !== playerSquadId) continue;
+          const roundFixtures = roundUpdates.get(myCup)?.get(event.round) ?? [];
+          const fixture = roundFixtures.find((f) => f.id === event.fixtureId);
+          if (!fixture) continue;
+          const winner = fixtureWinner(fixture);
+          if (winner === null) continue;
+          const stage = stageNameOf(event.round);
+          if (stage === null) continue;
+
+          if (winner === playerSquadId) {
+            if (stage === "final") {
+              await emitInboxMessage(
+                saveId,
+                buildCupMessage({ date: currentDate, kind: "champion", cupSlug: myCup, cupName: cupDisplayName, stage }),
+                saveService,
+              );
+            }
+          } else {
+            const opponentId = event.home === playerSquadId ? event.away : event.home;
+            const opponentName = index.byId(opponentId)?.name ?? opponentId;
+            await emitInboxMessage(
+              saveId,
+              buildCupMessage({
+                date: currentDate, kind: "eliminated", cupSlug: myCup, cupName: cupDisplayName, stage, opponentName,
+              }),
+              saveService,
+            );
+          }
+        }
+
+        // Draw: a new stage was drawn today and the player's club is in it.
+        for (const change of cupChanges) {
+          if (change.slug !== myCup || change.drawnRound === undefined) continue;
+          const drawnStage = stageNameOf(change.drawnRound);
+          if (drawnStage === null) continue;
+          const round = await saveService.getRound(saveId, myCup, change.drawnRound);
+          const fixture = round?.fixtures.find((f) => f.home === playerSquadId || f.away === playerSquadId);
+          if (!fixture) continue;
+          const opponentId = fixture.home === playerSquadId ? fixture.away : fixture.home;
+          const opponentName = index.byId(opponentId)?.name ?? opponentId;
+          const venue = fixture.neutral ? "neutral" : fixture.home === playerSquadId ? "home" : "away";
+          await emitInboxMessage(
+            saveId,
+            buildCupMessage({
+              date: currentDate, kind: "draw", cupSlug: myCup, cupName: cupDisplayName,
+              stage: drawnStage, opponentName, tieDate: fixture.date, venue,
+            }),
+            saveService,
+          );
+        }
+      }
     }
 
     // ── Write day log ────────────────────────────────────────────────────────
@@ -750,6 +863,37 @@ export async function advanceOneDay(
           archivedSeasonYear: archiveYear,
           moves: plan.moves.length,
           playerMove: plan.playerMove,
+        });
+      }
+    }
+
+    // ── National cups: a country's cup is archived and regenerated once all its leagues rolled ──
+    // Also runs on a resync-only day (a rollover already applied on disk, only activeLeagues was
+    // stale) — the cup must still regenerate then, not just on a day that itself ran the rollover.
+    if (due.units.length > 0 || due.resync.length > 0) {
+      const catalog = await getLeagueData();
+      const countryOf = countryByLeague(catalog);
+      const cupYear: Record<string, number> = {};
+      const oldCups = new Map<string, LeagueSeasonMeta>();
+      for (const slug of await saveService.listCompetitionSlugs(saveId)) {
+        if (!isCupSlug(slug)) continue;
+        const cm = await saveService.getLeagueMeta(saveId, slug);
+        if (cm?.cup) { cupYear[cm.cup.country] = cm.year; oldCups.set(cm.cup.country, cm); }
+      }
+      const states = updatedActiveLeagues
+        .filter((l) => countryOf.has(l.leagueSlug))
+        .map((l) => ({ leagueSlug: l.leagueSlug, country: countryOf.get(l.leagueSlug)!, year: l.year, start: l.start, end: l.end }));
+      const pyramids = await getPyramids();
+      for (const c of countriesToRegenerate(states, cupYear)) {
+        const old = oldCups.get(c.country)!;
+        const nameOf = (id: string) => {
+          const e = index.byId(id);
+          return { name: e?.name ?? id, coachId: null, coachName: "" };
+        };
+        await saveService.writeLeagueSeasonArchive(saveId, buildCupArchive(old, nameOf));
+        await createCountryCup({
+          service: saveService, saveId, country: c.country, year: c.year, window: c.window,
+          index, countryOf, pyramids,
         });
       }
     }

@@ -288,7 +288,7 @@ function ResultTeamCard({
 // ── Main ────────────────────────────────────────────────────────────────────
 
 export function MatchResultScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, loading: saveLoading, fixtures, squad, currentDate: simCurrentDate } = useGameSave();
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
@@ -448,7 +448,7 @@ export function MatchResultScreen() {
   const awayLogoUrl = squadLogoUrl(matchEvent.away);
 
   const { weather, referee, venue } = getMatchMeta(resolvedDate, session.clubName, isHome);
-  const competition = competitionName(matchEvent.competition, leagues);
+  const competition = competitionName(matchEvent.competition, leagues, i18n.language);
   const th = matchEvent.teamStats.home;
   const ta = matchEvent.teamStats.away;
   const homePrimary = squadPrimaryColor(homeSquad, FALLBACK_HOME_ACCENT);

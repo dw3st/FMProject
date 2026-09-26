@@ -13,7 +13,27 @@ const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"
 type MatchOutcome = "W" | "D" | "L";
 type DayEventType = "match" | "training" | "rest";
 
-function matchEventLabel(
+/**
+ * Result of the fixture from the given side's point of view. A cup tie decided on penalties has
+ * a drawn scoreline in `result` (regulation/extra-time goals), so the shootout — not the goal
+ * tally — decides W/L. Only a fixture with no penalty shootout can end in a real draw.
+ */
+export function matchOutcomeFor(fixture: Fixture, isHome: boolean): MatchOutcome {
+  const pens = fixture.decider?.penalties;
+  if (pens) {
+    const myPens = isHome ? pens.home : pens.away;
+    const oppPens = isHome ? pens.away : pens.home;
+    return myPens > oppPens ? "W" : "L";
+  }
+  const { home: gh, away: ga } = fixture.result!;
+  const myGoals = isHome ? gh : ga;
+  const oppGoals = isHome ? ga : gh;
+  if (myGoals > oppGoals) return "W";
+  if (myGoals === oppGoals) return "D";
+  return "L";
+}
+
+export function matchEventLabel(
   fixture: Fixture,
   opponentName: string,
   isHome: boolean,
@@ -25,10 +45,7 @@ function matchEventLabel(
   const { home: gh, away: ga } = fixture.result;
   const myGoals = isHome ? gh : ga;
   const oppGoals = isHome ? ga : gh;
-  let outcome: MatchOutcome;
-  if (myGoals > oppGoals) outcome = "W";
-  else if (myGoals === oppGoals) outcome = "D";
-  else outcome = "L";
+  const outcome = matchOutcomeFor(fixture, isHome);
   return { label: `${outcome} ${myGoals}–${oppGoals} ${prefix} ${opponentName}`, outcome };
 }
 

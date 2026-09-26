@@ -1,4 +1,5 @@
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider } from '@/GameEngine/types';
+import { resolvePenaltyShootout, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from './DecisionTree';
 import type { PlayerDecision, DecisionPath } from './DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
@@ -81,6 +82,28 @@ const TIME_SCALE = 2700 / REAL_HALF_DURATION;
 const HALF_DURATION = 2700;
 /** Real-seconds the pre-match / half-time presentation freeze lasts. */
 const PRESENTATION_DURATION = 4;
+
+/** Game-seconds per extra-time half (15 min). */
+const ET_HALF_DURATION = 900;
+/** Real seconds between presented penalty kicks. */
+const PENALTY_KICK_INTERVAL = 1.5;
+/** Share of the half-time energy recovery granted in the break before extra time. */
+const ET_BREAK_RECOVERY_SCALE = 0.5;
+
+const LIVE_PHASES = new Set<MatchPhase>(['firstHalf', 'secondHalf', 'extraTimeFirst', 'extraTimeSecond']);
+const MINUTE_OFFSET: Partial<Record<MatchPhase, number>> = {
+  firstHalf: 0, secondHalf: 45, extraTimeBreak: 45, extraTimeFirst: 90, extraTimeSecond: 105, penalties: 105,
+};
+
+/** True while the ball can be in play (the four clock-running periods). */
+export function isLivePhase(phase: MatchPhase): boolean {
+  return LIVE_PHASES.has(phase);
+}
+
+/** Displayed match minute (0-based within the match, stoppage not capped). */
+export function matchMinute(state: GameState): number {
+  return Math.floor(state.matchTime / 60) + (MINUTE_OFFSET[state.matchPhase] ?? 0);
+}
 
 /**
  * Game-seconds between periodic team intent re-evaluations. Possession transfer
@@ -342,6 +365,7 @@ export function isDeadBall(state: GameState): boolean {
   if (state.setPiece && state.setPiece.countdown > 0) return true;
   // Half-time presentation window
   if (state.matchPhase === 'halfTime') return true;
+  if (state.matchPhase === 'extraTimeBreak' || state.matchPhase === 'penalties') return true;
   // GK in possession — treat as a valid sub window
   const holder = state.players.find(p => p.id === state.ballHolderId);
   if (holder?.role === 'GK') return true;
@@ -392,9 +416,7 @@ export function performSubstitution(
     justReceivedTicks: 0,
   };
 
-  const matchMinute = Math.floor(
-    (state.matchTime / 2700) * 45 + (state.matchPhase === 'secondHalf' ? 45 : 0),
-  );
+  const minute = matchMinute(state);
 
   const record: import('../types').SubstitutionRecord = {
     team,
@@ -405,7 +427,7 @@ export function performSubstitution(
     playerInId:        inPlayerId,
     playerInName:      inPlayer.name,
     playerInRosterId:  inPlayer.rosterId,
-    matchMinute,
+    matchMinute: minute,
   };
 
   gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team });
@@ -616,7 +638,7 @@ function teamHasBall(state: GameState, teamId: GamePlayer['team']): boolean {
 }
 
 function shouldDrainStamina(state: GameState): boolean {
-  if (state.matchPhase !== 'firstHalf' && state.matchPhase !== 'secondHalf') return false;
+  if (!isLivePhase(state.matchPhase)) return false;
   if (state.setPiece && state.setPiece.countdown > 0) return false;
   return true;
 }
@@ -690,9 +712,14 @@ function resetToKickoff(state: GameState, kickoffTeam: import('../types').TeamId
  * Team B kicks off the second half (Team A kicked off the first).
  */
 
-function switchSides(state: GameState): GameState {
+function switchSides(
+  state: GameState,
+  nextPhase: 'secondHalf' | 'extraTimeFirst' | 'extraTimeSecond' = 'secondHalf',
+  kickoffTeam: TeamId = 'B',
+  recoveryScale = 1,
+): GameState {
   const switched = state.players.map(p => {
-    const recoveryRate = 0.30 + (p.stamina / 10) * 0.30; // 30% at stamina 0 → 60% at stamina 10
+    const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
     const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
     const energyChanged = recoveredEnergy !== p.energy;
     return {
@@ -714,21 +741,27 @@ function switchSides(state: GameState): GameState {
     };
   });
 
-  // Team B kicks off second half — B uses kickOff, A uses kickOffDefend.
-  // attackDir is already flipped above, so applySetPieceToTeam mirrors correctly.
+  // The kicking team uses kickOff, the other kickOffDefend. attackDir is already flipped above,
+  // so applySetPieceToTeam mirrors correctly.
+  const defendingTeam: TeamId = kickoffTeam === 'A' ? 'B' : 'A';
   let positioned = switched;
   const spA2 = getFormationSetPieces(state.formationA.id);
   const spB2 = getFormationSetPieces(state.formationB.id);
-  positioned = applySetPieceToTeam(positioned, 'A', spA2?.kickOffDefend ?? generateKickoffLayout(state.formationA));
-  positioned = applySetPieceToTeam(positioned, 'B', spB2?.kickOff       ?? generateKickoffLayout(state.formationB));
-  // Team A must stay outside the centre circle
-  positioned = enforceKickoffCircleRule(positioned, 'A');
+  const layoutA = kickoffTeam === 'A'
+    ? (spA2?.kickOff ?? generateKickoffLayout(state.formationA))
+    : (spA2?.kickOffDefend ?? generateKickoffLayout(state.formationA));
+  const layoutB = kickoffTeam === 'B'
+    ? (spB2?.kickOff ?? generateKickoffLayout(state.formationB))
+    : (spB2?.kickOffDefend ?? generateKickoffLayout(state.formationB));
+  positioned = applySetPieceToTeam(positioned, 'A', layoutA);
+  positioned = applySetPieceToTeam(positioned, 'B', layoutB);
+  positioned = enforceKickoffCircleRule(positioned, defendingTeam);
 
   const kickoffHolder =
-    positioned.find(p => p.team === 'B' && p.role === 'ST') ??
-    positioned.find(p => p.team === 'B')!;
+    positioned.find(p => p.team === kickoffTeam && p.role === 'ST') ??
+    positioned.find(p => p.team === kickoffTeam)!;
 
-  gameBus.emit('kickOff', { team: 'B', phase: 'secondHalf' });
+  gameBus.emit('kickOff', { team: kickoffTeam, phase: nextPhase });
 
   const prevHolderId = state.ballHolderId;
   return onPossessionTransfer({
@@ -738,7 +771,7 @@ function switchSides(state: GameState): GameState {
     pass:                  null,
     shot:                  null,
     looseBall:             null,
-    matchPhase:            'secondHalf',
+    matchPhase:            nextPhase,
     matchTime:             0,
     presentationCountdown: 0,
     setPiece:              { type: 'kickoff', takerId: kickoffHolder.id, countdown: 2 },
@@ -747,6 +780,79 @@ function switchSides(state: GameState): GameState {
   }, prevHolderId);
 }
 
+/** Goals in extra time, shootout and winner of a knockout match; null when decided in 90'. */
+export function knockoutDecider(state: GameState): KnockoutDecider | null {
+  const reg = state.scoreAtRegulation;
+  if (!state.knockout || !reg) return null;
+  const extraTime = { A: state.score.A - reg.A, B: state.score.B - reg.B };
+  const so = state.shootout ?? null;
+  const winner: TeamId = so ? so.winner : (state.score.A > state.score.B ? 'A' : 'B');
+  return { extraTime, penalties: so ? { ...so.finalScore } : null, winner };
+}
+
+function finishMatch(state: GameState): GameState {
+  const final: GameState = { ...state, matchPhase: 'matchEnd', pass: null, shot: null, looseBall: null };
+  if (final.shootout) gameBus.emit('shootoutEnd', { winner: final.shootout.winner, score: { ...final.shootout.finalScore } });
+  gameBus.emit('matchEnd', { score: final.score, decider: knockoutDecider(final) });
+  return final;
+}
+
+function penaltySide(state: GameState, team: TeamId): PenaltySide<number> {
+  const onPitch = state.players.filter(p => p.team === team);
+  const gk = onPitch.find(p => p.role === 'GK') ?? null;
+  return {
+    takers: onPitch.map(p => ({ id: p.id, accuracy: p.runtimeStats.withBall.shootAccuracy, isGK: p.role === 'GK' })),
+    keeper: gk
+      ? { id: gk.id, reflex: gk.runtimeStats.withoutBall.gkReflex, diving: gk.runtimeStats.withoutBall.gkDiving }
+      : null,
+  };
+}
+
+function startPenalties(state: GameState): GameState {
+  const r = resolvePenaltyShootout(penaltySide(state, 'A'), penaltySide(state, 'B'), Math.random);
+  return {
+    ...state,
+    matchPhase: 'penalties',
+    presentationCountdown: PENALTY_KICK_INTERVAL,
+    pass: null, shot: null, looseBall: null, setPiece: null,
+    shootout: { kicks: r.kicks, score: { A: 0, B: 0 }, finalScore: r.score, winner: r.winner, shown: 0 },
+  };
+}
+
+/**
+ * End the running period now. Used by the clock (tickState) and by /test ("end period").
+ * firstHalf → halfTime; secondHalf → matchEnd, or extraTimeBreak when a knockout match is
+ * level; extraTimeFirst → extraTimeSecond; extraTimeSecond → matchEnd or penalties.
+ */
+export function endCurrentPeriod(state: GameState, newMatchTime: number = state.matchTime): GameState {
+  const s = { ...state, matchTime: newMatchTime };
+  switch (s.matchPhase) {
+    case 'firstHalf':
+      gameBus.emit('halfTime', { score: s.score, extraTime: Math.round(s.extraTimeSecond / 60) });
+      return {
+        ...s, matchPhase: 'halfTime', presentationCountdown: PRESENTATION_DURATION,
+        pass: null, shot: null, looseBall: null,
+      };
+    case 'secondHalf':
+      if (s.knockout && s.score.A === s.score.B) {
+        gameBus.emit('extraTimeStart', { score: s.score });
+        return {
+          ...s, matchPhase: 'extraTimeBreak', presentationCountdown: PRESENTATION_DURATION,
+          pass: null, shot: null, looseBall: null,
+          scoreAtRegulation: { ...s.score },
+          etStoppageFirst:  Math.floor(Math.random() * 3) * 60,
+          etStoppageSecond: Math.floor(Math.random() * 3) * 60,
+        };
+      }
+      return finishMatch(s);
+    case 'extraTimeFirst':
+      return switchSides(s, 'extraTimeSecond', 'B', 0);
+    case 'extraTimeSecond':
+      return s.score.A === s.score.B ? startPenalties(s) : finishMatch(s);
+    default:
+      return state;
+  }
+}
 
 function startShot(state: GameState): GameState {
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
@@ -1406,31 +1512,52 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     return noop(htState);
   }
 
+  if (state.matchPhase === 'extraTimeBreak') {
+    const countdown = state.presentationCountdown - dt;
+    if (countdown <= 0) {
+      return noop(switchSides(state, 'extraTimeFirst', 'A', ET_BREAK_RECOVERY_SCALE));
+    }
+    let brk = { ...state, presentationCountdown: countdown };
+    if (brk.pendingSubsA.length > 0 || brk.pendingSubsB.length > 0) {
+      brk = flushPendingSubs(brk, 'A');
+      brk = flushPendingSubs(brk, 'B');
+    }
+    return noop(brk);
+  }
+
+  if (state.matchPhase === 'penalties') {
+    const so = state.shootout;
+    if (!so) return noop(finishMatch(state));
+    const countdown = state.presentationCountdown - dt;
+    if (countdown > 0) return noop({ ...state, presentationCountdown: countdown });
+    if (so.shown >= so.kicks.length) return noop(finishMatch({ ...state, presentationCountdown: 0 }));
+    const kick = so.kicks[so.shown]!;
+    const score = { ...so.score, [kick.team]: so.score[kick.team] + (kick.scored ? 1 : 0) };
+    gameBus.emit('penaltyKick', {
+      team: kick.team, takerId: kick.takerId, keeperId: kick.keeperId,
+      scored: kick.scored, chance: kick.chance, score,
+    });
+    return noop({
+      ...state,
+      presentationCountdown: PENALTY_KICK_INTERVAL,
+      shootout: { ...so, score, shown: so.shown + 1 },
+    });
+  }
+
   if (state.matchPhase === 'matchEnd') {
     return noop(state); // frozen — no further simulation
   }
 
-  // ── Clock advancement (firstHalf / secondHalf only) ───────────────────────
-  const newMatchTime  = state.matchTime + dt * TIME_SCALE;
-  const extraTime     = state.matchPhase === 'firstHalf' ? state.extraTimeFirst : state.extraTimeSecond;
-  const halfEnd       = HALF_DURATION + extraTime;
+  // ── Clock advancement (the four live periods) ─────────────────────────────
+  const newMatchTime = state.matchTime + dt * TIME_SCALE;
+  const periodEnd =
+    state.matchPhase === 'firstHalf'       ? HALF_DURATION + state.extraTimeFirst :
+    state.matchPhase === 'secondHalf'      ? HALF_DURATION + state.extraTimeSecond :
+    state.matchPhase === 'extraTimeFirst'  ? ET_HALF_DURATION + (state.etStoppageFirst ?? 0) :
+                                             ET_HALF_DURATION + (state.etStoppageSecond ?? 0);
 
-  if (!state.testMode && newMatchTime >= halfEnd) {
-    if (state.matchPhase === 'firstHalf') {
-      gameBus.emit('halfTime', {
-        score:     state.score,
-        extraTime: Math.round(state.extraTimeSecond / 60),
-      });
-      return noop({
-        ...state, matchTime: newMatchTime,
-        matchPhase: 'halfTime', presentationCountdown: PRESENTATION_DURATION,
-        pass: null, shot: null, looseBall: null,
-      });
-    } else {
-      // Second half over → match end
-      gameBus.emit('matchEnd', { score: state.score });
-      return noop({ ...state, matchTime: newMatchTime, matchPhase: 'matchEnd' });
-    }
+  if (!state.testMode && newMatchTime >= periodEnd) {
+    return noop(endCurrentPeriod(state, newMatchTime));
   }
 
   // Set-piece freeze (kickoff / goal kick / offside FK) — drain countdown,
@@ -1473,10 +1600,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     }
   }
 
-  // ── AI substitution evaluation (second half only, periodic) ───────────────
+  // ── AI substitution evaluation (second half / extra time only, periodic) ──
   // In live matches, only Team B (opponent) is AI-controlled; in headless mode,
   // SimulateMatch passes aiTeams = ['A', 'B'] via the optional parameter below.
-  if (s.matchPhase === 'secondHalf' && shouldCheckAiSubs(s.matchTime, dt * TIME_SCALE)) {
+  const inSubsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
+  if (inSubsWindow && shouldCheckAiSubs(s.matchTime, dt * TIME_SCALE)) {
     // Team B is always AI in live matches; `aiTeams` can override for headless sim
     const subsB = evaluateAiSubstitutions(s, 'B');
     if (subsB.length > 0) {

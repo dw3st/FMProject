@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy } from "lucide-react";
+import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
+import type { LeagueData } from "@/types/playerTypes";
+import { competitionName } from "@/Domain/world/labels";
 
 type FilterTab = "all" | "unread";
 
@@ -38,6 +40,13 @@ const CATEGORY_META: Record<
     border: "border-yellow-500/30",
     Icon: Trophy,
   },
+  cup: {
+    labelKey: "inbox.categories.cup",
+    color: "text-fuchsia-400",
+    bg: "bg-fuchsia-500/15",
+    border: "border-fuchsia-500/30",
+    Icon: Award,
+  },
 };
 
 function formatInboxDate(dateStr: string): string {
@@ -67,12 +76,20 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [leagues, setLeagues] = useState<LeagueData[]>([]);
 
   useEffect(() => {
     if (inboxMessages === null) {
       void refreshInbox();
     }
   }, [inboxMessages, refreshInbox]);
+
+  useEffect(() => {
+    void fetch("/api/leagues")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: LeagueData[]) => setLeagues(Array.isArray(data) ? data : []))
+      .catch(() => setLeagues([]));
+  }, []);
 
   const messages = inboxMessages ?? [];
   const unreadCount = messages.reduce((acc, m) => (m.read ? acc : acc + 1), 0);
@@ -217,7 +234,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
             </div>
             <div className="md:col-span-2 card-arcade rounded-xl overflow-hidden flex flex-col min-h-0">
               {selected ? (
-                <MessageDetail message={selected} />
+                <MessageDetail message={selected} leagues={leagues} />
               ) : (
                 <div className="flex-1 flex items-center justify-center p-12">
                   <p className="text-sm text-muted-foreground m-0">
@@ -293,7 +310,7 @@ function MessageRow({
   );
 }
 
-function MessageDetail({ message }: { message: InboxMessage }) {
+function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: LeagueData[] }) {
   const { t } = useTranslation();
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
@@ -345,8 +362,45 @@ function MessageDetail({ message }: { message: InboxMessage }) {
         {message.category === "season" && (
           <p className="text-sm text-foreground m-0">{message.preview}</p>
         )}
+        {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
       </div>
     </div>
+  );
+}
+
+function CupBody({
+  message,
+  leagues,
+}: {
+  message: Extract<InboxMessage, { category: "cup" }>;
+  leagues: LeagueData[];
+}) {
+  const { t, i18n } = useTranslation();
+  const stage = t(`cups.stage.${message.stage}`, { defaultValue: message.stage });
+  // Fall back to the stored English name while the league catalog hasn't loaded yet.
+  const cupName = leagues.length > 0 ? competitionName(message.cupSlug, leagues, i18n.language) : message.cupName;
+
+  if (message.kind === "champion") {
+    return <p className="text-sm text-foreground m-0">{t("inbox.cup.champion", { cup: cupName })}</p>;
+  }
+  if (message.kind === "eliminated") {
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.cup.eliminated", { cup: cupName, stage, opponent: message.opponentName ?? "?" })}
+      </p>
+    );
+  }
+  const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
+  return (
+    <p className="text-sm text-foreground m-0">
+      {t("inbox.cup.draw", {
+        cup: cupName,
+        stage,
+        opponent: message.opponentName ?? "?",
+        venue,
+        date: message.tieDate ? formatFullDate(message.tieDate) : "?",
+      })}
+    </p>
   );
 }
 

@@ -147,6 +147,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'knockout-draw-90',
+    name:        '11v11 — Knockout level at 90\'',
+    description: 'Knockout match, 1–1 late in the second half. Use "End period" to go through extra time and penalties.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      return {
+        ...createMatchState(teamRedPlayers, f433, teamBluePlayers, f433),
+        knockout:   true,
+        matchPhase: 'secondHalf',
+        matchTime:  2640,
+        score:      { A: 1, B: 1 },
+        presentationCountdown: 0,
+      };
+    },
+  },
+
+  {
     id:          '1v1-duel',
     name:        '1v1 — Attacker vs Defender',
     description: 'ST with ball at midfield vs a CB. Tests carrying, lane detection, and tackling.',

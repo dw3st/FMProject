@@ -234,3 +234,127 @@ Resume when animation finishes.
 • deterministic match state transitions
 
 • flexible clock scaling without affecting gameplay logic
+
+---
+
+# Knockout Matches (Extra Time and Penalties) — Current Implementation
+
+A knockout match (`GameState.knockout === true`) can never end level. A league match
+(`knockout` absent/false) is unaffected — it ends at full time exactly as above, draws included.
+
+## Phase sequence
+
+```
+preMatch → firstHalf → halfTime → secondHalf
+  → (level after 90'?) extraTimeBreak → extraTimeFirst → extraTimeSecond
+       → (still level?) penalties
+  → matchEnd
+```
+
+`MatchPhase` (`types.ts`) has four extra members: `extraTimeBreak`, `extraTimeFirst`,
+`extraTimeSecond`, `penalties`. `isLivePhase(phase)` (`gameState.ts`) is `true` for the four
+periods where the ball can be in play — `firstHalf`, `secondHalf`, `extraTimeFirst`,
+`extraTimeSecond` — and gates things like stamina drain (`shouldDrainStamina`) exactly the same
+way for extra time as for the first 90 minutes. `isDeadBall` treats `extraTimeBreak` and
+`penalties` as dead-ball phases (no ball, no movement), the same way `halfTime` already was.
+
+## `endCurrentPeriod` — the one function that ends a period
+
+`endCurrentPeriod(state, newMatchTime?)` (exported from `gameState.ts`) is the single place a
+running period ends. The normal match clock calls it automatically once `matchTime` reaches the
+period's length (`HALF_DURATION` + stoppage for the two normal halves, `ET_HALF_DURATION` +
+stoppage for each extra-time half); `/test` calls it directly via the `endPeriod` test command so
+a tester can step through a knockout match without waiting for the clock. Both call sites get
+identical behaviour because there is only one implementation:
+
+| From phase | To phase | Condition |
+|---|---|---|
+| `firstHalf` | `halfTime` | always |
+| `secondHalf` | `extraTimeBreak` | `knockout && score.A === score.B` |
+| `secondHalf` | `matchEnd` | otherwise (league match, or knockout already decided) |
+| `extraTimeFirst` | `extraTimeSecond` | always (sides switch, no draw check — ET always plays both halves) |
+| `extraTimeSecond` | `penalties` | still level |
+| `extraTimeSecond` | `matchEnd` | decided |
+
+Entering `extraTimeBreak` snapshots `scoreAtRegulation` (the 90'-plus-stoppage score) and draws
+the two extra-time stoppage allowances, `etStoppageFirst`/`etStoppageSecond`, independently —
+each `Math.floor(Math.random() * 3) * 60`, i.e. 0, 1 or 2 minutes of added time per ET half. It
+also emits `extraTimeStart({ score })`.
+
+## Extra time
+
+`ET_HALF_DURATION = 900` game-seconds (15 minutes), same `TIME_SCALE` as normal play. The break
+before extra time drains for `PRESENTATION_DURATION` real seconds (same constant as half-time),
+then calls the same `switchSides` used at half-time — parameterised (see below) so it kicks off
+`extraTimeFirst` for team A at `ET_BREAK_RECOVERY_SCALE = 0.5` energy-recovery scale (half the
+recovery a normal half-time break grants, reflecting the short turnaround). `switchSides` at the
+end of `extraTimeFirst` kicks off `extraTimeSecond` for team B with recovery scale `0` (no
+recovery between ET halves, only the side/attack-direction swap and re-positioning).
+
+`switchSides(state, nextPhase = 'secondHalf', kickoffTeam = 'B', recoveryScale = 1)` is the
+generalised half-time function: any of the three params can be overridden, so the same function
+serves half-time (`nextPhase='secondHalf', kickoffTeam='B', recoveryScale=1`, the defaults),
+the extra-time break (`'extraTimeFirst', 'A', 0.5`) and the ET1→ET2 turn
+(`'extraTimeSecond', 'B', 0`).
+
+AI substitutions, previously gated to `secondHalf` only, are now allowed during `extraTimeFirst`
+and `extraTimeSecond` too (`AiSubstitution.ts` and the in-`tickState` substitution-window check).
+
+## Penalties
+
+`startPenalties(state)` builds one `PenaltySide<number>` per team from the 11 players currently on
+the pitch (`penaltySide`): every on-pitch player is a taker (`accuracy` = their
+`runtimeStats.withBall.shootAccuracy`), the `GK` on the pitch is the keeper
+(`gkReflex`/`gkDiving`). It calls `resolvePenaltyShootout` (see
+`.claude/rules/game-engine/shot-and-save.md` → "Penalty shootout") **once**, up front, with
+`Math.random` — the whole shootout outcome is decided immediately, then *presented* kick by kick.
+
+`GameState.shootout: ShootoutState` holds the full kick list (`kicks`), the score of kicks
+presented so far (`score`), the final score (`finalScore`), the `winner`, and how many kicks have
+been shown (`shown`). While `matchPhase === 'penalties'`, `tickState` counts down
+`presentationCountdown` (reset to `PENALTY_KICK_INTERVAL = 1.5` real seconds after each kick); when
+it drains, the next kick in `shootout.kicks` is revealed — `shootout.score` is updated, a
+`penaltyKick` event is emitted, and `shown` increments. Once every kick has been shown, the match
+ends (`finishMatch`).
+
+## Ending the match
+
+`finishMatch(state)` sets `matchPhase: 'matchEnd'`, clears `pass`/`shot`/`looseBall`, emits
+`shootoutEnd({ winner, score })` first if a shootout happened, then always emits
+`matchEnd({ score, decider })`.
+
+`knockoutDecider(state): KnockoutDecider | null` (exported from `gameState.ts`) is the single
+source of truth for "how was this knockout match decided": `null` for a league match or a
+knockout match that never went level (`scoreAtRegulation` absent). Otherwise:
+
+```ts
+{
+  extraTime: { A: score.A - scoreAtRegulation.A, B: score.B - scoreAtRegulation.B },
+  penalties: shootout ? { ...shootout.finalScore } : null,
+  winner: shootout ? shootout.winner : (score.A > score.B ? 'A' : 'B'),
+}
+```
+
+## `matchMinute` — displayed minute, all phases
+
+`matchMinute(state)` (exported from `gameState.ts`) is `Math.floor(matchTime / 60)` plus a
+per-phase offset (`MINUTE_OFFSET`): `firstHalf` 0, `secondHalf`/`extraTimeBreak` 45,
+`extraTimeFirst` 90, `extraTimeSecond`/`penalties` 105. It replaced an inline calculation
+previously duplicated wherever a minute needed to be shown (e.g. `performSubstitution`'s
+substitution record), so extra time reports 90'+ and 105'+ instead of restarting from 0.
+
+## Events (additions to the table above)
+
+| Event | Payload | Emitted when |
+|---|---|---|
+| `extraTimeStart` | `{ score }` | `secondHalf` ends level in a knockout match |
+| `penaltyKick` | `{ team, takerId, keeperId, scored, chance, score }` | Each presented shootout kick |
+| `shootoutEnd` | `{ winner, score }` | Right before `matchEnd`, only when a shootout decided the match |
+| `matchEnd` | `{ score, decider }` | Now always carries `decider: KnockoutDecider \| null` |
+
+## quickSim and `/lab`
+
+The headless path (`quickSim`, `/lab`) does not run the phase machine at all — it computes extra
+time and a shootout directly from xG. See `.claude/rules/non-player-games.md` → "quickSim
+(ligas não seguidas)" for that path, and `.claude/rules/game-engine/shot-and-save.md` for the
+shootout resolver shared by both paths.

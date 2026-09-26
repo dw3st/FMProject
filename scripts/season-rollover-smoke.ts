@@ -54,10 +54,13 @@ const { computeAdvanceDayMoneyDelta } = await import("@/Domain/advanceDay/financ
 const { addOneDay } = await import("@/Domain/advanceDay/date");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
+const { isCupSlug } = await import("@/Domain/cups/cupIds");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
 type Squad = import("@/types/playerTypes").Squad;
+type SeasonArchive = import("@/types/calendarTypes").SeasonArchive;
+type Fixture = import("@/types/calendarTypes").Fixture;
 
 type LeagueEntry = { slug: string; name: string; standings: Array<{ squadId: string; name?: string; colors?: [string, string] }> };
 const leagueData = (await Bun.file(`${RUNTIME_DATA_DIR}/leagueData.json`).json()) as LeagueEntry[];
@@ -143,6 +146,14 @@ try {
   const playerCountrySlugs = new Set(playerCountry ? pyramidLeagueSlugs(pyramids[playerCountry]!) : [PLAYER_LEAGUE]);
   console.log(`Player club ${playerSquadId}, country ${playerCountry ?? "(no pyramid)"}: ${[...playerCountrySlugs].join(", ")}\n`);
   await checkFiles(saveId, "fresh save");
+
+  // Cup year per country at creation — used later to detect which cups got regenerated.
+  const cupYearsStart = new Map<string, number>();
+  for (const slug of (await plain().listCompetitionSlugs(saveId)).filter(isCupSlug)) {
+    const cm = await plain().getLeagueMeta(saveId, slug);
+    if (cm?.cup) cupYearsStart.set(cm.cup.country, cm.year);
+  }
+  check(cupYearsStart.size > 0, `${cupYearsStart.size} national cup(s) generated at career creation`);
 
   const startDate = meta0.currentDate!;
   const startMembership = await idMembership(saveId);
@@ -466,6 +477,71 @@ try {
   console.log(`  closed seasons captured: ${capList.length} leagues, ${pastAtRoll} unplayed-in-past, ${lostAfterEnd} dated after end`
     + (lostAfterEnd ? ` (${capList.filter(([, c]) => c.afterEnd > 0).map(([s, c]) => `${s}:${c.afterEnd}`).join(" ")})` : ""));
   check(lostAfterEnd === 0, `no closed-season fixture scheduled after its league's end (${lostAfterEnd})`);
+
+  // ── National cups ───────────────────────────────────────────────────────
+  console.log("\n── National cups ──");
+  const smokeSaveId = saveId;
+  const allSlugsEnd = await plain().listCompetitionSlugs(smokeSaveId);
+  const cupSlugsEnd = allSlugsEnd.filter(isCupSlug);
+  const fixturesBySlugEnd = new Map<string, Fixture[]>();
+  for (const slug of allSlugsEnd) fixturesBySlugEnd.set(slug, await plain().getAllFixturesForLeague(smokeSaveId, slug));
+
+  // 1. Every cup folder has meta.cup; a regenerated cup's year advanced and the previous
+  //    season's archive (read back through the DAL, same path as a league archive) has 1 title.
+  let cupsMissingMeta = 0;
+  let cupsRegenerated = 0;
+  let cupsMissingArchive = 0;
+  let englandArchive: SeasonArchive | null = null;
+  for (const slug of cupSlugsEnd) {
+    const cm = await plain().getLeagueMeta(saveId, slug);
+    if (!cm?.cup) { cupsMissingMeta++; continue; }
+    const initial = cupYearsStart.get(cm.cup.country);
+    if (initial === undefined || cm.year <= initial) continue;
+    cupsRegenerated++;
+    const arch = await fsDal.readLeagueSeasonArchive(saveId, slug, initial);
+    if (!arch || arch.titles.length !== 1) {
+      cupsMissingArchive++;
+      console.log(`    ${slug}: expected a 1-title archive for year ${initial}, got ${arch ? arch.titles.length : "no archive"}`);
+    }
+    if (cm.cup.country === "England") englandArchive = arch;
+  }
+  check(cupSlugsEnd.length > 0, `${cupSlugsEnd.length} cup folder(s) exist (${cupSlugsEnd.length} of ${allSlugsEnd.length} competitions)`);
+  check(cupsMissingMeta === 0, `every cup folder has meta.cup (${cupsMissingMeta} missing)`);
+  check(cupsMissingArchive === 0,
+    `${cupsRegenerated} regenerated cup(s) archived the previous season with exactly 1 title (${cupsMissingArchive} bad)`);
+
+  // 4. England: the finished cup (before its regeneration) had a champion.
+  check(!!englandArchive && englandArchive.titles.length === 1,
+    `England's finished cup had a champion (${englandArchive?.titles[0]?.clubName ?? "none"})`);
+
+  // 2. No cup fixture dated before currentDate is still unplayed.
+  let cupFixturesChecked = 0;
+  let cupUnplayedPast = 0;
+  const cupOffenders: string[] = [];
+  for (const slug of cupSlugsEnd) {
+    const past = (fixturesBySlugEnd.get(slug) ?? []).filter((f) => f.date < endDate);
+    const bad = past.filter((f) => !f.played).length;
+    cupFixturesChecked += past.length;
+    cupUnplayedPast += bad;
+    if (bad > 0) cupOffenders.push(`${slug}(${bad})`);
+  }
+  check(cupUnplayedPast === 0,
+    `cup calendars: ${cupFixturesChecked} fixtures dated before ${endDate}, ${cupUnplayedPast} unplayed ${cupOffenders.join(" ")}`);
+
+  // 3. No club has two fixtures (league + cup, any competitions) on the same date.
+  const byClubDate = new Map<string, string[]>(); // "date|squadId" → competitions playing them that day
+  for (const [slug, fx] of fixturesBySlugEnd) {
+    for (const f of fx) {
+      for (const club of [f.home, f.away]) {
+        const key = `${f.date}|${club}`;
+        byClubDate.set(key, [...(byClubDate.get(key) ?? []), slug]);
+      }
+    }
+  }
+  const doubleBooked = [...byClubDate.entries()].filter(([, comps]) => comps.length > 1);
+  check(doubleBooked.length === 0,
+    `no club has two fixtures on the same date across ${allSlugsEnd.length} competitions (${doubleBooked.length} clashes)`
+    + (doubleBooked.length ? `: ${doubleBooked.slice(0, 5).map(([k, comps]) => `${k}→${comps.join(",")}`).join("; ")}` : ""));
 
   await checkFiles(saveId, "end");
   const el = (performance.now() - t0) / 1000;

@@ -2,18 +2,25 @@ import type { MatchPhase } from "@/GameEngine/types";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
 import { readableOnDark } from "@/GameInterface/matchTeamColors";
 
-const HALF_DURATION = 2700;
+const PERIOD: Partial<Record<MatchPhase, { offset: number; length: number }>> = {
+  firstHalf:       { offset: 0,   length: 45 },
+  secondHalf:      { offset: 45,  length: 45 },
+  extraTimeFirst:  { offset: 90,  length: 15 },
+  extraTimeSecond: { offset: 105, length: 15 },
+};
 
 function formatMatchClock(matchTime: number, matchPhase: MatchPhase): string {
   if (matchPhase === "preMatch") return "00:00";
   if (matchPhase === "halfTime") return "HT";
+  if (matchPhase === "extraTimeBreak") return "ET";
+  if (matchPhase === "penalties") return "PEN";
   if (matchPhase === "matchEnd") return "FT";
 
-  const halfOffset = matchPhase === "secondHalf" ? 45 : 0;
+  const { offset, length } = PERIOD[matchPhase] ?? { offset: 0, length: 45 };
   const rawMinutes = matchTime / 60;
-  const clampedMin = Math.min(Math.floor(rawMinutes), 45);
-  const displayMin = halfOffset + clampedMin;
-  const stoppage = rawMinutes > 45 ? Math.ceil(rawMinutes - 45) : 0;
+  const clampedMin = Math.min(Math.floor(rawMinutes), length);
+  const displayMin = offset + clampedMin;
+  const stoppage = rawMinutes > length ? Math.ceil(rawMinutes - length) : 0;
   const displaySec = Math.floor(matchTime % 60);
 
   if (stoppage > 0) {
@@ -50,7 +57,8 @@ export function ScoreBar({
   scoreColorB?: string;
 }) {
   const clockStr = formatMatchClock(matchTime, matchPhase);
-  const isSpecial = matchPhase === "halfTime" || matchPhase === "matchEnd";
+  const isSpecial = matchPhase === "halfTime" || matchPhase === "matchEnd"
+    || matchPhase === "extraTimeBreak" || matchPhase === "penalties";
 
   const colorA = readableOnDark(scoreColorA ?? teamA?.primaryColor ?? "#3b82f6");
   const colorB = readableOnDark(scoreColorB ?? teamB?.primaryColor ?? "#ef4444");

@@ -764,6 +764,7 @@
     "debug": "Debug",
     "loadError": "Falha ao carregar resultado da partida.",
     "noMatchOnDate": "Nenhuma partida agendada para esta data.",
+    "penalties": "Pênaltis",
     "mentality": {
       "attacking": "Ataque total",
       "balanced": "Equilibrado",
@@ -790,6 +791,16 @@
         "{{team}} sai do círculo central.",
         "Jogo retomado — {{team}} dá o pontapé.",
         "Gol confirmado — {{team}} reinicia."
+      ],
+      "extraTimeFirst": [
+        "Começa a prorrogação — {{team}} dá o pontapé inicial do primeiro tempo extra.",
+        "Vamos de novo — {{team}} inicia a prorrogação do meio-campo.",
+        "Mais trinta minutos se for preciso — {{team}} começa a prorrogação."
+      ],
+      "extraTimeSecond": [
+        "Segundo tempo da prorrogação — {{team}} reinicia do meio-campo.",
+        "Último período — {{team}} dá o pontapé.",
+        "A prorrogação é retomada — {{team}} põe a bola em jogo."
       ]
     },
     "passAttempted": {
@@ -1024,10 +1035,21 @@
       "development": "Evolução",
       "transfer_in": "Contratação",
       "transfer_out": "Venda",
-      "season": "Temporada"
+      "season": "Temporada",
+      "cup": "Copa"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
-    "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje."
+    "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
+    "cup": {
+      "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
+      "eliminated": "Eliminados da {{cup}} ({{stage}}) por {{opponent}}",
+      "champion": "Campeões da {{cup}}!",
+      "venue": {
+        "home": "em casa",
+        "away": "fora",
+        "neutral": "campo neutro"
+      }
+    }
   },
   "finances": {
     "alerts": "Alertas Financeiros",
@@ -1150,6 +1172,26 @@
       "interceptions": "Interceptações"
     },
     "substitutions": "Substituições"
+  },
+  "cups": {
+    "champion": "Campeão",
+    "notDrawn": "Ainda não sorteado",
+    "none": "Sem copa nacional neste país nesta temporada",
+    "pens": "pên. {{home}}–{{away}}",
+    "aet": "prorr.",
+    "neutral": "campo neutro",
+    "loading": "Carregando…",
+    "knockoutNote": "Mata-mata: prorrogação e pênaltis se empatar",
+    "stage": {
+      "preliminary": "Fase preliminar",
+      "r128": "64 avos de final",
+      "r64": "32 avos de final",
+      "r32": "16 avos de final",
+      "r16": "Oitavas de final",
+      "qf": "Quartas de final",
+      "sf": "Semifinal",
+      "final": "Final"
+    }
   },
   "development": {
     "title": "Evolução",
@@ -1373,8 +1415,11 @@
   "matchOverlay": {
     "halfTime": "Intervalo",
     "fullTime": "Fim de Jogo",
+    "extraTime": "Prorrogação",
     "secondHalfStarting": "Segundo tempo iniciando em breve…",
-    "matchOver": "Partida encerrada"
+    "extraTimeStarting": "Prorrogação começando em breve…",
+    "matchOver": "Partida encerrada",
+    "penaltiesScore": "Pênaltis {{a}}–{{b}}"
   },
   "goalOverlay": {
     "goal": "GOL!",
@@ -1384,6 +1429,7 @@
     "title": "Resumo do Dia",
     "matches": "Partidas ({{count}})",
     "matchRound": "{{competition}} • Rodada {{round}}",
+    "cupMatch": "{{competition}}",
     "otherLeagues": "Outras ligas ({{count}})",
     "playerDevelopment": "Evolução do Jogador",
     "shots": "Finalizações",

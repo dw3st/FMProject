@@ -88,6 +88,8 @@ export interface BalanceScenario {
   matchesPerPair: number;
   /** Which engine resolves matches for this scenario. Defaults to "full" when absent. */
   simEngine?: SimEngine;
+  /** Knockout matches (extra time + penalties). Defaults to false. */
+  knockout?: boolean;
   /** Single pool — every variant plays every other variant once, no self-pairs. */
   variants: Variant[];
 }
@@ -100,6 +102,8 @@ export interface WorkerInput {
   matches: number;
   /** Which engine resolves matches for this pair. Defaults to "full" when absent. */
   simEngine?: SimEngine;
+  /** Knockout matches (extra time + penalties). Defaults to false. */
+  knockout?: boolean;
 }
 
 /** Raw sums across all N matches for one team. */
@@ -124,6 +128,10 @@ export interface TeamRawStats {
   throughBallsLostInDuel: number;
   looseBallsWon: number;
   switchPlays: number;
+  extraTimeMatches: number;
+  shootoutsWon: number;
+  penaltiesTaken: number;
+  penaltiesScored: number;
 }
 
 export interface PairRaw {
@@ -165,6 +173,14 @@ export interface PerMatchView {
   avgLooseBallsWon: number;
   /** Switch-of-play passes played per match. */
   avgSwitchPlays: number;
+  /** Share of matches that went to extra time (0–100). */
+  extraTimePct: number;
+  /** Shootout wins as a share of all matches (0–100). */
+  shootoutWinPct: number;
+  /** Penalties taken per match (raw count, used to gate the conv% row in the UI). */
+  avgPenaltiesTaken: number;
+  /** Shootout conversion (0–100). */
+  penaltyConversionPct: number;
 }
 
 export interface PairResult {
@@ -205,6 +221,14 @@ export interface VariantSummary {
   throughBallCompletionPct: number;
   avgLooseBallsWon: number;
   avgSwitchPlays: number;
+  /** Share of matches that went to extra time (0–100). */
+  extraTimePct: number;
+  /** Shootout wins as a share of all matches (0–100). */
+  shootoutWinPct: number;
+  /** Penalties taken per match (raw count, used to gate the conv% row in the UI). */
+  avgPenaltiesTaken: number;
+  /** Shootout conversion (0–100). */
+  penaltyConversionPct: number;
 }
 
 export interface ScenarioResult {

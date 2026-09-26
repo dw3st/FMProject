@@ -28,8 +28,8 @@ export function evaluateAiSubstitutions(
   state: GameState,
   team: TeamId,
 ): PendingSub[] {
-  // Only sub during second half
-  if (state.matchPhase !== 'secondHalf') return [];
+  // Only sub during second half or extra time
+  if (state.matchPhase !== 'secondHalf' && state.matchPhase !== 'extraTimeFirst' && state.matchPhase !== 'extraTimeSecond') return [];
 
   const subsRemaining = team === 'A' ? state.subsRemainingA : state.subsRemainingB;
   if (subsRemaining <= 0) return [];
