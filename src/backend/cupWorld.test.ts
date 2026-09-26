@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay";
+import type { CupInboxMessage } from "@/types/inboxTypes";
 
 describe("createSave generates national cups", () => {
   let saveId = "";
@@ -60,6 +61,45 @@ describe("advanceOneDay plays and draws a cup stage", () => {
 
     const round2 = await saveService.getRound(saveId, "cup_england", stage1.round);
     expect(round2!.fixtures.length).toBe(stage1.entrants.length / 2);
+  }, 300_000);
+});
+
+describe("advanceOneDay emits cup inbox news", () => {
+  let saveId = "";
+  afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
+
+  test("stage 1 for the player's club produces a cup inbox message", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+    });
+    saveId = meta.id;
+
+    const cupBefore = await saveService.getLeagueMeta(saveId, "cup_england");
+    const stage0 = cupBefore!.cup!.stages[0]!;
+    const round1 = await saveService.getRound(saveId, "cup_england", stage0.round);
+    // Pick a club that actually plays stage 1 (a top-tier club may have a bye straight to stage 2).
+    const fixture = round1!.fixtures[0]!;
+
+    await saveService.updateMeta(saveId, { clubId: fixture.home, currentDate: stage0.date });
+    const outcome = await advanceOneDay(saveService, saveId);
+    expect(outcome.ok).toBe(true);
+
+    const inbox = await saveService.getInbox(saveId);
+    const cupMessages = inbox.filter((m) => m.category === "cup") as CupInboxMessage[];
+    expect(cupMessages.length).toBe(1);
+
+    const msg = cupMessages[0]!;
+    expect(msg.cupSlug).toBe("cup_england");
+    expect(["draw", "eliminated"]).toContain(msg.kind);
+    expect(msg.opponentName).toBeTruthy();
+    if (msg.kind === "draw") {
+      expect(msg.tieDate).toBeTruthy();
+      expect(msg.venue).toBeTruthy();
+      expect(["home", "away", "neutral"]).toContain(msg.venue!);
+    } else {
+      expect(msg.tieDate).toBeUndefined();
+    }
   }, 300_000);
 });
 

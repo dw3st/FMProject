@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { saveService, type SaveService } from "@/backend/SaveService";
 import type {
+  CupInboxMessage,
   DevelopmentInboxChange,
   DevelopmentInboxMessage,
   InboxMessage,
@@ -155,6 +156,34 @@ export function buildSeasonMessage(args: {
     seasonYear,
     ...(kind === "followers" ? { followersBefore: fb, followersAfter: fa } : {}),
   };
+}
+
+/**
+ * National-cup news for the human club: a draw for the next tie, elimination, or the title.
+ * `date` is the message date (day the news is posted); the tie's own date is `tieDate`.
+ */
+export function buildCupMessage(args: {
+  date: string; kind: CupInboxMessage["kind"]; cupSlug: string; cupName: string; stage: string;
+  opponentName?: string; tieDate?: string; venue?: CupInboxMessage["venue"];
+}): CupInboxMessage {
+  const { date, kind, cupSlug, cupName, stage, opponentName, tieDate, venue } = args;
+  const subject =
+    kind === "draw" ? `${cupName} draw` :
+    kind === "eliminated" ? `Out of the ${cupName}` :
+    `${cupName} winners!`;
+  const preview =
+    kind === "draw" ? `Next: ${opponentName ?? "?"} (${venue ?? "?"}) on ${tieDate ?? "?"}.` :
+    kind === "eliminated" ? `Knocked out by ${opponentName ?? "?"}.` :
+    `The club won the ${cupName}.`;
+  return {
+    id: `cup-${date}-${kind}-${cupSlug}-${randomUUID()}`,
+    date, createdAt: date, read: false, category: "cup",
+    subject, preview: preview.slice(0, 120),
+    kind, cupSlug, cupName, stage,
+    ...(opponentName ? { opponentName } : {}),
+    ...(tieDate ? { tieDate } : {}),
+    ...(venue ? { venue } : {}),
+  } as CupInboxMessage;
 }
 
 function formatCount(n: number): string {
