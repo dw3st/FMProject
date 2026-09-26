@@ -62,3 +62,46 @@ describe("buildQuickMatchEvent", () => {
     expect(r.event.teamStats.away.shots).toBeGreaterThanOrEqual(r.event.score.away);
   });
 });
+
+describe("cup fixtures", () => {
+  // Same stats on every roster slot (see makeSquad) → home and away are exactly equal in
+  // force, so any scoreline asymmetry below comes only from the venue flags under test.
+  const home = makeSquad("h");
+  const away = makeSquad("a");
+  const fixture = { id: "fx1", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
+  const sim = { homeLineup: home.players.map((p) => p.id), awayLineup: away.players.map((p) => p.id) };
+
+  test("knockout fixture never ends level and carries the decider on the event", () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const knockoutFixture = { ...fixture, knockout: true as const };
+      const { event } = buildQuickMatchEvent(knockoutFixture, home, away, sim, mulberry32(seed));
+      const pens = event.decider?.penalties;
+      const level = event.score.home === event.score.away;
+      expect(level ? !!pens && pens.home !== pens.away : true).toBe(true);
+    }
+  });
+
+  test("neutral fixture removes home advantage", () => {
+    // A single pass at "average diff over N independent seeds" is noisy: quickSim's per-match
+    // score variance dwarfs the home-advantage signal (~0.05 goals/match) at any N that still
+    // runs fast, so an independent-sample test is either loose enough to pass regardless of a
+    // regression, or tight enough to flake. Instead, each seed drives BOTH a normal and a
+    // neutral fixture — same rng stream, so the shared randomness (dominance noise, the exact
+    // Bernoulli draws inside sampleGoals) mostly cancels out and only the effect of the venue
+    // flag on expected goals remains. Calibrated empirically (scripts/_scratch_neutral_calib.ts,
+    // discarded): paired mean ~0.045, paired SE ~0.005 at n=2000 — a >8-sigma signal, so 0.02 is
+    // a safe, non-flaky threshold while still failing hard if `neutral` stops suppressing home
+    // advantage.
+    const n = 2000;
+    let diffSum = 0;
+    for (let seed = 1; seed <= n; seed++) {
+      const normal = buildQuickMatchEvent(fixture, home, away, sim, mulberry32(seed));
+      const neutral = buildQuickMatchEvent({ ...fixture, neutral: true as const }, home, away, sim, mulberry32(seed));
+      const normalMargin = normal.event.score.home - normal.event.score.away;
+      const neutralMargin = neutral.event.score.home - neutral.event.score.away;
+      diffSum += normalMargin - neutralMargin;
+    }
+    // Paired mean margin lost by removing home advantage — must be clearly positive.
+    expect(diffSum / n).toBeGreaterThan(0.02);
+  });
+});

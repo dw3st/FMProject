@@ -196,6 +196,7 @@ export function buildMatchEventFromRecording(
     substitutions: recording.substitutions ?? [],
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
+    ...(recording.decider ? { decider: recording.decider } : {}),
   };
 
   return { event, updatedHome, updatedAway };
@@ -219,6 +220,7 @@ export function buildMatchEvent(
     sim.awayFormation,
     sim.homeLineup,
     sim.awayLineup,
+    { knockout: fixture.knockout === true },
   );
 
   const nameToRosterId = new Map<string, string>();
@@ -354,6 +356,16 @@ export function buildMatchEvent(
     substitutions,
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: result.durationMs,
+    ...(result.decider
+      ? {
+          decider: {
+            extraTime: { home: result.decider.extraTime.A, away: result.decider.extraTime.B },
+            ...(result.decider.penalties
+              ? { penalties: { home: result.decider.penalties.A, away: result.decider.penalties.B } }
+              : {}),
+          },
+        }
+      : {}),
   };
 
   return { event, updatedHome: devHome, updatedAway: devAway };
@@ -395,6 +407,8 @@ export function buildQuickMatchEvent(
       awayLineup: sim.awayLineup,
       homeRoles: sim.homeFormation ? slotRoles(sim.homeFormation) : undefined,
       awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
+      knockout: fixture.knockout === true,
+      neutral: fixture.neutral === true,
     },
     rng,
   );
