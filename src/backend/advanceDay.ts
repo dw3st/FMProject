@@ -453,13 +453,22 @@ export async function advanceOneDay(
     const cupChanges = await advanceCupStages(saveService, saveId, cupPlayed);
 
     // ── National cup inbox news for the human club ────────────────────────────
+    // These messages are emitted on the same day the tie/draw happens, before the "Transfers +
+    // inbox are cleared" block further down (only runs when `seasonEnded`). They never collide
+    // with that clear because no cup tie can fall on the rollover day itself: every cup stage's
+    // date window ends at least FINAL_BEFORE_END_DAYS (7) days before the league window end
+    // (src/Domain/cups/cupDates.ts), so the final is always played and read well before the
+    // season rolls.
     if (playerSquadId) {
       const myCup = await playerCupSlug(meta.leagueSlug);
       const cupMeta = myCup ? await saveService.getLeagueMeta(saveId, myCup) : null;
       if (myCup && cupMeta?.cup) {
         const catalogForCups = await getLeagueData();
         const cupDisplayName = competitionName(myCup, catalogForCups as unknown as LeagueData[], "en");
-        const stageNameOf = (round: number) => cupMeta.cup!.stages.find((s) => s.round === round)?.name ?? "final";
+        // Returns null when the round isn't in this cup's stage list (should not happen, but a
+        // silent "final" fallback here would risk a false champion/eliminated message for the
+        // wrong stage) — callers skip the event rather than guess.
+        const stageNameOf = (round: number): string | null => cupMeta.cup!.stages.find((s) => s.round === round)?.name ?? null;
 
         // Elimination / champion: from today's played fixtures in the player's cup.
         for (const event of dayEvents) {
@@ -471,6 +480,7 @@ export async function advanceOneDay(
           const winner = fixtureWinner(fixture);
           if (winner === null) continue;
           const stage = stageNameOf(event.round);
+          if (stage === null) continue;
 
           if (winner === playerSquadId) {
             if (stage === "final") {
@@ -496,6 +506,8 @@ export async function advanceOneDay(
         // Draw: a new stage was drawn today and the player's club is in it.
         for (const change of cupChanges) {
           if (change.slug !== myCup || change.drawnRound === undefined) continue;
+          const drawnStage = stageNameOf(change.drawnRound);
+          if (drawnStage === null) continue;
           const round = await saveService.getRound(saveId, myCup, change.drawnRound);
           const fixture = round?.fixtures.find((f) => f.home === playerSquadId || f.away === playerSquadId);
           if (!fixture) continue;
@@ -506,7 +518,7 @@ export async function advanceOneDay(
             saveId,
             buildCupMessage({
               date: currentDate, kind: "draw", cupSlug: myCup, cupName: cupDisplayName,
-              stage: stageNameOf(change.drawnRound), opponentName, tieDate: fixture.date, venue,
+              stage: drawnStage, opponentName, tieDate: fixture.date, venue,
             }),
             saveService,
           );
