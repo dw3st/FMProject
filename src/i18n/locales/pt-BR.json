@@ -1035,10 +1035,21 @@
       "development": "Evolução",
       "transfer_in": "Contratação",
       "transfer_out": "Venda",
-      "season": "Temporada"
+      "season": "Temporada",
+      "cup": "Copa"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
-    "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje."
+    "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
+    "cup": {
+      "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
+      "eliminated": "Eliminados da {{cup}} ({{stage}}) por {{opponent}}",
+      "champion": "Campeões da {{cup}}!",
+      "venue": {
+        "home": "em casa",
+        "away": "fora",
+        "neutral": "campo neutro"
+      }
+    }
   },
   "finances": {
     "alerts": "Alertas Financeiros",

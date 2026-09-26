@@ -1035,10 +1035,21 @@
       "development": "Development",
       "transfer_in": "Transfer In",
       "transfer_out": "Transfer Out",
-      "season": "Season"
+      "season": "Season",
+      "cup": "Cup"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
-    "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today."
+    "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
+    "cup": {
+      "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
+      "eliminated": "Eliminated from the {{cup}} ({{stage}}) by {{opponent}}",
+      "champion": "Champions of the {{cup}}!",
+      "venue": {
+        "home": "at home",
+        "away": "away",
+        "neutral": "neutral venue"
+      }
+    }
   },
   "finances": {
     "alerts": "Financial Alerts",

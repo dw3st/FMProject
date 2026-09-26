@@ -1,4 +1,4 @@
-export type InboxCategory = "development" | "transfer_in" | "transfer_out" | "season";
+export type InboxCategory = "development" | "transfer_in" | "transfer_out" | "season" | "cup";
 
 export interface InboxMessageBase {
   id:        string;
@@ -57,8 +57,24 @@ export interface SeasonInboxMessage extends InboxMessageBase {
   seasonYear: number;
 }
 
+/** National-cup news for the human club. */
+export interface CupInboxMessage extends InboxMessageBase {
+  category:  "cup";
+  kind:      "draw" | "eliminated" | "champion";
+  cupSlug:   string;
+  cupName:   string;
+  /** Stage key (CupStageName) of the draw / elimination / final. */
+  stage:     string;
+  /** Opponent (draw: next opponent; eliminated: who knocked us out). */
+  opponentName?: string;
+  /** Draw only: the tie's date and whether we are at home ("neutral" for the final). */
+  tieDate?:  string;
+  venue?:    "home" | "away" | "neutral";
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
   | TransferOutInboxMessage
-  | SeasonInboxMessage;
+  | SeasonInboxMessage
+  | CupInboxMessage;

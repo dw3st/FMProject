@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy } from "lucide-react";
+import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 
@@ -37,6 +37,13 @@ const CATEGORY_META: Record<
     bg: "bg-yellow-500/15",
     border: "border-yellow-500/30",
     Icon: Trophy,
+  },
+  cup: {
+    labelKey: "inbox.categories.cup",
+    color: "text-fuchsia-400",
+    bg: "bg-fuchsia-500/15",
+    border: "border-fuchsia-500/30",
+    Icon: Award,
   },
 };
 
@@ -345,8 +352,41 @@ function MessageDetail({ message }: { message: InboxMessage }) {
         {message.category === "season" && (
           <p className="text-sm text-foreground m-0">{message.preview}</p>
         )}
+        {message.category === "cup" && <CupBody message={message} />}
       </div>
     </div>
+  );
+}
+
+function CupBody({
+  message,
+}: {
+  message: Extract<InboxMessage, { category: "cup" }>;
+}) {
+  const { t } = useTranslation();
+  const stage = t(`cups.stage.${message.stage}`, { defaultValue: message.stage });
+
+  if (message.kind === "champion") {
+    return <p className="text-sm text-foreground m-0">{t("inbox.cup.champion", { cup: message.cupName })}</p>;
+  }
+  if (message.kind === "eliminated") {
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.cup.eliminated", { cup: message.cupName, stage, opponent: message.opponentName ?? "?" })}
+      </p>
+    );
+  }
+  const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
+  return (
+    <p className="text-sm text-foreground m-0">
+      {t("inbox.cup.draw", {
+        cup: message.cupName,
+        stage,
+        opponent: message.opponentName ?? "?",
+        venue,
+        date: message.tieDate ? formatFullDate(message.tieDate) : "?",
+      })}
+    </p>
   );
 }
 
