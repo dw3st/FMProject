@@ -1176,6 +1176,7 @@
   "cups": {
     "champion": "Champion",
     "notDrawn": "Not drawn yet",
+    "none": "No national cup for this country this season",
     "pens": "pens {{home}}–{{away}}",
     "aet": "a.e.t.",
     "neutral": "neutral venue",

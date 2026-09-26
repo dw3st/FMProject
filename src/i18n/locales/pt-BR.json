@@ -1176,6 +1176,7 @@
   "cups": {
     "champion": "Campeão",
     "notDrawn": "Ainda não sorteado",
+    "none": "Sem copa nacional neste país nesta temporada",
     "pens": "pên. {{home}}–{{away}}",
     "aet": "prorr.",
     "neutral": "campo neutro",

@@ -505,6 +505,8 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const [financeRows, setFinanceRows] = useState<ClubFinanceRow[] | null>(null);
   // National cup bracket of the selected league's country — fetched only while the Cup tab is open.
   const [cupData, setCupData] = useState<CupBracketData | null>(null);
+  // True once the cup fetch has come back 404 (this country has no national cup this season).
+  const [cupMissing, setCupMissing] = useState(false);
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
   // True while the save's standings are in flight — the catalog fallback would show the
@@ -578,13 +580,27 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const cupSlug = active?.country ? cupSlugOf(active.country) : null;
 
   // Fetch the national cup bracket for the selected league's country — reset whenever the
-  // league (and therefore the cup) changes.
+  // league (and therefore the cup) changes. A country without a cup this season (cupSlug
+  // null, or a 404 from the route) must not leave a stale bracket or an infinite "Loading…".
   useEffect(() => {
-    if (tab !== "cup" || !session?.saveId || !cupSlug) return;
+    if (!cupSlug) {
+      setCupData(null);
+      setCupMissing(false);
+      if (tab === "cup") setTab("table");
+      return;
+    }
+    if (tab !== "cup" || !session?.saveId) return;
     let cancelled = false;
     setCupData(null);
+    setCupMissing(false);
     fetch(`/api/saves/${session.saveId}/cups/${cupSlug}`)
-      .then((r) => (r.ok ? (r.json() as Promise<CupBracketData>) : null))
+      .then((r) => {
+        if (!r.ok) {
+          if (!cancelled) setCupMissing(true);
+          return null;
+        }
+        return r.json() as Promise<CupBracketData>;
+      })
       .catch(() => null)
       .then((data) => {
         if (!cancelled) setCupData(data);
@@ -823,7 +839,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 </div>
               )
             ) : tab === "cup" ? (
-              cupData ? (
+              cupMissing ? (
+                <p className="text-muted-foreground text-sm p-6">{t("cups.none")}</p>
+              ) : cupData ? (
                 <CupBracket data={cupData} myClubId={session?.clubId ?? ""} />
               ) : (
                 <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
