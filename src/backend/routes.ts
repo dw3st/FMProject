@@ -23,6 +23,7 @@ import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
+import { playerCupSlug } from "@/backend/cupWorld";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -337,10 +338,11 @@ export const apiRoutes = {
       if (!currentDate) {
         return Response.json({ error: "save has no currentDate" }, { status: 400 });
       }
+      const cupSlug = await playerCupSlug(save.leagueSlug);
       const todayFixtures = await saveService.getFixturesForDate(save.id, currentDate);
       const todayFixture = todayFixtures.find(
         (f) =>
-          f.competition === save.leagueSlug &&
+          (f.competition === save.leagueSlug || f.competition === cupSlug) &&
           (f.home === myInternalId || f.away === myInternalId) &&
           !f.played,
       );

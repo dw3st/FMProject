@@ -1,12 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
   computeAdvanceTarget,
+  nextPlayerFixtureDate,
   runAdvanceBatch,
   shiftDate,
   type AdvanceBatchDeps,
   type AdvancePosition,
 } from "@/backend/advanceUntil";
 import type { AdvanceDayOutcome } from "@/backend/advanceDay";
+import { SaveService } from "@/backend/SaveService";
+import type { ISaveDAL } from "@/backend/dal/ISaveDAL";
+import type { Fixture, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
 
 describe("computeAdvanceTarget", () => {
   test("targets the next unplayed player fixture day itself", () => {
@@ -37,6 +41,77 @@ describe("computeAdvanceTarget", () => {
     expect(() => computeAdvanceTarget("2025-01-01", [])).toThrow();
     expect(() => computeAdvanceTarget("2025-01-01", ["2026-03-01"])).toThrow();
     expect(() => computeAdvanceTarget("2025-01-01", [], "2024-12-01")).toThrow();
+  });
+});
+
+function fixture(id: string, date: string, competition: string, home: string, away: string, played = false): Fixture {
+  return { id, date, competition, round: 1, home, away, played, result: null };
+}
+
+/** In-memory ISaveDAL covering only round + date-index reads; any other method throws. */
+function calendarDAL(leagues: Record<string, { dateIndex: LeagueDateIndex; rounds: Record<number, RoundFixtures> }>): ISaveDAL {
+  const impl: Partial<ISaveDAL> = {
+    async readDateIndex(_saveId, leagueSlug) {
+      return leagues[leagueSlug]?.dateIndex ?? null;
+    },
+    async readRound(_saveId, leagueSlug, round) {
+      return leagues[leagueSlug]?.rounds[round] ?? null;
+    },
+  };
+  return new Proxy(impl, {
+    get(target, prop) {
+      const v = Reflect.get(target, prop);
+      if (v) return v;
+      return () => { throw new Error(`memory DAL: ${String(prop)} not implemented`); };
+    },
+  }) as ISaveDAL;
+}
+
+describe("nextPlayerFixtureDate", () => {
+  test("earliest unplayed fixture across league AND cup", async () => {
+    const svc = new SaveService(calendarDAL({
+      premier_league: {
+        dateIndex: { "2027-08-20": [1], "2027-08-30": [2] },
+        rounds: {
+          1: { leagueSlug: "premier_league", round: 1, fixtures: [fixture("f1", "2027-08-20", "premier_league", "me", "them")] },
+          2: { leagueSlug: "premier_league", round: 2, fixtures: [fixture("f2", "2027-08-30", "premier_league", "me", "other")] },
+        },
+      },
+      cup_england: {
+        dateIndex: { "2027-08-14": [1] },
+        rounds: {
+          1: { leagueSlug: "cup_england", round: 1, fixtures: [fixture("c1", "2027-08-14", "cup_england", "me", "cupfoe")] },
+        },
+      },
+    }));
+    const date = await nextPlayerFixtureDate(svc, "save-1", ["premier_league", "cup_england"], "me", "2027-08-01");
+    expect(date).toBe("2027-08-14");
+  });
+
+  test("league-only fixtures still work without a cup competition", async () => {
+    const svc = new SaveService(calendarDAL({
+      premier_league: {
+        dateIndex: { "2027-08-20": [1] },
+        rounds: { 1: { leagueSlug: "premier_league", round: 1, fixtures: [fixture("f1", "2027-08-20", "premier_league", "me", "them")] } },
+      },
+    }));
+    const date = await nextPlayerFixtureDate(svc, "save-1", ["premier_league"], "me", "2027-08-01");
+    expect(date).toBe("2027-08-20");
+  });
+
+  test("a played cup fixture doesn't count; the league date wins", async () => {
+    const svc = new SaveService(calendarDAL({
+      premier_league: {
+        dateIndex: { "2027-08-20": [1] },
+        rounds: { 1: { leagueSlug: "premier_league", round: 1, fixtures: [fixture("f1", "2027-08-20", "premier_league", "me", "them")] } },
+      },
+      cup_england: {
+        dateIndex: { "2027-08-14": [1] },
+        rounds: { 1: { leagueSlug: "cup_england", round: 1, fixtures: [fixture("c1", "2027-08-14", "cup_england", "me", "cupfoe", true)] } },
+      },
+    }));
+    const date = await nextPlayerFixtureDate(svc, "save-1", ["premier_league", "cup_england"], "me", "2027-08-01");
+    expect(date).toBe("2027-08-20");
   });
 });
 
