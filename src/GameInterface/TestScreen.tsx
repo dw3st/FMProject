@@ -1065,20 +1065,19 @@ export function TestScreen() {
               {liveGameState?.shootout && (
                 <PenaltyShootoutStrip shootout={liveGameState.shootout} nameA="A" nameB="B" />
               )}
+              {debug && liveGameState?.shootout && (
+                <div className="text-[10px] font-mono text-white/60 space-y-0.5">
+                  {liveGameState.shootout.kicks.slice(0, liveGameState.shootout.shown).map((k, i) => (
+                    <div key={i}>
+                      {k.team} #{k.takerId} {(k.chance * 100).toFixed(0)}% {k.scored ? "✓" : "✗"}
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
       </div>
-
-      {debug && liveGameState?.shootout && (
-        <div className="text-[10px] font-mono text-white/60 space-y-0.5">
-          {liveGameState.shootout.kicks.slice(0, liveGameState.shootout.shown).map((k, i) => (
-            <div key={i}>
-              {k.team} #{k.takerId} {(k.chance * 100).toFixed(0)}% {k.scored ? "✓" : "✗"}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* ── Live broadcast (commentary ticker) ── */}
       <div className="card-arcade rounded-xl px-4 py-3 border border-primary/20 bg-primary/5">
