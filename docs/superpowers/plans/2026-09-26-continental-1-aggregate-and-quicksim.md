@@ -241,7 +241,12 @@ function load(league: string): Squad[] {
     return { ...s, players: s.players.map((p) => ({ ...p, seasonLog: p.seasonLog ?? emptySeasonLog() })) };
   });
 }
-const level = (s: Squad) => teamLevel(teamStrength(s.players.filter((p) => autoLineupDefaultFormation(s).includes(p.id)), ROLES));
+const level = (s: Squad) => {
+  // teamStrength expects the XI in slot order, aligned with ROLES.
+  const byId = new Map(s.players.map((p) => [p.id, p]));
+  const xi = autoLineupDefaultFormation(s).map((id) => byId.get(id)).filter((p) => p !== undefined);
+  return teamLevel(teamStrength(xi, ROLES));
+};
 const top = (league: string) => load(league).map((s) => ({ s, lv: level(s) })).sort((a, b) => b.lv - a.lv).slice(0, N);
 
 type Tally = { w: number; d: number; l: number; goals: number; n: number };
