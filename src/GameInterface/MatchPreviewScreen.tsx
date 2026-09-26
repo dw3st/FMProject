@@ -896,7 +896,7 @@ export function MatchPreviewScreen() {
         >
           {isCupTie
             ? (cupStageName ? <>{t(`cups.stage.${cupStageName}`)} &bull; {competition}</> : competition)
-            : <>Matchday {matchday} &bull; {competition}</>}
+            : <>{t("leagues.matchday", { round: matchday })} &bull; {competition}</>}
         </p>
         <h1 className="text-4xl font-black font-display text-foreground uppercase tracking-wider m-0">
           {t("matchPreview.title")}
