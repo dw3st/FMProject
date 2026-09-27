@@ -52,6 +52,7 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
+import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
@@ -1006,6 +1007,12 @@ export async function advanceOneDay(
               playerFollowersChange = { before: human.followersBefore, after: human.followersAfter, leagueSlug: slug };
             }
           }
+          // Wage factor for the season ahead, now that this club's tier-adjusted revenue is
+          // known (`.claude/rules/AI-clubs/finance.md` → wages). Uses the league's club count
+          // before any move below — the same approximation the season's home-game count uses
+          // elsewhere in this block.
+          const homeGames = Math.max(0, leagueTeams.length - 1);
+          next = { ...next, wageFactor: clubWageFactor(clubAnnualRevenue(next, homeGames), squadCurveBill(next.players)) };
           await saveService.saveSquadById(saveId, next);
           if (squad.id === playerClubSquadId && transition.playerBroadcastingCredit > 0) {
             // The new season's ledger: closedYear.get(slug) is the OLD (just-archived) year, so

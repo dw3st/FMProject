@@ -173,7 +173,7 @@ describe("finance ledger — start kit reconciliation", () => {
     const ledger = await saveService.getLedger(saveIdNoKit, leagueMeta!.year);
     const sum = ledger.reduce((s, e) => s + e.amount, 0);
     expect(sum).toBe(squad!.finances!.budget);
-  });
+  }, 300_000); // createSave now also computes every squad's wage factor (#12 curve + club factor) — see SaveService.createSave
 
   test("kit path (Brazilian career, catch-up needed): the kit's own finances are overwritten, but the player's budget stays sum(ledger)", async () => {
     let meta = await saveService.createSave({

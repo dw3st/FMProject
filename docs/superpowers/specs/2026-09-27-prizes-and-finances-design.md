@@ -27,14 +27,39 @@ táticas) vai na mesma branch.
 
 ### Novo
 
-- `src/Domain/finance/wages.ts`: `weeklyWage(rating)` — a única fonte. `estimateWeeklyWage`,
-  `Player.salaryLabel` e o `FinancesScreen` passam a chamá-la.
-- Forma: lei de potência ou exponencial na nota (a que o script ajustar melhor), com piso para a
-  base (juvenis) — os parâmetros ficam em `src/Domain/finance/wageConfig.ts`.
-- **Calibração** (`scripts/wage-calibrate.ts`): para cada clube do mundo, folha que a curva daria
-  (soma do elenco) × receita anual (`broadcasting + commercial` + bilheteria estimada de uma
-  temporada de liga). Ajusta os parâmetros para a mediana de `folha / receita` ficar em ~0,60 em
-  cada nível (1ª, 2ª, 3ª+). Imprime por liga: mediana, p10, p90 da razão, antes e depois.
+**Uma curva só de nota não fecha.** A primeira tentativa (Etapa 3, Tarefa 1) calibrou só
+`weeklyWage(nota)` no mundo inteiro, mirando mediana `folha / receita ≈ 0,60` por nível (1ª, 2ª,
+3ª+ pela pirâmide; liga sem pirâmide = nível 1). Mesmo com lei de potência (venceu a exponencial,
+erro menor) e um teto de sanidade (nenhuma nota custa mais de €5M/semana em nota 10), o resultado
+ficou longe do alvo: mediana 0,20 / 0,72 / 1,51 por nível. O nível 1 sozinho junta a Premier League
+com a primeira divisão de Fiji — a RECEITA desses clubes varia por ordens de grandeza muito mais
+do que a NOTA dos jogadores, então nenhuma curva baseada só em nota consegue acertar 0,60 de forma
+uniforme dentro de um nível tão heterogêneo sem estourar o teto de sanidade.
+
+**Curva + fator de clube.** A solução escolhida separa duas coisas:
+
+- `src/Domain/finance/wages.ts`: `weeklyWage(nota)` — curva só de FORMATO (lei de potência,
+  `SCALE × nota^GROWTH`, com piso), calibrada só para que o degrau nota 6→7 seja um aumento
+  plausível de ~2–2,5× (escolha de design, não alvo de ajuste) e para que a mediana do fator (ver
+  abaixo) nas 5 grandes ligas europeias (Inglaterra/Espanha/Itália/Alemanha/França) seja ≈ 1,0 —
+  ou seja, a curva sozinha já serve quase sem correção para as ligas em torno das quais foi
+  desenhada.
+- `clubWageFactor(receita, folhaDaCurva)` — multiplicador por clube que corrige a folha REAL para
+  exatamente 60% da receita DAQUELE clube (quando não satura), limitado a `[0,25×, 4×]` para que
+  nem um clube muito rico nem um muito pobre (frente ao que a curva sozinha previa para o elenco)
+  receba uma correção absurda. `estimateWeeklyWage`, `Player.salaryLabel` e o `FinancesScreen`
+  passam a usar `weeklyWage` × o fator do clube, não a curva sozinha.
+- `Squad.wageFactor?: number`: calculado na criação da carreira (`SaveService.createSave`, todo
+  clube) e recalculado em toda virada de temporada (depois da mudança de nível financeiro, antes
+  de gravar o squad); ausente → `wageFactorOf` calcula na hora a partir do squad atual. Um jogador
+  transferido passa a ser pago pelo fator do clube comprador.
+- **Calibração** (`scripts/wage-calibrate.ts`): mesma receita anual de antes
+  (`broadcasting + commercial` + bilheteria estimada de uma temporada de liga). Busca em grade o
+  degrau 6→7 (2,0–2,5×) e a forma (potência × exponencial) que minimizam a fração de clubes
+  saturados no fator, com SCALE resolvido analiticamente pela mediana das 5 grandes a cada
+  combinação testada. Imprime por nível e por liga a mediana/p10/p90 de `folha / receita` (deve
+  ficar perto de 0,60, exceto clubes saturados), a fração de clubes no piso/teto do fator, e
+  salários de exemplo (notas 4/5/6/7) para um clube inglês, um da Championship e um do Quênia.
 - **IA:** `maxWageBudget` passa a derivar da receita do clube (`≈ 0,70 × receita / 52`, com o
   `SOFT_BALANCE` por tier), não mais de `BASE_WEEKLY_BUDGET`. Meta: a distribuição de estado de
   contratação no mundo inicial fica perto da atual (~92% `open`, ~5% `tight`, ~3% `frozen`); o

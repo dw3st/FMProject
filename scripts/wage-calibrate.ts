@@ -1,16 +1,32 @@
 #!/usr/bin/env bun
 /**
- * Calibrates the wage curve (`src/Domain/finance/wageConfig.ts`) against the real world.
+ * Calibrates the wage curve + per-club factor (`src/Domain/finance/wageConfig.ts`) against the
+ * real world.
  *
- * For every club in `src/Data/squads/**`, computes an estimated annual revenue
- * (`broadcasting + commercial + capacity × 0.65 × 25 × homeGames`, `homeGames = clubs in the
- * league − 1`) and the wage bill the curve would produce for the roster, and searches for curve
- * parameters that put the median `52 × wageBill / revenue` at ~0.60 for each financial tier
- * (1, 2, 3+ — read from `src/Data/pyramids.json`; a league absent from every pyramid is tier 1).
+ * Design (curve + club factor — see `.claude/rules/AI-clubs/finance.md` and the design spec §1):
+ * a single rating-only curve cannot make `wageBill / revenue` land near 0.60 for every club — a
+ * "tier 1" (top flight) bucket alone pools the Premier League with Fiji's top flight, and those
+ * clubs' REVENUE varies by orders of magnitude far more than their players' RATING does (see the
+ * single-curve result documented in `wageConfig.ts`'s history / the design spec: tier medians
+ * 0.20 / 0.72 / 1.51 against a 0.60 target, using a curve alone). So instead:
  *
- * Tries both an exponential form (`SCALE × e^(GROWTH × rating)`) and a power-law form
- * (`SCALE × rating^GROWTH`); reports per-league medians/p10/p90 for both, old vs new, and picks
- * the form with the smaller calibration error.
+ *   1. `weeklyWage(rating)` is a MILD relative-pay curve — it only sets the shape (how much more
+ *      a higher-rated player costs) and the floor. GROWTH is chosen so the rating 6→7 step is a
+ *      plausible ~2–2.5× pay rise (a design choice, not a fit target). SCALE is then solved so
+ *      the big-5 leagues' (England/Spain/Italy/Germany/France top flight) median
+ *      `52 × curveBill / revenue` ratio is exactly 0.60 — i.e. the curve alone is well-calibrated
+ *      for the leagues it was designed around, needing the least correction.
+ *   2. `clubWageFactor(revenue, curveBill)` is a per-club multiplier that corrects EVERY other
+ *      club's actual wage bill to land at 60% of ITS OWN revenue, clamped to [0.25, 4] so neither
+ *      a very rich nor a very poor club (relative to what the curve predicts for its roster) gets
+ *      an absurd correction.
+ *
+ * For every club in `src/Data/squads/**`, this script computes the same annual revenue estimate
+ * as before (`broadcasting + commercial + capacity × 0.65 × 25 × homeGames`,
+ * `homeGames = clubs in the league − 1`), the curve's raw wage bill, the resulting factor, and
+ * reports: per-tier and per-league bill/revenue median/p10/p90 (should sit near 0.60 except
+ * clamped clubs), the fraction of clubs hitting the MIN/MAX clamp, and example wages for a
+ * Premier League / Championship / Kenyan club.
  *
  * Usage: bun scripts/wage-calibrate.ts
  */
@@ -27,27 +43,27 @@ const SQUADS_DIR = join(ROOT, "src", "Data", "squads");
 const LEAGUE_DATA_PATH = join(ROOT, "src", "Data", "leagueData.json");
 const PYRAMIDS_PATH = join(ROOT, "src", "Data", "pyramids.json");
 
-// Same numbers as src/backend/FinancialService.ts (TICKET_PRICE, HOME_FILL_RATE).
+// Same numbers as src/backend/FinancialService.ts / src/Domain/finance/gate.ts.
 const TICKET_PRICE = 25;
 const HOME_FILL_RATE = 0.65;
+
+// Mirrors src/Domain/finance/wageConfig.ts (kept local so this script is self-contained and can
+// freely search candidate values before anything is written back to that file).
 const TARGET_RATIO = 0.6;
+const MIN_FACTOR = 0.25;
+const MAX_FACTOR = 4;
+const CLAMP_EPS = 1e-9;
 
-/**
- * Sanity ceiling: no rating (0..10, the ceiling for a maxed-out player, well above the ~6.94
- * anyone reaches in the current world) may cost more than this per week. Real-world football's
- * best-paid player earns roughly €3.5–4M/week; €5M/week leaves headroom above that for this
- * world's theoretical best while still ruling out absurd (multi-hundred-million-per-week)
- * curves. Without this cap the bucket-median objective below is degenerate — see the comment on
- * `bestGrowth`: minimizing the spread of the three tier medians alone has NO interior optimum
- * over GROWTH, it strictly improves as GROWTH grows without bound (verified by grid sweep up to
- * GROWTH=3 for the exponential form), which produces multi-billion-euro weekly wages at the top
- * of the rating scale. This cap is the thing that actually stops the search.
- */
-const MAX_WAGE_AT_RATING_10 = 5_000_000;
-
-// Old (pre-calibration) curve — src/Domain/aiFinance/aiFinanceConfig.ts WAGE_EXPONENT/WAGE_SCALE.
+// Old (pre-#12) curve — src/Domain/aiFinance/aiFinanceConfig.ts WAGE_EXPONENT/WAGE_SCALE.
 const OLD_EXPONENT = 2.2;
 const OLD_SCALE = 50;
+
+const BIG5 = ["premier_league", "la_liga", "serie_a", "bundesliga", "ligue_1"];
+const EXAMPLE_LEAGUES: { slug: string; label: string }[] = [
+  { slug: "premier_league", label: "Premier League" },
+  { slug: "of_championship", label: "Championship" },
+  { slug: "of_kenyan_premier_division", label: "Kenyan Premier Division" },
+];
 
 interface LeagueEntry {
   slug: string;
@@ -59,8 +75,9 @@ type TierBucket = "1" | "2" | "3+";
 type Form = "exp" | "pow";
 
 interface ClubSample {
+  squadId: string;
+  squadName: string;
   leagueSlug: string;
-  leagueName: string;
   tier: number;
   bucket: TierBucket;
   revenue: number;
@@ -113,8 +130,9 @@ function loadClubs(leagues: LeagueEntry[], tiers: Map<string, number>): ClubSamp
       if (revenue <= 0) continue;
       const ratings = squad.players.map((p: RosterPlayer) => Player.overallAvg(p));
       out.push({
+        squadId: squad.id,
+        squadName: squad.name,
         leagueSlug: league.slug,
-        leagueName: league.name,
         tier,
         bucket: tierBucketOf(tier),
         revenue,
@@ -131,6 +149,11 @@ function loadClubs(leagues: LeagueEntry[], tiers: Map<string, number>): ClubSamp
 
 function rawWage(form: Form, scale: number, growth: number, rating: number): number {
   return form === "exp" ? scale * Math.exp(growth * rating) : scale * Math.pow(Math.max(rating, 0), growth);
+}
+
+/** GROWTH implied by wanting rating7/rating6 to cost `ratio67` times as much (design choice). */
+function growthForStep(form: Form, ratio67: number): number {
+  return form === "exp" ? Math.log(ratio67) : Math.log(ratio67) / Math.log(7 / 6);
 }
 
 function squadRawWageBill(form: Form, scale: number, growth: number, ratings: number[]): number {
@@ -157,122 +180,143 @@ function percentile(values: number[], p: number): number {
   return sorted[idx]!;
 }
 
-// ---------------------------------------------------------------------------------------------
-// Growth search
-//
-// Ratio(club) = 52 × wageBill(club) / revenue(club) scales LINEARLY in SCALE (wageBill is a plain
-// sum of SCALE × f(GROWTH, rating)), so for a fixed GROWTH we can compute a "base ratio" with
-// SCALE = 1 and derive the SCALE that best centers all three tier-bucket medians on TARGET_RATIO
-// in one shot: minimizing Σ_bucket (log(SCALE) + log(median_bucket) − log(TARGET))² over log(SCALE)
-// gives log(SCALE) = log(TARGET) − mean(log(median_bucket)), and the residual error at that optimum
-// is Σ_bucket (log(median_bucket) − mean(log(median_bucket)))² — i.e. how spread out the three
-// bucket base-ratios are. We grid-search GROWTH to minimize that spread, then compute SCALE.
-// ---------------------------------------------------------------------------------------------
-
-function bucketBaseMedians(form: Form, growth: number, clubs: ClubSample[]): Partial<Record<TierBucket, number>> {
-  const byBucket: Record<TierBucket, number[]> = { "1": [], "2": [], "3+": [] };
-  for (const c of clubs) {
-    const baseSum = squadRawWageBill(form, 1, growth, c.ratings);
-    byBucket[c.bucket]!.push((52 * baseSum) / c.revenue);
-  }
-  const out: Partial<Record<TierBucket, number>> = {};
-  for (const bucket of ["1", "2", "3+"] as const) {
-    if (byBucket[bucket].length > 0) out[bucket] = median(byBucket[bucket]);
-  }
-  return out;
+function fmtEUR(n: number): string {
+  return `€${Math.round(n).toLocaleString("en-US")}`;
 }
 
-interface GrowthCandidate {
-  growth: number;
+// ---------------------------------------------------------------------------------------------
+// Fit: SCALE from the big-5 median, FLOOR from tier 3+ p10, then evaluate the whole world
+// ---------------------------------------------------------------------------------------------
+
+interface Curve {
+  form: Form;
   scale: number;
-  spreadError: number; // Σ (log(median) − mean(log(median)))² — growth-only spread across buckets
-  medians: Partial<Record<TierBucket, number>>;
+  growth: number;
+  floor: number;
+  weekly(rating: number): number;
 }
 
-function bestGrowth(form: Form, clubs: ClubSample[], growthRange: [number, number], step: number): GrowthCandidate {
-  let best: GrowthCandidate | null = null;
-  for (let growth = growthRange[0]; growth <= growthRange[1] + 1e-9; growth += step) {
-    const medians = bucketBaseMedians(form, growth, clubs);
-    const logs = Object.values(medians).filter((v): v is number => Number.isFinite(v) && v! > 0).map(Math.log);
-    if (logs.length === 0) continue;
-    const meanLog = logs.reduce((a, b) => a + b, 0) / logs.length;
-    const spreadError = logs.reduce((s, l) => s + (l - meanLog) ** 2, 0);
-    const scale = Math.exp(Math.log(TARGET_RATIO) - meanLog);
+function fitCurve(form: Form, ratio67: number, clubs: ClubSample[]): Curve {
+  const growth = growthForStep(form, ratio67);
 
-    // Sanity gate: reject any (scale, growth) whose wage at rating 10 blows past the cap. See the
-    // MAX_WAGE_AT_RATING_10 comment — without this, spreadError keeps improving as growth grows
-    // without bound, so the "best" candidate is whichever one this gate lets through the furthest.
-    const wageAt10 = rawWage(form, scale, growth, 10);
-    if (wageAt10 > MAX_WAGE_AT_RATING_10) continue;
+  // SCALE: the big-5's median raw ratio (SCALE=1) tells us the multiplier that puts their
+  // median bill/revenue exactly at TARGET_RATIO — i.e. the curve alone needs the LEAST
+  // correction (factor ≈ 1) for the leagues it's designed around.
+  const big5RawRatios = clubs
+    .filter((c) => BIG5.includes(c.leagueSlug))
+    .map((c) => (52 * squadRawWageBill(form, 1, growth, c.ratings)) / c.revenue);
+  const scale = TARGET_RATIO / median(big5RawRatios);
 
-    if (!best || spreadError < best.spreadError) best = { growth, scale, spreadError, medians };
+  // FLOOR: p10 of individual (unfloored) player wages within tier 3+, so weak/young players
+  // aren't paid next to nothing.
+  const tier3Wages = clubs
+    .filter((c) => c.bucket === "3+")
+    .flatMap((c) => c.ratings.map((r) => rawWage(form, scale, growth, r)));
+  const floor = tier3Wages.length > 0 ? Math.round(percentile(tier3Wages, 0.1)) : 0;
+
+  return { form, scale, growth, floor, weekly: (r) => Math.round(Math.max(floor, rawWage(form, scale, growth, r))) };
+}
+
+function clubFactor(revenue: number, curveBill: number): number {
+  if (curveBill <= 0) return MAX_FACTOR;
+  const raw = (TARGET_RATIO * revenue) / (52 * curveBill);
+  return Math.min(MAX_FACTOR, Math.max(MIN_FACTOR, raw));
+}
+
+interface ClubOutcome extends ClubSample {
+  curveBill: number;
+  factor: number;
+  ratio: number; // post-factor bill/revenue
+  clampedMin: boolean;
+  clampedMax: boolean;
+}
+
+function evaluate(curve: Curve, clubs: ClubSample[]): ClubOutcome[] {
+  return clubs.map((c) => {
+    const curveBill = c.ratings.reduce((s, r) => s + curve.weekly(r), 0);
+    const factor = clubFactor(c.revenue, curveBill);
+    const ratio = (52 * curveBill * factor) / c.revenue;
+    return {
+      ...c,
+      curveBill,
+      factor,
+      ratio,
+      clampedMin: factor <= MIN_FACTOR + CLAMP_EPS,
+      clampedMax: factor >= MAX_FACTOR - CLAMP_EPS,
+    };
+  });
+}
+
+function tierMedianError(outcomes: ClubOutcome[]): number {
+  const byBucket: Record<TierBucket, number[]> = { "1": [], "2": [], "3+": [] };
+  for (const o of outcomes) byBucket[o.bucket].push(o.ratio);
+  let error = 0;
+  for (const bucket of ["1", "2", "3+"] as const) {
+    if (byBucket[bucket].length === 0) continue;
+    error += (Math.log(median(byBucket[bucket])) - Math.log(TARGET_RATIO)) ** 2;
   }
-  if (!best) throw new Error(`bestGrowth(${form}): no viable growth found in range under the wage(10) cap`);
-  return best;
+  return error;
+}
+
+function clampedFraction(outcomes: ClubOutcome[]): number {
+  return outcomes.filter((o) => o.clampedMin || o.clampedMax).length / outcomes.length;
 }
 
 // ---------------------------------------------------------------------------------------------
 // Reporting
 // ---------------------------------------------------------------------------------------------
 
-interface CurveFn {
-  weekly(rating: number): number;
-}
-
-function ratioFor(curve: CurveFn, club: ClubSample): number {
-  const wageBill = club.ratings.reduce((s, r) => s + curve.weekly(r), 0);
-  return (52 * wageBill) / club.revenue;
-}
-
-/** Final squared log error vs TARGET_RATIO, computed on the ACTUAL (post-floor) per-tier medians. */
-function finalError(curve: CurveFn, clubs: ClubSample[]): number {
-  const byBucket: Record<TierBucket, number[]> = { "1": [], "2": [], "3+": [] };
-  for (const c of clubs) byBucket[c.bucket]!.push(ratioFor(curve, c));
-  let error = 0;
+function printTierTable(title: string, outcomes: ClubOutcome[]) {
+  console.log(`\n${title}`);
+  console.log("tier".padEnd(6) + "n".padEnd(6) + "median".padEnd(10) + "p10".padEnd(10) + "p90".padEnd(10) + "clampMin".padEnd(10) + "clampMax");
   for (const bucket of ["1", "2", "3+"] as const) {
-    if (byBucket[bucket].length === 0) continue;
-    const m = median(byBucket[bucket]);
-    error += (Math.log(m) - Math.log(TARGET_RATIO)) ** 2;
+    const rows = outcomes.filter((o) => o.bucket === bucket);
+    if (rows.length === 0) continue;
+    const ratios = rows.map((o) => o.ratio);
+    console.log(
+      bucket.padEnd(6) +
+        String(rows.length).padEnd(6) +
+        median(ratios).toFixed(2).padEnd(10) +
+        percentile(ratios, 0.1).toFixed(2).padEnd(10) +
+        percentile(ratios, 0.9).toFixed(2).padEnd(10) +
+        String(rows.filter((o) => o.clampedMin).length).padEnd(10) +
+        String(rows.filter((o) => o.clampedMax).length),
+    );
   }
-  return error;
 }
 
-function fmtEUR(n: number): string {
-  return `€${Math.round(n).toLocaleString("en-US")}`;
-}
-
-function printLeagueTable(title: string, clubs: ClubSample[], oldCurve: CurveFn, newCurve: CurveFn) {
+function printLeagueTable(title: string, outcomes: ClubOutcome[], oldWeekly: (r: number) => number) {
   console.log(`\n${title}`);
   console.log(
     "league".padEnd(38) +
       "tier".padEnd(6) +
       "n".padEnd(5) +
       "old med".padEnd(10) +
-      "old p10".padEnd(10) +
-      "old p90".padEnd(10) +
       "new med".padEnd(10) +
       "new p10".padEnd(10) +
-      "new p90",
+      "new p90".padEnd(10) +
+      "clampMin".padEnd(10) +
+      "clampMax",
   );
-  const byLeague = new Map<string, ClubSample[]>();
-  for (const c of clubs) {
-    if (!byLeague.has(c.leagueSlug)) byLeague.set(c.leagueSlug, []);
-    byLeague.get(c.leagueSlug)!.push(c);
+  const byLeague = new Map<string, ClubOutcome[]>();
+  for (const o of outcomes) {
+    if (!byLeague.has(o.leagueSlug)) byLeague.set(o.leagueSlug, []);
+    byLeague.get(o.leagueSlug)!.push(o);
   }
   const rows = [...byLeague.entries()].sort((a, b) => a[1][0]!.tier - b[1][0]!.tier || a[0].localeCompare(b[0]));
   for (const [slug, leagueClubs] of rows) {
-    const oldRatios = leagueClubs.map((c) => ratioFor(oldCurve, c));
-    const newRatios = leagueClubs.map((c) => ratioFor(newCurve, c));
+    const oldRatios = leagueClubs.map((o) => (52 * o.ratings.reduce((s, r) => s + oldWeekly(r), 0)) / o.revenue);
+    const newRatios = leagueClubs.map((o) => o.ratio);
     console.log(
       slug.slice(0, 37).padEnd(38) +
         String(leagueClubs[0]!.tier).padEnd(6) +
         String(leagueClubs.length).padEnd(5) +
         median(oldRatios).toFixed(2).padEnd(10) +
-        percentile(oldRatios, 0.1).toFixed(2).padEnd(10) +
-        percentile(oldRatios, 0.9).toFixed(2).padEnd(10) +
         median(newRatios).toFixed(2).padEnd(10) +
         percentile(newRatios, 0.1).toFixed(2).padEnd(10) +
-        percentile(newRatios, 0.9).toFixed(2),
+        percentile(newRatios, 0.9).toFixed(2).padEnd(10) +
+        String(leagueClubs.filter((o) => o.clampedMin).length).padEnd(10) +
+        String(leagueClubs.filter((o) => o.clampedMax).length),
     );
   }
 }
@@ -290,87 +334,85 @@ console.log(`Loaded ${clubs.length} clubs across ${new Set(clubs.map((c) => c.le
 for (const bucket of ["1", "2", "3+"] as const) {
   console.log(`  tier ${bucket}: ${clubs.filter((c) => c.bucket === bucket).length} clubs`);
 }
+console.log(`  big-5: ${clubs.filter((c) => BIG5.includes(c.leagueSlug)).length} clubs`);
 
-const oldCurve: CurveFn = { weekly: (r) => Math.round(Math.pow(r, OLD_EXPONENT) * OLD_SCALE) };
+// Small grid over the design-allowed 6→7 step (2.0–2.5×) for each form — SCALE/FLOOR are fit
+// analytically per candidate, so this is cheap. We pick, per form, the step minimizing clamped
+// fraction (primary — fewest clubs needing a forced correction) then final tier-median error
+// (secondary), then compare the two forms' best candidates.
+const STEP_GRID = [2.0, 2.1, 2.2, 2.25, 2.3, 2.4, 2.5];
 
-const forms: { form: Form; range: [number, number]; step: number }[] = [
-  { form: "exp", range: [0.05, 3.0], step: 0.01 },
-  { form: "pow", range: [0.5, 12.0], step: 0.02 },
-];
-
-interface FormResult {
+interface Candidate {
   form: Form;
-  growth: number;
-  scale: number;
-  floor: number;
-  finalError: number;
-  medians: { "1": number; "2": number; "3+": number };
+  ratio67: number;
+  curve: Curve;
+  outcomes: ClubOutcome[];
+  clamped: number;
+  error: number;
 }
 
-const results: FormResult[] = [];
-
-for (const { form, range, step } of forms) {
-  const best = bestGrowth(form, clubs, range, step);
-  // Round to a clean grid value and recompute scale analytically at that exact growth — the
-  // raw best.growth carries float step-accumulation noise (e.g. 6.3999999999999515).
-  const growth = Math.round(best.growth / step) * step;
-  const roundedMedians = bucketBaseMedians(form, growth, clubs);
-  const roundedLogs = Object.values(roundedMedians).filter((v): v is number => Number.isFinite(v) && v! > 0).map(Math.log);
-  const scale = Math.exp(Math.log(TARGET_RATIO) - roundedLogs.reduce((a, b) => a + b, 0) / roundedLogs.length);
-
-  // Suggested FLOOR: p10 of individual (unfloored) player wages within tier 3+.
-  const tier3Wages = clubs
-    .filter((c) => c.bucket === "3+")
-    .flatMap((c) => c.ratings.map((r) => rawWage(form, scale, growth, r)));
-  const floor = tier3Wages.length > 0 ? Math.round(percentile(tier3Wages, 0.1)) : 0;
-
-  const curve: CurveFn = { weekly: (r) => Math.round(Math.max(floor, rawWage(form, scale, growth, r))) };
-  const err = finalError(curve, clubs);
-
-  const byBucket: Record<TierBucket, number[]> = { "1": [], "2": [], "3+": [] };
-  for (const c of clubs) byBucket[c.bucket]!.push(ratioFor(curve, c));
-
-  results.push({
-    form,
-    growth,
-    scale,
-    floor,
-    finalError: err,
-    medians: { "1": median(byBucket["1"]), "2": median(byBucket["2"]), "3+": median(byBucket["3+"]) },
-  });
-
-  console.log(
-    `\n[${form}] growth=${growth.toFixed(3)} scale=${scale.toFixed(3)} floor=${fmtEUR(floor)} ` +
-      `finalError=${err.toFixed(5)}`,
-  );
-  console.log(
-    `  medians by tier — 1: ${byBucket["1"].length ? median(byBucket["1"]).toFixed(3) : "n/a"}` +
-      `  2: ${byBucket["2"].length ? median(byBucket["2"]).toFixed(3) : "n/a"}` +
-      `  3+: ${byBucket["3+"].length ? median(byBucket["3+"]).toFixed(3) : "n/a"}`,
-  );
+const candidates: Candidate[] = [];
+for (const form of ["exp", "pow"] as const) {
+  console.log(`\n--- ${form} form, scanning 6→7 step ${STEP_GRID[0]}–${STEP_GRID.at(-1)} ---`);
+  for (const ratio67 of STEP_GRID) {
+    const curve = fitCurve(form, ratio67, clubs);
+    const outcomes = evaluate(curve, clubs);
+    const clamped = clampedFraction(outcomes);
+    const error = tierMedianError(outcomes);
+    candidates.push({ form, ratio67, curve, outcomes, clamped, error });
+    console.log(
+      `  step=${ratio67.toFixed(2)} growth=${curve.growth.toFixed(3)} scale=${curve.scale.toExponential(3)} ` +
+        `floor=${fmtEUR(curve.floor)} clamped=${(clamped * 100).toFixed(1)}% error=${error.toFixed(5)}`,
+    );
+  }
 }
 
-const winner = results.reduce((a, b) => (b.finalError < a.finalError ? b : a));
-console.log(`\n=== WINNER: ${winner.form} (finalError ${winner.finalError.toFixed(5)} vs ${
-  results.find((r) => r.form !== winner.form)!.finalError.toFixed(5)
-} for the other form) ===`);
+// Best per form (fewest clamped, then smallest error), then the overall winner.
+const bestByForm = (form: Form) =>
+  candidates.filter((c) => c.form === form).reduce((a, b) => (b.clamped < a.clamped || (b.clamped === a.clamped && b.error < a.error) ? b : a));
+const bestExp = bestByForm("exp");
+const bestPow = bestByForm("pow");
+const winner = bestExp.clamped < bestPow.clamped || (bestExp.clamped === bestPow.clamped && bestExp.error < bestPow.error) ? bestExp : bestPow;
+const loser = winner === bestExp ? bestPow : bestExp;
+
 console.log(
-  winner.form === "exp"
-    ? `weekly € = max(FLOOR, SCALE × e^(GROWTH × rating))`
-    : `weekly € = max(FLOOR, SCALE × rating^GROWTH)`,
+  `\n=== WINNER: ${winner.form} step=${winner.ratio67} (clamped ${(winner.clamped * 100).toFixed(1)}%, error ${winner.error.toFixed(5)}) ` +
+    `vs ${loser.form} step=${loser.ratio67} (clamped ${(loser.clamped * 100).toFixed(1)}%, error ${loser.error.toFixed(5)}) ===`,
 );
-console.log(`SCALE=${winner.scale}`);
-console.log(`GROWTH=${winner.growth}`);
-console.log(`FLOOR=${winner.floor}`);
-console.log(`medians by tier: 1=${winner.medians["1"].toFixed(3)} 2=${winner.medians["2"].toFixed(3)} 3+=${winner.medians["3+"].toFixed(3)}`);
+console.log(winner.form === "exp" ? `weekly € = max(FLOOR, SCALE × e^(GROWTH × rating))` : `weekly € = max(FLOOR, SCALE × rating^GROWTH)`);
+console.log(`SCALE=${winner.curve.scale}`);
+console.log(`GROWTH=${winner.curve.growth}`);
+console.log(`FLOOR=${winner.curve.floor}`);
+console.log(`TARGET_SHARE=${TARGET_RATIO} MIN_FACTOR=${MIN_FACTOR} MAX_FACTOR=${MAX_FACTOR}`);
+console.log(`rating 6 → 7 step: ${(winner.curve.weekly(7) / winner.curve.weekly(6)).toFixed(3)}x`);
 
-const winnerCurve: CurveFn = {
-  weekly: (r) => Math.round(Math.max(winner.floor, rawWage(winner.form, winner.scale, winner.growth, r))),
-};
+const oldWeekly = (r: number) => Math.round(Math.pow(r, OLD_EXPONENT) * OLD_SCALE);
 
-printLeagueTable("Per-league wageBill/revenue ratio — OLD vs NEW (winning form)", clubs, oldCurve, winnerCurve);
+printTierTable("Post-factor bill/revenue ratio by tier (winning curve)", winner.outcomes);
+printLeagueTable("Post-factor bill/revenue ratio by league — old (curve-only) median vs new", winner.outcomes, oldWeekly);
 
-console.log("\nExample weekly wages (winning curve):");
-for (const rating of [4, 5, 6, 7, 8]) {
-  console.log(`  rating ${rating}: ${fmtEUR(winnerCurve.weekly(rating))}`);
+const worstLeagues = [...new Set(winner.outcomes.map((o) => o.leagueSlug))]
+  .map((slug) => {
+    const rows = winner.outcomes.filter((o) => o.leagueSlug === slug);
+    const dev = Math.abs(Math.log(median(rows.map((o) => o.ratio))) - Math.log(TARGET_RATIO));
+    return { slug, dev, n: rows.length };
+  })
+  .sort((a, b) => b.dev - a.dev)
+  .slice(0, 8);
+console.log("\nWorst-fitting leagues (median ratio furthest from 0.60):");
+for (const w of worstLeagues) console.log(`  ${w.slug} (n=${w.n})`);
+
+console.log("\nExample weekly wages at rating 4/5/6/7, one representative club per league (factor closest to that league's median):");
+for (const { slug, label } of EXAMPLE_LEAGUES) {
+  const rows = winner.outcomes.filter((o) => o.leagueSlug === slug);
+  if (rows.length === 0) {
+    console.log(`  ${label} (${slug}): no data`);
+    continue;
+  }
+  const medFactor = median(rows.map((o) => o.factor));
+  const rep = rows.reduce((a, b) => (Math.abs(b.factor - medFactor) < Math.abs(a.factor - medFactor) ? b : a));
+  console.log(`  ${label} — ${rep.squadName} (factor ${rep.factor.toFixed(2)}, revenue ${fmtEUR(rep.revenue)}):`);
+  for (const rating of [4, 5, 6, 7]) {
+    console.log(`    rating ${rating}: ${fmtEUR(Math.round(winner.curve.weekly(rating) * rep.factor))}`);
+  }
 }

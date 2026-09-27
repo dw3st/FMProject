@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
-import { squadWeeklyWages } from "@/Domain/finance/wages";
+import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { gateRevenue } from "@/Domain/finance/gate";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -32,7 +32,7 @@ describe("computeAdvanceDayMoney", () => {
     expect(entries.map((e) => e.kind)).toEqual(["commercial", "wages", "operational"]);
 
     const weeklyCommercial = Math.round(5_200_000 / 52);
-    const weeklyWages = squadWeeklyWages(sq.players);
+    const weeklyWages = squadWeeklyWages(sq.players, wageFactorOf(sq));
     expect(entries[0]!.amount).toBe(weeklyCommercial);
     expect(entries[1]!.amount).toBe(-weeklyWages);
     expect(entries[2]!.amount).toBe(-Math.round(weeklyWages * 0.1));
