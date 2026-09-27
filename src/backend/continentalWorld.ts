@@ -118,7 +118,7 @@ function zoneSlotsOf(
 }
 
 /** Everything computed once per country's tier-1 league, reused across slots/ranking/pots. */
-interface CountryTier1 {
+export interface CountryTier1 {
   country: string;
   league: string;
   /** Whether the league's season crosses the calendar year (e.g. "2026-27"), not a single year. */
@@ -187,7 +187,7 @@ async function tier1Info(
  * position here) when an archive exists; otherwise (first career season) squad strength (`level`)
  * descending.
  */
-async function rankingOf(
+export async function rankingOf(
   service: SaveService,
   saveId: string,
   t: CountryTier1,
