@@ -10,7 +10,7 @@ import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerT
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
+import type { ContinentalSlug, ContinentalStageName, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
@@ -41,6 +41,11 @@ import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransi
 import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
+import {
+  aiTransferBudgetOf, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
+} from "@/Domain/aiFinance/aiClubFinance";
+import { aiBudgetWithPrize, continentalPrize, cupRunnerUpPrize, cupStagePrize, leaguePrize } from "@/Domain/finance/prizes";
+import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
@@ -49,7 +54,7 @@ import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
-import { advanceCupStages, countryByLeague, createCountryCup, playerCupSlug } from "@/backend/cupWorld";
+import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
@@ -60,6 +65,7 @@ import {
   advanceContinentalStages,
   createContinentalSeason,
   continentalClubStatus,
+  continentalGoodClubsThisSeason,
   continentalQualificationOf,
   continentalTier1LeagueStates,
   logEuropeanCalendarClashes,
@@ -71,6 +77,18 @@ const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 /** A national cup or a continental competition: no table, sim mode gated on the player's league. */
 function isKnockoutComp(slug: string): boolean {
   return isCupSlug(slug) || isContinentalSlug(slug);
+}
+
+/** "1st", "2nd", "3rd", "4th"… for the league prize ledger label (design spec §3 "Liga"). */
+function ordinalPosition(position: number): string {
+  const mod100 = position % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${position}th`;
+  switch (position % 10) {
+    case 1: return `${position}st`;
+    case 2: return `${position}nd`;
+    case 3: return `${position}rd`;
+    default: return `${position}th`;
+  }
 }
 
 function withDefaultFinances(s: Squad): Squad {
@@ -600,6 +618,170 @@ export async function advanceOneDay(
     for (const [slug, rounds] of roundUpdates) if (isContinentalSlug(slug)) continentalPlayed.set(slug, [...rounds.keys()]);
     const continentalChanges = await advanceContinentalStages(saveService, saveId, continentalPlayed);
 
+    // ── Prize money: cup + continental (league prize is at rollover, further down) ───────────
+    // Player's club → ledger `prize` entry; AI club → `aiTransferBudget`, capped
+    // (`aiBudgetWithPrize` — see `.claude/rules/AI-clubs/finance.md`, design spec §3 "Premiação").
+    // Read-then-write per club, sequential (never Promise.all): a club can receive more than one
+    // prize the same day (e.g. continental participation + a group result), and this always runs
+    // AFTER the day's match writes are flushed (`squadWrites`, above) — never races or clobbers
+    // them, and any market-tick write later this same day (below) re-reads the squad fresh.
+    let playerLedgerSeasonCache: number | null = null;
+    const playerLedgerSeason = async (): Promise<number> => {
+      if (playerLedgerSeasonCache !== null) return playerLedgerSeasonCache;
+      const lm = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
+      playerLedgerSeasonCache = lm?.year ?? new Date(currentDate).getFullYear();
+      return playerLedgerSeasonCache;
+    };
+    const awardClubPrize = async (
+      clubId: string, amount: number, label: string, ref?: LedgerEntry["ref"],
+    ): Promise<number> => {
+      if (amount <= 0) return 0;
+      const entry = index.byId(clubId);
+      if (!entry) return 0;
+      if (clubId === playerSquadId) {
+        const season = await playerLedgerSeason();
+        await recordMoney(
+          saveService, saveId, season,
+          { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
+          { date: currentDate, kind: "prize", amount, label, ...(ref ? { ref } : {}) },
+        );
+        return amount;
+      }
+      const squad = await saveService.getSquadById(saveId, clubId);
+      if (!squad) return 0;
+      const tier = financialTierOf(squad);
+      const seasonalGrant = seasonalTransferBudgetFor(tier, popularityFromFollowers(squad.finances?.followers ?? 0));
+      const current = aiTransferBudgetOf(squad);
+      const next = aiBudgetWithPrize(current, amount, seasonalGrant);
+      if (next !== current) await saveService.saveSquadById(saveId, { ...squad, aiTransferBudget: next });
+      return amount;
+    };
+
+    // ── National cup prizes: every country, every tie decided today ──────────
+    // `cupPrizeAwardedTo` feeds the player's own cup inbox messages below (champion / eliminated).
+    const cupPrizeAwardedTo = new Map<string, number>();
+    if (cupPlayed.size > 0) {
+      const catalogForCupPrizes = await getLeagueData();
+      const countryOfForCupPrizes = countryByLeague(catalogForCupPrizes);
+      const pyramidsForCupPrizes = await getPyramids();
+      const cupBaseCache = new Map<string, number>();
+      const cupBaseFor = async (country: string): Promise<number> => {
+        const cached = cupBaseCache.get(country);
+        if (cached !== undefined) return cached;
+        const v = await cupPrizeBase(saveService, saveId, country, index, countryOfForCupPrizes, pyramidsForCupPrizes);
+        cupBaseCache.set(country, v);
+        return v;
+      };
+      const cupMetaCache = new Map<string, LeagueSeasonMeta | null>();
+      for (const event of dayEvents) {
+        if (event.kind !== "match" || !isCupSlug(event.competition)) continue;
+        const cSlug = event.competition;
+        let cupMeta = cupMetaCache.get(cSlug);
+        if (cupMeta === undefined) {
+          cupMeta = await saveService.getLeagueMeta(saveId, cSlug);
+          cupMetaCache.set(cSlug, cupMeta);
+        }
+        if (!cupMeta?.cup) continue;
+        const fixture = roundUpdates.get(cSlug)?.get(event.round)?.find((f) => f.id === event.fixtureId);
+        if (!fixture) continue;
+        const winnerId = fixtureWinner(fixture);
+        if (winnerId === null) continue;
+        const loserId = winnerId === fixture.home ? fixture.away : fixture.home;
+        const stage = cupMeta.cup.stages.find((s) => s.round === event.round)?.name;
+        if (!stage) continue;
+        const label = competitionName(cSlug, catalogForCupPrizes as unknown as LeagueData[], "en");
+        const base = await cupBaseFor(cupMeta.cup.country);
+
+        const winnerPrize = cupStagePrize(base, stage);
+        const paidToWinner = await awardClubPrize(winnerId, winnerPrize, `${label} · ${stage}`, { competition: cSlug, stage });
+        if (paidToWinner > 0) cupPrizeAwardedTo.set(winnerId, (cupPrizeAwardedTo.get(winnerId) ?? 0) + paidToWinner);
+
+        if (stage === "final") {
+          const loserPrize = cupRunnerUpPrize(base);
+          const paidToLoser = await awardClubPrize(loserId, loserPrize, `${label} · runner-up`, { competition: cSlug, stage });
+          if (paidToLoser > 0) cupPrizeAwardedTo.set(loserId, (cupPrizeAwardedTo.get(loserId) ?? 0) + paidToLoser);
+        }
+      }
+    }
+
+    // ── Continental prizes: every competition, everything that happened today ─────────────────
+    // `continentalPrizeAwardedTo` covers champion/eliminated (final loss carries no separate
+    // continental prize, unlike cups); `continentalR16PrizeAwardedTo` is kept SEPARATE because
+    // reaching r16 (an "advanced" event) and a group-stage round-6 result (win/draw) can land on
+    // the SAME day — conflating them would inflate the "classificação às oitavas" inbox amount.
+    const continentalPrizeAwardedTo = new Map<string, number>();
+    const continentalR16PrizeAwardedTo = new Map<string, number>();
+    if (continentalPlayed.size > 0) {
+      const catalogForContinentalPrizes = await getLeagueData();
+      type ContinentalPrizeStage = "r16" | "qf" | "sf" | "final";
+      const STAGE_REACHED: Partial<Record<ContinentalStageName, ContinentalPrizeStage>> = {
+        group: "r16", r16: "qf", qf: "sf", sf: "final",
+      };
+      const add = (map: Map<string, number>, clubId: string, amount: number) => {
+        if (amount > 0) map.set(clubId, (map.get(clubId) ?? 0) + amount);
+      };
+
+      for (const [cSlug, rounds] of continentalPlayed) {
+        if (!isContinentalSlug(cSlug)) continue;
+        const contMeta = await saveService.getLeagueMeta(saveId, cSlug);
+        const cont = contMeta?.continental;
+        if (!cont) continue;
+        const compSlug = cSlug as ContinentalSlug;
+        const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
+        const groupStage = cont.stages.find((s) => s.name === "group")!;
+
+        // Participation: every one of the 32 clubs, the day round 1 of the group stage is played.
+        if (rounds.includes(groupStage.rounds[0]!)) {
+          const amount = continentalPrize(compSlug, "participation");
+          for (const clubId of cont.groups.flatMap((g) => g.clubs)) {
+            const paid = await awardClubPrize(clubId, amount, `${label} · participation`, { competition: cSlug, stage: "group" });
+            add(continentalPrizeAwardedTo, clubId, paid);
+          }
+        }
+
+        // Group win / draw: every group-stage match played today.
+        for (const round of rounds) {
+          if (!groupStage.rounds.includes(round)) continue;
+          for (const f of roundUpdates.get(cSlug)?.get(round) ?? []) {
+            if (!f.played || f.date !== currentDate || !f.result) continue;
+            if (f.result.home === f.result.away) {
+              const amount = continentalPrize(compSlug, "groupDraw");
+              for (const clubId of [f.home, f.away]) {
+                const paid = await awardClubPrize(clubId, amount, `${label} · group draw`, { competition: cSlug, stage: "group" });
+                add(continentalPrizeAwardedTo, clubId, paid);
+              }
+            } else {
+              const winnerId = f.result.home > f.result.away ? f.home : f.away;
+              const amount = continentalPrize(compSlug, "groupWin");
+              const paid = await awardClubPrize(winnerId, amount, `${label} · group win`, { competition: cSlug, stage: "group" });
+              add(continentalPrizeAwardedTo, winnerId, paid);
+            }
+          }
+        }
+      }
+
+      // Stage advancement + title, from the events advanceContinentalStages already produced.
+      for (const { slug: cSlug, events } of continentalChanges) {
+        if (!isContinentalSlug(cSlug)) continue;
+        const compSlug = cSlug as ContinentalSlug;
+        const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
+        for (const ev of events) {
+          if (ev.kind === "advanced") {
+            const reached = STAGE_REACHED[ev.stage];
+            if (!reached) continue; // "final" advanced (the eventual champion) — no further stage
+            const amount = continentalPrize(compSlug, reached);
+            const paid = await awardClubPrize(ev.clubId, amount, `${label} · ${reached}`, { competition: cSlug, stage: reached });
+            add(continentalPrizeAwardedTo, ev.clubId, paid);
+            if (ev.stage === "group") add(continentalR16PrizeAwardedTo, ev.clubId, paid);
+          } else if (ev.kind === "champion") {
+            const amount = continentalPrize(compSlug, "title");
+            const paid = await awardClubPrize(ev.clubId, amount, `${label} · title`, { competition: cSlug, stage: "final" });
+            add(continentalPrizeAwardedTo, ev.clubId, paid);
+          }
+        }
+      }
+    }
+
     // ── National cup inbox news for the human club ────────────────────────────
     // These messages are emitted on the same day the tie/draw happens, before the "Transfers +
     // inbox are cleared" block further down (only runs when `seasonEnded`). They never collide
@@ -634,7 +816,10 @@ export async function advanceOneDay(
             if (stage === "final") {
               await emitInboxMessage(
                 saveId,
-                buildCupMessage({ date: currentDate, kind: "champion", cupSlug: myCup, cupName: cupDisplayName, stage }),
+                buildCupMessage({
+                  date: currentDate, kind: "champion", cupSlug: myCup, cupName: cupDisplayName, stage,
+                  prize: cupPrizeAwardedTo.get(playerSquadId),
+                }),
                 saveService,
               );
             }
@@ -645,6 +830,7 @@ export async function advanceOneDay(
               saveId,
               buildCupMessage({
                 date: currentDate, kind: "eliminated", cupSlug: myCup, cupName: cupDisplayName, stage, opponentName,
+                prize: cupPrizeAwardedTo.get(playerSquadId),
               }),
               saveService,
             );
@@ -710,11 +896,12 @@ export async function advanceOneDay(
             const opponentName = opponentId ? (index.byId(opponentId)?.name ?? opponentId) : undefined;
             continentalMessages.push({
               date: currentDate, kind: "eliminated", competition: compSlug, competitionName: compDisplayName,
-              stage: event.stage, opponentName,
+              stage: event.stage, opponentName, prize: continentalPrizeAwardedTo.get(playerSquadId),
             });
           } else if (event.kind === "champion" && event.clubId === playerSquadId) {
             continentalMessages.push({
               date: currentDate, kind: "champion", competition: compSlug, competitionName: compDisplayName, stage: "final",
+              prize: continentalPrizeAwardedTo.get(playerSquadId),
             });
           } else if (event.kind === "drawn") {
             const myTie = event.ties.find((tie) => tie.home === playerSquadId || tie.away === playerSquadId);
@@ -723,9 +910,13 @@ export async function advanceOneDay(
             const opponentName = index.byId(opponentId)?.name ?? opponentId;
             const venue: "home" | "away" | "neutral" =
               !myTie.tieId ? "neutral" : myTie.home === playerSquadId ? "home" : "away";
+            // Only the r16 draw (classificação às oitavas) carries a prize — see the separate
+            // `continentalR16PrizeAwardedTo` map above (kept apart from group-stage match prizes
+            // paid the same day).
             continentalMessages.push({
               date: currentDate, kind: "draw", competition: compSlug, competitionName: compDisplayName,
               stage: event.stage, opponentName, firstLegDate: myTie.firstLegDate, venue,
+              ...(event.stage === "r16" ? { prize: continentalR16PrizeAwardedTo.get(playerSquadId) } : {}),
             });
           }
         }
@@ -920,6 +1111,9 @@ export async function advanceOneDay(
     let playerChampionOf: string | null = null;
     const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
     let playerFollowersChange: { before: number; after: number; leagueSlug: string } | null = null;
+    // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
+    // champion/promoted/relegated season message below. 0 when no rollover happens this day.
+    let playerLeaguePrizeThisRollover = 0;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -953,6 +1147,11 @@ export async function advanceOneDay(
     // Every league's brand-new next-season fixtures (step 6 below), for the calendar-year vs.
     // continental clash check right after this loop.
     const rolledLeagueFixtures = new Map<string, Fixture[]>();
+    // League display names (for the prize ledger label below) and continental finalists/champions
+    // of the season that's ending (design spec §3 "IA" — a title or final counts as a good season
+    // regardless of domestic position, see `clubSeasonOutcome`), both read once for every unit.
+    const nameOfLeagueForPrizes = due.units.length > 0 ? await leagueNameResolver(activeLeagues) : null;
+    const continentalGoodClubs = due.units.length > 0 ? await continentalGoodClubsThisSeason(saveService, saveId) : new Set<string>();
 
     for (const unit of due.units) {
       if (unit.partial) {
@@ -997,19 +1196,46 @@ export async function advanceOneDay(
 
         // The human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
         const refs = applyPlayerBroadcastingCredit(transition.squadsToSave, playerClubSquadId, transition.playerBroadcastingCredit);
+        const table = standings[slug] ?? [];
         // Then every club reacts to its season: AI clubs get followers + financial tier + next
-        // season's transfer budget; the human club only its followers.
+        // season's transfer budget; the human club only its followers. Every club with a final
+        // table position also gets its league merit prize (design spec §3 "Liga") — the club's
+        // own broadcasting THIS (ending) season, at the position it just finished.
         for (const { squad } of refs) {
+          const tablePos = table.findIndex((r) => r.squadId === squad.id);
+          const leaguePrizeAmount = tablePos >= 0
+            ? leaguePrize(squad.finances?.broadcasting ?? 0, tablePos + 1, table.length)
+            : 0;
+
           const tc = plan.tierChanges[squad.id];
           let next = tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad;
-          const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves);
+          const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves, continentalGoodClubs);
           if (squad.id !== playerClubSquadId) {
             next = applyAISeasonReaction(next, outcome);
+            if (leaguePrizeAmount > 0) {
+              // Prize is granted on top of the NEW season's budget applyAISeasonReaction just set —
+              // it never accumulates on top of a stale one (`.claude/rules/AI-clubs/finance.md`).
+              const seasonalGrant = seasonalTransferBudgetFor(
+                next.financialTier ?? "LOW", popularityFromFollowers(next.finances?.followers ?? 0),
+              );
+              next = {
+                ...next,
+                aiTransferBudget: aiBudgetWithPrize(aiTransferBudgetOf(next), leaguePrizeAmount, seasonalGrant),
+              };
+            }
           } else {
             const human = applyHumanSeasonReaction(next, outcome);
             next = human.squad;
             if (human.followersAfter !== human.followersBefore) {
               playerFollowersChange = { before: human.followersBefore, after: human.followersAfter, leagueSlug: slug };
+            }
+            if (leaguePrizeAmount > 0) {
+              next = applyMoney(next, {
+                date: currentDate, kind: "prize", amount: leaguePrizeAmount,
+                label: `${nameOfLeagueForPrizes!(slug)} · ${ordinalPosition(tablePos + 1)}`,
+                ref: { competition: slug },
+              });
+              playerLeaguePrizeThisRollover = leaguePrizeAmount;
             }
           }
           // Wage factor for the season ahead, now that this club's tier-adjusted revenue is
@@ -1019,16 +1245,25 @@ export async function advanceOneDay(
           const homeGames = Math.max(0, leagueTeams.length - 1);
           next = { ...next, wageFactor: clubWageFactor(clubAnnualRevenue(next, homeGames), squadCurveBill(next.players)) };
           await saveService.saveSquadById(saveId, next);
-          if (squad.id === playerClubSquadId && transition.playerBroadcastingCredit > 0) {
+          if (squad.id === playerClubSquadId) {
             // The new season's ledger: closedYear.get(slug) is the OLD (just-archived) year, so
-            // the credit goes onto the NEW season's file — same "+1" the next-season calendar
+            // both entries go onto the NEW season's file — same "+1" the next-season calendar
             // below uses for cal.meta.year.
-            await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, [{
-              date: currentDate,
-              kind: "broadcasting",
-              amount: transition.playerBroadcastingCredit,
-              label: "Broadcasting revenue",
-            }]);
+            const newSeasonEntries: LedgerEntry[] = [];
+            if (transition.playerBroadcastingCredit > 0) {
+              newSeasonEntries.push({
+                date: currentDate, kind: "broadcasting", amount: transition.playerBroadcastingCredit,
+                label: "Broadcasting revenue",
+              });
+            }
+            if (leaguePrizeAmount > 0) {
+              newSeasonEntries.push({
+                date: currentDate, kind: "prize", amount: leaguePrizeAmount,
+                label: `${nameOfLeagueForPrizes!(slug)} · ${ordinalPosition(tablePos + 1)}`,
+                ref: { competition: slug },
+              });
+            }
+            if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries);
           }
         }
       }
@@ -1086,12 +1321,14 @@ export async function advanceOneDay(
           seasonMessages.push({
             date: currentDate, kind: "champion", leagueSlug: plan.playerChampionOf,
             leagueName: nameOf(plan.playerChampionOf), seasonYear: archiveYear!,
+            ...(playerLeaguePrizeThisRollover > 0 ? { prize: playerLeaguePrizeThisRollover } : {}),
           });
         }
         if (plan.playerMove) {
           seasonMessages.push({
             date: currentDate, kind: plan.playerMove.kind, leagueSlug: plan.playerMove.to,
             leagueName: nameOf(plan.playerMove.to), fromLeagueSlug: plan.playerMove.from, seasonYear: archiveYear!,
+            ...(playerLeaguePrizeThisRollover > 0 ? { prize: playerLeaguePrizeThisRollover } : {}),
           });
         }
         if (playerFollowersChange) {

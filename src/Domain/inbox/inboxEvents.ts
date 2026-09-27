@@ -130,8 +130,10 @@ export function buildSeasonMessage(args: {
   followersAfter?:  number;
   /** Club budget on the day it crossed negative (kind "negative_balance" only). */
   balance?: number;
+  /** League prize paid at this rollover (champion/promoted/relegated only), euros. */
+  prize?: number;
 }): SeasonInboxMessage {
-  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear, followersBefore, followersAfter, balance } = args;
+  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear, followersBefore, followersAfter, balance, prize } = args;
   const fb = followersBefore ?? 0;
   const fa = followersAfter ?? 0;
   const pct = fb > 0 ? Math.round(((fa - fb) / fb) * 100) : 0;
@@ -163,6 +165,7 @@ export function buildSeasonMessage(args: {
     seasonYear,
     ...(kind === "followers" ? { followersBefore: fb, followersAfter: fa } : {}),
     ...(kind === "negative_balance" ? { balance: bal } : {}),
+    ...(prize ? { prize } : {}),
   };
 }
 
@@ -173,8 +176,10 @@ export function buildSeasonMessage(args: {
 export function buildCupMessage(args: {
   date: string; kind: CupInboxMessage["kind"]; cupSlug: string; cupName: string; stage: string;
   opponentName?: string; tieDate?: string; venue?: CupInboxMessage["venue"];
+  /** Prize paid THIS DAY for this event (champion, or the runner-up prize on a final loss), euros. */
+  prize?: number;
 }): CupInboxMessage {
-  const { date, kind, cupSlug, cupName, stage, opponentName, tieDate, venue } = args;
+  const { date, kind, cupSlug, cupName, stage, opponentName, tieDate, venue, prize } = args;
   const subject =
     kind === "draw" ? `${cupName} draw` :
     kind === "eliminated" ? `Out of the ${cupName}` :
@@ -191,6 +196,7 @@ export function buildCupMessage(args: {
     ...(opponentName ? { opponentName } : {}),
     ...(tieDate ? { tieDate } : {}),
     ...(venue ? { venue } : {}),
+    ...(prize ? { prize } : {}),
   } as CupInboxMessage;
 }
 
@@ -204,8 +210,10 @@ export function buildContinentalMessage(args: {
   date: string; kind: ContinentalInboxMessage["kind"]; competition: ContinentalSlug; competitionName: string;
   stage: ContinentalStageName; group?: string; opponentName?: string; opponentNames?: string[];
   firstLegDate?: string; venue?: ContinentalInboxMessage["venue"];
+  /** Prize paid THIS DAY for this event: champion, final-loss elimination, or the r16 draw. */
+  prize?: number;
 }): ContinentalInboxMessage {
-  const { date, kind, competition, competitionName, stage, group, opponentName, opponentNames, firstLegDate, venue } = args;
+  const { date, kind, competition, competitionName, stage, group, opponentName, opponentNames, firstLegDate, venue, prize } = args;
   const subject =
     kind === "qualified"  ? `Qualified for the ${competitionName}` :
     kind === "group"      ? `${competitionName} group draw` :
@@ -228,6 +236,7 @@ export function buildContinentalMessage(args: {
     ...(opponentName ? { opponentName } : {}),
     ...(firstLegDate ? { firstLegDate } : {}),
     ...(venue ? { venue } : {}),
+    ...(prize ? { prize } : {}),
   } as ContinentalInboxMessage;
 }
 

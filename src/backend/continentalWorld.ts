@@ -613,3 +613,32 @@ export async function continentalClubStatus(
   }
   return null;
 }
+
+/**
+ * Every club that reached a continental final (or won it) THIS SEASON, across all 4 competitions
+ * still on disk — read right before a country's league season rolls over
+ * (`.claude/rules/AI-clubs/finance.md`, design spec §3 "IA"), so `clubSeasonOutcome`'s
+ * `continentalGoodClubs` can treat them as a good season regardless of domestic position. A
+ * competition's final only has entrants once its final stage is drawn (`stages.find(final).drawn`)
+ * — both finalists count, the champion (if decided) is a subset of them.
+ */
+export async function continentalGoodClubsThisSeason(
+  service: SaveService,
+  saveId: string,
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (const slug of CONTINENTAL_SLUGS) {
+    const meta = await service.getLeagueMeta(saveId, slug);
+    const cont = meta?.continental;
+    if (!cont) continue;
+    const final = cont.stages.find((s) => s.name === "final");
+    if (!final?.drawn) continue;
+    const round = await service.getRound(saveId, slug, final.rounds[0]!);
+    for (const f of round?.fixtures ?? []) {
+      out.add(f.home);
+      out.add(f.away);
+    }
+    if (cont.championId) out.add(cont.championId);
+  }
+  return out;
+}
