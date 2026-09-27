@@ -484,6 +484,7 @@ function KindBreakdown({
 }
 
 function ProjectionRow({ icon, label, value, positive }: { icon: IconName; label: string; value: number; positive?: boolean }) {
+  const { t } = useTranslation();
   const color = positive ? "text-emerald-400" : value < 0 ? "text-red-400" : "text-foreground";
   return (
     <div className="flex items-center justify-between text-xs">
@@ -491,7 +492,7 @@ function ProjectionRow({ icon, label, value, positive }: { icon: IconName; label
         <Icon name={icon} size={12} />
         {label}
       </div>
-      <span className={`font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatCurrency(value)}/wk</span>
+      <span className={`font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatCurrency(value)}{t("financesScreen.weekly")}</span>
     </div>
   );
 }
