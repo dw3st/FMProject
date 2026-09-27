@@ -139,9 +139,12 @@ export function spreadOnWeekday(
       // the gap down to the floor only if the window is entirely busy at tighter gaps.
       pick = scanForFreeDay(lo, hi, prev, target, minGapDays, minGapFloor, busy, false);
       if (pick === null) {
-        // Last resort: accept a busy day, but still prefer one at least `lastResortGapDays` after
-        // the previous pick when such a day exists.
-        pick = scanForFreeDay(lo, hi, prev, target, lastResortGapDays, lastResortGapDays, busy, true);
+        // Last resort: accept a busy day, preferring the widest gap after the previous pick that
+        // still leaves room (from `minGapDays` down to `lastResortGapDays`) rather than only ever
+        // trying the single tightest gap — a single fixed gap can pick a date needlessly close to
+        // `prev` early on, one that then starves a later pick of room before `hi` even though the
+        // window overall has plenty of days left.
+        pick = scanForFreeDay(lo, hi, prev, target, minGapDays, lastResortGapDays, busy, true);
       }
     }
 
