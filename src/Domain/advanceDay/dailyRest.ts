@@ -1,9 +1,12 @@
 import type { Squad } from "@/types/playerTypes";
 import type { RestEvent } from "@/types/dayLogTypes";
-import { trainingFitnessCostRange, restAgeRecoveryFactor } from "@/types/developmentTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 
 export const MAX_POINTS_LOST_PER_REST = 2;
+
+/** `stats.stamina` (0–10) is required on the type, but fall back defensively — see fitness.md. */
+const DEFAULT_STAMINA = 7;
 
 export interface RestResult {
   event: RestEvent;
@@ -11,7 +14,7 @@ export interface RestResult {
 }
 
 export interface RestOutcome {
-  /** Always ≥ 0. Recovery matches the same magnitude as a heavy training session. */
+  /** Always ≥ 0 (never exceeds what `recoverDay` would add). A full rest-day recovery. */
   fitnessDelta: number;
   /** Always ≤ 0. Up to MAX_POINTS_LOST_PER_REST training points are lost. */
   pointsDelta: number;
@@ -19,35 +22,40 @@ export interface RestOutcome {
 
 /**
  * Rolls one rest day outcome for a single player.
- * - `fitnessDelta`: positive recovery (same base roll as heavy training cost, age inverted so youth recovers faster).
- * - `pointsDelta`: negative — 0 to -MAX_POINTS_LOST_PER_REST training points lost.
- * Calls `rand` twice: once for points lost, once for fitness recovery magnitude.
+ * - `fitnessDelta`: `recoverDay(fitness, {age, load, stamina})` minus the starting `fitness` — the
+ *   same recovery curve driving training (`.claude/rules/game/fitness.md`), not a random roll.
+ * - `pointsDelta`: negative — 0 to -MAX_POINTS_LOST_PER_REST training points lost. Unchanged from
+ *   before — this is the weekly training-points counter, not the DP/development system.
+ * Calls `rand` once, for points lost only (fitness recovery is now deterministic given its inputs).
  *
  * Position is not used: goalkeepers recover fitness here at the same rate as outfield players.
  * (GK-only fatigue reduction applies only in `rollTrainingOutcome`, not on rest.)
  */
 export function rollRestOutcome(
   age: number,
+  fitness: number,
+  load: number,
+  stamina: number,
   rand: () => number = Math.random,
 ): RestOutcome {
-  const [cMin, cMax] = trainingFitnessCostRange("heavy");
-  const recoveryFactor = restAgeRecoveryFactor(age);
-
-  const pointsLost   = +(( rand() * MAX_POINTS_LOST_PER_REST).toFixed(2));
-  const baseRecovery = cMin + rand() * (cMax - cMin);
-  const fitnessDelta = +((baseRecovery * recoveryFactor).toFixed(1));
+  const pointsLost = +(rand() * MAX_POINTS_LOST_PER_REST).toFixed(2);
+  const nextFitness = recoverDay(fitness, { age, load, stamina });
+  const fitnessDelta = +(nextFitness - fitness).toFixed(1);
 
   return { fitnessDelta, pointsDelta: -pointsLost };
 }
 
 /**
  * Builds a rest event for the entire squad — all players rest regardless of fitness level.
- * - `fitness` is capped at 100.
+ * - `fitness` recovers via `recoverDay` (age/load/stamina factors) and is capped at 100.
+ * - `load` decays by one day's half-life (`decayLoad`) — a rest day is a low-intensity day.
  * - `trainingSessions` (points) never goes below 0.
  */
 export function buildRestEvent(squadId: string, squad: Squad): RestResult {
   const effects = squad.players.map((p) => {
-    const { fitnessDelta, pointsDelta } = rollRestOutcome(p.age);
+    const log = ensureSeasonLog(p).seasonLog!;
+    const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
+    const { fitnessDelta, pointsDelta } = rollRestOutcome(p.age, log.fitness, log.load ?? 0, stamina);
     return { playerId: String(p.id), name: p.name, fitnessDelta, pointsDelta };
   });
 
@@ -62,6 +70,7 @@ export function buildRestEvent(squadId: string, squad: Squad): RestResult {
       if (eff) {
         log.fitness = Math.min(100, Math.max(0, +(log.fitness + eff.fitnessDelta).toFixed(1)));
         log.trainingSessions = Math.max(0, +(log.trainingSessions + eff.pointsDelta).toFixed(2));
+        log.load = decayLoad(log.load ?? 0);
       }
       return { ...pl, seasonLog: log };
     }),

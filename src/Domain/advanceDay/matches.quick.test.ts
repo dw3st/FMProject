@@ -56,6 +56,9 @@ describe("buildQuickMatchEvent", () => {
     const allPlayers = [...r.updatedHome.players, ...r.updatedAway.players];
     expect(allPlayers.some((p) => p.seasonLog!.fitness !== startFitness)).toBe(true);
 
+    // quickSim never substitutes — every starter racks up a full match's worth of load (90').
+    for (const p of allPlayers) expect(p.seasonLog!.load).toBe(90);
+
     // Team stats are populated and consistent with the scoreline (shots include every goal).
     expect(r.event.teamStats.home).toBeDefined();
     expect(r.event.teamStats.away).toBeDefined();

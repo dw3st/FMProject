@@ -4,6 +4,7 @@ import {
   MAX_POINTS_LOST_PER_REST,
   rollRestOutcome,
 } from "@/Domain/advanceDay/dailyRest";
+import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import { generateRestDays } from "@/Domain/season";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -41,53 +42,59 @@ function baseSquad(players: RosterPlayer[]): Squad {
 // ── rollRestOutcome ───────────────────────────────────────────────────────────
 
 describe("rollRestOutcome", () => {
-  test("age 22, rand=0.5 → expected fitness gain and points loss", () => {
-    const rand = () => 0.5;
-    const { fitnessDelta, pointsDelta } = rollRestOutcome(22, rand);
+  test("fitnessDelta matches recoverDay(fitness, {age, load, stamina}) minus fitness", () => {
+    const next = recoverDay(70, { age: 22, load: 0, stamina: 7 });
+    const { fitnessDelta } = rollRestOutcome(22, 70, 0, 7, () => 0.5);
+    expect(fitnessDelta).toBe(+(next - 70).toFixed(1));
+  });
+
+  test("rand=0.5 → expected points loss (fitness recovery no longer uses rand)", () => {
+    const { pointsDelta } = rollRestOutcome(22, 70, 0, 7, () => 0.5);
     // pointsLost = 0.5 * 2 = 1.0 → pointsDelta = -1.0
     expect(pointsDelta).toBe(-1.0);
-    // baseRecovery = 7 + 0.5*(13-7) = 10; restAgeRecoveryFactor(22)=1.5 → +15.0
-    expect(fitnessDelta).toBe(15.0);
   });
 
-  test("no goalkeeper modifier on rest — recovery uses only age (same as outfield for same age)", () => {
-    const rand = () => 0.5;
-    expect(rollRestOutcome(22, rand)).toEqual(rollRestOutcome(22, rand));
+  test("deterministic given the same inputs (fitness recovery has no randomness)", () => {
+    const a = rollRestOutcome(22, 70, 0, 7, () => 0.5);
+    const b = rollRestOutcome(22, 70, 0, 7, () => 0.5);
+    expect(a.fitnessDelta).toBe(b.fitnessDelta);
   });
 
-  test("younger player recovers more fitness than older (same RNG)", () => {
-    const rand = () => 0.5;
-    const young = rollRestOutcome(22, rand);
-    const old   = rollRestOutcome(35, rand);
+  test("younger player recovers more fitness than older (same rest inputs)", () => {
+    const young = rollRestOutcome(22, 55, 0, 7);
+    const old   = rollRestOutcome(35, 55, 0, 7);
     expect(young.fitnessDelta).toBeGreaterThan(old.fitnessDelta);
   });
 
-  test("fitnessDelta is always > 0", () => {
+  test("high load slows recovery relative to no load", () => {
+    const noLoad = rollRestOutcome(26, 55, 0, 7);
+    const highLoad = rollRestOutcome(26, 55, 220, 7); // FITNESS.LOAD_HIGH
+    expect(highLoad.fitnessDelta).toBeLessThan(noLoad.fitnessDelta);
+  });
+
+  test("fitnessDelta is always > 0 below 100 fitness", () => {
     for (const age of [18, 25, 30, 35, 40]) {
-      const { fitnessDelta } = rollRestOutcome(age, () => 0);
+      const { fitnessDelta } = rollRestOutcome(age, 50, 0, 7, () => 0);
       expect(fitnessDelta).toBeGreaterThan(0);
     }
   });
 
   test("pointsDelta is always ≤ 0", () => {
     for (const r of [0, 0.5, 1]) {
-      const { pointsDelta } = rollRestOutcome(22, () => r);
+      const { pointsDelta } = rollRestOutcome(22, 70, 0, 7, () => r);
       expect(pointsDelta).toBeLessThanOrEqual(0);
     }
   });
 
   test("pointsDelta magnitude never exceeds MAX_POINTS_LOST_PER_REST", () => {
-    // Worst case: rand() = 1 for first call (points)
-    const draws = [1, 0.5];
-    let i = 0;
-    const { pointsDelta } = rollRestOutcome(22, () => draws[i++] ?? 0);
+    const { pointsDelta } = rollRestOutcome(22, 70, 0, 7, () => 1);
     expect(Math.abs(pointsDelta)).toBeLessThanOrEqual(MAX_POINTS_LOST_PER_REST);
   });
 
-  test("uses exactly two random draws (points then recovery)", () => {
+  test("uses exactly one random draw (points lost only)", () => {
     let calls = 0;
-    rollRestOutcome(25, () => { calls++; return 0.5; });
-    expect(calls).toBe(2);
+    rollRestOutcome(25, 70, 0, 7, () => { calls++; return 0.5; });
+    expect(calls).toBe(1);
   });
 });
 
@@ -159,6 +166,24 @@ describe("buildRestEvent", () => {
     withRand(() => {
       const { updatedSquad } = buildRestEvent("s", squad);
       expect(updatedSquad.players[0]!.seasonLog!.morale).toBe(65);
+    });
+  });
+
+  test("load decays by one day's half-life on a rest day", () => {
+    const squad = baseSquad([
+      basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ load: 100 }) }),
+    ]);
+    withRand(() => {
+      const { updatedSquad } = buildRestEvent("s", squad);
+      expect(updatedSquad.players[0]!.seasonLog!.load).toBe(decayLoad(100));
+    });
+  });
+
+  test("missing load is treated as 0 and stays 0 after decay", () => {
+    const squad = baseSquad([basePlayer({ id: "p1", name: "One" })]);
+    withRand(() => {
+      const { updatedSquad } = buildRestEvent("s", squad);
+      expect(updatedSquad.players[0]!.seasonLog!.load).toBe(0);
     });
   });
 });
