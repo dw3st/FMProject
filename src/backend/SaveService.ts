@@ -18,6 +18,7 @@ import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types
 import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
+import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
@@ -690,7 +691,12 @@ export class SaveService {
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
-      for await (const p of squadGlob.scan(srcDir)) {
+      // Materialized up front (not streamed) so we know the league's club count — and thus its
+      // home-game count — before computing each club's wage factor below.
+      const paths: string[] = [];
+      for await (const p of squadGlob.scan(srcDir)) paths.push(p);
+      const homeGames = Math.max(0, paths.length - 1);
+      for (const p of paths) {
         const raw   = (await Bun.file(`${srcDir}/${p}`).json()) as Squad;
         const clubSlug = p.replace(".json", "");
 
@@ -712,6 +718,9 @@ export class SaveService {
             followers:    srcFin?.followers ?? 0,
           },
         };
+        // Wage factor (`.claude/rules/AI-clubs/finance.md` → wages): computed once here from the
+        // real league size, then reused every day until the next season rollover recomputes it.
+        squad.wageFactor = clubWageFactor(clubAnnualRevenue(squad, homeGames), squadCurveBill(squad.players));
 
         await this.dal.writeSquad(id, league, clubSlug, squad);
         this.squadIndexCache.delete(id);

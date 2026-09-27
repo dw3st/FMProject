@@ -155,6 +155,13 @@ export interface Squad {
   venue?: ClubVenue;
   /** Head coach from data pipeline; use `id` for identity when present. */
   coach?: ClubCoach;
+  /**
+   * Per-club wage multiplier (`src/Domain/finance/wages.ts` — `clubWageFactor`, applied to the
+   * shared curve `weeklyWage(rating)`), correcting for the club's actual revenue vs the curve's
+   * baseline. Set at career creation and refreshed at each season rollover; absent means
+   * `wageFactorOf` computes it on the fly from the squad's current finances/roster.
+   */
+  wageFactor?: number;
 }
 
 export interface LeagueTeam {
