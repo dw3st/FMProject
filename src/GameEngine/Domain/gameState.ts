@@ -390,6 +390,7 @@ export function performSubstitution(
   team: TeamId,
   outPlayerId: number,
   inPlayerId: number,
+  reason?: 'fatigue',
 ): GameState {
   const bench = team === 'A' ? state.benchA : state.benchB;
   const outPlayer = state.players.find(p => p.id === outPlayerId && p.team === team);
@@ -437,7 +438,7 @@ export function performSubstitution(
     matchMinute: minute,
   };
 
-  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team });
+  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason });
 
   // Transfer ball if outgoing player held it
   let ballHolderId = state.ballHolderId;
@@ -479,7 +480,7 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
   for (const req of pending) {
     const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
     if (subsLeft <= 0) break;
-    s = performSubstitution(s, team, req.outId, req.inId);
+    s = performSubstitution(s, team, req.outId, req.inId, req.reason);
   }
 
   return s;
@@ -807,7 +808,11 @@ export function knockoutDecider(state: GameState): KnockoutDecider | null {
 function finishMatch(state: GameState): GameState {
   const final: GameState = { ...state, matchPhase: 'matchEnd', pass: null, shot: null, looseBall: null };
   if (final.shootout) gameBus.emit('shootoutEnd', { winner: final.shootout.winner, score: { ...final.shootout.finalScore } });
-  gameBus.emit('matchEnd', { score: final.score, decider: knockoutDecider(final) });
+  gameBus.emit('matchEnd', {
+    score: final.score,
+    decider: knockoutDecider(final),
+    finalEnergy: final.players.map(p => ({ id: p.id, team: p.team, energy: p.energy })),
+  });
   return final;
 }
 

@@ -1,7 +1,8 @@
+import { Fragment } from "react";
 import { Bar } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { ensureChartsRegistered } from "@/lab/components/chartSetup";
-import type { PerMatchView, ScenarioResult } from "@/lab/types";
+import type { CongestionMatchResult, PerMatchView, ScenarioResult } from "@/lab/types";
 
 ensureChartsRegistered();
 
@@ -55,6 +56,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Dribbles won",      key: "avgDribblesWon" },
     { stat: "Dribbles lost",     key: "avgDribblesLost" },
     { stat: "Drib success%",     key: "dribbleSuccessPct" },
+    { stat: "Avg end energy",    key: "avgEndEnergy" },
+    { stat: "Fatigue subs",      key: "avgFatigueSubs" },
   ];
 
   const data = {
@@ -108,6 +111,78 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
         <div className="h-[460px]">
           <Bar data={data} options={options} />
         </div>
+      </div>
+
+      {pair.congestion && pair.congestion.length > 0 && (
+        <CongestionTable congestion={pair.congestion} labelA={labelFor(aId)} labelB={labelFor(bId)} />
+      )}
+    </div>
+  );
+}
+
+/** Fixture-congestion breakdown — one row per match-in-sequence index (see CongestionSpec). */
+function CongestionTable({
+  congestion,
+  labelA,
+  labelB,
+}: {
+  congestion: CongestionMatchResult[];
+  labelA: string;
+  labelB: string;
+}) {
+  const cols: { label: string; key: keyof PerMatchView; fmt?: (v: number) => string }[] = [
+    { label: "Win%",      key: "wins",        fmt: (v) => `${v.toFixed(1)}%` },
+    { label: "Avg goals", key: "avgGoals" },
+    { label: "Avg xG",    key: "avgXg" },
+    { label: "End energy", key: "avgEndEnergy" },
+    { label: "Fatigue subs", key: "avgFatigueSubs" },
+  ];
+
+  return (
+    <div className="bg-white/[0.03] border border-white/10 rounded p-4">
+      <h3 className="text-sm font-semibold mb-3 text-white/80">Fixture congestion — per match in sequence</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-white/50 text-left">
+              <th className="py-1 pr-3">Match</th>
+              <th className="py-1 pr-3">Side</th>
+              {cols.map((c) => (
+                <th key={c.label} className="py-1 pr-3 text-right">{c.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {congestion.map((cm) => {
+              // "Win%" isn't a PerMatchView field — `wins` is a raw count, so derive the share here.
+              const winPctA = (cm.teamA.wins / cm.matches) * 100;
+              const winPctB = (cm.teamB.wins / cm.matches) * 100;
+              const valueFor = (side: "A" | "B", key: keyof PerMatchView) =>
+                key === "wins" ? (side === "A" ? winPctA : winPctB) : Number((side === "A" ? cm.teamA : cm.teamB)[key]);
+              return (
+                <Fragment key={cm.matchIndex}>
+                  <tr className="border-t border-white/5">
+                    <td className="py-1 pr-3 text-white/70" rowSpan={2}>Match {cm.matchIndex + 1}</td>
+                    <td className="py-1 pr-3 text-emerald-300">{labelA}</td>
+                    {cols.map((c) => (
+                      <td key={c.label} className="py-1 pr-3 text-right text-white">
+                        {(c.fmt ?? ((v: number) => v.toFixed(2)))(valueFor("A", c.key))}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="py-1 pr-3 text-rose-300">{labelB}</td>
+                    {cols.map((c) => (
+                      <td key={c.label} className="py-1 pr-3 text-right text-white">
+                        {(c.fmt ?? ((v: number) => v.toFixed(2)))(valueFor("B", c.key))}
+                      </td>
+                    ))}
+                  </tr>
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

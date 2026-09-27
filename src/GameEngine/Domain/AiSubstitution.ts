@@ -63,7 +63,7 @@ export function evaluateAiSubstitutions(
       || best.energy > tired.energy + 20;
     if (!worthSub) continue;
 
-    subs.push({ outId: tired.id, inId: best.id });
+    subs.push({ outId: tired.id, inId: best.id, reason: 'fatigue' });
     usedBenchIds.add(best.id);
   }
 

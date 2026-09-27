@@ -160,6 +160,27 @@ function TeamTable({
   );
 }
 
+/** End-of-match fitness summary — average energy of everyone who appeared + fatigue-driven AI subs. */
+function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-4 px-4 py-1.5 border-b border-border/50 text-xs text-muted-foreground">
+      <span>
+        {t("stats.avgEndEnergy")}:{" "}
+        <span className="text-foreground font-bold tabular-nums">{Math.round(teamA.avgEndEnergy)}</span>
+        {" – "}
+        <span className="text-foreground font-bold tabular-nums">{Math.round(teamB.avgEndEnergy)}</span>
+      </span>
+      <span>
+        {t("stats.fatigueSubs")}:{" "}
+        <span className="text-foreground font-bold tabular-nums">{teamA.fatigueSubstitutions}</span>
+        {" – "}
+        <span className="text-foreground font-bold tabular-nums">{teamB.fatigueSubstitutions}</span>
+      </span>
+    </div>
+  );
+}
+
 /** Extra-time / shootout summary — shown only when the match actually had them. */
 function KnockoutSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }) {
   const { t } = useTranslation();
@@ -219,6 +240,7 @@ export function StatsPanel({
           {t("stats.matchStatistics")}
         </h3>
       </div>
+      <FitnessSummary teamA={teamAStats} teamB={teamBStats} />
       <KnockoutSummary teamA={teamAStats} teamB={teamBStats} />
       <div className="flex gap-4 p-2">
         <TeamTable team="A" accentColor={teamColorA} players={teamA} substitutions={substitutions} stats={stats} side="left" />
