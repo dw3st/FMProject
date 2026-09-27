@@ -717,6 +717,8 @@
   "stats": {
     "matchStatistics": "Match Statistics",
     "team": "Team {{team}}",
+    "extraTime": "Extra time",
+    "penalties": "Penalties",
     "headers": {
       "G": "Goals",
       "SH": "Shots",

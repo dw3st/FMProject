@@ -717,6 +717,8 @@
   "stats": {
     "matchStatistics": "Estatísticas da Partida",
     "team": "Time {{team}}",
+    "extraTime": "Prorrogação",
+    "penalties": "Pênaltis",
     "headers": {
       "G": "Gols",
       "SH": "Finalizações",
