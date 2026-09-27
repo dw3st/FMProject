@@ -1,7 +1,10 @@
 import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
-import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
+import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { Squad } from "@/types/playerTypes";
+
+/** Operational cost, as a share of annual revenue, charged weekly (`OPERATIONAL_COST_SHARE × wageRevenueBasisOf(squad) / 52`). */
+export const OPERATIONAL_COST_SHARE = 0.25;
 
 /** One home fixture of the player's club today, already resolved to a competition kind + label. */
 export interface PlayerHomeFixtureToday {
@@ -34,7 +37,7 @@ export function computeAdvanceDayMoney(args: {
   if (dayOfWeek === 1) {
     const weeklyCommercial = Math.round((playerSquad.finances?.commercial ?? 0) / 52);
     const weeklyWages = squadWeeklyWages(playerSquad.players, wageFactorOf(playerSquad));
-    const weeklyOperational = Math.round(weeklyWages * 0.1);
+    const weeklyOperational = Math.round((OPERATIONAL_COST_SHARE * wageRevenueBasisOf(playerSquad)) / 52);
     entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
     entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });
     entries.push({ date: currentDate, kind: "operational", amount: -weeklyOperational, label: "Operational costs" });

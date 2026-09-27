@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
-import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
+import { OPERATIONAL_COST_SHARE, computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
+import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { gateRevenue } from "@/Domain/finance/gate";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -33,9 +33,21 @@ describe("computeAdvanceDayMoney", () => {
 
     const weeklyCommercial = Math.round(5_200_000 / 52);
     const weeklyWages = squadWeeklyWages(sq.players, wageFactorOf(sq));
+    const weeklyOperational = Math.round((OPERATIONAL_COST_SHARE * wageRevenueBasisOf(sq)) / 52);
     expect(entries[0]!.amount).toBe(weeklyCommercial);
     expect(entries[1]!.amount).toBe(-weeklyWages);
-    expect(entries[2]!.amount).toBe(-Math.round(weeklyWages * 0.1));
+    expect(entries[2]!.amount).toBe(-weeklyOperational);
+  });
+
+  test("operational cost is 25% of annual revenue basis, charged weekly — independent of the wage bill", () => {
+    const sq = squad();
+    const entries = computeAdvanceDayMoney({ currentDate: "2027-03-08", playerSquad: sq, homeFixturesToday: [] });
+    const operational = entries.find((e) => e.kind === "operational")!;
+    const expected = -Math.round((0.25 * wageRevenueBasisOf(sq)) / 52);
+    expect(operational.amount).toBe(expected);
+    // Sanity: this is NOT 10% of the wage bill any more (the old formula).
+    const weeklyWages = squadWeeklyWages(sq.players, wageFactorOf(sq));
+    expect(operational.amount).not.toBe(-Math.round(weeklyWages * 0.1));
   });
 
   test("a non-Monday with no home fixture: no entries", () => {
