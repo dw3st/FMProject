@@ -231,7 +231,10 @@ export function buildMatchEvent(
     sim.awayFormation,
     sim.homeLineup,
     sim.awayLineup,
-    { knockout: fixture.knockout === true },
+    {
+      knockout: fixture.knockout === true,
+      ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
+    },
   );
 
   const nameToRosterId = new Map<string, string>();
@@ -422,6 +425,7 @@ export function buildQuickMatchEvent(
       awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
       knockout: fixture.knockout === true,
       neutral: fixture.neutral === true,
+      aggregate: fixture.aggregate,
     },
     rng,
   );

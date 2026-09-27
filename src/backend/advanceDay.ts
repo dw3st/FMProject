@@ -287,7 +287,10 @@ export async function advanceOneDay(
             userPlaysThis;
 
           if (useRecording && playedMatchOverride) {
-            if (fixture.knockout && playedMatchOverride.score.home === playedMatchOverride.score.away) {
+            const result = playedMatchOverride.score;
+            const level =
+              result.home + (fixture.aggregate?.home ?? 0) === result.away + (fixture.aggregate?.away ?? 0);
+            if (fixture.knockout && level) {
               const pens = playedMatchOverride.decider?.penalties;
               if (!pens || pens.home === pens.away) {
                 return { ok: false, status: 400, error: "knockout recording without a winner" };
