@@ -17,8 +17,21 @@ export interface ClubSeasonOutcome {
    * The club reached the final (or won it) of one of its continental competitions this season —
    * treated as a "good" season with the same weight as a top-15% domestic finish, regardless of
    * the club's actual league position (design spec §3 "IA" / `.claude/rules/AI-clubs/finance.md`).
+   * Feeds BOTH `seasonPerformance`/`nextFinancialTier`'s tier-step logic AND (via `followersChange`,
+   * which calls `seasonPerformance`) the HUMAN club's followers reaction — `applyHumanSeasonReaction`
+   * shares the exact same `ClubSeasonOutcome` the AI path uses, so a human finalist/champion gets
+   * the same followers boost an AI one would. It does NOT unlock ELITE on its own — see
+   * `continentalTitle` below, which is the stricter, separate flag for that.
    */
   continentalGood?: boolean;
+  /**
+   * The club WON (not just reached) a continental competition this season. Counts as a "title" for
+   * `nextFinancialTier`'s ELITE-entry gate, exactly like being domestic champion (`o.rank === 1`) —
+   * a continental trophy is at least as prestigious. Always a subset of `continentalGood` (the
+   * champion also reached the final), but tracked separately because reaching the final alone must
+   * NOT unlock ELITE (only winning it, or winning the domestic league, does).
+   */
+  continentalTitle?: boolean;
 }
 
 /**
@@ -68,7 +81,8 @@ export function nextFinancialTier(current: FinancialTier, natural: FinancialTier
     else if (frac >= s.BOTTOM_FRAC) step = -1;
   }
   let idx = tierIndex(current) + step;
-  if (step > 0 && tierAt(idx) === "ELITE" && current !== "ELITE" && !(o.played && o.rank === 1)) idx -= 1;
+  const hasTitle = (o.played && o.rank === 1) || o.continentalTitle === true;
+  if (step > 0 && tierAt(idx) === "ELITE" && current !== "ELITE" && !hasTitle) idx -= 1;
   const nat = tierIndex(natural);
   const d = s.MAX_DRIFT_FROM_NATURAL;
   return tierAt(Math.max(nat - d, Math.min(nat + d, idx)));
@@ -117,15 +131,28 @@ export function applyHumanSeasonReaction(
 
 /**
  * An AI club's outcome from its league's final table (old membership) and the rollover moves.
- * `continentalGoodClubs`, when given, is the set of squad ids that reached a continental final (or
- * won it) this season (`.claude/rules/AI-clubs/finance.md`) — the caller reads it once per day
- * from the continental competitions' metas (see `continentalGoodClubsThisSeason`, continentalWorld.ts).
+ * `continental`, when given, is read once per day from the continental competitions' metas (see
+ * `continentalGoodClubsThisSeason`, continentalWorld.ts): `good` is every club that reached a
+ * final (or won it) this season, `title` is the (smaller) set that actually won it — a champion
+ * is always in both.
+ *
+ * KNOWN GAP (documented for Task 9's docs pass, `.claude/rules/AI-clubs/finance.md`): this only
+ * sees finals that are ALREADY DRAWN on disk at the moment a country's league rolls over. A
+ * continental competition's final is typically drawn well after most leagues end (semis run into
+ * April/May), so in practice this only ever fires for the handful of leagues that roll over LATE
+ * enough in the year — chiefly the calendar-year European leagues (Belarus, Finland, Georgia,
+ * Iceland, Norway, Sweden — `.claude/rules/game/continental.md`), which roll over in December,
+ * well after the continental final. A cross-year league (Aug–May, e.g. Premier League) rolls over
+ * in the summer, generally AFTER the continental final too, so it isn't actually excluded — but
+ * the set is read at the moment THAT SPECIFIC country's rollover runs, so a country whose league
+ * ends unusually early relative to the continental calendar could still miss a final decided
+ * later. No fix attempted here — flagging the timing dependency for whoever revisits this.
  */
 export function clubSeasonOutcome(
   table: StandingRow[],
   squadId: string,
   moves: ReadonlyArray<Pick<ClubMove, "squadId" | "kind">>,
-  continentalGoodClubs?: ReadonlySet<string>,
+  continental?: { good?: ReadonlySet<string>; title?: ReadonlySet<string> },
 ): ClubSeasonOutcome {
   const idx = table.findIndex((r) => r.squadId === squadId);
   const row = idx >= 0 ? table[idx]! : null;
@@ -134,6 +161,7 @@ export function clubSeasonOutcome(
     leagueSize: table.length,
     played: !!row && (row.mp ?? 0) > 0,
     move: moves.find((m) => m.squadId === squadId)?.kind ?? null,
-    ...(continentalGoodClubs?.has(squadId) ? { continentalGood: true } : {}),
+    ...(continental?.good?.has(squadId) ? { continentalGood: true } : {}),
+    ...(continental?.title?.has(squadId) ? { continentalTitle: true } : {}),
   };
 }

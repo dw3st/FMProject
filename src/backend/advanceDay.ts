@@ -10,7 +10,7 @@ import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerT
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { ContinentalSlug, ContinentalStageName, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
+import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
@@ -44,7 +44,9 @@ import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } fr
 import {
   aiTransferBudgetOf, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
 } from "@/Domain/aiFinance/aiClubFinance";
-import { aiBudgetWithPrize, continentalPrize, cupRunnerUpPrize, cupStagePrize, leaguePrize } from "@/Domain/finance/prizes";
+import {
+  aiBudgetWithPrize, continentalPrize, continentalStagePrizesFromEvents, cupRunnerUpPrize, cupStagePrize, leaguePrize,
+} from "@/Domain/finance/prizes";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { requireSaveOwner } from "@/backend/auth/middleware";
@@ -705,18 +707,18 @@ export async function advanceOneDay(
     }
 
     // ── Continental prizes: every competition, everything that happened today ─────────────────
-    // `continentalPrizeAwardedTo` covers champion/eliminated (final loss carries no separate
-    // continental prize, unlike cups); `continentalR16PrizeAwardedTo` is kept SEPARATE because
-    // reaching r16 (an "advanced" event) and a group-stage round-6 result (win/draw) can land on
-    // the SAME day — conflating them would inflate the "classificação às oitavas" inbox amount.
+    // `continentalPrizeAwardedTo` covers participation, group win/draw, stage-reached and the
+    // title — used for the "champion" inbox message below. It is DELIBERATELY NOT used for
+    // "eliminated" — continental has no runner-up/elimination payout (unlike cups), and a
+    // group-stage elimination lands on the SAME day as that club's round-6 win/draw prize, which
+    // would otherwise look (wrongly) like a payout for being knocked out.
+    // `continentalR16PrizeAwardedTo` is kept SEPARATE for the same reason: reaching r16 (an
+    // "advanced" event) and a group-stage round-6 result (win/draw) can land on the SAME day —
+    // conflating them would inflate the "classificação às oitavas" inbox amount.
     const continentalPrizeAwardedTo = new Map<string, number>();
     const continentalR16PrizeAwardedTo = new Map<string, number>();
     if (continentalPlayed.size > 0) {
       const catalogForContinentalPrizes = await getLeagueData();
-      type ContinentalPrizeStage = "r16" | "qf" | "sf" | "final";
-      const STAGE_REACHED: Partial<Record<ContinentalStageName, ContinentalPrizeStage>> = {
-        group: "r16", r16: "qf", qf: "sf", sf: "final",
-      };
       const add = (map: Map<string, number>, clubId: string, amount: number) => {
         if (amount > 0) map.set(clubId, (map.get(clubId) ?? 0) + amount);
       };
@@ -760,24 +762,19 @@ export async function advanceOneDay(
         }
       }
 
-      // Stage advancement + title, from the events advanceContinentalStages already produced.
+      // Stage advancement + title, from the events advanceContinentalStages already produced —
+      // the mapping itself (which stage was REACHED, the champion's "title") is pure and unit
+      // tested independently: `continentalStagePrizesFromEvents` (src/Domain/finance/prizes.ts).
       for (const { slug: cSlug, events } of continentalChanges) {
         if (!isContinentalSlug(cSlug)) continue;
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
-        for (const ev of events) {
-          if (ev.kind === "advanced") {
-            const reached = STAGE_REACHED[ev.stage];
-            if (!reached) continue; // "final" advanced (the eventual champion) — no further stage
-            const amount = continentalPrize(compSlug, reached);
-            const paid = await awardClubPrize(ev.clubId, amount, `${label} · ${reached}`, { competition: cSlug, stage: reached });
-            add(continentalPrizeAwardedTo, ev.clubId, paid);
-            if (ev.stage === "group") add(continentalR16PrizeAwardedTo, ev.clubId, paid);
-          } else if (ev.kind === "champion") {
-            const amount = continentalPrize(compSlug, "title");
-            const paid = await awardClubPrize(ev.clubId, amount, `${label} · title`, { competition: cSlug, stage: "final" });
-            add(continentalPrizeAwardedTo, ev.clubId, paid);
-          }
+        for (const award of continentalStagePrizesFromEvents(compSlug, events)) {
+          const paid = await awardClubPrize(
+            award.clubId, award.amount, `${label} · ${award.reason}`, { competition: cSlug, stage: award.reason },
+          );
+          add(continentalPrizeAwardedTo, award.clubId, paid);
+          if (award.reason === "r16") add(continentalR16PrizeAwardedTo, award.clubId, paid);
         }
       }
     }
@@ -894,9 +891,14 @@ export async function advanceOneDay(
           if (event.kind === "eliminated" && event.clubId === playerSquadId) {
             const opponentId = event.stage === "group" ? undefined : opponentOfTodaysFixture();
             const opponentName = opponentId ? (index.byId(opponentId)?.name ?? opponentId) : undefined;
+            // No prize field here — the design table has no continental runner-up/elimination
+            // payout (unlike cups). A group-stage elimination happens the SAME day as that club's
+            // round-6 result (win/draw), which DOES pay via `continentalPrizeAwardedTo` — but that
+            // money is for the match result, not for being eliminated, so it must never be shown
+            // on this message (review fix — see `.claude/rules/game/finances.md`).
             continentalMessages.push({
               date: currentDate, kind: "eliminated", competition: compSlug, competitionName: compDisplayName,
-              stage: event.stage, opponentName, prize: continentalPrizeAwardedTo.get(playerSquadId),
+              stage: event.stage, opponentName,
             });
           } else if (event.kind === "champion" && event.clubId === playerSquadId) {
             continentalMessages.push({
@@ -1148,10 +1150,13 @@ export async function advanceOneDay(
     // continental clash check right after this loop.
     const rolledLeagueFixtures = new Map<string, Fixture[]>();
     // League display names (for the prize ledger label below) and continental finalists/champions
-    // of the season that's ending (design spec §3 "IA" — a title or final counts as a good season
-    // regardless of domestic position, see `clubSeasonOutcome`), both read once for every unit.
+    // of the season that's ending (design spec §3 "IA" — a final counts as a good season and a
+    // title unlocks ELITE, regardless of domestic position — see `clubSeasonOutcome`), both read
+    // once for every unit.
     const nameOfLeagueForPrizes = due.units.length > 0 ? await leagueNameResolver(activeLeagues) : null;
-    const continentalGoodClubs = due.units.length > 0 ? await continentalGoodClubsThisSeason(saveService, saveId) : new Set<string>();
+    const continentalSeasonStatus = due.units.length > 0
+      ? await continentalGoodClubsThisSeason(saveService, saveId)
+      : { good: new Set<string>(), title: new Set<string>() };
 
     for (const unit of due.units) {
       if (unit.partial) {
@@ -1209,7 +1214,7 @@ export async function advanceOneDay(
 
           const tc = plan.tierChanges[squad.id];
           let next = tc ? applyTierFinanceChange(squad, tc.from, tc.to) : squad;
-          const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves, continentalGoodClubs);
+          const outcome = clubSeasonOutcome(standings[slug] ?? [], squad.id, plan.moves, continentalSeasonStatus);
           if (squad.id !== playerClubSquadId) {
             next = applyAISeasonReaction(next, outcome);
             if (leaguePrizeAmount > 0) {
@@ -1331,14 +1336,12 @@ export async function advanceOneDay(
           seasonMessages.push({
             date: currentDate, kind: "champion", leagueSlug: plan.playerChampionOf,
             leagueName: nameOf(plan.playerChampionOf), seasonYear: archiveYear!,
-            ...(playerLeaguePrizeThisRollover > 0 ? { prize: playerLeaguePrizeThisRollover } : {}),
           });
         }
         if (plan.playerMove) {
           seasonMessages.push({
             date: currentDate, kind: plan.playerMove.kind, leagueSlug: plan.playerMove.to,
             leagueName: nameOf(plan.playerMove.to), fromLeagueSlug: plan.playerMove.from, seasonYear: archiveYear!,
-            ...(playerLeaguePrizeThisRollover > 0 ? { prize: playerLeaguePrizeThisRollover } : {}),
           });
         }
         if (playerFollowersChange) {
@@ -1346,6 +1349,17 @@ export async function advanceOneDay(
             date: currentDate, kind: "followers", leagueSlug: playerFollowersChange.leagueSlug,
             leagueName: nameOf(playerFollowersChange.leagueSlug), seasonYear: archiveYear!,
             followersBefore: playerFollowersChange.before, followersAfter: playerFollowersChange.after,
+          });
+        }
+        // Always fires once per rollover, independent of champion/promoted/relegated/followers —
+        // a mid-table finish still earns (and shows) its merit prize, and this never doubles up
+        // with those messages (review fix: a club can be BOTH champion of its league AND promoted
+        // the same season, which used to attach the same prize to two messages).
+        if (playerLeaguePrizeThisRollover > 0) {
+          seasonMessages.push({
+            date: currentDate, kind: "league_prize", leagueSlug: meta.leagueSlug,
+            leagueName: nameOf(meta.leagueSlug), seasonYear: archiveYear!,
+            prize: playerLeaguePrizeThisRollover,
           });
         }
         debugLog(LOG_NS_SEASON, "Season rollover complete", {

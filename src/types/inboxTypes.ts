@@ -45,12 +45,15 @@ export interface TransferOutInboxMessage extends InboxMessageBase {
 
 /**
  * End-of-season news for the human club: promotion, relegation, a league title, the fan base
- * change, or (`negative_balance`, not tied to a season end — any day the ledger tips it below
- * zero, see `.claude/rules/game/finances.md`) the cash extract going negative.
+ * change, the league merit prize (`league_prize` — ALWAYS fires once per rollover the club has a
+ * final table position, independent of champion/promoted/relegated/followers, so a mid-table
+ * finish still gets prize news; never doubles up with those — see `.claude/rules/game/finances.md`),
+ * or (`negative_balance`, not tied to a season end — any day the ledger tips it below zero) the
+ * cash extract going negative.
  */
 export interface SeasonInboxMessage extends InboxMessageBase {
   category:   "season";
-  kind:       "promoted" | "relegated" | "champion" | "followers" | "negative_balance";
+  kind:       "promoted" | "relegated" | "champion" | "followers" | "negative_balance" | "league_prize";
   /** Followers before / after the season reaction (kind "followers" only). */
   followersBefore?: number;
   followersAfter?:  number;
@@ -63,7 +66,7 @@ export interface SeasonInboxMessage extends InboxMessageBase {
   seasonYear: number;
   /** Club budget on the day it crossed negative (kind "negative_balance" only). */
   balance?: number;
-  /** League prize paid at this rollover (champion/promoted/relegated only), euros. */
+  /** League prize paid at this rollover (kind "league_prize" only), euros. */
   prize?: number;
 }
 
@@ -104,8 +107,10 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
   /** Draw only: whether we are at home ("neutral" for the final). */
   venue?:      "home" | "away" | "neutral";
   /**
-   * Prize paid THIS DAY for this event: champion (title), a final loss (elimination in the
-   * final), or reaching the round of 16 (the "draw" message for stage "r16"). Absent otherwise.
+   * Prize paid THIS DAY for this event: champion (title), or reaching the round of 16 (the
+   * "draw" message for stage "r16"). Never set on "eliminated" — the design table has no
+   * continental runner-up/elimination payout (unlike cups' `cupRunnerUpPrize`); a final loss
+   * earns nothing beyond the "final" prize already paid the day it reached the final.
    */
   prize?:      number;
 }

@@ -5,10 +5,11 @@ import { applyBroadcasting } from "@/backend/FinancialService";
 import { countryByLeague, cupPrizeBase } from "@/backend/cupWorld";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import type { Fixture } from "@/types/calendarTypes";
-import { aiBudgetWithPrize, continentalPrize, cupStagePrize, leaguePrize } from "@/Domain/finance/prizes";
+import { aiBudgetWithPrize, continentalPrize, cupRunnerUpPrize, cupStagePrize, leaguePrize } from "@/Domain/finance/prizes";
 import {
   aiTransferBudgetOf, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
 } from "@/Domain/aiFinance/aiClubFinance";
+import { applyAISeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 
 /**
  * Integration coverage for prize money (Task 6, design spec §3): a national cup, continental
@@ -145,6 +146,13 @@ describe("finance prizes — league merit at rollover", () => {
     const oldYear = stateBefore.year;
     const broadcastingFee = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!.finances!.broadcasting;
 
+    // An AI club in the same (pyramid-less, single-division) league — its league prize lands in
+    // `aiTransferBudget` instead of a ledger entry (review fix: also cover the AI side here).
+    const index = await saveService.getSquadIndex(saveId);
+    const aiClubId = index.inLeague(meta.leagueSlug).map((t) => t.squadId).find((id) => id !== meta.clubId)!;
+    expect(aiClubId).toBeTruthy();
+    const aiBefore = (await saveService.getSquadById(saveId, aiClubId))!;
+
     await saveService.updateMeta(saveId, { currentDate: stateBefore.end });
     const outcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
     expect(outcome.ok).toBe(true);
@@ -176,6 +184,24 @@ describe("finance prizes — league merit at rollover", () => {
     const oldLedger = await saveService.getLedger(saveId, oldYear);
     const sum = [...oldLedger, ...newLedger].reduce((s, e) => s + e.amount, 0);
     expect(sum).toBe(squadAfter!.finances!.budget);
+
+    // AI side: no tier change (Iceland has no pyramid), so the prize is applied on top of the
+    // NEW season's budget `applyAISeasonReaction` grants — same order the implementation uses.
+    const aiPosition = archive!.standings.findIndex((r) => r.squadId === aiClubId) + 1;
+    expect(aiPosition).toBeGreaterThan(0);
+    const aiExpectedPrize = leaguePrize(aiBefore.finances!.broadcasting, aiPosition, n);
+    const aiOutcome = clubSeasonOutcome(archive!.standings, aiClubId, [], { good: new Set(), title: new Set() });
+    const aiNext = applyAISeasonReaction(aiBefore, aiOutcome);
+    const aiSeasonalGrant = seasonalTransferBudgetFor(
+      aiNext.financialTier ?? "LOW", popularityFromFollowers(aiNext.finances?.followers ?? 0),
+    );
+    const aiExpectedBudget = aiExpectedPrize > 0
+      ? aiBudgetWithPrize(aiTransferBudgetOf(aiNext), aiExpectedPrize, aiSeasonalGrant)
+      : aiTransferBudgetOf(aiNext);
+
+    const aiAfter = await saveService.getSquadById(saveId, aiClubId);
+    expect(aiAfter!.aiTransferBudget).toBe(aiExpectedBudget);
+    if (aiExpectedPrize > 0) expect(aiAfter!.aiTransferBudget).toBeGreaterThanOrEqual(aiTransferBudgetOf(aiNext));
   }, 60_000);
 });
 
@@ -236,4 +262,109 @@ describe("finance prizes — national cup (FA Cup stage 1)", () => {
       expect(cupPrizeEntry).toBeUndefined();
     }
   }, 120_000);
+});
+
+describe("finance prizes — national cup runner-up (FA Cup final)", () => {
+  let saveId = "";
+  afterAll(async () => {
+    if (saveId) await saveService.deleteSave(saveId);
+  });
+
+  test("the final's LOSER gets cupRunnerUpPrize; the winner gets cupStagePrize(base,'final') only, never runner-up + champion", async () => {
+    let meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    saveId = meta.id;
+    meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId);
+
+    const stages = (await saveService.getLeagueMeta(saveId, "cup_england"))!.cup!.stages;
+    const finalStage = stages.find((s) => s.name === "final")!;
+
+    // Play every stage up to (not including) the final, so the final's entrants are known —
+    // it's drawn the moment the semifinal completes (`drawNextStage`, cupProgress.ts).
+    let finalHome = "";
+    let finalAway = "";
+    for (const stage of stages) {
+      if (stage.round === finalStage.round) {
+        const finalRoundBefore = await saveService.getRound(saveId, "cup_england", finalStage.round);
+        const f = finalRoundBefore!.fixtures[0]!;
+        finalHome = f.home;
+        finalAway = f.away;
+        break;
+      }
+      await saveService.updateMeta(saveId, { currentDate: stage.date });
+      const outcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+      expect(outcome.ok).toBe(true);
+    }
+    expect(finalHome).toBeTruthy();
+    expect(finalAway).toBeTruthy();
+
+    // Snapshot both finalists' AI transfer budgets right before the final is played — the ONLY
+    // financial event either of them can have that day is the cup prize under test.
+    const snapshot = async (clubId: string) => {
+      if (clubId === meta.clubId) return null; // player — tracked via the ledger instead
+      const squad = (await saveService.getSquadById(saveId, clubId))!;
+      return {
+        current: aiTransferBudgetOf(squad),
+        seasonalGrant: seasonalTransferBudgetFor(
+          financialTierOf(squad), popularityFromFollowers(squad.finances?.followers ?? 0),
+        ),
+      };
+    };
+    const homeBefore = await snapshot(finalHome);
+    const awayBefore = await snapshot(finalAway);
+
+    await saveService.updateMeta(saveId, { currentDate: finalStage.date });
+    const finalOutcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+    expect(finalOutcome.ok).toBe(true);
+
+    const finalRoundAfter = await saveService.getRound(saveId, "cup_england", finalStage.round);
+    const finalFixture = finalRoundAfter!.fixtures.find((f) => f.home === finalHome && f.away === finalAway)!;
+    expect(finalFixture.played).toBe(true);
+    const winnerId = fixtureWinner(finalFixture)!;
+    const loserId = winnerId === finalHome ? finalAway : finalHome;
+
+    const index = await saveService.getSquadIndex(saveId);
+    const catalog = await getLeagueData();
+    const countryOf = countryByLeague(catalog);
+    const pyramids = await getPyramids();
+    const base = await cupPrizeBase(saveService, saveId, "England", index, countryOf, pyramids);
+    const championPrize = cupStagePrize(base, "final");
+    const runnerUpPrize = cupRunnerUpPrize(base);
+    expect(runnerUpPrize).toBeGreaterThan(0);
+    expect(championPrize).toBeGreaterThan(runnerUpPrize);
+
+    const leagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
+    const ledger = await saveService.getLedger(saveId, leagueMeta!.year);
+    const cupEntries = ledger.filter((e) => e.date === finalStage.date && e.kind === "prize" && e.ref?.competition === "cup_england");
+
+    const checkSide = async (
+      clubId: string, expectedPrize: number, before: { current: number; seasonalGrant: number } | null,
+    ) => {
+      if (clubId === meta.clubId) {
+        expect(cupEntries.some((e) => e.amount === expectedPrize)).toBe(true);
+      } else {
+        const after = (await saveService.getSquadById(saveId, clubId))!;
+        const expectedBudget = aiBudgetWithPrize(before!.current, expectedPrize, before!.seasonalGrant);
+        expect(after.aiTransferBudget).toBe(expectedBudget);
+      }
+    };
+    await checkSide(winnerId, championPrize, winnerId === finalHome ? homeBefore : awayBefore);
+    await checkSide(loserId, runnerUpPrize, loserId === finalHome ? homeBefore : awayBefore);
+
+    // The winner never also shows up with the runner-up amount, and vice versa (never runner-up + champion).
+    if (winnerId !== meta.clubId && loserId !== meta.clubId) {
+      const winnerAfter = (await saveService.getSquadById(saveId, winnerId))!;
+      const winnerBefore = winnerId === finalHome ? homeBefore! : awayBefore!;
+      const winnerWithBoth = aiBudgetWithPrize(
+        aiBudgetWithPrize(winnerBefore.current, championPrize, winnerBefore.seasonalGrant), runnerUpPrize, winnerBefore.seasonalGrant,
+      );
+      if (winnerWithBoth !== winnerAfter.aiTransferBudget) {
+        // Only assert inequality when the two possible outcomes actually differ (both could
+        // collide exactly at the cap) — a same-value coincidence must not fail this check.
+        expect(winnerAfter.aiTransferBudget).not.toBe(winnerWithBoth);
+      }
+    }
+  }, 300_000);
 });
