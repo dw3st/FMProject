@@ -199,14 +199,15 @@ export const apiRoutes = {
     const loc = resolveSquadRoute(await saveService.getSquadIndex(saveId!), league!, club!);
     const found = loc ? await saveService.getSquad(saveId!, loc.leagueSlug, loc.stem) : null;
     if (!loc || !found) return Response.json({ error: "save squad not found" }, { status: 404 });
-    let squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
+    const squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
     if (req.method === "PUT") {
       // `finances` is never accepted from the client here — every money movement for the
       // player's club goes through the ledger (`FinancialService.recordMoney`), never a raw
-      // squad PUT (design spec §2, "Brecha"). The body is otherwise unused today; parse-and-
-      // discard keeps the endpoint tolerant of a client that still sends one.
+      // squad PUT (design spec §2, "Brecha"). The body is otherwise unused today, and re-writing
+      // the squad we just read back to disk achieved nothing but risk (no lock — a concurrent
+      // advance-day or transfer write to this same squad could be clobbered by this stale copy).
+      // So this is a no-op PUT: parse-and-discard the body, write nothing, echo the current squad.
       await req.json().catch(() => null);
-      await saveService.saveSquad(saveId!, loc.leagueSlug, loc.stem, squad);
     }
     return Response.json(squad);
   },
