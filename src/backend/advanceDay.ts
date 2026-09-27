@@ -237,7 +237,12 @@ export async function advanceOneDay(
     const activeLeagues = meta.activeLeagues ?? [];
 
     const dayEvents: Array<StoredDayLog["events"][number] | TrainingEvent | RestEvent> = [];
-    const squadWrites: Array<{ league: string; club: string; squad: Squad }> = [];
+    // Keyed by squadId (not appended) so a club with two fixtures today (should not normally
+    // happen, but the calendar has no hard guarantee across every competition folder) chains: the
+    // second fixture reads the first match's updated squad instead of the stale pre-day snapshot,
+    // and only one, final write per squad reaches disk — a plain array here would let the two
+    // parallel `saveSquad` calls race and the loser's energy/seasonLog/development silently vanish.
+    const squadWrites = new Map<string, { league: string; club: string; squad: Squad }>();
     const teamsPlayingToday = new Set<string>(); // squadIds that have a match today
 
     const tactics = await saveService.getTactics(saveId);
@@ -289,9 +294,27 @@ export async function advanceOneDay(
             continue;
           }
 
+          // A club already updated earlier today (any competition) reads its chained, in-memory
+          // squad instead of the stale on-disk snapshot — see the `squadWrites` comment above.
+          // This should never happen (the calendar is built to avoid same-day double-booking),
+          // so it's logged when it does rather than silently dropping one match's effects.
+          for (const squadId of [rawFixture.home, rawFixture.away]) {
+            if (squadWrites.has(squadId)) {
+              logError(
+                "calendar",
+                `save ${saveId}: club ${squadId} has more than one fixture on ${currentDate} — ${rawFixture.id} (${leagueSlug}) plays after an earlier match today`,
+                { squadId, fixtureId: rawFixture.id, competition: leagueSlug },
+              );
+            }
+          }
+
           const [homeSquad, awaySquad] = await Promise.all([
-            saveService.getSquadById(saveId, rawFixture.home),
-            saveService.getSquadById(saveId, rawFixture.away),
+            squadWrites.has(rawFixture.home)
+              ? Promise.resolve<Squad | null>(squadWrites.get(rawFixture.home)!.squad)
+              : saveService.getSquadById(saveId, rawFixture.home),
+            squadWrites.has(rawFixture.away)
+              ? Promise.resolve<Squad | null>(squadWrites.get(rawFixture.away)!.squad)
+              : saveService.getSquadById(saveId, rawFixture.away),
           ]);
           if (!homeSquad || !awaySquad) continue;
 
@@ -347,8 +370,8 @@ export async function advanceOneDay(
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
             dayEvents.push(r.event);
-            squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
-            squadWrites.push({ league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
+            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
+            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
 
@@ -370,8 +393,8 @@ export async function advanceOneDay(
               ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
             dayEvents.push(r.event);
-            squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
-            squadWrites.push({ league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
+            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
+            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
 
@@ -467,19 +490,19 @@ export async function advanceOneDay(
         if (isRestDay) {
           const { event, updatedSquad } = buildRestEvent(row.squadId, squad);
           dayEvents.push(event);
-          squadWrites.push({ league, club, squad: updatedSquad });
+          squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
         } else {
           const policy = resolveTrainingPolicy(meta, club, row.squadId);
           const { event, updatedSquad } = buildTrainingEvent(row.squadId, squad, policy);
           dayEvents.push(event);
-          squadWrites.push({ league, club, squad: updatedSquad });
+          squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
         }
       }
     }
 
     // ── Write all squad updates in parallel ──────────────────────────────────
     await Promise.all(
-      squadWrites.map((sw) => saveService.saveSquad(saveId, sw.league, sw.club, sw.squad)),
+      [...squadWrites.values()].map((sw) => saveService.saveSquad(saveId, sw.league, sw.club, sw.squad)),
     );
 
     // ── Write updated round files + recompute standings per league ────────────
