@@ -533,6 +533,7 @@ export function changeFormation(
       bounds,
       ballSupportScale: roleEng.ballSupportScale,
       runtimeStats:    getRuntimeLineup(p.baseStats, { energy: p.energy }),
+      fatigueBaselineEnergy: p.energy,
     };
   });
 
@@ -732,7 +733,7 @@ function switchSides(
   kickoffTeam: TeamId = 'B',
   recoveryScale = 1,
 ): GameState {
-  const switched = state.players.map(p => {
+  const switched: GamePlayer[] = state.players.map(p => {
     const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
     const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
     const energyChanged = recoveredEnergy !== p.energy;
@@ -752,6 +753,7 @@ function switchSides(
       runtimeStats: energyChanged
         ? getRuntimeLineup(p.baseStats, { energy: recoveredEnergy })
         : p.runtimeStats,
+      fatigueBaselineEnergy: recoveredEnergy,
     };
   });
 

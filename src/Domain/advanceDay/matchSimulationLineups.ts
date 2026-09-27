@@ -13,7 +13,11 @@ function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
 
 function resolveUserLineup(squad: Squad, formation: Formation, savedLineup: string[]): string[] {
   const slots = slotsFor(formation);
-  if (!savedLineup.length) return autoFillLineup(slots, squad.players);
+  // No saved lineup (e.g. a career that never touched the formation screen) falls back to the same
+  // fitness-aware auto-fill the AI uses, not the plain rating-only fill — a human's XI shouldn't
+  // start a clearly-tired keeper/starter over a fresh bench player just because nobody ever saved
+  // a lineup. See `docs/superpowers/specs/2026-09-27-stamina-design.md` §2.
+  if (!savedLineup.length) return autoFillLineupWithFitness(slots, squad.players);
   const aligned = buildSlotAlignedLineup(squad.players, savedLineup);
   return aligned.map((p) => p?.id ?? "");
 }

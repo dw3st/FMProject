@@ -73,10 +73,12 @@ describe("autoFillLineupWithFitness — whole lineup", () => {
 const stSlot: FormationSlot[] = [{ role: "ST", x: 50, y: 10 }];
 
 describe("autoFillLineupWithFitness — swap rule", () => {
-  test("tired starter (< 75 fitness) with an equivalent-stat bench player → bench player starts", () => {
+  test("badly tired starter (fitness 10) with an equivalent-stat bench player → bench player starts", () => {
+    // BENCH_SWAP_RATIO is now > 1 (the bench player must be BETTER, not merely close) — a starter
+    // needs to be quite drained before an equal-stat bench player clears the bar.
     const starter = makePlayer({
       id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(6),
-      seasonLog: makeSeasonLog({ fitness: 60 }),
+      seasonLog: makeSeasonLog({ fitness: 10 }),
     });
     const bench = makePlayer({
       id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(6),
@@ -87,6 +89,22 @@ describe("autoFillLineupWithFitness — swap rule", () => {
     expect(autoFillLineup(stSlot, squad)).toEqual(["starter"]); // sanity: plain fill still starts them
 
     expect(autoFillLineupWithFitness(stSlot, squad)).toEqual(["bench"]);
+  });
+
+  test("moderately tired starter (fitness 60) with an equivalent-stat bench player → starter stays", () => {
+    // The softened fatigue curve means a merely-tired (not drained) starter barely loses value, so
+    // an equal-stat bench player no longer clears the > 1.0 swap bar at this fitness.
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 60 }),
+    });
+    const bench = makePlayer({
+      id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 100 }),
+    });
+    const squad = [starter, bench];
+
+    expect(autoFillLineupWithFitness(stSlot, squad)).toEqual(["starter"]);
   });
 
   test("tired but clearly superior starter still plays over a much weaker bench player", () => {
@@ -133,8 +151,8 @@ describe("autoFillLineupWithFitness — swap rule", () => {
 
   test("high accumulated load discounts the starter enough to tip a marginal bench swap that fitness alone would not", () => {
     const starter = makePlayer({
-      id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(9),
-      seasonLog: makeSeasonLog({ fitness: 60, load: 0 }),
+      id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
+      seasonLog: makeSeasonLog({ fitness: 50, load: 0 }),
     });
     const marginalBench = makePlayer({
       id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(6),
@@ -142,12 +160,59 @@ describe("autoFillLineupWithFitness — swap rule", () => {
     });
     const squad = [starter, marginalBench];
 
-    // At load 0 the bench player falls just short of the 85% threshold.
+    // At load 0 the bench player falls short of the swap bar.
     expect(autoFillLineupWithFitness(stSlot, squad)).toEqual(["starter"]);
 
     // At LOAD_HIGH the starter's value is discounted further (drainMultiplier), tipping the swap.
-    const loadedStarter = { ...starter, seasonLog: makeSeasonLog({ fitness: 60, load: 220 }) };
+    const loadedStarter = { ...starter, seasonLog: makeSeasonLog({ fitness: 50, load: 220 }) };
     const loadedSquad = [loadedStarter, marginalBench];
     expect(autoFillLineupWithFitness(stSlot, loadedSquad)).toEqual(["bench"]);
+  });
+});
+
+// GK slot has its own, much stricter swap gate — see `autoFillLineupWithFitness` doc comment.
+const gkSlot: FormationSlot[] = [{ role: "GK", x: 50, y: 95 }];
+
+describe("autoFillLineupWithFitness — GK exemption", () => {
+  test("GK starter below the outfield threshold (65) but above the GK threshold (60) is never swapped", () => {
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["GK"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 65 }),
+    });
+    const bench = makePlayer({
+      id: "bench", name: "Bench", positions: ["GK"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 100 }),
+    });
+    const squad = [starter, bench];
+
+    expect(autoFillLineupWithFitness(gkSlot, squad)).toEqual(["starter"]);
+  });
+
+  test("GK starter below 60 with a bench GK also under the 85 fitness floor is never swapped", () => {
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["GK"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 40 }),
+    });
+    const bench = makePlayer({
+      id: "bench", name: "Bench", positions: ["GK"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 80 }),
+    });
+    const squad = [starter, bench];
+
+    expect(autoFillLineupWithFitness(gkSlot, squad)).toEqual(["starter"]);
+  });
+
+  test("GK starter below 60 with a bench GK at/above 85 fitness can be swapped", () => {
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["GK"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 10 }),
+    });
+    const bench = makePlayer({
+      id: "bench", name: "Bench", positions: ["GK"], stats: statsAt(6),
+      seasonLog: makeSeasonLog({ fitness: 100 }),
+    });
+    const squad = [starter, bench];
+
+    expect(autoFillLineupWithFitness(gkSlot, squad)).toEqual(["bench"]);
   });
 });

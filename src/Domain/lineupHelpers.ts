@@ -60,8 +60,23 @@ export function autoFillLineup(slots: FormationSlot[], players: RosterPlayer[]):
 /** Fitness below this (0..100) makes a starter (from the plain `autoFillLineup`) a swap candidate. */
 const TIRED_FITNESS_THRESHOLD = 75;
 
-/** A bench player must reach this fraction of the tired starter's fitness-adjusted value to take the slot. */
-const BENCH_SWAP_RATIO = 0.85;
+/**
+ * A bench player must reach this fraction of the tired starter's fitness-adjusted value to take
+ * the slot. Above 1.0 the bench player must actually be BETTER than the tired starter, not merely
+ * close — this is deliberate: with `TIRED_FITNESS_THRESHOLD` alone gating eligibility, almost any
+ * clearly-tired starter (fitness well under 75) loses so much value to a fresh bench player that a
+ * ratio below ~1 barely filters anything, which over-rotates a congested AI squad (measured ~8-9
+ * starters changed per match at 0.85-1.0 on a 3-day fixture gap). Tuned so a congested run (match
+ * every 3 days) lands ~2-3.5 rotated starters per match, while a normal week (fitness barely dips
+ * below the threshold) still rotates ~0 — see `.claude/rules/non-player-games.md` → "Fadiga" for
+ * the rotation sweep and the fatigue curve this was calibrated alongside.
+ */
+const BENCH_SWAP_RATIO = 1.09;
+
+/** GK slot is exempt from ordinary rotation unless the starter is really struggling. */
+const GK_TIRED_FITNESS_THRESHOLD = 60;
+/** ...and even then, only when a bench keeper is clearly not carrying his own fatigue. */
+const GK_BENCH_FITNESS_FLOOR = 85;
 
 /**
  * A player's value in a slot once today's fitness is taken into account:
@@ -90,6 +105,12 @@ function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
  * role) ranked by `fitnessAdjustedValue`. If the bench player's fitness-adjusted value is at least
  * `BENCH_SWAP_RATIO` of the tired starter's, the bench player takes the slot; otherwise the starter
  * — however tired — stays, because they are still clearly the better pick.
+ *
+ * The GK slot is exempt from this by default: a keeper is only a swap candidate when his own
+ * fitness drops below `GK_TIRED_FITNESS_THRESHOLD` (well under the outfield threshold — resting a
+ * keeper mid-week is a bigger call than resting an outfield player), and even then only among bench
+ * keepers whose own fitness is at least `GK_BENCH_FITNESS_FLOOR` (a barely-fresher backup keeper
+ * isn't worth the disruption).
  */
 export function autoFillLineupWithFitness(slots: FormationSlot[], players: RosterPlayer[]): string[] {
   const plain = autoFillLineup(slots, players);
@@ -103,16 +124,21 @@ export function autoFillLineupWithFitness(slots: FormationSlot[], players: Roste
     const starter = byId.get(starterId);
     if (!starter) continue;
 
-    const fitness = starter.seasonLog?.fitness ?? DEFAULT_FITNESS;
-    if (fitness >= TIRED_FITNESS_THRESHOLD) continue;
-
     const role = slots[i]!.role;
+    const isGK = role === "GK";
+    const fitness = starter.seasonLog?.fitness ?? DEFAULT_FITNESS;
+    const tiredThreshold = isGK ? GK_TIRED_FITNESS_THRESHOLD : TIRED_FITNESS_THRESHOLD;
+    if (fitness >= tiredThreshold) continue;
+
     const roleMain = getMainRole(role);
-    const bench = players.filter(
+    let bench = players.filter(
       (p) =>
         !usedIds.has(p.id) &&
         (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
     );
+    if (isGK) {
+      bench = bench.filter((p) => (p.seasonLog?.fitness ?? DEFAULT_FITNESS) >= GK_BENCH_FITNESS_FLOOR);
+    }
     if (bench.length === 0) continue;
 
     let best: RosterPlayer | null = null;
