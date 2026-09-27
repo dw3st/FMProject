@@ -67,6 +67,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 9 | 3.3 Tela Tactics | #8 estilo posse | Tactics mexe nas instruções; o estilo posse é um dos alvos |
 | 10 | 3.4 Staff | #13 nomes turcos | Etapa grande + correção pequena de dados |
 | 11 | 3.5 Base | #9 notas ≥ 8,5 no quickSim | Jovens gerados passam pelo quickSim; notas precisam estar calibradas |
+| 11b | 3.6 Aposentadoria e renascimento de craques | — | Usa a geração de jovens da Base (3.5); entra logo depois dela |
 | 12 | 4.1 Faltas e cartões | — | |
 | 13 | 4.2 Jogo aéreo | — | |
 | 14 | 4.3 Bolas paradas | — | |
@@ -121,9 +122,14 @@ reserva entra em campo; quickSim e motor concordam no volume de lesões.
 3.4 **Staff:** treinadores, preparador físico, olheiros, com efeito em desenvolvimento, lesões e
    observação.
 3.5 **Base:** jovens gerados por temporada, promoção ao elenco principal.
+3.6 **Aposentadoria e "renascimento" de craques (estilo Brasfoot):** jogadores se aposentam por idade
+   e declínio. Quando um craque de classe mundial do clube do jogador se aposenta, o jogador pode
+   escolher trazê-lo de volta como um jovem de 17–19 anos na base do clube — mesmo nome/perfil, com
+   uma estrela marcando a origem, nível de "promessa" (~médio aos 17), e que pode voltar a ser classe
+   mundial se se desenvolver. Depende da Base (3.5) e do desenvolvimento por desempenho.
 
-**Pronto quando:** cada tela "em breve" (Staff, Stats, Tactics) está funcionando e contratos
-mudam decisões de mercado.
+**Pronto quando:** cada tela "em breve" (Staff, Stats, Tactics) está funcionando, contratos
+mudam decisões de mercado e um craque aposentado pode renascer na base do clube.
 
 ### Fase 4 — Realismo da partida
 
