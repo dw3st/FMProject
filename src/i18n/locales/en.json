@@ -1193,6 +1193,28 @@
       "final": "Final"
     }
   },
+  "continental": {
+    "tab": "Continental",
+    "groupRound": "Group {{group}} · matchday {{round}}",
+    "leg1": "1st leg",
+    "leg2": "2nd leg",
+    "firstLeg": "First leg: {{home}} {{score}} {{away}}",
+    "aggregateNote": "Decided on aggregate; extra time and penalties if level",
+    "aggregate": "agg. {{home}}–{{away}}",
+    "notDrawn": "Not drawn yet",
+    "champion": "Champion",
+    "groups": "Groups",
+    "group": "Group {{name}}",
+    "knockout": "Knockout",
+    "none": "Not played yet this season",
+    "stage": {
+      "group": "Group stage",
+      "r16": "Round of 16",
+      "qf": "Quarter-finals",
+      "sf": "Semi-finals",
+      "final": "Final"
+    }
+  },
   "development": {
     "title": "Development",
     "subtitle": "Track your players' progress",

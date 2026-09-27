@@ -1193,6 +1193,28 @@
       "final": "Final"
     }
   },
+  "continental": {
+    "tab": "Continental",
+    "groupRound": "Grupo {{group}} · rodada {{round}}",
+    "leg1": "Ida",
+    "leg2": "Volta",
+    "firstLeg": "Ida: {{home}} {{score}} {{away}}",
+    "aggregateNote": "Decide no agregado; prorrogação e pênaltis se empatar",
+    "aggregate": "agr. {{home}}–{{away}}",
+    "notDrawn": "Ainda não sorteado",
+    "champion": "Campeão",
+    "groups": "Grupos",
+    "group": "Grupo {{name}}",
+    "knockout": "Mata-mata",
+    "none": "Ainda não começou nesta temporada",
+    "stage": {
+      "group": "Fase de grupos",
+      "r16": "Oitavas de final",
+      "qf": "Quartas de final",
+      "sf": "Semifinal",
+      "final": "Final"
+    }
+  },
   "development": {
     "title": "Evolução",
     "subtitle": "Acompanhe o progresso dos seus jogadores",
