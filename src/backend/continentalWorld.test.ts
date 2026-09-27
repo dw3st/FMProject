@@ -2,11 +2,16 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { countryByLeague, leagueBusyDates } from "@/backend/cupWorld";
-import { continentalTier1LeagueStates } from "@/backend/continentalWorld";
+import { continentalTier1LeagueStates, playerContinentalSlug } from "@/backend/continentalWorld";
+import { apiRoutes } from "@/backend/routes";
+import { devAutoLogin } from "@/backend/auth/AuthService";
+import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { CONTINENTAL, CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
+import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { RoundFixtures } from "@/types/calendarTypes";
 import type { LeagueZone } from "@/types/playerTypes";
+import type { TacticsSave } from "@/types/tacticsTypes";
 
 const GROUP_ROUNDS = [1, 2, 3, 4, 5, 6];
 const DAY_MS = 86_400_000;
@@ -183,6 +188,113 @@ describe("createSave generates continental competitions", () => {
           `min gap ${m.minGapDays}d`,
       );
       expect(m.minGapDays, `${slug}: dates ${JSON.stringify(m.dates)}`).toBeGreaterThanOrEqual(3);
+    }
+  }, 300_000);
+
+  test("playerContinentalSlug: a qualified Premier League club returns ucl or uel; a Championship club returns null", async () => {
+    const index = await saveService.getSquadIndex(saveId);
+    const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
+    const ucl = await saveService.getLeagueMeta(saveId, "ucl");
+    const uel = await saveService.getLeagueMeta(saveId, "uel");
+    const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
+    const uelClubs = uel!.continental!.groups.flatMap((g) => g.clubs);
+    const qualifiedClub = [...uclClubs, ...uelClubs].find((id) => plClubs.has(id));
+    expect(qualifiedClub).toBeTruthy();
+
+    const contSlug = await playerContinentalSlug(saveService, saveId, qualifiedClub!);
+    expect(["ucl", "uel"]).toContain(contSlug!);
+
+    const championshipClub = index.inLeague("of_championship")[0]?.squadId;
+    expect(championshipClub).toBeTruthy();
+    expect(await playerContinentalSlug(saveService, saveId, championshipClub!)).toBeNull();
+  }, 300_000);
+
+  test("GET /api/saves/:id/continental/:slug returns meta, fixtures, names and 8 group tables of 4 rows each", async () => {
+    const { user, session } = devAutoLogin(`continental-route-${saveId}@test.local`);
+    recordSaveOwnership(saveId, user.id);
+    const handler = apiRoutes["/api/saves/:saveId/continental/:slug"];
+
+    const contSlug = "ucl";
+    const okReq = Object.assign(
+      new Request(`http://localhost/api/saves/${saveId}/continental/${contSlug}`, {
+        headers: { cookie: `fs_session=${session.token}` },
+      }),
+      { params: { saveId, slug: contSlug } },
+    );
+    const okRes = await handler(okReq as Request & { params: Record<string, string> });
+    expect(okRes.status).toBe(200);
+    const body = (await okRes.json()) as {
+      meta: { continental: { groups: { name: string; clubs: string[] }[] } };
+      fixtures: unknown[];
+      names: Record<string, string>;
+      groups: { name: string; rows: unknown[] }[];
+    };
+    expect(body.meta.continental.groups.length).toBe(8);
+    expect(body.fixtures.length).toBeGreaterThan(0);
+    expect(body.groups.length).toBe(8);
+    for (const g of body.groups) expect(g.rows.length).toBe(4);
+    for (const g of body.meta.continental.groups) {
+      for (const clubId of g.clubs) expect(body.names[clubId]).toBeTruthy();
+    }
+
+    const badReq = Object.assign(
+      new Request(`http://localhost/api/saves/${saveId}/continental/xyz`, {
+        headers: { cookie: `fs_session=${session.token}` },
+      }),
+      { params: { saveId, slug: "xyz" } },
+    );
+    const badRes = await handler(badReq as Request & { params: Record<string, string> });
+    expect(badRes.status).toBe(400);
+  }, 300_000);
+
+  test("/api/match-setup picks up the player's continental fixture", async () => {
+    // The player's OWN club needs to be a continental qualifier for this flow — pick one of the
+    // Premier League clubs already known (from the earlier test) to be in ucl/uel this season and
+    // create a dedicated save owned by it, rather than assuming the shared save's clubId (33)
+    // qualifies (it may not — qualification is rank/level-based, not fixed per club).
+    const index = await saveService.getSquadIndex(saveId);
+    const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
+    const ucl = await saveService.getLeagueMeta(saveId, "ucl");
+    const uel = await saveService.getLeagueMeta(saveId, "uel");
+    const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
+    const uelClubs = uel!.continental!.groups.flatMap((g) => g.clubs);
+    const qualifiedClub = [...uclClubs, ...uelClubs].find((id) => plClubs.has(id))!;
+    expect(qualifiedClub).toBeTruthy();
+
+    const meta2 = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: qualifiedClub, clubName: "Test2", clubColors: ["#000000", "#ffffff"], budget: 1,
+    });
+    const saveId2 = meta2.id;
+    try {
+      const contSlug = (await playerContinentalSlug(saveService, saveId2, qualifiedClub))!;
+      expect(contSlug).toBeTruthy();
+      const contMeta = await saveService.getLeagueMeta(saveId2, contSlug);
+      const group = contMeta!.continental!.stages.find((s) => s.name === "group")!;
+      const round1Date = group.dates[0]!;
+
+      const mySquad = (await saveService.getSquadById(saveId2, qualifiedClub))!;
+      const tactics: TacticsSave = {
+        tactical_style: "balanced",
+        formation: "4-3-3",
+        lineup: autoLineupDefaultFormation(mySquad),
+      };
+      await saveService.saveTactics(saveId2, tactics);
+      await saveService.updateMeta(saveId2, { currentDate: round1Date });
+
+      const { user, session } = devAutoLogin(`match-setup-${saveId2}@test.local`);
+      recordSaveOwnership(saveId2, user.id);
+
+      const req = new Request(`http://localhost/api/match-setup?saveId=${saveId2}`, {
+        headers: { cookie: `fs_session=${session.token}` },
+      });
+      const res = await apiRoutes["/api/match-setup"](req);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { fixture: { competition: string; home: string; away: string } };
+      expect(body.fixture.competition).toBe(contSlug);
+      expect([body.fixture.home, body.fixture.away]).toContain(qualifiedClub);
+    } finally {
+      await saveService.deleteSave(saveId2);
     }
   }, 300_000);
 });

@@ -84,7 +84,7 @@ if (cont) return lang.toLowerCase().startsWith("pt") ? cont.pt : cont.en;
 **Files:** `src/backend/continentalWorld.ts` (+ teste), `src/backend/saves.ts`,
 `src/backend/advanceUntil.ts` (+ teste), `src/backend/routes.ts`.
 
-- [ ] **Step 1: `playerContinentalSlug`** — em `continentalWorld.ts`:
+- [x] **Step 1: `playerContinentalSlug`** — em `continentalWorld.ts`:
 
 ```ts
 /** The continental competition the club plays this season (its group), or null. */
@@ -102,15 +102,15 @@ export async function playerContinentalSlug(
   Teste em `continentalWorld.test.ts`: num save novo, um clube da Premier que se classificou devolve
   `"ucl"` ou `"uel"`; um clube da Championship devolve `null`.
 
-- [ ] **Step 2: calendário** — em `saves.ts`, onde as fixtures de copa entram no `fullCalendar`,
+- [x] **Step 2: calendário** — em `saves.ts`, onde as fixtures de copa entram no `fullCalendar`,
   acrescente as continentais do jogador da mesma forma (filtro `home === myId || away === myId`) e
   ordene por data como hoje.
-- [ ] **Step 3: avanço rápido** — em `advanceUntil.ts`, a lista de competições do jogador passa a ser
+- [x] **Step 3: avanço rápido** — em `advanceUntil.ts`, a lista de competições do jogador passa a ser
   `[meta.leagueSlug, cup, continental]` sem nulos. Teste: com o jogo continental do jogador como o
   próximo jogo, `nextPlayerFixtureDate` devolve a data dele.
-- [ ] **Step 4: `match-setup`** — em `routes.ts` (~linha 341), aceite também
+- [x] **Step 4: `match-setup`** — em `routes.ts` (~linha 341), aceite também
   `f.competition === continentalSlug`.
-- [ ] **Step 5: rota** — `GET /api/saves/:saveId/continental/:slug` (ao lado da rota da copa,
+- [x] **Step 5: rota** — `GET /api/saves/:saveId/continental/:slug` (ao lado da rota da copa,
   mesma checagem de dono do save): `slug` precisa passar `isContinentalSlug` (400 senão); sem meta →
   404. Resposta:
 
@@ -123,7 +123,7 @@ export async function playerContinentalSlug(
 }
 ```
 
-- [ ] **Step 6:** `bunx tsc --noEmit -p .`, `bun test src/backend`; commit
+- [x] **Step 6:** `bunx tsc --noEmit -p .`, `bun test src/backend`; commit
   (`feat(continental): player calendar, advance-until, match setup and bracket route`).
 
 ---
