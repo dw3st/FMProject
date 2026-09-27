@@ -57,7 +57,7 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
-import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
+import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
@@ -1239,11 +1239,21 @@ export async function advanceOneDay(
             }
           }
           // Wage factor for the season ahead, now that this club's tier-adjusted revenue is
-          // known (`.claude/rules/AI-clubs/finance.md` → wages). Uses the league's club count
-          // before any move below — the same approximation the season's home-game count uses
-          // elsewhere in this block.
+          // known (`.claude/rules/AI-clubs/finance.md` → wages). CARRIED FORWARD from last
+          // season's factor + revenue basis (`carryForwardWageFactor`), not recomputed from
+          // scratch — a fresh `clubWageFactor` every rollover would snap every club's bill back
+          // to exactly 60% of revenue each season regardless of how it actually spent. Falls
+          // back to a fresh computation only when the squad has no prior factor/basis to carry
+          // forward from (its very first rollover). Uses the league's club count before any move
+          // below — the same approximation the season's home-game count uses elsewhere in this
+          // block.
           const homeGames = Math.max(0, leagueTeams.length - 1);
-          next = { ...next, wageFactor: clubWageFactor(clubAnnualRevenue(next, homeGames), squadCurveBill(next.players)) };
+          const newRevenue = clubAnnualRevenue(next, homeGames);
+          const newWageFactor =
+            typeof next.wageFactor === "number" && typeof next.wageRevenueBasis === "number"
+              ? carryForwardWageFactor(next.wageFactor, next.wageRevenueBasis, newRevenue)
+              : clubWageFactor(newRevenue, squadCurveBill(next.players));
+          next = { ...next, wageFactor: newWageFactor, wageRevenueBasis: newRevenue };
           await saveService.saveSquadById(saveId, next);
           if (squad.id === playerClubSquadId) {
             // The new season's ledger: closedYear.get(slug) is the OLD (just-archived) year, so

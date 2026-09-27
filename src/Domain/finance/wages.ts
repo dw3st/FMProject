@@ -1,6 +1,6 @@
 import { WAGE_CONFIG } from "@/Domain/finance/wageConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
-import { Player } from "@/Domain/Player";
+import { overallAvg } from "@/Domain/playerRating";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 /**
@@ -28,7 +28,7 @@ export function weeklyWage(rating: number): number {
 
 /** Sum of the raw curve wage (no club factor) across a squad — the baseline `clubWageFactor` corrects. */
 export function squadCurveBill(players: RosterPlayer[]): number {
-  return players.reduce((sum, p) => sum + weeklyWage(Player.overallAvg(p)), 0);
+  return players.reduce((sum, p) => sum + weeklyWage(overallAvg(p)), 0);
 }
 
 /**
@@ -45,7 +45,7 @@ export function clubWageFactor(revenue: number, curveBill: number): number {
 
 /** A player's actual weekly wage at their club: the curve wage times the club's factor. */
 export function playerWeeklyWage(p: RosterPlayer, factor: number): number {
-  return Math.round(weeklyWage(Player.overallAvg(p)) * factor);
+  return Math.round(weeklyWage(overallAvg(p)) * factor);
 }
 
 export function squadWeeklyWages(players: RosterPlayer[], factor: number): number {
@@ -67,11 +67,37 @@ export function clubAnnualRevenue(squad: Squad, homeGames: number): number {
 }
 
 /**
- * The squad's wage factor: the stored value (set at career creation and refreshed at every
- * season rollover, once the club's tier-adjusted revenue for the season ahead is known) or, when
+ * The squad's wage factor: the stored value (set at career creation and CARRIED FORWARD — not
+ * recomputed from scratch — at every season rollover, see `carryForwardWageFactor`) or, when
  * absent, computed on the fly from the squad's current finances and roster.
  */
 export function wageFactorOf(squad: Squad, homeGames: number = FALLBACK_HOME_GAMES): number {
   if (typeof squad.wageFactor === "number") return squad.wageFactor;
   return clubWageFactor(clubAnnualRevenue(squad, homeGames), squadCurveBill(squad.players));
+}
+
+/**
+ * The `clubAnnualRevenue` basis the squad's stored `wageFactor` was last set against (the stored
+ * `wageRevenueBasis`), or — when absent — computed on the fly the same way `wageFactorOf`'s
+ * fallback does. Callers that need a revenue figure consistent with the stored factor (the AI
+ * wage cap, `aiClubFinance`) should read this instead of calling `clubAnnualRevenue` directly:
+ * a fresh `clubAnnualRevenue(squad, someGuessedHomeGames)` can disagree with the real league-size
+ * basis the stored factor was calibrated against.
+ */
+export function wageRevenueBasisOf(squad: Squad, homeGames: number = FALLBACK_HOME_GAMES): number {
+  if (typeof squad.wageRevenueBasis === "number") return squad.wageRevenueBasis;
+  return clubAnnualRevenue(squad, homeGames);
+}
+
+/**
+ * Carries a club's wage factor forward across a season boundary instead of snapping it back to
+ * exactly `TARGET_SHARE` of the new revenue (`clubWageFactor` computed fresh would do that every
+ * time). A club that was over/under its calibrated target keeps that same relative standing,
+ * scaled by how much its revenue changed since the factor was last set — clamped the same as
+ * `clubWageFactor`. A non-positive `oldRevenue` has no meaningful basis to scale from, so the old
+ * factor is kept as-is (still clamped).
+ */
+export function carryForwardWageFactor(oldFactor: number, oldRevenue: number, newRevenue: number): number {
+  const next = oldRevenue > 0 ? oldFactor * (newRevenue / oldRevenue) : oldFactor;
+  return Math.min(WAGE_CONFIG.MAX_FACTOR, Math.max(WAGE_CONFIG.MIN_FACTOR, next));
 }

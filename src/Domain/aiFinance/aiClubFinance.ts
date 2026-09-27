@@ -1,5 +1,5 @@
 import { AI_FINANCE_CONFIG, FINANCIAL_TIERS } from "@/Domain/aiFinance/aiFinanceConfig";
-import { clubAnnualRevenue, FALLBACK_HOME_GAMES, playerWeeklyWage, squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
+import { FALLBACK_HOME_GAMES, playerWeeklyWage, squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { ClubFinances, FinancialTier, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { TransferBudgetTier } from "@/types/transferMarketTypes";
 
@@ -145,14 +145,18 @@ export function applyAITransferSale(squad: Squad, fee: number): Squad {
 }
 
 /**
- * `homeGames` defaults to a typical division size (`FALLBACK_HOME_GAMES`) — a bare `Squad` carries
- * no league-membership info. Callers that know the real league size (season rollover, career
- * creation) should pass it through for an exact revenue/wage-cap estimate.
+ * `homeGames` only matters as a fallback: the revenue used for the wage cap is
+ * `wageRevenueBasisOf(squad, homeGames)` — the SAME basis the squad's stored `wageFactor` was set
+ * against (career creation or the last season rollover), not a fresh `clubAnnualRevenue` guess.
+ * Reading the stored basis (rather than recomputing revenue with a possibly-wrong `homeGames`,
+ * e.g. the generic `FALLBACK_HOME_GAMES` default) keeps the cap and the actual wage bill — which
+ * also comes from the stored factor via `squadWageBill` → `wageFactorOf` — in agreement about the
+ * club's league size. `homeGames` is only actually used when the squad has no stored basis yet.
  */
 export function aiClubFinance(squad: Squad, homeGames: number = FALLBACK_HOME_GAMES): AIClubFinance {
   const tier = financialTierOf(squad);
   const popularity = popularityOf(squad);
-  const revenue = clubAnnualRevenue(squad, homeGames);
+  const revenue = wageRevenueBasisOf(squad, homeGames);
   const maxWageBudget = maxWageBudgetFor(revenue, tier);
   const weeklyBudget = weeklyBudgetFor(maxWageBudget);
   const wageBill = squadWageBill(squad, homeGames);

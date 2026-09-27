@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
+  carryForwardWageFactor,
   clubAnnualRevenue,
   clubWageFactor,
   playerWeeklyWage,
   squadCurveBill,
   squadWeeklyWages,
   wageFactorOf,
+  wageRevenueBasisOf,
   weeklyWage,
 } from "@/Domain/finance/wages";
 import { WAGE_CONFIG } from "@/Domain/finance/wageConfig";
@@ -150,5 +152,50 @@ describe("wageFactorOf", () => {
     const revenue = clubAnnualRevenue(squad, 19);
     const expected = clubWageFactor(revenue, squadCurveBill(squad.players));
     expect(wageFactorOf(squad)).toBe(expected);
+  });
+});
+
+describe("wageRevenueBasisOf", () => {
+  test("uses the stored wageRevenueBasis when present", () => {
+    const squad = makeSquad({ wageRevenueBasis: 42_000_000 });
+    expect(wageRevenueBasisOf(squad)).toBe(42_000_000);
+  });
+
+  test("computes on the fly (same fallback home games as wageFactorOf) when absent", () => {
+    const squad = makeSquad();
+    expect(wageRevenueBasisOf(squad)).toBe(clubAnnualRevenue(squad, 19));
+  });
+
+  test("a caller-supplied homeGames is used for the on-the-fly path", () => {
+    const squad = makeSquad();
+    expect(wageRevenueBasisOf(squad, 37)).toBe(clubAnnualRevenue(squad, 37));
+  });
+});
+
+describe("carryForwardWageFactor", () => {
+  test("unchanged revenue keeps the same factor", () => {
+    expect(carryForwardWageFactor(1.5, 10_000_000, 10_000_000)).toBeCloseTo(1.5, 9);
+  });
+
+  test("revenue doubling doubles the factor (before clamping)", () => {
+    expect(carryForwardWageFactor(1, 10_000_000, 20_000_000)).toBeCloseTo(2, 9);
+  });
+
+  test("revenue halving halves the factor (before clamping)", () => {
+    expect(carryForwardWageFactor(2, 10_000_000, 5_000_000)).toBeCloseTo(1, 9);
+  });
+
+  test("clamps to MAX_FACTOR on a big revenue jump", () => {
+    expect(carryForwardWageFactor(2, 1_000_000, 100_000_000)).toBe(WAGE_CONFIG.MAX_FACTOR);
+  });
+
+  test("clamps to MIN_FACTOR on a big revenue collapse", () => {
+    expect(carryForwardWageFactor(2, 100_000_000, 1_000_000)).toBe(WAGE_CONFIG.MIN_FACTOR);
+  });
+
+  test("a zero or negative old revenue basis has nothing to scale from — keeps the old factor, clamped", () => {
+    expect(carryForwardWageFactor(1.5, 0, 10_000_000)).toBe(1.5);
+    expect(carryForwardWageFactor(1.5, -1, 10_000_000)).toBe(1.5);
+    expect(carryForwardWageFactor(100, 0, 10_000_000)).toBe(WAGE_CONFIG.MAX_FACTOR);
   });
 });
