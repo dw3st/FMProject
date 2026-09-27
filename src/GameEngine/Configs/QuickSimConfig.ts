@@ -46,8 +46,13 @@ export const QUICK_SIM_CONFIG = {
   /**
    * σ of the per-match "dominance" d ~ N(0, σ): home xG × e^(d−σ²/2), away xG × e^(−d−σ²/2).
    * Anti-correlates the two sides' chances → more lopsided results, fewer draws. 0 disables.
+   * Lowered 0.35 → 0.25 (2026-09-26, #2 cross-league follow-up): at 0.35 the underdog won
+   * cross-league ties ~1.6× as often as the full engine (a mean-preserving lognormal spread,
+   * independent of team strength — it inflates upsets between UNEQUAL sides without touching
+   * within-league W/D/L, where both sides draw the same dominance distribution on average). See
+   * `.claude/rules/non-player-games.md` → "quickSim" → cross-league checks.
    */
-  DOMINANCE_SIGMA: 0.35,
+  DOMINANCE_SIGMA: 0.25,
   /**
    * Match level (mean of both XIs' mean line strength, floor included) at which the level
    * term is 1 — BASE_GOALS applies as-is at this level.
