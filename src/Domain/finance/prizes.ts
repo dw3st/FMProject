@@ -1,5 +1,6 @@
 import type { CupStageName, ContinentalSlug } from "@/types/calendarTypes";
 import { AI_PRIZE_SHARE, CONTINENTAL_PRIZE, CUP_RUNNER_UP_SHARE, CUP_STAGE_SHARE, LEAGUE_PRIZE } from "@/Domain/finance/prizeConfig";
+import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 
 /**
  * Pure prize maths (`.claude/rules/AI-clubs/finance.md`,
@@ -35,11 +36,16 @@ export function continentalPrize(
 
 /**
  * AI share of a prize, capped: returns the new `aiTransferBudget`. Adds `AI_PRIZE_SHARE` of the
- * prize, never taking the budget above `1.5 × seasonalGrant`, and never lowering a budget already
- * at or above that cap (mirrors `applyAITransferSale`'s cap behaviour).
+ * prize, never taking the budget above `MAX_BALANCE_RATIO × seasonalGrant` (the same cap
+ * `applyAITransferSale` uses, `AI_FINANCE_CONFIG.TRANSFER_BUDGET.MAX_BALANCE_RATIO`), and never
+ * lowering a budget already at or above that cap.
+ *
+ * `current` is the club's transfer budget BEFORE the prize — callers pass
+ * `aiTransferBudgetOf(squad)` (absent `squad.aiTransferBudget` means the full seasonal grant, see
+ * `src/Domain/aiFinance/aiClubFinance.ts`), not `squad.aiTransferBudget` directly.
  */
 export function aiBudgetWithPrize(current: number, prize: number, seasonalGrant: number): number {
-  const cap = 1.5 * seasonalGrant;
+  const cap = seasonalGrant * AI_FINANCE_CONFIG.TRANSFER_BUDGET.MAX_BALANCE_RATIO;
   if (current >= cap) return current;
   return Math.min(cap, current + Math.round(prize * AI_PRIZE_SHARE));
 }

@@ -387,7 +387,11 @@ export class FileSystemDAL implements ISaveDAL {
   async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
     if (entries.length === 0) return;
     const existing = await this.readLedger(saveId, season);
+    await this.writeLedger(saveId, season, [...existing, ...entries]);
+  }
+
+  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}/ledger`, { recursive: true });
-    await Bun.write(ledgerPath(saveId, season), JSON.stringify([...existing, ...entries], null, 2));
+    await Bun.write(ledgerPath(saveId, season), JSON.stringify(entries, null, 2));
   }
 }

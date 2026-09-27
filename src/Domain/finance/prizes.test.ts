@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { aiBudgetWithPrize, continentalPrize, cupRunnerUpPrize, cupStagePrize, leaguePrize } from "@/Domain/finance/prizes";
+import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 
 describe("leaguePrize", () => {
   test("champion (position 1) gets merit + champion bonus", () => {
@@ -101,14 +102,15 @@ describe("aiBudgetWithPrize", () => {
     expect(aiBudgetWithPrize(1_000_000, 2_000_000, 10_000_000)).toBe(2_000_000);
   });
 
-  test("never lifts the budget above 1.5x the seasonal grant", () => {
+  test("never lifts the budget above MAX_BALANCE_RATIO x the seasonal grant (same cap applyAITransferSale uses)", () => {
     // current 14M + 50% of 10M (5M) = 19M, but cap is 1.5 * 10M = 15M
-    expect(aiBudgetWithPrize(14_000_000, 10_000_000, 10_000_000)).toBe(15_000_000);
+    const cap = 10_000_000 * AI_FINANCE_CONFIG.TRANSFER_BUDGET.MAX_BALANCE_RATIO;
+    expect(aiBudgetWithPrize(14_000_000, 10_000_000, 10_000_000)).toBe(cap);
   });
 
   test("never lowers a budget already at or above the cap", () => {
     const seasonalGrant = 10_000_000;
-    const cap = 1.5 * seasonalGrant;
+    const cap = seasonalGrant * AI_FINANCE_CONFIG.TRANSFER_BUDGET.MAX_BALANCE_RATIO;
     expect(aiBudgetWithPrize(cap, 5_000_000, seasonalGrant)).toBe(cap);
     expect(aiBudgetWithPrize(cap + 1_000_000, 5_000_000, seasonalGrant)).toBe(cap + 1_000_000);
   });
