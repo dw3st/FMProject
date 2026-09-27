@@ -491,6 +491,10 @@ export class SaveService {
     return this.dal.writeLeagueSeasonArchive(saveId, archive);
   }
 
+  readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null> {
+    return this.dal.readLeagueSeasonArchive(saveId, leagueSlug, year);
+  }
+
   writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
     return this.dal.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers);
   }
@@ -669,6 +673,9 @@ export class SaveService {
 
     const squadGlob = new Bun.Glob("*.json");
     let copied = 0;
+    // Kept so createContinentalSeason (below) can reuse these already-in-memory squads for
+    // clubLevel instead of re-reading every one of them back off disk via getSquadById.
+    const squadCache = new Map<string, Squad>();
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
@@ -697,6 +704,7 @@ export class SaveService {
 
         await this.dal.writeSquad(id, league, clubSlug, squad);
         this.squadIndexCache.delete(id);
+        squadCache.set(squad.id, squad);
         copied++;
       }
     }
@@ -729,6 +737,38 @@ export class SaveService {
       }
     } catch (e) {
       console.error("Failed to generate national cups:", e);
+    }
+
+    // Continental competitions: Champions League/Europa League (Europe), Libertadores/
+    // Sul-Americana (South America) — one season per continent, each with its own try/catch so
+    // one continent's failure never skips the other (or the cups above, or the save itself).
+    //
+    // The "qualified"/"group" inbox news for the player's club is NOT emitted here: the wizard
+    // always calls POST /api/saves/:id/presimulate right after this returns, and for a career that
+    // needs a start kit (Brazilian leagues — see .claude/rules/data/openfootball-import.md) that
+    // route's applyRandomStartKit OVERWRITES these freshly generated ucl/uel/lib/sud metas with a
+    // pre-simulated season (different groups; the kit's r16 is already drawn by its cutoff date —
+    // see .claude/rules/game/continental.md). Emitting from this call's `result` would describe a
+    // group that no longer exists on disk a moment later. The presimulate route reads
+    // `continentalClubStatus` (what's actually on disk after its own kit decision) instead, for
+    // both the "kit applied" and "no kit" paths.
+    try {
+      const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
+      const { createContinentalSeason, seasonDefiningYear } = await import("@/backend/continentalWorld");
+      const catalog = await getLeagueData();
+      const pyramids = await getPyramids();
+      const index = await this.getSquadIndex(id);
+      for (const continent of ["Europe", "South America"] as const) {
+        try {
+          const year = await seasonDefiningYear(continent, activeLeagues, catalog);
+          if (year === null) continue;
+          await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
+        } catch (e) {
+          logError("continental", `save ${id}: failed to generate continental competitions for ${continent}`, e);
+        }
+      }
+    } catch (e) {
+      logError("continental", `save ${id}: failed to generate continental competitions`, e);
     }
 
     return meta;

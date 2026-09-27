@@ -55,6 +55,7 @@ const { addOneDay } = await import("@/Domain/advanceDay/date");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 const { isCupSlug } = await import("@/Domain/cups/cupIds");
+const { isContinentalSlug, competitionsOf } = await import("@/Domain/continental/competitions");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
@@ -154,6 +155,14 @@ try {
     if (cm?.cup) cupYearsStart.set(cm.cup.country, cm.year);
   }
   check(cupYearsStart.size > 0, `${cupYearsStart.size} national cup(s) generated at career creation`);
+
+  // Continental competition years at creation — used later to detect which continent regenerated.
+  const continentalYearsStart = new Map<string, number>(); // slug -> year
+  for (const slug of (await plain().listCompetitionSlugs(saveId)).filter(isContinentalSlug)) {
+    const cm = await plain().getLeagueMeta(saveId, slug);
+    if (cm?.continental) continentalYearsStart.set(slug, cm.year);
+  }
+  check(continentalYearsStart.size === 4, `${continentalYearsStart.size} continental competition(s) generated at career creation (expected 4)`);
 
   const startDate = meta0.currentDate!;
   const startMembership = await idMembership(saveId);
@@ -542,6 +551,147 @@ try {
   check(doubleBooked.length === 0,
     `no club has two fixtures on the same date across ${allSlugsEnd.length} competitions (${doubleBooked.length} clashes)`
     + (doubleBooked.length ? `: ${doubleBooked.slice(0, 5).map(([k, comps]) => `${k}→${comps.join(",")}`).join("; ")}` : ""));
+
+  // ── Continental competitions ────────────────────────────────────────────
+  console.log("\n── Continental competitions ──");
+  const continentalSlugsEnd = allSlugsEnd.filter(isContinentalSlug);
+  check(continentalSlugsEnd.length === 4, `${continentalSlugsEnd.length} continental competition(s) exist (expected 4)`);
+
+  // 1. Every continental folder has meta.continental with exactly 32 clubs.
+  const continentalClubs = new Map<string, string[]>(); // slug -> its 32 club ids
+  let continentalMissingMeta = 0;
+  let continentalWrongSize = 0;
+  for (const slug of continentalSlugsEnd) {
+    const cm = await plain().getLeagueMeta(smokeSaveId, slug);
+    if (!cm?.continental) { continentalMissingMeta++; continue; }
+    const clubs = cm.continental.groups.flatMap((g) => g.clubs);
+    continentalClubs.set(slug, clubs);
+    if (clubs.length !== 32) { continentalWrongSize++; console.log(`    ${slug}: ${clubs.length} clubs (expected 32)`); }
+  }
+  check(continentalMissingMeta === 0, `every continental folder has meta.continental (${continentalMissingMeta} missing)`);
+  check(continentalWrongSize === 0, `every continental competition has exactly 32 clubs (${continentalWrongSize} bad)`);
+
+  // 2. No club plays in two continental competitions.
+  const clubComps = new Map<string, string[]>();
+  for (const [slug, clubs] of continentalClubs) {
+    for (const id of clubs) clubComps.set(id, [...(clubComps.get(id) ?? []), slug]);
+  }
+  const inTwoContinentals = [...clubComps.entries()].filter(([, comps]) => comps.length > 1);
+  check(inTwoContinentals.length === 0,
+    `no club plays in two continental competitions (${inTwoContinentals.length})`
+    + (inTwoContinentals.length ? `: ${inTwoContinentals.slice(0, 5).map(([id, comps]) => `${id}→${comps.join(",")}`).join("; ")}` : ""));
+
+  // 3. No club has two fixtures on the same date, across ALL competitions (league + cup +
+  //    continental) — already checked above (`doubleBooked`, built from every slug in `allSlugsEnd`,
+  //    which lists every folder under leagues/ regardless of kind).
+
+  // 4. No continental fixture dated before currentDate is still unplayed.
+  let contFixturesChecked = 0;
+  let contUnplayedPast = 0;
+  const contOffenders: string[] = [];
+  for (const slug of continentalSlugsEnd) {
+    const past = (fixturesBySlugEnd.get(slug) ?? []).filter((f) => f.date < endDate);
+    const bad = past.filter((f) => !f.played).length;
+    contFixturesChecked += past.length;
+    contUnplayedPast += bad;
+    if (bad > 0) contOffenders.push(`${slug}(${bad})`);
+  }
+  check(contUnplayedPast === 0,
+    `continental calendars: ${contFixturesChecked} fixtures dated before ${endDate}, ${contUnplayedPast} unplayed ${contOffenders.join(" ")}`);
+
+  // 5. Informational only (not a failure): the spec's ±1-day rule is soft-enforced by the date
+  //    scheduler, not guaranteed for every club on every date (e.g. a club whose domestic cup stage
+  //    date shifts after the continental calendar was generated). Count club/fixture instances where
+  //    a continental fixture falls the day before or after a league/cup fixture for that same club.
+  const subOneDay = (d: string): string => {
+    const dt = new Date(`${d}T12:00:00`);
+    dt.setDate(dt.getDate() - 1);
+    return dt.toISOString().slice(0, 10);
+  };
+  const nonContinentalSlugs = allSlugsEnd.filter((s) => !isContinentalSlug(s));
+  const clubDatesNonContinental = new Map<string, Set<string>>();
+  for (const slug of nonContinentalSlugs) {
+    for (const f of fixturesBySlugEnd.get(slug) ?? []) {
+      for (const club of [f.home, f.away]) {
+        if (!clubDatesNonContinental.has(club)) clubDatesNonContinental.set(club, new Set());
+        clubDatesNonContinental.get(club)!.add(f.date);
+      }
+    }
+  }
+  let adjacentInstances = 0;
+  const adjacentClubs = new Set<string>();
+  for (const slug of continentalSlugsEnd) {
+    for (const f of fixturesBySlugEnd.get(slug) ?? []) {
+      for (const club of [f.home, f.away]) {
+        const dates = clubDatesNonContinental.get(club);
+        if (!dates) continue;
+        if (dates.has(addOneDay(f.date)) || dates.has(subOneDay(f.date))) {
+          adjacentInstances++;
+          adjacentClubs.add(club);
+        }
+      }
+    }
+  }
+  console.log(`  ${adjacentInstances} continental fixture/club instance(s) (${adjacentClubs.size} distinct clubs) fall the day `
+    + `before/after a league or cup fixture for that club (informational only, not a failure)`);
+
+  // 6. Europe: the first season's UCL/UEL must have gone through the European continental
+  //    rollover by the end of this run (hard requirement — every European cross-year tier-1
+  //    league ends 05-16..05-18, so the rollover is always reached well within a run that goes
+  //    from world genesis (Aug 2026) through the player's own country rolling over in ~May 2027;
+  //    if it isn't reached, that's a real bug, not a timing fluke). The finished season must be
+  //    archived with exactly 1 title.
+  const [uclComp, uelComp] = competitionsOf("Europe");
+  const uclSlug = uclComp!.slug, uelSlug = uelComp!.slug;
+  const uclInitialYear = continentalYearsStart.get(uclSlug);
+  const uelInitialYear = continentalYearsStart.get(uelSlug);
+  const uclMetaEnd = await plain().getLeagueMeta(smokeSaveId, uclSlug);
+  const uelMetaEnd = await plain().getLeagueMeta(smokeSaveId, uelSlug);
+  const europeRegenerated = uclInitialYear !== undefined && (uclMetaEnd?.year ?? uclInitialYear) > uclInitialYear;
+  check(europeRegenerated,
+    `European continental rollover reached by ${endDate} (UCL year ${uclInitialYear} → ${uclMetaEnd?.year ?? uclInitialYear})`);
+  if (europeRegenerated) {
+    const uclArchive = await fsDal.readLeagueSeasonArchive(saveId, uclSlug, uclInitialYear!);
+    const uelArchive = await fsDal.readLeagueSeasonArchive(saveId, uelSlug, uelInitialYear!);
+    check(!!uclArchive && uclArchive.titles.length === 1,
+      `UCL ${uclInitialYear} archived at the European rollover with exactly 1 title (champion ${uclArchive?.titles[0]?.clubName ?? "none"})`);
+    check(!!uelArchive && uelArchive.titles.length === 1,
+      `UEL ${uelInitialYear} archived at the European rollover with exactly 1 title (champion ${uelArchive?.titles[0]?.clubName ?? "none"})`);
+  } else {
+    console.log(`    UCL ${uclInitialYear} champion at end of run: ${uclMetaEnd?.continental?.championId ?? "none"} (rollover not reached)`);
+    console.log(`    UEL ${uelInitialYear} champion at end of run: ${uelMetaEnd?.continental?.championId ?? "none"} (rollover not reached)`);
+  }
+
+  // 7. South America: same check if the SA continental rollover was reached (unlikely in a
+  //    default run rooted in a European player league — the calendar-year South American leagues
+  //    only roll around November); otherwise confirm the Libertadores progressed past the group
+  //    stage (r16 drawn) and every played r16 second leg carries an aggregate.
+  const [libComp, sudComp] = competitionsOf("South America");
+  const libSlug = libComp!.slug, sudSlug = sudComp!.slug;
+  const libInitialYear = continentalYearsStart.get(libSlug);
+  const sudInitialYear = continentalYearsStart.get(sudSlug);
+  const libMetaEnd = await plain().getLeagueMeta(smokeSaveId, libSlug);
+  const sudMetaEnd = await plain().getLeagueMeta(smokeSaveId, sudSlug);
+  const saRegenerated = libInitialYear !== undefined && (libMetaEnd?.year ?? libInitialYear) > libInitialYear;
+  if (saRegenerated) {
+    const libArchive = await fsDal.readLeagueSeasonArchive(saveId, libSlug, libInitialYear!);
+    const sudArchive = await fsDal.readLeagueSeasonArchive(saveId, sudSlug, sudInitialYear!);
+    check(!!libArchive && libArchive.titles.length === 1,
+      `Libertadores ${libInitialYear} archived at the South American rollover with exactly 1 title (champion ${libArchive?.titles[0]?.clubName ?? "none"})`);
+    check(!!sudArchive && sudArchive.titles.length === 1,
+      `Sul-Americana ${sudInitialYear} archived at the South American rollover with exactly 1 title (champion ${sudArchive?.titles[0]?.clubName ?? "none"})`);
+  } else {
+    const r16Stage = libMetaEnd?.continental?.stages.find((s) => s.name === "r16");
+    check(!!r16Stage?.drawn, `Libertadores ${libInitialYear} r16 drawn — progressed past the group stage`);
+    if (r16Stage) {
+      const leg2Round = r16Stage.rounds[1]!;
+      const rf = await plain().getRound(smokeSaveId, libSlug, leg2Round);
+      const playedLeg2 = (rf?.fixtures ?? []).filter((f) => f.played);
+      const missingAgg = playedLeg2.filter((f) => f.aggregate === undefined).length;
+      check(missingAgg === 0,
+        `Libertadores r16 second-leg fixtures have an aggregate once played (${missingAgg} missing of ${playedLeg2.length} played)`);
+    }
+  }
 
   await checkFiles(saveId, "end");
   const el = (performance.now() - t0) / 1000;

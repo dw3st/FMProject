@@ -4,6 +4,7 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { getPyramids, runBufferedDay, type AdvanceDayOutcome } from "@/backend/advanceDay";
 import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRollover";
 import { playerCupSlug } from "@/backend/cupWorld";
+import { playerContinentalSlug } from "@/backend/continentalWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
 
 /**
@@ -170,9 +171,9 @@ export async function readAdvancePosition(saveId: string, service: SaveService =
   if (!meta.currentDate) throw new Error("save has no currentDate");
   const currentDate = meta.currentDate;
   const cup = await playerCupSlug(meta.leagueSlug);
-  const matchDate = await nextPlayerFixtureDate(
-    service, saveId, cup ? [meta.leagueSlug, cup] : [meta.leagueSlug], meta.clubId, currentDate,
-  );
+  const continental = await playerContinentalSlug(service, saveId, meta.clubId);
+  const competitions = [meta.leagueSlug, cup, continental].filter((s): s is string => s !== null);
+  const matchDate = await nextPlayerFixtureDate(service, saveId, competitions, meta.clubId, currentDate);
 
   let rolloverDay: string | null = null;
   if (!matchDate) {

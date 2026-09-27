@@ -74,6 +74,30 @@ describe("endCurrentPeriod", () => {
   });
 });
 
+describe("aggregate (second leg)", () => {
+  test("level on the day but ahead on aggregate → match ends, no extra time", () => {
+    const s = endCurrentPeriod({ ...base(true, { A: 1, B: 1 }), aggregate: { A: 2, B: 0 } });
+    expect(s.matchPhase).toBe("matchEnd");
+    expect(knockoutDecider(s)).toBeNull();
+  });
+  test("aggregate level (2–1 today after 0–1 away) → extra time", () => {
+    const s = endCurrentPeriod({ ...base(true, { A: 1, B: 0 }), aggregate: { A: 0, B: 1 } });
+    expect(s.matchPhase).toBe("extraTimeBreak");
+  });
+  test("aggregate level after extra time → penalties; winner from the shootout", () => {
+    let s = endCurrentPeriod({ ...base(true, { A: 1, B: 0 }), aggregate: { A: 0, B: 1 } });
+    s = endCurrentPeriod({ ...s, matchPhase: "extraTimeSecond" });
+    expect(s.matchPhase).toBe("penalties");
+  });
+  test("extra-time goal wins on aggregate; decider winner uses the aggregate", () => {
+    let s = endCurrentPeriod({ ...base(true, { A: 1, B: 0 }), aggregate: { A: 0, B: 1 } });
+    s = endCurrentPeriod({ ...s, matchPhase: "extraTimeSecond", score: { A: 1, B: 1 } });
+    expect(s.matchPhase).toBe("matchEnd");
+    // today 1–1 after 0–1 away: aggregate A 1, B 2 → B wins
+    expect(knockoutDecider(s)!.winner).toBe("B");
+  });
+});
+
 describe("matchMinute", () => {
   test("offsets per period", () => {
     const s = base(true, { A: 0, B: 0 });

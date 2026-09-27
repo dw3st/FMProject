@@ -13,6 +13,7 @@ import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
 import { generateCup } from "@/Domain/cups/generateCup";
 import { cupChampion, drawNextStage, stageComplete } from "@/Domain/cups/cupProgress";
 import type { CupEntrant } from "@/Domain/cups/cupDraw";
+import { CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { logError } from "@/Logger";
 
 /** leagueSlug → country, from the leagueData catalog. */
@@ -34,6 +35,24 @@ export function countryClubs(
     const p = pyr.get(league);
     const tier = (p && tierOfLeague(p, league)) ?? 1;
     for (const t of index.inLeague(league)) out.push({ id: t.squadId, tier });
+  }
+  return out;
+}
+
+/**
+ * Continental competition slugs (ucl/uel/lib/sud) that already have at least one club of `country`
+ * among their participants (`meta.continental.countryOf`) — so a national cup's own dates can be
+ * scheduled to avoid double-booking those clubs the same way it already avoids the country's own
+ * domestic leagues. A competition not yet generated for this save (e.g. every cup at career
+ * creation, before continentals exist) or with no participant from `country` is simply absent —
+ * a country with no continental participants gets none, same as before this existed.
+ */
+export async function continentalSlugsOf(service: SaveService, saveId: string, country: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const slug of CONTINENTAL_SLUGS) {
+    const meta = await service.getLeagueMeta(saveId, slug);
+    const countryOf = meta?.continental?.countryOf;
+    if (countryOf && Object.values(countryOf).includes(country)) out.push(slug);
   }
   return out;
 }
@@ -68,12 +87,13 @@ export async function createCountryCup(args: {
 }): Promise<LeagueSeasonMeta | null> {
   const clubs = countryClubs(args.country, args.index, args.countryOf, args.pyramids);
   const leagues = [...args.countryOf].filter(([, c]) => c === args.country).map(([s]) => s);
+  const continentalSlugs = await continentalSlugsOf(args.service, args.saveId, args.country);
   const cup = generateCup({
     country: args.country,
     year: args.year,
     clubs,
     window: args.window,
-    busyDates: await leagueBusyDates(args.service, args.saveId, leagues),
+    busyDates: await leagueBusyDates(args.service, args.saveId, [...leagues, ...continentalSlugs]),
     seedKey: `${args.saveId}:${args.year}:${args.country}`,
   });
   if (!cup) return null;

@@ -213,6 +213,11 @@ export function MatchScreen() {
             oppLineup,
           ),
           knockout: data.fixture.knockout === true,
+          ...(data.fixture.aggregate
+            ? { aggregate: data.fixture.home === data.mySquadId
+                  ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }
+                  : { A: data.fixture.aggregate.away, B: data.fixture.aggregate.home } }
+            : {}),
         };
         initRatings(state.players.map(p => p.id));
         initStats(state.players.map(p => ({ id: p.id, team: p.team })));
@@ -487,6 +492,7 @@ export function MatchScreen() {
             teamB={teamBWithCrest}
             scoreColorA={matchKitColors.teamA}
             scoreColorB={matchKitColors.teamB}
+            aggregate={gameState.aggregate}
           />
 
           {gameState.shootout && (

@@ -44,6 +44,8 @@ export interface MatchResult {
 export interface SimulateMatchOptions {
   /** Knockout: a draw after 90' goes to extra time and penalties. */
   knockout?: boolean;
+  /** Second leg of a two-legged tie: first-leg goals per side of THIS match. */
+  aggregate?: { A: number; B: number };
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -116,6 +118,7 @@ export function simulateMatch(
     matchPhase:            'firstHalf',
     presentationCountdown: 0,
     knockout:              options.knockout === true,
+    ...(options.aggregate ? { aggregate: options.aggregate } : {}),
   };
 
   // Reset shared accumulators so live-game stats don't bleed in

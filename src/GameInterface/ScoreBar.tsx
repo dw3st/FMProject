@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { MatchPhase } from "@/GameEngine/types";
 import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
 import { readableOnDark } from "@/GameInterface/matchTeamColors";
@@ -45,6 +46,7 @@ export function ScoreBar({
   teamB,
   scoreColorA,
   scoreColorB,
+  aggregate,
 }: {
   scoreA: number;
   scoreB: number;
@@ -55,7 +57,11 @@ export function ScoreBar({
   /** Resolved kit colors (pitch / placar). Falls back to each team's primary when omitted. */
   scoreColorA?: string;
   scoreColorB?: string;
+  /** Two-legged tie (cup or continental), 2nd leg only: first-leg goals per side. Renders a small
+   *  "agg. X–Y" under the clock, X/Y already including today's live score. */
+  aggregate?: { A: number; B: number };
 }) {
+  const { t } = useTranslation();
   const clockStr = formatMatchClock(matchTime, matchPhase);
   const isSpecial = matchPhase === "halfTime" || matchPhase === "matchEnd"
     || matchPhase === "extraTimeBreak" || matchPhase === "penalties";
@@ -93,15 +99,22 @@ export function ScoreBar({
           </span>
         </div>
 
-        {/* Clock */}
-        <div
-          className={`w-20 h-11 flex items-center justify-center border-y transition-colors ${
-            isSpecial ? "bg-primary/15 border-primary/40" : "bg-card/60 border-border"
-          }`}
-        >
-          <span className={`font-display font-black text-base tracking-widest tabular-nums ${isSpecial ? "text-primary" : "text-foreground"}`}>
-            {clockStr}
-          </span>
+        {/* Clock (+ aggregate score for a two-legged tie's 2nd leg) */}
+        <div className="flex flex-col items-center">
+          <div
+            className={`w-20 h-11 flex items-center justify-center border-y transition-colors ${
+              isSpecial ? "bg-primary/15 border-primary/40" : "bg-card/60 border-border"
+            }`}
+          >
+            <span className={`font-display font-black text-base tracking-widest tabular-nums ${isSpecial ? "text-primary" : "text-foreground"}`}>
+              {clockStr}
+            </span>
+          </div>
+          {aggregate && (
+            <span className="text-[10px] text-muted-foreground font-bold tabular-nums mt-0.5">
+              {t("continental.aggregate", { home: aggregate.A + scoreA, away: aggregate.B + scoreB })}
+            </span>
+          )}
         </div>
 
         {/* Score B */}

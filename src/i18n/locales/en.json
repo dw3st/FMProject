@@ -1036,7 +1036,8 @@
       "transfer_in": "Transfer In",
       "transfer_out": "Transfer Out",
       "season": "Season",
-      "cup": "Cup"
+      "cup": "Cup",
+      "continental": "Continental"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1049,6 +1050,14 @@
         "away": "away",
         "neutral": "neutral venue"
       }
+    },
+    "continental": {
+      "qualified": "The club qualified for the {{competition}}",
+      "group": "{{competition}} draw: Group {{group}} with {{opponents}}",
+      "draw": "{{competition}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
+      "eliminated": "Eliminated from the {{competition}} ({{stage}}) by {{opponent}}",
+      "eliminatedGroup": "Eliminated from the {{competition}} group stage",
+      "champion": "Champions of the {{competition}}!"
     }
   },
   "finances": {
@@ -1187,6 +1196,30 @@
       "r128": "Round of 128",
       "r64": "Round of 64",
       "r32": "Round of 32",
+      "r16": "Round of 16",
+      "qf": "Quarter-finals",
+      "sf": "Semi-finals",
+      "final": "Final"
+    }
+  },
+  "continental": {
+    "tab": "Continental",
+    "groupRound": "Group {{group}} · matchday {{round}}",
+    "leg1": "1st leg",
+    "leg2": "2nd leg",
+    "firstLeg": "First leg: {{home}} {{score}} {{away}}",
+    "aggregateNote": "Decided on aggregate; extra time and penalties if level",
+    "aggregate": "agg. {{home}}–{{away}}",
+    "aggregateNamed": "agg. {{homeName}} {{home}}–{{away}} {{awayName}}",
+    "pensNamed": "pens {{homeName}} {{home}}–{{away}} {{awayName}}",
+    "notDrawn": "Not drawn yet",
+    "champion": "Champion",
+    "groups": "Groups",
+    "group": "Group {{name}}",
+    "knockout": "Knockout",
+    "none": "Not played yet this season",
+    "stage": {
+      "group": "Group stage",
       "r16": "Round of 16",
       "qf": "Quarter-finals",
       "sf": "Semi-finals",

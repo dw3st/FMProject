@@ -2,15 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { Icon } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
 
 type FilterTab = "all" | "unread";
 
+/** Continental news uses the shared Icon abstraction (`globe`) rather than importing lucide-react
+ *  directly, so it slots into `CATEGORY_META.Icon` (a `{ className }` component) like every other
+ *  category's direct lucide import does. */
+function ContinentalIcon({ className }: { className?: string }) {
+  return <Icon name="globe" className={className} />;
+}
+
 const CATEGORY_META: Record<
   InboxCategory,
-  { labelKey: string; color: string; bg: string; border: string; Icon: typeof TrendingUp }
+  { labelKey: string; color: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }
 > = {
   development: {
     labelKey: "inbox.categories.development",
@@ -46,6 +54,13 @@ const CATEGORY_META: Record<
     bg: "bg-fuchsia-500/15",
     border: "border-fuchsia-500/30",
     Icon: Award,
+  },
+  continental: {
+    labelKey: "inbox.categories.continental",
+    color: "text-sky-400",
+    bg: "bg-sky-500/15",
+    border: "border-sky-500/30",
+    Icon: ContinentalIcon,
   },
 };
 
@@ -363,6 +378,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           <p className="text-sm text-foreground m-0">{message.preview}</p>
         )}
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
+        {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
       </div>
     </div>
   );
@@ -399,6 +415,58 @@ function CupBody({
         opponent: message.opponentName ?? "?",
         venue,
         date: message.tieDate ? formatFullDate(message.tieDate) : "?",
+      })}
+    </p>
+  );
+}
+
+function ContinentalBody({
+  message,
+  leagues,
+}: {
+  message: Extract<InboxMessage, { category: "continental" }>;
+  leagues: LeagueData[];
+}) {
+  const { t, i18n } = useTranslation();
+  const stage = t(`continental.stage.${message.stage}`, { defaultValue: message.stage });
+  // Fall back to the stored English name while the league catalog hasn't loaded yet.
+  const competition = leagues.length > 0
+    ? competitionName(message.competition, leagues, i18n.language)
+    : message.competitionName;
+
+  if (message.kind === "qualified") {
+    return <p className="text-sm text-foreground m-0">{t("inbox.continental.qualified", { competition })}</p>;
+  }
+  if (message.kind === "group") {
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.continental.group", {
+          competition, group: message.group ?? "?", opponents: (message.opponentNames ?? []).join(", "),
+        })}
+      </p>
+    );
+  }
+  if (message.kind === "champion") {
+    return <p className="text-sm text-foreground m-0">{t("inbox.continental.champion", { competition })}</p>;
+  }
+  if (message.kind === "eliminated") {
+    return (
+      <p className="text-sm text-foreground m-0">
+        {message.opponentName
+          ? t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName })
+          : t("inbox.continental.eliminatedGroup", { competition })}
+      </p>
+    );
+  }
+  const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
+  return (
+    <p className="text-sm text-foreground m-0">
+      {t("inbox.continental.draw", {
+        competition,
+        stage,
+        opponent: message.opponentName ?? "?",
+        venue,
+        date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
       })}
     </p>
   );

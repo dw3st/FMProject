@@ -57,6 +57,8 @@ export interface QuickSimInput {
   awayRoles?: string[];
   /** Knockout: a level score after 90' goes to extra time (xG × 30/90) and then penalties. */
   knockout?: boolean;
+  /** Two-legged tie: first-leg goals, home/away of THIS match. Level = today's score + aggregate. */
+  aggregate?: { home: number; away: number };
   /** Neutral venue: no home advantage for either side. */
   neutral?: boolean;
 }
@@ -362,7 +364,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
 
   let decider: PlayedMatchRecording["decider"];
-  if (input.knockout && goalsHome === goalsAway) {
+  const agg = input.aggregate ?? { home: 0, away: 0 };
+  const levelNow = () => goalsHome + agg.home === goalsAway + agg.away;
+  if (input.knockout && levelNow()) {
     const etHome = homeXI.length > 0 ? sampleGoals(xgHomeDay * (30 / 90), rng) : 0;
     const etAway = awayXI.length > 0 ? sampleGoals(xgAwayDay * (30 / 90), rng) : 0;
     assignGoals(homeXI, etHome, playerStats, rng);
@@ -370,7 +374,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     goalsHome += etHome;
     goalsAway += etAway;
     decider = { extraTime: { home: etHome, away: etAway } };
-    if (goalsHome === goalsAway) {
+    if (levelNow()) {
       const so = resolvePenaltyShootout(shootoutSide(homeXI), shootoutSide(awayXI), rng);
       decider.penalties = { home: so.score.A, away: so.score.B };
     }

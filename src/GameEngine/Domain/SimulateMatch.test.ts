@@ -61,4 +61,21 @@ describe("simulateMatch knockout", () => {
     const r = simulateMatch(loadSquad("33.json"), loadSquad("34.json"));
     expect(r.decider).toBeNull();
   }, 30_000);
+
+  test("second leg: aggregate decides whether the tie is level", () => {
+    const squad = loadSquad("33.json");
+    for (let i = 0; i < 4; i++) {
+      const r = simulateMatch(squad, squad, undefined, undefined, undefined, undefined, {
+        knockout: true,
+        aggregate: { A: 3, B: 0 },
+      });
+      const diff = r.score.B - r.score.A;
+      if (diff < 3) {
+        expect(r.decider).toBeNull();
+      } else {
+        expect(r.decider).not.toBeNull();
+        expect(diff).toBe(3);
+      }
+    }
+  }, 120_000);
 });

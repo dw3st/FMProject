@@ -24,6 +24,9 @@ import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { playerCupSlug } from "@/backend/cupWorld";
+import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { groupTable } from "@/Domain/continental/groupTable";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -339,10 +342,11 @@ export const apiRoutes = {
         return Response.json({ error: "save has no currentDate" }, { status: 400 });
       }
       const cupSlug = await playerCupSlug(save.leagueSlug);
+      const continentalSlug = await playerContinentalSlug(saveService, save.id, myInternalId);
       const todayFixtures = await saveService.getFixturesForDate(save.id, currentDate);
       const todayFixture = todayFixtures.find(
         (f) =>
-          (f.competition === save.leagueSlug || f.competition === cupSlug) &&
+          (f.competition === save.leagueSlug || f.competition === cupSlug || f.competition === continentalSlug) &&
           (f.home === myInternalId || f.away === myInternalId) &&
           !f.played,
       );
@@ -496,6 +500,33 @@ export const apiRoutes = {
     if (meta.cup.championId) ids.add(meta.cup.championId);
     const names = Object.fromEntries([...ids].map((id) => [id, index.byId(id)?.name ?? id]));
     return Response.json({ meta, fixtures, names });
+  },
+
+  /**
+   * Continental competition (UCL/UEL/Libertadores/Sudamericana): meta (groups, stages, champion),
+   * every fixture, club names, and group tables (`groupTable` over each group's own round-1..6
+   * fixtures). Mirrors the national-cup route above.
+   */
+  "/api/saves/:saveId/continental/:slug": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId, slug } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    if (!isContinentalSlug(slug!)) {
+      return Response.json({ error: "not a continental competition" }, { status: 400 });
+    }
+    const meta = await saveService.getLeagueMeta(saveId!, slug!);
+    if (!meta?.continental) return Response.json({ error: "continental competition not found" }, { status: 404 });
+    const fixtures = await saveService.getAllFixturesForLeague(saveId!, slug!);
+    const index = await saveService.getSquadIndex(saveId!);
+    const ids = new Set(meta.continental.groups.flatMap((g) => g.clubs));
+    for (const f of fixtures) { ids.add(f.home); ids.add(f.away); }
+    if (meta.continental.championId) ids.add(meta.continental.championId);
+    const names = Object.fromEntries([...ids].map((id) => [id, index.byId(id)?.name ?? id]));
+    const groupRounds = meta.continental.stages.find((s) => s.name === "group")?.rounds ?? [];
+    const groupFixtures = fixtures.filter((f) => groupRounds.includes(f.round));
+    const groups = meta.continental.groups.map((g) => ({ name: g.name, rows: groupTable(g.clubs, groupFixtures) }));
+    return Response.json({ meta, fixtures, names, groups });
   },
 
   /** Ids of the world's top-50 players (by overall AVG) — used to badge them as "Current legend". */

@@ -22,6 +22,12 @@ export interface Fixture {
   neutral?:    true;
   /** Knockout only: extra-time goals / shootout. Absent when decided in 90'. */
   decider?:    MatchDecider;
+  /** Two-legged tie id (same on both legs). */
+  tieId?:      string;
+  /** 1 = first leg, 2 = second leg (knockout, decides on aggregate). */
+  leg?:        1 | 2;
+  /** Second leg only: first-leg goals from THIS fixture's home/away point of view. */
+  aggregate?:  { home: number; away: number };
 }
 
 export interface SeasonData {
@@ -86,6 +92,32 @@ export interface CupMetaData {
   championId: string | null;
 }
 
+/** UCL/UEL (Europe) or Lib/Sud (South America). */
+export type ContinentalSlug = "ucl" | "uel" | "lib" | "sud";
+export type ContinentalStageName = "group" | "r16" | "qf" | "sf" | "final";
+
+/** One stage of a continental competition. `rounds` are RoundFixtures file numbers. */
+export interface ContinentalStage {
+  name:   ContinentalStageName;
+  /** RoundFixtures file numbers of this stage (group: 6, r16/qf/sf: 2 (leg 1, leg 2), final: 1). */
+  rounds: number[];
+  dates:  string[];
+  drawn:  boolean;
+}
+
+export interface ContinentalMetaData {
+  competition: ContinentalSlug;
+  continent:   "Europe" | "South America";
+  /** A–H, 4 clubs each, pot order (pot 1 first). */
+  groups:      { name: string; clubs: string[] }[];
+  stages:      ContinentalStage[];
+  /** Club → leagueData country, for draw restrictions and display. */
+  countryOf:   Record<string, string>;
+  /** Club strength (quickSim teamLevel) at generation — pots and "stronger side". */
+  level:       Record<string, number>;
+  championId:  string | null;
+}
+
 /** Lightweight season metadata for one league (replaces SeasonData as the per-league store) */
 export interface LeagueSeasonMeta {
   leagueSlug:   string;
@@ -95,9 +127,10 @@ export interface LeagueSeasonMeta {
   totalRounds:  number;
   /** Rest days for the player's league (shown in training calendar UI) */
   restDays?:    string[];
-  /** "cup" for a national cup; absent for a league. */
-  kind?:        "cup";
+  /** "cup" for a national cup, "continental" for UCL/UEL/Lib/Sud; absent for a league. */
+  kind?:        "cup" | "continental";
   cup?:         CupMetaData;
+  continental?: ContinentalMetaData;
 }
 
 /** All fixtures for a single round of one league */
