@@ -29,7 +29,7 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
-import { autoFillLineup } from "@/Domain/lineupHelpers";
+import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
@@ -896,7 +896,10 @@ export function MatchPreviewScreen() {
   const homeSquad        = isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const awaySquad        = isHome ? opponentSquad          : matchSetup?.mySquad ?? null;
   const oppAutoLineup = opponentSquad
-    ? autoFillLineup(oppFormationSlots as Parameters<typeof autoFillLineup>[0], opponentSquad.players)
+    ? autoFillLineupWithFitness(
+        oppFormationSlots as Parameters<typeof autoFillLineupWithFitness>[0],
+        opponentSquad.players,
+      )
     : [];
   const homeLineup       = isHome ? myLineup               : oppAutoLineup;
   const awayLineup       = isHome ? oppAutoLineup           : myLineup;
