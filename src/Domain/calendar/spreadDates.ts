@@ -230,7 +230,7 @@ export function spreadOnWeekday(
       if (clampCeiling > prev) {
         pick = clampCeiling;
         if (hardBusy?.has(toIso(pick))) {
-          const cappedLower = Math.max(prev, clampCeiling - MAX_HARD_FREE_BACKTRACK_DAYS * DAY);
+          const cappedLower = Math.max(lo, prev, clampCeiling - MAX_HARD_FREE_BACKTRACK_DAYS * DAY);
           for (let ms = clampCeiling - DAY; ms > cappedLower; ms -= DAY) {
             if (!hardBusy.has(toIso(ms))) {
               pick = ms;
