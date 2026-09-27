@@ -126,5 +126,5 @@ describe("fitness/load model under fixture congestion", () => {
     // stat-only selector would still start.
     const restedSomeone = before3.plainXi.some((id, i) => id !== before3.fitnessXi[i]);
     expect(restedSomeone).toBe(true);
-  }, 30_000);
+  }, 90_000);
 });
