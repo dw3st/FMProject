@@ -5,7 +5,7 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import type { LeagueData, LeagueTeam, LeagueZone, LeagueZoneColor, StandingRow } from "@/types/playerTypes";
-import type { Fixture } from "@/types/calendarTypes";
+import type { ContinentalSlug, Fixture } from "@/types/calendarTypes";
 import type { DayLog, MatchEvent } from "@/types/dayLogTypes";
 import type { CountryEntry } from "@/types/worldTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -20,7 +20,9 @@ import { Icon } from "@/GameInterface/Icons";
 import { ClubFinancesTable } from "@/GameInterface/Components/ClubFinancesTable";
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
 import { CupBracket, type CupBracketData } from "@/GameInterface/Components/CupBracket";
+import { ContinentalView, type ContinentalData } from "@/GameInterface/Components/ContinentalView";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
+import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
 import countriesRaw from "@/Data/countries.json";
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
@@ -494,19 +496,26 @@ function MatchStatsModal({
 
 export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const { t, i18n } = useTranslation();
-  const { session, currentDate, mergeSession } = useGameSave();
+  const { session, currentDate, mergeSession, fixtures } = useGameSave();
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [activeSlug, setActiveSlug] = useState(
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
   );
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup">("table");
+  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental">("table");
   // Club finances of the selected league — fetched only while the Finances tab is open.
   const [financeRows, setFinanceRows] = useState<ClubFinanceRow[] | null>(null);
   // National cup bracket of the selected league's country — fetched only while the Cup tab is open.
   const [cupData, setCupData] = useState<CupBracketData | null>(null);
   // True once the cup fetch has come back 404 (this country has no national cup this season).
   const [cupMissing, setCupMissing] = useState(false);
+  // Which of the 4 continental competitions is selected inside the Continental tab.
+  const [continentalSlug, setContinentalSlug] = useState<ContinentalSlug | null>(null);
+  const [continentalSlugTouched, setContinentalSlugTouched] = useState(false);
+  // Continental groups + bracket data — fetched only while the Continental tab is open.
+  const [continentalData, setContinentalData] = useState<ContinentalData | null>(null);
+  // True once the continental fetch has come back 404 (no competition running this season).
+  const [continentalMissing, setContinentalMissing] = useState(false);
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
   // True while the save's standings are in flight — the catalog fallback would show the
@@ -609,6 +618,49 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
       cancelled = true;
     };
   }, [tab, session?.saveId, cupSlug]);
+
+  // Default continental competition: the one the player's club is actually playing this season
+  // (from the player calendar), else the continent of the currently selected league.
+  const activeContinent = active?.country ? COUNTRY_BY_NAME.get(active.country)?.continent : undefined;
+  const defaultContinentalSlug: ContinentalSlug = (() => {
+    const own = fixtures.find((f) => isContinentalSlug(f.competition));
+    if (own) return own.competition as ContinentalSlug;
+    if (activeContinent === "South America") return "lib";
+    return "ucl";
+  })();
+
+  // A league switch clears the user's manual pick so the default re-applies for the new context.
+  useEffect(() => {
+    setContinentalSlugTouched(false);
+  }, [activeSlug]);
+
+  useEffect(() => {
+    if (!continentalSlugTouched) setContinentalSlug(defaultContinentalSlug);
+  }, [defaultContinentalSlug, continentalSlugTouched]);
+
+  // Fetch the continental groups + bracket — reset whenever the selected competition changes.
+  // Only fetched while the Continental tab is open (same pattern as the Cup tab).
+  useEffect(() => {
+    if (tab !== "continental" || !session?.saveId || !continentalSlug) return;
+    let cancelled = false;
+    setContinentalData(null);
+    setContinentalMissing(false);
+    fetch(`/api/saves/${session.saveId}/continental/${continentalSlug}`)
+      .then((r) => {
+        if (!r.ok) {
+          if (!cancelled) setContinentalMissing(true);
+          return null;
+        }
+        return r.json() as Promise<ContinentalData>;
+      })
+      .catch(() => null)
+      .then((data) => {
+        if (!cancelled) setContinentalData(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, session?.saveId, continentalSlug]);
 
   const hasFixtures = leagueFixtures.length > 0;
   // Prefer live standings from backend; fall back to client-side computation only once the
@@ -801,6 +853,18 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   {competitionName(cupSlug, leagues, i18n.language)}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setTab("continental")}
+                disabled={!session}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  tab === "continental"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground bg-transparent"
+                }`}
+              >
+                {t("continental.tab")}
+              </button>
             </div>
 
             {tab === "table" ? (
@@ -846,6 +910,36 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               ) : (
                 <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
               )
+            ) : tab === "continental" ? (
+              <div className="space-y-4">
+                <div className="flex gap-1 p-1 bg-secondary/20 rounded-lg w-fit border border-border flex-wrap">
+                  {CONTINENTAL_SLUGS.map((slug) => (
+                    <button
+                      key={slug}
+                      type="button"
+                      onClick={() => {
+                        setContinentalSlug(slug);
+                        setContinentalSlugTouched(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
+                        continentalSlug === slug
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground bg-transparent"
+                      }`}
+                    >
+                      {competitionName(slug, leagues, i18n.language)}
+                    </button>
+                  ))}
+                </div>
+
+                {continentalMissing ? (
+                  <p className="text-muted-foreground text-sm p-6">{t("continental.none")}</p>
+                ) : continentalData ? (
+                  <ContinentalView data={continentalData} myClubId={session?.clubId ?? ""} />
+                ) : (
+                  <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
+                )}
+              </div>
             ) : (
               <FixturesPanel
                 fixtures={leagueFixtures}
