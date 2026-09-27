@@ -22,14 +22,14 @@ export const DEFENSIVE_MID_ROLES = ["CDM", "DM"] as const;
 
 export const QUICK_SIM_CONFIG = {
   /** Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage. */
-  BASE_GOALS: 0.74,
-  HOME_ADVANTAGE: 1.07,
+  BASE_GOALS: 0.76,
+  HOME_ADVANTAGE: 1.03,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
    * have defence/GK strong vs attack, and the engine scores far less there than level alone predicts.
    * Refitted jointly with PACE_EDGE_WEIGHT (the pace edge took over part of what this carried).
    */
-  STRENGTH_EXPONENT: 0.54,
+  STRENGTH_EXPONENT: 0.51,
   /**
    * xG × e^(PACE_EDGE_WEIGHT × (attacker forward-line pace − defender back-line pace)), pace =
    * (3·speed + acceleration)/4 on raw 0–10 attributes. The engine's goal spread between leagues of
@@ -37,7 +37,7 @@ export const QUICK_SIM_CONFIG = {
    * drives chance volume via through-ball races, not conversion. Fitted with
    * `bun scripts/quicksim-spread.ts analyze`. 0 disables.
    */
-  PACE_EDGE_WEIGHT: 0.26,
+  PACE_EDGE_WEIGHT: 0.32,
   /**
    * Goals per side ~ Binomial(GOAL_CHANCES, xG / GOAL_CHANCES). Fewer chances → less variance
    * than Poisson → fewer 0-0s (the full engine is under-dispersed). Also caps goals/side.
@@ -57,7 +57,7 @@ export const QUICK_SIM_CONFIG = {
    * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
    * teams than between weak ones at the same strength ratio. 0 disables.
    */
-  LEVEL_EXPONENT: 0.8,
+  LEVEL_EXPONENT: 0.81,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
   /** Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100). */
@@ -74,17 +74,17 @@ export const QUICK_SIM_CONFIG = {
    * These are shares within the team, so they match the engine's line shares, subs included:
    * quickSim has no subs, and each starter carries his whole slot.
    */
-  ROLE_GOAL_WEIGHT:   { GK: 0, DEF: 0, MID: 0.113, FWD: 1.533 } as Record<LineGroup, number>,
-  ROLE_ASSIST_WEIGHT: { GK: 0.015, DEF: 0.219, MID: 0.284, FWD: 0.544 } as Record<LineGroup, number>,
+  ROLE_GOAL_WEIGHT:   { GK: 0, DEF: 0, MID: 0.103, FWD: 1.542 } as Record<LineGroup, number>,
+  ROLE_ASSIST_WEIGHT: { GK: 0.019, DEF: 0.222, MID: 0.277, FWD: 0.546 } as Record<LineGroup, number>,
   /** 1 − the engine's assists per goal. */
-  NO_ASSIST_RATE: 0.143,
+  NO_ASSIST_RATE: 0.131,
   /**
    * Non-goal shots per unit of (match-day) xG, at match level LEVEL_REF, scaled by
    * (matchLevel / LEVEL_REF)^SHOTS_LEVEL_EXPONENT: the engine's weak leagues shoot more per goal
    * (they convert less).
    */
-  SHOTS_PER_XG: 1.922,
-  SHOTS_LEVEL_EXPONENT: -1.03,
+  SHOTS_PER_XG: 1.754,
+  SHOTS_LEVEL_EXPONENT: -1.17,
 
   /**
    * Regular passes per starting slot at team level LEVEL_REF — the engine counts through balls in
@@ -93,30 +93,30 @@ export const QUICK_SIM_CONFIG = {
    * (ownTeamLevel / LEVEL_REF)^PASS_LEVEL_EXPONENT[group]. Fitted against the engine with the
    * midfield passing-hub levers (26 leagues, `bun scripts/quicksim-spread.ts events`).
    */
-  PASSES_PER_MATCH:        { GK: 2.095, DEF: 2.124, MID: 2.387, FWD: 1.102 } as Record<LineGroup, number>,
+  PASSES_PER_MATCH:        { GK: 2.159, DEF: 2.101, MID: 2.338, FWD: 1.128 } as Record<LineGroup, number>,
   /** Weak teams pass less in the engine, mostly in midfield (Kenya MID 1.32 vs Premier 2.36 per slot). */
-  PASS_LEVEL_EXPONENT:     { GK: 0.23, DEF: 0.34, MID: 1.01, FWD: 0.72 } as Record<LineGroup, number>,
+  PASS_LEVEL_EXPONENT:     { GK: 0.15, DEF: 0.4, MID: 0.96, FWD: 0.67 } as Record<LineGroup, number>,
   /** Engine completion is ~97.5% (only interceptions/offside fail a regular pass); passing barely moves it. */
-  PASS_COMPLETION_BASE: 0.973,
-  PASS_COMPLETION_SKILL: 0.004,
+  PASS_COMPLETION_BASE: 0.971,
+  PASS_COMPLETION_SKILL: 0.007,
   /**
    * Won tackles / interceptions per starting slot (the engine's line total ÷ starting slots) at
    * team level LEVEL_REF, per unit of the player factor (0.5 + tackling/10, resp. pressing/10).
    * Scaled by (ownTeamLevel / LEVEL_REF)^…_LEVEL_EXPONENT[group]. Fitted with
    * `bun scripts/quicksim-spread.ts events`.
    */
-  TACKLES_PER_MATCH:            { GK: 0, DEF: 0.54, MID: 0.189, FWD: 0.369 } as Record<LineGroup, number>,
-  TACKLE_LEVEL_EXPONENT:        { GK: 0, DEF: -0.2, MID: -0.74, FWD: -0.09 } as Record<LineGroup, number>,
-  INTERCEPTIONS_PER_MATCH:      { GK: 0, DEF: 0.124, MID: 0.152, FWD: 0.161 } as Record<LineGroup, number>,
-  INTERCEPTION_LEVEL_EXPONENT:  { GK: 0, DEF: 0.6, MID: 1.04, FWD: 1.24 } as Record<LineGroup, number>,
+  TACKLES_PER_MATCH:            { GK: 0, DEF: 0.529, MID: 0.186, FWD: 0.362 } as Record<LineGroup, number>,
+  TACKLE_LEVEL_EXPONENT:        { GK: 0, DEF: -0.16, MID: -0.79, FWD: -0.08 } as Record<LineGroup, number>,
+  INTERCEPTIONS_PER_MATCH:      { GK: 0, DEF: 0.123, MID: 0.157, FWD: 0.175 } as Record<LineGroup, number>,
+  INTERCEPTION_LEVEL_EXPONENT:  { GK: 0, DEF: 0.51, MID: 1.09, FWD: 1.37 } as Record<LineGroup, number>,
   /**
    * Failed tackles per starting slot at LEVEL_REF, × (ownTeamLevel / LEVEL_REF)^TACKLE_FAIL_LEVEL_EXPONENT.
    * Independent of the won-tackle roll. The exponents follow the engine; the rates are set so each
    * line's mean starter rating matches the engine's (a quickSim starter also carries the events of
    * the sub who would replace him, so the rates sit off the engine's per-slot counts).
    */
-  TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 1.068, MID: 0.364, FWD: 1.076 } as Record<LineGroup, number>,
-  TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.39, MID: -0.82, FWD: -0.3 } as Record<LineGroup, number>,
+  TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 1.072, MID: 0.356, FWD: 1.154 } as Record<LineGroup, number>,
+  TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.39, MID: -0.81, FWD: -0.36 } as Record<LineGroup, number>,
 
   /** Energy spent over 90' for an average-stamina player. */
   ENERGY_DRAIN: 35,

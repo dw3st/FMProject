@@ -89,7 +89,12 @@ describe("cup fixtures", () => {
     // neutral fixture — same rng stream, so the shared randomness (dominance noise, the exact
     // Bernoulli draws inside sampleGoals) mostly cancels out and only the effect of the venue
     // flag on expected goals remains. Calibrated empirically: paired mean ~0.045, paired SE
-    // ~0.005 at n=2000 — a >8-sigma signal, so 0.02 is a safe, non-flaky threshold while still
+    // ~0.005 at n=2000 (HOME_ADVANTAGE = 1.07) — a >8-sigma signal, so 0.02 was a safe,
+    // non-flaky threshold while still failing hard if `neutral` stops suppressing home
+    // advantage. `HOME_ADVANTAGE` was recalibrated to 1.03 (2026-09-26, quickSim goal-formula
+    // recalibration after the native-star recalibration — see
+    // `.claude/rules/non-player-games.md` → "quickSim"), which shrinks the paired mean to
+    // ~0.0195 at n=2000. 0.012 stays comfortably below that measured value while still
     // failing hard if `neutral` stops suppressing home advantage.
     const n = 2000;
     let diffSum = 0;
@@ -103,7 +108,7 @@ describe("cup fixtures", () => {
       neutralMarginSum += neutralMargin;
     }
     // Paired mean margin lost by removing home advantage — must be clearly positive.
-    expect(diffSum / n).toBeGreaterThan(0.02);
+    expect(diffSum / n).toBeGreaterThan(0.012);
     // With home and away exactly equal in force (see makeSquad), a neutral fixture on its own
     // should have no systematic home/away bias — the mean margin should sit close to 0.
     expect(Math.abs(neutralMarginSum / n)).toBeLessThan(0.08);
