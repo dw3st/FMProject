@@ -36,6 +36,7 @@ import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
+  readableOnDark,
   resolveMatchTeamKitColors,
   squadPrimaryColor,
   squadSecondaryColor,
@@ -931,10 +932,13 @@ export function MatchPreviewScreen() {
   const awayLogoUrl      = isHome ? oppLogoUrl             : myLogoUrl;
   const homePrimary = squadPrimaryColor(homeSquad, FALLBACK_HOME_ACCENT);
   const awayPrimary = squadPrimaryColor(awaySquad, FALLBACK_AWAY_ACCENT);
-  const { teamA: homeHex, teamB: awayHex } = resolveMatchTeamKitColors(
+  const kits = resolveMatchTeamKitColors(
     { primary: homePrimary, secondary: squadSecondaryColor(homeSquad, homePrimary) },
     { primary: awayPrimary, secondary: squadSecondaryColor(awaySquad, awayPrimary) },
   );
+  // Drawn on the dark background: lift black/navy kits so accents stay readable.
+  const homeHex = readableOnDark(kits.teamA);
+  const awayHex = readableOnDark(kits.teamB);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
