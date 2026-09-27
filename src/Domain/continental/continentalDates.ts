@@ -15,7 +15,15 @@ const CONTINENTAL_OPTIONS = {
   avoidBusyHarder: true,
   minGapFloor: 3,
   lastResortGapDays: 2,
-  throwOnDegenerate: true,
+  // Not `true`: measured against the real world (see `continentalWorld.ts`'s `createContinentalSeason`
+  // busy-set comment), a handful of countries whose domestic calendar already rotates through 2-3
+  // weekdays (e.g. Brazil and Argentina playing some rounds on the same weekday national cups always
+  // use) is enough, once unioned with a ±1-day buffer across a whole continent's worth of countries,
+  // to leave a knockout window with no fully clash-free day left for every one of the 13 dates. That
+  // is a real scarcity, not a bug in the picker, so this falls back to the same graceful "pack the
+  // remaining picks a day apart, ending at the window's end" degradation `scheduleStageDates` (cups)
+  // already uses by default, instead of throwing and failing the whole competition's generation.
+  throwOnDegenerate: false,
 } as const;
 
 /**
@@ -37,8 +45,11 @@ const CONTINENTAL_OPTIONS = {
  * date. The group and knockout windows are searched harder than a cup's stage dates
  * (`avoidBusyHarder`): a busy day is only ever accepted once the *entire* remaining window has
  * been scanned at every gap down to 3 days, because landing on a busy day here means double-
- * booking a participant club, not just a tight cup schedule. A window with no room left for its
- * dates throws instead of silently packing/dropping one — see `spreadOnWeekday`.
+ * booking a participant club, not just a tight cup schedule. A window with truly no clash-free day
+ * left for one of its dates falls back to packing the remaining dates a day apart ending exactly at
+ * the window's end (never dropped, never duplicated, never out of order) — see `spreadOnWeekday`'s
+ * `avoidBusyHarder`/`throwOnDegenerate` options and `continentalWorld.ts`'s busy-set comment for why
+ * this happens with real-world data.
  */
 export function continentalDates(
   continent: "Europe" | "South America",

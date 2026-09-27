@@ -95,13 +95,21 @@ describe("continentalDates — Europe", () => {
     for (const d of knockout) expect(d <= "2027-05-31").toBe(true);
   });
 
-  test("degenerate window (hi before lo) throws", () => {
-    // end − 7d lands before the knockout window even opens.
-    expect(() => continentalDates("Europe", Y, "2027-02-11", weekday, new Set())).toThrow();
+  test("degenerate window (hi before lo): still 13 valid, strictly increasing dates, never past the knockout window's own end", () => {
+    // end − 7d lands before the knockout window even opens — the knockout half degrades to a
+    // tight pack ending at its own `hi`, rather than throwing (see continentalDates.ts's
+    // `throwOnDegenerate` comment — this is a real scarcity case, not just this contrived window).
+    const dates = continentalDates("Europe", Y, "2027-02-11", weekday, new Set());
+    expect(dates).toHaveLength(13);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates.slice(6)) expect(d <= "2027-02-04").toBe(true); // end − 7d
   });
 
-  test("degenerate window (not enough room for 7 dates at >=3-day gaps) throws", () => {
-    expect(() => continentalDates("Europe", Y, "2027-02-24", weekday, new Set())).toThrow();
+  test("degenerate window (not enough room for 7 dates at >=3-day gaps): still 13 valid, strictly increasing dates", () => {
+    const dates = continentalDates("Europe", Y, "2027-02-24", weekday, new Set());
+    expect(dates).toHaveLength(13);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates.slice(6)) expect(d <= "2027-02-17").toBe(true); // end − 7d
   });
 });
 
@@ -159,11 +167,17 @@ describe("continentalDates — South America", () => {
     for (const d of knockout) expect(d <= "2027-11-30").toBe(true);
   });
 
-  test("degenerate window (hi before lo) throws", () => {
-    expect(() => continentalDates("South America", Y, "2027-07-16", weekday, new Set())).toThrow();
+  test("degenerate window (hi before lo): still 13 valid, strictly increasing dates, never past the knockout window's own end", () => {
+    const dates = continentalDates("South America", Y, "2027-07-16", weekday, new Set());
+    expect(dates).toHaveLength(13);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates.slice(6)) expect(d <= "2027-07-09").toBe(true); // end − 7d
   });
 
-  test("degenerate window (not enough room for 7 dates at >=3-day gaps) throws", () => {
-    expect(() => continentalDates("South America", Y, "2027-07-29", weekday, new Set())).toThrow();
+  test("degenerate window (not enough room for 7 dates at >=3-day gaps): still 13 valid, strictly increasing dates", () => {
+    const dates = continentalDates("South America", Y, "2027-07-29", weekday, new Set());
+    expect(dates).toHaveLength(13);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates.slice(6)) expect(d <= "2027-07-22").toBe(true); // end − 7d
   });
 });
