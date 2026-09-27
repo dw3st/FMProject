@@ -719,6 +719,8 @@
     "team": "Team {{team}}",
     "extraTime": "Extra time",
     "penalties": "Penalties",
+    "avgEndEnergy": "Avg end energy",
+    "fatigueSubs": "Fatigue subs",
     "headers": {
       "G": "Goals",
       "SH": "Shots",
@@ -749,7 +751,9 @@
       "dribblesLost": "Dribbles lost",
       "looseBallsWon": "Loose balls won",
       "throughBalls": "Through balls",
-      "throughBallCompletion": "TB completion%"
+      "throughBallCompletion": "TB completion%",
+      "avgEndEnergy": "Avg end energy",
+      "avgFatigueSubs": "Fatigue subs"
     },
     "subbedOff": "Substituted off at {{minute}}'"
   },

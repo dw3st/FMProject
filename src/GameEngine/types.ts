@@ -240,6 +240,12 @@ export interface PendingSub {
   outId: number;
   /** Engine player ID to bring on from the bench. */
   inId: number;
+  /**
+   * Set to `'fatigue'` only when this sub was recommended by `evaluateAiSubstitutions`
+   * (AiSubstitution.ts) — absent for a manual/tactical substitution. Threaded through to the
+   * `playerSubstituted` event so Statistics.ts can count fatigue-driven AI subs separately.
+   */
+  reason?: 'fatigue';
 }
 
 export interface GamePlayer {

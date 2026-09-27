@@ -9,6 +9,7 @@
 
 import type {
   BalanceScenario,
+  CongestionMatchResult,
   PairRaw,
   PairResult,
   PerMatchView,
@@ -176,6 +177,8 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     shootoutWinPct: pct(t.shootoutsWon, matches),
     avgPenaltiesTaken: r2(t.penaltiesTaken / matches),
     penaltyConversionPct: pct(t.penaltiesScored, t.penaltiesTaken),
+    avgEndEnergy: r2(t.avgEndEnergySum / matches),
+    avgFatigueSubs: r2(t.fatigueSubstitutions / matches),
   };
 }
 
@@ -200,6 +203,7 @@ function emptyTotals(): VariantTotals {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0,
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -231,6 +235,8 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.shootoutsWon     += src.shootoutsWon;
   dst.penaltiesTaken   += src.penaltiesTaken;
   dst.penaltiesScored  += src.penaltiesScored;
+  dst.avgEndEnergySum      += src.avgEndEnergySum;
+  dst.fatigueSubstitutions += src.fatigueSubstitutions;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -273,6 +279,8 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     shootoutWinPct: pct(totals.shootoutsWon, totals.games),
     avgPenaltiesTaken: r2(totals.penaltiesTaken / games),
     penaltyConversionPct: pct(totals.penaltiesScored, totals.penaltiesTaken),
+    avgEndEnergy: r2(totals.avgEndEnergySum / games),
+    avgFatigueSubs: r2(totals.fatigueSubstitutions / games),
   };
 }
 
@@ -299,6 +307,7 @@ export async function runScenario(
         matches: scenario.matchesPerPair,
         simEngine: scenario.simEngine ?? "full",
         knockout: scenario.knockout ?? false,
+        ...(scenario.congestion ? { congestion: scenario.congestion } : {}),
       },
       opts.onProgress,
     ),
@@ -313,6 +322,19 @@ export async function runScenario(
     draws: r.draws,
     teamA: perMatchView(r.teamA, r.matches),
     teamB: perMatchView(r.teamB, r.matches),
+    ...(r.congestionMatches
+      ? {
+          congestion: r.congestionMatches.map(
+            (cm): CongestionMatchResult => ({
+              matchIndex: cm.matchIndex,
+              matches: cm.matches,
+              draws: cm.draws,
+              teamA: perMatchView(cm.teamA, cm.matches),
+              teamB: perMatchView(cm.teamB, cm.matches),
+            }),
+          ),
+        }
+      : {}),
   }));
 
   // Build per-variant totals across both A-side and B-side appearances.
