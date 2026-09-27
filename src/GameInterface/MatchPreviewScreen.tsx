@@ -1009,7 +1009,9 @@ export function MatchPreviewScreen() {
             <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value="20:00 GMT" />
             <InfoCell icon={User} label={t("matchPreview.officials")} value={referee} />
           </div>
-          {fixture?.knockout && (
+          {/* A 2nd leg with an aggregate already shows continental.aggregateNote under the header
+              (same "extra time / penalties if level" info) — don't repeat it here. */}
+          {fixture?.knockout && !fixture.aggregate && (
             <p className="text-xs text-muted-foreground text-center mt-3 mb-0">{t("cups.knockoutNote")}</p>
           )}
         </div>

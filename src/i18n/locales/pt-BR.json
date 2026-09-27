@@ -1210,6 +1210,8 @@
     "firstLeg": "Ida: {{home}} {{score}} {{away}}",
     "aggregateNote": "Decide no agregado; prorrogação e pênaltis se empatar",
     "aggregate": "agr. {{home}}–{{away}}",
+    "aggregateNamed": "agr. {{homeName}} {{home}}–{{away}} {{awayName}}",
+    "pensNamed": "pên. {{homeName}} {{home}}–{{away}} {{awayName}}",
     "notDrawn": "Ainda não sorteado",
     "champion": "Campeão",
     "groups": "Grupos",

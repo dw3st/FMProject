@@ -1210,6 +1210,8 @@
     "firstLeg": "First leg: {{home}} {{score}} {{away}}",
     "aggregateNote": "Decided on aggregate; extra time and penalties if level",
     "aggregate": "agg. {{home}}–{{away}}",
+    "aggregateNamed": "agg. {{homeName}} {{home}}–{{away}} {{awayName}}",
+    "pensNamed": "pens {{homeName}} {{home}}–{{away}} {{awayName}}",
     "notDrawn": "Not drawn yet",
     "champion": "Champion",
     "groups": "Groups",

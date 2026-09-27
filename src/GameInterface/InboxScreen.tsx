@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award, Globe } from "lucide-react";
+import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { Icon } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
 
 type FilterTab = "all" | "unread";
 
+/** Continental news uses the shared Icon abstraction (`globe`) rather than importing lucide-react
+ *  directly, so it slots into `CATEGORY_META.Icon` (a `{ className }` component) like every other
+ *  category's direct lucide import does. */
+function ContinentalIcon({ className }: { className?: string }) {
+  return <Icon name="globe" className={className} />;
+}
+
 const CATEGORY_META: Record<
   InboxCategory,
-  { labelKey: string; color: string; bg: string; border: string; Icon: typeof TrendingUp }
+  { labelKey: string; color: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }
 > = {
   development: {
     labelKey: "inbox.categories.development",
@@ -52,7 +60,7 @@ const CATEGORY_META: Record<
     color: "text-sky-400",
     bg: "bg-sky-500/15",
     border: "border-sky-500/30",
-    Icon: Globe,
+    Icon: ContinentalIcon,
   },
 };
 
