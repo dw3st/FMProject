@@ -20,6 +20,7 @@ import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
 import { Player } from "@/Domain/Player";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
 import { isCupSlug } from "@/Domain/cups/cupIds";
+import { isContinentalSlug } from "@/Domain/continental/competitions";
 import {
   DEFAULT_TACTICAL_STYLE,
   TACTICAL_STYLE_OPTIONS,
@@ -725,6 +726,26 @@ export function MatchPreviewScreen() {
     };
   }, [session?.saveId, fixture]);
 
+  // Continental tie (UCL/UEL/Lib/Sud): same idea as the cup fetch above — the header needs the
+  // group letter (group stage) or the knockout stage name, and a 2nd leg needs the first-leg score.
+  const [continentalMeta, setContinentalMeta] = useState<LeagueSeasonMeta | null>(null);
+  useEffect(() => {
+    if (!session?.saveId || !fixture || !isContinentalSlug(fixture.competition)) {
+      setContinentalMeta(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/saves/${session.saveId}/continental/${fixture.competition}`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ meta: LeagueSeasonMeta }>) : null))
+      .catch(() => null)
+      .then((data) => {
+        if (!cancelled) setContinentalMeta(data?.meta ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.saveId, fixture]);
+
   async function handleLastMinuteSub(newLineup: string[]) {
     if (!session) return;
     setLocalLineup(newLineup);
@@ -851,6 +872,21 @@ export function MatchPreviewScreen() {
     ? cupMeta?.cup?.stages.find((s) => s.round === fixture!.round)?.name
     : undefined;
 
+  const isContinentalTie = fixture ? isContinentalSlug(fixture.competition) : false;
+  const continentalStageName = isContinentalTie
+    ? continentalMeta?.continental?.stages.find((s) => s.rounds.includes(fixture!.round))?.name
+    : undefined;
+  const continentalGroup = isContinentalTie
+    ? continentalMeta?.continental?.groups.find((g) => g.clubs.includes(mySquadId || session.clubId))?.name
+    : undefined;
+  const continentalLegLabel =
+    fixture?.leg === 1 ? t("continental.leg1") : fixture?.leg === 2 ? t("continental.leg2") : undefined;
+  const continentalPhase =
+    !isContinentalTie ? undefined :
+    continentalStageName === "group" ? t("continental.groupRound", { group: continentalGroup ?? "?", round: matchday }) :
+    continentalStageName ? [t(`continental.stage.${continentalStageName}`), continentalLegLabel].filter(Boolean).join(" · ") :
+    undefined;
+
   const myLogoUrl  = squadLogoUrl(mySquadId || session.clubId);
   const oppLogoUrl = opponentId ? squadLogoUrl(opponentId) : undefined;
 
@@ -896,6 +932,8 @@ export function MatchPreviewScreen() {
         >
           {isCupTie
             ? (cupStageName ? <>{t(`cups.stage.${cupStageName}`)} &bull; {competition}</> : competition)
+            : isContinentalTie
+            ? (continentalPhase ? <>{continentalPhase} &bull; {competition}</> : competition)
             : <>{t("leagues.matchday", { round: matchday })} &bull; {competition}</>}
         </p>
         <h1 className="text-4xl font-black font-display text-foreground uppercase tracking-wider m-0">
@@ -905,6 +943,21 @@ export function MatchPreviewScreen() {
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"
           style={{ background: `linear-gradient(to right, ${homeHex}, ${awayHex})` }}
         />
+        {isContinentalTie && fixture?.leg === 2 && fixture.aggregate && (
+          <div className="pt-1 space-y-0.5">
+            {/* fixture.home/away are this (2nd) leg's sides; the 1st leg had them swapped, and
+                `aggregate` holds each side's 1st-leg goals from THIS fixture's home/away point of
+                view — so the 1st leg's home team is this fixture's AWAY side, and vice versa. */}
+            <p className="text-xs text-muted-foreground m-0">
+              {t("continental.firstLeg", {
+                home: awaySquadName,
+                away: homeSquadName,
+                score: `${fixture.aggregate.away}–${fixture.aggregate.home}`,
+              })}
+            </p>
+            <p className="text-[11px] text-muted-foreground/70 m-0">{t("continental.aggregateNote")}</p>
+          </div>
+        )}
       </div>
 
       {/* Team cards */}
