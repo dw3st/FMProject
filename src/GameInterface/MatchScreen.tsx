@@ -492,6 +492,7 @@ export function MatchScreen() {
             teamB={teamBWithCrest}
             scoreColorA={matchKitColors.teamA}
             scoreColorB={matchKitColors.teamB}
+            aggregate={gameState.aggregate}
           />
 
           {gameState.shootout && (
