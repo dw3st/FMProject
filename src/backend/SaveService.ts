@@ -9,7 +9,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
-import type { LeagueData, Squad, StandingRow } from "@/types/playerTypes";
+import type { Squad, StandingRow } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -742,11 +742,19 @@ export class SaveService {
     // Continental competitions: Champions League/Europa League (Europe), Libertadores/
     // Sul-Americana (South America) — one season per continent, each with its own try/catch so
     // one continent's failure never skips the other (or the cups above, or the save itself).
+    //
+    // The "qualified"/"group" inbox news for the player's club is NOT emitted here: the wizard
+    // always calls POST /api/saves/:id/presimulate right after this returns, and for a career that
+    // needs a start kit (Brazilian leagues — see .claude/rules/data/openfootball-import.md) that
+    // route's applyRandomStartKit OVERWRITES these freshly generated ucl/uel/lib/sud metas with a
+    // pre-simulated season (different groups; the kit's r16 is already drawn by its cutoff date —
+    // see .claude/rules/game/continental.md). Emitting from this call's `result` would describe a
+    // group that no longer exists on disk a moment later. The presimulate route reads
+    // `continentalClubStatus` (what's actually on disk after its own kit decision) instead, for
+    // both the "kit applied" and "no kit" paths.
     try {
       const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
-      const { createContinentalSeason, seasonDefiningYear, continentalQualificationOf } = await import("@/backend/continentalWorld");
-      const { competitionName } = await import("@/Domain/world/labels");
-      const { emitInboxMessage, buildContinentalMessage } = await import("@/Domain/inbox/inboxEvents");
+      const { createContinentalSeason, seasonDefiningYear } = await import("@/backend/continentalWorld");
       const catalog = await getLeagueData();
       const pyramids = await getPyramids();
       const index = await this.getSquadIndex(id);
@@ -754,24 +762,7 @@ export class SaveService {
         try {
           const year = await seasonDefiningYear(continent, activeLeagues, catalog);
           if (year === null) continue;
-          const result = await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
-
-          // The player's club, if it qualified for one of this continent's two competitions: a
-          // "qualified" + "group" inbox message (createSave never has an inbox to clear, so no
-          // deferral is needed here — see advanceDay.ts for the rollover case).
-          const qual = continentalQualificationOf(body.clubId, result);
-          if (qual) {
-            const msgDate = meta.currentDate ?? now.slice(0, 10);
-            const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
-            const opponentNames = qual.opponentIds.map((clubId) => index.byId(clubId)?.name ?? clubId);
-            await emitInboxMessage(id, buildContinentalMessage({
-              date: msgDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
-            }), this);
-            await emitInboxMessage(id, buildContinentalMessage({
-              date: msgDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
-              group: qual.group, opponentNames,
-            }), this);
-          }
+          await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
         } catch (e) {
           logError("continental", `save ${id}: failed to generate continental competitions for ${continent}`, e);
         }
