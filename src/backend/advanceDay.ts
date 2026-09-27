@@ -10,10 +10,11 @@ import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerT
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
+import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
+  buildContinentalMessage,
   buildCupMessage,
   buildDevelopmentMessage,
   buildTransferInMessage,
@@ -49,8 +50,25 @@ import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { advanceCupStages, countryByLeague, createCountryCup, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
+import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
+import { withAggregate } from "@/Domain/continental/knockout";
+import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
+import {
+  advanceContinentalStages,
+  createContinentalSeason,
+  continentalClubStatus,
+  continentalQualificationOf,
+  continentalTier1LeagueStates,
+  logEuropeanCalendarClashes,
+  seasonDefiningYear,
+} from "@/backend/continentalWorld";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
+
+/** A national cup or a continental competition: no table, sim mode gated on the player's league. */
+function isKnockoutComp(slug: string): boolean {
+  return isCupSlug(slug) || isContinentalSlug(slug);
+}
 
 function withDefaultFinances(s: Squad): Squad {
   if (s.finances) return s;
@@ -193,6 +211,52 @@ export async function presimulatePreStart(
   };
 }
 
+/**
+ * Season-start continental inbox news ("qualified" for the club's continent + wherever it
+ * actually stands on disk right now) for the human club. Called once, from the
+ * `/api/saves/:saveId/presimulate` route, AFTER the start-kit decision (`applyRandomStartKit`) —
+ * never from `createSave` itself, because a start kit overwrites the season's ucl/uel/lib/sud
+ * metas with a different (pre-simulated) draw, and by its cutoff date the group stage has always
+ * finished with the r16 already drawn (see `.claude/rules/game/continental.md`). Reading
+ * `continentalClubStatus` after the kit decision — instead of the group `createSave` originally
+ * generated — covers both paths (kit applied, no kit) with one read of what's on disk.
+ */
+export async function emitContinentalSeasonStartNews(
+  saveId: string,
+  clubId: string,
+  date: string,
+): Promise<void> {
+  const found = await continentalClubStatus(saveService, saveId, clubId);
+  if (!found) return;
+  const { slug, status } = found;
+
+  const catalog = await getLeagueData();
+  const compName = competitionName(slug, catalog as unknown as LeagueData[], "en");
+  const index = await saveService.getSquadIndex(saveId);
+
+  await emitInboxMessage(saveId, buildContinentalMessage({
+    date, kind: "qualified", competition: slug, competitionName: compName, stage: "group",
+  }), saveService);
+
+  if (status.kind === "group") {
+    const opponentNames = status.opponentIds.map((id) => index.byId(id)?.name ?? id);
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "group", competition: slug, competitionName: compName, stage: "group",
+      group: status.group, opponentNames,
+    }), saveService);
+  } else if (status.kind === "eliminatedGroup") {
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "eliminated", competition: slug, competitionName: compName, stage: "group",
+    }), saveService);
+  } else {
+    const opponentName = index.byId(status.opponentId)?.name ?? status.opponentId;
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "draw", competition: slug, competitionName: compName, stage: status.stage,
+      opponentName, firstLegDate: status.firstLegDate, venue: status.venue,
+    }), saveService);
+  }
+}
+
 export interface AdvanceOneDayOptions {
   /**
    * The whole transfer market sits out today (no AI buying, no AI selling, no sell-list
@@ -228,7 +292,12 @@ export async function advanceOneDay(
     const activeLeagues = meta.activeLeagues ?? [];
 
     const dayEvents: Array<StoredDayLog["events"][number] | TrainingEvent | RestEvent> = [];
-    const squadWrites: Array<{ league: string; club: string; squad: Squad }> = [];
+    // Keyed by squadId (not appended) so a club with two fixtures today (should not normally
+    // happen, but the calendar has no hard guarantee across every competition folder) chains: the
+    // second fixture reads the first match's updated squad instead of the stale pre-day snapshot,
+    // and only one, final write per squad reaches disk — a plain array here would let the two
+    // parallel `saveSquad` calls race and the loser's energy/seasonLog/development silently vanish.
+    const squadWrites = new Map<string, { league: string; club: string; squad: Squad }>();
     const teamsPlayingToday = new Set<string>(); // squadIds that have a match today
 
     const tactics = await saveService.getTactics(saveId);
@@ -265,20 +334,78 @@ export async function advanceOneDay(
 
         const updatedFixtures = [...roundData.fixtures];
 
-        for (const fixture of todayFixtures) {
-          const homeEntry = index.byId(fixture.home);
-          const awayEntry = index.byId(fixture.away);
+        for (const rawFixture of todayFixtures) {
+          const homeEntry = index.byId(rawFixture.home);
+          const awayEntry = index.byId(rawFixture.away);
           if (!homeEntry || !awayEntry) {
-            // A skipped cup tie never completes its stage — make the stall visible.
-            if (isCupSlug(leagueSlug)) logError("cups", `save ${saveId}: ${fixture.id} skipped — club missing from the world`, { home: fixture.home, away: fixture.away });
+            // A skipped cup/continental tie never completes its stage — make the stall visible.
+            if (isKnockoutComp(leagueSlug)) {
+              logError(
+                isContinentalSlug(leagueSlug) ? "continental" : "cups",
+                `save ${saveId}: ${rawFixture.id} skipped — club missing from the world`,
+                { home: rawFixture.home, away: rawFixture.away },
+              );
+            }
             continue;
           }
 
+          // A club already updated earlier today (any competition) reads its chained, in-memory
+          // squad instead of the stale on-disk snapshot — see the `squadWrites` comment above.
+          // This should never happen (the calendar is built to avoid same-day double-booking),
+          // so it's logged when it does rather than silently dropping one match's effects.
+          for (const squadId of [rawFixture.home, rawFixture.away]) {
+            if (squadWrites.has(squadId)) {
+              logError(
+                "calendar",
+                `save ${saveId}: club ${squadId} has more than one fixture on ${currentDate} — ${rawFixture.id} (${leagueSlug}) plays after an earlier match today`,
+                { squadId, fixtureId: rawFixture.id, competition: leagueSlug },
+              );
+            }
+          }
+
           const [homeSquad, awaySquad] = await Promise.all([
-            saveService.getSquadById(saveId, fixture.home),
-            saveService.getSquadById(saveId, fixture.away),
+            squadWrites.has(rawFixture.home)
+              ? Promise.resolve<Squad | null>(squadWrites.get(rawFixture.home)!.squad)
+              : saveService.getSquadById(saveId, rawFixture.home),
+            squadWrites.has(rawFixture.away)
+              ? Promise.resolve<Squad | null>(squadWrites.get(rawFixture.away)!.squad)
+              : saveService.getSquadById(saveId, rawFixture.away),
           ]);
           if (!homeSquad || !awaySquad) continue;
+
+          // Continental second leg with no aggregate yet: the first-leg round's advanceContinental
+          // step normally writes it the day the first leg completes, but a failure there (or a
+          // stale round file) would leave the engine to decide extra time/penalties off the wrong
+          // total. Compute it from the played first leg before kicking this leg off.
+          let fixture = rawFixture;
+          if (isContinentalSlug(leagueSlug) && fixture.leg === 2 && fixture.aggregate === undefined) {
+            const leg1Round = await saveService.getRound(saveId, leagueSlug, fixture.round - 1);
+            const leg1Fixture = leg1Round?.fixtures.find((f) => f.tieId === fixture.tieId && f.played);
+            if (leg1Fixture) {
+              try {
+                fixture = withAggregate(fixture, leg1Fixture);
+                const patchIdx = updatedFixtures.findIndex((f) => f.id === fixture.id);
+                if (patchIdx !== -1) updatedFixtures[patchIdx] = fixture;
+                logError(
+                  "continental",
+                  `save ${saveId}: ${fixture.id} (tie ${fixture.tieId}) had no aggregate before kickoff — computed it from the first leg (${leg1Fixture.id})`,
+                );
+              } catch (err) {
+                // Corrupt data (e.g. a mismatched tieId pairing) must not brick every future
+                // advance — play the leg as-is (no aggregate) rather than throwing the whole day.
+                logError(
+                  "continental",
+                  `save ${saveId}: ${fixture.id} (tie ${fixture.tieId ?? "?"}) failed to compute its aggregate from leg 1 (${leg1Fixture.id}) — playing without it`,
+                  err,
+                );
+              }
+            } else {
+              logError(
+                "continental",
+                `save ${saveId}: ${fixture.id} (tie ${fixture.tieId ?? "?"}) is a second leg with no played first leg to compute the aggregate from`,
+              );
+            }
+          }
 
           const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
           const useRecording =
@@ -287,7 +414,10 @@ export async function advanceOneDay(
             userPlaysThis;
 
           if (useRecording && playedMatchOverride) {
-            if (fixture.knockout && playedMatchOverride.score.home === playedMatchOverride.score.away) {
+            const result = playedMatchOverride.score;
+            const level =
+              result.home + (fixture.aggregate?.home ?? 0) === result.away + (fixture.aggregate?.away ?? 0);
+            if (fixture.knockout && level) {
               const pens = playedMatchOverride.decider?.penalties;
               if (!pens || pens.home === pens.away) {
                 return { ok: false, status: 400, error: "knockout recording without a winner" };
@@ -295,8 +425,8 @@ export async function advanceOneDay(
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, playedMatchOverride);
             dayEvents.push(r.event);
-            squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
-            squadWrites.push({ league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
+            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
+            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
 
@@ -311,15 +441,15 @@ export async function advanceOneDay(
             const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
             const mode = userPlays
               ? "full"
-              : isCupSlug(leagueSlug)
+              : isKnockoutComp(leagueSlug)
                 ? (playerLeagueClubs.has(fixture.home) || playerLeagueClubs.has(fixture.away) ? "full" : "fast")
                 : resolveSimMode(leagueSlug, meta);
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
             dayEvents.push(r.event);
-            squadWrites.push({ league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
-            squadWrites.push({ league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
+            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
+            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
 
@@ -415,19 +545,19 @@ export async function advanceOneDay(
         if (isRestDay) {
           const { event, updatedSquad } = buildRestEvent(row.squadId, squad);
           dayEvents.push(event);
-          squadWrites.push({ league, club, squad: updatedSquad });
+          squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
         } else {
           const policy = resolveTrainingPolicy(meta, club, row.squadId);
           const { event, updatedSquad } = buildTrainingEvent(row.squadId, squad, policy);
           dayEvents.push(event);
-          squadWrites.push({ league, club, squad: updatedSquad });
+          squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
         }
       }
     }
 
     // ── Write all squad updates in parallel ──────────────────────────────────
     await Promise.all(
-      squadWrites.map((sw) => saveService.saveSquad(saveId, sw.league, sw.club, sw.squad)),
+      [...squadWrites.values()].map((sw) => saveService.saveSquad(saveId, sw.league, sw.club, sw.squad)),
     );
 
     // ── Write updated round files + recompute standings per league ────────────
@@ -438,8 +568,9 @@ export async function advanceOneDay(
         await saveService.writeRound(saveId, leagueSlug, roundNum, { leagueSlug, round: roundNum, fixtures });
       }
 
-      // Cups have no table — the draw/champion progression is handled below.
-      if (isCupSlug(leagueSlug)) continue;
+      // Cups and continental competitions have no table — group standings (continental) and the
+      // draw/champion progression (both) are handled below.
+      if (isKnockoutComp(leagueSlug)) continue;
 
       // Recompute standings from all rounds for accuracy
       const allFixtures = await saveService.getAllFixturesForLeague(saveId, leagueSlug);
@@ -451,6 +582,12 @@ export async function advanceOneDay(
     const cupPlayed = new Map<string, number[]>();
     for (const [slug, rounds] of roundUpdates) if (isCupSlug(slug)) cupPlayed.set(slug, [...rounds.keys()]);
     const cupChanges = await advanceCupStages(saveService, saveId, cupPlayed);
+
+    // ── Continental competitions: group table completion → r16 draw, leg1 → aggregate, leg2 →
+    // next stage draw / champion (see `advanceContinental`) ───────────────────
+    const continentalPlayed = new Map<string, number[]>();
+    for (const [slug, rounds] of roundUpdates) if (isContinentalSlug(slug)) continentalPlayed.set(slug, [...rounds.keys()]);
+    const continentalChanges = await advanceContinentalStages(saveService, saveId, continentalPlayed);
 
     // ── National cup inbox news for the human club ────────────────────────────
     // These messages are emitted on the same day the tie/draw happens, before the "Transfers +
@@ -522,6 +659,64 @@ export async function advanceOneDay(
             }),
             saveService,
           );
+        }
+      }
+    }
+
+    // ── Continental competition inbox news for the human club ─────────────────
+    // Unlike the national-cup block above, this is NEVER emitted directly — it is only QUEUED
+    // into `continentalMessages`, flushed after the "Transfers + inbox are cleared" block further
+    // down. A national cup's window always ends >= FINAL_BEFORE_END_DAYS before its own country's
+    // league end, so a cup tie can never land on that country's own rollover day. A continental
+    // competition has no such guarantee against a DIFFERENT country's rollover: the European
+    // calendar-year leagues (Belarus, Finland, Georgia, Iceland, Norway, Sweden — see
+    // .claude/rules/game/continental.md) roll over on their own December schedule while the UCL/UEL
+    // group stage runs to 12-15, with no coordination between the two — so a group-stage draw/
+    // elimination for a club in one of those leagues CAN fall on that same country's rollover day,
+    // right before `clearInbox` runs later in this same function call.
+    const continentalMessages: Array<Parameters<typeof buildContinentalMessage>[0]> = [];
+    if (playerSquadId && continentalChanges.some(({ events }) => events.length > 0)) {
+      const catalogForContinental = await getLeagueData();
+      for (const { slug, events } of continentalChanges) {
+        if (events.length === 0) continue;
+        // `advanceContinentalStages` types `slug` as `string`, but `continentalPlayed` (the map it
+        // was called with) only ever holds slugs that passed `isContinentalSlug` above.
+        const compSlug = slug as ContinentalSlug;
+        const compDisplayName = competitionName(slug, catalogForContinental as unknown as LeagueData[], "en");
+        const slugRounds = roundUpdates.get(slug);
+        const opponentOfTodaysFixture = (): string | undefined => {
+          if (!slugRounds) return undefined;
+          for (const fixtures of slugRounds.values()) {
+            const f = fixtures.find((x) => x.played && (x.home === playerSquadId || x.away === playerSquadId));
+            if (f) return f.home === playerSquadId ? f.away : f.home;
+          }
+          return undefined;
+        };
+
+        for (const event of events) {
+          if (event.kind === "eliminated" && event.clubId === playerSquadId) {
+            const opponentId = event.stage === "group" ? undefined : opponentOfTodaysFixture();
+            const opponentName = opponentId ? (index.byId(opponentId)?.name ?? opponentId) : undefined;
+            continentalMessages.push({
+              date: currentDate, kind: "eliminated", competition: compSlug, competitionName: compDisplayName,
+              stage: event.stage, opponentName,
+            });
+          } else if (event.kind === "champion" && event.clubId === playerSquadId) {
+            continentalMessages.push({
+              date: currentDate, kind: "champion", competition: compSlug, competitionName: compDisplayName, stage: "final",
+            });
+          } else if (event.kind === "drawn") {
+            const myTie = event.ties.find((tie) => tie.home === playerSquadId || tie.away === playerSquadId);
+            if (!myTie) continue;
+            const opponentId = myTie.home === playerSquadId ? myTie.away : myTie.home;
+            const opponentName = index.byId(opponentId)?.name ?? opponentId;
+            const venue: "home" | "away" | "neutral" =
+              !myTie.tieId ? "neutral" : myTie.home === playerSquadId ? "home" : "away";
+            continentalMessages.push({
+              date: currentDate, kind: "draw", competition: compSlug, competitionName: compDisplayName,
+              stage: event.stage, opponentName, firstLegDate: myTie.firstLegDate, venue,
+            });
+          }
         }
       }
     }
@@ -729,6 +924,9 @@ export async function advanceOneDay(
 
     const playerClubSquadId = playerSquadId ?? meta.clubId;
     const transfersAtSeasonEnd = due.units.length > 0 ? await saveService.getTransfers(saveId) : [];
+    // Every league's brand-new next-season fixtures (step 6 below), for the calendar-year vs.
+    // continental clash check right after this loop.
+    const rolledLeagueFixtures = new Map<string, Fixture[]>();
 
     for (const unit of due.units) {
       if (unit.partial) {
@@ -815,6 +1013,7 @@ export async function advanceOneDay(
           year: closedYear.get(slug)! + 1,
           leagueConfig: LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === slug),
         });
+        rolledLeagueFixtures.set(slug, cal.rounds.flatMap((r) => r.fixtures));
         for (const round of cal.rounds) await saveService.writeRound(saveId, slug, round.round, round);
         await saveService.writeDateIndex(saveId, slug, cal.dateIndex);
         await saveService.writeLeagueMeta(saveId, cal.meta);
@@ -867,6 +1066,15 @@ export async function advanceOneDay(
       }
     }
 
+    // A calendar-year European league (Belarus, Finland, Georgia, Iceland, Norway, Sweden — see
+    // .claude/rules/game/continental.md) rolls over on its own December schedule, independently of
+    // the Europe-wide continental rollover below (which only tracks cross-year leagues) — so its
+    // brand-new Y+1 calendar is generated with no knowledge of UCL/UEL dates already fixed for the
+    // season in progress. Logged only, never rescheduled: see `logEuropeanCalendarClashes`.
+    if (rolledLeagueFixtures.size > 0) {
+      await logEuropeanCalendarClashes(saveService, saveId, rolledLeagueFixtures);
+    }
+
     // ── National cups: a country's cup is archived and regenerated once all its leagues rolled ──
     // Also runs on a resync-only day (a rollover already applied on disk, only activeLeagues was
     // stale) — the cup must still regenerate then, not just on a day that itself ran the rollover.
@@ -898,12 +1106,91 @@ export async function advanceOneDay(
       }
     }
 
+    // ── Continental competitions: archived and regenerated once every season-defining tier-1
+    // league of the continent has rolled to a season later than the competition's current year
+    // (same "units or resync" trigger as national cups above; the tier-1 leagues' new-season
+    // archives are already on disk by this point — written earlier in this same function, in the
+    // `due.units` loop, before this block runs). ──────────────────────────────────────────────
+    if (due.units.length > 0 || due.resync.length > 0) {
+      const catalog = await getLeagueData();
+      const pyramids = await getPyramids();
+      const tier1States = await continentalTier1LeagueStates(updatedActiveLeagues, catalog, pyramids);
+      const compYear: Partial<Record<"Europe" | "South America", number>> = {};
+
+      // Player's-club "qualified" + "group" news for a competition pair just (re)generated below —
+      // queued into the deferred `continentalMessages` array (see its declaration above), never
+      // emitted directly here.
+      const queueQualificationMessage = (result: Awaited<ReturnType<typeof createContinentalSeason>>) => {
+        const qual = continentalQualificationOf(playerClubSquadId, result);
+        if (!qual) return;
+        const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
+        const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
+        continentalMessages.push({
+          date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
+        });
+        continentalMessages.push({
+          date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
+          group: qual.group, opponentNames,
+        });
+      };
+      for (const continent of ["Europe", "South America"] as const) {
+        const primarySlug = competitionsOf(continent)[0]!.slug;
+        const m = await saveService.getLeagueMeta(saveId, primarySlug);
+        if (m) compYear[continent] = m.year;
+      }
+
+      // Self-heal: a continent with NO primary competition meta at all never went through
+      // `createSave` successfully (its try/catch there swallowed the failure — see
+      // `.claude/rules/game/continental.md`). `continentsToRegenerateContinental` below can never
+      // pick it up (it requires an existing year to compare against), so without this it would
+      // stay without a continental competition forever. Create it fresh for the current
+      // season-defining year — no try/catch (matches the regenerate loop below): a failure here
+      // fails the whole day, and the next rollover/resync day simply retries.
+      for (const continent of ["Europe", "South America"] as const) {
+        if (compYear[continent] !== undefined) continue;
+        const year = await seasonDefiningYear(continent, updatedActiveLeagues, catalog);
+        if (year === null) continue; // no season-defining league yet — nothing to build from
+        logError(
+          "continental",
+          `save ${saveId}: ${continent} has no continental competition on disk — creating it now (self-heal) for ${year}`,
+        );
+        queueQualificationMessage(
+          await createContinentalSeason({ service: saveService, saveId, continent, year, index, catalog, pyramids }),
+        );
+      }
+
+      for (const c of continentsToRegenerateContinental(tier1States, compYear)) {
+        // No try/catch here (matches the national-cups block above): a failure must fail the whole
+        // day so it is never silently swallowed. Left un-regenerated, the trigger condition stays
+        // true and the day's own buffered write never lands, so the next advance simply retries
+        // the same regeneration rather than the continent being stuck for months with a stale
+        // (already-archived-elsewhere) year.
+        const nameOf = (id: string) => {
+          const e = index.byId(id);
+          return { name: e?.name ?? id, coachId: null, coachName: "" };
+        };
+        for (const comp of competitionsOf(c.continent)) {
+          const old = await saveService.getLeagueMeta(saveId, comp.slug);
+          if (!old) continue;
+          await saveService.writeLeagueSeasonArchive(saveId, buildContinentalArchive(old, nameOf));
+        }
+        queueQualificationMessage(
+          await createContinentalSeason({
+            service: saveService, saveId, continent: c.continent, year: c.year, index, catalog, pyramids,
+          }),
+        );
+      }
+    }
+
     // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
     if (seasonEnded) {
       await saveService.writeTransfers(saveId, []);
       await saveService.clearInbox(saveId);
       for (const msg of seasonMessages) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService);
     }
+    // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
+    // any `clearInbox` this same day, whether or not it was the player's own country that rolled.
+    for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};
@@ -946,10 +1233,23 @@ export const advanceDayRoutes = {
     }
     const auth = requireSaveOwner(req, req.params.saveId!);
     if (auth instanceof Response) return auth;
+    const saveId = req.params.saveId!;
     // Apply a pre-computed start kit (instant). The live full-pipeline catch-up
     // (presimulatePreStart) is reserved for the offline kit generator — running it
     // here would block for minutes.
-    const result = await applyRandomStartKit(req.params.saveId!);
+    const result = await applyRandomStartKit(saveId);
+
+    // Continental season-start news, read from whatever is on disk AFTER the kit decision above
+    // (see emitContinentalSeasonStartNews) — covers both the "kit applied" and "no kit" paths.
+    const meta = await saveService.getMeta(saveId);
+    if (meta?.clubId && meta.currentDate) {
+      try {
+        await emitContinentalSeasonStartNews(saveId, meta.clubId, meta.currentDate);
+      } catch (e) {
+        logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
+      }
+    }
+
     return Response.json(result);
   },
 

@@ -38,6 +38,8 @@ export interface PlayerSeasonLog {
   morale:      number;
   /** National-cup games only (the fields above are the season total, league + cup). */
   cup?: { appearances: number; goals: number; assists: number };
+  /** Continental competition games only (ucl/uel/lib/sud) — the fields above are the season total. */
+  continental?: { appearances: number; goals: number; assists: number };
 }
 
 export function emptySeasonLog(): PlayerSeasonLog {

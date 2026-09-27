@@ -270,10 +270,10 @@ identical behaviour because there is only one implementation:
 | From phase | To phase | Condition |
 |---|---|---|
 | `firstHalf` | `halfTime` | always |
-| `secondHalf` | `extraTimeBreak` | `knockout && score.A === score.B` |
+| `secondHalf` | `extraTimeBreak` | `knockout && isLevelForKnockout(state)` |
 | `secondHalf` | `matchEnd` | otherwise (league match, or knockout already decided) |
 | `extraTimeFirst` | `extraTimeSecond` | always (sides switch, no draw check — ET always plays both halves) |
-| `extraTimeSecond` | `penalties` | still level |
+| `extraTimeSecond` | `penalties` | still level (`isLevelForKnockout`) |
 | `extraTimeSecond` | `matchEnd` | decided |
 
 Entering `extraTimeBreak` snapshots `scoreAtRegulation` (the 90'-plus-stoppage score) and draws
@@ -331,7 +331,7 @@ knockout match that never went level (`scoreAtRegulation` absent). Otherwise:
 {
   extraTime: { A: score.A - scoreAtRegulation.A, B: score.B - scoreAtRegulation.B },
   penalties: shootout ? { ...shootout.finalScore } : null,
-  winner: shootout ? shootout.winner : (score.A > score.B ? 'A' : 'B'),
+  winner: shootout ? shootout.winner : (score.A + agg.A > score.B + agg.B ? 'A' : 'B'),
 }
 ```
 
@@ -351,6 +351,25 @@ substitution record), so extra time reports 90'+ and 105'+ instead of restarting
 | `penaltyKick` | `{ team, takerId, keeperId, scored, chance, score }` | Each presented shootout kick |
 | `shootoutEnd` | `{ winner, score }` | Right before `matchEnd`, only when a shootout decided the match |
 | `matchEnd` | `{ score, decider }` | Now always carries `decider: KnockoutDecider \| null` |
+
+## Two-legged ties (`aggregate`)
+
+The second leg of a two-legged tie (continental knockout rounds) carries
+`GameState.aggregate?: { A: number; B: number }` — the first-leg goals of each side of the
+**current** match. "Level" in every knockout check is `isLevelForKnockout(state)`
+(`gameState.ts`): `score.A + agg.A === score.B + agg.B` (absent aggregate = `{A:0,B:0}`, so a
+single-leg tie is unchanged). There is no away-goals rule. Consequences:
+
+- The second leg goes to extra time only when the **aggregate** is level at 90' — a 1–0 second
+  leg after a 0–1 first leg goes to extra time; a 1–1 second leg after a 1–0 first leg ends at 90'.
+- Penalties only when the aggregate is still level after extra time; `knockoutDecider` picks the
+  no-shootout winner by score + aggregate. `extraTime`/`penalties` in the decider stay per-leg.
+- Entry points: `simulateMatch(..., { knockout: true, aggregate })`; `quickSimMatch` takes
+  `input.aggregate: { home, away }` with the same rule. `Fixture.aggregate` (`calendarTypes.ts`,
+  home/away of that fixture, plus `tieId`/`leg`) is mapped by `buildMatchEvent` (A = home) and
+  `buildQuickMatchEvent`; `MatchScreen` flips it when the player is away (player = A).
+- `advanceDay` rejects a knockout recording that is level on score + aggregate without deciding
+  penalties (400 `knockout recording without a winner`).
 
 ## quickSim and `/lab`
 

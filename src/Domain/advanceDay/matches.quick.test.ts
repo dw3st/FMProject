@@ -4,6 +4,7 @@ import { mulberry32 } from "@/Domain/rng";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
+import { QUICK_SIM_CONFIG as C } from "@/GameEngine/Configs/QuickSimConfig";
 
 const ROLES = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CM", "LW", "ST", "RW"];
 
@@ -88,9 +89,16 @@ describe("cup fixtures", () => {
     // regression, or tight enough to flake. Instead, each seed drives BOTH a normal and a
     // neutral fixture — same rng stream, so the shared randomness (dominance noise, the exact
     // Bernoulli draws inside sampleGoals) mostly cancels out and only the effect of the venue
-    // flag on expected goals remains. Calibrated empirically: paired mean ~0.045, paired SE
-    // ~0.005 at n=2000 — a >8-sigma signal, so 0.02 is a safe, non-flaky threshold while still
-    // failing hard if `neutral` stops suppressing home advantage.
+    // flag on expected goals remains.
+    //
+    // The paired mean margin lost by removing home advantage scales close to linearly with
+    // `(HOME_ADVANTAGE - 1)` — measured empirically at n=2000: ~0.045 at HOME_ADVANTAGE=1.07
+    // (2026-09-24), ~0.0195 at HOME_ADVANTAGE=1.03 (2026-09-26 quickSim goal-formula
+    // recalibration after the native-star recalibration — see
+    // `.claude/rules/non-player-games.md` → "quickSim"), i.e. ~0.64 × (HOME_ADVANTAGE - 1) both
+    // times. Deriving the expected margin from `HOME_ADVANTAGE` (instead of a constant threshold
+    // baked in at write time) keeps this test correct across future goal-formula recalibrations
+    // without a manual edit — it moves with the constant it is testing.
     const n = 2000;
     let diffSum = 0;
     let neutralMarginSum = 0;
@@ -102,8 +110,12 @@ describe("cup fixtures", () => {
       diffSum += normalMargin - neutralMargin;
       neutralMarginSum += neutralMargin;
     }
-    // Paired mean margin lost by removing home advantage — must be clearly positive.
-    expect(diffSum / n).toBeGreaterThan(0.02);
+    // Paired mean margin lost by removing home advantage — must be clearly positive. Assert at
+    // half the empirically-scaled prediction: a safe, non-flaky floor (>4-sigma at either
+    // calibration measured so far) that still fails hard if `neutral` stops suppressing home
+    // advantage or if HOME_ADVANTAGE drops to ~1.
+    const expectedMargin = 0.64 * (C.HOME_ADVANTAGE - 1);
+    expect(diffSum / n).toBeGreaterThan(expectedMargin * 0.5);
     // With home and away exactly equal in force (see makeSquad), a neutral fixture on its own
     // should have no systematic home/away bias — the mean margin should sit close to 0.
     expect(Math.abs(neutralMarginSum / n)).toBeLessThan(0.08);
@@ -120,5 +132,41 @@ describe("cup fixtures", () => {
     expect(playedLeague.seasonLog!.cup?.appearances ?? 0).toBe(0);
     // League appearances/goals/assists are never routed into the cup sub-log.
     expect(playedLeague.seasonLog!.appearances).toBe(1);
+  });
+
+  test("continental ties count in seasonLog.continental and the total, not in cup", () => {
+    const continentalFixture = { ...fixture, competition: "ucl" };
+    const afterContinental = buildQuickMatchEvent(continentalFixture, home, away, sim, mulberry32(1));
+    const playedContinental = afterContinental.updatedHome.players.find(
+      (p) => (p.seasonLog?.appearances ?? 0) > 0,
+    )!;
+    expect(playedContinental.seasonLog!.continental?.appearances).toBe(1);
+    // Season totals keep counting the continental game too.
+    expect(playedContinental.seasonLog!.appearances).toBe(1);
+    // A continental tie is never routed into the national-cup sub-log.
+    expect(playedContinental.seasonLog!.cup?.appearances ?? 0).toBe(0);
+  });
+
+  test("second leg with a first-leg aggregate decides on aggregate, not the 90' score alone", () => {
+    // First leg: away won 1-0 (home:0, away:1) — from THIS second-leg fixture's home/away
+    // point of view. Level on aggregate requires this leg's home - away === 1.
+    let deciderCount = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      const secondLeg = { ...fixture, knockout: true as const, aggregate: { home: 0, away: 1 } };
+      const { event } = buildQuickMatchEvent(secondLeg, home, away, sim, mulberry32(seed));
+      const diffAfter90 =
+        event.score.home - (event.decider?.extraTime.home ?? 0) -
+        (event.score.away - (event.decider?.extraTime.away ?? 0));
+      if (event.decider) {
+        deciderCount++;
+        expect(diffAfter90).toBe(1); // level on aggregate after 90'
+      } else {
+        expect(event.score.home - event.score.away).not.toBe(1); // otherwise decided in 90'
+      }
+      if (event.decider?.penalties) {
+        expect(event.score.home - event.score.away).toBe(1); // still level on aggregate after ET
+      }
+    }
+    expect(deciderCount).toBeGreaterThan(0);
   });
 });

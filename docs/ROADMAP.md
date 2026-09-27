@@ -1,7 +1,7 @@
 # FMProject — Roadmap
 
 Referência única do que está feito, do que vem a seguir e em que ordem. Atualizado a cada entrega
-(merge em `main`). Última atualização: 2026-09-26 (Etapa 1: copas nacionais).
+(merge em `main`). Última atualização: 2026-09-27 (Etapa 2: continentais).
 
 ---
 
@@ -30,6 +30,11 @@ Mudou o mundo (importadores, elencos, calendário)? Regenerar a cadeia inteira �
 - **Craques recalibrados:** nível dos nativos vem do seed (Mbappé 3º, Haaland 5º, Vini 10º).
 - **Copas nacionais:** uma por país (60), mata-mata em jogo único com prorrogação e pênaltis,
   aba Copa na tela de ligas, inbox, virada com arquivo e copa nova. Ver `.claude/rules/game/cups.md`.
+- **Competições continentais:** Champions League, Europa League, Libertadores e Copa
+  Sul-Americana em todo save (32 clubes cada, vagas por coeficiente/zona), fase de grupos + mata-mata
+  de ida e volta com agregado/prorrogação/pênaltis, aba Continental na tela de ligas, inbox,
+  `seasonLog.continental`; quickSim recalibrado para o confronto entre ligas de nível muito
+  diferente (issue #2). Ver `.claude/rules/game/continental.md`.
 - **Partida:** motor tick a tick com táticas por estilo, mentalidade ao vivo, 1×/2×/4×, roda com a
   aba em segundo plano. Ligas não seguidas usam o quickSim.
 - **Clube:** finanças do jogador (orçamento, receitas, estádio), IA com finanças por tier,
@@ -49,7 +54,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | Etapa | Roadmap | Issue | Por que junto / por que agora |
 |---|---|---|---|
 | 1 ✅ | 1.1 Copas nacionais | #5 revisão + smoke da recalibração | Fechar a verificação do que já está em produção antes de construir em cima; o smoke de temporada vai ganhar as copas |
-| 2 | 1.2 Continentais | #2 quickSim × motor em gols | Continentais misturam clubes seguidos (motor) e não seguidos (quickSim): o quickSim precisa estar calibrado |
+| 2 ✅ | 1.2 Continentais | #2 quickSim × motor em gols | Continentais misturam clubes seguidos (motor) e não seguidos (quickSim): o quickSim precisa estar calibrado |
 | 3 | 1.3 Premiação e finanças | #12 salários fora de escala | Mesma área (finanças do clube); prêmios sem salários coerentes distorcem o caixa |
 | 4 | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
 | 5 | 2.2 Lesões | #3 ruído dos `of_*` | Lesões e rotação dependem de elencos com níveis críveis |
@@ -132,6 +137,20 @@ com `/test` e `/lab` exibindo as novas estatísticas.
 
 - **Reports dos testers:** triagem semanal com `bun scripts/fetchReports.ts`.
 - **Issues abertos** (abaixo), atacados entre as fases.
+
+---
+
+## Pendências técnicas
+
+Débito conhecido, sem issue próprio ainda (ou fora do escopo de um único fix) — atacado entre as
+etapas ou quando a área correspondente for revisitada.
+
+| # | Pendência | Onde |
+|---|---|---|
+| 1 | Taxa de dia adjacente da América do Sul entre Libertadores/Sul-Americana e a liga/copa do mesmo clube (~13%, 54/416) por causa das rodadas de meio de semana do Brasil e da Argentina — estruturalmente maior que a Europa, não dá para baixar sem violar o piso de 3 dias entre datas da própria competição | `Domain/continental/continentalDates.ts` |
+| 2 | Ligas europeias de ano civil (Bielorrússia, Finlândia, Geórgia, Islândia, Noruega, Suécia) só têm o choque de data com a UCL/UEL do mesmo clube **logado** na própria virada (dezembro); a rodada não é reagendada, porque mover a rodada inteira da liga para evitar o jogo de 1-2 clubes desalinharia o calendário de todo mundo | `logEuropeanCalendarClashes` (`backend/continentalWorld.ts`) |
+| 3 | quickSim × motor entre ligas de força muito diferente: `bundesliga` × `of_danish_superliga` fica com ~8 p.p. de gap na vitória do lado mais forte mesmo depois de `DOMINANCE_SIGMA` 0,35 → 0,25 (issue #2; o gap de gols já está dentro da meta de ±15%) — não foi possível isolar do ruído do motor sem seed nesta rodada | `Domain/advanceDay/QuickSimConfig.ts` |
+| 4 | `of_uzbek_super_league` fica em +21% de gols no quickSim vs. motor (era +25% antes da recalibração de 2026-09-26) — é a liga de menor volume de gols do conjunto, então pesa pouco no ajuste por deviance de Poisson somada entre todas as ligas | `Domain/advanceDay/QuickSimConfig.ts` |
 
 ---
 

@@ -269,8 +269,10 @@ desenvolvimento) é o mesmo do motor.
   - `ATTACK_KEYS` perdeu `finishing` (agora `dribbling, speed, acceleration`). No motor, a
     finalização só mexe na conversão (`shooterEffect` 0,85–1,2). No quickSim ela continua
     escolhendo quem marca (`fillSide`).
-  - Valores: `BASE_GOALS = 0.74`, `STRENGTH_EXPONENT = 0.54`, `LEVEL_EXPONENT = 0.8`,
-    `PACE_EDGE_WEIGHT = 0.26`, `HOME_ADVANTAGE = 1.07` (antes 0.78 / 1.0 / 1.1 / — / 1.06).
+  - Valores (2026-09-24, **superseded pela recalibração de 2026-09-26** — ver
+    "Recalibração de 2026-09-26" mais abaixo): `BASE_GOALS = 0.74`, `STRENGTH_EXPONENT = 0.54`,
+    `LEVEL_EXPONENT = 0.8`, `PACE_EDGE_WEIGHT = 0.26`, `HOME_ADVANTAGE = 1.07`
+    (antes 0.78 / 1.0 / 1.1 / — / 1.06).
   - **O que explica o espalhamento:** a vantagem de velocidade dos atacantes sobre os zagueiros
     adversários. Nas 5 grandes (nível ~5,1 em todas) o `paceEdge` médio vai de +0,10 (Bundesliga,
     1,74 gol/jogo no motor) a +0,94 (Premier, 2,54). Numa regressão de Poisson jogo a jogo sobre
@@ -430,7 +432,8 @@ desenvolvimento) é o mesmo do motor.
     - Quem marca/chuta e quem dá assistência continuam por `ROLE_GOAL_WEIGHT` /
       `ROLE_ASSIST_WEIGHT` (partilhas dentro do time, ajustadas às partilhas por linha do motor) e
       `NO_ASSIST_RATE` = 1 − assistências por gol do motor.
-  - **Valores:**
+  - **Valores (2026-09-24, superseded pela recalibração de 2026-09-26 — ver
+    "Recalibração de 2026-09-26" mais abaixo para os valores atuais):**
 
     | Constante | GK | DEF | MID | FWD |
     |---|---|---|---|---|
@@ -485,3 +488,166 @@ desenvolvimento) é o mesmo do motor.
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa
   `positions[0]` quando o slot não tem papel conhecido. `ROLE_GROUP` aceita os dois formatos.
+
+### Recalibração de 2026-09-26 (após a recalibração dos craques, issue #2)
+
+A recalibração dos nativos (nível do seed — ver `.claude/rules/data/openfootball-import.md` →
+"Recalibração dos nativos") fez o motor marcar mais nas ligas fortes sem o quickSim acompanhar:
+`bundesliga` −17,5%, `premier_league` −12,6%, `serie_a` −9,7% (issue #2). Recoletado com
+`bun scripts/quicksim-spread.ts collect <liga> 200 2 <dir>/<liga>.json` para as mesmas 26 ligas da
+tabela acima (400 jogos cada, motor pós-recalibração dos craques; Tasks 1–3 deste plano — agregado
+de mata-mata — não mudam jogos de liga, então coletar antes delas terminarem foi válido).
+
+**Fórmula de gols (`analyze`, seção 8, `ratio+level+pace` com as chaves atuais):**
+
+```
+xG = BASE_GOALS × ratio^STRENGTH_EXPONENT × (nível/LEVEL_REF)^LEVEL_EXPONENT
+   × e^(PACE_EDGE_WEIGHT × paceEdge) × HOME_ADVANTAGE (mandante)
+```
+
+| Constante | Antes (2026-09-24) | Depois (2026-09-26) |
+|---|---|---|
+| `BASE_GOALS` | 0,74 | 0,76 |
+| `HOME_ADVANTAGE` | 1,07 | 1,03 |
+| `STRENGTH_EXPONENT` | 0,54 | 0,51 |
+| `LEVEL_EXPONENT` | 0,80 | 0,81 |
+| `PACE_EDGE_WEIGHT` | 0,26 | 0,32 |
+
+Um termo extra de `FWD.finishing` (`ratio+level+pace+finishing FWD`) reduzia mais o rms (6,7%
+contra 8,2%) e trazia `of_uzbek_super_league` para dentro de ±15%, mas colapsa `LEVEL_EXPONENT`
+para ~0,07 — a mesma colinearidade já documentada na rodada de 2026-09-24 ("derruba o
+`LEVEL_EXPONENT` para 0,2 (colinear)") — então não foi adotado, por consistência com essa decisão.
+
+**Gols/jogo por liga, motor × quickSim (400 jogos cada), antes e depois das constantes novas:**
+
+| Liga | motor | quick antes | erro antes | quick depois | erro depois |
+|---|---|---|---|---|---|
+| premier_league | 2,74 | 2,38 | −13,1% | 2,55 | −6,8% |
+| serie_a | 2,09 | 2,07 | −0,8% | 2,19 | +5,1% |
+| la_liga | 2,29 | 2,23 | −2,4% | 2,34 | +2,2% |
+| ligue_1 | 2,10 | 1,94 | −7,5% | 2,04 | −2,8% |
+| bundesliga | 1,92 | 1,78 | −7,0% | 1,84 | −3,8% |
+| brazil_serie_a | 1,82 | 1,72 | −5,8% | 1,78 | −2,4% |
+| brazil_serie_b | 1,37 | 1,36 | −0,9% | 1,38 | +1,0% |
+| brazil_serie_c | 1,08 | 1,01 | −7,2% | 1,02 | −6,0% |
+| of_ekstraklasa | 0,98 | 1,15 | +16,9% | 1,13 | +14,7% |
+| of_championship | 1,63 | 1,49 | −8,3% | 1,52 | −6,4% |
+| of_allsvenskan | 1,06 | 1,16 | +8,7% | 1,16 | +8,6% |
+| of_argentine_premier_division | 1,56 | 1,42 | −9,4% | 1,45 | −7,3% |
+| of_danish_superliga | 1,56 | 1,41 | −9,5% | 1,47 | −5,9% |
+| of_eredivisie | 1,54 | 1,68 | +9,0% | 1,72 | +11,6% |
+| of_greek_super_league | 1,23 | 1,27 | +3,6% | 1,28 | +4,9% |
+| of_italian_serie_c_a | 0,94 | 0,96 | +1,1% | 0,95 | +0,9% |
+| of_j_league | 1,13 | 1,13 | +0,1% | 1,12 | −0,8% |
+| of_kenyan_premier_division | 0,70 | 0,68 | −2,5% | 0,67 | −4,2% |
+| of_liga_mx | 1,42 | 1,39 | −2,1% | 1,39 | −2,1% |
+| of_major_league_soccer | 1,40 | 1,40 | +0,2% | 1,42 | +2,0% |
+| of_portuguese_primeira_liga | 1,65 | 1,61 | −2,2% | 1,66 | +1,1% |
+| of_russian_second_division_b_group_2 | 0,77 | 0,68 | −11,4% | 0,66 | −14,6% |
+| of_saudi_professional_league | 1,17 | 1,29 | +10,7% | 1,33 | +14,4% |
+| of_spanish_second_division | 1,62 | 1,67 | +3,2% | 1,73 | +6,8% |
+| of_turkish_super_league | 1,86 | 1,64 | −11,6% | 1,69 | −9,0% |
+| of_uzbek_super_league | 0,66 | 0,82 | +25,1% | 0,80 | +21,2% |
+
+rms por liga 9,0% → 8,2% (piso de ruído do motor 4,4%). **25 de 26 ligas ficam dentro de ±15%.**
+`of_uzbek_super_league` continua fora (+21,2%, era +25,1%): é a liga de menor volume de gols (0,66
+gol/lado no motor, ruído ±6,2%), e o ajuste é feito por deviance de Poisson somada sobre todos os
+lados de todas as ligas — uma liga com poucos gols pesa pouco nessa soma, então o ajuste não
+prioriza acertá-la. Isso é uma limitação conhecida da família de 5 parâmetros (o mesmo motivo por
+trás da rejeição do termo de `finishing`, que só ajuda via colinearidade com o nível). Não corrigido
+nesta rodada — precisaria de um ajuste ponderado por liga, fora do escopo de `analyze`.
+
+**Eventos por vaga (`events --apply`, 3 rodadas até convergir):** `ROLE_GOAL_WEIGHT`,
+`ROLE_ASSIST_WEIGHT`, `NO_ASSIST_RATE`, `SHOTS_PER_XG`, `SHOTS_LEVEL_EXPONENT`,
+`PASSES_PER_MATCH`, `PASS_LEVEL_EXPONENT`, `PASS_COMPLETION_BASE`, `PASS_COMPLETION_SKILL`,
+`TACKLES_PER_MATCH`, `TACKLE_LEVEL_EXPONENT`, `INTERCEPTIONS_PER_MATCH`,
+`INTERCEPTION_LEVEL_EXPONENT`, `TACKLES_FAILED_PER_MATCH`, `TACKLE_FAIL_LEVEL_EXPONENT` — todos
+recalculados contra os caches novos (motor pós-recalibração dos craques). Mudanças pequenas em
+relação à rodada de 2026-09-24 (ex.: `SHOTS_PER_XG` 1,922 → 1,754, `PASSES_PER_MATCH.MID` 2,387 →
+2,338): o motor pós-recalibração dos craques concentra mais chutes/gols nos craques de ataque, mas
+a distribuição por linha/vaga não mudou o suficiente para exigir uma nova tabela de "eventos por
+vaga" e notas — os valores de 2026-09-24 continuam uma leitura válida da forma da calibração.
+
+**Checagem entre ligas (`scripts/quicksim-crossleague.ts`, top 6 de cada liga, os dois mandos,
+motor 4 repetições, quickSim 50 repetições por confronto) — primeira rodada, `DOMINANCE_SIGMA =
+0,35`:**
+
+| Par | motor: lado forte V/E/D, gols/jogo | quickSim: V/E/D, gols/jogo | gap vitória forte | gap gols |
+|---|---|---|---|---|
+| premier_league × of_eredivisie | 80,2/13,5/6,3, 2,92 | 74,9/14,7/10,3, 3,07 | −5,3 p.p. | +5,0% |
+| la_liga × of_portuguese_primeira_liga | 74,7/18,4/6,9, 2,70 | 68,5/19,2/12,3, 2,55 | −6,2 p.p. | −5,7% |
+| brazil_serie_a × of_argentine_premier_division | 31,6/34,0/34,4, 1,52 | 36,6/31,6/31,7, 1,73 | +5,0 p.p. | +14,1% |
+| bundesliga × of_danish_superliga | 72,2/20,5/7,3, 2,08 | 65,2/23,4/11,4, 2,07 | −7,0 p.p. | −0,4% |
+
+Meta: gap de vitória do lado mais forte ≤ 6 p.p., gap de gols ≤ 15%. Gols: as 4 checagens passam.
+Vitória do mais forte: 2 de 4 passam (`premier_league`/`of_eredivisie` −5,3 p.p.,
+`brazil_serie_a`/`of_argentine_premier_division` +5,0 p.p.); as outras duas ficam perto, mas fora
+(`la_liga`/`of_portuguese_primeira_liga` −6,2 p.p., `bundesliga`/`of_danish_superliga` −7,0 p.p.).
+
+**Diagnóstico:** não é `LEVEL_EXPONENT` — ele entra igual dos dois lados (`(nível médio da
+partida / LEVEL_REF)^LEVEL_EXPONENT`, mesmo nível para os dois times de uma partida), então não
+tem como abrir nem fechar a diferença **entre** os dois lados de um confronto. Olhando as colunas
+V/E/D: os empates do quickSim já batem com o motor; o excesso está nas **derrotas do lado forte**
+(L), sistematicamente ~1,6× a taxa do motor nos três pares de nível bem diferente (Premier×Eredivisie,
+La Liga×Portugal, Bundesliga×Dinamarca). Isso aponta para `DOMINANCE_SIGMA` — o fator de domínio
+por partida em `quickSim.ts` (`d ~ N(0, σ)`, `xG_casa × e^(d−σ²/2)`, `xG_fora × e^(−d−σ²/2)`) é uma
+log-normal **que preserva a média** (`E[e^(d−σ²/2)] = 1` para qualquer σ) mas cuja variância não
+depende da diferença de força entre os dois lados: o mesmo σ empurra o resultado tanto quando os
+dois times são parecidos quanto quando um é muito mais forte. Num confronto desigual essa variância
+extra vira upset (o lado fraco vence mais do que deveria); num confronto de nível parecido
+(`brazil_serie_a` × `of_argentine_premier_division`, nível ~4,46 × ~4,32 — **efetivamente iguais**,
+não há de fato um lado "fraco") a mesma variância não tem para onde vazar como excesso de upset —
+por isso esse par nem aparece com gap negativo, e o rótulo "lado forte" ali é quase arbitrário
+(decidido por uma diferença de nível pequena o bastante para virar ruído).
+
+**Fix:** `DOMINANCE_SIGMA` 0,35 → 0,25. Só afeta a variância por partida do quickSim (o motor não
+usa esse parâmetro); a média de gols não muda por construção (`E[e^(d−σ²/2)] = 1`), então não é
+esperado nenhum efeito no volume de gols por liga (seção anterior) — só na dispersão de
+resultados. Verificado dentro de cada liga antes de aplicar entre ligas
+(`bun scripts/quicksim-calibrate.ts <liga> 50 2`, `QS_QUICK_REPEATS=30`, ~100 jogos do motor por
+liga — amostra pequena, ruído esperado de alguns p.p.):
+
+| Liga | motor gols/casa%/empate%/fora% | quickSim (σ=0,25) | dentro de ±10% (gols/casa/empate) |
+|---|---|---|---|
+| premier_league | 2,77 / 39,0 / 27,0 / 34,0 | 2,58 / 40,1 / 22,5 / 37,4 | gols ✓, casa ✓, empate ✗ (mas só 4,5 p.p.) |
+| bundesliga | 2,01 / 36,0 / 24,0 / 40,0 | 1,83 / 37,6 / 29,1 / 33,2 | gols ✓, casa ✓, empate ✗ (5,1 p.p., amostra pequena) |
+| of_kenyan_premier_division | 0,67 / 25,0 / 53,0 / 22,0 | 0,66 / 21,3 / 57,3 / 21,4 | gols ✓, casa ✗ (3,7 p.p.), empate ✓ |
+
+Nenhuma liga piorou de forma clara em relação à calibração de eventos já feita (a seção "Eventos
+por vaga" acima não muda com `DOMINANCE_SIGMA`); as diferenças de casa/empate ficam na faixa de
+alguns p.p., compatível com o ruído de ~100 partidas do motor por liga. `DOMINANCE_SIGMA = 0,25`
+foi mantido (não revertido).
+
+**Checagem entre ligas, segunda rodada, `DOMINANCE_SIGMA = 0,25`** (mesmos parâmetros
+`n=6, repeats=4, quickRepeats=50`; o motor usa `Math.random` sem seed, então o próprio valor do
+motor varia um pouco entre as duas rodadas — visível na coluna "motor" abaixo):
+
+| Par | motor: lado forte V/E/D, gols/jogo | quickSim: V/E/D, gols/jogo | gap vitória forte | gap gols |
+|---|---|---|---|---|
+| premier_league × of_eredivisie | 80,9/13,2/5,9, 2,81 | 77,2/14,1/8,6, 3,08 | −3,7 p.p. | +9,7% |
+| la_liga × of_portuguese_primeira_liga | 75,7/17,4/6,9, 2,81 | 70,4/18,5/11,1, 2,56 | −5,2 p.p. | −9,0% |
+| brazil_serie_a × of_argentine_premier_division | 33,3/34,7/31,9, 1,57 | 35,7/33,0/31,3, 1,73 | +2,4 p.p. | +10,2% |
+| bundesliga × of_danish_superliga | 75,3/16,3/8,3, 2,11 | 67,0/22,7/10,3, 2,08 | −8,3 p.p. | −1,3% |
+
+Gols: as 4 checagens continuam dentro de ±15%. Vitória do mais forte: `premier_league`/`of_eredivisie`
+(−5,3 → −3,7 p.p.) e `brazil_serie_a`/`of_argentine_premier_division` (+5,0 → +2,4 p.p.) melhoraram
+e passam com folga; `la_liga`/`of_portuguese_primeira_liga` ficou praticamente igual (−6,2 → −5,2
+p.p., passa agora). `bundesliga`/`of_danish_superliga` piorou na leitura direta (−7,0 → −8,3 p.p.),
+mas o valor do **motor** nessa rodada também subiu bastante (72,2% → 75,3% de vitória do lado
+forte) sem nenhuma mudança de código — com `n=288` jogos de motor sem seed, o desvio-padrão
+esperado de uma proporção ~0,72 é ≈ 2,6 p.p., então um salto de 3,1 p.p. no motor entre as duas
+rodadas é consistente com ruído de amostra, não com uma regressão do `DOMINANCE_SIGMA` novo. Não
+foi possível isolar o efeito de σ desse ruído do motor sem aumentar `repeats` além do pedido nesta
+rodada (ideia para depois: um script de checagem entre ligas que reaproveite os mesmos jogos de
+motor entre uma rodada de σ e outra, em vez de resimular o motor do zero).
+
+**Testes:** `bun test` → 856 passam (0 falham; a contagem subiu em relação aos 842 da primeira
+rodada porque outras tasks deste plano — o agregado de mata-mata — commitaram no meio do caminho).
+Só um dependia diretamente das constantes de gols:
+`src/Domain/advanceDay/matches.quick.test.ts` → "neutral fixture removes home advantage" (usa o
+efeito multiplicativo de `HOME_ADVANTAGE` na margem esperada). Com `HOME_ADVANTAGE` 1,07 → 1,03 a
+margem pareada caiu de ~0,045 para ~0,0195 em 2000 seeds — nos dois pontos, ~0,64 × (HOME_ADVANTAGE
+− 1). O teste agora deriva o limiar dessa relação
+(`0,64 × (QUICK_SIM_CONFIG.HOME_ADVANTAGE − 1) × 0,5`) em vez de um número fixo escrito na hora —
+continua um sinal claramente positivo e não-flaky, mas passa a acompanhar sozinho a próxima
+recalibração de `HOME_ADVANTAGE`, sem precisar de outro ajuste manual no teste.

@@ -15,6 +15,7 @@ import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
+import { isContinentalSlug } from "@/Domain/continental/competitions";
 
 export interface MatchSimResult {
   event: MatchEvent;
@@ -45,6 +46,7 @@ function finalizeSquadsAfterMatch(
   playerRatings: Record<string, number>,
   playerEnergy: Record<string, number> | undefined,
   isCup: boolean,
+  isContinental: boolean,
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -71,6 +73,14 @@ function finalizeSquadsAfterMatch(
           if (isCup) {
             const c = log.cup ?? { appearances: 0, goals: 0, assists: 0 };
             log.cup = {
+              appearances: c.appearances + 1,
+              goals: c.goals + ps.goals,
+              assists: c.assists + ps.assists,
+            };
+          }
+          if (isContinental) {
+            const c = log.continental ?? { appearances: 0, goals: 0, assists: 0 };
+            log.continental = {
               appearances: c.appearances + 1,
               goals: c.goals + ps.goals,
               assists: c.assists + ps.assists,
@@ -188,6 +198,7 @@ export function buildMatchEventFromRecording(
     recording.playerRatings,
     recording.playerEnergy,
     isCupSlug(fixture.competition),
+    isContinentalSlug(fixture.competition),
   );
 
   const event: MatchEvent = {
@@ -231,7 +242,10 @@ export function buildMatchEvent(
     sim.awayFormation,
     sim.homeLineup,
     sim.awayLineup,
-    { knockout: fixture.knockout === true },
+    {
+      knockout: fixture.knockout === true,
+      ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
+    },
   );
 
   const nameToRosterId = new Map<string, string>();
@@ -325,7 +339,8 @@ export function buildMatchEvent(
 
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
     finalizeSquadsAfterMatch(
-      homeSquad, awaySquad, playerStats, playerRatings, playerEnergy, isCupSlug(fixture.competition),
+      homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
+      isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
     );
 
   const substitutions: import("@/types/dayLogTypes").MatchSubstitution[] = result.substitutions.map((sub) => ({
@@ -422,6 +437,7 @@ export function buildQuickMatchEvent(
       awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
       knockout: fixture.knockout === true,
       neutral: fixture.neutral === true,
+      aggregate: fixture.aggregate,
     },
     rng,
   );

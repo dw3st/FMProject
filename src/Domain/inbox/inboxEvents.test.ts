@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildCupMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
+import { buildContinentalMessage, buildCupMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
 
 describe("buildSeasonMessage", () => {
   test("promoted names the new league and keeps the one left", () => {
@@ -82,5 +82,81 @@ describe("buildCupMessage", () => {
   test("ids are unique", () => {
     const args = { date: "d", kind: "champion" as const, cupSlug: "cup_england", cupName: "FA Cup", stage: "final" };
     expect(buildCupMessage(args).id).not.toBe(buildCupMessage(args).id);
+  });
+});
+
+describe("buildContinentalMessage", () => {
+  test("qualified names the competition", () => {
+    const m = buildContinentalMessage({
+      date: "2027-08-15", kind: "qualified", competition: "ucl", competitionName: "Champions League", stage: "group",
+    });
+    expect(m.category).toBe("continental");
+    expect(m.kind).toBe("qualified");
+    expect(m.subject).toBe("Qualified for the Champions League");
+    expect(m.preview).toBe("The club qualified for the Champions League.");
+    expect(m.competition).toBe("ucl");
+    expect(m.competitionName).toBe("Champions League");
+    expect(m.stage).toBe("group");
+    expect(m.read).toBe(false);
+    expect("group" in m).toBe(false);
+  });
+
+  test("group carries the letter and the group-mates in the preview", () => {
+    const m = buildContinentalMessage({
+      date: "2027-08-15", kind: "group", competition: "ucl", competitionName: "Champions League", stage: "group",
+      group: "C", opponentNames: ["Real Madrid", "Bayern Munich", "Ajax"],
+    });
+    expect(m.subject).toBe("Champions League group draw");
+    expect(m.preview).toBe("Group C: Real Madrid, Bayern Munich, Ajax.");
+    expect(m.group).toBe("C");
+    expect(m.opponentNames).toEqual(["Real Madrid", "Bayern Munich", "Ajax"]);
+  });
+
+  test("draw carries the opponent, first-leg date and venue", () => {
+    const m = buildContinentalMessage({
+      date: "2028-02-10", kind: "draw", competition: "ucl", competitionName: "Champions League", stage: "r16",
+      opponentName: "Real Madrid", firstLegDate: "2028-02-18", venue: "home",
+    });
+    expect(m.subject).toBe("Champions League draw");
+    expect(m.preview).toBe("Next: Real Madrid (home) on 2028-02-18.");
+    expect(m.stage).toBe("r16");
+    expect(m.opponentName).toBe("Real Madrid");
+    expect(m.firstLegDate).toBe("2028-02-18");
+    expect(m.venue).toBe("home");
+  });
+
+  test("eliminated names the opponent when there is one", () => {
+    const m = buildContinentalMessage({
+      date: "2028-03-10", kind: "eliminated", competition: "ucl", competitionName: "Champions League", stage: "r16",
+      opponentName: "Real Madrid",
+    });
+    expect(m.subject).toBe("Out of the Champions League");
+    expect(m.preview).toBe("Knocked out by Real Madrid.");
+    expect("firstLegDate" in m).toBe(false);
+    expect("venue" in m).toBe(false);
+  });
+
+  test("eliminated has no opponent for a group-stage 3rd/4th finish", () => {
+    const m = buildContinentalMessage({
+      date: "2027-12-15", kind: "eliminated", competition: "uel", competitionName: "Europa League", stage: "group",
+    });
+    expect(m.preview).toBe("Eliminated from the Europa League group stage.");
+    expect("opponentName" in m).toBe(false);
+  });
+
+  test("champion has no opponent", () => {
+    const m = buildContinentalMessage({
+      date: "2028-05-25", kind: "champion", competition: "lib", competitionName: "Copa Libertadores", stage: "final",
+    });
+    expect(m.subject).toBe("Copa Libertadores champions!");
+    expect(m.preview).toBe("The club won the Copa Libertadores.");
+    expect("opponentName" in m).toBe(false);
+  });
+
+  test("ids are unique", () => {
+    const args = {
+      date: "d", kind: "champion" as const, competition: "sud" as const, competitionName: "Copa Sudamericana", stage: "final" as const,
+    };
+    expect(buildContinentalMessage(args).id).not.toBe(buildContinentalMessage(args).id);
   });
 });

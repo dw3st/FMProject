@@ -440,6 +440,8 @@ export interface GameState {
   extraTimeSecond: number;
   /** Knockout match: a draw after 90' goes to extra time and penalties. Absent/false = league. */
   knockout?: boolean;
+  /** Second leg of a two-legged tie: first-leg goals per side of THIS match. Level = score + aggregate. */
+  aggregate?: { A: number; B: number };
   /** Score when the second half ended level in a knockout match (null/absent otherwise). */
   scoreAtRegulation?: { A: number; B: number } | null;
   /** Stoppage game-seconds for each extra-time half (0–2 min), drawn when extra time starts. */

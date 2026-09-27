@@ -485,3 +485,20 @@ describe("quickSim knockout", () => {
     expect(draws).toBeGreaterThan(0);
   });
 });
+
+describe("quickSim aggregate", () => {
+  test("extra time only when level on aggregate", () => {
+    const home = makeSquad("h", 6), away = makeSquad("a", 6);
+    for (let seed = 1; seed <= 300; seed++) {
+      const { recording: r } = quickSimMatch(
+        { fixtureId: "g", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away),
+          knockout: true, aggregate: { home: 0, away: 2 } },
+        mulberry32(seed),
+      );
+      const diffAfter90 = r.score.home - (r.decider?.extraTime.home ?? 0) - (r.score.away - (r.decider?.extraTime.away ?? 0));
+      if (r.decider) expect(diffAfter90).toBe(2);           // level on aggregate after 90'
+      else expect(r.score.home - r.score.away).not.toBe(2); // otherwise decided in 90'
+      if (r.decider?.penalties) expect(r.score.home - r.score.away).toBe(2);
+    }
+  });
+});

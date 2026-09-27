@@ -8,6 +8,7 @@ import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { playerCupSlug } from "@/backend/cupWorld";
+import { playerContinentalSlug } from "@/backend/continentalWorld";
 import {
   recordSaveOwnership,
   deleteSaveOwnership,
@@ -94,7 +95,15 @@ export const saveRoutes = {
           const cupFixtures = cupSlug
             ? (await saveService.getAllFixturesForLeague(id, cupSlug)).filter((f) => f.home === myId || f.away === myId)
             : [];
-          const fullCalendar = [...calendar, ...cupFixtures].sort((a, b) => a.date.localeCompare(b.date));
+          const continentalSlug = await playerContinentalSlug(saveService, id, myId);
+          const continentalFixtures = continentalSlug
+            ? (await saveService.getAllFixturesForLeague(id, continentalSlug)).filter(
+                (f) => f.home === myId || f.away === myId,
+              )
+            : [];
+          const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures].sort((a, b) =>
+            a.date.localeCompare(b.date),
+          );
           season = {
             year: playerLeagueState.year,
             start: playerLeagueState.start,

@@ -120,6 +120,16 @@ describe("competitionName — cups", () => {
   });
 });
 
+describe("competitionName — continentais", () => {
+  test("continental competitions have fixed names", () => {
+    expect(competitionName("ucl", [], "en")).toBe("Champions League");
+    expect(competitionName("uel", [], "pt-BR")).toBe("Europa League");
+    expect(competitionName("lib", [], "pt-BR")).toBe("Copa Libertadores");
+    expect(competitionName("sud", [], "en")).toBe("Copa Sudamericana");
+    expect(competitionName("sud", [], "pt-BR")).toBe("Copa Sul-Americana");
+  });
+});
+
 describe("matchesCountryQuery", () => {
   test("query vazia sempre bate", () => {
     expect(matchesCountryQuery("", ["Qualquer coisa"])).toBe(true);
