@@ -218,10 +218,10 @@ export const transferRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
-    const rawMarket = await saveService.getMarket(saveId);
-    const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
 
     if (req.method === "GET") {
+      const rawMarket = await saveService.getMarket(saveId);
+      const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
       return Response.json(market?.playerSellList ?? []);
     }
 
@@ -235,23 +235,31 @@ export const transferRoutes = {
         return Response.json({ error: "missing playerId" }, { status: 400 });
       }
 
-      const allSquads = await saveService.getAllSquads(saveId);
-      const baseMarket = market ?? initMarketState(allSquads);
-      const currentList: SellCandidate[] = baseMarket.playerSellList;
+      // Serialise the read-decide-write of the market's sell list per save: a concurrent
+      // dailyMarketTick (advance-day) or another sell-list toggle on the same save must not
+      // interleave with this read-modify-write, or one toggle can silently undo another.
+      return withSaveLock(saveId, async () => {
+        const rawMarket = await saveService.getMarket(saveId);
+        const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
 
-      let newList: SellCandidate[];
-      const existingIdx = currentList.findIndex((c) => c.playerId === playerId);
-      if (existingIdx >= 0) {
-        // Toggle off
-        newList = currentList.filter((c) => c.playerId !== playerId);
-      } else {
-        // Add with max priority (human explicitly listed it)
-        newList = [...currentList, { playerId, priority: 1.0 }];
-      }
+        const allSquads = await saveService.getAllSquads(saveId);
+        const baseMarket = market ?? initMarketState(allSquads);
+        const currentList: SellCandidate[] = baseMarket.playerSellList;
 
-      const updatedMarket = { ...baseMarket, playerSellList: newList };
-      await saveService.saveMarket(saveId, updatedMarket);
-      return Response.json({ playerSellList: newList });
+        let newList: SellCandidate[];
+        const existingIdx = currentList.findIndex((c) => c.playerId === playerId);
+        if (existingIdx >= 0) {
+          // Toggle off
+          newList = currentList.filter((c) => c.playerId !== playerId);
+        } else {
+          // Add with max priority (human explicitly listed it)
+          newList = [...currentList, { playerId, priority: 1.0 }];
+        }
+
+        const updatedMarket = { ...baseMarket, playerSellList: newList };
+        await saveService.saveMarket(saveId, updatedMarket);
+        return Response.json({ playerSellList: newList });
+      });
     }
 
     return Response.json({ error: "method not allowed" }, { status: 405 });
