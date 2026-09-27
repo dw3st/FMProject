@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { aiBudgetWithPrize, continentalPrize, cupRunnerUpPrize, cupStagePrize, leaguePrize } from "@/Domain/finance/prizes";
+import {
+  aiBudgetWithPrize, continentalPrize, continentalStagePrizesFromEvents, cupRunnerUpPrize, cupStagePrize, leaguePrize,
+} from "@/Domain/finance/prizes";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
+import type { ContinentalEvent } from "@/Domain/continental/continentalProgress";
 
 describe("leaguePrize", () => {
   test("champion (position 1) gets merit + champion bonus", () => {
@@ -118,5 +121,59 @@ describe("aiBudgetWithPrize", () => {
   test("rounds the added share", () => {
     // 50% of 1 = 0.5 -> rounds to 1 (banker's/half-up via Math.round)
     expect(aiBudgetWithPrize(0, 1, 1_000_000)).toBe(1);
+  });
+});
+
+describe("continentalStagePrizesFromEvents (Task 6 review fix — stage-reached mapping, no double pay)", () => {
+  test("group -> r16, r16 -> qf, qf -> sf, sf -> final: each 'advanced' event pays the STAGE REACHED", () => {
+    const events: ContinentalEvent[] = [
+      { kind: "advanced", clubId: "a", stage: "group" },
+      { kind: "advanced", clubId: "b", stage: "r16" },
+      { kind: "advanced", clubId: "c", stage: "qf" },
+      { kind: "advanced", clubId: "d", stage: "sf" },
+    ];
+    const awards = continentalStagePrizesFromEvents("ucl", events);
+    expect(awards).toEqual([
+      { clubId: "a", amount: continentalPrize("ucl", "r16"), reason: "r16" },
+      { clubId: "b", amount: continentalPrize("ucl", "qf"), reason: "qf" },
+      { clubId: "c", amount: continentalPrize("ucl", "sf"), reason: "sf" },
+      { clubId: "d", amount: continentalPrize("ucl", "final"), reason: "final" },
+    ]);
+  });
+
+  test("champion event pays the title bonus", () => {
+    const events: ContinentalEvent[] = [{ kind: "champion", clubId: "e" }];
+    expect(continentalStagePrizesFromEvents("lib", events)).toEqual([
+      { clubId: "e", amount: continentalPrize("lib", "title"), reason: "title" },
+    ]);
+  });
+
+  test("the champion's OWN 'advanced,stage:final' event is skipped — no further stage exists, and they are paid once (title) via the separate champion event", () => {
+    // What advanceContinental actually emits when the final is decided: both an "advanced" event
+    // for the winner (stage: "final", mirroring every other stage's "who moved on" bookkeeping)
+    // and a "champion" event — see continentalProgress.ts case 4.
+    const events: ContinentalEvent[] = [
+      { kind: "advanced", clubId: "champ", stage: "final" },
+      { kind: "eliminated", clubId: "loser", stage: "final" },
+      { kind: "champion", clubId: "champ" },
+    ];
+    const awards = continentalStagePrizesFromEvents("uel", events);
+    expect(awards).toEqual([{ clubId: "champ", amount: continentalPrize("uel", "title"), reason: "title" }]);
+    // Not double-paid: exactly one award for "champ", none at all for "loser".
+    expect(awards.filter((a) => a.clubId === "champ")).toHaveLength(1);
+    expect(awards.some((a) => a.clubId === "loser")).toBe(false);
+  });
+
+  test("eliminated / drawn / undecidedTie events pay nothing", () => {
+    const events: ContinentalEvent[] = [
+      { kind: "eliminated", clubId: "a", stage: "group" },
+      { kind: "drawn", stage: "r16", round: 7, ties: [] },
+      { kind: "undecidedTie", tieId: "t1" },
+    ];
+    expect(continentalStagePrizesFromEvents("sud", events)).toEqual([]);
+  });
+
+  test("empty events array pays nothing", () => {
+    expect(continentalStagePrizesFromEvents("ucl", [])).toEqual([]);
   });
 });

@@ -615,18 +615,24 @@ export async function continentalClubStatus(
 }
 
 /**
- * Every club that reached a continental final (or won it) THIS SEASON, across all 4 competitions
- * still on disk — read right before a country's league season rolls over
- * (`.claude/rules/AI-clubs/finance.md`, design spec §3 "IA"), so `clubSeasonOutcome`'s
- * `continentalGoodClubs` can treat them as a good season regardless of domestic position. A
- * competition's final only has entrants once its final stage is drawn (`stages.find(final).drawn`)
- * — both finalists count, the champion (if decided) is a subset of them.
+ * Every club that reached a continental final (`good`) or won it (`title`, always a subset of
+ * `good`) THIS SEASON, across all 4 competitions still on disk — read right before a country's
+ * league season rolls over (`.claude/rules/AI-clubs/finance.md`, design spec §3 "IA"), so
+ * `clubSeasonOutcome`'s `continental` param can feed `ClubSeasonOutcome.continentalGood` (both
+ * finalists — followers/tier-step) and `continentalTitle` (champion only — ELITE-entry gate,
+ * `nextFinancialTier`) separately. A competition's final only has entrants once its final stage is
+ * drawn (`stages.find(final).drawn`); `championId` is only set once the final is actually played.
+ *
+ * KNOWN TIMING GAP: only sees finals already drawn AT THE MOMENT a country's league rolls over —
+ * see the longer note on `clubSeasonOutcome` (seasonReaction.ts) for which leagues this actually
+ * reaches in practice and why (Task 9 docs pass).
  */
 export async function continentalGoodClubsThisSeason(
   service: SaveService,
   saveId: string,
-): Promise<Set<string>> {
-  const out = new Set<string>();
+): Promise<{ good: Set<string>; title: Set<string> }> {
+  const good = new Set<string>();
+  const title = new Set<string>();
   for (const slug of CONTINENTAL_SLUGS) {
     const meta = await service.getLeagueMeta(saveId, slug);
     const cont = meta?.continental;
@@ -635,10 +641,13 @@ export async function continentalGoodClubsThisSeason(
     if (!final?.drawn) continue;
     const round = await service.getRound(saveId, slug, final.rounds[0]!);
     for (const f of round?.fixtures ?? []) {
-      out.add(f.home);
-      out.add(f.away);
+      good.add(f.home);
+      good.add(f.away);
     }
-    if (cont.championId) out.add(cont.championId);
+    if (cont.championId) {
+      good.add(cont.championId);
+      title.add(cont.championId);
+    }
   }
-  return out;
+  return { good, title };
 }
