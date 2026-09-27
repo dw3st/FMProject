@@ -52,7 +52,12 @@ import { competitionName } from "@/Domain/world/labels";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
-import { advanceContinentalStages, createContinentalSeason, continentalTier1LeagueStates } from "@/backend/continentalWorld";
+import {
+  advanceContinentalStages,
+  createContinentalSeason,
+  continentalTier1LeagueStates,
+  logEuropeanCalendarClashes,
+} from "@/backend/continentalWorld";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -811,6 +816,9 @@ export async function advanceOneDay(
 
     const playerClubSquadId = playerSquadId ?? meta.clubId;
     const transfersAtSeasonEnd = due.units.length > 0 ? await saveService.getTransfers(saveId) : [];
+    // Every league's brand-new next-season fixtures (step 6 below), for the calendar-year vs.
+    // continental clash check right after this loop.
+    const rolledLeagueFixtures = new Map<string, Fixture[]>();
 
     for (const unit of due.units) {
       if (unit.partial) {
@@ -897,6 +905,7 @@ export async function advanceOneDay(
           year: closedYear.get(slug)! + 1,
           leagueConfig: LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === slug),
         });
+        rolledLeagueFixtures.set(slug, cal.rounds.flatMap((r) => r.fixtures));
         for (const round of cal.rounds) await saveService.writeRound(saveId, slug, round.round, round);
         await saveService.writeDateIndex(saveId, slug, cal.dateIndex);
         await saveService.writeLeagueMeta(saveId, cal.meta);
@@ -947,6 +956,15 @@ export async function advanceOneDay(
           playerMove: plan.playerMove,
         });
       }
+    }
+
+    // A calendar-year European league (Belarus, Finland, Georgia, Iceland, Norway, Sweden — see
+    // .claude/rules/game/continental.md) rolls over on its own December schedule, independently of
+    // the Europe-wide continental rollover below (which only tracks cross-year leagues) — so its
+    // brand-new Y+1 calendar is generated with no knowledge of UCL/UEL dates already fixed for the
+    // season in progress. Logged only, never rescheduled: see `logEuropeanCalendarClashes`.
+    if (rolledLeagueFixtures.size > 0) {
+      await logEuropeanCalendarClashes(saveService, saveId, rolledLeagueFixtures);
     }
 
     // ── National cups: a country's cup is archived and regenerated once all its leagues rolled ──
