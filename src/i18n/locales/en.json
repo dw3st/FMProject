@@ -1036,7 +1036,8 @@
       "transfer_in": "Transfer In",
       "transfer_out": "Transfer Out",
       "season": "Season",
-      "cup": "Cup"
+      "cup": "Cup",
+      "continental": "Continental"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1049,6 +1050,14 @@
         "away": "away",
         "neutral": "neutral venue"
       }
+    },
+    "continental": {
+      "qualified": "The club qualified for the {{competition}}",
+      "group": "{{competition}} draw: Group {{group}} with {{opponents}}",
+      "draw": "{{competition}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
+      "eliminated": "Eliminated from the {{competition}} ({{stage}}) by {{opponent}}",
+      "eliminatedGroup": "Eliminated from the {{competition}} group stage",
+      "champion": "Champions of the {{competition}}!"
     }
   },
   "finances": {

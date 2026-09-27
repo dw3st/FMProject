@@ -10,10 +10,11 @@ import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerT
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import type { Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
+import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
 import {
   emitInboxMessage,
+  buildContinentalMessage,
   buildCupMessage,
   buildDevelopmentMessage,
   buildTransferInMessage,
@@ -55,6 +56,7 @@ import { continentsToRegenerate as continentsToRegenerateContinental, buildConti
 import {
   advanceContinentalStages,
   createContinentalSeason,
+  continentalQualificationOf,
   continentalTier1LeagueStates,
   logEuropeanCalendarClashes,
   seasonDefiningYear,
@@ -614,6 +616,73 @@ export async function advanceOneDay(
       }
     }
 
+    // ── Continental competition inbox news for the human club ─────────────────
+    // Same timing guarantee as the national-cup block above: emitted right away, never deferred
+    // past a possible "Transfers + inbox are cleared" further down. Safe because no continental
+    // fixture (any stage) can land within FINAL_BEFORE_END_DAYS-equivalent of the season-defining
+    // leagues' end (continentalDates.ts caps the knockout window at `fim - 7 dias`), so a draw/
+    // elimination/title here never falls on the same day as the player's own country rollover.
+    // The season-start "qualified"/"group" messages (from a fresh createContinentalSeason) are a
+    // different story — those DO land on the same day as a rollover — see the deferred
+    // `continentalMessages` array emitted after `clearInbox` below.
+    if (playerSquadId && continentalChanges.some(({ events }) => events.length > 0)) {
+      const catalogForContinental = await getLeagueData();
+      for (const { slug, events } of continentalChanges) {
+        if (events.length === 0) continue;
+        // `advanceContinentalStages` types `slug` as `string`, but `continentalPlayed` (the map it
+        // was called with) only ever holds slugs that passed `isContinentalSlug` above.
+        const compSlug = slug as ContinentalSlug;
+        const compDisplayName = competitionName(slug, catalogForContinental as unknown as LeagueData[], "en");
+        const slugRounds = roundUpdates.get(slug);
+        const opponentOfTodaysFixture = (): string | undefined => {
+          if (!slugRounds) return undefined;
+          for (const fixtures of slugRounds.values()) {
+            const f = fixtures.find((x) => x.played && (x.home === playerSquadId || x.away === playerSquadId));
+            if (f) return f.home === playerSquadId ? f.away : f.home;
+          }
+          return undefined;
+        };
+
+        for (const event of events) {
+          if (event.kind === "eliminated" && event.clubId === playerSquadId) {
+            const opponentId = event.stage === "group" ? undefined : opponentOfTodaysFixture();
+            const opponentName = opponentId ? (index.byId(opponentId)?.name ?? opponentId) : undefined;
+            await emitInboxMessage(
+              saveId,
+              buildContinentalMessage({
+                date: currentDate, kind: "eliminated", competition: compSlug, competitionName: compDisplayName,
+                stage: event.stage, opponentName,
+              }),
+              saveService,
+            );
+          } else if (event.kind === "champion" && event.clubId === playerSquadId) {
+            await emitInboxMessage(
+              saveId,
+              buildContinentalMessage({
+                date: currentDate, kind: "champion", competition: compSlug, competitionName: compDisplayName, stage: "final",
+              }),
+              saveService,
+            );
+          } else if (event.kind === "drawn") {
+            const myTie = event.ties.find((tie) => tie.home === playerSquadId || tie.away === playerSquadId);
+            if (!myTie) continue;
+            const opponentId = myTie.home === playerSquadId ? myTie.away : myTie.home;
+            const opponentName = index.byId(opponentId)?.name ?? opponentId;
+            const venue: "home" | "away" | "neutral" =
+              !myTie.tieId ? "neutral" : myTie.home === playerSquadId ? "home" : "away";
+            await emitInboxMessage(
+              saveId,
+              buildContinentalMessage({
+                date: currentDate, kind: "draw", competition: compSlug, competitionName: compDisplayName,
+                stage: event.stage, opponentName, firstLegDate: myTie.firstLegDate, venue,
+              }),
+              saveService,
+            );
+          }
+        }
+      }
+    }
+
     // ── Write day log ────────────────────────────────────────────────────────
     // Strip per-player effects from training/rest events before persisting — effects
     // are only needed for the immediate API response, not stored on disk.
@@ -787,6 +856,11 @@ export async function advanceOneDay(
     let playerChampionOf: string | null = null;
     const seasonMessages: Array<Parameters<typeof buildSeasonMessage>[0]> = [];
     let playerFollowersChange: { before: number; after: number; leagueSlug: string } | null = null;
+    // Continental "qualified"/"group" news from a fresh createContinentalSeason (self-heal or the
+    // regeneration loop below), collected and emitted AFTER the "Transfers + inbox are cleared"
+    // block further down — regeneration is driven by the same due.units/due.resync trigger as the
+    // player's own country rollover, so it can land on the exact day `clearInbox` runs.
+    const continentalMessages: Array<Parameters<typeof buildContinentalMessage>[0]> = [];
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -1009,6 +1083,23 @@ export async function advanceOneDay(
       const pyramids = await getPyramids();
       const tier1States = await continentalTier1LeagueStates(updatedActiveLeagues, catalog, pyramids);
       const compYear: Partial<Record<"Europe" | "South America", number>> = {};
+
+      // Player's-club "qualified" + "group" news for a competition pair just (re)generated below —
+      // queued into the deferred `continentalMessages` array (see its declaration above), never
+      // emitted directly here.
+      const queueQualificationMessage = (result: Awaited<ReturnType<typeof createContinentalSeason>>) => {
+        const qual = continentalQualificationOf(playerClubSquadId, result);
+        if (!qual) return;
+        const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
+        const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
+        continentalMessages.push({
+          date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
+        });
+        continentalMessages.push({
+          date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
+          group: qual.group, opponentNames,
+        });
+      };
       for (const continent of ["Europe", "South America"] as const) {
         const primarySlug = competitionsOf(continent)[0]!.slug;
         const m = await saveService.getLeagueMeta(saveId, primarySlug);
@@ -1030,7 +1121,9 @@ export async function advanceOneDay(
           "continental",
           `save ${saveId}: ${continent} has no continental competition on disk — creating it now (self-heal) for ${year}`,
         );
-        await createContinentalSeason({ service: saveService, saveId, continent, year, index, catalog, pyramids });
+        queueQualificationMessage(
+          await createContinentalSeason({ service: saveService, saveId, continent, year, index, catalog, pyramids }),
+        );
       }
 
       for (const c of continentsToRegenerateContinental(tier1States, compYear)) {
@@ -1048,9 +1141,11 @@ export async function advanceOneDay(
           if (!old) continue;
           await saveService.writeLeagueSeasonArchive(saveId, buildContinentalArchive(old, nameOf));
         }
-        await createContinentalSeason({
-          service: saveService, saveId, continent: c.continent, year: c.year, index, catalog, pyramids,
-        });
+        queueQualificationMessage(
+          await createContinentalSeason({
+            service: saveService, saveId, continent: c.continent, year: c.year, index, catalog, pyramids,
+          }),
+        );
       }
     }
 
@@ -1060,6 +1155,9 @@ export async function advanceOneDay(
       await saveService.clearInbox(saveId);
       for (const msg of seasonMessages) await emitInboxMessage(saveId, buildSeasonMessage(msg), saveService);
     }
+    // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
+    // any `clearInbox` this same day, whether or not it was the player's own country that rolled.
+    for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};

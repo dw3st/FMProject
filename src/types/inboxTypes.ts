@@ -1,4 +1,6 @@
-export type InboxCategory = "development" | "transfer_in" | "transfer_out" | "season" | "cup";
+import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
+
+export type InboxCategory = "development" | "transfer_in" | "transfer_out" | "season" | "cup" | "continental";
 
 export interface InboxMessageBase {
   id:        string;
@@ -72,9 +74,31 @@ export interface CupInboxMessage extends InboxMessageBase {
   venue?:    "home" | "away" | "neutral";
 }
 
+/** Continental-competition (UCL/UEL/Lib/Sud) news for the human club. */
+export interface ContinentalInboxMessage extends InboxMessageBase {
+  category:    "continental";
+  kind:        "qualified" | "group" | "draw" | "eliminated" | "champion";
+  competition: ContinentalSlug;
+  /** English fallback name, shown only until the league catalog loads (mirrors CupInboxMessage.cupName). */
+  competitionName: string;
+  /** Stage key of the draw / elimination / final. "group" for qualified/group. */
+  stage:       ContinentalStageName;
+  /** Qualified / group only: the group letter. */
+  group?:      string;
+  /** Group only: the other clubs in the group, for the message body. */
+  opponentNames?: string[];
+  /** Draw / eliminated only: the opponent (eliminated: absent for a group-stage 3rd/4th finish). */
+  opponentName?: string;
+  /** Draw only: the tie's first-leg date. */
+  firstLegDate?: string;
+  /** Draw only: whether we are at home ("neutral" for the final). */
+  venue?:      "home" | "away" | "neutral";
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
   | TransferOutInboxMessage
   | SeasonInboxMessage
-  | CupInboxMessage;
+  | CupInboxMessage
+  | ContinentalInboxMessage;
