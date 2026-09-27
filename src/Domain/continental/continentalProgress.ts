@@ -5,6 +5,7 @@ import type {
   Fixture,
   LeagueSeasonMeta,
   RoundFixtures,
+  SeasonArchive,
 } from "@/types/calendarTypes";
 import { seedFrom } from "@/Domain/cups/cupIds";
 import { groupTable } from "@/Domain/continental/groupTable";
@@ -296,4 +297,36 @@ export function continentsToRegenerate(
     out.push({ continent, year: Math.min(...seasonDefining.map((l) => l.year)) });
   }
   return out;
+}
+
+/**
+ * Season archive of a finished continental competition (no table; one title for the champion) —
+ * the continental equivalent of `buildCupArchive` (`src/Domain/cups/cupRollover.ts`), reading
+ * `meta.continental.championId` instead of `meta.cup.championId`.
+ */
+export function buildContinentalArchive(
+  meta: LeagueSeasonMeta,
+  clubInfo: (squadId: string) => { name: string; coachId: number | null; coachName: string },
+): SeasonArchive {
+  const champ = meta.continental?.championId ?? null;
+  return {
+    leagueSlug: meta.leagueSlug,
+    year: meta.year,
+    start: meta.start,
+    end: meta.end,
+    standings: [],
+    titles: champ
+      ? [(() => {
+          const info = clubInfo(champ);
+          return {
+            competition: meta.leagueSlug,
+            clubId: champ,
+            clubName: info.name,
+            coachId: info.coachId,
+            coachName: info.coachName,
+          };
+        })()]
+      : [],
+    playerLogs: {},
+  };
 }
