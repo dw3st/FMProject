@@ -539,3 +539,21 @@ export async function continentalTier1LeagueStates(
   }
   return out;
 }
+
+/**
+ * The continental competition (ucl/uel/lib/sud) whose group stage this club belongs to this
+ * season, or null when the club did not qualify for any of the 4. Group membership is fixed for
+ * the season (`meta.continental.groups`) — a knockout-stage club is always a subset of some
+ * group's clubs, so checking the groups alone is enough. Mirrors `playerCupSlug` (cupWorld.ts).
+ */
+export async function playerContinentalSlug(
+  service: SaveService,
+  saveId: string,
+  clubId: string,
+): Promise<ContinentalSlug | null> {
+  for (const slug of CONTINENTAL_SLUGS) {
+    const meta = await service.getLeagueMeta(saveId, slug);
+    if (meta?.continental?.groups.some((g) => g.clubs.includes(clubId))) return slug;
+  }
+  return null;
+}
