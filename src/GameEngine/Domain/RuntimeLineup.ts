@@ -62,15 +62,21 @@ export function getReductionFactor(energyLost: number, step: number): number {
   return Math.max(0.1, 1 - reduction * 0.1);
 }
 
+/**
+ * @param loadDrainMultiplier `drainMultiplier(seasonLog.load)` from `src/Domain/fitness/fitness.ts`
+ *   — 1 with no accumulated load, up to 1.25 at `FITNESS.LOAD_HIGH`. Defaults to 1 (no penalty) for
+ *   callers that don't track load (e.g. hand-built test players).
+ */
 export function consumeEnergy(
   energy: number,
   stamina: number,
   action: StaminaAction,
   dtGame: number,
+  loadDrainMultiplier = 1,
 ): number {
   const base = STAMINA_COST[action];
   const reduction = stamina * 0.05; // 0–50%
-  const cost = base * (1 - reduction) * dtGame;
+  const cost = base * (1 - reduction) * dtGame * loadDrainMultiplier;
   return clampEnergy(energy - cost);
 }
 
@@ -105,6 +111,32 @@ export function getRuntimeLineup(base: PlayerStats, player: Pick<GamePlayer, 'en
       interceptionChance: base.withoutBall.interceptionChance * semiRed,
     },
   };
+}
+
+/**
+ * Continuous fatigue (`docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Na partida"):
+ * energy points below which `runtimeStats` is left untouched since the last recompute. Replaces
+ * the old "every 10/20/40 energy points" step — `getRuntimeLineup` itself is already continuous,
+ * this only controls how often the (comparatively expensive) recompute runs.
+ */
+export const FATIGUE_RECOMPUTE_THRESHOLD = 1;
+
+/**
+ * Decide whether a player's `runtimeStats` need recomputing for a fresh `energy` value, given the
+ * energy last used to compute them (`fatigueBaselineEnergy`). Recomputes once `energy` has moved at
+ * least `FATIGUE_RECOMPUTE_THRESHOLD` points from that baseline; otherwise returns the same
+ * `runtimeStats` reference untouched so callers can skip the object-spread cost every tick.
+ */
+export function applyContinuousFatigue(
+  baseStats: PlayerStats,
+  runtimeStats: PlayerStats,
+  energy: number,
+  fatigueBaselineEnergy: number,
+): { runtimeStats: PlayerStats; fatigueBaselineEnergy: number } {
+  if (Math.abs(energy - fatigueBaselineEnergy) < FATIGUE_RECOMPUTE_THRESHOLD) {
+    return { runtimeStats, fatigueBaselineEnergy };
+  }
+  return { runtimeStats: getRuntimeLineup(baseStats, { energy }), fatigueBaselineEnergy: energy };
 }
 
 /** Old saves / snapshots used `stats` instead of `baseStats` + `runtimeStats`. */
@@ -162,7 +194,14 @@ export function applyStaminaCost(
     if (p.id !== playerId) return p;
     const pl = normalizeGamePlayer(p);
     if (pl.baseStats == null) return p;
-    const energy = consumeEnergy(pl.energy, pl.stamina, action, 1.0);
-    return { ...pl, energy, runtimeStats: getRuntimeLineup(pl.baseStats, { energy }) };
+    const energy = consumeEnergy(pl.energy, pl.stamina, action, 1.0, pl.drainMultiplier ?? 1);
+    // A discrete action (tackle, save, interception) is rare enough that we always recompute,
+    // rather than gating on FATIGUE_RECOMPUTE_THRESHOLD like the per-tick locomotion drain does.
+    return {
+      ...pl,
+      energy,
+      fatigueBaselineEnergy: energy,
+      runtimeStats: getRuntimeLineup(pl.baseStats, { energy }),
+    };
   });
 }

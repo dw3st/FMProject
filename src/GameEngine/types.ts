@@ -268,6 +268,20 @@ export interface GamePlayer {
   startEnergy: number;
   /** Roster stamina attribute (0–10 scale) — reduces energy cost in `consumeEnergy`. */
   stamina: number;
+  /**
+   * In-match energy-cost multiplier from `seasonLog.load` (`drainMultiplier` in
+   * `src/Domain/fitness/fitness.ts`, see `docs/superpowers/specs/2026-09-27-stamina-design.md` §1
+   * "Na partida"). 1 = no load penalty, up to 1.25 at `FITNESS.LOAD_HIGH`. Optional so hand-built
+   * test players (no season log) default to 1 via `pl.drainMultiplier ?? 1`.
+   */
+  drainMultiplier?: number;
+  /**
+   * Energy value at which `runtimeStats` was last recomputed from fatigue. Continuous fatigue
+   * recomputes `runtimeStats` when `|energy − fatigueBaselineEnergy| >= 1`, instead of the old
+   * "every 10 energy points" step. Optional — absent/undefined is treated as "recompute now"
+   * (falls back to the current `energy`, see `RuntimeLineup.ts`).
+   */
+  fatigueBaselineEnergy?: number;
   /** 0..1 — how much this role tracks the ball's Y position (from roles.json engine block). */
   ballSupportScale: number;
   /** Index into the formation's slot arrays — stable for the entire match. */
