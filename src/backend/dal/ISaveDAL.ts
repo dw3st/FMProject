@@ -6,6 +6,7 @@ import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 
 export interface SquadFile {
   leagueSlug: string;
@@ -80,4 +81,9 @@ export interface ISaveDAL {
   writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
   readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null>;
   writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void>;
+
+  // ── Ledger (player club cash extract) ────────────────────────────────────────
+  readLedger(saveId: string, season: number): Promise<LedgerEntry[]>;
+  /** Append entries to the season's ledger, preserving whatever is already there. */
+  appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
 }

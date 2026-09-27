@@ -87,3 +87,42 @@ describe("FileSystemDAL.deleteSquad", () => {
     await dal.deleteSquad(saveId, "lg", "nope");
   });
 });
+
+describe("FileSystemDAL ledger", () => {
+  test("readLedger on a save with no ledger file returns an empty array", async () => {
+    const saveId = `test-ledger-missing-${randomUUID()}`;
+    created.push(saveId);
+    expect(await dal.readLedger(saveId, 2027)).toEqual([]);
+  });
+
+  test("appendLedger creates the file; a second append preserves the first entries", async () => {
+    const saveId = `test-ledger-${randomUUID()}`;
+    created.push(saveId);
+    await dal.appendLedger(saveId, 2027, [
+      { date: "2027-03-10", kind: "gate", amount: 1000, label: "a" },
+    ]);
+    await dal.appendLedger(saveId, 2027, [
+      { date: "2027-03-17", kind: "wages", amount: -500, label: "b" },
+    ]);
+
+    const entries = await dal.readLedger(saveId, 2027);
+    expect(entries.map((e) => e.label)).toEqual(["a", "b"]);
+  });
+
+  test("different seasons are stored separately", async () => {
+    const saveId = `test-ledger-season-${randomUUID()}`;
+    created.push(saveId);
+    await dal.appendLedger(saveId, 2027, [{ date: "2027-03-10", kind: "gate", amount: 100, label: "y1" }]);
+    await dal.appendLedger(saveId, 2028, [{ date: "2028-03-10", kind: "gate", amount: 200, label: "y2" }]);
+
+    expect((await dal.readLedger(saveId, 2027)).map((e) => e.label)).toEqual(["y1"]);
+    expect((await dal.readLedger(saveId, 2028)).map((e) => e.label)).toEqual(["y2"]);
+  });
+
+  test("appending an empty array does not create a file", async () => {
+    const saveId = `test-ledger-empty-${randomUUID()}`;
+    created.push(saveId);
+    await dal.appendLedger(saveId, 2027, []);
+    expect(await dal.readLedger(saveId, 2027)).toEqual([]);
+  });
+});

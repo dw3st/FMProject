@@ -17,6 +17,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
@@ -229,6 +230,16 @@ export class SaveService {
 
   clearInbox(saveId: string): Promise<void> {
     return this.dal.writeInbox(saveId, []);
+  }
+
+  // ── Ledger (player club cash extract) ───────────────────────────────────────
+
+  getLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
+    return this.dal.readLedger(saveId, season);
+  }
+
+  appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    return this.dal.appendLedger(saveId, season, entries);
   }
 
   // ── Squads ─────────────────────────────────────────────────────────────────
