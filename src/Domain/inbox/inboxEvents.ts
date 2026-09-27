@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
 import { saveService, type SaveService } from "@/backend/SaveService";
+import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type {
+  ContinentalInboxMessage,
   CupInboxMessage,
   DevelopmentInboxChange,
   DevelopmentInboxMessage,
@@ -184,6 +186,43 @@ export function buildCupMessage(args: {
     ...(tieDate ? { tieDate } : {}),
     ...(venue ? { venue } : {}),
   } as CupInboxMessage;
+}
+
+/**
+ * Continental-competition (UCL/UEL/Lib/Sud) news for the human club: qualification + group draw at
+ * season start, a knockout-stage draw, elimination, or the title. Mirrors `buildCupMessage`.
+ * `opponentNames` (group only) builds the preview text but is also kept on the returned message so
+ * the inbox UI can render a localized list — see `ContinentalInboxMessage`.
+ */
+export function buildContinentalMessage(args: {
+  date: string; kind: ContinentalInboxMessage["kind"]; competition: ContinentalSlug; competitionName: string;
+  stage: ContinentalStageName; group?: string; opponentName?: string; opponentNames?: string[];
+  firstLegDate?: string; venue?: ContinentalInboxMessage["venue"];
+}): ContinentalInboxMessage {
+  const { date, kind, competition, competitionName, stage, group, opponentName, opponentNames, firstLegDate, venue } = args;
+  const subject =
+    kind === "qualified"  ? `Qualified for the ${competitionName}` :
+    kind === "group"      ? `${competitionName} group draw` :
+    kind === "draw"       ? `${competitionName} draw` :
+    kind === "eliminated" ? `Out of the ${competitionName}` :
+    `${competitionName} champions!`;
+  const preview =
+    kind === "qualified"  ? `The club qualified for the ${competitionName}.` :
+    kind === "group"      ? `Group ${group ?? "?"}: ${opponentNames && opponentNames.length > 0 ? opponentNames.join(", ") : "?"}.` :
+    kind === "draw"       ? `Next: ${opponentName ?? "?"} (${venue ?? "?"}) on ${firstLegDate ?? "?"}.` :
+    kind === "eliminated" ? (opponentName ? `Knocked out by ${opponentName}.` : `Eliminated from the ${competitionName} group stage.`) :
+    `The club won the ${competitionName}.`;
+  return {
+    id: `continental-${date}-${kind}-${competition}-${randomUUID()}`,
+    date, createdAt: date, read: false, category: "continental",
+    subject, preview: preview.slice(0, 120),
+    kind, competition, competitionName, stage,
+    ...(group ? { group } : {}),
+    ...(opponentNames && opponentNames.length > 0 ? { opponentNames } : {}),
+    ...(opponentName ? { opponentName } : {}),
+    ...(firstLegDate ? { firstLegDate } : {}),
+    ...(venue ? { venue } : {}),
+  } as ContinentalInboxMessage;
 }
 
 function formatCount(n: number): string {

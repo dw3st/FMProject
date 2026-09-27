@@ -9,7 +9,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
-import type { Squad, StandingRow } from "@/types/playerTypes";
+import type { LeagueData, Squad, StandingRow } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -744,7 +744,9 @@ export class SaveService {
     // one continent's failure never skips the other (or the cups above, or the save itself).
     try {
       const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
-      const { createContinentalSeason, seasonDefiningYear } = await import("@/backend/continentalWorld");
+      const { createContinentalSeason, seasonDefiningYear, continentalQualificationOf } = await import("@/backend/continentalWorld");
+      const { competitionName } = await import("@/Domain/world/labels");
+      const { emitInboxMessage, buildContinentalMessage } = await import("@/Domain/inbox/inboxEvents");
       const catalog = await getLeagueData();
       const pyramids = await getPyramids();
       const index = await this.getSquadIndex(id);
@@ -752,7 +754,24 @@ export class SaveService {
         try {
           const year = await seasonDefiningYear(continent, activeLeagues, catalog);
           if (year === null) continue;
-          await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
+          const result = await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
+
+          // The player's club, if it qualified for one of this continent's two competitions: a
+          // "qualified" + "group" inbox message (createSave never has an inbox to clear, so no
+          // deferral is needed here — see advanceDay.ts for the rollover case).
+          const qual = continentalQualificationOf(body.clubId, result);
+          if (qual) {
+            const msgDate = meta.currentDate ?? now.slice(0, 10);
+            const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
+            const opponentNames = qual.opponentIds.map((clubId) => index.byId(clubId)?.name ?? clubId);
+            await emitInboxMessage(id, buildContinentalMessage({
+              date: msgDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
+            }), this);
+            await emitInboxMessage(id, buildContinentalMessage({
+              date: msgDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
+              group: qual.group, opponentNames,
+            }), this);
+          }
         } catch (e) {
           logError("continental", `save ${id}: failed to generate continental competitions for ${continent}`, e);
         }

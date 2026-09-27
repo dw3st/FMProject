@@ -243,6 +243,33 @@ export interface ContinentalCompetitionResult {
   groupOf: Record<string, string>;
 }
 
+export interface ContinentalQualification {
+  slug: ContinentalSlug;
+  group: string;
+  /** The other 3 clubs in the group. */
+  opponentIds: string[];
+}
+
+/**
+ * Which of a continent's two freshly generated competitions (if either) a club is in this season,
+ * and its group + group-mates — feeds the Plan 3 "qualified"/"group" inbox messages emitted right
+ * after `createContinentalSeason` (career start, self-heal, and continent rollover). A club is
+ * never in both the primary and secondary competition of the same continent (see qualify.ts), so
+ * at most one of the two results matches.
+ */
+export function continentalQualificationOf(
+  clubId: string,
+  results: { primary: ContinentalCompetitionResult; secondary: ContinentalCompetitionResult },
+): ContinentalQualification | null {
+  for (const r of [results.primary, results.secondary]) {
+    const group = r.groupOf[clubId];
+    if (group === undefined) continue;
+    const clubs = r.meta.continental?.groups.find((g) => g.name === group)?.clubs ?? [];
+    return { slug: r.slug, group, opponentIds: clubs.filter((id) => id !== clubId) };
+  }
+  return null;
+}
+
 /**
  * Generates and writes one continent's two competitions (primary + secondary — e.g. UCL + UEL) for
  * a season: coefficients from `clubLevel`, places from `allocateSlots`, qualifiers from

@@ -1036,7 +1036,8 @@
       "transfer_in": "Contratação",
       "transfer_out": "Venda",
       "season": "Temporada",
-      "cup": "Copa"
+      "cup": "Copa",
+      "continental": "Continental"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1049,6 +1050,14 @@
         "away": "fora",
         "neutral": "campo neutro"
       }
+    },
+    "continental": {
+      "qualified": "O clube se classificou para a {{competition}}",
+      "group": "Sorteio da {{competition}}: Grupo {{group}} com {{opponents}}",
+      "draw": "{{competition}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
+      "eliminated": "Eliminados da {{competition}} ({{stage}}) por {{opponent}}",
+      "eliminatedGroup": "Eliminados na fase de grupos da {{competition}}",
+      "champion": "Campeões da {{competition}}!"
     }
   },
   "finances": {
