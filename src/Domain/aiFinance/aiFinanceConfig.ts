@@ -46,15 +46,23 @@ export const AI_FINANCE_CONFIG = {
    * the share crosses the point where a tier's ratio passes the 0.9/1.0 NEAR_LIMIT_RATIO
    * thresholds, that ENTIRE tier flips open/tight/frozen at once (only clamped-factor clubs, a
    * small minority, land off that tier-wide value). A grid search (0.55–1.00) found no share that
-   * smoothly hits the ~92/5/3% design target — the best plateau (0.67–0.70) gives world-start
-   * **95.8% open / 3.5% tight / 0.6% frozen**, with ELITE (3.1% of clubs, 40 total) landing
-   * ENTIRELY in "tight" (its SOFT_BALANCE 0.95 is the smallest, so it's the first tier to cross
-   * into "tight" as the share rises) while LOW/MEDIUM/HIGH are ~95-100% open. This reads as
-   * "the biggest, richest clubs are usually already near their spending ceiling" rather than a
-   * smooth distribution — an acceptable, arguably thematic outcome given the model's structure.
-   * See the script's "Hiring-state distribution vs WAGE_REVENUE_SHARE" table for the full grid.
+   * smoothly hits the ~92/5/3% design target — the closest-by-SSE plateau (0.67–0.70) gives
+   * world-start **95.8% open / 3.5% tight / 0.6% frozen**, but at that share ELITE's ratio
+   * (`0.6 / (share × 0.95)` ≈ 0.90–0.94) sits AT OR ABOVE the 0.9 NEAR_LIMIT_RATIO threshold, so
+   * ALL 40 ELITE clubs (3.1% of the world) are permanently "tight" from world start, every
+   * season, regardless of how they actually spend — every big club reading as chronically
+   * strapped isn't the intent.
+   *
+   * **0.72 instead of the SSE-closest 0.67–0.70**: pushes every tier's ratio below 0.9 (ELITE:
+   * `0.6/(0.72×0.95)` ≈ 0.877, the tightest of the four — LOW/MEDIUM/HIGH are 0.76–0.83), so
+   * every tier opens at world start. Trades a slightly worse fit to the flat 92/5/3 target
+   * (world-start **99.0% open / 0.5% tight / 0.5% frozen**; by tier: LOW 95.7% open / 2.3% tight
+   * / 2.0% frozen, MEDIUM/HIGH/ELITE 100% open) for "every club can spend at least a little at
+   * creation" being true across the board, not just for three of the four tiers.
+   * See the script's "Hiring-state distribution vs WAGE_REVENUE_SHARE" table (and the by-tier
+   * breakdown at both the SSE-closest and the production share) for the full grid.
    */
-  WAGE_REVENUE_SHARE: 0.7,
+  WAGE_REVENUE_SHARE: 0.72,
   /** `weeklyBudget = maxWageBudget / WAGE_RATIO` (design range 0.6–0.8) — the headline "weekly budget" figure, not itself a cap. */
   WAGE_RATIO: 0.8,
 
