@@ -82,8 +82,14 @@ const REAL_HALF_DURATION = 150;
 const TIME_SCALE = 2700 / REAL_HALF_DURATION;
 /** Duration of one half in game-seconds (45 minutes). */
 const HALF_DURATION = 2700;
-/** Real-seconds the pre-match / half-time presentation freeze lasts. */
-const PRESENTATION_DURATION = 4;
+/**
+ * Real-seconds the pre-match / half-time / extra-time-break presentation freeze lasts,
+ * counted in game-time via `presentationCountdown` — see `tickState`'s match-phase gating.
+ * Exported so UI presentation (e.g. the half-time/extra-time overlay's progress bar) can
+ * derive "how much of the pause is left" from the same total the engine drains against,
+ * instead of duplicating the constant.
+ */
+export const PRESENTATION_DURATION = 4;
 
 /** Game-seconds per extra-time half (15 min). */
 const ET_HALF_DURATION = 900;
