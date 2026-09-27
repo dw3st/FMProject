@@ -47,9 +47,11 @@ issue #2).
 - **Europa** (temporada das ligas europeias, ago–mai): grupos set–dez; mata-mata fev–mai; final ≥ 7
   dias antes do fim da janela. Champions às terças, Europa League às quintas.
 - **América do Sul** (ano civil, fev–nov): grupos mar–mai; mata-mata jul–nov; final ≥ 7 dias antes
-  do fim. Libertadores às quartas, Sul-Americana às quintas.
-- Uma data de rodada nunca cai num dia (nem no dia anterior) em que algum clube participante joga
-  pela liga ou pela copa nacional; entre dois jogos do mesmo clube sempre ≥ 3 dias.
+  do fim. Libertadores às terças (quarta colide com as copas nacionais), Sul-Americana às quintas.
+- Uma data de rodada **nunca** cai no mesmo dia de um jogo de liga ou copa de um participante (regra
+  dura). Dia anterior/seguinte é evitado quando possível (custo por clube), e as datas saem de uma
+  otimização (menos vizinhança, dia da semana certo, espaçamento uniforme); entre duas rodadas
+  continentais ≥ 3 dias (≥ 6 quando possível).
 
 ### Geração
 
