@@ -754,11 +754,11 @@ export class SaveService {
           if (year === null) continue;
           await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
         } catch (e) {
-          console.error(`Failed to generate continental competitions for ${continent}:`, e);
+          logError("continental", `save ${id}: failed to generate continental competitions for ${continent}`, e);
         }
       }
     } catch (e) {
-      console.error("Failed to generate continental competitions:", e);
+      logError("continental", `save ${id}: failed to generate continental competitions`, e);
     }
 
     return meta;
