@@ -45,14 +45,36 @@ uniforme dentro de um nível tão heterogêneo sem estourar o teto de sanidade.
   ou seja, a curva sozinha já serve quase sem correção para as ligas em torno das quais foi
   desenhada.
 - `clubWageFactor(receita, folhaDaCurva)` — multiplicador por clube que corrige a folha REAL para
-  exatamente 60% da receita DAQUELE clube (quando não satura), limitado a `[0,25×, 4×]` para que
-  nem um clube muito rico nem um muito pobre (frente ao que a curva sozinha previa para o elenco)
-  receba uma correção absurda. `estimateWeeklyWage`, `Player.salaryLabel` e o `FinancesScreen`
-  passam a usar `weeklyWage` × o fator do clube, não a curva sozinha.
-- `Squad.wageFactor?: number`: calculado na criação da carreira (`SaveService.createSave`, todo
-  clube) e recalculado em toda virada de temporada (depois da mudança de nível financeiro, antes
-  de gravar o squad); ausente → `wageFactorOf` calcula na hora a partir do squad atual. Um jogador
-  transferido passa a ser pago pelo fator do clube comprador.
+  exatamente 60% da receita DAQUELE clube (quando não satura), limitado a **`[0,08×, 4×]`**
+  (`MIN_FACTOR`/`MAX_FACTOR`) para que nem um clube muito rico nem um muito pobre (frente ao que a
+  curva sozinha previa para o elenco) receba uma correção absurda. O piso começou em `0,25×` e foi
+  reduzido para `0,08×`: com `0,25×`, 93 dos 137 clubes de nível 3+ batiam no piso e a mediana
+  `folha/receita` desse nível ficava em 0,80 (p90 1,86) — pior que sem correção nenhuma para quem
+  joga ali. Com `0,08×`: mediana 0,60/p90 0,67, só 21 clubes ainda no piso (os que a receita
+  genuinamente não sustenta nenhuma folha razoável — ver `wageConfig.ts`).
+  `estimateWeeklyWage`, `Player.salaryLabel` e o `FinancesScreen` passam a usar `weeklyWage` × o
+  fator do clube, não a curva sozinha.
+- **Fator carregado adiante, não recalculado do zero a cada temporada.** Recalcular
+  `clubWageFactor` do zero em toda virada (a partir do elenco + receita da temporada nova) faria a
+  folha voltar a exatamente 60% da receita todo ano, ignorando como o clube realmente gastou.
+  Em vez disso: `newFactor = clamp(oldFactor × newRevenue / oldRevenue, 0,08×, 4×)`
+  (`carryForwardWageFactor`, `wages.ts`) — o clube mantém sua posição relativa (acima/abaixo do
+  alvo calibrado), só escalada pela variação da receita.
+- `Squad.wageFactor?: number` + `Squad.wageRevenueBasis?: number`: o fator e a receita anual
+  (`clubAnnualRevenue`) usados para calculá-lo pela ÚLTIMA vez, sempre gravados juntos. Calculados
+  na criação da carreira (`SaveService.createSave`, todo clube, com o tamanho real da liga) e
+  atualizados em toda virada de temporada (`carryForwardWageFactor` com a `wageRevenueBasis`
+  antiga e a receita nova, depois da mudança de nível financeiro, antes de gravar o squad);
+  ausentes → `wageFactorOf`/`wageRevenueBasisOf` calculam na hora a partir do squad atual (sem
+  histórico pra carregar adiante). Um jogador transferido passa a ser pago pelo fator do clube
+  comprador. Um kit (`applyKit`, `startKits.ts`) sobrescreve os squads do save com os do kit, que
+  não têm `wageFactor`/`wageRevenueBasis` (kits são regenerados na Etapa 9) — por isso `applyKit`
+  lê os valores frescos do save (calculados pelo `createSave` que acabou de rodar) antes de
+  sobrescrever, e os transplanta para o squad do kit por id.
+- A verba de transferências e o teto de salário da IA (abaixo) leem a MESMA `wageRevenueBasis`
+  gravada no squad, em vez de recalcular a receita com um `homeGames` genérico (19, o padrão de
+  "divisão típica de 20 clubes") — senão o teto e a folha real ficam em bases diferentes mesmo
+  quando o fator já reflete o tamanho de liga certo.
 - **Calibração** (`scripts/wage-calibrate.ts`): mesma receita anual de antes
   (`broadcasting + commercial` + bilheteria estimada de uma temporada de liga). Busca em grade o
   degrau 6→7 (2,0–2,5×) e a forma (potência × exponencial) que minimizam a fração de clubes
@@ -60,11 +82,38 @@ uniforme dentro de um nível tão heterogêneo sem estourar o teto de sanidade.
   combinação testada. Imprime por nível e por liga a mediana/p10/p90 de `folha / receita` (deve
   ficar perto de 0,60, exceto clubes saturados), a fração de clubes no piso/teto do fator, e
   salários de exemplo (notas 4/5/6/7) para um clube inglês, um da Championship e um do Quênia.
-- **IA:** `maxWageBudget` passa a derivar da receita do clube (`≈ 0,70 × receita / 52`, com o
-  `SOFT_BALANCE` por tier), não mais de `BASE_WEEKLY_BUDGET`. Meta: a distribuição de estado de
-  contratação no mundo inicial fica perto da atual (~92% `open`, ~5% `tight`, ~3% `frozen`); o
-  script de calibração mede e reporta. `weeklyBudget` segue coerente (`maxWageBudget / 0,8`).
+- **IA:** `maxWageBudget` deriva da mesma `wageRevenueBasis` do clube (`WAGE_REVENUE_SHARE × receita
+  / 52`, com o `SOFT_BALANCE` por tier), não mais de `BASE_WEEKLY_BUDGET`. `WAGE_REVENUE_SHARE =
+  0,72` (não o `0,67` mais próximo do alvo 92/5/3 por soma de quadrados) — com `0,67–0,70` a razão
+  folha/teto do nível ELITE (`0,6 / (share × 0,95)`) fica em ~0,90–0,94, empurrando TODOS os 40
+  clubes ELITE do mundo para "tight" permanentemente, temporada após temporada, não importa como
+  gastem. Com `0,72` essa razão cai pra ~0,877, abaixo do limiar de 0,9. Distribuição no mundo
+  inicial (1273 clubes): **99,0% `open` / 0,5% `tight` / 0,5% `frozen`** (era 95,8%/3,5%/0,6% com
+  `0,70`); por nível: LOW 95,7%/2,3%/2,0%, MEDIUM 100%/0%/0%, HIGH 100%/0%/0%, ELITE 100%/0%/0%. O
+  script de calibração mede e reporta os dois pontos (mais próximo do alvo vs valor de produção).
+  `weeklyBudget` segue coerente (`maxWageBudget / 0,8`).
 - A tabela de finanças da liga (`ClubFinancesTable`) mostra os números novos sem mudança de layout.
+
+### Custo operacional
+
+- **Decisão do usuário:** custo operacional = 25% da receita anual (a mesma `wageRevenueBasis`),
+  cobrado semanalmente (`0,25 × wageRevenueBasis / 52`), no lugar de 10% da folha salarial.
+  `OPERATIONAL_COST_SHARE = 0,25` em `src/Domain/advanceDay/financial.ts`.
+  `FinancialService.calcWeeklyDelta` (código morto, sem nenhum chamador) foi removido em vez de
+  atualizado.
+- Para um clube não saturado no fator (folha ≈ 60% da receita), o saldo típico de temporada antes
+  de prêmios é `receita − folha − operacional ≈ receita × (1 − 0,60 − 0,25) = 15%` da receita —
+  positivo por construção. Exemplos (mundo inicial, sem prêmios):
+
+  | Clube | Receita anual | Fator | Folha anual | Operacional anual | Saldo (antes de prêmios) |
+  |---|---|---|---|---|---|
+  | Manchester City | €426.160.006 | 1,387 | €255.696.012 | €106.539.992 | €63.924.002 (15,0%) |
+  | Sunderland | €210.567.915 | 0,920 | €126.340.708 | €52.641.992 | €31.585.215 (15,0%) |
+  | Flamengo | €149.097.087 | 1,201 | €89.458.304 | €37.274.276 | €22.364.507 (15,0%) |
+
+  Os 15,0% batem exatamente porque nenhum dos três está saturado no fator (`[0,08×, 4×]`) — um
+  clube saturado se afasta desse número (pra mais, se o piso/teto empurra a folha pra baixo do
+  alvo; pra menos ou negativo, se empurra pra cima).
 
 ## 2. Caixa do jogador
 
