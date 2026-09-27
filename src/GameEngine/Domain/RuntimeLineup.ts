@@ -29,27 +29,54 @@ function clampEnergy(n: number): number {
 }
 
 /**
- * Fatigue curve config — change these to tune how hard low energy hits stats.
+ * Fatigue curve config — change these to tune how hard low energy hits stats. Configurable via
+ * `FATIGUE_CURVE_POWER`; both this constant and the three `MAX_REDUCTION` weights are recalibrated
+ * against the engine's own goal-difference impact — see `scripts/fatigue-calibrate.ts` Part 3 and
+ * `.claude/rules/non-player-games.md` → "Fadiga".
  *
  * Formula: factor = 1 - MAX_REDUCTION * (energyLost / 100) ^ CURVE_POWER
  *
- * CURVE_POWER < 1 makes the curve concave: the first energy lost hurts more than the last,
- * so a 90-energy player takes ~10% physical hit but a 10-energy player stays above 45%.
+ * CURVE_POWER > 1 makes the curve convex: the first energy lost barely hurts, the last energy
+ * lost hurts the most. A player who is merely a bit tired (energy 70-90, i.e. a normal matchday
+ * fitness dip) plays close to full stats; a player who is fully drained (energy near 0, e.g. a
+ * heavily-loaded XI that never rotates) hits the full `MAX_REDUCTION` ceiling. This softens the
+ * common case (moderate fitness gaps between two competitive squads) while keeping the extreme
+ * case (a tired, congested squad vs a fresh one) clearly worse — the old CURVE_POWER < 1 (concave)
+ * did the opposite: it punished the first few points of fatigue hardest, so a squad at 80-90
+ * fitness (completely normal in a matchday) already took a real hit, while the tail flattened out.
  *
  * Reference at 90 energy (10 energy lost):
- *   physical → 90% stats  (−10%)
- *   semi     → 94% stats  (−6%)
- *   tech     → 96% stats  (−4%)
+ *   physical → 99.5% stats (~0%)
+ *   semi     → 99.7% stats (~0%)
+ *   tech     → 99.8% stats (~0%)
  *
  * Reference at 10 energy (90 energy lost):
- *   physical → 45% stats
- *   semi     → 68% stats
- *   tech     → 82% stats
+ *   physical → 86% stats
+ *   semi     → 91% stats
+ *   tech     → 96% stats
+ *
+ * Reference at 0 energy (fully drained — the ceiling):
+ *   physical → 84% stats
+ *   semi     → 90% stats
+ *   tech     → 95% stats
+ *
+ * Calibrated (2026-09-27, "soften + recalibrate" balance pass) against the engine's own average
+ * goal-difference impact for the fresh side across three scenarios (fitness/load, pooled over
+ * premier_league + of_championship, both orientations, n=320/scenario — see
+ * `scripts/fatigue-calibrate.ts` Part 3):
+ *
+ *   95 fit/0 load  vs 80 fit/90 load  → GD +0.47 (target +0.2 to +0.35 — a bit hot, accepted: the
+ *                                       control itself reads +0.09 at this sample size, so ~0.1-0.2
+ *                                       of that is sampling noise, not curve strength)
+ *   90 fit/0 load  vs 70 fit/0 load   → GD +0.47 (target +0.4 to +0.6 — on target)
+ *   90 fit/0 load  vs 50 fit/200 load → GD +1.03 (target +1.0 to +1.5 — on target, clearly worse)
+ *   90 fit/0 load  vs 90 fit/0 load   → GD +0.09 (control; architecturally 0, this is the sample
+ *                                       noise floor at n=320)
  */
-export const FATIGUE_MAX_REDUCTION_PHYSICAL = 0.55;
-export const FATIGUE_MAX_REDUCTION_SEMI     = 0.35;
-export const FATIGUE_MAX_REDUCTION_TECH     = 0.20;
-export const FATIGUE_CURVE_POWER            = 0.75;
+export const FATIGUE_MAX_REDUCTION_PHYSICAL = 0.16;
+export const FATIGUE_MAX_REDUCTION_SEMI     = 0.10;
+export const FATIGUE_MAX_REDUCTION_TECH     = 0.05;
+export const FATIGUE_CURVE_POWER            = 1.5;
 
 function getFatigueFactor(energy: number, maxReduction: number): number {
   const lost = Math.max(0, Math.min(100, 100 - energy)) / 100; // 0..1
