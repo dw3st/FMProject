@@ -29,6 +29,15 @@ import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Squad } from "@/types/playerTypes";
 import { mulberry32 } from "@/Domain/rng";
+import {
+  FATIGUE_MAX_REDUCTION_PHYSICAL,
+  FATIGUE_MAX_REDUCTION_SEMI,
+  FATIGUE_MAX_REDUCTION_TECH,
+  FATIGUE_CURVE_POWER,
+} from "@/GameEngine/Domain/RuntimeLineup";
+
+/** Skips the (comparatively expensive) Parts 1–2 for fast iteration while tuning the curve in Part 3. */
+const ONLY_PART3 = process.env.FC_ONLY_PART3 === "1";
 
 // QUICK_SIM_CONFIG is `as const` for its TYPES only — the object itself isn't frozen, so the
 // FATIGUE_PENALTY sweep below can mutate it in-process to compare candidates against the same
@@ -109,6 +118,7 @@ async function measureLeagueDrain(league: string): Promise<DrainAcc> {
   return acc;
 }
 
+if (!ONLY_PART3) {
 console.log(`=== Parte 1 — desgaste médio por linha (fitness 100, carga 0), ${PAIRS} pares × ${REPEATS} por liga ===`);
 const pooled = newDrainAcc();
 for (const league of LEAGUES) {
@@ -161,6 +171,7 @@ console.log(
     }),
   ),
 );
+} // ONLY_PART3
 
 // ── Part 2: descansado × cansado ─────────────────────────────────────────────────────────────
 
@@ -184,6 +195,25 @@ function fmtWDL(t: WDL) {
   };
 }
 
+function quickWDLFor(fixtures: { home: Squad; away: Squad; hl: string[]; al: string[] }[], fatiguePenalty: number): WDL {
+  const prev = C.FATIGUE_PENALTY;
+  C.FATIGUE_PENALTY = fatiguePenalty;
+  const acc = newWDL();
+  let qSeed = 99;
+  for (const fx of fixtures) {
+    for (let r = 0; r < QUICK_REPEATS; r++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: "t", home: fx.home, away: fx.away, homeLineup: fx.hl, awayLineup: fx.al, homeRoles: roles, awayRoles: roles },
+        mulberry32(qSeed++),
+      );
+      addWDL(acc, recording.score.home, recording.score.away);
+    }
+  }
+  C.FATIGUE_PENALTY = prev;
+  return acc;
+}
+
+if (!ONLY_PART3) {
 console.log(
   `\n=== Parte 2 — descansado × cansado (premier_league; fresco fitness 100/carga 0 × cansado fitness 70/carga ${FITNESS.LOAD_HIGH}) ===`,
 );
@@ -218,27 +248,106 @@ for (const fx of fixtures) {
 console.log("Motor (fixo, não muda com FATIGUE_PENALTY):");
 console.table({ motor: fmtWDL(engineWDL) });
 
-function quickWDLFor(fatiguePenalty: number): WDL {
-  const prev = C.FATIGUE_PENALTY;
-  C.FATIGUE_PENALTY = fatiguePenalty;
-  const acc = newWDL();
-  let qSeed = 99;
-  for (const fx of fixtures) {
-    for (let r = 0; r < QUICK_REPEATS; r++) {
-      const { recording } = quickSimMatch(
-        { fixtureId: "t", home: fx.home, away: fx.away, homeLineup: fx.hl, awayLineup: fx.al, homeRoles: roles, awayRoles: roles },
-        mulberry32(qSeed++),
-      );
-      addWDL(acc, recording.score.home, recording.score.away);
-    }
-  }
-  C.FATIGUE_PENALTY = prev;
-  return acc;
-}
-
 const CANDIDATES = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.8];
 console.log(`quickSim, ${QUICK_REPEATS} repetições por confronto, varrendo FATIGUE_PENALTY:`);
 console.table(
-  Object.fromEntries(CANDIDATES.map((fp) => [`FATIGUE_PENALTY=${fp}`, fmtWDL(quickWDLFor(fp))])),
+  Object.fromEntries(CANDIDATES.map((fp) => [`FATIGUE_PENALTY=${fp}`, fmtWDL(quickWDLFor(fixtures, fp))])),
 );
 console.log(`FATIGUE_PENALTY atual em QuickSimConfig.ts: ${C.FATIGUE_PENALTY}`);
+} // ONLY_PART3
+
+// ── Part 3: engine goal-difference impact per scenario (soften + recalibrate, Task 1) ─────────
+//
+// Measures the average goal difference (fresh − tired) the engine's fatigue curve produces for
+// a handful of (fitness/load) scenarios, pooled over premier_league + a mid `of_*` league, both
+// orientations (each pair plays fresh-home/tired-away AND tired-home/fresh-away, so team-quality
+// and any home-advantage bias cancel out when pooling — see Part 2's fixture construction). A
+// control of fitness 90/load 0 vs fitness 90/load 0 is architecturally GD ≈ 0 (both sides
+// identical) — included with the same N as a sanity check that nothing else biases the pooling.
+//
+// Usage: bun scripts/fatigue-calibrate.ts [pairs] [repeats] [scenPairs] [scenRepeats] [scen3Pairs] [scen3Repeats]
+// Env: FC_ONLY_PART3=1 skips Parts 1–2 for fast iteration while tuning the curve.
+
+type FatigueScenario = { name: string; fresh: { fitness: number; load: number }; tired: { fitness: number; load: number } };
+const FATIGUE_SCENARIOS: FatigueScenario[] = [
+  { name: "95/0 vs 80/90 (target GD +0.2 to +0.35)", fresh: { fitness: 95, load: 0 }, tired: { fitness: 80, load: 90 } },
+  { name: "90/0 vs 70/0 (target GD +0.4 to +0.6)", fresh: { fitness: 90, load: 0 }, tired: { fitness: 70, load: 0 } },
+  { name: "90/0 vs 50/200 (target GD +1.0 to +1.5)", fresh: { fitness: 90, load: 0 }, tired: { fitness: 50, load: 200 } },
+  { name: "control 90/0 vs 90/0 (target GD ≈ 0)", fresh: { fitness: 90, load: 0 }, tired: { fitness: 90, load: 0 } },
+];
+const SCENARIO_LEAGUES = ["premier_league", "of_championship"];
+const SCEN3_PAIRS = Number(process.argv[6] ?? 60);
+const SCEN3_REPEATS = Number(process.argv[7] ?? 2);
+
+type GDAcc = { gdSum: number; n: number; freshW: number; draws: number; tiredW: number };
+const newGDAcc = (): GDAcc => ({ gdSum: 0, n: 0, freshW: 0, draws: 0, tiredW: 0 });
+function addGD(acc: GDAcc, gf: number, ga: number) {
+  acc.gdSum += gf - ga;
+  acc.n++;
+  if (gf > ga) acc.freshW++;
+  else if (gf === ga) acc.draws++;
+  else acc.tiredW++;
+}
+function fmtGD(acc: GDAcc) {
+  return {
+    "GD médio (fresco − cansado)": +(acc.gdSum / acc.n).toFixed(3),
+    "vitória fresco %": +((acc.freshW / acc.n) * 100).toFixed(1),
+    "empate %": +((acc.draws / acc.n) * 100).toFixed(1),
+    "vitória cansado %": +((acc.tiredW / acc.n) * 100).toFixed(1),
+    n: acc.n,
+  };
+}
+
+async function measureScenarioGD(
+  league: string,
+  scenario: FatigueScenario,
+  pairs: number,
+  repeats: number,
+  seed: number,
+): Promise<GDAcc> {
+  const freshLeague = await loadLeague(league, scenario.fresh.fitness, scenario.fresh.load);
+  const tiredLeague = await loadLeague(league, scenario.tired.fitness, scenario.tired.load);
+  const tiredById = new Map(tiredLeague.map((s) => [s.id, s]));
+  const rng = mulberry32(seed);
+  const acc = newGDAcc();
+  for (let i = 0; i < pairs; i++) {
+    const [x, y] = pickPair(freshLeague, rng);
+    const tiredX = tiredById.get(x.id)!;
+    const tiredY = tiredById.get(y.id)!;
+    const xl = autoLineupDefaultFormation(x);
+    const yl = autoLineupDefaultFormation(y);
+    const fixtures = [
+      { home: x, away: tiredY, hl: xl, al: autoLineupDefaultFormation(tiredY) },
+      { home: y, away: tiredX, hl: yl, al: autoLineupDefaultFormation(tiredX) },
+    ];
+    for (const fx of fixtures) {
+      for (let r = 0; r < repeats; r++) {
+        const m = simulateMatch(fx.home, fx.away, formation, formation, fx.hl, fx.al);
+        addGD(acc, m.score.A, m.score.B);
+      }
+    }
+  }
+  return acc;
+}
+
+console.log(
+  `\n=== Parte 3 — impacto no GD por cenário (${SCEN3_PAIRS} pares × 2 orientações × ${SCEN3_REPEATS} repetições por liga; ligas: ${SCENARIO_LEAGUES.join(", ")}) ===`,
+);
+let seed3 = 5000;
+for (const scenario of FATIGUE_SCENARIOS) {
+  console.log(scenario.name);
+  const pooled3 = newGDAcc();
+  for (const league of SCENARIO_LEAGUES) {
+    const acc = await measureScenarioGD(league, scenario, SCEN3_PAIRS, SCEN3_REPEATS, seed3++);
+    pooled3.gdSum += acc.gdSum;
+    pooled3.n += acc.n;
+    pooled3.freshW += acc.freshW;
+    pooled3.draws += acc.draws;
+    pooled3.tiredW += acc.tiredW;
+    console.log(`  ${league}:`, fmtGD(acc));
+  }
+  console.log("  pooled:", fmtGD(pooled3));
+}
+console.log(
+  `Curva atual: PHYSICAL=${FATIGUE_MAX_REDUCTION_PHYSICAL} SEMI=${FATIGUE_MAX_REDUCTION_SEMI} TECH=${FATIGUE_MAX_REDUCTION_TECH} POWER=${FATIGUE_CURVE_POWER}`,
+);
