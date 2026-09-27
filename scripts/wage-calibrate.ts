@@ -485,26 +485,46 @@ for (const share of SHARE_GRID) {
   console.log(share.toFixed(2).padEnd(8) + d.open.toFixed(1).padEnd(9) + d.tight.toFixed(1).padEnd(9) + d.frozen.toFixed(1));
 }
 
-console.log(`\n=== Closest WAGE_REVENUE_SHARE to target: ${bestShare.toFixed(2)} ===`);
+console.log(`\n=== Closest WAGE_REVENUE_SHARE to the 92/5/3 target by SSE alone: ${bestShare.toFixed(2)} ===`);
 const bestDist = distributionFor(bestShare);
 console.log(`  open=${bestDist.open.toFixed(1)}% tight=${bestDist.tight.toFixed(1)}% frozen=${bestDist.frozen.toFixed(1)}%`);
-console.log("\nBy financial tier, at the chosen share:");
-console.log("tier".padEnd(8) + "n".padEnd(6) + "open%".padEnd(9) + "tight%".padEnd(9) + "frozen%");
-for (const t of FINANCIAL_TIERS) {
-  const rows = hiringSamples.filter((s) => s.tier === t);
-  if (rows.length === 0) continue;
-  let open = 0, tight = 0, frozen = 0;
-  for (const s of rows) {
-    const cap = bestShare * (s.revenue / 52) * AI_FINANCE_CONFIG.SOFT_BALANCE[s.tier];
-    const state = hiringStateLocal(s.weeklyBill, cap);
-    if (state === "open") open++;
-    else if (state === "tight") tight++;
-    else frozen++;
+
+function printByTier(share: number, label: string) {
+  console.log(`\nBy financial tier, at share=${share.toFixed(2)} (${label}):`);
+  console.log("tier".padEnd(8) + "n".padEnd(6) + "open%".padEnd(9) + "tight%".padEnd(9) + "frozen%");
+  for (const t of FINANCIAL_TIERS) {
+    const rows = hiringSamples.filter((s) => s.tier === t);
+    if (rows.length === 0) continue;
+    let open = 0, tight = 0, frozen = 0;
+    for (const s of rows) {
+      const cap = share * (s.revenue / 52) * AI_FINANCE_CONFIG.SOFT_BALANCE[s.tier];
+      const state = hiringStateLocal(s.weeklyBill, cap);
+      if (state === "open") open++;
+      else if (state === "tight") tight++;
+      else frozen++;
+    }
+    console.log(
+      t.padEnd(8) + String(rows.length).padEnd(6) +
+        ((open / rows.length) * 100).toFixed(1).padEnd(9) +
+        ((tight / rows.length) * 100).toFixed(1).padEnd(9) +
+        ((frozen / rows.length) * 100).toFixed(1),
+    );
   }
+}
+
+printByTier(bestShare, "closest to 92/5/3 by SSE alone");
+
+// The SSE-closest share above is NOT necessarily what's actually configured: bill/cap is a
+// near-constant PER TIER (see the AI_FINANCE_CONFIG.WAGE_REVENUE_SHARE comment), so as the share
+// rises past a tier's 0.9 NEAR_LIMIT_RATIO threshold, that whole tier flips open/tight at once —
+// 0.67-0.70 puts ELITE (bill/cap 0.6/(share×0.95)) permanently at or above 0.9 (tight or worse).
+// The production value trades a slightly worse SSE-to-92/5/3 fit for keeping every tier open at
+// world start.
+if (AI_FINANCE_CONFIG.WAGE_REVENUE_SHARE !== bestShare) {
+  const prodDist = distributionFor(AI_FINANCE_CONFIG.WAGE_REVENUE_SHARE);
   console.log(
-    t.padEnd(8) + String(rows.length).padEnd(6) +
-      ((open / rows.length) * 100).toFixed(1).padEnd(9) +
-      ((tight / rows.length) * 100).toFixed(1).padEnd(9) +
-      ((frozen / rows.length) * 100).toFixed(1),
+    `\n=== Production WAGE_REVENUE_SHARE (aiFinanceConfig.ts): ${AI_FINANCE_CONFIG.WAGE_REVENUE_SHARE.toFixed(2)} — ` +
+      `open=${prodDist.open.toFixed(1)}% tight=${prodDist.tight.toFixed(1)}% frozen=${prodDist.frozen.toFixed(1)}% ===`,
   );
+  printByTier(AI_FINANCE_CONFIG.WAGE_REVENUE_SHARE, "production value");
 }
