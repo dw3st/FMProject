@@ -22,6 +22,12 @@ export interface Fixture {
   neutral?:    true;
   /** Knockout only: extra-time goals / shootout. Absent when decided in 90'. */
   decider?:    MatchDecider;
+  /** Two-legged tie id (same on both legs). */
+  tieId?:      string;
+  /** 1 = first leg, 2 = second leg (knockout, decides on aggregate). */
+  leg?:        1 | 2;
+  /** Second leg only: first-leg goals from THIS fixture's home/away point of view. */
+  aggregate?:  { home: number; away: number };
 }
 
 export interface SeasonData {

@@ -121,4 +121,27 @@ describe("cup fixtures", () => {
     // League appearances/goals/assists are never routed into the cup sub-log.
     expect(playedLeague.seasonLog!.appearances).toBe(1);
   });
+
+  test("second leg with a first-leg aggregate decides on aggregate, not the 90' score alone", () => {
+    // First leg: away won 1-0 (home:0, away:1) — from THIS second-leg fixture's home/away
+    // point of view. Level on aggregate requires this leg's home - away === 1.
+    let deciderCount = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      const secondLeg = { ...fixture, knockout: true as const, aggregate: { home: 0, away: 1 } };
+      const { event } = buildQuickMatchEvent(secondLeg, home, away, sim, mulberry32(seed));
+      const diffAfter90 =
+        event.score.home - (event.decider?.extraTime.home ?? 0) -
+        (event.score.away - (event.decider?.extraTime.away ?? 0));
+      if (event.decider) {
+        deciderCount++;
+        expect(diffAfter90).toBe(1); // level on aggregate after 90'
+      } else {
+        expect(event.score.home - event.score.away).not.toBe(1); // otherwise decided in 90'
+      }
+      if (event.decider?.penalties) {
+        expect(event.score.home - event.score.away).toBe(1); // still level on aggregate after ET
+      }
+    }
+    expect(deciderCount).toBeGreaterThan(0);
+  });
 });
