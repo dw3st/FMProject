@@ -1,4 +1,6 @@
 import type {
+  ContinentalMetaData,
+  ContinentalStage,
   ContinentalStageName,
   Fixture,
   LeagueSeasonMeta,
@@ -9,18 +11,51 @@ import { groupTable } from "@/Domain/continental/groupTable";
 import { drawFree, drawRoundOf16, finalWinner, tieWinner, twoLegFixtures, withAggregate } from "@/Domain/continental/knockout";
 import { mulberry32 } from "@/Domain/rng";
 
+/** One tie of a freshly drawn stage — the first leg (or the single neutral match for the final). */
+export interface ContinentalDrawnTie {
+  home: string;
+  away: string;
+  /** Absent only for the final, which has no `tieId` (single neutral match, no aggregate). */
+  tieId?: string;
+  firstLegDate: string;
+}
+
 /**
  * Inbox-relevant thing that happened while advancing a continental competition. Consumers (Plan 3)
  * turn these into inbox messages; `advanceContinentalStages` (backend) turns an `undecidedTie` into
  * a `logError`, mirroring how `advanceCupStages` handles a cup tie that finished level and undecided.
  */
 export type ContinentalEvent =
-  | { kind: "drawn"; stage: ContinentalStageName; round: number }
+  | { kind: "drawn"; stage: ContinentalStageName; round: number; ties: ContinentalDrawnTie[] }
   | { kind: "advanced"; clubId: string; stage: ContinentalStageName }
   | { kind: "eliminated"; clubId: string; stage: ContinentalStageName }
   /** A two-legged tie (or the final) finished level with no penalties recorded — should not happen. */
   | { kind: "undecidedTie"; tieId: string }
   | { kind: "champion"; clubId: string };
+
+/** Stage order, group first — used to find "the stage right after this one" without array-index luck. */
+const STAGE_ORDER: ContinentalStageName[] = ["group", "r16", "qf", "sf", "final"];
+
+/** Looks a stage up by name; throws instead of returning undefined on malformed meta. */
+function stageByName(cont: ContinentalMetaData, name: ContinentalStageName): ContinentalStage {
+  const stage = cont.stages.find((s) => s.name === name);
+  if (!stage) {
+    throw new Error(`advanceContinental: meta.continental.stages is missing a "${name}" stage — malformed meta`);
+  }
+  return stage;
+}
+
+/** The stage that follows `current` in `STAGE_ORDER`; throws for "final" (nothing follows it) or malformed meta. */
+function nextStageName(current: ContinentalStageName): ContinentalStageName {
+  const next = STAGE_ORDER[STAGE_ORDER.indexOf(current) + 1];
+  if (!next) throw new Error(`advanceContinental: no stage follows "${current}" — malformed meta`);
+  return next;
+}
+
+/** Builds the `ties` payload of a "drawn" event from the fixtures of the stage's first round. */
+function tiesEventFrom(fixtures: Fixture[]): ContinentalDrawnTie[] {
+  return fixtures.map((f) => ({ home: f.home, away: f.away, tieId: f.tieId, firstLegDate: f.date }));
+}
 
 export interface ContinentalAdvanceResult {
   meta: LeagueSeasonMeta;
@@ -51,6 +86,11 @@ export interface ContinentalAdvanceResult {
  *
  * Returns `null` when `playedRound` doesn't complete anything (an in-progress round, or a stage
  * that was already drawn/decided — safe to call more than once for the same round).
+ *
+ * `seedKey` must be unique per save + season + competition — callers pass `${saveId}:${year}:${slug}`
+ * (mirrors the cup's `${saveId}:${year}:${country}`, see `cupWorld.ts`). It seeds every draw made
+ * here (r16/qf/sf/final), each under its own suffix (e.g. `${seedKey}:r16`), so two competitions or
+ * two seasons never share a draw even if called with the same `playedRound`.
  */
 export function advanceContinental(
   meta: LeagueSeasonMeta,
@@ -71,9 +111,9 @@ export function advanceContinental(
     return f.length > 0 && f.every((x) => x.played);
   };
 
-  const group = cont.stages.find((s) => s.name === "group")!;
-  const r16 = cont.stages.find((s) => s.name === "r16")!;
-  const final = cont.stages.find((s) => s.name === "final")!;
+  const group = stageByName(cont, "group");
+  const r16 = stageByName(cont, "r16");
+  const final = stageByName(cont, "final");
 
   // 1. Group stage complete -> group tables -> draw round of 16.
   if (playedRound === group.rounds.at(-1)) {
@@ -98,14 +138,15 @@ export function advanceContinental(
     }
 
     const rng = mulberry32(seedFrom(`${seedKey}:r16`));
-    const ties = drawRoundOf16(winners, runnersUp, groupOf, cont.countryOf, rng);
-    const fixtures = twoLegFixtures(meta.leagueSlug, meta.year, "r16", ties, r16.rounds, r16.dates);
+    const pairing = drawRoundOf16(winners, runnersUp, groupOf, cont.countryOf, rng);
+    const fixtures = twoLegFixtures(meta.leagueSlug, meta.year, "r16", pairing, r16.rounds, r16.dates);
     const writes: RoundFixtures[] = r16.rounds.map((round) => ({
       leagueSlug: meta.leagueSlug,
       round,
       fixtures: fixtures.filter((f) => f.round === round),
     }));
-    events.push({ kind: "drawn", stage: "r16", round: r16.rounds[0]! });
+    const firstLegFixtures = fixtures.filter((f) => f.round === r16.rounds[0]);
+    events.push({ kind: "drawn", stage: "r16", round: r16.rounds[0]!, ties: tiesEventFrom(firstLegFixtures) });
 
     const stages = cont.stages.map((s) => (s.name === "r16" ? { ...s, drawn: true } : s));
     return { meta: { ...meta, continental: { ...cont, stages } }, writes, events };
@@ -140,8 +181,7 @@ export function advanceContinental(
   if (legStage2) {
     if (!roundComplete(playedRound)) return null;
 
-    const idx = cont.stages.findIndex((s) => s.name === legStage2.name);
-    const next = cont.stages[idx + 1]!;
+    const next = stageByName(cont, nextStageName(legStage2.name));
     if (next.drawn) return null;
 
     const leg2 = fixturesOf(playedRound);
@@ -173,14 +213,15 @@ export function advanceContinental(
     }
 
     const rng = mulberry32(seedFrom(`${seedKey}:${next.name}`));
-    const ties = drawFree(winners, rng);
-    const fixtures = twoLegFixtures(meta.leagueSlug, meta.year, next.name, ties, next.rounds, next.dates);
+    const pairing = drawFree(winners, rng);
+    const fixtures = twoLegFixtures(meta.leagueSlug, meta.year, next.name, pairing, next.rounds, next.dates);
     const writes: RoundFixtures[] = next.rounds.map((round) => ({
       leagueSlug: meta.leagueSlug,
       round,
       fixtures: fixtures.filter((f) => f.round === round),
     }));
-    events.push({ kind: "drawn", stage: next.name, round: next.rounds[0]! });
+    const firstLegFixtures = fixtures.filter((f) => f.round === next.rounds[0]);
+    events.push({ kind: "drawn", stage: next.name, round: next.rounds[0]!, ties: tiesEventFrom(firstLegFixtures) });
 
     const stages = cont.stages.map((s) => (s.name === next.name ? { ...s, drawn: true } : s));
     return { meta: { ...meta, continental: { ...cont, stages } }, writes, events };
@@ -191,17 +232,22 @@ export function advanceContinental(
     if (cont.championId) return null;
     if (!roundComplete(playedRound)) return null;
 
-    const finalFixtures = fixturesOf(playedRound);
-    const champ = finalWinner(finalFixtures[0]!);
+    const finalFixture = fixturesOf(playedRound)[0]!;
+    const champ = finalWinner(finalFixture);
     if (!champ) {
-      return { meta, writes: [], events: [{ kind: "undecidedTie", tieId: finalFixtures[0]!.id }] };
+      return { meta, writes: [], events: [{ kind: "undecidedTie", tieId: finalFixture.id }] };
     }
+    const loser = champ === finalFixture.home ? finalFixture.away : finalFixture.home;
 
     return {
       meta: { ...meta, continental: { ...cont, championId: champ } },
       writes: [],
       championId: champ,
-      events: [{ kind: "champion", clubId: champ }],
+      events: [
+        { kind: "advanced", clubId: champ, stage: "final" },
+        { kind: "eliminated", clubId: loser, stage: "final" },
+        { kind: "champion", clubId: champ },
+      ],
     };
   }
 
