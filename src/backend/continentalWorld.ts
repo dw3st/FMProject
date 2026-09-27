@@ -103,16 +103,18 @@ function zoneSpan(zones: LeagueZone[] | undefined, id: string): number {
 /**
  * Fixed places from the league's leagueData zones — undefined when the league has no zone for this
  * continent's primary competition (the country then competes for places by coefficient instead).
+ * Reads each competition's own `zoneIds` (`CONTINENTAL`) instead of hard-coding zone id strings
+ * here, so a competition that ever needs an extra zone (or a renamed one) only changes the catalog.
  */
 function zoneSlotsOf(
   continent: "Europe" | "South America",
   zones: LeagueZone[] | undefined,
 ): { primary: number; secondary: number } | undefined {
-  const primary = zoneSpan(zones, continent === "Europe" ? "ucl" : "lib");
+  const [primaryComp, secondaryComp] = competitionsOf(continent);
+  const spanOf = (comp: typeof primaryComp) => comp!.zoneIds.reduce((sum, id) => sum + zoneSpan(zones, id), 0);
+  const primary = spanOf(primaryComp);
   if (primary === 0) return undefined;
-  const secondary =
-    continent === "Europe" ? zoneSpan(zones, "uel") + zoneSpan(zones, "uecl") : zoneSpan(zones, "sud");
-  return { primary, secondary };
+  return { primary, secondary: spanOf(secondaryComp) };
 }
 
 /** Everything computed once per country's tier-1 league, reused across slots/ranking/pots. */
