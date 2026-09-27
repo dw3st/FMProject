@@ -1,7 +1,13 @@
 import type { RosterPlayer } from "@/types/playerTypes";
+import { emptySeasonLog } from "@/types/playerTypes";
 import type { FormationSlot } from "@/types/formationSlots";
 import { Player } from "@/Domain/Player";
 import { getMainRole } from "@/GameInterface/positionHelpers";
+import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
+import { drainMultiplier } from "@/Domain/fitness/fitness";
+
+/** Same default as `ensureSeasonLog`/`emptySeasonLog` — a player never touched by the fitness model yet. */
+const DEFAULT_FITNESS = emptySeasonLog().fitness;
 
 /**
  * Auto-fills a lineup from available players for a given set of formation slots.
@@ -51,51 +57,80 @@ export function autoFillLineup(slots: FormationSlot[], players: RosterPlayer[]):
   return result;
 }
 
+/** Fitness below this (0..100) makes a starter (from the plain `autoFillLineup`) a swap candidate. */
+const TIRED_FITNESS_THRESHOLD = 75;
+
+/** A bench player must reach this fraction of the tired starter's fitness-adjusted value to take the slot. */
+const BENCH_SWAP_RATIO = 0.85;
+
 /**
- * Like `autoFillLineup` but factors in `seasonLog.fitness` so fatigued players
- * are deprioritised for starting positions. Used by AI clubs for initial lineup selection.
- *
- * Score blend: 70 % weighted stat score + 30 % fitness (0–100 normalised to 0–1 scale).
+ * A player's value in a slot once today's fitness is taken into account:
+ * `Player.weightedScore(stats, role) × overallEnergyFactor(fitness)`, further discounted by
+ * `drainMultiplier(load)` — a simple forward-looking penalty for a high-load player who will drain
+ * faster than their current fitness alone suggests over 90 minutes (see
+ * `docs/superpowers/specs/2026-09-27-stamina-design.md` §2 and `src/Domain/fitness/fitness.ts`).
+ * This does not simulate the match; it is only a cheap proxy used to rank lineup candidates.
  */
-export function autoFillLineupWithEnergy(slots: FormationSlot[], players: RosterPlayer[]): string[] {
-  const used = new Set<string>();
-  const result: string[] = new Array(slots.length).fill('');
+function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
+  const stat = Player.weightedScore(player.stats, role);
+  const fitness = player.seasonLog?.fitness ?? DEFAULT_FITNESS;
+  const load = player.seasonLog?.load ?? 0;
+  return (stat * overallEnergyFactor(fitness)) / drainMultiplier(load);
+}
 
-  function blendedScore(p: RosterPlayer, role: string): number {
-    const stat    = Player.weightedScore(p.stats, role);
-    const fitness = (p.seasonLog?.fitness ?? 100) / 100;
-    return stat * 0.7 + fitness * 10 * 0.3; // fitness scaled to same ~0–10 range
-  }
+/**
+ * `autoFillLineup`, but a tired starter can be rested for a nearly-as-good bench player of the same
+ * slot. Used by AI clubs (and the formation screen's "auto" button) for lineup selection — see
+ * `docs/superpowers/specs/2026-09-27-stamina-design.md` §2.
+ *
+ * Algorithm: start from the plain `autoFillLineup` result (identical slot-filling logic/order — a
+ * fully fit squad returns exactly the same lineup). Then, for each slot whose starter has
+ * `seasonLog.fitness < TIRED_FITNESS_THRESHOLD`, look at the best-fit bench player for that same
+ * slot (same eligibility rule as `autoFillLineup`'s first pass: exact position code, else same main
+ * role) ranked by `fitnessAdjustedValue`. If the bench player's fitness-adjusted value is at least
+ * `BENCH_SWAP_RATIO` of the tired starter's, the bench player takes the slot; otherwise the starter
+ * — however tired — stays, because they are still clearly the better pick.
+ */
+export function autoFillLineupWithFitness(slots: FormationSlot[], players: RosterPlayer[]): string[] {
+  const plain = autoFillLineup(slots, players);
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const usedIds = new Set(plain.filter((id) => id));
+  const result = [...plain];
 
-  // First pass: best role-matched player per slot
   for (let i = 0; i < slots.length; i++) {
+    const starterId = result[i];
+    if (!starterId) continue;
+    const starter = byId.get(starterId);
+    if (!starter) continue;
+
+    const fitness = starter.seasonLog?.fitness ?? DEFAULT_FITNESS;
+    if (fitness >= TIRED_FITNESS_THRESHOLD) continue;
+
     const role = slots[i]!.role;
     const roleMain = getMainRole(role);
-    const candidates = players
-      .filter(
-        (p) =>
-          !used.has(p.id) &&
-          (p.positions.includes(role) || getMainRole(p.positions[0] ?? 'CM') === roleMain),
-      )
-      .sort((a, b) => blendedScore(b, role) - blendedScore(a, role));
+    const bench = players.filter(
+      (p) =>
+        !usedIds.has(p.id) &&
+        (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
+    );
+    if (bench.length === 0) continue;
 
-    if (candidates[0]) {
-      result[i] = candidates[0].id;
-      used.add(candidates[0].id);
+    let best: RosterPlayer | null = null;
+    let bestValue = -Infinity;
+    for (const candidate of bench) {
+      const value = fitnessAdjustedValue(candidate, role);
+      if (value > bestValue) {
+        bestValue = value;
+        best = candidate;
+      }
     }
-  }
+    if (!best) continue;
 
-  // Second pass: fill remaining slots
-  for (let i = 0; i < slots.length; i++) {
-    if (result[i]) continue;
-    const role = slots[i]!.role;
-    const remaining = players
-      .filter((p) => !used.has(p.id))
-      .sort((a, b) => blendedScore(b, role) - blendedScore(a, role));
-
-    if (remaining[0]) {
-      result[i] = remaining[0].id;
-      used.add(remaining[0].id);
+    const starterValue = fitnessAdjustedValue(starter, role);
+    if (bestValue >= starterValue * BENCH_SWAP_RATIO) {
+      usedIds.delete(starterId);
+      usedIds.add(best.id);
+      result[i] = best.id;
     }
   }
 

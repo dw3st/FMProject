@@ -80,6 +80,40 @@ export function consumeEnergy(
   return clampEnergy(energy - cost);
 }
 
+/**
+ * Weights for `overallEnergyFactor`'s blend of the physical/semi/tech fatigue factors — each
+ * category's own `FATIGUE_MAX_REDUCTION_*` constant, normalized to sum to 1. This reuses the same
+ * numbers `getRuntimeLineup` already uses to decide how much fatigue hurts each stat category, so
+ * the single "how fatigued is this player, overall" number stays consistent with the per-stat
+ * curves instead of introducing new tuning: physical is weighted heaviest (0.55 of the 1.10 total)
+ * because it is also the category the fatigue curve hits hardest, tech the lightest (0.20).
+ */
+const ENERGY_FACTOR_WEIGHT_SUM =
+  FATIGUE_MAX_REDUCTION_PHYSICAL + FATIGUE_MAX_REDUCTION_SEMI + FATIGUE_MAX_REDUCTION_TECH;
+const ENERGY_FACTOR_WEIGHTS = {
+  physical: FATIGUE_MAX_REDUCTION_PHYSICAL / ENERGY_FACTOR_WEIGHT_SUM,
+  semi: FATIGUE_MAX_REDUCTION_SEMI / ENERGY_FACTOR_WEIGHT_SUM,
+  tech: FATIGUE_MAX_REDUCTION_TECH / ENERGY_FACTOR_WEIGHT_SUM,
+} as const;
+
+/**
+ * A single representative fatigue factor (0..1) for a given energy/fitness value (0..100), for
+ * callers that need one number rather than a full `PlayerStats` recompute (e.g. lineup selection —
+ * see `src/Domain/lineupHelpers.ts` → `autoFillLineupWithFitness`). It is the weighted mean of the
+ * same physical/semi/tech factors `getRuntimeLineup` applies per stat category — see
+ * `ENERGY_FACTOR_WEIGHTS` above for the weighting.
+ */
+export function overallEnergyFactor(energy: number): number {
+  const physical = getFatigueFactor(energy, FATIGUE_MAX_REDUCTION_PHYSICAL);
+  const semi = getFatigueFactor(energy, FATIGUE_MAX_REDUCTION_SEMI);
+  const tech = getFatigueFactor(energy, FATIGUE_MAX_REDUCTION_TECH);
+  return (
+    physical * ENERGY_FACTOR_WEIGHTS.physical +
+    semi * ENERGY_FACTOR_WEIGHTS.semi +
+    tech * ENERGY_FACTOR_WEIGHTS.tech
+  );
+}
+
 export function getRuntimeLineup(base: PlayerStats, player: Pick<GamePlayer, 'energy'>): PlayerStats {
   const physicalRed = getFatigueFactor(player.energy, FATIGUE_MAX_REDUCTION_PHYSICAL);
   const semiRed     = getFatigueFactor(player.energy, FATIGUE_MAX_REDUCTION_SEMI);

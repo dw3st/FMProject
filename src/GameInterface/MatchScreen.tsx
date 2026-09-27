@@ -17,7 +17,7 @@ import type { TacticsSave, TacticalStyle, Mentality } from "@/types/tacticsTypes
 import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { autoFillLineup } from "@/Domain/lineupHelpers";
+import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
@@ -202,7 +202,7 @@ export function MatchScreen() {
 
         const opponentPlayers = data.opponentSquad?.players ?? data.mySquad.players;
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
-        const oppLineup = autoFillLineup(oppSlots, opponentPlayers);
+        const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers);
         const state = {
           ...createMatchState(
             data.mySquad.players,
