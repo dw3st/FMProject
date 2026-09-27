@@ -36,6 +36,14 @@ export interface PlayerSeasonLog {
   trainingSessions: number;
   fitness:     number;
   morale:      number;
+  /**
+   * Accumulated fatigue (minutes-equivalent), decaying with a half-life — see
+   * `.claude/rules/game/fitness.md` and `src/Domain/fitness/fitness.ts`. High load slows daily
+   * `fitness` recovery and raises in-match energy drain (`drainMultiplier`). Absent means 0 (a
+   * fresh/never-tracked player) — not written by older saves, no migration needed per
+   * `CLAUDE.md`'s prototype rule.
+   */
+  load?: number;
   /** National-cup games only (the fields above are the season total, league + cup). */
   cup?: { appearances: number; goals: number; assists: number };
   /** Continental competition games only (ucl/uel/lib/sud) — the fields above are the season total. */
