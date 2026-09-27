@@ -6,6 +6,7 @@ import type { AttributeId } from "@/GameInterface/AttributeLabels";
 import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
@@ -164,7 +165,10 @@ export function PlayerCard({
                 <p className="text-lg md:text-xl font-black text-foreground font-display m-0">{player.salary}</p>
               </div>
               <div className="card-arcade rounded-xl p-4 text-center border border-border/50">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 m-0">{t("dashboard.playerCard.energy")}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 m-0 inline-flex items-center gap-1 justify-center w-full">
+                  {t("dashboard.playerCard.energy")}
+                  <LoadIndicator load={player.load} size={11} />
+                </p>
                 <p className="text-lg md:text-xl font-black text-foreground font-display m-0">{player.energy}%</p>
               </div>
             </div>
@@ -259,7 +263,10 @@ export function PlayerCard({
           <p className="text-xs font-black text-foreground font-display">{player.salary}</p>
         </div>
         <div className="text-center">
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">{t("dashboard.playerCard.energy")}</p>
+          <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5 inline-flex items-center gap-1 justify-center w-full">
+            {t("dashboard.playerCard.energy")}
+            <LoadIndicator load={player.load} size={10} />
+          </p>
           <p className="text-xs font-black text-foreground font-display">{player.energy}%</p>
         </div>
       </div>

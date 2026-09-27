@@ -1410,7 +1410,8 @@
     "fitness": "Fitness",
     "rating": "rating",
     "cancelSelection": "Cancel selection",
-    "change": "change"
+    "change": "change",
+    "lowFitnessWarning": "Starting with low fitness: {{names}}"
   },
   "matchResult": {
     "title": "Match result",
@@ -1668,5 +1669,8 @@
   },
   "players": {
     "star": "Current legend"
+  },
+  "fitness": {
+    "highLoadTooltip": "High load: recovers slowly and tires faster"
   }
 }

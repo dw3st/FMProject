@@ -41,6 +41,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   MapPin,
+  Flame,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -93,7 +94,8 @@ export type IconName =
   | "alert"
   | "arrow-down-left"
   | "arrow-up-right"
-  | "map-pin";
+  | "map-pin"
+  | "load";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -142,6 +144,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "arrow-down-left": ArrowDownLeft,
   "arrow-up-right":  ArrowUpRight,
   "map-pin":      MapPin,
+  "load":         Flame,
 };
 
 export interface IconProps {

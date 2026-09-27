@@ -16,7 +16,7 @@ const STATS = (v = 5): PlayerStatsRecord => ({
 });
 
 const P = (over: Partial<DisplayPlayer> & { id: string }): DisplayPlayer => ({
-  pos: "CM", positions: [over.pos ?? "CM"], name: `Player ${over.id}`, age: 25, avg: 6, energy: 100,
+  pos: "CM", positions: [over.pos ?? "CM"], name: `Player ${over.id}`, age: 25, avg: 6, energy: 100, load: 0,
   salary: "£10K", value: "£5M", goals: 0, assists: 0, avgRating: 0, phase: 3, training: 3, moral: 3,
   status: "fit", club: "Club", stats: STATS(), preferredFoot: "right", valueMillions: 5,
   nationality: "Brazil", leagueSlug: "premier_league", clubSlug: "club", ...over,
