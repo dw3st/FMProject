@@ -43,10 +43,14 @@ export interface TransferOutInboxMessage extends InboxMessageBase {
   feeEuros:   number;
 }
 
-/** End-of-season news for the human club: promotion, relegation, a league title or the fan base change. */
+/**
+ * End-of-season news for the human club: promotion, relegation, a league title, the fan base
+ * change, or (`negative_balance`, not tied to a season end — any day the ledger tips it below
+ * zero, see `.claude/rules/game/finances.md`) the cash extract going negative.
+ */
 export interface SeasonInboxMessage extends InboxMessageBase {
   category:   "season";
-  kind:       "promoted" | "relegated" | "champion" | "followers";
+  kind:       "promoted" | "relegated" | "champion" | "followers" | "negative_balance";
   /** Followers before / after the season reaction (kind "followers" only). */
   followersBefore?: number;
   followersAfter?:  number;
@@ -55,8 +59,10 @@ export interface SeasonInboxMessage extends InboxMessageBase {
   leagueName: string;
   /** League the club left (promoted/relegated only). */
   fromLeagueSlug?: string;
-  /** Season year that just ended. */
+  /** Season year that just ended (or, for negative_balance, the ledger's current season). */
   seasonYear: number;
+  /** Club budget on the day it crossed negative (kind "negative_balance" only). */
+  balance?: number;
 }
 
 /** National-cup news for the human club. */

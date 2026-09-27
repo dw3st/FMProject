@@ -131,6 +131,15 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
  * start (Brazilian careers). Earliest-date (European) careers begin at genesis with a
  * fresh world and need no kit. Never throws fatally — a missing kit just means the
  * world starts empty and fills as days advance.
+ *
+ * The kit is a generic world snapshot with no player concept (see the `KitWorld` comment above):
+ * every club in it, including the one about to become the player's, sits at whatever
+ * `finances.budget` it had when the kit was generated — never touched by the ledger. Applying it
+ * verbatim would overwrite the real save's own ledger-tracked budget (`createSave` +
+ * `applyBroadcasting`, already recorded in `saves/{id}/ledger/`) with that stale figure. We
+ * capture the player's budget right before the kit write and restore it right after, so
+ * sum(ledger) == budget keeps holding for a kit (Brazilian-timeline) career exactly as it already
+ * does for a no-kit (European-timeline) one — see `.claude/rules/game/finances.md`.
  */
 export async function applyRandomStartKit(
   saveId: string,
@@ -149,7 +158,25 @@ export async function applyRandomStartKit(
   const kits = await listStartKits();
   if (kits.length === 0) return { applied: false, reason: "no kits generated" };
 
+  const preKitSquad = meta.clubId
+    ? await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId)
+    : null;
+  const preKitBudget = preKitSquad?.finances?.budget;
+
   const kit = kits[Math.floor(Math.random() * kits.length)]!;
   await applyKit(kit, saveId);
+
+  if (meta.clubId && preKitBudget !== undefined) {
+    const index = await saveService.getSquadIndex(saveId);
+    const entry = index.byId(meta.clubId);
+    const postKitSquad = entry ? await saveService.getSquad(saveId, entry.leagueSlug, entry.stem) : null;
+    if (entry && postKitSquad?.finances) {
+      await saveService.saveSquad(saveId, entry.leagueSlug, entry.stem, {
+        ...postKitSquad,
+        finances: { ...postKitSquad.finances, budget: preKitBudget },
+      });
+    }
+  }
+
   return { applied: true, kit };
 }

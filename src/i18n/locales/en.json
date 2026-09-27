@@ -1041,6 +1041,9 @@
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
+    "season": {
+      "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
+    },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
       "eliminated": "Eliminated from the {{cup}} ({{stage}}) by {{opponent}}",

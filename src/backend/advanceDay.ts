@@ -5,7 +5,7 @@ import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
-import { executeTransferFee } from "@/backend/FinancialService";
+import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
 import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
@@ -28,10 +28,11 @@ import {
   buildQuickMatchEvent,
   buildRestEvent,
   buildTrainingEvent,
-  computeAdvanceDayMoneyDelta,
+  computeAdvanceDayMoney,
   resolveSimMode,
   resolveTrainingPolicy,
   type PlayedMatchRecording,
+  type PlayerHomeFixtureToday,
 } from "@/Domain/advanceDay";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
@@ -50,6 +51,7 @@ import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
 import { advanceCupStages, countryByLeague, createCountryCup, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
+import type { GateKind } from "@/Domain/finance/gate";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
@@ -299,6 +301,10 @@ export async function advanceOneDay(
     // parallel `saveSquad` calls race and the loser's energy/seasonLog/development silently vanish.
     const squadWrites = new Map<string, { league: string; club: string; squad: Squad }>();
     const teamsPlayingToday = new Set<string>(); // squadIds that have a match today
+    // The player's club home fixtures today, across every competition (league, cup, continental —
+    // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
+    // loop below processes each competition's rounds for the day.
+    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean }> = [];
 
     const tactics = await saveService.getTactics(saveId);
 
@@ -408,6 +414,10 @@ export async function advanceOneDay(
           }
 
           const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
+          if (fixture.home === playerSquadId) {
+            const gateKind: GateKind = isContinentalSlug(leagueSlug) ? "continental" : isCupSlug(leagueSlug) ? "cup" : "league";
+            playerHomeFixturesToday.push({ competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true });
+          }
           const useRecording =
             playedMatchOverride !== null &&
             playedMatchOverride.fixtureId === fixture.id &&
@@ -845,40 +855,50 @@ export async function advanceOneDay(
       await saveService.saveMarket(saveId, updatedMarket);
     }
 
-    // ── Financial updates ────────────────────────────────────────────────────
-    // Load today's player league fixtures for ticket revenue
-    const playerLeagueTodayFixtures: Fixture[] = [];
-    const playerLeagueRounds = activeRoundsForDate.get(meta.leagueSlug);
-    if (playerLeagueRounds) {
-      for (const rNum of playerLeagueRounds) {
-        const rd = await saveService.getRound(saveId, meta.leagueSlug, rNum);
-        if (rd) playerLeagueTodayFixtures.push(...rd.fixtures.filter((f) => f.date === currentDate));
-      }
-    }
-
+    // ── Financial updates (player's club ledger) ─────────────────────────────
+    // Weekly commercial/wages/operational on Mondays, plus a gate entry for every home fixture
+    // of the player's club today across every competition (playerHomeFixturesToday, filled by the
+    // main match loop above). See computeAdvanceDayMoney / .claude/rules/game/finances.md.
     const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
     const isWeeklyTick = dayOfWeek === 1;
-    const needsPlayerSquad =
-      isWeeklyTick ||
-      Boolean(playerSquadId && playerLeagueTodayFixtures.some((f) => f.home === playerSquadId));
-    const playerSquad = needsPlayerSquad && playerEntry
-      ? await saveService.getSquad(saveId, playerEntry.leagueSlug, playerEntry.stem)
-      : null;
-
-    const moneyDelta = computeAdvanceDayMoneyDelta({
-      currentDate,
-      todayFixtures: playerLeagueTodayFixtures,
-      playerSquadId,
-      playerSquad,
-    });
-
-    // Apply money delta to player squad's budget
-    if (moneyDelta !== 0 && playerEntry && playerSquad?.finances) {
-      const budget = Math.max(0, (playerSquad.finances.budget ?? 0) + moneyDelta);
-      await saveService.saveSquad(saveId, playerEntry.leagueSlug, playerEntry.stem, {
-        ...playerSquad,
-        finances: { ...playerSquad.finances, budget },
-      });
+    const needsPlayerSquad = isWeeklyTick || playerHomeFixturesToday.length > 0;
+    if (needsPlayerSquad && playerEntry && playerSquadId) {
+      // Re-read the squad: it may have been updated by the match loop above (own fixture today).
+      const playerSquad = await saveService.getSquad(saveId, playerEntry.leagueSlug, playerEntry.stem);
+      if (playerSquad) {
+        const catalogForFinance = await getLeagueData();
+        const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f) => ({
+          ...f,
+          label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),
+        }));
+        const moneyEntries = computeAdvanceDayMoney({ currentDate, playerSquad, homeFixturesToday });
+        if (moneyEntries.length > 0) {
+          const playerLeagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
+          const season = playerLeagueMeta?.year ?? new Date(currentDate).getFullYear();
+          const balanceBefore = playerSquad.finances?.budget ?? 0;
+          let balanceAfter = balanceBefore;
+          // Sequential, never parallel: each entry read-modify-writes the squad's budget, so the
+          // next entry must observe the previous one's result (recordMoney is the only writer).
+          for (const entry of moneyEntries) {
+            const updated = await recordMoney(
+              saveService, saveId, season,
+              { leagueSlug: playerEntry.leagueSlug, clubSlug: playerEntry.stem },
+              entry,
+            );
+            balanceAfter = updated.finances?.budget ?? balanceAfter;
+          }
+          if (balanceBefore >= 0 && balanceAfter < 0) {
+            await emitInboxMessage(saveId, buildSeasonMessage({
+              date: currentDate,
+              kind: "negative_balance",
+              leagueSlug: meta.leagueSlug,
+              leagueName: competitionName(meta.leagueSlug, catalogForFinance as unknown as LeagueData[], "en"),
+              seasonYear: season,
+              balance: balanceAfter,
+            }), saveService);
+          }
+        }
+      }
     }
 
     // ── Season rollover, per country ─────────────────────────────────────────
@@ -987,6 +1007,17 @@ export async function advanceOneDay(
             }
           }
           await saveService.saveSquadById(saveId, next);
+          if (squad.id === playerClubSquadId && transition.playerBroadcastingCredit > 0) {
+            // The new season's ledger: closedYear.get(slug) is the OLD (just-archived) year, so
+            // the credit goes onto the NEW season's file — same "+1" the next-season calendar
+            // below uses for cal.meta.year.
+            await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, [{
+              date: currentDate,
+              kind: "broadcasting",
+              amount: transition.playerBroadcastingCredit,
+              label: "Broadcasting revenue",
+            }]);
+          }
         }
       }
 

@@ -201,13 +201,11 @@ export const apiRoutes = {
     if (!loc || !found) return Response.json({ error: "save squad not found" }, { status: 404 });
     let squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
     if (req.method === "PUT") {
-      const body = await req.json() as { finances?: Partial<import("@/types/playerTypes").ClubFinances> };
-      if (body.finances) {
-        squad = {
-          ...squad,
-          finances: { ...squad.finances, ...body.finances } as import("@/types/playerTypes").ClubFinances,
-        };
-      }
+      // `finances` is never accepted from the client here — every money movement for the
+      // player's club goes through the ledger (`FinancialService.recordMoney`), never a raw
+      // squad PUT (design spec §2, "Brecha"). The body is otherwise unused today; parse-and-
+      // discard keeps the endpoint tolerant of a client that still sends one.
+      await req.json().catch(() => null);
       await saveService.saveSquad(saveId!, loc.leagueSlug, loc.stem, squad);
     }
     return Response.json(squad);
