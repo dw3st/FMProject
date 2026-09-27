@@ -63,6 +63,8 @@ export interface SeasonInboxMessage extends InboxMessageBase {
   seasonYear: number;
   /** Club budget on the day it crossed negative (kind "negative_balance" only). */
   balance?: number;
+  /** League prize paid at this rollover (champion/promoted/relegated only), euros. */
+  prize?: number;
 }
 
 /** National-cup news for the human club. */
@@ -78,6 +80,8 @@ export interface CupInboxMessage extends InboxMessageBase {
   /** Draw only: the tie's date and whether we are at home ("neutral" for the final). */
   tieDate?:  string;
   venue?:    "home" | "away" | "neutral";
+  /** Prize paid THIS DAY for this event (champion, or the runner-up prize on a final loss), euros. */
+  prize?:    number;
 }
 
 /** Continental-competition (UCL/UEL/Lib/Sud) news for the human club. */
@@ -99,6 +103,11 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
   firstLegDate?: string;
   /** Draw only: whether we are at home ("neutral" for the final). */
   venue?:      "home" | "away" | "neutral";
+  /**
+   * Prize paid THIS DAY for this event: champion (title), a final loss (elimination in the
+   * final), or reaching the round of 16 (the "draw" message for stage "r16"). Absent otherwise.
+   */
+  prize?:      number;
 }
 
 export type InboxMessage =

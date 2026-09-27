@@ -1041,6 +1041,7 @@
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
+    "prizeAmount": "+ {{amount}}",
     "season": {
       "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
     },
