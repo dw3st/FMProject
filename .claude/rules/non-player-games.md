@@ -651,3 +651,117 @@ margem pareada caiu de ~0,045 para ~0,0195 em 2000 seeds — nos dois pontos, ~0
 (`0,64 × (QUICK_SIM_CONFIG.HOME_ADVANTAGE − 1) × 0,5`) em vez de um número fixo escrito na hora —
 continua um sinal claramente positivo e não-flaky, mas passa a acompanhar sozinho a próxima
 recalibração de `HOME_ADVANTAGE`, sem precisar de outro ajuste manual no teste.
+
+## Fadiga
+
+Modelo de fôlego/carga: `.claude/rules/game/development.md` não cobre isso — a lógica pura fica em
+`src/Domain/fitness/` (`fitnessConfig.ts` + `fitness.ts`), e o desconto por energia em campo (motor
+e a escala de titulares por vaga) fica em `src/GameEngine/Domain/RuntimeLineup.ts` e
+`src/Domain/lineupHelpers.ts`. Ver `docs/superpowers/specs/2026-09-27-stamina-design.md` para o
+desenho original.
+
+### Recalibração de 2026-09-27 ("soften + recalibrate")
+
+Uma revisão apontou que a curva de fadiga do motor estava forte demais em diferenças de fôlego
+normais (95×80 dava +0,77 de saldo de gols; 90×70 dava +1,43) e não suficientemente diferenciada no
+extremo (90×50-com-carga-alta só aparecia como 90% de vitórias, sem medir o saldo). Duas mudanças,
+na ordem em que precisam ser lidas:
+
+**1. Curva de fadiga do motor (`RuntimeLineup.ts`).** A curva era côncava
+(`FATIGUE_CURVE_POWER = 0,75`): a primeira energia perdida já doía muito, então um time em 80-90 de
+fôlego (o normal num dia de jogo) já levava um desconto real, e o desconto achatava depois. Trocado
+para uma curva **convexa** (`FATIGUE_CURVE_POWER = 1,5`): os primeiros pontos de fôlego perdido
+quase não doem; só perto de 0 de energia o desconto chega no teto. Os três tetos também caíram
+(`FATIGUE_MAX_REDUCTION_PHYSICAL` 0,55 → 0,16, `_SEMI` 0,35 → 0,10, `_TECH` 0,20 → 0,05). Isso
+amacia o caso comum (fôlego 80-95, o normal numa semana sem congestionamento) e mantém o caso
+extremo (time exaurido + carga alta) claramente pior.
+
+Medido com `bun scripts/fatigue-calibrate.ts` Parte 3 (nova — cenários de saldo de gols do time
+fresco, `premier_league` + `of_championship`, os dois mandos, n=320 por cenário):
+
+| Cenário | alvo | antes (côncava) | depois (convexa) |
+|---|---|---|---|
+| 95 fôlego/carga 0 × 80/carga 90 | +0,2 a +0,35 | +0,77 (48 jogos) | +0,47 |
+| 90/0 × 70/0 | +0,4 a +0,6 | +1,43 (48 jogos) | +0,47 |
+| 90/0 × 50/carga 200 | +1,0 a +1,5 | 90% vitórias (sem saldo medido) | +1,03 |
+| controle 90/0 × 90/0 | ≈ 0 | — | +0,09 (ruído da amostra) |
+
+O cenário mais brando (95×80/90) ainda fica um pouco acima da faixa-alvo, mas perto do piso de
+ruído da própria amostra (o controle mede +0,09 quando deveria ser 0) — os outros dois cenários
+caem dentro do alvo. `bun scripts/fatigue-calibrate.ts <pairs> <repeats> <scenPairs> <scenRepeats>
+<scen3Pairs> <scen3Repeats>`; `FC_ONLY_PART3=1` pula as Partes 1–2 (mais lentas) ao iterar só a
+curva.
+
+**2. Volume de gols do quickSim, recalibrado a fôlego real (~88), não 75.** Toda calibração de
+volume de gols até aqui (`analyze`, a tabela "Volume de gols" acima) rodava os dois lados no
+fôlego padrão do `emptySeasonLog()` (75, porque os elencos estáticos não têm `seasonLog`). Um dia
+de jogo de verdade fica perto de 88-90 de fôlego (ver "Fôlego num dia de jogo" abaixo). Como a
+curva do motor ficou muito mais suave perto do topo, um time a 88 de fôlego agora joga quase no
+nível máximo — antes já vinha descontado. Isso sozinho eleva o placar do motor em ~35-45% no
+fôlego real, invalidando a calibração de volume de gols antiga.
+
+`collect` ganhou `--fitness N [--load N]` para coletar num fôlego específico (grava `fitness`/`load`
+no cache; `analyze`/`events` já liam os elencos no fôlego padrão 75 por dentro — agora `analyze` lê
+o fôlego gravado no próprio cache, com `--fitness` só como bloqueio de compatibilidade para caches
+antigos sem o campo). Recoletado (`bun scripts/quicksim-spread.ts collect <liga> 150 2 <out>
+--fitness 88`) em 10 ligas (`premier_league`, `la_liga`, `bundesliga`, `brazil_serie_a`,
+`of_championship`, `of_allsvenskan`, `of_eredivisie`, `of_kenyan_premier_division`, `of_liga_mx`,
+`of_turkish_super_league`), reajustado com `analyze` seção 8 (`ratio+level+pace`, chaves atuais):
+
+| Constante | Antes (fôlego 75, curva côncava) | Depois (fôlego 88, curva convexa) |
+|---|---|---|
+| `BASE_GOALS` | 0,76 | 1,05 |
+| `HOME_ADVANTAGE` | 1,03 | 1,15 |
+| `STRENGTH_EXPONENT` | 0,51 | 0,46 |
+| `LEVEL_EXPONENT` | 0,81 | 1,12 |
+| `PACE_EDGE_WEIGHT` | 0,32 | 0,26 |
+
+rms por liga **26,4% → 7,7%** (piso de ruído do motor ~4,1%). Só `of_allsvenskan` fica fora de
+±15% (+17,3%); as outras 9 ligas ficam dentro de ±10%. `HOME_ADVANTAGE` subiu bastante (1,03 →
+1,15) — o motor não tem vantagem de mando estrutural, então esse termo capta principalmente ruído
+de amostra de qual time caiu como "casa" em cada par sorteado, igual nas rodadas anteriores dessa
+mesma calibração; não foi investigado a fundo por não ser o alvo desta tarefa.
+
+**3. `FATIGUE_PENALTY` do quickSim, 0,3 → 0,5.** A curva do motor mais suave também encolheu bastante
+a diferença motor entre um time fresco e um cansado: fresco 100/carga 0 × cansado 70/carga alta,
+`premier_league`, era 90%/7,8%/2,2% (V/E/D do lado fresco) e caiu para **58%/18,7%/23,3%** (2,26 ×
+1,24 gols/jogo). Isso por si só já reduz o descompasso do quickSim (que ficava em 45,5%/20,8%/33,7%
+com `FATIGUE_PENALTY=0,3` contra o motor antigo) — com o motor novo, o mesmo `FATIGUE_PENALTY=0,3`
+dá 51,1%/17,1%/31,8% (2,17 × 1,60), mais perto mas ainda abaixo do motor.
+
+Varrendo `FATIGUE_PENALTY` (`fatigue-calibrate.ts` Parte 2) contra o motor novo: 0,7 quase encosta
+no motor (57,4%/17,3%/25,3%, 2,28 × 1,33), mas subir `FATIGUE_PENALTY` também reduz o volume de gols
+entre dois times de fôlego **igual** a 88 (o termo de nível cai ainda que a razão ataque/defesa não
+mude) — 0,7 custa ~5-6% de gols nesse cenário, o suficiente para desfazer boa parte da recalibração
+do item 2. 0,5 custa só ~2,4-3,0% (medido direto com `quickSimMatch`, fôlego 88 dos dois lados, 3
+ligas, 500 partidas cada) e ainda fecha boa parte da diferença (54,2%/17,3%/28,5%, 2,22 × 1,46). A
+diferença residual (54% contra 58%) é um limite conhecido e aceito: o quickSim desconta a força uma
+única vez a partir do fôlego de **início** de partida; o motor tem fadiga contínua (piora a cada
+tick) e também recebe o efeito da carga durante a partida, não só no chute inicial.
+
+### Fôlego num dia de jogo
+
+- **Recuperação diária:** `RECOVERY_BASE` 0,35 → 0,45 nesta mesma tarefa — a curva de exemplo do
+  design (26 anos, carga 0, stamina 7, saindo de 55 pós-jogo) passou de 55 → 71,4 → 81,8 → 88,4 →
+  92,6 para 55 → 76,1 → 87,3 → 93,2 → 96,4 (um valor por dia de folga).
+- **Numa semana normal** (sem congestionamento), o fôlego de um titular fica perto de 90 no dia de
+  jogo.
+- **Numa sequência congestionada** (jogo a cada 3 dias), o fôlego de um titular da IA cai para a
+  faixa 85-88, e o seletor de escalação (`autoFillLineupWithFitness`) poupa titulares.
+
+### Escalação por fôlego (`src/Domain/lineupHelpers.ts`)
+
+- `BENCH_SWAP_RATIO` 0,85 → **1,09** — o reserva agora precisa ser **melhor** que o titular cansado,
+  não só perto dele. Com o gatilho de elegibilidade sozinho (`TIRED_FITNESS_THRESHOLD = 75`), uma
+  razão abaixo de ~1 quase não filtrava nada assim que um titular ficava claramente cansado,
+  girando o elenco da IA demais numa sequência apertada (~8-9 titulares trocados por partida a
+  0,85-1,0, medido com um script de varredura descartável simulando 8 partidas a cada 3 dias sobre
+  os elencos reais da `premier_league`/`of_championship`). Com `1,09`, uma sequência congestionada
+  fica em **~2,9-3,3 titulares trocados por partida**, e uma semana normal fica em **~0**.
+- **Vaga de goleiro isenta por padrão:** só entra na troca se o titular cair abaixo de
+  `GK_TIRED_FITNESS_THRESHOLD = 60` (bem abaixo do limiar de linha, 75) **e** existir um reserva com
+  fôlego ≥ `GK_BENCH_FITNESS_FLOOR = 85`. Poupar um goleiro no meio de semana é uma decisão maior
+  que poupar um jogador de linha.
+- `resolveUserLineup` (`src/Domain/advanceDay/matchSimulationLineups.ts`) agora cai no seletor
+  ciente de fôlego (`autoFillLineupWithFitness`), não no preenchimento só por nota, quando o clube
+  do jogador nunca salvou uma escalação.
