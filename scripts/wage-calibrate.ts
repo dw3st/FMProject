@@ -50,7 +50,7 @@ const HOME_FILL_RATE = 0.65;
 // Mirrors src/Domain/finance/wageConfig.ts (kept local so this script is self-contained and can
 // freely search candidate values before anything is written back to that file).
 const TARGET_RATIO = 0.6;
-const MIN_FACTOR = 0.25;
+const MIN_FACTOR = 0.08;
 const MAX_FACTOR = 4;
 const CLAMP_EPS = 1e-9;
 
