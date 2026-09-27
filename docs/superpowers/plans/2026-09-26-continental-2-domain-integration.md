@@ -638,6 +638,9 @@ Nada a fazer → `null`.
   `logError`), trate também `isContinentalSlug` da mesma forma (helper local
   `isKnockoutComp = (s) => isCupSlug(s) || isContinentalSlug(s)` para "sem tabela" e "modo de
   simulação"; o modo "full" continua só com clube da liga do jogador).
+- [ ] **Step 1b: volta sem agregado** — antes de simular uma fixture com `leg === 2` sem `aggregate`,
+  calcule-o da ida jogada (`withAggregate`) e registre `logError("continental", …)`: o passo da ida
+  pode ter falhado, e sem agregado o motor decidiria prorrogação/pênaltis com o total errado.
 - [ ] **Step 2:** depois de `advanceCupStages`, chame `advanceContinentalStages` com as rodadas
   continentais jogadas hoje (`continentalChanges`, guardado para o Plano 3).
 - [ ] **Step 3: Virada por continente** — no bloco de regeneração das copas (roda com
