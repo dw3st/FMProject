@@ -14,6 +14,7 @@ import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 
 /** Max buffered writes in flight during `flush()`. */
 export const FLUSH_CONCURRENCY = 32;
@@ -334,5 +335,39 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
     this.buffer(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, transfers, () => this.inner.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers));
+  }
+
+  // ── Ledger (player club cash extract) ────────────────────────────────────────
+  //
+  // Same shape as inbox: `writeLedger` (full replace) is the buffered resource;
+  // `appendLedger` is a read-then-write on top of it, so re-flushing an already
+  // partially-flushed write (a write re-buffered while its flush was in flight —
+  // see the squad "re-buffered while in flight" test) is idempotent — the pending
+  // thunk always writes the COMPLETE list, never just what changed since the last
+  // flush, so it can never duplicate entries already on disk from an earlier
+  // partial flush.
+
+  /** Not buffered — a season's ledger file only starts existing via `writeLedger`, and a listing
+   * mid-flush (rollover creating the next season's file) is not a case this read-only helper needs
+   * to cover; callers that need the season just created should already know its year. */
+  listLedgerSeasons(saveId: string): Promise<number[]> {
+    return this.inner.listLedgerSeasons(saveId);
+  }
+  readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
+    return this.readThrough(`ledger:${saveId}:${season}`, () => this.inner.readLedger(saveId, season));
+  }
+  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    this.buffer(`ledger:${saveId}:${season}`, entries, () => this.inner.writeLedger(saveId, season, entries));
+  }
+  async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    const key = `ledger:${saveId}:${season}`;
+    await this.readLedger(saveId, season);
+    // Read the cache AFTER the await, not the value `readLedger` resolved with: a concurrent
+    // append may have already landed its own buffered write (updating `cache`) while this call
+    // was awaiting — building from the fresh cache instead of a stale local variable keeps that
+    // append's entries instead of overwriting them.
+    const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
+    await this.writeLedger(saveId, season, [...current, ...entries]);
   }
 }

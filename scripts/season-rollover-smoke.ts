@@ -50,18 +50,23 @@ const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
-const { computeAdvanceDayMoneyDelta } = await import("@/Domain/advanceDay/financial");
+const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial");
 const { addOneDay } = await import("@/Domain/advanceDay/date");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 const { isCupSlug } = await import("@/Domain/cups/cupIds");
 const { isContinentalSlug, competitionsOf } = await import("@/Domain/continental/competitions");
+const { totalsByKind } = await import("@/Domain/finance/ledger");
+const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await import("@/Domain/aiFinance/aiClubFinance");
+const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
+const { leaguePrize } = await import("@/Domain/finance/prizes");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
 type Squad = import("@/types/playerTypes").Squad;
 type SeasonArchive = import("@/types/calendarTypes").SeasonArchive;
 type Fixture = import("@/types/calendarTypes").Fixture;
+type LedgerEntry = import("@/Domain/finance/ledger").LedgerEntry;
 
 type LeagueEntry = { slug: string; name: string; standings: Array<{ squadId: string; name?: string; colors?: [string, string] }> };
 const leagueData = (await Bun.file(`${RUNTIME_DATA_DIR}/leagueData.json`).json()) as LeagueEntry[];
@@ -90,7 +95,6 @@ async function createSmokeSave(): Promise<string> {
     clubId: club.squadId,
     clubName: club.name ?? club.squadId,
     clubColors: club.colors ?? ["#888888", "#ffffff"],
-    budget: 0,
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Smoke Manager", nationalityIso: "gb", backgroundId: "former-player" },
   });
@@ -287,6 +291,11 @@ try {
 
       // Player squad: age + 1, broadcasting credit.
       const postSquad = await plain().getSquadById(saveId, playerSquadId);
+      // League merit prize (design spec §3 "Liga"), hoisted so the inbox-message-count check
+      // below can also see it: paid on the ending season's broadcasting (before any tier change)
+      // at the club's final table position — see advanceDay.ts's rollover loop and
+      // .claude/rules/game/finances.md § "Premiação".
+      let leaguePrizeAmount = 0;
       if (prePlayerSquad && postSquad) {
         const p0 = prePlayerSquad.players.find((p) => postSquad.players.some((q) => q.id === p.id));
         const p1 = p0 && postSquad.players.find((q) => q.id === p0.id);
@@ -294,15 +303,25 @@ try {
         const b0 = prePlayerSquad.finances?.budget ?? 0;
         const b1 = postSquad.finances?.budget ?? 0;
         const tv = prePlayerSquad.finances?.broadcasting ?? 0;
-        const delta = computeAdvanceDayMoneyDelta({
-          currentDate: date, todayFixtures: prePlayerFixtures, playerSquadId, playerSquad: prePlayerSquad,
+        const homeFixturesToday = prePlayerFixtures
+          .filter((f) => f.home === playerSquadId)
+          .map((f) => ({ competition: f.competition, kind: "league" as const, label: f.competition, neutral: f.neutral }));
+        const entries = computeAdvanceDayMoney({
+          currentDate: date, playerSquad: prePlayerSquad, homeFixturesToday,
         });
-        const expected = Math.max(0, b0 + delta) + tv;
+        const delta = entries.reduce((s, e) => s + e.amount, 0);
+        const closedTable = archive?.standings ?? [];
+        const playerTablePos = closedTable.findIndex((r) => r.squadId === playerSquadId);
+        leaguePrizeAmount = playerTablePos >= 0 ? leaguePrize(tv, playerTablePos + 1, closedTable.length) : 0;
+        // No clamp any more (see .claude/rules/game/finances.md — the ledger allows a negative
+        // balance), so budget is expected to move by exactly `delta`, not max(0, ...).
+        const expected = b0 + delta + tv + leaguePrizeAmount;
         if (obsPlayer) {
-          console.log(`  budget ${b0} → ${b1} (club changed tier: exact check skipped; tv ${tv}, day delta ${delta})`);
-          check(b1 >= Math.max(0, b0 + delta), `budget did not drop at the rollover (${b0} → ${b1})`);
+          console.log(`  budget ${b0} → ${b1} (club changed tier: exact check skipped; tv ${tv}, day delta ${delta}, league prize ${leaguePrizeAmount})`);
+          check(b1 >= b0 + delta, `budget did not drop at the rollover (${b0} → ${b1})`);
         } else {
-          check(Math.abs(b1 - expected) < 1, `budget ${b0} + day ${delta} + TV ${tv} = ${expected} (got ${b1})`);
+          check(Math.abs(b1 - expected) < 1,
+            `budget ${b0} + day ${delta} + TV ${tv} + league prize ${leaguePrizeAmount} = ${expected} (got ${b1})`);
         }
       } else {
         check(false, "player squad readable before and after the rollover");
@@ -327,9 +346,14 @@ try {
         check(followersAfter === expected, `human followers ${followersBefore} → ${followersAfter} (expected ${expected})`);
       }
       const followersNews = followersAfter !== followersBefore ? 1 : 0;
-      const expectedNews = (payload.playerChampionOf ? 1 : 0) + (payload.playerMove ? 1 : 0) + followersNews;
+      // "league_prize" always fires once per rollover when a merit prize was paid (design spec
+      // §3 "Liga" / inboxTypes.ts) — independent of champion/promoted/relegated/followers, and
+      // never doubles up with those (`leaguePrizeAmount` computed just above).
+      const leaguePrizeNews = leaguePrizeAmount > 0 ? 1 : 0;
+      const expectedNews = (payload.playerChampionOf ? 1 : 0) + (payload.playerMove ? 1 : 0) + followersNews + leaguePrizeNews;
       check(season.length === expectedNews, `inbox season messages: ${season.length} (expected ${expectedNews})`);
       check(season.filter((m) => m.kind === "followers").length === followersNews, "inbox has the followers season line");
+      check(season.filter((m) => m.kind === "league_prize").length === leaguePrizeNews, "inbox has the league_prize season line");
       if (obsPlayer) check(metaAfter.leagueSlug === obsPlayer.to, `meta.leagueSlug follows the club (${metaAfter.leagueSlug})`);
       // AI finances: every AI club of the country got a financial tier and a fresh transfer budget;
       // the human club got neither.
@@ -691,6 +715,82 @@ try {
       check(missingAgg === 0,
         `Libertadores r16 second-leg fixtures have an aggregate once played (${missingAgg} missing of ${playedLeg2.length} played)`);
     }
+  }
+
+  // ── Finanças ─────────────────────────────────────────────────────────────
+  console.log("\n── Finanças ──");
+
+  // 1. Sum of the player's ledger over every season == final budget. The budget starts at 0
+  //    (SaveService.createSave) and every credit/debit since goes through recordMoney/applyMoney
+  //    — see .claude/rules/game/finances.md.
+  const ledgerSeasons = await plain().listLedgerSeasons(saveId);
+  const allLedgerEntries: LedgerEntry[] = [];
+  for (const season of ledgerSeasons) allLedgerEntries.push(...(await plain().getLedger(saveId, season)));
+  const ledgerTotal = allLedgerEntries.reduce((s, e) => s + e.amount, 0);
+  const finalPlayerSquad = await plain().getSquadById(saveId, playerSquadId);
+  const finalBudget = finalPlayerSquad?.finances?.budget ?? 0;
+  check(Math.abs(ledgerTotal - finalBudget) < 1,
+    `ledger sum across ${ledgerSeasons.length} season(s) (${Math.round(ledgerTotal).toLocaleString("en-US")}) `
+    + `== final budget (${Math.round(finalBudget).toLocaleString("en-US")})`);
+
+  // 2. At least one league `prize` entry after the rollover — the merit prize always fires once
+  //    per rollover (the "league_prize" inbox kind, advanceDay.ts).
+  const leaguePrizeEntries = allLedgerEntries.filter(
+    (e) => e.kind === "prize" && !!e.ref?.competition && !isCupSlug(e.ref.competition) && !isContinentalSlug(e.ref.competition),
+  );
+  check(leaguePrizeEntries.length > 0, `at least one league prize entry in the ledger (${leaguePrizeEntries.length})`);
+
+  // 3. Some AI club with a continental campaign has its transfer budget boosted above its fresh
+  //    seasonal grant by prize money (design spec §3 "IA"). Proxy: every club currently entered
+  //    in a continental competition (`continentalClubs`, from the section above). Informational
+  //    (not a failure) when none is found — the prize can already have been spent by the time we
+  //    check, so this reports the max ratio observed instead of failing.
+  const continentalClubIds = new Set<string>();
+  for (const ids of continentalClubs.values()) for (const id of ids) continentalClubIds.add(id);
+  let boostedCount = 0;
+  let continentalMaxRatio = 0;
+  for (const id of continentalClubIds) {
+    const squad = await plain().getSquadById(saveId, id);
+    if (!squad || squad.id === playerSquadId || !squad.financialTier) continue;
+    const grant = seasonalTransferBudgetFor(squad.financialTier, popularityOf(squad));
+    if (grant <= 0) continue;
+    const ratio = aiTransferBudgetOf(squad) / grant;
+    continentalMaxRatio = Math.max(continentalMaxRatio, ratio);
+    if (ratio > 1.001) boostedCount++;
+  }
+  if (boostedCount > 0) {
+    check(true, `${boostedCount} continental AI club(s) have aiTransferBudget above their fresh seasonal grant (max ratio ${continentalMaxRatio.toFixed(2)})`);
+  } else {
+    console.log(`  no continental AI club currently above its fresh seasonal grant (max ratio observed ${continentalMaxRatio.toFixed(2)}) — informational only`);
+  }
+
+  // 4. No AI transfer budget above MAX_BALANCE_RATIO × its seasonal grant, across the whole world.
+  // 5. Every squad has a numeric wageFactor and wageRevenueBasis, across the whole world.
+  const allFiles = await plain().listSquadFiles(saveId);
+  let overCap = 0;
+  let worldMaxRatio = 0;
+  let missingWageFields = 0;
+  for (const { squad } of allFiles) {
+    if (squad.id !== playerSquadId && squad.financialTier) {
+      const grant = seasonalTransferBudgetFor(squad.financialTier, popularityOf(squad));
+      if (grant > 0) {
+        const ratio = aiTransferBudgetOf(squad) / grant;
+        worldMaxRatio = Math.max(worldMaxRatio, ratio);
+        if (ratio > AI_FINANCE_CONFIG.TRANSFER_BUDGET.MAX_BALANCE_RATIO + 0.001) overCap++;
+      }
+    }
+    if (typeof squad.wageFactor !== "number" || typeof squad.wageRevenueBasis !== "number") missingWageFields++;
+  }
+  check(overCap === 0,
+    `no AI transfer budget above ${AI_FINANCE_CONFIG.TRANSFER_BUDGET.MAX_BALANCE_RATIO}x its seasonal grant `
+    + `(${overCap} over cap of ${allFiles.length} squads, world max ratio ${worldMaxRatio.toFixed(2)})`);
+  check(missingWageFields === 0,
+    `every squad has a numeric wageFactor + wageRevenueBasis (${missingWageFields} missing of ${allFiles.length})`);
+
+  // 6. Informational only: the player's season income/expense totals by kind.
+  console.log("  player ledger totals by kind (all seasons):");
+  for (const [kind, amount] of Object.entries(totalsByKind(allLedgerEntries))) {
+    console.log(`    ${kind.padEnd(14)} ${Math.round(amount).toLocaleString("en-US").padStart(16)}`);
   }
 
   await checkFiles(saveId, "end");

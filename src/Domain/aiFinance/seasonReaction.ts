@@ -13,15 +13,41 @@ export interface ClubSeasonOutcome {
   /** False when the league played no games: no performance reaction (moves still apply). */
   played: boolean;
   move: "promoted" | "relegated" | null;
+  /**
+   * The club reached the final (or won it) of one of its continental competitions this season —
+   * treated as a "good" season with the same weight as a top-15% domestic finish, regardless of
+   * the club's actual league position (design spec §3 "IA" / `.claude/rules/AI-clubs/finance.md`).
+   * Feeds BOTH `seasonPerformance`/`nextFinancialTier`'s tier-step logic AND (via `followersChange`,
+   * which calls `seasonPerformance`) the HUMAN club's followers reaction — `applyHumanSeasonReaction`
+   * shares the exact same `ClubSeasonOutcome` the AI path uses, so a human finalist/champion gets
+   * the same followers boost an AI one would. It does NOT unlock ELITE on its own — see
+   * `continentalTitle` below, which is the stricter, separate flag for that.
+   */
+  continentalGood?: boolean;
+  /**
+   * The club WON (not just reached) a continental competition this season. Counts as a "title" for
+   * `nextFinancialTier`'s ELITE-entry gate, exactly like being domestic champion (`o.rank === 1`) —
+   * a continental trophy is at least as prestigious. Always a subset of `continentalGood` (the
+   * champion also reached the final), but tracked separately because reaching the final alone must
+   * NOT unlock ELITE (only winning it, or winning the domestic league, does).
+   */
+  continentalTitle?: boolean;
 }
 
 /**
  * Performance in [-1, 1]: +1 champion, 0 mid-table, -1 last. 0 when there is no table.
+ * `continentalGood` floors the domestic fraction at `TOP_FRAC` (never makes a genuinely better
+ * league finish look worse), so a continental finalist/champion always performs at least as well
+ * as a club that finished right at the top-15% cutoff.
  */
 export function seasonPerformance(o: ClubSeasonOutcome): number {
-  if (!o.played || o.leagueSize < 2) return 0;
+  const s = AI_FINANCE_CONFIG.season;
+  if (!o.played || o.leagueSize < 2) {
+    return o.continentalGood ? 1 - 2 * s.TOP_FRAC : 0;
+  }
   const frac = (o.rank - 1) / (o.leagueSize - 1);
-  return 1 - 2 * Math.max(0, Math.min(1, frac));
+  const effectiveFrac = o.continentalGood ? Math.min(frac, s.TOP_FRAC) : frac;
+  return 1 - 2 * Math.max(0, Math.min(1, effectiveFrac));
 }
 
 /** Relative followers change for the season (e.g. 0.08 = +8%), with soft balancing by tier. */
@@ -48,13 +74,15 @@ export function nextFinancialTier(current: FinancialTier, natural: FinancialTier
   let step = 0;
   if (o.move === "promoted") step = 1;
   else if (o.move === "relegated") step = -1;
+  else if (o.continentalGood) step = 1;
   else if (o.played && o.leagueSize >= 2) {
     const frac = (o.rank - 1) / (o.leagueSize - 1);
     if (frac <= s.TOP_FRAC) step = 1;
     else if (frac >= s.BOTTOM_FRAC) step = -1;
   }
   let idx = tierIndex(current) + step;
-  if (step > 0 && tierAt(idx) === "ELITE" && current !== "ELITE" && !(o.played && o.rank === 1)) idx -= 1;
+  const hasTitle = (o.played && o.rank === 1) || o.continentalTitle === true;
+  if (step > 0 && tierAt(idx) === "ELITE" && current !== "ELITE" && !hasTitle) idx -= 1;
   const nat = tierIndex(natural);
   const d = s.MAX_DRIFT_FROM_NATURAL;
   return tierAt(Math.max(nat - d, Math.min(nat + d, idx)));
@@ -101,11 +129,30 @@ export function applyHumanSeasonReaction(
   return { squad: { ...squad, finances: { ...squad.finances, followers: after } }, followersBefore: before, followersAfter: after };
 }
 
-/** An AI club's outcome from its league's final table (old membership) and the rollover moves. */
+/**
+ * An AI club's outcome from its league's final table (old membership) and the rollover moves.
+ * `continental`, when given, is read once per day from the continental competitions' metas (see
+ * `continentalGoodClubsThisSeason`, continentalWorld.ts): `good` is every club that reached a
+ * final (or won it) this season, `title` is the (smaller) set that actually won it — a champion
+ * is always in both.
+ *
+ * KNOWN GAP (documented for Task 9's docs pass, `.claude/rules/AI-clubs/finance.md`): this only
+ * sees finals that are ALREADY DRAWN on disk at the moment a country's league rolls over. A
+ * continental competition's final is typically drawn well after most leagues end (semis run into
+ * April/May), so in practice this only ever fires for the handful of leagues that roll over LATE
+ * enough in the year — chiefly the calendar-year European leagues (Belarus, Finland, Georgia,
+ * Iceland, Norway, Sweden — `.claude/rules/game/continental.md`), which roll over in December,
+ * well after the continental final. A cross-year league (Aug–May, e.g. Premier League) rolls over
+ * in the summer, generally AFTER the continental final too, so it isn't actually excluded — but
+ * the set is read at the moment THAT SPECIFIC country's rollover runs, so a country whose league
+ * ends unusually early relative to the continental calendar could still miss a final decided
+ * later. No fix attempted here — flagging the timing dependency for whoever revisits this.
+ */
 export function clubSeasonOutcome(
   table: StandingRow[],
   squadId: string,
   moves: ReadonlyArray<Pick<ClubMove, "squadId" | "kind">>,
+  continental?: { good?: ReadonlySet<string>; title?: ReadonlySet<string> },
 ): ClubSeasonOutcome {
   const idx = table.findIndex((r) => r.squadId === squadId);
   const row = idx >= 0 ? table[idx]! : null;
@@ -114,5 +161,7 @@ export function clubSeasonOutcome(
     leagueSize: table.length,
     played: !!row && (row.mp ?? 0) > 0,
     move: moves.find((m) => m.squadId === squadId)?.kind ?? null,
+    ...(continental?.good?.has(squadId) ? { continentalGood: true } : {}),
+    ...(continental?.title?.has(squadId) ? { continentalTitle: true } : {}),
   };
 }

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { countryByLeague, leagueBusyDates } from "@/backend/cupWorld";
-import { continentalTier1LeagueStates, playerContinentalSlug } from "@/backend/continentalWorld";
+import { continentalGoodClubsThisSeason, continentalTier1LeagueStates, playerContinentalSlug } from "@/backend/continentalWorld";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
@@ -30,7 +30,6 @@ describe("createSave generates continental competitions", () => {
       clubId: "33",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     createSaveMs = Date.now() - start;
     saveId = meta.id;
@@ -263,7 +262,7 @@ describe("createSave generates continental competitions", () => {
 
     const meta2 = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: qualifiedClub, clubName: "Test2", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: qualifiedClub, clubName: "Test2", clubColors: ["#000000", "#ffffff"],
     });
     const saveId2 = meta2.id;
     try {
@@ -306,7 +305,7 @@ describe("advanceOneDay plays continental fixtures", () => {
   test("UCL group-stage round 1 (16 fixtures) gets played", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -334,7 +333,7 @@ describe("advanceOneDay fills a missing second-leg aggregate before kickoff", ()
   test("leg 2 with no aggregate on disk gets it computed from the played leg 1", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -436,4 +435,56 @@ describe("continentalTier1LeagueStates", () => {
     const pyramids = await getPyramids();
     expect(await continentalTier1LeagueStates([], catalog, pyramids)).toEqual([]);
   });
+});
+
+describe("continentalGoodClubsThisSeason (Task 6 review fix — good vs title, timing gap)", () => {
+  let saveId = "";
+  afterAll(async () => {
+    if (saveId) await saveService.deleteSave(saveId);
+  });
+
+  test("no final drawn anywhere: both sets empty", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    saveId = meta.id;
+    const status = await continentalGoodClubsThisSeason(saveService, saveId);
+    expect(status.good.size).toBe(0);
+    expect(status.title.size).toBe(0);
+  }, 60_000);
+
+  test("final drawn, not yet played: both finalists are 'good', neither is 'title' yet", async () => {
+    const uclMeta = (await saveService.getLeagueMeta(saveId, "ucl"))!;
+    const cont = uclMeta.continental!;
+    const finalStage = cont.stages.find((s) => s.name === "final")!;
+    const [home, away] = cont.groups.flatMap((g) => g.clubs);
+
+    const stages = cont.stages.map((s) => (s.name === "final" ? { ...s, drawn: true } : s));
+    await saveService.writeLeagueMeta(saveId, { ...uclMeta, continental: { ...cont, stages } });
+    await saveService.writeRound(saveId, "ucl", finalStage.rounds[0]!, {
+      leagueSlug: "ucl", round: finalStage.rounds[0]!,
+      fixtures: [{
+        id: "fix_final_test", date: finalStage.dates[0]!, competition: "ucl", round: finalStage.rounds[0]!,
+        home: home!, away: away!, played: false, result: null, knockout: true, neutral: true,
+      }],
+    });
+
+    const status = await continentalGoodClubsThisSeason(saveService, saveId);
+    expect(status.good).toEqual(new Set([home!, away!]));
+    expect(status.title.size).toBe(0);
+  }, 60_000);
+
+  test("champion decided: the champion is in BOTH sets, the runner-up only in 'good'", async () => {
+    const uclMeta = (await saveService.getLeagueMeta(saveId, "ucl"))!;
+    const cont = uclMeta.continental!;
+    const [home, away] = cont.groups.flatMap((g) => g.clubs);
+
+    await saveService.writeLeagueMeta(saveId, { ...uclMeta, continental: { ...cont, championId: home! } });
+
+    const status = await continentalGoodClubsThisSeason(saveService, saveId);
+    expect(status.good).toEqual(new Set([home!, away!]));
+    expect(status.title).toEqual(new Set([home!]));
+    expect(status.title.has(away!)).toBe(false);
+  }, 60_000);
 });

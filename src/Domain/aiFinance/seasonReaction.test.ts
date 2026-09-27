@@ -135,4 +135,86 @@ describe("clubSeasonOutcome", () => {
       .toEqual({ rank: 2, leagueSize: 3, played: true, move: "relegated" });
     expect(clubSeasonOutcome([row("a", 0)], "a", []).played).toBe(false);
   });
+  test("continental.good marks the outcome continentalGood, absent otherwise", () => {
+    const table = [row("a", 38), row("b", 38), row("c", 38)];
+    const good = clubSeasonOutcome(table, "c", [], { good: new Set(["c"]) });
+    expect(good.continentalGood).toBe(true);
+    const notGood = clubSeasonOutcome(table, "c", [], { good: new Set(["b"]) });
+    expect(notGood.continentalGood).toBeUndefined();
+    expect(clubSeasonOutcome(table, "c", []).continentalGood).toBeUndefined();
+  });
+  test("continental.title marks the outcome continentalTitle independently of good", () => {
+    const table = [row("a", 38), row("b", 38), row("c", 38)];
+    // Champion: in both sets.
+    const champion = clubSeasonOutcome(table, "c", [], { good: new Set(["c"]), title: new Set(["c"]) });
+    expect(champion.continentalGood).toBe(true);
+    expect(champion.continentalTitle).toBe(true);
+    // Runner-up: reached the final (good) but didn't win it (no title).
+    const runnerUp = clubSeasonOutcome(table, "b", [], { good: new Set(["b", "c"]), title: new Set(["c"]) });
+    expect(runnerUp.continentalGood).toBe(true);
+    expect(runnerUp.continentalTitle).toBeUndefined();
+    // Neither set given: both undefined.
+    expect(clubSeasonOutcome(table, "c", []).continentalTitle).toBeUndefined();
+  });
+});
+
+describe("continental title/final counts as a good season (Task 6, design spec §3 'IA')", () => {
+  // A club that finished bottom of the table (a clearly "bad" domestic season) but reached a
+  // continental final gets the same treatment as a top-15% finish: +1 tier step, and the same
+  // seasonPerformance a club right at the TOP_FRAC cutoff would get.
+  const badTable: ClubSeasonOutcome = { rank: 20, leagueSize: 20, played: true, move: null };
+  const goodContinental: ClubSeasonOutcome = { ...badTable, continentalGood: true };
+
+  test("seasonPerformance floors the fraction at TOP_FRAC instead of the real (bad) finish", () => {
+    expect(seasonPerformance(badTable)).toBeLessThan(0);
+    const s = AI_FINANCE_CONFIG.season;
+    expect(seasonPerformance(goodContinental)).toBeCloseTo(1 - 2 * s.TOP_FRAC);
+  });
+
+  test("nextFinancialTier steps up (same weight as a top-15% finish), never down", () => {
+    expect(nextFinancialTier("MEDIUM", "MEDIUM", badTable)).toBe("LOW");
+    expect(nextFinancialTier("MEDIUM", "MEDIUM", goodContinental)).toBe("HIGH");
+  });
+
+  test("followersChange matches a finish exactly at the TOP_FRAC cutoff, beats the real (bad) finish", () => {
+    // rank 4 of 21: (4-1)/(21-1) = 0.15 = TOP_FRAC exactly.
+    const atCutoff: ClubSeasonOutcome = { rank: 4, leagueSize: 21, played: true, move: null };
+    expect(followersChange(goodContinental, "HIGH")).toBeCloseTo(followersChange(atCutoff, "HIGH"));
+    expect(followersChange(goodContinental, "HIGH")).toBeGreaterThan(followersChange(badTable, "HIGH"));
+  });
+
+  test("does not override promotion/relegation, and never worsens an already-good finish", () => {
+    expect(nextFinancialTier("MEDIUM", "MEDIUM", { ...badTable, move: "relegated", continentalGood: true })).toBe("LOW");
+    const champion: ClubSeasonOutcome = { rank: 1, leagueSize: 20, played: true, move: null, continentalGood: true };
+    expect(seasonPerformance(champion)).toBe(seasonPerformance({ ...champion, continentalGood: false }));
+  });
+});
+
+describe("continentalTitle unlocks ELITE like a domestic title (Task 6 review fix)", () => {
+  // A finalist (continentalGood, no title) still can't jump into ELITE without a domestic
+  // title — only actually WINNING a continental competition (continentalTitle) does, same as
+  // being domestic champion (`o.rank === 1`).
+  test("a continental finalist (good, no title) is capped one step below ELITE, same as any other top finish", () => {
+    const finalist: ClubSeasonOutcome = { rank: 20, leagueSize: 20, played: true, move: null, continentalGood: true };
+    expect(nextFinancialTier("HIGH", "HIGH", finalist)).toBe("HIGH"); // capped: would be ELITE, but no title
+  });
+
+  test("a continental champion (title) unlocks ELITE even with a poor domestic finish", () => {
+    const champion: ClubSeasonOutcome = {
+      rank: 20, leagueSize: 20, played: true, move: null, continentalGood: true, continentalTitle: true,
+    };
+    expect(nextFinancialTier("HIGH", "HIGH", champion)).toBe("ELITE");
+  });
+
+  test("continentalTitle bypasses the domestic-title requirement regardless of where the step up came from (e.g. promotion)", () => {
+    const promotedAndChampion: ClubSeasonOutcome = { rank: 2, leagueSize: 20, played: true, move: "promoted", continentalTitle: true };
+    expect(nextFinancialTier("HIGH", "HIGH", promotedAndChampion)).toBe("ELITE");
+    // Without the title, the same promotion is capped one step below ELITE.
+    expect(nextFinancialTier("HIGH", "HIGH", { ...promotedAndChampion, continentalTitle: undefined })).toBe("HIGH");
+  });
+
+  test("a domestic title still unlocks ELITE on its own (unchanged behaviour)", () => {
+    const domesticChampion: ClubSeasonOutcome = { rank: 1, leagueSize: 20, played: true, move: null };
+    expect(nextFinancialTier("HIGH", "HIGH", domesticChampion)).toBe("ELITE");
+  });
 });

@@ -6,6 +6,7 @@ import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 
 export interface SquadFile {
   leagueSlug: string;
@@ -80,4 +81,17 @@ export interface ISaveDAL {
   writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
   readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<TransferRecord[] | null>;
   writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void>;
+
+  // ── Ledger (player club cash extract) ────────────────────────────────────────
+  /** Every season year that has a ledger file for this save, ascending. */
+  listLedgerSeasons(saveId: string): Promise<number[]>;
+  readLedger(saveId: string, season: number): Promise<LedgerEntry[]>;
+  /** Append entries to the season's ledger, preserving whatever is already there. */
+  appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  /**
+   * Replace the season's ledger entirely (idempotent full write). Used by `BufferingSaveDAL`'s
+   * flush, whose pending thunk always writes the complete list (on-disk baseline + everything
+   * buffered) so a write re-run after a partial flush never duplicates entries.
+   */
+  writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
 }

@@ -106,13 +106,30 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
   const buf = new Uint8Array(await Bun.file(kitPath(kitName)).arrayBuffer());
   const world = JSON.parse(new TextDecoder().decode(Bun.gunzipSync(buf))) as KitWorld;
 
+  // The fresh save's wage factors (`.claude/rules/AI-clubs/finance.md` → wages) were just
+  // computed by createSave from the REAL world's revenue/roster at the real league size. The
+  // kit's squads predate that — snapshotted kits carry no `wageFactor`/`wageRevenueBasis` at all
+  // (regenerated in Task 9) — so read the fresh values before the kit overwrites the squads
+  // below, keyed by squad id, and carry them forward instead of letting the kit fall back to an
+  // on-the-fly factor recomputed from the roster every call (signings would never move the bill).
+  // Both fields travel together — a factor without its matching basis breaks the next season
+  // rollover's carry-forward (`carryForwardWageFactor`).
+  const freshWage = new Map<string, { wageFactor: number; wageRevenueBasis?: number }>();
+  for (const f of await saveService.listSquadFiles(saveId)) {
+    if (typeof f.squad.wageFactor === "number") {
+      freshWage.set(f.squad.id, { wageFactor: f.squad.wageFactor, wageRevenueBasis: f.squad.wageRevenueBasis });
+    }
+  }
+
   for (const { league, club, squad } of world.squads) {
     // The kit's folder is the club's league in that world: if the fresh save holds
     // the club elsewhere, move it first so the write never leaves a duplicate.
     const e = (await saveService.getSquadIndex(saveId)).byId(squad.id);
     if (e && e.leagueSlug !== league) await saveService.moveSquad(saveId, squad.id, league);
+    const wage = freshWage.get(squad.id);
+    const toWrite = wage !== undefined ? { ...squad, ...wage } : squad;
     // `club` is the file stem (older kits stored the slug; saveSquad resolves either).
-    await saveService.saveSquad(saveId, league, club, squad);
+    await saveService.saveSquad(saveId, league, club, toWrite);
   }
   for (const lg of world.leagues) {
     if (lg.meta) await saveService.writeLeagueMeta(saveId, lg.meta);
@@ -131,6 +148,15 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
  * start (Brazilian careers). Earliest-date (European) careers begin at genesis with a
  * fresh world and need no kit. Never throws fatally — a missing kit just means the
  * world starts empty and fills as days advance.
+ *
+ * The kit is a generic world snapshot with no player concept (see the `KitWorld` comment above):
+ * every club in it, including the one about to become the player's, sits at whatever
+ * `finances.budget` it had when the kit was generated — never touched by the ledger. Applying it
+ * verbatim would overwrite the real save's own ledger-tracked budget (`createSave` +
+ * `applyBroadcasting`, already recorded in `saves/{id}/ledger/`) with that stale figure. We
+ * capture the player's budget right before the kit write and restore it right after, so
+ * sum(ledger) == budget keeps holding for a kit (Brazilian-timeline) career exactly as it already
+ * does for a no-kit (European-timeline) one — see `.claude/rules/game/finances.md`.
  */
 export async function applyRandomStartKit(
   saveId: string,
@@ -149,7 +175,25 @@ export async function applyRandomStartKit(
   const kits = await listStartKits();
   if (kits.length === 0) return { applied: false, reason: "no kits generated" };
 
+  const preKitSquad = meta.clubId
+    ? await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId)
+    : null;
+  const preKitBudget = preKitSquad?.finances?.budget;
+
   const kit = kits[Math.floor(Math.random() * kits.length)]!;
   await applyKit(kit, saveId);
+
+  if (meta.clubId && preKitBudget !== undefined) {
+    const index = await saveService.getSquadIndex(saveId);
+    const entry = index.byId(meta.clubId);
+    const postKitSquad = entry ? await saveService.getSquad(saveId, entry.leagueSlug, entry.stem) : null;
+    if (entry && postKitSquad?.finances) {
+      await saveService.saveSquad(saveId, entry.leagueSlug, entry.stem, {
+        ...postKitSquad,
+        finances: { ...postKitSquad.finances, budget: preKitBudget },
+      });
+    }
+  }
+
   return { applied: true, kit };
 }

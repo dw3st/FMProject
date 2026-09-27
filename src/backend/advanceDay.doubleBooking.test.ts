@@ -23,7 +23,6 @@ describe("advanceOneDay chains a club's squad across two same-day fixtures", () 
       clubId: "33",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     saveId = meta.id;
     const currentDate = meta.currentDate!;

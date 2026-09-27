@@ -1,21 +1,24 @@
-import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
-import ROLES from "@/Data/roles.json";
-import { getMainRole, type MainRole } from "@/GameInterface/positionHelpers";
+import { weeklyWage } from "@/Domain/finance/wages";
+import {
+  MAIN_ROLE_TO_SPECIFICS,
+  bestSpecificRole,
+  computeOverallAvg,
+  overallAvg,
+  weightedScore,
+} from "@/Domain/playerRating";
 
-/** All detailed roles mapped to their main role band — used to find a player's best fit. */
-export const MAIN_ROLE_TO_SPECIFICS: Record<MainRole, string[]> = {
-  GK:         ["GK"],
-  Defender:   ["CB", "LB", "RB", "LWB", "RWB"],
-  Midfielder: ["CDM", "CM", "CAM", "LM", "RM"],
-  Forward:    ["LW", "RW", "ST"],
-};
-
-type RolesWithAttrWeights = Record<string, { attrWeights?: Record<string, number> }>;
+export { MAIN_ROLE_TO_SPECIFICS };
 
 export type StatusLevel = 1 | 2 | 3 | 4 | 5;
 
 /**
  * Roster player model: weighted overall, age, market value, wage, and status bands.
+ *
+ * The rating math (`weightedScore`, `bestSpecificRole`, `computeOverallAvg`, `overallAvg`) lives
+ * in the leaf module `src/Domain/playerRating.ts` and is re-exposed here as static methods —
+ * `wages.ts` needs a player's rating to compute the wage curve, and `Player.ts` needs `weeklyWage`
+ * from `wages.ts` for `salaryLabel`, so the rating math can't live in this file without creating a
+ * `wages.ts` → `Player.ts` → `wages.ts` import cycle.
  */
 export class Player {
   constructor(
@@ -23,71 +26,10 @@ export class Player {
     readonly age: number,
   ) {}
 
-  /**
-   * Weighted score for a single specific role (e.g. "CB", "CM").
-   * Uses a quadratic mean (power mean, p=2) so high-end attributes outweigh
-   * mid-range ones — e.g. acc 9 + speed 5 scores higher than acc 8 + speed 6,
-   * because a point at the top of the scale is harder to get than one in the middle.
-   */
-  private static scoreForRole(stats: PlayerStatsRecord, role: string): number {
-    const R = ROLES as RolesWithAttrWeights;
-    const weights = R[role]?.attrWeights ?? R["CM"]?.attrWeights ?? {};
-    let wSum = 0;
-    let wTotal = 0;
-    for (const [attr, val] of Object.entries(stats)) {
-      const w = weights[attr] ?? 0;
-      wSum += val * val * w;
-      wTotal += w;
-    }
-    return wTotal > 0 ? Math.sqrt(wSum / wTotal) : 5.0;
-  }
-
-  /**
-   * Weighted score for a role. If a main role (GK / Defender / Midfielder / Forward) is
-   * passed, returns the best score across every specific role in that band. Specific roles
-   * are scored directly.
-   */
-  static weightedScore(stats: PlayerStatsRecord, position: string): number {
-    const specifics = MAIN_ROLE_TO_SPECIFICS[position as MainRole];
-    if (specifics) {
-      let best = 0;
-      for (const role of specifics) {
-        const s = Player.scoreForRole(stats, role);
-        if (s > best) best = s;
-      }
-      return best;
-    }
-    return Player.scoreForRole(stats, position);
-  }
-
-  /** Specific role (e.g. "ST", "CB") with the best weighted score inside `position`'s main role. */
-  static bestSpecificRole(stats: PlayerStatsRecord, position: string): string {
-    const specifics = MAIN_ROLE_TO_SPECIFICS[getMainRole(position)];
-    let best = specifics[0]!;
-    let bestScore = -1;
-    for (const role of specifics) {
-      const s = Player.scoreForRole(stats, role);
-      if (s > bestScore) { bestScore = s; best = role; }
-    }
-    return best;
-  }
-
-  /** Computes a player's overall AVG — best weighted score across their main role's specifics. */
-  static computeOverallAvg(player: RosterPlayer): number {
-    const main = getMainRole(player.positions[0] ?? "CM");
-    return Player.weightedScore(player.stats, main);
-  }
-
-  /**
-   * Returns the player's cached overall AVG, computing and storing it on first access.
-   * The cache is invalidated whenever stats change (see `PlayerDevelopment.applyDevelopment`).
-   */
-  static overallAvg(player: RosterPlayer): number {
-    if (typeof player.overallAvg === "number") return player.overallAvg;
-    const v = Player.computeOverallAvg(player);
-    player.overallAvg = v;
-    return v;
-  }
+  static weightedScore = weightedScore;
+  static bestSpecificRole = bestSpecificRole;
+  static computeOverallAvg = computeOverallAvg;
+  static overallAvg = overallAvg;
 
   /** Form band from last 5 ratings average; empty list uses 6.0 baseline. */
   static formToStatus(recentRatings: number[]): StatusLevel {
@@ -154,9 +96,14 @@ export class Player {
     return `${v.toFixed(1)}M`;
   }
 
-  /** Weekly wage label (e.g. `"45k"`). */
-  get salaryLabel(): string {
-    const weekly = Math.round(this.overallRating * this.overallRating * 350);
+  /**
+   * Weekly wage label (e.g. `"45k"`) — the shared wage curve (`weeklyWage`,
+   * `src/Domain/finance/wages.ts`) times the player's club's wage factor. `factor` defaults to 1
+   * (the curve's raw, uncorrected wage) for callers with no squad in scope; pass
+   * `wageFactorOf(squad)` for the real figure at a specific club.
+   */
+  salaryLabel(factor: number = 1): string {
+    const weekly = Math.round(weeklyWage(this.overallRating) * factor);
     if (weekly >= 1000) return `${(weekly / 1000).toFixed(0)}k`;
     return `${weekly}`;
   }

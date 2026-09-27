@@ -2,11 +2,14 @@ import type { FinancialTier } from "@/types/playerTypes";
 
 /**
  * Every tunable of the simplified AI club finance model (`.claude/rules/AI-clubs/finance.md`).
- * AI clubs never simulate revenue/expenses: they get a financial tier, a weekly budget derived
- * from tier + popularity, and a wage cap that gates hiring in the AI transfer market.
+ * AI clubs never simulate revenue/expenses beyond `clubAnnualRevenue` (broadcasting + commercial +
+ * estimated gate, `src/Domain/finance/wages.ts`): the wage cap that gates hiring in the AI
+ * transfer market is a share of that revenue, not a popularity-derived budget.
  *
- * Money units: `BASE_WEEKLY_BUDGET`, wages and wage budgets are € per week on the same scale as
- * `estimateWeeklyWage` (rating^2.2 × 50); fees and income are € (transfer / annual scale).
+ * Money units: wages and wage budgets are € per week, on the same real-euro scale as
+ * `playerWeeklyWage`/`weeklyWage` (`src/Domain/finance/wages.ts`, the shared wage curve + per-club
+ * factor — see `wageConfig.ts` for how the curve/factor are calibrated); fees and income are €
+ * (transfer / annual scale).
  */
 
 /** Ordered weakest → strongest; index arithmetic (tier moves) relies on this order. */
@@ -24,16 +27,44 @@ export const AI_FINANCE_CONFIG = {
   POPULARITY_LOG10_MIN: 5,
   POPULARITY_LOG10_MAX: 8.5,
 
-  /** `weeklyBudget = BASE_WEEKLY_BUDGET[tier] × (1 + popularity/100) × SOFT_BALANCE[tier]`. */
-  BASE_WEEKLY_BUDGET: { LOW: 22_000, MEDIUM: 28_000, HIGH: 42_000, ELITE: 50_000 } as Record<FinancialTier, number>,
   /** Hidden balancing: weak clubs get a small boost, strong clubs a small limit. */
   SOFT_BALANCE: { LOW: 1.1, MEDIUM: 1.03, HIGH: 1.0, ELITE: 0.95 } as Record<FinancialTier, number>,
-  /** `maxWageBudget = weeklyBudget × WAGE_RATIO` (design range 0.6–0.8). */
-  WAGE_RATIO: 0.8,
 
-  /** Estimated weekly wage of a player: `rating^WAGE_EXPONENT × WAGE_SCALE` (shared with FinancialService). */
-  WAGE_EXPONENT: 2.2,
-  WAGE_SCALE: 50,
+  /**
+   * `maxWageBudget = WAGE_REVENUE_SHARE × clubAnnualRevenue / 52 × SOFT_BALANCE[tier]` — the wage
+   * cap an AI club may spend up to, as a share of its own estimated annual revenue (not the 60%
+   * TARGET_SHARE the actual wage bill is calibrated to in `wageConfig.ts` — a real club spends
+   * LESS than its cap most of the time, so the cap needs headroom above the typical bill for
+   * "open" hiring to be the common case).
+   *
+   * Calibrated 2026-09-27 by `scripts/wage-calibrate.ts`'s hiring-distribution section against
+   * the real world (1273 clubs). Because every unclamped club's actual bill is EXACTLY
+   * `TARGET_SHARE × revenue` by construction (`clubWageFactor`, `wageConfig.ts`), the
+   * bill/cap ratio for a given financial tier is `TARGET_SHARE / (WAGE_REVENUE_SHARE ×
+   * SOFT_BALANCE[tier])` — a near-constant across every club of that tier (`SOFT_BALANCE` barely
+   * varies). The hiring-state split is therefore NOT a smooth curve in `WAGE_REVENUE_SHARE`: as
+   * the share crosses the point where a tier's ratio passes the 0.9/1.0 NEAR_LIMIT_RATIO
+   * thresholds, that ENTIRE tier flips open/tight/frozen at once (only clamped-factor clubs, a
+   * small minority, land off that tier-wide value). A grid search (0.55–1.00) found no share that
+   * smoothly hits the ~92/5/3% design target — the closest-by-SSE plateau (0.67–0.70) gives
+   * world-start **95.8% open / 3.5% tight / 0.6% frozen**, but at that share ELITE's ratio
+   * (`0.6 / (share × 0.95)` ≈ 0.90–0.94) sits AT OR ABOVE the 0.9 NEAR_LIMIT_RATIO threshold, so
+   * ALL 40 ELITE clubs (3.1% of the world) are permanently "tight" from world start, every
+   * season, regardless of how they actually spend — every big club reading as chronically
+   * strapped isn't the intent.
+   *
+   * **0.72 instead of the SSE-closest 0.67–0.70**: pushes every tier's ratio below 0.9 (ELITE:
+   * `0.6/(0.72×0.95)` ≈ 0.877, the tightest of the four — LOW/MEDIUM/HIGH are 0.76–0.83), so
+   * every tier opens at world start. Trades a slightly worse fit to the flat 92/5/3 target
+   * (world-start **99.0% open / 0.5% tight / 0.5% frozen**; by tier: LOW 95.7% open / 2.3% tight
+   * / 2.0% frozen, MEDIUM/HIGH/ELITE 100% open) for "every club can spend at least a little at
+   * creation" being true across the board, not just for three of the four tiers.
+   * See the script's "Hiring-state distribution vs WAGE_REVENUE_SHARE" table (and the by-tier
+   * breakdown at both the SSE-closest and the production share) for the full grid.
+   */
+  WAGE_REVENUE_SHARE: 0.72,
+  /** `weeklyBudget = maxWageBudget / WAGE_RATIO` (design range 0.6–0.8) — the headline "weekly budget" figure, not itself a cap. */
+  WAGE_RATIO: 0.8,
 
   /** wageBill ≥ NEAR_LIMIT_RATIO × maxWageBudget → "tight": only cheap cover signings. */
   NEAR_LIMIT_RATIO: 0.9,

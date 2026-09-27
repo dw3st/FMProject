@@ -3,6 +3,7 @@ import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import { toDisplayPlayer, resolveSquadIdFromLeagues } from "@/GameInterface/playerHelpers";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
+import { wageFactorOf } from "@/Domain/finance/wages";
 import type { Squad } from "@/types/playerTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 
@@ -43,8 +44,9 @@ export function mapSquadsToScoutPlayers(squads: Squad[], leagueSlugs: string[]):
     const leagueSlug = resolved?.leagueSlug ?? squad.leagueSlug;
     const clubSlug = resolved?.clubSlug ?? squad.slug;
     const squadCountry = squad.country ?? null;
+    const wageFactor = wageFactorOf(squad);
     for (const p of squad.players) {
-      const dp = toDisplayPlayer(p, squad.name, { squadCountry });
+      const dp = toDisplayPlayer(p, squad.name, { squadCountry, wageFactor });
       players.push(
         leagueSlug && clubSlug
           ? { ...dp, leagueSlug, clubSlug }
