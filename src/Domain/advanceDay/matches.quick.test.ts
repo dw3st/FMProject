@@ -134,6 +134,19 @@ describe("cup fixtures", () => {
     expect(playedLeague.seasonLog!.appearances).toBe(1);
   });
 
+  test("continental ties count in seasonLog.continental and the total, not in cup", () => {
+    const continentalFixture = { ...fixture, competition: "ucl" };
+    const afterContinental = buildQuickMatchEvent(continentalFixture, home, away, sim, mulberry32(1));
+    const playedContinental = afterContinental.updatedHome.players.find(
+      (p) => (p.seasonLog?.appearances ?? 0) > 0,
+    )!;
+    expect(playedContinental.seasonLog!.continental?.appearances).toBe(1);
+    // Season totals keep counting the continental game too.
+    expect(playedContinental.seasonLog!.appearances).toBe(1);
+    // A continental tie is never routed into the national-cup sub-log.
+    expect(playedContinental.seasonLog!.cup?.appearances ?? 0).toBe(0);
+  });
+
   test("second leg with a first-leg aggregate decides on aggregate, not the 90' score alone", () => {
     // First leg: away won 1-0 (home:0, away:1) — from THIS second-leg fixture's home/away
     // point of view. Level on aggregate requires this leg's home - away === 1.
