@@ -11,7 +11,7 @@
  */
 export const FITNESS = {
   /** Fraction of the missing fitness (100 − fitness) recovered per full rest day, before factors. */
-  RECOVERY_BASE: 0.35,
+  RECOVERY_BASE: 0.45,
 
   /** Age → recovery multiplier. Ordered ascending by age threshold; last entry is the catch-all (Infinity). */
   AGE_FACTOR: [
