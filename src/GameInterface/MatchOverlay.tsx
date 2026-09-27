@@ -9,9 +9,18 @@ interface Props {
   kitColorB?: string;
   /** Final shootout score — shown as the full-time subtitle when the match ended on penalties. */
   penaltiesScore?: { A: number; B: number };
+  /**
+   * Fraction of the presentation pause already elapsed, 0..1. `0` right when the overlay
+   * appears, `1` right before it's dismissed. Omit to render without a progress bar.
+   * Callers derive this from whatever "remaining time" signal drives the actual dismissal
+   * (the engine's `presentationCountdown` for half-time/extra-time, a speed-scaled real-time
+   * timer for full-time) so the bar always finishes exactly when the overlay disappears,
+   * at every match speed.
+   */
+  progress?: number;
 }
 
-export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore }: Props) {
+export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore, progress }: Props) {
   const { t } = useTranslation();
   if (!kind) return null;
 
@@ -80,6 +89,15 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore
             {subtitle}
           </p>
         </div>
+
+        {progress != null && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10" aria-hidden>
+            <div
+              className="h-full bg-primary/70"
+              style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
