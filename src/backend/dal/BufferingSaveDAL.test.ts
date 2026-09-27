@@ -4,6 +4,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { Squad } from "@/types/playerTypes";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 
 const SAVE = "save-1";
 
@@ -37,6 +38,9 @@ function fakeInner(opts: {
   let maxInFlight = 0;
   let listFailures = opts.failListSquadFiles ?? 0;
   const disk = new Map((opts.files ?? []).map((f) => [`${f.leagueSlug}/${f.clubSlug}`, f]));
+  /** Mirrors FileSystemDAL.appendLedger: one file per "saveId:season", grown on each append. */
+  const ledgerDisk = new Map<string, LedgerEntry[]>();
+  const ledgerAppends: LedgerEntry[][] = [];
 
   const impl: Partial<ISaveDAL> = {
     async listSquadFiles() {
@@ -63,6 +67,17 @@ function fakeInner(opts: {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       inboxWrites.push(messages);
       order.push("inbox");
+    },
+    async readLedger(_s, season) {
+      calls.push("readLedger");
+      return ledgerDisk.get(`${_s}:${season}`) ?? [];
+    },
+    async appendLedger(_s, season, entries) {
+      await Bun.sleep(opts.writeDelayMs ?? 1);
+      const key = `${_s}:${season}`;
+      ledgerDisk.set(key, [...(ledgerDisk.get(key) ?? []), ...entries]);
+      ledgerAppends.push(entries);
+      order.push("ledger");
     },
     async listAllSquads() {
       calls.push("listAllSquads");
@@ -114,7 +129,10 @@ function fakeInner(opts: {
       };
     },
   }) as ISaveDAL;
-  return { dal, calls, written, writtenSquads, order, inboxWrites, maxInFlight: () => maxInFlight };
+  return {
+    dal, calls, written, writtenSquads, order, inboxWrites, ledgerDisk, ledgerAppends,
+    maxInFlight: () => maxInFlight,
+  };
 }
 
 const meta = (id: string) => ({ id, currentDate: "2024-08-16" }) as unknown as SaveMeta;
@@ -168,6 +186,68 @@ describe("BufferingSaveDAL inbox", () => {
 
     await buf.flush();
     expect(inner.inboxWrites.map((l) => l.map((m) => m.id))).toEqual([["m1", "m2", "m3"]]);
+  });
+});
+
+describe("BufferingSaveDAL ledger", () => {
+  const entry = (amount: number, label = "test"): LedgerEntry => ({
+    date: "2027-03-10", kind: "gate", amount, label,
+  });
+
+  test("two appends on one buffered day produce one file with both entries after flush, and none before", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendLedger(SAVE, 2027, [entry(1000, "a")]);
+    await buf.appendLedger(SAVE, 2027, [entry(-200, "b")]);
+
+    // Reads within the unit of work see both buffered appends.
+    expect((await buf.readLedger(SAVE, 2027)).map((e) => e.label)).toEqual(["a", "b"]);
+    expect(inner.calls.filter((c) => c === "readLedger")).toHaveLength(1);
+    // Nothing hits the underlying DAL before flush.
+    expect(inner.ledgerAppends).toHaveLength(0);
+    expect(inner.ledgerDisk.size).toBe(0);
+
+    await buf.flush();
+
+    // Exactly one file, with both entries, after flush.
+    expect(inner.ledgerAppends).toHaveLength(1);
+    const written = inner.ledgerDisk.get(`${SAVE}:2027`) ?? [];
+    expect(written.map((e) => e.label)).toEqual(["a", "b"]);
+  });
+
+  test("an append made after flush is a fresh unit of work, appended on top", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendLedger(SAVE, 2027, [entry(500, "first")]);
+    await buf.flush();
+    await buf.appendLedger(SAVE, 2027, [entry(700, "second")]);
+    await buf.flush();
+
+    const written = inner.ledgerDisk.get(`${SAVE}:2027`) ?? [];
+    expect(written.map((e) => e.label)).toEqual(["first", "second"]);
+  });
+
+  test("an empty entries array is a no-op — no pending write, no disk touch", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendLedger(SAVE, 2027, []);
+    await buf.flush();
+
+    expect(inner.ledgerAppends).toHaveLength(0);
+  });
+
+  test("ledger writes flush before meta", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.writeMeta(meta(SAVE));
+    await buf.appendLedger(SAVE, 2027, [entry(100)]);
+    await buf.flush();
+
+    expect(inner.order.indexOf("ledger")).toBeLessThan(inner.order.indexOf(`meta:${SAVE}`));
   });
 });
 
