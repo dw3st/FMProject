@@ -158,10 +158,21 @@ export interface Squad {
   /**
    * Per-club wage multiplier (`src/Domain/finance/wages.ts` — `clubWageFactor`, applied to the
    * shared curve `weeklyWage(rating)`), correcting for the club's actual revenue vs the curve's
-   * baseline. Set at career creation and refreshed at each season rollover; absent means
-   * `wageFactorOf` computes it on the fly from the squad's current finances/roster.
+   * baseline. Set at career creation and CARRIED FORWARD (not recomputed from scratch) at each
+   * season rollover — `carryForwardWageFactor(oldFactor, wageRevenueBasis, newRevenue)` — so a
+   * club's bill doesn't snap back to exactly 60% of revenue every season regardless of how it
+   * actually spent. Absent means `wageFactorOf` computes it on the fly from the squad's current
+   * finances/roster (no history to carry forward from).
    */
   wageFactor?: number;
+  /**
+   * The `clubAnnualRevenue` (`src/Domain/finance/wages.ts`) used the LAST time `wageFactor` was
+   * set — the basis `carryForwardWageFactor` scales from at the next rollover, and the basis
+   * `aiClubFinance`'s wage cap reads (`wageRevenueBasisOf`) so the cap and the stored factor's
+   * bill agree on the same league-size assumption instead of the cap recomputing revenue with a
+   * generic fallback home-game count. Always set together with `wageFactor`.
+   */
+  wageRevenueBasis?: number;
 }
 
 export interface LeagueTeam {

@@ -721,8 +721,13 @@ export class SaveService {
           },
         };
         // Wage factor (`.claude/rules/AI-clubs/finance.md` → wages): computed once here from the
-        // real league size, then reused every day until the next season rollover recomputes it.
-        squad.wageFactor = clubWageFactor(clubAnnualRevenue(squad, homeGames), squadCurveBill(squad.players));
+        // real league size, then reused every day until the next season rollover carries it
+        // forward. wageRevenueBasis is the revenue this factor was set against — the season
+        // rollover (advanceDay.ts) and the AI wage cap (aiClubFinance) both read it back so they
+        // agree with the factor on the same league-size assumption.
+        const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
+        squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
+        squad.wageRevenueBasis = wageRevenueBasis;
 
         await this.dal.writeSquad(id, league, clubSlug, squad);
         this.squadIndexCache.delete(id);
