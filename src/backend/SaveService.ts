@@ -491,6 +491,10 @@ export class SaveService {
     return this.dal.writeLeagueSeasonArchive(saveId, archive);
   }
 
+  readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null> {
+    return this.dal.readLeagueSeasonArchive(saveId, leagueSlug, year);
+  }
+
   writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void> {
     return this.dal.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers);
   }
@@ -729,6 +733,28 @@ export class SaveService {
       }
     } catch (e) {
       console.error("Failed to generate national cups:", e);
+    }
+
+    // Continental competitions: Champions League/Europa League (Europe), Libertadores/
+    // Sul-Americana (South America) — one season per continent, each with its own try/catch so
+    // one continent's failure never skips the other (or the cups above, or the save itself).
+    try {
+      const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
+      const { createContinentalSeason, seasonDefiningYear } = await import("@/backend/continentalWorld");
+      const catalog = await getLeagueData();
+      const pyramids = await getPyramids();
+      const index = await this.getSquadIndex(id);
+      for (const continent of ["Europe", "South America"] as const) {
+        try {
+          const year = await seasonDefiningYear(continent, activeLeagues, catalog);
+          if (year === null) continue;
+          await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids });
+        } catch (e) {
+          console.error(`Failed to generate continental competitions for ${continent}:`, e);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to generate continental competitions:", e);
     }
 
     return meta;
