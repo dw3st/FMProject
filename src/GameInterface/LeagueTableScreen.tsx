@@ -509,6 +509,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const [cupData, setCupData] = useState<CupBracketData | null>(null);
   // True once the cup fetch has come back 404 (this country has no national cup this season).
   const [cupMissing, setCupMissing] = useState(false);
+  // True once the cup fetch has failed outright (network error) — distinct from a 404, so the
+  // panel shows a real error instead of looking stuck on "Loading…" forever.
+  const [cupError, setCupError] = useState(false);
   // Which of the 4 continental competitions is selected inside the Continental tab.
   const [continentalSlug, setContinentalSlug] = useState<ContinentalSlug | null>(null);
   const [continentalSlugTouched, setContinentalSlugTouched] = useState(false);
@@ -516,6 +519,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const [continentalData, setContinentalData] = useState<ContinentalData | null>(null);
   // True once the continental fetch has come back 404 (no competition running this season).
   const [continentalMissing, setContinentalMissing] = useState(false);
+  // True once the continental fetch has failed outright (network error) — same reasoning as
+  // `cupError` above.
+  const [continentalError, setContinentalError] = useState(false);
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [liveStandings, setLiveStandings] = useState<StandingRow[] | null>(null);
   // True while the save's standings are in flight — the catalog fallback would show the
@@ -595,6 +601,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     if (!cupSlug) {
       setCupData(null);
       setCupMissing(false);
+      setCupError(false);
       if (tab === "cup") setTab("table");
       return;
     }
@@ -602,6 +609,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     let cancelled = false;
     setCupData(null);
     setCupMissing(false);
+    setCupError(false);
     fetch(`/api/saves/${session.saveId}/cups/${cupSlug}`)
       .then((r) => {
         if (!r.ok) {
@@ -610,7 +618,10 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
         }
         return r.json() as Promise<CupBracketData>;
       })
-      .catch(() => null)
+      .catch(() => {
+        if (!cancelled) setCupError(true);
+        return null;
+      })
       .then((data) => {
         if (!cancelled) setCupData(data);
       });
@@ -645,6 +656,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     let cancelled = false;
     setContinentalData(null);
     setContinentalMissing(false);
+    setContinentalError(false);
     fetch(`/api/saves/${session.saveId}/continental/${continentalSlug}`)
       .then((r) => {
         if (!r.ok) {
@@ -653,7 +665,10 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
         }
         return r.json() as Promise<ContinentalData>;
       })
-      .catch(() => null)
+      .catch(() => {
+        if (!cancelled) setContinentalError(true);
+        return null;
+      })
       .then((data) => {
         if (!cancelled) setContinentalData(data);
       });
@@ -903,7 +918,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 </div>
               )
             ) : tab === "cup" ? (
-              cupMissing ? (
+              cupError ? (
+                <p className="text-destructive text-sm p-6">{t("warnings.errors.loadFailed")}</p>
+              ) : cupMissing ? (
                 <p className="text-muted-foreground text-sm p-6">{t("cups.none")}</p>
               ) : cupData ? (
                 <CupBracket data={cupData} myClubId={session?.clubId ?? ""} />
@@ -932,7 +949,9 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   ))}
                 </div>
 
-                {continentalMissing ? (
+                {continentalError ? (
+                  <p className="text-destructive text-sm p-6">{t("warnings.errors.loadFailed")}</p>
+                ) : continentalMissing ? (
                   <p className="text-muted-foreground text-sm p-6">{t("continental.none")}</p>
                 ) : continentalData ? (
                   <ContinentalView data={continentalData} myClubId={session?.clubId ?? ""} />

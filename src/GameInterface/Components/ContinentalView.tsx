@@ -195,7 +195,10 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                               <>
                                 <span className="text-white/30">·</span>
                                 <span className="text-white/60">
-                                  {t("continental.aggregate", { home: agg.home, away: agg.away })}
+                                  {t("continental.aggregateNamed", {
+                                    homeName: name(leg1.home), home: agg.home,
+                                    away: agg.away, awayName: name(leg1.away),
+                                  })}
                                 </span>
                               </>
                             )}
@@ -203,7 +206,10 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                           {decider && (
                             <div className="text-[10px] text-white/50 mt-0.5">
                               {decider.penalties
-                                ? t("cups.pens", { home: decider.penalties.home, away: decider.penalties.away })
+                                ? t("continental.pensNamed", {
+                                    homeName: name(leg2!.home), home: decider.penalties.home,
+                                    away: decider.penalties.away, awayName: name(leg2!.away),
+                                  })
                                 : t("cups.aet")}
                             </div>
                           )}
