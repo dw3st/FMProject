@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
-import { advanceOneDay, getLeagueData } from "@/backend/advanceDay";
+import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { countryByLeague, leagueBusyDates } from "@/backend/cupWorld";
+import { continentalTier1LeagueStates } from "@/backend/continentalWorld";
 import { CONTINENTAL, CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import type { RoundFixtures } from "@/types/calendarTypes";
@@ -296,4 +297,31 @@ describe("advanceOneDay fills a missing second-leg aggregate before kickoff", ()
     const tie2After = round8After!.fixtures.find((f) => f.id === "test_tie2_leg2")!;
     expect(tie2After.played).toBe(false);
   }, 300_000);
+});
+
+describe("continentalTier1LeagueStates", () => {
+  test("Europe's tier-1 league carries its schedule's cross-year flag; South America's is included too", async () => {
+    const catalog = await getLeagueData();
+    const pyramids = await getPyramids();
+    const activeLeagues = [
+      { leagueSlug: "premier_league", year: 2028 }, // England's tier-1 — Europe, crosses the year
+      { leagueSlug: "brazil_serie_a", year: 2029 }, // Brazil's tier-1 — South America, calendar-year
+    ];
+
+    const states = await continentalTier1LeagueStates(activeLeagues, catalog, pyramids);
+
+    const pl = states.find((s) => s.continent === "Europe" && s.year === 2028);
+    expect(pl).toBeTruthy();
+    expect(pl!.crossYear).toBe(true);
+
+    const br = states.find((s) => s.continent === "South America" && s.year === 2029);
+    expect(br).toBeTruthy();
+    expect(br!.crossYear).toBe(false);
+  });
+
+  test("a country's tier-1 league missing from activeLeagues is skipped, not guessed at", async () => {
+    const catalog = await getLeagueData();
+    const pyramids = await getPyramids();
+    expect(await continentalTier1LeagueStates([], catalog, pyramids)).toEqual([]);
+  });
 });
