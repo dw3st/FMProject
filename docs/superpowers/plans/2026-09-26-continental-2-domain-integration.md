@@ -605,11 +605,17 @@ Nada a fazer → `null`.
     coeficientes (média do `clubLevel` da liga de nível 1), `zoneSlots` a partir das zonas do
     `leagueData` da liga de nível 1 (conta posições `from..to` das zonas `ucl`/`uel`+`uecl`/`lib`/`sud`),
     `allocateSlots`, `pickQualifiers`, `busy` (datas ±1 dia de todas as fixtures de liga e copa dos
-    participantes — `getAllFixturesForLeague` nas ligas e copas envolvidas), `continentalDates`,
-    `generateContinental` para as duas competições do continente (a primária primeiro, e os clubes da
-    primária entram no `busy` da secundária? não — clubes nunca estão nas duas; mas as datas das duas
-    não podem coincidir para evitar sobrecarga do dia: use weekdays diferentes, já garantido), grava
-    com o mesmo esquema do `writeCup`.
+    participantes — `getAllFixturesForLeague` nas ligas e copas envolvidas — **mais a data de toda
+    fase de copa ainda não sorteada** (`meta.cup.stages[].date`, ±1 dia) das copas dos países dos
+    participantes, porque só a fase 1 da copa tem fixtures na geração), `continentalDates`,
+    `generateContinental` para as duas competições do continente (weekdays diferentes; um clube nunca
+    está nas duas), grava com o mesmo esquema do `writeCup`.
+  - `seasonYear`/`end` do continente: **Europa** usa só as ligas europeias de nível 1 que cruzam o ano
+    (`season` "YYYY-YY"; as de ano civil — Suécia, Noruega, Finlândia… — ficam de fora da janela e do
+    ano); **América do Sul** usa as ligas de nível 1 sul-americanas. `continentalDates` ainda limita o
+    mata-mata a (Y+1)-05-31 (Europa) e Y-11-30 (América do Sul).
+  - Depois de `pickQualifiers`, se alguma competição não tiver exatamente 32 clubes, lance erro (cai
+    no try/catch por continente).
   - `advanceContinentalStages(service, saveId, playedRounds)`: para cada competição continental com
     rodadas jogadas hoje, lê meta e rodadas e aplica `advanceContinental`, gravando o resultado;
     devolve as mudanças (para a inbox do Plano 3).
@@ -636,7 +642,8 @@ Nada a fazer → `null`.
   continentais jogadas hoje (`continentalChanges`, guardado para o Plano 3).
 - [ ] **Step 3: Virada por continente** — no bloco de regeneração das copas (roda com
   `due.units.length > 0 || due.resync.length > 0`): para cada continente, se todas as ligas de nível
-  1 dos países do continente têm `year` > `meta.year` da competição primária do continente, arquive
+  1 **que definem a temporada do continente** (Europa: só as que cruzam o ano; América do Sul: todas)
+  têm `year` > `meta.year` da competição primária do continente, arquive
   as duas competições (`writeLeagueSeasonArchive` com título do campeão — reaproveite
   `buildCupArchive`, que já monta arquivo sem tabela) e chame `createContinentalSeason` com o ano
   novo. Faça num helper puro `continentsToRegenerate(states, compYear)` em
