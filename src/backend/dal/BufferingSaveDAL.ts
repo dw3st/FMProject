@@ -65,8 +65,6 @@ export class BufferingSaveDAL implements ISaveDAL {
   private readonly squadEdits = new Map<string, Map<string, SquadFile | null>>();
   /** Pending thunks that are squad deletes — flushed after every write, before meta. */
   private readonly deleteThunks = new WeakSet<() => Promise<void>>();
-  /** Ledger entries appended this unit of work (per "saveId:season"), not yet flushed. */
-  private readonly ledgerDelta = new Map<string, LedgerEntry[]>();
 
   constructor(private readonly inner: ISaveDAL) {}
 
@@ -341,28 +339,29 @@ export class BufferingSaveDAL implements ISaveDAL {
 
   // ── Ledger (player club cash extract) ────────────────────────────────────────
   //
-  // Like inbox, but the underlying DAL only exposes an append (never a full
-  // replace), so the pending write must carry every entry appended this unit of
-  // work — not just the latest call's entries — or a second flush call would only
-  // ever see what changed since the last one. `ledgerDelta` tracks that cumulative
-  // list per "saveId:season"; `cache` (via readThrough/readLedger) always holds the
-  // full merged view (on-disk baseline + everything appended so far) for reads.
+  // Same shape as inbox: `writeLedger` (full replace) is the buffered resource;
+  // `appendLedger` is a read-then-write on top of it, so re-flushing an already
+  // partially-flushed write (a write re-buffered while its flush was in flight —
+  // see the squad "re-buffered while in flight" test) is idempotent — the pending
+  // thunk always writes the COMPLETE list, never just what changed since the last
+  // flush, so it can never duplicate entries already on disk from an earlier
+  // partial flush.
 
   readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
     return this.readThrough(`ledger:${saveId}:${season}`, () => this.inner.readLedger(saveId, season));
   }
+  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    this.buffer(`ledger:${saveId}:${season}`, entries, () => this.inner.writeLedger(saveId, season, entries));
+  }
   async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
     if (entries.length === 0) return;
     const key = `ledger:${saveId}:${season}`;
-    const existing = await this.readLedger(saveId, season);
-    const delta = [...(this.ledgerDelta.get(key) ?? []), ...entries];
-    this.ledgerDelta.set(key, delta);
-    this.cache.set(key, [...existing, ...entries]);
-    const write = async () => {
-      await this.inner.appendLedger(saveId, season, delta);
-      // Only clear if not re-buffered (a newer append) while this write was in flight.
-      if (this.ledgerDelta.get(key) === delta) this.ledgerDelta.delete(key);
-    };
-    this.pending.set(key, write);
+    await this.readLedger(saveId, season);
+    // Read the cache AFTER the await, not the value `readLedger` resolved with: a concurrent
+    // append may have already landed its own buffered write (updating `cache`) while this call
+    // was awaiting — building from the fresh cache instead of a stale local variable keeps that
+    // append's entries instead of overwriting them.
+    const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
+    await this.writeLedger(saveId, season, [...current, ...entries]);
   }
 }

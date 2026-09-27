@@ -86,4 +86,10 @@ export interface ISaveDAL {
   readLedger(saveId: string, season: number): Promise<LedgerEntry[]>;
   /** Append entries to the season's ledger, preserving whatever is already there. */
   appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+  /**
+   * Replace the season's ledger entirely (idempotent full write). Used by `BufferingSaveDAL`'s
+   * flush, whose pending thunk always writes the complete list (on-disk baseline + everything
+   * buffered) so a write re-run after a partial flush never duplicates entries.
+   */
+  writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
 }
