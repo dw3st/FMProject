@@ -378,6 +378,21 @@ export class FileSystemDAL implements ISaveDAL {
 
   // ── Ledger (player club cash extract) ────────────────────────────────────────
 
+  async listLedgerSeasons(saveId: string): Promise<number[]> {
+    const dir = `${SAVES_DIR}/${saveId}/ledger`;
+    let names: string[];
+    try {
+      names = await readdir(dir);
+    } catch {
+      return [];
+    }
+    return names
+      .map((n) => /^(\d+)\.json$/.exec(n)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+      .sort((a, b) => a - b);
+  }
+
   async readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
     const file = Bun.file(ledgerPath(saveId, season));
     if (!(await file.exists())) return [];

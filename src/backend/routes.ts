@@ -23,6 +23,8 @@ import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
+import { totalsByKind, weeklyNet } from "@/Domain/finance/ledger";
+import { getClubBudget } from "@/backend/FinancialService";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
@@ -537,6 +539,49 @@ export const apiRoutes = {
     const playerIds = await getStarPlayerIds(saveId!);
     if (!playerIds) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json({ playerIds });
+  },
+
+  /**
+   * The player's club cash extract for one season: entries, per-kind totals, weekly net, the
+   * seasons that have a ledger file, and the current balance. `?season=YYYY` picks a past season;
+   * omitted defaults to the player's league's current year. 404 when that season has no ledger
+   * file yet (see design spec §2 "Extrato" and §4).
+   */
+  "/api/saves/:saveId/ledger": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const meta = await saveService.getMeta(saveId!);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+
+    const seasons = await saveService.listLedgerSeasons(saveId!);
+    const url = new URL(req.url);
+    const seasonParam = url.searchParams.get("season");
+    let season: number;
+    if (seasonParam !== null) {
+      season = Number(seasonParam);
+      if (!Number.isInteger(season)) return Response.json({ error: "invalid season" }, { status: 400 });
+    } else {
+      const leagueMeta = await saveService.getLeagueMeta(saveId!, meta.leagueSlug);
+      season = leagueMeta?.year ?? NaN;
+    }
+    if (!Number.isInteger(season) || !seasons.includes(season)) {
+      return Response.json({ error: "ledger not found" }, { status: 404 });
+    }
+
+    const entries = await saveService.getLedger(saveId!, season);
+    const squad = await saveService.getSquadById(saveId!, meta.clubId);
+    const balance = squad ? getClubBudget(squad) : 0;
+
+    return Response.json({
+      season,
+      seasons,
+      entries,
+      totals: totalsByKind(entries),
+      weekly: weeklyNet(entries),
+      balance,
+    });
   },
 
   "/api/saves/:saveId/leagues": async (req: Request & { params: Record<string, string> }) => {

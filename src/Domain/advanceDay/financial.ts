@@ -6,6 +6,15 @@ import type { Squad } from "@/types/playerTypes";
 /** Operational cost, as a share of annual revenue, charged weekly (`OPERATIONAL_COST_SHARE × wageRevenueBasisOf(squad) / 52`). */
 export const OPERATIONAL_COST_SHARE = 0.25;
 
+/**
+ * The weekly operational cost charged every Monday in `computeAdvanceDayMoney` — pulled out so
+ * the FinancesScreen can project it with the exact same formula the server uses, instead of
+ * re-deriving it.
+ */
+export function weeklyOperationalCost(squad: Squad): number {
+  return Math.round((OPERATIONAL_COST_SHARE * wageRevenueBasisOf(squad)) / 52);
+}
+
 /** One home fixture of the player's club today, already resolved to a competition kind + label. */
 export interface PlayerHomeFixtureToday {
   /** Competition slug: the league slug, a cup slug (`cup_<país>`), or a continental slug. */
@@ -37,7 +46,7 @@ export function computeAdvanceDayMoney(args: {
   if (dayOfWeek === 1) {
     const weeklyCommercial = Math.round((playerSquad.finances?.commercial ?? 0) / 52);
     const weeklyWages = squadWeeklyWages(playerSquad.players, wageFactorOf(playerSquad));
-    const weeklyOperational = Math.round((OPERATIONAL_COST_SHARE * wageRevenueBasisOf(playerSquad)) / 52);
+    const weeklyOperational = weeklyOperationalCost(playerSquad);
     entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
     entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });
     entries.push({ date: currentDate, kind: "operational", amount: -weeklyOperational, label: "Operational costs" });

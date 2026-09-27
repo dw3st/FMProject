@@ -239,6 +239,10 @@ export class SaveService {
     return this.dal.readLedger(saveId, season);
   }
 
+  listLedgerSeasons(saveId: string): Promise<number[]> {
+    return this.dal.listLedgerSeasons(saveId);
+  }
+
   appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
     return this.dal.appendLedger(saveId, season, entries);
   }
