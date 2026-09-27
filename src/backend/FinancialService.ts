@@ -15,7 +15,6 @@ import type { Squad } from "@/types/playerTypes";
 import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
 import { gateRevenue } from "@/Domain/finance/gate";
-import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -32,17 +31,6 @@ export function getClubBudget(squad: Squad): number {
 }
 
 // ── Pure financial calculations (no side effects) ─────────────────────────────
-
-/**
- * Net weekly P/L for a squad:
- *   commercial_income / 52  −  total_weekly_salaries  −  operational (10% of salaries)
- */
-export function calcWeeklyDelta(squad: Squad): number {
-  const weeklyCommercial = Math.round((squad.finances?.commercial ?? 0) / 52);
-  const weeklyPlayerSalary = squadWeeklyWages(squad.players, wageFactorOf(squad));
-  const weeklyOperational = Math.round(weeklyPlayerSalary * 0.1);
-  return weeklyCommercial - weeklyPlayerSalary - weeklyOperational;
-}
 
 /** Home matchday ticket revenue based on stadium capacity (league price — see `gateRevenue`). */
 export function calcMatchdayRevenue(squad: Squad): number {
