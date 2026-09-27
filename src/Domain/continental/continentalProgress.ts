@@ -8,6 +8,7 @@ import type {
   SeasonArchive,
 } from "@/types/calendarTypes";
 import { seedFrom } from "@/Domain/cups/cupIds";
+import { buildKnockoutSeasonArchive } from "@/Domain/cups/cupRollover";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { drawFree, drawRoundOf16, finalWinner, tieWinner, twoLegFixtures, withAggregate } from "@/Domain/continental/knockout";
 import { mulberry32 } from "@/Domain/rng";
@@ -302,31 +303,12 @@ export function continentsToRegenerate(
 /**
  * Season archive of a finished continental competition (no table; one title for the champion) —
  * the continental equivalent of `buildCupArchive` (`src/Domain/cups/cupRollover.ts`), reading
- * `meta.continental.championId` instead of `meta.cup.championId`.
+ * `meta.continental.championId` instead of `meta.cup.championId`. Both share
+ * `buildKnockoutSeasonArchive`.
  */
 export function buildContinentalArchive(
   meta: LeagueSeasonMeta,
   clubInfo: (squadId: string) => { name: string; coachId: number | null; coachName: string },
 ): SeasonArchive {
-  const champ = meta.continental?.championId ?? null;
-  return {
-    leagueSlug: meta.leagueSlug,
-    year: meta.year,
-    start: meta.start,
-    end: meta.end,
-    standings: [],
-    titles: champ
-      ? [(() => {
-          const info = clubInfo(champ);
-          return {
-            competition: meta.leagueSlug,
-            clubId: champ,
-            clubName: info.name,
-            coachId: info.coachId,
-            coachName: info.coachName,
-          };
-        })()]
-      : [],
-    playerLogs: {},
-  };
+  return buildKnockoutSeasonArchive(meta, meta.continental?.championId ?? null, clubInfo);
 }

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { generateContinental } from "@/Domain/continental/generateContinental";
 import {
   advanceContinental,
+  buildContinentalArchive,
   continentsToRegenerate,
   type ContinentalEvent,
 } from "@/Domain/continental/continentalProgress";
@@ -317,5 +318,39 @@ describe("continentsToRegenerate", () => {
   test("Europe with no cross-year leagues has nothing season-defining -> not regenerated", () => {
     const leagues = [{ continent: "Europe" as const, year: 2027, crossYear: false }];
     expect(continentsToRegenerate(leagues, { Europe: 2026 })).toEqual([]);
+  });
+});
+
+describe("buildContinentalArchive", () => {
+  const baseMeta = (championId: string | null): LeagueSeasonMeta => ({
+    leagueSlug: "ucl",
+    year: 2026,
+    start: dates[0]!,
+    end: dates[12]!,
+    totalRounds: 13,
+    kind: "continental",
+    continental: {
+      competition: "ucl",
+      continent: "Europe",
+      groups: [],
+      stages: [],
+      countryOf: {},
+      level: {},
+      championId,
+    },
+  });
+
+  test("title for the champion", () => {
+    const a = buildContinentalArchive(baseMeta("c7"), (id) => ({ name: `Club ${id}`, coachId: null, coachName: "" }));
+    expect(a.leagueSlug).toBe("ucl");
+    expect(a.year).toBe(2026);
+    expect(a.standings).toEqual([]);
+    expect(a.titles).toEqual([{ competition: "ucl", clubId: "c7", clubName: "Club c7", coachId: null, coachName: "" }]);
+  });
+
+  test("no champion -> no titles", () => {
+    const a = buildContinentalArchive(baseMeta(null), () => ({ name: "unused", coachId: null, coachName: "" }));
+    expect(a.titles).toEqual([]);
+    expect(a.standings).toEqual([]);
   });
 });

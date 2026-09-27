@@ -304,13 +304,23 @@ export async function advanceOneDay(
             const leg1Round = await saveService.getRound(saveId, leagueSlug, fixture.round - 1);
             const leg1Fixture = leg1Round?.fixtures.find((f) => f.tieId === fixture.tieId && f.played);
             if (leg1Fixture) {
-              fixture = withAggregate(fixture, leg1Fixture);
-              const patchIdx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-              if (patchIdx !== -1) updatedFixtures[patchIdx] = fixture;
-              logError(
-                "continental",
-                `save ${saveId}: ${fixture.id} (tie ${fixture.tieId}) had no aggregate before kickoff — computed it from the first leg (${leg1Fixture.id})`,
-              );
+              try {
+                fixture = withAggregate(fixture, leg1Fixture);
+                const patchIdx = updatedFixtures.findIndex((f) => f.id === fixture.id);
+                if (patchIdx !== -1) updatedFixtures[patchIdx] = fixture;
+                logError(
+                  "continental",
+                  `save ${saveId}: ${fixture.id} (tie ${fixture.tieId}) had no aggregate before kickoff — computed it from the first leg (${leg1Fixture.id})`,
+                );
+              } catch (err) {
+                // Corrupt data (e.g. a mismatched tieId pairing) must not brick every future
+                // advance — play the leg as-is (no aggregate) rather than throwing the whole day.
+                logError(
+                  "continental",
+                  `save ${saveId}: ${fixture.id} (tie ${fixture.tieId ?? "?"}) failed to compute its aggregate from leg 1 (${leg1Fixture.id}) — playing without it`,
+                  err,
+                );
+              }
             } else {
               logError(
                 "continental",
@@ -963,22 +973,23 @@ export async function advanceOneDay(
         if (m) compYear[continent] = m.year;
       }
       for (const c of continentsToRegenerateContinental(tier1States, compYear)) {
-        try {
-          const nameOf = (id: string) => {
-            const e = index.byId(id);
-            return { name: e?.name ?? id, coachId: null, coachName: "" };
-          };
-          for (const comp of competitionsOf(c.continent)) {
-            const old = await saveService.getLeagueMeta(saveId, comp.slug);
-            if (!old) continue;
-            await saveService.writeLeagueSeasonArchive(saveId, buildContinentalArchive(old, nameOf));
-          }
-          await createContinentalSeason({
-            service: saveService, saveId, continent: c.continent, year: c.year, index, catalog, pyramids,
-          });
-        } catch (err) {
-          logError("continental", `save ${saveId}: failed to regenerate ${c.continent} continental competitions for ${c.year}`, err);
+        // No try/catch here (matches the national-cups block above): a failure must fail the whole
+        // day so it is never silently swallowed. Left un-regenerated, the trigger condition stays
+        // true and the day's own buffered write never lands, so the next advance simply retries
+        // the same regeneration rather than the continent being stuck for months with a stale
+        // (already-archived-elsewhere) year.
+        const nameOf = (id: string) => {
+          const e = index.byId(id);
+          return { name: e?.name ?? id, coachId: null, coachName: "" };
+        };
+        for (const comp of competitionsOf(c.continent)) {
+          const old = await saveService.getLeagueMeta(saveId, comp.slug);
+          if (!old) continue;
+          await saveService.writeLeagueSeasonArchive(saveId, buildContinentalArchive(old, nameOf));
         }
+        await createContinentalSeason({
+          service: saveService, saveId, continent: c.continent, year: c.year, index, catalog, pyramids,
+        });
       }
     }
 
