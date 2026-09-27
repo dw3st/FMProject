@@ -50,7 +50,7 @@ const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
-const { computeAdvanceDayMoneyDelta } = await import("@/Domain/advanceDay/financial");
+const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial");
 const { addOneDay } = await import("@/Domain/advanceDay/date");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
@@ -294,13 +294,19 @@ try {
         const b0 = prePlayerSquad.finances?.budget ?? 0;
         const b1 = postSquad.finances?.budget ?? 0;
         const tv = prePlayerSquad.finances?.broadcasting ?? 0;
-        const delta = computeAdvanceDayMoneyDelta({
-          currentDate: date, todayFixtures: prePlayerFixtures, playerSquadId, playerSquad: prePlayerSquad,
+        const homeFixturesToday = prePlayerFixtures
+          .filter((f) => f.home === playerSquadId)
+          .map((f) => ({ competition: f.competition, kind: "league" as const, label: f.competition, neutral: f.neutral }));
+        const entries = computeAdvanceDayMoney({
+          currentDate: date, playerSquad: prePlayerSquad, homeFixturesToday,
         });
-        const expected = Math.max(0, b0 + delta) + tv;
+        const delta = entries.reduce((s, e) => s + e.amount, 0);
+        // No clamp any more (see .claude/rules/game/finances.md — the ledger allows a negative
+        // balance), so budget is expected to move by exactly `delta`, not max(0, ...).
+        const expected = b0 + delta + tv;
         if (obsPlayer) {
           console.log(`  budget ${b0} → ${b1} (club changed tier: exact check skipped; tv ${tv}, day delta ${delta})`);
-          check(b1 >= Math.max(0, b0 + delta), `budget did not drop at the rollover (${b0} → ${b1})`);
+          check(b1 >= b0 + delta, `budget did not drop at the rollover (${b0} → ${b1})`);
         } else {
           check(Math.abs(b1 - expected) < 1, `budget ${b0} + day ${delta} + TV ${tv} = ${expected} (got ${b1})`);
         }

@@ -374,14 +374,30 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
             date={message.date}
           />
         )}
-        {message.category === "season" && (
-          <p className="text-sm text-foreground m-0">{message.preview}</p>
-        )}
+        {message.category === "season" && <SeasonBody message={message} />}
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
         {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
       </div>
     </div>
   );
+}
+
+function SeasonBody({
+  message,
+}: {
+  message: Extract<InboxMessage, { category: "season" }>;
+}) {
+  const { t } = useTranslation();
+  if (message.kind === "negative_balance") {
+    const bal = message.balance ?? 0;
+    const balanceText = bal < 0 ? `-${formatFee(Math.abs(bal))}` : formatFee(bal);
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.season.negativeBalance", { balance: balanceText })}
+      </p>
+    );
+  }
+  return <p className="text-sm text-foreground m-0">{message.preview}</p>;
 }
 
 function CupBody({

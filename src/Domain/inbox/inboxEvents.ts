@@ -128,20 +128,25 @@ export function buildSeasonMessage(args: {
   seasonYear:      number;
   followersBefore?: number;
   followersAfter?:  number;
+  /** Club budget on the day it crossed negative (kind "negative_balance" only). */
+  balance?: number;
 }): SeasonInboxMessage {
-  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear, followersBefore, followersAfter } = args;
+  const { date, kind, leagueSlug, leagueName, fromLeagueSlug, seasonYear, followersBefore, followersAfter, balance } = args;
   const fb = followersBefore ?? 0;
   const fa = followersAfter ?? 0;
   const pct = fb > 0 ? Math.round(((fa - fb) / fb) * 100) : 0;
+  const bal = balance ?? 0;
   const subject =
     kind === "champion" ? `Champion of ${leagueName}` :
     kind === "promoted" ? `Promoted to ${leagueName}` :
     kind === "followers" ? (fa >= fb ? "Fan base grew" : "Fan base shrank") :
+    kind === "negative_balance" ? "Club is in the red" :
     `Relegated to ${leagueName}`;
   const preview =
     kind === "champion" ? `The club won the ${leagueName} ${seasonYear} title.` :
     kind === "promoted" ? `Next season the club plays in ${leagueName}.` :
     kind === "followers" ? `After the ${seasonYear} season the club has ${formatCount(fa)} followers (${pct >= 0 ? "+" : ""}${pct}%).` :
+    kind === "negative_balance" ? `The club balance has gone negative: ${formatFee(bal)}.` :
     `Next season the club drops to ${leagueName}.`;
   return {
     id:        `season-${date}-${kind}-${leagueSlug}-${randomUUID()}`,
@@ -157,6 +162,7 @@ export function buildSeasonMessage(args: {
     ...(fromLeagueSlug ? { fromLeagueSlug } : {}),
     seasonYear,
     ...(kind === "followers" ? { followersBefore: fb, followersAfter: fa } : {}),
+    ...(kind === "negative_balance" ? { balance: bal } : {}),
   };
 }
 
