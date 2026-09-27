@@ -86,7 +86,10 @@ mata-mata em si (prorrogação, pênaltis) é do Plano 1, já mesclado na branch
 3. **Datas (`scheduleStageDates`):** uma fase por quarta-feira dentro de `[start, end − 7 dias]`
    (a final fica pelo menos uma semana antes do fim da janela), espaçadas uniformemente, nunca no
    mesmo dia (nem na véspera) de um jogo de liga do país (`busyDates`, de `leagueBusyDates` —
-   junta o `date-index` de toda liga do país). Se a quarta-feira mais próxima do alvo não serve,
+   junta o `date-index` de toda liga do país **e de toda competição continental
+   (`ucl`/`uel`/`lib`/`sud`) que já tenha algum clube do país**, `continentalSlugsOf` em
+   `cupWorld.ts` — mitiga a copa cair em cima de uma data de Champions/Europa League/Libertadores/
+   Sul-Americana do mesmo clube; ver `.claude/rules/game/continental.md`). Se a quarta-feira mais próxima do alvo não serve,
    tenta outras quartas (`OFFSETS`, ±1 a ±3 semanas) e depois qualquer dia perto do alvo, sempre
    com pelo menos 3 dias da fase anterior.
    - **Clamp de janela degenerada:** se a janela ficar curta demais para até a regra de "1 dia de
