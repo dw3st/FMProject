@@ -238,6 +238,7 @@ function formatCount(n: number): string {
 }
 
 function formatFee(euros: number): string {
+  if (euros < 0) return `-${formatFee(-euros)}`;
   if (euros >= 1_000_000) return `€${(euros / 1_000_000).toFixed(1)}M`;
   if (euros >= 1_000)     return `€${Math.round(euros / 1_000)}k`;
   return `€${euros}`;

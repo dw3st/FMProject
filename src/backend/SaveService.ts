@@ -574,7 +574,6 @@ export class SaveService {
     clubId:     string;
     clubName:   string;
     clubColors: [string, string];
-    budget:  number;
     formation?:      string;
     tactical_style?: TacticalStyle;
     database?: SaveDatabase;
@@ -702,7 +701,10 @@ export class SaveService {
 
         const isPlayerClub = league === body.leagueSlug && clubSlug === body.clubId;
         const srcFin = raw.finances;
-        const budget = isPlayerClub ? (body.budget ?? 0) : (srcFin?.budget ?? 0);
+        // The player's club always starts at 0 — the initial balance is the ledger's own
+        // broadcasting entry (applyBroadcasting, right after createSave returns), never a
+        // client-supplied figure. See .claude/rules/game/finances.md.
+        const budget = isPlayerClub ? 0 : (srcFin?.budget ?? 0);
 
         const squad: Squad = {
           ...raw,

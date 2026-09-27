@@ -30,7 +30,6 @@ describe("createSave generates continental competitions", () => {
       clubId: "33",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     createSaveMs = Date.now() - start;
     saveId = meta.id;
@@ -263,7 +262,7 @@ describe("createSave generates continental competitions", () => {
 
     const meta2 = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: qualifiedClub, clubName: "Test2", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: qualifiedClub, clubName: "Test2", clubColors: ["#000000", "#ffffff"],
     });
     const saveId2 = meta2.id;
     try {
@@ -306,7 +305,7 @@ describe("advanceOneDay plays continental fixtures", () => {
   test("UCL group-stage round 1 (16 fixtures) gets played", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -334,7 +333,7 @@ describe("advanceOneDay fills a missing second-leg aggregate before kickoff", ()
   test("leg 2 with no aggregate on disk gets it computed from the played leg 1", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 

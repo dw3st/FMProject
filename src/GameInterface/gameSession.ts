@@ -106,7 +106,6 @@ export async function createGameSave(data: {
   clubId: string;
   clubName: string;
   clubColors: [string, string];
-  budget: number;
   database?: SaveDatabase;
   manager?:  SaveManager;
 }): Promise<GameSession> {

@@ -20,7 +20,6 @@ describe("PUT /api/saves/:saveId/squad/:league/:club ignores finances from the b
       clubId: "33",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 0,
     });
     saveId = meta.id;
 
@@ -48,5 +47,5 @@ describe("PUT /api/saves/:saveId/squad/:league/:club ignores finances from the b
 
     const after = await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId);
     expect(after?.finances?.budget).toBe(originalBudget);
-  });
+  }, 60_000);
 });

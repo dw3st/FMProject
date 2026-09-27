@@ -36,7 +36,6 @@ describe("advanceOneDay rolls Europe's continental competitions over", () => {
       clubId: "33",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     saveId = meta.id;
 

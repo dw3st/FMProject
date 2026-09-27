@@ -164,7 +164,6 @@ async function createBenchSave(): Promise<string> {
     clubId: club.squadId,
     clubName: club.name ?? club.squadId,
     clubColors: club.colors ?? ["#888888", "#ffffff"],
-    budget: 0,
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Bench Manager", nationalityIso: "gb", backgroundId: "former-player" },
   });
