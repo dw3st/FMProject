@@ -11,10 +11,16 @@ export interface ContinentalCompetition {
   zoneIds: string[];
 }
 
+// `lib` plays Tuesday, not the Wednesday the design doc originally specified: every national cup
+// in the world plays on a fixed Wednesday (`cupDates.ts`'s `WEDNESDAY`), so a Wednesday Libertadores
+// would collide, same-day, with any country's cup on that exact date — impossible to avoid, not
+// just hard to schedule around (see continentalWorld.ts's busy-set comment). Real Copa Libertadores
+// fixtures do run Tuesday-Thursday, so this is also closer to the real competition, not only a
+// scheduling workaround.
 export const CONTINENTAL: Record<ContinentalSlug, ContinentalCompetition> = {
   ucl: { slug: "ucl", continent: "Europe", primary: true, weekday: 2, zoneIds: ["ucl"] },
   uel: { slug: "uel", continent: "Europe", primary: false, weekday: 4, zoneIds: ["uel", "uecl"] },
-  lib: { slug: "lib", continent: "South America", primary: true, weekday: 3, zoneIds: ["lib"] },
+  lib: { slug: "lib", continent: "South America", primary: true, weekday: 2, zoneIds: ["lib"] },
   sud: { slug: "sud", continent: "South America", primary: false, weekday: 4, zoneIds: ["sud"] },
 };
 

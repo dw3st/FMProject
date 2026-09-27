@@ -116,7 +116,7 @@ describe("continentalDates — Europe", () => {
 describe("continentalDates — South America", () => {
   const Y = 2027;
   const end = "2027-12-05";
-  const weekday = 3; // Wednesday
+  const weekday = 2; // Tuesday (CONTINENTAL.lib — see competitions.ts for why not Wednesday)
 
   test("group window Mar–May, knockout window Jul–Nov", () => {
     const dates = continentalDates("South America", Y, end, weekday, new Set());
@@ -179,5 +179,44 @@ describe("continentalDates — South America", () => {
     expect(dates).toHaveLength(13);
     for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
     for (const d of dates.slice(6)) expect(d <= "2027-07-22").toBe(true); // end − 7d
+  });
+});
+
+describe("continentalDates — hardBusy (same-day double-booking must be impossible)", () => {
+  const Y = 2027;
+  const end = "2027-12-05";
+  const weekday = 2; // Tuesday (CONTINENTAL.lib)
+
+  test("dense realistic calendar: no returned date ever equals a hardBusy date, even though soft clashes are tolerated", () => {
+    // Every Tuesday and every Saturday is an exact league/cup fixture date (hardBusy); the ±1-day
+    // neighbourhood of those is softBusy. This is deliberately harder than any real save (every
+    // week, not just some), so some soft clashes are expected — but never a hard one.
+    const hardBusy = new Set<string>();
+    for (let ms = toMs("2027-03-01"); ms <= toMs("2027-11-30"); ms += DAY) {
+      const day = new Date(ms).getUTCDay();
+      if (day === 2 || day === 6) hardBusy.add(toIso(ms));
+    }
+    const busy = new Set<string>();
+    for (const d of hardBusy) {
+      busy.add(toIso(toMs(d) - DAY));
+      busy.add(d);
+      busy.add(toIso(toMs(d) + DAY));
+    }
+
+    const dates = continentalDates("South America", Y, end, weekday, busy, hardBusy);
+    expect(dates).toHaveLength(13);
+    for (let i = 1; i < dates.length; i++) expect(dates[i]! > dates[i - 1]!).toBe(true);
+    for (const d of dates) expect(hardBusy.has(d)).toBe(false);
+  });
+
+  test("omitting hardBusy keeps the old single-tier behaviour (busy alone can be landed on only as an accepted clash)", () => {
+    const busy = new Set<string>();
+    for (let ms = toMs("2027-03-01"); ms <= toMs("2027-11-30"); ms += DAY) {
+      const day = new Date(ms).getUTCDay();
+      if (day === 2 || day === 6) busy.add(toIso(ms));
+    }
+    const withHardBusy = continentalDates("South America", Y, end, weekday, busy, new Set());
+    const withoutHardBusy = continentalDates("South America", Y, end, weekday, busy);
+    expect(withHardBusy).toEqual(withoutHardBusy);
   });
 });
