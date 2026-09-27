@@ -5,7 +5,7 @@ import {
   computeMinutesPlayed,
   type PlayedMatchRecording,
 } from "@/Domain/advanceDay/matches";
-import { addMatchLoad, postMatchFitness } from "@/Domain/fitness/fitness";
+import { addMatchLoad, decayLoad, postMatchFitness, recoverDay } from "@/Domain/fitness/fitness";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
@@ -70,16 +70,37 @@ describe("computeMinutesPlayed", () => {
     expect(minutes.in).toBe(15);
   });
 
-  test("unordered substitution input is sorted before processing", () => {
-    const minutes = computeMinutesPlayed(
-      ["a", "b", "c"],
-      [
-        { playerOutId: "b", playerInId: "c", matchMinute: 75 },
-        { playerOutId: "a", playerInId: "b", matchMinute: 45 },
-      ],
+  test("processes substitutions in the given (recording) order, never re-sorts by matchMinute", () => {
+    // matchMinute is not monotonic across halves/extra-time (each phase has its own offset — see
+    // `.claude/rules/match-flow.md`), so the recording order is the only reliable source of truth
+    // for who is on the pitch when. Here the second substitution reports a LOWER matchMinute than
+    // the first (e.g. crossing a phase boundary) — a numeric sort would try to process "b → c"
+    // before "a → b" ever happened, losing track of "b" entirely (their `since` would never be
+    // found) and wrongly crediting them with playing to the end. Processing in given order gets
+    // it right: a played 0→40, b played 40→40 (immediately subbed off again, 0 minutes), c played
+    // 20→90 (70 minutes) — note c's own minutes start at their recorded sub-in minute, not at a.
+    const subs = [
+      { playerOutId: "a", playerInId: "b", matchMinute: 40 },
+      { playerOutId: "b", playerInId: "c", matchMinute: 20 },
+    ];
+    const minutes = computeMinutesPlayed(["a", "b", "c"], subs, 90);
+    expect(minutes).toEqual({ a: 40, b: 0, c: 70 });
+  });
+
+  test("a player subbed on at or after the total still gets at least 1 minute, never 0", () => {
+    const atTotal = computeMinutesPlayed(
+      ["out", "in"],
+      [{ playerOutId: "out", playerInId: "in", matchMinute: 90 }],
       90,
     );
-    expect(minutes).toEqual({ a: 45, b: 30, c: 15 });
+    expect(atTotal.in).toBe(1);
+
+    const pastTotal = computeMinutesPlayed(
+      ["out", "in"],
+      [{ playerOutId: "out", playerInId: "in", matchMinute: 96 }],
+      90,
+    );
+    expect(pastTotal.in).toBe(1);
   });
 });
 
@@ -151,12 +172,13 @@ describe("buildMatchEventFromRecording — post-match fitness and load", () => {
     const p0 = updatedHome.players.find((p) => p.id === "h-p0")!;
     const p1 = updatedHome.players.find((p) => p.id === "h-p1")!;
     const a0 = updatedAway.players.find((p) => p.id === "a-p0")!;
-    expect(p0.seasonLog!.load).toBe(addMatchLoad(40, 70)); // pre-existing load + minutes played
-    expect(p1.seasonLog!.load).toBe(20); // came on at minute 70, fresh load
-    expect(a0.seasonLog!.load).toBe(90); // no substitutions on this side — full match
+    // Load always decays one day's worth first, then this match's minutes are added on top.
+    expect(p0.seasonLog!.load).toBe(addMatchLoad(decayLoad(40), 70)); // pre-existing load, decayed, + minutes played
+    expect(p1.seasonLog!.load).toBe(addMatchLoad(decayLoad(0), 20)); // came on at minute 70, fresh load
+    expect(a0.seasonLog!.load).toBe(addMatchLoad(decayLoad(0), 90)); // no substitutions on this side — full match
   });
 
-  test("a player who did not play keeps fitness and load untouched", () => {
+  test("a player who did not play still recovers fitness and decays load (their squad's daily rest/training is skipped today)", () => {
     const home = makeSquad("h", 2);
     home.players[1]!.seasonLog = { ...emptySeasonLog(), fitness: 77, load: 15 };
     const away = makeSquad("a", 1);
@@ -168,8 +190,11 @@ describe("buildMatchEventFromRecording — post-match fitness and load", () => {
 
     const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording);
     const bench = updatedHome.players.find((p) => p.id === "h-p1")!;
-    expect(bench.seasonLog!.fitness).toBe(77);
-    expect(bench.seasonLog!.load).toBe(15);
+    // makeSquad: age 25, stamina 5 — same recoverDay curve as an actual rest day.
+    const expectedFitness = +recoverDay(77, { age: 25, load: 15, stamina: 5 }).toFixed(1);
+    expect(bench.seasonLog!.fitness).toBe(expectedFitness);
+    expect(bench.seasonLog!.fitness).toBeGreaterThan(77); // did recover, wasn't left untouched
+    expect(bench.seasonLog!.load).toBe(decayLoad(15));
   });
 
   test("extra time (decider present) counts as 120 minutes for the full match", () => {
@@ -207,20 +232,21 @@ describe("buildMatchEvent — full engine post-match fitness and load", () => {
       homeFormation: formation, homeLineup, awayFormation: formation, awayLineup,
     });
 
-    // Mirrors `totalMatchMinutes` in matches.ts — stoppage-time substitutions push the real
-    // match length past 90/120.
-    const totalMinutes = event.substitutions.reduce(
-      (m, s) => Math.max(m, s.matchMinute),
-      event.decider ? 120 : 90,
-    );
+    // `totalMatchMinutes` in matches.ts — a flat 90/120, never stretched by stoppage-time subs.
+    const totalMinutes = event.decider ? 120 : 90;
     const subbedOutIds = new Set(event.substitutions.map((s) => s.playerOutId));
     let checkedNonSubbed = 0;
 
     for (const p of [...updatedHome.players, ...updatedAway.players]) {
       const ps = event.playerStats[p.id];
       if (!ps) {
-        // Never on the pitch — untouched by the match.
+        // Never on the pitch this match — the daily rest/training loop skips this squad
+        // entirely today (it played a fixture), so `finalizeSquadsAfterMatch` gives bench
+        // players the day's recovery/decay itself: fitness recovers off the fresh-squad
+        // default (75, from `emptySeasonLog`), load (freshly 0) decays to itself (still 0).
         expect(p.seasonLog?.load ?? 0).toBe(0);
+        expect(p.seasonLog!.fitness).toBeGreaterThan(75);
+        expect(p.seasonLog!.fitness).toBeLessThanOrEqual(100);
         continue;
       }
       const fitness = p.seasonLog!.fitness;
@@ -229,13 +255,15 @@ describe("buildMatchEvent — full engine post-match fitness and load", () => {
       expect(fitness).toBeLessThanOrEqual(100);
 
       const load = p.seasonLog!.load ?? 0;
-      // A player subbed on in the very last instant of the match can legitimately play 0 minutes.
+      // The "at least 1 minute" floor only applies to a player still on the pitch at the final
+      // whistle (see the dedicated computeMinutesPlayed test) — a player subbed off in the very
+      // first minute of the match could in principle still show 0 here.
       expect(load).toBeGreaterThanOrEqual(0);
-      expect(load).toBeLessThanOrEqual(totalMinutes);
 
       if (!subbedOutIds.has(p.id)) {
         // Started and finished the match (or came on and was never subbed off again) — a
-        // starter who was never substituted plays the full match length.
+        // starter who was never involved in any substitution plays exactly the full match
+        // length (fresh squads start at load 0, so decay-then-add doesn't change this).
         const isStarter = homeLineup.includes(p.id) || awayLineup.includes(p.id);
         const wasSubbedIn = event.substitutions.some((s) => s.playerInId === p.id);
         if (isStarter && !wasSubbedIn) {

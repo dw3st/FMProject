@@ -23,11 +23,10 @@ describe("postMatchFitness", () => {
 
 describe("recoverDay", () => {
   // Design example (docs/superpowers/specs/2026-09-27-stamina-design.md §1): a 26-year-old, no
-  // accumulated load, stamina 7, recovering from a post-match fitness of 55 climbs "55 → ~81 → ~88
-  // → ~93" (tolerance ±1.5). With the constants as given (RECOVERY_BASE=0.35 unchanged — no
-  // adjustment needed), that sequence is days 2–4 of the curve: day 1 ≈ 71.4 (not shown in the
-  // compressed example), day 2 ≈ 81.8, day 3 ≈ 88.4, day 4 ≈ 92.6 — each within 0.8 of the quoted
-  // ~81/~88/~93, well inside the ±1.5 tolerance.
+  // accumulated load, stamina 7, recovering from a post-match fitness of 55. With RECOVERY_BASE
+  // = 0.35 (kept as-is — the slower curve is intended, per review), the honest curve is
+  // 55 → 71.4 → 81.8 → 88.4 → 92.6, one value per rest day (each `toBeCloseTo(target, 0)`, i.e.
+  // within 0.5 of the exact recurrence `f += (100 − f) × rate`).
   test("matches the design example curve (55, 26yo, load 0, stamina 7)", () => {
     const p = { age: 26, load: 0, stamina: 7 };
     let fitness = 55;
@@ -36,9 +35,9 @@ describe("recoverDay", () => {
       fitness = recoverDay(fitness, p);
       days.push(fitness);
     }
-    const targets = [81, 88, 93];
+    const targets = [71.4, 81.8, 88.4, 92.6];
     for (let i = 0; i < targets.length; i++) {
-      expect(Math.abs(days[i + 1]! - targets[i]!)).toBeLessThanOrEqual(1.5);
+      expect(days[i]!).toBeCloseTo(targets[i]!, 0);
     }
   });
 
