@@ -68,4 +68,27 @@ describe("groupTable", () => {
       expect(t.find((r) => r.squadId === id)).toMatchObject({ pts: 6, gd: 0, gf: 2 });
     }
   });
+
+  test("three-way tie: head-to-head points alone don't resolve everyone, head-to-head goal difference does", () => {
+    // a, b and c all finish pts12, gd2, gf8 overall (double round-robin trio + filler matches against
+    // d/e/f). Within the trio (h2h) a beat both b and c twice (h2h pts12, clear leader), but b and c
+    // split their two h2h meetings one win each — tied at h2h pts3 apiece. The tie-break is a single,
+    // non-recursive pass over the h2h table: sort by h2h points, then h2h goal difference (b won 2-0,
+    // lost 0-1 -> h2h gd -3; c lost 0-2, won 1-0 -> h2h gd -5), so b ranks above c on goal difference
+    // without ever re-computing a head-to-head among the still-tied pair. Only after that does id
+    // apply, and it isn't needed here since gd already separates b and c.
+    const fx = [
+      f("a", "b", 2, 0), f("b", "a", 0, 2), // a beats b home and away
+      f("a", "c", 2, 0), f("c", "a", 0, 2), // a beats c home and away
+      f("b", "c", 2, 0), f("c", "b", 1, 0), // b and c split — b's win is by more, c's win is by less
+      f("d", "a", 6, 0),                                         // filler: a
+      f("b", "d", 2, 0), f("b", "e", 2, 0), f("b", "f", 2, 1),   // filler: b
+      f("c", "d", 3, 0), f("c", "e", 2, 0), f("c", "f", 2, 0),   // filler: c
+    ];
+    const t = groupTable(["a", "b", "c", "d", "e", "f"], fx);
+    for (const id of ["a", "b", "c"]) {
+      expect(t.find((r) => r.squadId === id)).toMatchObject({ pts: 12, gd: 2, gf: 8 });
+    }
+    expect(t.map((r) => r.squadId).filter((id) => ["a", "b", "c"].includes(id))).toEqual(["a", "b", "c"]);
+  });
 });
