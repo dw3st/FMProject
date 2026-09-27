@@ -71,10 +71,20 @@ function cupName(slug: string, leagues: LeagueData[], lang: string): string | nu
   return `Copa nacional (${country})`;
 }
 
-/** Display name of a competition slug: league name, national cup name, or a title-cased slug. */
+/** Fixed names for the continental competitions — never derived from leagueData. */
+const CONTINENTAL_NAMES: Record<string, { en: string; pt: string }> = {
+  ucl: { en: "Champions League", pt: "Champions League" },
+  uel: { en: "Europa League", pt: "Europa League" },
+  lib: { en: "Copa Libertadores", pt: "Copa Libertadores" },
+  sud: { en: "Copa Sudamericana", pt: "Copa Sul-Americana" },
+};
+
+/** Display name of a competition slug: league name, national cup name, continental name, or a title-cased slug. */
 export function competitionName(slug: string, leagues: LeagueData[], lang = "en"): string {
   const hit = leagues.find((l) => l.slug === slug);
   if (hit) return hit.name;
+  const cont = CONTINENTAL_NAMES[slug];
+  if (cont) return lang.toLowerCase().startsWith("pt") ? cont.pt : cont.en;
   if (isCupSlug(slug)) return cupName(slug, leagues, lang) ?? titleCase(slug.replace(/^of_/, ""));
   return titleCase(slug.replace(/^of_/, ""));
 }
