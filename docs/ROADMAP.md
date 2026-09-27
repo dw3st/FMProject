@@ -1,7 +1,7 @@
 # FMProject — Roadmap
 
 Referência única do que está feito, do que vem a seguir e em que ordem. Atualizado a cada entrega
-(merge em `main`). Última atualização: 2026-09-27 (Etapa 2: continentais).
+(merge em `main`). Última atualização: 2026-09-27 (Etapa 3: premiação e finanças).
 
 ---
 
@@ -37,8 +37,11 @@ Mudou o mundo (importadores, elencos, calendário)? Regenerar a cadeia inteira �
   diferente (issue #2). Ver `.claude/rules/game/continental.md`.
 - **Partida:** motor tick a tick com táticas por estilo, mentalidade ao vivo, 1×/2×/4×, roda com a
   aba em segundo plano. Ligas não seguidas usam o quickSim.
-- **Clube:** finanças do jogador (orçamento, receitas, estádio), IA com finanças por tier,
-  mercado de transferências (IA e jogador), desenvolvimento de jogadores, inbox, fim de temporada.
+- **Clube:** finanças do jogador por extrato real (salário em escala real, bilheteria em toda
+  competição, premiação de liga/copa/continental, saldo pode ficar negativo), IA com orçamento
+  de salário pela receita e prêmios entrando na verba de transferências, mercado de
+  transferências (IA e jogador), desenvolvimento de jogadores, inbox, fim de temporada. Ver
+  `.claude/rules/game/finances.md`.
 - **Plataforma:** login por e-mail (Resend), reports de testers (botão Report), login automático
   só em desenvolvimento, deploy por Docker + túnel Cloudflare.
 
@@ -55,7 +58,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 |---|---|---|---|
 | 1 ✅ | 1.1 Copas nacionais | #5 revisão + smoke da recalibração | Fechar a verificação do que já está em produção antes de construir em cima; o smoke de temporada vai ganhar as copas |
 | 2 ✅ | 1.2 Continentais | #2 quickSim × motor em gols | Continentais misturam clubes seguidos (motor) e não seguidos (quickSim): o quickSim precisa estar calibrado |
-| 3 | 1.3 Premiação e finanças | #12 salários fora de escala | Mesma área (finanças do clube); prêmios sem salários coerentes distorcem o caixa |
+| 3 ✅ | 1.3 Premiação e finanças | #12 salários fora de escala | Mesma área (finanças do clube); prêmios sem salários coerentes distorcem o caixa |
 | 4 | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
 | 5 | 2.2 Lesões | #3 ruído dos `of_*` | Lesões e rotação dependem de elencos com níveis críveis |
 | 6 | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
@@ -176,6 +179,10 @@ servidor de desenvolvimento · #5 revisão final + smoke da recalibração · #6
 #7 Bundesliga × Serie A · #8 estilo posse · #9 notas ≥ 8,5 no quickSim · #10 compose exposto na rede
 local · #11 ligas de ano civil com a composição de 2026 · #12 salários fora de escala · #13 nomes
 turcos com maiúscula estranha.
+
+Fechados em 2026-09-27: **#12** salários fora de escala (curva real-euro + fator de clube, Etapa 3 —
+ver `.claude/rules/game/finances.md`) · **#16** laterais invertidos na tela de táticas (commit
+`736ed20`, mesma branch).
 
 ---
 

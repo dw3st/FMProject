@@ -40,6 +40,27 @@ export function countryClubs(
 }
 
 /**
+ * Prize base for a country's national cup: mean broadcasting of its tier-1 league clubs
+ * (`.claude/rules/AI-clubs/finance.md`, design spec §3 "Copa nacional"). `cupStagePrize`/
+ * `cupRunnerUpPrize` (src/Domain/finance/prizes.ts) take a fraction of this. Callers doing this
+ * once per country per day should cache the result — the mean rarely changes within a day.
+ */
+export async function cupPrizeBase(
+  service: SaveService,
+  saveId: string,
+  country: string,
+  index: SquadIndex,
+  countryOf: Map<string, string>,
+  pyramids: Pyramids,
+): Promise<number> {
+  const tier1 = countryClubs(country, index, countryOf, pyramids).filter((c) => c.tier === 1);
+  if (tier1.length === 0) return 0;
+  const squads = await Promise.all(tier1.map((c) => service.getSquadById(saveId, c.id)));
+  const total = squads.reduce((sum, s) => sum + (s?.finances?.broadcasting ?? 0), 0);
+  return total / tier1.length;
+}
+
+/**
  * Continental competition slugs (ucl/uel/lib/sud) that already have at least one club of `country`
  * among their participants (`meta.continental.countryOf`) — so a national cup's own dates can be
  * scheduled to avoid double-booking those clubs the same way it already avoids the country's own

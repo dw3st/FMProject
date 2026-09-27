@@ -6,6 +6,7 @@ import { comparePositions } from "@/types/positionOrder";
 import { toDisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -45,7 +46,8 @@ export function SquadTable({
 
   const players = useMemo<DisplayPlayer[]>(() => {
     if (!squad) return [];
-    return squad.players.map((p) => toDisplayPlayer(p, squad.name));
+    const wageFactor = wageFactorOf(squad);
+    return squad.players.map((p) => toDisplayPlayer(p, squad.name, { wageFactor }));
   }, [squad]);
 
   const handleSort = (key: string) => {

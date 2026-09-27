@@ -717,6 +717,8 @@
   "stats": {
     "matchStatistics": "Estatísticas da Partida",
     "team": "Time {{team}}",
+    "extraTime": "Prorrogação",
+    "penalties": "Pênaltis",
     "headers": {
       "G": "Gols",
       "SH": "Finalizações",
@@ -1041,6 +1043,10 @@
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
+    "prizeAmount": "+ {{amount}}",
+    "season": {
+      "negativeBalance": "O caixa do clube ficou negativo: {{balance}}."
+    },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
       "eliminated": "Eliminados da {{cup}} ({{stage}}) por {{opponent}}",
@@ -1527,7 +1533,7 @@
     "expenses": "Despesas",
     "playerSalaries": "Salários de Jogadores",
     "weekly": "/sem",
-    "operational": "Operacional (10%)",
+    "operational": "Operacional",
     "transfersOut": "Transferências Realizadas",
     "playerPurchases": "compras de jogadores",
     "noPurchases": "sem compras",
@@ -1548,7 +1554,21 @@
     "playMatchesToSeeAttendance": "Jogue partidas para ver estimativa de presença.",
     "expand": "Expandir",
     "comingSoon": "Em breve",
-    "loading": "Carregando..."
+    "loading": "Carregando...",
+    "gate": "Bilheteria",
+    "prize": "Premiação",
+    "seasonIncome": "Receita da Temporada",
+    "seasonExpenses": "Despesa da Temporada",
+    "seasonPrizes": "Prêmios da Temporada",
+    "weeklyNet": "Saldo Semanal",
+    "last12Weeks": "Últimas 12 semanas",
+    "ledgerTitle": "Extrato",
+    "allKinds": "Todos",
+    "noEntries": "Nenhum lançamento ainda.",
+    "gateProjection": "Projeção de Bilheteria",
+    "noUpcomingHomeGames": "Sem jogos em casa agendados.",
+    "weeklyProjection": "Projeção Semanal",
+    "seasonBasis": "Temporada até agora"
   },
   "developmentScreen": {
     "playerDevelopment": "Desenvolvimento do Jogador",

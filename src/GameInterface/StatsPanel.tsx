@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { getAllPlayerStats, getTeamStats } from "@/GameEngine/Domain/Statistics";
-import type { PlayerStats } from "@/GameEngine/Domain/Statistics";
+import type { PlayerStats, TeamStats } from "@/GameEngine/Domain/Statistics";
 import type { GamePlayer, SubstitutionRecord } from "@/GameEngine/types";
 
 interface Col {
@@ -160,6 +160,30 @@ function TeamTable({
   );
 }
 
+/** Extra-time / shootout summary — shown only when the match actually had them. */
+function KnockoutSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }) {
+  const { t } = useTranslation();
+  const hadExtraTime = teamA.extraTimePlayed === 1 || teamB.extraTimePlayed === 1;
+  if (!hadExtraTime) return null;
+  const hadShootout = teamA.penaltiesTaken > 0 || teamB.penaltiesTaken > 0;
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50 text-xs">
+      <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold uppercase tracking-wide">
+        {t("stats.extraTime", { defaultValue: "Extra time" })}
+      </span>
+      {hadShootout && (
+        <span className="text-muted-foreground">
+          {t("stats.penalties", { defaultValue: "Penalties" })}:{" "}
+          <span className="text-foreground font-bold tabular-nums">{teamA.penaltiesScored}</span>
+          {" – "}
+          <span className="text-foreground font-bold tabular-nums">{teamB.penaltiesScored}</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function StatsPanel({
   players,
   substitutions = [],
@@ -182,6 +206,11 @@ export function StatsPanel({
 
   const teamA = players.filter((p) => p.team === "A");
   const teamB = players.filter((p) => p.team === "B");
+  // Recomputed every render; the `stats` state update above (on "statsUpdated")
+  // is what triggers the re-render, and getTeamStats reads the same module-level
+  // store that event was just emitted from — so this always reflects the latest.
+  const teamAStats = getTeamStats("A");
+  const teamBStats = getTeamStats("B");
 
   return (
     <div className="bg-card/80 backdrop-blur-sm border-t border-border">
@@ -190,6 +219,7 @@ export function StatsPanel({
           {t("stats.matchStatistics")}
         </h3>
       </div>
+      <KnockoutSummary teamA={teamAStats} teamB={teamBStats} />
       <div className="flex gap-4 p-2">
         <TeamTable team="A" accentColor={teamColorA} players={teamA} substitutions={substitutions} stats={stats} side="left" />
         <TeamTable team="B" accentColor={teamColorB} players={teamB} substitutions={substitutions} stats={stats} side="right" />

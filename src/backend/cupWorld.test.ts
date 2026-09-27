@@ -12,7 +12,7 @@ describe("createSave generates national cups", () => {
   test("England cup exists with a drawn first stage", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
     const cup = await saveService.getLeagueMeta(saveId, "cup_england");
@@ -32,7 +32,7 @@ describe("advanceOneDay plays and draws a cup stage", () => {
   test("stage 1 is played and stage 2 is drawn", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -72,7 +72,7 @@ describe("advanceOneDay emits cup inbox news", () => {
   test("stage 1 for the player's club produces a cup inbox message", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -111,7 +111,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
   test("level score with no penalty winner returns 400 and writes nothing", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -156,7 +156,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
   test("second leg: 90' score alone would be level, but aggregate decides it — no decider needed, 400", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -208,7 +208,7 @@ describe("advanceOneDay rejects an undecided knockout recording", () => {
   test("second leg: 90' score alone would be level, aggregate breaks the tie — recorded with no decider", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 
@@ -263,7 +263,7 @@ describe("createCountryCup avoids continental competition dates", () => {
   test("England finds its own continentals; a country with none gets none; a regenerated cup never lands on one of those dates", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
     });
     saveId = meta.id;
 

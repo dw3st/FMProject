@@ -42,7 +42,6 @@ for (let n = 1; n <= COUNT; n++) {
     clubId: placeholder.squadId,
     clubName: placeholder.name ?? "Placeholder",
     clubColors: placeholder.colors ?? ["#888888", "#ffffff"],
-    budget: 0,
   });
 
   process.stdout.write(`  kit-${n}: simulating ${save.currentDate} back to world start … `);

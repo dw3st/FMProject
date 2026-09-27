@@ -13,6 +13,7 @@ import {
 import { getSellPriority } from "@/Domain/transfer/sellList";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
 import { requireSaveOwner } from "@/backend/auth/middleware";
+import { withSaveLock } from "@/backend/saveLock";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -76,9 +77,6 @@ export const transferRoutes = {
     }
 
     if (req.method === "POST") {
-      const meta = await saveService.getMeta(saveId);
-      if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-
       let body: unknown;
       try {
         body = await req.json();
@@ -101,101 +99,112 @@ export const transferRoutes = {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
 
-      // ── Resolve squads ────────────────────────────────────────────────────
-      const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
-      const sellerResolved = await saveService.resolveSquadId(saveId, fromSquadId);
-      if (!sellerResolved) return Response.json({ error: "selling squad not found" }, { status: 404 });
+      // Serialise the whole read-decide-mutate sequence per save: reading squads/budget,
+      // deciding acceptance, exchanging the fee (executeTransferFee: saveSquad + appendLedger)
+      // and appending the transfer/day-event must not interleave with a concurrent advance-day
+      // on the same save (which also touches finances and the transfer log).
+      return withSaveLock(saveId, async () => {
+        const meta = await saveService.getMeta(saveId);
+        if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-      const [sellerSquad, buyerSquad] = await Promise.all([
-        saveService.getSquad(saveId, sellerResolved.leagueSlug, sellerResolved.clubSlug),
-        saveService.getSquad(saveId, buyerResolved.leagueSlug, buyerResolved.clubSlug),
-      ]);
-      if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
-      if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
+        // ── Resolve squads ────────────────────────────────────────────────────
+        const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
+        const sellerResolved = await saveService.resolveSquadId(saveId, fromSquadId);
+        if (!sellerResolved) return Response.json({ error: "selling squad not found" }, { status: 404 });
 
-      // ── Budget check ──────────────────────────────
-      const budget = buyerSquad.finances?.budget ?? 0;
-      if (budget < fee) {
-        return Response.json({ error: "Insufficient funds" }, { status: 400 });
-      }
+        const [sellerSquad, buyerSquad] = await Promise.all([
+          saveService.getSquad(saveId, sellerResolved.leagueSlug, sellerResolved.clubSlug),
+          saveService.getSquad(saveId, buyerResolved.leagueSlug, buyerResolved.clubSlug),
+        ]);
+        if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
+        if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
 
-      const player = sellerSquad.players.find((p) => p.id === playerId);
-      if (!player) return Response.json({ error: "player not found" }, { status: 404 });
-
-      // ── Look up seller's sell list for acceptance boost ───────────────────
-      const rawMarket = await saveService.getMarket(saveId);
-      const market = rawMarket ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] } : null;
-      const sellerProfile = market?.profiles[fromSquadId];
-      const sellPriority = sellerProfile
-        ? (getSellPriority(playerId, sellerProfile.sellList ?? []) ?? undefined)
-        : undefined;
-
-      // ── AI acceptance decision ────────────────────────────────────────────
-      const { accepted, reason } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority);
-
-      const transferId = randomUUID();
-      const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
-
-      const record: TransferRecord = {
-        id: transferId,
-        date,
-        playerId,
-        playerName: player.name,
-        playerPosition: player.positions[0] ?? "—",
-        playerAge: player.age,
-        fromSquadId,
-        fromSquadName: sellerSquad.name,
-        toSquadId: buyerSquad.id,
-        toSquadName: buyerSquad.name,
-        fee,
-        direction: "in",
-        status: accepted ? "accepted" : "rejected",
-        reason,
-      };
-
-      let updatedMeta = meta;
-
-      if (accepted) {
-        // Move player between squads (no money here — FinancialService handles that)
-        const { selling, buying } = squadsAfterAcceptedTransfer(
-          player,
-          sellerSquad,
-          buyerSquad,
-          buyerSquad.id,
-          playerId,
-        );
-
-        // Exchange money via FinancialService — it also persists both squads (roster + money).
-        // Saving `selling` / `buying` again here would overwrite the fee exchange.
-        const isSellerPlayerClub = isPlayerSquadId(fromSquadId, meta);
-        updatedMeta = await executeTransferFee(
-          saveId,
-          meta,
-          { squad: buying, ...buyerResolved, isPlayerClub: true },
-          { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
-          fee,
-        );
-
-        // Remove the sold player from the seller's sell list in the market profile
-        if (market && sellerProfile) {
-          const updatedProfile = {
-            ...sellerProfile,
-            sellList: (sellerProfile.sellList ?? []).filter((c) => c.playerId !== playerId),
-          };
-          await saveService.saveMarket(saveId, {
-            ...market,
-            profiles: { ...market.profiles, [fromSquadId]: updatedProfile },
-          });
+        // ── Budget check ──────────────────────────────
+        const budget = buyerSquad.finances?.budget ?? 0;
+        if (budget < fee) {
+          return Response.json({ error: "Insufficient funds" }, { status: 400 });
         }
-      }
 
-      await saveService.appendTransfer(saveId, record);
-      const ref: TransferRef = { kind: "transfer_ref", transferId };
-      await saveService.appendDayEvent(saveId, date, ref);
+        const player = sellerSquad.players.find((p) => p.id === playerId);
+        if (!player) return Response.json({ error: "player not found" }, { status: 404 });
 
-      const oldBudget = buyerSquad.finances?.budget ?? 0;
-      const newBudget = accepted ? Math.max(0, oldBudget - fee) : oldBudget;
-      return Response.json({ record, newBudget });
+        // ── Look up seller's sell list for acceptance boost ───────────────────
+        const rawMarket = await saveService.getMarket(saveId);
+        const market = rawMarket ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] } : null;
+        const sellerProfile = market?.profiles[fromSquadId];
+        const sellPriority = sellerProfile
+          ? (getSellPriority(playerId, sellerProfile.sellList ?? []) ?? undefined)
+          : undefined;
+
+        // ── AI acceptance decision ────────────────────────────────────────────
+        const { accepted, reason } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority);
+
+        const transferId = randomUUID();
+        const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+
+        const record: TransferRecord = {
+          id: transferId,
+          date,
+          playerId,
+          playerName: player.name,
+          playerPosition: player.positions[0] ?? "—",
+          playerAge: player.age,
+          fromSquadId,
+          fromSquadName: sellerSquad.name,
+          toSquadId: buyerSquad.id,
+          toSquadName: buyerSquad.name,
+          fee,
+          direction: "in",
+          status: accepted ? "accepted" : "rejected",
+          reason,
+        };
+
+        let updatedMeta = meta;
+
+        if (accepted) {
+          // Move player between squads (no money here — FinancialService handles that)
+          const { selling, buying } = squadsAfterAcceptedTransfer(
+            player,
+            sellerSquad,
+            buyerSquad,
+            buyerSquad.id,
+            playerId,
+          );
+
+          // Exchange money via FinancialService — it also persists both squads (roster + money).
+          // Saving `selling` / `buying` again here would overwrite the fee exchange.
+          const isSellerPlayerClub = isPlayerSquadId(fromSquadId, meta);
+          updatedMeta = await executeTransferFee(
+            saveId,
+            meta,
+            { squad: buying, ...buyerResolved, isPlayerClub: true },
+            { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
+            fee,
+          );
+
+          // Remove the sold player from the seller's sell list in the market profile
+          if (market && sellerProfile) {
+            const updatedProfile = {
+              ...sellerProfile,
+              sellList: (sellerProfile.sellList ?? []).filter((c) => c.playerId !== playerId),
+            };
+            await saveService.saveMarket(saveId, {
+              ...market,
+              profiles: { ...market.profiles, [fromSquadId]: updatedProfile },
+            });
+          }
+        }
+
+        await saveService.appendTransfer(saveId, record);
+        const ref: TransferRef = { kind: "transfer_ref", transferId };
+        await saveService.appendDayEvent(saveId, date, ref);
+
+        // No clamp (see .claude/rules/game/finances.md) — this is only the response's echo of the
+        // new budget, the real value already comes from executeTransferFee's persisted squad.
+        const oldBudget = buyerSquad.finances?.budget ?? 0;
+        const newBudget = accepted ? oldBudget - fee : oldBudget;
+        return Response.json({ record, newBudget });
+      });
     }
 
     return Response.json({ error: "method not allowed" }, { status: 405 });
@@ -209,10 +218,10 @@ export const transferRoutes = {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
-    const rawMarket = await saveService.getMarket(saveId);
-    const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
 
     if (req.method === "GET") {
+      const rawMarket = await saveService.getMarket(saveId);
+      const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
       return Response.json(market?.playerSellList ?? []);
     }
 
@@ -226,23 +235,31 @@ export const transferRoutes = {
         return Response.json({ error: "missing playerId" }, { status: 400 });
       }
 
-      const allSquads = await saveService.getAllSquads(saveId);
-      const baseMarket = market ?? initMarketState(allSquads);
-      const currentList: SellCandidate[] = baseMarket.playerSellList;
+      // Serialise the read-decide-write of the market's sell list per save: a concurrent
+      // dailyMarketTick (advance-day) or another sell-list toggle on the same save must not
+      // interleave with this read-modify-write, or one toggle can silently undo another.
+      return withSaveLock(saveId, async () => {
+        const rawMarket = await saveService.getMarket(saveId);
+        const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
 
-      let newList: SellCandidate[];
-      const existingIdx = currentList.findIndex((c) => c.playerId === playerId);
-      if (existingIdx >= 0) {
-        // Toggle off
-        newList = currentList.filter((c) => c.playerId !== playerId);
-      } else {
-        // Add with max priority (human explicitly listed it)
-        newList = [...currentList, { playerId, priority: 1.0 }];
-      }
+        const allSquads = await saveService.getAllSquads(saveId);
+        const baseMarket = market ?? initMarketState(allSquads);
+        const currentList: SellCandidate[] = baseMarket.playerSellList;
 
-      const updatedMarket = { ...baseMarket, playerSellList: newList };
-      await saveService.saveMarket(saveId, updatedMarket);
-      return Response.json({ playerSellList: newList });
+        let newList: SellCandidate[];
+        const existingIdx = currentList.findIndex((c) => c.playerId === playerId);
+        if (existingIdx >= 0) {
+          // Toggle off
+          newList = currentList.filter((c) => c.playerId !== playerId);
+        } else {
+          // Add with max priority (human explicitly listed it)
+          newList = [...currentList, { playerId, priority: 1.0 }];
+        }
+
+        const updatedMarket = { ...baseMarket, playerSellList: newList };
+        await saveService.saveMarket(saveId, updatedMarket);
+        return Response.json({ playerSellList: newList });
+      });
     }
 
     return Response.json({ error: "method not allowed" }, { status: 405 });

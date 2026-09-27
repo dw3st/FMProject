@@ -7,6 +7,7 @@ import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { mkdir, readdir, rm, unlink } from "fs/promises";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { runPool } from "@/backend/dal/pool";
@@ -32,6 +33,7 @@ function squadPath(saveId: string, league: string, club: string) {
 function tacticsPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/tactics.json`; }
 function marketPath(saveId: string)      { return `${SAVES_DIR}/${saveId}/market.json`; }
 function inboxPath(saveId: string)       { return `${SAVES_DIR}/${saveId}/inbox.json`; }
+function ledgerPath(saveId: string, season: number) { return `${SAVES_DIR}/${saveId}/ledger/${season}.json`; }
 function dayLogPath(saveId: string, date: string) {
   const [yyyy, mm] = date.split("-");
   return `${SAVES_DIR}/${saveId}/days/${yyyy}/${mm}/${date}.json`;
@@ -372,5 +374,39 @@ export class FileSystemDAL implements ISaveDAL {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}`;
     await mkdir(dir, { recursive: true });
     await Bun.write(leagueTransfersArchivePath2(saveId, leagueSlug, year), JSON.stringify(transfers, null, 2));
+  }
+
+  // ── Ledger (player club cash extract) ────────────────────────────────────────
+
+  async listLedgerSeasons(saveId: string): Promise<number[]> {
+    const dir = `${SAVES_DIR}/${saveId}/ledger`;
+    let names: string[];
+    try {
+      names = await readdir(dir);
+    } catch {
+      return [];
+    }
+    return names
+      .map((n) => /^(\d+)\.json$/.exec(n)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+      .sort((a, b) => a - b);
+  }
+
+  async readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
+    const file = Bun.file(ledgerPath(saveId, season));
+    if (!(await file.exists())) return [];
+    return file.json() as Promise<LedgerEntry[]>;
+  }
+
+  async appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+    const existing = await this.readLedger(saveId, season);
+    await this.writeLedger(saveId, season, [...existing, ...entries]);
+  }
+
+  async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}/ledger`, { recursive: true });
+    await Bun.write(ledgerPath(saveId, season), JSON.stringify(entries, null, 2));
   }
 }

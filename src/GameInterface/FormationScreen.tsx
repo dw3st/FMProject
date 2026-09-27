@@ -638,7 +638,10 @@ function FormationPitch({
         </div>
 
         {slots.map((slot, i) => {
-          const topPct = 100 - slot.y;
+          // slot.y is already a top offset with the attack end at the top (see getFormationSlots).
+          // Inverting it drew the keeper at the top, so the team attacked downward and its left
+          // side (LB/LWB/LW) appeared on the screen's right.
+          const topPct = slot.y;
           const player = players[i];
           const isSelected = selectedSlotIdx === i;
           const oop = player && getOutOfPosition ? getOutOfPosition(player, slot.role) : false;

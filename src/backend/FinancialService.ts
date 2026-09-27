@@ -12,7 +12,9 @@
 import { saveService, SaveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad } from "@/types/playerTypes";
-import { applyAITransferSale, applyAITransferSpend, estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
+import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
+import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
+import { gateRevenue } from "@/Domain/finance/gate";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -30,28 +32,34 @@ export function getClubBudget(squad: Squad): number {
 
 // ── Pure financial calculations (no side effects) ─────────────────────────────
 
-/**
- * Net weekly P/L for a squad:
- *   commercial_income / 52  −  total_weekly_salaries  −  operational (10% of salaries)
- */
-export function calcWeeklyDelta(squad: Squad): number {
-  const weeklyCommercial = Math.round((squad.finances?.commercial ?? 0) / 52);
-  const weeklyPlayerSalary = squad.players.reduce((sum, p) => sum + estimateWeeklyWage(p), 0);
-  const weeklyOperational = Math.round(weeklyPlayerSalary * 0.1);
-  return weeklyCommercial - weeklyPlayerSalary - weeklyOperational;
-}
-
-/** Home matchday ticket revenue based on stadium capacity. */
+/** Home matchday ticket revenue based on stadium capacity (league price — see `gateRevenue`). */
 export function calcMatchdayRevenue(squad: Squad): number {
   const capacity = squad.venue?.capacity ?? 0;
-  return capacity > 0 ? Math.round(capacity * HOME_FILL_RATE * TICKET_PRICE) : 0;
+  return gateRevenue(capacity, "league");
 }
 
 // ── Season start ──────────────────────────────────────────────────────────────
 
 /**
- * Credit the full season broadcasting fee to the player's club budget.
- * Called once when a new save is created.
+ * The ledger season for the player's club: the `year` of the given league's season meta. Falls
+ * back to the calendar year of `fallbackDate` (or now) when the league meta is missing — should
+ * not happen for an active save, but keeps this from throwing.
+ */
+async function ledgerSeasonFor(
+  service: SaveService,
+  saveId: string,
+  leagueSlug: string,
+  fallbackDate?: string,
+): Promise<number> {
+  const lm = await service.getLeagueMeta(saveId, leagueSlug);
+  if (lm) return lm.year;
+  const d = fallbackDate ? new Date(fallbackDate) : new Date();
+  return d.getFullYear();
+}
+
+/**
+ * Credit the full season broadcasting fee to the player's club budget via the ledger
+ * (`recordMoney` — see `.claude/rules/game/finances.md`). Called once when a new save is created.
  */
 export async function applyBroadcasting(
   saveId: string,
@@ -63,12 +71,12 @@ export async function applyBroadcasting(
   const broadcasting = squad?.finances?.broadcasting ?? 0;
   if (broadcasting <= 0 || !squad?.finances) return meta;
 
-  await saveService.saveSquad(saveId, leagueSlug, clubSlug, {
-    ...squad,
-    finances: {
-      ...squad.finances,
-      budget: (squad.finances.budget ?? 0) + broadcasting,
-    },
+  const season = await ledgerSeasonFor(saveService, saveId, leagueSlug, meta.currentDate);
+  await recordMoney(saveService, saveId, season, { leagueSlug, clubSlug }, {
+    date: meta.currentDate ?? new Date().toISOString().slice(0, 10),
+    kind: "broadcasting",
+    amount: broadcasting,
+    label: "Broadcasting revenue",
   });
 
   return meta;
@@ -86,9 +94,11 @@ type ClubRef = {
 /**
  * Move a transfer fee from the buyer to the seller and persist all changes.
  *
- * The human club pays / receives on `finances.budget` (its real balance). AI clubs keep no balance:
- * an AI buyer's fee comes out of its seasonal transfer budget and an AI seller gets part of the fee
- * back into it (`applyAITransferSpend` / `applyAITransferSale`, src/Domain/aiFinance).
+ * The human club pays / receives on `finances.budget` (its real balance, no clamp — see
+ * `transferFeeSquads`) and gets a `transfer_out`/`transfer_in` ledger entry. AI clubs keep no
+ * balance: an AI buyer's fee comes out of its seasonal transfer budget and an AI seller gets part
+ * of the fee back into it (`applyAITransferSpend` / `applyAITransferSale`, src/Domain/aiFinance) —
+ * no ledger entry, the ledger is the player club's cash extract only.
  *
  * Returns the updated SaveMeta.
  */
@@ -105,12 +115,36 @@ export async function executeTransferFee(
     service.saveSquad(saveId, buyer.leagueSlug, buyer.clubSlug, paid),
     service.saveSquad(saveId, seller.leagueSlug, seller.clubSlug, credited),
   ]);
+
+  if (buyer.isPlayerClub || seller.isPlayerClub) {
+    const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+    const playerRef = buyer.isPlayerClub ? buyer : seller;
+    const season = await ledgerSeasonFor(service, saveId, playerRef.leagueSlug, date);
+    const entries: LedgerEntry[] = [];
+    if (buyer.isPlayerClub) {
+      entries.push({
+        date, kind: "transfer_out", amount: -fee,
+        label: `Transfer fee paid to ${seller.squad.name}`,
+        ref: { opponentId: seller.squad.id },
+      });
+    }
+    if (seller.isPlayerClub) {
+      entries.push({
+        date, kind: "transfer_in", amount: fee,
+        label: `Transfer fee from ${buyer.squad.name}`,
+        ref: { opponentId: buyer.squad.id },
+      });
+    }
+    await service.appendLedger(saveId, season, entries);
+  }
+
   return meta;
 }
 
 /**
  * Pure: both squads with the fee applied (see `executeTransferFee`). Always returns both squads,
- * which the caller persists as the final state of the transfer (roster + money).
+ * which the caller persists as the final state of the transfer (roster + money). No clamp on the
+ * human side — the balance may go negative (design spec §2, "Extrato").
  */
 export function transferFeeSquads(
   buyer: Pick<ClubRef, "squad" | "isPlayerClub">,
@@ -118,9 +152,43 @@ export function transferFeeSquads(
   fee: number,
 ): { buyer: Squad; seller: Squad } {
   const humanDelta = (s: Squad, delta: number): Squad =>
-    s.finances ? { ...s, finances: { ...s.finances, budget: Math.max(0, (s.finances.budget ?? 0) + delta) } } : s;
+    s.finances ? { ...s, finances: { ...s.finances, budget: (s.finances.budget ?? 0) + delta } } : s;
   return {
     buyer: buyer.isPlayerClub ? humanDelta(buyer.squad, -fee) : applyAITransferSpend(buyer.squad, fee),
     seller: seller.isPlayerClub ? humanDelta(seller.squad, fee) : applyAITransferSale(seller.squad, fee),
   };
+}
+
+// ── Ledger (player club cash extract) ──────────────────────────────────────────
+
+/** Where a squad lives — the same (league, club stem/id) pair `saveSquad`/`getSquad` resolve. */
+export interface SquadRef {
+  leagueSlug: string;
+  clubSlug: string;
+}
+
+/**
+ * The single entry point for a money movement on the player's club: reads the squad, applies
+ * `entry` to its budget (`applyMoney`, no clamp — the balance may go negative), persists the
+ * squad, and appends `entry` to the season's ledger. The ledger's season is the `year` of the
+ * player's league season (see `.claude/rules/game/finances.md`).
+ *
+ * Returns the updated squad so a caller applying several entries in a row (e.g. a Monday's
+ * commercial + wages + operational lines) can chain without re-reading.
+ */
+export async function recordMoney(
+  service: SaveService,
+  saveId: string,
+  season: number,
+  squadRef: SquadRef,
+  entry: LedgerEntry,
+): Promise<Squad> {
+  const squad = await service.getSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug);
+  if (!squad) {
+    throw new Error(`recordMoney: squad ${squadRef.leagueSlug}/${squadRef.clubSlug} not found in save ${saveId}`);
+  }
+  const updated = applyMoney(squad, entry);
+  await service.saveSquad(saveId, squadRef.leagueSlug, squadRef.clubSlug, updated);
+  await service.appendLedger(saveId, season, [entry]);
+  return updated;
 }

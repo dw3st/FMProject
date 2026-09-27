@@ -43,10 +43,17 @@ export interface TransferOutInboxMessage extends InboxMessageBase {
   feeEuros:   number;
 }
 
-/** End-of-season news for the human club: promotion, relegation, a league title or the fan base change. */
+/**
+ * End-of-season news for the human club: promotion, relegation, a league title, the fan base
+ * change, the league merit prize (`league_prize` — ALWAYS fires once per rollover the club has a
+ * final table position, independent of champion/promoted/relegated/followers, so a mid-table
+ * finish still gets prize news; never doubles up with those — see `.claude/rules/game/finances.md`),
+ * or (`negative_balance`, not tied to a season end — any day the ledger tips it below zero) the
+ * cash extract going negative.
+ */
 export interface SeasonInboxMessage extends InboxMessageBase {
   category:   "season";
-  kind:       "promoted" | "relegated" | "champion" | "followers";
+  kind:       "promoted" | "relegated" | "champion" | "followers" | "negative_balance" | "league_prize";
   /** Followers before / after the season reaction (kind "followers" only). */
   followersBefore?: number;
   followersAfter?:  number;
@@ -55,8 +62,12 @@ export interface SeasonInboxMessage extends InboxMessageBase {
   leagueName: string;
   /** League the club left (promoted/relegated only). */
   fromLeagueSlug?: string;
-  /** Season year that just ended. */
+  /** Season year that just ended (or, for negative_balance, the ledger's current season). */
   seasonYear: number;
+  /** Club budget on the day it crossed negative (kind "negative_balance" only). */
+  balance?: number;
+  /** League prize paid at this rollover (kind "league_prize" only), euros. */
+  prize?: number;
 }
 
 /** National-cup news for the human club. */
@@ -72,6 +83,8 @@ export interface CupInboxMessage extends InboxMessageBase {
   /** Draw only: the tie's date and whether we are at home ("neutral" for the final). */
   tieDate?:  string;
   venue?:    "home" | "away" | "neutral";
+  /** Prize paid THIS DAY for this event (champion, or the runner-up prize on a final loss), euros. */
+  prize?:    number;
 }
 
 /** Continental-competition (UCL/UEL/Lib/Sud) news for the human club. */
@@ -93,6 +106,13 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
   firstLegDate?: string;
   /** Draw only: whether we are at home ("neutral" for the final). */
   venue?:      "home" | "away" | "neutral";
+  /**
+   * Prize paid THIS DAY for this event: champion (title), or reaching the round of 16 (the
+   * "draw" message for stage "r16"). Never set on "eliminated" — the design table has no
+   * continental runner-up/elimination payout (unlike cups' `cupRunnerUpPrize`); a final loss
+   * earns nothing beyond the "final" prize already paid the day it reached the final.
+   */
+  prize?:      number;
 }
 
 export type InboxMessage =

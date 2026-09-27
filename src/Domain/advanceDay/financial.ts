@@ -1,40 +1,69 @@
-import { calcMatchdayRevenue, calcWeeklyDelta } from "@/backend/FinancialService";
-import type { Fixture } from "@/types/calendarTypes";
+import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
+import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { Squad } from "@/types/playerTypes";
 
+/** Operational cost, as a share of annual revenue, charged weekly (`OPERATIONAL_COST_SHARE × wageRevenueBasisOf(squad) / 52`). */
+export const OPERATIONAL_COST_SHARE = 0.25;
+
 /**
- * Money change for the player's club on this advance-day tick:
- * weekly P/L on Mondays, plus home matchday ticket revenue when applicable.
+ * The weekly operational cost charged every Monday in `computeAdvanceDayMoney` — pulled out so
+ * the FinancesScreen can project it with the exact same formula the server uses, instead of
+ * re-deriving it.
  */
-export function computeAdvanceDayMoneyDelta(args: {
+export function weeklyOperationalCost(squad: Squad): number {
+  return Math.round((OPERATIONAL_COST_SHARE * wageRevenueBasisOf(squad)) / 52);
+}
+
+/** One home fixture of the player's club today, already resolved to a competition kind + label. */
+export interface PlayerHomeFixtureToday {
+  /** Competition slug: the league slug, a cup slug (`cup_<país>`), or a continental slug. */
+  competition: string;
+  kind: GateKind;
+  /** Competition display name for the ledger entry, e.g. "Champions League". */
+  label: string;
+  /** Neutral-venue fixture (a cup/continental final) — always 0 gate revenue. */
+  neutral?: boolean;
+}
+
+/**
+ * Ledger entries for the player's club on this advance-day tick: on a Monday, separate
+ * commercial/wages/operational lines; for every home fixture today (any competition — league,
+ * cup, continental), a `gate` line. Pure — the caller (`recordMoney`, sequentially, one entry at a
+ * time) applies each to the squad's budget and persists it.
+ */
+export function computeAdvanceDayMoney(args: {
   currentDate: string;
-  todayFixtures: Fixture[];
-  playerSquadId: string | undefined;
   playerSquad: Squad | null;
-}): number {
-  const { currentDate, todayFixtures, playerSquadId, playerSquad } = args;
+  homeFixturesToday: PlayerHomeFixtureToday[];
+}): LedgerEntry[] {
+  const { currentDate, playerSquad, homeFixturesToday } = args;
+  if (!playerSquad) return [];
+
+  const entries: LedgerEntry[] = [];
+
   const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
-  const isWeeklyTick = dayOfWeek === 1;
-
-  let moneyDelta = 0;
-
-  if (
-    isWeeklyTick ||
-    (playerSquadId && todayFixtures.some((f) => f.home === playerSquadId))
-  ) {
-    if (playerSquad) {
-      if (isWeeklyTick) {
-        moneyDelta += calcWeeklyDelta(playerSquad);
-      }
-      if (playerSquadId) {
-        for (const fixture of todayFixtures) {
-          if (fixture.home === playerSquadId) {
-            moneyDelta += calcMatchdayRevenue(playerSquad);
-          }
-        }
-      }
-    }
+  if (dayOfWeek === 1) {
+    const weeklyCommercial = Math.round((playerSquad.finances?.commercial ?? 0) / 52);
+    const weeklyWages = squadWeeklyWages(playerSquad.players, wageFactorOf(playerSquad));
+    const weeklyOperational = weeklyOperationalCost(playerSquad);
+    entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
+    entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });
+    entries.push({ date: currentDate, kind: "operational", amount: -weeklyOperational, label: "Operational costs" });
   }
 
-  return moneyDelta;
+  const capacity = playerSquad.venue?.capacity ?? 0;
+  for (const f of homeFixturesToday) {
+    const amount = gateRevenue(capacity, f.kind, f.neutral);
+    if (amount <= 0) continue;
+    entries.push({
+      date: currentDate,
+      kind: "gate",
+      amount,
+      label: f.label,
+      ref: { competition: f.competition },
+    });
+  }
+
+  return entries;
 }

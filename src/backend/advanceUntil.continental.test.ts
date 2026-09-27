@@ -17,7 +17,7 @@ describe("readAdvancePosition includes the player's continental competition", ()
     // qualifies again in the second, real save).
     const probeMeta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Probe", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Probe", clubColors: ["#000000", "#ffffff"],
     });
     let qualifiedClub: string;
     try {
@@ -39,7 +39,6 @@ describe("readAdvancePosition includes the player's continental competition", ()
       clubId: qualifiedClub,
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     saveId = meta.id;
 

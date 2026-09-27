@@ -7,7 +7,7 @@ describe("continentalClubStatus", () => {
   test("no start kit needed (career starts at world genesis): still in the group stage", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Probe", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Probe", clubColors: ["#000000", "#ffffff"],
     });
     try {
       const kitResult = await applyRandomStartKit(meta.id);
@@ -40,7 +40,7 @@ describe("continentalClubStatus", () => {
     // genesis date) — see .claude/rules/data/openfootball-import.md "Regra de calendário".
     const meta = await saveService.createSave({
       leagueSlug: "brazil_serie_a", leagueName: "Brasileirão",
-      clubId: "1000", clubName: "Probe", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "1000", clubName: "Probe", clubColors: ["#000000", "#ffffff"],
     });
     try {
       const kitResult = await applyRandomStartKit(meta.id);

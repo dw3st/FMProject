@@ -374,12 +374,43 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
             date={message.date}
           />
         )}
-        {message.category === "season" && (
-          <p className="text-sm text-foreground m-0">{message.preview}</p>
-        )}
+        {message.category === "season" && <SeasonBody message={message} />}
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
         {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
       </div>
+    </div>
+  );
+}
+
+function PrizeLine({ prize }: { prize?: number }) {
+  const { t } = useTranslation();
+  if (!prize || prize <= 0) return null;
+  return (
+    <p className="text-sm font-semibold text-emerald-400 m-0 mt-1">
+      {t("inbox.prizeAmount", { amount: formatFee(prize) })}
+    </p>
+  );
+}
+
+function SeasonBody({
+  message,
+}: {
+  message: Extract<InboxMessage, { category: "season" }>;
+}) {
+  const { t } = useTranslation();
+  if (message.kind === "negative_balance") {
+    const bal = message.balance ?? 0;
+    const balanceText = bal < 0 ? `-${formatFee(Math.abs(bal))}` : formatFee(bal);
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.season.negativeBalance", { balance: balanceText })}
+      </p>
+    );
+  }
+  return (
+    <div>
+      <p className="text-sm text-foreground m-0">{message.preview}</p>
+      <PrizeLine prize={message.prize} />
     </div>
   );
 }
@@ -397,13 +428,21 @@ function CupBody({
   const cupName = leagues.length > 0 ? competitionName(message.cupSlug, leagues, i18n.language) : message.cupName;
 
   if (message.kind === "champion") {
-    return <p className="text-sm text-foreground m-0">{t("inbox.cup.champion", { cup: cupName })}</p>;
+    return (
+      <div>
+        <p className="text-sm text-foreground m-0">{t("inbox.cup.champion", { cup: cupName })}</p>
+        <PrizeLine prize={message.prize} />
+      </div>
+    );
   }
   if (message.kind === "eliminated") {
     return (
-      <p className="text-sm text-foreground m-0">
-        {t("inbox.cup.eliminated", { cup: cupName, stage, opponent: message.opponentName ?? "?" })}
-      </p>
+      <div>
+        <p className="text-sm text-foreground m-0">
+          {t("inbox.cup.eliminated", { cup: cupName, stage, opponent: message.opponentName ?? "?" })}
+        </p>
+        <PrizeLine prize={message.prize} />
+      </div>
     );
   }
   const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
@@ -447,28 +486,39 @@ function ContinentalBody({
     );
   }
   if (message.kind === "champion") {
-    return <p className="text-sm text-foreground m-0">{t("inbox.continental.champion", { competition })}</p>;
+    return (
+      <div>
+        <p className="text-sm text-foreground m-0">{t("inbox.continental.champion", { competition })}</p>
+        <PrizeLine prize={message.prize} />
+      </div>
+    );
   }
   if (message.kind === "eliminated") {
     return (
-      <p className="text-sm text-foreground m-0">
-        {message.opponentName
-          ? t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName })
-          : t("inbox.continental.eliminatedGroup", { competition })}
-      </p>
+      <div>
+        <p className="text-sm text-foreground m-0">
+          {message.opponentName
+            ? t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName })
+            : t("inbox.continental.eliminatedGroup", { competition })}
+        </p>
+        <PrizeLine prize={message.prize} />
+      </div>
     );
   }
   const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
   return (
-    <p className="text-sm text-foreground m-0">
-      {t("inbox.continental.draw", {
-        competition,
-        stage,
-        opponent: message.opponentName ?? "?",
-        venue,
-        date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
-      })}
-    </p>
+    <div>
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.continental.draw", {
+          competition,
+          stage,
+          opponent: message.opponentName ?? "?",
+          venue,
+          date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
+        })}
+      </p>
+      <PrizeLine prize={message.prize} />
+    </div>
   );
 }
 

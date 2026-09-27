@@ -17,6 +17,8 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
+import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
@@ -229,6 +231,20 @@ export class SaveService {
 
   clearInbox(saveId: string): Promise<void> {
     return this.dal.writeInbox(saveId, []);
+  }
+
+  // ── Ledger (player club cash extract) ───────────────────────────────────────
+
+  getLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
+    return this.dal.readLedger(saveId, season);
+  }
+
+  listLedgerSeasons(saveId: string): Promise<number[]> {
+    return this.dal.listLedgerSeasons(saveId);
+  }
+
+  appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
+    return this.dal.appendLedger(saveId, season, entries);
   }
 
   // ── Squads ─────────────────────────────────────────────────────────────────
@@ -562,7 +578,6 @@ export class SaveService {
     clubId:     string;
     clubName:   string;
     clubColors: [string, string];
-    budget:  number;
     formation?:      string;
     tactical_style?: TacticalStyle;
     database?: SaveDatabase;
@@ -679,13 +694,21 @@ export class SaveService {
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
-      for await (const p of squadGlob.scan(srcDir)) {
+      // Materialized up front (not streamed) so we know the league's club count — and thus its
+      // home-game count — before computing each club's wage factor below.
+      const paths: string[] = [];
+      for await (const p of squadGlob.scan(srcDir)) paths.push(p);
+      const homeGames = Math.max(0, paths.length - 1);
+      for (const p of paths) {
         const raw   = (await Bun.file(`${srcDir}/${p}`).json()) as Squad;
         const clubSlug = p.replace(".json", "");
 
         const isPlayerClub = league === body.leagueSlug && clubSlug === body.clubId;
         const srcFin = raw.finances;
-        const budget = isPlayerClub ? (body.budget ?? 0) : (srcFin?.budget ?? 0);
+        // The player's club always starts at 0 — the initial balance is the ledger's own
+        // broadcasting entry (applyBroadcasting, right after createSave returns), never a
+        // client-supplied figure. See .claude/rules/game/finances.md.
+        const budget = isPlayerClub ? 0 : (srcFin?.budget ?? 0);
 
         const squad: Squad = {
           ...raw,
@@ -701,6 +724,14 @@ export class SaveService {
             followers:    srcFin?.followers ?? 0,
           },
         };
+        // Wage factor (`.claude/rules/AI-clubs/finance.md` → wages): computed once here from the
+        // real league size, then reused every day until the next season rollover carries it
+        // forward. wageRevenueBasis is the revenue this factor was set against — the season
+        // rollover (advanceDay.ts) and the AI wage cap (aiClubFinance) both read it back so they
+        // agree with the factor on the same league-size assumption.
+        const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
+        squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
+        squad.wageRevenueBasis = wageRevenueBasis;
 
         await this.dal.writeSquad(id, league, clubSlug, squad);
         this.squadIndexCache.delete(id);

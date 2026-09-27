@@ -4,6 +4,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { Squad } from "@/types/playerTypes";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
 
 const SAVE = "save-1";
 
@@ -26,6 +27,8 @@ function fakeInner(opts: {
   failDelete?: (clubSlug: string) => boolean;
   /** Number of initial listSquadFiles calls that reject. */
   failListSquadFiles?: number;
+  /** Holds a writeLedger call in flight until the returned promise resolves. */
+  gateLedgerWrite?: () => Promise<void> | undefined;
 } = {}) {
   const calls: string[] = [];
   const written: string[] = [];
@@ -37,6 +40,10 @@ function fakeInner(opts: {
   let maxInFlight = 0;
   let listFailures = opts.failListSquadFiles ?? 0;
   const disk = new Map((opts.files ?? []).map((f) => [`${f.leagueSlug}/${f.clubSlug}`, f]));
+  /** Ledger "disk": one entry list per "saveId:season", replaced whole by writeLedger. */
+  const ledgerDisk = new Map<string, LedgerEntry[]>();
+  /** Every full-replace list passed to writeLedger, in call order. */
+  const ledgerWrites: LedgerEntry[][] = [];
 
   const impl: Partial<ISaveDAL> = {
     async listSquadFiles() {
@@ -63,6 +70,29 @@ function fakeInner(opts: {
       await Bun.sleep(opts.writeDelayMs ?? 1);
       inboxWrites.push(messages);
       order.push("inbox");
+    },
+    async readLedger(_s, season) {
+      calls.push("readLedger");
+      return ledgerDisk.get(`${_s}:${season}`) ?? [];
+    },
+    async writeLedger(_s, season, entries) {
+      await Bun.sleep(opts.writeDelayMs ?? 1);
+      await opts.gateLedgerWrite?.();
+      const key = `${_s}:${season}`;
+      ledgerDisk.set(key, entries); // full replace — mirrors FileSystemDAL.writeLedger
+      ledgerWrites.push(entries);
+      order.push("ledger");
+    },
+    // Not called by BufferingSaveDAL (it composes appendLedger from readLedger + writeLedger),
+    // but implemented for interface completeness / FileSystemDAL-parity in case a test calls it
+    // on the fake inner directly.
+    async appendLedger(_s, season, entries) {
+      await Bun.sleep(opts.writeDelayMs ?? 1);
+      const key = `${_s}:${season}`;
+      const full = [...(ledgerDisk.get(key) ?? []), ...entries];
+      ledgerDisk.set(key, full);
+      ledgerWrites.push(full);
+      order.push("ledger");
     },
     async listAllSquads() {
       calls.push("listAllSquads");
@@ -114,7 +144,10 @@ function fakeInner(opts: {
       };
     },
   }) as ISaveDAL;
-  return { dal, calls, written, writtenSquads, order, inboxWrites, maxInFlight: () => maxInFlight };
+  return {
+    dal, calls, written, writtenSquads, order, inboxWrites, ledgerDisk, ledgerWrites,
+    maxInFlight: () => maxInFlight,
+  };
 }
 
 const meta = (id: string) => ({ id, currentDate: "2024-08-16" }) as unknown as SaveMeta;
@@ -168,6 +201,120 @@ describe("BufferingSaveDAL inbox", () => {
 
     await buf.flush();
     expect(inner.inboxWrites.map((l) => l.map((m) => m.id))).toEqual([["m1", "m2", "m3"]]);
+  });
+});
+
+describe("BufferingSaveDAL ledger", () => {
+  const entry = (amount: number, label = "test"): LedgerEntry => ({
+    date: "2027-03-10", kind: "gate", amount, label,
+  });
+
+  test("two appends on one buffered day produce one file with both entries after flush, and none before", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendLedger(SAVE, 2027, [entry(1000, "a")]);
+    await buf.appendLedger(SAVE, 2027, [entry(-200, "b")]);
+
+    // Reads within the unit of work see both buffered appends.
+    expect((await buf.readLedger(SAVE, 2027)).map((e) => e.label)).toEqual(["a", "b"]);
+    expect(inner.calls.filter((c) => c === "readLedger")).toHaveLength(1);
+    // Nothing hits the underlying DAL before flush.
+    expect(inner.ledgerWrites).toHaveLength(0);
+    expect(inner.ledgerDisk.size).toBe(0);
+
+    await buf.flush();
+
+    // Exactly one file, with both entries, after flush.
+    expect(inner.ledgerWrites).toHaveLength(1);
+    const written = inner.ledgerDisk.get(`${SAVE}:2027`) ?? [];
+    expect(written.map((e) => e.label)).toEqual(["a", "b"]);
+  });
+
+  test("an append made after flush is a fresh unit of work, appended on top", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendLedger(SAVE, 2027, [entry(500, "first")]);
+    await buf.flush();
+    await buf.appendLedger(SAVE, 2027, [entry(700, "second")]);
+    await buf.flush();
+
+    const written = inner.ledgerDisk.get(`${SAVE}:2027`) ?? [];
+    expect(written.map((e) => e.label)).toEqual(["first", "second"]);
+  });
+
+  test("an empty entries array is a no-op — no pending write, no disk touch", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.appendLedger(SAVE, 2027, []);
+    await buf.flush();
+
+    expect(inner.ledgerWrites).toHaveLength(0);
+  });
+
+  test("ledger writes flush before meta", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await buf.writeMeta(meta(SAVE));
+    await buf.appendLedger(SAVE, 2027, [entry(100)]);
+    await buf.flush();
+
+    expect(inner.order.indexOf("ledger")).toBeLessThan(inner.order.indexOf(`meta:${SAVE}`));
+  });
+
+  test("an append injected during an in-flight flush is not lost, and a second flush does not duplicate the first (idempotent full replace)", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let startedResolve!: () => void;
+    const started = new Promise<void>((r) => (startedResolve = r));
+    let gated = true;
+    const inner = fakeInner({
+      gateLedgerWrite: () => {
+        if (!gated) return undefined;
+        gated = false;
+        startedResolve();
+        return gate;
+      },
+    });
+    const buf = new BufferingSaveDAL(inner.dal);
+    await buf.appendLedger(SAVE, 2027, [entry(100, "a")]);
+
+    const flushing = buf.flush();
+    await started; // "a" is now in flight, writing only ["a"] (what was buffered at that time)
+    await buf.appendLedger(SAVE, 2027, [entry(200, "b")]); // injected mid-flush
+    release();
+    await flushing;
+
+    // The in-flight write only carried what was buffered when it started.
+    expect((inner.ledgerDisk.get(`${SAVE}:2027`) ?? []).map((e) => e.label)).toEqual(["a"]);
+
+    await buf.flush(); // "b" was not dropped — flushed as ["a", "b"], a full replace
+    const final = inner.ledgerDisk.get(`${SAVE}:2027`) ?? [];
+    expect(final.map((e) => e.label)).toEqual(["a", "b"]);
+    expect(final).toHaveLength(2); // no duplicate "a" from the second flush's full replace
+
+    await buf.flush(); // idempotent: nothing pending, disk unchanged
+    expect(inner.ledgerDisk.get(`${SAVE}:2027`)).toHaveLength(2);
+  });
+
+  test("two concurrent first appends on a never-read key both land — neither wipes the other", async () => {
+    const inner = fakeInner();
+    const buf = new BufferingSaveDAL(inner.dal);
+
+    await Promise.all([
+      buf.appendLedger(SAVE, 2027, [entry(100, "a")]),
+      buf.appendLedger(SAVE, 2027, [entry(200, "b")]),
+    ]);
+
+    const cached = (await buf.readLedger(SAVE, 2027)).map((e) => e.label).sort();
+    expect(cached).toEqual(["a", "b"]);
+
+    await buf.flush();
+    const written = (inner.ledgerDisk.get(`${SAVE}:2027`) ?? []).map((e) => e.label).sort();
+    expect(written).toEqual(["a", "b"]);
   });
 });
 

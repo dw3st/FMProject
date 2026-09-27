@@ -717,6 +717,8 @@
   "stats": {
     "matchStatistics": "Match Statistics",
     "team": "Team {{team}}",
+    "extraTime": "Extra time",
+    "penalties": "Penalties",
     "headers": {
       "G": "Goals",
       "SH": "Shots",
@@ -1041,6 +1043,10 @@
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
+    "prizeAmount": "+ {{amount}}",
+    "season": {
+      "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
+    },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
       "eliminated": "Eliminated from the {{cup}} ({{stage}}) by {{opponent}}",
@@ -1527,7 +1533,7 @@
     "expenses": "Expenses",
     "playerSalaries": "Player Salaries",
     "weekly": "/wk",
-    "operational": "Operational (10%)",
+    "operational": "Operational",
     "transfersOut": "Transfers Out",
     "playerPurchases": "player purchases",
     "noPurchases": "no purchases",
@@ -1548,7 +1554,21 @@
     "playMatchesToSeeAttendance": "Play matches to see attendance estimate.",
     "expand": "Expand",
     "comingSoon": "Coming soon",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "gate": "Gate",
+    "prize": "Prizes",
+    "seasonIncome": "Season Income",
+    "seasonExpenses": "Season Expenses",
+    "seasonPrizes": "Season Prizes",
+    "weeklyNet": "Weekly Net",
+    "last12Weeks": "Last 12 weeks",
+    "ledgerTitle": "Ledger",
+    "allKinds": "All",
+    "noEntries": "No entries yet.",
+    "gateProjection": "Gate Projection",
+    "noUpcomingHomeGames": "No upcoming home games.",
+    "weeklyProjection": "Weekly Projection",
+    "seasonBasis": "Season to date"
   },
   "developmentScreen": {
     "playerDevelopment": "Player Development",

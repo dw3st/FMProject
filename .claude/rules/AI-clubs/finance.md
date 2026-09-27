@@ -247,18 +247,25 @@ This is where your system will really start to feel alive.
 
 | File | Role |
 |---|---|
-| `src/Domain/aiFinance/aiFinanceConfig.ts` | **All constants** (tier thresholds, base budgets, wage ratio, transfer budget, soft balancing, season reaction) |
-| `src/Domain/aiFinance/aiClubFinance.ts` | Pure: tier, popularity, `weeklyBudget`, `maxWageBudget`, wage bill, hiring state, `passesWageGate`, `estimateWeeklyWage`, seasonal transfer budget (`aiTransferBudgetOf`, `applyAITransferSpend/Sale`), `transferBudgetTierOf`, `aiFinancialPressure` |
-| `src/Domain/aiFinance/seasonReaction.ts` | Pure: `clubSeasonOutcome`, `followersChange`, `nextFinancialTier`, `applyAISeasonReaction`, `applyHumanSeasonReaction` |
+| `src/Domain/aiFinance/aiFinanceConfig.ts` | **All constants** (tier thresholds, `WAGE_REVENUE_SHARE`, wage ratio, transfer budget, soft balancing, season reaction) |
+| `src/Domain/aiFinance/aiClubFinance.ts` | Pure: tier, popularity, `weeklyBudget`, `maxWageBudget` (from revenue), wage bill, hiring state, `passesWageGate`, `estimateWeeklyWage`, seasonal transfer budget (`aiTransferBudgetOf`, `applyAITransferSpend/Sale`), `transferBudgetTierOf`, `aiFinancialPressure` |
+| `src/Domain/finance/wages.ts` | Pure: `weeklyWage` (curve), `clubWageFactor`/`carryForwardWageFactor`, `clubAnnualRevenue`, `wageFactorOf`/`wageRevenueBasisOf` — shared by the human club and `aiClubFinance`. See `.claude/rules/game/finances.md` |
+| `src/Domain/finance/prizes.ts` | Pure: `leaguePrize`, `cupStagePrize`/`cupRunnerUpPrize`, `continentalPrize`/`continentalStagePrizesFromEvents`, `aiBudgetWithPrize` (the AI's capped share of any prize) |
+| `src/Domain/aiFinance/seasonReaction.ts` | Pure: `clubSeasonOutcome` (now takes an optional `continental` good/title set), `followersChange`, `nextFinancialTier`, `applyAISeasonReaction`, `applyHumanSeasonReaction` |
 | `src/Domain/aiFinance/financeRows.ts` | Pure: `buildClubFinanceRows` for the UI endpoint |
 | `src/Domain/transfer/transferNeeds.ts` | Needs use `transferBudgetTierOf`; `processTeamTransferAttempt` pays from `aiTransferBudgetOf` and applies the wage gate |
 | `src/Domain/transfer/sellList.ts` | Depth minimums / financial bonus from `transferBudgetTierOf` |
 | `src/Domain/transfer/transferAcceptance.ts` | AI seller pressure from its tier; `{ humanSeller: true }` keeps the budget-based pressure for the human club |
 | `src/Domain/transfer/marketRotation.ts` | Human sell-list matching: AI buyer needs transfer budget + wage room |
-| `src/backend/FinancialService.ts` | `executeTransferFee` / pure `transferFeeSquads`: human <-> `finances.budget`, AI <-> `aiTransferBudget` |
-| `src/backend/advanceDay.ts` | Rollover step 3: `applyTierFinanceChange`, then `applyAISeasonReaction` (AI) or `applyHumanSeasonReaction` (human) + inbox line |
-| `src/backend/routes.ts` | `GET /api/saves/:id/leagues/:slug/ai-finances` |
+| `src/backend/FinancialService.ts` | `executeTransferFee` / pure `transferFeeSquads`: human <-> `finances.budget` (ledger `transfer_in`/`transfer_out`), AI <-> `aiTransferBudget`; `recordMoney` (the ledger's single write point) |
+| `src/backend/continentalWorld.ts` | `continentalGoodClubsThisSeason` — finals/titles already drawn on disk, read once per country rollover for `clubSeasonOutcome` |
+| `src/backend/advanceDay.ts` | Prize awards (cup/continental, on the day; league, at rollover) via `awardClubPrize`; rollover step 3: `applyTierFinanceChange`, then `applyAISeasonReaction` (AI) or `applyHumanSeasonReaction` (human) + inbox line |
+| `src/backend/routes.ts` | `GET /api/saves/:id/leagues/:slug/ai-finances`, `GET /api/saves/:id/ledger` |
 | `src/GameInterface/Components/ClubFinancesTable.tsx` | "Finances" tab of the league screen (`LeagueTableScreen`) |
+
+See `.claude/rules/game/finances.md` for the wage curve calibration, the player's ledger, gate
+revenue and the full prize tables — this file only covers the AI-specific budget/hiring/season-
+reaction rules that consume them.
 
 ## Data model
 
@@ -280,23 +287,34 @@ This is where your system will really start to feel alive.
 | HIGH | >= EUR 80M | 19% |
 | ELITE | >= EUR 200M | 3% |
 
-## Weekly budget and wage cap (EUR/week, same scale as `estimateWeeklyWage = rating^2.2 x 50`)
+## Weekly budget and wage cap (from revenue, not a per-tier base amount — since 2026-09-27, #12)
+
+`estimateWeeklyWage`/`playerWeeklyWage` now come from the shared real-euro curve + per-club factor
+(`src/Domain/finance/wages.ts`, `weeklyWage(rating) x clubWageFactor(...)`, carried forward every
+rollover — see `.claude/rules/game/finances.md` § "Salários"), the SAME formula the human club uses.
+The AI's wage cap is a share of the club's own estimated revenue, using the exact same
+`wageRevenueBasis` stored on the squad the wage factor was last set against — never a fresh
+`clubAnnualRevenue` with a guessed league size, or the cap and the real wage bill land on different
+bases:
 
 ```
-weeklyBudget  = BASE_WEEKLY_BUDGET[tier] x (1 + popularity/100) x SOFT_BALANCE[tier]
-maxWageBudget = weeklyBudget x 0.8
+maxWageBudget = WAGE_REVENUE_SHARE x wageRevenueBasis / 52 x SOFT_BALANCE[tier]
+weeklyBudget  = maxWageBudget / WAGE_RATIO   (WAGE_RATIO = 0.8 — the headline figure, not itself a cap)
 ```
 
-| Tier | Base weekly | Soft balance | Cheap-fee cap (tight) | Financial pressure (as seller) |
-|---|---|---|---|---|
-| LOW | 22 000 | x1.10 | EUR 2M | 1.0 |
-| MEDIUM | 28 000 | x1.03 | EUR 5M | 0.5 |
-| HIGH | 42 000 | x1.00 | EUR 12M | 0.25 |
-| ELITE | 50 000 | x0.95 | EUR 25M | 0.1 |
+| Tier | Cheap-fee cap (tight) | Financial pressure (as seller) |
+|---|---|---|
+| LOW | EUR 2M | 1.0 |
+| MEDIUM | EUR 5M | 0.5 |
+| HIGH | EUR 12M | 0.25 |
+| ELITE | EUR 25M | 0.1 |
 
-World start with `WAGE_RATIO = 0.8`: **92.3% open, 5.1% tight, 2.6% frozen** (1227 clubs). Measured on
-the intermediate 2024/25 world (see `.claude/rules/data/openfootball-import.md`); not re-measured
-since the world moved to 2026/27 via `importEspn` (1273 clubs, see `.claude/rules/data/espn-import.md`).
+`WAGE_REVENUE_SHARE = 0.72` (not the `0.67` closest to the 92/5/3 open/tight/frozen target by sum
+of squares — at 0.67 the ELITE tier's bill/cap ratio sits at/above the 0.9 `NEAR_LIMIT_RATIO`
+threshold, so every one of the world's 40 ELITE clubs reads "tight" permanently regardless of how
+it spends; 0.72 pushes every tier's ratio below 0.9). World start (2026-09-27, 1273 clubs,
+`bun scripts/wage-calibrate.ts`): **99.0% open / 0.5% tight / 0.5% frozen**; by tier: LOW 95.7%
+open / 2.3% tight / 2.0% frozen, MEDIUM/HIGH/ELITE 100% open.
 
 ## Seasonal transfer budget (AI money comes from the tier)
 
@@ -318,6 +336,19 @@ World start ranges: LOW EUR 3.9-6.4M, MEDIUM EUR 12-21M, HIGH EUR 52-71M, ELITE 
 - Human finances are unchanged: the human pays/receives on `finances.budget`, and its listed
   players are evaluated with the budget-based pressure (`{ humanSeller: true }`).
 
+## Prize money into the transfer budget (#12 follow-up, 2026-09-27)
+
+League merit (at rollover), national cup stage prizes (on the day a stage is won) and continental
+prizes (participation/group result/stage reached/title, on the day) all pay the AI club through
+`aiBudgetWithPrize(current, prize, seasonalGrant)` (`src/Domain/finance/prizes.ts`):
+`AI_PRIZE_SHARE = 0.5` of the prize is added to `aiTransferBudget`, capped at
+`MAX_BALANCE_RATIO x seasonalGrant` (the same 1.5x cap `applyAITransferSale` already respects for
+sale proceeds), never lowering a budget already at or above that cap. `seasonalGrant` is always
+recomputed from the club's CURRENT tier + popularity at the moment of the award — a league prize
+specifically is applied AFTER `applyAISeasonReaction` has already re-granted the new season's
+seasonal budget, so the prize stacks on top of the fresh grant, never a stale one. See
+`.claude/rules/game/finances.md` § "Premiação" for the full prize tables.
+
 ## Wage control (AI transfer market)
 
 `hiring = frozen` if `wageBill >= maxWageBudget`, `tight` if `>= 0.9 x maxWageBudget`, else `open`.
@@ -335,8 +366,28 @@ Performance `perf = 1 - 2 x (rank-1)/(n-1)` (+1 champion, -1 last; 0 if no games
   The human gets an inbox `season` message of kind `followers` when the number changed.
 - **Tier (AI only):** promoted +1, relegated -1, otherwise top 15% +1 / bottom 15% -1; into ELITE
   only with a title; clamped to +-1 step around the natural tier of the new income.
-- **Transfer budget (AI only):** new seasonal grant from the new tier + popularity.
+- **Transfer budget (AI only):** new seasonal grant from the new tier + popularity (then, if the
+  club also earned a league prize this rollover, boosted further — see "Prize money" above).
 - The human club never gets `financialTier` / `aiTransferBudget`.
+- **Continental good season / title (#12 follow-up, 2026-09-27):** reaching a continental final
+  counts as `continentalGood` — the SAME weight as a top-15% domestic finish, for both the tier
+  step above and the followers reaction (`ClubSeasonOutcome.continentalGood`, floors the
+  performance fraction at `TOP_FRAC`). Only WINNING it sets `continentalTitle`, the strict
+  equivalent of being domestic champion for the ELITE-entry gate (reaching the final alone never
+  unlocks ELITE). Both flags come from `continentalGoodClubsThisSeason` (`continentalWorld.ts`),
+  read once per country rollover from the continental competitions' metas still on disk — a final
+  needs `stages.find(final).drawn`, a title needs `continental.championId` set.
+  **Known timing gap:** a continental final is typically drawn well after most domestic leagues
+  end (semis run into April/May), so in practice this only reliably fires for the countries whose
+  own rollover happens LATE enough in the year — chiefly the calendar-year European leagues
+  (Belarus, Finland, Georgia, Iceland, Norway, Sweden — roll over in December, well after the
+  continental final; see `.claude/rules/game/continental.md`). A cross-year league (Aug-May, e.g.
+  Premier League) rolls over in the summer, generally also after the final, so it isn't excluded
+  either — but the set is read at the EXACT moment that country's own rollover runs, so a country
+  that rolls unusually early relative to the continental calendar can still miss a final decided
+  later. Not fixed — flagged for whoever revisits this. This same `ClubSeasonOutcome` (continental
+  flags included) is shared by `applyHumanSeasonReaction`, so a human finalist/champion gets the
+  identical followers boost an AI one would.
 
 ## UI
 
@@ -354,7 +405,10 @@ The human transfer route (`src/backend/transfers.ts`) used to save both squads a
 
 ## Tests
 
-`bun test src/Domain/aiFinance src/Domain/transfer src/backend/FinancialService.test.ts`.
+`bun test src/Domain/aiFinance src/Domain/finance src/Domain/transfer src/backend/FinancialService.test.ts src/backend/continentalWorld.test.ts`.
 `scripts/season-rollover-smoke.ts` checks every AI club of the player's country has a tier and a
 fresh transfer budget after the rollover, the human has neither, the human followers match
-`applyHumanSeasonReaction`, and the inbox has the followers line.
+`applyHumanSeasonReaction`, the inbox has the followers line, plus a whole "Finanças" section (see
+`.claude/rules/game/finances.md` § "Testes"): the player's ledger sums to its budget, at least one
+league prize was paid, no AI transfer budget anywhere exceeds `MAX_BALANCE_RATIO x` its seasonal
+grant, and every squad in the world has a numeric `wageFactor`/`wageRevenueBasis`.

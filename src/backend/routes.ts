@@ -23,6 +23,8 @@ import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayerIds } from "@/backend/starsIndex";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
+import { totalsByKind, weeklyNet } from "@/Domain/finance/ledger";
+import { getClubBudget } from "@/backend/FinancialService";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
@@ -199,16 +201,15 @@ export const apiRoutes = {
     const loc = resolveSquadRoute(await saveService.getSquadIndex(saveId!), league!, club!);
     const found = loc ? await saveService.getSquad(saveId!, loc.leagueSlug, loc.stem) : null;
     if (!loc || !found) return Response.json({ error: "save squad not found" }, { status: 404 });
-    let squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
+    const squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
     if (req.method === "PUT") {
-      const body = await req.json() as { finances?: Partial<import("@/types/playerTypes").ClubFinances> };
-      if (body.finances) {
-        squad = {
-          ...squad,
-          finances: { ...squad.finances, ...body.finances } as import("@/types/playerTypes").ClubFinances,
-        };
-      }
-      await saveService.saveSquad(saveId!, loc.leagueSlug, loc.stem, squad);
+      // `finances` is never accepted from the client here — every money movement for the
+      // player's club goes through the ledger (`FinancialService.recordMoney`), never a raw
+      // squad PUT (design spec §2, "Brecha"). The body is otherwise unused today, and re-writing
+      // the squad we just read back to disk achieved nothing but risk (no lock — a concurrent
+      // advance-day or transfer write to this same squad could be clobbered by this stale copy).
+      // So this is a no-op PUT: parse-and-discard the body, write nothing, echo the current squad.
+      await req.json().catch(() => null);
     }
     return Response.json(squad);
   },
@@ -538,6 +539,49 @@ export const apiRoutes = {
     const playerIds = await getStarPlayerIds(saveId!);
     if (!playerIds) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json({ playerIds });
+  },
+
+  /**
+   * The player's club cash extract for one season: entries, per-kind totals, weekly net, the
+   * seasons that have a ledger file, and the current balance. `?season=YYYY` picks a past season;
+   * omitted defaults to the player's league's current year. 404 when that season has no ledger
+   * file yet (see design spec §2 "Extrato" and §4).
+   */
+  "/api/saves/:saveId/ledger": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const meta = await saveService.getMeta(saveId!);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+
+    const seasons = await saveService.listLedgerSeasons(saveId!);
+    const url = new URL(req.url);
+    const seasonParam = url.searchParams.get("season");
+    let season: number;
+    if (seasonParam !== null) {
+      season = Number(seasonParam);
+      if (!Number.isInteger(season)) return Response.json({ error: "invalid season" }, { status: 400 });
+    } else {
+      const leagueMeta = await saveService.getLeagueMeta(saveId!, meta.leagueSlug);
+      season = leagueMeta?.year ?? NaN;
+    }
+    if (!Number.isInteger(season) || !seasons.includes(season)) {
+      return Response.json({ error: "ledger not found" }, { status: 404 });
+    }
+
+    const entries = await saveService.getLedger(saveId!, season);
+    const squad = await saveService.getSquadById(saveId!, meta.clubId);
+    const balance = squad ? getClubBudget(squad) : 0;
+
+    return Response.json({
+      season,
+      seasons,
+      entries,
+      totals: totalsByKind(entries),
+      weekly: weeklyNet(entries),
+      balance,
+    });
   },
 
   "/api/saves/:saveId/leagues": async (req: Request & { params: Record<string, string> }) => {
