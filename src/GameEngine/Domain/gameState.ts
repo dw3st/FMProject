@@ -780,13 +780,20 @@ function switchSides(
   }, prevHolderId);
 }
 
+/** Knockout "level": today's score plus the first-leg aggregate (if any). */
+function isLevelForKnockout(s: GameState): boolean {
+  const agg = s.aggregate ?? { A: 0, B: 0 };
+  return s.score.A + agg.A === s.score.B + agg.B;
+}
+
 /** Goals in extra time, shootout and winner of a knockout match; null when decided in 90'. */
 export function knockoutDecider(state: GameState): KnockoutDecider | null {
   const reg = state.scoreAtRegulation;
   if (!state.knockout || !reg) return null;
   const extraTime = { A: state.score.A - reg.A, B: state.score.B - reg.B };
   const so = state.shootout ?? null;
-  const winner: TeamId = so ? so.winner : (state.score.A > state.score.B ? 'A' : 'B');
+  const agg = state.aggregate ?? { A: 0, B: 0 };
+  const winner: TeamId = so ? so.winner : (state.score.A + agg.A > state.score.B + agg.B ? 'A' : 'B');
   return { extraTime, penalties: so ? { ...so.finalScore } : null, winner };
 }
 
@@ -834,7 +841,7 @@ export function endCurrentPeriod(state: GameState, newMatchTime: number = state.
         pass: null, shot: null, looseBall: null,
       };
     case 'secondHalf':
-      if (s.knockout && s.score.A === s.score.B) {
+      if (s.knockout && isLevelForKnockout(s)) {
         gameBus.emit('extraTimeStart', { score: s.score });
         return {
           ...s, matchPhase: 'extraTimeBreak', presentationCountdown: PRESENTATION_DURATION,
@@ -848,7 +855,7 @@ export function endCurrentPeriod(state: GameState, newMatchTime: number = state.
     case 'extraTimeFirst':
       return switchSides(s, 'extraTimeSecond', 'B', 0);
     case 'extraTimeSecond':
-      return s.score.A === s.score.B ? startPenalties(s) : finishMatch(s);
+      return isLevelForKnockout(s) ? startPenalties(s) : finishMatch(s);
     default:
       return state;
   }
