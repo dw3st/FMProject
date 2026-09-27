@@ -378,7 +378,209 @@ da semana com mais frequência que as europeias, deixando menos dias realmente l
   mundo sem necessidade. As copas nacionais de ano civil (se algum dia existirem fora da América do
   Sul) já mitigam esse mesmo tipo de colisão para si mesmas via `continentalSlugsOf`, mas essa
   mitigação nunca existiu para o calendário da liga em si.
-- **Issue #2 (recalibração do quickSim entre ligas de força muito diferente) e a interface**
-  (aba Continental na tela de ligas, inbox de sorteio/eliminação/título, prévia de partida com
-  ida/volta, `seasonLog.continental`) ficam para o **Plano 3** — não implementadas aqui. Este plano
-  (2) cobre só domínio + integração com o save (geração, avanço, virada, kits, smoke).
+- **Issue #2 (recalibração do quickSim entre ligas de força muito diferente)** ainda não foi
+  medida/ajustada. A interface (aba Continental, inbox, prévia de partida, `seasonLog.continental`)
+  foi implementada no Plano 3 — ver seção "Interface" abaixo.
+
+## Interface
+
+O jogador enxerga e joga a continental do seu clube sem nenhuma rota nova de tela — mesmo padrão
+das copas nacionais (`.claude/rules/game/cups.md` → "Interface"): entra no calendário e nas telas
+que já existiam para a liga/copa.
+
+### Calendário do jogador inclui a continental
+
+`GET /api/saves/:id` (`src/backend/saves.ts`) monta `season.calendar` juntando as fixtures da liga
+do jogador, as da copa nacional (já existente) e agora também as de
+`playerContinentalSlug(saveService, id, myId)` (`src/backend/continentalWorld.ts`) **filtradas
+pelo clube do jogador**, tudo ordenado por data. `playerContinentalSlug` percorre as 4 competições
+(`CONTINENTAL_SLUGS`) e devolve a primeira cujo `meta.continental.groups` contém o clube — os
+grupos são fixos para a temporada inteira, então um clube em fase de mata-mata ainda é encontrado
+por essa checagem (é sempre um subconjunto dos clubes de algum grupo). `null` se o clube não se
+classificou para nenhuma das 4. Isso basta para `useAdvanceDay`, `TopNavigation`, `ClubSidebar` e o
+calendário semanal mostrarem o jogo continental sem nenhuma mudança própria — todos já leem
+`season.calendar`.
+
+### Avanço rápido inclui a continental
+
+`readAdvancePosition` (`src/backend/advanceUntil.ts`) monta a lista de competições do jogador como
+`[meta.leagueSlug, cup, continental].filter(s => s !== null)` (antes só liga + copa) e passa para
+`nextPlayerFixtureDate` sem heurística nova — a mesma varredura por `date-index` de sempre, agora
+sobre três pastas de competição em vez de duas. `POST /api/saves/:id/advance-until` para tanto num
+jogo de liga quanto de copa quanto de continental do clube do jogador.
+
+### `match-setup` aceita a continental
+
+`POST /api/match-setup` (`src/backend/routes.ts`) já escolhia a fixture do dia comparando
+`f.competition` com a liga e a copa do save; o filtro ganhou mais uma opção,
+`f.competition === continentalSlug` (com `continentalSlug = await playerContinentalSlug(saveService,
+save.id, myInternalId)`) — mesmo endpoint, mesma resposta, sem campo novo.
+
+### Rota `GET /api/saves/:saveId/continental/:slug`
+
+Mesmo molde da rota de copa (`GET /api/saves/:id/cups/:cupSlug`). Checa dono do save, 400 se `slug`
+não passa `isContinentalSlug`, 404 se o save não tem `meta.continental` para aquele slug. Resposta:
+
+```ts
+{
+  meta:     LeagueSeasonMeta;              // com .continental (grupos, fases, campeão)
+  fixtures: Fixture[];                     // todas as fixtures da pasta (grupo + mata-mata)
+  names:    Record<string, string>;        // squadId → nome, dos clubes dos grupos + fixtures + campeão
+  groups:   { name: string; rows: GroupRow[] }[];  // groupTable() de cada grupo, só as rodadas 1–6
+}
+```
+
+`groups` é calculado sob demanda: `groupRounds = meta.continental.stages.find(s => s.name ===
+"group").rounds`, as fixtures são filtradas para essas 6 rodadas e passadas por
+`groupTable(clubesDoGrupo, fixturesDoGrupo)` (pontos, saldo, confronto direto — ver seção "Tabela
+do grupo" acima) para cada grupo. `names` inclui todo clube citado em qualquer grupo, em qualquer
+fixture, e o campeão (se houver), resolvidos pelo `squadIndex` do save.
+
+### Partida ao vivo: placar agregado
+
+`GameState.aggregate?: { A: number; B: number }` já existia do Plano 1 (mata-mata genérico,
+partilhado com a copa nacional — ver `.claude/rules/match-flow.md` → "Two-legged ties") e é gravado
+no início da volta de um confronto de ida e volta. `MatchScreen.tsx` passa `gameState.aggregate`
+para `ScoreBar`, que — só quando a prop existe — mostra uma linha pequena `"agr. X–Y"`
+(`t("continental.aggregate", { home: aggregate.A + scoreA, away: aggregate.B + scoreB })`) logo
+abaixo do relógio, sempre somando o placar de hoje ao agregado da ida para ficar sempre atualizado
+ao vivo. O mesmo componente serve qualquer mata-mata de ida e volta (copa nacional ou continental);
+nada aqui é específico da continental.
+
+### Prévia da partida
+
+`MatchPreviewScreen.tsx` detecta `isContinentalSlug(fixture.competition)` e busca a mesma rota de
+continental (`GET /api/saves/:id/continental/:slug`) só para ler `meta.continental.stages` e
+`meta.continental.groups`, no mesmo padrão já usado para a copa nacional (`cupMeta`/`isCupTie`):
+
+- **Fase de grupos:** `t("continental.groupRound", { group, round: matchday })`, onde `group` é o
+  grupo do clube do jogador (`meta.continental.groups.find(g => g.clubs.includes(mySquadId))`).
+- **Mata-mata:** `t(\`continental.stage.\${stageName}\`)` (Oitavas/Quartas/Semifinal/Final) mais
+  `t("continental.leg1")`/`t("continental.leg2")` (de `fixture.leg`), unidos por " · ". A final não
+  tem `leg`, então só mostra o nome da fase.
+- **Placar da ida (volta, com `fixture.aggregate`):** abaixo do cabeçalho, `t("continental.firstLeg",
+  { home, away, score })`. `fixture.home`/`fixture.away` são os lados **desta** (2ª) perna; a ida
+  teve os lados invertidos, e `fixture.aggregate` guarda os gols da ida do ponto de vista do
+  mandante/visitante **desta** fixture — então o mandante da ida é o visitante desta fixture, e
+  vice-versa (comentário explícito no código por causa dessa inversão). Junto, a nota fixa
+  `t("continental.aggregateNote")` ("Decide no agregado; prorrogação e pênaltis se empatar").
+- A nota genérica de mata-mata (`t("cups.knockoutNote")`, mesma usada pela copa) só aparece quando
+  **não** há `fixture.aggregate` — na volta com agregado, `continental.aggregateNote` já cobre a
+  mesma informação, e mostrar as duas seria repetir a frase (corrigido no commit `d4e0a67`).
+
+### Aba Continental na tela de ligas
+
+`LeagueTableScreen.tsx` ganha uma quinta aba (`"table" | "fixtures" | "finances" | "cup" |
+"continental"`), sempre depois de "Copa", desabilitada sem save carregado. Ela não depende do país
+da liga ter uma continental (ao contrário da aba Copa, que só aparece com `cupSlug`) — a
+continental existe para todo mundo, então o seletor interno decide o que mostrar.
+
+- **Competição padrão:** a primeira fixture de `season.calendar` cujo `competition` passa
+  `isContinentalSlug` (ou seja, a continental que o **clube do jogador** realmente disputa nesta
+  temporada); se o clube não se classificou para nenhuma, cai no continente da liga selecionada
+  (`COUNTRY_BY_NAME` → `activeContinent`): América do Sul → `lib`, qualquer outro → `ucl`.
+- **Seletor manual:** 4 botões (Champions League, Europa League, Libertadores, Sul-Americana, via
+  `CONTINENTAL_SLUGS` + `competitionName`). Escolher um marca `continentalSlugTouched`, que é
+  resetado ao trocar de liga (`activeSlug`) — assim o padrão volta a valer no novo contexto.
+- **Busca:** só com a aba aberta (mesmo padrão da aba Copa), resetando `continentalData` a cada
+  troca de competição. Dois estados de erro distintos, adicionados no fix `d4e0a67`:
+  `continentalMissing` (resposta 404 — a rota nunca deveria devolver 404 já que toda competição
+  continental existe em todo save, mas o estado existe por robustez) mostra
+  `t("continental.none")`; `continentalError` (falha de rede, `.catch`) mostra
+  `t("warnings.errors.loadFailed")` em vez de ficar preso em "carregando" para sempre. O mesmo par
+  de estados (`cupError`) foi adicionado à aba Copa no mesmo commit.
+
+### `ContinentalView` (`src/GameInterface/Components/ContinentalView.tsx`)
+
+Componente burro, props `{ data: ContinentalData; myClubId: string }` (o `ContinentalData` é
+exatamente a resposta da rota acima). Mirror do `CupBracket`:
+
+- **Campeão:** faixa âmbar no topo (`continental.championId`), se já houver.
+- **Grupos:** grade `grid sm:grid-cols-2 gap-3`, uma tabela por grupo (Pos, clube com `ClubLogo`,
+  J, SG, Pts, vindos de `GroupRow` — `squadId`, `mp`, `gd`, `pts`); os dois primeiros colocados
+  (`idx < 2`) recebem um ícone de check e uma borda esquerda verde (classificados); a linha do
+  clube do jogador fica destacada (`bg-primary/10`).
+- **Mata-mata:** uma seção por fase (`r16`, `qf`, `sf`, `final`, na ordem `KNOCKOUT_STAGE_NAMES`).
+  `legsByTie` agrupa as fixtures de uma fase por `tieId` e ordena ida antes de volta. Cada confronto
+  vira uma linha `A 2–1 B · B 1–1 A · agr. <NomeA> 3–2 <NomeB>` (vencedor em negrito, via
+  `tieWinner`/`finalWinner`), com `continental.pensNamed`/`cups.aet` embaixo quando a volta teve
+  `decider`. Fase ainda não sorteada (`!stage.drawn`) mostra `t("continental.notDrawn")`. A final é
+  uma fixture única, sem `tieId`, sempre com a nota "campo neutro" (`cups.neutral`).
+- **Nomes no agregado:** o agregado usa `continental.aggregateNamed`/`continental.pensNamed`
+  (`"agr. <NomeA> 3–2 <NomeB>"`), não o genérico `continental.aggregate` usado no placar ao vivo —
+  numa lista de vários confrontos ao mesmo tempo, um placar sem nome dos dois lados é ambíguo; no
+  placar ao vivo da partida (`ScoreBar`, uma partida por vez) o genérico já basta. Corrigido no
+  commit `d4e0a67` (chaves `aggregateNamed`/`pensNamed` novas em `en.json`/`pt-BR.json`).
+
+### Inbox `continental`
+
+Categoria nova em `InboxCategory` (`src/types/inboxTypes.ts`): `ContinentalInboxMessage` com
+`kind: "qualified" | "group" | "draw" | "eliminated" | "champion"`, `competition`
+(`ContinentalSlug`), `competitionName` (fallback em inglês, mesmo esquema do `cupName` da
+`CupInboxMessage`), `stage` (`ContinentalStageName`, `"group"` para qualified/group), e conforme o
+`kind`: `group` (grupo, só qualified/group), `opponentNames` (grupo inteiro, só group),
+`opponentName` (draw/eliminated), `firstLegDate`/`venue` (só draw). `buildContinentalMessage`
+(`src/Domain/inbox/inboxEvents.ts`) monta a mensagem no molde de `buildCupMessage`; sujeito/corpo em
+inglês (fallback), a tela traduz de verdade com `inbox.continental.*` (en/pt-BR) + `competitionName`
+assim que o catálogo de ligas carrega. `InboxScreen.tsx` usa o ícone `globe` (via a abstração
+`Icon`, não `lucide-react` direto — corrigido no commit `d4e0a67`: o import inicial usava `Globe`
+de `lucide-react` diretamente, quebrando a regra de `.claude/rules/frontend.md` de que só
+`Icons.tsx` importa de `iconoir-react`) e `ContinentalBody` para o corpo detalhado de cada `kind`.
+
+Duas fontes emitem mensagens, com timing diferente:
+
+- **`qualified` + `group`/`draw`/`eliminated` de início de temporada** — `emitContinentalSeasonStartNews(saveId,
+  clubId, date)` (`src/backend/advanceDay.ts`), chamada uma única vez pela rota
+  `POST /api/saves/:saveId/presimulate`, **depois** de `applyRandomStartKit`. Ela lê
+  `continentalClubStatus(saveService, saveId, clubId)` (`src/backend/continentalWorld.ts`), o
+  wrapper de E/S sobre a função pura `continentalClubStatusOf` (`src/Domain/continental/
+  clubStatus.ts`), que devolve onde o clube realmente está **agora**, direto do disco:
+  - `{ kind: "group", group, opponentIds }` → emite `qualified` + `group` (grupo e adversários);
+  - `{ kind: "eliminatedGroup" }` (oitavas já sorteadas e o clube não está nelas — eliminado como
+    3º/4º de grupo) → emite `qualified` + `eliminated` (fase `"group"`, sem adversário);
+  - `{ kind: "drawn", stage: "r16", opponentId, firstLegDate, venue }` → emite `qualified` + `draw`.
+
+  Essa leitura pós-kit existe por causa de `b2c5b6e`: um kit pré-simulado (`applyRandomStartKit`)
+  **sobrescreve** as `ucl`/`uel`/`lib`/`sud` recém-geradas pelo `createSave` com uma temporada já
+  simulada até a data de corte do kit (o início do Brasileirão) — grupos diferentes dos que
+  `createSave` sorteou, e a essa altura a fase de grupos sempre já terminou e as oitavas já foram
+  sorteadas (ver "Datas" e "Andamento" acima). Antes do fix, `SaveService.createSave` emitia
+  `qualified`/`group` direto do resultado de `createContinentalSeason` (a temporada recém-gerada,
+  **antes** do kit rodar) — uma mensagem descrevendo um grupo que, um instante depois, deixava de
+  existir em disco. `createSave` não emite mais nada disso; só `emitContinentalSeasonStartNews`
+  (chamada do lado do `presimulate`) emite, cobrindo os dois caminhos (com kit e sem kit) com uma
+  única leitura do que está realmente salvo.
+
+- **`draw`/`eliminated`/`champion` do dia a dia**, e `qualified`+`group` de uma competição
+  regenerada/self-healed no meio da carreira — ambos em `advanceOneDay` (`src/backend/
+  advanceDay.ts`), a partir de `advanceContinentalStages` (mudanças do dia) e de
+  `createContinentalSeason`/`continentalQualificationOf` (virada de continente ou self-heal de um
+  continente sem competição nenhuma). **Nenhuma dessas é emitida na hora** — todas são empilhadas
+  no array `continentalMessages` e só gravadas depois do bloco "Transfers + inbox are cleared"
+  (depois de um possível `clearInbox`), ao contrário da copa nacional, cujas mensagens saem na hora.
+  Motivo: a copa nacional nunca cai no mesmo dia da virada do próprio país (a janela de mata-mata
+  da copa sempre termina `FINAL_BEFORE_END_DAYS` dias antes do fim da liga), mas a continental não
+  tem essa garantia contra a virada de um país **diferente** — as ligas europeias de ano civil
+  (Bielorrússia, Finlândia, Geórgia, Islândia, Noruega, Suécia) viram em dezembro, sem nenhuma
+  coordenação com a janela de grupos da UCL/UEL (que vai até 12-15), então um sorteio/eliminação de
+  fase de grupos de um clube dessas ligas pode cair exatamente no dia da virada desse país, logo
+  antes do `clearInbox` rodar mais adiante na mesma função. Empilhar e só gravar depois do
+  `clearInbox` garante que a mensagem sobrevive à limpeza.
+
+### `seasonLog.continental`
+
+`PlayerSeasonLog.continental?: { appearances, goals, assists }` (`src/types/playerTypes.ts`, mesmo
+formato de `seasonLog.cup`) — só os jogos continentais; os campos de fora (`appearances`, `goals`,
+`assists`...) continuam sendo o total da temporada (liga + copa + continental).
+`finalizeSquadsAfterMatch` (`src/Domain/advanceDay/matches.ts`) recebe `isContinental =
+isContinentalSlug(fixture.competition)` (ao lado do `isCup` já existente) e, quando verdadeiro,
+também incrementa `log.continental` além dos campos normais — nunca ao mesmo tempo que `log.cup`
+(uma fixture é ou copa ou continental, nunca as duas).
+
+### Nomes das competições
+
+`competitionName(slug, leagues, lang)` (`src/Domain/world/labels.ts`, ver
+`.claude/rules/ui-world.md`) reconhece `ucl`/`uel`/`lib`/`sud` com nomes **fixos** por `lang`
+(`CONTINENTAL_NAMES`, nunca derivados do `leagueData`, ao contrário da copa nacional genérica):
+"Champions League" e "Europa League" iguais em inglês e português, "Copa Libertadores" igual nos
+dois, "Copa Sudamericana" (inglês) vs. "Copa Sul-Americana" (`pt-BR`).
