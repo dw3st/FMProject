@@ -860,6 +860,11 @@ export async function advanceOneDay(
     // Weekly commercial/wages/operational on Mondays, plus a gate entry for every home fixture
     // of the player's club today across every competition (playerHomeFixturesToday, filled by the
     // main match loop above). See computeAdvanceDayMoney / .claude/rules/game/finances.md.
+    // The negative-balance message is QUEUED, not emitted immediately: a rollover later this same
+    // function call may clearInbox() (see "Transfers + inbox are cleared" below) — emitting here
+    // would have it wiped the same day it was raised. Flushed after that clear, like
+    // `continentalMessages`.
+    let negativeBalanceMessage: Parameters<typeof buildSeasonMessage>[0] | null = null;
     const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
     const isWeeklyTick = dayOfWeek === 1;
     const needsPlayerSquad = isWeeklyTick || playerHomeFixturesToday.length > 0;
@@ -889,14 +894,14 @@ export async function advanceOneDay(
             balanceAfter = updated.finances?.budget ?? balanceAfter;
           }
           if (balanceBefore >= 0 && balanceAfter < 0) {
-            await emitInboxMessage(saveId, buildSeasonMessage({
+            negativeBalanceMessage = {
               date: currentDate,
               kind: "negative_balance",
               leagueSlug: meta.leagueSlug,
               leagueName: competitionName(meta.leagueSlug, catalogForFinance as unknown as LeagueData[], "en"),
               seasonYear: season,
               balance: balanceAfter,
-            }), saveService);
+            };
           }
         }
       }
@@ -1229,6 +1234,8 @@ export async function advanceOneDay(
     // Continental "qualified"/"group" news, queued above (self-heal / regeneration): always after
     // any `clearInbox` this same day, whether or not it was the player's own country that rolled.
     for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
+    // Negative-balance news (queued above, same reason): always after any `clearInbox` this day.
+    if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};

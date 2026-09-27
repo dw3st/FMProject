@@ -219,7 +219,6 @@ export function NewGameWizard() {
         clubId:     selectedTeam.squadId,
         clubName:   selectedTeam.name,
         clubColors: selectedTeam.colors,
-        budget:     0,
         database: {
           id:        selectedDatabase.id,
           name:      selectedDatabase.name,

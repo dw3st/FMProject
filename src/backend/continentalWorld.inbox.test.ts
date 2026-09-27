@@ -18,7 +18,7 @@ describe("emitContinentalSeasonStartNews", () => {
     // by that club (deterministic from static world data — the same club qualifies again).
     const probeMeta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
-      clubId: "33", clubName: "Probe", clubColors: ["#000000", "#ffffff"], budget: 1,
+      clubId: "33", clubName: "Probe", clubColors: ["#000000", "#ffffff"],
     });
     let qualifiedClub: string;
     try {
@@ -40,7 +40,6 @@ describe("emitContinentalSeasonStartNews", () => {
       clubId: qualifiedClub,
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     const saveId = meta.id;
     try {
@@ -88,7 +87,6 @@ describe("emitContinentalSeasonStartNews", () => {
       clubId: "1000",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     const saveId = meta.id;
     try {

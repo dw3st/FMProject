@@ -25,7 +25,6 @@ describe("advanceOneDay self-heals a continent with no continental competition o
       clubId: "33",
       clubName: "Test",
       clubColors: ["#000000", "#ffffff"],
-      budget: 1,
     });
     saveId = meta.id;
 
