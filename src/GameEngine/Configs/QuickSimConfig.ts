@@ -21,15 +21,33 @@ export const ATTACKING_MID_ROLES = ["CAM", "AM", "LM", "RM"] as const;
 export const DEFENSIVE_MID_ROLES = ["CDM", "DM"] as const;
 
 export const QUICK_SIM_CONFIG = {
-  /** Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage. */
-  BASE_GOALS: 0.76,
-  HOME_ADVANTAGE: 1.03,
+  /**
+   * Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage.
+   *
+   * Recalibrated 2026-09-27 ("soften + recalibrate" stamina balance task) at a representative
+   * matchday fitness (88, not the old 75 `emptySeasonLog()` default every prior goal-volume
+   * calibration assumed) and against the engine's new, softened fatigue curve
+   * (`src/GameEngine/Domain/RuntimeLineup.ts` — a squad at 88 fitness now plays close to full
+   * strength, where it used to already be meaningfully worn down). That combination raises the
+   * engine's scoring rate at realistic in-game fitness by ~35-45% across leagues, so every constant
+   * below moved with it. Old values (fitted at fitness 75, old curve): BASE_GOALS 0.76,
+   * HOME_ADVANTAGE 1.03, STRENGTH_EXPONENT 0.51, LEVEL_EXPONENT 0.81, PACE_EDGE_WEIGHT 0.32.
+   *
+   * Refit: `bun scripts/quicksim-spread.ts collect <league> 150 2 <out> --fitness 88`, 10 leagues
+   * (premier_league, la_liga, bundesliga, brazil_serie_a, of_championship, of_allsvenskan,
+   * of_eredivisie, of_kenyan_premier_division, of_liga_mx, of_turkish_super_league), then
+   * `analyze` section 8 ("ratio+level+pace", current ATTACK_KEYS). rms across leagues 26.4% → 7.6%
+   * (worst-case of_kenyan_premier_division −16.7%, just over the ±15% target; every other league
+   * within ±10%). The gap is one lightly-populated weak league, not a systematic bias — accepted.
+   */
+  BASE_GOALS: 1.05,
+  HOME_ADVANTAGE: 1.15,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
    * have defence/GK strong vs attack, and the engine scores far less there than level alone predicts.
    * Refitted jointly with PACE_EDGE_WEIGHT (the pace edge took over part of what this carried).
    */
-  STRENGTH_EXPONENT: 0.51,
+  STRENGTH_EXPONENT: 0.46,
   /**
    * xG × e^(PACE_EDGE_WEIGHT × (attacker forward-line pace − defender back-line pace)), pace =
    * (3·speed + acceleration)/4 on raw 0–10 attributes. The engine's goal spread between leagues of
@@ -37,7 +55,7 @@ export const QUICK_SIM_CONFIG = {
    * drives chance volume via through-ball races, not conversion. Fitted with
    * `bun scripts/quicksim-spread.ts analyze`. 0 disables.
    */
-  PACE_EDGE_WEIGHT: 0.32,
+  PACE_EDGE_WEIGHT: 0.26,
   /**
    * Goals per side ~ Binomial(GOAL_CHANCES, xG / GOAL_CHANCES). Fewer chances → less variance
    * than Poisson → fewer 0-0s (the full engine is under-dispersed). Also caps goals/side.
@@ -62,7 +80,7 @@ export const QUICK_SIM_CONFIG = {
    * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
    * teams than between weak ones at the same strength ratio. 0 disables.
    */
-  LEVEL_EXPONENT: 0.81,
+  LEVEL_EXPONENT: 1.12,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
   /**
@@ -71,26 +89,29 @@ export const QUICK_SIM_CONFIG = {
    * above), by design (`docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Motor ×
    * quickSim": the engine gets the load factor at kickoff, quickSim gets it in the drain).
    *
-   * Kept at 0.3 after calibrating against the engine (`bun scripts/fatigue-calibrate.ts`, Part 2):
-   * a fresh XI (fitness 100/load 0) vs a tired XI (fitness 70/load LOAD_HIGH) on the same
-   * premier_league fixtures scored engine 90% fresh win / 7.8% draw / 2.2% tired win (90 matches),
-   * vs quickSim's 45.5% / 20.8% / 33.7% at FATIGUE_PENALTY=0.3 — a real gap, expected from the
-   * engine's continuous fatigue (physical stats keep degrading tick by tick, amplified by the
-   * load-driven drain) against quickSim's single static discount from *start* fitness only.
-   * Raising FATIGUE_PENALTY narrows that gap (e.g. 1.8 → 72.5%/16.4%/11%) but was rejected: every
-   * quickSim calibration to date (`quicksim-calibrate.ts`, `quicksim-spread.ts`, the "Volume de
-   * gols" tables in `.claude/rules/non-player-games.md`) runs BOTH sides at the same uniform
-   * `emptySeasonLog()` fitness (75, no persisted `seasonLog` on world data), where a change to
-   * FATIGUE_PENALTY does NOT cancel out between the two equal-fitness sides — verified directly
-   * (holding fitness at 75 for an 11-a-side XI both ways, mean xG dropped from 1.27 at
-   * FATIGUE_PENALTY=0.3 to 0.81 at 2.0, a 36% swing) because of the LEVEL_EXPONENT/STRENGTH_EXPONENT
-   * curvature and the additive STRENGTH_FLOOR. Raising it enough to meaningfully close the
-   * tired-vs-fresh gap (≥ ~1.5) would silently invalidate the whole per-league goal-volume
-   * calibration (rms 6%, individual leagues within ~13%). Closing the gap properly needs `load`
-   * (or an evolving in-match fitness) to feed team strength too, which the design explicitly
-   * scopes to the full engine only — left as a known limitation, not a bug.
+   * Raised 0.3 → 0.5 in the 2026-09-27 "soften + recalibrate" balance pass, after the engine's own
+   * fatigue curve (`src/GameEngine/Domain/RuntimeLineup.ts`) was softened — this SHRANK the
+   * engine's own tired-vs-fresh gap a lot: a fresh XI (fitness 100/load 0) vs a tired XI (fitness
+   * 70/load LOAD_HIGH) on the same premier_league fixtures now scores engine 58% fresh win / 18.7%
+   * draw / 23.3% tired win, 2.26 vs 1.24 goals/match (down from the old curve's 90%/7.8%/2.2%) — so
+   * quickSim's old FATIGUE_PENALTY=0.3 (tuned against the OLD, harsher engine curve at 45.5%/
+   * 20.8%/33.7%) now undershoots by less than before but still undershoots (51.1%/17.1%/31.8%,
+   * 2.17 vs 1.60). Swept `bun scripts/fatigue-calibrate.ts` Part 2 against the new engine baseline:
+   * 0.7 tracks the new engine gap almost exactly (57.4%/17.3%/25.3%, 2.28 vs 1.33), but raising
+   * FATIGUE_PENALTY also lowers goal volume for two EQUAL-fitness sides at a realistic matchday
+   * fitness (~88, see BASE_GOALS above) — 0.7 costs ~5-6% of goals there (checked directly with
+   * quickSimMatch, both sides at fitness 88, premier_league/of_championship/
+   * of_kenyan_premier_division), enough to meaningfully undo the goal-volume recalibration just
+   * above. 0.5 costs only ~2.4-3.0% at fitness 88 (within the ~3% budget) while still closing much
+   * of the tired-vs-fresh gap (54.2%/17.3%/28.5%, 2.22 vs 1.46) — the chosen middle ground.
+   *
+   * The residual gap (54% vs the engine's 58%) is a known, accepted limitation, same root cause as
+   * before: quickSim discounts strength once from *start* fitness, the engine's fatigue is
+   * continuous and also feeds off `load` mid-match. Closing it fully needs `load` (or an evolving
+   * in-match fitness) to feed team strength too, which the design explicitly scopes to the full
+   * engine only.
    */
-  FATIGUE_PENALTY: 0.3,
+  FATIGUE_PENALTY: 0.5,
 
   /** No finishing: in the engine it only nudges conversion (shooterEffect 0.85–1.2); it still picks the scorer (fillSide). */
   ATTACK_KEYS:     ["dribbling", "speed", "acceleration"],
