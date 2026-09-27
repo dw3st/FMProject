@@ -65,7 +65,31 @@ export const QUICK_SIM_CONFIG = {
   LEVEL_EXPONENT: 0.81,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
-  /** Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100). */
+  /**
+   * Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100).
+   * Only `fitness` feeds this — `load` never does; load only raises `ENERGY_DRAIN_BY_LINE` (see
+   * above), by design (`docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Motor ×
+   * quickSim": the engine gets the load factor at kickoff, quickSim gets it in the drain).
+   *
+   * Kept at 0.3 after calibrating against the engine (`bun scripts/fatigue-calibrate.ts`, Part 2):
+   * a fresh XI (fitness 100/load 0) vs a tired XI (fitness 70/load LOAD_HIGH) on the same
+   * premier_league fixtures scored engine 90% fresh win / 7.8% draw / 2.2% tired win (90 matches),
+   * vs quickSim's 45.5% / 20.8% / 33.7% at FATIGUE_PENALTY=0.3 — a real gap, expected from the
+   * engine's continuous fatigue (physical stats keep degrading tick by tick, amplified by the
+   * load-driven drain) against quickSim's single static discount from *start* fitness only.
+   * Raising FATIGUE_PENALTY narrows that gap (e.g. 1.8 → 72.5%/16.4%/11%) but was rejected: every
+   * quickSim calibration to date (`quicksim-calibrate.ts`, `quicksim-spread.ts`, the "Volume de
+   * gols" tables in `.claude/rules/non-player-games.md`) runs BOTH sides at the same uniform
+   * `emptySeasonLog()` fitness (75, no persisted `seasonLog` on world data), where a change to
+   * FATIGUE_PENALTY does NOT cancel out between the two equal-fitness sides — verified directly
+   * (holding fitness at 75 for an 11-a-side XI both ways, mean xG dropped from 1.27 at
+   * FATIGUE_PENALTY=0.3 to 0.81 at 2.0, a 36% swing) because of the LEVEL_EXPONENT/STRENGTH_EXPONENT
+   * curvature and the additive STRENGTH_FLOOR. Raising it enough to meaningfully close the
+   * tired-vs-fresh gap (≥ ~1.5) would silently invalidate the whole per-league goal-volume
+   * calibration (rms 6%, individual leagues within ~13%). Closing the gap properly needs `load`
+   * (or an evolving in-match fitness) to feed team strength too, which the design explicitly
+   * scopes to the full engine only — left as a known limitation, not a bug.
+   */
   FATIGUE_PENALTY: 0.3,
 
   /** No finishing: in the engine it only nudges conversion (shooterEffect 0.85–1.2); it still picks the scorer (fillSide). */
@@ -123,6 +147,15 @@ export const QUICK_SIM_CONFIG = {
   TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 1.072, MID: 0.356, FWD: 1.154 } as Record<LineGroup, number>,
   TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.39, MID: -0.81, FWD: -0.36 } as Record<LineGroup, number>,
 
-  /** Energy spent over 90' for an average-stamina player. */
-  ENERGY_DRAIN: 35,
+  /**
+   * Energy spent over 90' for an average-stamina player, per line — calibrated against the full
+   * engine's average end-of-match energy loss for players who play the whole 90' (fitness 100,
+   * load 0), pooled across premier_league / of_allsvenskan / of_kenyan_premier_division (60 pairs
+   * per league, ~360–940 full-90 player-observations per line). See
+   * `bun scripts/fatigue-calibrate.ts`. Applied in `quickSim.ts` as
+   * `ENERGY_DRAIN_BY_LINE[line] × staminaFactor × drainMultiplier(load) × extraTimeMult`. GK
+   * drains the least (mostly holds position / occasional gkSave); DEF and FWD the most (constant
+   * pressing/tackling and carrying/pressing respectively); MID sits in between.
+   */
+  ENERGY_DRAIN_BY_LINE: { GK: 38.1, DEF: 53.5, MID: 48.3, FWD: 52.1 } as Record<LineGroup, number>,
 } as const;
