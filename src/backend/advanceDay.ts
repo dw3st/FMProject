@@ -57,6 +57,7 @@ import {
   createContinentalSeason,
   continentalTier1LeagueStates,
   logEuropeanCalendarClashes,
+  seasonDefiningYear,
 } from "@/backend/continentalWorld";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
@@ -1013,6 +1014,25 @@ export async function advanceOneDay(
         const m = await saveService.getLeagueMeta(saveId, primarySlug);
         if (m) compYear[continent] = m.year;
       }
+
+      // Self-heal: a continent with NO primary competition meta at all never went through
+      // `createSave` successfully (its try/catch there swallowed the failure — see
+      // `.claude/rules/game/continental.md`). `continentsToRegenerateContinental` below can never
+      // pick it up (it requires an existing year to compare against), so without this it would
+      // stay without a continental competition forever. Create it fresh for the current
+      // season-defining year — no try/catch (matches the regenerate loop below): a failure here
+      // fails the whole day, and the next rollover/resync day simply retries.
+      for (const continent of ["Europe", "South America"] as const) {
+        if (compYear[continent] !== undefined) continue;
+        const year = await seasonDefiningYear(continent, updatedActiveLeagues, catalog);
+        if (year === null) continue; // no season-defining league yet — nothing to build from
+        logError(
+          "continental",
+          `save ${saveId}: ${continent} has no continental competition on disk — creating it now (self-heal) for ${year}`,
+        );
+        await createContinentalSeason({ service: saveService, saveId, continent, year, index, catalog, pyramids });
+      }
+
       for (const c of continentsToRegenerateContinental(tier1States, compYear)) {
         // No try/catch here (matches the national-cups block above): a failure must fail the whole
         // day so it is never silently swallowed. Left un-regenerated, the trigger condition stays
