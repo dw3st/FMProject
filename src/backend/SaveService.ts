@@ -673,6 +673,9 @@ export class SaveService {
 
     const squadGlob = new Bun.Glob("*.json");
     let copied = 0;
+    // Kept so createContinentalSeason (below) can reuse these already-in-memory squads for
+    // clubLevel instead of re-reading every one of them back off disk via getSquadById.
+    const squadCache = new Map<string, Squad>();
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
@@ -701,6 +704,7 @@ export class SaveService {
 
         await this.dal.writeSquad(id, league, clubSlug, squad);
         this.squadIndexCache.delete(id);
+        squadCache.set(squad.id, squad);
         copied++;
       }
     }
@@ -748,7 +752,7 @@ export class SaveService {
         try {
           const year = await seasonDefiningYear(continent, activeLeagues, catalog);
           if (year === null) continue;
-          await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids });
+          await createContinentalSeason({ service: this, saveId: id, continent, year, index, catalog, pyramids, squadCache });
         } catch (e) {
           console.error(`Failed to generate continental competitions for ${continent}:`, e);
         }

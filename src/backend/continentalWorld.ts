@@ -20,15 +20,14 @@ import { teamLevel, teamStrength } from "@/Domain/advanceDay/quickSim";
 import { CONTINENTAL, competitionsOf, isContinentalSlug } from "@/Domain/continental/competitions";
 import { allocateSlots, type CountrySlotInput } from "@/Domain/continental/slots";
 import { pickQualifiers } from "@/Domain/continental/qualify";
-import { continentalDates } from "@/Domain/continental/continentalDates";
+import { continentalDates, type ParticipantDates } from "@/Domain/continental/continentalDates";
 import { generateContinental } from "@/Domain/continental/generateContinental";
 import type { DrawClub } from "@/Domain/continental/groupDraw";
-import { advanceContinental, type ContinentalEvent } from "@/Domain/continental/continentalProgress";
+import { advanceContinental, type ContinentalEvent, type ContinentalTier1LeagueState } from "@/Domain/continental/continentalProgress";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { logError } from "@/Logger";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
-const DAY_MS = 86_400_000;
 
 let _countriesCache: Record<string, CountryEntry> | null = null;
 
@@ -81,9 +80,16 @@ export function clubLevel(squad: Squad): number {
   const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
   const roles = slotRoles(formation);
   const byId = new Map(squad.players.map((p) => [p.id, p]));
-  const xi = autoLineupDefaultFormation(squad)
-    .map((id) => byId.get(id))
-    .filter((p): p is RosterPlayer => p !== undefined);
+  // Never drop a missing id: `xi[i]` must line up with `roles[i]` (both slot-ordered), and
+  // filtering out a hole would shift every later slot's role onto the wrong player.
+  const xi: RosterPlayer[] = autoLineupDefaultFormation(squad).map((id) => {
+    const p = byId.get(id);
+    if (!p) throw new Error(`clubLevel: squad ${squad.id} — player ${id} from autoLineupDefaultFormation not found`);
+    return p;
+  });
+  if (xi.length !== 11) {
+    throw new Error(`clubLevel: squad ${squad.id} — expected an 11-player XI, got ${xi.length}`);
+  }
   return teamLevel(teamStrength(xi, roles));
 }
 
@@ -109,23 +115,6 @@ function zoneSlotsOf(
   return { primary, secondary };
 }
 
-/** `d` plus the day before and the day after it, as "YYYY-MM-DD" strings. */
-function withNeighbours(d: string): string[] {
-  const ms = Date.parse(`${d}T00:00:00Z`);
-  return [
-    new Date(ms - DAY_MS).toISOString().slice(0, 10),
-    d,
-    new Date(ms + DAY_MS).toISOString().slice(0, 10),
-  ];
-}
-
-/** A continental fixture can never land the day before, the day of, or the day after any date in `dates`. */
-function expandBusy(dates: Set<string>): Set<string> {
-  const out = new Set<string>();
-  for (const d of dates) for (const n of withNeighbours(d)) out.add(n);
-  return out;
-}
-
 /** Everything computed once per country's tier-1 league, reused across slots/ranking/pots. */
 interface CountryTier1 {
   country: string;
@@ -142,17 +131,20 @@ interface CountryTier1 {
  * `clubLevel(squad)`, cached per squad id in `cache` — every squad in a continent's tier-1 leagues
  * belongs to exactly one country, so nothing is actually re-fetched today, but this keeps it that
  * way even if a future caller (e.g. re-ranking a second time) ends up asking for the same club
- * twice within one `createContinentalSeason` call.
+ * twice within one `createContinentalSeason` call. `squadCache` (the squads `createSave` already
+ * read into memory to copy into the save) is checked before falling back to `getSquadById`'s disk
+ * read, so a fresh career never re-reads a squad file it just wrote.
  */
 async function clubLevelCached(
   service: SaveService,
   saveId: string,
   squadId: string,
   cache: Map<string, number>,
+  squadCache?: Map<string, Squad>,
 ): Promise<number> {
   const cached = cache.get(squadId);
   if (cached !== undefined) return cached;
-  const squad = await service.getSquadById(saveId, squadId);
+  const squad = squadCache?.get(squadId) ?? (await service.getSquadById(saveId, squadId));
   const level = squad ? clubLevel(squad) : 0;
   cache.set(squadId, level);
   return level;
@@ -167,6 +159,7 @@ async function tier1Info(
   index: SquadIndex,
   continent: "Europe" | "South America",
   levelCache: Map<string, number>,
+  squadCache: Map<string, Squad> | undefined,
 ): Promise<CountryTier1 | null> {
   const league = topLeagueOf(country, catalog, pyramids);
   if (!league) return null;
@@ -176,7 +169,7 @@ async function tier1Info(
   const levels = new Map<string, number>();
   await Promise.all(
     clubs.map(async (id) => {
-      levels.set(id, await clubLevelCached(service, saveId, id, levelCache));
+      levels.set(id, await clubLevelCached(service, saveId, id, levelCache, squadCache));
     }),
   );
   const coefficient = [...levels.values()].reduce((a, b) => a + b, 0) / levels.size;
@@ -251,9 +244,10 @@ export interface ContinentalCompetitionResult {
 /**
  * Generates and writes one continent's two competitions (primary + secondary — e.g. UCL + UEL) for
  * a season: coefficients from `clubLevel`, places from `allocateSlots`, qualifiers from
- * `pickQualifiers`, a shared busy-dates set for `continentalDates`, then `generateContinental` for
- * each competition. Throws (caller's try/catch per continent) when either competition doesn't come
- * out to exactly 32 clubs, or when the continent has no country with a tier-1 league to work with.
+ * `pickQualifiers`, per-competition participant fixture dates for `continentalDates`'s scheduler,
+ * then `generateContinental` for each competition. Throws (caller's try/catch per continent) when
+ * either competition doesn't come out to exactly 32 clubs, or when the continent has no country
+ * with a tier-1 league to work with.
  */
 export async function createContinentalSeason(args: {
   service: SaveService;
@@ -263,15 +257,19 @@ export async function createContinentalSeason(args: {
   index: SquadIndex;
   catalog: LeagueDataEntry[];
   pyramids: Pyramids;
+  /** Squads `createSave` already read into memory — avoids re-reading them via `getSquadById`. */
+  squadCache?: Map<string, Squad>;
 }): Promise<{ primary: ContinentalCompetitionResult; secondary: ContinentalCompetitionResult }> {
-  const { service, saveId, continent, year, index, catalog, pyramids } = args;
+  const { service, saveId, continent, year, index, catalog, pyramids, squadCache } = args;
   const catalogList = catalog as CatalogLeague[];
   const levelCache = new Map<string, number>();
 
   const countries = await countriesOfContinent(continent, catalog);
   const infos = (
     await Promise.all(
-      countries.map((c) => tier1Info(service, saveId, c, catalogList, pyramids, index, continent, levelCache)),
+      countries.map((c) =>
+        tier1Info(service, saveId, c, catalogList, pyramids, index, continent, levelCache, squadCache),
+      ),
     )
   ).filter((t): t is CountryTier1 => t !== null);
   if (infos.length === 0) {
@@ -321,37 +319,48 @@ export async function createContinentalSeason(args: {
   }
   const end = [...endDates].sort().at(-1)!;
 
-  // Two-tier busy dates, the same set feeding both competitions' `continentalDates` call (a club is
-  // never in both, but they can share a country's domestic calendar):
-  //
-  // - `hardBusy`: the EXACT dates of every involved country's league and national cup fixtures
-  //   (including every cup stage not yet drawn — `leagueBusyDates` reads the cup's date-index, which
-  //   `generateCup` populates for every stage up front, drawn or not). A continental pick may never
-  //   land on one of these — same-day double-booking a participant club must be impossible, not just
-  //   unlikely. Libertadores plays Tuesday specifically so this never structurally collides with
-  //   every country's cup, which always plays a fixed Wednesday (`cupDates.ts`'s `WEDNESDAY`) — see
-  //   `competitions.ts`'s comment on `CONTINENTAL.lib`.
-  // - `busy` (soft): `hardBusy` expanded ±1 day. Only ever avoided when possible — `continentalDates`
-  //   accepts a soft clash once the whole window has been searched and no fully clash-free day
-  //   exists, which real-world data does force sometimes (a handful of countries' domestic calendars
-  //   already rotate through 2-3 weekdays; see `continentalDates.ts`'s option comment).
-  const involvedCountries = new Set([...primary, ...secondary].map((id) => countryOfClub.get(id)!));
+  // Per-participant exact fixture dates (league + national cup, including every cup stage not yet
+  // drawn — `leagueBusyDates` on the cup slug reads its date-index, which `generateCup` populates
+  // for every stage up front) feed `continentalDates`' own dynamic-programming scheduler, which
+  // derives same-day ("hard") and adjacent-day ("soft") clash counts from them directly. Each
+  // competition gets ONLY ITS OWN 32 qualifiers here — not the continent's other competition, and
+  // not every country in the continent — so a country with no club in, say, the Europa League
+  // never influences the Champions League's schedule. Clubs of the same country share one
+  // `leagueBusyDates` lookup (memoised in `countryDates`) rather than paying for it once per club.
   const byCountry = new Map(infos.map((t) => [t.country, t]));
-  const busyLeagues = [...involvedCountries].flatMap((c) => {
-    const t = byCountry.get(c)!;
-    return [t.league, cupSlugOf(c)];
-  });
-  const hardBusy = await leagueBusyDates(service, saveId, busyLeagues);
-  const busy = expandBusy(hardBusy);
+  const countryDates = new Map<string, Set<string>>();
+  const datesOfCountry = async (country: string): Promise<Set<string>> => {
+    const cached = countryDates.get(country);
+    if (cached) return cached;
+    const t = byCountry.get(country)!;
+    const dates = await leagueBusyDates(service, saveId, [t.league, cupSlugOf(country)]);
+    countryDates.set(country, dates);
+    return dates;
+  };
+  const participantsFor = async (ids: string[]): Promise<ParticipantDates[]> =>
+    Promise.all(ids.map(async (id) => ({ id, dates: await datesOfCountry(countryOfClub.get(id)!) })));
 
-  const primaryDates = continentalDates(continent, year, end, CONTINENTAL[primarySlug].weekday, busy, hardBusy);
-  const secondaryDates = continentalDates(continent, year, end, CONTINENTAL[secondarySlug].weekday, busy, hardBusy);
+  const primaryParticipants = await participantsFor(primary);
+  const secondaryParticipants = await participantsFor(secondary);
 
-  // Should never happen (see the comment above) — `continentalDates` only ever lands on a hardBusy
-  // date as its own last resort once every avoidance search has failed. Surface it loudly rather
-  // than let a same-day double-booking pass silently.
-  for (const [slug, dates] of [[primarySlug, primaryDates], [secondarySlug, secondaryDates]] as const) {
-    const violations = dates.filter((d) => hardBusy.has(d));
+  const primaryDates = continentalDates(continent, year, end, CONTINENTAL[primarySlug].weekday, primaryParticipants);
+  const secondaryDates = continentalDates(
+    continent,
+    year,
+    end,
+    CONTINENTAL[secondarySlug].weekday,
+    secondaryParticipants,
+  );
+
+  // Should never happen — `continentalDates`' HUGE same-day weight means it only ever lands on a
+  // hard-busy date once no combination of hard-free days satisfies the competition's own minimum
+  // gap. Surface it loudly rather than let a same-day double-booking pass silently.
+  for (const [slug, dates, participants] of [
+    [primarySlug, primaryDates, primaryParticipants],
+    [secondarySlug, secondaryDates, secondaryParticipants],
+  ] as const) {
+    const hardDates = new Set(participants.flatMap((p) => [...p.dates]));
+    const violations = dates.filter((d) => hardDates.has(d));
     if (violations.length > 0) {
       logError(
         "continental",
@@ -443,4 +452,31 @@ export async function advanceContinentalStages(
     }
   }
   return changes;
+}
+
+/**
+ * One tier-1 league state (year + whether its season crosses the calendar year) per country of
+ * both continents, from the world's already-generated league states — the input
+ * `continentsToRegenerate` (`src/Domain/continental/continentalProgress.ts`) needs to decide when
+ * a continent's UCL/UEL or Lib/Sud must roll over. A country whose tier-1 league has no matching
+ * entry in `activeLeagues` (should not happen once the world is fully generated) is skipped rather
+ * than guessed at.
+ */
+export async function continentalTier1LeagueStates(
+  activeLeagues: { leagueSlug: string; year: number }[],
+  catalog: LeagueDataEntry[],
+  pyramids: Pyramids,
+): Promise<ContinentalTier1LeagueState[]> {
+  const out: ContinentalTier1LeagueState[] = [];
+  const yearByLeague = new Map(activeLeagues.map((l) => [l.leagueSlug, l.year]));
+  for (const continent of ["Europe", "South America"] as const) {
+    for (const country of await countriesOfContinent(continent, catalog)) {
+      const league = topLeagueOf(country, catalog as CatalogLeague[], pyramids);
+      const year = league ? yearByLeague.get(league) : undefined;
+      if (!league || year === undefined) continue;
+      const crossYear = LEAGUE_SCHEDULE_CONFIGS.find((c) => c.slug === league)?.crossYear ?? false;
+      out.push({ continent, year, crossYear });
+    }
+  }
+  return out;
 }
