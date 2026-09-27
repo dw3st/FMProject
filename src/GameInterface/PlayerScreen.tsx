@@ -11,6 +11,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import type { TransferRecord } from "@/types/transferTypes";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
+import { wageFactorOf } from "@/Domain/finance/wages";
 
 export function PlayerScreen({
   playerId,
@@ -27,6 +28,7 @@ export function PlayerScreen({
   const [squadId, setSquadId] = useState("");
   const [squadName, setSquadName] = useState("");
   const [squadColors, setSquadColors] = useState<[string, string]>(["#555", "#888"]);
+  const [squadWageFactor, setSquadWageFactor] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
   const lastTransferResult = useRef<TransferRecord | null>(null);
@@ -44,6 +46,7 @@ export function PlayerScreen({
       setSquadId(mySquad.id);
       setSquadName(mySquad.name);
       setSquadColors(mySquad.colors);
+      setSquadWageFactor(wageFactorOf(mySquad));
       setLoading(false);
       return;
     }
@@ -55,6 +58,7 @@ export function PlayerScreen({
         setSquadId(data.id);
         setSquadName(data.name);
         setSquadColors(data.colors);
+        setSquadWageFactor(wageFactorOf(data));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -62,9 +66,9 @@ export function PlayerScreen({
 
   const displayPlayer = useMemo((): DisplayPlayer | null => {
     if (!player || !squadName) return null;
-    const dp = toDisplayPlayer(player, squadName);
+    const dp = toDisplayPlayer(player, squadName, { wageFactor: squadWageFactor });
     return { ...dp, leagueSlug: league, clubSlug: club };
-  }, [player, squadName, league, club]);
+  }, [player, squadName, squadWageFactor, league, club]);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
   const isOwnPlayer = !!player && !!mySquadId && player.squadId === mySquadId;

@@ -53,7 +53,7 @@ export function resolveSquadIdFromLeagues(
 export function toDisplayPlayer(
   player: RosterPlayer,
   clubName: string,
-  options?: { squadCountry?: string | null },
+  options?: { squadCountry?: string | null; wageFactor?: number },
 ): DisplayPlayer {
   const avg = Player.overallAvg(player);
   const domain = new Player(avg, player.age);
@@ -71,7 +71,7 @@ export function toDisplayPlayer(
     age: player.age,
     avg: Math.round(avg * 10) / 10,
     energy: log ? Math.round(log.fitness) : 100,
-    salary: domain.salaryLabel,
+    salary: domain.salaryLabel(options?.wageFactor),
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,
     nationality: nat,

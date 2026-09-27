@@ -19,6 +19,7 @@ import {
   weeklyBudgetFor,
 } from "@/Domain/aiFinance/aiClubFinance";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
+import { clubAnnualRevenue, FALLBACK_HOME_GAMES, playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
 
 const fin = (income: number, followers = 0, budget = 10_000_000): ClubFinances => ({
   broadcasting: income, commercial: 0, total: income, budget, followers,
@@ -65,30 +66,39 @@ describe("popularityFromFollowers", () => {
   });
 });
 
-describe("budget math", () => {
-  test("weeklyBudget = base × (1 + popularity/100) × soft balance", () => {
+describe("budget math (revenue-driven wage cap)", () => {
+  test("maxWageBudget = WAGE_REVENUE_SHARE × revenue / 52 × soft balance", () => {
     const c = AI_FINANCE_CONFIG;
-    expect(weeklyBudgetFor("HIGH", 0)).toBe(c.BASE_WEEKLY_BUDGET.HIGH);
-    expect(weeklyBudgetFor("HIGH", 50)).toBe(Math.round(c.BASE_WEEKLY_BUDGET.HIGH * 1.5));
-    expect(weeklyBudgetFor("LOW", 0)).toBe(Math.round(c.BASE_WEEKLY_BUDGET.LOW * c.SOFT_BALANCE.LOW));
-    expect(weeklyBudgetFor("ELITE", 100)).toBe(Math.round(c.BASE_WEEKLY_BUDGET.ELITE * 2 * c.SOFT_BALANCE.ELITE));
+    const revenue = 104_000_000; // /52 = 2,000,000 weekly base
+    expect(maxWageBudgetFor(revenue, "HIGH")).toBe(Math.round(c.WAGE_REVENUE_SHARE * 2_000_000 * c.SOFT_BALANCE.HIGH));
+    expect(maxWageBudgetFor(revenue, "LOW")).toBe(Math.round(c.WAGE_REVENUE_SHARE * 2_000_000 * c.SOFT_BALANCE.LOW));
   });
-  test("maxWageBudget = weeklyBudget × wageRatio (0.6–0.8)", () => {
+  test("weeklyBudget = maxWageBudget / wageRatio (0.6–0.8) — headline figure, not a cap", () => {
     expect(AI_FINANCE_CONFIG.WAGE_RATIO).toBeGreaterThanOrEqual(0.6);
     expect(AI_FINANCE_CONFIG.WAGE_RATIO).toBeLessThanOrEqual(0.8);
-    expect(maxWageBudgetFor(10_000)).toBe(Math.round(10_000 * AI_FINANCE_CONFIG.WAGE_RATIO));
+    expect(weeklyBudgetFor(10_000)).toBe(Math.round(10_000 / AI_FINANCE_CONFIG.WAGE_RATIO));
   });
-  test("stronger tiers always get a bigger budget at equal popularity", () => {
-    for (const p of [0, 50, 100]) {
-      expect(weeklyBudgetFor("MEDIUM", p)).toBeGreaterThan(weeklyBudgetFor("LOW", p));
-      expect(weeklyBudgetFor("HIGH", p)).toBeGreaterThan(weeklyBudgetFor("MEDIUM", p));
-      expect(weeklyBudgetFor("ELITE", p)).toBeGreaterThan(weeklyBudgetFor("HIGH", p));
-    }
+  test("wage cap grows with revenue, for a fixed tier", () => {
+    expect(maxWageBudgetFor(200_000_000, "HIGH")).toBeGreaterThan(maxWageBudgetFor(100_000_000, "HIGH"));
   });
-  test("wage estimate and wage bill", () => {
-    expect(estimateWeeklyWage(player("a", 4))).toBe(Math.round(Math.pow(4, 2.2) * 50));
-    expect(squadWageBill(squad(undefined, [player("a", 4), player("b", 2)])))
-      .toBe(estimateWeeklyWage(player("a", 4)) + estimateWeeklyWage(player("b", 2)));
+  test("soft balance discounts stronger tiers at equal revenue", () => {
+    const revenue = 100_000_000;
+    expect(maxWageBudgetFor(revenue, "LOW")).toBeGreaterThan(maxWageBudgetFor(revenue, "MEDIUM"));
+    expect(maxWageBudgetFor(revenue, "MEDIUM")).toBeGreaterThan(maxWageBudgetFor(revenue, "HIGH"));
+    expect(maxWageBudgetFor(revenue, "HIGH")).toBeGreaterThan(maxWageBudgetFor(revenue, "ELITE"));
+  });
+  test("wage estimate = the shared curve wage × the given club factor", () => {
+    expect(estimateWeeklyWage(player("a", 4), 1)).toBe(playerWeeklyWage(player("a", 4), 1));
+    expect(estimateWeeklyWage(player("a", 4), 2)).toBe(2 * estimateWeeklyWage(player("a", 4), 1));
+  });
+  test("squadWageBill sums player wages at the squad's own wage factor", () => {
+    const s = squad(fin(50_000_000), [player("a", 4), player("b", 2)]);
+    const factor = wageFactorOf(s);
+    expect(squadWageBill(s)).toBe(playerWeeklyWage(player("a", 4), factor) + playerWeeklyWage(player("b", 2), factor));
+  });
+  test("a stored wageFactor overrides the on-the-fly computation", () => {
+    const s = squad(fin(50_000_000), [player("a", 4)], { wageFactor: 3 });
+    expect(squadWageBill(s)).toBe(playerWeeklyWage(player("a", 4), 3));
   });
 });
 
@@ -105,10 +115,17 @@ describe("wage gate", () => {
     const f = aiClubFinance(s);
     expect(f.tier).toBe("HIGH");
     expect(f.popularity).toBeCloseTo(50);
-    expect(f.weeklyBudget).toBe(weeklyBudgetFor("HIGH", f.popularity));
-    expect(f.maxWageBudget).toBe(maxWageBudgetFor(f.weeklyBudget));
-    expect(f.wageBill).toBe(estimateWeeklyWage(player("a", 4)));
+    const revenue = clubAnnualRevenue(s, FALLBACK_HOME_GAMES); // no venue on this squad → gate = 0
+    expect(f.maxWageBudget).toBe(maxWageBudgetFor(revenue, "HIGH"));
+    expect(f.weeklyBudget).toBe(weeklyBudgetFor(f.maxWageBudget));
+    expect(f.wageBill).toBe(squadWageBill(s));
     expect(f.hiring).toBe("open");
+  });
+  test("aiClubFinance uses the real home-game count when the caller passes one", () => {
+    const s = squad(fin(100_000_000, 10 ** 6.75), [player("a", 4)], { venue: { name: "Stadium", city: "City", capacity: 40_000 } });
+    const withDefault = aiClubFinance(s);
+    const withRealSchedule = aiClubFinance(s, 37); // e.g. a 38-club league
+    expect(withRealSchedule.maxWageBudget).toBeGreaterThan(withDefault.maxWageBudget);
   });
   const base = { tier: "HIGH" as const, popularity: 0, weeklyBudget: 0, maxWageBudget: 10_000, transferBudget: 0, seasonalTransferBudget: 0 };
   test("open: any fee, as long as the wage fits", () => {

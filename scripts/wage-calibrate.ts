@@ -35,7 +35,9 @@ import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { fileURLToPath } from "node:url";
 import { Player } from "@/Domain/Player";
-import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import { naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
+import { AI_FINANCE_CONFIG, FINANCIAL_TIERS } from "@/Domain/aiFinance/aiFinanceConfig";
+import type { RosterPlayer, Squad, FinancialTier } from "@/types/playerTypes";
 import type { Pyramids } from "@/types/pyramidTypes";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -81,6 +83,8 @@ interface ClubSample {
   tier: number;
   bucket: TierBucket;
   revenue: number;
+  /** broadcasting + commercial only (no gate) — the basis `naturalFinancialTier` classifies on. */
+  income: number;
   ratings: number[];
 }
 
@@ -136,6 +140,7 @@ function loadClubs(leagues: LeagueEntry[], tiers: Map<string, number>): ClubSamp
         tier,
         bucket: tierBucketOf(tier),
         revenue,
+        income: finances.broadcasting + finances.commercial,
         ratings,
       });
     }
@@ -415,4 +420,91 @@ for (const { slug, label } of EXAMPLE_LEAGUES) {
   for (const rating of [4, 5, 6, 7]) {
     console.log(`    rating ${rating}: ${fmtEUR(Math.round(winner.curve.weekly(rating) * rep.factor))}`);
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// AI wage-budget hiring distribution (#12 follow-up — maxWageBudget from revenue, not popularity)
+// ---------------------------------------------------------------------------------------------
+//
+// `maxWageBudget = WAGE_REVENUE_SHARE × revenue / 52 × SOFT_BALANCE[tier]` — see
+// `src/Domain/aiFinance/aiFinanceConfig.ts` / `aiClubFinance.ts`. Every club's ACTUAL wage bill
+// (`curveBill × factor`, `winner.outcomes` above) is already computed with the real
+// `clubWageFactor` / `weeklyWage` from `src/Domain/finance/wages.ts` (imported directly, not
+// re-implemented) — this section only grid-searches WAGE_REVENUE_SHARE against that same data to
+// find the value whose hiring-state split (open/tight/frozen) across the whole world lands near
+// the design target ~92% / 5% / 3%.
+
+interface HiringSample {
+  tier: FinancialTier;
+  weeklyBill: number; // curveBill × factor, same formula as squadWageBill
+  revenue: number;
+}
+
+const hiringSamples: HiringSample[] = winner.outcomes.map((o) => ({
+  tier: naturalFinancialTier({ broadcasting: o.income, commercial: 0, total: o.income, budget: 0, followers: 0 }),
+  weeklyBill: o.curveBill * o.factor,
+  revenue: o.revenue,
+}));
+
+console.log(`\nFinancial-tier split of the ${hiringSamples.length} sampled clubs (naturalFinancialTier, world start):`);
+for (const t of FINANCIAL_TIERS) {
+  const n = hiringSamples.filter((s) => s.tier === t).length;
+  console.log(`  ${t.padEnd(7)} ${n} (${((n / hiringSamples.length) * 100).toFixed(1)}%)`);
+}
+
+function hiringStateLocal(bill: number, cap: number): "open" | "tight" | "frozen" {
+  if (bill >= cap) return "frozen";
+  if (bill >= cap * AI_FINANCE_CONFIG.NEAR_LIMIT_RATIO) return "tight";
+  return "open";
+}
+
+function distributionFor(share: number): { open: number; tight: number; frozen: number } {
+  let open = 0, tight = 0, frozen = 0;
+  for (const s of hiringSamples) {
+    const cap = share * (s.revenue / 52) * AI_FINANCE_CONFIG.SOFT_BALANCE[s.tier];
+    const state = hiringStateLocal(s.weeklyBill, cap);
+    if (state === "open") open++;
+    else if (state === "tight") tight++;
+    else frozen++;
+  }
+  const n = hiringSamples.length;
+  return { open: (open / n) * 100, tight: (tight / n) * 100, frozen: (frozen / n) * 100 };
+}
+
+const TARGET_DIST = { open: 92, tight: 5, frozen: 3 };
+const SHARE_GRID = [0.55, 0.58, 0.60, 0.62, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.72, 0.75, 0.78, 0.80, 0.85, 0.90, 1.0];
+
+console.log("\nHiring-state distribution vs WAGE_REVENUE_SHARE (target ~92% open / 5% tight / 3% frozen):");
+console.log("share".padEnd(8) + "open%".padEnd(9) + "tight%".padEnd(9) + "frozen%");
+let bestShare = SHARE_GRID[0]!;
+let bestErr = Infinity;
+for (const share of SHARE_GRID) {
+  const d = distributionFor(share);
+  const err = (d.open - TARGET_DIST.open) ** 2 + (d.tight - TARGET_DIST.tight) ** 2 + (d.frozen - TARGET_DIST.frozen) ** 2;
+  if (err < bestErr) { bestErr = err; bestShare = share; }
+  console.log(share.toFixed(2).padEnd(8) + d.open.toFixed(1).padEnd(9) + d.tight.toFixed(1).padEnd(9) + d.frozen.toFixed(1));
+}
+
+console.log(`\n=== Closest WAGE_REVENUE_SHARE to target: ${bestShare.toFixed(2)} ===`);
+const bestDist = distributionFor(bestShare);
+console.log(`  open=${bestDist.open.toFixed(1)}% tight=${bestDist.tight.toFixed(1)}% frozen=${bestDist.frozen.toFixed(1)}%`);
+console.log("\nBy financial tier, at the chosen share:");
+console.log("tier".padEnd(8) + "n".padEnd(6) + "open%".padEnd(9) + "tight%".padEnd(9) + "frozen%");
+for (const t of FINANCIAL_TIERS) {
+  const rows = hiringSamples.filter((s) => s.tier === t);
+  if (rows.length === 0) continue;
+  let open = 0, tight = 0, frozen = 0;
+  for (const s of rows) {
+    const cap = bestShare * (s.revenue / 52) * AI_FINANCE_CONFIG.SOFT_BALANCE[s.tier];
+    const state = hiringStateLocal(s.weeklyBill, cap);
+    if (state === "open") open++;
+    else if (state === "tight") tight++;
+    else frozen++;
+  }
+  console.log(
+    t.padEnd(8) + String(rows.length).padEnd(6) +
+      ((open / rows.length) * 100).toFixed(1).padEnd(9) +
+      ((tight / rows.length) * 100).toFixed(1).padEnd(9) +
+      ((frozen / rows.length) * 100).toFixed(1),
+  );
 }
