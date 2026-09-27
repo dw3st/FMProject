@@ -3,12 +3,16 @@
  * Explains the full engine's goals/match spread across leagues, match by match, so quickSim can
  * follow it. Two subcommands:
  *
- *   bun scripts/quicksim-spread.ts collect <league> [pairs=200] [repeats=2] [out=<dir>/<league>.json]
+ *   bun scripts/quicksim-spread.ts collect <league> [pairs=200] [repeats=2] [out=<dir>/<league>.json] [--fitness N] [--load N]
  *     Runs the full engine (default 4-3-3 + autoFillLineup, same as AI league matches) on
  *     `pairs` random fixtures × `repeats` and stores every match (ids, score, shots, xG) in a
  *     per-match cache. Slow (~0.7 s/match) — run several leagues as parallel processes.
+ *     `--fitness`/`--load` set both sides' starting `seasonLog` (default 75/0, matching the old
+ *     assumption every squad has no season log yet); pass `--fitness 88` to collect at a more
+ *     representative matchday fitness (`docs/superpowers/specs/2026-09-27-stamina-design.md`,
+ *     balance task "soften + recalibrate").
  *
- *   bun scripts/quicksim-spread.ts analyze <cacheDir> [--holdout a,b,c]
+ *   bun scripts/quicksim-spread.ts analyze <cacheDir> [--holdout a,b,c] [--fitness N]
  *     Loads every cache in <cacheDir>, recomputes each XI's per-line attribute means from the
  *     current squads, and reports:
  *       1. per-league engine vs quickSim goals (current constants) and the residual;
@@ -66,21 +70,30 @@ export interface LineRecord {
 }
 interface SideRecord { goals: number; shots: number; xg: number; lines?: Record<LineGroup, LineRecord> }
 interface MatchRecord { home: string; away: string; h: SideRecord; a: SideRecord }
-interface Cache { league: string; pairs: number; repeats: number; createdAt: string; matches: MatchRecord[] }
+/** `fitness`/`load` absent = an older cache collected before these fields existed (implicitly 75/0). */
+interface Cache { league: string; pairs: number; repeats: number; createdAt: string; matches: MatchRecord[]; fitness?: number; load?: number }
 
-async function loadSquads(league: string): Promise<Squad[]> {
+/**
+ * `fitness`/`load` default to `emptySeasonLog()`'s 75/0 — the historical assumption for every
+ * goal-volume cache before the stamina balance pass. `collect` accepts overrides so a cache can be
+ * built at a more representative matchday fitness (~88, see
+ * `docs/superpowers/specs/2026-09-27-stamina-design.md` and the balance task that added this) —
+ * `analyze`/`events`'s own `loadSquads` calls (only used for attribute means, never fitness) keep
+ * the default.
+ */
+async function loadSquads(league: string, fitness = 75, load = 0): Promise<Squad[]> {
   const dir = `${SQUADS_DIR}${league}/`;
   const files = (await readdir(dir)).filter((f) => f.endsWith(".json")).sort();
   return Promise.all(files.map(async (f) => {
     const s = (await Bun.file(`${dir}${f}`).json()) as Squad;
-    return { ...s, players: s.players.map((p) => ({ ...p, seasonLog: emptySeasonLog() })) };
+    return { ...s, players: s.players.map((p) => ({ ...p, seasonLog: { ...emptySeasonLog(), fitness, load } })) };
   }));
 }
 
 // ── collect ──────────────────────────────────────────────────────────────────
 
-async function collect(league: string, pairs: number, repeats: number, out: string) {
-  const squads = await loadSquads(league);
+async function collect(league: string, pairs: number, repeats: number, out: string, fitness = 75, load = 0) {
+  const squads = await loadSquads(league, fitness, load);
   const pick = mulberry32(2026);
   const matches: MatchRecord[] = [];
   const t0 = performance.now();
@@ -106,7 +119,7 @@ async function collect(league: string, pairs: number, repeats: number, out: stri
       console.log(`${league}: ${i + 1}/${pairs} pares — ${((performance.now() - t0) / 1000).toFixed(0)} s`);
     }
   }
-  const cache: Cache = { league, pairs, repeats, createdAt: new Date().toISOString(), matches };
+  const cache: Cache = { league, pairs, repeats, createdAt: new Date().toISOString(), matches, fitness, load };
   await Bun.write(out, JSON.stringify(cache));
   console.log(`${league}: ${matches.length} jogos → ${out}`);
 }
@@ -242,13 +255,20 @@ interface Model {
   feature: (o: SideObs) => number;
 }
 
-async function analyze(cacheDir: string, holdout: Set<string>) {
+async function analyze(cacheDir: string, holdout: Set<string>, fitnessOverride?: number) {
   const files = (await readdir(cacheDir)).filter((f) => f.endsWith(".json")).sort();
   const sides: SideObs[] = [];
   const leagues: string[] = [];
   for (const file of files) {
     const cache = (await Bun.file(`${cacheDir}/${file}`).json()) as Cache;
-    const squads = new Map((await loadSquads(cache.league)).map((s) => [s.id, s]));
+    // The squads' seasonLog must match whatever fitness/load the cache was actually COLLECTED at
+    // (`FATIGUE_PENALTY` reads `seasonLog.fitness` — see quickSim.ts `fitnessFactor`), never the
+    // loadSquads default (75/0) — otherwise engine (fitness X) is compared against a quickSim
+    // xG computed at a different fitness. Falls back to `fitnessOverride` for older caches that
+    // predate the `fitness`/`load` cache fields.
+    const fitness = cache.fitness ?? fitnessOverride ?? 75;
+    const load = cache.load ?? 0;
+    const squads = new Map((await loadSquads(cache.league, fitness, load)).map((s) => [s.id, s]));
     const prof = new Map<string, XIProfile>();
     const get = (id: string) => {
       if (!prof.has(id)) prof.set(id, profileOf(squads.get(id)!));
@@ -957,18 +977,23 @@ if (cmd === "collect") {
   const pairs = Number(args[1] ?? 200);
   const repeats = Number(args[2] ?? 2);
   const out = args[3] ?? `qs-spread-cache/${league}.json`;
+  const fIdx = args.indexOf("--fitness");
+  const lIdx = args.indexOf("--load");
+  const fitness = fIdx >= 0 ? Number(args[fIdx + 1]) : 75;
+  const load = lIdx >= 0 ? Number(args[lIdx + 1]) : 0;
   await mkdir(out.replace(/[\\/][^\\/]*$/, "") || ".", { recursive: true });
-  await collect(league, pairs, repeats, out);
+  await collect(league, pairs, repeats, out, fitness, load);
 } else if (cmd === "analyze") {
   const dir = args[0]!;
   const hIdx = args.indexOf("--holdout");
   const holdout = new Set(hIdx >= 0 ? args[hIdx + 1]!.split(",") : []);
-  await analyze(dir, holdout);
+  const fIdx = args.indexOf("--fitness");
+  await analyze(dir, holdout, fIdx >= 0 ? Number(args[fIdx + 1]) : undefined);
 } else if (cmd === "events") {
   const dir = args[0]!;
   const hIdx = args.indexOf("--holdout");
   const kIdx = args.indexOf("--quick");
   await events(dir, kIdx >= 0 ? Number(args[kIdx + 1]) : 5, new Set(hIdx >= 0 ? args[hIdx + 1]!.split(",") : []), args.includes("--apply"));
 } else {
-  console.log("uso: bun scripts/quicksim-spread.ts collect <liga> [pares] [repetições] [saída] | analyze <dir> [--holdout a,b] | events <dir> [--quick k] [--holdout a,b]");
+  console.log("uso: bun scripts/quicksim-spread.ts collect <liga> [pares] [repetições] [saída] [--fitness N] [--load N] | analyze <dir> [--holdout a,b] | events <dir> [--quick k] [--holdout a,b]");
 }
