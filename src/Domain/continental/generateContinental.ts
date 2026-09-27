@@ -79,6 +79,14 @@ export function generateContinental(a: GenerateContinentalArgs): LeagueCalendarR
   if (a.dates.length !== TOTAL_ROUNDS) {
     throw new Error(`generateContinental: need ${TOTAL_ROUNDS} dates, got ${a.dates.length}`);
   }
+  for (let i = 1; i < a.dates.length; i++) {
+    if (!(a.dates[i]! > a.dates[i - 1]!)) {
+      throw new Error(
+        `generateContinental: dates must be strictly increasing and unique, got ` +
+          `"${a.dates[i - 1]}" then "${a.dates[i]}" at index ${i}`,
+      );
+    }
+  }
 
   const comp = CONTINENTAL[a.slug];
   const groups = drawGroups(a.clubs, mulberry32(seedFrom(`${a.seedKey}:groups`)));

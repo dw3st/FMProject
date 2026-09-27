@@ -132,4 +132,16 @@ describe("generateContinental", () => {
   test("wrong number of dates throws", () => {
     expect(() => generateContinental({ ...args, dates: dates.slice(0, 12) })).toThrow();
   });
+
+  test("non-increasing dates throw (would silently collapse dateIndex)", () => {
+    const swapped = [...dates];
+    swapped[1] = dates[0]!; // duplicate — no longer strictly increasing
+    expect(() => generateContinental({ ...args, dates: swapped })).toThrow();
+  });
+
+  test("out-of-order dates throw", () => {
+    const outOfOrder = [...dates];
+    [outOfOrder[2], outOfOrder[3]] = [outOfOrder[3]!, outOfOrder[2]!];
+    expect(() => generateContinental({ ...args, dates: outOfOrder })).toThrow();
+  });
 });
