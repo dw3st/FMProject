@@ -1,9 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { generateContinental } from "@/Domain/continental/generateContinental";
-import { advanceContinental, continentsToRegenerate } from "@/Domain/continental/continentalProgress";
+import {
+  advanceContinental,
+  continentsToRegenerate,
+  type ContinentalEvent,
+} from "@/Domain/continental/continentalProgress";
 import { seedFrom } from "@/Domain/cups/cupIds";
 import type { DrawClub } from "@/Domain/continental/groupDraw";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
+
+/** Narrows an event list to its "drawn" entries — used to inspect the `ties` payload. */
+function drawnEvents(events: ContinentalEvent[]): Extract<ContinentalEvent, { kind: "drawn" }>[] {
+  return events.filter((e): e is Extract<ContinentalEvent, { kind: "drawn" }> => e.kind === "drawn");
+}
 
 const clubs: DrawClub[] = Array.from({ length: 32 }, (_, i) => ({
   id: `c${i}`,
@@ -84,7 +93,19 @@ describe("advanceContinental — full competition", () => {
 
     expect(afterGroups.events.filter((e) => e.kind === "advanced")).toHaveLength(16);
     expect(afterGroups.events.filter((e) => e.kind === "eliminated")).toHaveLength(16);
-    expect(afterGroups.events).toContainEqual({ kind: "drawn", stage: "r16", round: 7 });
+
+    const r16Drawn = drawnEvents(afterGroups.events);
+    expect(r16Drawn).toHaveLength(1);
+    expect(r16Drawn[0]!.stage).toBe("r16");
+    expect(r16Drawn[0]!.round).toBe(7);
+    expect(r16Drawn[0]!.ties).toHaveLength(8);
+    for (const t of r16Drawn[0]!.ties) {
+      expect(t.firstLegDate).toBe(dates[6]!); // r16 stage's first date
+      const match = round7.find((f) => f.tieId === t.tieId);
+      expect(match).toBeDefined();
+      expect(match!.home).toBe(t.home);
+      expect(match!.away).toBe(t.away);
+    }
 
     // Calling it again for the same round is a no-op (already drawn).
     expect(advanceContinental(meta, roundsById, 6, seedKey)).toBeNull();
@@ -106,18 +127,36 @@ describe("advanceContinental — full competition", () => {
       expect(drawResult).not.toBeNull();
       meta = drawResult.meta;
       for (const w of drawResult.writes) roundsById.set(w.round, w.fixtures);
+
+      // The "drawn" event's ties match the actual first-leg (or single-final) fixtures written.
+      const [drawn] = drawnEvents(drawResult.events);
+      expect(drawn).toBeDefined();
+      const firstLegWrite = drawResult.writes.find((w) => w.round === drawn!.round)!;
+      expect(drawn!.ties).toHaveLength(firstLegWrite.fixtures.length);
+      for (const t of drawn!.ties) {
+        const match = firstLegWrite.fixtures.find((f) => f.home === t.home && f.away === t.away);
+        expect(match).toBeDefined();
+        expect(t.tieId).toBe(match!.tieId);
+        expect(t.firstLegDate).toBe(match!.date);
+      }
     }
 
     expect(roundsById.get(13)).toHaveLength(1);
     expect(meta.continental!.stages.find((s) => s.name === "final")!.drawn).toBe(true);
 
     // Final.
+    const finalFixtureBeforePlay = roundsById.get(13)![0]!;
     roundsById.set(13, roundsById.get(13)!.map(playDecisive));
     const finalResult = advanceContinental(meta, roundsById, 13, seedKey)!;
     expect(finalResult).not.toBeNull();
     expect(typeof finalResult.championId).toBe("string");
     const championId = finalResult.championId!;
-    expect(finalResult.events).toEqual([{ kind: "champion", clubId: championId }]);
+    const loserId = championId === finalFixtureBeforePlay.home ? finalFixtureBeforePlay.away : finalFixtureBeforePlay.home;
+    expect(finalResult.events).toEqual([
+      { kind: "advanced", clubId: championId, stage: "final" },
+      { kind: "eliminated", clubId: loserId, stage: "final" },
+      { kind: "champion", clubId: championId },
+    ]);
     meta = finalResult.meta;
     expect(meta.continental!.championId).toBe(championId);
 
@@ -148,35 +187,38 @@ describe("advanceContinental — full competition", () => {
   });
 });
 
+const dates6 = dates.slice(0, 6);
+
+const FULL_STAGES: NonNullable<LeagueSeasonMeta["continental"]>["stages"] = [
+  { name: "group", rounds: [1, 2, 3, 4, 5, 6], dates: dates6, drawn: true },
+  { name: "r16", rounds: [7, 8], dates: [dates[6]!, dates[7]!], drawn: true },
+  { name: "qf", rounds: [9, 10], dates: [dates[8]!, dates[9]!], drawn: false },
+  { name: "sf", rounds: [11, 12], dates: [dates[10]!, dates[11]!], drawn: false },
+  { name: "final", rounds: [13], dates: [dates[12]!], drawn: false },
+];
+
+/** Minimal r16-onward meta, with `stages` overridable to build malformed-meta fixtures. */
+function minimalMeta(stages = FULL_STAGES): LeagueSeasonMeta {
+  return {
+    leagueSlug: "ucl",
+    year: 2026,
+    start: dates[0]!,
+    end: dates[12]!,
+    totalRounds: 13,
+    kind: "continental",
+    continental: {
+      competition: "ucl",
+      continent: "Europe",
+      groups: [],
+      stages,
+      countryOf: {},
+      level: {},
+      championId: null,
+    },
+  };
+}
+
 describe("advanceContinental — undecided tie", () => {
-  const dates6 = dates.slice(0, 6);
-
-  function minimalMeta(): LeagueSeasonMeta {
-    return {
-      leagueSlug: "ucl",
-      year: 2026,
-      start: dates[0]!,
-      end: dates[12]!,
-      totalRounds: 13,
-      kind: "continental",
-      continental: {
-        competition: "ucl",
-        continent: "Europe",
-        groups: [],
-        stages: [
-          { name: "group", rounds: [1, 2, 3, 4, 5, 6], dates: dates6, drawn: true },
-          { name: "r16", rounds: [7, 8], dates: [dates[6]!, dates[7]!], drawn: true },
-          { name: "qf", rounds: [9, 10], dates: [dates[8]!, dates[9]!], drawn: false },
-          { name: "sf", rounds: [11, 12], dates: [dates[10]!, dates[11]!], drawn: false },
-          { name: "final", rounds: [13], dates: [dates[12]!], drawn: false },
-        ],
-        countryOf: {},
-        level: {},
-        championId: null,
-      },
-    };
-  }
-
   test("second leg complete but one tie level with no penalties -> reported, no draw", () => {
     const meta = minimalMeta();
 
@@ -213,6 +255,34 @@ describe("advanceContinental — undecided tie", () => {
     expect(result.events).toEqual([{ kind: "undecidedTie", tieId: "tieB" }]);
     expect(result.meta).toBe(meta);
     expect(result.meta.continental!.stages.find((s) => s.name === "qf")!.drawn).toBe(false);
+  });
+});
+
+describe("advanceContinental — malformed meta", () => {
+  test("missing a required stage (group/r16/final) throws, naming the stage", () => {
+    const withoutFinal = FULL_STAGES.filter((s) => s.name !== "final");
+    const meta = minimalMeta(withoutFinal);
+    const roundsById = new Map<number, Fixture[]>();
+    expect(() => advanceContinental(meta, roundsById, 13, seedKey)).toThrow(/"final"/);
+  });
+
+  test("a decided second leg with no stage after it (malformed meta) throws, naming the missing stage", () => {
+    // group, r16 (drawn, decided below), final — "qf" (the stage that should follow r16) is missing.
+    const withoutQfAndSf = FULL_STAGES.filter((s) => s.name === "group" || s.name === "r16" || s.name === "final");
+    const meta = minimalMeta(withoutQfAndSf);
+
+    const leg1: Fixture = {
+      id: "ucl_2026_r7_1", date: dates[6]!, competition: "ucl", round: 7,
+      home: "Ya", away: "Xa", played: true, result: { home: 1, away: 0 }, tieId: "tieA", leg: 1,
+    };
+    const leg2: Fixture = {
+      id: "ucl_2026_r8_1", date: dates[7]!, competition: "ucl", round: 8,
+      home: "Xa", away: "Ya", played: true, result: { home: 2, away: 0 },
+      tieId: "tieA", leg: 2, knockout: true, aggregate: { home: 0, away: 1 },
+    };
+    const roundsById = new Map<number, Fixture[]>([[7, [leg1]], [8, [leg2]]]);
+
+    expect(() => advanceContinental(meta, roundsById, 8, seedKey)).toThrow(/"qf"/);
   });
 });
 
