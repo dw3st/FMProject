@@ -9,6 +9,7 @@ import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/p
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
@@ -33,7 +34,7 @@ export function SquadTable({
     { key: "name", label: t("dashboard.squadTable.name"), width: "flex-1 min-w-[140px]" },
     { key: "age", label: t("dashboard.squadTable.age"), width: "w-12" },
     { key: "avg", label: t("dashboard.squadTable.avg"), width: "w-14" },
-    { key: "energy", label: t("dashboard.squadTable.energy"), width: "w-24" },
+    { key: "energy", label: t("dashboard.squadTable.energy"), width: "w-28" },
     { key: "phase", label: t("dashboard.squadTable.phase"), width: "w-20" },
     { key: "training", label: t("dashboard.squadTable.train"), width: "w-20" },
     { key: "moral", label: t("dashboard.squadTable.moral"), width: "w-20" },
@@ -131,8 +132,11 @@ export function SquadTable({
             <div className="px-3 py-2.5 w-14">
               <AvgBadge value={player.avg} />
             </div>
-            <div className="px-3 py-2.5 w-24">
-              <EnergyBar value={player.energy} />
+            <div className="px-3 py-2.5 w-28 flex items-center gap-1.5">
+              <div className="flex-1 min-w-0">
+                <EnergyBar value={player.energy} />
+              </div>
+              <LoadIndicator load={player.load} size={12} />
             </div>
             <div className="px-3 py-2.5 w-20">
               <StatusBadge level={player.phase} />

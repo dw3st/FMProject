@@ -1410,7 +1410,8 @@
     "fitness": "Condicionamento",
     "rating": "nota",
     "cancelSelection": "Cancelar seleção",
-    "change": "mudança"
+    "change": "mudança",
+    "lowFitnessWarning": "Titulares com fôlego baixo: {{names}}"
   },
   "matchResult": {
     "title": "Resultado da partida",
@@ -1668,5 +1669,8 @@
   },
   "players": {
     "star": "Mito da atualidade"
+  },
+  "fitness": {
+    "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"
   }
 }

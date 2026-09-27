@@ -13,6 +13,7 @@ import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
+import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import {
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
@@ -577,6 +578,7 @@ function SquadPlayerRow({
             <div className="flex items-center gap-1 text-muted-foreground">
               <Zap className="w-3 h-3" />
               <span>{Math.round(energy)}%</span>
+              <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
             </div>
           </div>
         </div>
@@ -740,6 +742,7 @@ function FormationPitch({
                               <div className={`h-full rounded-full ${getEnergyColor(energy)}`} style={{ width: `${energy}%` }} />
                             </div>
                             <span className="font-bold text-xs text-foreground">{Math.round(energy)}%</span>
+                            <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
                           </div>
                         </div>
                       </div>

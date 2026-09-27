@@ -1,7 +1,16 @@
 import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
+import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 
 export type { StatusLevel };
+
+/** Threshold for the "high load" UI indicator — 70% of `FITNESS.LOAD_HIGH` (see `game/fitness.md`). */
+export const HIGH_LOAD_THRESHOLD = FITNESS.LOAD_HIGH * 0.7;
+
+/** Whether a player's accumulated `load` warrants the high-load icon (slower recovery, faster in-match drain). */
+export function isHighLoad(load: number): boolean {
+  return load >= HIGH_LOAD_THRESHOLD;
+}
 
 export interface DisplayPlayer {
   id: string;
@@ -14,6 +23,8 @@ export interface DisplayPlayer {
   age: number;
   avg: number;
   energy: number;
+  /** Minutes-equivalent accumulated fatigue (`seasonLog.load`, absent = 0). See `FITNESS.LOAD_HIGH`. */
+  load: number;
   salary: string;
   value: string;
   goals: number;
@@ -71,6 +82,7 @@ export function toDisplayPlayer(
     age: player.age,
     avg: Math.round(avg * 10) / 10,
     energy: log ? Math.round(log.fitness) : 100,
+    load: log?.load ?? 0,
     salary: domain.salaryLabel(options?.wageFactor),
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,
