@@ -62,8 +62,8 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 4 | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
 | 5 | 2.2 Lesões | #3 ruído dos `of_*` | Lesões e rotação dependem de elencos com níveis críveis |
 | 6 | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
-| 7 | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) | Contratos usam idade e nível; revisar a curva de declínio junto |
-| 8 | 3.2 Tela Stats | #7 Bundesliga × Serie A | A tela Stats expõe os números por liga que o issue investiga |
+| 7 | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) + #23 ELITE 'tight' | Contratos usam idade e nível; revisar a curva de declínio junto. Contratos mudam a folha da IA — mesma hora de afinar a folga dos ELITE |
+| 8 | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato |
 | 9 | 3.3 Tela Tactics | #8 estilo posse | Tactics mexe nas instruções; o estilo posse é um dos alvos |
 | 10 | 3.4 Staff | #13 nomes turcos | Etapa grande + correção pequena de dados |
 | 11 | 3.5 Base | #9 notas ≥ 8,5 no quickSim | Jovens gerados passam pelo quickSim; notas precisam estar calibradas |
