@@ -1,6 +1,7 @@
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
 import { getMainRole, type MainRole } from "@/GameInterface/positionHelpers";
+import { weeklyWage } from "@/Domain/finance/wages";
 
 /** All detailed roles mapped to their main role band — used to find a player's best fit. */
 export const MAIN_ROLE_TO_SPECIFICS: Record<MainRole, string[]> = {
@@ -154,9 +155,14 @@ export class Player {
     return `${v.toFixed(1)}M`;
   }
 
-  /** Weekly wage label (e.g. `"45k"`). */
-  get salaryLabel(): string {
-    const weekly = Math.round(this.overallRating * this.overallRating * 350);
+  /**
+   * Weekly wage label (e.g. `"45k"`) — the shared wage curve (`weeklyWage`,
+   * `src/Domain/finance/wages.ts`) times the player's club's wage factor. `factor` defaults to 1
+   * (the curve's raw, uncorrected wage) for callers with no squad in scope; pass
+   * `wageFactorOf(squad)` for the real figure at a specific club.
+   */
+  salaryLabel(factor: number = 1): string {
+    const weekly = Math.round(weeklyWage(this.overallRating) * factor);
     if (weekly >= 1000) return `${(weekly / 1000).toFixed(0)}k`;
     return `${weekly}`;
   }

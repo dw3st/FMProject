@@ -12,9 +12,10 @@
 import { saveService, SaveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad } from "@/types/playerTypes";
-import { applyAITransferSale, applyAITransferSpend, estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
+import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
 import { gateRevenue } from "@/Domain/finance/gate";
+import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ export function getClubBudget(squad: Squad): number {
  */
 export function calcWeeklyDelta(squad: Squad): number {
   const weeklyCommercial = Math.round((squad.finances?.commercial ?? 0) / 52);
-  const weeklyPlayerSalary = squad.players.reduce((sum, p) => sum + estimateWeeklyWage(p), 0);
+  const weeklyPlayerSalary = squadWeeklyWages(squad.players, wageFactorOf(squad));
   const weeklyOperational = Math.round(weeklyPlayerSalary * 0.1);
   return weeklyCommercial - weeklyPlayerSalary - weeklyOperational;
 }

@@ -5,11 +5,12 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 /**
  * A typical division size (20 clubs) gives 19 home games — used only by the on-the-fly fallback
- * in `wageFactorOf` when a squad has no stored `wageFactor` and the caller doesn't know its real
- * league size (a bare `Squad` carries no league-membership info). `SaveService.createSave` and
- * the season-rollover path in `advanceDay.ts` always pass the real count.
+ * in `wageFactorOf` (and, by extension, `aiClubFinance`) when a squad has no stored `wageFactor`
+ * and the caller doesn't know its real league size (a bare `Squad` carries no league-membership
+ * info). `SaveService.createSave` and the season-rollover path in `advanceDay.ts` always pass the
+ * real count.
  */
-const FALLBACK_HOME_GAMES = 19;
+export const FALLBACK_HOME_GAMES = 19;
 
 /**
  * Relative pay curve: how much a player's weekly wage scales with their 0–10 rating, in the

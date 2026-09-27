@@ -9,22 +9,11 @@ import {
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { GameSession } from "@/GameInterface/gameSession";
-import type { Squad, RosterPlayer, StandingRow } from "@/types/playerTypes";
+import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
-import { Player } from "@/Domain/Player";
 import { isCupSlug } from "@/Domain/cups/cupIds";
-
-// ── Salary estimation ────────────────────────────────────────────────────────
-
-function estimateWeeklyWage(p: RosterPlayer): number {
-  const rating = Player.overallAvg(p);
-  return Math.round(Math.pow(rating, 2.2) * 50);
-}
-
-function calcWeeklyPlayerSalary(players: RosterPlayer[]): number {
-  return players.reduce((sum, p) => sum + estimateWeeklyWage(p), 0);
-}
+import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 
 // ── Attendance formula ───────────────────────────────────────────────────────
 
@@ -121,7 +110,7 @@ interface FinanceData {
 function buildFinanceData(session: GameSession, squad: Squad | null): FinanceData {
   const fin = squad?.finances;
   const players = squad?.players ?? [];
-  const weeklyPlayerSalary = calcWeeklyPlayerSalary(players);
+  const weeklyPlayerSalary = squad ? squadWeeklyWages(players, wageFactorOf(squad)) : 0;
   const weeklyCommercial = Math.round((fin?.commercial ?? 0) / 52);
   const weeklyOperational = Math.round(weeklyPlayerSalary * 0.1);
   const weeklyPL = weeklyCommercial - weeklyPlayerSalary - weeklyOperational;

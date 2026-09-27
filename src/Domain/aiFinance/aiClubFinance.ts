@@ -1,13 +1,14 @@
-import { Player } from "@/Domain/Player";
 import { AI_FINANCE_CONFIG, FINANCIAL_TIERS } from "@/Domain/aiFinance/aiFinanceConfig";
+import { clubAnnualRevenue, FALLBACK_HOME_GAMES, playerWeeklyWage, squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import type { ClubFinances, FinancialTier, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { TransferBudgetTier } from "@/types/transferMarketTypes";
 
 /**
- * Simplified AI club finances (`.claude/rules/AI-clubs/finance.md`): tier + popularity → weekly
- * budget → wage cap, and tier + popularity → seasonal transfer budget. AI clubs never track a
- * money balance (`finances.budget` is the human club's only). Pure functions only; nothing here
- * reads or writes the save.
+ * Simplified AI club finances (`.claude/rules/AI-clubs/finance.md`): tier + popularity → seasonal
+ * transfer budget, and tier + estimated annual revenue (`src/Domain/finance/wages.ts`) → wage cap
+ * that gates hiring in the AI transfer market. AI clubs never track a money balance
+ * (`finances.budget` is the human club's only). Pure functions only; nothing here reads or writes
+ * the save.
  */
 
 export type HiringState = "open" | "tight" | "frozen";
@@ -37,13 +38,20 @@ export function tierAt(index: number): FinancialTier {
   return FINANCIAL_TIERS[clamp(Math.round(index), 0, FINANCIAL_TIERS.length - 1)]!;
 }
 
-/** Estimated weekly wage (€) of a player. Also used for the human club's weekly P/L. */
-export function estimateWeeklyWage(player: RosterPlayer): number {
-  return Math.round(Math.pow(Player.overallAvg(player), AI_FINANCE_CONFIG.WAGE_EXPONENT) * AI_FINANCE_CONFIG.WAGE_SCALE);
+/**
+ * Estimated weekly wage (€) of a player at a specific club: the shared rating curve
+ * (`weeklyWage`, `src/Domain/finance/wages.ts`) times that club's wage factor. Wages are no
+ * longer a flat function of rating alone — the same player costs a different amount at a rich
+ * club than at a poor one, so callers must pass the BUYING club's factor (`wageFactorOf`), not
+ * the selling club's.
+ */
+export function estimateWeeklyWage(player: RosterPlayer, factor: number): number {
+  return playerWeeklyWage(player, factor);
 }
 
-export function squadWageBill(squad: Squad): number {
-  return squad.players.reduce((sum, p) => sum + estimateWeeklyWage(p), 0);
+/** A squad's current wage bill (€/week) at its own wage factor. */
+export function squadWageBill(squad: Squad, homeGames: number = FALLBACK_HOME_GAMES): number {
+  return squadWeeklyWages(squad.players, wageFactorOf(squad, homeGames));
 }
 
 /** Followers → popularity 0..100 on a log scale. */
@@ -68,14 +76,21 @@ export function financialTierOf(squad: Squad): FinancialTier {
   return squad.financialTier ?? naturalFinancialTier(squad.finances);
 }
 
-/** `weeklyBudget = baseByTier × (1 + popularity/100)`, times the hidden soft-balance factor. */
-export function weeklyBudgetFor(tier: FinancialTier, popularity: number): number {
-  const c = AI_FINANCE_CONFIG;
-  return Math.round(c.BASE_WEEKLY_BUDGET[tier] * (1 + clamp(popularity, 0, 100) / 100) * c.SOFT_BALANCE[tier]);
+/**
+ * The wage cap: `WAGE_REVENUE_SHARE × annual revenue / 52 × SOFT_BALANCE[tier]`. Unlike the old
+ * popularity-derived budget, this is driven by the club's own estimated revenue
+ * (`clubAnnualRevenue`, `src/Domain/finance/wages.ts`) — the same revenue basis the actual wage
+ * bill is calibrated against (`wageConfig.ts` TARGET_SHARE), just with more headroom
+ * (`WAGE_REVENUE_SHARE` > `TARGET_SHARE`) so a club spending near its calibrated bill still reads
+ * as "open" to hire.
+ */
+export function maxWageBudgetFor(revenue: number, tier: FinancialTier): number {
+  return Math.round(AI_FINANCE_CONFIG.WAGE_REVENUE_SHARE * (revenue / 52) * AI_FINANCE_CONFIG.SOFT_BALANCE[tier]);
 }
 
-export function maxWageBudgetFor(weeklyBudget: number): number {
-  return Math.round(weeklyBudget * AI_FINANCE_CONFIG.WAGE_RATIO);
+/** Headline "weekly budget" figure shown in the UI — the wage cap scaled back up by WAGE_RATIO; not itself a cap. */
+export function weeklyBudgetFor(maxWageBudget: number): number {
+  return Math.round(maxWageBudget / AI_FINANCE_CONFIG.WAGE_RATIO);
 }
 
 export function hiringStateFor(wageBill: number, maxWageBudget: number): HiringState {
@@ -129,12 +144,18 @@ export function applyAITransferSale(squad: Squad, fee: number): Squad {
   return { ...squad, aiTransferBudget: Math.round(next) };
 }
 
-export function aiClubFinance(squad: Squad): AIClubFinance {
+/**
+ * `homeGames` defaults to a typical division size (`FALLBACK_HOME_GAMES`) — a bare `Squad` carries
+ * no league-membership info. Callers that know the real league size (season rollover, career
+ * creation) should pass it through for an exact revenue/wage-cap estimate.
+ */
+export function aiClubFinance(squad: Squad, homeGames: number = FALLBACK_HOME_GAMES): AIClubFinance {
   const tier = financialTierOf(squad);
   const popularity = popularityOf(squad);
-  const weeklyBudget = weeklyBudgetFor(tier, popularity);
-  const maxWageBudget = maxWageBudgetFor(weeklyBudget);
-  const wageBill = squadWageBill(squad);
+  const revenue = clubAnnualRevenue(squad, homeGames);
+  const maxWageBudget = maxWageBudgetFor(revenue, tier);
+  const weeklyBudget = weeklyBudgetFor(maxWageBudget);
+  const wageBill = squadWageBill(squad, homeGames);
   return {
     tier, popularity, weeklyBudget, maxWageBudget, wageBill,
     hiring: hiringStateFor(wageBill, maxWageBudget),

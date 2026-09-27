@@ -9,6 +9,7 @@ import { generateSellList, getSellPriority } from "@/Domain/transfer/sellList";
 import { Player } from "@/Domain/Player";
 import { debugLog } from "@/Logger";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
+import { wageFactorOf } from "@/Domain/finance/wages";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
 export const TEAMS_PER_DAY_ATTEMPTS = 10;
@@ -152,9 +153,10 @@ function tryMatchPlayerSellList(
   if (rating < matchingNeed.targetMin || rating > matchingNeed.targetMax) return null;
 
   const fee = new Player(rating, listedPlayer.age).price;
-  // AI buyer finances (see src/Domain/aiFinance): seasonal transfer budget and wage cap.
+  // AI buyer finances (see src/Domain/aiFinance): seasonal transfer budget and wage cap. The
+  // candidate's wage is estimated at the BUYING club's wage factor, not the seller's.
   if (fee > aiTransferBudgetOf(buyerSquad)) return null;
-  if (!passesWageGate(aiClubFinance(buyerSquad), estimateWeeklyWage(listedPlayer), fee)) return null;
+  if (!passesWageGate(aiClubFinance(buyerSquad), estimateWeeklyWage(listedPlayer, wageFactorOf(buyerSquad)), fee)) return null;
   const sellPriority = candidate.priority;
   const { accepted } = evaluateTransferOffer(listedPlayer, playerSquadCurrent, fee, sellPriority, { humanSeller: true });
   if (!accepted) return null;

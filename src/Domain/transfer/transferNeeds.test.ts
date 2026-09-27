@@ -10,6 +10,8 @@ import {
   teamAvgRating,
 } from "@/Domain/transfer/transferNeeds";
 import { Player } from "@/Domain/Player";
+import { aiClubFinance, estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
+import { wageFactorOf } from "@/Domain/finance/wages";
 
 function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" | "name">): RosterPlayer {
   return {
@@ -219,7 +221,11 @@ describe("scoreCandidate", () => {
 describe("processTeamTransferAttempt", () => {
   test("fee varies vs fair price", () => {
     const rng = () => 0.5;
-    const sellerPlayer = basePlayer({ id: "sp", name: "Sell", positions: ["ST"], squadId: "sell" });
+    // Candidate rating close to the buyer's own roster quality (rating 3) — under the curve+
+    // factor wage model (#12) a candidate's wage at this club scales with the CLUB's factor, so a
+    // much higher-rated target (e.g. the old default rating-10 `basePlayer`) would cost far more
+    // than any AI wage cap allows and never pass the wage gate.
+    const sellerPlayer = basePlayer({ id: "sp", name: "Sell", positions: ["ST"], squadId: "sell", stats: flat(4) });
     const fair = new Player(playerOverallRating(sellerPlayer), sellerPlayer.age).price;
     const seller = makeSquad("sell", [sellerPlayer]);
     // Modest roster + HIGH-tier income so the signing fits under the AI wage cap.
@@ -371,21 +377,33 @@ describe("processTeamTransferAttempt — AI wage control", () => {
   });
 
   test("signing that would push the bill past the cap is skipped", () => {
-    // HIGH, popularity 0: cap 33 600/week. 6 players of rating 8 ≈ 29.1k (open); a rating-9 signing ≈ 6.3k.
-    const buyer = buyerWithMoney(6, 8);
-    const heavy = basePlayer({ id: "hv", name: "Heavy", positions: ["ST"], squadId: "sell", stats: flat(9) });
+    // A small MEDIUM-tier squad (5 players, rating 6, revenue right at the MEDIUM threshold):
+    // under the curve+factor wage model (#12) its own bill sits comfortably under the cap
+    // (`hiring: "open"`), but a modest rating-6.5 upgrade at this club's own wage factor is
+    // still enough on its own to tip the bill over the cap — verified against the real
+    // `aiClubFinance`/`estimateWeeklyWage` below rather than hand-derived constants, since the
+    // exact euro figures depend on the calibrated wage curve (`wageConfig.ts`).
+    const buyer = { ...makeSquad(
+      "buy",
+      Array.from({ length: 5 }, (_, j) => basePlayer({ id: `b${j}`, name: `B${j}`, positions: ["CM"], stats: flat(6) })),
+      { broadcasting: 15_000_000, commercial: 0, total: 15_000_000, budget: 0, followers: 0 },
+    ), aiTransferBudget: 500_000_000 };
+    const finance = aiClubFinance(buyer);
+    expect(finance.hiring).toBe("open");
+    const heavy = basePlayer({ id: "hv", name: "Heavy", positions: ["ST"], squadId: "sell", stats: flat(6.5) });
+    expect(finance.wageBill + estimateWeeklyWage(heavy, wageFactorOf(buyer))).toBeGreaterThan(finance.maxWageBudget);
     const r = playerOverallRating(heavy);
     const profile = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: r - 0.1, targetMax: r + 0.1 }] };
     expect(processTeamTransferAttempt(buyer, profile, [makeSquad("sell", [heavy])], rng)).toBeNull();
   });
 
   test("tight buyer: only cheap cover signings", () => {
-    // 15 players of rating 5.5 ≈ 31.9k/week: in [0.9, 1.0) of the 33.6k cap → tight.
-    const buyer = buyerWithMoney(15, 5.5);
-    const cap = 33_600;
-    const bill = buyer.players.reduce((s, p) => s + Math.round(Math.pow(playerOverallRating(p), 2.2) * 50), 0);
-    expect(bill).toBeGreaterThanOrEqual(cap * 0.9);
-    expect(bill).toBeLessThan(cap);
+    // 15 players of rating 9 on a HIGH-tier squad: the roster is rich enough relative to its own
+    // revenue that the wage factor hits its floor (MIN_FACTOR), pushing the actual bill to ~94%
+    // of the cap → "tight". Verified against the real `aiClubFinance`, not a hand-derived figure.
+    const buyer = buyerWithMoney(15, 9);
+    const finance = aiClubFinance(buyer);
+    expect(finance.hiring).toBe("tight");
     // improvement needs are dropped while tight
     expect(processTeamTransferAttempt(buyer, need("improvement"), [seller], rng)).toBeNull();
     // rating-4 target costs ≈ €13M > HIGH cheap cap (€12M)
