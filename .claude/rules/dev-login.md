@@ -46,3 +46,37 @@ $env:DEV_AUTO_LOGIN = "1"; Start-Process bun -ArgumentList "run","dev" -WorkingD
 - It's a plain `GET` with no CSRF token. That's acceptable only because the route is unreachable
   except from a process running on your own machine — it grants a session to whoever loads that
   URL, so never make it reachable from anywhere else.
+
+## Match screen under the dev server (issue #4) — fixed
+
+`/match` (and any other screen mounting `PixiPitch`) used to throw
+`TypeError: Cannot read properties of undefined (reading 'add')` while loading
+`pixi.js/lib/index.mjs`, but **only** under `bun run dev`/`bun --hot` — production
+(`bun run start`, `NODE_ENV=production`) was never affected.
+
+**Root cause:** `bun-plugin-tailwind` declares a loose peer dependency (`"bun": ">=1.0.0"`), and
+`bun install` had pinned an actual `bun` npm package in `bun.lock` to satisfy it — this is Bun's
+own official npm distribution (the same binary as the CLI, published as a package so JS tooling can
+depend on it), installed under `node_modules/bun` with a `node_modules/.bin/bun.exe` shim. Because
+`bun run <script>` prepends `node_modules/.bin` to `PATH`, every bare `bun` inside a `package.json`
+script (`"dev": "... bun --hot src/index.ts"`) resolves to **that pinned copy**, not whatever `bun`
+is installed globally — even if the global one is newer. The pinned copy had drifted to `1.3.10`
+while the global install on this machine had moved on to `1.4.2`.
+
+Bun 1.3.10's dev/HMR module bundler has a module-execution-order bug with pixi.js's
+`node_modules/pixi.js/lib/extensions/index.mjs`: by the time `pixi.js/lib/index.mjs`'s top-level
+`extensions.add(browserExt, webworkerExt)` runs, `extensions` (the import of that submodule) is
+still `undefined` — hence "Cannot read properties of undefined (reading 'add')". This only shows up
+through the `--hot` dev bundler's module registry (each `.mjs` submodule of pixi.js is wrapped as
+its own lazily-executed entry in a big module-id → loader map); a plain `bun -e "import('pixi.js')"`
+or the production bundle (no HMR wrapper) never hits it. Confirmed via a headless-Chrome + CDP
+repro (`Runtime.exceptionThrown` on `/test` and `/match`) that `bun@1.3.10` throws every time and
+`bun@1.4.2` never does, with the pitch actually rendering and the match simulating normally.
+
+**Fix:** `bun update bun` (run once, from any newer Bun) bumped the pinned copy in `bun.lock` from
+`1.3.10` to `1.4.2` — no source change needed. Re-run this (or `bun install` after bumping the
+global Bun) if `bun.lock`'s `bun` entry ever drifts stale again; check with
+`node_modules/.bin/bun.exe --version` vs your global `bun --version`. Verified in both modes after
+the bump: `bun run dev` (`/test` on the lab server and `/match` on the main server, via a
+dev-login + `localStorage` session) renders the pitch and simulates with no console errors; `bun
+run start` still serves `/match`'s bundle unchanged (production was never on the buggy path).
