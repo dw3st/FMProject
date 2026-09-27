@@ -24,6 +24,7 @@ import { continentalDates, type ParticipantDates } from "@/Domain/continental/co
 import { generateContinental } from "@/Domain/continental/generateContinental";
 import type { DrawClub } from "@/Domain/continental/groupDraw";
 import { advanceContinental, type ContinentalEvent, type ContinentalTier1LeagueState } from "@/Domain/continental/continentalProgress";
+import { continentalClubStatusOf, type ContinentalClubStatus } from "@/Domain/continental/clubStatus";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { logError } from "@/Logger";
 
@@ -581,6 +582,34 @@ export async function playerContinentalSlug(
   for (const slug of CONTINENTAL_SLUGS) {
     const meta = await service.getLeagueMeta(saveId, slug);
     if (meta?.continental?.groups.some((g) => g.clubs.includes(clubId))) return slug;
+  }
+  return null;
+}
+
+/**
+ * I/O wrapper around `continentalClubStatusOf` (pure, `src/Domain/continental/clubStatus.ts`):
+ * finds the club's competition (if any), reads the r16 first-leg round when it's drawn, and
+ * returns where the club actually stands right now. Used right after the season-start start-kit
+ * decision (`applyRandomStartKit`), so the "qualified"/"group"/"draw"/"eliminated" inbox message
+ * reflects what's really on disk instead of what `createSave` originally handed out.
+ */
+export async function continentalClubStatus(
+  service: SaveService,
+  saveId: string,
+  clubId: string,
+): Promise<{ slug: ContinentalSlug; status: ContinentalClubStatus } | null> {
+  for (const slug of CONTINENTAL_SLUGS) {
+    const meta = await service.getLeagueMeta(saveId, slug);
+    const cont = meta?.continental;
+    if (!cont) continue;
+    if (!cont.groups.some((g) => g.clubs.includes(clubId))) continue;
+
+    const r16 = cont.stages.find((s) => s.name === "r16");
+    const r16FirstLegFixtures = r16?.drawn
+      ? ((await service.getRound(saveId, slug, r16.rounds[0]!))?.fixtures ?? [])
+      : [];
+    const status = continentalClubStatusOf(cont, clubId, r16FirstLegFixtures);
+    if (status) return { slug, status };
   }
   return null;
 }
