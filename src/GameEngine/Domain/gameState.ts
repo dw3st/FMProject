@@ -9,6 +9,7 @@ import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets } from '@/GameEngine/Domain/DefensivePositioning';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
+  applyContinuousFatigue,
   applyStaminaCost,
   consumeEnergy,
   getRuntimeLineup,
@@ -52,6 +53,7 @@ import type { FormationSetPieces, SetPieceLayout } from '@/GameEngine/Domain/Set
 import { applySetPieceToTeam, enforceKickoffCircleRule } from '@/GameEngine/Domain/SetPiecePositioning';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
+import { drainMultiplier as loadDrainMultiplier } from '@/Domain/fitness/fitness';
 
 export { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 
@@ -211,6 +213,8 @@ function buildGamePlayerForSlot(
     energy,
     startEnergy:      energy,
     stamina:          buffed.stamina,
+    drainMultiplier:      loadDrainMultiplier(rp.seasonLog?.load ?? 0),
+    fatigueBaselineEnergy: energy,
     ballSupportScale: roleEng.ballSupportScale,
     slotIndex,
     basePosition:     startPos,
@@ -274,6 +278,8 @@ function buildTeam(
       energy,
       startEnergy:      energy,
       stamina:          buffed.stamina,
+      drainMultiplier:      loadDrainMultiplier(rp.seasonLog?.load ?? 0),
+      fatigueBaselineEnergy: energy,
       ballSupportScale: roleEng.ballSupportScale,
       slotIndex:        -1,
       basePosition:     dummyPos,
@@ -411,6 +417,7 @@ export function performSubstitution(
     ballSupportScale: roleEngine(role).ballSupportScale,
     baseStats:      newBaseStats,
     runtimeStats:   getRuntimeLineup(newBaseStats, { energy: inPlayer.energy }),
+    fatigueBaselineEnergy: inPlayer.energy,
     decisionMemory: EMPTY_DECISION_MEMORY,
     recoveryTime:   0,
     justReceivedTicks: 0,
@@ -1768,19 +1775,16 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         if (pl.baseStats == null) return p;
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
-        const energy = consumeEnergy(pl.energy, pl.stamina, action, dt * TIME_SCALE);
+        const energy = consumeEnergy(pl.energy, pl.stamina, action, dt * TIME_SCALE, pl.drainMultiplier ?? 1);
         if (energy === pl.energy) return p;
-        // getReductionFactor uses floor(energyLost / step) — the multipliers only
-        // change when energy crosses multiples of 10, 20, or 40. Skip the expensive
-        // getRuntimeLineup spread unless a threshold actually flipped.
-        const oldLost = 100 - pl.energy;
-        const newLost = 100 - energy;
-        const factorsChanged =
-          Math.floor(oldLost / 10) !== Math.floor(newLost / 10) ||
-          Math.floor(oldLost / 20) !== Math.floor(newLost / 20) ||
-          Math.floor(oldLost / 40) !== Math.floor(newLost / 40);
-        if (!factorsChanged) return { ...pl, energy };
-        return { ...pl, energy, runtimeStats: getRuntimeLineup(pl.baseStats, { energy }) };
+        // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
+        // moved at least FATIGUE_RECOMPUTE_THRESHOLD since the last recompute, instead of only
+        // when it crosses a multiple of 10/20/40. Skips the expensive getRuntimeLineup spread
+        // otherwise.
+        const { runtimeStats, fatigueBaselineEnergy } = applyContinuousFatigue(
+          pl.baseStats, pl.runtimeStats, energy, pl.fatigueBaselineEnergy ?? pl.energy,
+        );
+        return { ...pl, energy, runtimeStats, fatigueBaselineEnergy };
       }),
     };
   }
