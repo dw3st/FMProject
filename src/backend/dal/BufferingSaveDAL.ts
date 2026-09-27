@@ -347,6 +347,12 @@ export class BufferingSaveDAL implements ISaveDAL {
   // flush, so it can never duplicate entries already on disk from an earlier
   // partial flush.
 
+  /** Not buffered — a season's ledger file only starts existing via `writeLedger`, and a listing
+   * mid-flush (rollover creating the next season's file) is not a case this read-only helper needs
+   * to cover; callers that need the season just created should already know its year. */
+  listLedgerSeasons(saveId: string): Promise<number[]> {
+    return this.inner.listLedgerSeasons(saveId);
+  }
   readLedger(saveId: string, season: number): Promise<LedgerEntry[]> {
     return this.readThrough(`ledger:${saveId}:${season}`, () => this.inner.readLedger(saveId, season));
   }

@@ -83,6 +83,8 @@ export interface ISaveDAL {
   writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: TransferRecord[]): Promise<void>;
 
   // ── Ledger (player club cash extract) ────────────────────────────────────────
+  /** Every season year that has a ledger file for this save, ascending. */
+  listLedgerSeasons(saveId: string): Promise<number[]>;
   readLedger(saveId: string, season: number): Promise<LedgerEntry[]>;
   /** Append entries to the season's ledger, preserving whatever is already there. */
   appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;

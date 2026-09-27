@@ -33,6 +33,14 @@ import {
   TrendingDown,
   Flag,
   CheckCircle2,
+  Wallet,
+  Tv,
+  Handshake,
+  Building2,
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  MapPin,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -77,7 +85,15 @@ export type IconName =
   | "trend-up"
   | "trend-down"
   | "report"
-  | "check-circle";
+  | "check-circle"
+  | "wallet"
+  | "broadcast"
+  | "handshake"
+  | "building"
+  | "alert"
+  | "arrow-down-left"
+  | "arrow-up-right"
+  | "map-pin";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -118,6 +134,14 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "trend-down":   TrendingDown,
   "report":       Flag,
   "check-circle": CheckCircle2,
+  "wallet":       Wallet,
+  "broadcast":    Tv,
+  "handshake":    Handshake,
+  "building":     Building2,
+  "alert":        AlertTriangle,
+  "arrow-down-left": ArrowDownLeft,
+  "arrow-up-right":  ArrowUpRight,
+  "map-pin":      MapPin,
 };
 
 export interface IconProps {
