@@ -48,7 +48,8 @@ quickSim e pelo avanço do dia.
   - `fatorIdade`: ≤24 1,1 · ≤28 1,0 · ≤32 0,85 · >32 0,7;
   - `fatorCarga = 1 − 0,5 × min(1, carga / CARGA_ALTA)`;
   - `fatorStamina = 0,9 + 0,2 × stamina/10`.
-- Exemplo (26 anos, carga baixa, stamina 7): 55 → ~81 → ~88 → ~93.
+- Exemplo (26 anos, carga 0, stamina 7), um valor por dia de folga: 55 → 71,4 → 81,8 → 88,4 → 92,6
+  (`RECOVERY_BASE = 0,35`, mantido — a curva mais lenta é intencional).
 - Dia de jogo do time: quem joga não recupera nesse dia; os outros recuperam normalmente.
 - **Treino:** o custo passa a escalar com o fôlego (`custo × fôlego/100`); abaixo do limite de treino
   (`minEnergyToTrain`) o jogador só recupera. A folga é um dia de recuperação cheia.

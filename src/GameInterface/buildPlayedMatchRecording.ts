@@ -1,6 +1,7 @@
 import type { GameState } from "@/GameEngine/types";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
+import { emptySeasonLog } from "@/types/playerTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { getTeamStats, getPlayerStats } from "@/GameEngine/Domain/Statistics";
 import type { TeamStats } from "@/GameEngine/Domain/Statistics";
@@ -16,6 +17,24 @@ function toMatchTeamStats(t: TeamStats): MatchTeamStats {
     tackles: t.tackles,
     interceptions: t.interceptions,
   };
+}
+
+/**
+ * For any `playerStats` entry with no valid (finite) recorded energy, fall back to that player's
+ * own start-of-match fitness (`startFitness`) rather than a fixed number — `postMatchFitness` on
+ * that value is then a no-op ("no change"), instead of forcibly resetting an unrelated player's
+ * fitness to a fixed 50 whenever this (should-never-happen) defensive path fires.
+ */
+export function fillMissingEnergy(
+  playerStats: Record<string, unknown>,
+  playerEnergy: Record<string, number>,
+  startFitness: Map<string, number>,
+): void {
+  for (const rid of Object.keys(playerStats)) {
+    if (typeof playerEnergy[rid] !== "number" || !Number.isFinite(playerEnergy[rid])) {
+      playerEnergy[rid] = startFitness.get(rid) ?? emptySeasonLog().fitness;
+    }
+  }
 }
 
 /**
@@ -42,8 +61,10 @@ export function buildPlayedMatchRecording(
   };
 
   const nameToRoster = new Map<string, string>();
+  const startFitness = new Map<string, number>();
   for (const p of [...homeSquad.players, ...awaySquad.players]) {
     nameToRoster.set(p.name, p.id);
+    startFitness.set(p.id, p.seasonLog?.fitness ?? emptySeasonLog().fitness);
   }
 
   const playerStats: PlayedMatchRecording["playerStats"] = {};
@@ -90,11 +111,7 @@ export function buildPlayedMatchRecording(
 
   // Defensive: ensure every playerStats key has a corresponding playerEnergy entry
   // so the server-side validation never silently falls back to headless simulation.
-  for (const rid of Object.keys(playerStats)) {
-    if (typeof playerEnergy[rid] !== "number" || !Number.isFinite(playerEnergy[rid])) {
-      playerEnergy[rid] = 50;
-    }
-  }
+  fillMissingEnergy(playerStats, playerEnergy, startFitness);
 
   const durationMs = Math.max(0, Math.round((gameState.matchTime ?? 0) * 1000));
 
