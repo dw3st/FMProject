@@ -7,11 +7,13 @@ import {
   teamLevel,
   teamStrength,
 } from "@/Domain/advanceDay/quickSim";
-import { QUICK_SIM_CONFIG as C } from "@/GameEngine/Configs/QuickSimConfig";
+import { QUICK_SIM_CONFIG as C, ROLE_GROUP } from "@/GameEngine/Configs/QuickSimConfig";
 import { mulberry32 } from "@/Domain/rng";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { drainMultiplier } from "@/Domain/fitness/fitness";
+import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 
 const ROLES = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CM", "LW", "ST", "RW"];
 
@@ -437,12 +439,66 @@ describe("quickSim knockout", () => {
       found = true;
       for (const p of [...home.players, ...away.players]) {
         const startEnergy = ensureSeasonLog(p).seasonLog!.fitness;
-        const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (p.stats.stamina / 10)) * (4 / 3);
+        const group = ROLE_GROUP[p.positions[0]!]!;
+        const drain =
+          C.ENERGY_DRAIN_BY_LINE[group] *
+          (1.2 - 0.4 * (p.stats.stamina / 10)) *
+          drainMultiplier(ensureSeasonLog(p).seasonLog!.load ?? 0) *
+          (4 / 3);
         const expected = Math.max(0, Math.min(100, startEnergy - drain));
         expect(r.playerEnergy[p.id]).toBeCloseTo(expected, 6);
       }
     }
     expect(found).toBe(true);
+  });
+
+  test("drain differs by line", () => {
+    // Same squad/lineup on both sides so the only asymmetry is role → line group. GK/DEF/MID/FWD
+    // each have a distinct ENERGY_DRAIN_BY_LINE constant, so a full-90 GK and a full-90 ST must
+    // lose different amounts of energy for the same stamina and load.
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const { recording: r } = quickSimMatch(
+      { fixtureId: "d", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+      mulberry32(1),
+    );
+    const gk = home.players.find((p) => p.positions[0] === "GK")!;
+    const st = home.players.find((p) => p.positions[0] === "ST")!;
+    const gkLoss = ensureSeasonLog(gk).seasonLog!.fitness - r.playerEnergy[gk.id]!;
+    const stLoss = ensureSeasonLog(st).seasonLog!.fitness - r.playerEnergy[st.id]!;
+    expect(C.ENERGY_DRAIN_BY_LINE.GK).not.toBe(C.ENERGY_DRAIN_BY_LINE.FWD);
+    expect(gkLoss).toBeCloseTo(
+      C.ENERGY_DRAIN_BY_LINE.GK * (1.2 - 0.4 * (gk.stats.stamina / 10)),
+      6,
+    );
+    expect(stLoss).toBeCloseTo(
+      C.ENERGY_DRAIN_BY_LINE.FWD * (1.2 - 0.4 * (st.stats.stamina / 10)),
+      6,
+    );
+  });
+
+  test("load raises drain via drainMultiplier", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const loaded = {
+      ...home,
+      players: home.players.map((p) => ({ ...p, seasonLog: { ...emptySeasonLog(), load: FITNESS.LOAD_HIGH } })),
+    };
+    const { recording: fresh } = quickSimMatch(
+      { fixtureId: "l1", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+      mulberry32(5),
+    );
+    const { recording: tired } = quickSimMatch(
+      { fixtureId: "l2", home: loaded, away, homeLineup: lineupOf(loaded), awayLineup: lineupOf(away) },
+      mulberry32(5),
+    );
+    for (const p of home.players) {
+      const startEnergy = ensureSeasonLog(p).seasonLog!.fitness;
+      const freshLoss = startEnergy - fresh.playerEnergy[p.id]!;
+      const tiredLoss = startEnergy - tired.playerEnergy[p.id]!;
+      expect(tiredLoss).toBeGreaterThan(freshLoss);
+      expect(tiredLoss).toBeCloseTo(freshLoss * drainMultiplier(FITNESS.LOAD_HIGH), 6);
+    }
   });
 
   test("a knockout match with an empty lineup still ends with an unlevel shootout", () => {

@@ -9,6 +9,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+import { drainMultiplier } from "@/Domain/fitness/fitness";
 import { resolvePenaltyShootout, type PenaltySide } from "@/GameEngine/Infrastructure/PenaltyShootout";
 import {
   ATTACKING_MID_ROLES,
@@ -95,6 +96,11 @@ function stat(p: RosterPlayer, key: string): number {
 
 function startFitness(p: RosterPlayer): number {
   return ensureSeasonLog(p).seasonLog!.fitness;
+}
+
+/** Accumulated fatigue load at kickoff (`seasonLog.load`, minutes-equivalent) — see `drainMultiplier`. */
+function startLoad(p: RosterPlayer): number {
+  return ensureSeasonLog(p).seasonLog!.load ?? 0;
 }
 
 function fitnessFactor(p: RosterPlayer): number {
@@ -385,10 +391,15 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const extraTimeMult = decider?.extraTime ? 4 / 3 : 1;
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
-  for (const { p } of [...homeXI, ...awayXI]) {
+  for (const x of [...homeXI, ...awayXI]) {
+    const { p } = x;
     playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0);
     const startEnergy = startFitness(p);
-    const drain = C.ENERGY_DRAIN * (1.2 - 0.4 * (stat(p, "stamina") / 10)) * extraTimeMult;
+    const drain =
+      C.ENERGY_DRAIN_BY_LINE[groupOf(x)] *
+      (1.2 - 0.4 * (stat(p, "stamina") / 10)) *
+      drainMultiplier(startLoad(p)) *
+      extraTimeMult;
     playerEnergy[p.id] = clamp(startEnergy - drain, 0, 100);
   }
 
