@@ -24,12 +24,18 @@ import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 
 /**
- * Base (1x) real-time delays for the presentation overlays. Both are scaled down by the live
- * match speed via `overlayDismissDelayMs` at the point they're used — see that module for why:
- * at 2x/4x these must run faster or the overlay outlives the (speed-scaled) underlying pause.
+ * Base (1x) real-time delay before navigating to the result screen after full time. Scaled down
+ * by the live match speed via `overlayDismissDelayMs` at the point it's used — see that module for
+ * why: at 2x/4x this must run faster, or the overlay/navigation lags behind the (speed-scaled)
+ * match ending underneath it.
+ *
+ * Half-time and extra-time-break do NOT use a real-time delay at all — see the `halfTime` /
+ * `extraTimeStart` gameBus handlers and the `matchPhase`-driven dismissal effect below: those
+ * overlays are dismissed the moment the engine itself leaves the corresponding phase
+ * (`halfTime` → `secondHalf`, `extraTimeBreak` → `extraTimeFirst`), so they always resume exactly
+ * when play actually resumes, however the match is paused or its speed is changed while showing.
  */
 const MATCH_END_TO_RESULT_MS = 3500;
-const OVERLAY_DISMISS_MS = 3500;
 /** 1x / 2x / 4x — live match speed group (spec §4). */
 const GAME_SPEEDS = [1, 2, 4] as const;
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
@@ -312,25 +318,30 @@ export function MatchScreen() {
 
   useEffect(() => {
     return gameBus.on("halfTime", () => {
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("halfTime");
-      overlayTimerRef.current = setTimeout(
-        () => setMatchOverlay(null),
-        overlayDismissDelayMs(OVERLAY_DISMISS_MS, gameSpeedRef.current),
-      );
     });
   }, []);
 
   useEffect(() => {
     return gameBus.on("extraTimeStart", () => {
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("extraTime");
-      overlayTimerRef.current = setTimeout(
-        () => setMatchOverlay(null),
-        overlayDismissDelayMs(OVERLAY_DISMISS_MS, gameSpeedRef.current),
-      );
     });
   }, []);
+
+  // Half-time / extra-time-break overlays are dismissed the moment the engine itself moves past
+  // the corresponding phase — not on a real-time timer. This tracks exactly what actually gates
+  // the pause (`isDeadBall` in gameState.ts), so the overlay reaches 100% and disappears exactly
+  // when play resumes, stays frozen together with `paused`, and reacts correctly to a mid-overlay
+  // speed change (a fixed-delay `setTimeout` couldn't do any of that — see `matchOverlayTiming.ts`).
+  useEffect(() => {
+    const phase = gameState?.matchPhase;
+    if (!phase) return;
+    if (matchOverlay === "halfTime" && phase !== "halfTime") {
+      setMatchOverlay(null);
+    } else if (matchOverlay === "extraTime" && phase !== "extraTimeBreak") {
+      setMatchOverlay(null);
+    }
+  }, [gameState?.matchPhase, matchOverlay]);
 
   useEffect(() => {
     const unsub = gameBus.on("matchEnd", () => {
