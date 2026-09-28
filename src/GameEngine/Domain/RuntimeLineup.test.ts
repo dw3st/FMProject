@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
+  applyContinuousFatigue,
   applyStaminaCost,
   consumeEnergy,
   getReductionFactor,
   getRuntimeLineup,
   normalizeGamePlayer,
+  overallEnergyFactor,
   STAMINA_COST,
 } from "@/GameEngine/Domain/RuntimeLineup";
 import type { GamePlayer, PlayerStats } from "@/GameEngine/types";
@@ -56,6 +58,19 @@ describe("consumeEnergy", () => {
       consumeEnergy(100, stamina, "move", dtGame);
     expect(from100(10)).toBeGreaterThan(from100(0));
     expect(from100(10)).toBeCloseTo(100 - STAMINA_COST.move * (1 - 0.5) * dtGame, 10);
+  });
+
+  test("defaults to no load penalty (multiplier 1) when omitted", () => {
+    const dtGame = 0.3;
+    expect(consumeEnergy(100, 5, "move", dtGame)).toBe(consumeEnergy(100, 5, "move", dtGame, 1));
+  });
+
+  test("higher load multiplier drains more energy", () => {
+    const dtGame = 0.3;
+    const noLoad = consumeEnergy(100, 5, "move", dtGame, 1);
+    const highLoad = consumeEnergy(100, 5, "move", dtGame, 1.25);
+    expect(highLoad).toBeLessThan(noLoad);
+    expect(100 - highLoad).toBeCloseTo((100 - noLoad) * 1.25, 10);
   });
 });
 
@@ -126,5 +141,52 @@ describe("normalizeGamePlayer", () => {
     expect(p.runtimeStats?.withBall.vision).toBeDefined();
     expect(p.energy).toBe(100);
     expect(p.stamina).toBe(7);
+  });
+});
+
+describe("applyContinuousFatigue", () => {
+  const runtimeAt100 = getRuntimeLineup(sampleBase, { energy: 100 });
+
+  test("below the 1-point threshold, keeps the same runtimeStats reference and baseline", () => {
+    const result = applyContinuousFatigue(sampleBase, runtimeAt100, 99.5, 100);
+    expect(result.runtimeStats).toBe(runtimeAt100);
+    expect(result.fatigueBaselineEnergy).toBe(100);
+  });
+
+  test("losing 3 energy points (< 10, would not have crossed the old step) recomputes runtimeStats", () => {
+    const result = applyContinuousFatigue(sampleBase, runtimeAt100, 97, 100);
+    expect(result.runtimeStats).not.toBe(runtimeAt100);
+    expect(result.runtimeStats.withBall.carrySpeed).toBeLessThan(runtimeAt100.withBall.carrySpeed);
+    expect(result.fatigueBaselineEnergy).toBe(97);
+  });
+
+  test("recomputed stats match a direct getRuntimeLineup call at the new energy", () => {
+    const result = applyContinuousFatigue(sampleBase, runtimeAt100, 97, 100);
+    expect(result.runtimeStats).toEqual(getRuntimeLineup(sampleBase, { energy: 97 }));
+  });
+});
+
+describe("overallEnergyFactor", () => {
+  test("full energy yields factor 1", () => {
+    expect(overallEnergyFactor(100)).toBeCloseTo(1, 10);
+  });
+
+  test("decreases monotonically as energy drops", () => {
+    const values = [100, 90, 75, 60, 40, 20, 0].map(overallEnergyFactor);
+    for (let i = 1; i < values.length; i++) {
+      expect(values[i]).toBeLessThan(values[i - 1]!);
+    }
+  });
+
+  test("at 60 energy sits between the physical (worst-hit) and tech (least-hit) single factors", () => {
+    const factor = overallEnergyFactor(60);
+    // Reference values from the fatigue curve doc: physical ~72% stats, tech ~90% stats at 60 energy.
+    expect(factor).toBeGreaterThan(0.72);
+    expect(factor).toBeLessThan(0.90);
+    expect(factor).toBeCloseTo(0.787, 2);
+  });
+
+  test("never negative even at 0 energy", () => {
+    expect(overallEnergyFactor(0)).toBeGreaterThanOrEqual(0);
   });
 });

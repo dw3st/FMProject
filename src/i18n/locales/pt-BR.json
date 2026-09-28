@@ -719,6 +719,8 @@
     "team": "Time {{team}}",
     "extraTime": "Prorrogação",
     "penalties": "Pênaltis",
+    "avgEndEnergy": "Fôlego médio final",
+    "fatigueSubs": "Trocas por cansaço",
     "headers": {
       "G": "Gols",
       "SH": "Finalizações",
@@ -749,7 +751,9 @@
       "dribblesLost": "Dribles perdidos",
       "looseBallsWon": "Bolas divididas ganhas",
       "throughBalls": "Bolas em profundidade",
-      "throughBallCompletion": "Aproveitamento em profundidade %"
+      "throughBallCompletion": "Aproveitamento em profundidade %",
+      "avgEndEnergy": "Fôlego médio final",
+      "avgFatigueSubs": "Trocas por cansaço"
     },
     "subbedOff": "Substituído aos {{minute}}'"
   },
@@ -1406,7 +1410,8 @@
     "fitness": "Condicionamento",
     "rating": "nota",
     "cancelSelection": "Cancelar seleção",
-    "change": "mudança"
+    "change": "mudança",
+    "lowFitnessWarning": "Titulares com fôlego baixo: {{names}}"
   },
   "matchResult": {
     "title": "Resultado da partida",
@@ -1664,5 +1669,8 @@
   },
   "players": {
     "star": "Mito da atualidade"
+  },
+  "fitness": {
+    "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"
   }
 }

@@ -33,6 +33,33 @@ function clampEnergy(n: number): number {
  *
  * Formula: factor = 1 - MAX_REDUCTION * (energyLost / 100) ^ CURVE_POWER
  *
+ * KEPT AT THE ORIGINAL VALUES (2026-09-27 "soften + recalibrate" balance pass, revised after
+ * review). A softer curve was attempted and reverted — see `.claude/rules/non-player-games.md` →
+ * "Fadiga" → "Tentativa de amaciar a curva do motor (revertida)" for the full grid of curves tried
+ * (power-law with lower `MAX_REDUCTION`, power-law with `MAX_REDUCTION` unchanged but higher power,
+ * and a normalized logistic "knee" curve) and why every one of them failed one of two hard-to-
+ * reconcile constraints at once:
+ *
+ *   A. a symmetric match at realistic matchday fitness (~88 both sides) must keep close to the same
+ *      total goal volume the engine produced before any curve change (the engine is what players
+ *      watch — its scoring can't drift just because the curve got softer);
+ *   B. a moderate START-fitness gap between two sides (e.g. 90 vs 70) should produce a smaller
+ *      goal-difference swing than this curve does.
+ *
+ * Empirically, in THIS engine, anything that reduces `MAX_REDUCTION` (needed to soften B) also
+ * measurably raises goal volume for two EQUAL-fitness sides at A (players close to full pace/skill
+ * make the engine's decisive plays — through-ball races, dribble duels — resolve more often, which
+ * raises scoring even for a symmetric match). Raising `CURVE_POWER` while holding `MAX_REDUCTION`
+ * fixed does NOT soften B at all (measured flat-to-worse across power 0.75→1.5) — it only helps once
+ * `MAX_REDUCTION` also drops, which is the change that costs A. No single-power-law or knee-shaped
+ * curve tested broke this coupling; see the balance task write-up for the full data.
+ *
+ * Given the explicit priority (A is a hard constraint), this curve is unchanged.
+ * The realistic-matchday-fitness mismatch (goal-volume calibration built at fitness 75, real
+ * matchday fitness ~88) is still real and still worth fixing — see QuickSimConfig.ts and
+ * `.claude/rules/non-player-games.md` → "Fadiga" for that recalibration, which does NOT touch this
+ * curve.
+ *
  * CURVE_POWER < 1 makes the curve concave: the first energy lost hurts more than the last,
  * so a 90-energy player takes ~10% physical hit but a 10-energy player stays above 45%.
  *
@@ -62,16 +89,56 @@ export function getReductionFactor(energyLost: number, step: number): number {
   return Math.max(0.1, 1 - reduction * 0.1);
 }
 
+/**
+ * @param loadDrainMultiplier `drainMultiplier(seasonLog.load)` from `src/Domain/fitness/fitness.ts`
+ *   — 1 with no accumulated load, up to 1.25 at `FITNESS.LOAD_HIGH`. Defaults to 1 (no penalty) for
+ *   callers that don't track load (e.g. hand-built test players).
+ */
 export function consumeEnergy(
   energy: number,
   stamina: number,
   action: StaminaAction,
   dtGame: number,
+  loadDrainMultiplier = 1,
 ): number {
   const base = STAMINA_COST[action];
   const reduction = stamina * 0.05; // 0–50%
-  const cost = base * (1 - reduction) * dtGame;
+  const cost = base * (1 - reduction) * dtGame * loadDrainMultiplier;
   return clampEnergy(energy - cost);
+}
+
+/**
+ * Weights for `overallEnergyFactor`'s blend of the physical/semi/tech fatigue factors — each
+ * category's own `FATIGUE_MAX_REDUCTION_*` constant, normalized to sum to 1. This reuses the same
+ * numbers `getRuntimeLineup` already uses to decide how much fatigue hurts each stat category, so
+ * the single "how fatigued is this player, overall" number stays consistent with the per-stat
+ * curves instead of introducing new tuning: physical is weighted heaviest (0.55 of the 1.10 total)
+ * because it is also the category the fatigue curve hits hardest, tech the lightest (0.20).
+ */
+const ENERGY_FACTOR_WEIGHT_SUM =
+  FATIGUE_MAX_REDUCTION_PHYSICAL + FATIGUE_MAX_REDUCTION_SEMI + FATIGUE_MAX_REDUCTION_TECH;
+const ENERGY_FACTOR_WEIGHTS = {
+  physical: FATIGUE_MAX_REDUCTION_PHYSICAL / ENERGY_FACTOR_WEIGHT_SUM,
+  semi: FATIGUE_MAX_REDUCTION_SEMI / ENERGY_FACTOR_WEIGHT_SUM,
+  tech: FATIGUE_MAX_REDUCTION_TECH / ENERGY_FACTOR_WEIGHT_SUM,
+} as const;
+
+/**
+ * A single representative fatigue factor (0..1) for a given energy/fitness value (0..100), for
+ * callers that need one number rather than a full `PlayerStats` recompute (e.g. lineup selection —
+ * see `src/Domain/lineupHelpers.ts` → `autoFillLineupWithFitness`). It is the weighted mean of the
+ * same physical/semi/tech factors `getRuntimeLineup` applies per stat category — see
+ * `ENERGY_FACTOR_WEIGHTS` above for the weighting.
+ */
+export function overallEnergyFactor(energy: number): number {
+  const physical = getFatigueFactor(energy, FATIGUE_MAX_REDUCTION_PHYSICAL);
+  const semi = getFatigueFactor(energy, FATIGUE_MAX_REDUCTION_SEMI);
+  const tech = getFatigueFactor(energy, FATIGUE_MAX_REDUCTION_TECH);
+  return (
+    physical * ENERGY_FACTOR_WEIGHTS.physical +
+    semi * ENERGY_FACTOR_WEIGHTS.semi +
+    tech * ENERGY_FACTOR_WEIGHTS.tech
+  );
 }
 
 export function getRuntimeLineup(base: PlayerStats, player: Pick<GamePlayer, 'energy'>): PlayerStats {
@@ -105,6 +172,32 @@ export function getRuntimeLineup(base: PlayerStats, player: Pick<GamePlayer, 'en
       interceptionChance: base.withoutBall.interceptionChance * semiRed,
     },
   };
+}
+
+/**
+ * Continuous fatigue (`docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Na partida"):
+ * energy points below which `runtimeStats` is left untouched since the last recompute. Replaces
+ * the old "every 10/20/40 energy points" step — `getRuntimeLineup` itself is already continuous,
+ * this only controls how often the (comparatively expensive) recompute runs.
+ */
+export const FATIGUE_RECOMPUTE_THRESHOLD = 1;
+
+/**
+ * Decide whether a player's `runtimeStats` need recomputing for a fresh `energy` value, given the
+ * energy last used to compute them (`fatigueBaselineEnergy`). Recomputes once `energy` has moved at
+ * least `FATIGUE_RECOMPUTE_THRESHOLD` points from that baseline; otherwise returns the same
+ * `runtimeStats` reference untouched so callers can skip the object-spread cost every tick.
+ */
+export function applyContinuousFatigue(
+  baseStats: PlayerStats,
+  runtimeStats: PlayerStats,
+  energy: number,
+  fatigueBaselineEnergy: number,
+): { runtimeStats: PlayerStats; fatigueBaselineEnergy: number } {
+  if (Math.abs(energy - fatigueBaselineEnergy) < FATIGUE_RECOMPUTE_THRESHOLD) {
+    return { runtimeStats, fatigueBaselineEnergy };
+  }
+  return { runtimeStats: getRuntimeLineup(baseStats, { energy }), fatigueBaselineEnergy: energy };
 }
 
 /** Old saves / snapshots used `stats` instead of `baseStats` + `runtimeStats`. */
@@ -162,7 +255,14 @@ export function applyStaminaCost(
     if (p.id !== playerId) return p;
     const pl = normalizeGamePlayer(p);
     if (pl.baseStats == null) return p;
-    const energy = consumeEnergy(pl.energy, pl.stamina, action, 1.0);
-    return { ...pl, energy, runtimeStats: getRuntimeLineup(pl.baseStats, { energy }) };
+    const energy = consumeEnergy(pl.energy, pl.stamina, action, 1.0, pl.drainMultiplier ?? 1);
+    // A discrete action (tackle, save, interception) is rare enough that we always recompute,
+    // rather than gating on FATIGUE_RECOMPUTE_THRESHOLD like the per-tick locomotion drain does.
+    return {
+      ...pl,
+      energy,
+      fatigueBaselineEnergy: energy,
+      runtimeStats: getRuntimeLineup(pl.baseStats, { energy }),
+    };
   });
 }

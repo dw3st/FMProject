@@ -60,6 +60,7 @@ const { totalsByKind } = await import("@/Domain/finance/ledger");
 const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await import("@/Domain/aiFinance/aiClubFinance");
 const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
 const { leaguePrize } = await import("@/Domain/finance/prizes");
+const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness } = await import("@/Domain/advanceDay/matchSimulationLineups");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
@@ -181,6 +182,13 @@ try {
   let matchDayMs = 0;
   let matchDays = 0;
 
+  // ── Fôlego (see "Fôlego" section below) ──────────────────────────────────
+  // Sampled on every player-club match day, before that day's matches are played, so the
+  // fitness read is the starting fitness the fitness-aware XI selector actually saw.
+  const oppFitnessSamples: Array<{ month: string; value: number }> = [];
+  const leagueFitnessSamples: Array<{ month: string; value: number }> = [];
+  let fitnessDifferedFromPlain = false;
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -207,6 +215,34 @@ try {
       if (ending.some((l) => playerCountrySlugs.has(l.leagueSlug))) {
         prePlayerSquad = await svc.getSquadById(saveId, playerSquadId);
         prePlayerFixtures = (await svc.getFixturesForDate(saveId, date)).filter((f) => f.competition === meta.leagueSlug);
+      }
+    }
+
+    // Fôlego: on a player-club match day, sample starting fitness before today's matches are
+    // played — the fitness-aware XI (`autoLineupDefaultFormationWithFitness`) is what the AI
+    // actually fields; `autoLineupDefaultFormation` (plain, no fitness) is the baseline it's
+    // compared against to detect a fatigue-driven substitution.
+    const leagueFixturesToday = (await svc.getFixturesForDate(saveId, date)).filter((f) => f.competition === meta.leagueSlug);
+    const playerFixtureToday = leagueFixturesToday.find((f) => f.home === playerSquadId || f.away === playerSquadId);
+    if (playerFixtureToday) {
+      const month = date.slice(0, 7);
+      const opponentId = playerFixtureToday.home === playerSquadId ? playerFixtureToday.away : playerFixtureToday.home;
+      for (const fx of leagueFixturesToday) {
+        for (const squadId of [fx.home, fx.away]) {
+          if (squadId === playerSquadId) continue;
+          const squad = await svc.getSquadById(saveId, squadId);
+          if (!squad) continue;
+          const fitnessXI = autoLineupDefaultFormationWithFitness(squad);
+          const plainXI = autoLineupDefaultFormation(squad);
+          if (JSON.stringify([...fitnessXI].sort()) !== JSON.stringify([...plainXI].sort())) {
+            fitnessDifferedFromPlain = true;
+          }
+          const xiPlayers = fitnessXI.map((id) => squad.players.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p);
+          if (xiPlayers.length === 0) continue;
+          const mean = xiPlayers.reduce((s, p) => s + (p.seasonLog?.fitness ?? 75), 0) / xiPlayers.length;
+          leagueFitnessSamples.push({ month, value: mean });
+          if (squadId === opponentId) oppFitnessSamples.push({ month, value: mean });
+        }
       }
     }
 
@@ -792,6 +828,56 @@ try {
   for (const [kind, amount] of Object.entries(totalsByKind(allLedgerEntries))) {
     console.log(`    ${kind.padEnd(14)} ${Math.round(amount).toLocaleString("en-US").padStart(16)}`);
   }
+
+  // ── Fôlego ───────────────────────────────────────────────────────────────
+  console.log("\n── Fôlego ──");
+
+  function monthlyMeans(samples: Array<{ month: string; value: number }>): Map<string, number> {
+    const byMonth = new Map<string, number[]>();
+    for (const s of samples) byMonth.set(s.month, [...(byMonth.get(s.month) ?? []), s.value]);
+    const out = new Map<string, number>();
+    for (const [month, values] of [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      out.set(month, values.reduce((s, v) => s + v, 0) / values.length);
+    }
+    return out;
+  }
+
+  const oppMonthly = monthlyMeans(oppFitnessSamples);
+  const leagueMonthly = monthlyMeans(leagueFitnessSamples);
+  console.log("  month     opponent XI   league AI XIs");
+  for (const month of [...new Set([...oppMonthly.keys(), ...leagueMonthly.keys()])].sort()) {
+    const o = oppMonthly.get(month);
+    const l = leagueMonthly.get(month);
+    console.log(`  ${month}   ${(o !== undefined ? o.toFixed(1) : "n/a").padStart(11)}   ${(l !== undefined ? l.toFixed(1) : "n/a").padStart(13)}`);
+  }
+
+  const allFitnessSamples = [...oppFitnessSamples, ...leagueFitnessSamples];
+  check(allFitnessSamples.length > 0, `fôlego: ${allFitnessSamples.length} sample(s) collected across ${oppMonthly.size} month(s)`);
+  const seasonMean = allFitnessSamples.length > 0
+    ? allFitnessSamples.reduce((s, x) => s + x.value, 0) / allFitnessSamples.length
+    : NaN;
+  check(seasonMean >= 55 && seasonMean <= 95, `fôlego: season mean starting fitness ${seasonMean.toFixed(1)} within 55..95`);
+
+  // "Not stuck": informational only (per the plan, a narrow range is reported, not failed) —
+  // use the league-wide series, since it has far more samples per month than the single-opponent one.
+  const leagueMonthlyValues = [...leagueMonthly.values()];
+  const monthlyRange = leagueMonthlyValues.length > 0 ? Math.max(...leagueMonthlyValues) - Math.min(...leagueMonthlyValues) : 0;
+  if (monthlyRange >= 2) {
+    check(true, `fôlego: monthly means vary by ${monthlyRange.toFixed(1)} points across the season (not stuck)`);
+  } else {
+    console.log(`  fôlego: monthly means vary by only ${monthlyRange.toFixed(1)} point(s) across the season — informational only, not a failure`);
+  }
+
+  check(fitnessDifferedFromPlain,
+    "fôlego: at least one AI club fielded a fitness-aware XI different from the plain autoFillLineup XI (fatigue-driven substitution)");
+
+  const badFitness = allFiles.filter(({ squad }) =>
+    squad.players.some((p) => typeof p.seasonLog?.fitness === "number" && (p.seasonLog.fitness < 0 || p.seasonLog.fitness > 100)));
+  check(badFitness.length === 0, `no player fitness outside 0..100 across the world (${badFitness.length} squad(s) with an out-of-range value)`);
+
+  const badLoad = allFiles.filter(({ squad }) =>
+    squad.players.some((p) => typeof p.seasonLog?.load === "number" && p.seasonLog.load < 0));
+  check(badLoad.length === 0, `no player load below 0 across the world (${badLoad.length} squad(s) with a negative load)`);
 
   await checkFiles(saveId, "end");
   const el = (performance.now() - t0) / 1000;

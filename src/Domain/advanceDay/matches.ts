@@ -5,6 +5,7 @@ import type { Fixture } from "@/types/calendarTypes";
 import type {
   MatchEvent,
   MatchTeamStats,
+  MatchSubstitution,
   Scorer,
   MatchPlayerStats,
   PlayerDevelopmentChange,
@@ -16,6 +17,60 @@ import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { applyMatchFitness } from "@/Domain/fitness/fitness";
+
+/** `stats.stamina` (0–10) is required on the type, but fall back defensively — see fitness.md. */
+const DEFAULT_STAMINA = 7;
+
+/**
+ * Full match length in minutes — 90, or 120 when a knockout decider is present (it only exists
+ * once 90' ended level and extra time was played — see `.claude/rules/match-flow.md`). Stoppage
+ * time is not modelled as a stretch of this total (a flat 90/120 is simpler and matches the design
+ * doc) — see `computeMinutesPlayed` for how a stoppage-time substitution is still handled without
+ * ever crediting 0 minutes to a player who genuinely came on.
+ */
+function totalMatchMinutes(decider: unknown): number {
+  return decider ? 120 : 90;
+}
+
+/**
+ * Minutes played per roster id, from the set of players who appeared in the match (typically
+ * `Object.keys(playerStats)`) and the substitution log, in the order it was recorded — NEVER
+ * re-sorted by `matchMinute`, which is not monotonic across halves/extra-time (each phase has its
+ * own `MINUTE_OFFSET`, see `.claude/rules/match-flow.md`); the log's own order is what tells us
+ * who is actually on the pitch when a later substitution happens. A player never substituted plays
+ * the full `totalMinutes`; a substitute's minutes start at their sub-in minute. A player still on
+ * the pitch at the final whistle who came on at or after `totalMinutes` (a stoppage-time
+ * substitution) is credited at least 1 minute, never 0 — the substitution itself proves they
+ * played. Works with an empty substitution list (quickSim: every player in `playerIds` plays
+ * `totalMinutes`) and is robust to a player being subbed on and later subbed off again.
+ */
+export function computeMinutesPlayed(
+  playerIds: string[],
+  substitutions: Pick<MatchSubstitution, "playerOutId" | "playerInId" | "matchMinute">[],
+  totalMinutes: number,
+): Record<string, number> {
+  const subbedIn = new Set(substitutions.map((s) => s.playerInId));
+  // onSince: minute the player has been on the pitch since (absent = not on the pitch).
+  const onSince = new Map<string, number>();
+  const minutes: Record<string, number> = {};
+  for (const id of playerIds) {
+    minutes[id] = 0;
+    if (!subbedIn.has(id)) onSince.set(id, 0);
+  }
+  for (const sub of substitutions) {
+    const since = onSince.get(sub.playerOutId);
+    if (since != null) {
+      minutes[sub.playerOutId] = (minutes[sub.playerOutId] ?? 0) + Math.max(0, sub.matchMinute - since);
+    }
+    onSince.delete(sub.playerOutId);
+    onSince.set(sub.playerInId, sub.matchMinute);
+  }
+  for (const [id, since] of onSince) {
+    minutes[id] = (minutes[id] ?? 0) + Math.max(1, totalMinutes - since);
+  }
+  return minutes;
+}
 
 export interface MatchSimResult {
   event: MatchEvent;
@@ -45,6 +100,8 @@ function finalizeSquadsAfterMatch(
   playerStats: Record<string, MatchPlayerStats>,
   playerRatings: Record<string, number>,
   playerEnergy: Record<string, number> | undefined,
+  substitutions: Pick<MatchSubstitution, "playerOutId" | "playerInId" | "matchMinute">[],
+  totalMinutes: number,
   isCup: boolean,
   isContinental: boolean,
 ): {
@@ -53,6 +110,9 @@ function finalizeSquadsAfterMatch(
   homeDevChanges: PlayerDevelopmentChange[];
   awayDevChanges: PlayerDevelopmentChange[];
 } {
+  // Shared across both squads — `playerStats` already combines home + away.
+  const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), substitutions, totalMinutes);
+
   function applyMatchToSquad(squad: Squad): Squad {
     return {
       ...squad,
@@ -94,17 +154,24 @@ function finalizeSquadsAfterMatch(
                 : +((prev * (log.appearances - 1) + rating) / log.appearances).toFixed(2);
             log.recentRatings = [...(log.recentRatings ?? []), rating].slice(-5);
           }
+          // Post-match fitness/load, shared with `/lab`'s congestion carry-over
+          // (`lab/fitnessCarry.ts`) via `applyMatchFitness` — see `.claude/rules/game/fitness.md`.
           const endEnergy = playerEnergy?.[p.id];
-          if (typeof endEnergy === "number" && Number.isFinite(endEnergy)) {
-            // Give back 50% of energy spent during the match (post-match recovery).
-            // e.g. started at 80, ended at 20 → spent 60 → recover 30 → final fitness 50.
-            const startEnergy = log.fitness;
-            const spent = Math.max(0, startEnergy - endEnergy);
-            log.fitness = Math.max(0, Math.min(100, endEnergy + spent * 0.5));
-          } else {
-            log.fitness = Math.max(0, log.fitness - +(Math.random() * 5 + 3).toFixed(1));
-          }
+          const minutes = minutesPlayed[p.id] ?? 0;
+          const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
+          const updated = applyMatchFitness(log, { age: p.age, stamina }, { endEnergy, minutes });
+          log.fitness = updated.fitness;
+          log.load = updated.load;
           log.morale = Math.min(100, log.morale + +(Math.random() * 2).toFixed(1));
+        } else {
+          // Did not appear in this match (bench/reserve). The daily rest/training loop skips
+          // this squad entirely today because it played a fixture — so this is this player's
+          // only chance to recover fitness and decay load today, on the same curve as an actual
+          // rest day (`.claude/rules/game/fitness.md`).
+          const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
+          const updated = applyMatchFitness(log, { age: p.age, stamina }, undefined);
+          log.fitness = updated.fitness;
+          log.load = updated.load;
         }
         return { ...pl, seasonLog: log };
       }),
@@ -197,6 +264,8 @@ export function buildMatchEventFromRecording(
     recording.playerStats,
     recording.playerRatings,
     recording.playerEnergy,
+    recording.substitutions ?? [],
+    totalMatchMinutes(recording.decider),
     isCupSlug(fixture.competition),
     isContinentalSlug(fixture.competition),
   );
@@ -337,13 +406,7 @@ export function buildMatchEvent(
   }
   scorers.sort((a, b) => b.goals - a.goals);
 
-  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
-    finalizeSquadsAfterMatch(
-      homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
-      isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
-    );
-
-  const substitutions: import("@/types/dayLogTypes").MatchSubstitution[] = result.substitutions.map((sub) => ({
+  const substitutions: MatchSubstitution[] = result.substitutions.map((sub) => ({
     team: sub.team === "A" ? "home" : "away",
     playerOutId:   sub.playerOutRosterId,
     playerOutName: sub.playerOutName,
@@ -351,6 +414,13 @@ export function buildMatchEvent(
     playerInName:  sub.playerInName,
     matchMinute:   sub.matchMinute,
   }));
+
+  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
+    finalizeSquadsAfterMatch(
+      homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
+      substitutions, totalMatchMinutes(result.decider),
+      isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
+    );
 
   const event: MatchEvent = {
     kind: "match",

@@ -1,7 +1,7 @@
 # FMProject — Roadmap
 
 Referência única do que está feito, do que vem a seguir e em que ordem. Atualizado a cada entrega
-(merge em `main`). Última atualização: 2026-09-27 (Etapa 3: premiação e finanças).
+(merge em `main`). Última atualização: 2026-09-27 (Etapa 4: stamina / cansaço).
 
 ---
 
@@ -37,6 +37,12 @@ Mudou o mundo (importadores, elencos, calendário)? Regenerar a cadeia inteira �
   diferente (issue #2). Ver `.claude/rules/game/continental.md`.
 - **Partida:** motor tick a tick com táticas por estilo, mentalidade ao vivo, 1×/2×/4×, roda com a
   aba em segundo plano. Ligas não seguidas usam o quickSim.
+- **Fôlego e carga:** cada jogador recupera dia a dia (idade/carga/stamina), acumula carga
+  (minutos-equivalentes com decaimento) num calendário apertado, e a energia de início de partida é
+  comprimida em torno de uma referência (`matchStartEnergy`) para suavizar a diferença entre dois
+  fôlegos sem mudar o volume de gols de um confronto simétrico. A IA (e o botão "auto" do jogador)
+  escala pelo fôlego, poupando titulares cansados por um reserva melhor. Ver
+  `.claude/rules/game/fitness.md`.
 - **Clube:** finanças do jogador por extrato real (salário em escala real, bilheteria em toda
   competição, premiação de liga/copa/continental, saldo pode ficar negativo), IA com orçamento
   de salário pela receita e prêmios entrando na verba de transferências, mercado de
@@ -59,7 +65,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 1 ✅ | 1.1 Copas nacionais | #5 revisão + smoke da recalibração | Fechar a verificação do que já está em produção antes de construir em cima; o smoke de temporada vai ganhar as copas |
 | 2 ✅ | 1.2 Continentais | #2 quickSim × motor em gols | Continentais misturam clubes seguidos (motor) e não seguidos (quickSim): o quickSim precisa estar calibrado |
 | 3 ✅ | 1.3 Premiação e finanças | #12 salários fora de escala | Mesma área (finanças do clube); prêmios sem salários coerentes distorcem o caixa |
-| 4 | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
+| 4 ✅ | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
 | 5 | 2.2 Lesões | #3 ruído dos `of_*` | Lesões e rotação dependem de elencos com níveis críveis |
 | 6 | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
 | 7 | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) + #23 ELITE 'tight' | Contratos usam idade e nível; revisar a curva de declínio junto. Contratos mudam a folha da IA — mesma hora de afinar a folga dos ELITE |
@@ -67,6 +73,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 9 | 3.3 Tela Tactics | #8 estilo posse | Tactics mexe nas instruções; o estilo posse é um dos alvos |
 | 10 | 3.4 Staff | #13 nomes turcos | Etapa grande + correção pequena de dados |
 | 11 | 3.5 Base | #9 notas ≥ 8,5 no quickSim | Jovens gerados passam pelo quickSim; notas precisam estar calibradas |
+| 11b | 3.6 Aposentadoria e renascimento de craques | — | Usa a geração de jovens da Base (3.5); entra logo depois dela |
 | 12 | 4.1 Faltas e cartões | — | |
 | 13 | 4.2 Jogo aéreo | — | |
 | 14 | 4.3 Bolas paradas | — | |
@@ -121,9 +128,14 @@ reserva entra em campo; quickSim e motor concordam no volume de lesões.
 3.4 **Staff:** treinadores, preparador físico, olheiros, com efeito em desenvolvimento, lesões e
    observação.
 3.5 **Base:** jovens gerados por temporada, promoção ao elenco principal.
+3.6 **Aposentadoria e "renascimento" de craques (estilo Brasfoot):** jogadores se aposentam por idade
+   e declínio. Quando um craque de classe mundial do clube do jogador se aposenta, o jogador pode
+   escolher trazê-lo de volta como um jovem de 17–19 anos na base do clube — mesmo nome/perfil, com
+   uma estrela marcando a origem, nível de "promessa" (~médio aos 17), e que pode voltar a ser classe
+   mundial se se desenvolver. Depende da Base (3.5) e do desenvolvimento por desempenho.
 
-**Pronto quando:** cada tela "em breve" (Staff, Stats, Tactics) está funcionando e contratos
-mudam decisões de mercado.
+**Pronto quando:** cada tela "em breve" (Staff, Stats, Tactics) está funcionando, contratos
+mudam decisões de mercado e um craque aposentado pode renascer na base do clube.
 
 ### Fase 4 — Realismo da partida
 
@@ -174,15 +186,23 @@ https://github.com/dw3st/FMProject/issues
 Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
 (`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
 
-Abertos em 2026-09-25: #2 quickSim × motor em gols · #3 ruído dos `of_*` · #4 partida quebra no
-servidor de desenvolvimento · #5 revisão final + smoke da recalibração · #6 Kane/Bellingham/Van Dijk ·
-#7 Bundesliga × Serie A · #8 estilo posse · #9 notas ≥ 8,5 no quickSim · #10 compose exposto na rede
-local · #11 ligas de ano civil com a composição de 2026 · #12 salários fora de escala · #13 nomes
-turcos com maiúscula estranha.
+Abertos em 2026-09-25: #2 quickSim × motor em gols · #3 ruído dos `of_*` · #5 revisão final + smoke
+da recalibração · #6 Kane/Bellingham/Van Dijk · #7 Bundesliga × Serie A · #8 estilo posse · #9 notas
+≥ 8,5 no quickSim · #10 compose exposto na rede local · #11 ligas de ano civil com a composição de
+2026 · #12 salários fora de escala · #13 nomes turcos com maiúscula estranha.
 
 Fechados em 2026-09-27: **#12** salários fora de escala (curva real-euro + fator de clube, Etapa 3 —
 ver `.claude/rules/game/finances.md`) · **#16** laterais invertidos na tela de táticas (commit
-`736ed20`, mesma branch).
+`736ed20`, mesma branch) · **#4** partida quebra no servidor de desenvolvimento (Etapa 4 — não era o
+bundler nem o casing do caminho: o `bun` pinado em `bun.lock` estava em 1.3.10 (atrás do peer solto
+de `bun-plugin-tailwind`); `bun update bun` levou esse pin para 1.4.2 — único arquivo alterado, sem
+mudança de código — e o `Dockerfile` de produção foi pinado em `oven/bun:1.4-alpine` pelo mesmo
+motivo; ver `.claude/rules/dev-login.md`).
+
+Dois reports de tester corrigidos durante a Etapa 4, sem issue próprio (achados direto na revisão da
+tarefa, não vieram de uma triagem de `fetchReports.ts`): camisas pretas/escuras ilegíveis na tela de
+resultado e na prévia da partida (commit `a4e5e03`, `readableOnDark` como o `ScoreBar` ao vivo já
+fazia) e o overlay de intervalo/fim de jogo passando rápido demais em 4× (commit `318b61a`).
 
 ---
 

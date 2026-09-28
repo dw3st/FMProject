@@ -4,7 +4,8 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { Pause, Play, BarChart3, Settings, ArrowRightLeft } from "lucide-react";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation } from "@/GameEngine/Domain/gameState";
+import { createMatchState, changeFormation, PRESENTATION_DURATION } from "@/GameEngine/Domain/gameState";
+import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Suport/DebugLog";
 import { initRatings, getAllRatings } from "@/GameEngine/Domain/PlayerRating";
@@ -17,11 +18,23 @@ import type { TacticsSave, TacticalStyle, Mentality } from "@/types/tacticsTypes
 import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { autoFillLineup } from "@/Domain/lineupHelpers";
+import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 
+/**
+ * Base (1x) real-time delay before navigating to the result screen after full time. Scaled down
+ * by the live match speed via `overlayDismissDelayMs` at the point it's used — see that module for
+ * why: at 2x/4x this must run faster, or the overlay/navigation lags behind the (speed-scaled)
+ * match ending underneath it.
+ *
+ * Half-time and extra-time-break do NOT use a real-time delay at all — see the `halfTime` /
+ * `extraTimeStart` gameBus handlers and the `matchPhase`-driven dismissal effect below: those
+ * overlays are dismissed the moment the engine itself leaves the corresponding phase
+ * (`halfTime` → `secondHalf`, `extraTimeBreak` → `extraTimeFirst`), so they always resume exactly
+ * when play actually resumes, however the match is paused or its speed is changed while showing.
+ */
 const MATCH_END_TO_RESULT_MS = 3500;
 /** 1x / 2x / 4x — live match speed group (spec §4). */
 const GAME_SPEEDS = [1, 2, 4] as const;
@@ -111,6 +124,19 @@ export function MatchScreen() {
     score: { A: number; B: number };
   } | null>(null);
   const [matchOverlay, setMatchOverlay] = useState<"halfTime" | "extraTime" | "matchEnd" | null>(null);
+  /**
+   * 0..1 elapsed fraction driving the full-time overlay's progress bar. Unlike half-time /
+   * extra-time (whose pause is tracked by the engine's own `presentationCountdown`, read
+   * directly off `gameState` below), `matchEnd` freezes the engine entirely — there is no
+   * engine value left counting down — so this is driven by a rAF loop timed against the same
+   * speed-scaled delay used to schedule the navigation to the result screen.
+   */
+  const [matchEndProgress, setMatchEndProgress] = useState(0);
+  const matchEndAnimRef = useRef<number | null>(null);
+  /** Mirrors `gameSpeed` for the gameBus handlers below, which are registered once (`[]` deps)
+   *  and would otherwise close over the initial render's speed forever. */
+  const gameSpeedRef = useRef(gameSpeed);
+  useEffect(() => { gameSpeedRef.current = gameSpeed; }, [gameSpeed]);
   const [ratings, setRatings] = useState<Record<number, number>>(() => getAllRatings());
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
@@ -202,7 +228,7 @@ export function MatchScreen() {
 
         const opponentPlayers = data.opponentSquad?.players ?? data.mySquad.players;
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
-        const oppLineup = autoFillLineup(oppSlots, opponentPlayers);
+        const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers);
         const state = {
           ...createMatchState(
             data.mySquad.players,
@@ -292,24 +318,52 @@ export function MatchScreen() {
 
   useEffect(() => {
     return gameBus.on("halfTime", () => {
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("halfTime");
-      overlayTimerRef.current = setTimeout(() => setMatchOverlay(null), 3500);
     });
   }, []);
 
   useEffect(() => {
     return gameBus.on("extraTimeStart", () => {
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("extraTime");
-      overlayTimerRef.current = setTimeout(() => setMatchOverlay(null), 3500);
     });
   }, []);
+
+  // Half-time / extra-time-break overlays are dismissed the moment the engine itself moves past
+  // the corresponding phase — not on a real-time timer. This tracks exactly what actually gates
+  // the pause (`isDeadBall` in gameState.ts), so the overlay reaches 100% and disappears exactly
+  // when play resumes, stays frozen together with `paused`, and reacts correctly to a mid-overlay
+  // speed change (a fixed-delay `setTimeout` couldn't do any of that — see `matchOverlayTiming.ts`).
+  useEffect(() => {
+    const phase = gameState?.matchPhase;
+    if (!phase) return;
+    if (matchOverlay === "halfTime" && phase !== "halfTime") {
+      setMatchOverlay(null);
+    } else if (matchOverlay === "extraTime" && phase !== "extraTimeBreak") {
+      setMatchOverlay(null);
+    }
+  }, [gameState?.matchPhase, matchOverlay]);
 
   useEffect(() => {
     const unsub = gameBus.on("matchEnd", () => {
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("matchEnd");
+
+      // matchEnd freezes the engine (tickState no-ops forever in this phase — see
+      // gameState.ts), so there's no engine countdown left to read for the progress bar.
+      // Drive it from a rAF loop timed against the same speed-scaled delay used below to
+      // schedule the navigation, so the bar reaches 100% exactly when the overlay/navigation
+      // fires, at every speed.
+      const delayMs = overlayDismissDelayMs(MATCH_END_TO_RESULT_MS, gameSpeedRef.current);
+      if (matchEndAnimRef.current != null) cancelAnimationFrame(matchEndAnimRef.current);
+      const startedAt = performance.now();
+      const tickProgress = () => {
+        const frac = Math.min(1, (performance.now() - startedAt) / delayMs);
+        setMatchEndProgress(frac);
+        matchEndAnimRef.current = frac < 1 ? requestAnimationFrame(tickProgress) : null;
+      };
+      setMatchEndProgress(0);
+      matchEndAnimRef.current = requestAnimationFrame(tickProgress);
+
       if (matchEndFinalizeRef.current) return;
       matchEndFinalizeRef.current = true;
 
@@ -359,11 +413,12 @@ export function MatchScreen() {
             window.location.href = "/match-result";
           }
         })();
-      }, MATCH_END_TO_RESULT_MS);
+      }, delayMs);
     });
     return () => {
       unsub();
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      if (matchEndAnimRef.current != null) cancelAnimationFrame(matchEndAnimRef.current);
     };
   }, []);
 
@@ -464,6 +519,17 @@ export function MatchScreen() {
     gameState.substitutions.filter((s) => s.team === "B").map((s) => s.playerInId),
   );
 
+  // Half-time/extra-time: read straight off the engine's own countdown, so the bar tracks
+  // exactly what actually gates the pause (including e.g. staying put while `paused`).
+  // Full-time: no engine countdown left once matchPhase is 'matchEnd' — use the rAF-driven
+  // fraction timed against the same speed-scaled delay that schedules the navigation.
+  const overlayProgress =
+    matchOverlay === "halfTime" || matchOverlay === "extraTime"
+      ? 1 - Math.max(0, Math.min(1, gameState.presentationCountdown / PRESENTATION_DURATION))
+      : matchOverlay === "matchEnd"
+      ? matchEndProgress
+      : undefined;
+
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
       <GoalOverlay
@@ -478,6 +544,7 @@ export function MatchScreen() {
         kitColorA={matchKitColors.teamA}
         kitColorB={matchKitColors.teamB}
         penaltiesScore={gameState.shootout?.finalScore}
+        progress={overlayProgress}
       />
 
       {/* Scoreboard Header */}

@@ -13,6 +13,8 @@ import { Player } from "@/Domain/Player";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
+import type { Formation } from "@/GameEngine/types";
+import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
 import { clubLineRating, clubProfileStem, reputationStars } from "@/backend/clubProfile";
 import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
@@ -438,15 +440,29 @@ export const apiRoutes = {
       ],
     };
 
+    const resolvedMyFormation = (myFormation ?? defaultFormation) as Formation;
+
+    // An empty (or otherwise invalid) saved lineup — e.g. a career that never touched the
+    // formation screen — is filled the same way the headless path resolves it
+    // (`resolveUserLineup`/`computeMatchSimulationLineups`), so a live match starts the same XI a
+    // skipped/simulated day for this same fixture would have used, instead of match-setup's own
+    // plain per-slot `pickForRole` fallback (via `createMatchState`'s unfilled lineup slots).
+    if (!myTactics.lineup || myTactics.lineup.length !== 11) {
+      myTactics = {
+        ...myTactics,
+        lineup: resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? []),
+      };
+    }
+
     return Response.json({
       save,
       mySquad,
       mySquadId: myInternalId,
       fixture: matchFixture,
       opponentSquad,
-      myFormation:  myFormation  ?? defaultFormation,
+      myFormation:  resolvedMyFormation,
       oppFormation: oppFormation ?? defaultFormation,
-      myLineup:     myTactics.lineup ?? [],
+      myLineup:     myTactics.lineup,
       myTactics,
     });
   },

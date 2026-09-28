@@ -24,6 +24,7 @@ import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
+  readableOnDark,
   resolveMatchTeamKitColors,
   squadPrimaryColor,
   squadSecondaryColor,
@@ -453,10 +454,14 @@ export function MatchResultScreen() {
   const ta = matchEvent.teamStats.away;
   const homePrimary = squadPrimaryColor(homeSquad, FALLBACK_HOME_ACCENT);
   const awayPrimary = squadPrimaryColor(awaySquad, FALLBACK_AWAY_ACCENT);
-  const { teamA: homeHex, teamB: awayHex } = resolveMatchTeamKitColors(
+  const kits = resolveMatchTeamKitColors(
     { primary: homePrimary, secondary: squadSecondaryColor(homeSquad, homePrimary) },
     { primary: awayPrimary, secondary: squadSecondaryColor(awaySquad, awayPrimary) },
   );
+  // Everything here is drawn on the dark background: lift black/navy kits so the score,
+  // names, bars and accents stay readable (same helper as the live ScoreBar).
+  const homeHex = readableOnDark(kits.teamA);
+  const awayHex = readableOnDark(kits.teamB);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">

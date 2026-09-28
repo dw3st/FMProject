@@ -19,6 +19,9 @@ import { createMatchState } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
+import { emptySeasonLog } from '@/types/playerTypes';
+import { FITNESS } from '@/Domain/fitness/fitnessConfig';
+import { drainMultiplier as loadDrainMultiplier } from '@/Domain/fitness/fitness';
 
 // ── Attribute presets (full roster shape; unused fields set to neutral test values) ──
 
@@ -135,6 +138,44 @@ const roster = playersJson as RosterPlayer[];
 const teamRedPlayers  = roster.filter(p => p.squadId === 'team_red');
 const teamBluePlayers = roster.filter(p => p.squadId === 'team_blue');
 
+/**
+ * `createMatchState`'s no-history fallback (`gameState.ts`) values a roster with no `seasonLog` at
+ * `matchStartEnergy(emptySeasonLog().fitness)` (~83) for consistency with quickSim/the lineup
+ * selector — see `.claude/rules/game/fitness.md`. These hand-crafted engine-tuning scenarios exist
+ * to observe carry/pass/tackle/etc. logic in isolation, not the fitness system, so they explicitly
+ * pin a full, uncompressed 100 energy instead of picking up that default.
+ */
+function freshRoster(players: RosterPlayer[]): RosterPlayer[] {
+  return players.map(p => ({ ...p, seasonLog: { ...emptySeasonLog(), fitness: 100 } }));
+}
+
+/**
+ * Sets a team's energy to `energy` and its `drainMultiplier` from `load` (see
+ * `src/Domain/fitness/fitness.ts` → `drainMultiplier`), on every player currently on the pitch
+ * AND the bench — a substitute brought on mid-match should be just as fatigued as the XI, since
+ * they came off a congested fixture list too. Used by the `tired-team` scenario below.
+ */
+function applyFatigue(state: GameState, team: TeamId, energy: number, load: number): GameState {
+  const mult = loadDrainMultiplier(load);
+  const patch = (p: GamePlayer): GamePlayer => {
+    if (p.team !== team) return p;
+    return {
+      ...p,
+      energy,
+      startEnergy: energy,
+      drainMultiplier: mult,
+      fatigueBaselineEnergy: energy,
+      runtimeStats: getRuntimeLineup(p.baseStats, { energy }),
+    };
+  };
+  return {
+    ...state,
+    players: state.players.map(patch),
+    benchA: team === 'A' ? state.benchA.map(patch) : state.benchA,
+    benchB: team === 'B' ? state.benchB.map(patch) : state.benchB,
+  };
+}
+
 export const TEST_SCENARIOS: TestScenario[] = [
   {
     id:          '11v11-classic',
@@ -142,7 +183,7 @@ export const TEST_SCENARIOS: TestScenario[] = [
     description: 'Full 11v11 using the original team_red vs team_blue test roster in a 4-3-3.',
     createState() {
       const f433 = formation433Json as Formation;
-      return createMatchState(teamRedPlayers, f433, teamBluePlayers, f433);
+      return createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
     },
   },
 
@@ -153,7 +194,7 @@ export const TEST_SCENARIOS: TestScenario[] = [
     createState() {
       const f433 = formation433Json as Formation;
       return {
-        ...createMatchState(teamRedPlayers, f433, teamBluePlayers, f433),
+        ...createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433),
         knockout:   true,
         matchPhase: 'secondHalf',
         matchTime:  2640,
@@ -279,6 +320,17 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Okeke',    'B', 'CDM', 62, 24, MIDFIELDER), // congest near side
         makePlayer('Kowalski', 'B', 'GK', 110, 37, GOALKEEPER),
       ], 1);
+    },
+  },
+
+  {
+    id:          'tired-team',
+    name:        '11v11 — Tired Team (fixture congestion)',
+    description: 'Team A starts at 60 energy with the load-derived drain multiplier from FITNESS.LOAD_HIGH (fresh Team B) — mirrors a squad deep into a congested fixture list. Toggle the Energy panel to watch Team A fade and the AI make fatigue substitutions.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      return applyFatigue(base, 'A', 60, FITNESS.LOAD_HIGH);
     },
   },
 ];
