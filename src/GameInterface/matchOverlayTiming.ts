@@ -1,18 +1,19 @@
 /**
- * Real-time delay (ms) before a match presentation overlay (half-time / extra-time /
- * full-time) is dismissed, or before the app navigates away after a finished match.
+ * Real-time delay (ms) before the app navigates to the match-result screen after full time.
  *
- * The engine's own presentation pauses (halfTime, extraTimeBreak, penalties — see
- * `PRESENTATION_DURATION` in `GameEngine/Domain/gameState.ts`) are counted in game-time,
- * so they already run faster at higher live-match speed: `advanceSim` feeds more fixed
- * `tickState` steps per real second the higher `gameSpeed` is (see
- * `GraficsEngine/PixiPitch.tsx` → `pumpSimulation`), and each step drains
- * `presentationCountdown` by the same fixed step regardless of speed.
+ * `matchEnd` freezes the engine entirely (`tickState` no-ops forever in that phase — see
+ * `GameEngine/Domain/gameState.ts`), so unlike half-time / extra-time-break there is no engine
+ * countdown left to drive the full-time overlay or the navigation away from it — both are timed
+ * against this real-time delay instead (see `MatchScreen.tsx`'s `matchEnd` handler).
  *
- * The UI's own overlay-dismissal timers must scale the same way. Without this, at 2x/4x
- * the overlay (and, for full time, the delay before navigating to the match-result screen)
- * keeps showing in real time for as long as at 1x, well after the underlying pause (or the
- * whole match) has already moved on underneath it.
+ * Half-time and extra-time-break do NOT use this function: those overlays are dismissed the
+ * instant the engine's own `matchPhase` moves past them (`halfTime` → `secondHalf`,
+ * `extraTimeBreak` → `extraTimeFirst` — see `MatchScreen.tsx`'s `matchPhase`-driven dismissal
+ * effect), which already tracks the engine's own `presentationCountdown` (itself in game-time, so
+ * it already runs faster at higher live-match speed — `advanceSim` feeds more fixed `tickState`
+ * steps per real second the higher `gameSpeed` is, see `GraficsEngine/PixiPitch.tsx` →
+ * `pumpSimulation`) and needs no separate real-time delay, at any speed, and pauses/resumes
+ * together with the match itself.
  */
 export function overlayDismissDelayMs(baseMs: number, gameSpeed: number): number {
   if (!Number.isFinite(gameSpeed) || gameSpeed <= 0) return baseMs;
