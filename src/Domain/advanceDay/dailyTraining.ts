@@ -22,6 +22,7 @@ import rolesData from "@/Data/roles.json";
 import {
   clearHealed,
   isInjured,
+  mergeInjury,
   returnDate as injuryReturnDate,
   rollSeverity,
   trainingInjuryChance,
@@ -231,7 +232,7 @@ export function buildTrainingEvent(
         ...pl,
         seasonLog: log,
         ...(newInjury
-          ? { injury: { severity: newInjury.severity, returnDate: newInjury.returnDate } }
+          ? { injury: mergeInjury(pl.injury, { severity: newInjury.severity, returnDate: newInjury.returnDate }) }
           : {}),
       };
     }),
