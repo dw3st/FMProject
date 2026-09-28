@@ -10,22 +10,31 @@
  * Pass `--local <path>` to read a local file instead (e.g. a fixture, or a copy already
  * downloaded) — useful for testing this script without touching the homelab.
  *
+ * A report may have a screenshot attachment, stored as a standalone file (never inside
+ * reports.jsonl — it's append-only) at `<...>/report-attachments/<id>.png|jpg`. This script
+ * lists that sibling directory (over SSH, or next to the --local file) and flags each report
+ * that has one; `--download-attachments <dir>` copies those files locally.
+ *
  * Filters (composable):
  *   --type bug|improvement|tweak   only this report type
  *   --since YYYY-MM-DD             only reports created on/after this date (by createdAt)
  *   --user <substring>             only reports whose email contains this (case-insensitive)
  *   --json                         print the filtered array as JSON instead of the text view
+ *   --download-attachments <dir>   copy the attachments of the (filtered) reports into <dir>
  *
  * Usage:
  *   bun scripts/fetchReports.ts
  *   bun scripts/fetchReports.ts --local scripts/fixtures/reports.jsonl
  *   bun scripts/fetchReports.ts --type bug --since 2026-09-01
  *   bun scripts/fetchReports.ts --user dev@localhost --json
+ *   bun scripts/fetchReports.ts --download-attachments ./downloaded-attachments
  */
-import { readFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const REMOTE_HOST = "VMHOME";
 const REMOTE_PATH = "/opt/docker/projects/fmproject/persistent/reports.jsonl";
+const REMOTE_ATTACHMENTS_DIR = "/opt/docker/projects/fmproject/persistent/report-attachments";
 
 interface ReportRecord {
   id: string;
@@ -96,6 +105,97 @@ function fetchRemoteContents(): string {
   return proc.stdout.toString("utf8");
 }
 
+// The exact shape the server writes: `<uuid>.png` or `<uuid>.jpg` (src/backend/reports.ts).
+// Anything else found in the attachments directory is ignored, and never used to build a path.
+const ATTACHMENT_FILENAME_RE =
+  /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(png|jpg)$/i;
+
+/** Filenames present under the remote attachments directory — [] if it doesn't exist yet. */
+function listRemoteAttachmentFiles(): string[] {
+  const proc = Bun.spawnSync(
+    ["ssh", REMOTE_HOST, `ls -1 ${REMOTE_ATTACHMENTS_DIR} 2>/dev/null`],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  if (proc.exitCode !== 0) return [];
+  return proc.stdout
+    .toString("utf8")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** The local sibling `report-attachments` directory next to a --local reports.jsonl path. */
+function localAttachmentsDir(localReportsPath: string): string {
+  return join(dirname(localReportsPath), "report-attachments");
+}
+
+function listLocalAttachmentFiles(localReportsPath: string): string[] {
+  try {
+    return readdirSync(localAttachmentsDir(localReportsPath));
+  } catch {
+    return [];
+  }
+}
+
+/** report id (lowercased) -> its attachment's filename, for every filename that looks like one
+ *  the server actually writes. */
+function buildAttachmentMap(filenames: string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const name of filenames) {
+    const m = ATTACHMENT_FILENAME_RE.exec(name);
+    if (m) map.set(m[1]!.toLowerCase(), name);
+  }
+  return map;
+}
+
+/** Downloads one attachment's bytes over SSH. `filename` must already have passed
+ *  ATTACHMENT_FILENAME_RE (via buildAttachmentMap) before it's ever interpolated into a
+ *  remote shell command. */
+function fetchRemoteAttachmentBytes(filename: string): Buffer | null {
+  if (!ATTACHMENT_FILENAME_RE.test(filename)) return null;
+  const proc = Bun.spawnSync(["ssh", REMOTE_HOST, `cat ${REMOTE_ATTACHMENTS_DIR}/${filename}`], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  if (proc.exitCode !== 0) return null;
+  return Buffer.from(proc.stdout);
+}
+
+/** Copies the attachments of the given reports into `destDir` — over SSH when not --local,
+ *  from the local sibling directory otherwise. Returns how many were copied. */
+function downloadAttachments(
+  records: ReportRecord[],
+  attachments: Map<string, string>,
+  destDir: string,
+  localReportsPath: string | undefined,
+): number {
+  mkdirSync(destDir, { recursive: true });
+  let copied = 0;
+  for (const r of records) {
+    const filename = attachments.get(r.id.toLowerCase());
+    if (!filename) continue;
+    const bytes = localReportsPath
+      ? safeReadLocalAttachment(localAttachmentsDir(localReportsPath), filename)
+      : fetchRemoteAttachmentBytes(filename);
+    if (!bytes) {
+      console.error(`Could not read attachment ${filename} for report ${r.id}, skipping.`);
+      continue;
+    }
+    writeFileSync(join(destDir, filename), bytes);
+    copied++;
+  }
+  return copied;
+}
+
+function safeReadLocalAttachment(dir: string, filename: string): Buffer | null {
+  if (!ATTACHMENT_FILENAME_RE.test(filename)) return null;
+  try {
+    return readFileSync(join(dir, filename));
+  } catch {
+    return null;
+  }
+}
+
 function parseJsonl(contents: string): ReportRecord[] {
   const records: ReportRecord[] = [];
   const lines = contents.split("\n");
@@ -111,13 +211,16 @@ function parseJsonl(contents: string): ReportRecord[] {
   return records;
 }
 
-function formatReport(r: ReportRecord): string {
+function formatReport(r: ReportRecord, attachmentFilename: string | undefined): string {
   const lines = [
     `${r.createdAt}  [${r.type}]  ${r.email}`,
     `  id: ${r.id}`,
     `  page: ${r.page}${r.gameDate ? `  game date: ${r.gameDate}` : ""}${r.saveId ? `  save: ${r.saveId}` : ""}`,
     `  ${r.description.replace(/\n/g, "\n  ")}`,
   ];
+  if (attachmentFilename) {
+    lines.push(`  [imagem anexada: ${sanitize(attachmentFilename)}]`);
+  }
   return lines.join("\n");
 }
 
@@ -129,6 +232,7 @@ function main() {
   const sinceFilter = argValue(args, "--since");
   const userFilter = argValue(args, "--user")?.toLowerCase();
   const asJson = hasFlag(args, "--json");
+  const downloadDir = argValue(args, "--download-attachments");
 
   if (typeFilter && !["bug", "improvement", "tweak"].includes(typeFilter)) {
     console.error(`--type must be one of bug, improvement, tweak (got "${typeFilter}")`);
@@ -142,6 +246,9 @@ function main() {
   const contents = localPath ? readFileSync(localPath, "utf8") : fetchRemoteContents();
   let records = parseJsonl(contents);
 
+  const attachmentFiles = localPath ? listLocalAttachmentFiles(localPath) : listRemoteAttachmentFiles();
+  const attachments = buildAttachmentMap(attachmentFiles);
+
   if (typeFilter) records = records.filter((r) => r.type === typeFilter);
   if (sinceFilter) {
     const sinceMs = Date.parse(sinceFilter);
@@ -152,8 +259,17 @@ function main() {
   records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   records = records.map(sanitizeRecord);
 
+  if (downloadDir) {
+    const copied = downloadAttachments(records, attachments, downloadDir, localPath);
+    console.log(`Downloaded ${copied} attachment(s) into ${downloadDir}.`);
+  }
+
   if (asJson) {
-    console.log(JSON.stringify(records, null, 2));
+    const withAttachment = records.map((r) => ({
+      ...r,
+      attachment: attachments.get(r.id.toLowerCase()) ?? null,
+    }));
+    console.log(JSON.stringify(withAttachment, null, 2));
     return;
   }
 
@@ -164,7 +280,7 @@ function main() {
 
   console.log(`${records.length} report(s):\n`);
   for (const r of records) {
-    console.log(formatReport(r));
+    console.log(formatReport(r, attachments.get(r.id.toLowerCase())));
     console.log("");
   }
 }

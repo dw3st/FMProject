@@ -7,23 +7,6 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
-const DECISION_BADGE: Record<PlayerDecision["type"], { label: string; className: string }> = {
-  carry:                { label: "CARRY",   className: "text-emerald-400 border-emerald-400" },
-  shoot:                { label: "SHOOT",   className: "text-red-400 border-red-400" },
-  pass:                 { label: "PASS",    className: "text-blue-400 border-blue-400" },
-  through_ball:         { label: "TB",      className: "text-purple-400 border-purple-400" },
-  dribble:              { label: "DRIBBLE", className: "text-fuchsia-400 border-fuchsia-400" },
-  tackle:               { label: "TACKLE",  className: "text-orange-400 border-orange-400" },
-  press:                { label: "PRESS",   className: "text-yellow-400 border-yellow-400" },
-  support_run:          { label: "RUN",     className: "text-purple-400 border-purple-400" },
-  create_space:         { label: "SPACE",   className: "text-pink-400 border-pink-400" },
-  chase_loose_ball:     { label: "CHASE",   className: "text-amber-400 border-amber-400" },
-  hold_shape:           { label: "SHAPE",   className: "text-blue-400 border-blue-400" },
-  track_mark:           { label: "MARK",    className: "text-cyan-400 border-cyan-400" },
-  step_into_carry_lane: { label: "STEP",    className: "text-red-400 border-red-400" },
-  idle:                 { label: "IDLE",    className: "text-muted-foreground/20 border-muted-foreground/20" },
-};
-
 function energyBarColor(energy: number): string {
   if (energy >= 60) return "bg-emerald-500/90";
   if (energy >= 35) return "bg-amber-500/90";
@@ -41,24 +24,6 @@ function EnergyReadout({ energy }: { energy: number }) {
       <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
     </div>
   );
-}
-
-function actionLabel(
-  decision: PlayerDecision | undefined,
-  isHolder: boolean,
-  isPassFrom: boolean,
-  isPassTo: boolean,
-): { label: string; className: string } {
-  if (decision && DECISION_BADGE[decision.type]) {
-    return {
-      label: DECISION_BADGE[decision.type]!.label,
-      className: DECISION_BADGE[decision.type]!.className,
-    };
-  }
-  if (isHolder) return { label: "BALL", className: "text-amber-400 border-amber-400/70" };
-  if (isPassFrom) return { label: "FROM", className: "text-blue-400 border-blue-400/70" };
-  if (isPassTo) return { label: "TO", className: "text-blue-400 border-blue-400/70" };
-  return { label: "IDLE", className: "text-muted-foreground/70 border-border/60" };
 }
 
 function PlayerRow({
@@ -92,8 +57,6 @@ function PlayerRow({
   const color = accentColor;
   const highlighted = isHolder || isPassFrom || isPassTo;
   const isLeft = side === "left";
-  const act = actionLabel(decision, isHolder, isPassFrom, isPassTo);
-
   return (
     <div
       onClick={() => onSelect?.(player.id)}
@@ -122,10 +85,7 @@ function PlayerRow({
         )}
       </div>
 
-      <div className={`flex items-center w-full gap-2 ${isLeft ? "justify-between flex-row" : "justify-between flex-row-reverse"}`}>
-        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border shrink-0 ${act.className}`}>
-          {act.label}
-        </span>
+      <div className={`flex items-center w-full gap-2 ${isLeft ? "justify-end flex-row" : "justify-end flex-row-reverse"}`}>
         <EnergyReadout energy={player.energy} />
       </div>
     </div>
