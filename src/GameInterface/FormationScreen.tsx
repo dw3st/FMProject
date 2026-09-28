@@ -49,7 +49,7 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
 
 export function FormationScreen() {
   const { t } = useTranslation();
-  const { session, squad, loading: saveLoading, mergeSession } = useGameSave();
+  const { session, squad, loading: saveLoading, mergeSession, currentDate } = useGameSave();
   const [formations, setFormations] = useState<FormationOption[]>([]);
   const [slots, setSlots] = useState<FormationSlot[]>([]);
   const [lineup, setLineup] = useState<string[]>([]);
@@ -87,8 +87,8 @@ export function FormationScreen() {
   // Auto-fill lineup when no saved lineup exists and both slots and squad are available.
   useEffect(() => {
     if (!lineupReady || !squad || slots.length === 0 || lineup.length > 0) return;
-    setLineup(autoFillLineupWithFitness(slots, squad.players));
-  }, [lineupReady, slots, squad, lineup.length]);
+    setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
+  }, [lineupReady, slots, squad, lineup.length, currentDate]);
 
   useEffect(() => {
     fetch("/api/formations")
@@ -143,7 +143,7 @@ export function FormationScreen() {
 
   function handleAutoFill() {
     if (!squad || slots.length === 0) return;
-    setLineup(autoFillLineupWithFitness(slots, squad.players));
+    setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
     setSelectedSlotIdx(null);
   }
 

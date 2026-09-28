@@ -19,7 +19,7 @@ import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
-import { clearHealed, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
+import { clearHealed, isInjured, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
 
 /**
  * An in-match injury after `player.injury` has been written (`returnDate` computed) — Task 3
@@ -363,9 +363,17 @@ export function buildMatchEvent(
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
+  // The engine's own candidate pool for bench/substitutes (`buildTeam` in `gameState.ts`) is built
+  // from whatever squad is handed to `simulateMatch` — starters injured on the fixture date are
+  // already excluded upstream (`computeMatchSimulationLineups`/`resolveUserLineup`), but the BENCH
+  // pool otherwise still comes straight from the full roster. Filter injured players out here too,
+  // so an injured player is never subbed on mid-match. `homeSquad`/`awaySquad` themselves (used
+  // below for name/roster-id mapping and post-match writes) stay the full, unfiltered roster.
+  const eligibleHome = { ...homeSquad, players: homeSquad.players.filter((p) => !isInjured(p, fixture.date)) };
+  const eligibleAway = { ...awaySquad, players: awaySquad.players.filter((p) => !isInjured(p, fixture.date)) };
   const result = simulateMatch(
-    homeSquad,
-    awaySquad,
+    eligibleHome,
+    eligibleAway,
     sim.homeFormation,
     sim.awayFormation,
     sim.homeLineup,

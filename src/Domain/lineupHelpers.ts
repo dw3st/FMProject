@@ -5,9 +5,21 @@ import { Player } from "@/Domain/Player";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
+import { isInjured } from "@/Domain/injury/injury";
 
 /** Same default as `ensureSeasonLog`/`emptySeasonLog` — a player never touched by the fitness model yet. */
 const DEFAULT_FITNESS = emptySeasonLog().fitness;
+
+/**
+ * Filters `players` down to those eligible to play on `date` — i.e. not currently injured. When
+ * `date` is omitted the pool is returned unchanged: some callers (continental club-strength
+ * ratings, `/test` and `/lab` tooling) deliberately compare squads on their own terms, independent
+ * of any specific matchday, and must not have injuries silently filtered in.
+ */
+function eligiblePool(players: RosterPlayer[], date: string | undefined): RosterPlayer[] {
+  if (!date) return players;
+  return players.filter((p) => !isInjured(p, date));
+}
 
 /**
  * Auto-fills a lineup from available players for a given set of formation slots.
@@ -17,8 +29,16 @@ const DEFAULT_FITNESS = emptySeasonLog().fitness;
  *  2. Any remaining unassigned player, scored by the slot's weighted score.
  *
  * Exported separately so non-player teams (AI squads) can reuse the same logic.
+ *
+ * `date`, when given, excludes any player injured on that date from the whole candidate pool —
+ * see `eligiblePool`. Omit it for context-free squad comparisons (see `eligiblePool`'s doc).
  */
-export function autoFillLineup(slots: FormationSlot[], players: RosterPlayer[]): string[] {
+export function autoFillLineup(
+  slots: FormationSlot[],
+  players: RosterPlayer[],
+  date?: string,
+): string[] {
+  players = eligiblePool(players, date);
   const used = new Set<string>();
   const result: string[] = new Array(slots.length).fill("");
 
@@ -126,8 +146,16 @@ function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
  * keeper mid-week is a bigger call than resting an outfield player), and even then only among bench
  * keepers whose own fitness is at least `GK_BENCH_FITNESS_FLOOR` (a barely-fresher backup keeper
  * isn't worth the disruption).
+ *
+ * `date`, when given, excludes any player injured on that date from the whole candidate pool
+ * (starters and bench alike) before any of the above runs — see `eligiblePool`.
  */
-export function autoFillLineupWithFitness(slots: FormationSlot[], players: RosterPlayer[]): string[] {
+export function autoFillLineupWithFitness(
+  slots: FormationSlot[],
+  players: RosterPlayer[],
+  date?: string,
+): string[] {
+  players = eligiblePool(players, date);
   const plain = autoFillLineup(slots, players);
   const byId = new Map(players.map((p) => [p.id, p]));
   const usedIds = new Set(plain.filter((id) => id));
@@ -228,4 +256,66 @@ export function slotRoleFitRank(player: RosterPlayer, slotRole: string): number 
   if (player.positions.includes(slotRole)) return 2;
   if (getMainRole(player.positions[0] ?? "CM") === getMainRole(slotRole)) return 1;
   return 0;
+}
+
+/** One starter swapped out because they were injured on the match date. */
+export interface InjuredReplacement {
+  out: string;
+  in: string;
+}
+
+/**
+ * Takes a slot-aligned lineup (e.g. from `buildSlotAlignedLineup`, index i = formation slot i) and
+ * swaps out any player injured on `date` for the best eligible bench player — same-role/main-role
+ * candidates ranked by `fitnessAdjustedValue` first, falling back to any remaining eligible player
+ * if none fit the role. A slot whose player is injured but no eligible replacement exists (squad
+ * too thin) is left as-is — better to field an injured player than an empty slot.
+ *
+ * Used for a HUMAN club's saved lineup, which (unlike AI auto-fill) can go stale between the day it
+ * was saved and the day the fixture is actually played — see `resolveUserLineup`
+ * (`matchSimulationLineups.ts`).
+ */
+export function replaceInjuredStarters(
+  slots: FormationSlot[],
+  lineupIds: string[],
+  players: RosterPlayer[],
+  date: string,
+): { lineup: string[]; replaced: InjuredReplacement[] } {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const used = new Set(lineupIds.filter((id): id is string => Boolean(id)));
+  const result = [...lineupIds];
+  const replaced: InjuredReplacement[] = [];
+
+  for (let i = 0; i < slots.length && i < lineupIds.length; i++) {
+    const starterId = lineupIds[i];
+    if (!starterId) continue;
+    const starter = byId.get(starterId);
+    if (!starter || !isInjured(starter, date)) continue;
+
+    const role = slots[i]!.role;
+    const roleMain = getMainRole(role);
+    const eligible = players.filter((p) => !used.has(p.id) && !isInjured(p, date));
+    const sameRole = eligible.filter(
+      (p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain,
+    );
+    const pool = sameRole.length > 0 ? sameRole : eligible;
+
+    let best: RosterPlayer | null = null;
+    let bestValue = -Infinity;
+    for (const candidate of pool) {
+      const value = fitnessAdjustedValue(candidate, role);
+      if (value > bestValue) {
+        bestValue = value;
+        best = candidate;
+      }
+    }
+    if (!best) continue;
+
+    used.delete(starterId);
+    used.add(best.id);
+    result[i] = best.id;
+    replaced.push({ out: starterId, in: best.id });
+  }
+
+  return { lineup: result, replaced };
 }
