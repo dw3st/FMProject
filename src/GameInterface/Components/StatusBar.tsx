@@ -1,4 +1,4 @@
-import { DollarSign, Newspaper, Users, Calendar, Settings } from "lucide-react";
+import { DollarSign, Newspaper, Users, Calendar, Settings, Sparkles } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -22,9 +22,11 @@ function formatSimDate(dateStr: string): string {
 export function StatusBar({
   onOpenInbox,
   onOpenSettings,
+  onOpenChangelog,
 }: {
   onOpenInbox: () => void;
   onOpenSettings: () => void;
+  onOpenChangelog: () => void;
 }) {
   const { t } = useTranslation();
   const { session, squad, currentDate, unreadInboxCount } = useGameSave();
@@ -58,6 +60,15 @@ export function StatusBar({
             <Calendar className="w-4 h-4 shrink-0" />
             {dateLabel}
           </div>
+          <button
+            type="button"
+            onClick={onOpenChangelog}
+            title={t("nav.changelog")}
+            aria-label={t("nav.changelog")}
+            className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer border-0 bg-transparent"
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
           <button
             type="button"
             onClick={onOpenSettings}

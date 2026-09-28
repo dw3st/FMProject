@@ -60,7 +60,7 @@
     "signedInAs": "Signed in as",
     "signOut": "Sign out",
     "useADifferentEmail": "Use a different email",
-    "version": "v0.1.0 ALPHA",
+    "version": "v{{version}}",
     "loadingLeagues": "Loading leagues...",
     "headlessEngine": "Headless engine · no rendering · same rules",
     "simulation": "Simulation",
@@ -462,7 +462,8 @@
     "settings": "Settings",
     "training": "Training",
     "restDay": "Rest Day",
-    "vsOpponent": "vs {{opponent}}"
+    "vsOpponent": "vs {{opponent}}",
+    "changelog": "What's new"
   },
   "settings": {
     "title": "Settings",
@@ -492,6 +493,13 @@
     "error403": "You don't have access to send reports.",
     "error413": "Your report is too long. Please shorten the description and try again.",
     "error429": "You've sent a lot of reports recently. Please wait a bit and try again."
+  },
+  "changelog": {
+    "title": "What's new",
+    "subtitle": "Recent updates to the game",
+    "version": "Version {{version}}",
+    "fixes": "Fixes",
+    "notice": "New: v{{version}}"
   },
   "status": {
     "budget": "Budget",

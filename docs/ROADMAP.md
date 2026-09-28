@@ -20,6 +20,9 @@ Referência única do que está feito, do que vem a seguir e em que ordem. Atual
 Mudou o mundo (importadores, elencos, calendário)? Regenerar a cadeia inteira — ver
 `.claude/rules/data/espn-import.md`.
 
+Toda etapa concluída do roadmap entra no changelog do jogo ("Novidades") antes do merge — ver
+`.claude/rules/changelog.md`.
+
 ---
 
 ## Onde estamos (em produção)
