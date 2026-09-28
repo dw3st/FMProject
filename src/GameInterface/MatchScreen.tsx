@@ -123,6 +123,12 @@ export function MatchScreen() {
     team: TeamId;
     score: { A: number; B: number };
   } | null>(null);
+  /** Brief on-screen notice for an in-match injury (`docs/superpowers/specs/2026-09-28-injuries-design.md`). */
+  const [injuryNotice, setInjuryNotice] = useState<{
+    team: TeamId;
+    playerName: string;
+    severity: "light" | "medium" | "severe";
+  } | null>(null);
   const [matchOverlay, setMatchOverlay] = useState<"halfTime" | "extraTime" | "matchEnd" | null>(null);
   /**
    * 0..1 elapsed fraction driving the full-time overlay's progress bar. Unlike half-time /
@@ -166,6 +172,7 @@ export function MatchScreen() {
     return () => window.removeEventListener("resize", measurePitch);
   }, [measurePitch]);
   const goalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const injuryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matchEndFinalizeRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
@@ -313,6 +320,17 @@ export function MatchScreen() {
       if (goalTimerRef.current) clearTimeout(goalTimerRef.current);
       setGoalFlash(data);
       goalTimerRef.current = setTimeout(() => setGoalFlash(null), 2800);
+    });
+  }, []);
+
+  useEffect(() => {
+    return gameBus.on("injury", (data) => {
+      // The engine may have already removed/substituted the player from `gameState.players` by
+      // the time this fires (same tick), so look the name up from the still-old state ref.
+      const player = gameStateRef.current?.players.find((p) => p.id === data.playerId);
+      if (injuryTimerRef.current) clearTimeout(injuryTimerRef.current);
+      setInjuryNotice({ team: data.team, playerName: player?.name ?? "?", severity: data.severity });
+      injuryTimerRef.current = setTimeout(() => setInjuryNotice(null), 4000);
     });
   }, []);
 
@@ -538,6 +556,14 @@ export function MatchScreen() {
         kitColorA={matchKitColors.teamA}
         kitColorB={matchKitColors.teamB}
       />
+      {injuryNotice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border border-destructive/40 rounded-lg px-4 py-2 shadow-lg text-sm text-foreground">
+          {t("match.injuryNotice", {
+            player: injuryNotice.playerName,
+            severity: t(`match.injurySeverity.${injuryNotice.severity}`),
+          })}
+        </div>
+      )}
       <MatchOverlay
         kind={matchOverlay}
         score={score}

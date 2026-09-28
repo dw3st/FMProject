@@ -788,6 +788,12 @@
       "attacking": "Ataque total",
       "balanced": "Equilibrado",
       "defensive": "Defesa"
+    },
+    "injuryNotice": "{{player}} se lesionou ({{severity}}) e foi substituído.",
+    "injurySeverity": {
+      "light": "leve",
+      "medium": "média",
+      "severe": "grave"
     }
   },
   "broadcast": {

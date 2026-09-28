@@ -241,11 +241,26 @@ export interface PendingSub {
   /** Engine player ID to bring on from the bench. */
   inId: number;
   /**
-   * Set to `'fatigue'` only when this sub was recommended by `evaluateAiSubstitutions`
-   * (AiSubstitution.ts) — absent for a manual/tactical substitution. Threaded through to the
-   * `playerSubstituted` event so Statistics.ts can count fatigue-driven AI subs separately.
+   * Set to `'fatigue'` when this sub was recommended by `evaluateAiSubstitutions`
+   * (AiSubstitution.ts), or `'injury'` when it was forced by `forceInjurySubstitution`
+   * (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Na partida") — absent for a
+   * manual/tactical substitution. Threaded through to the `playerSubstituted` event so
+   * Statistics.ts can count these separately.
    */
-  reason?: 'fatigue';
+  reason?: 'fatigue' | 'injury';
+}
+
+/** One entry in the match injury log (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). */
+export interface InjuryRecord {
+  team: TeamId;
+  /** Engine player ID of the player who got injured. */
+  playerId: number;
+  playerName: string;
+  /** Roster player ID — links back to the squad JSON. */
+  playerRosterId: string;
+  severity: import('@/Domain/injury/injury').InjurySeverity;
+  /** Game-minute when the injury occurred. */
+  matchMinute: number;
 }
 
 export interface GamePlayer {
@@ -312,6 +327,22 @@ export interface GamePlayer {
   justReceivedTicks: number;
   /** Short-term decision memory — prevents re-deciding every tick for stable decisions. */
   decisionMemory: import('./Domain/DecisionTree').DecisionMemory;
+  /**
+   * Age in years, at kickoff — fixed for the match. Used by the injury model
+   * (`Domain/injury/injury.ts` → `ageInjuryFactor`); not otherwise read by the engine.
+   */
+  age: number;
+  /**
+   * Roster `strength` attribute, 0..10 scale (NOT the normalised 0..1 `runtimeStats` value) —
+   * fixed for the match. Used by the injury model (`strengthInjuryFactor`).
+   */
+  strengthAttr: number;
+  /**
+   * `seasonLog.load` (minutes-equivalent fatigue) at kickoff — fixed for the match. Used by the
+   * injury model (`loadInjuryFactor`); distinct from `drainMultiplier`, which scales in-match
+   * energy cost from the same source value.
+   */
+  injuryLoad: number;
 }
 
 /**
@@ -408,6 +439,8 @@ export interface GameState {
   benchB: GamePlayer[];
   /** Completed substitutions this match, in chronological order. */
   substitutions: SubstitutionRecord[];
+  /** In-match injuries, in chronological order (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). */
+  injuries: InjuryRecord[];
   /** Substitutions remaining for Team A (starts at 5). */
   subsRemainingA: number;
   /** Substitutions remaining for Team B (starts at 5). */
