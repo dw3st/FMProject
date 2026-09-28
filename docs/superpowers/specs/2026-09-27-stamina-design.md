@@ -69,6 +69,20 @@ quickSim e pelo avanço do dia.
 - A redução dos atributos pela energia passa a ser contínua (recalcula quando a energia muda mais
   que um passo pequeno, ex. 1 ponto), sem os degraus de 10.
 - `stamina` continua reduzindo o custo e acelerando a recuperação do intervalo.
+- **Energia de início comprimida em torno da referência (2026-09-27, balanceamento "compress the
+  relative gap"):** o fôlego do dia (`seasonLog.fitness`) não vira a energia de início direto —
+  passa por `matchStartEnergy(fôlego) = FITNESS_REF + START_COMPRESSION × (fôlego − FITNESS_REF)`,
+  travado em 0..100 (`src/Domain/fitness/fitness.ts` + `fitnessConfig.ts`). `FITNESS_REF = 88` é o
+  fôlego típico de um dia de jogo sem congestionamento, então uma partida com os dois lados no
+  fôlego de referência começa exatamente igual a antes (`matchStartEnergy(88) === 88` sempre,
+  qualquer que seja `START_COMPRESSION`). Uma diferença de fôlego entre dois times fica menor no
+  apito inicial — ex. 90 × 70 vira 89,2 × 79,2 com `START_COMPRESSION = 0,4` — mas o desgaste em
+  campo e a curva de fadiga continuam exatamente como eram; só o ponto de partida muda. O fôlego
+  pós-jogo continua sendo simplesmente a energia final (`postMatchFitness`), calculada a partir
+  desse início comprimido — o motor drena normalmente a partir dali. Ver
+  `.claude/rules/non-player-games.md` → "Fadiga" para a calibração de `START_COMPRESSION` e o
+  porquê dessa abordagem (tentativas de suavizar a curva de fadiga em si foram revertidas — ver a
+  mesma seção).
 
 ### Motor × quickSim
 
