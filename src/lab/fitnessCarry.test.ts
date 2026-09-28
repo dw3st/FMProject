@@ -73,6 +73,30 @@ describe("fullEngineAppearances", () => {
     expect(map.get("p1")).toEqual({ endEnergy: 70, minutes: 30 });
   });
 
+  test("a player subbed on then subbed off again gets the minutes they were actually on the pitch, not their sub-off minute", () => {
+    // p0 starts, subbed off at 45' for p1; p1 is subbed off at 75' for p2, who finishes the match.
+    const players = [gamePlayer("p2", "A", 80)]; // only p2 is still on the pitch at full time
+    const substitutions: SubstitutionRecord[] = [
+      {
+        team: "A",
+        playerOutId: 1, playerOutName: "p0", playerOutRosterId: "p0", playerOutEnergy: 60,
+        playerInId: 2, playerInName: "p1", playerInRosterId: "p1",
+        matchMinute: 45,
+      },
+      {
+        team: "A",
+        playerOutId: 2, playerOutName: "p1", playerOutRosterId: "p1", playerOutEnergy: 50,
+        playerInId: 3, playerInName: "p2", playerInRosterId: "p2",
+        matchMinute: 75,
+      },
+    ];
+    const map = fullEngineAppearances(players, substitutions, "A", false);
+    expect(map.get("p0")).toEqual({ endEnergy: 60, minutes: 45 });
+    // p1 was on the pitch from 45' to 75' — 30 minutes, NOT their sub-off matchMinute (75).
+    expect(map.get("p1")).toEqual({ endEnergy: 50, minutes: 30 });
+    expect(map.get("p2")).toEqual({ endEnergy: 80, minutes: 15 });
+  });
+
   test("other team's substitutions are ignored", () => {
     const substitutions: SubstitutionRecord[] = [{
       team: "B",

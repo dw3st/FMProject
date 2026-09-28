@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   addMatchLoad,
   addTrainingLoad,
+  applyMatchFitness,
   decayLoad,
   drainMultiplier,
   matchStartEnergy,
@@ -166,5 +167,40 @@ describe("matchStartEnergy", () => {
       expect(v).toBeGreaterThan(prev);
       prev = v;
     }
+  });
+});
+
+describe("applyMatchFitness", () => {
+  test("appeared: fitness becomes postMatchFitness(endEnergy), load gets minutes added on top of decay", () => {
+    const log = { fitness: 90, load: 40 };
+    const result = applyMatchFitness(log, { age: 25, stamina: 5 }, { endEnergy: 65, minutes: 90 });
+    expect(result.fitness).toBe(postMatchFitness(65));
+    expect(result.load).toBe(addMatchLoad(decayLoad(40), 90));
+  });
+
+  test("appeared with no persisted load: load starts at 0 before decay", () => {
+    const log = { fitness: 90 };
+    const result = applyMatchFitness(log, { age: 25, stamina: 5 }, { endEnergy: 60, minutes: 90 });
+    expect(result.load).toBe(addMatchLoad(decayLoad(0), 90));
+  });
+
+  test("appeared with missing/non-finite endEnergy falls back to a small random decrement, never below 0", () => {
+    const log = { fitness: 5, load: 0 };
+    const result = applyMatchFitness(log, { age: 25, stamina: 5 }, { endEnergy: undefined, minutes: 90 });
+    expect(result.fitness).toBeGreaterThanOrEqual(0);
+    expect(result.fitness).toBeLessThan(5);
+  });
+
+  test("did not appear: recovers via recoverDay (rounded to 1 decimal) and decays load, same as a rest day", () => {
+    const log = { fitness: 50, load: 20 };
+    const result = applyMatchFitness(log, { age: 25, stamina: 7 }, undefined);
+    const expectedFitness = +recoverDay(50, { age: 25, load: 20, stamina: 7 }).toFixed(1);
+    expect(result.fitness).toBe(expectedFitness);
+    expect(result.load).toBe(decayLoad(20));
+  });
+
+  test("did not appear: fitness never exceeds 100", () => {
+    const result = applyMatchFitness({ fitness: 100, load: 0 }, { age: 20, stamina: 10 }, undefined);
+    expect(result.fitness).toBe(100);
   });
 });
