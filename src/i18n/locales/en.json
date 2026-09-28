@@ -256,27 +256,47 @@
       "former-player": {
         "name": "Former Player",
         "description": "A celebrated career on the pitch has given you tactical insight and respect from players. You know the game from the inside.",
-        "bonuses": ["High initial reputation", "Better player relationships", "Tactical knowledge"]
+        "bonuses": [
+          "High initial reputation",
+          "Better player relationships",
+          "Tactical knowledge"
+        ]
       },
       "young-prodigy": {
         "name": "Young Prodigy",
         "description": "Fresh out of coaching school with modern ideas and innovative tactics. You have everything to prove.",
-        "bonuses": ["Modern training methods", "Youth development bonus", "Faster learning"]
+        "bonuses": [
+          "Modern training methods",
+          "Youth development bonus",
+          "Faster learning"
+        ]
       },
       "journeyman": {
         "name": "Journeyman Manager",
         "description": "Years of experience across multiple clubs and divisions. You've seen it all and adapted to every situation.",
-        "bonuses": ["Versatile tactics", "Experience in adversity", "Financial management"]
+        "bonuses": [
+          "Versatile tactics",
+          "Experience in adversity",
+          "Financial management"
+        ]
       },
       "club-legend": {
         "name": "Club Legend",
         "description": "You rose through the ranks at your beloved club, from youth team to first team coach. This is your destiny.",
-        "bonuses": ["Maximum board trust", "Fan support", "Club knowledge"]
+        "bonuses": [
+          "Maximum board trust",
+          "Fan support",
+          "Club knowledge"
+        ]
       },
       "analyst": {
         "name": "Data Analyst",
         "description": "Numbers don't lie. Your analytical approach to the game has revolutionized how you build and manage teams.",
-        "bonuses": ["Advanced scouting", "Statistical insights", "Transfer market advantage"]
+        "bonuses": [
+          "Advanced scouting",
+          "Statistical insights",
+          "Transfer market advantage"
+        ]
       }
     },
     "nationalities": {
@@ -333,7 +353,6 @@
     },
     "genericHeadline": "In {{country}}, every match writes a new chapter in the story of the game.",
     "division": "Division",
-    "territoryProfile": "Territory Profile",
     "teams": "Teams",
     "divisions": "Divisions",
     "theSpirit": "The Spirit",
@@ -369,7 +388,6 @@
     "reviewSelection": "Review your selections before starting your managerial journey.",
     "database": "Database",
     "manager": "Manager",
-    "startDate": "Start Date",
     "leagueSeason": "League Season",
     "currently": "Currently Selecting",
     "readyToBegin": "Ready to",
@@ -644,6 +662,12 @@
       "4-3-3": "Three forwards up top with midfield control and defensive stability.",
       "4-4-2": "Paired strikers backed by a balanced flat four across midfield.",
       "3-5-2": "Five midfielders dominate possession with wing-backs providing width."
+    },
+    "injuredUntil": "Out until {{date}}",
+    "injurySeverity": {
+      "light": "Light injury",
+      "medium": "Medium injury",
+      "severe": "Severe injury"
     }
   },
   "attributes": {
@@ -734,6 +758,7 @@
     "penalties": "Penalties",
     "avgEndEnergy": "Avg end energy",
     "fatigueSubs": "Fatigue subs",
+    "injuries": "Injuries",
     "headers": {
       "G": "Goals",
       "SH": "Shots",
@@ -1336,7 +1361,12 @@
       "goalkeeping": "Goalkeeping",
       "rightFoot": "Right",
       "leftFoot": "Left",
-      "yearsOld": "years"
+      "yearsOld": "years",
+      "injuredDays": "Out {{days}}d",
+      "injuredToday": "Returns today",
+      "sevLight": "Light injury",
+      "sevMedium": "Medium injury",
+      "sevSevere": "Severe injury"
     },
     "squadTable": {
       "noSquadData": "No squad data available.",
@@ -1360,7 +1390,12 @@
       "top": "Top",
       "fit": "Fit",
       "injured": "Injured",
-      "suspended": "Suspended"
+      "suspended": "Suspended",
+      "injuredDays": "Injured ({{severity}}) — {{days}}d left",
+      "injuredToday": "Injured ({{severity}}) — returns today",
+      "sevLight": "light",
+      "sevMedium": "medium",
+      "sevSevere": "severe"
     },
     "assistsLabel": "assists",
     "clubSidebar": {
@@ -1395,7 +1430,12 @@
       "players": "players",
       "fit": "Fit",
       "injured": "Injured",
-      "suspended": "Suspended"
+      "suspended": "Suspended",
+      "injuredDays": "Injured ({{severity}}) — {{days}}d left",
+      "injuredToday": "Injured ({{severity}}) — returns today",
+      "sevLight": "light",
+      "sevMedium": "medium",
+      "sevSevere": "severe"
     }
   },
   "squadScreen": {
@@ -1440,7 +1480,8 @@
     "rating": "rating",
     "cancelSelection": "Cancel selection",
     "change": "change",
-    "lowFitnessWarning": "Starting with low fitness: {{names}}"
+    "lowFitnessWarning": "Starting with low fitness: {{names}}",
+    "injuredReplaced": "{{out}} injured, replaced by {{in}}"
   },
   "matchResult": {
     "title": "Match result",

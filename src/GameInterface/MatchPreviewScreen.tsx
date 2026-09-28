@@ -1057,6 +1057,22 @@ export function MatchPreviewScreen() {
         </div>
       )}
 
+      {/* Injured-starter replacements — players the saved lineup wanted who were swapped out for being injured */}
+      {!!matchSetup?.injuredReplaced && matchSetup.injuredReplaced.length > 0 && (
+        <div className="w-full max-w-5xl shrink-0">
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-destructive mt-0.5 shrink-0" />
+            <div className="text-xs text-destructive m-0 space-y-0.5">
+              {matchSetup.injuredReplaced.map((swap, i) => (
+                <p key={i} className="m-0">
+                  {t("matchPreview.injuredReplaced", { out: swap.out, in: swap.in })}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
         <a

@@ -177,6 +177,14 @@ function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }
         {" – "}
         <span className="text-foreground font-bold tabular-nums">{teamB.fatigueSubstitutions}</span>
       </span>
+      {(teamA.injuries > 0 || teamB.injuries > 0) && (
+        <span>
+          {t("stats.injuries")}:{" "}
+          <span className="text-destructive font-bold tabular-nums">{teamA.injuries}</span>
+          {" – "}
+          <span className="text-destructive font-bold tabular-nums">{teamB.injuries}</span>
+        </span>
+      )}
     </div>
   );
 }

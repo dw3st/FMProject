@@ -1,6 +1,19 @@
 import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
+import { isInjured } from "@/Domain/injury/injury";
+
+/** Capitalizes an injury severity string ("light" → "Light") for i18n key lookup. */
+export function capitalizeSeverity(severity: "light" | "medium" | "severe"): string {
+  return severity.charAt(0).toUpperCase() + severity.slice(1);
+}
+
+/** Whole days between two `YYYY-MM-DD` dates (`to − from`, may be negative). */
+function daysBetween(from: string, to: string): number {
+  const a = new Date(`${from}T00:00:00Z`).getTime();
+  const b = new Date(`${to}T00:00:00Z`).getTime();
+  return Math.round((b - a) / 86_400_000);
+}
 
 export type { StatusLevel };
 
@@ -44,6 +57,8 @@ export interface DisplayPlayer {
   valueMillions: number;
   /** Nationality label for lists / filters; may be inferred from club country. */
   nationality: string;
+  /** Active injury details, when `status === "injured"` and `currentDate` was supplied. */
+  injury?: { severity: "light" | "medium" | "severe"; returnDate: string; daysLeft: number };
 }
 
 /** Split `squadId` (e.g. `premier_league_arsenal`) using known league slugs (longest match first). */
@@ -64,7 +79,7 @@ export function resolveSquadIdFromLeagues(
 export function toDisplayPlayer(
   player: RosterPlayer,
   clubName: string,
-  options?: { squadCountry?: string | null; wageFactor?: number },
+  options?: { squadCountry?: string | null; wageFactor?: number; currentDate?: string },
 ): DisplayPlayer {
   const avg = Player.overallAvg(player);
   const domain = new Player(avg, player.age);
@@ -73,6 +88,15 @@ export function toDisplayPlayer(
     (player.nationality && String(player.nationality).trim()) ||
     (options?.squadCountry && String(options.squadCountry).trim()) ||
     "";
+  const injured = options?.currentDate ? isInjured(player, options.currentDate) : false;
+  const injuryInfo =
+    injured && player.injury && options?.currentDate
+      ? {
+          severity: player.injury.severity,
+          returnDate: player.injury.returnDate,
+          daysLeft: Math.max(0, daysBetween(options.currentDate, player.injury.returnDate)),
+        }
+      : undefined;
   return {
     id: player.id,
     squadId: player.squadId,
@@ -93,9 +117,10 @@ export function toDisplayPlayer(
     phase: Player.formToStatus(log?.recentRatings ?? []),
     training: log ? Player.trainingToStatus(log.trainingSessions) : (3 as StatusLevel),
     moral: log ? Player.moraleToStatus(log.morale) : (3 as StatusLevel),
-    status: "fit",
+    status: injured ? "injured" : "fit",
     club: clubName,
     stats: player.stats,
     preferredFoot: player.preferredFoot,
+    injury: injuryInfo,
   };
 }

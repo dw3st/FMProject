@@ -15,7 +15,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { createMatchState } from '@/GameEngine/Domain/gameState';
+import { createMatchState, forceInjurySubstitution } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
@@ -335,6 +335,19 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const f433 = formation433Json as Formation;
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
       return applyFatigue(base, 'A', 60, FITNESS.LOAD_HIGH);
+    },
+  },
+
+  {
+    id:          'injury-demo',
+    name:        '11v11 — Injury Demo',
+    description: 'Forces an injury on Team A\'s first outfield player at kickoff (via forceInjurySubstitution) so the forced substitution, the on-screen injury notice, and the "injury" debug log category can be observed immediately.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const target = base.players.find(p => p.team === 'A' && p.role !== 'GK');
+      if (!target) return base;
+      return forceInjurySubstitution(base, target, 1, 'severe');
     },
   },
 ];
