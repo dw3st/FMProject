@@ -180,10 +180,10 @@ describe("overallEnergyFactor", () => {
 
   test("at 60 energy sits between the physical (worst-hit) and tech (least-hit) single factors", () => {
     const factor = overallEnergyFactor(60);
-    // Reference values from the fatigue curve doc: physical ~96.0% stats, tech ~98.7% stats at 60 energy.
-    expect(factor).toBeGreaterThan(0.959);
-    expect(factor).toBeLessThan(0.988);
-    expect(factor).toBeCloseTo(0.9689, 3);
+    // Reference values from the fatigue curve doc: physical ~72% stats, tech ~90% stats at 60 energy.
+    expect(factor).toBeGreaterThan(0.72);
+    expect(factor).toBeLessThan(0.90);
+    expect(factor).toBeCloseTo(0.787, 2);
   });
 
   test("never negative even at 0 energy", () => {
