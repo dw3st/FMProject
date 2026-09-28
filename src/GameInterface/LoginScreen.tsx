@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Mail, KeyRound, ArrowLeft, ArrowRight } from "lucide-react";
+import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 
 type Stage = "email" | "code";
 
@@ -189,7 +190,7 @@ export function LoginScreen() {
         )}
 
         <div className="absolute bottom-6 text-xs text-muted-foreground/50 font-mono">
-          {t("common.version")}
+          {t("common.version", { version: CURRENT_VERSION })}
         </div>
       </div>
     </div>

@@ -6,8 +6,11 @@ import { FastForwardModal, SeasonNoticeModal } from "@/GameInterface/Components/
 import { Modal } from "@/GameInterface/Components/Modal";
 import { InboxScreen } from "@/GameInterface/InboxScreen";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
+import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { useAdvanceDay } from "@/GameInterface/useAdvanceDay";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
+import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import type { LeagueData } from "@/types/playerTypes";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -20,6 +23,13 @@ export function Layout({ children }: { children: ReactNode }) {
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+  const { showNotice: showChangelogNotice, markSeen: markChangelogSeen } = useChangelogNotice();
+
+  function openChangelog() {
+    setIsChangelogOpen(true);
+    markChangelogSeen();
+  }
 
   useEffect(() => {
     void fetch("/api/leagues")
@@ -37,6 +47,11 @@ export function Layout({ children }: { children: ReactNode }) {
         onFastForward={canFastForward ? handleFastForward : undefined}
         advancing={advancing}
         leagues={leagues}
+        changelogNotice={
+          showChangelogNotice
+            ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
+            : null
+        }
       />
 
       <main className="h-full pt-16 pb-14 overflow-y-auto flex flex-col">
@@ -46,6 +61,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <StatusBar
         onOpenInbox={() => setIsInboxOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenChangelog={openChangelog}
       />
 
       <Modal
@@ -62,6 +78,8 @@ export function Layout({ children }: { children: ReactNode }) {
         onClose={() => setIsSettingsOpen(false)}
         onExitToMenu={() => { window.location.href = "/start"; }}
       />
+
+      <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
 
       {dayLog && (
         <DaySummaryModal

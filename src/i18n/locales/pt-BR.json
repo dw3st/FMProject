@@ -60,7 +60,7 @@
     "signedInAs": "Conectado como",
     "signOut": "Desconectar",
     "useADifferentEmail": "Usar um email diferente",
-    "version": "v0.1.0 ALPHA",
+    "version": "v{{version}}",
     "loadingLeagues": "Carregando ligas...",
     "headlessEngine": "Engine sem interface · sem renderização · mesmas regras",
     "simulation": "Simulação",
@@ -462,7 +462,8 @@
     "settings": "Configurações",
     "training": "Treino",
     "restDay": "Dia de Folga",
-    "vsOpponent": "vs {{opponent}}"
+    "vsOpponent": "vs {{opponent}}",
+    "changelog": "Novidades"
   },
   "settings": {
     "title": "Configurações",
@@ -492,6 +493,13 @@
     "error403": "Você não tem acesso para enviar relatórios.",
     "error413": "Seu relatório está muito longo. Diminua a descrição e tente de novo.",
     "error429": "Você enviou muitos relatórios recentemente. Espere um pouco e tente de novo."
+  },
+  "changelog": {
+    "title": "Novidades",
+    "subtitle": "Atualizações recentes do jogo",
+    "version": "Versão {{version}}",
+    "fixes": "Correções",
+    "notice": "Novo: v{{version}}"
   },
   "status": {
     "budget": "Orçamento",
