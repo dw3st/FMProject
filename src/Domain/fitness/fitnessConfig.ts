@@ -38,4 +38,21 @@ export const FITNESS = {
 
   /** Recovery multiplier from the `stamina` attribute (0..10): base + span × stamina/10. */
   STAMINA_RECOVERY: { base: 0.9, span: 0.2 },
+
+  /**
+   * `matchStartEnergy` (2026-09-27 "compress the relative gap" balance pass — see `fitness.ts` and
+   * `.claude/rules/non-player-games.md` → "Fadiga"): a match's starting energy is `fitness`
+   * compressed around `FITNESS_REF` by `START_COMPRESSION`, not `fitness` itself. `FITNESS_REF` is
+   * the fitness of a normal, uncongested matchday (see "Fôlego num dia de jogo"), so an average
+   * week's match is completely unaffected (`matchStartEnergy(88) === 88` always, regardless of
+   * `START_COMPRESSION`) while a squad that is unusually fresh or unusually tired starts the match
+   * closer to that normal baseline than its raw fitness would suggest. This softens the impact of a
+   * START-fitness gap between two sides without touching the in-match fatigue curve or drain rate
+   * at all (both stay exactly as they were), which is what keeps a symmetric match at the reference
+   * fitness — the case the engine's own goal-volume calibration is built on — untouched by
+   * construction.
+   */
+  FITNESS_REF: 88,
+  /** 1 = no compression (matchStartEnergy = fitness); 0 = every match starts at FITNESS_REF. */
+  START_COMPRESSION: 0.4,
 } as const;

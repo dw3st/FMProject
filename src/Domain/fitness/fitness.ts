@@ -69,3 +69,19 @@ export function drainMultiplier(load: number): number {
 export function postMatchFitness(endEnergy: number): number {
   return Math.min(100, Math.max(0, Math.round(endEnergy)));
 }
+
+/**
+ * A match's STARTING energy from a player's persisted `fitness` — `fitness` compressed around
+ * `FITNESS.FITNESS_REF` by `FITNESS.START_COMPRESSION`. `matchStartEnergy(FITNESS_REF) ===
+ * FITNESS_REF` always, so a squad at the reference (normal-week) fitness starts the match at
+ * exactly its own fitness, unaffected by this — it's specifically a gap between two DIFFERENT
+ * fitness levels that gets pulled toward the reference. See `fitnessConfig.ts` for why.
+ *
+ * Only the STARTING energy is compressed — in-match drain and the fatigue curve applied to that
+ * energy are both untouched; `seasonLog.fitness` after the match is still simply the end-of-match
+ * energy (`postMatchFitness`), computed by draining from this compressed start.
+ */
+export function matchStartEnergy(fitness: number): number {
+  const raw = FITNESS.FITNESS_REF + FITNESS.START_COMPRESSION * (fitness - FITNESS.FITNESS_REF);
+  return Math.min(100, Math.max(0, raw));
+}

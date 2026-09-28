@@ -4,6 +4,7 @@ import {
   addTrainingLoad,
   decayLoad,
   drainMultiplier,
+  matchStartEnergy,
   postMatchFitness,
   recoverDay,
 } from "@/Domain/fitness/fitness";
@@ -118,5 +119,52 @@ describe("drainMultiplier", () => {
   test("is linear between 0 and LOAD_HIGH", () => {
     const half = FITNESS.LOAD_HIGH / 2;
     expect(drainMultiplier(half)).toBeCloseTo(1 + FITNESS.LOAD_DRAIN_BONUS / 2, 10);
+  });
+});
+
+describe("matchStartEnergy", () => {
+  test("is a no-op at FITNESS_REF, regardless of compression", () => {
+    expect(matchStartEnergy(FITNESS.FITNESS_REF)).toBe(FITNESS.FITNESS_REF);
+  });
+
+  test("compresses a gap above the reference by START_COMPRESSION", () => {
+    // 95 -> 88 + 0.5*(95-88) = 91.5
+    const expected = FITNESS.FITNESS_REF + FITNESS.START_COMPRESSION * (95 - FITNESS.FITNESS_REF);
+    expect(matchStartEnergy(95)).toBeCloseTo(expected, 10);
+  });
+
+  test("compresses a gap below the reference by START_COMPRESSION", () => {
+    // 70 -> 88 + 0.5*(70-88) = 79
+    const expected = FITNESS.FITNESS_REF + FITNESS.START_COMPRESSION * (70 - FITNESS.FITNESS_REF);
+    expect(matchStartEnergy(70)).toBeCloseTo(expected, 10);
+  });
+
+  test("two different fitness levels end up closer together than they started", () => {
+    const gapBefore = 90 - 70;
+    const gapAfter = matchStartEnergy(90) - matchStartEnergy(70);
+    expect(gapAfter).toBeLessThan(gapBefore);
+    expect(gapAfter).toBeCloseTo(gapBefore * FITNESS.START_COMPRESSION, 10);
+  });
+
+  test("clamps to 0..100", () => {
+    expect(matchStartEnergy(0)).toBeGreaterThanOrEqual(0);
+    expect(matchStartEnergy(100)).toBeLessThanOrEqual(100);
+    // Below reference clamps at 0 only for a compression far more aggressive than the default —
+    // at the default 0.5, matchStartEnergy(0) = 88 - 44 = 44, well above 0. Just check monotonic
+    // ordering holds and nothing escapes the 0..100 range across the whole domain.
+    for (const f of [-50, -10, 0, 25, 50, 75, 88, 100, 150]) {
+      const v = matchStartEnergy(f);
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(100);
+    }
+  });
+
+  test("monotonically increasing in fitness", () => {
+    let prev = matchStartEnergy(0);
+    for (const f of [10, 20, 30, 88, 90, 100]) {
+      const v = matchStartEnergy(f);
+      expect(v).toBeGreaterThan(prev);
+      prev = v;
+    }
   });
 });
