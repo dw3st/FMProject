@@ -53,7 +53,7 @@ import type { FormationSetPieces, SetPieceLayout } from '@/GameEngine/Domain/Set
 import { applySetPieceToTeam, enforceKickoffCircleRule } from '@/GameEngine/Domain/SetPiecePositioning';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
-import { drainMultiplier as loadDrainMultiplier } from '@/Domain/fitness/fitness';
+import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
 
 export { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 
@@ -203,8 +203,10 @@ function buildGamePlayerForSlot(
     maxY: Math.min(PITCH_WIDTH, slotY + yRange),
   };
   const baseStats = teamLineup(buffed, slotDef.role);
-  // Use persisted fitness as starting energy (falls back to full if no history).
-  const energy = Math.max(0, Math.min(100, rp.seasonLog?.fitness ?? 100));
+  // Match start energy is persisted fitness compressed toward the reference matchday fitness
+  // (`matchStartEnergy` — see `.claude/rules/non-player-games.md` → "Fadiga"), not raw fitness.
+  // No persisted history (e.g. a hand-built test player) skips compression entirely — full energy.
+  const energy = rp.seasonLog?.fitness != null ? matchStartEnergy(rp.seasonLog.fitness) : 100;
   return {
     id:               engineId,
     rosterId:         rp.id,
@@ -266,7 +268,8 @@ function buildTeam(
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     );
     const baseStats = teamLineup(buffed, naturalRole);
-    const energy = Math.max(0, Math.min(100, rp.seasonLog?.fitness ?? 100));
+    // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
+    const energy = rp.seasonLog?.fitness != null ? matchStartEnergy(rp.seasonLog.fitness) : 100;
     // Bench players have placeholder positions — overwritten when they sub in
     const dummyPos = { x: 0, y: 0 };
     const dummyBounds = { minX: 0, maxX: PITCH_LENGTH, minY: 0, maxY: PITCH_WIDTH };
