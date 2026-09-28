@@ -477,6 +477,13 @@ export async function advanceOneDay(
                 returnDate: inj.returnDate,
               });
             }
+            for (const playerId of r.healedPlayerIds) {
+              const onHome = homeSquad.players.some((p) => p.id === playerId);
+              const squadId = onHome ? fixture.home : fixture.away;
+              const roster = onHome ? homeSquad : awaySquad;
+              const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
+              injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
+            }
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
             if (idx !== -1) updatedFixtures[idx] = {
@@ -509,6 +516,13 @@ export async function advanceOneDay(
                 severity: inj.severity,
                 returnDate: inj.returnDate,
               });
+            }
+            for (const playerId of r.healedPlayerIds) {
+              const onHome = homeSquad.players.some((p) => p.id === playerId);
+              const squadId = onHome ? fixture.home : fixture.away;
+              const roster = onHome ? homeSquad : awaySquad;
+              const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
+              injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
             }
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
@@ -626,20 +640,20 @@ export async function advanceOneDay(
     }
 
     // ── Injury news for the human club (match + training + return-to-play) ───
+    // Not emitted yet — `clearInbox` (season rollover, further below) would wipe it if it landed
+    // now. Queued into `deferredInjuryMessages` and flushed after `clearInbox`, same pattern as
+    // `continentalMessages` / `negativeBalanceMessage`.
+    const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
     if (playerSquadId) {
       for (const inj of injuryInboxEvents) {
         if (inj.squadId !== playerSquadId) continue;
-        await emitInboxMessage(
-          saveId,
+        deferredInjuryMessages.push(
           inj.kind === "injured"
-            ? buildInjuryMessage({
+            ? {
                 date: currentDate, kind: "injured", playerId: inj.playerId, playerName: inj.playerName,
                 severity: inj.severity, returnDate: inj.returnDate,
-              })
-            : buildInjuryMessage({
-                date: currentDate, kind: "returned", playerId: inj.playerId, playerName: inj.playerName,
-              }),
-          saveService,
+              }
+            : { date: currentDate, kind: "returned", playerId: inj.playerId, playerName: inj.playerName },
         );
       }
     }
@@ -1555,6 +1569,8 @@ export async function advanceOneDay(
     for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
     // Negative-balance news (queued above, same reason): always after any `clearInbox` this day.
     if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
+    // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
+    for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};

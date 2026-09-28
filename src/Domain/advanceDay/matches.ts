@@ -19,7 +19,7 @@ import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
-import { clearHealed, isInjured, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
+import { clearHealed, isInjured, mergeInjury, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
 
 /**
  * An in-match injury after `player.injury` has been written (`returnDate` computed) — Task 3
@@ -89,6 +89,8 @@ export interface MatchSimResult {
   updatedAway: Squad;
   /** New injuries this match, with the return date already rolled. Empty when none occurred. */
   injuriesApplied: AppliedInjury[];
+  /** Players whose injury cleared today (`clearHealed`) — for the "return" inbox message. */
+  healedPlayerIds: string[];
 }
 
 /** Payload from a live /match playthrough — advance-day uses this instead of simulating again. */
@@ -122,6 +124,15 @@ function finalizeSquadsAfterMatch(
   matchDate: string,
   injuries: MatchInjury[] = [],
   rng: Rng = Math.random,
+  /**
+   * quickSim never actually benches an injured player — there is no lineup change, every XI
+   * player is simulated for the full match (see `rollSideInjuries` in `quickSim.ts`). The engine,
+   * by contrast, really does remove an injured player from play. Default `false` keeps the
+   * engine's synthetic sub-out (below); `buildQuickMatchEvent` passes `true` so a quickSim
+   * recording's injured players still get full-minutes credit instead of having their clock cut
+   * at the injury minute for a substitution that never happened.
+   */
+  fullMinutesForInjured = false,
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -129,6 +140,8 @@ function finalizeSquadsAfterMatch(
   awayDevChanges: PlayerDevelopmentChange[];
   /** New injuries this match, with the return date already rolled — see `AppliedInjury`. */
   injuriesApplied: AppliedInjury[];
+  /** Players whose injury cleared today (`clearHealed`) — for the "return" inbox message. */
+  healedPlayerIds: string[];
 } {
   // Shared across both squads — `playerStats` already combines home + away.
   //
@@ -140,19 +153,22 @@ function finalizeSquadsAfterMatch(
   // `minutes[id]` for ids it was given in `playerIds` (now includes injured-removed players — see
   // both collectors, `buildMatchEvent`/`buildPlayedMatchRecording.ts`).
   const subbedOutIds = new Set(substitutions.map((s) => s.playerOutId));
-  const minutesSubstitutions = [
-    ...substitutions,
-    ...injuries
-      .filter((inj) => !subbedOutIds.has(inj.playerId))
-      .map((inj) => ({
-        playerOutId: inj.playerId,
-        playerInId: `__injured_out_${inj.playerId}`,
-        matchMinute: inj.matchMinute,
-      })),
-  ];
+  const minutesSubstitutions = fullMinutesForInjured
+    ? substitutions
+    : [
+        ...substitutions,
+        ...injuries
+          .filter((inj) => !subbedOutIds.has(inj.playerId))
+          .map((inj) => ({
+            playerOutId: inj.playerId,
+            playerInId: `__injured_out_${inj.playerId}`,
+            matchMinute: inj.matchMinute,
+          })),
+      ];
   const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), minutesSubstitutions, totalMinutes);
   const injuryByPlayer = new Map(injuries.map((inj) => [inj.playerId, inj]));
   const injuriesApplied: AppliedInjury[] = [];
+  const healedPlayerIds: string[] = [];
 
   function applyMatchToSquad(squad: Squad): Squad {
     return {
@@ -162,6 +178,7 @@ function finalizeSquadsAfterMatch(
         // match with `injury` absent for the rest of the pipeline (`.claude/rules/game/injuries.md`
         // — Task 1's `clearHealed`, resets `seasonLog.fitness` to `INJURY.RETURN_FITNESS`, which
         // the fitness update below then further adjusts for the match itself).
+        if (p0.injury && !clearHealed(p0, matchDate).injury) healedPlayerIds.push(String(p0.id));
         const p = clearHealed(p0, matchDate);
         const pl = ensureSeasonLog(p);
         const log = { ...pl.seasonLog! };
@@ -223,7 +240,8 @@ function finalizeSquadsAfterMatch(
         if (inj) {
           const rd = injuryReturnDate(matchDate, inj.severity, rng);
           injuriesApplied.push({ ...inj, returnDate: rd });
-          return { ...pl, seasonLog: log, injury: { severity: inj.severity, returnDate: rd } };
+          const merged = mergeInjury(p.injury, { severity: inj.severity, returnDate: rd });
+          return { ...pl, seasonLog: log, injury: merged };
         }
         return { ...pl, seasonLog: log };
       }),
@@ -259,6 +277,7 @@ function finalizeSquadsAfterMatch(
     homeDevChanges,
     awayDevChanges,
     injuriesApplied,
+    healedPlayerIds,
   };
 }
 
@@ -308,11 +327,13 @@ export function buildMatchEventFromRecording(
   awaySquad: Squad,
   recording: PlayedMatchRecording,
   rng: Rng = Math.random,
+  /** See `finalizeSquadsAfterMatch` — pass `true` only for a quickSim-produced recording. */
+  fullMinutesForInjured = false,
 ): MatchSimResult {
   const { playerNames, playerTeams } = rosterNameAndTeamMaps(homeSquad, awaySquad);
   const scorers = buildScorers(recording.playerStats, playerNames, playerTeams);
 
-  const { updatedHome, updatedAway, homeDevChanges, awayDevChanges, injuriesApplied } = finalizeSquadsAfterMatch(
+  const { updatedHome, updatedAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds } = finalizeSquadsAfterMatch(
     homeSquad,
     awaySquad,
     recording.playerStats,
@@ -325,6 +346,7 @@ export function buildMatchEventFromRecording(
     fixture.date,
     recording.injuries ?? [],
     rng,
+    fullMinutesForInjured,
   );
 
   const event: MatchEvent = {
@@ -348,7 +370,7 @@ export function buildMatchEventFromRecording(
     ...(recording.decider ? { decider: recording.decider } : {}),
   };
 
-  return { event, updatedHome, updatedAway, injuriesApplied };
+  return { event, updatedHome, updatedAway, injuriesApplied, healedPlayerIds };
 }
 
 export function buildMatchEvent(
@@ -516,7 +538,7 @@ export function buildMatchEvent(
     energy:      inj.energy,
   }));
 
-  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied } =
+  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds } =
     finalizeSquadsAfterMatch(
       homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
       substitutions, totalMatchMinutes(result.decider),
@@ -569,7 +591,7 @@ export function buildMatchEvent(
       : {}),
   };
 
-  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied };
+  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds };
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
@@ -614,6 +636,8 @@ export function buildQuickMatchEvent(
     },
     rng,
   );
-  const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng);
+  // quickSim never benches an injured player (see `finalizeSquadsAfterMatch`'s
+  // `fullMinutesForInjured` doc comment) — skip the synthetic sub-out the engine path needs.
+  const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng, true);
   return { ...r, event: compactMatchEvent(r.event) };
 }

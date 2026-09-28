@@ -120,6 +120,20 @@ export function isInjured(player: Pick<RosterPlayer, "injury">, date: string): b
  * (spec: "volta com fôlego ~70"). Otherwise returns `player` unchanged (same reference). Pure —
  * never mutates the input.
  */
+/**
+ * Resolves a new injury against any injury the player is already carrying: keeps whichever
+ * `returnDate` is LATER (and that entry's own severity) rather than blindly overwriting with the
+ * new one. Guards against a new injury shortening — or a stale one extending past — the time a
+ * player who was already sidelined actually needs. Pure, no I/O.
+ */
+export function mergeInjury(
+  existing: { severity: InjurySeverity; returnDate: string } | undefined,
+  incoming: { severity: InjurySeverity; returnDate: string },
+): { severity: InjurySeverity; returnDate: string } {
+  if (!existing) return incoming;
+  return existing.returnDate > incoming.returnDate ? existing : incoming;
+}
+
 export function clearHealed(player: RosterPlayer, date: string): RosterPlayer {
   if (!player.injury || date < player.injury.returnDate) return player;
   const { injury: _injury, ...rest } = player;
