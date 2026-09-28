@@ -114,7 +114,7 @@ describe("buildRestEvent", () => {
     ]);
 
     withRand(() => {
-      const { event } = buildRestEvent("s", squad);
+      const { event } = buildRestEvent("s", squad, "2027-02-05");
       expect(event.kind).toBe("rest");
       expect(event.effects).toHaveLength(2);
     });
@@ -126,7 +126,7 @@ describe("buildRestEvent", () => {
     ]);
 
     withRand(() => {
-      const { updatedSquad } = buildRestEvent("s", squad);
+      const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       const p1 = updatedSquad.players[0]!;
       expect(p1.seasonLog!.fitness).toBeGreaterThan(70);
       expect(p1.seasonLog!.trainingSessions).toBeLessThan(3);
@@ -139,7 +139,7 @@ describe("buildRestEvent", () => {
     ]);
     Math.random = () => 1;
     try {
-      const { updatedSquad } = buildRestEvent("s", squad);
+      const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.fitness).toBeLessThanOrEqual(100);
     } finally {
       Math.random = globalThis.Math.random;
@@ -152,7 +152,7 @@ describe("buildRestEvent", () => {
     ]);
     Math.random = () => 1;
     try {
-      const { updatedSquad } = buildRestEvent("s", squad);
+      const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.trainingSessions).toBeGreaterThanOrEqual(0);
     } finally {
       Math.random = globalThis.Math.random;
@@ -164,7 +164,7 @@ describe("buildRestEvent", () => {
       basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ morale: 65 }) }),
     ]);
     withRand(() => {
-      const { updatedSquad } = buildRestEvent("s", squad);
+      const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.morale).toBe(65);
     });
   });
@@ -174,7 +174,7 @@ describe("buildRestEvent", () => {
       basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ load: 100 }) }),
     ]);
     withRand(() => {
-      const { updatedSquad } = buildRestEvent("s", squad);
+      const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.load).toBe(decayLoad(100));
     });
   });
@@ -182,7 +182,7 @@ describe("buildRestEvent", () => {
   test("missing load is treated as 0 and stays 0 after decay", () => {
     const squad = baseSquad([basePlayer({ id: "p1", name: "One" })]);
     withRand(() => {
-      const { updatedSquad } = buildRestEvent("s", squad);
+      const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.load).toBe(0);
     });
   });
@@ -221,5 +221,35 @@ describe("generateRestDays", () => {
     const fixtures = [fixture("2025-10-05"), fixture("2025-09-01")];
     const restDays = generateRestDays(fixtures);
     expect(restDays).toEqual([...restDays].sort());
+  });
+});
+
+// ── injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ───────────
+
+describe("buildRestEvent — injuries", () => {
+  test("clears a healed injury (returnDate reached) and reports it in healedPlayerIds", () => {
+    const squad = baseSquad([
+      basePlayer({
+        id: "p1", name: "Healed",
+        seasonLog: makeSeasonLog({ fitness: 20 }),
+        injury: { severity: "light", returnDate: "2027-03-10" },
+      }),
+    ]);
+    const { updatedSquad, healedPlayerIds } = buildRestEvent("s", squad, "2027-03-10");
+    expect(updatedSquad.players[0]!.injury).toBeUndefined();
+    expect(healedPlayerIds).toEqual(["p1"]);
+  });
+
+  test("keeps a still-injured player's injury and does not report them as healed", () => {
+    const squad = baseSquad([
+      basePlayer({
+        id: "p1", name: "Hurt",
+        seasonLog: makeSeasonLog({ fitness: 70 }),
+        injury: { severity: "severe", returnDate: "2027-06-01" },
+      }),
+    ]);
+    const { updatedSquad, healedPlayerIds } = buildRestEvent("s", squad, "2027-03-10");
+    expect(updatedSquad.players[0]!.injury).toEqual({ severity: "severe", returnDate: "2027-06-01" });
+    expect(healedPlayerIds).toEqual([]);
   });
 });

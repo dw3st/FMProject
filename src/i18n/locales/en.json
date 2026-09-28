@@ -1062,7 +1062,8 @@
       "transfer_out": "Transfer Out",
       "season": "Season",
       "cup": "Cup",
-      "continental": "Continental"
+      "continental": "Continental",
+      "injury": "Injury"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1087,6 +1088,15 @@
       "eliminated": "Eliminated from the {{competition}} ({{stage}}) by {{opponent}}",
       "eliminatedGroup": "Eliminated from the {{competition}} group stage",
       "champion": "Champions of the {{competition}}!"
+    },
+    "injury": {
+      "injured": "{{player}} injured ({{severity}}) — expected back {{date}}",
+      "returned": "{{player}} has recovered and is available again",
+      "severity": {
+        "light": "light",
+        "medium": "medium",
+        "severe": "severe"
+      }
     }
   },
   "finances": {

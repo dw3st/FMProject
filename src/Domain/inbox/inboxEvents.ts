@@ -7,6 +7,7 @@ import type {
   DevelopmentInboxChange,
   DevelopmentInboxMessage,
   InboxMessage,
+  InjuryInboxMessage,
   SeasonInboxMessage,
   TransferInInboxMessage,
   TransferOutInboxMessage,
@@ -245,6 +246,39 @@ export function buildContinentalMessage(args: {
     ...(venue ? { venue } : {}),
     ...(prize ? { prize } : {}),
   } as ContinentalInboxMessage;
+}
+
+/**
+ * Injury news for the human club (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1):
+ * fired both when a player gets injured (match or heavy training) and when they return.
+ */
+export function buildInjuryMessage(args: {
+  date:        string;
+  kind:        InjuryInboxMessage["kind"];
+  playerId:    string;
+  playerName:  string;
+  severity?:   "light" | "medium" | "severe";
+  returnDate?: string;
+}): InjuryInboxMessage {
+  const { date, kind, playerId, playerName, severity, returnDate: retDate } = args;
+  const subject = kind === "injured" ? `${playerName} injured` : `${playerName} is back`;
+  const preview =
+    kind === "injured"
+      ? `${severity ?? "light"} injury — expected back ${retDate ?? "?"}.`
+      : `${playerName} has recovered and is available again.`;
+  return {
+    id:        `injury-${date}-${kind}-${playerId}-${randomUUID()}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "injury",
+    subject,
+    preview:   preview.slice(0, 120),
+    kind,
+    playerId,
+    playerName,
+    ...(kind === "injured" ? { severity, returnDate: retDate } : {}),
+  } as InjuryInboxMessage;
 }
 
 function formatCount(n: number): string {

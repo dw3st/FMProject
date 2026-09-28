@@ -51,6 +51,16 @@ export const INJURY = {
    */
   CONTACT_BASE: 0.0020689655172413794,
 
+  /**
+   * quickSim-only multiplier on `CONTACT_BASE` (Task 3, `docs/superpowers/plans/2026-09-28-
+   * injuries.md`). quickSim has no loose-ball duels and only one side of each tackle attempt
+   * (the tackler) generates a contact event per player, so its raw contact-event volume is lower
+   * than the full engine's (tackles + tackle attempts + duels on both participants). This scales
+   * `contactInjuryChance` back up so quickSim's overall injuries/match lands within ±15% of the
+   * engine's — calibrated by `scripts/injury-calibrate.ts --quicksim`.
+   */
+  QUICKSIM_CONTACT_SCALE: 1,
+
   /** Heavy training session → small flat chance of a light injury. Light/normal training: 0. */
   HEAVY_TRAINING_CHANCE: 0.01,
 
