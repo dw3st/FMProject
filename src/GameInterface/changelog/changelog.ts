@@ -25,7 +25,7 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    version: "1.4.0",
+    version: "1.4",
     date: "2026-09-28",
     items: [
       {
@@ -53,7 +53,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "1.3.0",
+    version: "1.3",
     date: "2026-09-27",
     items: [
       { pt: "Salários realistas", en: "Realistic wages" },
@@ -78,7 +78,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "1.2.0",
+    version: "1.2",
     date: "2026-09-27",
     items: [
       {
@@ -96,7 +96,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "1.1.0",
+    version: "1.1",
     date: "2026-09-26",
     items: [
       {
@@ -110,7 +110,7 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
-    version: "1.0.0",
+    version: "1.0",
     date: "2026-09-25",
     items: [
       {
