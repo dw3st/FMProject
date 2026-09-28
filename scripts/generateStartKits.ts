@@ -15,12 +15,70 @@
  */
 import { mkdir } from "fs/promises";
 import { fileURLToPath } from "node:url";
+import { Glob } from "bun";
 import { saveService } from "@/backend/SaveService";
 import { presimulatePreStart } from "@/backend/advanceDay";
 import { snapshotSaveToKit } from "@/backend/startKits";
 
 const KITS_DIR = fileURLToPath(new URL("../src/Data/startKits", import.meta.url));
+const DATA_SQUADS_DIR = fileURLToPath(new URL("../src/Data/squads", import.meta.url));
+const EXAMPLE_SQUADS_DIR = fileURLToPath(new URL("../src/example_data/squads", import.meta.url));
 const COUNT = Math.max(1, parseInt(process.argv[2] ?? "5", 10) || 5);
+
+/**
+ * A kit is built directly off `src/Data/squads` (via `saveService.createSave` + the normal squad
+ * index), NOT off `src/example_data/squads`. The two must be byte-identical in shape (same squad
+ * ids, same player ids, each player in exactly one squad) — a stale `src/Data/squads` left over
+ * from `cp -R src/example_data/. src/Data/` (which never deletes) silently bakes duplicate
+ * squads/players into every kit. `.claude/rules/data/espn-import.md` documents `rm -rf
+ * src/Data/squads` (and `src/Data/logos/espn`) before every sync for this reason — this check is
+ * the safety net in case that step is ever skipped.
+ */
+async function validateWorldMatchesExampleData(): Promise<void> {
+  const glob = new Glob("**/*.json");
+  const listSquadIds = async (dir: string): Promise<Set<string>> => {
+    const ids = new Set<string>();
+    for await (const rel of glob.scan({ cwd: dir })) ids.add(rel.replace(/\.json$/, "").split(/[/\\]/).pop()!);
+    return ids;
+  };
+  const [dataIds, exampleIds] = await Promise.all([listSquadIds(DATA_SQUADS_DIR), listSquadIds(EXAMPLE_SQUADS_DIR)]);
+  if (dataIds.size !== exampleIds.size) {
+    throw new Error(
+      `generateStartKits: src/Data/squads has ${dataIds.size} squad files, src/example_data/squads has ${exampleIds.size} — ` +
+      `stale files from a previous world (removed/moved clubs). Run "rm -rf src/Data/squads src/Data/logos/espn" then re-sync before regenerating kits.`,
+    );
+  }
+  const missing = [...exampleIds].filter((id) => !dataIds.has(id));
+  const extra = [...dataIds].filter((id) => !exampleIds.has(id));
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      `generateStartKits: src/Data/squads and src/example_data/squads have different squad ids ` +
+      `(${missing.length} missing, ${extra.length} extra, e.g. ${[...missing, ...extra].slice(0, 5).join(", ")}) — ` +
+      `re-sync src/Data from src/example_data (after "rm -rf src/Data/squads") before regenerating kits.`,
+    );
+  }
+
+  // Every player id must appear in exactly one squad file — a duplicate means a squad survives
+  // under two ids/paths (e.g. an old and a new league folder) with the same players baked twice.
+  const playerSquad = new Map<string, string>();
+  const duplicates: string[] = [];
+  for await (const rel of glob.scan({ cwd: DATA_SQUADS_DIR })) {
+    const squad = (await Bun.file(`${DATA_SQUADS_DIR}/${rel}`).json()) as { id: string; players?: Array<{ id: string }> };
+    for (const p of squad.players ?? []) {
+      const prev = playerSquad.get(p.id);
+      if (prev && prev !== squad.id) duplicates.push(`${p.id} (${prev} / ${squad.id})`);
+      else playerSquad.set(p.id, squad.id);
+    }
+  }
+  if (duplicates.length > 0) {
+    throw new Error(
+      `generateStartKits: ${duplicates.length} player id(s) appear in two squads, e.g. ${duplicates.slice(0, 5).join("; ")} — ` +
+      `re-sync src/Data/squads from a clean "rm -rf" before regenerating kits.`,
+    );
+  }
+}
+
+await validateWorldMatchesExampleData();
 
 // A real Brazilian club so currentDate resolves to the Brazilian season start.
 // The kit world is club-agnostic apart from this one club being excluded from AI
