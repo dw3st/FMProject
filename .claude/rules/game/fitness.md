@@ -144,8 +144,21 @@ Usado em três lugares, sempre a mesma função:
 - **Seletor de escalação** (`lineupHelpers.ts`, `fitnessAdjustedValue`): valoriza titular e reserva
   pelo fôlego comprimido, porque é o que a partida vai realmente jogar.
 
-Sem `seasonLog` (jogador de teste, elenco estático sem histórico), `matchStartEnergy` não entra em
-jogo — a energia de início cai para 100 direto.
+Sem `seasonLog` (um jogador de save antes do primeiro avanço de dia, ou um elenco estático sem
+histórico), os três lugares usam o mesmo piso: `emptySeasonLog().fitness` (75), então a energia de
+início cai em `matchStartEnergy(75) ≈ 82,8` — **não** 100 puro. Antes disso o motor (`gameState.ts`)
+tinha um caminho próprio (energia de início = 100 direto, sem passar por `matchStartEnergy`) que
+divergia do quickSim e do seletor de escalação; corrigido para os três caírem no mesmo piso.
+
+**`/test` (`TestCases.ts`) é a exceção deliberada.** Os cenários gerais de ajuste de motor
+(`11v11-classic`, `knockout-draw-90`, `tired-team`) existem para observar carry/passe/desarme/etc.
+isoladamente, não o sistema de fôlego — por isso o roster `team_red`/`team_blue` passa por
+`freshRoster()` antes de `createMatchState`, fixando `seasonLog.fitness: 100` explicitamente (sem
+compressão, já que `matchStartEnergy(100) = 100`). O seletor livre de elenco do `/test`
+(`TestScreen.tsx`, times "Team Red"/"Team Blue" via `SQUADS`) **não** recebe esse tratamento e cai
+no piso de 75/82,8 como qualquer elenco sem `seasonLog` — aceito porque afeta os dois lados
+igualmente (comparação A/B continua justa), só a intensidade absoluta de fadiga ao longo da
+partida muda um pouco.
 
 ## 2. Motor
 
