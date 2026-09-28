@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.4.1",
+    date: "2026-09-28",
+    items: [
+      {
+        pt: "Report: anexe uma imagem (arquivo ou Ctrl+V)",
+        en: "Report: attach an image (file or Ctrl+V)",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Etiquetas técnicas (run, mark, press…) escondidas na lista de jogadores da partida",
+        en: "Technical labels (run, mark, press…) hidden in the match player list",
+      },
+      {
+        pt: "Opção 'Ajuste' removida do report (igual a 'Melhoria')",
+        en: "'Tweak' option removed from the report (same as 'Improvement')",
+      },
+    ],
+  },
+  {
     version: "1.4",
     date: "2026-09-28",
     items: [
