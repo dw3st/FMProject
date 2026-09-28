@@ -6,7 +6,7 @@
  * post-match pipeline (seasonLog, energy, development) applies unchanged.
  */
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import type { MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
+import type { MatchInjury, MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
@@ -19,6 +19,8 @@ import {
   type LineGroup,
 } from "@/GameEngine/Configs/QuickSimConfig";
 import { RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
+import { contactInjuryChance, injuryRatePerMinute, rollSeverity, type InjuryFactors } from "@/Domain/injury/injury";
+import { INJURY } from "@/Domain/injury/injuryConfig";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -324,6 +326,56 @@ function fillSide(
   }
 }
 
+/**
+ * In-match injuries for one side, no substitutions (`docs/superpowers/plans/2026-09-28-
+ * injuries.md` Task 3): every XI player is treated as playing the full `minutesTotal` (quickSim
+ * has no bench swap), so this is the only place an injury can remove a player from a quickSim
+ * match — it never actually does (no lineup change), it just records the event and severity for
+ * the post-match / inbox pipeline (`matches.ts` → `finalizeSquadsAfterMatch`).
+ *
+ * Same per-minute risk as the engine (`injuryRatePerMinute`, using this match's start
+ * energy/load — `startFitness`/`startLoad` — and age/strength), modelled as a Poisson count over
+ * the minutes played. Approximates the engine's tackle/duel contact risk with a per-player
+ * contact-event count (`tackles` won + failed tackle attempts — quickSim has no loose-ball duels
+ * and only sees the tackler's side of each attempt), scaled by `QUICKSIM_CONTACT_SCALE` so the
+ * overall volume matches the engine's (calibrated by `scripts/injury-calibrate.ts --quicksim`).
+ */
+function rollSideInjuries(
+  xi: XIPlayer[],
+  team: "home" | "away",
+  stats: Record<string, MatchPlayerStats>,
+  tacklesFailed: Record<string, number>,
+  minutesTotal: number,
+  rng: Rng,
+): MatchInjury[] {
+  const injuries: MatchInjury[] = [];
+  for (const { p } of xi) {
+    const factors: InjuryFactors = {
+      energy: startFitness(p),
+      load: startLoad(p),
+      age: p.age,
+      strength: stat(p, "strength"),
+    };
+    const contactEvents = (stats[p.id]?.tackles ?? 0) + (tacklesFailed[p.id] ?? 0);
+    const lambda =
+      injuryRatePerMinute(factors) * minutesTotal +
+      contactInjuryChance(factors) * contactEvents * INJURY.QUICKSIM_CONTACT_SCALE;
+    if (samplePoisson(lambda, rng) < 1) continue;
+    injuries.push({
+      team,
+      playerId: p.id,
+      playerName: p.name,
+      severity: rollSeverity(rng),
+      matchMinute: 1 + Math.floor(rng() * minutesTotal),
+      // quickSim never actually benches a player (no lineup change — see the doc comment above),
+      // so there's no separate "energy at the moment of injury" to capture; use the same
+      // start-of-match energy the risk roll itself used (`factors.energy`).
+      energy: factors.energy,
+    });
+  }
+  return injuries;
+}
+
 function sumTeamStats(xi: XIPlayer[], stats: Record<string, MatchPlayerStats>): MatchTeamStats {
   const t: MatchTeamStats = { shots: 0, passesCompleted: 0, passesAttempted: 0, tackles: 0, interceptions: 0 };
   for (const { p } of xi) {
@@ -411,6 +463,13 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     playerEnergy[p.id] = clamp(startEnergy - drain, 0, 100);
   }
 
+  // Same total-minutes convention as the extra-time energy drain above (120' once ET was played).
+  const totalMinutes = decider?.extraTime ? 120 : 90;
+  const injuries = [
+    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng),
+    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng),
+  ].sort((a, b) => a.matchMinute - b.matchMinute);
+
   const recording: PlayedMatchRecording = {
     fixtureId: input.fixtureId,
     score: { home: goalsHome, away: goalsAway },
@@ -421,6 +480,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     substitutions: [],
     durationMs: Math.round(performance.now() - start),
     ...(decider ? { decider } : {}),
+    ...(injuries.length > 0 ? { injuries } : {}),
   };
 
   return { recording, breakdown: { home, away, xgHome, xgAway } };

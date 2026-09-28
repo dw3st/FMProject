@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { STAT_KEYS, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, playerProfile, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
+import { STAT_KEYS, JITTER_WEIGHT, LUCK_WEIGHT, SOFT_CAP_SD, buildLevelCorrection, buildRoleLevelPredictor, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, playerProfile, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
+import { predictLevel } from "@/../scripts/openfootball/recalibrate";
+import { computeOverallAvg } from "@/Domain/playerRating";
 import type { SeedPlayer } from "@/../scripts/openfootball/types";
 
 const line = (a: number, b: number, sd = 0, n = 100) => ({ a, b, sd, n });
@@ -82,6 +84,70 @@ describe("derivePlayer", () => {
     const s = { passing: 9, vision: 2, finishing: 1, dribbling: 3, speed: 3, acceleration: 3, tackling: 3,
       pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 0, jump: 0 };
     expect(playerProfile("Midfielder", s, "Solid")).toEqual({ archetype: "Playmaker", summary: "Solid midfielder, strongest at passing." });
+  });
+});
+
+describe("#3 — per-player luck + soft cap", () => {
+  const noisyCoeffs: PlayerCoeffs = {
+    byRole: {
+      GK: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-2, 0.06, 0, 1.2)])),
+      Defender: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.08, 0, 1.2)])),
+      Midfielder: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.08, 0, 1.2)])),
+      Forward: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.08, 0, 1.2)])),
+    },
+    pooled: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.08, 0, 1.2)])),
+    repMin: 5.8, repMax: 9.5,
+  };
+
+  test("luck+jitter weights combine to unit magnitude (same overall noise scale as before)", () => {
+    expect(LUCK_WEIGHT * LUCK_WEIGHT + JITTER_WEIGHT * JITTER_WEIGHT).toBeCloseTo(1, 9);
+  });
+
+  test("determinístico mesmo com o teto suave ativo", () => {
+    const p = { ...seedP, overall: 70 };
+    expect(derivePlayer(p, "s", noisyCoeffs, REP)).toEqual(derivePlayer(p, "s", noisyCoeffs, REP));
+  });
+
+  test("nenhum jogador (mesmo com muita sorte) fica muito acima do previsto para o seedOverall", () => {
+    // Varre vários ids de jogador mediano (overall 65-72) e nunca deixa o overall final passar de
+    // SOFT_CAP_SD desvios acima do previsto pelo previsor — o teto suave sempre reencolhe o ruído.
+    const predictorByRole = buildRoleLevelPredictor(noisyCoeffs);
+    for (let i = 0; i < 60; i++) {
+      const sp: SeedPlayer = { ...seedP, id: `lucky-${i}`, overall: 65 + (i % 8), position: "MID" };
+      const p = derivePlayer(sp, "s", noisyCoeffs, REP);
+      const overall = computeOverallAvg(p as never);
+      const fit = predictorByRole.Midfielder!;
+      const predicted = predictLevel(fit, sp.overall, REP);
+      expect(overall).toBeLessThanOrEqual(predicted + SOFT_CAP_SD * fit.sd + 0.75); // rounding/iteration slack
+    }
+  });
+
+  test("previsor por papel: overall previsto cresce com o seedOverall", () => {
+    const fit = buildRoleLevelPredictor(noisyCoeffs).Forward!;
+    expect(predictLevel(fit, 90, REP)).toBeGreaterThan(predictLevel(fit, 60, REP));
+  });
+
+  test("sem ruído (sd 0) o teto suave nunca dispara — resultado idêntico ao ajuste linear", () => {
+    const p = derivePlayer(seedP, "of_uy_x", coeffs, REP); // `coeffs` (sd 0) from the outer describe
+    expect(p.stats.passing).toBe(Math.round(-3 + 0.09 * 70));
+  });
+
+  test("sem ruído (sd 0) a correção de nível fica perto de 0 — nada de verdade para recentrar", () => {
+    // Não é exatamente 0: com sd 0 dos dois lados a comparação vira uma função em degrau
+    // (arredondamento), então a busca binária pode parar num pequeno degrau — mas nunca longe de 0.
+    const c = buildLevelCorrection(coeffs);
+    for (const v of Object.values(c)) expect(Math.abs(v)).toBeLessThan(0.2);
+  });
+
+  test("com ruído, a correção de nível é positiva (compensa a queda de média)", () => {
+    const c = buildLevelCorrection(noisyCoeffs);
+    for (const v of Object.values(c)) expect(v).toBeGreaterThan(0);
+  });
+
+  test("memoizado por objeto coeffs (mesma referência → mesmo resultado, instantâneo na 2ª chamada)", () => {
+    const c1 = buildLevelCorrection(noisyCoeffs);
+    const c2 = buildLevelCorrection(noisyCoeffs);
+    expect(c1).toBe(c2); // mesma referência de objeto — veio do cache
   });
 });
 

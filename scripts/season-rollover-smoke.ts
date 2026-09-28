@@ -61,6 +61,7 @@ const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await im
 const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
 const { leaguePrize } = await import("@/Domain/finance/prizes");
 const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness } = await import("@/Domain/advanceDay/matchSimulationLineups");
+const { isInjured } = await import("@/Domain/injury/injury");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
@@ -189,6 +190,14 @@ try {
   const leagueFitnessSamples: Array<{ month: string; value: number }> = [];
   let fitnessDifferedFromPlain = false;
 
+  // ── Lesões (see "Lesões" section below) ───────────────────────────────────
+  let totalMatchesLogged = 0;
+  let totalMatchInjuries = 0;
+  let injuredXIChecks = 0;
+  let injuredXIViolations = 0;
+  const trackedInjured = new Map<string, string>(); // playerId → returnDate last observed
+  let healedObserved = 0;
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -224,13 +233,39 @@ try {
     // compared against to detect a fatigue-driven substitution.
     const leagueFixturesToday = (await svc.getFixturesForDate(saveId, date)).filter((f) => f.competition === meta.leagueSlug);
     const playerFixtureToday = leagueFixturesToday.find((f) => f.home === playerSquadId || f.away === playerSquadId);
+    // Lesões: pre-day injury status of every player involved in today's league round, read before
+    // `runBufferedDay` runs — this is the state the lineup selectors actually saw. Also doubles as
+    // an injury-bookkeeping sample point (tracked-injured set + healed transitions).
+    let preDayInjured: Map<string, boolean> | null = null;
     if (playerFixtureToday) {
       const month = date.slice(0, 7);
       const opponentId = playerFixtureToday.home === playerSquadId ? playerFixtureToday.away : playerFixtureToday.home;
+      preDayInjured = new Map<string, boolean>();
+      const sid: string = saveId;
+      const playerSquadPreDay = await svc.getSquadById(sid, playerSquadId);
+      const squadsToday = [
+        ...(playerSquadPreDay ? [playerSquadPreDay] : []),
+        ...(await Promise.all(
+          [...new Set(leagueFixturesToday.flatMap((f) => [f.home, f.away]))]
+            .filter((id): id is string => id !== playerSquadId)
+            .map((id) => svc.getSquadById(sid, id)),
+        )).filter((s): s is Squad => !!s),
+      ];
+      for (const squad of squadsToday) {
+        for (const p of squad.players) {
+          preDayInjured.set(p.id, isInjured(p, date));
+          if (p.injury) {
+            trackedInjured.set(p.id, p.injury.returnDate);
+          } else if (trackedInjured.has(p.id)) {
+            healedObserved++;
+            trackedInjured.delete(p.id);
+          }
+        }
+      }
       for (const fx of leagueFixturesToday) {
         for (const squadId of [fx.home, fx.away]) {
           if (squadId === playerSquadId) continue;
-          const squad = await svc.getSquadById(saveId, squadId);
+          const squad = squadsToday.find((s) => s.id === squadId);
           if (!squad) continue;
           const fitnessXI = autoLineupDefaultFormationWithFitness(squad);
           const plainXI = autoLineupDefaultFormation(squad);
@@ -258,6 +293,24 @@ try {
     const payload = outcome.payload as Record<string, unknown>;
     const playedMine = prePlayerFixtures.length > 0 || ms > 4000;
     if (playedMine) { matchDays++; matchDayMs += ms; }
+
+    // Lesões: count every match played today (any league, engine or quickSim — both always write
+    // `MatchEvent.injuries`, possibly empty) and check the player's league round against the
+    // pre-day injury snapshot taken above.
+    const dayLog = await plain().getDayLog(saveId, date);
+    if (dayLog) {
+      for (const event of dayLog.events) {
+        if (event.kind !== "match") continue;
+        totalMatchesLogged++;
+        totalMatchInjuries += event.injuries?.length ?? 0;
+        if (preDayInjured && event.competition === meta.leagueSlug) {
+          for (const playerId of Object.keys(event.playerStats)) {
+            injuredXIChecks++;
+            if (preDayInjured.get(playerId) === true) injuredXIViolations++;
+          }
+        }
+      }
+    }
 
     const metaAfter = (await plain().getMeta(saveId))!;
     if (metaAfter.currentDate !== addOneDay(date)) {
@@ -828,6 +881,28 @@ try {
   for (const [kind, amount] of Object.entries(totalsByKind(allLedgerEntries))) {
     console.log(`    ${kind.padEnd(14)} ${Math.round(amount).toLocaleString("en-US").padStart(16)}`);
   }
+
+  // ── Lesões ───────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/injuries.md`. `allFiles` (final world state) already fetched above.
+  console.log("\n── Lesões ──");
+
+  const injuryRate = totalMatchesLogged > 0 ? totalMatchInjuries / totalMatchesLogged : NaN;
+  console.log(`  ${totalMatchInjuries} injuries across ${totalMatchesLogged} logged matches (${isNaN(injuryRate) ? "n/a" : injuryRate.toFixed(3)}/match)`);
+  check(totalMatchesLogged > 0, `lesões: ${totalMatchesLogged} match(es) logged (engine + quickSim)`);
+  check(injuryRate >= 0.15 && injuryRate <= 0.5,
+    `lesões: ${isNaN(injuryRate) ? "n/a" : injuryRate.toFixed(3)} injuries/match within 0.15..0.5`);
+
+  check(injuredXIChecks > 0, `lesões: ${injuredXIChecks} player-appearance(s) checked against the pre-day injury snapshot (player's league)`);
+  check(injuredXIViolations === 0,
+    `lesões: no player injured on the match date appeared in a played XI (${injuredXIViolations} of ${injuredXIChecks} violated)`);
+
+  check(healedObserved > 0, `lesões: at least one tracked injury healed during the run (${healedObserved} observed)`);
+
+  const endDateForInjuryCheck = (await plain().getMeta(saveId))!.currentDate!;
+  const staleInjuries = allFiles.flatMap(({ squad }) =>
+    squad.players.filter((p) => p.injury && p.injury.returnDate < endDateForInjuryCheck).map((p) => `${squad.id}/${p.id}`));
+  check(staleInjuries.length === 0,
+    `lesões: no injury.returnDate earlier than currentDate left set at the end (${staleInjuries.length} stale, e.g. ${staleInjuries.slice(0, 3).join(", ")})`);
 
   // ── Fôlego ───────────────────────────────────────────────────────────────
   console.log("\n── Fôlego ──");

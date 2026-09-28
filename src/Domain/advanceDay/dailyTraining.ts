@@ -19,6 +19,15 @@ import {
   type RoleDPWeights,
 } from "@/GameEngine/PlayerDevelopment";
 import rolesData from "@/Data/roles.json";
+import {
+  clearHealed,
+  isInjured,
+  mergeInjury,
+  returnDate as injuryReturnDate,
+  rollSeverity,
+  trainingInjuryChance,
+  type InjurySeverity,
+} from "@/Domain/injury/injury";
 
 /** `stats.stamina` (0–10) is required on the type, but fall back defensively — see fitness.md. */
 const DEFAULT_STAMINA = 7;
@@ -60,9 +69,21 @@ export function resolveTrainingPolicy(
   };
 }
 
+/** One training-caused injury (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Treino"). */
+export interface NewTrainingInjury {
+  playerId:   string;
+  playerName: string;
+  severity:   InjurySeverity;
+  returnDate: string;
+}
+
 export interface TrainingResult {
   event: TrainingEvent;
   updatedSquad: Squad;
+  /** Players whose injury cleared today (`clearHealed`) — for the "return" inbox message. */
+  healedPlayerIds: string[];
+  /** Players newly injured by a heavy session today — for the "injured" inbox message. */
+  newInjuries: NewTrainingInjury[];
 }
 
 export interface TrainingOutcome {
@@ -100,21 +121,38 @@ export function rollTrainingOutcome(
 
 /**
  * @param policy.intensity — used for both eligible players' session AND the load a heavy
- *   session adds (`addTrainingLoad`); ineligible players below `minEnergyToTrain` never train
- *   (`.claude/rules/game/fitness.md`) — they get a full rest-day recovery (`recoverDay`) instead.
+ *   session adds (`addTrainingLoad`); ineligible players below `minEnergyToTrain`, or currently
+ *   injured, never train (`.claude/rules/game/fitness.md`, `.claude/rules/game/injuries.md`) —
+ *   they get a full rest-day recovery (`recoverDay`) instead.
+ * @param date — today's ISO date. Clears a healed injury (`clearHealed`) before anything else, and
+ *   is the day a new heavy-training injury (`trainingInjuryChance`) starts counting from.
  */
 export function buildTrainingEvent(
   squadId: string,
   squad: Squad,
   policy: { minEnergyToTrain: number; intensity: TrainingIntensity },
+  date: string,
+  rng: () => number = Math.random,
 ): TrainingResult {
+  // Clear a healed injury BEFORE eligibility/training is decided — a player who returns today can
+  // train (or be ineligible on fitness) the same day, same as `matches.ts`.
+  const healedPlayerIds: string[] = [];
+  const players = squad.players.map((p) => {
+    if (p.injury && !clearHealed(p, date).injury) healedPlayerIds.push(String(p.id));
+    return clearHealed(p, date);
+  });
+
   const eligibleIds = new Set(
-    squad.players
+    players
       .filter((p) => (ensureSeasonLog(p).seasonLog?.fitness ?? 0) >= policy.minEnergyToTrain)
+      .filter((p) => !isInjured(p, date))
       .map((p) => String(p.id)),
   );
 
-  const effects: TrainingEffect[] = squad.players.map((p) => {
+  const newInjuries: NewTrainingInjury[] = [];
+  const injuryByPlayer = new Map<string, NewTrainingInjury>();
+
+  const effects: TrainingEffect[] = players.map((p) => {
     const log = ensureSeasonLog(p).seasonLog!;
     if (eligibleIds.has(String(p.id))) {
       const { fitnessDelta, trainingPoints } = rollTrainingOutcome(
@@ -126,6 +164,18 @@ export function buildTrainingEvent(
       // The raw session cost scales down with how tired the player already is (a worn-down
       // player has less fitness left to lose) — see `.claude/rules/game/fitness.md`.
       const scaledFitnessDelta = +(fitnessDelta * (log.fitness / 100)).toFixed(1);
+      // Heavy training's small flat chance of a light injury — light/normal training never rolls.
+      if (rng() < trainingInjuryChance(policy.intensity)) {
+        const severity = rollSeverity(rng);
+        const injury: NewTrainingInjury = {
+          playerId: String(p.id),
+          playerName: p.name,
+          severity,
+          returnDate: injuryReturnDate(date, severity, rng),
+        };
+        newInjuries.push(injury);
+        injuryByPlayer.set(String(p.id), injury);
+      }
       return { playerId: String(p.id), name: p.name, fitnessDelta: scaledFitnessDelta, trainingPoints };
     }
     // Ineligible players skip training entirely and get a full rest-day recovery instead.
@@ -143,7 +193,7 @@ export function buildTrainingEvent(
 
   const updatedSquad: Squad = {
     ...squad,
-    players: squad.players.map((p) => {
+    players: players.map((p) => {
       const didTrain = eligibleIds.has(String(p.id));
       const eff = effectMap.get(String(p.id));
       const trained = eff != null && eff.trainingPoints > 0;
@@ -177,9 +227,16 @@ export function buildTrainingEvent(
         const decayed = decayLoad(log.load ?? 0);
         log.load = didTrain ? addTrainingLoad(decayed, policy.intensity) : decayed;
       }
-      return { ...pl, seasonLog: log };
+      const newInjury = injuryByPlayer.get(String(p.id));
+      return {
+        ...pl,
+        seasonLog: log,
+        ...(newInjury
+          ? { injury: mergeInjury(pl.injury, { severity: newInjury.severity, returnDate: newInjury.returnDate }) }
+          : {}),
+      };
     }),
   };
 
-  return { event: { kind: "training", squadId, effects }, updatedSquad };
+  return { event: { kind: "training", squadId, effects }, updatedSquad, healedPlayerIds, newInjuries };
 }

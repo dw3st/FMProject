@@ -441,18 +441,20 @@ export const apiRoutes = {
     };
 
     const resolvedMyFormation = (myFormation ?? defaultFormation) as Formation;
+    const matchDate = matchFixture?.date ?? save.currentDate ?? undefined;
 
     // An empty (or otherwise invalid) saved lineup — e.g. a career that never touched the
     // formation screen — is filled the same way the headless path resolves it
     // (`resolveUserLineup`/`computeMatchSimulationLineups`), so a live match starts the same XI a
     // skipped/simulated day for this same fixture would have used, instead of match-setup's own
     // plain per-slot `pickForRole` fallback (via `createMatchState`'s unfilled lineup slots).
-    if (!myTactics.lineup || myTactics.lineup.length !== 11) {
-      myTactics = {
-        ...myTactics,
-        lineup: resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? []),
-      };
-    }
+    //
+    // Even a VALID 11-player saved lineup can go stale between the day it was saved and the day
+    // the fixture is played — `resolveUserLineup` swaps out any starter injured on `matchDate` for
+    // the best eligible bench player, and we surface which slots changed (`injuredReplaced`) so the
+    // preview screen can warn the user before kickoff.
+    const resolved = resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? [], matchDate);
+    myTactics = { ...myTactics, lineup: resolved.lineup };
 
     return Response.json({
       save,
@@ -464,6 +466,7 @@ export const apiRoutes = {
       oppFormation: oppFormation ?? defaultFormation,
       myLineup:     myTactics.lineup,
       myTactics,
+      injuredReplaced: resolved.injuredReplaced,
     });
   },
 

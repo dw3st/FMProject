@@ -49,6 +49,24 @@ export interface MatchSubstitution {
   matchMinute:    number;
 }
 
+/**
+ * One in-match injury (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Na partida").
+ * Task 3 (post-match / `advanceDay`) reads these to write `player.injury` with a `returnDate`.
+ */
+export interface MatchInjury {
+  team:        "home" | "away";
+  playerId:    string;
+  playerName:  string;
+  severity:    "light" | "medium" | "severe";
+  matchMinute: number;
+  /**
+   * Energy (0–100) at the moment of injury. Needed for a player removed outright (no subs left)
+   * — they never appear in `playerEnergy`/`substitutions` otherwise, so this is the only source
+   * for their final in-match energy.
+   */
+  energy: number;
+}
+
 export interface MatchEvent {
   kind:          "match";
   fixtureId:     string;
@@ -67,6 +85,8 @@ export interface MatchEvent {
   scorers:       Scorer[];
   /** Substitutions made during the match, in chronological order. */
   substitutions: MatchSubstitution[];
+  /** In-match injuries, in chronological order. Absent/omitted means none occurred. */
+  injuries?: MatchInjury[];
   /** Attribute level-ups/downs that occurred this match. */
   developmentChanges: PlayerDevelopmentChange[];
   durationMs:    number;

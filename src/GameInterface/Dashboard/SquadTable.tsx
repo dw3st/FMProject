@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronUp, ChevronDown, Star } from "lucide-react";
 import type { Squad } from "@/types/playerTypes";
 import { comparePositions } from "@/types/positionOrder";
-import { toDisplayPlayer } from "@/GameInterface/playerHelpers";
+import { toDisplayPlayer, capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { wageFactorOf } from "@/Domain/finance/wages";
@@ -48,8 +48,8 @@ export function SquadTable({
   const players = useMemo<DisplayPlayer[]>(() => {
     if (!squad) return [];
     const wageFactor = wageFactorOf(squad);
-    return squad.players.map((p) => toDisplayPlayer(p, squad.name, { wageFactor }));
-  }, [squad]);
+    return squad.players.map((p) => toDisplayPlayer(p, squad.name, { wageFactor, currentDate }));
+  }, [squad, currentDate]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -157,7 +157,7 @@ export function SquadTable({
               <RatingBadge value={player.avgRating} />
             </div>
             <div className="w-10 px-3 py-2.5">
-              <FitStatusIcon status={player.status} />
+              <FitStatusIcon status={player.status} injury={player.injury} />
             </div>
           </div>
         ))}
@@ -218,10 +218,24 @@ function StatusBadge({ level }: { level: StatusLevel }) {
   );
 }
 
-function FitStatusIcon({ status }: { status: string }) {
+function FitStatusIcon({
+  status,
+  injury,
+}: {
+  status: string;
+  injury?: { severity: "light" | "medium" | "severe"; daysLeft: number };
+}) {
   const { t } = useTranslation();
   if (status === "fit") return <div className="w-3 h-3 rounded-full bg-primary glow-primary-sm" title={t("dashboard.squadTable.fit")} />;
-  if (status === "injured") return <div className="w-3 h-3 rounded-full bg-destructive" title={t("dashboard.squadTable.injured")} style={{ boxShadow: "0 0 8px rgb(239 68 68 / 0.5)" }} />;
+  if (status === "injured") {
+    const severity = injury ? t(`dashboard.squadTable.sev${capitalizeSeverity(injury.severity)}` as never) : "";
+    const title = injury
+      ? injury.daysLeft > 0
+        ? t("dashboard.squadTable.injuredDays", { severity, days: injury.daysLeft })
+        : t("dashboard.squadTable.injuredToday", { severity })
+      : t("dashboard.squadTable.injured");
+    return <div className="w-3 h-3 rounded-full bg-destructive" title={title} style={{ boxShadow: "0 0 8px rgb(239 68 68 / 0.5)" }} />;
+  }
   if (status === "suspended") return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadTable.suspended")} style={{ boxShadow: "0 0 8px rgb(250 204 21 / 0.5)" }} />;
   return null;
 }

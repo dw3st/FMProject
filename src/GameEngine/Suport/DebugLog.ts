@@ -20,7 +20,8 @@ export type DebugCategory =
   | 'possession'    // ball ownership changes
   | 'offside'       // offside violations
   | 'dribble'       // dribble attempt outcomes
-  | 'throughBall';  // through-ball lifecycle (started, race, contested, won)
+  | 'throughBall'   // through-ball lifecycle (started, race, contested, won)
+  | 'injury';       // in-match injuries (forced substitution)
 
 export interface DebugEntry {
   id:        number;

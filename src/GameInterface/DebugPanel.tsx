@@ -17,6 +17,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   offside:      "text-purple-400",
   dribble:      "text-fuchsia-400",
   throughBall:  "text-purple-400",
+  injury:       "text-rose-500",
 };
 
 type ActionScoreKey = 'shoot' | 'pass' | 'carry' | 'dribble' | 'throughBall';

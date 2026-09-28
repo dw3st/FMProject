@@ -1,4 +1,4 @@
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord } from '@/GameEngine/types';
 import { resolvePenaltyShootout, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from './DecisionTree';
 import type { PlayerDecision, DecisionPath } from './DecisionTree';
@@ -52,7 +52,11 @@ import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS } from '@/GameEngi
 import { getFormationSetPieces, generateKickoffLayout } from '@/GameEngine/Domain/SetPieceLayouts';
 import type { FormationSetPieces, SetPieceLayout } from '@/GameEngine/Domain/SetPieceLayouts';
 import { applySetPieceToTeam, enforceKickoffCircleRule } from '@/GameEngine/Domain/SetPiecePositioning';
-import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
+import { evaluateAiSubstitutions, shouldCheckAiSubs, findBestBenchForRole } from '@/GameEngine/Domain/AiSubstitution';
+import {
+  injuryRatePerMinute, contactInjuryChance, rollSeverity,
+  type InjuryFactors, type InjurySeverity,
+} from '@/Domain/injury/injury';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
 import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
 
@@ -238,6 +242,9 @@ function buildGamePlayerForSlot(
     recoveryTime:     0,
     justReceivedTicks: 0,
     decisionMemory:   EMPTY_DECISION_MEMORY,
+    age:              rp.age,
+    strengthAttr:     buffed.strength,
+    injuryLoad:       rp.seasonLog?.load ?? 0,
   };
 }
 
@@ -304,6 +311,9 @@ function buildTeam(
       recoveryTime:     0,
       justReceivedTicks: 0,
       decisionMemory:   EMPTY_DECISION_MEMORY,
+      age:              rp.age,
+      strengthAttr:     buffed.strength,
+      injuryLoad:       rp.seasonLog?.load ?? 0,
     });
   }
 
@@ -350,6 +360,7 @@ export function createMatchState(
     benchA:                teamAResult.bench,
     benchB:                teamBResult.bench,
     substitutions:         [],
+    injuries:              [],
     subsRemainingA:        5,
     subsRemainingB:        5,
     pendingSubsA:          [],
@@ -406,7 +417,7 @@ export function performSubstitution(
   team: TeamId,
   outPlayerId: number,
   inPlayerId: number,
-  reason?: 'fatigue',
+  reason?: 'fatigue' | 'injury',
 ): GameState {
   const bench = team === 'A' ? state.benchA : state.benchB;
   const outPlayer = state.players.find(p => p.id === outPlayerId && p.team === team);
@@ -468,7 +479,7 @@ export function performSubstitution(
   const newPlayers = state.players.map(p => p.id === outPlayerId ? incoming : p);
   const newBench   = bench.filter(p => p.id !== inPlayerId);
 
-  return {
+  return cleanupAfterPlayerLeft({
     ...state,
     players:         newPlayers,
     benchA:          team === 'A' ? newBench : state.benchA,
@@ -477,7 +488,7 @@ export function performSubstitution(
     subsRemainingB:  team === 'B' ? state.subsRemainingB - 1 : state.subsRemainingB,
     substitutions:   [...state.substitutions, record],
     ballHolderId,
-  };
+  }, outPlayerId);
 }
 
 /**
@@ -499,6 +510,230 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
     s = performSubstitution(s, team, req.outId, req.inId, req.reason);
   }
 
+  return s;
+}
+
+// ── In-match injuries ─────────────────────────────────────────────────────────
+// `docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Na partida". Pure risk math lives in
+// `Domain/injury/injury.ts`; this file owns reading player condition and executing the outcome
+// (forced substitution, or "play on with 10" when none is available).
+
+function injuryFactorsOf(p: GamePlayer): InjuryFactors {
+  return { energy: p.energy, load: p.injuryLoad, age: p.age, strength: p.strengthAttr };
+}
+
+/**
+ * Cleans up references to a player who just left the pitch (removed outright, or replaced by a
+ * substitution) so no other piece of state dangles on their now-stale id:
+ *  - `setPiece.takerId` — reassigned to the CURRENT `ballHolderId` (already correctly updated by
+ *    the caller before this runs) if it was pointing at the player who left.
+ *  - `pendingSubsA`/`B` — any queued sub with `outId === leftId` is now unfulfillable (that player
+ *    is gone) and is dropped rather than left to silently no-op in `performSubstitution`.
+ *  - `decisions[leftId]` — stale per-tick decision entry removed.
+ * `looseBall` ids (`fromPasserId`/`intendedRunnerId`) are tolerated unresolved — they're purely
+ * informational once the ball has moved on and nothing dereferences them as a live player lookup.
+ */
+function cleanupAfterPlayerLeft(state: GameState, leftId: number): GameState {
+  let s = state;
+  if (s.setPiece && s.setPiece.takerId === leftId) {
+    s = { ...s, setPiece: { ...s.setPiece, takerId: s.ballHolderId } };
+  }
+  if (s.pendingSubsA.some(p => p.outId === leftId) || s.pendingSubsB.some(p => p.outId === leftId)) {
+    s = {
+      ...s,
+      pendingSubsA: s.pendingSubsA.filter(p => p.outId !== leftId),
+      pendingSubsB: s.pendingSubsB.filter(p => p.outId !== leftId),
+    };
+  }
+  if (leftId in s.decisions) {
+    const rest = { ...s.decisions };
+    delete rest[leftId];
+    s = { ...s, decisions: rest };
+  }
+  return s;
+}
+
+/** Removes a player from the pitch outright (no bench candidate / no subs left — "play on with 10"). */
+function removeInjuredPlayer(state: GameState, player: GamePlayer): GameState {
+  let ballHolderId = state.ballHolderId;
+  if (ballHolderId === player.id) {
+    const nearest = state.players
+      .filter(p => p.team === player.team && p.id !== player.id)
+      .sort((a, b) => distSq(a, player) - distSq(b, player));
+    ballHolderId = nearest[0]?.id ?? ballHolderId;
+  }
+  return cleanupAfterPlayerLeft({
+    ...state,
+    players: state.players.filter(p => p.id !== player.id),
+    ballHolderId,
+  }, player.id);
+}
+
+/** Emergency-keeper stat floor — deliberately weak (a real GK's stats are built from role-specific
+ *  attributes and land well above this), just enough that shots against a promoted outfielder
+ *  aren't an automatic save-chance of exactly zero. 0..1 scale, same as `runtimeStats`. */
+const GK_EMERGENCY_STAT_FLOOR = 0.2;
+
+/** True when a GK-role player actually has GK-specific stats built (i.e. `teamLineup` built them
+ *  as a real keeper) — false for an outfielder whose role got relabelled 'GK' by a substitution
+ *  slot but whose `baseStats` were never recomputed for the position (see `performSubstitution`'s
+ *  "we don't have their raw PlayerStatsRecord anymore" comment). */
+function hasRealGkStats(p: GamePlayer): boolean {
+  const s = p.baseStats.withoutBall;
+  return s.gkPositioning > 0 || s.gkReflex > 0 || s.gkDiving > 0;
+}
+
+function withGkStatFloor(p: GamePlayer): GamePlayer {
+  const floor = (v: number) => Math.max(v, GK_EMERGENCY_STAT_FLOOR);
+  return {
+    ...p,
+    baseStats: {
+      ...p.baseStats,
+      withoutBall: {
+        ...p.baseStats.withoutBall,
+        gkPositioning: floor(p.baseStats.withoutBall.gkPositioning),
+        gkReflex:      floor(p.baseStats.withoutBall.gkReflex),
+        gkDiving:      floor(p.baseStats.withoutBall.gkDiving),
+      },
+    },
+    runtimeStats: {
+      ...p.runtimeStats,
+      withoutBall: {
+        ...p.runtimeStats.withoutBall,
+        gkPositioning: floor(p.runtimeStats.withoutBall.gkPositioning),
+        gkReflex:      floor(p.runtimeStats.withoutBall.gkReflex),
+        gkDiving:      floor(p.runtimeStats.withoutBall.gkDiving),
+      },
+    },
+  };
+}
+
+/**
+ * Guarantees `team` has a goalkeeper capable of at least a baseline save chance, after an
+ * injury-forced sub/removal. Two cases:
+ *  - No GK-role player at all (the injured keeper was removed outright, no subs left/no bench) —
+ *    promotes the outfield player closest to the team's own goal: role → GK, slot 0, bounds and
+ *    position rebuilt from the GK role engine entry, plus the stat floor below.
+ *  - A GK-role player exists but was never actually built as a keeper (bench had no GK, so
+ *    `findBestBenchForRole` brought on an outfielder — `performSubstitution` forces the SLOT's
+ *    role onto them but keeps their old outfield `baseStats`, all-zero GK stats) — patches the
+ *    stat floor onto that SAME player in place; no repositioning needed, they're already on the
+ *    GK slot/bounds from the substitution itself.
+ */
+function ensureCompetentGK(state: GameState, team: TeamId): GameState {
+  const teamPlayers = state.players.filter(p => p.team === team);
+  const gk = teamPlayers.find(p => p.role === 'GK');
+
+  if (gk) {
+    if (hasRealGkStats(gk)) return state;
+    return { ...state, players: state.players.map(p => (p.id === gk.id ? withGkStatFloor(p) : p)) };
+  }
+
+  const outfield = teamPlayers.filter(p => p.role !== 'GK');
+  if (outfield.length === 0) return state; // nobody left on the team at all — degenerate, nothing to promote
+
+  const ownGoalX = outfield[0]!.attackDir === 1 ? 0 : PITCH_LENGTH;
+  const deepest = outfield.reduce((best, p) =>
+    Math.abs(p.x - ownGoalX) < Math.abs(best.x - ownGoalX) ? p : best,
+  );
+
+  const roleEng    = roleEngine('GK');
+  const xBoundsBase = roleEng.bounds;
+  const xBounds    = team === 'A' ? xBoundsBase : mirrorBounds({ ...xBoundsBase, minY: 0, maxY: PITCH_WIDTH });
+  const goalY      = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
+  const bounds: MovementBounds = {
+    minX: xBounds.minX, maxX: xBounds.maxX,
+    minY: Math.max(0, goalY - roleEng.yRange),
+    maxY: Math.min(PITCH_WIDTH, goalY + roleEng.yRange),
+  };
+  const goalPos = { x: ownGoalX, y: goalY };
+
+  const promoted = withGkStatFloor({
+    ...deepest,
+    role:              'GK' as PlayerRole,
+    slotIndex:         0,
+    x:                 goalPos.x,
+    y:                 goalPos.y,
+    basePosition:      goalPos,
+    targetPosition:    goalPos,
+    bounds,
+    ballSupportScale:  roleEng.ballSupportScale,
+  });
+
+  return { ...state, players: state.players.map(p => (p.id === deepest.id ? promoted : p)) };
+}
+
+/**
+ * Records an injury, emits the `injury` event, and either forces a substitution (best bench
+ * player for the injured player's slot — reuses `findBestBenchForRole`, same choice
+ * `evaluateAiSubstitutions` would make) or, with no subs remaining / no bench candidate, removes
+ * the player outright — the team plays on with 10 (or fewer). Either way, guarantees the team
+ * still has a competent goalkeeper afterward (`ensureCompetentGK`).
+ */
+export function forceInjurySubstitution(
+  state: GameState,
+  player: GamePlayer,
+  minute: number,
+  severity: InjurySeverity,
+): GameState {
+  const team = player.team;
+  const record: InjuryRecord = {
+    team,
+    playerId:       player.id,
+    playerName:     player.name,
+    playerRosterId: player.rosterId,
+    severity,
+    matchMinute:    minute,
+    energy:         player.energy,
+  };
+  let s: GameState = { ...state, injuries: [...state.injuries, record] };
+  gameBus.emit('injury', { playerId: player.id, playerName: player.name, team, minute, severity });
+  debugLog('injury', `${player.name} (team ${team}) injured — ${severity}, minute ${minute}`, {
+    playerId: player.id,
+    data: { severity, minute, team, energy: player.energy },
+  });
+
+  const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
+  const bench    = team === 'A' ? s.benchA         : s.benchB;
+  let result: GameState;
+  if (subsLeft > 0 && bench.length > 0) {
+    const best = findBestBenchForRole(bench, player.role);
+    result = best ? performSubstitution(s, team, player.id, best.id, 'injury') : removeInjuredPlayer(s, player);
+  } else {
+    result = removeInjuredPlayer(s, player);
+  }
+  return ensureCompetentGK(result, team);
+}
+
+/** Per-tick, per-player injury roll: `injuryRatePerMinute` scaled to the game-minutes elapsed this tick. */
+function rollInMatchInjuries(state: GameState, dt: number): GameState {
+  const gameMinutes = (dt * TIME_SCALE) / 60;
+  let s = state;
+  for (const player of state.players) {
+    // Guard against a player removed earlier THIS tick by a prior roll.
+    if (!s.players.some(p => p.id === player.id)) continue;
+    const prob = injuryRatePerMinute(injuryFactorsOf(player)) * gameMinutes;
+    if (Math.random() < prob) {
+      s = forceInjurySubstitution(s, player, matchMinute(s), rollSeverity());
+    }
+  }
+  return s;
+}
+
+/**
+ * Extra contact-event injury risk for the two players involved in a tackle or loose-ball duel —
+ * rolled independently for each, regardless of who won. Looks players up by id on the CURRENT
+ * state so it's safe to call after possession/recovery updates have already been applied.
+ */
+function rollContactInjuries(state: GameState, ids: [number, number], minute: number): GameState {
+  let s = state;
+  for (const id of ids) {
+    const player = s.players.find(p => p.id === id);
+    if (!player) continue; // already left the pitch this tick
+    if (Math.random() < contactInjuryChance(injuryFactorsOf(player))) {
+      s = forceInjurySubstitution(s, player, minute, rollSeverity());
+    }
+  }
   return s;
 }
 
@@ -1404,6 +1639,9 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   // ── Someone arrived — clean pickup OR contested duel ───────────────────
   let winner: GamePlayer;
   let duelLost = false;
+  // Set only when a real contested duel happened this call — feeds the contact-injury roll
+  // applied to the final outcome via `finishLooseBall` below.
+  let duelParticipants: [number, number] | null = null;
 
   if (
     inTouch.length >= 2 &&
@@ -1430,9 +1668,19 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
       gameBus.emit('throughBallLostInDuel', { player: lb.fromPasserId, defenderWinnerId: winner.id });
       duelLost = true;
     }
+    duelParticipants = [a.id, b.id];
   } else {
     winner = inTouch[0]!.p;
   }
+
+  // Applies the contact-injury roll (only when `duelParticipants` was set above) to a finished
+  // TickResult right before it's returned — safe to do last since `ballHolderId`/`players` are
+  // already final in `result.state`, and both helpers correctly reassign `ballHolderId` if the
+  // injured player happens to be the one just given possession.
+  const finishLooseBall = (result: TickResult): TickResult => {
+    if (!duelParticipants) return result;
+    return { ...result, state: rollContactInjuries(result.state, duelParticipants, matchMinute(result.state)) };
+  };
 
   // ── Offside enforcement — only if the intended runner is the one who collects
   const flaggedOffside =
@@ -1450,7 +1698,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
       return d < bd ? p : best;
     });
     const prevHolderId = s.ballHolderId;
-    return {
+    return finishLooseBall({
       state: onPossessionTransfer({
         ...s,
         looseBall: null,
@@ -1460,7 +1708,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
         setPiece: { type: 'offside_fk', takerId: nearestDefender.id, countdown: 2, position: { x: lb.x, y: lb.y } },
       }, prevHolderId),
       passCompleted: false, tackled: false, goalScored: null,
-    };
+    });
   }
 
   const wonByTeam = winner.team === lb.fromTeamLastTouch;
@@ -1472,7 +1720,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     debugLog('throughBall', `Loose ball collected by ${winner.name}${isIntended ? ' (intended runner)' : ''}`, {
       playerId: winner.id, data: { fromId: lb.fromPasserId },
     });
-    return {
+    return finishLooseBall({
       state: {
         ...s,
         ballHolderId: winner.id,
@@ -1481,7 +1729,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
         players: s.players.map(p => p.id === winner.id ? { ...p, justReceivedTicks: 4 } : p),
       },
       passCompleted: true, tackled: false, goalScored: null,
-    };
+    });
   }
 
   // Defender wins
@@ -1492,13 +1740,13 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     playerId: winner.id, data: { fromId: lb.fromPasserId },
   });
   const prevHolderId = s.ballHolderId;
-  return {
+  return finishLooseBall({
     state: onPossessionTransfer(
       { ...s, looseBall: null, ballHolderId: winner.id, possessionTime: 0, lastPasserId: null },
       prevHolderId,
     ),
     passCompleted: false, tackled: true, goalScored: null,
-  };
+  });
 }
 
 // ── Tick ─────────────────────────────────────────────────────────────────────
@@ -1627,6 +1875,16 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       return Object.keys(updates).length > 0 ? { ...p, ...updates } : p;
     }),
   };
+
+  // ── Per-minute injury risk (energy/load/age/strength) — every on-pitch player, every tick ──
+  // Skipped while a pass/shot is in flight: `rollInMatchInjuries` can remove or substitute ANY
+  // on-pitch player, including the passer/shooter/receiver a `PassState`/`ShotState` references
+  // by id — doing that mid-flight would leave `state.pass.fromId`/`toId` (or `shot.shooterId`)
+  // dangling and crash `getBallPos`/shot resolution. The skipped ticks are a negligible share of
+  // match time (a pass/shot flight is a fraction of a second).
+  if (s.pass === null && s.shot === null) {
+    s = rollInMatchInjuries(s, dt);
+  }
 
   // GK fake-stop: flush pending subs when GK holds the ball (not while a pass/shot is in flight)
   if (s.pendingSubsA.length > 0 || s.pendingSubsB.length > 0) {
@@ -2105,6 +2363,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
               return p;
             }),
           }, prevHolderId);
+          s = rollContactInjuries(s, [tackler.id, updatedHolder.id], matchMinute(s));
           return { state: s, passCompleted: false, tackled: true, goalScored: null };
         } else {
           s = {
@@ -2113,6 +2372,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
               p.id === tackler!.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p,
             ),
           };
+          s = rollContactInjuries(s, [tackler.id, updatedHolder.id], matchMinute(s));
         }
       }
     }

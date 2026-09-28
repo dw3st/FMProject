@@ -75,7 +75,7 @@ export function evaluateAiSubstitutions(
  * Priority: exact role match → same main role → any player.
  * Among equals, picks the one with better weighted score for the role.
  */
-function findBestBenchForRole(bench: GamePlayer[], role: string): GamePlayer | null {
+export function findBestBenchForRole(bench: GamePlayer[], role: string): GamePlayer | null {
   if (bench.length === 0) return null;
 
   const exactMatch = bench

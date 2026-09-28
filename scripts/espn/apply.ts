@@ -1,4 +1,4 @@
-import { agePlayerStats } from "@/../scripts/espn/aging";
+import { agePlayerStats, youngGrowthDampen } from "@/../scripts/espn/aging";
 import { estimateStats, fillSquad, lineMedians, makePlayer, trimSquad } from "@/../scripts/espn/estimate";
 import { planLineup, type LeagueRef } from "@/../scripts/espn/lineup";
 import { matchClubs } from "@/../scripts/espn/matchClubs";
@@ -305,6 +305,20 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
       if (t.logoFile) espnLogoOf.set(sid, t.logoFile);
       base.players = [];
       const aged: RosterPlayer[] = [];
+      // #14 — pre-pass: the destination club's median overall per line, from the matched
+      // sources' PRE-aging stats (opts.overall), so a young player's growth can be dampened
+      // when they're already above their new club's median in that line (youngGrowthDampen).
+      const lineOverallsBySid = new Map<MainRole, number[]>();
+      for (const a of t.athletes) {
+        if (winnerTeamOf.get(a.id) !== t.id) continue;
+        const pid = playerMatch.get(a.id);
+        if (!pid) continue;
+        const src = playerById.get(pid)!;
+        const role = espnRole(a.position) ?? lineOf(src);
+        const arr = lineOverallsBySid.get(role) ?? [];
+        arr.push(opts.overall(src));
+        lineOverallsBySid.set(role, arr);
+      }
       for (const a of [...t.athletes].sort((x, y) => byId(x.id, y.id))) {
         if (winnerTeamOf.get(a.id) !== t.id) continue; // dropped duplicate — belongs to another team
         const pid = playerMatch.get(a.id);
@@ -312,14 +326,17 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         const src = playerById.get(pid)!;
         const p = clone(src);
         const newAge = a.age ?? (src.age + typicalGap);
-        p.stats = agePlayerStats(p.id, src.stats, src.age, newAge, opts.roleWeights(src));
+        const er = espnRole(a.position);
+        const role = er ?? lineOf(src);
+        const clubLineMedian = median(lineOverallsBySid.get(role) ?? []);
+        const dampen = youngGrowthDampen(opts.overall(src), clubLineMedian);
+        p.stats = agePlayerStats(p.id, src.stats, src.age, newAge, opts.roleWeights(src), dampen);
         p.age = newAge;
         p.squadId = sid;
         // Keep the world's own nationality when ESPN's citizenship doesn't normalize to a known
         // country (adjective forms, aliases we don't recognise, etc.) — never overwrite with junk.
         const nat = normalizeNationality(a.citizenship, worldNationalities);
         if (nat) p.nationality = nat;
-        const er = espnRole(a.position);
         if (er && er !== lineOf(src)) p.positions = [er];
         delete p.overallAvg;
         base.players.push(p);
@@ -369,14 +386,21 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     for (const id of ids) {
       if (built.has(id)) continue;
       const s = clone(squadById.get(id)!);
-      s.players = s.players
-        .filter((p) => !claimedPlayers.has(p.id))
-        .map((p) => {
-          const newAge = p.age + typicalGap;
-          const aged: RosterPlayer & { fullName?: string } = { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p)) };
-          delete aged.overallAvg;
-          return aged;
-        });
+      const remaining = s.players.filter((p) => !claimedPlayers.has(p.id));
+      // #14 — median overall per line among this club's own remaining (pre-aging) players.
+      const lineOveralls = new Map<MainRole, number[]>();
+      for (const p of remaining) {
+        const arr = lineOveralls.get(lineOf(p)) ?? [];
+        arr.push(opts.overall(p));
+        lineOveralls.set(lineOf(p), arr);
+      }
+      s.players = remaining.map((p) => {
+        const newAge = p.age + typicalGap;
+        const dampen = youngGrowthDampen(opts.overall(p), median(lineOveralls.get(lineOf(p)) ?? []));
+        const aged: RosterPlayer & { fullName?: string } = { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p), dampen) };
+        delete aged.overallAvg;
+        return aged;
+      });
       built.set(id, s);
     }
   }

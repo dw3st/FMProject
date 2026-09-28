@@ -17,6 +17,7 @@ import {
   buildContinentalMessage,
   buildCupMessage,
   buildDevelopmentMessage,
+  buildInjuryMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
   buildSeasonMessage,
@@ -322,6 +323,12 @@ export async function advanceOneDay(
     // parallel `saveSquad` calls race and the loser's energy/seasonLog/development silently vanish.
     const squadWrites = new Map<string, { league: string; club: string; squad: Squad }>();
     const teamsPlayingToday = new Set<string>(); // squadIds that have a match today
+    // Injury news for the human club, collected as the day is built (matches + training/rest) and
+    // emitted to the inbox once, after everything else — see `.claude/rules/game/injuries.md`.
+    const injuryInboxEvents: Array<
+      | { kind: "injured"; squadId: string; playerId: string; playerName: string; severity: "light" | "medium" | "severe"; returnDate: string }
+      | { kind: "returned"; squadId: string; playerId: string; playerName: string }
+    > = [];
     // The player's club home fixtures today, across every competition (league, cup, continental —
     // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
     // loop below processes each competition's rounds for the day.
@@ -460,6 +467,23 @@ export async function advanceOneDay(
             squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
+            for (const inj of r.injuriesApplied) {
+              injuryInboxEvents.push({
+                kind: "injured",
+                squadId: inj.team === "home" ? fixture.home : fixture.away,
+                playerId: inj.playerId,
+                playerName: inj.playerName,
+                severity: inj.severity,
+                returnDate: inj.returnDate,
+              });
+            }
+            for (const playerId of r.healedPlayerIds) {
+              const onHome = homeSquad.players.some((p) => p.id === playerId);
+              const squadId = onHome ? fixture.home : fixture.away;
+              const roster = onHome ? homeSquad : awaySquad;
+              const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
+              injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
+            }
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
             if (idx !== -1) updatedFixtures[idx] = {
@@ -483,6 +507,23 @@ export async function advanceOneDay(
             squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
+            for (const inj of r.injuriesApplied) {
+              injuryInboxEvents.push({
+                kind: "injured",
+                squadId: inj.team === "home" ? fixture.home : fixture.away,
+                playerId: inj.playerId,
+                playerName: inj.playerName,
+                severity: inj.severity,
+                returnDate: inj.returnDate,
+              });
+            }
+            for (const playerId of r.healedPlayerIds) {
+              const onHome = homeSquad.players.some((p) => p.id === playerId);
+              const squadId = onHome ? fixture.home : fixture.away;
+              const roster = onHome ? homeSquad : awaySquad;
+              const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
+              injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
+            }
 
             const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
             if (idx !== -1) updatedFixtures[idx] = {
@@ -574,15 +615,46 @@ export async function advanceOneDay(
         if (!squad) continue;
 
         if (isRestDay) {
-          const { event, updatedSquad } = buildRestEvent(row.squadId, squad);
+          const { event, updatedSquad, healedPlayerIds } = buildRestEvent(row.squadId, squad, currentDate);
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
+          for (const playerId of healedPlayerIds) {
+            const playerName = squad.players.find((p) => p.id === playerId)?.name ?? playerId;
+            injuryInboxEvents.push({ kind: "returned", squadId: row.squadId, playerId, playerName });
+          }
         } else {
           const policy = resolveTrainingPolicy(meta, club, row.squadId);
-          const { event, updatedSquad } = buildTrainingEvent(row.squadId, squad, policy);
+          const { event, updatedSquad, healedPlayerIds, newInjuries } =
+            buildTrainingEvent(row.squadId, squad, policy, currentDate);
           dayEvents.push(event);
           squadWrites.set(row.squadId, { league, club, squad: updatedSquad });
+          for (const playerId of healedPlayerIds) {
+            const playerName = squad.players.find((p) => p.id === playerId)?.name ?? playerId;
+            injuryInboxEvents.push({ kind: "returned", squadId: row.squadId, playerId, playerName });
+          }
+          for (const inj of newInjuries) {
+            injuryInboxEvents.push({ kind: "injured", squadId: row.squadId, ...inj });
+          }
         }
+      }
+    }
+
+    // ── Injury news for the human club (match + training + return-to-play) ───
+    // Not emitted yet — `clearInbox` (season rollover, further below) would wipe it if it landed
+    // now. Queued into `deferredInjuryMessages` and flushed after `clearInbox`, same pattern as
+    // `continentalMessages` / `negativeBalanceMessage`.
+    const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
+    if (playerSquadId) {
+      for (const inj of injuryInboxEvents) {
+        if (inj.squadId !== playerSquadId) continue;
+        deferredInjuryMessages.push(
+          inj.kind === "injured"
+            ? {
+                date: currentDate, kind: "injured", playerId: inj.playerId, playerName: inj.playerName,
+                severity: inj.severity, returnDate: inj.returnDate,
+              }
+            : { date: currentDate, kind: "returned", playerId: inj.playerId, playerName: inj.playerName },
+        );
       }
     }
 
@@ -1497,6 +1569,8 @@ export async function advanceOneDay(
     for (const msg of continentalMessages) await emitInboxMessage(saveId, buildContinentalMessage(msg), saveService);
     // Negative-balance news (queued above, same reason): always after any `clearInbox` this day.
     if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
+    // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
+    for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};
