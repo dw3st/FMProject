@@ -564,3 +564,90 @@ describe("quickSim aggregate", () => {
     }
   });
 });
+
+// ── injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ───────────
+
+describe("quickSimMatch — injuries", () => {
+  function extremeRiskSquad(id: string): Squad {
+    const s = makeSquad(id, 5);
+    return {
+      ...s,
+      players: s.players.map((p) => ({
+        ...p,
+        age: 38,
+        seasonLog: { ...emptySeasonLog(), fitness: 5, load: 400 },
+      })),
+    };
+  }
+
+  test("injuries occur across many matches under extreme risk factors (old, exhausted, overloaded)", () => {
+    const home = extremeRiskSquad("h");
+    const away = extremeRiskSquad("a");
+    let totalInjuries = 0;
+    for (let seed = 0; seed < 200; seed++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: `f${seed}`, home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+        mulberry32(seed),
+      );
+      totalInjuries += recording.injuries?.length ?? 0;
+    }
+    expect(totalInjuries).toBeGreaterThan(0);
+  });
+
+  test("injuries are absent (or rare) for fresh, young, low-load players", () => {
+    const home = makeSquad("h", 7);
+    const away = makeSquad("a", 7);
+    let matchesWithInjury = 0;
+    const N = 100;
+    for (let seed = 0; seed < N; seed++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: `f${seed}`, home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+        mulberry32(seed + 10_000),
+      );
+      if (recording.injuries && recording.injuries.length > 0) matchesWithInjury++;
+    }
+    // Baseline target is ~0.3 injuries/match combined — well under half the matches should show one.
+    expect(matchesWithInjury / N).toBeLessThan(0.5);
+  });
+
+  test("recorded injuries carry valid team/severity and a matchMinute within the match, sorted", () => {
+    const home = extremeRiskSquad("h");
+    const away = extremeRiskSquad("a");
+    let found: NonNullable<ReturnType<typeof quickSimMatch>["recording"]["injuries"]> | undefined;
+    for (let seed = 0; seed < 200 && !found; seed++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: `f${seed}`, home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+        mulberry32(seed),
+      );
+      if (recording.injuries && recording.injuries.length > 0) found = recording.injuries;
+    }
+    expect(found).toBeDefined();
+    for (const inj of found!) {
+      expect(["home", "away"]).toContain(inj.team);
+      expect(["light", "medium", "severe"]).toContain(inj.severity);
+      expect(inj.matchMinute).toBeGreaterThanOrEqual(1);
+      expect(inj.matchMinute).toBeLessThanOrEqual(90);
+    }
+    const sorted = [...found!].sort((a, b) => a.matchMinute - b.matchMinute);
+    expect(found).toEqual(sorted);
+  });
+
+  test("no substitutions in quickSim — an injured player still appears with full stats (no lineup change)", () => {
+    const home = extremeRiskSquad("h");
+    const away = extremeRiskSquad("a");
+    for (let seed = 0; seed < 200; seed++) {
+      const { recording } = quickSimMatch(
+        { fixtureId: `f${seed}`, home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away) },
+        mulberry32(seed),
+      );
+      if (recording.injuries && recording.injuries.length > 0) {
+        expect(recording.substitutions).toEqual([]);
+        for (const inj of recording.injuries) {
+          expect(recording.playerStats[inj.playerId]).toBeDefined();
+        }
+        return;
+      }
+    }
+    throw new Error("expected at least one injury across 200 seeds under extreme risk factors");
+  });
+});

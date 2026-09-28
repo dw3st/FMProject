@@ -26,7 +26,7 @@ describe("buildQuickMatchEvent", () => {
   test("gera evento compacto e atualiza seasonLog dos escalados", () => {
     const home = makeSquad("h");
     const away = makeSquad("a");
-    const fixture = { id: "fx1", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
+    const fixture = { id: "fx1", date: "2027-02-05", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
     const sim = { homeLineup: home.players.map((p) => p.id), awayLineup: away.players.map((p) => p.id) };
 
     // Seed 5 produces at least one goal for this fixed 11v11 setup — verified rather than
@@ -72,7 +72,7 @@ describe("cup fixtures", () => {
   // force, so any scoreline asymmetry below comes only from the venue flags under test.
   const home = makeSquad("h");
   const away = makeSquad("a");
-  const fixture = { id: "fx1", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
+  const fixture = { id: "fx1", date: "2027-02-05", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
   const sim = { homeLineup: home.players.map((p) => p.id), awayLineup: away.players.map((p) => p.id) };
 
   test("knockout fixture never ends level and carries the decider on the event", () => {

@@ -6,6 +6,7 @@ import type {
   MatchEvent,
   MatchTeamStats,
   MatchSubstitution,
+  MatchInjury,
   Scorer,
   MatchPlayerStats,
   PlayerDevelopmentChange,
@@ -18,6 +19,16 @@ import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
+import { clearHealed, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
+
+/**
+ * An in-match injury after `player.injury` has been written (`returnDate` computed) — Task 3
+ * (`docs/superpowers/plans/2026-09-28-injuries.md`). Callers (e.g. `advanceDay.ts`) use this to
+ * build the "injured" inbox message for the human club without recomputing the return date.
+ */
+export interface AppliedInjury extends MatchInjury {
+  returnDate: string;
+}
 
 /** `stats.stamina` (0–10) is required on the type, but fall back defensively — see fitness.md. */
 const DEFAULT_STAMINA = 7;
@@ -76,6 +87,8 @@ export interface MatchSimResult {
   event: MatchEvent;
   updatedHome: Squad;
   updatedAway: Squad;
+  /** New injuries this match, with the return date already rolled. Empty when none occurred. */
+  injuriesApplied: AppliedInjury[];
 }
 
 /** Payload from a live /match playthrough — advance-day uses this instead of simulating again. */
@@ -106,19 +119,31 @@ function finalizeSquadsAfterMatch(
   totalMinutes: number,
   isCup: boolean,
   isContinental: boolean,
+  matchDate: string,
+  injuries: MatchInjury[] = [],
+  rng: Rng = Math.random,
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
   homeDevChanges: PlayerDevelopmentChange[];
   awayDevChanges: PlayerDevelopmentChange[];
+  /** New injuries this match, with the return date already rolled — see `AppliedInjury`. */
+  injuriesApplied: AppliedInjury[];
 } {
   // Shared across both squads — `playerStats` already combines home + away.
   const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), substitutions, totalMinutes);
+  const injuryByPlayer = new Map(injuries.map((inj) => [inj.playerId, inj]));
+  const injuriesApplied: AppliedInjury[] = [];
 
   function applyMatchToSquad(squad: Squad): Squad {
     return {
       ...squad,
-      players: squad.players.map((p) => {
+      players: squad.players.map((p0) => {
+        // Clear a healed injury BEFORE anything else — a player who returns today plays this
+        // match with `injury` absent for the rest of the pipeline (`.claude/rules/game/injuries.md`
+        // — Task 1's `clearHealed`, resets `seasonLog.fitness` to `INJURY.RETURN_FITNESS`, which
+        // the fitness update below then further adjusts for the match itself).
+        const p = clearHealed(p0, matchDate);
         const pl = ensureSeasonLog(p);
         const log = { ...pl.seasonLog! };
         const ps = playerStats[p.id];
@@ -175,6 +200,12 @@ function finalizeSquadsAfterMatch(
           log.fitness = updated.fitness;
           log.load = updated.load;
         }
+        const inj = injuryByPlayer.get(p.id);
+        if (inj) {
+          const rd = injuryReturnDate(matchDate, inj.severity, rng);
+          injuriesApplied.push({ ...inj, returnDate: rd });
+          return { ...pl, seasonLog: log, injury: { severity: inj.severity, returnDate: rd } };
+        }
         return { ...pl, seasonLog: log };
       }),
     };
@@ -208,6 +239,7 @@ function finalizeSquadsAfterMatch(
     updatedAway: devAway,
     homeDevChanges,
     awayDevChanges,
+    injuriesApplied,
   };
 }
 
@@ -256,11 +288,12 @@ export function buildMatchEventFromRecording(
   homeSquad: Squad,
   awaySquad: Squad,
   recording: PlayedMatchRecording,
+  rng: Rng = Math.random,
 ): MatchSimResult {
   const { playerNames, playerTeams } = rosterNameAndTeamMaps(homeSquad, awaySquad);
   const scorers = buildScorers(recording.playerStats, playerNames, playerTeams);
 
-  const { updatedHome, updatedAway, homeDevChanges, awayDevChanges } = finalizeSquadsAfterMatch(
+  const { updatedHome, updatedAway, homeDevChanges, awayDevChanges, injuriesApplied } = finalizeSquadsAfterMatch(
     homeSquad,
     awaySquad,
     recording.playerStats,
@@ -270,6 +303,9 @@ export function buildMatchEventFromRecording(
     totalMatchMinutes(recording.decider),
     isCupSlug(fixture.competition),
     isContinentalSlug(fixture.competition),
+    fixture.date,
+    recording.injuries ?? [],
+    rng,
   );
 
   const event: MatchEvent = {
@@ -293,7 +329,7 @@ export function buildMatchEventFromRecording(
     ...(recording.decider ? { decider: recording.decider } : {}),
   };
 
-  return { event, updatedHome, updatedAway };
+  return { event, updatedHome, updatedAway, injuriesApplied };
 }
 
 export function buildMatchEvent(
@@ -306,6 +342,7 @@ export function buildMatchEvent(
     awayFormation: Formation;
     awayLineup: string[];
   },
+  rng: Rng = Math.random,
 ): MatchSimResult {
   const result = simulateMatch(
     homeSquad,
@@ -426,11 +463,12 @@ export function buildMatchEvent(
     matchMinute: inj.matchMinute,
   }));
 
-  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
+  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied } =
     finalizeSquadsAfterMatch(
       homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
       substitutions, totalMatchMinutes(result.decider),
       isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
+      fixture.date, injuries, rng,
     );
 
   const event: MatchEvent = {
@@ -478,7 +516,7 @@ export function buildMatchEvent(
       : {}),
   };
 
-  return { event, updatedHome: devHome, updatedAway: devAway };
+  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied };
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
@@ -523,6 +561,6 @@ export function buildQuickMatchEvent(
     },
     rng,
   );
-  const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording);
+  const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng);
   return { ...r, event: compactMatchEvent(r.event) };
 }

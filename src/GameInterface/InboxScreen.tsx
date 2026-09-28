@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award } from "lucide-react";
+import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award, HeartPulse } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
@@ -61,6 +61,13 @@ const CATEGORY_META: Record<
     bg: "bg-sky-500/15",
     border: "border-sky-500/30",
     Icon: ContinentalIcon,
+  },
+  injury: {
+    labelKey: "inbox.categories.injury",
+    color: "text-red-400",
+    bg: "bg-red-500/15",
+    border: "border-red-500/30",
+    Icon: HeartPulse,
   },
 };
 
@@ -377,8 +384,34 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "season" && <SeasonBody message={message} />}
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
         {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
+        {message.category === "injury" && <InjuryBody message={message} />}
       </div>
     </div>
+  );
+}
+
+function InjuryBody({
+  message,
+}: {
+  message: Extract<InboxMessage, { category: "injury" }>;
+}) {
+  const { t } = useTranslation();
+  if (message.kind === "returned") {
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.injury.returned", { player: message.playerName })}
+      </p>
+    );
+  }
+  const severity = t(`inbox.injury.severity.${message.severity ?? "light"}`);
+  return (
+    <p className="text-sm text-foreground m-0">
+      {t("inbox.injury.injured", {
+        player: message.playerName,
+        severity,
+        date: formatInboxDate(message.returnDate ?? ""),
+      })}
+    </p>
   );
 }
 
