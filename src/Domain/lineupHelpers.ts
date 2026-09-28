@@ -4,7 +4,7 @@ import type { FormationSlot } from "@/types/formationSlots";
 import { Player } from "@/Domain/Player";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
-import { drainMultiplier } from "@/Domain/fitness/fitness";
+import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 
 /** Same default as `ensureSeasonLog`/`emptySeasonLog` — a player never touched by the fitness model yet. */
 const DEFAULT_FITNESS = emptySeasonLog().fitness;
@@ -66,21 +66,22 @@ const TIRED_FITNESS_THRESHOLD = 75;
  * close — this is deliberate: with `TIRED_FITNESS_THRESHOLD` alone gating eligibility, almost any
  * clearly-tired starter (fitness well under 75) loses so much value to a fresh bench player under
  * the engine's fatigue curve (`overallEnergyFactor`, `RuntimeLineup.ts`) that a ratio below ~1
- * barely filters anything, which over-rotates a congested AI squad (measured ~8-9 starters changed
- * per match at 0.85-1.0 on a 3-day fixture gap, via a rotation-sweep harness — see
- * `.claude/rules/non-player-games.md` → "Fadiga").
+ * barely filters anything, which over-rotates a congested AI squad.
  *
- * `1.3` lands a congested run (match every 3 days) at ~4.4-4.5 rotated starters per match (a little
- * above the ~2-3.5 target the balance task asked for) and a normal week at ~0. A higher ratio
- * (~1.4) lands inside the 2-3.5 target but breaks the pre-existing integration test
- * (`fitness.congestion.test.ts`, from the original stamina design's acceptance criterion — "3
- * matches in 7 days rests at least one starter by the 3rd"): with only 3 matches to accumulate
- * fatigue debt (not the 8 the sweep harness uses to reach a steady state), 1.4 doesn't clear the
- * swap bar in time on that specific real-engine scenario. `1.3` is the highest ratio that keeps
- * that acceptance test passing. Depends on the fatigue curve's steepness (`FATIGUE_CURVE_POWER` et
- * al in `RuntimeLineup.ts`) — re-sweep this constant if that curve changes.
+ * `fitnessAdjustedValue` values BOTH players by `matchStartEnergy(fitness)` — the compressed
+ * energy the ENGINE will actually kick off with (2026-09-27 "compress the relative gap" balance
+ * pass, see `src/Domain/fitness/fitness.ts` and `.claude/rules/non-player-games.md` → "Fadiga") —
+ * not raw fitness. That compression narrows the value gap between a tired starter and a fresh
+ * bench player considerably (both are pulled toward `FITNESS.FITNESS_REF`), so `BENCH_SWAP_RATIO`
+ * had to be re-swept against it every time `START_COMPRESSION` changed. Re-swept with a
+ * rotation-sweep harness (8 matches every 3 days, real `premier_league`/`of_championship` squads)
+ * at the final `START_COMPRESSION = 0.4`: `1.17` lands a congested run at ~2.8-3.1 rotated starters
+ * per match (inside the 2-3.5 target) and a normal week at ~0, and keeps the pre-existing
+ * `fitness.congestion.test.ts` acceptance criterion (a starter rested by the 3rd of 3 matches in 7
+ * days) passing. Depends on both `matchStartEnergy`'s compression and the fatigue
+ * curve's steepness (`RuntimeLineup.ts`) — re-sweep this constant if either changes.
  */
-const BENCH_SWAP_RATIO = 1.3;
+const BENCH_SWAP_RATIO = 1.17;
 
 /** GK slot is exempt from ordinary rotation unless the starter is really struggling. */
 const GK_TIRED_FITNESS_THRESHOLD = 60;
@@ -99,7 +100,12 @@ function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
   const stat = Player.weightedScore(player.stats, role);
   const fitness = player.seasonLog?.fitness ?? DEFAULT_FITNESS;
   const load = player.seasonLog?.load ?? 0;
-  return (stat * overallEnergyFactor(fitness)) / drainMultiplier(load);
+  // Value the player by what the ENGINE will actually play him at — the match's compressed
+  // starting energy (`matchStartEnergy`), not raw persisted fitness. Otherwise a moderately tired
+  // starter (say fitness 70, which the engine will actually start at ~79 — see
+  // `.claude/rules/non-player-games.md` → "Fadiga") looks more degraded to the selector than he'll
+  // actually be on the pitch, over-resting him relative to what the match itself will show.
+  return (stat * overallEnergyFactor(matchStartEnergy(fitness))) / drainMultiplier(load);
 }
 
 /**
