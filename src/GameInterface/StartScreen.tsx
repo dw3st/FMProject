@@ -7,6 +7,7 @@ import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
 import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
+import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 
 interface SaveEntry {
   id: string;
@@ -25,6 +26,9 @@ export function StartScreen() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const { showNotice: showChangelogNotice, markSeen: markChangelogSeen } = useChangelogNotice();
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const pendingDeleteSave = saves.find((s) => s.id === pendingDeleteId) ?? null;
 
   function openChangelog() {
     setIsChangelogOpen(true);
@@ -51,9 +55,16 @@ export function StartScreen() {
     }
   }
 
-  async function handleDelete(id: string) {
-    await deleteGameSave(id);
-    setSaves((prev) => prev.filter((s) => s.id !== id));
+  async function handleConfirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    try {
+      await deleteGameSave(pendingDeleteId);
+      setSaves((prev) => prev.filter((s) => s.id !== pendingDeleteId));
+      setPendingDeleteId(null);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function formatDate(iso: string) {
@@ -189,7 +200,7 @@ export function StartScreen() {
                     <Play className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(save.id)}
+                    onClick={() => setPendingDeleteId(save.id)}
                     disabled={loadingId !== null}
                     className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors cursor-pointer border-0 disabled:opacity-50"
                     title={t("common.delete")}
@@ -228,6 +239,22 @@ export function StartScreen() {
 
       <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
+      <ConfirmDialog
+        open={pendingDeleteSave !== null}
+        title={t("startScreen.deleteConfirmTitle")}
+        body={
+          pendingDeleteSave
+            ? t("startScreen.deleteConfirmBody", {
+                clubName: pendingDeleteSave.clubName,
+                leagueName: pendingDeleteSave.leagueName,
+              })
+            : ""
+        }
+        confirmLabel={t("startScreen.deleteConfirmAction")}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setPendingDeleteId(null)}
+        busy={deleting}
+      />
     </div>
   );
 }

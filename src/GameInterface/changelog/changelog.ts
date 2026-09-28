@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.5.1",
+    date: "2026-09-28",
+    items: [
+      {
+        pt: "Escudos corrigidos (Figueirense, Athletic Club, entre outros)",
+        en: "Fixed several club crests (Figueirense, Athletic Club, and others)",
+      },
+      {
+        pt: "Excluir um jogo salvo agora pede confirmação",
+        en: "Deleting a saved game now asks for confirmation",
+      },
+    ],
+  },
+  {
     version: "1.5",
     date: "2026-09-28",
     items: [
