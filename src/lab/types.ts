@@ -81,6 +81,19 @@ export interface Variant {
 
 // ── Scenario ─────────────────────────────────────────────────────────────────
 
+/**
+ * Fixture congestion: each pair plays `matches` consecutive matches instead of one, applying the
+ * fitness/load model (`src/Domain/fitness/fitness.ts`) to both squads between games — `restDays`
+ * days of rest, no real day advance. Absent ⇒ no congestion, one independent match per repetition
+ * (today's behaviour). See `docs/superpowers/specs/2026-09-27-stamina-design.md` §3.
+ */
+export interface CongestionSpec {
+  /** Games played back-to-back per repetition, ≥ 2 (1 is just "no congestion"). */
+  matches: number;
+  /** Rest days applied between each game in the sequence (0 = play again the next day). */
+  restDays: number;
+}
+
 export interface BalanceScenario {
   id: string;              // generated on first save
   name: string;
@@ -90,6 +103,8 @@ export interface BalanceScenario {
   simEngine?: SimEngine;
   /** Knockout matches (extra time + penalties). Defaults to false. */
   knockout?: boolean;
+  /** Fixture congestion — see `CongestionSpec`. Absent ⇒ no congestion. */
+  congestion?: CongestionSpec;
   /** Single pool — every variant plays every other variant once, no self-pairs. */
   variants: Variant[];
 }
@@ -104,6 +119,8 @@ export interface WorkerInput {
   simEngine?: SimEngine;
   /** Knockout matches (extra time + penalties). Defaults to false. */
   knockout?: boolean;
+  /** Fixture congestion — see `CongestionSpec`. Absent ⇒ no congestion. */
+  congestion?: CongestionSpec;
 }
 
 /** Raw sums across all N matches for one team. */
@@ -132,6 +149,24 @@ export interface TeamRawStats {
   shootoutsWon: number;
   penaltiesTaken: number;
   penaltiesScored: number;
+  /**
+   * Sum, across `matches` games, of that game's average end-of-match energy for this team (see
+   * `Statistics.ts` → `TeamStats.avgEndEnergy`). Divide by `matches` for the average.
+   */
+  avgEndEnergySum: number;
+  /** Fatigue-driven AI substitutions made by this team, summed across `matches` games. */
+  fatigueSubstitutions: number;
+}
+
+/** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
+export interface CongestionMatchRaw {
+  /** 0-based position in the congestion sequence (0 = first match played). */
+  matchIndex: number;
+  /** Repetitions this slice was summed over (== the pair's `matches`, i.e. `matchesPerPair`). */
+  matches: number;
+  draws: number;
+  teamA: TeamRawStats;
+  teamB: TeamRawStats;
 }
 
 export interface PairRaw {
@@ -142,6 +177,12 @@ export interface PairRaw {
   durationMs: number;
   teamA: TeamRawStats;
   teamB: TeamRawStats;
+  /**
+   * Present only when the scenario set `congestion`: one entry per match-in-sequence index. The
+   * top-level `teamA`/`teamB`/`matches`/`draws` above remain the OVERALL sums across every game of
+   * every repetition (`matches` = `matchesPerPair × congestion.matches`).
+   */
+  congestionMatches?: CongestionMatchRaw[];
 }
 
 export type WorkerMessage =
@@ -181,6 +222,19 @@ export interface PerMatchView {
   avgPenaltiesTaken: number;
   /** Shootout conversion (0–100). */
   penaltyConversionPct: number;
+  /** Average end-of-match energy (0–100) across everyone who appeared for this team. */
+  avgEndEnergy: number;
+  /** Fatigue-driven AI substitutions per match. */
+  avgFatigueSubs: number;
+}
+
+/** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
+export interface CongestionMatchResult {
+  matchIndex: number;
+  matches: number;
+  draws: number;
+  teamA: PerMatchView;
+  teamB: PerMatchView;
 }
 
 export interface PairResult {
@@ -190,6 +244,8 @@ export interface PairResult {
   draws: number;
   teamA: PerMatchView;
   teamB: PerMatchView;
+  /** Present only when the scenario set `congestion` — one row per match-in-sequence index. */
+  congestion?: CongestionMatchResult[];
 }
 
 export interface VariantSummary {
@@ -229,6 +285,10 @@ export interface VariantSummary {
   avgPenaltiesTaken: number;
   /** Shootout conversion (0–100). */
   penaltyConversionPct: number;
+  /** Average end-of-match energy (0–100) across everyone who appeared for this variant. */
+  avgEndEnergy: number;
+  /** Fatigue-driven AI substitutions per match. */
+  avgFatigueSubs: number;
 }
 
 export interface ScenarioResult {

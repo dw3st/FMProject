@@ -21,15 +21,34 @@ export const ATTACKING_MID_ROLES = ["CAM", "AM", "LM", "RM"] as const;
 export const DEFENSIVE_MID_ROLES = ["CDM", "DM"] as const;
 
 export const QUICK_SIM_CONFIG = {
-  /** Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage. */
-  BASE_GOALS: 0.76,
+  /**
+   * Expected goals for one side when both teams are equal and at LEVEL_REF, before home advantage.
+   *
+   * Recalibrated 2026-09-27 ("soften + recalibrate" stamina balance task) at a representative
+   * matchday fitness (88, not the old 75 `emptySeasonLog()` default every prior goal-volume
+   * calibration assumed) — the engine's fatigue curve itself (`RuntimeLineup.ts`) is UNCHANGED (a
+   * softened version was tried and reverted — see that file's doc comment and
+   * `.claude/rules/non-player-games.md` → "Fadiga"). Only the fitness assumption used to collect
+   * the calibration data moved (75 → 88); the engine's own scoring at fitness 88 is close to, but
+   * not identical to, its scoring at fitness 75 (a fresher squad plays a little sharper), so the
+   * constants below moved a little too. Old values (fitted at fitness 75): BASE_GOALS 0.76,
+   * HOME_ADVANTAGE 1.03, STRENGTH_EXPONENT 0.51, LEVEL_EXPONENT 0.81, PACE_EDGE_WEIGHT 0.32.
+   *
+   * Refit: `bun scripts/quicksim-spread.ts collect <league> 150 2 <out> --fitness 88`, 10 leagues
+   * (premier_league, la_liga, bundesliga, brazil_serie_a, of_championship, of_allsvenskan,
+   * of_eredivisie, of_kenyan_premier_division, of_liga_mx, of_turkish_super_league), then
+   * `analyze` section 8 ("ratio+level+pace", current ATTACK_KEYS). rms across leagues 25.1% (with
+   * the OLD, fitness-75-fit constants, measured against fitness-88 data) → 5.9% (worst-case
+   * la_liga −9.5%; every league within ±10%).
+   */
+  BASE_GOALS: 0.84,
   HOME_ADVANTAGE: 1.03,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
    * have defence/GK strong vs attack, and the engine scores far less there than level alone predicts.
    * Refitted jointly with PACE_EDGE_WEIGHT (the pace edge took over part of what this carried).
    */
-  STRENGTH_EXPONENT: 0.51,
+  STRENGTH_EXPONENT: 0.48,
   /**
    * xG × e^(PACE_EDGE_WEIGHT × (attacker forward-line pace − defender back-line pace)), pace =
    * (3·speed + acceleration)/4 on raw 0–10 attributes. The engine's goal spread between leagues of
@@ -37,7 +56,7 @@ export const QUICK_SIM_CONFIG = {
    * drives chance volume via through-ball races, not conversion. Fitted with
    * `bun scripts/quicksim-spread.ts analyze`. 0 disables.
    */
-  PACE_EDGE_WEIGHT: 0.32,
+  PACE_EDGE_WEIGHT: 0.29,
   /**
    * Goals per side ~ Binomial(GOAL_CHANCES, xG / GOAL_CHANCES). Fewer chances → less variance
    * than Poisson → fewer 0-0s (the full engine is under-dispersed). Also caps goals/side.
@@ -62,10 +81,31 @@ export const QUICK_SIM_CONFIG = {
    * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
    * teams than between weak ones at the same strength ratio. 0 disables.
    */
-  LEVEL_EXPONENT: 0.81,
+  LEVEL_EXPONENT: 1.06,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
-  /** Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100). */
+  /**
+   * Strength multiplier lost at 0 fitness (linear): factor = 1 − FATIGUE_PENALTY × (1 − fitness/100).
+   * Only `fitness` feeds this — `load` never does; load only raises `ENERGY_DRAIN_BY_LINE` (see
+   * above), by design (`docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Motor ×
+   * quickSim": the engine gets the load factor at kickoff, quickSim gets it in the drain).
+   *
+   * Kept at 0.3 after re-checking against the engine (`bun scripts/fatigue-calibrate.ts`, Part 2) —
+   * the engine's own fatigue curve (`RuntimeLineup.ts`) is unchanged by the 2026-09-27
+   * "soften + recalibrate" balance pass (a softened curve was tried and reverted; see that file's
+   * doc comment), so the engine's tired-vs-fresh gap is the same as it always was: a fresh XI
+   * (fitness 100/load 0) vs a tired XI (fitness 70/load LOAD_HIGH) on the same premier_league
+   * fixtures scores engine ~82-90% fresh win / ~8-12% draw / ~2-6% tired win — quickSim's
+   * FATIGUE_PENALTY=0.3 gives 44.9%/21.1%/34%, matching its original calibration. Only BASE_GOALS
+   * and friends moved (see above — the fitness ASSUMPTION for the goal-volume calibration moved
+   * 75 → 88, not the curve), and re-checking the FATIGUE_PENALTY sweep against those new constants
+   * changes nothing about the underlying tension: raising it enough to meaningfully close the gap
+   * (≥ ~1.5) still costs equal-fitness goal volume (LEVEL_EXPONENT/STRENGTH_EXPONENT curvature +
+   * the additive STRENGTH_FLOOR don't cancel between two equal-fitness sides), so it would silently
+   * invalidate the per-league goal-volume calibration just above. Closing the gap properly needs
+   * `load` (or an evolving in-match fitness) to feed team strength too, which the design explicitly
+   * scopes to the full engine only — left as a known limitation, not a bug.
+   */
   FATIGUE_PENALTY: 0.3,
 
   /** No finishing: in the engine it only nudges conversion (shooterEffect 0.85–1.2); it still picks the scorer (fillSide). */
@@ -123,6 +163,15 @@ export const QUICK_SIM_CONFIG = {
   TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 1.072, MID: 0.356, FWD: 1.154 } as Record<LineGroup, number>,
   TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.39, MID: -0.81, FWD: -0.36 } as Record<LineGroup, number>,
 
-  /** Energy spent over 90' for an average-stamina player. */
-  ENERGY_DRAIN: 35,
+  /**
+   * Energy spent over 90' for an average-stamina player, per line — calibrated against the full
+   * engine's average end-of-match energy loss for players who play the whole 90' (fitness 100,
+   * load 0), pooled across premier_league / of_allsvenskan / of_kenyan_premier_division (60 pairs
+   * per league, ~360–940 full-90 player-observations per line). See
+   * `bun scripts/fatigue-calibrate.ts`. Applied in `quickSim.ts` as
+   * `ENERGY_DRAIN_BY_LINE[line] × staminaFactor × drainMultiplier(load) × extraTimeMult`. GK
+   * drains the least (mostly holds position / occasional gkSave); DEF and FWD the most (constant
+   * pressing/tackling and carrying/pressing respectively); MID sits in between.
+   */
+  ENERGY_DRAIN_BY_LINE: { GK: 38.1, DEF: 53.5, MID: 48.3, FWD: 52.1 } as Record<LineGroup, number>,
 } as const;

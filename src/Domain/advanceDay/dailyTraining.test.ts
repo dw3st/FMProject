@@ -11,6 +11,7 @@ import {
   GOALKEEPER_TRAINING_FATIGUE_MULTIPLIER,
 } from "@/types/developmentTypes";
 import { Player } from "@/Domain/Player";
+import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 function makeSeasonLog(overrides: Partial<RosterPlayer["seasonLog"]> = {}): NonNullable<RosterPlayer["seasonLog"]> {
@@ -217,14 +218,48 @@ describe("buildTrainingEvent", () => {
       const p1 = updatedSquad.players.find((p) => p.id === "p1");
       const p2 = updatedSquad.players.find((p) => p.id === "p2");
 
-      // p1 trains: points + fitnessDelta applied, morale unchanged
+      // p1 trains: raw cost (-4.8, see rollTrainingOutcome tests) scaled by fitness/100 (70/100)
+      // before being applied; points unaffected; morale untouched.
+      const scaledDelta = +(-4.8 * (70 / 100)).toFixed(1);
       expect(p1?.seasonLog?.trainingSessions).toBe(1.50);
-      expect(p1?.seasonLog?.fitness).toBe(65.2); // 70 + (-4.8)
+      expect(p1?.seasonLog?.fitness).toBe(+(70 + scaledDelta).toFixed(1));
       expect(p1?.seasonLog?.morale).toBe(70);    // morale not touched
+      // Heavy-only load addition: "normal" intensity never adds load, only decays it.
+      expect(p1?.seasonLog?.load).toBe(decayLoad(0));
 
-      // p2 gets partial rest recovery (40%), not full training
+      // p2 is below the training threshold — skips training entirely, gets a full rest-day
+      // recovery (recoverDay) instead, same curve as an actual rest day.
+      const p2NextFitness = recoverDay(50, { age: 22, load: 0, stamina: 10 });
       expect(p2?.seasonLog?.trainingSessions).toBe(0);
-      expect(p2?.seasonLog?.fitness).toBeGreaterThanOrEqual(50); // recovered slightly
+      expect(p2?.seasonLog?.fitness).toBe(+(50 + +(p2NextFitness - 50).toFixed(1)).toFixed(1));
+      expect(p2?.seasonLog?.fitness).toBeGreaterThan(50);
+    });
+  });
+
+  test("heavy training adds load; light/normal do not", () => {
+    for (const intensity of ["light", "normal", "heavy"] as const) {
+      const squad: Squad = {
+        id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+        players: [basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ load: 20 }) })],
+      };
+      withRand(() => {
+        const { updatedSquad } = buildTrainingEvent("s", squad, { minEnergyToTrain: 60, intensity });
+        const expected = addTrainingLoad(decayLoad(20), intensity);
+        expect(updatedSquad.players[0]!.seasonLog!.load).toBe(expected);
+        if (intensity === "heavy") expect(expected).toBeGreaterThan(decayLoad(20));
+        else expect(expected).toBe(decayLoad(20));
+      });
+    }
+  });
+
+  test("ineligible (below minEnergyToTrain) players only decay load, never add training load", () => {
+    const squad: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [basePlayer({ id: "p1", name: "Low", seasonLog: makeSeasonLog({ fitness: 50, load: 20 }) })],
+    };
+    withRand(() => {
+      const { updatedSquad } = buildTrainingEvent("s", squad, { minEnergyToTrain: 60, intensity: "heavy" });
+      expect(updatedSquad.players[0]!.seasonLog!.load).toBe(decayLoad(20));
     });
   });
 

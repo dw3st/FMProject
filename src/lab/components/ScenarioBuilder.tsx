@@ -26,6 +26,9 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
   const [matchesPerPair, setMatches] = useState<number>(draft?.matchesPerPair ?? 50);
   const [simEngine, setSimEngine] = useState<"full" | "quick">(draft?.simEngine ?? "full");
   const [knockout, setKnockout] = useState<boolean>(draft?.knockout ?? false);
+  const [congestionOn, setCongestionOn] = useState<boolean>(!!draft?.congestion);
+  const [congestionMatches, setCongestionMatches] = useState<number>(draft?.congestion?.matches ?? 3);
+  const [congestionRestDays, setCongestionRestDays] = useState<number>(draft?.congestion?.restDays ?? 2);
   const supported = formations.supported.length > 0 ? formations.supported : [FALLBACK_FORMATION];
   const initialFormation = supported.includes(FALLBACK_FORMATION) ? FALLBACK_FORMATION : supported[0]!;
 
@@ -161,10 +164,49 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
           </Field>
         </div>
 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+          <Field label="Congestion">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={congestionOn}
+                onChange={(e) => setCongestionOn(e.target.checked)}
+              />
+              Consecutive fixtures
+            </label>
+          </Field>
+          {congestionOn && (
+            <>
+              <Field label="Games in a row">
+                <input
+                  type="number"
+                  min={2}
+                  value={congestionMatches}
+                  onChange={(e) => setCongestionMatches(Math.max(2, parseInt(e.target.value) || 2))}
+                  className="bg-black/40 border border-white/10 rounded px-2 py-1 text-sm w-full"
+                />
+              </Field>
+              <Field label="Rest days between">
+                <input
+                  type="number"
+                  min={0}
+                  value={congestionRestDays}
+                  onChange={(e) => setCongestionRestDays(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="bg-black/40 border border-white/10 rounded px-2 py-1 text-sm w-full"
+                />
+              </Field>
+            </>
+          )}
+        </div>
+
         <div className="text-xs text-white/50">
           Will run <strong className="text-white">{estPairs}</strong> pair
-          {estPairs === 1 ? "" : "s"} × {matchesPerPair} matches ={" "}
-          <strong className="text-white">{totalMatches}</strong> matches total.
+          {estPairs === 1 ? "" : "s"} × {matchesPerPair} matches
+          {congestionOn ? <> × {congestionMatches} congested games</> : null} ={" "}
+          <strong className="text-white">
+            {congestionOn ? totalMatches * congestionMatches : totalMatches}
+          </strong>{" "}
+          matches total.
         </div>
       </div>
 
@@ -200,6 +242,9 @@ export function ScenarioBuilder({ formations, draft, onRun }: Props) {
               matchesPerPair,
               simEngine,
               knockout,
+              ...(congestionOn
+                ? { congestion: { matches: congestionMatches, restDays: congestionRestDays } }
+                : {}),
               variants,
             })
           }

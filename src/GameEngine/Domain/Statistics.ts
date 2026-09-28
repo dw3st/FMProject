@@ -54,6 +54,14 @@ export interface TeamStats extends PlayerStats {
   extraTimePlayed: number;
   /** 1 when this team won a penalty shootout. */
   shootoutsWon:    number;
+  /**
+   * Average end-of-match energy (0–100) across every player who appeared for this team — on the
+   * pitch at full time, or substituted off (at their exit energy) — see `playerSubstituted` and
+   * `matchEnd` in EventBus.ts. 0 if nobody appeared (should not happen in a real match).
+   */
+  avgEndEnergy: number;
+  /** Count of substitutions this team made that were flagged `reason: 'fatigue'` by AiSubstitution. */
+  fatigueSubstitutions: number;
 }
 
 function emptyStats(): PlayerStats {
@@ -90,10 +98,18 @@ const store = new Map<number, PlayerStats>();
 const playerTeam = new Map<number, TeamId>();
 
 /** Team-level knockout flags (not derivable from player sums). */
-const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number }> = {
-  A: { extraTimePlayed: 0, shootoutsWon: 0 },
-  B: { extraTimePlayed: 0, shootoutsWon: 0 },
+const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number }> = {
+  A: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 },
+  B: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 },
 };
+
+/**
+ * Every player's end-of-match energy — recorded once, either when they're substituted off
+ * (`playerSubstituted`'s `outEnergy`) or, for anyone still on the pitch, at `matchEnd`. A player
+ * who never appears (stayed on the bench all match) never gets an entry here, so `getTeamStats`'s
+ * average is only over players who actually played — see `TeamStats.avgEndEnergy`.
+ */
+const endEnergy = new Map<number, { team: TeamId; energy: number }>();
 
 function get(id: number): PlayerStats {
   if (!store.has(id)) store.set(id, emptyStats());
@@ -109,6 +125,14 @@ function notify(): void {
 gameBus.on('playerSubstituted', e => {
   if (!store.has(e.inId)) store.set(e.inId, emptyStats());
   playerTeam.set(e.inId, e.team);
+  endEnergy.set(e.outId, { team: e.team, energy: e.outEnergy });
+  if (e.reason === 'fatigue') teamFlags[e.team].fatigueSubstitutions++;
+});
+
+// Players still on the pitch at the final whistle — merged with the `playerSubstituted` exits
+// above so `avgEndEnergy` covers everyone who appeared, not just the starting XI.
+gameBus.on('matchEnd', e => {
+  for (const p of e.finalEnergy) endEnergy.set(p.id, { team: p.team, energy: p.energy });
 });
 
 gameBus.on('passAttempted', e => { get(e.player).passesAttempted++; notify(); });
@@ -190,8 +214,9 @@ gameBus.on('shootoutEnd', e => {
 export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   store.clear();
   playerTeam.clear();
-  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0 };
-  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0 };
+  endEnergy.clear();
+  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 };
+  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 };
   for (const { id, team } of players) {
     store.set(id, emptyStats());
     playerTeam.set(id, team);
@@ -205,7 +230,15 @@ export function getPlayerStats(id: number): PlayerStats {
 
 /** Team stats derived from the sum of all player stats for that team. */
 export function getTeamStats(team: TeamId): TeamStats {
-  const result: TeamStats = { ...emptyStats(), ...teamFlags[team] };
+  const result: TeamStats = { ...emptyStats(), ...teamFlags[team], avgEndEnergy: 0 };
+  let energySum = 0;
+  let energyCount = 0;
+  for (const [, e] of endEnergy) {
+    if (e.team !== team) continue;
+    energySum += e.energy;
+    energyCount++;
+  }
+  result.avgEndEnergy = energyCount > 0 ? energySum / energyCount : 0;
   for (const [id, stats] of store) {
     if (playerTeam.get(id) !== team) continue;
     result.passesAttempted += stats.passesAttempted;

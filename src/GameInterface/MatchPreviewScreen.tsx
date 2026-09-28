@@ -29,11 +29,14 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
-import { autoFillLineup } from "@/Domain/lineupHelpers";
+import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
+import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
+import { Icon } from "@/GameInterface/Icons";
 import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
+  readableOnDark,
   resolveMatchTeamKitColors,
   squadPrimaryColor,
   squadSecondaryColor,
@@ -144,6 +147,7 @@ function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
     <div className="flex items-center gap-2 py-[3px]">
       <RoleBadge role={role} align="left" />
       <span className="flex-1 text-[13px] text-foreground font-medium truncate">{lastName}</span>
+      <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
       <span className={`text-[13px] font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
         {rating}
       </span>
@@ -161,6 +165,7 @@ function AwayPlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
       <span className={`text-[13px] font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
         {rating}
       </span>
+      <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
       <span className="flex-1 text-[13px] text-foreground font-medium truncate text-right">{lastName}</span>
       <RoleBadge role={role} align="right" />
     </div>
@@ -435,7 +440,10 @@ function LastMinuteSubsModal({
                     <span className={ratingTextClass10(Player.weightedScore(selectedOut.player.stats, selectedOut.role))}>
                       {Player.weightedScore(selectedOut.player.stats, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
                     </span>
-                    <span>{t("matchPreview.fitness")} {Math.round(selectedOut.player.seasonLog?.fitness ?? 100)}</span>
+                    <span className="inline-flex items-center gap-1">
+                      {t("matchPreview.fitness")} {Math.round(selectedOut.player.seasonLog?.fitness ?? 100)}
+                      <LoadIndicator load={selectedOut.player.seasonLog?.load ?? 0} size={11} />
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-center py-1 sm:py-0">
@@ -479,7 +487,7 @@ function LastMinuteSubsModal({
                       <span className={`text-xs font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
                         {avg.toFixed(1)}
                       </span>
-                      <div className="flex items-center gap-1 shrink-0 w-[4.5rem]">
+                      <div className="flex items-center gap-1 shrink-0 w-[5.5rem]">
                         <div className="h-1.5 flex-1 rounded-full bg-muted/60 overflow-hidden min-w-0">
                           <div
                             className={`h-full rounded-full ${fitnessBarClass(player.seasonLog?.fitness ?? 100)}`}
@@ -489,6 +497,7 @@ function LastMinuteSubsModal({
                         <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-5 text-right">
                           {Math.round(player.seasonLog?.fitness ?? 100)}
                         </span>
+                        <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
                       </div>
                     </button>
                   );
@@ -540,7 +549,7 @@ function LastMinuteSubsModal({
                         <span className={`text-xs font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
                           {avg.toFixed(1)}
                         </span>
-                        <div className="flex items-center gap-1 shrink-0 w-[4.5rem]">
+                        <div className="flex items-center gap-1 shrink-0 w-[5.5rem]">
                           <div className="h-1.5 flex-1 rounded-full bg-muted/60 overflow-hidden min-w-0">
                             <div
                               className={`h-full rounded-full ${fitnessBarClass(p.seasonLog?.fitness ?? 100)}`}
@@ -550,6 +559,7 @@ function LastMinuteSubsModal({
                           <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-5 text-right">
                             {Math.round(p.seasonLog?.fitness ?? 100)}
                           </span>
+                          <LoadIndicator load={p.seasonLog?.load ?? 0} size={11} />
                         </div>
                       </button>
                     );
@@ -857,6 +867,15 @@ export function MatchPreviewScreen() {
   const oppFormationSlots = matchSetup?.oppFormation?.attacking ?? [];
   const myLineup = localLineup.length > 0 ? localLineup : (matchSetup?.myLineup ?? []);
 
+  // Starters of the player's own XI whose fitness is below the "risk" threshold — surfaced as a
+  // warning line above the action buttons (spec §3 "a prévia avisa titular com fôlego < 70").
+  const LOW_FITNESS_THRESHOLD = 70;
+  const myPlayersById = new Map((matchSetup?.mySquad.players ?? []).map((p) => [p.id, p]));
+  const lowFitnessStarterNames = myLineup
+    .map((id) => myPlayersById.get(id))
+    .filter((p): p is RosterPlayer => !!p && (p.seasonLog?.fitness ?? 100) < LOW_FITNESS_THRESHOLD)
+    .map((p) => `${p.name} (${Math.round(p.seasonLog?.fitness ?? 100)})`);
+
   const myTactics: TacticalStyle = session.tactical_style;
   const oppTactics: TacticalStyle = DEFAULT_TACTICAL_STYLE;
 
@@ -896,7 +915,10 @@ export function MatchPreviewScreen() {
   const homeSquad        = isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const awaySquad        = isHome ? opponentSquad          : matchSetup?.mySquad ?? null;
   const oppAutoLineup = opponentSquad
-    ? autoFillLineup(oppFormationSlots as Parameters<typeof autoFillLineup>[0], opponentSquad.players)
+    ? autoFillLineupWithFitness(
+        oppFormationSlots as Parameters<typeof autoFillLineupWithFitness>[0],
+        opponentSquad.players,
+      )
     : [];
   const homeLineup       = isHome ? myLineup               : oppAutoLineup;
   const awayLineup       = isHome ? oppAutoLineup           : myLineup;
@@ -910,10 +932,13 @@ export function MatchPreviewScreen() {
   const awayLogoUrl      = isHome ? oppLogoUrl             : myLogoUrl;
   const homePrimary = squadPrimaryColor(homeSquad, FALLBACK_HOME_ACCENT);
   const awayPrimary = squadPrimaryColor(awaySquad, FALLBACK_AWAY_ACCENT);
-  const { teamA: homeHex, teamB: awayHex } = resolveMatchTeamKitColors(
+  const kits = resolveMatchTeamKitColors(
     { primary: homePrimary, secondary: squadSecondaryColor(homeSquad, homePrimary) },
     { primary: awayPrimary, secondary: squadSecondaryColor(awaySquad, awayPrimary) },
   );
+  // Drawn on the dark background: lift black/navy kits so accents stay readable.
+  const homeHex = readableOnDark(kits.teamA);
+  const awayHex = readableOnDark(kits.teamB);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1016,6 +1041,18 @@ export function MatchPreviewScreen() {
           )}
         </div>
       </div>
+
+      {/* Low-fitness warning — starters of the player's own XI below the risk threshold */}
+      {lowFitnessStarterNames.length > 0 && (
+        <div className="w-full max-w-5xl shrink-0">
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-amber-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-300 m-0">
+              {t("matchPreview.lowFitnessWarning", { names: lowFitnessStarterNames.join(", ") })}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">

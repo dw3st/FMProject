@@ -30,7 +30,9 @@ How every roster attribute flows through the engine: what it becomes, where it i
 | `strength` | `withBall.strength` | `strength / 10` | 0..1; defaults to 0.5 if missing |
 | `strength` | `withoutBall.strength` | `strength / 10` | 0..1; defaults to 0.5 if missing |
 
-**Not yet wired to any engine stat:** `stamina`, `heading`
+**Not yet wired to any engine stat:** `heading`. `stamina` is not converted to an engine stat by
+`TeamLineup.ts`, but it is read directly by the fitness model and the in-match energy/recovery
+code — see Part 2 below.
 
 ---
 
@@ -335,11 +337,41 @@ Both derive from the roster's `strength` attribute (`strength / 10`, default 0.5
 
 ---
 
+### `stamina` (raw roster attribute, not converted to an engine stat — read directly)
+
+`stamina` (0..10) is the one raw roster attribute the engine and the fitness model read without
+going through `TeamLineup.ts`. Three call sites, all added by the stamina/fatigue work — see
+`.claude/rules/game/fitness.md`:
+
+**1. In-match energy cost** (`RuntimeLineup.ts → consumeEnergy`):
+```ts
+reduction = stamina * 0.05        // 0 at stamina 0, 0.5 at stamina 10
+cost = STAMINA_COST[action] * (1 - reduction) * dtGame * loadDrainMultiplier
+```
+A full-stamina player spends energy at half the rate of a zero-stamina player on every action
+(locomotion drain per tick, tackle/press bursts).
+
+**2. Half-time recovery** (`gameState.ts` — `switchSides`):
+```ts
+recoveryRate = (0.30 + (stamina / 10) * 0.30) * recoveryScale
+// 30% of the energy gap at stamina 0 → 60% at stamina 10
+```
+
+**3. Daily recovery** (`src/Domain/fitness/fitness.ts → staminaRecoveryFactor`, used by
+`recoverDay`): `factor = STAMINA_RECOVERY_BASE + STAMINA_RECOVERY_SPAN * (stamina / 10)` — one of
+the four multipliers (with age, load, and the fixed `RECOVERY_BASE`) on how much of the fitness gap
+to 100 a player closes on a rest day. See `.claude/rules/game/fitness.md` → "Recuperação diária".
+
+**Influence level: MEDIUM-HIGH** — directly halves in-match energy drain at max stamina, and
+meaningfully speeds both half-time and day-to-day recovery, but has no effect on any single-action
+decision or outcome roll.
+
+---
+
 ## Part 3 — Dead Roster Attributes (not wired to any engine behaviour)
 
 | Roster attribute | Status |
 |---|---|
-| `stamina` | Not used |
 | `heading` | Not used |
 
 These attributes exist on the roster but `TeamLineup.ts` never reads them.
@@ -382,3 +414,4 @@ Similarly, `speed` and `acceleration` feed into both `carrySpeed` and `pressSpee
 | `withBall.speed` | **LOW** — no decision use; absorbed into carrySpeed |
 | `withBall.acceleration` | **LOW** — only pressure escape burst |
 | `withoutBall.pressRange` | **LOW** — flat value, tactic-driven not stat-driven |
+| `stamina` (raw, not an engine stat) | **MEDIUM-HIGH** — halves in-match energy cost at max value; scales half-time and daily recovery |

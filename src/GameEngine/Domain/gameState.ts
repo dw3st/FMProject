@@ -9,6 +9,7 @@ import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets } from '@/GameEngine/Domain/DefensivePositioning';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
+  applyContinuousFatigue,
   applyStaminaCost,
   consumeEnergy,
   getRuntimeLineup,
@@ -25,6 +26,7 @@ import {
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
+import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
@@ -52,6 +54,7 @@ import type { FormationSetPieces, SetPieceLayout } from '@/GameEngine/Domain/Set
 import { applySetPieceToTeam, enforceKickoffCircleRule } from '@/GameEngine/Domain/SetPiecePositioning';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
+import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
 
 export { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 
@@ -80,8 +83,14 @@ const REAL_HALF_DURATION = 150;
 const TIME_SCALE = 2700 / REAL_HALF_DURATION;
 /** Duration of one half in game-seconds (45 minutes). */
 const HALF_DURATION = 2700;
-/** Real-seconds the pre-match / half-time presentation freeze lasts. */
-const PRESENTATION_DURATION = 4;
+/**
+ * Real-seconds the pre-match / half-time / extra-time-break presentation freeze lasts,
+ * counted in game-time via `presentationCountdown` — see `tickState`'s match-phase gating.
+ * Exported so UI presentation (e.g. the half-time/extra-time overlay's progress bar) can
+ * derive "how much of the pause is left" from the same total the engine drains against,
+ * instead of duplicating the constant.
+ */
+export const PRESENTATION_DURATION = 4;
 
 /** Game-seconds per extra-time half (15 min). */
 const ET_HALF_DURATION = 900;
@@ -195,8 +204,16 @@ function buildGamePlayerForSlot(
     maxY: Math.min(PITCH_WIDTH, slotY + yRange),
   };
   const baseStats = teamLineup(buffed, slotDef.role);
-  // Use persisted fitness as starting energy (falls back to full if no history).
-  const energy = Math.max(0, Math.min(100, rp.seasonLog?.fitness ?? 100));
+  // Match start energy is persisted fitness compressed toward the reference matchday fitness
+  // (`matchStartEnergy` — see `.claude/rules/non-player-games.md` → "Fadiga"), not raw fitness.
+  // No persisted history (a save-game player before their first advance-day, or a hand-built
+  // roster with no `seasonLog`) falls back to `emptySeasonLog().fitness` (75) — the SAME default
+  // quickSim (`startFitness`) and the lineup selector (`fitnessAdjustedValue`) already use, so a
+  // squad without history is valued consistently everywhere instead of starting at a full 100 here
+  // only. `TestCases.ts` scenarios that want a genuinely fresh 100-energy match (most of them —
+  // this default is for engine tuning, not fitness testing) give their roster an explicit
+  // `seasonLog.fitness: 100` for that reason.
+  const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
   return {
     id:               engineId,
     rosterId:         rp.id,
@@ -211,6 +228,8 @@ function buildGamePlayerForSlot(
     energy,
     startEnergy:      energy,
     stamina:          buffed.stamina,
+    drainMultiplier:      loadDrainMultiplier(rp.seasonLog?.load ?? 0),
+    fatigueBaselineEnergy: energy,
     ballSupportScale: roleEng.ballSupportScale,
     slotIndex,
     basePosition:     startPos,
@@ -256,7 +275,8 @@ function buildTeam(
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     );
     const baseStats = teamLineup(buffed, naturalRole);
-    const energy = Math.max(0, Math.min(100, rp.seasonLog?.fitness ?? 100));
+    // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
+    const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
     // Bench players have placeholder positions — overwritten when they sub in
     const dummyPos = { x: 0, y: 0 };
     const dummyBounds = { minX: 0, maxX: PITCH_LENGTH, minY: 0, maxY: PITCH_WIDTH };
@@ -274,6 +294,8 @@ function buildTeam(
       energy,
       startEnergy:      energy,
       stamina:          buffed.stamina,
+      drainMultiplier:      loadDrainMultiplier(rp.seasonLog?.load ?? 0),
+      fatigueBaselineEnergy: energy,
       ballSupportScale: roleEng.ballSupportScale,
       slotIndex:        -1,
       basePosition:     dummyPos,
@@ -384,6 +406,7 @@ export function performSubstitution(
   team: TeamId,
   outPlayerId: number,
   inPlayerId: number,
+  reason?: 'fatigue',
 ): GameState {
   const bench = team === 'A' ? state.benchA : state.benchB;
   const outPlayer = state.players.find(p => p.id === outPlayerId && p.team === team);
@@ -411,6 +434,7 @@ export function performSubstitution(
     ballSupportScale: roleEngine(role).ballSupportScale,
     baseStats:      newBaseStats,
     runtimeStats:   getRuntimeLineup(newBaseStats, { energy: inPlayer.energy }),
+    fatigueBaselineEnergy: inPlayer.energy,
     decisionMemory: EMPTY_DECISION_MEMORY,
     recoveryTime:   0,
     justReceivedTicks: 0,
@@ -430,7 +454,7 @@ export function performSubstitution(
     matchMinute: minute,
   };
 
-  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team });
+  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason });
 
   // Transfer ball if outgoing player held it
   let ballHolderId = state.ballHolderId;
@@ -472,7 +496,7 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
   for (const req of pending) {
     const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
     if (subsLeft <= 0) break;
-    s = performSubstitution(s, team, req.outId, req.inId);
+    s = performSubstitution(s, team, req.outId, req.inId, req.reason);
   }
 
   return s;
@@ -519,6 +543,7 @@ export function changeFormation(
       bounds,
       ballSupportScale: roleEng.ballSupportScale,
       runtimeStats:    getRuntimeLineup(p.baseStats, { energy: p.energy }),
+      fatigueBaselineEnergy: p.energy,
     };
   });
 
@@ -718,7 +743,7 @@ function switchSides(
   kickoffTeam: TeamId = 'B',
   recoveryScale = 1,
 ): GameState {
-  const switched = state.players.map(p => {
+  const switched: GamePlayer[] = state.players.map(p => {
     const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
     const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
     const energyChanged = recoveredEnergy !== p.energy;
@@ -738,6 +763,7 @@ function switchSides(
       runtimeStats: energyChanged
         ? getRuntimeLineup(p.baseStats, { energy: recoveredEnergy })
         : p.runtimeStats,
+      fatigueBaselineEnergy: recoveredEnergy,
     };
   });
 
@@ -800,7 +826,11 @@ export function knockoutDecider(state: GameState): KnockoutDecider | null {
 function finishMatch(state: GameState): GameState {
   const final: GameState = { ...state, matchPhase: 'matchEnd', pass: null, shot: null, looseBall: null };
   if (final.shootout) gameBus.emit('shootoutEnd', { winner: final.shootout.winner, score: { ...final.shootout.finalScore } });
-  gameBus.emit('matchEnd', { score: final.score, decider: knockoutDecider(final) });
+  gameBus.emit('matchEnd', {
+    score: final.score,
+    decider: knockoutDecider(final),
+    finalEnergy: final.players.map(p => ({ id: p.id, team: p.team, energy: p.energy })),
+  });
   return final;
 }
 
@@ -1768,19 +1798,16 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         if (pl.baseStats == null) return p;
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
-        const energy = consumeEnergy(pl.energy, pl.stamina, action, dt * TIME_SCALE);
+        const energy = consumeEnergy(pl.energy, pl.stamina, action, dt * TIME_SCALE, pl.drainMultiplier ?? 1);
         if (energy === pl.energy) return p;
-        // getReductionFactor uses floor(energyLost / step) — the multipliers only
-        // change when energy crosses multiples of 10, 20, or 40. Skip the expensive
-        // getRuntimeLineup spread unless a threshold actually flipped.
-        const oldLost = 100 - pl.energy;
-        const newLost = 100 - energy;
-        const factorsChanged =
-          Math.floor(oldLost / 10) !== Math.floor(newLost / 10) ||
-          Math.floor(oldLost / 20) !== Math.floor(newLost / 20) ||
-          Math.floor(oldLost / 40) !== Math.floor(newLost / 40);
-        if (!factorsChanged) return { ...pl, energy };
-        return { ...pl, energy, runtimeStats: getRuntimeLineup(pl.baseStats, { energy }) };
+        // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
+        // moved at least FATIGUE_RECOMPUTE_THRESHOLD since the last recompute, instead of only
+        // when it crosses a multiple of 10/20/40. Skips the expensive getRuntimeLineup spread
+        // otherwise.
+        const { runtimeStats, fatigueBaselineEnergy } = applyContinuousFatigue(
+          pl.baseStats, pl.runtimeStats, energy, pl.fatigueBaselineEnergy ?? pl.energy,
+        );
+        return { ...pl, energy, runtimeStats, fatigueBaselineEnergy };
       }),
     };
   }

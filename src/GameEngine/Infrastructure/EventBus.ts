@@ -226,8 +226,14 @@ export interface GameEvents {
   /**
    * Emitted when a substitution is executed so Statistics and PlayerRating
    * can register the incoming player under their own engine id.
+   *
+   * `outEnergy` is the outgoing player's energy (0–100) at the moment of the swap — Statistics
+   * uses it to fold subbed-off players into the team's average end-of-match energy (see
+   * `.claude/rules/game/fitness.md`). `reason` is `'fatigue'` only when the substitution came
+   * from `evaluateAiSubstitutions` (AiSubstitution.ts); absent for a manual/tactical substitution
+   * (e.g. the user's own sub in MatchScreen) — Statistics counts only the former as a fatigue sub.
    */
-  playerSubstituted: { outId: number; inId: number; team: TeamId };
+  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' };
 
   // ── Match flow events ─────────────────────────────────────────────────────
   /**
@@ -238,8 +244,19 @@ export interface GameEvents {
   matchStart: { extraTime: number };
   /** Emitted when the first half clock expires. Engine will auto-switch sides. */
   halfTime: { score: { A: number; B: number }; extraTime: number };
-  /** Emitted when the second half clock expires. Simulation freezes. */
-  matchEnd: { score: { A: number; B: number }; decider?: import('@/GameEngine/types').KnockoutDecider | null };
+  /**
+   * Emitted when the second half clock expires. Simulation freezes.
+   *
+   * `finalEnergy` is every player still on the pitch at full time (0–100 energy) — combined with
+   * the `outEnergy` on each `playerSubstituted` event, Statistics can average "everyone who
+   * appeared, at their exit energy" without needing direct access to `GameState` (see
+   * `.claude/rules/game/fitness.md`).
+   */
+  matchEnd: {
+    score: { A: number; B: number };
+    decider?: import('@/GameEngine/types').KnockoutDecider | null;
+    finalEnergy: Array<{ id: number; team: TeamId; energy: number }>;
+  };
   /** Knockout match level after 90': extra time begins after a short break. */
   extraTimeStart: { score: { A: number; B: number } };
   /** One presented kick of a penalty shootout; `score` includes this kick. */

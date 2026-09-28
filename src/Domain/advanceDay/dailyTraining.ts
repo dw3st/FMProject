@@ -12,7 +12,7 @@ import {
 } from "@/types/developmentTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { isPlayerSquadId } from "@/Domain/clubLookup";
-import { rollRestOutcome } from "@/Domain/advanceDay/dailyRest";
+import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import {
   applyTrainingDevelopment,
   DEFAULT_DP_WEIGHTS,
@@ -20,7 +20,8 @@ import {
 } from "@/GameEngine/PlayerDevelopment";
 import rolesData from "@/Data/roles.json";
 
-const INELIGIBLE_RECOVERY_FRACTION = 0.4;
+/** `stats.stamina` (0–10) is required on the type, but fall back defensively — see fitness.md. */
+const DEFAULT_STAMINA = 7;
 
 export const MAX_TRAINING_POINTS = 5;
 
@@ -97,6 +98,11 @@ export function rollTrainingOutcome(
   return { fitnessDelta, trainingPoints };
 }
 
+/**
+ * @param policy.intensity — used for both eligible players' session AND the load a heavy
+ *   session adds (`addTrainingLoad`); ineligible players below `minEnergyToTrain` never train
+ *   (`.claude/rules/game/fitness.md`) — they get a full rest-day recovery (`recoverDay`) instead.
+ */
 export function buildTrainingEvent(
   squadId: string,
   squad: Squad,
@@ -109,6 +115,7 @@ export function buildTrainingEvent(
   );
 
   const effects: TrainingEffect[] = squad.players.map((p) => {
+    const log = ensureSeasonLog(p).seasonLog!;
     if (eligibleIds.has(String(p.id))) {
       const { fitnessDelta, trainingPoints } = rollTrainingOutcome(
         policy.intensity,
@@ -116,14 +123,18 @@ export function buildTrainingEvent(
         Math.random,
         isGoalkeeperPlayer(p.positions),
       );
-      return { playerId: String(p.id), name: p.name, fitnessDelta, trainingPoints };
+      // The raw session cost scales down with how tired the player already is (a worn-down
+      // player has less fitness left to lose) — see `.claude/rules/game/fitness.md`.
+      const scaledFitnessDelta = +(fitnessDelta * (log.fitness / 100)).toFixed(1);
+      return { playerId: String(p.id), name: p.name, fitnessDelta: scaledFitnessDelta, trainingPoints };
     }
-    // Ineligible players get partial rest recovery instead of training.
-    const { fitnessDelta: restDelta } = rollRestOutcome(p.age);
+    // Ineligible players skip training entirely and get a full rest-day recovery instead.
+    const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
+    const nextFitness = recoverDay(log.fitness, { age: p.age, load: log.load ?? 0, stamina });
     return {
       playerId: String(p.id),
       name: p.name,
-      fitnessDelta: +(restDelta * INELIGIBLE_RECOVERY_FRACTION).toFixed(1),
+      fitnessDelta: +(nextFitness - log.fitness).toFixed(1),
       trainingPoints: 0,
     };
   });
@@ -133,6 +144,7 @@ export function buildTrainingEvent(
   const updatedSquad: Squad = {
     ...squad,
     players: squad.players.map((p) => {
+      const didTrain = eligibleIds.has(String(p.id));
       const eff = effectMap.get(String(p.id));
       const trained = eff != null && eff.trainingPoints > 0;
 
@@ -151,7 +163,7 @@ export function buildTrainingEvent(
         }
       }
 
-      // Then layer the season-log mutation (fitness + training session counter) on top.
+      // Then layer the season-log mutation (fitness + training session counter + load) on top.
       const pl = ensureSeasonLog(next);
       const log = { ...pl.seasonLog! };
       if (eff) {
@@ -162,6 +174,8 @@ export function buildTrainingEvent(
           );
         }
         log.fitness = Math.min(100, Math.max(0, +(log.fitness + eff.fitnessDelta).toFixed(1)));
+        const decayed = decayLoad(log.load ?? 0);
+        log.load = didTrain ? addTrainingLoad(decayed, policy.intensity) : decayed;
       }
       return { ...pl, seasonLog: log };
     }),

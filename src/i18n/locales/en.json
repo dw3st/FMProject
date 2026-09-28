@@ -719,6 +719,8 @@
     "team": "Team {{team}}",
     "extraTime": "Extra time",
     "penalties": "Penalties",
+    "avgEndEnergy": "Avg end energy",
+    "fatigueSubs": "Fatigue subs",
     "headers": {
       "G": "Goals",
       "SH": "Shots",
@@ -749,7 +751,9 @@
       "dribblesLost": "Dribbles lost",
       "looseBallsWon": "Loose balls won",
       "throughBalls": "Through balls",
-      "throughBallCompletion": "TB completion%"
+      "throughBallCompletion": "TB completion%",
+      "avgEndEnergy": "Avg end energy",
+      "avgFatigueSubs": "Fatigue subs"
     },
     "subbedOff": "Substituted off at {{minute}}'"
   },
@@ -1406,7 +1410,8 @@
     "fitness": "Fitness",
     "rating": "rating",
     "cancelSelection": "Cancel selection",
-    "change": "change"
+    "change": "change",
+    "lowFitnessWarning": "Starting with low fitness: {{names}}"
   },
   "matchResult": {
     "title": "Match result",
@@ -1664,5 +1669,8 @@
   },
   "players": {
     "star": "Current legend"
+  },
+  "fitness": {
+    "highLoadTooltip": "High load: recovers slowly and tires faster"
   }
 }

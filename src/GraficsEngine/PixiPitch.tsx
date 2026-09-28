@@ -1110,7 +1110,10 @@ export function PixiPitch({
             });
           } else if (cmd.phase === 'matchEnd') {
             stateRef.current = { ...stateRef.current, matchPhase: 'matchEnd' };
-            gameBus.emit('matchEnd', { score: stateRef.current.score });
+            gameBus.emit('matchEnd', {
+              score: stateRef.current.score,
+              finalEnergy: stateRef.current.players.map(p => ({ id: p.id, team: p.team, energy: p.energy })),
+            });
           } else if (cmd.phase === 'endPeriod') {
             stateRef.current = endCurrentPeriod(stateRef.current);
           }

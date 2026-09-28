@@ -4,6 +4,7 @@ import type { DebugOverlays } from "@/GraficsEngine/PixiPitch";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
 import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
+import { EnergyPanel } from "@/GameInterface/EnergyPanel";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
 import type { CrowdMode } from "@/GameInterface/CrowdHeatmapPanel";
 import { Icon } from "@/GameInterface/Icons";
@@ -336,6 +337,7 @@ export function TestScreen() {
   const [debug, setDebug]         = useState(true);
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [energyOpen, setEnergyOpen] = useState(false);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
   const [debugOverlays, setDebugOverlays] = useState<DebugOverlays>(() => {
     try {
@@ -1169,6 +1171,12 @@ export function TestScreen() {
         >
           Stats
         </button>
+        <button
+          className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10"
+          onClick={() => setEnergyOpen((o) => !o)}
+        >
+          Energy
+        </button>
       </div>
       {quickSimOpen && <div className="mt-2"><QuickSimPanel /></div>}
       {statsOpen && (
@@ -1179,6 +1187,11 @@ export function TestScreen() {
             teamColorA="#2d6cdf"
             teamColorB="#df3b2d"
           />
+        </div>
+      )}
+      {energyOpen && (
+        <div className="mt-2 rounded border border-white/10 overflow-hidden">
+          <EnergyPanel gameState={liveGameState} teamColorA="#2d6cdf" teamColorB="#df3b2d" />
         </div>
       )}
 
