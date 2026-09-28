@@ -7,7 +7,7 @@ primeiro. `CURRENT_VERSION` é sempre `changelog[0].version`. Cada entrada:
 
 ```ts
 {
-  version: string;   // semver completo, ex. "1.4.0"
+  version: string;   // "1.4" (etapa) ou "1.4.1" (só correções)
   date:    string;   // YYYY-MM-DD
   items:   { pt: string; en: string }[];
   fixes?:  { pt: string; en: string }[];  // opcional
@@ -33,7 +33,7 @@ igual à primeira entrada, todo item com `pt`/`en` não vazios).
 ## Regra de versionamento
 
 - Cada etapa concluída do `docs/ROADMAP.md` = próximo **minor**: 1.4 → 1.5 → … → 1.9 → 2.0.
-- Uma release só com correções, sem etapa nova do roadmap, pode usar um **patch**: 1.4.0 → 1.4.1.
+- Uma release só com correções, sem etapa nova do roadmap, pode usar um **patch**: 1.4 → 1.4.1.
 - `package.json` (`"version"`) acompanha `CURRENT_VERSION` — atualize os dois juntos.
 
 ## Texto
