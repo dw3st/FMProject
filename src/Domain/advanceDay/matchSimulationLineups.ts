@@ -11,7 +11,15 @@ function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
   return getFormationSlots(formation as unknown as FormationShape, "attacking");
 }
 
-function resolveUserLineup(squad: Squad, formation: Formation, savedLineup: string[]): string[] {
+/**
+ * Resolves the lineup a human club actually takes to a match: the saved lineup when there is one,
+ * otherwise the same fitness-aware auto-fill the AI uses. Exported so `/api/match-setup`
+ * (`src/backend/routes.ts`) can fill in an empty saved lineup the exact same way for a LIVE match
+ * — before this, a save that never touched the formation screen fell straight through to
+ * `pickForRole` per slot (no fitness awareness at all) for a live match, while this headless path
+ * (used when the human's fixture is resolved without the match screen) already fell back here.
+ */
+export function resolveUserLineup(squad: Squad, formation: Formation, savedLineup: string[]): string[] {
   const slots = slotsFor(formation);
   // No saved lineup (e.g. a career that never touched the formation screen) falls back to the same
   // fitness-aware auto-fill the AI uses, not the plain rating-only fill — a human's XI shouldn't
