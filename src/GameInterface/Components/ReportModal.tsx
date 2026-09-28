@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, ClipboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { DialogTitle } from "@headlessui/react";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { validateAttachmentFile } from "@/GameInterface/Components/reportAttachmentValidation";
 
 // "tweak" was dropped from the form (#22) — too close to "improvement". The server still accepts
 // it so older reports stay valid.
@@ -38,6 +40,12 @@ export function ReportModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [attachmentUploadFailed, setAttachmentUploadFailed] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Reset local state each time the modal is (re)opened.
   useEffect(() => {
     if (!open) return;
@@ -46,7 +54,22 @@ export function ReportModal({ open, onClose }: Props) {
     setError(null);
     setSuccess(false);
     setSubmitting(false);
+    setAttachment(null);
+    setAttachmentError(null);
+    setAttachmentUploadFailed(false);
   }, [open]);
+
+  // Object URL preview — created when an attachment is picked, revoked on change/unmount so we
+  // never leak a blob: URL.
+  useEffect(() => {
+    if (!attachment) {
+      setAttachmentPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(attachment);
+    setAttachmentPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [attachment]);
 
   // Latest onClose, read from a ref inside the auto-close timeout below — so a parent re-render
   // that passes a new onClose closure (e.g. an inline arrow function) can't reset/postpone a
@@ -67,10 +90,65 @@ export function ReportModal({ open, onClose }: Props) {
   const descriptionValid =
     trimmedLength >= DESCRIPTION_MIN && trimmedLength <= DESCRIPTION_MAX;
 
+  /** Validates and stores a picked/pasted file as the one attachment (client-side pre-check
+   *  only — the server re-validates type, size, and magic bytes independently). */
+  function applyAttachment(file: File) {
+    const result = validateAttachmentFile(file);
+    if (!result.ok) {
+      setAttachmentError(
+        result.error === "type"
+          ? t("reports.attachmentErrorType")
+          : t("reports.attachmentErrorSize"),
+      );
+      return;
+    }
+    setAttachmentError(null);
+    setAttachment(file);
+  }
+
+  function handleFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) applyAttachment(file);
+    e.target.value = ""; // allow picking the same file again after removing it
+  }
+
+  function handlePaste(e: ClipboardEvent<HTMLDivElement>) {
+    if (submitting || success) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          applyAttachment(file);
+        }
+        return;
+      }
+    }
+  }
+
+  /** Uploads the picked attachment for an already-filed report. Best-effort: the report itself
+   *  is already sent by the time this runs, so a failure here is surfaced as a soft warning
+   *  rather than blocking the success state. */
+  async function uploadAttachment(reportId: string, file: File): Promise<void> {
+    try {
+      const res = await fetch(`/api/reports/${reportId}/attachment`, {
+        method: "POST",
+        headers: { "content-type": file.type },
+        body: file,
+      });
+      if (!res.ok) setAttachmentUploadFailed(true);
+    } catch {
+      setAttachmentUploadFailed(true);
+    }
+  }
+
   async function submit() {
     if (submitting || !descriptionValid) return;
     setSubmitting(true);
     setError(null);
+    setAttachmentUploadFailed(false);
     try {
       const res = await fetch("/api/reports", {
         method: "POST",
@@ -93,6 +171,10 @@ export function ReportModal({ open, onClose }: Props) {
         }
         return;
       }
+      const body = (await res.json().catch(() => ({}))) as { id?: string };
+      if (attachment && body.id) {
+        await uploadAttachment(body.id, attachment);
+      }
       setSuccess(true);
     } catch {
       setError(t("reports.errorGeneric"));
@@ -108,7 +190,7 @@ export function ReportModal({ open, onClose }: Props) {
 
   return (
     <Modal open={open} onClose={onClose} size="sm">
-      <div className="flex flex-col">
+      <div className="flex flex-col" onPaste={handlePaste}>
         <div className="px-6 py-4 border-b border-border bg-card/50">
           <DialogTitle
             as="h2"
@@ -177,6 +259,56 @@ export function ReportModal({ open, onClose }: Props) {
                 </p>
               </div>
 
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                  {t("reports.attachImage")}
+                </span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  disabled={submitting}
+                  onChange={handleFileInputChange}
+                />
+                {attachmentPreviewUrl ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={attachmentPreviewUrl}
+                      alt=""
+                      className="h-20 w-20 rounded-xl border border-border/60 object-cover"
+                    />
+                    <button
+                      type="button"
+                      aria-label={t("reports.attachmentRemove")}
+                      disabled={submitting}
+                      onClick={() => setAttachment(null)}
+                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide px-2.5 py-1.5 rounded-lg border border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <Icon name="image" size={14} />
+                    {t("reports.attachImage")}
+                  </button>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1 m-0">
+                  {t("reports.attachmentHint")}
+                </p>
+                {attachmentError && (
+                  <p className="text-xs text-red-400 mt-1 m-0" role="alert">
+                    {attachmentError}
+                  </p>
+                )}
+              </div>
+
               {error && (
                 <p className="text-sm text-red-400 m-0" role="alert">
                   {error}
@@ -205,6 +337,11 @@ export function ReportModal({ open, onClose }: Props) {
             <div className="text-center py-4">
               <Icon name="check-circle" size={48} className="text-emerald-400 mx-auto mb-3" />
               <p className="text-base font-black text-emerald-400 m-0">{t("reports.success")}</p>
+              {attachmentUploadFailed && (
+                <p className="text-xs text-amber-400 mt-2 m-0" role="alert">
+                  {t("reports.attachmentUploadFailed")}
+                </p>
+              )}
             </div>
           )}
         </div>
