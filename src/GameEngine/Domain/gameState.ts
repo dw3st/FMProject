@@ -26,6 +26,7 @@ import {
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
+import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
@@ -205,8 +206,14 @@ function buildGamePlayerForSlot(
   const baseStats = teamLineup(buffed, slotDef.role);
   // Match start energy is persisted fitness compressed toward the reference matchday fitness
   // (`matchStartEnergy` — see `.claude/rules/non-player-games.md` → "Fadiga"), not raw fitness.
-  // No persisted history (e.g. a hand-built test player) skips compression entirely — full energy.
-  const energy = rp.seasonLog?.fitness != null ? matchStartEnergy(rp.seasonLog.fitness) : 100;
+  // No persisted history (a save-game player before their first advance-day, or a hand-built
+  // roster with no `seasonLog`) falls back to `emptySeasonLog().fitness` (75) — the SAME default
+  // quickSim (`startFitness`) and the lineup selector (`fitnessAdjustedValue`) already use, so a
+  // squad without history is valued consistently everywhere instead of starting at a full 100 here
+  // only. `TestCases.ts` scenarios that want a genuinely fresh 100-energy match (most of them —
+  // this default is for engine tuning, not fitness testing) give their roster an explicit
+  // `seasonLog.fitness: 100` for that reason.
+  const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
   return {
     id:               engineId,
     rosterId:         rp.id,
@@ -269,7 +276,7 @@ function buildTeam(
     );
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
-    const energy = rp.seasonLog?.fitness != null ? matchStartEnergy(rp.seasonLog.fitness) : 100;
+    const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
     // Bench players have placeholder positions — overwritten when they sub in
     const dummyPos = { x: 0, y: 0 };
     const dummyBounds = { minX: 0, maxX: PITCH_LENGTH, minY: 0, maxY: PITCH_WIDTH };
