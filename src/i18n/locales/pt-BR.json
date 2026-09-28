@@ -481,7 +481,6 @@
     "type": "Tipo",
     "typeBug": "Bug",
     "typeImprovement": "Melhoria",
-    "typeTweak": "Ajuste",
     "descriptionLabel": "Descrição",
     "descriptionPlaceholder": "O que aconteceu? O que você esperava?",
     "descriptionHint": "De {{min}} a {{max}} caracteres.",

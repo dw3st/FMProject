@@ -481,7 +481,6 @@
     "type": "Type",
     "typeBug": "Bug",
     "typeImprovement": "Improvement",
-    "typeTweak": "Tweak",
     "descriptionLabel": "Description",
     "descriptionPlaceholder": "What happened? What did you expect?",
     "descriptionHint": "{{min}} to {{max}} characters.",

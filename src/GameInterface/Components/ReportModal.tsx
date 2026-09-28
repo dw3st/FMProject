@@ -5,7 +5,9 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 
-const REPORT_TYPES = ["bug", "improvement", "tweak"] as const;
+// "tweak" was dropped from the form (#22) — too close to "improvement". The server still accepts
+// it so older reports stay valid.
+const REPORT_TYPES = ["bug", "improvement"] as const;
 type ReportType = (typeof REPORT_TYPES)[number];
 
 const DESCRIPTION_MIN = 5;
@@ -102,7 +104,6 @@ export function ReportModal({ open, onClose }: Props) {
   const TYPE_OPTIONS: { value: ReportType; label: string }[] = [
     { value: "bug", label: t("reports.typeBug") },
     { value: "improvement", label: t("reports.typeImprovement") },
-    { value: "tweak", label: t("reports.typeTweak") },
   ];
 
   return (
