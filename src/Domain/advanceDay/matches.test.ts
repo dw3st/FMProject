@@ -285,7 +285,7 @@ describe("buildMatchEventFromRecording — injuries", () => {
     const away = makeSquad("a", 1);
     const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
     const injuries: MatchInjury[] = [
-      { team: "home", playerId: "h-p0", playerName: "h0", severity: "medium", matchMinute: 30 },
+      { team: "home", playerId: "h-p0", playerName: "h0", severity: "medium", matchMinute: 30, energy: 50 },
     ];
     const recording = baseRecording({
       playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },

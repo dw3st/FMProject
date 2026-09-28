@@ -131,7 +131,26 @@ function finalizeSquadsAfterMatch(
   injuriesApplied: AppliedInjury[];
 } {
   // Shared across both squads — `playerStats` already combines home + away.
-  const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), substitutions, totalMinutes);
+  //
+  // A player injured and removed outright (no bench candidate / no subs left) never appears as a
+  // `playerOutId` in `substitutions` (that log only covers replaced players) — without a synthetic
+  // entry here, `computeMinutesPlayed` would credit them the full match instead of stopping their
+  // clock at the injury minute. `playerInId` is a placeholder that never matches a real roster id,
+  // so it can't accidentally start tracking a bogus "player" — `computeMinutesPlayed` only reads
+  // `minutes[id]` for ids it was given in `playerIds` (now includes injured-removed players — see
+  // both collectors, `buildMatchEvent`/`buildPlayedMatchRecording.ts`).
+  const subbedOutIds = new Set(substitutions.map((s) => s.playerOutId));
+  const minutesSubstitutions = [
+    ...substitutions,
+    ...injuries
+      .filter((inj) => !subbedOutIds.has(inj.playerId))
+      .map((inj) => ({
+        playerOutId: inj.playerId,
+        playerInId: `__injured_out_${inj.playerId}`,
+        matchMinute: inj.matchMinute,
+      })),
+  ];
+  const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), minutesSubstitutions, totalMinutes);
   const injuryByPlayer = new Map(injuries.map((inj) => [inj.playerId, inj]));
   const injuriesApplied: AppliedInjury[] = [];
 
@@ -373,6 +392,16 @@ export function buildMatchEvent(
       engineIdToRosterId.set(sub.playerOutId, sub.playerOutRosterId);
     }
   }
+  // Also map players injured and removed outright (no bench candidate / no subs left) — they
+  // never appear on the pitch at full time, nor in `substitutions` (that log only covers
+  // replaced players), so without this their accumulated stats/rating (still held in the
+  // Statistics/PlayerRating stores by engine id — never purged just because a player left the
+  // pitch) would silently be dropped from the day-log event.
+  for (const inj of result.injuries) {
+    if (!engineIdToRosterId.has(inj.playerId)) {
+      engineIdToRosterId.set(inj.playerId, inj.playerRosterId);
+    }
+  }
 
   const playerStats: Record<string, MatchPlayerStats> = {};
   for (const [id, stats] of result.playerStats) {
@@ -409,6 +438,13 @@ export function buildMatchEvent(
       playerEnergy[rosterId] = Math.max(0, Math.min(100, sub.playerOutEnergy));
     }
   }
+  // Injured and removed outright — use their energy captured at the moment of injury.
+  for (const inj of result.injuries) {
+    const rosterId = inj.playerRosterId;
+    if (rosterId && !(rosterId in playerEnergy)) {
+      playerEnergy[rosterId] = Math.max(0, Math.min(100, inj.energy));
+    }
+  }
 
   const playerNames: Record<string, string> = {};
   const playerTeams: Record<string, "home" | "away"> = {};
@@ -425,6 +461,14 @@ export function buildMatchEvent(
     if (rosterId && !playerNames[rosterId]) {
       playerNames[rosterId] = sub.playerOutName;
       playerTeams[rosterId] = sub.team === "A" ? "home" : "away";
+    }
+  }
+  // Fill names/teams for injured-and-removed players from the injury log.
+  for (const inj of result.injuries) {
+    const rosterId = inj.playerRosterId;
+    if (rosterId && !playerNames[rosterId]) {
+      playerNames[rosterId] = inj.playerName;
+      playerTeams[rosterId] = inj.team === "A" ? "home" : "away";
     }
   }
 
@@ -461,6 +505,7 @@ export function buildMatchEvent(
     playerName:  inj.playerName,
     severity:    inj.severity,
     matchMinute: inj.matchMinute,
+    energy:      inj.energy,
   }));
 
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied } =

@@ -59,7 +59,7 @@ export const INJURY = {
    * `contactInjuryChance` back up so quickSim's overall injuries/match lands within ±15% of the
    * engine's — calibrated by `scripts/injury-calibrate.ts --quicksim`.
    */
-  QUICKSIM_CONTACT_SCALE: 1,
+  QUICKSIM_CONTACT_SCALE: 2.3248935431401576,
 
   /** Heavy training session → small flat chance of a light injury. Light/normal training: 0. */
   HEAVY_TRAINING_CHANCE: 0.01,

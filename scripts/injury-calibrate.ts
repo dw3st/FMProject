@@ -15,11 +15,18 @@
  * exact ratio needed since the correction only needs to close a small residual gap).
  *
  * Usage: bun scripts/injury-calibrate.ts [matchesPerLeague=150] [--apply]
- *   --apply     writes the calibrated BASE/CONTACT_BASE back into injuryConfig.ts.
- *   --quicksim  ALSO runs the same squads through quickSim (Task 3) and reports its injuries/match
- *               against the (possibly just-recalibrated) engine baseline, adjusting
- *               `INJURY.QUICKSIM_CONTACT_SCALE` to close the gap to within ±15%. Implies --apply
- *               writes that constant too.
+ *   --apply      writes the calibrated BASE/CONTACT_BASE back into injuryConfig.ts.
+ *   --quicksim   ALSO runs the same squads through quickSim (Task 3) and reports its injuries/match
+ *                against the (possibly just-recalibrated) engine baseline, adjusting
+ *                `INJURY.QUICKSIM_CONTACT_SCALE` to close the gap to within ±15%. Implies --apply
+ *                writes that constant too.
+ *   --realistic  ALSO runs the engine at realistic matchday fitness/load (88 / 100 — a typical
+ *                congested-calendar starter, not the fresh-squad baseline used for the main
+ *                calibration) and reports injuries/match. Report-only: never adjusts BASE/
+ *                CONTACT_BASE — the main calibration intentionally isolates age/strength via a
+ *                fresh squad; this is a sanity check that a realistic fatigue/load state doesn't
+ *                blow the target up (the energy/load multipliers in `injuryRatePerMinute` can
+ *                push per-minute risk up to ~3x — see `injury.ts`).
  */
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -39,7 +46,10 @@ const LEAGUES = ["premier_league", "of_championship"];
 const MATCHES_PER_LEAGUE = Number(process.argv[2] ?? 150);
 const APPLY = process.argv.includes("--apply");
 const DO_QUICKSIM = process.argv.includes("--quicksim");
+const DO_REALISTIC = process.argv.includes("--realistic");
 const TARGET_PER_MATCH = 0.3;
+/** Report-only sanity check — never retuned unless it blows well past this. */
+const REALISTIC_WARN_THRESHOLD = 0.45;
 
 // `INJURY` is `as const` for its TYPES only — the object itself isn't frozen, so BASE/CONTACT_BASE
 // can be scaled in-process between iterations without re-running the (expensive) engine matches
@@ -49,17 +59,17 @@ const C = INJURY as unknown as { BASE: number; CONTACT_BASE: number; QUICKSIM_CO
 const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
 const roles = slotRoles(formation);
 
-async function loadLeague(league: string): Promise<Squad[]> {
+async function loadLeague(league: string, fitness = 100, load = 0): Promise<Squad[]> {
   const dir = fileURLToPath(new URL(`../src/example_data/squads/${league}/`, import.meta.url));
   const files = (await readdir(dir)).filter((f) => f.endsWith(".json"));
   return Promise.all(
     files.map(async (f) => {
       const s = (await Bun.file(`${dir}${f}`).json()) as Squad;
-      // Fresh fitness/load for every player — isolates age/strength as the only remaining injury
+      // Fresh fitness/load (the default) isolates age/strength as the only remaining injury
       // factors, so the measured rate reflects the baseline calibration target, not a squad's
-      // current fatigue state (which the spec calibrates separately, via the engine's real minute
-      // and contact-event volume anyway).
-      return { ...s, players: s.players.map((p) => ({ ...p, seasonLog: { ...emptySeasonLog(), fitness: 100, load: 0 } })) };
+      // current fatigue state. `--realistic` overrides fitness/load to a typical matchday value
+      // instead, as a report-only sanity check (see the module doc comment).
+      return { ...s, players: s.players.map((p) => ({ ...p, seasonLog: { ...emptySeasonLog(), fitness, load } })) };
     }),
   );
 }
@@ -71,8 +81,14 @@ function pickPair(squads: Squad[], rng: () => number): [Squad, Squad] {
   return [home, away];
 }
 
-async function measureLeague(league: string, n: number, rng: () => number): Promise<{ matches: number; injuries: number }> {
-  const squads = await loadLeague(league);
+async function measureLeague(
+  league: string,
+  n: number,
+  rng: () => number,
+  fitness = 100,
+  load = 0,
+): Promise<{ matches: number; injuries: number }> {
+  const squads = await loadLeague(league, fitness, load);
   let injuries = 0;
   for (let i = 0; i < n; i++) {
     const [home, away] = pickPair(squads, rng);
@@ -84,12 +100,12 @@ async function measureLeague(league: string, n: number, rng: () => number): Prom
   return { matches: n, injuries };
 }
 
-async function measureAll(): Promise<{ matches: number; injuries: number; perMatch: number }> {
+async function measureAll(fitness = 100, load = 0): Promise<{ matches: number; injuries: number; perMatch: number }> {
   const rng = mulberry32(2026);
   let matches = 0;
   let injuries = 0;
   for (const league of LEAGUES) {
-    const r = await measureLeague(league, MATCHES_PER_LEAGUE, rng);
+    const r = await measureLeague(league, MATCHES_PER_LEAGUE, rng, fitness, load);
     matches += r.matches;
     injuries += r.injuries;
     console.log(`  ${league}: ${r.injuries} injuries / ${r.matches} matches = ${(r.injuries / r.matches).toFixed(3)}/match`);
@@ -149,6 +165,19 @@ async function main() {
     console.log(`Engine:   ${result.perMatch.toFixed(3)} injuries/match over ${result.matches} matches`);
     console.log(`Gap: ${gap >= 0 ? "+" : ""}${gap.toFixed(1)}% (target ±15%)`);
     console.log(`Final QUICKSIM_CONTACT_SCALE=${C.QUICKSIM_CONTACT_SCALE.toFixed(6)}`);
+  }
+
+  // ── Realistic matchday fitness/load sanity check (report-only) ───────────
+  if (DO_REALISTIC) {
+    console.log("\n" + "─".repeat(60));
+    console.log("Realistic matchday fitness/load (fitness=88, load=100) — report only, no retuning:\n");
+    const realistic = await measureAll(88, 100);
+    console.log(`  → ${realistic.perMatch.toFixed(3)}/match (fresh baseline: ${result.perMatch.toFixed(3)}/match)`);
+    if (realistic.perMatch > REALISTIC_WARN_THRESHOLD) {
+      console.log(`  ⚠ exceeds the ${REALISTIC_WARN_THRESHOLD}/match warn threshold — consider retuning.`);
+    } else {
+      console.log(`  within the ${REALISTIC_WARN_THRESHOLD}/match warn threshold — BASE/CONTACT_BASE left as-is.`);
+    }
   }
 
   if (APPLY) {

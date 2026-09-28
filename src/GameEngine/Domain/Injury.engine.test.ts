@@ -116,4 +116,45 @@ describe("in-match injuries — tickState integration", () => {
     expect(result.benchA.some(b => b.id === record!.playerInId)).toBe(false);
     expect(result.subsRemainingA).toBe(state.subsRemainingA - 1);
   });
+
+  // ── Reviewer feedback: GK safety net ────────────────────────────────────────────────────────
+  test("GK injured, 0 subs left: an outfielder is promoted to GK rather than leaving the team keeperless", () => {
+    const state = buildFreshState();
+    const gk = state.players.find(p => p.team === "A" && p.role === "GK")!;
+    const noSubsState: GameState = { ...state, subsRemainingA: 0, benchA: [] };
+
+    const result = forceInjurySubstitution(noSubsState, gk, 12, "severe");
+
+    // The original GK is gone — but the team still has exactly one GK-role player on the pitch.
+    expect(result.players.some(p => p.id === gk.id)).toBe(false);
+    const teamA = result.players.filter(p => p.team === "A");
+    expect(teamA).toHaveLength(10);
+    const newGk = teamA.filter(p => p.role === "GK");
+    expect(newGk).toHaveLength(1);
+    // The promoted player must actually have usable GK stats (not the all-zero default an
+    // outfielder's `baseStats` would carry), and be assigned the GK slot.
+    expect(newGk[0]!.slotIndex).toBe(0);
+    expect(newGk[0]!.baseStats.withoutBall.gkPositioning).toBeGreaterThan(0);
+    expect(newGk[0]!.baseStats.withoutBall.gkReflex).toBeGreaterThan(0);
+    expect(newGk[0]!.baseStats.withoutBall.gkDiving).toBeGreaterThan(0);
+  });
+
+  test("GK injured, no bench GK: the substituted-in outfielder gets a GK stat floor instead of zero", () => {
+    const state = buildFreshState();
+    const gk = state.players.find(p => p.team === "A" && p.role === "GK")!;
+    // Strip any real GK from the bench — findBestBenchForRole must fall back to an outfielder.
+    const noBenchGkState: GameState = { ...state, benchA: state.benchA.filter(p => p.role !== "GK") };
+    expect(noBenchGkState.benchA.some(p => p.role === "GK")).toBe(false);
+
+    const result = forceInjurySubstitution(noBenchGkState, gk, 12, "severe");
+
+    const teamA = result.players.filter(p => p.team === "A");
+    expect(teamA).toHaveLength(11); // still substituted, not removed
+    const newGk = teamA.filter(p => p.role === "GK");
+    expect(newGk).toHaveLength(1);
+    expect(newGk[0]!.id).not.toBe(gk.id); // a different player (the bench outfielder) took the slot
+    expect(newGk[0]!.baseStats.withoutBall.gkPositioning).toBeGreaterThan(0);
+    expect(newGk[0]!.baseStats.withoutBall.gkReflex).toBeGreaterThan(0);
+    expect(newGk[0]!.baseStats.withoutBall.gkDiving).toBeGreaterThan(0);
+  });
 });

@@ -367,6 +367,10 @@ function rollSideInjuries(
       playerName: p.name,
       severity: rollSeverity(rng),
       matchMinute: 1 + Math.floor(rng() * minutesTotal),
+      // quickSim never actually benches a player (no lineup change — see the doc comment above),
+      // so there's no separate "energy at the moment of injury" to capture; use the same
+      // start-of-match energy the risk roll itself used (`factors.energy`).
+      energy: factors.energy,
     });
   }
   return injuries;

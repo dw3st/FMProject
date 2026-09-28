@@ -240,7 +240,7 @@ export interface GameEvents {
    * contact event (tackle / loose-ball duel). See `docs/superpowers/specs/2026-09-28-injuries-design.md`
    * §1 "Na partida" and `Domain/injury/injury.ts`.
    */
-  injury: { playerId: number; team: TeamId; minute: number; severity: import('@/Domain/injury/injury').InjurySeverity };
+  injury: { playerId: number; playerName: string; team: TeamId; minute: number; severity: import('@/Domain/injury/injury').InjurySeverity };
 
   // ── Match flow events ─────────────────────────────────────────────────────
   /**

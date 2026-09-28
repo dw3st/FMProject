@@ -479,7 +479,7 @@ export function performSubstitution(
   const newPlayers = state.players.map(p => p.id === outPlayerId ? incoming : p);
   const newBench   = bench.filter(p => p.id !== inPlayerId);
 
-  return {
+  return cleanupAfterPlayerLeft({
     ...state,
     players:         newPlayers,
     benchA:          team === 'A' ? newBench : state.benchA,
@@ -488,7 +488,7 @@ export function performSubstitution(
     subsRemainingB:  team === 'B' ? state.subsRemainingB - 1 : state.subsRemainingB,
     substitutions:   [...state.substitutions, record],
     ballHolderId,
-  };
+  }, outPlayerId);
 }
 
 /**
@@ -522,6 +522,37 @@ function injuryFactorsOf(p: GamePlayer): InjuryFactors {
   return { energy: p.energy, load: p.injuryLoad, age: p.age, strength: p.strengthAttr };
 }
 
+/**
+ * Cleans up references to a player who just left the pitch (removed outright, or replaced by a
+ * substitution) so no other piece of state dangles on their now-stale id:
+ *  - `setPiece.takerId` — reassigned to the CURRENT `ballHolderId` (already correctly updated by
+ *    the caller before this runs) if it was pointing at the player who left.
+ *  - `pendingSubsA`/`B` — any queued sub with `outId === leftId` is now unfulfillable (that player
+ *    is gone) and is dropped rather than left to silently no-op in `performSubstitution`.
+ *  - `decisions[leftId]` — stale per-tick decision entry removed.
+ * `looseBall` ids (`fromPasserId`/`intendedRunnerId`) are tolerated unresolved — they're purely
+ * informational once the ball has moved on and nothing dereferences them as a live player lookup.
+ */
+function cleanupAfterPlayerLeft(state: GameState, leftId: number): GameState {
+  let s = state;
+  if (s.setPiece && s.setPiece.takerId === leftId) {
+    s = { ...s, setPiece: { ...s.setPiece, takerId: s.ballHolderId } };
+  }
+  if (s.pendingSubsA.some(p => p.outId === leftId) || s.pendingSubsB.some(p => p.outId === leftId)) {
+    s = {
+      ...s,
+      pendingSubsA: s.pendingSubsA.filter(p => p.outId !== leftId),
+      pendingSubsB: s.pendingSubsB.filter(p => p.outId !== leftId),
+    };
+  }
+  if (leftId in s.decisions) {
+    const rest = { ...s.decisions };
+    delete rest[leftId];
+    s = { ...s, decisions: rest };
+  }
+  return s;
+}
+
 /** Removes a player from the pitch outright (no bench candidate / no subs left — "play on with 10"). */
 function removeInjuredPlayer(state: GameState, player: GamePlayer): GameState {
   let ballHolderId = state.ballHolderId;
@@ -531,18 +562,113 @@ function removeInjuredPlayer(state: GameState, player: GamePlayer): GameState {
       .sort((a, b) => distSq(a, player) - distSq(b, player));
     ballHolderId = nearest[0]?.id ?? ballHolderId;
   }
-  return {
+  return cleanupAfterPlayerLeft({
     ...state,
     players: state.players.filter(p => p.id !== player.id),
     ballHolderId,
+  }, player.id);
+}
+
+/** Emergency-keeper stat floor — deliberately weak (a real GK's stats are built from role-specific
+ *  attributes and land well above this), just enough that shots against a promoted outfielder
+ *  aren't an automatic save-chance of exactly zero. 0..1 scale, same as `runtimeStats`. */
+const GK_EMERGENCY_STAT_FLOOR = 0.2;
+
+/** True when a GK-role player actually has GK-specific stats built (i.e. `teamLineup` built them
+ *  as a real keeper) — false for an outfielder whose role got relabelled 'GK' by a substitution
+ *  slot but whose `baseStats` were never recomputed for the position (see `performSubstitution`'s
+ *  "we don't have their raw PlayerStatsRecord anymore" comment). */
+function hasRealGkStats(p: GamePlayer): boolean {
+  const s = p.baseStats.withoutBall;
+  return s.gkPositioning > 0 || s.gkReflex > 0 || s.gkDiving > 0;
+}
+
+function withGkStatFloor(p: GamePlayer): GamePlayer {
+  const floor = (v: number) => Math.max(v, GK_EMERGENCY_STAT_FLOOR);
+  return {
+    ...p,
+    baseStats: {
+      ...p.baseStats,
+      withoutBall: {
+        ...p.baseStats.withoutBall,
+        gkPositioning: floor(p.baseStats.withoutBall.gkPositioning),
+        gkReflex:      floor(p.baseStats.withoutBall.gkReflex),
+        gkDiving:      floor(p.baseStats.withoutBall.gkDiving),
+      },
+    },
+    runtimeStats: {
+      ...p.runtimeStats,
+      withoutBall: {
+        ...p.runtimeStats.withoutBall,
+        gkPositioning: floor(p.runtimeStats.withoutBall.gkPositioning),
+        gkReflex:      floor(p.runtimeStats.withoutBall.gkReflex),
+        gkDiving:      floor(p.runtimeStats.withoutBall.gkDiving),
+      },
+    },
   };
+}
+
+/**
+ * Guarantees `team` has a goalkeeper capable of at least a baseline save chance, after an
+ * injury-forced sub/removal. Two cases:
+ *  - No GK-role player at all (the injured keeper was removed outright, no subs left/no bench) —
+ *    promotes the outfield player closest to the team's own goal: role → GK, slot 0, bounds and
+ *    position rebuilt from the GK role engine entry, plus the stat floor below.
+ *  - A GK-role player exists but was never actually built as a keeper (bench had no GK, so
+ *    `findBestBenchForRole` brought on an outfielder — `performSubstitution` forces the SLOT's
+ *    role onto them but keeps their old outfield `baseStats`, all-zero GK stats) — patches the
+ *    stat floor onto that SAME player in place; no repositioning needed, they're already on the
+ *    GK slot/bounds from the substitution itself.
+ */
+function ensureCompetentGK(state: GameState, team: TeamId): GameState {
+  const teamPlayers = state.players.filter(p => p.team === team);
+  const gk = teamPlayers.find(p => p.role === 'GK');
+
+  if (gk) {
+    if (hasRealGkStats(gk)) return state;
+    return { ...state, players: state.players.map(p => (p.id === gk.id ? withGkStatFloor(p) : p)) };
+  }
+
+  const outfield = teamPlayers.filter(p => p.role !== 'GK');
+  if (outfield.length === 0) return state; // nobody left on the team at all — degenerate, nothing to promote
+
+  const ownGoalX = outfield[0]!.attackDir === 1 ? 0 : PITCH_LENGTH;
+  const deepest = outfield.reduce((best, p) =>
+    Math.abs(p.x - ownGoalX) < Math.abs(best.x - ownGoalX) ? p : best,
+  );
+
+  const roleEng    = roleEngine('GK');
+  const xBoundsBase = roleEng.bounds;
+  const xBounds    = team === 'A' ? xBoundsBase : mirrorBounds({ ...xBoundsBase, minY: 0, maxY: PITCH_WIDTH });
+  const goalY      = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
+  const bounds: MovementBounds = {
+    minX: xBounds.minX, maxX: xBounds.maxX,
+    minY: Math.max(0, goalY - roleEng.yRange),
+    maxY: Math.min(PITCH_WIDTH, goalY + roleEng.yRange),
+  };
+  const goalPos = { x: ownGoalX, y: goalY };
+
+  const promoted = withGkStatFloor({
+    ...deepest,
+    role:              'GK' as PlayerRole,
+    slotIndex:         0,
+    x:                 goalPos.x,
+    y:                 goalPos.y,
+    basePosition:      goalPos,
+    targetPosition:    goalPos,
+    bounds,
+    ballSupportScale:  roleEng.ballSupportScale,
+  });
+
+  return { ...state, players: state.players.map(p => (p.id === deepest.id ? promoted : p)) };
 }
 
 /**
  * Records an injury, emits the `injury` event, and either forces a substitution (best bench
  * player for the injured player's slot — reuses `findBestBenchForRole`, same choice
  * `evaluateAiSubstitutions` would make) or, with no subs remaining / no bench candidate, removes
- * the player outright — the team plays on with 10 (or fewer).
+ * the player outright — the team plays on with 10 (or fewer). Either way, guarantees the team
+ * still has a competent goalkeeper afterward (`ensureCompetentGK`).
  */
 export function forceInjurySubstitution(
   state: GameState,
@@ -558,17 +684,21 @@ export function forceInjurySubstitution(
     playerRosterId: player.rosterId,
     severity,
     matchMinute:    minute,
+    energy:         player.energy,
   };
   let s: GameState = { ...state, injuries: [...state.injuries, record] };
-  gameBus.emit('injury', { playerId: player.id, team, minute, severity });
+  gameBus.emit('injury', { playerId: player.id, playerName: player.name, team, minute, severity });
 
   const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
   const bench    = team === 'A' ? s.benchA         : s.benchB;
+  let result: GameState;
   if (subsLeft > 0 && bench.length > 0) {
     const best = findBestBenchForRole(bench, player.role);
-    if (best) return performSubstitution(s, team, player.id, best.id, 'injury');
+    result = best ? performSubstitution(s, team, player.id, best.id, 'injury') : removeInjuredPlayer(s, player);
+  } else {
+    result = removeInjuredPlayer(s, player);
   }
-  return removeInjuredPlayer(s, player);
+  return ensureCompetentGK(result, team);
 }
 
 /** Per-tick, per-player injury roll: `injuryRatePerMinute` scaled to the game-minutes elapsed this tick. */

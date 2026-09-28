@@ -59,6 +59,12 @@ export interface MatchInjury {
   playerName:  string;
   severity:    "light" | "medium" | "severe";
   matchMinute: number;
+  /**
+   * Energy (0–100) at the moment of injury. Needed for a player removed outright (no subs left)
+   * — they never appear in `playerEnergy`/`substitutions` otherwise, so this is the only source
+   * for their final in-match energy.
+   */
+  energy: number;
 }
 
 export interface MatchEvent {
