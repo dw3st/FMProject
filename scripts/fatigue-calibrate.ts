@@ -15,8 +15,16 @@
  * quickSim (many repeats). Sweeps a few FATIGUE_PENALTY candidates against the fixed engine
  * baseline to see whether the current constant still tracks the engine's tired-vs-fresh gap.
  *
- * Usage: bun scripts/fatigue-calibrate.ts [pairs=40] [repeats=2] [scenarioPairs=15] [scenarioRepeats=3]
+ * Part 3 — engine-only goal-difference impact of START-fitness gaps between two sides, at a few
+ * (fitness/load) scenarios, pooled over premier_league + of_championship. Used while investigating
+ * whether the fatigue curve (`RuntimeLineup.ts`) could be softened for moderate fitness gaps
+ * without moving the engine's own goal volume for two equal-fitness sides — see that file's doc
+ * comment and `.claude/rules/non-player-games.md` → "Fadiga" for why the curve was, in the end,
+ * left unchanged (every softened variant tried pushed goal volume up too).
+ *
+ * Usage: bun scripts/fatigue-calibrate.ts [pairs=40] [repeats=2] [scenarioPairs=15] [scenarioRepeats=3] [scen3Pairs=60] [scen3Repeats=2]
  * Env: QS_QUICK_REPEATS (default 200) — quickSim repeats per scenario fixture.
+ *      FC_ONLY_PART3=1 — skip Parts 1-2 for fast iteration on Part 3 alone.
  */
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
