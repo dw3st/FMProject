@@ -2,6 +2,8 @@ import type { SeedPlayer } from "@/../scripts/openfootball/types";
 import type { LineFit, PlaneFit } from "@/../scripts/openfootball/calibration";
 import { gaussianFromKey, playerId, unitHash } from "@/../scripts/openfootball/ids";
 import { mainRole, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
+import { fitLevelPredictor, predictLevel, type LevelPair, type LevelPlaneFit } from "@/../scripts/openfootball/recalibrate";
+import { computeOverallAvg } from "@/Domain/playerRating";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 export const STAT_KEYS = [
@@ -22,6 +24,32 @@ export const NOISE_SCALE = 1;
 export const MIN_PAIRS = 30;
 /** How far below the lowest calibration league reputation (/1000) the fit may extrapolate. */
 export const REP_FLOOR_MARGIN = 3;
+
+/**
+ * #3 — a single luck factor per player instead of an independent gaussian per attribute. A
+ * player who "got lucky" once (LUCK_WEIGHT) tends to be a bit above/below their line on every
+ * attribute together, but a per-attribute jitter (JITTER_WEIGHT) still keeps some spread between
+ * attributes. Weights are chosen so `sqrt(LUCK_WEIGHT² + JITTER_WEIGHT²) = 1`, i.e. the combined
+ * noise has the same magnitude as the old independent-per-attribute noise (NOISE_SCALE unchanged).
+ */
+export const LUCK_WEIGHT = 0.8;
+export const JITTER_WEIGHT = Math.sqrt(1 - LUCK_WEIGHT * LUCK_WEIGHT);
+
+/**
+ * #3 soft cap — a player whose derived overall (`computeOverallAvg`) lands more than
+ * SOFT_CAP_SD standard deviations above the level predicted for their seedOverall/leagueRep
+ * (fit from `buildRoleLevelPredictor`, same shape as the native recalibration predictor in
+ * `recalibrate.ts`) has their noise shrunk by SOFT_CAP_SHRINK and is re-derived, up to
+ * SOFT_CAP_MAX_ITER times. This only pulls back lucky *upward* outliers — an unlucky player
+ * below the line is left alone.
+ */
+export const SOFT_CAP_SD = 2;
+export const SOFT_CAP_SHRINK = 0.5;
+export const SOFT_CAP_MAX_ITER = 6;
+
+/** Sample points used to fit each role's level predictor (seedOverall × leagueRep grid). */
+const PREDICTOR_OVERALL_SAMPLES = [40, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99];
+const ALL_MAIN_ROLES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
 const ARCHETYPES: Record<MainRole, Partial<Record<StatKey, string>> & { _: string }> = {
   GK:         { _: "Goalkeeper", reflex: "Shot-stopper", passing: "Sweeper-keeper", jump: "Commanding keeper" },
@@ -63,27 +91,91 @@ export function playerProfile(role: MainRole, stats: PlayerStatsRecord, adjectiv
   return { archetype: ARCHETYPES[role][top] ?? ARCHETYPES[role]._, summary: `${adjective} ${roleWord}, strongest at ${top}.` };
 }
 
+/** Picks the fit to use for one attribute — role fit if it has enough pairs, else the pooled fit. */
+function pickFit(coeffs: PlayerCoeffs, role: MainRole, k: StatKey): PlaneFit {
+  const roleFit = coeffs.byRole[role]?.[k];
+  const pooledFit = coeffs.pooled[k];
+  const f = finiteFit(roleFit) && roleFit.n >= MIN_PAIRS ? roleFit : finiteFit(pooledFit) ? pooledFit : undefined;
+  if (!f) throw new Error(`derivePlayer: missing/non-finite fit for ${role}.${k}`);
+  return f;
+}
+
 /**
- * `leagueRep` is the seed league reputation / 1000. It is clamped to
- * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
+ * Derives one player's stats at a given noise magnitude (`noiseScale`). `noiseScale = 0` gives
+ * the deterministic baseline (no luck, no jitter) — used both for real players (after the soft
+ * cap shrinks it) and for the synthetic samples that build the level predictor.
  */
-export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number): RosterPlayer {
-  const role = mainRole(sp.position);
-  const rep = clamp(leagueRep, coeffs.repMin - REP_FLOOR_MARGIN, coeffs.repMax);
+function deriveStats(sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, role: MainRole, noiseScale: number): PlayerStatsRecord {
+  const luck = gaussianFromKey(`${sp.id}:luck`);
   const statOf = (k: StatKey): number => {
-    const roleFit = coeffs.byRole[role]?.[k];
-    const pooledFit = coeffs.pooled[k];
-    const f = finiteFit(roleFit) && roleFit.n >= MIN_PAIRS ? roleFit : finiteFit(pooledFit) ? pooledFit : undefined;
-    if (!f) throw new Error(`derivePlayer: missing/non-finite fit for ${role}.${k}`);
-    const raw = f.a + f.b * sp.overall + f.c * rep + f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`);
+    const f = pickFit(coeffs, role, k);
+    const jitter = gaussianFromKey(`${sp.id}:${k}:jitter`);
+    const noise = f.sd * noiseScale * (LUCK_WEIGHT * luck + JITTER_WEIGHT * jitter);
+    const raw = f.a + f.b * sp.overall + f.c * rep + noise;
     return clamp(Math.round(raw), 0, 10);
   };
-  const stats: PlayerStatsRecord = {
+  return {
     passing: statOf("passing"), vision: statOf("vision"), finishing: statOf("finishing"),
     dribbling: statOf("dribbling"), speed: statOf("speed"), acceleration: statOf("acceleration"),
     tackling: statOf("tackling"), pressing: statOf("pressing"), stamina: statOf("stamina"),
     heading: statOf("heading"), strength: statOf("strength"), reflex: statOf("reflex"), jump: statOf("jump"),
   };
+}
+
+const rolePredictorCache = new WeakMap<PlayerCoeffs, Partial<Record<MainRole, LevelPlaneFit>>>();
+
+/**
+ * #3 — builds a per-role level predictor (`z = a + b·seedOverall + c·leagueRep`) from synthetic,
+ * noise-free samples derived under `coeffs`: the same shape as `recalibrate.ts`'s native-player
+ * predictor, but fitted against `of_*`'s own deterministic baseline instead of a native player's
+ * game overall. Memoized per `coeffs` object (one build per importer run).
+ */
+export function buildRoleLevelPredictor(coeffs: PlayerCoeffs): Partial<Record<MainRole, LevelPlaneFit>> {
+  const cached = rolePredictorCache.get(coeffs);
+  if (cached) return cached;
+  const repSamples = [...new Set([coeffs.repMin, (coeffs.repMin + coeffs.repMax) / 2, coeffs.repMax])];
+  const pairs: LevelPair[] = [];
+  for (const role of ALL_MAIN_ROLES) {
+    for (const overall of PREDICTOR_OVERALL_SAMPLES) {
+      for (const rep of repSamples) {
+        const sp: SeedPlayer = { id: "predictor-sample", name: "", position: "ATT", overall, potential: overall, age: 25, country: "us", foot: "R", value: 0, clubId: "sample" };
+        const stats = deriveStats(sp, coeffs, rep, role, 0);
+        const nativeOverall = computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+        pairs.push({ role, seedOverall: overall, leagueRep: rep, nativeOverall });
+      }
+    }
+  }
+  const fit = fitLevelPredictor(pairs);
+  rolePredictorCache.set(coeffs, fit);
+  return fit;
+}
+
+/**
+ * `leagueRep` is the seed league reputation / 1000. It is clamped to
+ * [coeffs.repMin − REP_FLOOR_MARGIN, coeffs.repMax] so the plane never extrapolates wildly.
+ *
+ * #3: noise is a per-player luck factor + per-attribute jitter (see `deriveStats`), with a soft
+ * cap — if the resulting overall lands more than `SOFT_CAP_SD` standard deviations above the
+ * level predicted for this seedOverall/leagueRep, the noise is shrunk and the player re-derived,
+ * up to `SOFT_CAP_MAX_ITER` times.
+ */
+export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number): RosterPlayer {
+  const role = mainRole(sp.position);
+  const rep = clamp(leagueRep, coeffs.repMin - REP_FLOOR_MARGIN, coeffs.repMax);
+
+  let noiseScale = NOISE_SCALE;
+  let stats = deriveStats(sp, coeffs, rep, role, noiseScale);
+  const fit = buildRoleLevelPredictor(coeffs)[role];
+  if (fit) {
+    for (let i = 0; i < SOFT_CAP_MAX_ITER; i++) {
+      const overall = computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+      const predicted = predictLevel(fit, sp.overall, rep);
+      if (overall <= predicted + SOFT_CAP_SD * fit.sd) break;
+      noiseScale *= SOFT_CAP_SHRINK;
+      stats = deriveStats(sp, coeffs, rep, role, noiseScale);
+    }
+  }
+
   const adjective = sp.overall >= 80 ? "Elite" : sp.overall >= 70 ? "Solid" : sp.overall >= 60 ? "Capable" : "Developing";
   const player: RosterPlayer = {
     id: playerId(sp.id),
