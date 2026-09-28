@@ -25,6 +25,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.5",
+    date: "2026-09-28",
+    items: [
+      {
+        pt: "Lesões: jogadores podem se machucar em partidas e em treinos pesados, ficando fora por dias, semanas ou meses",
+        en: "Injuries: players can get hurt in matches and heavy training, and sit out for days, weeks or months",
+      },
+      {
+        pt: "Um jogador lesionado não entra em campo, e a prévia da partida avisa quando isso acontece na sua escalação",
+        en: "An injured player can't be selected, and the match preview warns when this happens in your lineup",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Nível dos jogadores de ligas menores corrigido",
+        en: "Fixed player levels in smaller leagues",
+      },
+      {
+        pt: "Jovens promissores deixaram de nascer, por engano, como o melhor jogador do elenco",
+        en: "Fixed promising youngsters mistakenly starting out as the best player in the squad",
+      },
+    ],
+  },
+  {
     version: "1.4.1",
     date: "2026-09-28",
     items: [

@@ -1,7 +1,7 @@
 # FMProject — Roadmap
 
 Referência única do que está feito, do que vem a seguir e em que ordem. Atualizado a cada entrega
-(merge em `main`). Última atualização: 2026-09-27 (Etapa 4: stamina / cansaço).
+(merge em `main`). Última atualização: 2026-09-28 (Etapa 5: lesões + dados #3/#14).
 
 ---
 
@@ -46,6 +46,10 @@ Toda etapa concluída do roadmap entra no changelog do jogo ("Novidades") antes 
   fôlegos sem mudar o volume de gols de um confronto simétrico. A IA (e o botão "auto" do jogador)
   escala pelo fôlego, poupando titulares cansados por um reserva melhor. Ver
   `.claude/rules/game/fitness.md`.
+- **Lesões:** risco por minuto e por contato no motor e no quickSim (calibrados um contra o
+  outro), lesão de treino pesado, gravidade e tempo fora, cura na data de volta. Lesionado nunca é
+  escalado (IA, "auto", escalação salva do jogador com troca automática), telas de elenco/formação
+  avisam, inbox na lesão e na volta. Ver `.claude/rules/game/injuries.md`.
 - **Clube:** finanças do jogador por extrato real (salário em escala real, bilheteria em toda
   competição, premiação de liga/copa/continental, saldo pode ficar negativo), IA com orçamento
   de salário pela receita e prêmios entrando na verba de transferências, mercado de
@@ -69,7 +73,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 2 ✅ | 1.2 Continentais | #2 quickSim × motor em gols | Continentais misturam clubes seguidos (motor) e não seguidos (quickSim): o quickSim precisa estar calibrado |
 | 3 ✅ | 1.3 Premiação e finanças | #12 salários fora de escala | Mesma área (finanças do clube); prêmios sem salários coerentes distorcem o caixa |
 | 4 ✅ | 2.1 Stamina / cansaço | #4 partida quebra no servidor de dev | Mexer no motor exige testar partidas localmente com HMR |
-| 5 | 2.2 Lesões | #3 ruído dos `of_*` | Lesões e rotação dependem de elencos com níveis críveis |
+| 5 ✅ | 2.2 Lesões | #3 ruído dos `of_*` (+ #14 jovem do SP) | Lesões e rotação dependem de elencos com níveis críveis |
 | 6 | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
 | 7 | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) + #23 ELITE 'tight' | Contratos usam idade e nível; revisar a curva de declínio junto. Contratos mudam a folha da IA — mesma hora de afinar a folga dos ELITE |
 | 8 | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato |
@@ -189,10 +193,16 @@ https://github.com/dw3st/FMProject/issues
 Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
 (`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
 
-Abertos em 2026-09-25: #2 quickSim × motor em gols · #3 ruído dos `of_*` · #5 revisão final + smoke
+Abertos em 2026-09-25: #2 quickSim × motor em gols · #5 revisão final + smoke
 da recalibração · #6 Kane/Bellingham/Van Dijk · #7 Bundesliga × Serie A · #8 estilo posse · #9 notas
 ≥ 8,5 no quickSim · #10 compose exposto na rede local · #11 ligas de ano civil com a composição de
-2026 · #12 salários fora de escala · #13 nomes turcos com maiúscula estranha.
+2026 · #13 nomes turcos com maiúscula estranha.
+
+Fechados em 2026-09-28: **#3** ruído dos `of_*` (fator de sorte único por jogador + teto suave via
+previsor de nível, em vez de ruído independente por atributo) e **#14** jovem promissor nascendo
+como o melhor do elenco (crescimento reduzido no `importEspn` para quem já está acima da mediana do
+próprio clube na linha) — Etapa 5, mundo regenerado; ver `.claude/rules/data/openfootball-import.md`
+e `.claude/rules/data/espn-import.md`.
 
 Fechados em 2026-09-27: **#12** salários fora de escala (curva real-euro + fator de clube, Etapa 3 —
 ver `.claude/rules/game/finances.md`) · **#16** laterais invertidos na tela de táticas (commit
