@@ -21,6 +21,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
+import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import type { LeagueData } from "@/types/playerTypes";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
@@ -48,9 +49,21 @@ interface Props {
   onFastForward?: () => void;
   advancing?: boolean;
   leagues?: LeagueData[];
+  /** Present only when there's an unseen changelog version — see .claude/rules/changelog.md. */
+  changelogNotice?: {
+    version: string;
+    onOpen: () => void;
+    onDismiss: () => void;
+  } | null;
 }
 
-export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues = [] }: Props = {}) {
+export function TopNavigation({
+  onAdvanceDay,
+  onFastForward,
+  advancing,
+  leagues = [],
+  changelogNotice,
+}: Props = {}) {
   const { t } = useTranslation();
   const { currentDate, session, squad, fixtures, restDays } = useGameSave();
 
@@ -134,6 +147,15 @@ export function TopNavigation({ onAdvanceDay, onFastForward, advancing, leagues 
         </div>
 
         <div className="flex items-center gap-2 xl:gap-3 shrink-0">
+          {changelogNotice && (
+            <ChangelogNoticePill
+              version={changelogNotice.version}
+              onOpen={changelogNotice.onOpen}
+              onDismiss={changelogNotice.onDismiss}
+              className="hidden md:inline-flex"
+            />
+          )}
+
           {currentDate && (
             <div
               className={`flex items-center gap-1.5 xl:gap-2 text-xs xl:text-sm font-bold px-2.5 py-1.5 xl:px-4 xl:py-2 rounded-lg border font-display tracking-wider whitespace-nowrap ${

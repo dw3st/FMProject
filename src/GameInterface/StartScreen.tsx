@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Gamepad2, FolderOpen, Settings, Trash2, Play } from "lucide-react";
 import { loadGameSave, deleteGameSave } from "@/GameInterface/gameSession";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
+import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
+import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
+import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 
 interface SaveEntry {
   id: string;
@@ -19,6 +23,13 @@ export function StartScreen() {
   const [showSaves, setShowSaves] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+  const { showNotice: showChangelogNotice, markSeen: markChangelogSeen } = useChangelogNotice();
+
+  function openChangelog() {
+    setIsChangelogOpen(true);
+    markChangelogSeen();
+  }
 
   const MAX_SAVES = 5;
   const atLimit = saves.length >= MAX_SAVES;
@@ -197,12 +208,26 @@ export function StartScreen() {
           </div>
         )}
 
-        <div className="absolute bottom-6 text-xs text-muted-foreground/50 font-mono">
-          {t("common.version")}
+        <div className="absolute bottom-6 flex items-center gap-2 text-xs text-muted-foreground/50 font-mono">
+          <button
+            type="button"
+            onClick={openChangelog}
+            className="bg-transparent border-0 p-0 text-inherit font-mono cursor-pointer transition-colors hover:text-primary hover:underline underline-offset-2"
+          >
+            {t("common.version", { version: CURRENT_VERSION })}
+          </button>
+          {showChangelogNotice && (
+            <ChangelogNoticePill
+              version={CURRENT_VERSION}
+              onOpen={openChangelog}
+              onDismiss={markChangelogSeen}
+            />
+          )}
         </div>
       </div>
 
       <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
     </div>
   );
 }
