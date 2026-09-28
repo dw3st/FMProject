@@ -43,13 +43,43 @@ export const JITTER_WEIGHT = Math.sqrt(1 - LUCK_WEIGHT * LUCK_WEIGHT);
  * SOFT_CAP_MAX_ITER times. This only pulls back lucky *upward* outliers — an unlucky player
  * below the line is left alone.
  */
-export const SOFT_CAP_SD = 2;
+export const SOFT_CAP_SD = 1.2;
 export const SOFT_CAP_SHRINK = 0.5;
 export const SOFT_CAP_MAX_ITER = 6;
 
-/** Sample points used to fit each role's level predictor (seedOverall × leagueRep grid). */
+/**
+ * #3 re-centring — the quadratic-mean weighted score (`computeOverallAvg`/`scoreForRole`) is
+ * convex, so independent per-attribute noise (the old scheme) pushed a role's *average* derived
+ * overall up (Jensen's inequality). The single-luck-factor scheme has less independent per-
+ * attribute variance (attributes move together), so it doesn't inflate the mean the same way —
+ * left alone, every `of_*` league's mean overall would quietly drop versus the pre-#3 world.
+ * `buildLevelCorrection` finds, per role, the flat additive offset (added to every attribute's
+ * raw value, same spot as the league-rep covariable) that makes the new scheme's average overall
+ * (over a seedOverall/leagueRep grid, many noise draws) match what the OLD scheme produced on the
+ * same grid. Applied unconditionally (including the noiseless baseline used by the soft-cap
+ * predictor), so the predictor and the real derivation always agree on what "average" means.
+ */
+const CORRECTION_OVERALL_SAMPLES = [50, 60, 70, 80, 90];
+const CORRECTION_DRAWS = 24;
+const CORRECTION_ITERATIONS = 30;
+const CORRECTION_BOUNDS: [number, number] = [-1, 3];
+
+/**
+ * Sample points used to fit each role's level predictor (seedOverall × leagueRep grid).
+ * `PREDICTOR_DRAWS` noisy samples are drawn per grid point (see `buildRoleLevelPredictor`) so the
+ * fit's `sd` reflects the real *population* scatter of noisy derived overalls around the
+ * predicted line — not the near-zero curvature residual of a deterministic (noiseless) curve.
+ * A predictor fit on noiseless samples has essentially no spread, so the soft cap's `predicted +
+ * SOFT_CAP_SD·sd` threshold would be far too tight and re-shrink almost every player's noise —
+ * exactly the bug that dragged every `of_*` league's mean down after the #3 noise change.
+ */
 const PREDICTOR_OVERALL_SAMPLES = [40, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99];
+const PREDICTOR_DRAWS = 30;
 const ALL_MAIN_ROLES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
+
+function repSamplesOf(coeffs: PlayerCoeffs): number[] {
+  return [...new Set([coeffs.repMin, (coeffs.repMin + coeffs.repMax) / 2, coeffs.repMax])];
+}
 
 const ARCHETYPES: Record<MainRole, Partial<Record<StatKey, string>> & { _: string }> = {
   GK:         { _: "Goalkeeper", reflex: "Shot-stopper", passing: "Sweeper-keeper", jump: "Commanding keeper" },
@@ -101,17 +131,20 @@ function pickFit(coeffs: PlayerCoeffs, role: MainRole, k: StatKey): PlaneFit {
 }
 
 /**
- * Derives one player's stats at a given noise magnitude (`noiseScale`). `noiseScale = 0` gives
- * the deterministic baseline (no luck, no jitter) — used both for real players (after the soft
- * cap shrinks it) and for the synthetic samples that build the level predictor.
+ * Derives one player's stats at a given noise magnitude (`noiseScale`) and level `correction`
+ * (see `buildLevelCorrection`, added regardless of `noiseScale`). `noiseScale = 0` gives the
+ * deterministic (+correction) baseline — used both for real players (after the soft cap shrinks
+ * it) and for the synthetic samples that build the level predictor.
  */
-function deriveStats(sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, role: MainRole, noiseScale: number): PlayerStatsRecord {
+function deriveStats(
+  sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, role: MainRole, noiseScale: number, correction = 0,
+): PlayerStatsRecord {
   const luck = gaussianFromKey(`${sp.id}:luck`);
   const statOf = (k: StatKey): number => {
     const f = pickFit(coeffs, role, k);
     const jitter = gaussianFromKey(`${sp.id}:${k}:jitter`);
     const noise = f.sd * noiseScale * (LUCK_WEIGHT * luck + JITTER_WEIGHT * jitter);
-    const raw = f.a + f.b * sp.overall + f.c * rep + noise;
+    const raw = f.a + f.b * sp.overall + f.c * rep + correction + noise;
     return clamp(Math.round(raw), 0, 10);
   };
   return {
@@ -122,26 +155,163 @@ function deriveStats(sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, role: Ma
   };
 }
 
+/** The pre-#3 formula (independent per-attribute noise) — used only to calibrate `buildLevelCorrection`. */
+function deriveStatsLegacy(sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, role: MainRole): PlayerStatsRecord {
+  const statOf = (k: StatKey): number => {
+    const f = pickFit(coeffs, role, k);
+    const raw = f.a + f.b * sp.overall + f.c * rep + f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`);
+    return clamp(Math.round(raw), 0, 10);
+  };
+  return {
+    passing: statOf("passing"), vision: statOf("vision"), finishing: statOf("finishing"),
+    dribbling: statOf("dribbling"), speed: statOf("speed"), acceleration: statOf("acceleration"),
+    tackling: statOf("tackling"), pressing: statOf("pressing"), stamina: statOf("stamina"),
+    heading: statOf("heading"), strength: statOf("strength"), reflex: statOf("reflex"), jump: statOf("jump"),
+  };
+}
+
+/** Mean `computeOverallAvg` over a seedOverall × leagueRep × draw grid, for one role. */
+function meanOverallOver(
+  coeffs: PlayerCoeffs, role: MainRole, repSamples: number[],
+  deriveFn: (sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, role: MainRole) => PlayerStatsRecord,
+): number {
+  let sum = 0;
+  let n = 0;
+  for (const overall of CORRECTION_OVERALL_SAMPLES) {
+    for (const rep of repSamples) {
+      for (let i = 0; i < CORRECTION_DRAWS; i++) {
+        const sp: SeedPlayer = {
+          id: `correction-sample-${role}-${overall}-${rep}-${i}`, name: "", position: "ATT",
+          overall, potential: overall, age: 25, country: "us", foot: "R", value: 0, clubId: "sample",
+        };
+        const stats = deriveFn(sp, coeffs, rep, role);
+        sum += computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+        n++;
+      }
+    }
+  }
+  return sum / n;
+}
+
+/**
+ * A small predictor fit purely for calibrating `buildLevelCorrection` — same shape as
+ * `buildRoleLevelPredictor`'s official one, but on the (much smaller) correction grid, so the
+ * correction search can see the SAME soft-cap suppression a real derivation would apply at a
+ * given candidate `correction` without paying for the full-resolution official grid on every
+ * bisection step.
+ */
+function calibrationPredictorAt(coeffs: PlayerCoeffs, role: MainRole, repSamples: number[], correction: number): LevelPlaneFit {
+  const pairs: LevelPair[] = [];
+  for (const overall of CORRECTION_OVERALL_SAMPLES) {
+    for (const rep of repSamples) {
+      for (let i = 0; i < CORRECTION_DRAWS; i++) {
+        const sp: SeedPlayer = {
+          id: `calib-predictor-${role}-${overall}-${rep}-${i}`, name: "", position: "ATT",
+          overall, potential: overall, age: 25, country: "us", foot: "R", value: 0, clubId: "sample",
+        };
+        const stats = deriveStats(sp, coeffs, rep, role, NOISE_SCALE, correction);
+        const nativeOverall = computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+        pairs.push({ role, seedOverall: overall, leagueRep: rep, nativeOverall });
+      }
+    }
+  }
+  return fitLevelPredictor(pairs)[role]!;
+}
+
+/**
+ * Average overall a candidate `correction` produces INCLUDING the soft cap — mirrors
+ * `derivePlayer`'s own noise/cap loop exactly (same `SOFT_CAP_SD`/`SOFT_CAP_SHRINK`/
+ * `SOFT_CAP_MAX_ITER`), using a predictor built fresh at this `correction`
+ * (`calibrationPredictorAt`) so the cap's suppression at this candidate is captured, not just the
+ * uncapped noise's inflation.
+ */
+function meanOverallCapped(coeffs: PlayerCoeffs, role: MainRole, repSamples: number[], correction: number): number {
+  const fit = calibrationPredictorAt(coeffs, role, repSamples, correction);
+  let sum = 0;
+  let n = 0;
+  for (const overall of CORRECTION_OVERALL_SAMPLES) {
+    for (const rep of repSamples) {
+      for (let i = 0; i < CORRECTION_DRAWS; i++) {
+        const sp: SeedPlayer = {
+          id: `capped-mean-${role}-${overall}-${rep}-${i}`, name: "", position: "ATT",
+          overall, potential: overall, age: 25, country: "us", foot: "R", value: 0, clubId: "sample",
+        };
+        let noiseScale = NOISE_SCALE;
+        let stats = deriveStats(sp, coeffs, rep, role, noiseScale, correction);
+        for (let iter = 0; iter < SOFT_CAP_MAX_ITER; iter++) {
+          const ov = computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+          const predicted = predictLevel(fit, overall, rep);
+          if (ov <= predicted + SOFT_CAP_SD * fit.sd) break;
+          noiseScale *= SOFT_CAP_SHRINK;
+          stats = deriveStats(sp, coeffs, rep, role, noiseScale, correction);
+        }
+        sum += computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+        n++;
+      }
+    }
+  }
+  return sum / n;
+}
+
+const levelCorrectionCache = new WeakMap<PlayerCoeffs, Record<MainRole, number>>();
+
+/**
+ * #3 re-centring — see the constant block above `CORRECTION_OVERALL_SAMPLES`. Bisects, per role,
+ * the flat offset `c` so that the FULL noisy+capped scheme's average overall
+ * (`meanOverallCapped`, i.e. what `derivePlayer` actually produces at this correction) matches
+ * `deriveStatsLegacy(...)`'s average (the pre-#3 scheme, uncapped — it never had one). Including
+ * the cap in the candidate-side evaluation matters: the soft cap only trims the upper tail, so it
+ * pulls the mean down a little on its own, and a correction calibrated ignoring that (i.e. against
+ * the uncapped scheme) under-corrects once the real cap is applied. Memoized per `coeffs` object.
+ */
+export function buildLevelCorrection(coeffs: PlayerCoeffs): Record<MainRole, number> {
+  const cached = levelCorrectionCache.get(coeffs);
+  if (cached) return cached;
+  const repSamples = repSamplesOf(coeffs);
+  const out = {} as Record<MainRole, number>;
+  for (const role of ALL_MAIN_ROLES) {
+    const target = meanOverallOver(coeffs, role, repSamples, deriveStatsLegacy);
+    let [lo, hi] = CORRECTION_BOUNDS;
+    for (let i = 0; i < CORRECTION_ITERATIONS; i++) {
+      const mid = (lo + hi) / 2;
+      const mean = meanOverallCapped(coeffs, role, repSamples, mid);
+      if (mean < target) lo = mid; else hi = mid;
+    }
+    out[role] = (lo + hi) / 2;
+  }
+  levelCorrectionCache.set(coeffs, out);
+  return out;
+}
+
 const rolePredictorCache = new WeakMap<PlayerCoeffs, Partial<Record<MainRole, LevelPlaneFit>>>();
 
 /**
- * #3 — builds a per-role level predictor (`z = a + b·seedOverall + c·leagueRep`) from synthetic,
- * noise-free samples derived under `coeffs`: the same shape as `recalibrate.ts`'s native-player
- * predictor, but fitted against `of_*`'s own deterministic baseline instead of a native player's
- * game overall. Memoized per `coeffs` object (one build per importer run).
+ * #3 — builds a per-role level predictor (`z = a + b·seedOverall + c·leagueRep`) from synthetic
+ * samples derived under `coeffs` **with noise and the level correction applied**, `PREDICTOR_DRAWS`
+ * draws per grid point: the same shape as `recalibrate.ts`'s native-player predictor, but fitted
+ * against `of_*`'s own (simulated) noisy population instead of real native players' game overall.
+ * Fitting on noisy draws (not a deterministic baseline) is what gives `fit.sd` a real population
+ * spread for the soft cap to compare against — see the comment above `PREDICTOR_OVERALL_SAMPLES`.
+ * Memoized per `coeffs` object (one build per importer run).
  */
 export function buildRoleLevelPredictor(coeffs: PlayerCoeffs): Partial<Record<MainRole, LevelPlaneFit>> {
   const cached = rolePredictorCache.get(coeffs);
   if (cached) return cached;
-  const repSamples = [...new Set([coeffs.repMin, (coeffs.repMin + coeffs.repMax) / 2, coeffs.repMax])];
+  const repSamples = repSamplesOf(coeffs);
+  const correction = buildLevelCorrection(coeffs);
   const pairs: LevelPair[] = [];
   for (const role of ALL_MAIN_ROLES) {
     for (const overall of PREDICTOR_OVERALL_SAMPLES) {
       for (const rep of repSamples) {
-        const sp: SeedPlayer = { id: "predictor-sample", name: "", position: "ATT", overall, potential: overall, age: 25, country: "us", foot: "R", value: 0, clubId: "sample" };
-        const stats = deriveStats(sp, coeffs, rep, role, 0);
-        const nativeOverall = computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
-        pairs.push({ role, seedOverall: overall, leagueRep: rep, nativeOverall });
+        for (let i = 0; i < PREDICTOR_DRAWS; i++) {
+          const sp: SeedPlayer = {
+            id: `predictor-sample-${role}-${overall}-${rep}-${i}`, name: "", position: "ATT",
+            overall, potential: overall, age: 25, country: "us", foot: "R", value: 0, clubId: "sample",
+          };
+          const stats = deriveStats(sp, coeffs, rep, role, NOISE_SCALE, correction[role]);
+          const nativeOverall = computeOverallAvg({ positions: [role], stats } as unknown as RosterPlayer);
+          pairs.push({ role, seedOverall: overall, leagueRep: rep, nativeOverall });
+        }
       }
     }
   }
@@ -157,14 +327,16 @@ export function buildRoleLevelPredictor(coeffs: PlayerCoeffs): Partial<Record<Ma
  * #3: noise is a per-player luck factor + per-attribute jitter (see `deriveStats`), with a soft
  * cap — if the resulting overall lands more than `SOFT_CAP_SD` standard deviations above the
  * level predicted for this seedOverall/leagueRep, the noise is shrunk and the player re-derived,
- * up to `SOFT_CAP_MAX_ITER` times.
+ * up to `SOFT_CAP_MAX_ITER` times — plus a flat per-role level correction (`buildLevelCorrection`)
+ * so the population's average overall matches the pre-#3 (independent-noise) scheme.
  */
 export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoeffs, leagueRep: number): RosterPlayer {
   const role = mainRole(sp.position);
   const rep = clamp(leagueRep, coeffs.repMin - REP_FLOOR_MARGIN, coeffs.repMax);
+  const correction = buildLevelCorrection(coeffs)[role] ?? 0;
 
   let noiseScale = NOISE_SCALE;
-  let stats = deriveStats(sp, coeffs, rep, role, noiseScale);
+  let stats = deriveStats(sp, coeffs, rep, role, noiseScale, correction);
   const fit = buildRoleLevelPredictor(coeffs)[role];
   if (fit) {
     for (let i = 0; i < SOFT_CAP_MAX_ITER; i++) {
@@ -172,7 +344,7 @@ export function derivePlayer(sp: SeedPlayer, squadId: string, coeffs: PlayerCoef
       const predicted = predictLevel(fit, sp.overall, rep);
       if (overall <= predicted + SOFT_CAP_SD * fit.sd) break;
       noiseScale *= SOFT_CAP_SHRINK;
-      stats = deriveStats(sp, coeffs, rep, role, noiseScale);
+      stats = deriveStats(sp, coeffs, rep, role, noiseScale, correction);
     }
   }
 

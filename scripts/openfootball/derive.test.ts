@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { STAT_KEYS, JITTER_WEIGHT, LUCK_WEIGHT, SOFT_CAP_SD, buildRoleLevelPredictor, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, playerProfile, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
+import { STAT_KEYS, JITTER_WEIGHT, LUCK_WEIGHT, SOFT_CAP_SD, buildLevelCorrection, buildRoleLevelPredictor, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, playerProfile, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
 import { predictLevel } from "@/../scripts/openfootball/recalibrate";
 import { computeOverallAvg } from "@/Domain/playerRating";
 import type { SeedPlayer } from "@/../scripts/openfootball/types";
@@ -130,6 +130,24 @@ describe("#3 — per-player luck + soft cap", () => {
   test("sem ruído (sd 0) o teto suave nunca dispara — resultado idêntico ao ajuste linear", () => {
     const p = derivePlayer(seedP, "of_uy_x", coeffs, REP); // `coeffs` (sd 0) from the outer describe
     expect(p.stats.passing).toBe(Math.round(-3 + 0.09 * 70));
+  });
+
+  test("sem ruído (sd 0) a correção de nível fica perto de 0 — nada de verdade para recentrar", () => {
+    // Não é exatamente 0: com sd 0 dos dois lados a comparação vira uma função em degrau
+    // (arredondamento), então a busca binária pode parar num pequeno degrau — mas nunca longe de 0.
+    const c = buildLevelCorrection(coeffs);
+    for (const v of Object.values(c)) expect(Math.abs(v)).toBeLessThan(0.2);
+  });
+
+  test("com ruído, a correção de nível é positiva (compensa a queda de média)", () => {
+    const c = buildLevelCorrection(noisyCoeffs);
+    for (const v of Object.values(c)) expect(v).toBeGreaterThan(0);
+  });
+
+  test("memoizado por objeto coeffs (mesma referência → mesmo resultado, instantâneo na 2ª chamada)", () => {
+    const c1 = buildLevelCorrection(noisyCoeffs);
+    const c2 = buildLevelCorrection(noisyCoeffs);
+    expect(c1).toBe(c2); // mesma referência de objeto — veio do cache
   });
 });
 

@@ -22,12 +22,30 @@ Spec: `docs/superpowers/specs/2026-09-25-espn-roster-import-design.md`.
 bun scripts/fetchEspn.ts            # único passo com rede (curl) — atualiza o snapshot
 cp src/example_data/roles.json src/Data/roles.json   # os dois importadores recusam roles.json fora de sincronia
 bun scripts/importOpenFootball.ts   # mundo base a partir de data_process/native + data_process/openfootball
+rm -rf src/Data/squads src/Data/logos/espn          # ver "Sincronizar sem lixo" abaixo
 cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (ele confere isso)
 bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
+rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
-bun run kits:generate 5
+bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
 rm -f src/example_data/startKits/* && cp src/Data/startKits/* src/example_data/startKits/
 ```
+
+### Sincronizar sem lixo
+
+`cp -R src/example_data/. src/Data/` **nunca apaga** o que já existe em `src/Data` — só sobrescreve
+e adiciona. `src/example_data/squads` é reescrito do zero a cada importador (clube removido ou
+movido de liga simplesmente não existe mais nesse diretório), mas o `cp -R` deixa o arquivo antigo
+parado em `src/Data/squads/<liga-antiga>/<id>.json` para sempre. Isso já causou clubes duplicados
+em `src/Data/squads` (mesmo `squadId` em duas pastas de liga, os jogadores duplicados em dois
+elencos) e, por tabela, em todo kit gerado a partir desse `src/Data` sujo — um kit chegou a
+carregar 1414 elencos para um mundo de 1273. Por isso todo `cp -R` para `src/Data` nesta cadeia
+é precedido por `rm -rf src/Data/squads src/Data/logos/espn` (as duas pastas que os importadores
+reescrevem inteiras a cada rodada — ver a tabela em "O que é" acima; os demais arquivos de saída
+são JSON de arquivo único, sempre sobrescritos por inteiro, sem risco de lixo). `kits:generate`
+recusa rodar (`generateStartKits.ts` → `validateWorldMatchesExampleData`) se `src/Data/squads` não
+bater em contagem/ids com `src/example_data/squads`, ou se algum id de jogador aparecer em dois
+elencos — pega esse tipo de sincronização incompleta antes de gastar minutos simulando kits sujos.
 
 `importOpenFootball` e `importEspn` recusam rodar se `src/Data/roles.json` não for byte-a-byte igual a `src/example_data/roles.json`
 (ele lê papéis do runtime para a curva de idade) e recusa um mundo cujas ligas já estão em `202[6-9]`
