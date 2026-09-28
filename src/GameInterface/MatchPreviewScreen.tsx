@@ -583,6 +583,8 @@ interface MatchSetupData {
   oppFormation: { id: string; attacking: FormationSlotDef[] };
   myLineup: string[];
   myTactics?: TacticsSave;
+  /** Saved-lineup starters auto-swapped for being injured on the match date — see Task 5 (UI warning). */
+  injuredReplaced?: { out: string; in: string }[];
 }
 
 export function MatchPreviewScreen() {
@@ -918,6 +920,7 @@ export function MatchPreviewScreen() {
     ? autoFillLineupWithFitness(
         oppFormationSlots as Parameters<typeof autoFillLineupWithFitness>[0],
         opponentSquad.players,
+        currentDate,
       )
     : [];
   const homeLineup       = isHome ? myLineup               : oppAutoLineup;

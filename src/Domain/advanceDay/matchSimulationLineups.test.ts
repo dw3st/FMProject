@@ -32,23 +32,67 @@ describe("resolveUserLineup", () => {
 
   test("empty saved lineup falls back to the same fitness-aware auto-fill the AI uses", () => {
     const squad = squadOf11();
-    const result = resolveUserLineup(squad, formation, []);
-    expect(result).toEqual(autoFillLineupWithFitness(slots, squad.players));
-    expect(result).toHaveLength(11);
-    expect(result.every((id) => id !== "")).toBe(true);
+    const { lineup, injuredReplaced } = resolveUserLineup(squad, formation, []);
+    expect(lineup).toEqual(autoFillLineupWithFitness(slots, squad.players));
+    expect(lineup).toHaveLength(11);
+    expect(lineup.every((id) => id !== "")).toBe(true);
+    expect(injuredReplaced).toEqual([]);
   });
 
   test("a full saved lineup is used as-is (aligned by slot)", () => {
     const squad = squadOf11();
     const saved = squad.players.map((p) => p.id);
-    const result = resolveUserLineup(squad, formation, saved);
-    expect(result).toEqual(saved);
+    const { lineup, injuredReplaced } = resolveUserLineup(squad, formation, saved);
+    expect(lineup).toEqual(saved);
+    expect(injuredReplaced).toEqual([]);
   });
 
   test("a corrupted (non-empty, wrong-length) saved lineup still resolves to 11 ids", () => {
     const squad = squadOf11();
-    const result = resolveUserLineup(squad, formation, ["p0", "p1"]);
-    expect(result).toHaveLength(11);
-    expect(new Set(result).size).toBe(11);
+    const { lineup } = resolveUserLineup(squad, formation, ["p0", "p1"]);
+    expect(lineup).toHaveLength(11);
+    expect(new Set(lineup).size).toBe(11);
+  });
+
+  test("a player injured on the match date is excluded from an empty-lineup auto-fill, and eligible again on returnDate", () => {
+    const squad = squadOf11();
+    // p9 is the ST slot.
+    squad.players = squad.players.map((p) =>
+      p.id === "p9" ? { ...p, injury: { severity: "light" as const, returnDate: "2027-04-10" } } : p,
+    );
+    // Add a bench ST so the slot can still be filled.
+    squad.players = [
+      ...squad.players,
+      { ...squadOf11().players[9]!, id: "bench-st", name: "Bench ST" },
+    ];
+
+    const before = resolveUserLineup(squad, formation, [], "2027-04-05");
+    expect(before.lineup).not.toContain("p9");
+    expect(before.lineup).toContain("bench-st");
+
+    const onReturn = resolveUserLineup(squad, formation, [], "2027-04-10");
+    expect(onReturn.lineup).toContain("p9");
+  });
+
+  test("a saved lineup with an injured starter is auto-replaced for the match, and reported in injuredReplaced", () => {
+    const squad = squadOf11();
+    squad.players = squad.players.map((p) =>
+      p.id === "p9" ? { ...p, injury: { severity: "medium" as const, returnDate: "2027-04-10" } } : p,
+    );
+    squad.players = [
+      ...squad.players,
+      { ...squadOf11().players[9]!, id: "bench-st", name: "Bench ST" },
+    ];
+    const saved = squadOf11().players.map((p) => p.id); // includes "p9"
+
+    const before = resolveUserLineup(squad, formation, saved, "2027-04-05");
+    expect(before.lineup).not.toContain("p9");
+    expect(before.lineup).toContain("bench-st");
+    expect(before.injuredReplaced).toEqual([{ out: "p9", in: "bench-st" }]);
+
+    // On returnDate, the saved lineup plays as originally saved — no replacement needed.
+    const onReturn = resolveUserLineup(squad, formation, saved, "2027-04-10");
+    expect(onReturn.lineup).toContain("p9");
+    expect(onReturn.injuredReplaced).toEqual([]);
   });
 });
