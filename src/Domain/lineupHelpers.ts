@@ -64,14 +64,23 @@ const TIRED_FITNESS_THRESHOLD = 75;
  * A bench player must reach this fraction of the tired starter's fitness-adjusted value to take
  * the slot. Above 1.0 the bench player must actually be BETTER than the tired starter, not merely
  * close — this is deliberate: with `TIRED_FITNESS_THRESHOLD` alone gating eligibility, almost any
- * clearly-tired starter (fitness well under 75) loses so much value to a fresh bench player that a
- * ratio below ~1 barely filters anything, which over-rotates a congested AI squad (measured ~8-9
- * starters changed per match at 0.85-1.0 on a 3-day fixture gap). Tuned so a congested run (match
- * every 3 days) lands ~2-3.5 rotated starters per match, while a normal week (fitness barely dips
- * below the threshold) still rotates ~0 — see `.claude/rules/non-player-games.md` → "Fadiga" for
- * the rotation sweep and the fatigue curve this was calibrated alongside.
+ * clearly-tired starter (fitness well under 75) loses so much value to a fresh bench player under
+ * the engine's fatigue curve (`overallEnergyFactor`, `RuntimeLineup.ts`) that a ratio below ~1
+ * barely filters anything, which over-rotates a congested AI squad (measured ~8-9 starters changed
+ * per match at 0.85-1.0 on a 3-day fixture gap, via a rotation-sweep harness — see
+ * `.claude/rules/non-player-games.md` → "Fadiga").
+ *
+ * `1.3` lands a congested run (match every 3 days) at ~4.4-4.5 rotated starters per match (a little
+ * above the ~2-3.5 target the balance task asked for) and a normal week at ~0. A higher ratio
+ * (~1.4) lands inside the 2-3.5 target but breaks the pre-existing integration test
+ * (`fitness.congestion.test.ts`, from the original stamina design's acceptance criterion — "3
+ * matches in 7 days rests at least one starter by the 3rd"): with only 3 matches to accumulate
+ * fatigue debt (not the 8 the sweep harness uses to reach a steady state), 1.4 doesn't clear the
+ * swap bar in time on that specific real-engine scenario. `1.3` is the highest ratio that keeps
+ * that acceptance test passing. Depends on the fatigue curve's steepness (`FATIGUE_CURVE_POWER` et
+ * al in `RuntimeLineup.ts`) — re-sweep this constant if that curve changes.
  */
-const BENCH_SWAP_RATIO = 1.09;
+const BENCH_SWAP_RATIO = 1.3;
 
 /** GK slot is exempt from ordinary rotation unless the starter is really struggling. */
 const GK_TIRED_FITNESS_THRESHOLD = 60;
