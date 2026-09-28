@@ -66,9 +66,9 @@ export function PlayerScreen({
 
   const displayPlayer = useMemo((): DisplayPlayer | null => {
     if (!player || !squadName) return null;
-    const dp = toDisplayPlayer(player, squadName, { wageFactor: squadWageFactor });
+    const dp = toDisplayPlayer(player, squadName, { wageFactor: squadWageFactor, currentDate: session?.currentDate });
     return { ...dp, leagueSlug: league, clubSlug: club };
-  }, [player, squadName, squadWageFactor, league, club]);
+  }, [player, squadName, squadWageFactor, league, club, session?.currentDate]);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
   const isOwnPlayer = !!player && !!mySquadId && player.squadId === mySquadId;

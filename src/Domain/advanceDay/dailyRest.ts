@@ -2,6 +2,7 @@ import type { Squad } from "@/types/playerTypes";
 import type { RestEvent } from "@/types/dayLogTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
+import { clearHealed } from "@/Domain/injury/injury";
 
 export const MAX_POINTS_LOST_PER_REST = 2;
 
@@ -11,6 +12,8 @@ const DEFAULT_STAMINA = 7;
 export interface RestResult {
   event: RestEvent;
   updatedSquad: Squad;
+  /** Players whose injury cleared today (`clearHealed`) — for the "return" inbox message. */
+  healedPlayerIds: string[];
 }
 
 export interface RestOutcome {
@@ -51,8 +54,15 @@ export function rollRestOutcome(
  * - `load` decays by one day's half-life (`decayLoad`) — a rest day is a low-intensity day.
  * - `trainingSessions` (points) never goes below 0.
  */
-export function buildRestEvent(squadId: string, squad: Squad): RestResult {
-  const effects = squad.players.map((p) => {
+export function buildRestEvent(squadId: string, squad: Squad, date: string): RestResult {
+  // Clear a healed injury before anything else, same as `matches.ts` / `dailyTraining.ts`.
+  const healedPlayerIds: string[] = [];
+  const players = squad.players.map((p) => {
+    if (p.injury && !clearHealed(p, date).injury) healedPlayerIds.push(String(p.id));
+    return clearHealed(p, date);
+  });
+
+  const effects = players.map((p) => {
     const log = ensureSeasonLog(p).seasonLog!;
     const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
     const { fitnessDelta, pointsDelta } = rollRestOutcome(p.age, log.fitness, log.load ?? 0, stamina);
@@ -63,7 +73,7 @@ export function buildRestEvent(squadId: string, squad: Squad): RestResult {
 
   const updatedSquad: Squad = {
     ...squad,
-    players: squad.players.map((p) => {
+    players: players.map((p) => {
       const pl = ensureSeasonLog(p);
       const log = { ...pl.seasonLog! };
       const eff = effectMap.get(String(p.id));
@@ -76,5 +86,5 @@ export function buildRestEvent(squadId: string, squad: Squad): RestResult {
     }),
   };
 
-  return { event: { kind: "rest", squadId, effects }, updatedSquad };
+  return { event: { kind: "rest", squadId, effects }, updatedSquad, healedPlayerIds };
 }

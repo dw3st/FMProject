@@ -583,6 +583,8 @@ interface MatchSetupData {
   oppFormation: { id: string; attacking: FormationSlotDef[] };
   myLineup: string[];
   myTactics?: TacticsSave;
+  /** Saved-lineup starters auto-swapped for being injured on the match date — see Task 5 (UI warning). */
+  injuredReplaced?: { out: string; in: string }[];
 }
 
 export function MatchPreviewScreen() {
@@ -918,6 +920,7 @@ export function MatchPreviewScreen() {
     ? autoFillLineupWithFitness(
         oppFormationSlots as Parameters<typeof autoFillLineupWithFitness>[0],
         opponentSquad.players,
+        currentDate,
       )
     : [];
   const homeLineup       = isHome ? myLineup               : oppAutoLineup;
@@ -1050,6 +1053,22 @@ export function MatchPreviewScreen() {
             <p className="text-xs text-amber-300 m-0">
               {t("matchPreview.lowFitnessWarning", { names: lowFitnessStarterNames.join(", ") })}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Injured-starter replacements — players the saved lineup wanted who were swapped out for being injured */}
+      {!!matchSetup?.injuredReplaced && matchSetup.injuredReplaced.length > 0 && (
+        <div className="w-full max-w-5xl shrink-0">
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-destructive mt-0.5 shrink-0" />
+            <div className="text-xs text-destructive m-0 space-y-0.5">
+              {matchSetup.injuredReplaced.map((swap, i) => (
+                <p key={i} className="m-0">
+                  {t("matchPreview.injuredReplaced", { out: swap.out, in: swap.in })}
+                </p>
+              ))}
+            </div>
           </div>
         </div>
       )}

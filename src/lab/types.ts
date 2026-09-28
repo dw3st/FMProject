@@ -156,6 +156,8 @@ export interface TeamRawStats {
   avgEndEnergySum: number;
   /** Fatigue-driven AI substitutions made by this team, summed across `matches` games. */
   fatigueSubstitutions: number;
+  /** In-match injuries suffered by this team, summed across `matches` games. */
+  injuries: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -226,6 +228,8 @@ export interface PerMatchView {
   avgEndEnergy: number;
   /** Fatigue-driven AI substitutions per match. */
   avgFatigueSubs: number;
+  /** Injuries per match. */
+  avgInjuries: number;
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -289,6 +293,8 @@ export interface VariantSummary {
   avgEndEnergy: number;
   /** Fatigue-driven AI substitutions per match. */
   avgFatigueSubs: number;
+  /** Injuries per match. */
+  avgInjuries: number;
 }
 
 export interface ScenarioResult {

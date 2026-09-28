@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   autoFillLineup,
   autoFillLineupWithFitness,
+  buildSlotAlignedLineup,
+  replaceInjuredStarters,
 } from "@/Domain/lineupHelpers";
 import type { FormationSlot } from "@/types/formationSlots";
 import type { RosterPlayer } from "@/types/playerTypes";
@@ -214,5 +216,125 @@ describe("autoFillLineupWithFitness — GK exemption", () => {
     const squad = [starter, bench];
 
     expect(autoFillLineupWithFitness(gkSlot, squad)).toEqual(["bench"]);
+  });
+});
+
+describe("injured players are never picked", () => {
+  test("autoFillLineup skips an injured starter for a healthy bench player of the same slot", () => {
+    const injured = makePlayer({
+      id: "injured", name: "Injured", positions: ["ST"], stats: statsAt(9),
+      injury: { severity: "medium", returnDate: "2027-04-10" },
+    });
+    const healthy = makePlayer({
+      id: "healthy", name: "Healthy", positions: ["ST"], stats: statsAt(4),
+    });
+    const squad = [injured, healthy];
+
+    expect(autoFillLineup(stSlot, squad, "2027-04-01")).toEqual(["healthy"]);
+    // Without a date, injuries are not filtered (context-free comparisons keep old behaviour).
+    expect(autoFillLineup(stSlot, squad)).toEqual(["injured"]);
+  });
+
+  test("autoFillLineup includes the player again once returnDate is reached", () => {
+    const player = makePlayer({
+      id: "p", name: "P", positions: ["ST"], stats: statsAt(6),
+      injury: { severity: "light", returnDate: "2027-04-10" },
+    });
+    const squad = [player];
+
+    expect(autoFillLineup(stSlot, squad, "2027-04-09")).toEqual([""]);
+    expect(autoFillLineup(stSlot, squad, "2027-04-10")).toEqual(["p"]);
+  });
+
+  test("autoFillLineupWithFitness never selects an injured starter or bench player", () => {
+    const injuredStarter = makePlayer({
+      id: "injured-starter", name: "Injured Starter", positions: ["ST"], stats: statsAt(9),
+      injury: { severity: "severe", returnDate: "2027-06-01" },
+    });
+    const injuredBench = makePlayer({
+      id: "injured-bench", name: "Injured Bench", positions: ["ST"], stats: statsAt(8),
+      injury: { severity: "light", returnDate: "2027-04-05" },
+    });
+    const healthyBench = makePlayer({
+      id: "healthy-bench", name: "Healthy Bench", positions: ["ST"], stats: statsAt(5),
+    });
+    const squad = [injuredStarter, injuredBench, healthyBench];
+
+    expect(autoFillLineupWithFitness(stSlot, squad, "2027-04-01")).toEqual(["healthy-bench"]);
+  });
+
+  test("replaceInjuredStarters swaps out a saved-lineup starter injured on the match date", () => {
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
+      injury: { severity: "medium", returnDate: "2027-05-01" },
+    });
+    const bench = makePlayer({
+      id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(5),
+    });
+    const squad = [starter, bench];
+    const savedLineup = ["starter"];
+
+    const { lineup, replaced } = replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-15");
+    expect(lineup).toEqual(["bench"]);
+    expect(replaced).toEqual([{ out: "starter", in: "bench" }]);
+  });
+
+  test("replaceInjuredStarters leaves a healthy saved lineup untouched", () => {
+    const starter = makePlayer({ id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7) });
+    const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(5) });
+    const squad = [starter, bench];
+    const savedLineup = ["starter"];
+
+    const { lineup, replaced } = replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-15");
+    expect(lineup).toEqual(["starter"]);
+    expect(replaced).toEqual([]);
+  });
+
+  test("replaceInjuredStarters becomes eligible again exactly on returnDate", () => {
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
+      injury: { severity: "light", returnDate: "2027-04-10" },
+    });
+    const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(5) });
+    const squad = [starter, bench];
+    const savedLineup = ["starter"];
+
+    expect(replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-09").lineup).toEqual(["bench"]);
+    expect(replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-10").lineup).toEqual(["starter"]);
+  });
+
+  test("replaceInjuredStarters leaves the injured player in place when no eligible replacement exists", () => {
+    const starter = makePlayer({
+      id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
+      injury: { severity: "severe", returnDate: "2027-06-01" },
+    });
+    const squad = [starter];
+    const savedLineup = ["starter"];
+
+    const { lineup, replaced } = replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-15");
+    expect(lineup).toEqual(["starter"]);
+    expect(replaced).toEqual([]);
+  });
+
+  test("buildSlotAlignedLineup + replaceInjuredStarters round-trip: full saved lineup, one injured", () => {
+    const players = fullSlots.map((s, i) =>
+      makePlayer({ id: `starter-${i}`, name: `Starter ${i}`, positions: [s.role], stats: statsAt(6) }),
+    );
+    // Injure the ST (index 9).
+    players[9] = { ...players[9]!, injury: { severity: "medium", returnDate: "2027-05-01" } };
+    const benchForward = makePlayer({ id: "bench-fwd", name: "Bench Fwd", positions: ["ST"], stats: statsAt(4) });
+    const squad = [...players, benchForward];
+    const saved = players.map((p) => p.id);
+
+    const aligned = buildSlotAlignedLineup(squad, saved).map((p) => p?.id ?? "");
+    const { lineup, replaced } = replaceInjuredStarters(fullSlots, aligned, squad, "2027-04-15");
+
+    expect(lineup[9]).toBe("bench-fwd");
+    expect(replaced).toEqual([{ out: "starter-9", in: "bench-fwd" }]);
+    // Every other slot is untouched.
+    for (let i = 0; i < fullSlots.length; i++) {
+      if (i === 9) continue;
+      expect(lineup[i]).toBe(aligned[i]);
+    }
   });
 });

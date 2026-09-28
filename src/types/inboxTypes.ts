@@ -1,6 +1,13 @@
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 
-export type InboxCategory = "development" | "transfer_in" | "transfer_out" | "season" | "cup" | "continental";
+export type InboxCategory =
+  | "development"
+  | "transfer_in"
+  | "transfer_out"
+  | "season"
+  | "cup"
+  | "continental"
+  | "injury";
 
 export interface InboxMessageBase {
   id:        string;
@@ -115,10 +122,26 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
   prize?:      number;
 }
 
+/**
+ * Injury news for the human club (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1):
+ * a player got injured (in a match or heavy training), or a previously injured player returned.
+ */
+export interface InjuryInboxMessage extends InboxMessageBase {
+  category:   "injury";
+  kind:       "injured" | "returned";
+  playerId:   string;
+  playerName: string;
+  /** Injured only. */
+  severity?:   "light" | "medium" | "severe";
+  /** Injured only: expected return date (ISO). */
+  returnDate?: string;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
   | TransferOutInboxMessage
   | SeasonInboxMessage
   | CupInboxMessage
-  | ContinentalInboxMessage;
+  | ContinentalInboxMessage
+  | InjuryInboxMessage;

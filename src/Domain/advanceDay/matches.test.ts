@@ -12,7 +12,7 @@ import { DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
-import type { MatchPlayerStats } from "@/types/dayLogTypes";
+import type { MatchInjury, MatchPlayerStats } from "@/types/dayLogTypes";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 
@@ -226,7 +226,7 @@ describe("buildMatchEvent — full engine post-match fitness and load", () => {
     const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
     const homeLineup = autoLineupDefaultFormation(home);
     const awayLineup = autoLineupDefaultFormation(away);
-    const fixture = { id: "fx1", competition: "premier_league", round: 1, home: home.id, away: away.id } as Fixture;
+    const fixture = { id: "fx1", date: "2027-02-05", competition: "premier_league", round: 1, home: home.id, away: away.id } as Fixture;
 
     const { event, updatedHome, updatedAway } = buildMatchEvent(fixture, home, away, {
       homeFormation: formation, homeLineup, awayFormation: formation, awayLineup,
@@ -275,4 +275,180 @@ describe("buildMatchEvent — full engine post-match fitness and load", () => {
     // Sanity: the assertion above actually ran for at least one player.
     expect(checkedNonSubbed).toBeGreaterThan(0);
   }, 30_000);
+});
+
+// ── buildMatchEventFromRecording — injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ──
+
+describe("buildMatchEventFromRecording — injuries", () => {
+  test("a recorded injury writes player.injury with a returnDate after the match date", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const injuries: MatchInjury[] = [
+      { team: "home", playerId: "h-p0", playerName: "h0", severity: "medium", matchMinute: 30, energy: 50 },
+    ];
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries,
+    });
+
+    const { updatedHome, injuriesApplied } = buildMatchEventFromRecording(fixture, home, away, recording, () => 0.5);
+    const p0 = updatedHome.players.find((p) => p.id === "h-p0")!;
+    expect(p0.injury).toBeDefined();
+    expect(p0.injury!.severity).toBe("medium");
+    expect(p0.injury!.returnDate > "2027-03-10").toBe(true);
+    expect(injuriesApplied).toHaveLength(1);
+    expect(injuriesApplied[0]!.returnDate).toBe(p0.injury!.returnDate);
+  });
+
+  test("no injuries recorded — no player gets an injury field, injuriesApplied is empty", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+    });
+
+    const { updatedHome, updatedAway, injuriesApplied } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(injuriesApplied).toEqual([]);
+    for (const p of [...updatedHome.players, ...updatedAway.players]) expect(p.injury).toBeUndefined();
+  });
+
+  test("a healed injury (matchDate >= returnDate) is cleared, fitness reset toward RETURN_FITNESS", () => {
+    const home = makeSquad("h", 1);
+    home.players[0]!.injury = { severity: "light", returnDate: "2027-03-01" };
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-01", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 70, "a-p0": 50 },
+    });
+
+    const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(updatedHome.players[0]!.injury).toBeUndefined();
+  });
+
+  test("still injured on the match date — injury field is preserved", () => {
+    const home = makeSquad("h", 1);
+    home.players[0]!.injury = { severity: "severe", returnDate: "2027-06-01" };
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-01", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: {},
+      playerEnergy: {},
+    });
+
+    const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(updatedHome.players[0]!.injury).toEqual({ severity: "severe", returnDate: "2027-06-01" });
+  });
+
+  // ── review fix #2: healedPlayerIds is returned so advance-day can emit a "returned" message ──
+  test("a healed injury is reported in healedPlayerIds", () => {
+    const home = makeSquad("h", 1);
+    home.players[0]!.injury = { severity: "light", returnDate: "2027-03-01" };
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-01", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 70, "a-p0": 50 },
+    });
+
+    const { healedPlayerIds } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(healedPlayerIds).toEqual(["h-p0"]);
+  });
+
+  test("no healed injury — healedPlayerIds is empty", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-01", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 70, "a-p0": 50 },
+    });
+
+    const { healedPlayerIds } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(healedPlayerIds).toEqual([]);
+  });
+
+  // ── review fix #4: a new injury never overwrites an existing one with an earlier returnDate ──
+  test("re-injury keeps the later returnDate (and that entry's severity)", () => {
+    const home = makeSquad("h", 1);
+    home.players[0]!.injury = { severity: "severe", returnDate: "2027-06-01" };
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const injuries: MatchInjury[] = [
+      { team: "home", playerId: "h-p0", playerName: "h0", severity: "light", matchMinute: 10, energy: 50 },
+    ];
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries,
+    });
+
+    // matchDate (2027-03-10) is before the existing returnDate (2027-06-01), so the player is
+    // still injured — the pipeline shouldn't select an injured player, but if it somehow does,
+    // the new (shorter) light injury must not shorten the existing severe one.
+    const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording, () => 0.01);
+    expect(updatedHome.players[0]!.injury).toEqual({ severity: "severe", returnDate: "2027-06-01" });
+  });
+
+  test("re-injury with a later returnDate than the existing one wins", () => {
+    const home = makeSquad("h", 1);
+    home.players[0]!.injury = { severity: "light", returnDate: "2027-03-12" };
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const injuries: MatchInjury[] = [
+      { team: "home", playerId: "h-p0", playerName: "h0", severity: "severe", matchMinute: 10, energy: 50 },
+    ];
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries,
+    });
+
+    const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording, () => 0.99);
+    const inj = updatedHome.players[0]!.injury!;
+    expect(inj.severity).toBe("severe");
+    expect(inj.returnDate > "2027-03-12").toBe(true);
+  });
+});
+
+// ── review fix #3: quickSim never benches an injured player — fullMinutesForInjured skips the
+// synthetic sub-out so an injured player still gets full-match minutes credit ─────────────────
+describe("buildMatchEventFromRecording — fullMinutesForInjured (quickSim)", () => {
+  test("default (engine) behaviour: an injured player's clock stops at the injury minute", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const injuries: MatchInjury[] = [
+      { team: "home", playerId: "h-p0", playerName: "h0", severity: "light", matchMinute: 20, energy: 50 },
+    ];
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries,
+    });
+
+    const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(updatedHome.players[0]!.seasonLog!.load).toBe(20);
+  });
+
+  test("fullMinutesForInjured=true (quickSim): an injured player still gets full-match minutes", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const injuries: MatchInjury[] = [
+      { team: "home", playerId: "h-p0", playerName: "h0", severity: "light", matchMinute: 20, energy: 50 },
+    ];
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries,
+    });
+
+    const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording, Math.random, true);
+    expect(updatedHome.players[0]!.seasonLog!.load).toBe(90);
+  });
 });

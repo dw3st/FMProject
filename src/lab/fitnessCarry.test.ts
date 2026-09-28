@@ -43,6 +43,7 @@ function gamePlayer(id: string, team: "A" | "B", energy: number): GamePlayer {
     bounds: { minX: 0, maxX: 1, minY: 0, maxY: 1 },
     recoveryTime: 0, justReceivedTicks: 0,
     decisionMemory: EMPTY_DECISION_MEMORY,
+    age: 25, strengthAttr: 5, injuryLoad: 0,
   };
 }
 

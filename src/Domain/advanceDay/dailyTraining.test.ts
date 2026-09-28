@@ -210,7 +210,7 @@ describe("buildTrainingEvent", () => {
       const { event, updatedSquad } = buildTrainingEvent("s", squad, {
         minEnergyToTrain: 60,
         intensity: "normal",
-      });
+      }, "2027-02-05");
 
       expect(event.effects).toHaveLength(2); // all players get an effect entry now
       expect(event.effects[0]!.playerId).toBe("p1");
@@ -243,7 +243,7 @@ describe("buildTrainingEvent", () => {
         players: [basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ load: 20 }) })],
       };
       withRand(() => {
-        const { updatedSquad } = buildTrainingEvent("s", squad, { minEnergyToTrain: 60, intensity });
+        const { updatedSquad } = buildTrainingEvent("s", squad, { minEnergyToTrain: 60, intensity }, "2027-02-05");
         const expected = addTrainingLoad(decayLoad(20), intensity);
         expect(updatedSquad.players[0]!.seasonLog!.load).toBe(expected);
         if (intensity === "heavy") expect(expected).toBeGreaterThan(decayLoad(20));
@@ -258,7 +258,7 @@ describe("buildTrainingEvent", () => {
       players: [basePlayer({ id: "p1", name: "Low", seasonLog: makeSeasonLog({ fitness: 50, load: 20 }) })],
     };
     withRand(() => {
-      const { updatedSquad } = buildTrainingEvent("s", squad, { minEnergyToTrain: 60, intensity: "heavy" });
+      const { updatedSquad } = buildTrainingEvent("s", squad, { minEnergyToTrain: 60, intensity: "heavy" }, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.load).toBe(decayLoad(20));
     });
   });
@@ -275,7 +275,7 @@ describe("buildTrainingEvent", () => {
       const { updatedSquad } = buildTrainingEvent("s", squad, {
         minEnergyToTrain: 60,
         intensity: "heavy",
-      });
+      }, "2027-02-05");
       const p1 = updatedSquad.players.find((p) => p.id === "p1");
       expect(p1?.seasonLog?.trainingSessions).toBe(MAX_TRAINING_POINTS);
     });
@@ -293,7 +293,7 @@ describe("buildTrainingEvent", () => {
       const { event, updatedSquad } = buildTrainingEvent("s", squad, {
         minEnergyToTrain: 60,
         intensity: "normal",
-      });
+      }, "2027-02-05");
 
       expect(event.effects).toHaveLength(14);
       for (const p of updatedSquad.players) {
@@ -313,10 +313,116 @@ describe("buildTrainingEvent", () => {
       const { updatedSquad } = buildTrainingEvent("s", squad, {
         minEnergyToTrain: 60,
         intensity: "heavy",
-      });
+      }, "2027-02-05");
       expect(updatedSquad.players[0]?.seasonLog?.fitness).toBeGreaterThanOrEqual(0);
     } finally {
       Math.random = globalThis.Math.random;
     }
+  });
+});
+
+// ── injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ───────────
+
+describe("buildTrainingEvent — injuries", () => {
+  test("a currently injured player never trains and skips to rest-day recovery", () => {
+    const squad: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [
+        basePlayer({
+          id: "p1", name: "Hurt", seasonLog: makeSeasonLog({ fitness: 90 }),
+          injury: { severity: "medium", returnDate: "2027-04-01" },
+        }),
+      ],
+    };
+    const { event, updatedSquad } = buildTrainingEvent(
+      "s", squad, { minEnergyToTrain: 60, intensity: "heavy" }, "2027-03-10",
+    );
+    expect(event.effects[0]!.trainingPoints).toBe(0);
+    const p1 = updatedSquad.players[0]!;
+    expect(p1.injury).toEqual({ severity: "medium", returnDate: "2027-04-01" });
+  });
+
+  test("a player whose returnDate has passed is cleared (clearHealed) and can train again", () => {
+    const squad: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [
+        basePlayer({
+          id: "p1", name: "Healed", seasonLog: makeSeasonLog({ fitness: 90 }),
+          injury: { severity: "light", returnDate: "2027-03-10" },
+        }),
+      ],
+    };
+    const { event, updatedSquad } = buildTrainingEvent(
+      "s", squad, { minEnergyToTrain: 60, intensity: "normal" }, "2027-03-10",
+    );
+    expect(updatedSquad.players[0]!.injury).toBeUndefined();
+    expect(event.effects[0]!.trainingPoints).toBeGreaterThan(0);
+  });
+
+  test("clearHealed on the return date resets fitness toward RETURN_FITNESS (~70)", () => {
+    const squad: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [
+        basePlayer({
+          id: "p1", name: "Healed", seasonLog: makeSeasonLog({ fitness: 20 }),
+          injury: { severity: "light", returnDate: "2027-03-10" },
+        }),
+      ],
+    };
+    const { updatedSquad } = buildTrainingEvent(
+      "s", squad, { minEnergyToTrain: 60, intensity: "normal" }, "2027-03-10",
+    );
+    // Fitness starts at INJURY.RETURN_FITNESS (70) after clearHealed, then training/rest applies
+    // its own delta on top — so it should end up well above the pre-heal value of 20.
+    expect(updatedSquad.players[0]!.seasonLog!.fitness).toBeGreaterThan(60);
+  });
+
+  test("a heavy session can newly injure a player when the rng rolls inside trainingInjuryChance", () => {
+    const squad: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ fitness: 90 }) })],
+    };
+    // rng() < HEAVY_TRAINING_CHANCE (0.01) on the injury-roll call — always return 0 so the
+    // roll always hits, and severity/duration rolls are deterministic too.
+    const { updatedSquad, newInjuries } = buildTrainingEvent(
+      "s", squad, { minEnergyToTrain: 60, intensity: "heavy" }, "2027-03-10", () => 0,
+    );
+    expect(newInjuries).toHaveLength(1);
+    expect(newInjuries[0]!.playerId).toBe("p1");
+    const p1 = updatedSquad.players[0]!;
+    expect(p1.injury).toBeDefined();
+    expect(p1.injury!.severity).toBe(newInjuries[0]!.severity);
+    expect(p1.injury!.returnDate).toBe(newInjuries[0]!.returnDate);
+    expect(p1.injury!.returnDate > "2027-03-10").toBe(true);
+  });
+
+  test("light/normal training never rolls a new injury regardless of rng", () => {
+    for (const intensity of ["light", "normal"] as const) {
+      const squad: Squad = {
+        id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+        players: [basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ fitness: 90 }) })],
+      };
+      const { newInjuries } = buildTrainingEvent(
+        "s", squad, { minEnergyToTrain: 60, intensity }, "2027-03-10", () => 0,
+      );
+      expect(newInjuries).toEqual([]);
+    }
+  });
+
+  test("healedPlayerIds reports players whose injury cleared today", () => {
+    const squad: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [
+        basePlayer({
+          id: "p1", name: "Healed", seasonLog: makeSeasonLog({ fitness: 90 }),
+          injury: { severity: "light", returnDate: "2027-03-10" },
+        }),
+        basePlayer({ id: "p2", name: "Healthy", seasonLog: makeSeasonLog({ fitness: 90 }) }),
+      ],
+    };
+    const { healedPlayerIds } = buildTrainingEvent(
+      "s", squad, { minEnergyToTrain: 60, intensity: "normal" }, "2027-03-10",
+    );
+    expect(healedPlayerIds).toEqual(["p1"]);
   });
 });

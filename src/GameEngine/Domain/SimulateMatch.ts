@@ -36,6 +36,8 @@ export interface MatchResult {
   players:       GamePlayer[];
   /** All substitutions made by either team during the match. */
   substitutions: import('@/GameEngine/types').SubstitutionRecord[];
+  /** All in-match injuries suffered by either team, in chronological order. */
+  injuries: import('@/GameEngine/types').InjuryRecord[];
   /** Extra time / shootout outcome of a knockout match; null otherwise or when decided in 90'. */
   decider:       KnockoutDecider | null;
   durationMs:    number;
@@ -148,6 +150,7 @@ export function simulateMatch(
     playerRatings: getAllRatings(),
     players:       s.players,
     substitutions: s.substitutions,
+    injuries:      s.injuries,
     decider:       knockoutDecider(s),
     durationMs:    performance.now() - startMs,
   };

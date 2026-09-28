@@ -109,6 +109,28 @@ export function buildPlayedMatchRecording(
     playerRatings[rid] = getPlayerRating(sub.playerOutId);
   }
 
+  // Players injured and removed outright (no bench candidate / no subs left) — they never appear
+  // on the pitch at full time, nor in `substitutions` (that log only covers replaced players), so
+  // without this their accumulated stats/rating (still held in the Statistics/PlayerRating stores
+  // by engine id — never purged just because a player left the pitch) would silently be dropped.
+  for (const inj of gameState.injuries ?? []) {
+    const rid = inj.playerRosterId;
+    if (!rid || playerStats[rid]) continue;
+    playerEnergy[rid] = Math.max(0, Math.min(100, inj.energy));
+    const ps = getPlayerStats(inj.playerId);
+    playerStats[rid] = {
+      passesAttempted: ps.passesAttempted,
+      passesCompleted: ps.passesCompleted,
+      passesFailed: ps.passesFailed,
+      shots: ps.shots,
+      goals: ps.goals,
+      assists: ps.assists,
+      interceptions: ps.interceptions,
+      tackles: ps.tackles,
+    };
+    playerRatings[rid] = getPlayerRating(inj.playerId);
+  }
+
   // Defensive: ensure every playerStats key has a corresponding playerEnergy entry
   // so the server-side validation never silently falls back to headless simulation.
   fillMissingEnergy(playerStats, playerEnergy, startFitness);
@@ -125,6 +147,15 @@ export function buildPlayedMatchRecording(
     playerInId:    sub.playerInRosterId,
     playerInName:  sub.playerInName,
     matchMinute:   sub.matchMinute,
+  }));
+
+  const injuries: import("@/types/dayLogTypes").MatchInjury[] = (gameState.injuries ?? []).map((inj) => ({
+    team:        inj.team === "A" ? (myIsHome ? "home" : "away") : (myIsHome ? "away" : "home"),
+    playerId:    inj.playerRosterId,
+    playerName:  inj.playerName,
+    severity:    inj.severity,
+    matchMinute: inj.matchMinute,
+    energy:      inj.energy,
   }));
 
   const kd = knockoutDecider(gameState);
@@ -145,6 +176,7 @@ export function buildPlayedMatchRecording(
     playerRatings,
     playerEnergy,
     substitutions,
+    injuries,
     durationMs,
     ...(decider ? { decider } : {}),
   };

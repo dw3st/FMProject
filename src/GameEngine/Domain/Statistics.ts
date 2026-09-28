@@ -62,6 +62,8 @@ export interface TeamStats extends PlayerStats {
   avgEndEnergy: number;
   /** Count of substitutions this team made that were flagged `reason: 'fatigue'` by AiSubstitution. */
   fatigueSubstitutions: number;
+  /** Count of in-match injuries suffered by this team (`injury` event). */
+  injuries: number;
 }
 
 function emptyStats(): PlayerStats {
@@ -98,9 +100,9 @@ const store = new Map<number, PlayerStats>();
 const playerTeam = new Map<number, TeamId>();
 
 /** Team-level knockout flags (not derivable from player sums). */
-const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number }> = {
-  A: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 },
-  B: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 },
+const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number }> = {
+  A: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 },
+  B: { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 },
 };
 
 /**
@@ -205,6 +207,12 @@ gameBus.on('shootoutEnd', e => {
   notify();
 });
 
+// ── Injury stats ──────────────────────────────────────────────────────────────
+gameBus.on('injury', e => {
+  teamFlags[e.team].injuries++;
+  notify();
+});
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -215,8 +223,8 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   store.clear();
   playerTeam.clear();
   endEnergy.clear();
-  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 };
-  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0 };
+  teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
+  teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
   for (const { id, team } of players) {
     store.set(id, emptyStats());
     playerTeam.set(id, team);
