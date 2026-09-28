@@ -43,6 +43,7 @@ import {
   MapPin,
   Flame,
   Sparkles,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -97,7 +98,8 @@ export type IconName =
   | "arrow-up-right"
   | "map-pin"
   | "load"
-  | "sparkles";
+  | "sparkles"
+  | "image";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -148,6 +150,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "map-pin":      MapPin,
   "load":         Flame,
   "sparkles":     Sparkles,
+  "image":        ImageIcon,
 };
 
 export interface IconProps {

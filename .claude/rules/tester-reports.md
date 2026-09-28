@@ -17,7 +17,9 @@ tweak, one line of context, no ticketing system. Not visible to regular players.
 - **Back end:** `POST /api/reports` (`src/backend/reports.ts`) — auth required, tester required
   (403), `Content-Type: application/json` required (415), body capped at 16 KB (413, checked both
   from `Content-Length` and the actual decoded byte length), strict field validation (400), a
-  per-user rate limit (429), and one JSON line appended to `reports.jsonl`.
+  per-user rate limit (429), and one JSON line appended to `reports.jsonl`. The response carries
+  the new report's `id`, used by the front end to attach a screenshot in a follow-up request (see
+  "Screenshot attachment" below).
 - **Tester check:** `src/backend/auth/testers.ts` — `isTesterEmail(email)` reads the
   `REPORT_TESTERS` env var (comma-separated emails, case-insensitive, trimmed) at call time, so it
   can change without a restart-sensitive cache. `GET /api/auth/me` includes `isTester` in its
@@ -89,6 +91,52 @@ One JSON object per line:
 - Rate limit: 20 accepted reports per user per rolling hour (in-memory — resets on process
   restart), **429** past that. A rejected (invalid) submission does not consume the limit.
 
+## Screenshot attachment (`POST /api/reports/:id/attachment`)
+
+A report may carry **one** optional screenshot, uploaded as a **separate request after** the
+report itself is accepted — this keeps the 16 KB JSON cap on `/api/reports` untouched instead of
+raising it for an image. The body is the **raw image bytes**, no multipart: `Content-Type` is
+`image/png` or `image/jpeg`, and the report `id` (from the `/api/reports` response) goes in the
+path.
+
+- **Front end:** `ReportModal.tsx` — an "Anexar imagem" (Attach image) button opens a hidden
+  `<input type="file" accept="image/png,image/jpeg">`, and pasting (Ctrl+V) anywhere in the modal
+  also attaches an image straight from the clipboard (`onPaste` on the modal's root div checks
+  `clipboardData.items` for an `image/png`/`image/jpeg` file item). One image at a time — picking
+  or pasting a new one replaces the current selection; a thumbnail preview (an
+  `URL.createObjectURL` blob, revoked on change/unmount) shows with a small remove button.
+  Client-side pre-check — type and ≤ 2 MB — lives in the pure, ReportModal-independent
+  `src/GameInterface/Components/reportAttachmentValidation.ts` (`validateAttachmentFile`), tested
+  on its own in `reportAttachmentValidation.test.ts`; the server re-validates everything
+  independently, so this is only a fast, friendly rejection before any network round-trip. On
+  submit, `POST /api/reports` goes out first as usual; only once it succeeds does the picked file
+  (if any) go to `POST /api/reports/:id/attachment` with the file's own `type` as `Content-Type`.
+  The report is already "sent" at that point, so an attachment failure never blocks the success
+  state — it shows a small non-blocking warning instead (`reports.attachmentUploadFailed`).
+- **Back end:** same route file (`src/backend/reports.ts`), same auth + tester gate as
+  `/api/reports`. Order of checks: method (**405** if not POST) → auth (**401**) → tester
+  (**403**) → the `id` must look exactly like a value `randomUUID()` produces, else **404** (a
+  malformed id is treated as "not found" and never reaches a filesystem path) → the id must exist
+  in `reports.jsonl` **and** belong to the caller's `userId`, else **404** (an unknown id and
+  someone else's id are indistinguishable on purpose — the route never reveals which) → the report
+  must not already have an attachment, else **409** → `Content-Type` must be exactly `image/png`
+  or `image/jpeg`, else **415** → body capped at 2 MB, checked from `Content-Length` first
+  (**413**) and then the actual read byte length (**413**, `req.arrayBuffer()`) → the first bytes
+  must match the declared type's magic number (PNG `89 50 4E 47 0D 0A 1A 0A`, JPEG `FF D8 FF`),
+  else **400** (a non-image, or one format's bytes served under the other's `Content-Type`, is
+  rejected here even though the header claimed otherwise) → a **separate**, small per-user hourly
+  rate limit (20 uploads/hour, same window and same in-memory-resets-on-restart shape as the
+  report limit, but its own counter — a retried upload after a transient failure shouldn't burn
+  into the budget for filing new reports), **429** past that → written to disk, **200**.
+- **Storage:** `reports.jsonl` is append-only, so the attachment is never recorded in it. Instead
+  the image is saved as a standalone file at
+  `${RUNTIME_DATA_DIR}/report-attachments/<id>.png` or `.jpg` (`attachmentsDir()`, exported from
+  `reports.ts` for tests/scripts) — its *presence* on disk is what "this report has an attachment"
+  means; nothing else tracks it. In the Docker deploy this lands at
+  `persistent/report-attachments/` — inside the **same** `./persistent:/app/persistent` volume
+  `docker-compose.yml` already mounts for `reports.jsonl`/`fmproject.db`/`saves/`, so **no compose
+  change is needed** to ship this.
+
 ## Pulling reports
 
 `scripts/fetchReports.ts` — newest first, with `--type`, `--since YYYY-MM-DD`, `--user
@@ -97,17 +145,31 @@ control characters and bidi override/isolate characters replaced with `\uFFFD` f
 report text should never be able to spoof terminal output (`\r` overwrite, ANSI escapes, a
 right-to-left override flipping how a line reads) or corrupt `--json`'s output.
 
+A report with a screenshot is flagged inline — `[imagem anexada: <id>.png]` under its description
+(and an `"attachment": "<id>.png" | null` field in `--json` output). The attachment directory is
+listed alongside `reports.jsonl` (over SSH by default, or the `report-attachments` sibling folder
+of a `--local` file) and matched by filename (`<uuid>.png|jpg` — anything else found in that
+directory is ignored and never used to build a path). `--download-attachments <dir>` copies the
+attachment of every report currently being shown (after `--type`/`--since`/`--user` filters) into
+`<dir>`, fetched byte-for-byte over `ssh VMHOME "cat ...report-attachments/<file>"` (or copied
+directly from the local sibling folder with `--local`) — the filename is validated against that
+same `<uuid>.png|jpg` shape before it's ever interpolated into the remote command or a local path.
+
 ```bash
 # from the homelab (ssh VMHOME, see the user's homelab-deploy memory note)
 bun scripts/fetchReports.ts
 bun scripts/fetchReports.ts --type bug --since 2026-09-01
+bun scripts/fetchReports.ts --download-attachments ./downloaded-attachments
 
 # from a local file (a downloaded copy, or a fixture)
 bun scripts/fetchReports.ts --local path/to/reports.jsonl
 ```
 
-Without `--local` it runs `ssh VMHOME "cat /opt/docker/projects/fmproject/persistent/reports.jsonl"`.
-Malformed lines are skipped with a warning to stderr rather than aborting the whole read.
+Without `--local` it runs `ssh VMHOME "cat /opt/docker/projects/fmproject/persistent/reports.jsonl"`
+for the JSONL file and `ssh VMHOME "ls -1 .../persistent/report-attachments"` for the attachment
+listing (a directory that doesn't exist yet — no report has ever had an attachment — is treated as
+empty, not an error). Malformed lines are skipped with a warning to stderr rather than aborting the
+whole read.
 
 ## Test isolation
 
@@ -138,7 +200,17 @@ byte-for-byte and mtime-unchanged, whether or not those files exist beforehand.
 unauthenticated, 403 non-tester), `Content-Type`/body-size gates (415/413), the rate limit,
 `saveId` behavior (owned/unowned/nonexistent/wrong-type), the exact append format (including a
 description with embedded newlines and control characters staying one JSONL line and round-
-tripping exactly), `userAgent` capping, and `/api/auth/me`'s `isTester` field.
+tripping exactly), `userAgent` capping, and `/api/auth/me`'s `isTester` field. The same file also
+covers `/api/reports/:id/attachment`: auth/tester gates, method gate, a garbage-shaped id and an
+unknown id both landing on 404, a report id owned by someone else also 404 (never distinguished
+from unknown), the already-attached 409, the content-type 415, the two 413s (declared
+`Content-Length` and actual body), the magic-byte-mismatch 400 (including a PNG served under
+`image/jpeg`), a successful PNG and a successful JPEG upload each landing under `attachmentsDir()`
+with the right extension, and its own, independent 429 after 20 uploads in the window (reports for
+that test are seeded straight into `reports.jsonl` rather than filed through the rate-limited
+`/api/reports` route, so the two limits stay decoupled in the test). The client-side pre-check
+(`validateAttachmentFile` — type and 2 MB size) has its own pure unit test,
+`src/GameInterface/Components/reportAttachmentValidation.test.ts`, independent of `ReportModal`.
 
 ## Triage flow
 

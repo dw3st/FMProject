@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync } from "fs";
+import { appendFileSync, existsSync, readFileSync } from "fs";
 import { randomUUID } from "node:crypto";
-import { reportRoutes, reportsFilePath, resetReportRateLimit } from "@/backend/reports";
+import {
+  attachmentsDir,
+  reportRoutes,
+  reportsFilePath,
+  resetReportRateLimit,
+} from "@/backend/reports";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
@@ -22,6 +27,70 @@ afterEach(() => {
 });
 
 const handler = () => reportRoutes["/api/reports"];
+const attachmentHandler = () => reportRoutes["/api/reports/:id/attachment"];
+
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const JPEG_MAGIC = [0xff, 0xd8, 0xff];
+
+function pngBytes(extra = 16): Uint8Array {
+  const bytes = new Uint8Array(PNG_MAGIC.length + extra);
+  bytes.set(PNG_MAGIC);
+  return bytes;
+}
+
+function jpegBytes(extra = 16): Uint8Array {
+  const bytes = new Uint8Array(JPEG_MAGIC.length + extra);
+  bytes.set(JPEG_MAGIC);
+  return bytes;
+}
+
+function postAttachment(
+  token: string | null,
+  id: string,
+  bytes: Uint8Array,
+  contentType = "image/png",
+): Request & { params: Record<string, string> } {
+  const req = new Request(`http://localhost:3000/api/reports/${id}/attachment`, {
+    method: "POST",
+    headers: {
+      "content-type": contentType,
+      ...(token ? { cookie: `fs_session=${token}` } : {}),
+    },
+    body: bytes as BodyInit,
+  }) as Request & { params: Record<string, string> };
+  req.params = { id };
+  return req;
+}
+
+/** Files a valid report and returns its id. */
+async function fileReport(token: string): Promise<string> {
+  const res = await handler()(postReport(token, VALID_BODY));
+  const body = (await res.json()) as { id: string };
+  return body.id;
+}
+
+/**
+ * Appends a report line directly to reports.jsonl, bypassing the `/api/reports` route (and so
+ * its own, separate rate limit) — used to set up many reports for an attachment-only test
+ * without tripping the report rate limit first.
+ */
+function seedReportRecord(userId: string, email: string): string {
+  const id = randomUUID();
+  const record = {
+    id,
+    createdAt: new Date().toISOString(),
+    userId,
+    email,
+    type: "bug",
+    description: "seeded directly for attachment tests",
+    saveId: null,
+    page: "/test",
+    gameDate: null,
+    userAgent: null,
+  };
+  appendFileSync(reportsFilePath(), `${JSON.stringify(record)}\n`, "utf8");
+  return id;
+}
 
 function sessionFor(email: string): { token: string; userId: string } {
   const { user, session } = devAutoLogin(email);
@@ -453,5 +522,147 @@ describe("POST /api/reports — append format", () => {
     const res = await handler()(postReport(token, VALID_BODY)); // postReport never sets one
     expect(res.status).toBe(200);
     expect(lastReportLine().userAgent).toBeNull();
+  });
+});
+
+describe("POST /api/reports/:id/attachment — auth and tester gates", () => {
+  test("401 with no session cookie", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const res = await attachmentHandler()(postAttachment(null, id, pngBytes()));
+    expect(res.status).toBe(401);
+  });
+
+  test("403 for an authenticated user who is not a tester", async () => {
+    const { token: testerToken } = sessionFor("tester@example.com");
+    const id = await fileReport(testerToken);
+    const { token: otherToken } = sessionFor("not-a-tester@example.com");
+    const res = await attachmentHandler()(postAttachment(otherToken, id, pngBytes()));
+    expect(res.status).toBe(403);
+  });
+
+  test("405 for non-POST methods", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const req = new Request(`http://localhost:3000/api/reports/${id}/attachment`, {
+      method: "GET",
+      headers: { cookie: `fs_session=${token}` },
+    }) as Request & { params: Record<string, string> };
+    req.params = { id };
+    const res = await attachmentHandler()(req);
+    expect(res.status).toBe(405);
+  });
+});
+
+describe("POST /api/reports/:id/attachment — id ownership", () => {
+  test("404 for an id that does not exist", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const res = await attachmentHandler()(postAttachment(token, randomUUID(), pngBytes()));
+    expect(res.status).toBe(404);
+  });
+
+  test("404 for an id shaped like garbage (never even reaches a file lookup)", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const res = await attachmentHandler()(
+      postAttachment(token, "../../etc/passwd", pngBytes()),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  test("404 for a report id belonging to someone else", async () => {
+    const { token: ownerToken } = sessionFor("owner@example.com");
+    process.env.REPORT_TESTERS = "owner@example.com,other@example.com";
+    const id = await fileReport(ownerToken);
+
+    const { token: otherToken } = sessionFor("other@example.com");
+    const res = await attachmentHandler()(postAttachment(otherToken, id, pngBytes()));
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("POST /api/reports/:id/attachment — validation and storage", () => {
+  test("415 when Content-Type is neither image/png nor image/jpeg", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const res = await attachmentHandler()(
+      postAttachment(token, id, pngBytes(), "application/octet-stream"),
+    );
+    expect(res.status).toBe(415);
+  });
+
+  test("413 when Content-Length header alone claims more than 2 MB", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const req = postAttachment(token, id, pngBytes());
+    req.headers.set("content-length", String(3 * 1024 * 1024));
+    const res = await attachmentHandler()(req);
+    expect(res.status).toBe(413);
+  });
+
+  test("413 when the actual body exceeds 2 MB regardless of headers", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const oversized = pngBytes(3 * 1024 * 1024);
+    const res = await attachmentHandler()(postAttachment(token, id, oversized));
+    expect(res.status).toBe(413);
+  });
+
+  test("400 when the declared Content-Type is image/png but the bytes are not a PNG", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const notPng = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    const res = await attachmentHandler()(postAttachment(token, id, notPng, "image/png"));
+    expect(res.status).toBe(400);
+  });
+
+  test("400 when the declared Content-Type is image/jpeg but the bytes are a PNG", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const res = await attachmentHandler()(
+      postAttachment(token, id, pngBytes(), "image/jpeg"),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test("200 for a valid PNG, and the file lands under attachmentsDir()", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const res = await attachmentHandler()(postAttachment(token, id, pngBytes(), "image/png"));
+    expect(res.status).toBe(200);
+    expect(existsSync(`${attachmentsDir()}/${id}.png`)).toBe(true);
+  });
+
+  test("200 for a valid JPEG, and the file lands under attachmentsDir() with a .jpg extension", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const res = await attachmentHandler()(postAttachment(token, id, jpegBytes(), "image/jpeg"));
+    expect(res.status).toBe(200);
+    expect(existsSync(`${attachmentsDir()}/${id}.jpg`)).toBe(true);
+  });
+
+  test("409 when the report already has an attachment", async () => {
+    const { token } = sessionFor("tester@example.com");
+    const id = await fileReport(token);
+    const first = await attachmentHandler()(postAttachment(token, id, pngBytes(), "image/png"));
+    expect(first.status).toBe(200);
+
+    const second = await attachmentHandler()(postAttachment(token, id, pngBytes(), "image/png"));
+    expect(second.status).toBe(409);
+  });
+});
+
+describe("POST /api/reports/:id/attachment — rate limit", () => {
+  test("429 after 20 successful uploads in the window, per user", async () => {
+    // Reports are seeded directly (not via the rate-limited /api/reports route) so this test
+    // isolates the attachment rate limit from the report-filing rate limit.
+    const { token, userId } = sessionFor("tester@example.com");
+    for (let i = 0; i < 20; i++) {
+      const id = seedReportRecord(userId, "tester@example.com");
+      const res = await attachmentHandler()(postAttachment(token, id, pngBytes(), "image/png"));
+      expect(res.status).toBe(200);
+    }
+    const id21 = seedReportRecord(userId, "tester@example.com");
+    const res21 = await attachmentHandler()(postAttachment(token, id21, pngBytes(), "image/png"));
+    expect(res21.status).toBe(429);
   });
 });
