@@ -183,7 +183,7 @@
     "back": "Voltar"
   },
   "newGame": {
-    "startDate": "Data Inicial",
+    "startDate": "Data de Início",
     "creator": "Criador",
     "lastUpdated": "Última atualização",
     "official": "Oficial",
@@ -243,27 +243,47 @@
       "former-player": {
         "name": "Ex-jogador",
         "description": "Uma carreira premiada nos gramados te deu visão tática e respeito dos jogadores. Você conhece o jogo por dentro.",
-        "bonuses": ["Reputação inicial alta", "Melhor relação com jogadores", "Conhecimento tático"]
+        "bonuses": [
+          "Reputação inicial alta",
+          "Melhor relação com jogadores",
+          "Conhecimento tático"
+        ]
       },
       "young-prodigy": {
         "name": "Jovem Promessa",
         "description": "Recém-saído da escola de treinadores, cheio de ideias modernas e táticas inovadoras. Você tem tudo a provar.",
-        "bonuses": ["Métodos modernos de treino", "Bônus de desenvolvimento de jovens", "Aprendizado mais rápido"]
+        "bonuses": [
+          "Métodos modernos de treino",
+          "Bônus de desenvolvimento de jovens",
+          "Aprendizado mais rápido"
+        ]
       },
       "journeyman": {
         "name": "Treinador Veterano",
         "description": "Anos de experiência em vários clubes e divisões. Você já viu de tudo e se adaptou a cada situação.",
-        "bonuses": ["Táticas versáteis", "Experiência em adversidade", "Gestão financeira"]
+        "bonuses": [
+          "Táticas versáteis",
+          "Experiência em adversidade",
+          "Gestão financeira"
+        ]
       },
       "club-legend": {
         "name": "Lenda do Clube",
         "description": "Você subiu degrau por degrau no clube do coração, do time de base ao profissional. Esse é o seu destino.",
-        "bonuses": ["Confiança máxima da diretoria", "Apoio da torcida", "Conhecimento do clube"]
+        "bonuses": [
+          "Confiança máxima da diretoria",
+          "Apoio da torcida",
+          "Conhecimento do clube"
+        ]
       },
       "analyst": {
         "name": "Analista de Dados",
         "description": "Os números não mentem. Sua abordagem analítica revolucionou como você monta e gerencia equipes.",
-        "bonuses": ["Olheiros avançados", "Insights estatísticos", "Vantagem no mercado de transferências"]
+        "bonuses": [
+          "Olheiros avançados",
+          "Insights estatísticos",
+          "Vantagem no mercado de transferências"
+        ]
       }
     },
     "nationalities": {
@@ -333,7 +353,6 @@
     },
     "genericHeadline": "Em {{country}}, cada partida escreve um novo capítulo na história do jogo.",
     "division": "Divisão",
-    "territoryProfile": "Perfil do Território",
     "teams": "Clubes",
     "divisions": "Divisões",
     "theSpirit": "O Espírito",
@@ -369,7 +388,6 @@
     "reviewSelection": "Revise suas seleções antes de iniciar sua jornada como técnico.",
     "database": "Banco de Dados",
     "manager": "Técnico",
-    "startDate": "Data de Início",
     "leagueSeason": "Temporada da Liga",
     "currently": "Selecionando Atualmente",
     "readyToBegin": "Pronto para",
@@ -644,6 +662,12 @@
       "4-3-3": "Três atacantes na frente, com controle no meio e estabilidade defensiva.",
       "4-4-2": "Dupla de ataque apoiada por uma linha equilibrada de quatro no meio.",
       "3-5-2": "Cinco meio-campistas dominam a posse, com alas dando amplitude."
+    },
+    "injuredUntil": "Fora até {{date}}",
+    "injurySeverity": {
+      "light": "Lesão leve",
+      "medium": "Lesão média",
+      "severe": "Lesão grave"
     }
   },
   "attributes": {
@@ -734,6 +758,7 @@
     "penalties": "Pênaltis",
     "avgEndEnergy": "Fôlego médio final",
     "fatigueSubs": "Trocas por cansaço",
+    "injuries": "Lesões",
     "headers": {
       "G": "Gols",
       "SH": "Finalizações",
@@ -1336,7 +1361,12 @@
       "goalkeeping": "Goleiragem",
       "rightFoot": "Destro",
       "leftFoot": "Canhoto",
-      "yearsOld": "anos"
+      "yearsOld": "anos",
+      "injuredDays": "Fora por {{days}}d",
+      "injuredToday": "Retorna hoje",
+      "sevLight": "Lesão leve",
+      "sevMedium": "Lesão média",
+      "sevSevere": "Lesão grave"
     },
     "squadTable": {
       "noSquadData": "Nenhum dado de elenco disponível.",
@@ -1360,7 +1390,12 @@
       "top": "Ótimo",
       "fit": "Apto",
       "injured": "Lesionado",
-      "suspended": "Suspenso"
+      "suspended": "Suspenso",
+      "injuredDays": "Lesionado ({{severity}}) — {{days}}d restantes",
+      "injuredToday": "Lesionado ({{severity}}) — retorna hoje",
+      "sevLight": "leve",
+      "sevMedium": "média",
+      "sevSevere": "grave"
     },
     "assistsLabel": "assistências",
     "clubSidebar": {
@@ -1395,7 +1430,12 @@
       "players": "jogadores",
       "fit": "Apto",
       "injured": "Lesionado",
-      "suspended": "Suspenso"
+      "suspended": "Suspenso",
+      "injuredDays": "Lesionado ({{severity}}) — {{days}}d restantes",
+      "injuredToday": "Lesionado ({{severity}}) — retorna hoje",
+      "sevLight": "leve",
+      "sevMedium": "média",
+      "sevSevere": "grave"
     }
   },
   "squadScreen": {
@@ -1440,7 +1480,8 @@
     "rating": "nota",
     "cancelSelection": "Cancelar seleção",
     "change": "mudança",
-    "lowFitnessWarning": "Titulares com fôlego baixo: {{names}}"
+    "lowFitnessWarning": "Titulares com fôlego baixo: {{names}}",
+    "injuredReplaced": "{{out}} lesionado, substituído por {{in}}"
   },
   "matchResult": {
     "title": "Resultado da partida",

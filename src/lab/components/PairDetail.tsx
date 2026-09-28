@@ -58,6 +58,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Drib success%",     key: "dribbleSuccessPct" },
     { stat: "Avg end energy",    key: "avgEndEnergy" },
     { stat: "Fatigue subs",      key: "avgFatigueSubs" },
+    { stat: "Injuries",          key: "avgInjuries" },
   ];
 
   const data = {
@@ -136,6 +137,7 @@ function CongestionTable({
     { label: "Avg xG",    key: "avgXg" },
     { label: "End energy", key: "avgEndEnergy" },
     { label: "Fatigue subs", key: "avgFatigueSubs" },
+    { label: "Injuries", key: "avgInjuries" },
   ];
 
   return (

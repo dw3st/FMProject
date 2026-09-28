@@ -20,6 +20,7 @@ import {
   isOutOfPosition,
   slotRoleFitRank,
 } from "@/Domain/lineupHelpers";
+import { isInjured } from "@/Domain/injury/injury";
 
 interface FormationOption {
   id: string;
@@ -188,6 +189,7 @@ export function FormationScreen() {
 
   function handleAssignPlayer(player: RosterPlayer) {
     if (selectedSlotIdx === null) return;
+    if (isInjured(player, currentDate)) return;
     const newLineup = [...lineup];
     while (newLineup.length <= selectedSlotIdx) newLineup.push("");
     // If player is already in lineup, swap positions
@@ -396,6 +398,7 @@ export function FormationScreen() {
                           selected={selectedSlotIdx === idx}
                           outOfPosition={slots[idx] ? isOutOfPosition(player, slots[idx]!.role) : false}
                           onClick={() => handleSlotClick(idx)}
+                          injured={isInjured(player, currentDate)}
                         />
                       ) : (
                         <button
@@ -419,15 +422,19 @@ export function FormationScreen() {
                     bench.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-4 m-0">{t("formations.noBenchPlayers")}</p>
                     ) : (
-                      benchOrderedForSlot.map((player) => (
-                        <SquadPlayerRow
-                          key={player.id}
-                          player={player}
-                          ratingRole={targetSlotRole}
-                          onClick={selectedSlotIdx !== null ? () => handleAssignPlayer(player) : undefined}
-                          highlight={selectedSlotIdx !== null}
-                        />
-                      ))
+                      benchOrderedForSlot.map((player) => {
+                        const injured = isInjured(player, currentDate);
+                        return (
+                          <SquadPlayerRow
+                            key={player.id}
+                            player={player}
+                            ratingRole={targetSlotRole}
+                            onClick={selectedSlotIdx !== null && !injured ? () => handleAssignPlayer(player) : undefined}
+                            highlight={selectedSlotIdx !== null && !injured}
+                            injured={injured}
+                          />
+                        );
+                      })
                     )
                   )}
                 </div>
@@ -510,6 +517,7 @@ function SquadPlayerRow({
   highlight,
   outOfPosition,
   onClick,
+  injured,
 }: {
   player: RosterPlayer;
   slotLabel?: string;
@@ -520,6 +528,7 @@ function SquadPlayerRow({
   highlight?: boolean;
   outOfPosition?: boolean;
   onClick?: () => void;
+  injured?: boolean;
 }) {
   const { t } = useTranslation();
   const scorePos = ratingRole ?? slotLabel ?? player.positions[0] ?? "CM";
@@ -536,7 +545,7 @@ function SquadPlayerRow({
 
   return (
     <div
-      className={`flex items-center gap-2 ${onClick ? "cursor-pointer" : ""}`}
+      className={`flex items-center gap-2 ${onClick ? "cursor-pointer" : injured ? "opacity-60 cursor-not-allowed" : ""}`}
       onClick={onClick}
     >
       {(showSlot && slotLabel) ? (
@@ -567,6 +576,14 @@ function SquadPlayerRow({
             {outOfPosition && (
               <span title={t("formations.outOfPosition")}>
                 <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" aria-hidden />
+              </span>
+            )}
+            {injured && player.injury && (
+              <span
+                className="text-[8px] font-black uppercase tracking-wider px-1 py-0.5 rounded bg-destructive/20 text-destructive border border-destructive/40 shrink-0"
+                title={t(`formations.injurySeverity.${player.injury.severity}` as never)}
+              >
+                {t("formations.injuredUntil", { date: player.injury.returnDate })}
               </span>
             )}
           </div>

@@ -688,6 +688,10 @@ export function forceInjurySubstitution(
   };
   let s: GameState = { ...state, injuries: [...state.injuries, record] };
   gameBus.emit('injury', { playerId: player.id, playerName: player.name, team, minute, severity });
+  debugLog('injury', `${player.name} (team ${team}) injured — ${severity}, minute ${minute}`, {
+    playerId: player.id,
+    data: { severity, minute, team, energy: player.energy },
+  });
 
   const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
   const bench    = team === 'A' ? s.benchA         : s.benchB;

@@ -94,7 +94,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0,
   };
 }
 
@@ -125,6 +125,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.penaltiesScored             += src.penaltiesScored;
   dst.avgEndEnergySum             += src.avgEndEnergySum;
   dst.fatigueSubstitutions        += src.fatigueSubstitutions;
+  dst.injuries                    += src.injuries;
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -201,6 +202,9 @@ function runOneMatch(
     teamA.interceptions += hA.interceptions; teamB.interceptions += hB.interceptions;
     // quickSim doesn't count individual shootout kicks — penaltiesTaken/Scored stay 0 for this engine.
     // quickSim never subs (no bench) — fatigueSubstitutions stays 0 for this engine.
+    for (const inj of q.recording.injuries ?? []) {
+      if (inj.team === "home") teamA.injuries++; else teamB.injuries++;
+    }
     const qd = q.recording.decider;
     if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
     const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
@@ -246,6 +250,7 @@ function runOneMatch(
   teamA.penaltiesScored  += sA.penaltiesScored;  teamB.penaltiesScored  += sB.penaltiesScored;
   teamA.avgEndEnergySum      += sA.avgEndEnergy;         teamB.avgEndEnergySum      += sB.avgEndEnergy;
   teamA.fatigueSubstitutions += sA.fatigueSubstitutions; teamB.fatigueSubstitutions += sB.fatigueSubstitutions;
+  teamA.injuries += sA.injuries; teamB.injuries += sB.injuries;
 
   const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
   if (winner === "A") teamA.wins++;

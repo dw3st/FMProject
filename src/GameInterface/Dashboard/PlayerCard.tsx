@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
+import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
 import { ATTRIBUTE_LABELS } from "@/GameInterface/AttributeLabels";
 import type { AttributeId } from "@/GameInterface/AttributeLabels";
@@ -147,6 +148,14 @@ export function PlayerCard({
                 {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} {t("common.foot")} · {player.age} {t("dashboard.playerCard.yearsOld")}
               </span>
             </div>
+            {player.injury && (
+              <p className="text-xs font-bold text-destructive mt-2 m-0">
+                {t(`dashboard.playerCard.sev${capitalizeSeverity(player.injury.severity)}` as never)}{" · "}
+                {player.injury.daysLeft > 0
+                  ? t("dashboard.playerCard.injuredDays", { days: player.injury.daysLeft })
+                  : t("dashboard.playerCard.injuredToday")}
+              </p>
+            )}
           </div>
 
           <AvgRing value={player.avg} size="lg" />
@@ -226,6 +235,13 @@ export function PlayerCard({
               {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} · {player.age}y
             </span>
           </div>
+          {player.injury && (
+            <p className="text-[9px] font-bold text-destructive mt-1 m-0">
+              {player.injury.daysLeft > 0
+                ? t("dashboard.playerCard.injuredDays", { days: player.injury.daysLeft })
+                : t("dashboard.playerCard.injuredToday")}
+            </p>
+          )}
         </div>
 
         <AvgRing value={player.avg} />
