@@ -100,6 +100,12 @@ export interface RosterPlayer {
   /** Cached best weighted score across all specific roles in the player's main role.
    *  Recomputed when stats change (see PlayerDevelopment.applyDevelopment). */
   overallAvg?: number;
+  /**
+   * Active injury (`src/Domain/injury/injury.ts`). Absent means healthy. The day advance clears
+   * this once `date >= returnDate` (`clearHealed`) — a player is `isInjured` for any date strictly
+   * before `returnDate`.
+   */
+  injury?: { severity: "light" | "medium" | "severe"; returnDate: string };
 }
 
 export interface ClubFinances {
