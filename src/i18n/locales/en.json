@@ -180,7 +180,10 @@
     "noSavedGames": "No saved games found.",
     "load": "Load",
     "delete": "Delete",
-    "back": "Back"
+    "back": "Back",
+    "deleteConfirmTitle": "Delete save?",
+    "deleteConfirmBody": "This will permanently delete \"{{clubName}}\" ({{leagueName}}). This cannot be undone.",
+    "deleteConfirmAction": "Delete save"
   },
   "newGame": {
     "phase01": "Phase 01: Origin",

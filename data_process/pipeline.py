@@ -896,33 +896,45 @@ def load_player_positions() -> dict[int, str]:
     return {int(k): v["primary"] for k, v in data.items() if "primary" in v}
 
 
-def _build_logo_map() -> dict[str, Path]:
-    """Build a combined map of name_key → logo file path from ALL logo directories."""
-    logo_map: dict[str, Path] = {}
+def _build_logo_maps() -> dict[str, dict[str, Path]]:
+    """Build one name_key → logo file map PER LEAGUE directory.
+
+    Each football-logos.cc source directory only ever contains crests for clubs of
+    that specific league, so matching must stay scoped to a club's own league dir.
+    A single global map (the previous approach) let two clubs from DIFFERENT leagues
+    that happen to share (or fuzzy-match) a name key silently reuse each other's
+    crest — e.g. "Athletic Club" existing in both La Liga (Athletic Bilbao) and
+    Brazil's Série B collided on the exact same key, and "Figueirense" (no dedicated
+    source dir for Série C) fuzzy-matched onto "Fluminense" from a completely
+    different league/country. See .claude/rules/data/espn-import.md history / issue
+    #25, #26.
+    """
+    logo_maps: dict[str, dict[str, Path]] = {}
 
     def logo_key(p: Path) -> str:
         stem = p.stem
         stem = re.sub(r"\.football-logos\.cc$", "", stem)
         return _name_key(stem)
 
-    # Preferred order: league-specific dirs first (SVG preferred over PNG for same key)
-    for dir_name in LEAGUE_LOGO_DIRS.values():
+    for league_slug, dir_name in LEAGUE_LOGO_DIRS.items():
         src_dir = LOGOS_SRC_DIR / dir_name
         if not src_dir.exists():
             continue
+        league_map: dict[str, Path] = {}
         for p in src_dir.iterdir():
             if p.is_file() and p.suffix in (".svg", ".png"):
                 key = logo_key(p)
                 # SVG takes priority over PNG for the same key
-                existing = logo_map.get(key)
+                existing = league_map.get(key)
                 if existing is None or (existing.suffix == ".png" and p.suffix == ".svg"):
-                    logo_map[key] = p
+                    league_map[key] = p
+        logo_maps[league_slug] = league_map
 
-    return logo_map
+    return logo_maps
 
 
 # Built once at module level after LEAGUE_LOGO_DIRS is defined
-_LOGO_MAP: dict[str, Path] | None = None
+_LOGO_MAPS: dict[str, dict[str, Path]] | None = None
 
 
 def _find_logo(club: str, league_slug: str, team_id: int) -> str | None:
@@ -931,20 +943,29 @@ def _find_logo(club: str, league_slug: str, team_id: int) -> str | None:
     naming the output file {slug}.{ext} (e.g. arsenal.svg) so the frontend can
     resolve it directly from the club slug.
     Returns the relative path 'logos/{league_slug}/{slug}.{ext}', or None if not found.
-    Accepts both .svg and .png files. Searches all available logo directories.
+    Accepts both .svg and .png files. Only searches the club's OWN league's source
+    directory (LEAGUE_LOGO_DIRS[league_slug]) — never another league's, even as a
+    fuzzy fallback. A league with no dedicated source directory (e.g. lower tiers
+    not listed in LEAGUE_LOGO_DIRS) has no crest available and returns None, letting
+    the frontend fall back to the generated colour badge instead of borrowing an
+    unrelated club's artwork.
     """
-    global _LOGO_MAP
-    if _LOGO_MAP is None:
-        _LOGO_MAP = _build_logo_map()
+    global _LOGO_MAPS
+    if _LOGO_MAPS is None:
+        _LOGO_MAPS = _build_logo_maps()
+
+    league_map = _LOGO_MAPS.get(league_slug)
+    if not league_map:
+        return None
 
     club_key = _name_key(club)
-    if club_key in _LOGO_MAP:
-        src = _LOGO_MAP[club_key]
+    if club_key in league_map:
+        src = league_map[club_key]
     else:
-        close = difflib.get_close_matches(club_key, _LOGO_MAP.keys(), n=1, cutoff=0.55)
+        close = difflib.get_close_matches(club_key, league_map.keys(), n=1, cutoff=0.55)
         if not close:
             return None
-        src = _LOGO_MAP[close[0]]
+        src = league_map[close[0]]
 
     out_dir = OUTPUT_LOGOS_DIR / league_slug
     out_dir.mkdir(parents=True, exist_ok=True)

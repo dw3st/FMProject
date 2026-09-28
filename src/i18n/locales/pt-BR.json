@@ -180,7 +180,10 @@
     "noSavedGames": "Nenhum jogo salvo encontrado.",
     "load": "Carregar",
     "delete": "Excluir",
-    "back": "Voltar"
+    "back": "Voltar",
+    "deleteConfirmTitle": "Excluir save?",
+    "deleteConfirmBody": "Isso vai excluir permanentemente \"{{clubName}}\" ({{leagueName}}). Essa ação não pode ser desfeita.",
+    "deleteConfirmAction": "Excluir save"
   },
   "newGame": {
     "startDate": "Data de Início",
