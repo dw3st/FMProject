@@ -261,6 +261,13 @@ export interface InjuryRecord {
   severity: import('@/Domain/injury/injury').InjurySeverity;
   /** Game-minute when the injury occurred. */
   matchMinute: number;
+  /**
+   * Energy (0–100) at the moment of injury — needed because a player removed outright (no subs
+   * left / no bench candidate) never appears in `GameState.players` again, nor in
+   * `substitutions` (that log only covers replaced players), so this is the only place their
+   * final in-match energy is recorded (`buildPlayedMatchRecording.ts` / `matches.ts`).
+   */
+  energy: number;
 }
 
 export interface GamePlayer {

@@ -325,11 +325,8 @@ export function MatchScreen() {
 
   useEffect(() => {
     return gameBus.on("injury", (data) => {
-      // The engine may have already removed/substituted the player from `gameState.players` by
-      // the time this fires (same tick), so look the name up from the still-old state ref.
-      const player = gameStateRef.current?.players.find((p) => p.id === data.playerId);
       if (injuryTimerRef.current) clearTimeout(injuryTimerRef.current);
-      setInjuryNotice({ team: data.team, playerName: player?.name ?? "?", severity: data.severity });
+      setInjuryNotice({ team: data.team, playerName: data.playerName, severity: data.severity });
       injuryTimerRef.current = setTimeout(() => setInjuryNotice(null), 4000);
     });
   }, []);
