@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ageDelta, agePlayerStats } from "@/../scripts/espn/aging";
+import { AGE_MEDIAN_DAMPEN_K, ageDelta, agePlayerStats, youngGrowthDampen } from "@/../scripts/espn/aging";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
 
 const base: PlayerStatsRecord = {
@@ -49,5 +49,45 @@ describe("agePlayerStats", () => {
   });
   test("caps the gap at two years", () => {
     expect(agePlayerStats("p", base, 18, 23, outfield)).toEqual(agePlayerStats("p", base, 18, 20, outfield));
+  });
+});
+
+describe("#14 — youngGrowthDampen", () => {
+  test("at the median: full growth (1)", () => {
+    expect(youngGrowthDampen(6, 6)).toBe(1);
+  });
+  test("below the median: still full growth, never boosted above 1", () => {
+    expect(youngGrowthDampen(4, 6)).toBe(1);
+  });
+  test(`AGE_MEDIAN_DAMPEN_K (${AGE_MEDIAN_DAMPEN_K}) points above the median: floored at 0.25`, () => {
+    expect(youngGrowthDampen(6 + AGE_MEDIAN_DAMPEN_K, 6)).toBe(0.25);
+    expect(youngGrowthDampen(6 + AGE_MEDIAN_DAMPEN_K * 10, 6)).toBe(0.25);
+  });
+  test("linear in between", () => {
+    expect(youngGrowthDampen(6 + AGE_MEDIAN_DAMPEN_K / 2, 6)).toBeCloseTo(0.5, 9);
+  });
+});
+
+describe("#14 — growthDampen reduces growth for a young player above the club median, decline unaffected", () => {
+  test("dampen < 1 grows the young player less than dampen 1", () => {
+    const full = agePlayerStats("y", base, 19, 21, outfield, 1);
+    const half = agePlayerStats("y", base, 19, 21, outfield, 0.5);
+    expect(sum(half)).toBeLessThan(sum(full));
+    expect(sum(half)).toBeGreaterThanOrEqual(sum(base));
+  });
+  test("dampen 0.25 (fully clamped) still grows a little, never shrinks", () => {
+    const dampened = agePlayerStats("y", base, 19, 21, outfield, 0.25);
+    expect(sum(dampened)).toBeGreaterThan(sum(base));
+  });
+  test("growthDampen never affects a veteran's decline", () => {
+    const full = agePlayerStats("v", base, 33, 35, outfield, 1);
+    const dampened = agePlayerStats("v", base, 33, 35, outfield, 0.25);
+    expect(dampened).toEqual(full);
+  });
+  test("default growthDampen (omitted) behaves exactly like 1 — backward compatible", () => {
+    expect(agePlayerStats("y", base, 19, 21, outfield)).toEqual(agePlayerStats("y", base, 19, 21, outfield, 1));
+  });
+  test("deterministic with growthDampen", () => {
+    expect(agePlayerStats("y", base, 19, 21, outfield, 0.6)).toEqual(agePlayerStats("y", base, 19, 21, outfield, 0.6));
   });
 });
