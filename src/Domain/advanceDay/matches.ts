@@ -89,6 +89,8 @@ export interface PlayedMatchRecording {
   playerEnergy: Record<string, number>;
   /** Substitutions made during the match, in chronological order. */
   substitutions: import("@/types/dayLogTypes").MatchSubstitution[];
+  /** In-match injuries, in chronological order. */
+  injuries?: import("@/types/dayLogTypes").MatchInjury[];
   durationMs: number;
   /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
   decider?: import("@/types/calendarTypes").MatchDecider;
@@ -285,6 +287,7 @@ export function buildMatchEventFromRecording(
     playerTeams,
     scorers,
     substitutions: recording.substitutions ?? [],
+    injuries: recording.injuries ?? [],
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
     ...(recording.decider ? { decider: recording.decider } : {}),
@@ -415,6 +418,14 @@ export function buildMatchEvent(
     matchMinute:   sub.matchMinute,
   }));
 
+  const injuries: import("@/types/dayLogTypes").MatchInjury[] = result.injuries.map((inj) => ({
+    team:        inj.team === "A" ? "home" : "away",
+    playerId:    inj.playerRosterId,
+    playerName:  inj.playerName,
+    severity:    inj.severity,
+    matchMinute: inj.matchMinute,
+  }));
+
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges } =
     finalizeSquadsAfterMatch(
       homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
@@ -452,6 +463,7 @@ export function buildMatchEvent(
     playerTeams,
     scorers,
     substitutions,
+    injuries,
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: result.durationMs,
     ...(result.decider

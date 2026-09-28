@@ -233,7 +233,14 @@ export interface GameEvents {
    * from `evaluateAiSubstitutions` (AiSubstitution.ts); absent for a manual/tactical substitution
    * (e.g. the user's own sub in MatchScreen) — Statistics counts only the former as a fatigue sub.
    */
-  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' };
+  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' | 'injury' };
+
+  /**
+   * Emitted when a player suffers an in-match injury — either the per-minute risk roll or a
+   * contact event (tackle / loose-ball duel). See `docs/superpowers/specs/2026-09-28-injuries-design.md`
+   * §1 "Na partida" and `Domain/injury/injury.ts`.
+   */
+  injury: { playerId: number; team: TeamId; minute: number; severity: import('@/Domain/injury/injury').InjurySeverity };
 
   // ── Match flow events ─────────────────────────────────────────────────────
   /**

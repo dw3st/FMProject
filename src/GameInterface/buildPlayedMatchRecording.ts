@@ -127,6 +127,14 @@ export function buildPlayedMatchRecording(
     matchMinute:   sub.matchMinute,
   }));
 
+  const injuries: import("@/types/dayLogTypes").MatchInjury[] = (gameState.injuries ?? []).map((inj) => ({
+    team:        inj.team === "A" ? (myIsHome ? "home" : "away") : (myIsHome ? "away" : "home"),
+    playerId:    inj.playerRosterId,
+    playerName:  inj.playerName,
+    severity:    inj.severity,
+    matchMinute: inj.matchMinute,
+  }));
+
   const kd = knockoutDecider(gameState);
   const side = <T extends { A: number; B: number }>(v: T) =>
     ({ home: myIsHome ? v.A : v.B, away: myIsHome ? v.B : v.A });
@@ -145,6 +153,7 @@ export function buildPlayedMatchRecording(
     playerRatings,
     playerEnergy,
     substitutions,
+    injuries,
     durationMs,
     ...(decider ? { decider } : {}),
   };

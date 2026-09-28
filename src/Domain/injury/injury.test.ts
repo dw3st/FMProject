@@ -104,10 +104,16 @@ describe("injuryRatePerMinute", () => {
     expect(rate).toBeCloseTo(INJURY.BASE, 12);
   });
 
-  test("baseline produces ~0.3 injuries per match summed over 22 players x 90 minutes", () => {
+  test("baseline per-minute risk alone is a fraction of the ~0.3/match target (contact events make up the rest)", () => {
+    // `INJURY.BASE`/`CONTACT_BASE` are calibrated together against the full engine
+    // (`scripts/injury-calibrate.ts`, Task 2 — see `injuryConfig.ts`'s module doc comment): the
+    // per-minute component alone no longer accounts for the whole 0.3/match target on its own,
+    // since tackles/loose-ball duels (`contactInjuryChance`) contribute the rest. This just pins
+    // the per-minute share to a sane range so a future recalibration can't silently zero it out.
     const rate = injuryRatePerMinute({ energy: 100, load: 0, age: 25, strength: 5 });
     const perMatch = rate * 22 * 90;
-    expect(perMatch).toBeCloseTo(0.3, 10);
+    expect(perMatch).toBeGreaterThan(0);
+    expect(perMatch).toBeLessThan(0.3);
   });
 
   test("low energy, high load, old, weak player has a strictly higher rate than baseline", () => {

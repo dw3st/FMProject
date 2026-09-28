@@ -96,6 +96,10 @@ function makePlayer(
     recoveryTime:     0,
     justReceivedTicks: 0,
     decisionMemory:   EMPTY_DECISION_MEMORY,
+    // Engine-tuning scenarios don't model injuries — pin baseline (no extra risk) values.
+    age:              25,
+    strengthAttr:     attrs.strength,
+    injuryLoad:       0,
   };
 }
 

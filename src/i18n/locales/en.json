@@ -788,6 +788,12 @@
       "attacking": "All-out Attack",
       "balanced": "Balanced",
       "defensive": "Defensive"
+    },
+    "injuryNotice": "{{player}} is injured ({{severity}}) and has been substituted.",
+    "injurySeverity": {
+      "light": "light",
+      "medium": "medium",
+      "severe": "severe"
     }
   },
   "broadcast": {

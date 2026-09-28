@@ -46,7 +46,7 @@ function emptyTeam(): TeamStats {
     switchPlays: 0,
     penaltiesTaken: 0, penaltiesScored: 0,
     extraTimePlayed: 0, shootoutsWon: 0,
-    avgEndEnergy: 0, fatigueSubstitutions: 0,
+    avgEndEnergy: 0, fatigueSubstitutions: 0, injuries: 0,
   };
 }
 
