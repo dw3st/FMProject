@@ -17,7 +17,7 @@ import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
-import { addMatchLoad, decayLoad, postMatchFitness, recoverDay } from "@/Domain/fitness/fitness";
+import { applyMatchFitness } from "@/Domain/fitness/fitness";
 
 /** `stats.stamina` (0–10) is required on the type, but fall back defensively — see fitness.md. */
 const DEFAULT_STAMINA = 7;
@@ -154,20 +154,14 @@ function finalizeSquadsAfterMatch(
                 : +((prev * (log.appearances - 1) + rating) / log.appearances).toFixed(2);
             log.recentRatings = [...(log.recentRatings ?? []), rating].slice(-5);
           }
+          // Post-match fitness/load, shared with `/lab`'s congestion carry-over
+          // (`lab/fitnessCarry.ts`) via `applyMatchFitness` — see `.claude/rules/game/fitness.md`.
           const endEnergy = playerEnergy?.[p.id];
-          if (typeof endEnergy === "number" && Number.isFinite(endEnergy)) {
-            // Post-match fitness is simply the end-of-match energy (no automatic 50% give-back —
-            // see `.claude/rules/game/fitness.md`); recovery instead happens day by day via
-            // `recoverDay`, shaped by age/load/stamina.
-            log.fitness = postMatchFitness(endEnergy);
-          } else {
-            log.fitness = Math.max(0, log.fitness - +(Math.random() * 5 + 3).toFixed(1));
-          }
-          // Load always decays one day's worth first, then the match's own minutes are added on
-          // top — this player's squad plays today, so the daily rest/training loop (which decays
-          // everyone else) skips it entirely; this is their only chance to decay today.
           const minutes = minutesPlayed[p.id] ?? 0;
-          log.load = addMatchLoad(decayLoad(log.load ?? 0), minutes);
+          const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
+          const updated = applyMatchFitness(log, { age: p.age, stamina }, { endEnergy, minutes });
+          log.fitness = updated.fitness;
+          log.load = updated.load;
           log.morale = Math.min(100, log.morale + +(Math.random() * 2).toFixed(1));
         } else {
           // Did not appear in this match (bench/reserve). The daily rest/training loop skips
@@ -175,10 +169,9 @@ function finalizeSquadsAfterMatch(
           // only chance to recover fitness and decay load today, on the same curve as an actual
           // rest day (`.claude/rules/game/fitness.md`).
           const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
-          const preDecayLoad = log.load ?? 0;
-          const recovered = recoverDay(log.fitness, { age: p.age, load: preDecayLoad, stamina });
-          log.fitness = Math.min(100, Math.max(0, +recovered.toFixed(1)));
-          log.load = decayLoad(preDecayLoad);
+          const updated = applyMatchFitness(log, { age: p.age, stamina }, undefined);
+          log.fitness = updated.fitness;
+          log.load = updated.load;
         }
         return { ...pl, seasonLog: log };
       }),

@@ -1,4 +1,5 @@
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
+import type { PlayerSeasonLog } from "@/types/playerTypes";
 
 /**
  * Pure fitness/fatigue model (`docs/superpowers/specs/2026-09-27-stamina-design.md` §1). No I/O —
@@ -68,6 +69,47 @@ export function drainMultiplier(load: number): number {
 /** Post-match fitness is simply the end-of-match energy, rounded and clamped to 0..100. */
 export function postMatchFitness(endEnergy: number): number {
   return Math.min(100, Math.max(0, Math.round(endEnergy)));
+}
+
+/**
+ * One player's post-match `fitness`/`load` update — shared by production
+ * (`Domain/advanceDay/matches.ts`) and the `/lab` congestion carry-over (`lab/fitnessCarry.ts`), so
+ * both apply the exact same rule instead of two hand-copied (and drifting) versions. Pure — returns
+ * the new `{ fitness, load }` pair, never mutates `log`.
+ *
+ * `appearance` absent means the player did not appear in this match: recovers via `recoverDay`, the
+ * same curve as an actual rest day (their squad's daily rest/training loop skips them entirely today
+ * — see `.claude/rules/game/fitness.md`).
+ *
+ * `appearance` present means the player appeared: `fitness` becomes `postMatchFitness(endEnergy)`
+ * when `endEnergy` is a finite number, or a small random decrement when it's missing (only reachable
+ * in production, from a recording without per-player energy — `/lab` always supplies a real
+ * `endEnergy` for anyone in its appearances map); `load` gets the match's minutes added on top of one
+ * day's decay.
+ */
+export function applyMatchFitness(
+  log: Pick<PlayerSeasonLog, "fitness" | "load">,
+  player: { age: number; stamina: number },
+  appearance: { endEnergy: number | undefined; minutes: number } | undefined,
+): { fitness: number; load: number } {
+  if (appearance) {
+    const { endEnergy, minutes } = appearance;
+    const fitness =
+      typeof endEnergy === "number" && Number.isFinite(endEnergy)
+        ? postMatchFitness(endEnergy)
+        : Math.max(0, log.fitness - +(Math.random() * 5 + 3).toFixed(1));
+    return { fitness, load: addMatchLoad(decayLoad(log.load ?? 0), minutes) };
+  }
+  const preDecayLoad = log.load ?? 0;
+  const recovered = recoverDay(log.fitness, {
+    age: player.age,
+    load: preDecayLoad,
+    stamina: player.stamina,
+  });
+  return {
+    fitness: Math.min(100, Math.max(0, +recovered.toFixed(1))),
+    load: decayLoad(preDecayLoad),
+  };
 }
 
 /**
