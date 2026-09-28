@@ -12,7 +12,7 @@ import { mulberry32 } from "@/Domain/rng";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
-import { drainMultiplier } from "@/Domain/fitness/fitness";
+import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 
 const ROLES = ["GK", "LB", "CB", "CB", "RB", "CDM", "CM", "CM", "LW", "ST", "RW"];
@@ -438,7 +438,9 @@ describe("quickSim knockout", () => {
       if (!r.decider?.extraTime) continue;
       found = true;
       for (const p of [...home.players, ...away.players]) {
-        const startEnergy = ensureSeasonLog(p).seasonLog!.fitness;
+        // Start energy is the match's compressed energy (`matchStartEnergy`), not raw persisted
+        // fitness — see `.claude/rules/non-player-games.md` → "Fadiga".
+        const startEnergy = matchStartEnergy(ensureSeasonLog(p).seasonLog!.fitness);
         const group = ROLE_GROUP[p.positions[0]!]!;
         const drain =
           C.ENERGY_DRAIN_BY_LINE[group] *
@@ -464,8 +466,9 @@ describe("quickSim knockout", () => {
     );
     const gk = home.players.find((p) => p.positions[0] === "GK")!;
     const st = home.players.find((p) => p.positions[0] === "ST")!;
-    const gkLoss = ensureSeasonLog(gk).seasonLog!.fitness - r.playerEnergy[gk.id]!;
-    const stLoss = ensureSeasonLog(st).seasonLog!.fitness - r.playerEnergy[st.id]!;
+    // Loss is measured from the match's compressed start energy, not raw persisted fitness.
+    const gkLoss = matchStartEnergy(ensureSeasonLog(gk).seasonLog!.fitness) - r.playerEnergy[gk.id]!;
+    const stLoss = matchStartEnergy(ensureSeasonLog(st).seasonLog!.fitness) - r.playerEnergy[st.id]!;
     expect(C.ENERGY_DRAIN_BY_LINE.GK).not.toBe(C.ENERGY_DRAIN_BY_LINE.FWD);
     expect(gkLoss).toBeCloseTo(
       C.ENERGY_DRAIN_BY_LINE.GK * (1.2 - 0.4 * (gk.stats.stamina / 10)),
@@ -493,7 +496,10 @@ describe("quickSim knockout", () => {
       mulberry32(5),
     );
     for (const p of home.players) {
-      const startEnergy = ensureSeasonLog(p).seasonLog!.fitness;
+      // Both `fresh` and `tired` start from the SAME raw fitness (only `load` differs between the
+      // two squads), so they share the same compressed start energy — load itself is never
+      // compressed, only fitness (see `matchStartEnergy`).
+      const startEnergy = matchStartEnergy(ensureSeasonLog(p).seasonLog!.fitness);
       const freshLoss = startEnergy - fresh.playerEnergy[p.id]!;
       const tiredLoss = startEnergy - tired.playerEnergy[p.id]!;
       expect(tiredLoss).toBeGreaterThan(freshLoss);
