@@ -77,13 +77,13 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 6 | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
 | 7 | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) + #23 ELITE 'tight' | Contratos usam idade e nível; revisar a curva de declínio junto. Contratos mudam a folha da IA — mesma hora de afinar a folga dos ELITE |
 | 8 | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato + #28/#29 estrelas | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato. As estrelas (regra de quem recebe + cores com legenda) usam as mesmas notas e estatísticas da tela |
-| 9 | 3.3 Tela Tactics | #8 estilo posse + #30 cor por posição + #31 posições estilo FM | Tactics mexe nas instruções; o estilo posse é um dos alvos. A posição detalhada (cor e aptidão por posição) é a base da escalação e das instruções |
+| 9 | 3.3 Tela Tactics | #8 estilo posse + #20 zagueiro × lateral na escalação + #21 arrastar e formação livre + #30 cor por posição + #31 posições estilo FM | Tactics mexe nas instruções; o estilo posse é um dos alvos. A posição detalhada (cor e aptidão por posição) é a base da escalação e das instruções |
 | 10 | 3.4 Staff | #13 nomes turcos | Etapa grande + correção pequena de dados |
 | 11 | 3.5 Base | #9 notas ≥ 8,5 no quickSim | Jovens gerados passam pelo quickSim; notas precisam estar calibradas |
 | 11b | 3.6 Aposentadoria e renascimento de craques | — | Usa a geração de jovens da Base (3.5); entra logo depois dela |
 | 11c | 3.7 Histórico do jogador | #32 | Carreira clube a clube; precisa de contratos (3.1) e aposentadoria (3.6) para ter história de verdade |
 | 11d | 3.8 Ranking de técnicos | #33 | Pontuação por títulos; base para convites de clubes maiores e seleções e um futuro multiplayer |
-| 12 | 4.1 Faltas e cartões | — | |
+| 12 | 4.1 Faltas e cartões | #17 impedimento visível, faltas, cartões e pênaltis + #19 resumo ao vivo do adversário | Faltas e cartões entram no mesmo painel ao vivo que substitui a escalação do adversário |
 | 13 | 4.2 Jogo aéreo | — | |
 | 14 | 4.3 Bolas paradas | — | |
 
