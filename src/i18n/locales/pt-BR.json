@@ -114,11 +114,10 @@
     "current": "Atual"
   },
   "startScreen": {
-    "footballSimulation": "Simulação de Futebol",
     "newGame": "Novo Jogo",
     "loadGame": "Carregar Jogo",
     "settings": "Configurações",
-    "savedGames": "Jogos Salvos",
+    "savedGames": "Jogos salvos",
     "backButton": "Voltar",
     "noSavedGames": "Nenhum jogo salvo encontrado.",
     "load": "Carregar",
@@ -126,7 +125,9 @@
     "back": "Voltar",
     "deleteConfirmTitle": "Excluir save?",
     "deleteConfirmBody": "Isso vai excluir permanentemente \"{{clubName}}\" ({{leagueName}}). Essa ação não pode ser desfeita.",
-    "deleteConfirmAction": "Excluir save"
+    "deleteConfirmAction": "Excluir save",
+    "continue": "Continuar",
+    "whatsNew": "Novidades"
   },
   "newGame": {
     "startDate": "Data de Início",
@@ -1688,5 +1689,12 @@
   },
   "fitness": {
     "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"
+  },
+  "login": {
+    "email": "E-mail",
+    "code": "Código",
+    "sendCode": "Receber código",
+    "signIn": "Entrar",
+    "help": "Enviamos um código de 6 dígitos. Sem senha."
   }
 }

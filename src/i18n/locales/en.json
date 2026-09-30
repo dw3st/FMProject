@@ -114,11 +114,10 @@
     "current": "Current"
   },
   "startScreen": {
-    "footballSimulation": "Football Simulation",
     "newGame": "New Game",
     "loadGame": "Load Game",
     "settings": "Settings",
-    "savedGames": "Saved Games",
+    "savedGames": "Saved games",
     "backButton": "Back",
     "noSavedGames": "No saved games found.",
     "load": "Load",
@@ -126,7 +125,9 @@
     "back": "Back",
     "deleteConfirmTitle": "Delete save?",
     "deleteConfirmBody": "This will permanently delete \"{{clubName}}\" ({{leagueName}}). This cannot be undone.",
-    "deleteConfirmAction": "Delete save"
+    "deleteConfirmAction": "Delete save",
+    "continue": "Continue",
+    "whatsNew": "What's new"
   },
   "newGame": {
     "phase01": "Phase 01: Origin",
@@ -1688,5 +1689,12 @@
   },
   "fitness": {
     "highLoadTooltip": "High load: recovers slowly and tires faster"
+  },
+  "login": {
+    "email": "Email",
+    "code": "Code",
+    "sendCode": "Send code",
+    "signIn": "Sign in",
+    "help": "We email you a 6-digit code. No password."
   }
 }

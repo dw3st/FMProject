@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Mail, KeyRound, ArrowLeft, ArrowRight } from "lucide-react";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { Wordmark } from "@/GameInterface/Components/Wordmark";
+import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 
 type Stage = "email" | "code";
 
@@ -65,133 +66,79 @@ export function LoginScreen() {
     }
   }
 
+  const inputClass =
+    "h-10 w-full rounded border border-border bg-transparent px-3 text-foreground placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none disabled:opacity-50";
+  const buttonClass =
+    "mt-4 inline-flex h-10 w-full items-center justify-center rounded border-0 bg-primary font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer disabled:opacity-40 disabled:pointer-events-none";
+
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-background">
-      {/* Football Field Background — same as StartScreen */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[oklch(0.08_0.02_var(--team-hue))] to-transparent">
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 w-80 h-24 border-2 border-muted/30 rounded-b-lg">
-            <div
-              className="w-full h-full"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, oklch(0.3 0.02 var(--team-hue)) 1px, transparent 1px),
-                  linear-gradient(to bottom, oklch(0.3 0.02 var(--team-hue)) 1px, transparent 1px)
-                `,
-                backgroundSize: "12px 12px",
-              }}
-            />
-          </div>
-        </div>
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background">
+      <PitchBackdrop />
 
-        <div className="absolute top-28 left-0 right-0 bottom-0 bg-gradient-to-b from-[oklch(0.18_0.04_var(--team-hue))] via-[oklch(0.14_0.03_var(--team-hue))] to-[oklch(0.10_0.02_var(--team-hue))]">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border-2 border-muted/20" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-muted/20" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-32 border-t-2 border-l-2 border-r-2 border-muted/15 rounded-t-lg" />
-        </div>
-
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,oklch(0.08_0.02_var(--team-hue))_100%)]" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
-        <div className="text-center mb-12">
-          <h1 className="text-6xl md:text-8xl font-black tracking-tight font-display">
-            <span className="text-foreground">FM</span>
-            <span className="text-primary glow-text">PROJECT</span>
-          </h1>
-          <p className="mt-4 text-sm md:text-base tracking-[0.4em] text-muted-foreground uppercase font-medium">
-            {stage === "email" ? "Sign in to your account" : "Enter the 6-digit code"}
-          </p>
-        </div>
+      <div className="relative w-full max-w-[280px] px-4">
+        <Wordmark size="md" className="mb-7 block text-center" />
 
         {stage === "email" ? (
-          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-4 w-full max-w-sm">
-            <div className="card-arcade rounded-xl p-1.5">
-              <div className="relative flex items-center">
-                <Mail className="absolute left-4 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <input
-                  type="email"
-                  autoComplete="email"
-                  autoFocus
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  disabled={submitting}
-                  className="w-full bg-transparent border-0 pl-12 pr-4 py-3 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-xs text-center text-destructive uppercase tracking-wider font-semibold">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
+          <form onSubmit={handleEmailSubmit}>
+            <label htmlFor="login-email" className="mb-1.5 block text-xs text-muted-foreground">
+              {t("login.email")}
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
               disabled={submitting}
-              className="flex items-center justify-center gap-3 w-full py-4 px-8 bg-primary text-primary-foreground rounded-xl font-bold text-lg uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98] glow-primary border-0 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {submitting ? "Sending…" : "Send login code"}
-              {!submitting && <ArrowRight className="w-5 h-5" />}
+              className={inputClass}
+            />
+            {error && <p role="alert" className="mt-1.5 text-xs text-destructive">{error}</p>}
+            <button type="submit" disabled={submitting} className={buttonClass}>
+              {submitting ? "Sending…" : t("login.sendCode")}
             </button>
+            <p className="mt-3.5 text-center text-xs text-muted-foreground">{t("login.help")}</p>
           </form>
         ) : (
-          <form onSubmit={handleCodeSubmit} className="flex flex-col gap-4 w-full max-w-sm">
-            <p className="text-center text-xs text-muted-foreground uppercase tracking-wider">
-              {t("common.sentTo")} <span className="text-foreground font-semibold normal-case">{email}</span>
+          <form onSubmit={handleCodeSubmit}>
+            <p className="mb-3 text-center text-xs text-muted-foreground">
+              {t("common.sentTo")} <span className="text-foreground">{email}</span>
             </p>
-
-            <div className="card-arcade rounded-xl p-1.5">
-              <div className="relative flex items-center">
-                <KeyRound className="absolute left-4 w-5 h-5 text-muted-foreground pointer-events-none" />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="\d{6}"
-                  maxLength={6}
-                  autoComplete="one-time-code"
-                  autoFocus
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="123456"
-                  disabled={submitting}
-                  className="w-full bg-transparent border-0 pl-12 pr-4 py-3 text-base font-mono tracking-[0.5em] text-center text-foreground placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-xs text-center text-destructive uppercase tracking-wider font-semibold">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
+            <label htmlFor="login-code" className="mb-1.5 block text-xs text-muted-foreground">
+              {t("login.code")}
+            </label>
+            <input
+              id="login-code"
+              type="text"
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              autoComplete="one-time-code"
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="123456"
               disabled={submitting}
-              className="flex items-center justify-center gap-3 w-full py-4 px-8 bg-primary text-primary-foreground rounded-xl font-bold text-lg uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98] glow-primary border-0 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {submitting ? "Verifying…" : "Sign in"}
-              {!submitting && <ArrowRight className="w-5 h-5" />}
+              className={`${inputClass} text-center font-mono tracking-[0.5em]`}
+            />
+            {error && <p role="alert" className="mt-1.5 text-xs text-destructive">{error}</p>}
+            <button type="submit" disabled={submitting} className={buttonClass}>
+              {submitting ? "Verifying…" : t("login.signIn")}
             </button>
-
             <button
               type="button"
               onClick={() => { setStage("email"); setCode(""); setError(null); }}
-              className="flex items-center justify-center gap-2 w-full py-3 px-6 text-muted-foreground font-semibold uppercase tracking-wider text-xs transition-all hover:text-primary cursor-pointer bg-transparent border-0"
+              className="mt-3.5 block w-full cursor-pointer border-0 bg-transparent p-0 text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              <ArrowLeft className="w-4 h-4" />
               {t("common.useADifferentEmail")}
             </button>
           </form>
         )}
+      </div>
 
-        <div className="absolute bottom-6 text-xs text-muted-foreground/50 font-mono">
-          {t("common.version", { version: CURRENT_VERSION })}
-        </div>
+      <div className="absolute bottom-4 text-xs text-muted-foreground">
+        {t("common.version", { version: CURRENT_VERSION })}
       </div>
     </div>
   );
