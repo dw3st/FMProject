@@ -585,6 +585,10 @@ interface MatchSetupData {
   myTactics?: TacticsSave;
   /** Saved-lineup starters auto-swapped for being injured on the match date — see Task 5 (UI warning). */
   injuredReplaced?: { out: string; in: string }[];
+  /** Tired-starter swaps the user can accept for this match. */
+  rotationSuggestion?: { out: string; in: string }[];
+  /** Tired-starter swaps already in the XI (assistant on, or accepted). */
+  rotationApplied?: { out: string; in: string }[];
 }
 
 export function MatchPreviewScreen() {
@@ -610,6 +614,8 @@ export function MatchPreviewScreen() {
   const [commencing, setCommencing] = useState(false);
   const [localLineup, setLocalLineup] = useState<string[]>([]);
   const [showLastMinuteSubs, setShowLastMinuteSubs] = useState(false);
+  const [rotationBusy, setRotationBusy] = useState(false);
+  const [rotationHidden, setRotationHidden] = useState(false);
 
   useEffect(() => {
     if (saveLoading) return;
@@ -878,6 +884,28 @@ export function MatchPreviewScreen() {
     .filter((p): p is RosterPlayer => !!p && (p.seasonLog?.fitness ?? 100) < LOW_FITNESS_THRESHOLD)
     .map((p) => `${p.name} (${Math.round(p.seasonLog?.fitness ?? 100)})`);
 
+  const playerName = (id: string) => myPlayersById.get(id)?.name ?? id;
+  const playerFitness = (id: string) => Math.round(myPlayersById.get(id)?.seasonLog?.fitness ?? 100);
+
+  async function postRotation(swaps: { out: string; in: string }[], optOut = false) {
+    if (!session || rotationBusy) return;
+    setRotationBusy(true);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/rotation-override`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: session.currentDate, swaps, optOut }),
+      });
+      if (!res.ok) return;
+      const setupRes = await fetch(`/api/match-setup?saveId=${encodeURIComponent(session.saveId)}`);
+      if (!setupRes.ok) return;
+      setMatchSetup((await setupRes.json()) as MatchSetupData);
+      setLocalLineup([]);
+    } finally {
+      setRotationBusy(false);
+    }
+  }
+
   const myTactics: TacticalStyle = session.tactical_style;
   const oppTactics: TacticalStyle = DEFAULT_TACTICAL_STYLE;
 
@@ -1053,6 +1081,75 @@ export function MatchPreviewScreen() {
             <p className="text-xs text-amber-300 m-0">
               {t("matchPreview.lowFitnessWarning", { names: lowFitnessStarterNames.join(", ") })}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Rotation suggestion — tired starters the user can rest for this match */}
+      {!rotationHidden && !!matchSetup?.rotationSuggestion && matchSetup.rotationSuggestion.length > 0 && (
+        <div className="w-full max-w-5xl shrink-0">
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-xs text-amber-300 m-0 space-y-0.5 flex-1">
+              <p className="m-0 font-bold">
+                {t("matchPreview.rotationTitle", { count: matchSetup.rotationSuggestion.length })}
+              </p>
+              {matchSetup.rotationSuggestion.map((s, i) => (
+                <p key={i} className="m-0">
+                  {t("matchPreview.rotationSwap", {
+                    out: playerName(s.out), outFit: playerFitness(s.out),
+                    in: playerName(s.in), inFit: playerFitness(s.in),
+                  })}
+                </p>
+              ))}
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                disabled={rotationBusy}
+                onClick={() => postRotation(matchSetup.rotationSuggestion ?? [])}
+                className="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-200 text-xs font-bold hover:bg-amber-500/30 disabled:opacity-50 cursor-pointer"
+              >
+                {t("matchPreview.rotationApply")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRotationHidden(true)}
+                className="px-3 py-1 rounded-lg text-amber-300 text-xs hover:bg-white/10 cursor-pointer"
+              >
+                {t("matchPreview.rotationIgnore")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rotation already applied (assistant or accepted suggestion) */}
+      {!!matchSetup?.rotationApplied && matchSetup.rotationApplied.length > 0 && (
+        <div className="w-full max-w-5xl shrink-0">
+          <div className="flex items-start gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5">
+            <Icon name="check-circle" size={16} className="text-emerald-400 mt-0.5 shrink-0" />
+            <div className="text-xs text-emerald-300 m-0 space-y-0.5 flex-1">
+              <p className="m-0 font-bold">
+                {t("matchPreview.rotationApplied", { count: matchSetup.rotationApplied.length })}
+              </p>
+              {matchSetup.rotationApplied.map((s, i) => (
+                <p key={i} className="m-0">
+                  {t("matchPreview.rotationSwap", {
+                    out: playerName(s.out), outFit: playerFitness(s.out),
+                    in: playerName(s.in), inFit: playerFitness(s.in),
+                  })}
+                </p>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={rotationBusy}
+              onClick={() => postRotation([], true)}
+              className="px-3 py-1 rounded-lg text-emerald-300 text-xs font-bold hover:bg-white/10 disabled:opacity-50 cursor-pointer shrink-0"
+            >
+              {t("matchPreview.rotationUndo")}
+            </button>
           </div>
         </div>
       )}
