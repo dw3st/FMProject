@@ -1162,7 +1162,7 @@ export function MatchPreviewScreen() {
             <div className="text-xs text-destructive m-0 space-y-0.5">
               {matchSetup.injuredReplaced.map((swap, i) => (
                 <p key={i} className="m-0">
-                  {t("matchPreview.injuredReplaced", { out: swap.out, in: swap.in })}
+                  {t("matchPreview.injuredReplaced", { out: playerName(swap.out), in: playerName(swap.in) })}
                 </p>
               ))}
             </div>
