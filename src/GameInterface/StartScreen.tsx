@@ -7,7 +7,7 @@ import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice
 import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
-import { ClubLogo } from "@/GameInterface/Components/ClubLogo";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
@@ -15,6 +15,7 @@ import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 interface SaveEntry {
   id: string;
   name: string;
+  clubId: string;
   clubName: string;
   leagueName: string;
   clubColors: [string, string];
@@ -109,6 +110,7 @@ export function StartScreen() {
               <li key={save.id} className="flex items-center gap-3 border-t border-border py-3">
                 <ClubLogo
                   className="h-[22px] w-[22px] shrink-0 rounded-full"
+                  logoUrl={squadLogoUrl(save.clubId)}
                   primaryColor={save.clubColors[0]}
                   secondaryColor={save.clubColors[1]}
                 />

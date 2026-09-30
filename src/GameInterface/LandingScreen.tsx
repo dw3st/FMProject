@@ -41,6 +41,7 @@ export function LandingScreen() {
 
       <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 pb-6 pt-2 text-xs text-muted-foreground">
         <span>v{CURRENT_VERSION}</span>
+        <span>{t("landing.footerText")}</span>
         <a href={SOURCE_REPO_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.sourceCode")}</a>
         <a href={LICENSE_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.license")}</a>
         <span>
