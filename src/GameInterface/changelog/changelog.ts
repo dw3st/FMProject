@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.5.2",
+    date: "2026-09-30",
+    items: [
+      {
+        pt: "Novo visual da página inicial, do login e da tela inicial",
+        en: "New look for the landing page, login and start screen",
+      },
+    ],
+  },
+  {
     version: "1.5.1",
     date: "2026-09-28",
     items: [
