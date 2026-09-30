@@ -11,6 +11,8 @@ export interface CreatePageOptions {
   public?: boolean;
   /** Skip only the auth gate but keep GameSaveProvider. Used for lab tools. */
   noAuth?: boolean;
+  /** Page works at any screen size; skip the minimum-size gate. Used for landing, login and start. */
+  responsive?: boolean;
 }
 
 export function createPage(Component: React.ComponentType, options: CreatePageOptions = {}) {
@@ -33,7 +35,7 @@ export function createPage(Component: React.ComponentType, options: CreatePageOp
 
     createRoot(document.getElementById("root")!).render(
       <LanguageProvider>
-        <ScreenSizeGate>{inner}</ScreenSizeGate>
+        {options.responsive ? inner : <ScreenSizeGate>{inner}</ScreenSizeGate>}
       </LanguageProvider>,
     );
   }
