@@ -16,7 +16,7 @@ export function LandingScreen() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-7 h-14 text-xs">
+      <header className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-7 h-14 text-sm">
         <a href="/" className="no-underline"><Wordmark size="sm" /></a>
         <a href="/start" className={LINK}>{t("landing.signIn")}</a>
       </header>
@@ -35,11 +35,11 @@ export function LandingScreen() {
         </div>
       </section>
 
-      <ul className="flex flex-col items-center gap-1 border-t border-border px-6 py-4 text-xs text-muted-foreground sm:flex-row sm:justify-center sm:gap-8">
+      <ul className="flex flex-col items-center gap-1 border-t border-border px-6 py-4 text-sm text-muted-foreground sm:flex-row sm:justify-center sm:gap-8">
         {WORLD_NUMBERS.map((key) => <li key={key}>{t(key)}</li>)}
       </ul>
 
-      <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 pb-6 pt-2 text-xs text-muted-foreground">
+      <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 pb-6 pt-2 text-sm text-muted-foreground">
         <span>v{CURRENT_VERSION}</span>
         <span>{t("landing.footerText")}</span>
         <a href={SOURCE_REPO_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.sourceCode")}</a>
