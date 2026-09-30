@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.6",
+    date: "2026-09-30",
+    items: [
+      {
+        pt: "Rotação: a prévia da partida sugere poupar titulares cansados, e você aplica ou ignora",
+        en: "Rotation: the match preview suggests resting tired starters, and you can apply or ignore it",
+      },
+      {
+        pt: "Novo assistente nas táticas: escala o time por fôlego automaticamente",
+        en: "New assistant in tactics: picks your lineup by fitness automatically",
+      },
+    ],
+  },
+  {
     version: "1.5.2",
     date: "2026-09-30",
     items: [
