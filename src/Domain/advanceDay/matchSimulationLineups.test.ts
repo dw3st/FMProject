@@ -96,3 +96,53 @@ describe("resolveUserLineup", () => {
     expect(onReturn.injuredReplaced).toEqual([]);
   });
 });
+
+describe("resolveUserLineup — rotation", () => {
+  const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
+  const DATE = "2027-04-05";
+
+  function tiredSquad(): { squad: Squad; saved: string[] } {
+    const squad = squadOf11();
+    squad.players = squad.players.map((p) =>
+      p.id === "p9" ? { ...p, seasonLog: { ...emptySeasonLog(), fitness: 10 } } : p,
+    );
+    squad.players.push({
+      ...squadOf11().players[9]!, id: "bench-st", name: "Bench ST",
+      seasonLog: { ...emptySeasonLog(), fitness: 100 },
+    });
+    return { squad, saved: squadOf11().players.map((p) => p.id) };
+  }
+
+  test("default: suggested but not applied", () => {
+    const { squad, saved } = tiredSquad();
+    const r = resolveUserLineup(squad, formation, saved, DATE);
+    expect(r.lineup).toEqual(saved);
+    expect(r.rotationSuggestion).toEqual([{ out: "p9", in: "bench-st" }]);
+    expect(r.rotationApplied).toEqual([]);
+  });
+
+  test("assistant on: applied automatically", () => {
+    const { squad, saved } = tiredSquad();
+    const r = resolveUserLineup(squad, formation, saved, DATE, { assistantRotation: true });
+    expect(r.lineup).toContain("bench-st");
+    expect(r.lineup).not.toContain("p9");
+    expect(r.rotationApplied).toEqual([{ out: "p9", in: "bench-st" }]);
+    expect(r.rotationSuggestion).toEqual([]);
+  });
+
+  test("override applies only on its date", () => {
+    const { squad, saved } = tiredSquad();
+    const override = { date: DATE, swaps: [{ out: "p9", in: "bench-st" }] };
+    expect(resolveUserLineup(squad, formation, saved, DATE, { override }).lineup).toContain("bench-st");
+    const other = resolveUserLineup(squad, formation, saved, "2027-04-06", { override });
+    expect(other.lineup).toEqual(saved);
+  });
+
+  test("optOut undoes the assistant for that date", () => {
+    const { squad, saved } = tiredSquad();
+    const override = { date: DATE, swaps: [], optOut: true };
+    const r = resolveUserLineup(squad, formation, saved, DATE, { assistantRotation: true, override });
+    expect(r.lineup).toEqual(saved);
+    expect(r.rotationApplied).toEqual([]);
+  });
+});

@@ -195,6 +195,8 @@ export interface TacticsSave {
   formation: string;
   /** Ordered player IDs — index maps to formation slot index. May be shorter than 11 if not fully set. */
   lineup: string[];
+  /** When true the assistant rests tired starters automatically (default false). */
+  assistantRotation?: boolean;
 }
 
 export const DEFAULT_TACTICAL_STYLE: TacticalStyle = "balanced";

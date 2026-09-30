@@ -4,6 +4,8 @@ import { applyBroadcasting } from "@/backend/FinancialService";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
+import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { formationForSimId } from "@/Domain/matchFormations";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
@@ -203,6 +205,7 @@ export const saveRoutes = {
         formation:      body.formation      ?? existing.formation,
         tactical_style: body.tactical_style ?? existing.tactical_style,
         lineup:         body.lineup         ?? existing.lineup,
+        assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
       };
 
       await saveService.saveTactics(id, updated);
@@ -214,5 +217,50 @@ export const saveRoutes = {
     }
 
     return Response.json({ error: "method not allowed" }, { status: 405 });
+  },
+
+  "/api/saves/:id/rotation-override": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const id = req.params.id!;
+    const auth = requireSaveOwner(req, id);
+    if (auth instanceof Response) return auth;
+    const meta = await saveService.getMeta(id);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+
+    let body: { date?: unknown; swaps?: unknown; optOut?: unknown };
+    try { body = await req.json(); } catch {
+      return Response.json({ error: "invalid body" }, { status: 400 });
+    }
+    if (body.date !== meta.currentDate) {
+      return Response.json({ error: "date must be the current date" }, { status: 400 });
+    }
+    const optOut = body.optOut === true;
+    const swaps = (Array.isArray(body.swaps) ? body.swaps : []) as { out: string; in: string }[];
+    if (!swaps.every((s) => s && typeof s.out === "string" && typeof s.in === "string")) {
+      return Response.json({ error: "invalid swaps" }, { status: 400 });
+    }
+
+    if (!optOut && swaps.length > 0) {
+      const squad = await saveService.getSquadById(id, meta.clubId);
+      if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
+      const tactics = await saveService.getTactics(id);
+      const valid = resolveUserLineup(
+        squad,
+        formationForSimId(tactics?.formation ?? meta.formation ?? "4-3-3"),
+        tactics?.lineup ?? [],
+        meta.currentDate,
+      ).rotationSuggestion;
+      const ok = swaps.every((s) => valid.some((v) => v.out === s.out && v.in === s.in));
+      if (!ok) return Response.json({ error: "swap not in today's suggestion" }, { status: 400 });
+    }
+
+    await saveService.updateMeta(id, {
+      rotationOverride: {
+        date: body.date as string,
+        swaps: optOut ? [] : swaps,
+        ...(optOut ? { optOut: true } : {}),
+      },
+    });
+    return Response.json({ ok: true });
   },
 };
