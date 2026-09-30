@@ -10,6 +10,8 @@ import {
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
   replaceInjuredStarters,
+  suggestRotation,
+  applyRotation,
   type InjuredReplacement,
 } from "@/Domain/lineupHelpers";
 
@@ -30,25 +32,61 @@ function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
  * saved lineup can go stale between the day it was saved and the day the fixture is played.
  * `injuredReplaced` lists any such swaps so a preview screen can warn the user.
  */
+export interface RotationOverride {
+  date: string;
+  swaps: { out: string; in: string }[];
+  optOut?: boolean;
+}
+
 export function resolveUserLineup(
   squad: Squad,
   formation: Formation,
   savedLineup: string[],
   date?: string,
-): { lineup: string[]; injuredReplaced: InjuredReplacement[] } {
+  rotation?: { assistantRotation?: boolean; override?: RotationOverride | null },
+): {
+  lineup: string[];
+  injuredReplaced: InjuredReplacement[];
+  /** Tired-starter swaps NOT applied (the user may accept them on the preview). */
+  rotationSuggestion: { out: string; in: string }[];
+  /** Tired-starter swaps already applied (assistant on, or accepted override). */
+  rotationApplied: { out: string; in: string }[];
+} {
   const slots = slotsFor(formation);
   // No saved lineup (e.g. a career that never touched the formation screen) falls back to the same
-  // fitness-aware auto-fill the AI uses, not the plain rating-only fill — a human's XI shouldn't
-  // start a clearly-tired keeper/starter over a fresh bench player just because nobody ever saved
-  // a lineup. See `docs/superpowers/specs/2026-09-27-stamina-design.md` §2.
+  // fitness-aware auto-fill the AI uses, not the plain rating-only fill. See
+  // `docs/superpowers/specs/2026-09-27-stamina-design.md` section 2.
   if (!savedLineup.length) {
-    return { lineup: autoFillLineupWithFitness(slots, squad.players, date), injuredReplaced: [] };
+    return {
+      lineup: autoFillLineupWithFitness(slots, squad.players, date),
+      injuredReplaced: [],
+      rotationSuggestion: [],
+      rotationApplied: [],
+    };
   }
   const aligned = buildSlotAlignedLineup(squad.players, savedLineup);
   const lineup = aligned.map((p) => p?.id ?? "");
-  if (!date) return { lineup, injuredReplaced: [] };
+  if (!date) return { lineup, injuredReplaced: [], rotationSuggestion: [], rotationApplied: [] };
   const { lineup: fixed, replaced } = replaceInjuredStarters(slots, lineup, squad.players, date);
-  return { lineup: fixed, injuredReplaced: replaced };
+
+  const suggestions = suggestRotation(slots, fixed, squad.players, date);
+  const override = rotation?.override?.date === date ? rotation.override : null;
+  let applied: { out: string; in: string }[] = [];
+  let pending = suggestions;
+  if (override) {
+    applied = override.optOut ? [] : override.swaps.filter((s) => fixed.includes(s.out));
+    const appliedOut = new Set(applied.map((s) => s.out));
+    pending = suggestions.filter((s) => !appliedOut.has(s.out));
+  } else if (rotation?.assistantRotation) {
+    applied = suggestions;
+    pending = [];
+  }
+  return {
+    lineup: applyRotation(fixed, applied),
+    injuredReplaced: replaced,
+    rotationSuggestion: pending,
+    rotationApplied: applied,
+  };
 }
 
 /** Detailed role per formation slot — index i is slot i, aligned with a slot-ordered lineup. */
@@ -104,6 +142,7 @@ export function computeMatchSimulationLineups(
   awaySquad: Squad,
   playerSquadId: string | undefined,
   tactics: TacticsSave | null,
+  rotationOverride?: RotationOverride | null,
 ): {
   homeFormation: Formation;
   homeLineup: string[];
@@ -111,6 +150,7 @@ export function computeMatchSimulationLineups(
   awayLineup: string[];
   /** Any of the human's saved-lineup starters swapped out for being injured on `fixture.date`. */
   userInjuredReplaced: InjuredReplacement[];
+  userRotationApplied: { out: string; in: string }[];
 } {
   const date = fixture.date;
   const defaultAi = formationForSimId(DEFAULT_SIM_FORMATION_ID);
@@ -124,6 +164,7 @@ export function computeMatchSimulationLineups(
       awayFormation: defaultAi,
       awayLineup: autoLineupDefaultFormationWithFitness(awaySquad, date),
       userInjuredReplaced: [],
+      userRotationApplied: [],
     };
   }
 
@@ -134,24 +175,27 @@ export function computeMatchSimulationLineups(
   } satisfies TacticsSave);
 
   const userFormation = formationForSimId(t.formation);
+  const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {
-    const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date);
+    const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot);
     return {
       homeFormation: userFormation,
       homeLineup: user.lineup,
       awayFormation: defaultAi,
       awayLineup: autoLineupDefaultFormationWithFitness(awaySquad, date),
       userInjuredReplaced: user.injuredReplaced,
+      userRotationApplied: user.rotationApplied,
     };
   }
 
-  const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date);
+  const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date, rot);
   return {
     homeFormation: defaultAi,
     homeLineup: autoLineupDefaultFormationWithFitness(homeSquad, date),
     awayFormation: userFormation,
     awayLineup: user.lineup,
     userInjuredReplaced: user.injuredReplaced,
+    userRotationApplied: user.rotationApplied,
   };
 }
