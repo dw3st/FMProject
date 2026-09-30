@@ -1,7 +1,7 @@
 # FMProject — Roadmap
 
 Referência única do que está feito, do que vem a seguir e em que ordem. Atualizado a cada entrega
-(merge em `main`). Última atualização: 2026-09-28 (Etapa 5: lesões + dados #3/#14).
+(merge em `main`). Última atualização: 2026-09-30 (issues #28–#33 do tester encaixadas nas etapas).
 
 ---
 
@@ -76,11 +76,13 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 5 ✅ | 2.2 Lesões | #3 ruído dos `of_*` (+ #14 jovem do SP) | Lesões e rotação dependem de elencos com níveis críveis |
 | 6 | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
 | 7 | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) + #23 ELITE 'tight' | Contratos usam idade e nível; revisar a curva de declínio junto. Contratos mudam a folha da IA — mesma hora de afinar a folga dos ELITE |
-| 8 | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato |
-| 9 | 3.3 Tela Tactics | #8 estilo posse | Tactics mexe nas instruções; o estilo posse é um dos alvos |
+| 8 | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato + #28/#29 estrelas | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato. As estrelas (regra de quem recebe + cores com legenda) usam as mesmas notas e estatísticas da tela |
+| 9 | 3.3 Tela Tactics | #8 estilo posse + #30 cor por posição + #31 posições estilo FM | Tactics mexe nas instruções; o estilo posse é um dos alvos. A posição detalhada (cor e aptidão por posição) é a base da escalação e das instruções |
 | 10 | 3.4 Staff | #13 nomes turcos | Etapa grande + correção pequena de dados |
 | 11 | 3.5 Base | #9 notas ≥ 8,5 no quickSim | Jovens gerados passam pelo quickSim; notas precisam estar calibradas |
 | 11b | 3.6 Aposentadoria e renascimento de craques | — | Usa a geração de jovens da Base (3.5); entra logo depois dela |
+| 11c | 3.7 Histórico do jogador | #32 | Carreira clube a clube; precisa de contratos (3.1) e aposentadoria (3.6) para ter história de verdade |
+| 11d | 3.8 Ranking de técnicos | #33 | Pontuação por títulos; base para convites de clubes maiores e seleções e um futuro multiplayer |
 | 12 | 4.1 Faltas e cartões | — | |
 | 13 | 4.2 Jogo aéreo | — | |
 | 14 | 4.3 Bolas paradas | — | |
@@ -140,6 +142,10 @@ reserva entra em campo; quickSim e motor concordam no volume de lesões.
    escolher trazê-lo de volta como um jovem de 17–19 anos na base do clube — mesmo nome/perfil, com
    uma estrela marcando a origem, nível de "promessa" (~médio aos 17), e que pode voltar a ser classe
    mundial se se desenvolver. Depende da Base (3.5) e do desenvolvimento por desempenho.
+3.7 **Histórico do jogador (#32):** clube que revelou e a carreira clube a clube — empréstimos,
+   vendas (com valores), jogos, gols, assistências, cartões, lesões e títulos.
+3.8 **Ranking de técnicos (#33):** pontuação pelos títulos conquistados; usada para convites de
+   clubes maiores e seleções (e num futuro multiplayer).
 
 **Pronto quando:** cada tela "em breve" (Staff, Stats, Tactics) está funcionando, contratos
 mudam decisões de mercado e um craque aposentado pode renascer na base do clube.
@@ -197,6 +203,14 @@ Abertos em 2026-09-25: #2 quickSim × motor em gols · #5 revisão final + smoke
 da recalibração · #6 Kane/Bellingham/Van Dijk · #7 Bundesliga × Serie A · #8 estilo posse · #9 notas
 ≥ 8,5 no quickSim · #10 compose exposto na rede local · #11 ligas de ano civil com a composição de
 2026 · #13 nomes turcos com maiúscula estranha.
+
+Abertos em 2026-09-28 (triagem de tester): #28 estrela dada a quem não deveria (Konaté) · #29
+estrelas por cor com legenda · #30 cor por posição detalhada · #31 posições estilo Football Manager
+· #32 histórico do jogador por clube · #33 ranking de técnicos.
+
+Fechados na 1.5.1 (2026-09-28): **#25** escudo do Figueirense · **#26** escudo do Athletic Club ·
+**#27** confirmação ao excluir save. A causa dos escudos era o mapa global com busca aproximada entre
+ligas em `data_process/pipeline.py`.
 
 Fechados em 2026-09-28: **#3** ruído dos `of_*` (fator de sorte único por jogador + teto suave via
 previsor de nível, em vez de ruído independente por atributo) e **#14** jovem promissor nascendo
