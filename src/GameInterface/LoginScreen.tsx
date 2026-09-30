@@ -73,7 +73,7 @@ export function LoginScreen() {
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background">
-      <PitchBackdrop />
+      <PitchBackdrop players={false} />
 
       <div className="relative w-full max-w-[280px] px-4">
         <Wordmark size="md" className="mb-7 block text-center" />

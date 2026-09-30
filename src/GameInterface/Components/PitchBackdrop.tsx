@@ -7,7 +7,7 @@ const TEAM_B = [
   [142, 80], [84, 18], [88, 112], [104, 52], [96, 84],
 ] as const;
 
-export function PitchBackdrop() {
+export function PitchBackdrop({ players = true }: { players?: boolean } = {}) {
   return (
     <svg
       viewBox="0 0 200 130"
@@ -22,12 +22,14 @@ export function PitchBackdrop() {
         <rect x={1} y={38} width={26} height={54} />
         <rect x={173} y={38} width={26} height={54} />
       </g>
+      {players && (<>
       <g className="fill-primary opacity-50">
         {TEAM_A.map(([x, y]) => <circle key={`a${x}-${y}`} cx={x} cy={y} r={2} />)}
       </g>
       <g className="fill-muted-foreground opacity-50">
         {TEAM_B.map(([x, y]) => <circle key={`b${x}-${y}`} cx={x} cy={y} r={2} />)}
       </g>
+      </>)}
     </svg>
   );
 }

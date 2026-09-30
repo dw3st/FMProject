@@ -80,7 +80,7 @@ export function StartScreen() {
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background pb-14">
-      <PitchBackdrop />
+      <PitchBackdrop players={false} />
 
       <div className="relative w-full max-w-[340px] px-4">
         <Wordmark size="md" className="mb-6 block text-center" />
