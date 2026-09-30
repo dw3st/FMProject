@@ -82,7 +82,7 @@ export function StartScreen() {
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background pb-14">
       <PitchBackdrop players={false} />
 
-      <div className="relative w-full max-w-[340px] px-4">
+      <div className="relative w-full max-w-[400px] px-4">
         <Wordmark size="md" className="mb-6 block text-center" />
 
         {atLimit ? (
@@ -98,25 +98,25 @@ export function StartScreen() {
           </a>
         )}
         {atLimit && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">{t("common.saveLimitReached")}</p>
+          <p className="mt-2 text-center text-sm text-muted-foreground">{t("common.saveLimitReached")}</p>
         )}
 
-        <p className="mb-2 mt-6 text-xs text-muted-foreground">{t("startScreen.savedGames")}</p>
+        <p className="mb-2 mt-6 text-sm text-muted-foreground">{t("startScreen.savedGames")}</p>
         {saves.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("startScreen.noSavedGames")}</p>
+          <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
           <ul className="m-0 list-none border-b border-border p-0">
             {saves.map((save) => (
               <li key={save.id} className="flex items-center gap-3 border-t border-border py-3">
                 <ClubLogo
-                  className="h-[22px] w-[22px] shrink-0 rounded-full"
+                  className="h-9 w-9 shrink-0 rounded-full"
                   logoUrl={squadLogoUrl(save.clubId)}
                   primaryColor={save.clubColors[0]}
                   secondaryColor={save.clubColors[1]}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm text-foreground">{save.clubName}</div>
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div className="truncate text-base text-foreground">{save.clubName}</div>
+                  <div className="truncate text-sm text-muted-foreground">
                     {save.leagueName} · {formatDate(save.updatedAt)}
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export function StartScreen() {
                   type="button"
                   onClick={() => handleLoad(save.id)}
                   disabled={loadingId !== null}
-                  className="h-10 cursor-pointer border-0 bg-transparent px-1 text-xs text-primary transition-colors hover:text-foreground disabled:opacity-50"
+                  className="h-10 cursor-pointer border-0 bg-transparent px-1 text-sm text-primary transition-colors hover:text-foreground disabled:opacity-50"
                 >
                   {t("startScreen.continue")}
                 </button>
@@ -144,7 +144,7 @@ export function StartScreen() {
         )}
       </div>
 
-      <div className="absolute inset-x-6 bottom-4 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="absolute inset-x-6 bottom-4 flex items-center justify-between text-sm text-muted-foreground">
         <button
           type="button"
           onClick={() => setIsSettingsOpen(true)}

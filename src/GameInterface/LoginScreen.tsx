@@ -75,12 +75,12 @@ export function LoginScreen() {
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background">
       <PitchBackdrop players={false} />
 
-      <div className="relative w-full max-w-[280px] px-4">
+      <div className="relative w-full max-w-[320px] px-4">
         <Wordmark size="md" className="mb-7 block text-center" />
 
         {stage === "email" ? (
           <form onSubmit={handleEmailSubmit}>
-            <label htmlFor="login-email" className="mb-1.5 block text-xs text-muted-foreground">
+            <label htmlFor="login-email" className="mb-1.5 block text-sm text-muted-foreground">
               {t("login.email")}
             </label>
             <input
@@ -94,18 +94,18 @@ export function LoginScreen() {
               disabled={submitting}
               className={inputClass}
             />
-            {error && <p role="alert" className="mt-1.5 text-xs text-destructive">{error}</p>}
+            {error && <p role="alert" className="mt-1.5 text-sm text-destructive">{error}</p>}
             <button type="submit" disabled={submitting} className={buttonClass}>
               {submitting ? "Sending…" : t("login.sendCode")}
             </button>
-            <p className="mt-3.5 text-center text-xs text-muted-foreground">{t("login.help")}</p>
+            <p className="mt-3.5 text-center text-sm text-muted-foreground">{t("login.help")}</p>
           </form>
         ) : (
           <form onSubmit={handleCodeSubmit}>
-            <p className="mb-3 text-center text-xs text-muted-foreground">
+            <p className="mb-3 text-center text-sm text-muted-foreground">
               {t("common.sentTo")} <span className="text-foreground">{email}</span>
             </p>
-            <label htmlFor="login-code" className="mb-1.5 block text-xs text-muted-foreground">
+            <label htmlFor="login-code" className="mb-1.5 block text-sm text-muted-foreground">
               {t("login.code")}
             </label>
             <input
@@ -122,14 +122,14 @@ export function LoginScreen() {
               disabled={submitting}
               className={`${inputClass} text-center font-mono tracking-[0.5em]`}
             />
-            {error && <p role="alert" className="mt-1.5 text-xs text-destructive">{error}</p>}
+            {error && <p role="alert" className="mt-1.5 text-sm text-destructive">{error}</p>}
             <button type="submit" disabled={submitting} className={buttonClass}>
               {submitting ? "Verifying…" : t("login.signIn")}
             </button>
             <button
               type="button"
               onClick={() => { setStage("email"); setCode(""); setError(null); }}
-              className="mt-3.5 block w-full cursor-pointer border-0 bg-transparent p-0 text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="mt-3.5 block w-full cursor-pointer border-0 bg-transparent p-0 text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {t("common.useADifferentEmail")}
             </button>
@@ -137,7 +137,7 @@ export function LoginScreen() {
         )}
       </div>
 
-      <div className="absolute bottom-4 text-xs text-muted-foreground">
+      <div className="absolute bottom-4 text-sm text-muted-foreground">
         {t("common.version", { version: CURRENT_VERSION })}
       </div>
     </div>
