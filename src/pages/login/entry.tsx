@@ -1,4 +1,4 @@
 import { createPage } from "@/createPage";
 import { LoginScreen } from "@/GameInterface/LoginScreen";
 
-createPage(LoginScreen, { public: true });
+createPage(LoginScreen, { public: true, responsive: true });

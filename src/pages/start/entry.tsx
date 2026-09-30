@@ -1,4 +1,4 @@
 import { createPage } from "@/createPage";
 import { StartScreen } from "@/GameInterface/StartScreen";
 
-createPage(StartScreen);
+createPage(StartScreen, { responsive: true });
