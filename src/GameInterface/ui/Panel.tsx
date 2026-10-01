@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 
-interface Props extends HTMLAttributes<HTMLDivElement> {
+interface Props extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Section title shown above the content. */
   title?: ReactNode;
   /** Draw a thin border (no fill, no shadow). Off by default: spacing and a title are enough. */

@@ -19,6 +19,7 @@ import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
 import { clubLineRating, clubProfileStem, reputationStars } from "@/backend/clubProfile";
 import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
+import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { authRoutes } from "@/backend/auth/routes";
 import { reportRoutes } from "@/backend/reports";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
@@ -190,6 +191,8 @@ export const apiRoutes = {
       midfield:   clubLineRating(squad.players, "Midfielder"),
       defense:    clubLineRating(squad.players, "Defender"),
       keyPlayers,
+      annualRevenue: (squad.finances?.broadcasting ?? 0) + (squad.finances?.commercial ?? 0),
+      weeklyWages:   squadWeeklyWages(squad.players, wageFactorOf(squad)),
       reputation,
       reputationLabel: reputationLabels[reputation - 1],
     });
