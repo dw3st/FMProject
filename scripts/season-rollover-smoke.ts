@@ -1087,6 +1087,32 @@ try {
       `posições: no AI XI fields an unsuitable player when a same-line alternative existed (${offenders.length} squad(s): ${offenders.slice(0, 5).join(", ")})`);
   }
 
+  // ── Base ─────────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/youth.md`: at the rollover every club gets a 3-5 player intake. The human
+  // club keeps it in `squad.youth`; AI clubs promote 1-2 into the squad (<= 30) and drop the rest.
+  console.log("\n── Base ──");
+  {
+    const youthN = humanFinal?.youth?.length ?? 0;
+    check(youthN >= 3 && youthN <= 5, `base: the human club has ${youthN} academy player(s) (3-5)`);
+    check((humanFinal?.youth ?? []).every((p) => p.age >= 16 && p.age <= 17 && !!p.contract),
+      "base: academy players are 16-17 with a contract");
+    check(!(humanFinal?.players ?? []).some((p) => p.id.startsWith("youth_")),
+      "base: no academy player entered the human first team on its own");
+    const rolledLeagues = new Set(["premier_league", "of_championship", "serie_a", "of_italian_serie_b"]);
+    const rolledAI = allFiles.filter(({ squad }) => squad.id !== playerSquadId && rolledLeagues.has(squad.leagueSlug ?? ""));
+    const withProm = rolledAI.filter(({ squad }) => squad.players.some((p) => p.id.startsWith("youth_")));
+    check(rolledAI.length > 0 && withProm.length / rolledAI.length >= 0.85,
+      `base: ${withProm.length}/${rolledAI.length} AI clubs of the rolled leagues promoted an academy player (>= 85%)`);
+    check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.youth === undefined),
+      "base: no AI club stores an academy list");
+    check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.players.length <= 30),
+      "base: no AI squad above 30 players");
+    const allIds = allFiles.flatMap(({ squad }) => [...squad.players, ...(squad.youth ?? [])].map((p) => p.id));
+    check(new Set(allIds).size === allIds.length, `base: player ids unique across the world (${allIds.length - new Set(allIds).size} dupes)`);
+    const inbox = await plain().getInbox(saveId);
+    check(inbox.some((m) => m.category === "youth" && m.kind === "intake"), "base: inbox has the intake message");
+  }
+
   await checkFiles(saveId, "end");
   const el = (performance.now() - t0) / 1000;
   console.log(`\nSummary: ${days} days (${startDate} → ${endDate}), ${el.toFixed(0)} s total, avg ${(dayMsTotal / days).toFixed(0)} ms/day, `
