@@ -1,5 +1,5 @@
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave, CustomFormation } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { SaveMeta, SaveDatabase, SaveManager } from "@/backend/SaveService";
@@ -157,7 +157,8 @@ export async function updateSaveTacticalStyle(
   const res = await fetch(`/api/saves/${saveId}/tactics`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ tactical_style }),
+    // Picking a style fills the four axes again: any per-axis edit is dropped.
+    body: JSON.stringify({ tactical_style, axesOverride: {} }),
   });
   if (!res.ok) throw new Error("Failed to update tactics");
   const saved = await res.json() as TacticsSave;
@@ -174,7 +175,12 @@ export async function updateSaveTacticalStyle(
 /** Persist formation + tactical style + lineup to the tactics file and update session. */
 export async function saveFormationAndTactics(
   saveId: string,
-  config: { formation: string; tactical_style: TacticalStyle; lineup?: string[] },
+  config: {
+    formation: string;
+    tactical_style: TacticalStyle;
+    lineup?: string[];
+    customFormation?: CustomFormation;
+  },
 ): Promise<GameSession> {
   const res = await fetch(`/api/saves/${saveId}/tactics`, {
     method: "PUT",

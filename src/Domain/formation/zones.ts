@@ -125,18 +125,21 @@ export function customToFormation(custom: CustomFormation): Formation {
   return { id: CUSTOM_FORMATION_ID, attacking, defending };
 }
 
-/** Seed a custom formation from a ready-made one (each slot snapped to the nearest free zone). */
+/** Snaps each slot of a ready-made formation to the nearest free zone, keeping the slot order. */
+export function snapToZones(attacking: readonly { role: string; x: number; y: number }[]): CustomFormationSlot[] {
+  const used = new Set<string>();
+  return attacking.map((s) => {
+    const z = nearestZone(s.x, s.y, used)!;
+    used.add(`${z.row}:${z.col}`);
+    return slotForZone(z.row, z.col)!;
+  });
+}
+
+/** Seed a custom formation from a ready-made one (slots in canonical order). */
 export function customFromFormation(f: {
   attacking: readonly { role: string; x: number; y: number }[];
 }): CustomFormation {
-  const used = new Set<string>();
-  const slots: CustomFormationSlot[] = [];
-  for (const s of f.attacking) {
-    const z = nearestZone(s.x, s.y, used)!;
-    used.add(`${z.row}:${z.col}`);
-    slots.push(slotForZone(z.row, z.col)!);
-  }
-  return { slots: sortCustomSlots(slots) };
+  return { slots: sortCustomSlots(snapToZones(f.attacking)) };
 }
 
 function fromZones(zones: [number, number][]): CustomFormation {

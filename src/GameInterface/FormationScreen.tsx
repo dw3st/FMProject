@@ -1,13 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { updateSaveFormation, updateSaveTacticalStyle, saveFormationAndTactics } from "@/GameInterface/gameSession";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { getFormationSlots } from "@/types/formationSlots";
-import type { FormationSlot } from "@/types/formationSlots";
+import type { FormationSlot, FormationShape } from "@/types/formationSlots";
+import { PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
+import { useDragDrop, DragGhost } from "@/GameInterface/Components/useDragDrop";
+import type { DragSource, DropTarget } from "@/GameInterface/Components/useDragDrop";
+import { dropOnLineup } from "@/Domain/formation/lineupDrop";
+import {
+  CUSTOM_FORMATION_ID,
+  ZONE_COLS,
+  ZONE_ROWS,
+  customShape,
+  customToFormation,
+  slotForZone,
+  snapToZones,
+  validateCustomFormation,
+  zoneCenter,
+  zoneRole,
+} from "@/Domain/formation/zones";
 import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
-import { TACTICAL_STYLE_OPTIONS, DEFAULT_TACTICAL_STYLE, getTacticalStyleMeta } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
+import {
+  TACTICAL_STYLE_OPTIONS,
+  DEFAULT_TACTICAL_STYLE,
+  getTacticalStyleMeta,
+  axesFor,
+  effectiveAxes,
+  hasAxesOverride,
+} from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { aptitudeFor, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
@@ -61,8 +84,13 @@ export function FormationScreen() {
   const { t } = useTranslation();
   const { session, squad, loading: saveLoading, mergeSession, currentDate } = useGameSave();
   const [formations, setFormations] = useState<FormationOption[]>([]);
-  const [slots, setSlots] = useState<FormationSlot[]>([]);
-  const [lineup, setLineup] = useState<string[]>([]);
+  const [baseSlots, setSlots] = useState<FormationSlot[]>([]);
+  const [attacking, setAttacking] = useState<{ role: string; x: number; y: number }[]>([]);
+  const [savedLineup, setSavedLineup] = useState<string[]>([]);
+  const [customFormation, setCustomFormation] = useState<CustomFormation | null>(null);
+  const [axesOverride, setAxesOverride] = useState<Partial<TacticalAxes> | undefined>(undefined);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<{ slot: CustomFormationSlot; playerId: string }[] | null>(null);
   const [assistantRotation, setAssistantRotation] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [tacticsUpdating, setTacticsUpdating] = useState(false);
@@ -72,6 +100,25 @@ export function FormationScreen() {
   const [lineupReady, setLineupReady] = useState(false);
 
   const formationId = session?.formation ?? DEFAULT_FORMATION;
+
+  // While editing the formation the pitch and the lineup come from the draft.
+  const draftSlots = useMemo(
+    () =>
+      draft
+        ? getFormationSlots({ id: "draft", attacking: draft.map((d) => d.slot) } as FormationShape)
+        : null,
+    [draft],
+  );
+  const slots = editing && draftSlots ? draftSlots : baseSlots;
+  const lineup = editing && draft ? draft.map((d) => d.playerId) : savedLineup;
+  const validation = editing && draft ? validateCustomFormation(draft.map((d) => d.slot)) : null;
+
+  function setLineup(next: string[]) {
+    if (editing && draft) setDraft(draft.map((d, i) => ({ ...d, playerId: next[i] ?? "" })));
+    else setSavedLineup(next);
+  }
+
+  const { drag, dragProps, consumeClick } = useDragDrop(handleDrop);
 
   useEffect(() => {
     if (!saveLoading && !session) {
@@ -85,7 +132,9 @@ export function FormationScreen() {
     fetch(`/api/saves/${saveId}/tactics`)
       .then((r) => r.json())
       .then((t: TacticsSave) => {
-        if (t.lineup?.length) setLineup(t.lineup);
+        if (t.lineup?.length) setSavedLineup(t.lineup);
+        setCustomFormation(t.customFormation ?? null);
+        setAxesOverride(t.axesOverride);
         setAssistantRotation(t.assistantRotation === true);
         mergeSession({
           formation: t.formation,
@@ -98,9 +147,9 @@ export function FormationScreen() {
 
   // Auto-fill lineup when no saved lineup exists and both slots and squad are available.
   useEffect(() => {
-    if (!lineupReady || !squad || slots.length === 0 || lineup.length > 0) return;
-    setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
-  }, [lineupReady, slots, squad, lineup.length, currentDate]);
+    if (!lineupReady || !squad || baseSlots.length === 0 || savedLineup.length > 0) return;
+    setSavedLineup(autoFillLineupWithFitness(baseSlots, squad.players, currentDate));
+  }, [lineupReady, baseSlots, squad, savedLineup.length, currentDate]);
 
   useEffect(() => {
     fetch("/api/formations")
@@ -111,13 +160,21 @@ export function FormationScreen() {
 
   useEffect(() => {
     if (!formationId) return;
+    if (formationId === CUSTOM_FORMATION_ID) {
+      if (!customFormation) return;
+      const f = customToFormation(customFormation);
+      setAttacking(f.attacking);
+      setSlots(getFormationSlots(f as unknown as FormationShape));
+      return;
+    }
     fetch(`/api/formations/${formationId}`)
       .then((r) => r.json())
       .then((data: { id: string; attacking: { role: string; x: number; y: number }[] }) => {
+        setAttacking(data.attacking);
         setSlots(getFormationSlots(data));
       })
       .catch(() => setSlots([]));
-  }, [formationId]);
+  }, [formationId, customFormation]);
 
   useEffect(() => {
     if (selectedSlotIdx === null) return;
@@ -143,13 +200,108 @@ export function FormationScreen() {
   }
 
   async function handleStyleChange(style: TacticalStyle) {
-    if (!session || tacticsUpdating || session.tactical_style === style) return;
+    if (!session || tacticsUpdating) return;
+    if (session.tactical_style === style && !hasAxesOverride(style, axesOverride)) return;
     setTacticsUpdating(true);
     try {
       const updated = await updateSaveTacticalStyle(session.saveId, style);
+      setAxesOverride(undefined);
       mergeSession(updated);
     } finally {
       setTacticsUpdating(false);
+    }
+  }
+
+  /** Edits one axis on top of the style; going back to the style's own value drops the override. */
+  async function handleAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {
+    if (!session) return;
+    const style = session.tactical_style ?? DEFAULT_TACTICAL_STYLE;
+    const next: Partial<TacticalAxes> = { ...axesOverride, [key]: value };
+    if (axesFor(style)[key] === value) delete next[key];
+    const nextOrUndefined = Object.keys(next).length ? next : undefined;
+    const prev = axesOverride;
+    setAxesOverride(nextOrUndefined);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ axesOverride: nextOrUndefined ?? {} }),
+      });
+      if (!res.ok) setAxesOverride(prev);
+    } catch {
+      setAxesOverride(prev);
+    }
+  }
+
+  // ── Formation editor (zone grid) ───────────────────────────────────────────
+
+  function startEditing() {
+    if (!squad) return;
+    const base: CustomFormationSlot[] =
+      formationId === CUSTOM_FORMATION_ID && customFormation ? customFormation.slots : snapToZones(attacking);
+    if (base.length !== 11) return;
+    setDraft(base.map((slot, i) => ({ slot, playerId: savedLineup[i] ?? "" })));
+    setEditing(true);
+    setSelectedSlotIdx(null);
+  }
+
+  function cancelEditing() {
+    setEditing(false);
+    setDraft(null);
+    setSelectedSlotIdx(null);
+  }
+
+  function moveDraftSlot(index: number, row: number, col: number) {
+    if (!draft) return;
+    const target = slotForZone(row, col);
+    if (!target || index < 0 || index >= draft.length) return;
+    const taken = draft.some((d, i) => i !== index && d.slot.x === target.x && d.slot.y === target.y);
+    if (taken) return;
+    setDraft(draft.map((d, i) => (i === index ? { ...d, slot: target } : d)));
+  }
+
+  async function applyEditing() {
+    if (!draft || !session || validation?.ok !== true || saveStatus === "saving") return;
+    // Canonical slot order (goalkeeper first, then depth, then left to right); the lineup follows.
+    const sorted = [...draft].sort((a, b) => a.slot.x - b.slot.x || a.slot.y - b.slot.y);
+    const custom: CustomFormation = { slots: sorted.map((d) => d.slot) };
+    const ids = sorted.map((d) => d.playerId);
+    setSaveStatus("saving");
+    try {
+      const updated = await saveFormationAndTactics(session.saveId, {
+        formation: CUSTOM_FORMATION_ID,
+        tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        lineup: ids,
+        customFormation: custom,
+      });
+      mergeSession(updated);
+      setCustomFormation(custom);
+      setSavedLineup(ids);
+      setEditing(false);
+      setDraft(null);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch {
+      setSaveStatus("idle");
+    }
+  }
+
+  // ── Drag and drop ──────────────────────────────────────────────────────────
+
+  function handleDrop(source: DragSource, target: DropTarget) {
+    if (target.kind === "zone") {
+      if (editing && source.kind === "slot") moveDraftSlot(Number(source.key), target.row, target.col);
+      return;
+    }
+    const from = source.kind === "slot" ? { kind: "slot" as const, index: Number(source.key) } : { kind: "bench" as const, playerId: source.key };
+    const to = target.kind === "slot" ? { kind: "slot" as const, index: target.index } : { kind: "bench" as const, playerId: target.playerId };
+    const next = dropOnLineup(lineup, from, to, (id) => {
+      const p = squad?.players.find((x) => x.id === id);
+      return p ? isInjured(p, currentDate) : false;
+    });
+    if (next) {
+      setLineup(next);
+      setSelectedSlotIdx(null);
     }
   }
 
@@ -169,7 +321,7 @@ export function FormationScreen() {
   }
 
   function handleAutoFill() {
-    if (!squad || slots.length === 0) return;
+    if (!squad || slots.length === 0 || editing) return;
     setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
     setSelectedSlotIdx(null);
   }
@@ -187,7 +339,7 @@ export function FormationScreen() {
         lineup:         toSave,
       });
       mergeSession(updated);
-      setLineup(toSave);
+      setSavedLineup(toSave);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch {
@@ -196,6 +348,7 @@ export function FormationScreen() {
   }
 
   function handleSlotClick(slotIdx: number) {
+    if (consumeClick()) return;
     if (selectedSlotIdx === null) {
       setSelectedSlotIdx(slotIdx);
       setBenchTab("bench");
@@ -214,6 +367,7 @@ export function FormationScreen() {
   }
 
   function handleAssignPlayer(player: RosterPlayer) {
+    if (consumeClick()) return;
     if (selectedSlotIdx === null) return;
     if (isInjured(player, currentDate)) return;
     const newLineup = [...lineup];
@@ -231,10 +385,27 @@ export function FormationScreen() {
 
   const activeStyle: TacticalStyle = session?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
 
-  const parts = formationId.split("-").map(Number);
+  const shapeLabel =
+    editing && draft
+      ? customShape(draft.map((d) => d.slot))
+      : formationId === CUSTOM_FORMATION_ID && customFormation
+        ? customShape(customFormation.slots)
+        : formationId;
+  const parts = shapeLabel.split("-").map(Number);
   const defenders = parts[0] ?? 0;
   const forwards = parts[parts.length - 1] ?? 0;
   const midfielders = parts.slice(1, -1).reduce((a, b) => a + b, 0);
+  const dropHover = drag?.over ?? null;
+  const occupiedZones = new Set(
+    (draft ?? []).map((d) => {
+      for (let r = 0; r < ZONE_ROWS; r++)
+        for (let c = 0; c < ZONE_COLS; c++) {
+          const z = zoneCenter(r, c);
+          if (z.x === d.slot.x && z.y === d.slot.y) return `${r}:${c}`;
+        }
+      return "";
+    }),
+  );
 
   const startingBySlot = squad ? buildSlotAlignedLineup(squad.players, lineup) : Array<RosterPlayer | undefined>(11).fill(undefined);
   const usedInXi = new Set(
@@ -275,7 +446,7 @@ export function FormationScreen() {
                 <button
                   type="button"
                   onClick={handleAutoFill}
-                  disabled={!squad || slots.length === 0}
+                  disabled={!squad || slots.length === 0 || editing}
                   className="flex items-center gap-2 py-3 px-4 rounded-md bg-secondary text-foreground font-bold text-sm uppercase tracking-[0.08em] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-transform border border-border/50 hover:border-primary/40 hover:bg-primary/10 font-display"
                 >
                   <Icon name="staff" className="w-4 h-4" />
@@ -284,7 +455,7 @@ export function FormationScreen() {
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saveStatus === "saving" || !session}
+                  disabled={saveStatus === "saving" || !session || editing}
                   className="flex items-center gap-2 h-10 px-6 rounded bg-primary text-primary-foreground font-semibold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-0"
                 >
                   <Icon name="save" className="w-4 h-4" />
@@ -335,10 +506,39 @@ export function FormationScreen() {
                 {formations.length === 0 && (
                   <p className="text-muted-foreground text-sm py-4 text-center m-0">{t("formations.noFormations")}</p>
                 )}
+                {customFormation && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectFormation(CUSTOM_FORMATION_ID)}
+                    disabled={updating || editing}
+                    className={`mt-2 w-full rounded border px-3 py-1.5 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed ${
+                      formationId === CUSTOM_FORMATION_ID
+                        ? "border-primary text-primary"
+                        : "border-border text-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {t("formations.custom")} {customShape(customFormation.slots)}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={editing ? cancelEditing : startEditing}
+                  disabled={!squad || attacking.length === 0}
+                  className="mt-3 w-full rounded border border-border px-3 py-1.5 text-sm font-semibold text-foreground hover:border-primary/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Icon name="formation" className="w-4 h-4" />
+                    {editing ? t("formations.editor.cancel") : t("formations.editor.edit")}
+                  </span>
+                </button>
 
                 <div className="mt-6 pt-4 border-t border-border/30">
                   <h4 className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-2 font-display font-bold">{t("formations.formationInfo")}</h4>
                   <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("formations.title")}</span>
+                      <span className="font-bold text-foreground">{shapeLabel}</span>
+                    </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("roles.groups.Defender")}</span>
                       <span className="font-bold text-foreground">{defenders}</span>
@@ -363,9 +563,44 @@ export function FormationScreen() {
 
             {/* Pitch Preview */}
             <div className="lg:col-span-6">
+              {editing && (
+                <div className="mb-3 rounded-md border border-primary/50 p-3 flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-48">
+                    <p className="font-display font-black uppercase text-base leading-none m-0">
+                      {t("formations.editor.title")} · {shapeLabel}
+                    </p>
+                    <p className={`text-sm m-0 mt-1 ${validation && !validation.ok ? "text-destructive" : "text-muted-foreground"}`}>
+                      {validation && !validation.ok
+                        ? t(`formations.editor.invalid.${validation.reason}` as never)
+                        : t("formations.editor.hint")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="text-sm text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+                  >
+                    {t("formations.editor.cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyEditing}
+                    disabled={validation?.ok !== true || saveStatus === "saving"}
+                    title={validation && !validation.ok ? t(`formations.editor.invalid.${validation.reason}` as never) : undefined}
+                    className="flex items-center gap-2 h-10 px-5 rounded bg-primary text-primary-foreground font-semibold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-0"
+                  >
+                    <Icon name="save" className="w-4 h-4" />
+                    {t("formations.editor.apply")}
+                  </button>
+                </div>
+              )}
               <FormationPitch
                 slots={slots}
-                formationId={formationId}
+                formationId={formationId === CUSTOM_FORMATION_ID ? `${t("formations.custom")} ${shapeLabel}` : formationId}
+                editing={editing}
+                occupiedZones={occupiedZones}
+                dragProps={dragProps}
+                dropHover={dropHover}
                 players={startingBySlot}
                 selectedSlotIdx={selectedSlotIdx}
                 onSlotClick={handleSlotClick}
@@ -421,6 +656,11 @@ export function FormationScreen() {
                           slotLabel={slots[idx]?.role}
                           ratingRole={slots[idx]?.role}
                           showSlot
+                          rowProps={{
+                            "data-drop": `slot:${idx}`,
+                            ...dragProps({ kind: "slot", key: String(idx) }, player.name),
+                          }}
+                          dropHover={dropHover === `slot:${idx}`}
                           selected={selectedSlotIdx === idx}
                           outOfPosition={slots[idx] ? isPoorFit(aptitudeFor(player, slots[idx]!.role)) : false}
                           aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
@@ -431,9 +671,12 @@ export function FormationScreen() {
                         <button
                           key={`empty-slot-${idx}`}
                           type="button"
+                          data-drop={`slot:${idx}`}
                           onClick={() => handleSlotClick(idx)}
                           className={`flex w-full items-center gap-2 p-2 rounded-lg border text-left transition-colors cursor-pointer border-dashed ${
-                            selectedSlotIdx === idx
+                            dropHover === `slot:${idx}`
+                              ? "bg-primary/20 border-primary"
+                              : selectedSlotIdx === idx
                               ? "bg-primary/20 border-primary/50"
                               : "bg-muted/20 border-border/50 hover:bg-muted/40"
                           }`}
@@ -456,6 +699,11 @@ export function FormationScreen() {
                             key={player.id}
                             player={player}
                             ratingRole={targetSlotRole}
+                            rowProps={{
+                              "data-drop": `bench:${player.id}`,
+                              ...(injured ? {} : dragProps({ kind: "bench", key: player.id }, player.name)),
+                            }}
+                            dropHover={dropHover === `bench:${player.id}`}
                             onClick={selectedSlotIdx !== null && !injured ? () => handleAssignPlayer(player) : undefined}
                             highlight={selectedSlotIdx !== null && !injured}
                             injured={injured}
@@ -546,10 +794,73 @@ export function FormationScreen() {
               })}
             </div>
           </div>
+
+          {/* Team instructions (the four axes) */}
+          <div className="rounded-md border border-border p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+              <h3 className="font-display font-black uppercase text-xl leading-none m-0">
+                {t("tactics.axes.title")}
+              </h3>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-primary font-semibold">
+                  {hasAxesOverride(activeStyle, axesOverride)
+                    ? t("tactics.axes.custom", { style: getTacticalStyleMeta(activeStyle, t as never).label })
+                    : getTacticalStyleMeta(activeStyle, t as never).label}
+                </span>
+                {hasAxesOverride(activeStyle, axesOverride) && (
+                  <button
+                    type="button"
+                    onClick={() => handleStyleChange(activeStyle)}
+                    disabled={tacticsUpdating}
+                    className="text-sm text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+                  >
+                    {t("tactics.axes.reset")}
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground m-0 mb-4">{t("tactics.axes.hint")}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {AXIS_CHOICES.map((axis) => {
+                const current = effectiveAxes(activeStyle, axesOverride)[axis.key];
+                return (
+                  <div key={axis.key}>
+                    <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground m-0 mb-2">
+                      {t(`tactics.axes.${axis.key}` as never)}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {axis.values.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => handleAxis(axis.key, v as never)}
+                          className={`rounded border px-3 py-1.5 text-sm cursor-pointer bg-transparent ${
+                            current === v
+                              ? "border-primary text-primary"
+                              : "border-border text-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          {t(`tactics.axes.values.${v}` as never)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
+        <DragGhost drag={drag} />
     </main>
   );
 }
+
+const AXIS_CHOICES: { key: keyof TacticalAxes; values: string[] }[] = [
+  { key: "pressing_style", values: ["low_block", "mid_block", "high_press"] },
+  { key: "defensive_line", values: ["deep", "normal", "high"] },
+  { key: "width", values: ["narrow", "normal", "wide"] },
+  { key: "build_up", values: ["direct", "balanced", "possession"] },
+];
 
 function SquadPlayerRow({
   player,
@@ -562,7 +873,12 @@ function SquadPlayerRow({
   aptitude,
   onClick,
   injured,
+  rowProps,
+  dropHover,
 }: {
+  rowProps?: Record<string, unknown>;
+  /** A dragged item is hovering over this row. */
+  dropHover?: boolean;
   player: RosterPlayer;
   slotLabel?: string;
   /** Role used for weighted rating (formation slot). Falls back to slotLabel then primary position. */
@@ -591,24 +907,27 @@ function SquadPlayerRow({
 
   return (
     <div
-      className={`flex items-center gap-2 ${onClick ? "cursor-pointer" : injured ? "opacity-60 cursor-not-allowed" : ""}`}
+      className={`flex items-center gap-2 select-none ${onClick ? "cursor-pointer" : injured ? "opacity-60 cursor-not-allowed" : ""}`}
       onClick={onClick}
+      {...rowProps}
     >
       {(showSlot && slotLabel) ? (
-        <div className="flex items-center justify-center shrink-0">
+        <div className="flex items-center justify-center shrink-0 touch-none" data-drag-handle>
           <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
             {MAIN_ROLE_ABBR[mainRole]}
           </span>
         </div>
       ) : (
-        <div className="shrink-0">
+        <div className="shrink-0 touch-none" data-drag-handle>
           <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
             {MAIN_ROLE_ABBR[mainRole]}
           </span>
         </div>
       )}
       <div className={`flex-1 flex items-center gap-3 p-2 rounded-lg border transition-colors ${
-        highlight
+        dropHover
+          ? "bg-primary/20 border-primary"
+          : highlight
           ? "bg-primary/10 border-primary/40 hover:bg-primary/20"
           : selected
           ? "bg-primary/20 border-primary/50"
@@ -671,7 +990,16 @@ function FormationPitch({
   selectedSlotIdx,
   onSlotClick,
   getOutOfPosition,
+  editing,
+  occupiedZones,
+  dragProps,
+  dropHover,
 }: {
+  editing?: boolean;
+  /** "row:col" of the zones already used by a position (edit mode). */
+  occupiedZones?: Set<string>;
+  dragProps: (source: DragSource, label: string) => Record<string, unknown>;
+  dropHover?: string | null;
   slots: FormationSlot[];
   formationId: string;
   /** One entry per slot index; undefined = empty slot. */
@@ -708,6 +1036,28 @@ function FormationPitch({
           </svg>
         </div>
 
+        {editing &&
+          Array.from({ length: ZONE_ROWS }).flatMap((_, row) =>
+            Array.from({ length: ZONE_COLS }).map((__, col) => {
+              const role = zoneRole(row, col);
+              if (!role || occupiedZones?.has(`${row}:${col}`)) return null;
+              const c = zoneCenter(row, col);
+              const key = `zone:${row}:${col}`;
+              return (
+                <div
+                  key={key}
+                  data-drop={key}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-dashed flex items-center justify-center text-[13px] font-semibold ${
+                    dropHover === key ? "border-primary bg-primary/30 text-primary" : "border-white/40 text-white/60"
+                  }`}
+                  style={{ left: `${(c.y / PITCH_WIDTH) * 100}%`, top: `${100 - (c.x / PITCH_LENGTH) * 100}%` }}
+                >
+                  {role}
+                </div>
+              );
+            }),
+          )}
+
         {slots.map((slot, i) => {
           // slot.y is already a top offset with the attack end at the top (see getFormationSlots).
           // Inverting it drew the keeper at the top, so the team attacked downward and its left
@@ -743,8 +1093,13 @@ function FormationPitch({
             >
               <button
                 onClick={() => onSlotClick(i)}
-                className={`w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer border-0 ${
-                  isSelected
+                data-drop={`slot:${i}`}
+                data-pitch-marker
+                {...dragProps({ kind: "slot", key: String(i) }, player ? player.name : slot.role)}
+                className={`w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer select-none touch-none border-0 ${
+                  dropHover === `slot:${i}`
+                    ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                    : isSelected
                     ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
                     : "bg-primary/80 hover:bg-primary border-2 border-primary/50"
                 }`}
