@@ -27,6 +27,11 @@ export interface LedgerEntry {
     stage?: string;
     opponentId?: string;
     playerId?: string;
+    /** League prize: final table position (1-based). */
+    position?: number;
+    /** Transfers: the other club's name. */
+    clubName?: string;
+    playerName?: string;
   };
 }
 
