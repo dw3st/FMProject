@@ -19,6 +19,7 @@ import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/type
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
+import { initialStaff } from "@/Domain/staff/staff";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
@@ -745,6 +746,9 @@ export class SaveService {
         const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
         squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
         squad.wageRevenueBasis = wageRevenueBasis;
+        // Only the human club simulates staff (`.claude/rules/game/staff.md`): three professionals
+        // near its implicit tier rating, generated from the save id.
+        if (isPlayerClub) squad.staff = initialStaff(id, squad);
         // Every player starts with a fixed-wage contract ending on his league's season end
         // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
         const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end

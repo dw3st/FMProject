@@ -1,6 +1,7 @@
 import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { squadStaffWages } from "@/Domain/staff/staff";
 import type { Squad } from "@/types/playerTypes";
 
 /** Operational cost, as a share of annual revenue, charged weekly (`OPERATIONAL_COST_SHARE × wageRevenueBasisOf(squad) / 52`). */
@@ -50,6 +51,10 @@ export function computeAdvanceDayMoney(args: {
     entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
     entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });
     entries.push({ date: currentDate, kind: "operational", amount: -weeklyOperational, label: "Operational costs" });
+    const weeklyStaff = squadStaffWages(playerSquad.staff, wageFactorOf(playerSquad));
+    if (weeklyStaff > 0) {
+      entries.push({ date: currentDate, kind: "staff", amount: -weeklyStaff, label: "Technical staff" });
+    }
   }
 
   const capacity = playerSquad.venue?.capacity ?? 0;

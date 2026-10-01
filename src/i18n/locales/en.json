@@ -303,6 +303,36 @@
     "returnToMenu": "Return to Menu",
     "findNewClub": "Find New Club"
   },
+  "staff": {
+    "title": "Technical staff",
+    "subtitle": "Three professionals shape development, recovery and scouting.",
+    "loading": "Loading staff...",
+    "loadFailed": "Could not load the staff.",
+    "rating": "Rating",
+    "weeklyWage": "{{wage}}/wk",
+    "weeklyTotal": "Weekly staff bill",
+    "age": "{{age}} yrs",
+    "vacant": "Vacant",
+    "vacantEffect": "No one in the role: it counts as rating 3.",
+    "fire": "Dismiss",
+    "fireConfirmTitle": "Dismiss {{name}}?",
+    "fireConfirmBody": "The role stays vacant until you hire someone else.",
+    "hire": "Hire",
+    "hired": "Hired",
+    "market": "Market",
+    "marketSubtitle": "Five candidates per role. The list renews every Monday.",
+    "hireFailed": "Could not complete the hire.",
+    "roles": {
+      "assistant": "Assistant coach",
+      "fitness": "Fitness coach",
+      "scout": "Chief scout"
+    },
+    "effects": {
+      "assistant": "Development points x{{mult}}",
+      "fitness": "Recovery x{{recovery}}, injury risk x{{injury}}",
+      "scout": "Scouting uncertainty +/-{{noise}}"
+    }
+  },
   "comingSoon": {
     "comingSoonTitle": "Coming Soon",
     "comingSoon": "Coming Soon",
@@ -1572,6 +1602,7 @@
     "expenses": "Expenses",
     "playerSalaries": "Player Salaries",
     "weekly": "/wk",
+    "staffSalaries": "Technical Staff",
     "operational": "Operational",
     "transfersOut": "Transfers Out",
     "playerPurchases": "player purchases",
@@ -1611,6 +1642,7 @@
       "broadcasting": "Broadcasting revenue",
       "commercial": "Weekly commercial revenue",
       "wages": "Weekly wages",
+      "staff": "Technical staff",
       "operational": "Operational costs",
       "gate": "Gate: {{competition}}",
       "leaguePrize": "{{competition}} prize: position {{position}}",

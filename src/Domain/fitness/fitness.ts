@@ -35,10 +35,11 @@ export function staminaRecoveryFactor(stamina: number): number {
  */
 export function recoverDay(
   fitness: number,
-  p: { age: number; load: number; stamina: number },
+  p: { age: number; load: number; stamina: number; recoveryMult?: number },
 ): number {
   const rate =
     FITNESS.RECOVERY_BASE *
+    (p.recoveryMult ?? 1) *
     ageRecoveryFactor(p.age) *
     loadRecoveryFactor(p.load) *
     staminaRecoveryFactor(p.stamina);
@@ -89,7 +90,7 @@ export function postMatchFitness(endEnergy: number): number {
  */
 export function applyMatchFitness(
   log: Pick<PlayerSeasonLog, "fitness" | "load">,
-  player: { age: number; stamina: number },
+  player: { age: number; stamina: number; recoveryMult?: number },
   appearance: { endEnergy: number | undefined; minutes: number } | undefined,
 ): { fitness: number; load: number } {
   if (appearance) {
@@ -105,6 +106,7 @@ export function applyMatchFitness(
     age: player.age,
     load: preDecayLoad,
     stamina: player.stamina,
+    ...(player.recoveryMult !== undefined ? { recoveryMult: player.recoveryMult } : {}),
   });
   return {
     fitness: Math.min(100, Math.max(0, +recovered.toFixed(1))),

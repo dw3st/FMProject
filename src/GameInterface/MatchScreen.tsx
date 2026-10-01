@@ -19,6 +19,7 @@ import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { isInjured } from "@/Domain/injury/injury";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
@@ -255,6 +256,10 @@ export function MatchScreen() {
             data.oppFormation,
             data.myLineup,
             oppLineup,
+            {
+              A: staffEffectsOf(data.mySquad).injuryMult,
+              ...(data.opponentSquad ? { B: staffEffectsOf(data.opponentSquad).injuryMult } : {}),
+            },
           ),
           knockout: data.fixture.knockout === true,
           ...(data.fixture.aggregate

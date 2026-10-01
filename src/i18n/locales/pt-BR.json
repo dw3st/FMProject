@@ -303,6 +303,36 @@
     "returnToMenu": "Voltar ao Menu",
     "findNewClub": "Encontrar Novo Clube"
   },
+  "staff": {
+    "title": "Equipe técnica",
+    "subtitle": "Três profissionais definem desenvolvimento, recuperação e observação.",
+    "loading": "Carregando equipe...",
+    "loadFailed": "Não foi possível carregar a equipe.",
+    "rating": "Nota",
+    "weeklyWage": "{{wage}}/sem",
+    "weeklyTotal": "Folha semanal da equipe",
+    "age": "{{age}} anos",
+    "vacant": "Vaga aberta",
+    "vacantEffect": "Sem ninguém na função: vale como nota 3.",
+    "fire": "Demitir",
+    "fireConfirmTitle": "Demitir {{name}}?",
+    "fireConfirmBody": "A função fica vaga até você contratar outro profissional.",
+    "hire": "Contratar",
+    "hired": "Contratado",
+    "market": "Mercado",
+    "marketSubtitle": "Cinco candidatos por função. A lista renova toda segunda-feira.",
+    "hireFailed": "Não foi possível concluir a contratação.",
+    "roles": {
+      "assistant": "Auxiliar técnico",
+      "fitness": "Preparador físico",
+      "scout": "Olheiro-chefe"
+    },
+    "effects": {
+      "assistant": "Pontos de desenvolvimento x{{mult}}",
+      "fitness": "Recuperação x{{recovery}}, risco de lesão x{{injury}}",
+      "scout": "Incerteza de observação +/-{{noise}}"
+    }
+  },
   "comingSoon": {
     "comingSoonTitle": "Em Breve",
     "comingSoon": "Em Breve",
@@ -1572,6 +1602,7 @@
     "expenses": "Despesas",
     "playerSalaries": "Salários de Jogadores",
     "weekly": "/sem",
+    "staffSalaries": "Equipe Técnica",
     "operational": "Operacional",
     "transfersOut": "Transferências Realizadas",
     "playerPurchases": "compras de jogadores",
@@ -1611,6 +1642,7 @@
       "broadcasting": "Receita de TV",
       "commercial": "Receita comercial semanal",
       "wages": "Salários da semana",
+      "staff": "Equipe técnica",
       "operational": "Custos operacionais",
       "gate": "Bilheteria: {{competition}}",
       "leaguePrize": "Prêmio {{competition}}: {{position}}º lugar",
