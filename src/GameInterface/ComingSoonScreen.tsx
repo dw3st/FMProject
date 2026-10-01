@@ -6,7 +6,6 @@ const getPageMeta = (t: any): Record<string, { title: string; description: strin
   tactics:   { title: t("comingSoon.tactics"), description: t("comingSoon.tacticsDesc") },
   formation: { title: t("comingSoon.formation"), description: t("comingSoon.formationDesc") },
   finances:  { title: t("comingSoon.finances"), description: t("comingSoon.financesDesc") },
-  staff:     { title: t("comingSoon.staff"), description: t("comingSoon.staffDesc") },
   stats:     { title: t("comingSoon.stats"), description: t("comingSoon.statsDesc") },
 });
 
