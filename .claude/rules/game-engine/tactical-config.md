@@ -108,7 +108,7 @@ Positive weights (PROGRESS + LANE + SPACE + GOAL) sum to exactly **1.0** per sty
 
 | Style      | CLEARANCE_WEIGHT | PROGRESS_WEIGHT | ANGLE_WEIGHT | CROWD_PENALTY_WEIGHT | MIN_TOTAL_SCORE |
 |------------|-----------------|-----------------|--------------|---------------------|----------------|
-| possession | 0.50            | 0.15            | 0.15         | 0.45                | 0.55           |
+| possession | 0.90            | 0.15            | 0.10         | 0.45                | 0.55           |
 | balanced   | defaults        | defaults        | defaults     | defaults            | defaults       |
 | direct     | 0.25            | 0.50            | 0.15         | 0.15                | 0.35           |
 

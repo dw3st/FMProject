@@ -192,11 +192,11 @@ export function NewGameWizard() {
 
   if (step === "manager") {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-        <PitchBackdrop players={false} />
-        <div className="relative flex min-h-screen flex-col items-center px-6 py-8">
-          <Wordmark size="lg" className="mb-10 block text-center" />
-          <div className="w-full max-w-4xl">
+      <div className="flex min-h-screen flex-col items-center bg-background px-6 pt-8 text-foreground">
+        <Wordmark size="lg" className="mb-6 block text-center" />
+        <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden pb-8">
+          <PitchBackdrop players={false} />
+          <div className="relative w-full max-w-[1000px] rounded-lg border border-border bg-background/90 p-6 md:p-8">
             <ManagerForm
               initial={manager}
               onCancel={() => {
@@ -263,9 +263,10 @@ export function NewGameWizard() {
   );
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-background text-foreground">
+    <div className="min-h-screen flex flex-col items-center bg-background px-4 py-6 text-foreground">
+      <Wordmark size="lg" className="mb-6 block text-center" />
+      <div className="flex w-full max-w-[1200px] flex-1 flex-col md:flex-row min-h-0 md:h-[calc(100vh-9rem)] overflow-hidden rounded-lg border border-border bg-background/90">
       <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
-        <Wordmark size="sm" className="mb-4 block" />
         <button
           type="button"
           onClick={() => setCountriesOpen((o) => !o)}
@@ -372,6 +373,7 @@ export function NewGameWizard() {
           </div>
         </aside>
       </main>
+      </div>
     </div>
   );
 }
@@ -479,7 +481,7 @@ function ManagerForm({
   }, [initial]);
 
   return (
-    <div className="pb-24">
+    <div>
       <p className="text-sm text-muted-foreground m-0 mb-1">{t("newGame.stepOf", { n: 1 })}</p>
       <ScreenTitle subtitle={t("newGame.managerSubtitle")}>{t("newGame.createManagerTitle")}</ScreenTitle>
 

@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.1.1",
+    date: "2026-10-01",
+    items: [
+      { pt: "O estilo Posse volta a criar chances de gol como os outros estilos.", en: "The Possession style creates chances again, like the other styles." },
+      { pt: "Jogadores não correm mais pela linha de fundo em direção ao gol: preferem driblar para dentro ou passar.", en: "Players no longer run along the goal line toward goal: they cut inside or pass instead." },
+      { pt: "Jogadores maiores e mais fáceis de ver durante a partida.", en: "Bigger, easier-to-see players during matches." },
+      { pt: "Os painéis da partida mostram o nome dos clubes, e o placar fica legível mesmo com uniformes escuros.", en: "Match panels show the club names, and the score is readable even with dark kits." },
+      { pt: "Ao fim do jogo, a tela de espera agora diz que está carregando o resultado da partida.", en: "After the final whistle, the waiting screen now says it is loading the match result." },
+    ],
+  },
+  {
     version: "2.1",
     date: "2026-10-01",
     items: [
