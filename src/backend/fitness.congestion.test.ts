@@ -37,10 +37,12 @@ describe("fitness/load model under fixture congestion", () => {
     // random input that changes this scenario: an injured starter is replaced by a fresh reserve
     // in BOTH selectors, so nobody is left to rest (issue #35). This test is about fitness/load,
     // so injuries are switched off for its duration; injuries have their own tests.
+    // INJURY is a readonly const config; the test mutates it through a writable view.
+    const injuryCfg = INJURY as { BASE: number; CONTACT_BASE: number; HEAVY_TRAINING_CHANCE: number };
     const savedInjury = { base: INJURY.BASE, contact: INJURY.CONTACT_BASE, training: INJURY.HEAVY_TRAINING_CHANCE };
-    INJURY.BASE = 0;
-    INJURY.CONTACT_BASE = 0;
-    INJURY.HEAVY_TRAINING_CHANCE = 0;
+    injuryCfg.BASE = 0;
+    injuryCfg.CONTACT_BASE = 0;
+    injuryCfg.HEAVY_TRAINING_CHANCE = 0;
     try {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league",
@@ -149,9 +151,9 @@ describe("fitness/load model under fixture congestion", () => {
     // Same for a human club with the assistant on: at least one starter rested by match 3.
     expect(before3.assistantRested).toBeGreaterThanOrEqual(1);
     } finally {
-      INJURY.BASE = savedInjury.base;
-      INJURY.CONTACT_BASE = savedInjury.contact;
-      INJURY.HEAVY_TRAINING_CHANCE = savedInjury.training;
+      injuryCfg.BASE = savedInjury.base;
+      injuryCfg.CONTACT_BASE = savedInjury.contact;
+      injuryCfg.HEAVY_TRAINING_CHANCE = savedInjury.training;
     }
   }, 90_000);
 });
