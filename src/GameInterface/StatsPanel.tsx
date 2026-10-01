@@ -63,6 +63,7 @@ const EMPTY_STATS: PlayerStats = {
 
 function TeamTable({
   team,
+  teamName,
   accentColor,
   players,
   substitutions,
@@ -70,6 +71,7 @@ function TeamTable({
   side,
 }: {
   team: "A" | "B";
+  teamName?: string;
   accentColor: string;
   players: GamePlayer[];
   substitutions: SubstitutionRecord[];
@@ -84,7 +86,7 @@ function TeamTable({
     <div className="flex-1 min-w-0">
       <div className={`flex items-center gap-2 px-3 py-2 border-b border-border ${side === "right" ? "flex-row-reverse" : ""}`}>
         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: accentColor }} />
-        <span className="font-bold text-sm text-foreground uppercase tracking-[0.08em] font-display">{t("stats.team", { team, defaultValue: `Team ${team}` })}</span>
+        <span className="font-bold text-sm text-foreground uppercase tracking-[0.08em] font-display">{teamName ?? t("stats.team", { team, defaultValue: `Team ${team}` })}</span>
       </div>
 
       <div className="grid grid-cols-[40px_1fr_repeat(7,36px)] gap-1 px-3 py-1.5 text-[13px] font-bold uppercase text-muted-foreground border-b border-border/50">
@@ -218,11 +220,15 @@ export function StatsPanel({
   substitutions = [],
   teamColorA,
   teamColorB,
+  teamNameA,
+  teamNameB,
 }: {
   players: GamePlayer[];
   substitutions?: SubstitutionRecord[];
   teamColorA: string;
   teamColorB: string;
+  teamNameA?: string;
+  teamNameB?: string;
 }) {
   const { t } = useTranslation();
   const [stats, setStats] = useState<Record<number, PlayerStats>>(() =>
@@ -251,8 +257,8 @@ export function StatsPanel({
       <FitnessSummary teamA={teamAStats} teamB={teamBStats} />
       <KnockoutSummary teamA={teamAStats} teamB={teamBStats} />
       <div className="flex gap-4 p-2">
-        <TeamTable team="A" accentColor={teamColorA} players={teamA} substitutions={substitutions} stats={stats} side="left" />
-        <TeamTable team="B" accentColor={teamColorB} players={teamB} substitutions={substitutions} stats={stats} side="right" />
+        <TeamTable team="A" teamName={teamNameA} accentColor={teamColorA} players={teamA} substitutions={substitutions} stats={stats} side="left" />
+        <TeamTable team="B" teamName={teamNameB} accentColor={teamColorB} players={teamB} substitutions={substitutions} stats={stats} side="right" />
       </div>
     </div>
   );

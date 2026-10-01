@@ -36,6 +36,9 @@ export const PASS_CONFIG = {
    */
   ROLE_BIAS_WEIGHT:        0.10,
 
+  /** Flat raw bonus on a viable through-ball cell; 0 here, raised per build_up in AttackConfig. */
+  THROUGH_BALL_BONUS:      0,
+
   // ── Player modifier weights ──────────────────────────────────────────────
   PASSING_SKILL_WEIGHT:    0.15,
   VISION_WEIGHT:           0.15,

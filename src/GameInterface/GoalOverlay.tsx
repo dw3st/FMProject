@@ -7,16 +7,18 @@ interface Props {
   score: { A: number; B: number };
   kitColorA?: string;
   kitColorB?: string;
+  nameA?: string;
+  nameB?: string;
 }
 
-export function GoalOverlay({ scoringTeam, score, kitColorA, kitColorB }: Props) {
+export function GoalOverlay({ scoringTeam, score, kitColorA, kitColorB, nameA, nameB }: Props) {
   const { t } = useTranslation();
   if (!scoringTeam) return null;
 
   const a = readableOnDark(kitColorA ?? DEFAULT_TEAM_KIT_HEX.A);
   const b = readableOnDark(kitColorB ?? DEFAULT_TEAM_KIT_HEX.B);
   const color = scoringTeam === "A" ? a : b;
-  const teamLabel = scoringTeam === "A" ? "Team A" : "Team B";
+  const teamLabel = scoringTeam === "A" ? (nameA ?? "Team A") : (nameB ?? "Team B");
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">

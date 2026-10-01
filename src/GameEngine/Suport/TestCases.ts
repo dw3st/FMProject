@@ -328,6 +328,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'byline-winger',
+    name:        'Byline — Winger Near the Goal Line',
+    description: 'Winger with the ball 2 yds from the end line, wide of the box. Carry lanes that run along the byline are penalised (CARRY_CONFIG.BYLINE_RUN_*); expect a cut inside, a cross-style pass to Santos, or a pass instead of a run down the line.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW', 113, 8,  WINGER),
+        makePlayer('Santos',   'A', 'ST', 104, 37, STRIKER),
+        makePlayer('Garcia',   'A', 'CM',  96, 26, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB', 107, 32, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB', 107, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 112, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'tired-team',
     name:        '11v11 — Tired Team (fixture congestion)',
     description: 'Team A starts at 60 energy with the load-derived drain multiplier from FITNESS.LOAD_HIGH (fresh Team B) — mirrors a squad deep into a congested fixture list. Toggle the Energy panel to watch Team A fade and the AI make fatigue substitutions.',

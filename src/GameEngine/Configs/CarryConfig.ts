@@ -52,6 +52,16 @@ export const CARRY_CONFIG = {
    */
   BYLINE_MAX_PENALTY: 0.8,
 
+  // ── Byline run (carrying along the goal line) ────────────────────────────
+  /** Yards from the end line within which a lane target counts as "on the byline". */
+  BYLINE_RUN_ZONE: 4,
+  /** Half-width (yds, from pitch centre line) of the box; byline targets inside it are fine. */
+  BYLINE_RUN_BOX_HALF_WIDTH: 22,
+  /** Penalty for a lane whose target is on the byline outside the box width. */
+  BYLINE_RUN_PENALTY: 0.3,
+  /** Bonus per unit of inward (toward the centre line) lane component when the carrier is in the byline zone. */
+  BYLINE_CUT_INSIDE_BONUS: 0.15,
+
   // ── Clear run on goal ────────────────────────────────────────────────────
   /**
    * Lateral corridor width in yards. An outfield defender within this lateral

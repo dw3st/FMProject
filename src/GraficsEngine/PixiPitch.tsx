@@ -81,6 +81,9 @@ function buildMetrics(canvasW: number, canvasH: number): PitchMetrics {
   };
 }
 
+/** Player marker radius in px (was 10; ~1.4x for readability). */
+const PLAYER_MARKER_R = 14;
+
 function drawYardReferences(g: Graphics, labels: Container, m: PitchMetrics) {
   const { marginX: ox, marginY: oy, scale, width, height } = m;
 
@@ -531,7 +534,7 @@ export function PixiPitch({
       const playerLabels   = new Map<number, Text>();
 
       const labelStyle = new TextStyle({
-        fontSize:   9,
+        fontSize:   10,
         fontFamily: 'sans-serif',
         fontWeight: '600',
         fill:       0xffffff,
@@ -545,8 +548,8 @@ export function PixiPitch({
       function addPlayerSprite(player: (typeof stateRef.current.players)[0]): void {
         const color = player.team === "A" ? fillA : fillB;
         const g = new Graphics();
-        g.circle(0, 0, 10).fill(color);
-        g.circle(0, 0, 10).stroke({ width: 2, color: 0x000000, alpha: 0.35 });
+        g.circle(0, 0, PLAYER_MARKER_R).fill(color);
+        g.circle(0, 0, PLAYER_MARKER_R).stroke({ width: 2, color: 0x000000, alpha: 0.35 });
         const { px, py } = toPixel(player.x, player.y);
         g.x = px;
         g.y = py;
@@ -556,7 +559,7 @@ export function PixiPitch({
         const label = new Text({ text: player.name, style: labelStyle });
         label.anchor.set(0.5, 1);
         label.x = px;
-        label.y = py - 12;
+        label.y = py - (PLAYER_MARKER_R + 3);
         world.addChild(label);
         playerLabels.set(player.id, label);
       }
@@ -668,7 +671,7 @@ export function PixiPitch({
           if (label) {
             if (label.text !== player.name) label.text = player.name;
             label.x = px;
-            label.y = py - 12;
+            label.y = py - (PLAYER_MARKER_R + 3);
           }
         }
 

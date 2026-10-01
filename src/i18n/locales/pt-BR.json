@@ -51,7 +51,7 @@
     "noMatchResult": "Sem resultado de partida",
     "cannotStartMatch": "Não é possível iniciar a partida",
     "loadingMatch": "Carregando partida…",
-    "loadingMatchResult": "Carregando resultado da partida…",
+    "loadingMatchResult": "Carregando o resultado da partida…",
     "redirectingToDashboard": "Redirecionando para o painel…",
     "backToDashboard": "Voltar ao painel",
     "sizingPitch": "Dimensionando campo…",
