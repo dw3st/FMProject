@@ -18,7 +18,7 @@ export const INJURY = {
    * per-minute component alone accounts for roughly half the target, the rest coming from
    * `CONTACT_BASE` (tackles/duels).
    */
-  BASE: 0.00007836990595611286,
+  BASE: 0.0000874,
 
   /** Energy (0..100) → injury-rate multiplier: 1 at full energy (100), up to this at 0 energy. */
   ENERGY_MAX_MULT: 2,
@@ -49,7 +49,7 @@ export const INJURY = {
    * `scripts/injury-calibrate.ts` against the engine's real tackle/duel volume (see the module
    * doc comment above).
    */
-  CONTACT_BASE: 0.0020689655172413794,
+  CONTACT_BASE: 0.002307,
 
   /**
    * quickSim-only multiplier on `CONTACT_BASE` (Task 3, `docs/superpowers/plans/2026-09-28-
