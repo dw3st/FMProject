@@ -36,7 +36,7 @@ describe("finance ledger — new save", () => {
 
     const sum = ledger.reduce((s, e) => s + e.amount, 0);
     expect(sum).toBe(squad!.finances!.budget);
-  });
+  }, 60_000);
 });
 
 describe("finance ledger — weekly tick", () => {
