@@ -3,9 +3,9 @@ import { Icon } from "@/GameInterface/Icons";
 import type { StarKind } from "@/Domain/world/stars";
 
 const COLOR: Record<StarKind, string> = {
-  gold: "text-amber-400",
-  blue: "text-sky-400",
-  green: "text-emerald-400",
+  gold: "text-chart-4",
+  blue: "text-chart-3",
+  green: "text-chart-2",
 };
 
 /** Small star next to a player's name: gold = world top 25, blue = great form, green = prodigy. */

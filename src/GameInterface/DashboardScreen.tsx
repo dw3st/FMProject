@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { ClubSidebar } from "@/GameInterface/Dashboard/ClubSidebar";
 import { SquadTable } from "@/GameInterface/Dashboard/SquadTable";
 import { WeekCalendar } from "@/GameInterface/Dashboard/WeekCalendar";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { LeagueData } from "@/types/playerTypes";
 
 export function DashboardScreen() {
+  const { t } = useTranslation();
   const { session, squad, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType } = useGameSave();
 
   const [selectedPlayer, setSelectedPlayer] = useState<DisplayPlayer | null>(null);
@@ -53,7 +55,8 @@ export function DashboardScreen() {
         leagues={leagues}
       />
 
-      <main className="flex-1 flex flex-col p-4 gap-4 overflow-auto">
+      <main className="flex-1 flex flex-col px-6 py-5 gap-6 overflow-auto">
+        <ScreenTitle subtitle={squad ? `${squad.players.length} ${t("squadScreen.players")}` : undefined}>{t("nav.squad")}</ScreenTitle>
         <SquadTable
           squad={squad}
           selectedId={selectedPlayer?.id ?? ""}

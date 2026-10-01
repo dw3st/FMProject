@@ -35,14 +35,14 @@ export function ClubIdentity({
           logoUrl={logoUrl}
           primaryColor={primaryColor}
           secondaryColor={secondaryColor}
-          className="w-10 h-10 rounded-lg overflow-hidden"
+          className="w-8 h-8 rounded-full overflow-hidden"
           imgClassName="w-full h-full object-contain p-1"
         />
         {showName && (
           <div>
             <p className="font-bold text-foreground font-display text-sm m-0">{shortName ?? clubName}</p>
             {showLeague && leagueName && (
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider m-0">{leagueName}</p>
+              <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] m-0 font-display font-bold">{leagueName}</p>
             )}
           </div>
         )}
@@ -53,22 +53,22 @@ export function ClubIdentity({
   if (variant === "header") {
     return (
       <div className="flex items-center gap-4">
-        <div
-          className="w-1 h-10 rounded-full"
-          style={{ background: `linear-gradient(180deg, ${primaryColor} 0%, ${secondaryColor} 100%)` }}
-        />
+        <div className="flex w-1 h-10 flex-col rounded-full overflow-hidden">
+          <div className="flex-1" style={{ backgroundColor: primaryColor }} />
+          <div className="flex-1" style={{ backgroundColor: secondaryColor }} />
+        </div>
         <ClubLogo
           logoUrl={logoUrl}
           primaryColor={primaryColor}
           secondaryColor={secondaryColor}
-          className="w-12 h-12 rounded-xl overflow-hidden border-2"
+          className="w-12 h-12 rounded-full overflow-hidden"
           imgClassName="w-full h-full object-contain p-1.5"
         />
         {showName && (
           <div>
-            <p className="font-black text-foreground font-display text-lg tracking-wide m-0">{clubName}</p>
+            <p className="font-black text-foreground font-display text-lg m-0">{clubName}</p>
             {showLeague && (
-              <p className="text-xs text-muted-foreground m-0">
+              <p className="text-sm text-muted-foreground m-0">
                 {leagueName}
                 {divisionName && ` - ${divisionName}`}
               </p>
@@ -81,33 +81,28 @@ export function ClubIdentity({
 
   return (
     <div className="relative">
-      <div
-        className="absolute inset-0 opacity-20 rounded-xl"
-        style={{ background: `linear-gradient(180deg, ${primaryColor} 0%, transparent 100%)` }}
-      />
-
       <div className="relative p-4 flex flex-col items-center gap-3">
         <ClubLogo
           logoUrl={logoUrl}
           primaryColor={primaryColor}
           secondaryColor={secondaryColor}
-          className="w-24 h-24 rounded-xl overflow-hidden"
+          className="w-16 h-16 rounded-full overflow-hidden"
           imgClassName="w-full h-full object-contain p-2"
         />
 
         {showName && (
           <div className="text-center">
-            <p className="font-black text-foreground font-display tracking-wide m-0">{clubName}</p>
+            <p className="font-black text-foreground font-display m-0">{clubName}</p>
             {showLeague && divisionName && (
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5 m-0">{divisionName}</p>
+              <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mt-0.5 m-0 font-display font-bold">{divisionName}</p>
             )}
           </div>
         )}
 
         <div className="flex gap-1 mt-1">
-          <div className="w-8 h-1 rounded-full" style={{ backgroundColor: primaryColor }} />
-          <div className="w-4 h-1 rounded-full" style={{ backgroundColor: secondaryColor }} />
-          <div className="w-2 h-1 rounded-full" style={{ backgroundColor: primaryColor }} />
+          <div className="w-8 h-1.5 rounded-full" style={{ backgroundColor: primaryColor }} />
+          <div className="w-4 h-1.5 rounded-full" style={{ backgroundColor: secondaryColor }} />
+          <div className="w-2 h-1.5 rounded-full" style={{ backgroundColor: primaryColor }} />
         </div>
       </div>
     </div>
@@ -116,12 +111,10 @@ export function ClubIdentity({
 
 export function ClubGradientAccent({ primaryColor, secondaryColor }: ClubColors) {
   return (
-    <div
-      className="h-1 w-full rounded-full"
-      style={{
-        background: `linear-gradient(90deg, ${primaryColor} 0%, ${secondaryColor} 50%, transparent 100%)`,
-      }}
-    />
+    <div className="flex h-1.5 w-full overflow-hidden rounded-full">
+      <div className="flex-1" style={{ backgroundColor: primaryColor }} />
+      <div className="flex-1" style={{ backgroundColor: secondaryColor }} />
+    </div>
   );
 }
 
@@ -138,7 +131,7 @@ export function ClubBadge({
       logoUrl={logoUrl}
       primaryColor={primaryColor}
       secondaryColor={secondaryColor}
-      className={`${sizes[size]} rounded-lg overflow-hidden`}
+      className={`${sizes[size]} rounded-full overflow-hidden`}
       imgClassName="w-full h-full object-contain p-0.5"
     />
   );
