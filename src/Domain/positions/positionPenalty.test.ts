@@ -5,7 +5,8 @@ import { teamStrength } from "@/Domain/advanceDay/quickSim";
 import { createMatchState, performSubstitution } from "@/GameEngine/Domain/gameState";
 import formation433Json from "@/Data/formations/4-3-3.json";
 import type { Formation } from "@/GameEngine/types";
-import { aptitudeFor } from "@/Domain/positions/positionAptitude";
+import { teamLineup } from "@/GameEngine/Domain/TeamLineup";
+import { aptitudeFor, scaleStats } from "@/Domain/positions/positionAptitude";
 import { POSITION_PENALTY } from "@/Domain/positions/positionConfig";
 
 const DEF_STATS = {
@@ -41,12 +42,16 @@ describe("out-of-position penalty", () => {
     ];
     const state = createMatchState(squad("a"), formation433Json as Formation, squad("b"), formation433Json as Formation);
     const st = state.players.find((p) => p.team === "A" && p.role === "ST")!;
-    const cb = state.players.find((p) => p.team === "A" && p.role === "CB")!;
-    // Same raw attributes: the defender at ST is out of position, so finishing-derived accuracy is lower than a natural fit would give.
-    expect(st.baseStats.withBall.shootAccuracy).toBeLessThan(DEF_STATS.finishing / 10 + 1e-9);
-    expect(cb.baseStats.withoutBall.tackling).toBeGreaterThan(st.baseStats.withoutBall.tackling);
+    const roster = squad("a").find((p) => p.id === st.rosterId)!;
+    const k = POSITION_PENALTY[aptitudeFor(roster, "ST")];
+    expect(k).toBeLessThan(1);
+    // Starter: stats built from the (buffed) attributes scaled by the slot's factor.
+    expect(st.baseStats).toEqual(teamLineup(scaleStats(st.fit!.stats, k), "ST"));
+    expect(st.baseStats.withBall.shootAccuracy).toBeLessThan(teamLineup(st.fit!.stats, "ST").withBall.shootAccuracy);
+    // Substitute: re-fielded in the slot's role with the same rule.
     const next = performSubstitution(state, "A", st.id, state.benchA[0]!.id);
     const sub = next.players.find((p) => p.rosterId === "abench")!;
-    expect(sub.baseStats.withoutBall.tackling).toBeCloseTo(st.baseStats.withoutBall.tackling, 6);
+    const subK = POSITION_PENALTY[aptitudeFor(squad("a").find((p) => p.id === "abench")!, "ST")];
+    expect(sub.baseStats).toEqual(teamLineup(scaleStats(sub.fit!.stats, subK), "ST"));
   });
 });

@@ -1,7 +1,7 @@
 import type { RosterPlayer } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { FormationSlot } from "@/types/formationSlots";
-import { slotValue } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
@@ -25,7 +25,8 @@ function eligiblePool(players: RosterPlayer[], date: string | undefined): Roster
  * Auto-fills a lineup from available players for a given set of formation slots.
  *
  * Priority per slot:
- *  1. Players whose `positions` list includes the exact slot role (best score first).
+ *  1. Players whose `positions` list includes the exact slot role, or share its line (best
+ *     `slotValue` first; an `unsuitable` player only when nobody else of the line is left).
  *  2. Any remaining unassigned player, scored by the slot's weighted score.
  *
  * Exported separately so non-player teams (AI squads) can reuse the same logic.
@@ -52,7 +53,11 @@ export function autoFillLineup(
           !used.has(p.id) &&
           (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
       )
-      .sort((a, b) => slotValue(b, role) - slotValue(a, role));
+      .sort(
+        (a, b) =>
+          Number(aptitudeFor(a, role) === "unsuitable") - Number(aptitudeFor(b, role) === "unsuitable") ||
+          slotValue(b, role) - slotValue(a, role),
+      );
 
     if (candidates[0]) {
       result[i] = candidates[0].id;

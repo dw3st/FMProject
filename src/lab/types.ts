@@ -76,6 +76,11 @@ export interface Variant {
    * to be missing; consumers must default it themselves.
    */
   mentality?: Mentality;
+  /**
+   * Field the squad with the best order per line, ignoring position fit (`lineOrderLineup`), to
+   * measure the loss from out-of-position starters. Absent = fit-aware lineup.
+   */
+  outOfPosition?: boolean;
   squad: SquadSpec;
 }
 
@@ -158,6 +163,8 @@ export interface TeamRawStats {
   fatigueSubstitutions: number;
   /** In-match injuries suffered by this team, summed across `matches` games. */
   injuries: number;
+  /** Starters with `training`/`unsuitable` aptitude for their slot, summed across games. */
+  outOfPosition: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -230,6 +237,7 @@ export interface PerMatchView {
   avgFatigueSubs: number;
   /** Injuries per match. */
   avgInjuries: number;
+  avgOutOfPosition: number;
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -295,6 +303,7 @@ export interface VariantSummary {
   avgFatigueSubs: number;
   /** Injuries per match. */
   avgInjuries: number;
+  avgOutOfPosition: number;
 }
 
 export interface ScenarioResult {
