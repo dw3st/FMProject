@@ -69,18 +69,18 @@ export function LoginScreen() {
   const inputClass =
     "h-10 w-full rounded border border-border bg-transparent px-3 text-foreground placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none disabled:opacity-50";
   const buttonClass =
-    "mt-4 inline-flex h-10 w-full items-center justify-center rounded border-0 bg-primary font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer disabled:opacity-40 disabled:pointer-events-none";
+    "mt-4 inline-flex h-10 w-full items-center justify-center rounded border-0 bg-primary px-5 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer disabled:opacity-40 disabled:pointer-events-none";
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background">
       <PitchBackdrop players={false} />
 
-      <div className="relative w-full max-w-[320px] px-4">
-        <Wordmark size="md" className="mb-7 block text-center" />
+      <div className="relative w-full max-w-[360px] px-4">
+        <Wordmark size="lg" className="mb-8 block text-center" />
 
         {stage === "email" ? (
           <form onSubmit={handleEmailSubmit}>
-            <label htmlFor="login-email" className="mb-1.5 block text-sm text-muted-foreground">
+            <label htmlFor="login-email" className="mb-2 block font-display text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {t("login.email")}
             </label>
             <input
@@ -105,7 +105,7 @@ export function LoginScreen() {
             <p className="mb-3 text-center text-sm text-muted-foreground">
               {t("common.sentTo")} <span className="text-foreground">{email}</span>
             </p>
-            <label htmlFor="login-code" className="mb-1.5 block text-sm text-muted-foreground">
+            <label htmlFor="login-code" className="mb-2 block font-display text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {t("login.code")}
             </label>
             <input

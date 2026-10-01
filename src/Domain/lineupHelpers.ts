@@ -1,7 +1,7 @@
 import type { RosterPlayer } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { FormationSlot } from "@/types/formationSlots";
-import { Player } from "@/Domain/Player";
+import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
@@ -25,7 +25,8 @@ function eligiblePool(players: RosterPlayer[], date: string | undefined): Roster
  * Auto-fills a lineup from available players for a given set of formation slots.
  *
  * Priority per slot:
- *  1. Players whose `positions` list includes the exact slot role (best score first).
+ *  1. Players whose `positions` list includes the exact slot role, or share its line (best
+ *     `slotValue` first; an `unsuitable` player only when nobody else of the line is left).
  *  2. Any remaining unassigned player, scored by the slot's weighted score.
  *
  * Exported separately so non-player teams (AI squads) can reuse the same logic.
@@ -42,20 +43,42 @@ export function autoFillLineup(
   const used = new Set<string>();
   const result: string[] = new Array(slots.length).fill("");
 
-  // First pass: assign the best role-matched player to each slot (exact code, or same main role).
-  for (let i = 0; i < slots.length; i++) {
-    const role = slots[i]!.role;
+  // First pass: role-matched players (exact code, or same main role). Slots are filled
+  // scarcest-fit first: the slot with the fewest natural/apt candidates left picks next, so a
+  // versatile player is not burned in a slot that others could fill while a scarcer slot goes
+  // to someone unsuitable.
+  const eligibleFor = (role: string) => {
     const roleMain = getMainRole(role);
-    const candidates = players
-      .filter(
-        (p) =>
-          !used.has(p.id) &&
-          (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
-      )
-      .sort((a, b) => Player.weightedScore(b.stats, role) - Player.weightedScore(a.stats, role));
-
+    return players.filter(
+      (p) =>
+        !used.has(p.id) &&
+        (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
+    );
+  };
+  const pending = new Set(slots.map((_, i) => i));
+  while (pending.size > 0) {
+    let pick = -1;
+    let pickGood = Infinity;
+    for (const i of pending) {
+      const role = slots[i]!.role;
+      const good = eligibleFor(role).filter((p) => {
+        const a = aptitudeFor(p, role);
+        return a === "natural" || a === "apt";
+      }).length;
+      if (good < pickGood) {
+        pickGood = good;
+        pick = i;
+      }
+    }
+    pending.delete(pick);
+    const role = slots[pick]!.role;
+    const candidates = eligibleFor(role).sort(
+      (a, b) =>
+        Number(aptitudeFor(a, role) === "unsuitable") - Number(aptitudeFor(b, role) === "unsuitable") ||
+        slotValue(b, role) - slotValue(a, role),
+    );
     if (candidates[0]) {
-      result[i] = candidates[0].id;
+      result[pick] = candidates[0].id;
       used.add(candidates[0].id);
     }
   }
@@ -66,7 +89,7 @@ export function autoFillLineup(
     const role = slots[i]!.role;
     const remaining = players
       .filter((p) => !used.has(p.id))
-      .sort((a, b) => Player.weightedScore(b.stats, role) - Player.weightedScore(a.stats, role));
+      .sort((a, b) => slotValue(b, role) - slotValue(a, role));
 
     if (remaining[0]) {
       result[i] = remaining[0].id;
@@ -117,7 +140,7 @@ const GK_BENCH_FITNESS_FLOOR = 85;
  * This does not simulate the match; it is only a cheap proxy used to rank lineup candidates.
  */
 function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
-  const stat = Player.weightedScore(player.stats, role);
+  const stat = slotValue(player, role);
   const fitness = player.seasonLog?.fitness ?? DEFAULT_FITNESS;
   const load = player.seasonLog?.load ?? 0;
   // Value the player by what the ENGINE will actually play him at — the match's compressed

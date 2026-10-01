@@ -97,7 +97,8 @@ describe("teamStrength / expectedGoals", () => {
     const opp = teamStrength(makeSquad("o", 4).players);
     const sBase = teamStrength(base.players);
     const sFast = teamStrength(fast.players);
-    expect(sFast.forwardPace).toBeCloseTo(7, 5); // (3·8 + 4) / 4
+    expect(sFast.forwardPace).toBeGreaterThan(sBase.forwardPace);
+    expect(sFast.forwardPace).toBeLessThanOrEqual(7 + 1e-9); // (3·8 + 4) / 4, minus any out-of-position penalty
     expect(sFast.defensePace).toBeCloseTo(sBase.defensePace, 5);
     const ratio = expectedGoals(sFast, opp, false) / expectedGoals(sBase, opp, false);
     // Speed also feeds the attack strength, so the lift is at least the pace-edge factor.

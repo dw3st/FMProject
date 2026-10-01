@@ -25,10 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.0",
+    date: "2026-10-01",
+    items: [
+      {
+        pt: "Posições detalhadas: cada jogador tem uma posição natural (zagueiro, lateral, volante, ponta...), mostrada no elenco com cor própria.",
+        en: "Detailed positions: every player now has a natural position (centre-back, full-back, defensive midfielder, winger...), shown in the squad with its own colour.",
+      },
+      {
+        pt: "Na ficha do jogador, um campinho mostra onde ele joga bem, onde se adapta e onde precisa treinar.",
+        en: "On the player page, a small pitch shows where he plays well, where he adapts and where he needs training.",
+      },
+      {
+        pt: "Jogar fora da posição agora custa rendimento, e a tela de formação avisa quando um titular está mal encaixado.",
+        en: "Playing out of position now costs performance, and the formation screen warns when a starter is a poor fit.",
+      },
+    ],
+  },
+  {
     version: "1.9.1",
     date: "2026-10-01",
     items: [
-      { pt: "Novo jogo come�a pela cria��o do t�cnico", en: "New game starts with creating your manager" },
+      { pt: "Novo jogo começa pela criação do técnico", en: "New game starts with creating your manager" },
     ],
     fixes: [
       { pt: "Fontes e visual uniformes em todas as telas", en: "Uniform fonts and look on every screen" },

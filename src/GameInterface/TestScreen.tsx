@@ -36,6 +36,7 @@ import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import playersJson from "@/Data/players.json";
 import rolesJson from "@/Data/roles.json";
 import formation433Fallback from "@/Data/formations/4-3-3.json";
+import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -219,6 +220,7 @@ function PlayerRow({
         : DECISION_BADGE[decision.type])
     : null;
   const dot   = player.team === 'A' ? 'bg-blue-500' : 'bg-red-500';
+  const fitK  = factorFromAptitudes(player.fit?.aptitudes, player.role);
   return (
     <button
       onClick={() => onClick(player)}
@@ -236,6 +238,14 @@ function PlayerRow({
         {typeof player.energy === "number" ? Math.round(player.energy) : "—"}
       </span>
       <span className="flex-1 text-xs font-medium text-foreground truncate">{player.name}</span>
+      {fitK < 1 && (
+        <span
+          className={`font-mono tabular-nums text-[9px] shrink-0 ${fitK < 0.9 ? 'text-destructive' : 'text-amber-400'}`}
+          title={`Out of position: attributes x${fitK.toFixed(2)} at ${player.role}`}
+        >
+          x{fitK.toFixed(2)}
+        </span>
+      )}
       {badge && (
         <span className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase border ${badge.cls}`}>
           {badge.label}

@@ -26,21 +26,21 @@ export function ChangelogModal({ open, onClose }: Props) {
         <div className="px-6 py-4 border-b border-border bg-card/50">
           <DialogTitle
             as="h2"
-            className="text-lg font-black font-display text-foreground uppercase tracking-wider m-0"
+            className="text-lg font-bold font-display text-foreground uppercase tracking-[0.08em] m-0"
           >
             {t("changelog.title")}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground m-0 mt-0.5">{t("changelog.subtitle")}</p>
+          <p className="text-sm text-muted-foreground m-0 mt-0.5">{t("changelog.subtitle")}</p>
         </div>
 
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
           {changelog.map((entry) => (
             <section key={entry.version}>
               <div className="flex items-baseline gap-2 mb-2">
-                <h3 className="text-sm font-black text-foreground m-0">
+                <h3 className="font-display font-black uppercase text-xl leading-none m-0">
                   {t("changelog.version", { version: entry.version })}
                 </h3>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">
                   {localizedDate(entry.date, dateLocale)}
                 </span>
               </div>
@@ -53,7 +53,7 @@ export function ChangelogModal({ open, onClose }: Props) {
 
               {entry.fixes && entry.fixes.length > 0 && (
                 <div className="mt-2">
-                  <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+                  <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-1">
                     {t("changelog.fixes")}
                   </span>
                   <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">

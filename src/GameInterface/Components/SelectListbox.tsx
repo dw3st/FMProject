@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
-import { Check, ChevronDown } from "lucide-react";
+import { Icon } from "@/GameInterface/Icons";
 
 /** Shared “input box” look for Headless UI listboxes (filters, league picker, etc.). */
 export const formSelectBoxClass =
@@ -35,7 +35,7 @@ export function SelectListbox<T extends string>({
       {label && (
         <span
           id={id}
-          className="block text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider"
+          className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display"
         >
           {label}
         </span>
@@ -52,9 +52,9 @@ export function SelectListbox<T extends string>({
             <span className="min-w-0 flex-1 text-left font-medium truncate">
               {selected?.label ?? "—"}
             </span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Icon name="chevron-down" className="w-4 h-4 text-muted-foreground shrink-0" />
           </ListboxButton>
-          <ListboxOptions className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg bg-card border border-border shadow-xl py-1 text-sm focus:outline-none">
+          <ListboxOptions className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg bg-card border border-border py-1 text-sm focus:outline-none">
             {options.map((opt) => (
               <ListboxOption
                 key={opt.value}
@@ -62,7 +62,7 @@ export function SelectListbox<T extends string>({
                 className="group flex items-center justify-between px-3 py-2 cursor-pointer transition-colors data-[focus]:bg-primary/10 data-[selected]:text-primary"
               >
                 <span className="font-medium truncate">{opt.label}</span>
-                <Check className="w-4 h-4 opacity-0 group-data-[selected]:opacity-100 text-primary shrink-0" />
+                <Icon name="check" className="w-4 h-4 opacity-0 group-data-[selected]:opacity-100 text-primary shrink-0" />
               </ListboxOption>
             ))}
           </ListboxOptions>

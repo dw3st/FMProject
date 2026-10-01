@@ -71,10 +71,10 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
     <Modal open onClose={onClose} size="sm">
       <div className="flex flex-col">
         <div className="px-6 py-4 border-b border-border bg-card/50">
-          <h2 className="text-lg font-black font-display text-foreground uppercase tracking-wider m-0">
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0">
             {mode === "renew" ? t("contracts.renewTitle") : t("contracts.signTitle")}
           </h2>
-          <p className="text-xs text-muted-foreground m-0 mt-0.5">
+          <p className="text-sm text-muted-foreground m-0 mt-0.5">
             {player.name} · {player.age}y
             {player.contractUntil ? ` · ${t("contracts.currentUntil", { year: player.contractUntil })}` : ""}
           </p>
@@ -82,13 +82,13 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
         <div className="p-6 space-y-5">
           {done ? (
             <div className="text-center py-2">
-              <p className="text-base font-black text-emerald-400 m-0">
+              <p className="text-base font-black text-chart-2 m-0">
                 {mode === "renew" ? t("contracts.renewed") : t("contracts.signed")}
               </p>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-5 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary cursor-pointer border-0"
+                className="mt-5 px-6 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm cursor-pointer border-0"
               >
                 {t("common.close")}
               </button>
@@ -96,12 +96,12 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
           ) : (
             <>
               <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
-              {error && <p className="text-sm text-red-400 m-0" role="alert">{error}</p>}
+              {error && <p className="text-sm text-destructive m-0" role="alert">{error}</p>}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-bold uppercase tracking-wider text-muted-foreground hover:bg-muted/30 transition-colors cursor-pointer bg-transparent"
+                  className="flex-1 h-10 rounded border-0 text-sm font-semibold text-muted-foreground cursor-pointer bg-transparent hover:text-foreground"
                 >
                   {t("common.cancel")}
                 </button>
@@ -109,7 +109,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
                   type="button"
                   onClick={submit}
                   disabled={submitting || demand === null}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all cursor-pointer border-0 disabled:opacity-60"
+                  className="flex-1 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 disabled:opacity-60"
                 >
                   {submitting ? t("transfers.sending") : mode === "renew" ? t("contracts.renew") : t("contracts.sign")}
                 </button>

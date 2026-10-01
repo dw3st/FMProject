@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { ChevronUp, ChevronDown, UserPlus, Tag } from "lucide-react";
 import { Icon } from "@/GameInterface/Icons";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
 import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
@@ -56,7 +55,7 @@ export function ScoutTable({
 
   if (loading) {
     return (
-      <div className="flex-1 card-arcade rounded-xl flex items-center justify-center p-12">
+      <div className="flex-1 card-arcade rounded-md flex items-center justify-center p-12">
         <p className="text-muted-foreground text-sm m-0">{t("scout.table.loadingPlayers")}</p>
       </div>
     );
@@ -65,14 +64,14 @@ export function ScoutTable({
   const showUpdating = filtering && rows.length > 0;
 
   return (
-    <div className="flex-1 card-arcade rounded-xl overflow-hidden flex flex-col">
+    <div className="flex-1 card-arcade rounded-md overflow-hidden flex flex-col">
       <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between">
-        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+        <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
           {t("scout.table.foundPlayers", { count: total })}
         </span>
         {showUpdating && (
           <span
-            className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-semibold uppercase tracking-wider"
+            className="flex items-center gap-1.5 text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display"
             title={t("scout.table.applyingFilters")}
           >
             <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -81,7 +80,7 @@ export function ScoutTable({
         )}
       </div>
 
-      <div className="flex items-center bg-muted/30 border-b border-border text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+      <div className="flex items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
         {columns.map((col) => (
           <button
             key={col.key}
@@ -91,9 +90,9 @@ export function ScoutTable({
             {col.label}
             {sortKey === col.key &&
               (sortDir === "asc" ? (
-                <ChevronUp className="w-3 h-3 text-primary" />
+                <Icon name="chevron-up" className="w-3 h-3 text-primary" />
               ) : (
-                <ChevronDown className="w-3 h-3 text-primary" />
+                <Icon name="chevron-down" className="w-3 h-3 text-primary" />
               ))}
           </button>
         ))}
@@ -109,7 +108,7 @@ export function ScoutTable({
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/40 cursor-pointer"
+                  className="px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/40 cursor-pointer font-display"
                 >
                   {t("scout.table.retry")}
                 </button>
@@ -122,7 +121,7 @@ export function ScoutTable({
           rows.map((player, index) => (
             <div
               key={player.id}
-              className={`flex items-center text-xs border-b border-border/30 transition-all ${
+              className={`flex items-center text-sm border-b border-border/30 transition-all ${
                 index % 2 === 0
                   ? "bg-transparent hover:bg-muted/20"
                   : "bg-muted/5 hover:bg-muted/20"
@@ -135,7 +134,7 @@ export function ScoutTable({
               </div>
               <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
                 {sellListedIds.has(player.id) && (
-                  <span title={t("scout.table.forSale")} className="shrink-0"><Tag className="w-3 h-3 text-primary" /></span>
+                  <span title={t("scout.table.forSale")} className="shrink-0"><Icon name="tag" className="w-3 h-3 text-primary" /></span>
                 )}
                 {player.leagueSlug && player.clubSlug ? (
                   <a
@@ -189,13 +188,13 @@ export function ScoutTable({
                     onOffer?.(player);
                   }}
                   title={!!mySquadId && player.squadId === mySquadId ? t("scout.table.yourPlayer") : player.free ? t("scout.table.signFree") : t("scout.table.makeAnOffer")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] border rounded-lg transition-all ${
                     !!mySquadId && player.squadId === mySquadId
                       ? "bg-muted/30 text-muted-foreground border-border cursor-not-allowed opacity-60"
                       : "bg-primary/20 text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground cursor-pointer"
                   }`}
                 >
-                  <UserPlus className="w-3 h-3" />
+                  <Icon name="user-plus" className="w-3 h-3" />
                   {player.free ? t("scout.table.sign") : t("scout.table.offer")}
                 </button>
               </div>
@@ -209,19 +208,19 @@ export function ScoutTable({
           type="button"
           disabled={page <= 0}
           onClick={() => onPageChange(page - 1)}
-          className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-display"
         >
           <Icon name="chevron-left" size={12} />
           {t("scout.table.previousPage")}
         </button>
-        <span className="text-xs text-muted-foreground font-semibold">
+        <span className="text-sm text-muted-foreground font-semibold">
           {t("scout.table.pageOf", { page: page + 1, pages: pageCount })}
         </span>
         <button
           type="button"
           disabled={page + 1 >= pageCount}
           onClick={() => onPageChange(page + 1)}
-          className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] border rounded-lg transition-all bg-muted/20 text-muted-foreground border-border enabled:hover:text-primary enabled:hover:border-primary/40 enabled:cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-display"
         >
           {t("scout.table.nextPage")}
           <Icon name="chevron-right" size={12} />
@@ -236,15 +235,15 @@ export function ScoutTable({
 const statusLabels: Record<StatusLevel, string> = { 1: "Bad", 2: "Poor", 3: "OK", 4: "Good", 5: "Top" };
 const statusColors: Record<StatusLevel, string> = {
   1: "bg-destructive/20 text-destructive border-destructive/40",
-  2: "bg-orange-500/20 text-orange-400 border-orange-500/40",
+  2: "bg-chart-4/20 text-chart-4 border-chart-4/40",
   3: "bg-chart-4/20 text-chart-4 border-chart-4/40",
-  4: "bg-blue-500/20 text-blue-400 border-blue-500/40",
+  4: "bg-chart-3/20 text-chart-3 border-chart-3/40",
   5: "bg-primary/20 text-primary border-primary/40",
 };
 
 function StatusBadge({ level }: { level: StatusLevel }) {
   return (
-    <span className={`inline-flex items-center justify-center w-full px-1 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wide ${statusColors[level]}`}>
+    <span className={`inline-flex items-center justify-center w-full px-2 py-0.5 rounded text-sm border ${statusColors[level]}`}>
       {statusLabels[level]}
     </span>
   );

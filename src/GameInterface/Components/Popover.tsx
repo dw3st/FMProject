@@ -43,7 +43,7 @@ export function Popover({ trigger, content, side = "bottom", gap = 8 }: PopoverP
           animation: "popover-in 0.15s cubic-bezier(0.16, 1, 0.3, 1) both",
         }}
       >
-        <div className="rounded-xl border border-border bg-popover shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-3">
+        <div className="rounded-md border border-border bg-popover p-3">
           {content}
         </div>
       </PopoverPanel>

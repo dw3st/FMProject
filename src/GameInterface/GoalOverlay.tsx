@@ -21,27 +21,20 @@ export function GoalOverlay({ scoringTeam, score, kitColorA, kitColorB }: Props)
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
       <div
-        className="absolute inset-0"
-        style={{ background: `radial-gradient(ellipse at center, ${color}22 0%, transparent 70%)` }}
-      />
-
-      <div
-        className="relative flex flex-col items-center gap-3 px-16 py-10 rounded-3xl border"
+        className="relative flex flex-col items-center gap-3 px-16 py-10 rounded-md border bg-card"
         style={{
-          background: `linear-gradient(135deg, ${color}18, ${color}08)`,
-          borderColor: `${color}55`,
-          boxShadow: `0 0 60px ${color}44, 0 0 120px ${color}22`,
+          borderColor: color,
           animation: "goal-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }}
       >
         <div
-          className="text-8xl font-black tracking-widest leading-none font-display"
-          style={{ color, textShadow: `0 0 30px ${color}, 0 0 60px ${color}88` }}
+          className="text-7xl font-black tracking-tight leading-none font-display"
+          style={{ color }}
         >
           {t("goalOverlay.goal")}
         </div>
 
-        <div className="text-base font-semibold tracking-widest text-muted-foreground uppercase">
+        <div className="text-base font-bold tracking-[0.08em] text-muted-foreground uppercase font-display">
           {t("goalOverlay.scores", { team: teamLabel })}
         </div>
 

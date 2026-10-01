@@ -175,9 +175,9 @@ export function ScoutScreen() {
 
   return (
     <>
-      <div className="flex-1 p-4 flex flex-col gap-4 overflow-auto">
+      <div className="flex-1 px-6 py-5 flex flex-col gap-6 overflow-auto">
         <PageHeadline backHref="/dashboard">
-          {t("scout.title")} <span className="text-primary glow-text">{t("scout.database")}</span>
+          {t("scout.title")} <span className="text-primary">{t("scout.database")}</span>
         </PageHeadline>
 
         <ScoutFilters

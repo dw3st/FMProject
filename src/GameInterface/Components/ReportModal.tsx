@@ -194,11 +194,11 @@ export function ReportModal({ open, onClose }: Props) {
         <div className="px-6 py-4 border-b border-border bg-card/50">
           <DialogTitle
             as="h2"
-            className="text-lg font-black font-display text-foreground uppercase tracking-wider m-0"
+            className="text-lg font-bold font-display text-foreground uppercase tracking-[0.08em] m-0"
           >
             {t("reports.title")}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground m-0 mt-0.5">
+          <p className="text-sm text-muted-foreground m-0 mt-0.5">
             {t("reports.subtitle")}
           </p>
         </div>
@@ -207,7 +207,7 @@ export function ReportModal({ open, onClose }: Props) {
           {!success ? (
             <>
               <div>
-                <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
                   {t("reports.type")}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -220,7 +220,7 @@ export function ReportModal({ open, onClose }: Props) {
                         aria-pressed={active}
                         disabled={submitting}
                         onClick={() => setType(opt.value)}
-                        className={`text-[10px] font-black uppercase tracking-wide px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                        className={`text-[13px] font-black uppercase tracking-[0.08em] font-display px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
                           active
                             ? "border-primary bg-primary/15 text-primary"
                             : "border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground"
@@ -236,7 +236,7 @@ export function ReportModal({ open, onClose }: Props) {
               <div>
                 <label
                   htmlFor="report-description"
-                  className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2"
+                  className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2"
                 >
                   {t("reports.descriptionLabel")}
                 </label>
@@ -248,9 +248,9 @@ export function ReportModal({ open, onClose }: Props) {
                   placeholder={t("reports.descriptionPlaceholder")}
                   rows={5}
                   maxLength={DESCRIPTION_MAX}
-                  className="w-full resize-none rounded-xl border border-border/60 bg-card/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/60"
+                  className="w-full resize-none rounded-md border border-border/60 bg-card/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/60"
                 />
-                <p className="text-[10px] text-muted-foreground mt-1 m-0">
+                <p className="text-sm text-muted-foreground mt-1 m-0">
                   {t("reports.descriptionHint", {
                     min: DESCRIPTION_MIN,
                     max: DESCRIPTION_MAX,
@@ -260,7 +260,7 @@ export function ReportModal({ open, onClose }: Props) {
               </div>
 
               <div>
-                <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-2">
+                <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
                   {t("reports.attachImage")}
                 </span>
                 <input
@@ -276,7 +276,7 @@ export function ReportModal({ open, onClose }: Props) {
                     <img
                       src={attachmentPreviewUrl}
                       alt=""
-                      className="h-20 w-20 rounded-xl border border-border/60 object-cover"
+                      className="h-20 w-20 rounded-md border border-border/60 object-cover"
                     />
                     <button
                       type="button"
@@ -293,24 +293,24 @@ export function ReportModal({ open, onClose }: Props) {
                     type="button"
                     disabled={submitting}
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide px-2.5 py-1.5 rounded-lg border border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 text-sm font-black tracking-wide px-2.5 py-1.5 rounded-lg border border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
                   >
                     <Icon name="image" size={14} />
                     {t("reports.attachImage")}
                   </button>
                 )}
-                <p className="text-[10px] text-muted-foreground mt-1 m-0">
+                <p className="text-sm text-muted-foreground mt-1 m-0">
                   {t("reports.attachmentHint")}
                 </p>
                 {attachmentError && (
-                  <p className="text-xs text-red-400 mt-1 m-0" role="alert">
+                  <p className="text-sm text-destructive mt-1 m-0" role="alert">
                     {attachmentError}
                   </p>
                 )}
               </div>
 
               {error && (
-                <p className="text-sm text-red-400 m-0" role="alert">
+                <p className="text-sm text-destructive m-0" role="alert">
                   {error}
                 </p>
               )}
@@ -319,7 +319,7 @@ export function ReportModal({ open, onClose }: Props) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-bold uppercase tracking-wider text-muted-foreground hover:bg-muted/30 transition-colors cursor-pointer bg-transparent"
+                  className="flex-1 h-10 rounded border-0 text-sm font-semibold text-muted-foreground cursor-pointer bg-transparent hover:text-foreground"
                 >
                   {t("common.cancel")}
                 </button>
@@ -327,7 +327,7 @@ export function ReportModal({ open, onClose }: Props) {
                   type="button"
                   onClick={() => void submit()}
                   disabled={submitting || !descriptionValid}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all cursor-pointer border-0 disabled:opacity-60"
+                  className="flex-1 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 disabled:opacity-60"
                 >
                   {submitting ? t("reports.sending") : t("reports.send")}
                 </button>
@@ -335,10 +335,10 @@ export function ReportModal({ open, onClose }: Props) {
             </>
           ) : (
             <div className="text-center py-4">
-              <Icon name="check-circle" size={48} className="text-emerald-400 mx-auto mb-3" />
-              <p className="text-base font-black text-emerald-400 m-0">{t("reports.success")}</p>
+              <Icon name="check-circle" size={48} className="text-chart-2 mx-auto mb-3" />
+              <p className="text-base font-black text-chart-2 m-0">{t("reports.success")}</p>
               {attachmentUploadFailed && (
-                <p className="text-xs text-amber-400 mt-2 m-0" role="alert">
+                <p className="text-sm text-chart-4 mt-2 m-0" role="alert">
                   {t("reports.attachmentUploadFailed")}
                 </p>
               )}

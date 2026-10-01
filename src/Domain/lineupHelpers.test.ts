@@ -6,6 +6,7 @@ import {
   replaceInjuredStarters,
   suggestRotation,
 } from "@/Domain/lineupHelpers";
+import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
 import type { FormationSlot } from "@/types/formationSlots";
 import type { RosterPlayer } from "@/types/playerTypes";
 
@@ -376,5 +377,30 @@ describe("suggestRotation", () => {
     ];
     const swaps = suggestRotation(slots, ["s1", "s2"], [tired("s1"), tired("s2"), fresh("b")]);
     expect(swaps).toEqual([{ out: "s1", in: "b" }]);
+  });
+});
+
+describe("autoFillLineup — scarcest slot first", () => {
+  test("a left-footed full-back is kept for LB instead of being used at CB", () => {
+    const base = { passing: 5, vision: 5, finishing: 2, stamina: 6, reflex: 0, jump: 0 };
+    const fullBack = makePlayer({
+      id: "fb", name: "Left Back", positions: ["Defender"], preferredFoot: "left",
+      stats: { ...base, tackling: 9, heading: 8, strength: 8, pressing: 8, speed: 9, acceleration: 9, dribbling: 8 } as unknown as RosterPlayer["stats"],
+    });
+    const centreBack = makePlayer({
+      id: "cb", name: "Centre Back", positions: ["Defender"], preferredFoot: "right",
+      stats: { ...base, tackling: 7, heading: 8, strength: 8, pressing: 7, speed: 2, acceleration: 2, dribbling: 2 } as unknown as RosterPlayer["stats"],
+    });
+    expect(["natural", "apt"]).toContain(aptitudeFor(fullBack, "LB"));
+    expect(aptitudeFor(centreBack, "CB")).toBe("natural");
+    expect(["training", "unsuitable"]).toContain(aptitudeFor(centreBack, "LB"));
+    // Premise: ranked slot by slot, the full-back would out-value the natural CB at CB.
+    expect(slotValue(fullBack, "CB")).toBeGreaterThan(slotValue(centreBack, "CB"));
+
+    const slots: FormationSlot[] = [
+      { role: "CB", x: 50, y: 75 },
+      { role: "LB", x: 10, y: 75 },
+    ];
+    expect(autoFillLineup(slots, [fullBack, centreBack])).toEqual(["cb", "fb"]);
   });
 });

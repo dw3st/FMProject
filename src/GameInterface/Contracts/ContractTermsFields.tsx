@@ -44,13 +44,13 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand }: Pr
   const { t } = useTranslation();
   return (
     <div className="space-y-3">
-      <p className="text-[11px] text-muted-foreground m-0">
+      <p className="text-sm text-muted-foreground m-0">
         {demand === null
           ? t("contracts.loadingDemand")
           : <>{t("contracts.asking")}: <span className="text-primary font-semibold">{formatWage(demand)}</span> {t("contracts.perWeek")}</>}
       </p>
       <div className="flex items-center gap-3">
-        <label className="flex-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <label className="flex-1 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
           {t("contracts.weeklyWage")}
           <input
             type="number"
@@ -61,7 +61,7 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand }: Pr
             className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-muted/20 text-foreground text-sm font-semibold"
           />
         </label>
-        <label className="w-24 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <label className="w-24 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
           {t("contracts.years")}
           <select
             value={years}

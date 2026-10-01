@@ -1,11 +1,13 @@
 import type { ButtonHTMLAttributes } from "react";
 
-export type UiButtonVariant = "primary" | "ghost" | "danger";
+export type UiButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANT: Record<UiButtonVariant, string> = {
   primary: "bg-primary text-primary-foreground hover:opacity-90",
+  secondary: "bg-transparent text-muted-foreground hover:text-foreground",
+  // Alias of secondary, kept for existing callers.
   ghost: "bg-transparent text-muted-foreground hover:text-foreground",
-  danger: "bg-destructive text-white hover:opacity-90",
+  danger: "bg-transparent text-destructive hover:opacity-80",
 };
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,7 +18,7 @@ export function Button({ variant = "primary", className = "", type = "button", .
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded text-sm font-semibold cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded text-sm font-semibold cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT[variant]} ${className}`}
       {...rest}
     />
   );

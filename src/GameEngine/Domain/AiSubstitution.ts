@@ -8,6 +8,7 @@
 
 import type { GamePlayer, GameState, PendingSub, TeamId } from '@/GameEngine/types';
 import { Player } from '@/Domain/Player';
+import { factorFromAptitudes } from '@/Domain/positions/positionAptitude';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 
 /** Game-seconds between AI sub evaluations (~5 game-minutes). */
@@ -97,7 +98,9 @@ function scoreForRole(player: GamePlayer, role: string): number {
   const statScore = player.baseStats.withBall.speed
     + player.baseStats.withBall.passingSkill
     + player.baseStats.withoutBall.tackleChance;
-  return statScore * (player.energy / 100);
+  // Position fit for the slot: a natural beats an unsuitable one (same factor the engine applies).
+  const fitK = factorFromAptitudes(player.fit?.aptitudes, role);
+  return statScore * fitK * (player.energy / 100);
 }
 
 const MAIN_ROLE_BANDS: Record<string, string> = {

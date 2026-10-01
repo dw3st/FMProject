@@ -115,6 +115,16 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         </select>
       </div>
 
+      <label className="flex items-center gap-2 text-xs cursor-pointer">
+        <span className="text-white/50 w-20">Positions</span>
+        <input
+          type="checkbox"
+          checked={variant.outOfPosition ?? false}
+          onChange={(e) => patch({ outOfPosition: e.target.checked })}
+        />
+        <span className="text-white/70">Ignore position fit (out-of-position lineup)</span>
+      </label>
+
       <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20">Stat level</span>
         <input

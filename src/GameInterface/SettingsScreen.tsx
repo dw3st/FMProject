@@ -1,10 +1,10 @@
 import "flag-icons/css/flag-icons.min.css";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Check, LogOut, Home } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n/i18n";
 import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/AuthGate";
+import { Icon } from "@/GameInterface/Icons";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -40,13 +40,13 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
         type="button"
         onClick={onClose}
         aria-label={t("common.close")}
-        className="absolute top-6 right-6 w-10 h-10 rounded-full border border-border bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card transition-colors flex items-center justify-center cursor-pointer"
+        className="absolute top-6 right-6 w-10 h-10 bg-transparent border-0 text-muted-foreground hover:text-foreground flex items-center justify-center cursor-pointer"
       >
-        <X className="w-5 h-5" />
+        <Icon name="close" size={16} />
       </button>
 
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-black font-display tracking-tight text-foreground text-center mb-2">
+        <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0 text-center mb-6">
           {t("settings.language")}
         </h1>
         <p className="text-sm text-muted-foreground text-center mb-10">
@@ -71,12 +71,12 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             <button
               type="button"
               onClick={onExitToMenu}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-border bg-card/40 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-card transition-colors cursor-pointer"
+              className="w-full h-10 flex items-center justify-center gap-2 rounded border border-border bg-transparent text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              <Home className="w-4 h-4" />
+              <Icon name="home" size={16} />
               {t("settings.mainMenu")}
             </button>
-            <p className="mt-2 text-xs text-center text-muted-foreground">
+            <p className="mt-2 text-sm text-center text-muted-foreground">
               {t("settings.mainMenuDescription")}
             </p>
           </div>
@@ -85,15 +85,15 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
         {user && (
           <div className="mt-10 pt-6 border-t border-border flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("common.signedInAs")}</div>
+              <div className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground font-display font-bold">{t("common.signedInAs")}</div>
               <div className="text-sm font-medium text-foreground truncate">{user.email}</div>
             </div>
             <button
               type="button"
               onClick={() => { void logout(); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card/40 text-sm text-muted-foreground hover:text-foreground hover:bg-card transition-colors cursor-pointer"
+              className="flex items-center gap-2 h-10 px-4 rounded bg-transparent border-0 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
+              <Icon name="log-out" size={16} />
               {t("common.signOut")}
             </button>
           </div>
@@ -103,7 +103,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
       <button
         type="button"
         onClick={onClose}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 px-10 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider glow-primary hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer border-0"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 h-10 px-5 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0"
       >
         {t("common.save")}
       </button>
@@ -124,10 +124,10 @@ function LanguageOption({ label, flag, selected, onSelect }: LanguageOptionProps
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full flex items-center justify-between gap-3 px-5 py-4 rounded-lg border transition-all text-left cursor-pointer ${
+      className={`w-full flex items-center justify-between gap-3 p-3 rounded-md border text-left cursor-pointer ${
         selected
-          ? "border-primary/60 bg-primary/10"
-          : "border-border bg-card/40 hover:bg-card hover:border-primary/30"
+          ? "border-primary ring-1 ring-primary bg-card"
+          : "border-border bg-card hover:border-primary/50"
       }`}
     >
       <div className="flex items-center gap-3">
@@ -136,7 +136,7 @@ function LanguageOption({ label, flag, selected, onSelect }: LanguageOptionProps
           {label}
         </span>
       </div>
-      {selected && <Check className="w-5 h-5 text-primary" />}
+      {selected && <Icon name="check" size={16} className="text-primary" />}
     </button>
   );
 }

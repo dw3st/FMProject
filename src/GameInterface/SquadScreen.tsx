@@ -75,7 +75,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
 
   if (error || !squad) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="px-6 py-5 space-y-4">
         <PageHeadline hideTitle backHref={`/leagues/${league}`} />
         <p className="text-muted-foreground text-sm">{t("squadScreen.squadNotFound")}</p>
       </div>
@@ -83,7 +83,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   }
 
   return (
-    <div className="p-4 overflow-auto flex flex-col flex-1 min-h-0">
+    <div className="px-6 py-5 overflow-auto flex flex-col flex-1 min-h-0">
       <div className="max-w-6xl mx-auto w-full space-y-6 flex flex-col flex-1 min-h-0">
 
         <PageHeadline
@@ -97,7 +97,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
               logoUrl={squadLogoUrl(squad.id)}
               primaryColor={squad.colors[0]}
               secondaryColor={squad.colors[1]}
-              className="w-10 h-10 rounded-full shrink-0"
+              className="w-8 h-8 rounded-full shrink-0"
               imgClassName="w-full h-full object-contain p-0.5"
             />
             {squad.name}

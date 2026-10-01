@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { Icon } from "@/GameInterface/Icons";
+import { Wordmark } from "@/GameInterface/Components/Wordmark";
 
 /**
  * Full-screen loader shown after a save is created while the early-starting
@@ -10,8 +11,9 @@ export function PreSeasonLoadingScreen() {
   const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-[200] bg-background flex flex-col items-center justify-center px-6 text-center">
-      <Loader2 className="w-12 h-12 text-primary animate-spin mb-8" />
-      <h1 className="text-2xl md:text-3xl font-black font-display uppercase tracking-tight text-foreground mb-3">
+      <Wordmark size="lg" className="mb-10" />
+      <Icon name="loader2" size={32} className="text-primary animate-spin mb-6" />
+      <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none text-foreground mb-3">
         {t("newGame.preparingTitle")}
       </h1>
       <p className="text-sm text-muted-foreground max-w-md">

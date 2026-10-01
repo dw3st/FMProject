@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award, HeartPulse, FileText } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { Icon } from "@/GameInterface/Icons";
+import { Icon, iconOf } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
+
+const ArrowDownLeft = iconOf("arrow-down-left");
+const ArrowUpRight = iconOf("arrow-up-right");
+const Award = iconOf("award");
+const FileText = iconOf("file-text");
+const HeartPulse = iconOf("heart-pulse");
+const TrendingUp = iconOf("trend-up");
+const Trophy = iconOf("trophy");
 
 type FilterTab = "all" | "unread";
 
@@ -29,23 +36,23 @@ const CATEGORY_META: Record<
   },
   transfer_in: {
     labelKey: "inbox.categories.transfer_in",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/15",
-    border: "border-emerald-500/30",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
     Icon: ArrowDownLeft,
   },
   transfer_out: {
     labelKey: "inbox.categories.transfer_out",
-    color: "text-amber-400",
-    bg: "bg-amber-500/15",
-    border: "border-amber-500/30",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
     Icon: ArrowUpRight,
   },
   season: {
     labelKey: "inbox.categories.season",
-    color: "text-yellow-400",
-    bg: "bg-yellow-500/15",
-    border: "border-yellow-500/30",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
     Icon: Trophy,
   },
   cup: {
@@ -57,23 +64,23 @@ const CATEGORY_META: Record<
   },
   continental: {
     labelKey: "inbox.categories.continental",
-    color: "text-sky-400",
-    bg: "bg-sky-500/15",
-    border: "border-sky-500/30",
+    color: "text-chart-3",
+    bg: "bg-chart-3/15",
+    border: "border-chart-3/30",
     Icon: ContinentalIcon,
   },
   injury: {
     labelKey: "inbox.categories.injury",
-    color: "text-red-400",
-    bg: "bg-red-500/15",
-    border: "border-red-500/30",
+    color: "text-destructive",
+    bg: "bg-destructive/15",
+    border: "border-destructive/30",
     Icon: HeartPulse,
   },
   contract: {
     labelKey: "inbox.categories.contract",
-    color: "text-amber-400",
-    bg: "bg-amber-500/15",
-    border: "border-amber-500/30",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
     Icon: FileText,
   },
 };
@@ -173,17 +180,17 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
     <div className="flex flex-col h-full">
       {/* Modal header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
-        <h2 className="flex-1 text-xl font-black font-display m-0">
-          <span className="text-primary glow-text">{t("inbox.title")}</span>
+        <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex-1">
+          <span className="text-primary">{t("inbox.title")}</span>
         </h2>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-xl overflow-hidden border border-border bg-card/50">
+          <div className="flex rounded-md overflow-hidden border border-border bg-card/50">
             <button
               type="button"
               onClick={() => setFilter("all")}
-              className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+              className={`px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
                 filter === "all"
-                  ? "bg-primary text-primary-foreground glow-primary-sm"
+                  ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
               }`}
             >
@@ -192,16 +199,16 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
             <button
               type="button"
               onClick={() => setFilter("unread")}
-              className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+              className={`px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
                 filter === "unread"
-                  ? "bg-primary text-primary-foreground glow-primary-sm"
+                  ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
               }`}
             >
               {t("inbox.unread")}
               {unreadCount > 0 && (
                 <span
-                  className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                  className={`ml-1.5 text-sm px-1.5 py-0.5 rounded-full ${
                     filter === "unread"
                       ? "bg-primary-foreground/20 text-primary-foreground"
                       : "bg-primary/20 text-primary"
@@ -216,9 +223,9 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
             type="button"
             onClick={handleMarkAllRead}
             disabled={busy || unreadCount === 0}
-            className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl border border-border bg-card/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 h-10 text-[13px] font-semibold rounded border-0 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 bg-transparent hover:text-foreground"
           >
-            <CheckCheck className="w-3.5 h-3.5" />
+            <Icon name="check-check" className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t("inbox.markAllRead")}</span>
           </button>
           {onClose && (
@@ -227,7 +234,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
               onClick={onClose}
               className="w-8 h-8 rounded-lg border border-border bg-card/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer flex items-center justify-center border-0"
             >
-              <X className="w-4 h-4" />
+              <Icon name="close" className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -236,14 +243,14 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
       {/* Content */}
       <div className="flex-1 min-h-0 p-4">
         {loading ? (
-          <div className="card-arcade rounded-xl p-12 text-center h-full flex items-center justify-center">
+          <div className="card-arcade rounded-md p-12 text-center h-full flex items-center justify-center">
             <p className="text-muted-foreground text-sm m-0">{t("inbox.loadingMessages")}</p>
           </div>
         ) : messages.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-            <div className="md:col-span-1 card-arcade rounded-xl overflow-hidden flex flex-col min-h-0">
+            <div className="md:col-span-1 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto divide-y divide-border">
                 {filtered.length === 0 ? (
                   <p className="p-6 text-center text-sm text-muted-foreground m-0">
@@ -261,7 +268,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
                 )}
               </div>
             </div>
-            <div className="md:col-span-2 card-arcade rounded-xl overflow-hidden flex flex-col min-h-0">
+            <div className="md:col-span-2 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
               {selected ? (
                 <MessageDetail message={selected} leagues={leagues} />
               ) : (
@@ -282,9 +289,9 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
 function EmptyState() {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-xl p-16 text-center flex flex-col items-center gap-3">
-      <div className="w-14 h-14 rounded-xl bg-muted/30 border border-border flex items-center justify-center">
-        <Newspaper className="w-7 h-7 text-muted-foreground" />
+    <div className="card-arcade rounded-md p-16 text-center flex flex-col items-center gap-3">
+      <div className="w-14 h-14 rounded-md bg-muted/30 border border-border flex items-center justify-center">
+        <Icon name="news" className="w-7 h-7 text-muted-foreground" />
       </div>
       <p className="text-muted-foreground text-sm m-0">
         {t("inbox.emptyState")}
@@ -342,11 +349,11 @@ function MessageRow({
           >
             {prizeTexts?.subject ?? message.subject}
           </span>
-          <span className="text-[10px] text-muted-foreground shrink-0">
+          <span className="text-sm text-muted-foreground shrink-0">
             {formatInboxDate(message.date)}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground m-0 leading-snug truncate">{prizeTexts?.preview ?? message.preview}</p>
+        <p className="text-sm text-muted-foreground m-0 leading-snug truncate">{prizeTexts?.preview ?? message.preview}</p>
       </div>
     </button>
   );
@@ -369,15 +376,15 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </div>
           <div className="flex-1 min-w-0">
             <span
-              className={`text-[10px] font-black uppercase tracking-wider ${meta.color}`}
+              className={`text-[13px] font-black uppercase tracking-[0.08em] ${meta.color}`}
             >
               {t(meta.labelKey)}
             </span>
-            <h2 className="text-lg font-black font-display text-foreground m-0 leading-tight">
+            <h2 className="font-display font-black uppercase text-xl leading-none m-0">
               {prizeTexts?.subject ?? message.subject}
             </h2>
           </div>
-          <span className="text-xs text-muted-foreground shrink-0">
+          <span className="text-sm text-muted-foreground shrink-0">
             {formatFullDate(message.date)}
           </span>
         </div>
@@ -448,7 +455,7 @@ function PrizeLine({ prize }: { prize?: number }) {
   const { t } = useTranslation();
   if (!prize || prize <= 0) return null;
   return (
-    <p className="text-sm font-semibold text-emerald-400 m-0 mt-1">
+    <p className="text-sm font-semibold text-chart-2 m-0 mt-1">
       {t("inbox.prizeAmount", { amount: formatFee(prize) })}
     </p>
   );
@@ -607,8 +614,8 @@ function DevelopmentBody({
             </span>
             <div className="flex items-center gap-2 text-sm font-display font-black">
               <span className="text-muted-foreground">{c.from}</span>
-              <ArrowRight className="w-4 h-4 text-primary" />
-              <span className="text-primary glow-text">{c.to}</span>
+              <Icon name="arrow-right" className="w-4 h-4 text-primary" />
+              <span className="text-primary">{c.to}</span>
             </div>
           </div>
         ))}
@@ -657,12 +664,12 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4 p-3 bg-muted/10">
-      <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+      <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
         {label}
       </span>
       <span
         className={`text-sm font-bold ${
-          accent ? "text-primary font-display glow-text" : "text-foreground"
+          accent ? "text-primary font-display" : "text-foreground"
         }`}
       >
         {value}

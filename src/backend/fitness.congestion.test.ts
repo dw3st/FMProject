@@ -81,14 +81,17 @@ describe("fitness/load model under fixture congestion", () => {
 
     type Snapshot = { plainXi: string[]; fitnessXi: string[]; avgFitness: number; avgLoad: number; assistantRested: number };
 
-    function snapshotOf(squad: Squad, date: string): Snapshot {
-      const plainXi = autoLineupDefaultFormation(squad);
-      const fitnessXi = autoLineupDefaultFormationWithFitness(squad);
+    function snapshotOf(squad: Squad, date: string, playedPrev?: Set<string>): Snapshot {
+      const plainXi = autoLineupDefaultFormation(squad, date);
+      const fitnessXi = autoLineupDefaultFormationWithFitness(squad, date);
       const byId = new Map(squad.players.map((p) => [p.id, p]));
       const avgFitness =
         plainXi.reduce((sum, id) => sum + (byId.get(id)?.seasonLog?.fitness ?? 75), 0) / plainXi.length;
+      // Load trend is measured over the available starters: reference-XI members who actually
+      // played the previous match (a starter rested by rotation legitimately sheds load).
+      const loadIds = playedPrev ? plainXi.filter((id) => playedPrev.has(id)) : plainXi;
       const avgLoad =
-        plainXi.reduce((sum, id) => sum + (byId.get(id)?.seasonLog?.load ?? 0), 0) / plainXi.length;
+        loadIds.reduce((sum, id) => sum + (byId.get(id)?.seasonLog?.load ?? 0), 0) / Math.max(1, loadIds.length);
       // Human club with the rotation assistant ON and the stat-only XI saved as its lineup.
       const assisted = resolveUserLineup(
         squad, formationForSimId(DEFAULT_SIM_FORMATION_ID), plainXi, date, { assistantRotation: true },
@@ -104,7 +107,8 @@ describe("fitness/load model under fixture congestion", () => {
       if (matchDates.includes(currentDate)) {
         const squad = await saveService.getSquadById(saveId, clubX);
         if (!squad) throw new Error(`clubX squad ${clubX} not found before match day ${currentDate}`);
-        snapshots.push(snapshotOf(squad, currentDate));
+        const prev = snapshots[snapshots.length - 1];
+        snapshots.push(snapshotOf(squad, currentDate, prev ? new Set(prev.fitnessXi) : undefined));
       }
 
       const outcome = await advanceOneDay(saveService, saveId);
