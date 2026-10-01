@@ -66,6 +66,11 @@ export interface DisplayPlayer {
   valueMillions: number;
   /** Nationality label for lists / filters; may be inferred from club country. */
   nationality: string;
+  /**
+   * Scout rows of players outside the user's own squad: the overall shown as a range when the
+   * chief scout's uncertainty is large (`overallRange`, `src/Domain/staff`). Absent = exact.
+   */
+  avgRange?: [number, number];
   /** Active injury details, when `status === "injured"` and `currentDate` was supplied. */
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string; daysLeft: number };
 }

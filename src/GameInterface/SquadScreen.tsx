@@ -31,7 +31,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
       setLoading(false);
       return;
     }
-    fetch(`/api/saves/${session.saveId}/squad/${league}/${club}`)
+    fetch(`/api/saves/${session.saveId}/squad/${league}/${club}?scouted=1`)
       .then((r) => {
         if (!r.ok) throw new Error("not found");
         return r.json();
