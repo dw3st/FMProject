@@ -1067,7 +1067,8 @@
       "cup": "Copa",
       "continental": "Continental",
       "injury": "Lesão",
-      "contract": "Contratos"
+      "contract": "Contratos",
+      "youth": "Base"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1108,6 +1109,10 @@
       "expiring": "Contratos que terminam nesta temporada: {{players}}",
       "renewed": "{{players}} assinou novo contrato (até {{until}})",
       "released": "Contrato encerrado, saiu como jogador livre: {{players}}"
+    },
+    "youth": {
+      "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",
+      "released": "Chegou aos 19 anos sem ser promovido e saiu da base: {{players}}"
     }
   },
   "finances": {

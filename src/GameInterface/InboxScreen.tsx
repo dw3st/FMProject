@@ -13,6 +13,7 @@ const FileText = iconOf("file-text");
 const HeartPulse = iconOf("heart-pulse");
 const TrendingUp = iconOf("trend-up");
 const Trophy = iconOf("trophy");
+const Prospect = iconOf("user");
 
 type FilterTab = "all" | "unread";
 
@@ -82,6 +83,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-4/15",
     border: "border-chart-4/30",
     Icon: FileText,
+  },
+  youth: {
+    labelKey: "inbox.categories.youth",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: Prospect,
   },
 };
 
@@ -413,6 +421,16 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
         {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
         {message.category === "injury" && <InjuryBody message={message} />}
+        {message.category === "youth" && (
+          <p className="text-sm text-foreground m-0">
+            {message.kind === "intake"
+              ? t("inbox.youth.intake", {
+                  year: message.year, count: message.count,
+                  best: message.best?.name ?? "",
+                })
+              : t("inbox.youth.released", { players: (message.players ?? []).map((p) => p.name).join(", ") })}
+          </p>
+        )}
         {message.category === "contract" && (
           <p className="text-sm text-foreground m-0">
             {t(`inbox.contract.${message.kind}`, {
