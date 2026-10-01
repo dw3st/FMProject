@@ -66,6 +66,8 @@ export interface SaveMeta {
   activeLeagues?: LeagueSeasonState[];
   /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
   followedLeagues?: string[];
+  /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
+  rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────

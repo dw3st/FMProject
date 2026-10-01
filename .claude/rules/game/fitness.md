@@ -257,6 +257,21 @@ trocados por partida** (dentro do alvo 2–3,5) e uma semana normal em **~0**, m
 integração `src/backend/fitness.congestion.test.ts` (3 jogos em 7 dias → pelo menos 1 titular poupado
 no 3º jogo) passando.
 
+## 4b. Assistente de rotação (clube do jogador)
+
+- `suggestRotation(slots, lineupIds, players, date)` (`lineupHelpers.ts`) é a regra da seção 4
+  extraída: `autoFillLineupWithFitness` a usa, e o clube do jogador também. `applyRotation`
+  aplica as trocas.
+- `resolveUserLineup(..., date, { assistantRotation, override })` (`matchSimulationLineups.ts`):
+  depois de `replaceInjuredStarters`, calcula a sugestão. Override da data (`meta.rotationOverride`)
+  aplica as trocas aceitas (ou nada com `optOut`); sem override, `TacticsSave.assistantRotation`
+  ligado aplica tudo sozinho; senão só sugere. Devolve `rotationSuggestion` e `rotationApplied`.
+- `POST /api/saves/:id/rotation-override { date, swaps, optOut? }` grava `meta.rotationOverride`
+  (valida que as trocas estão na sugestão do dia). `/api/match-setup` devolve os dois campos.
+- UI: bloco na `MatchPreviewScreen` (Aplicar / Ignorar, Desfazer) e checkbox na tela de formação.
+- Testes: `lineupHelpers.test.ts`, `matchSimulationLineups.test.ts`, `fitness.congestion.test.ts`;
+  smoke liga o assistente no clube do jogador.
+
 ## 5. Telas
 
 - **Formação, prévia, elenco:** barra de fôlego + `LoadIndicator` (ícone de carga alta, ≥ 70% de

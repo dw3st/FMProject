@@ -54,6 +54,7 @@ export function FormationScreen() {
   const [formations, setFormations] = useState<FormationOption[]>([]);
   const [slots, setSlots] = useState<FormationSlot[]>([]);
   const [lineup, setLineup] = useState<string[]>([]);
+  const [assistantRotation, setAssistantRotation] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [tacticsUpdating, setTacticsUpdating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -76,6 +77,7 @@ export function FormationScreen() {
       .then((r) => r.json())
       .then((t: TacticsSave) => {
         if (t.lineup?.length) setLineup(t.lineup);
+        setAssistantRotation(t.assistantRotation === true);
         mergeSession({
           formation: t.formation,
           tactical_style: t.tactical_style,
@@ -139,6 +141,21 @@ export function FormationScreen() {
       mergeSession(updated);
     } finally {
       setTacticsUpdating(false);
+    }
+  }
+
+  async function handleAssistantRotation(next: boolean) {
+    if (!session) return;
+    setAssistantRotation(next);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assistantRotation: next }),
+      });
+      if (!res.ok) setAssistantRotation(!next);
+    } catch {
+      setAssistantRotation(!next);
     }
   }
 
@@ -449,6 +466,22 @@ export function FormationScreen() {
               </div>
             </div>
           </div>
+
+          {/* Assistant rotation */}
+          <label className="card-arcade rounded-xl p-5 flex items-center justify-between gap-4 cursor-pointer">
+            <span>
+              <span className="block font-display font-bold text-sm uppercase tracking-wider text-primary">
+                {t("tactics.assistantRotation")}
+              </span>
+              <span className="block text-xs text-muted-foreground mt-1">{t("tactics.assistantRotationHint")}</span>
+            </span>
+            <input
+              type="checkbox"
+              className="w-5 h-5 accent-primary cursor-pointer"
+              checked={assistantRotation}
+              onChange={(e) => handleAssistantRotation(e.target.checked)}
+            />
+          </label>
 
           {/* Tactical Style */}
           <div className="card-arcade rounded-xl p-5">

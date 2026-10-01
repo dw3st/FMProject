@@ -492,7 +492,7 @@ export async function advanceOneDay(
             };
             playedMatchOverride = null;
           } else {
-            const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics);
+            const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics, meta.rotationOverride);
             const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
             const mode = userPlays
               ? "full"

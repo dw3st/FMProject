@@ -573,7 +573,9 @@
       "narrow": "Fechada",
       "normal": "Normal",
       "wide": "Aberta"
-    }
+    },
+    "assistantRotation": "Assistente escala por fôlego",
+    "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo."
   },
   "formations": {
     "title": "Formação",
@@ -1428,7 +1430,13 @@
     "cancelSelection": "Cancelar seleção",
     "change": "mudança",
     "lowFitnessWarning": "Titulares com fôlego baixo: {{names}}",
-    "injuredReplaced": "{{out}} lesionado, substituído por {{in}}"
+    "injuredReplaced": "{{out}} lesionado, substituído por {{in}}",
+    "rotationTitle": "Poupar {{count}} cansados?",
+    "rotationSwap": "sai {{out}} ({{outFit}}%), entra {{in}} ({{inFit}}%)",
+    "rotationApply": "Aplicar",
+    "rotationIgnore": "Ignorar",
+    "rotationApplied": "O assistente poupou {{count}} jogadores",
+    "rotationUndo": "Desfazer"
   },
   "matchResult": {
     "title": "Resultado da partida",

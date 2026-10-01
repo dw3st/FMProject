@@ -60,7 +60,7 @@ const { totalsByKind } = await import("@/Domain/finance/ledger");
 const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await import("@/Domain/aiFinance/aiClubFinance");
 const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
 const { leaguePrize } = await import("@/Domain/finance/prizes");
-const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness } = await import("@/Domain/advanceDay/matchSimulationLineups");
+const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
@@ -153,6 +153,20 @@ try {
   const playerCountrySlugs = new Set(playerCountry ? pyramidLeagueSlugs(pyramids[playerCountry]!) : [PLAYER_LEAGUE]);
   console.log(`Player club ${playerSquadId}, country ${playerCountry ?? "(no pyramid)"}: ${[...playerCountrySlugs].join(", ")}\n`);
   await checkFiles(saveId, "fresh save");
+
+  // Rotation assistant ON for the player's club, with a stat-only XI saved as its lineup.
+  const { formationForSimId, DEFAULT_SIM_FORMATION_ID } = await import("@/Domain/matchFormations");
+  const rotFormation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
+  let rotationDiffered = false;
+  {
+    const sq = (await plain().getSquadById(saveId, playerSquadId))!;
+    await plain().saveTactics(saveId, {
+      formation: DEFAULT_SIM_FORMATION_ID,
+      tactical_style: "balanced",
+      lineup: autoLineupDefaultFormation(sq),
+      assistantRotation: true,
+    });
+  }
 
   // Cup year per country at creation — used later to detect which cups got regenerated.
   const cupYearsStart = new Map<string, number>();
@@ -278,6 +292,17 @@ try {
           leagueFitnessSamples.push({ month, value: mean });
           if (squadId === opponentId) oppFitnessSamples.push({ month, value: mean });
         }
+      }
+    }
+
+    const playerAnyFixtureToday = (await svc.getFixturesForDate(saveId, date))
+      .some((f) => f.home === playerSquadId || f.away === playerSquadId);
+    if (playerAnyFixtureToday && !rotationDiffered) {
+      const sq = await svc.getSquadById(saveId, playerSquadId);
+      const tac = await svc.getTactics(saveId);
+      if (sq && tac) {
+        const r = resolveUserLineup(sq, rotFormation, tac.lineup, date, { assistantRotation: true });
+        if (r.rotationApplied.length > 0) rotationDiffered = true;
       }
     }
 
@@ -953,6 +978,9 @@ try {
   const badLoad = allFiles.filter(({ squad }) =>
     squad.players.some((p) => typeof p.seasonLog?.load === "number" && p.seasonLog.load < 0));
   check(badLoad.length === 0, `no player load below 0 across the world (${badLoad.length} squad(s) with a negative load)`);
+
+  check(rotationDiffered,
+    "rotação: with assistantRotation on, at least one player match day fielded an XI different from the saved lineup because of fitness");
 
   await checkFiles(saveId, "end");
   const el = (performance.now() - t0) / 1000;
