@@ -393,6 +393,29 @@
     "players": "Jogadores"
   },
   "tactics": {
+    "axes": {
+      "title": "Instruções da equipe",
+      "hint": "Escolher um estilo preenche os quatro. Mude qualquer um para personalizar.",
+      "custom": "Personalizado (base {{style}})",
+      "reset": "Voltar ao estilo",
+      "pressing_style": "Pressão",
+      "defensive_line": "Linha defensiva",
+      "width": "Largura",
+      "build_up": "Saída de bola",
+      "values": {
+        "low_block": "Bloco baixo",
+        "mid_block": "Bloco médio",
+        "high_press": "Pressão alta",
+        "deep": "Recuada",
+        "normal": "Normal",
+        "high": "Alta",
+        "narrow": "Estreita",
+        "wide": "Larga",
+        "direct": "Direta",
+        "balanced": "Equilibrada",
+        "possession": "Posse"
+      }
+    },
     "tacticalStyle": "Estilo Tático",
     "selectStyle": "Selecione um estilo tático",
     "buildUp": "Construção",
@@ -494,6 +517,23 @@
     "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo."
   },
   "formations": {
+    "custom": "Personalizada",
+    "editor": {
+      "edit": "Editar formação",
+      "title": "Editando a formação",
+      "hint": "Arraste uma posição para uma zona livre. Uma posição por zona.",
+      "cancel": "Cancelar",
+      "apply": "Salvar formação",
+      "invalid": {
+        "count": "A formação precisa de exatamente 11 posições",
+        "goalkeeper": "É preciso exatamente 1 goleiro",
+        "outfield": "São necessários exatamente 10 jogadores de linha",
+        "defenders": "São necessários pelo menos 3 defensores",
+        "attackers": "É necessário pelo menos 1 atacante",
+        "duplicate": "Duas posições estão na mesma zona",
+        "zone": "Uma posição está fora da grade"
+      }
+    },
     "title": "Formação",
     "subtitle": "Formação e Táticas",
     "subtitleTactics": "e Táticas",
@@ -518,7 +558,7 @@
     "playersInStartingLineup": "{{count}} jogadores escalados",
     "playersOnBench": "{{count}} jogadores no banco",
     "preview": "Pré-visualização",
-    "clickPositionHint": "Clique em uma posição para trocar de jogador",
+    "clickPositionHint": "Clique ou arraste uma posição para trocar de jogador",
     "outOfPosition": "Fora de posição",
     "outOfPositionPrimary": "Fora de posição — principal: {{position}} ({{role}})",
     "rating": "Nota",
