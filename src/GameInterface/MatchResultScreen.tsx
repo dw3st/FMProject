@@ -1,16 +1,5 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Cloud,
-  MapPin,
-  Clock,
-  User,
-  ChevronLeft,
-  ChevronRight,
-  BarChart3,
-  Target,
-  ArrowRightLeft,
-} from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
 import type { MatchEvent } from "@/types/dayLogTypes";
@@ -30,6 +19,12 @@ import {
   squadSecondaryColor,
 } from "@/GameInterface/matchTeamColors";
 import { addOneDay } from "@/Domain/advanceDay/date";
+import { Icon, iconOf } from "@/GameInterface/Icons";
+
+const Clock = iconOf("clock");
+const Cloud = iconOf("cloud");
+const MapPin = iconOf("map-pin");
+const User = iconOf("user");
 
 // ── Helpers (aligned with MatchPreviewScreen) ───────────────────────────────
 
@@ -42,7 +37,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
   const color = getPositionColor(role);
   return (
     <span
-      className={`text-[9px] font-black uppercase tracking-wider shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
+      className={`text-[13px] font-black uppercase tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
     >
       {roleLabel(role)}
     </span>
@@ -128,45 +123,45 @@ function ResultPlayerRow({
   const ratingClass = rating != null && Number.isFinite(rating) ? ratingTextClass10(rating) : "text-muted-foreground";
 
   const rowClass = highlight
-    ? "bg-amber-500/10 border border-amber-500/35 rounded-lg"
+    ? "bg-chart-4/10 border border-chart-4/35 rounded-lg"
     : "";
 
   if (align === "left") {
     return (
       <div className={`flex items-center gap-2 py-[3px] px-1 -mx-1 ${rowClass}`}>
         <RoleBadge role={role} align="left" />
-        <span className="flex-1 text-[13px] text-foreground font-medium truncate">{lastName}</span>
+        <span className="flex-1 text-sm text-foreground font-medium truncate">{lastName}</span>
         {goals > 0 && (
-          <span className="flex items-center gap-0.5 text-amber-400 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
-            <Target className="w-3 h-3" />
-            {goals > 1 && <span className="text-[10px] font-black tabular-nums">{goals}</span>}
+          <span className="flex items-center gap-0.5 text-chart-4 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
+            <Icon name="target" className="w-3 h-3" />
+            {goals > 1 && <span className="text-sm font-black tabular-nums">{goals}</span>}
           </span>
         )}
         {assists > 0 && (
-          <span className="flex items-center gap-0.5 text-sky-400 shrink-0" title={`${assists} assist${assists > 1 ? "s" : ""}`}>
-            <span className="text-[10px] font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
+          <span className="flex items-center gap-0.5 text-chart-3 shrink-0" title={`${assists} assist${assists > 1 ? "s" : ""}`}>
+            <span className="text-sm font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
           </span>
         )}
-        <span className={`text-[13px] font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
+        <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
       </div>
     );
   }
 
   return (
     <div className={`flex items-center gap-2 py-[3px] px-1 -mx-1 ${rowClass}`}>
-      <span className={`text-[13px] font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
+      <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
       {assists > 0 && (
-        <span className="flex items-center gap-0.5 text-sky-400 shrink-0" title={`${assists} assist${assists > 1 ? "s" : ""}`}>
-          <span className="text-[10px] font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
+        <span className="flex items-center gap-0.5 text-chart-3 shrink-0" title={`${assists} assist${assists > 1 ? "s" : ""}`}>
+          <span className="text-sm font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
         </span>
       )}
       {goals > 0 && (
-        <span className="flex items-center gap-0.5 text-amber-400 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
-          {goals > 1 && <span className="text-[10px] font-black tabular-nums">{goals}</span>}
-          <Target className="w-3 h-3" />
+        <span className="flex items-center gap-0.5 text-chart-4 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
+          {goals > 1 && <span className="text-sm font-black tabular-nums">{goals}</span>}
+          <Icon name="target" className="w-3 h-3" />
         </span>
       )}
-      <span className="flex-1 text-[13px] text-foreground font-medium truncate text-right">{lastName}</span>
+      <span className="flex-1 text-sm text-foreground font-medium truncate text-right">{lastName}</span>
       <RoleBadge role={role} align="right" />
     </div>
   );
@@ -190,7 +185,7 @@ function StatsCompareBar({
   const awayPct = sum === 0 ? 50 : (away / sum) * 100;
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="flex justify-between text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
         <span>{label}</span>
         <span className="tabular-nums text-foreground">
           <span style={{ color: homeColor }}>{home}</span>
@@ -198,7 +193,7 @@ function StatsCompareBar({
           <span style={{ color: awayColor }}>{away}</span>
         </span>
       </div>
-      <div className="h-2 rounded-full bg-muted/40 overflow-hidden flex">
+      <div className="h-2 rounded-full bg-border overflow-hidden flex">
         <div
           className="h-full shrink-0 transition-all"
           style={{ width: `${homePct}%`, backgroundColor: homeColor }}
@@ -240,20 +235,20 @@ function ResultTeamCard({
 
   return (
     <div
-      className="flex-1 rounded-xl bg-card/60 backdrop-blur-sm p-5 flex flex-col gap-3 border border-border"
+      className="flex-1 rounded-md bg-card/60 backdrop-blur-sm p-5 flex flex-col gap-3 border border-border"
       style={{ ...accentBorder, height: "40vh", overflow: "scroll" }}
     >
       <div className={`flex items-center gap-3 ${isHome ? "" : "flex-row-reverse"}`}>
         <ClubLogo
           logoUrl={logoUrl}
-          className="w-10 h-10 rounded-full shrink-0"
+          className="w-8 h-8 rounded-full shrink-0"
           imgClassName="w-full h-full object-contain p-1"
         />
         <div className={`min-w-0 ${isHome ? "" : "text-right"}`}>
-          <h2 className="text-base font-black font-display text-foreground uppercase tracking-wider m-0 leading-tight truncate">
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0 truncate">
             {squadName}
           </h2>
-          <p className="text-[10px] font-bold uppercase tracking-widest m-0" style={{ color: accentHex }}>
+          <p className="text-[13px] font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
             {t("matchResult.matchRatings")}
           </p>
         </div>
@@ -263,12 +258,12 @@ function ResultTeamCard({
       <div className="border-t border-border/30" />
 
       <div className="flex-1">
-        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
+        <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-1.5 font-display">
           {t("matchResult.squadPerformance")}
         </p>
         <div>
           {ids.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground italic">{t("matchResult.noPlayerData")}</p>
+            <p className="text-sm text-muted-foreground">{t("matchResult.noPlayerData")}</p>
           ) : (
             ids.map((id) => (
               <ResultPlayerRow
@@ -434,7 +429,7 @@ export function MatchResultScreen() {
             href="/dashboard"
             className="inline-flex items-center gap-2 text-primary font-bold text-sm no-underline hover:underline"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <Icon name="chevron-left" className="w-4 h-4" />
             {t("common.backToDashboard")}
           </a>
         </div>
@@ -467,7 +462,7 @@ export function MatchResultScreen() {
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
       <div className="text-center space-y-2 shrink-0">
         <p
-          className="text-[11px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
+          className="text-[13px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
           style={{
             backgroundImage: `linear-gradient(90deg, ${homeHex}, ${awayHex})`,
             WebkitBackgroundClip: "text",
@@ -476,7 +471,7 @@ export function MatchResultScreen() {
         >
           {t("matchResult.matchdayRound", { round: matchEvent.round, competition })}
         </p>
-        <h1 className="text-4xl font-black font-display text-foreground uppercase tracking-wider m-0">
+        <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
           {t("matchResult.title")}
         </h1>
         <div className="flex items-center justify-center gap-6 pt-2">
@@ -508,9 +503,9 @@ export function MatchResultScreen() {
               {matchEvent.scorers.map((s, i) => (
                 <span
                   key={i}
-                  className="text-[12px] font-semibold text-amber-400/90 flex items-center gap-1"
+                  className="text-sm font-semibold text-chart-4/90 flex items-center gap-1"
                 >
-                  <Target className="w-3.5 h-3.5 shrink-0" />
+                  <Icon name="target" className="w-3.5 h-3.5 shrink-0" />
                   {s.playerName}
                   {s.goals > 1 ? ` (${s.goals} ${t("matchResult.goals")})` : ` (${t("matchResult.goal")})`}
                   <span className="text-muted-foreground/60">{s.team === "home" ? homeName : awayName}</span>
@@ -524,7 +519,7 @@ export function MatchResultScreen() {
                   .map(([pid, ps]) => (
                     <span
                       key={pid}
-                      className="text-[12px] font-semibold text-sky-400/90 flex items-center gap-1"
+                      className="text-sm font-semibold text-chart-3/90 flex items-center gap-1"
                     >
                       <span className="font-black">A</span>
                       {matchEvent.playerNames[pid] ?? pid}
@@ -540,7 +535,7 @@ export function MatchResultScreen() {
         )}
         <div
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"
-          style={{ background: `linear-gradient(to right, ${homeHex}, ${awayHex})` }}
+          style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
         />
       </div>
 
@@ -557,7 +552,7 @@ export function MatchResultScreen() {
         <div className="flex flex-col items-center justify-center shrink-0 gap-3 py-4">
           <div className="w-px flex-1 bg-border/30" />
           <div className="w-11 h-11 rounded-full border border-border/50 bg-card/40 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-muted-foreground" />
+            <Icon name="stats" className="w-5 h-5 text-muted-foreground" />
           </div>
           <div className="w-px flex-1 bg-border/30" />
         </div>
@@ -573,13 +568,13 @@ export function MatchResultScreen() {
       </div>
 
       <div className="w-full max-w-5xl shrink-0">
-        <div className="card-arcade rounded-xl overflow-hidden">
+        <div className="card-arcade rounded-md overflow-hidden">
           <div
-            className="h-1 w-full shrink-0"
-            style={{ background: `linear-gradient(to right, ${homeHex}, ${awayHex})` }}
+            className="h-1.5 w-full shrink-0"
+            style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
           />
           <div className="px-6 py-4">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 m-0">
+            <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-4 m-0 font-display">
               {t("matchResult.matchStatistics")}
             </p>
             <div className="grid gap-4 md:grid-cols-2">
@@ -618,10 +613,10 @@ export function MatchResultScreen() {
 
       {matchEvent.substitutions && matchEvent.substitutions.length > 0 && (
         <div className="w-full max-w-5xl shrink-0">
-          <div className="card-arcade rounded-xl px-6 py-4">
+          <div className="card-arcade rounded-md px-6 py-4">
             <div className="flex items-center gap-2 mb-3">
-              <ArrowRightLeft className="w-3.5 h-3.5 text-muted-foreground" />
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest m-0">
+              <Icon name="arrow-right-left" className="w-3.5 h-3.5 text-muted-foreground" />
+              <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] m-0 font-display">
                 {t("match.lastMinuteSubs")}
               </p>
             </div>
@@ -631,17 +626,17 @@ export function MatchResultScreen() {
                 .sort((a, b) => a.matchMinute - b.matchMinute)
                 .map((sub, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className="text-[10px] font-black tabular-nums text-muted-foreground w-7 shrink-0">
+                    <span className="text-sm font-black tabular-nums text-muted-foreground w-7 shrink-0">
                       {sub.matchMinute}&apos;
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground shrink-0">
+                    <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
                       {sub.team === "home" ? homeName : awayName}
                     </span>
-                    <span className="text-red-400 font-medium truncate flex-1">
+                    <span className="text-destructive font-medium truncate flex-1">
                       {sub.playerOutName}
                     </span>
-                    <ArrowRightLeft className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <span className="text-emerald-400 font-medium truncate flex-1 text-right">
+                    <Icon name="arrow-right-left" className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-chart-2 font-medium truncate flex-1 text-right">
                       {sub.playerInName}
                     </span>
                   </div>
@@ -652,7 +647,7 @@ export function MatchResultScreen() {
       )}
 
       <div className="w-full max-w-5xl shrink-0">
-        <div className="card-arcade rounded-xl px-6 py-4">
+        <div className="card-arcade rounded-md px-6 py-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <InfoCell icon={MapPin} label={t("matchResult.venue")} value={venue} />
             <InfoCell icon={Cloud} label={t("matchResult.weather")} value={`${weather.icon} ${weather.label}`} />
@@ -666,10 +661,10 @@ export function MatchResultScreen() {
       <div className="flex items-center gap-4 shrink-0 pb-2">
         <a
           href="/dashboard"
-          className="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] active:scale-[0.98] transition-all no-underline border-0"
+          className="flex items-center gap-2 px-8 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline border-0"
         >
           {t("common.continue")}
-          <ChevronRight className="w-4 h-4" />
+          <Icon name="chevron-right" className="w-4 h-4" />
         </a>
       </div>
 
@@ -691,7 +686,7 @@ function InfoCell({
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="w-3.5 h-3.5" />
-        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
       <p className="text-sm font-semibold text-foreground m-0">{value}</p>
     </div>
