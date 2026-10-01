@@ -1044,7 +1044,9 @@
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
     "prizeAmount": "+ {{amount}}",
     "season": {
-      "negativeBalance": "O caixa do clube ficou negativo: {{balance}}."
+      "leaguePrizeSubject": "Prêmio da liga: {{league}}",
+    "leaguePrizePreview": "O clube recebeu a premiação da {{league}} pela colocação final.",
+    "negativeBalance": "O caixa do clube ficou negativo: {{balance}}."
     },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
@@ -1606,6 +1608,23 @@
     "gateProjection": "Projeção de Bilheteria",
     "noUpcomingHomeGames": "Sem jogos em casa agendados.",
     "weeklyProjection": "Projeção Semanal",
+    "ledgerText": {
+      "broadcasting": "Receita de TV",
+      "commercial": "Receita comercial semanal",
+      "wages": "Salários da semana",
+      "operational": "Custos operacionais",
+      "gate": "Bilheteria: {{competition}}",
+      "leaguePrize": "Prêmio {{competition}}: {{position}}º lugar",
+      "cupStage": "Prêmio {{competition}}: {{stage}}",
+      "cupRunnerUp": "Prêmio {{competition}}: vice-campeão",
+      "contParticipation": "Prêmio {{competition}}: participação",
+      "contGroupDraw": "Prêmio {{competition}}: empate na fase de grupos",
+      "contGroupWin": "Prêmio {{competition}}: vitória na fase de grupos",
+      "contStage": "Prêmio {{competition}}: {{stage}}",
+      "contTitle": "Prêmio {{competition}}: título",
+      "transferIn": "Taxa de transferência recebida de {{club}}",
+      "transferOut": "Taxa de transferência paga a {{club}}"
+    },
     "seasonBasis": "Temporada até agora"
   },
   "developmentScreen": {
