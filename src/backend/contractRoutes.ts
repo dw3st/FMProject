@@ -1,7 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { buildContractMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 
@@ -45,6 +45,9 @@ export const contractRoutes = {
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
+      if (!renewalWithinLimits(player, date, seasonEnd, years)) {
+        return Response.json({ error: "tooManyYears", demand: check.demand }, { status: 400 });
+      }
       const contract = { until: addYearsIso(player.contract?.until ?? seasonEnd, years), wage };
       await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
         ...squad,

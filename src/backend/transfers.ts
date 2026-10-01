@@ -14,7 +14,8 @@ import { getSellPriority } from "@/Domain/transfer/sellList";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -120,6 +121,8 @@ export const transferRoutes = {
         if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
         if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
 
+        if (buyerSquad.players.length >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;
         if (budget < fee) {
@@ -153,7 +156,7 @@ export const transferRoutes = {
         }
         const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
           ?? defaultSeasonEnd(meta.currentDate ?? new Date().toISOString().slice(0, 10));
-        const newContract = { until: addYearsIso(seasonEnd, contractYears - 1), wage: contractWage };
+        const newContract = { until: contractEndFor(meta.currentDate ?? new Date().toISOString().slice(0, 10), seasonEnd, contractYears), wage: contractWage };
 
         // ── AI acceptance decision ────────────────────────────────────────────
         const { accepted, reason } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority);

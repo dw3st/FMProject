@@ -126,3 +126,24 @@ export function withContracts(squad: Squad, seasonEnd: string): Squad {
     players: squad.players.map((p) => (p.contract ? p : { ...p, contract: initialContract(p, squad, seasonEnd) })),
   };
 }
+
+/**
+ * End of a contract of `years` seasons signed on `date`. Off-season signings (date past the
+ * league's season end, before the country rollover) count from the NEXT season's end.
+ */
+export function contractEndFor(date: string, seasonEnd: string, years: number): string {
+  const base = date > seasonEnd ? addYearsIso(seasonEnd, 1) : seasonEnd;
+  return addYearsIso(base, Math.max(0, years - 1));
+}
+
+/**
+ * Renewal limits: remaining seasons on the current contract plus `years` may not exceed
+ * MAX_YEARS, nor run the player past the age cap.
+ */
+export function renewalWithinLimits(player: RosterPlayer, date: string, seasonEnd: string, years: number): boolean {
+  const firstEnd = date > seasonEnd ? addYearsIso(seasonEnd, 1) : seasonEnd;
+  const current = player.contract?.until ?? firstEnd;
+  const remaining = Math.max(1, Number(current.slice(0, 4)) - Number(firstEnd.slice(0, 4)) + 1);
+  if (remaining + years > C.MAX_YEARS) return false;
+  return player.age + remaining - 1 + years <= C.MAX_CONTRACT_AGE;
+}

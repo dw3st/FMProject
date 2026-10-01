@@ -10,7 +10,8 @@ import { Player } from "@/Domain/Player";
 import { debugLog } from "@/Logger";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
-import { aiRenewalYears, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
+import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
 export const TEAMS_PER_DAY_ATTEMPTS = 10;
@@ -89,7 +90,8 @@ export interface DailyMarketTickOptions {
 /** Contract an AI club gives a signing: the curve wage at its factor, length by age. */
 function aiSigningContract(player: RosterPlayer, buyer: Squad, date: string, options?: DailyMarketTickOptions) {
   const end = options?.seasonEndOf?.(buyer) ?? defaultSeasonEnd(date);
-  return renewalContract(player, buyer, end, aiRenewalYears(player));
+  const contract = renewalContract(player, buyer, end, aiRenewalYears(player));
+  return { ...contract, until: contractEndFor(date, end, aiRenewalYears(player)) };
 }
 
 /** Strip needs that pre-date the intentType field so old saves don't feed stale data into scoring. */
@@ -153,7 +155,7 @@ function tryMatchPlayerSellList(
   // Pick the best-scoring buyer (or random among top candidates)
   const buyerId = buyerIds[Math.floor(rng() * buyerIds.length)]!;
   const buyerSquad = squads.get(buyerId);
-  if (!buyerSquad) return null;
+  if (!buyerSquad || buyerSquad.players.length >= MAX_SQUAD) return null;
 
   const buyerProfile = profiles[buyerId]!;
   const matchingNeed = buyerProfile.needs.find((n) => playerMatchesBand(listedPlayer, n.position));
@@ -262,7 +264,7 @@ export function dailyMarketTick(
   for (const pi of pickIdx) {
     const buyerId = poolIds[pi]!;
     const buyerSquad = squads.get(buyerId);
-    if (!buyerSquad) continue;
+    if (!buyerSquad || buyerSquad.players.length >= MAX_SQUAD) continue;
 
     const profile = profiles[buyerId] ?? null;
     const latestList = Array.from(squads.values());

@@ -95,3 +95,11 @@ bun test src/Domain/contracts src/backend/contracts.renew.test.ts src/backend/co
 `bun scripts/season-rollover-smoke.ts`, seção "Contratos": nenhum contrato vencido nem faltando nos
 clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum clube que virou abaixo dos mínimos por papel
 (ou de 22 jogadores, IA), e a linha semanal de salários do extrato bate com a soma dos contratos do elenco.
+
+## Review follow-ups
+
+- **Off-season signing dates:** `contractEndFor(date, seasonEnd, years)` (`contracts.ts`) is the one helper for every signing (human free agent, human transfer buy, AI market signing, daily free-agent hire): a `date` past the league's `end` counts from the next season's end.
+- **Renewal limits:** `renewalWithinLimits` — remaining seasons + `years` <= `MAX_YEARS` and age cap, else 400 `tooManyYears`.
+- **Squad cap:** the human transfer buy refuses at `MAX_SQUAD` (`squadFull`); AI buyers (market and sell-list matching) skip at `MAX_SQUAD`.
+- **Role minimums on sale:** `evaluateTransferOffer` refuses (`squadDepth`) an AI seller's sale that would leave its main role below `MIN_BY_ROLE`. The smoke checks the minimums at the end of the run for the rolled clubs.
+- **Free pool:** `pruneFreeAgents` runs every day; `toFreeAgent` clears `injury`, `contract` and club on release. Released human players are also removed from `tactics.lineup` and `market.playerSellList`.

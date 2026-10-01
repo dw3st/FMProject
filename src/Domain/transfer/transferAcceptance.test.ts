@@ -106,3 +106,14 @@ describe("evaluateTransferOffer", () => {
     expect(evaluateTransferOffer(player, makeSquad(players, 100_000_000, "LOW"), fair, undefined, { humanSeller: true }).accepted).toBe(false);
   });
 });
+
+describe("evaluateTransferOffer role minimums", () => {
+  test("refuses a sale that drops the seller below the role minimum, even with a huge offer", () => {
+    // 7 defenders (mixed detailed positions) + enough others: selling one leaves 6 < 7
+    const defs = ["CB", "CB", "LB", "RB", "CB", "LWB", "CB"].map((pos, i) => makePlayer(`d${i}`, 7, 26, pos));
+    const others = Array.from({ length: 14 }, (_, i) => makePlayer(`m${i}`, 7, 26, "CM"));
+    const squad = makeSquad([...defs, ...others], 5_000_000);
+    const res = evaluateTransferOffer(defs[0]!, squad, 500_000_000);
+    expect(res).toEqual({ accepted: false, reason: "squadDepth" });
+  });
+});

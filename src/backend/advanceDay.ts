@@ -42,7 +42,7 @@ import {
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
-import { freeAgentTick, refillSquad } from "@/Domain/contracts/freeAgents";
+import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
 import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
@@ -1144,7 +1144,9 @@ export async function advanceOneDay(
 
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
-      const freeAgentPool = await saveService.getFreeAgents(saveId);
+      const rawFreeAgents = await saveService.getFreeAgents(saveId);
+      const freeAgentPool = pruneFreeAgents(rawFreeAgents, currentDate);
+      if (freeAgentPool.length !== rawFreeAgents.length) await saveService.writeFreeAgents(saveId, freeAgentPool);
       if (freeAgentPool.length > 0) {
         const tradedToday = new Set(completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]));
         const hiringSquads = allSquadsMarket.filter((sq) => !tradedToday.has(sq.id));
@@ -1458,8 +1460,17 @@ export async function advanceOneDay(
           afterExpiry.push({ squad: res.squad, nextEnd });
           if (res.squad === sq) continue;
           await saveService.saveSquadById(saveId, res.squad);
-          for (const p of res.released) releasedNow.push({ player: { ...p, squadId: "", contract: undefined }, since: currentDate });
+          for (const p of res.released) releasedNow.push(toFreeAgent(p, currentDate));
           if (isHuman && res.released.length > 0) {
+            const gone = new Set(res.released.map((p) => p.id));
+            const tac = await saveService.getTactics(saveId);
+            if (tac && tac.lineup.some((id) => gone.has(id))) {
+              await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !gone.has(id)) });
+            }
+            const mk = await saveService.getMarket(saveId);
+            if (mk?.playerSellList?.some((c) => gone.has(c.playerId))) {
+              await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !gone.has(c.playerId)) });
+            }
             deferredContractMessages.push({
               date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
             });
@@ -1467,9 +1478,8 @@ export async function advanceOneDay(
         }
       }
       if (releasedNow.length > 0 || due.units.length > 0) {
-        const keepSince = addYearsIso(currentDate, -1);
         const existing = await saveService.getFreeAgents(saveId);
-        let pool = [...existing.filter((f) => f.since > keepSince), ...releasedNow];
+        let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
         // Refill: AI clubs below the minimums sign the best free agents that fit the wage cap, then
         // filler youth; the human club only gets youth up to the per-role minimums.
         for (const { squad: sq, nextEnd } of afterExpiry) {

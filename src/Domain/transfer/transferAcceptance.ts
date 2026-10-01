@@ -1,3 +1,4 @@
+import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import type { Squad, RosterPlayer, PlayerContract } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { aiFinancialPressure } from "@/Domain/aiFinance/aiClubFinance";
@@ -50,6 +51,12 @@ export function evaluateTransferOffer(
   ).length;
   if (posCount <= 1) {
     return { accepted: false, reason: "squadDepth" };
+  }
+
+  if (!opts.humanSeller) {
+    const role = roleOf(player);
+    const inRole = fromSquad.players.filter((p) => roleOf(p) === role).length;
+    if (inRole - 1 < MIN_BY_ROLE[role]) return { accepted: false, reason: "squadDepth" };
   }
 
   const pRating = playerOverallRating(player);
