@@ -854,3 +854,14 @@ aproximar o quickSim do motor sem precisar mexer nisso.
 - `resolveUserLineup` (`src/Domain/advanceDay/matchSimulationLineups.ts`) agora cai no seletor
   ciente de fôlego (`autoFillLineupWithFitness`), não no preenchimento só por nota, quando o clube
   do jogador nunca salvou uma escalação.
+
+### Re-medição Bundesliga × Serie A (2026-10-01, issue #7)
+
+Mundo atual, `collect <liga> 200 2 --fitness 88` (400 jogos de motor cada), constantes inalteradas:
+
+| Liga | nível | paceEdge | motor | quick | erro |
+|---|---|---|---|---|---|
+| bundesliga | 5,01 | 0,12 | 1,94 | 1,96 | +1,3% |
+| serie_a | 5,34 | 0,67 | 2,26 | 2,43 | +7,6% |
+
+Ambas dentro de ±10% (ruído do motor ±3,6% / ±3,3%; rms 5,5%). O desvio antigo (Bundesliga −17,5%, Serie A −9,7%) não se reproduz no mundo atual, então nenhuma constante foi alterada.
