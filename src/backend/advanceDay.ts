@@ -792,7 +792,7 @@ export async function advanceOneDay(
 
         if (stage === "final") {
           const loserPrize = cupRunnerUpPrize(base);
-          const paidToLoser = await awardClubPrize(loserId, loserPrize, `${label} · runner-up`, { competition: cSlug, stage });
+          const paidToLoser = await awardClubPrize(loserId, loserPrize, `${label} · runner-up`, { competition: cSlug, stage: "runner_up" });
           if (paidToLoser > 0) cupPrizeAwardedTo.set(loserId, (cupPrizeAwardedTo.get(loserId) ?? 0) + paidToLoser);
         }
       }
@@ -828,7 +828,7 @@ export async function advanceOneDay(
         if (rounds.includes(groupStage.rounds[0]!)) {
           const amount = continentalPrize(compSlug, "participation");
           for (const clubId of cont.groups.flatMap((g) => g.clubs)) {
-            const paid = await awardClubPrize(clubId, amount, `${label} · participation`, { competition: cSlug, stage: "group" });
+            const paid = await awardClubPrize(clubId, amount, `${label} · participation`, { competition: cSlug, stage: "participation" });
             add(continentalPrizeAwardedTo, clubId, paid);
           }
         }
@@ -841,13 +841,13 @@ export async function advanceOneDay(
             if (f.result.home === f.result.away) {
               const amount = continentalPrize(compSlug, "groupDraw");
               for (const clubId of [f.home, f.away]) {
-                const paid = await awardClubPrize(clubId, amount, `${label} · group draw`, { competition: cSlug, stage: "group" });
+                const paid = await awardClubPrize(clubId, amount, `${label} · group draw`, { competition: cSlug, stage: "group_draw" });
                 add(continentalPrizeAwardedTo, clubId, paid);
               }
             } else {
               const winnerId = f.result.home > f.result.away ? f.home : f.away;
               const amount = continentalPrize(compSlug, "groupWin");
-              const paid = await awardClubPrize(winnerId, amount, `${label} · group win`, { competition: cSlug, stage: "group" });
+              const paid = await awardClubPrize(winnerId, amount, `${label} · group win`, { competition: cSlug, stage: "group_win" });
               add(continentalPrizeAwardedTo, winnerId, paid);
             }
           }
@@ -1356,7 +1356,7 @@ export async function advanceOneDay(
               next = applyMoney(next, {
                 date: currentDate, kind: "prize", amount: leaguePrizeAmount,
                 label: `${nameOfLeagueForPrizes!(slug)} · ${ordinalPosition(tablePos + 1)}`,
-                ref: { competition: slug },
+                ref: { competition: slug, position: tablePos + 1 },
               });
               playerLeaguePrizeThisRollover = leaguePrizeAmount;
             }
@@ -1396,7 +1396,7 @@ export async function advanceOneDay(
               newSeasonEntries.push({
                 date: currentDate, kind: "prize", amount: leaguePrizeAmount,
                 label: `${nameOfLeagueForPrizes!(slug)} · ${ordinalPosition(tablePos + 1)}`,
-                ref: { competition: slug },
+                ref: { competition: slug, position: tablePos + 1 },
               });
             }
             if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries);

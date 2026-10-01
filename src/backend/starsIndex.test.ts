@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import { getStarPlayerIds } from "@/backend/starsIndex";
+import { getStarPlayers } from "@/backend/starsIndex";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -20,11 +20,11 @@ const meta = (id: string, currentDate: string) =>
     clubId: "c", clubName: "C", clubColors: ["#000", "#fff"], currentDate,
   }) as unknown as SaveMeta;
 
-describe("getStarPlayerIds", () => {
+describe("getStarPlayers", () => {
   test("returns null when the save does not exist", async () => {
     const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(null);
     try {
-      expect(await getStarPlayerIds("missing-save")).toBeNull();
+      expect(await getStarPlayers("missing-save")).toBeNull();
     } finally {
       metaSpy.mockRestore();
     }
@@ -35,8 +35,8 @@ describe("getStarPlayerIds", () => {
     const metaSpy = spyOn(saveService, "getMeta").mockResolvedValue(meta("save-a", "2026-01-01"));
     const squadsSpy = spyOn(saveService, "getAllSquads").mockResolvedValue([squad]);
     try {
-      const ids = await getStarPlayerIds("save-a");
-      expect(ids).toEqual(["star", "weak"]);
+      const ids = await getStarPlayers("save-a");
+      expect(Object.keys(ids ?? {}).sort()).toEqual(["star", "weak"]);
     } finally {
       metaSpy.mockRestore();
       squadsSpy.mockRestore();
@@ -51,8 +51,8 @@ describe("getStarPlayerIds", () => {
     const squadsSpy = spyOn(saveService, "getAllSquads").mockReturnValue(squadsPromise);
 
     try {
-      const p1 = getStarPlayerIds("save-b");
-      const p2 = getStarPlayerIds("save-b");
+      const p1 = getStarPlayers("save-b");
+      const p2 = getStarPlayers("save-b");
       await Promise.resolve();
       await Promise.resolve();
       resolveSquads([squad]);
@@ -85,8 +85,8 @@ describe("getStarPlayerIds", () => {
     try {
       // Two requests for the same save, one right after the other: an older key (started first,
       // seq 0) and a newer key (started second, seq 1).
-      const pOld = getStarPlayerIds(saveId);
-      const pNew = getStarPlayerIds(saveId);
+      const pOld = getStarPlayers(saveId);
+      const pNew = getStarPlayers(saveId);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -97,14 +97,14 @@ describe("getStarPlayerIds", () => {
       resolveOld([squadOld]);
       const oldResult = await pOld;
 
-      expect(newResult).toEqual(["new"]);
-      expect(oldResult).toEqual(["old"]);
+      expect(Object.keys(newResult ?? {})).toEqual(["new"]);
+      expect(Object.keys(oldResult ?? {})).toEqual(["old"]);
 
       // A later read for the newer key must hit the cache (no extra scan) and still see the
       // newer data — the stale "old" result must not have clobbered it.
       metaSpy.mockResolvedValue(meta(saveId, "2026-01-02"));
-      const finalResult = await getStarPlayerIds(saveId);
-      expect(finalResult).toEqual(["new"]);
+      const finalResult = await getStarPlayers(saveId);
+      expect(Object.keys(finalResult ?? {})).toEqual(["new"]);
       expect(squadsSpy).toHaveBeenCalledTimes(2);
     } finally {
       metaSpy.mockRestore();

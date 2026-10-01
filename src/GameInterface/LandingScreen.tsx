@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
@@ -13,6 +15,7 @@ const LINK = "text-muted-foreground no-underline transition-colors hover:text-fo
 
 export function LandingScreen() {
   const { t } = useTranslation();
+  const [changelogOpen, setChangelogOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -21,7 +24,7 @@ export function LandingScreen() {
         <a href="/start" className={LINK}>{t("landing.signIn")}</a>
       </header>
 
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center">
+      <section className="relative h-[calc(100svh-8rem)] min-h-[420px] flex flex-col items-center justify-center px-6 text-center">
         <PitchBackdrop />
         <div className="relative flex flex-col items-center">
           <Wordmark size="lg" />
@@ -40,7 +43,7 @@ export function LandingScreen() {
       </ul>
 
       <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-6 pb-6 pt-2 text-sm text-muted-foreground">
-        <span>v{CURRENT_VERSION}</span>
+        <button type="button" onClick={() => setChangelogOpen(true)} className={`${LINK} cursor-pointer border-0 bg-transparent p-0 text-inherit`}>v{CURRENT_VERSION}</button>
         <span>{t("landing.footerText")}</span>
         <a href={SOURCE_REPO_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.sourceCode")}</a>
         <a href={LICENSE_URL} target="_blank" rel="noreferrer" className={LINK}>{t("landing.license")}</a>
@@ -49,6 +52,7 @@ export function LandingScreen() {
           <a href="https://westlab.dev" target="_blank" rel="noopener" className={LINK}>westlab.dev</a>
         </span>
       </footer>
+      <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
     </div>
   );
 }

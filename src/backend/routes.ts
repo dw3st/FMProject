@@ -24,7 +24,8 @@ import { reportRoutes } from "@/backend/reports";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
-import { getStarPlayerIds } from "@/backend/starsIndex";
+import { getStarPlayers } from "@/backend/starsIndex";
+import { getCompetitionRankings } from "@/backend/statsRankings";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { totalsByKind, weeklyNet } from "@/Domain/finance/ledger";
 import { getClubBudget } from "@/backend/FinancialService";
@@ -556,15 +557,29 @@ export const apiRoutes = {
     return Response.json({ meta, fixtures, names, groups });
   },
 
-  /** Ids of the world's top-50 players (by overall AVG) — used to badge them as "Current legend". */
+  /** Top-20 player rankings of one competition (`?competition=<league|cup_x|ucl...>`). */
+  "/api/saves/:saveId/stats": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSaveOwner(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const competition = new URL(req.url).searchParams.get("competition") ?? "";
+    if (!/^[a-z0-9_]{1,80}$/.test(competition)) return Response.json({ error: "invalid competition" }, { status: 400 });
+    const result = await getCompetitionRankings(saveId!, competition);
+    if (result === null) return Response.json({ error: "save not found" }, { status: 404 });
+    if (result === "not_found") return Response.json({ error: "competition not found" }, { status: 404 });
+    return Response.json(result);
+  },
+
+  /** Star kind (gold/blue/green) per player id — badges next to player names. */
   "/api/saves/:saveId/stars": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const { saveId } = req.params;
     const auth = requireSaveOwner(req, saveId!);
     if (auth instanceof Response) return auth;
-    const playerIds = await getStarPlayerIds(saveId!);
-    if (!playerIds) return Response.json({ error: "save not found" }, { status: 404 });
-    return Response.json({ playerIds });
+    const stars = await getStarPlayers(saveId!);
+    if (!stars) return Response.json({ error: "save not found" }, { status: 404 });
+    return Response.json({ stars });
   },
 
   /**

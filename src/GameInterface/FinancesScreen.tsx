@@ -12,6 +12,7 @@ import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { weeklyOperationalCost } from "@/Domain/advanceDay/financial";
 import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
+import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -70,6 +71,18 @@ export function FinancesScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
+
+  // Translated text of a ledger line from its kind + ref; the stored English label is only a fallback.
+  const ledgerText = (entry: LedgerEntry): string => {
+    const d = describeLedgerEntry(entry);
+    if (!d) return entry.label;
+    return t(`financesScreen.ledgerText.${d.key}`, {
+      competition: d.competition ? competitionName(d.competition, leagues, i18n.language) : "",
+      stage: d.stage ? t(`${d.stageScope === "continental" ? "continental" : "cups"}.stage.${d.stage}`) : "",
+      position: d.position,
+      club: d.club ?? "",
+    });
+  };
 
   useEffect(() => {
     if (!saveLoading && !session) window.location.href = "/new-game";
@@ -389,7 +402,7 @@ export function FinancesScreen() {
                       <Icon name={meta.icon} size={14} className="text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-foreground m-0 truncate">{entry.label}</p>
+                      <p className="text-xs text-foreground m-0 truncate">{ledgerText(entry)}</p>
                       <p className="text-[10px] text-muted-foreground m-0">
                         {entry.date} · {t(meta.labelKey)}
                       </p>
