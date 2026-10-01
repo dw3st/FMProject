@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.7",
+    date: "2026-09-30",
+    items: [
+      {
+        pt: "Contratos: cada jogador tem salário fixo e data de fim, e você pode renovar na ficha do jogador",
+        en: "Contracts: every player has a fixed wage and an end date, and you can renew from the player page",
+      },
+      {
+        pt: "Jogadores livres: quem fica sem contrato aparece nos Olheiros e pode ser contratado sem taxa",
+        en: "Free agents: players without a contract show up in Scout and can be signed with no fee",
+      },
+      {
+        pt: "Ao comprar um jogador você negocia salário e anos de contrato",
+        en: "When buying a player you now negotiate his wage and contract length",
+      },
+      {
+        pt: "Os clubes da IA mantêm elencos completos de uma temporada para a outra",
+        en: "AI clubs keep full squads from one season to the next",
+      },
+    ],
+  },
+  {
     version: "1.6",
     date: "2026-09-30",
     items: [

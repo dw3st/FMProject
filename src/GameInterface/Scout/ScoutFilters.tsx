@@ -182,7 +182,7 @@ export function ScoutFilters({
       </div>
 
       {/* For Sale Only toggle */}
-      <div className="mt-4 pt-4 border-t border-border/40">
+      <div className="mt-4 pt-4 border-t border-border/40 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}
@@ -194,6 +194,18 @@ export function ScoutFilters({
         >
           <Tag className="w-3.5 h-3.5" />
           {t("scout.filters.forSaleOnly")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+            filters.onlyFree
+              ? "bg-primary/20 text-primary border-primary/40"
+              : "bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/30"
+          }`}
+        >
+          <Tag className="w-3.5 h-3.5" />
+          {t("scout.filters.freeAgentsOnly")}
         </button>
       </div>
 

@@ -188,7 +188,7 @@ export function ScoutTable({
                     e.stopPropagation();
                     onOffer?.(player);
                   }}
-                  title={!!mySquadId && player.squadId === mySquadId ? t("scout.table.yourPlayer") : t("scout.table.makeAnOffer")}
+                  title={!!mySquadId && player.squadId === mySquadId ? t("scout.table.yourPlayer") : player.free ? t("scout.table.signFree") : t("scout.table.makeAnOffer")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all ${
                     !!mySquadId && player.squadId === mySquadId
                       ? "bg-muted/30 text-muted-foreground border-border cursor-not-allowed opacity-60"
@@ -196,7 +196,7 @@ export function ScoutTable({
                   }`}
                 >
                   <UserPlus className="w-3 h-3" />
-                  {t("scout.table.offer")}
+                  {player.free ? t("scout.table.sign") : t("scout.table.offer")}
                 </button>
               </div>
             </div>
