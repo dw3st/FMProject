@@ -1,3 +1,4 @@
+import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { YOUTH as Y } from "@/Domain/youth/youthConfig";
 import { aiClubFinance, financialTierOf, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { renewalContract } from "@/Domain/contracts/contracts";
@@ -160,7 +161,7 @@ export function developYouthSeason(player: RosterPlayer, dpMult: number): Roster
   const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
   let p: RosterPlayer = { ...player, overallAvg: undefined };
   for (let i = 0; i < Y.SESSIONS_PER_SEASON; i++) {
-    p = applyTrainingDevelopment(p, "normal", weights, dpMult).updatedPlayer;
+    p = applyTrainingDevelopment(p, "normal", weights, dpMult * rebornDpMult(player)).updatedPlayer;
   }
   return { ...p, age: p.age + 1, overallAvg: undefined };
 }

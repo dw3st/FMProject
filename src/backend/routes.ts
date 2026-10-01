@@ -6,6 +6,7 @@ import { transferRoutes } from "@/backend/transfers";
 import { contractRoutes } from "@/backend/contractRoutes";
 import { staffRoutes } from "@/backend/staffRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
+import { rebornRoutes } from "@/backend/rebornRoutes";
 import { obscureSquad, staffEffectsOf } from "@/Domain/staff/staff";
 import { inboxRoutes } from "@/backend/inbox";
 import { saveService } from "@/backend/SaveService";
@@ -72,6 +73,7 @@ export const apiRoutes = {
   ...contractRoutes,
   ...staffRoutes,
   ...youthRoutes,
+  ...rebornRoutes,
   ...inboxRoutes,
 
   // Public runtime config for the frontend. PostHog is only enabled when

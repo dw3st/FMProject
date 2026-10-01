@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-  buildWorldLevels, expireOffers, generateReborn, levelPercentile, processRetirements, rebornDpMult,
+  buildWorldLevels, expireOffers, generateReborn, levelPercentile, processRetirements,
   retireChance, retires,
 } from "@/Domain/retirement/retirement";
+import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { lineAverage } from "@/Domain/youth/youth";
 import { roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";

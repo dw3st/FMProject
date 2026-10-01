@@ -5,6 +5,7 @@ import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { Button } from "@/GameInterface/ui/Button";
 import { DataTable, type DataTableColumn } from "@/GameInterface/ui/DataTable";
 import { Notice } from "@/GameInterface/ui/Notice";
+import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 interface YouthRow {
@@ -68,7 +69,12 @@ export function YouthTable() {
     {
       key: "name",
       header: t("youth.player"),
-      cell: (r) => <span className="font-semibold">{r.player.name}</span>,
+      cell: (r) => (
+        <span className="inline-flex items-center gap-1.5 font-semibold">
+          {r.player.name}
+          {r.player.reborn && <RebornBadge />}
+        </span>
+      ),
     },
     {
       key: "pos",

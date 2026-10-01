@@ -8,6 +8,7 @@ import { getPositionColor, getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -124,6 +125,7 @@ export function SquadTable({
             <div className="px-3 py-2 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
               <span className="truncate">{player.name}</span>
               {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
+              {player.reborn && <RebornBadge />}
             </div>
             <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">
