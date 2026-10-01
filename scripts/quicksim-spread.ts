@@ -817,6 +817,11 @@ async function events(cacheDir: string, quickRepeats: number, holdout: Set<strin
   });
   console.log("\n2. Nota média dos titulares, todas as ligas");
   console.table([ratingRow("motor", E), ratingRow("quick", Q)]);
+  console.log("   ≥8.5 % por linha (motor | quick | razão quick/motor):");
+  console.table(Object.fromEntries(GROUPS.map((g) => {
+    const e = 100 * E[g].rHigh / E[g].rN, q = 100 * Q[g].rHigh / Q[g].rN;
+    return [g, { motor: +e.toFixed(2), quick: +q.toFixed(2), razão: e > 0 ? +(q / e).toFixed(2) : "-" }];
+  })));
   const spread: Record<string, string> = {};
   for (const g of GROUPS) {
     const d = leagues.map((lg) => rMean(quick.get(lg)![g]) - rMean(eng.get(lg)![g]));
