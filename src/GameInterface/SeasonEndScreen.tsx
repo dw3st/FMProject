@@ -1,5 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Trophy, Medal, Award, Target, Handshake, Star, ArrowRight, Crown } from "lucide-react";
+import { Icon, iconOf } from "@/GameInterface/Icons";
+
+const Award = iconOf("award");
+const Crown = iconOf("crown");
+const Handshake = iconOf("handshake");
+const Medal = iconOf("medal");
+const Star = iconOf("star");
+const Target = iconOf("target");
 
 export interface SeasonStanding {
   position: number;
@@ -60,9 +67,9 @@ const mockData: SeasonSummary = {
 };
 
 const positionStyles: Record<number, { bg: string; border: string; text: string; icon: typeof Crown }> = {
-  1: { bg: "bg-yellow-500/20", border: "border-yellow-500", text: "text-yellow-500", icon: Crown },
+  1: { bg: "bg-chart-4/20", border: "border-chart-4", text: "text-chart-4", icon: Crown },
   2: { bg: "bg-slate-300/20", border: "border-slate-300", text: "text-slate-300", icon: Medal },
-  3: { bg: "bg-amber-700/20", border: "border-amber-700", text: "text-amber-700", icon: Medal },
+  3: { bg: "bg-chart-4/20", border: "border-chart-4", text: "text-chart-4", icon: Medal },
 };
 
 function ordinal(n: number): string {
@@ -77,27 +84,27 @@ export function SeasonEndScreen() {
   const data = mockData;
 
   return (
-    <main className="flex-1 p-4 lg:p-8 overflow-auto">
+    <main className="flex-1 px-6 py-5 overflow-auto">
         {data.yourStats.isChampion && (
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-yellow-500/10 blur-3xl animate-pulse" />
+            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-chart-4/10 blur-3xl animate-pulse" />
             <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 left-1/2 w-96 h-96 rounded-full bg-yellow-500/5 blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 left-1/2 w-96 h-96 rounded-full bg-chart-4/5 blur-3xl animate-pulse" />
           </div>
         )}
 
         <div className="relative z-10 max-w-5xl mx-auto space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
-            <p className="text-sm text-muted-foreground uppercase tracking-widest m-0">{t("seasonEnd.seasonComplete")}</p>
-            <h1 className="text-4xl lg:text-5xl font-black font-display uppercase tracking-wider m-0">
+            <p className="text-sm text-muted-foreground uppercase tracking-[0.08em] m-0 font-display font-bold">{t("seasonEnd.seasonComplete")}</p>
+            <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
               {data.league} <span className="text-primary">{data.season}</span>
             </h1>
             {data.yourStats.isChampion && (
-              <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-yellow-500/20 border border-yellow-500 text-yellow-500">
-                <Trophy className="w-5 h-5" />
-                <span className="font-bold uppercase tracking-wider">{t("seasonEnd.champions")}</span>
-                <Trophy className="w-5 h-5" />
+              <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-chart-4/20 border border-chart-4 text-chart-4">
+                <Icon name="trophy" className="w-5 h-5" />
+                <span className="font-bold uppercase tracking-[0.08em] font-display">{t("seasonEnd.champions")}</span>
+                <Icon name="trophy" className="w-5 h-5" />
               </div>
             )}
           </div>
@@ -132,35 +139,35 @@ export function SeasonEndScreen() {
             />
             <AwardCard
               icon={Target}
-              iconColor="text-yellow-500"
-              iconBg="bg-yellow-500/20"
-              iconBorder="border-yellow-500"
+              iconColor="text-chart-4"
+              iconBg="bg-chart-4/20"
+              iconBorder="border-chart-4"
               label={t("seasonEnd.topScorer")}
               name={data.awards.topScorer.name}
               club={data.awards.topScorer.club}
               statIcon={Target}
               stat={`${data.awards.topScorer.goals} ${t("seasonEnd.goals")}`}
-              statColor="text-yellow-500"
-              statBg="bg-yellow-500/20"
+              statColor="text-chart-4"
+              statBg="bg-chart-4/20"
             />
             <AwardCard
               icon={Handshake}
-              iconColor="text-sky-500"
-              iconBg="bg-sky-500/20"
-              iconBorder="border-sky-500"
+              iconColor="text-chart-3"
+              iconBg="bg-chart-3/20"
+              iconBorder="border-chart-3"
               label={t("seasonEnd.mostAssists")}
               name={data.awards.topAssists.name}
               club={data.awards.topAssists.club}
               statIcon={Handshake}
               stat={`${data.awards.topAssists.assists} ${t("seasonEnd.assists")}`}
-              statColor="text-sky-500"
-              statBg="bg-sky-500/20"
+              statColor="text-chart-3"
+              statBg="bg-chart-3/20"
             />
           </div>
 
           {/* Your Summary */}
-          <div className="card-arcade rounded-xl p-6 border-glow">
-            <h3 className="text-lg font-bold font-display uppercase tracking-wider text-primary mb-4 m-0">
+          <div className="card-arcade rounded-md p-6">
+            <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">
               {t("seasonEnd.yourSeasonSummary")}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -168,23 +175,23 @@ export function SeasonEndScreen() {
                 <p className="text-2xl font-black font-display text-primary m-0">
                   {data.yourStats.finalPosition}{ordinal(data.yourStats.finalPosition)}
                 </p>
-                <p className="text-xs text-muted-foreground uppercase m-0">{t("seasonEnd.finalPosition")}</p>
+                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.finalPosition")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-black font-display m-0">{data.yourStats.matchesManaged}</p>
-                <p className="text-xs text-muted-foreground uppercase m-0">{t("seasonEnd.matches")}</p>
+                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.matches")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-black font-display text-primary m-0">{data.yourStats.wins}</p>
-                <p className="text-xs text-muted-foreground uppercase m-0">{t("seasonEnd.wins")}</p>
+                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.wins")}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-black font-display text-yellow-500 m-0">{data.yourStats.draws}</p>
-                <p className="text-xs text-muted-foreground uppercase m-0">{t("seasonEnd.draws")}</p>
+                <p className="text-2xl font-black font-display text-chart-4 m-0">{data.yourStats.draws}</p>
+                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.draws")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-black font-display text-destructive m-0">{data.yourStats.losses}</p>
-                <p className="text-xs text-muted-foreground uppercase m-0">{t("seasonEnd.losses")}</p>
+                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.losses")}</p>
               </div>
             </div>
           </div>
@@ -193,16 +200,16 @@ export function SeasonEndScreen() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="/leagues"
-              className="px-8 py-3 rounded-xl border border-border text-foreground hover:border-primary font-bold text-sm uppercase tracking-wider transition-all no-underline text-center"
+              className="px-8 py-3 rounded-md border border-border text-foreground hover:border-primary font-bold text-sm uppercase tracking-[0.08em] transition-all no-underline text-center font-display"
             >
               {t("seasonEnd.viewFullStandings")}
             </a>
             <a
               href="/dashboard"
-              className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all no-underline text-center inline-flex items-center justify-center gap-2"
+              className="px-8 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline text-center inline-flex items-center justify-center gap-2"
             >
               {t("seasonEnd.continueNextSeason")}
-              <ArrowRight className="w-4 h-4" />
+              <Icon name="arrow-right" className="w-4 h-4" />
             </a>
           </div>
         </div>
@@ -224,16 +231,16 @@ function PodiumCard({
   isWinner?: boolean;
 }) {
   const { t } = useTranslation();
-  const Icon = styles.icon;
+  const PosIcon = styles.icon;
   const posLabel = position === 1 ? t("seasonEnd.champion") : position === 2 ? t("seasonEnd.2ndPlace") : t("seasonEnd.3rdPlace");
 
   return (
-    <div className={`card-arcade rounded-xl ${height} p-4 flex flex-col justify-between border-2 ${styles.border} ${team.isYourTeam ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""} relative`}>
+    <div className={`card-arcade rounded-md ${height} p-4 flex flex-col justify-between border-2 ${styles.border} ${team.isYourTeam ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""} relative`}>
       <div className="text-center">
         <div className={`w-10 h-10 rounded-full ${styles.bg} flex items-center justify-center mx-auto mb-2 border ${styles.border}`}>
-          <Icon className={`w-5 h-5 ${styles.text}`} />
+          <PosIcon className={`w-5 h-5 ${styles.text}`} />
         </div>
-        <p className={`text-xs uppercase tracking-wider ${styles.text} font-bold m-0`}>
+        <p className={`text-[13px] uppercase tracking-[0.08em] ${styles.text} font-bold m-0`}>
           {posLabel}
         </p>
       </div>
@@ -243,13 +250,13 @@ function PodiumCard({
           {team.club}
         </p>
         <p className={`text-2xl lg:text-3xl font-black font-display m-0 ${styles.text}`}>
-          {team.points} <span className="text-xs text-muted-foreground">{t("common.pts")}</span>
+          {team.points} <span className="text-sm text-muted-foreground">{t("common.pts")}</span>
         </p>
       </div>
 
       {isWinner && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Trophy className="w-8 h-8 text-yellow-500 drop-shadow-lg" />
+          <Icon name="trophy" className="w-8 h-8 text-chart-4" />
         </div>
       )}
     </div>
@@ -282,12 +289,12 @@ function AwardCard({
   statBg: string;
 }) {
   return (
-    <div className="card-arcade rounded-xl p-5 border-glow text-center space-y-3">
+    <div className="card-arcade rounded-md p-5 text-center space-y-3">
       <div className={`w-14 h-14 rounded-full ${iconBg} flex items-center justify-center mx-auto border ${iconBorder}`}>
         <Icon className={`w-7 h-7 ${iconColor}`} />
       </div>
       <div>
-        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1 m-0">{label}</p>
+        <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{label}</p>
         <p className="text-lg font-bold font-display m-0">{name}</p>
         <p className="text-sm text-muted-foreground m-0">{club}</p>
       </div>

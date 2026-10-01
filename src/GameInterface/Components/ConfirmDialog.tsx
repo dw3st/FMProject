@@ -46,7 +46,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="px-4 py-2 rounded-lg text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-[0.08em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 disabled:opacity-50 font-display"
           >
             {t("common.cancel")}
           </button>
@@ -54,7 +54,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="px-4 py-2 rounded-lg text-sm font-semibold uppercase tracking-wider bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity cursor-pointer border-0 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-[0.08em] bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity cursor-pointer border-0 disabled:opacity-50 font-display"
           >
             {confirmLabel}
           </button>

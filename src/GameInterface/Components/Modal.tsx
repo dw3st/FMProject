@@ -28,9 +28,9 @@ interface ModalProps {
  */
 export function Modal({ open, onClose, children, size = "lg", panelClassName }: ModalProps) {
   const defaultPanel =
-    "card-arcade rounded-2xl border-glow w-full max-h-[90vh] overflow-y-auto";
+    "card-arcade rounded-md w-full max-h-[90vh] overflow-y-auto";
   const mergedPanel = panelClassName
-    ? `card-arcade rounded-2xl border-glow w-full ${sizeClass[size]} ${panelClassName}`
+    ? `card-arcade rounded-md w-full ${sizeClass[size]} ${panelClassName}`
     : `${defaultPanel} ${sizeClass[size]}`;
 
   return (
