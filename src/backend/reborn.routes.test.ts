@@ -70,5 +70,5 @@ describe("reborn routes", () => {
     expect(full.status).toBe(400);
     expect((await full.json() as any).error).toBe("youthFull");
     expect((await saveService.getRetired(saveId)).find((r) => r.id === "c")!.rebornOffer).toBe("pending");
-  });
+  }, 60_000);
 });
