@@ -45,8 +45,8 @@ function UnsupportedScreen() {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background text-foreground p-6 overflow-auto">
       <div className="max-w-md w-full text-center">
-        <Wordmark size="md" className="block mb-8" />
-        <h1 className="text-xl font-semibold mb-2">{t("unsupportedScreen.title")}</h1>
+        <Wordmark size="lg" className="block mb-8" />
+        <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none mb-3">{t("unsupportedScreen.title")}</h1>
         <p className="text-sm text-muted-foreground m-0">
           {t("unsupportedScreen.current")} {size.w} × {size.h} · {t("unsupportedScreen.minimum")} {MIN_WIDTH} × {MIN_HEIGHT}
         </p>

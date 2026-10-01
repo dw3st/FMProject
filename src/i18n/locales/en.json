@@ -219,11 +219,11 @@
       "us": "American"
     },
     "continue": "Continue",
-    "createManagerTitle": "Create Your Manager",
+    "createManagerTitle": "Create your manager",
     "managerName": "Manager Name",
     "enterName": "Enter your name...",
     "nationality": "Nationality",
-    "careerBackground": "Career Background",
+    "careerBackground": "Background",
     "searchTerritory": "Search territory...",
     "continents": {
       "europe": "Europe",
@@ -247,7 +247,23 @@
     "managerEmpty": "Manager not set",
     "edit": "Edit",
     "define": "Set up",
-    "startWith": "Start with {{club}}"
+    "startWith": "Start with {{club}}",
+    "stepOf": "Step {{n}} of 2",
+    "managerSubtitle": "Who will take charge of the club.",
+    "chooseClub": "Choose club →",
+    "chooseClubTitle": "Choose the club",
+    "selectClubDetail": "Pick a club to see its profile.",
+    "back": "Back",
+    "reputation": "Reputation",
+    "squadLabel": "Squad",
+    "attack": "Attack",
+    "midfield": "Midfield",
+    "defense": "Defence",
+    "keyPlayers": "Key players",
+    "finances": "Finances",
+    "annualRevenue": "Annual revenue",
+    "weeklyWages": "Weekly wages",
+    "perWeek": "/wk"
   },
   "seasonEnd": {
     "seasonComplete": "Season Complete",
