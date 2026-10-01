@@ -1434,7 +1434,26 @@
   "squadScreen": {
     "loadingSquad": "Carregando elenco...",
     "squadNotFound": "Elenco não encontrado.",
-    "players": "jogadores"
+    "players": "jogadores",
+    "tabSquad": "Elenco",
+    "tabYouth": "Base"
+  },
+  "youth": {
+    "loading": "Carregando a base...",
+    "loadFailed": "Não foi possível carregar a base.",
+    "actionFailed": "Algo deu errado. Tente de novo.",
+    "squadFull": "O elenco está cheio (30). Dispense ou venda um jogador antes.",
+    "subtitle": "Os jovens chegam aos 16-17 anos a cada temporada e saem aos 19. Elenco: {{size}}/{{limit}}.",
+    "empty": "Ainda não há jovens na base. A primeira safra chega no fim da temporada.",
+    "player": "Jogador",
+    "position": "Pos",
+    "age": "Idade",
+    "level": "Nível",
+    "potential": "Potencial",
+    "promote": "Promover",
+    "release": "Dispensar",
+    "confirmRelease": "Confirmar dispensa",
+    "cancel": "Cancelar"
   },
   "matchPreview": {
     "title": "Pré-jogo",
