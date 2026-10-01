@@ -187,12 +187,30 @@ export function axesWithMentality(style: TacticalStyle, mentality: Mentality): T
   };
 }
 
+// ── Free formation ───────────────────────────────────────────────────────────
+
+/** One slot of a custom formation: zone centre (yards, Team A frame) + the role the zone implies. */
+export interface CustomFormationSlot {
+  x: number;
+  y: number;
+  role: string;
+}
+
+export interface CustomFormation {
+  slots: CustomFormationSlot[];
+}
+
 // ── Save shape ────────────────────────────────────────────────────────────────
 
 /** Full tactics save: style + formation + explicit starting lineup (playerIds in slot order). */
 export interface TacticsSave {
   tactical_style: TacticalStyle;
+  /** Ready-made formation id, or "custom" when `customFormation` is active. */
   formation: string;
+  /** Free formation (zone grid). Slot order = lineup order. Active when `formation === "custom"`. */
+  customFormation?: CustomFormation;
+  /** Axes edited on top of the style's bundle ("Personalizado (base X)"). */
+  axesOverride?: Partial<TacticalAxes>;
   /** Ordered player IDs — index maps to formation slot index. May be shorter than 11 if not fully set. */
   lineup: string[];
   /** When true the assistant rests tired starters automatically (default false). */
