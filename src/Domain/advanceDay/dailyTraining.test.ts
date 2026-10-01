@@ -11,6 +11,7 @@ import {
   GOALKEEPER_TRAINING_FATIGUE_MULTIPLIER,
 } from "@/types/developmentTypes";
 import { Player } from "@/Domain/Player";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -229,7 +230,7 @@ describe("buildTrainingEvent", () => {
 
       // p2 is below the training threshold — skips training entirely, gets a full rest-day
       // recovery (recoverDay) instead, same curve as an actual rest day.
-      const p2NextFitness = recoverDay(50, { age: 22, load: 0, stamina: 10 });
+      const p2NextFitness = recoverDay(50, { age: 22, load: 0, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult });
       expect(p2?.seasonLog?.trainingSessions).toBe(0);
       expect(p2?.seasonLog?.fitness).toBe(+(50 + +(p2NextFitness - 50).toFixed(1)).toFixed(1));
       expect(p2?.seasonLog?.fitness).toBeGreaterThan(50);

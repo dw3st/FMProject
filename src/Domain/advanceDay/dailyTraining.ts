@@ -19,6 +19,7 @@ import {
   type RoleDPWeights,
 } from "@/GameEngine/PlayerDevelopment";
 import rolesData from "@/Data/roles.json";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 import {
   clearHealed,
   isInjured,
@@ -134,6 +135,7 @@ export function buildTrainingEvent(
   date: string,
   rng: () => number = Math.random,
 ): TrainingResult {
+  const { recoveryMult, injuryMult, devMult } = staffEffectsOf(squad);
   // Clear a healed injury BEFORE eligibility/training is decided — a player who returns today can
   // train (or be ineligible on fitness) the same day, same as `matches.ts`.
   const healedPlayerIds: string[] = [];
@@ -165,7 +167,7 @@ export function buildTrainingEvent(
       // player has less fitness left to lose) — see `.claude/rules/game/fitness.md`.
       const scaledFitnessDelta = +(fitnessDelta * (log.fitness / 100)).toFixed(1);
       // Heavy training's small flat chance of a light injury — light/normal training never rolls.
-      if (rng() < trainingInjuryChance(policy.intensity)) {
+      if (rng() < trainingInjuryChance(policy.intensity, injuryMult)) {
         const severity = rollSeverity(rng);
         const injury: NewTrainingInjury = {
           playerId: String(p.id),
@@ -180,7 +182,7 @@ export function buildTrainingEvent(
     }
     // Ineligible players skip training entirely and get a full rest-day recovery instead.
     const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
-    const nextFitness = recoverDay(log.fitness, { age: p.age, load: log.load ?? 0, stamina });
+    const nextFitness = recoverDay(log.fitness, { age: p.age, load: log.load ?? 0, stamina, recoveryMult });
     return {
       playerId: String(p.id),
       name: p.name,
@@ -205,7 +207,7 @@ export function buildTrainingEvent(
         const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
         const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
         const { updatedPlayer, levelChanges, dpGained } =
-          applyTrainingDevelopment(p, policy.intensity, weights);
+          applyTrainingDevelopment(p, policy.intensity, weights, devMult);
         next = updatedPlayer;
         if (dpGained > 0) {
           eff!.dpGained = +dpGained.toFixed(2);

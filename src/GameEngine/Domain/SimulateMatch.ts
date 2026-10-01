@@ -27,6 +27,7 @@ export type { Squad } from '@/types/playerTypes';
 // Side-effect imports activate event-bus subscriptions
 import '@/GameEngine/Domain/Statistics';
 import '@/GameEngine/Domain/PlayerRating';
+import { staffEffectsOf } from '@/Domain/staff/staff';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,11 @@ export interface SimulateMatchOptions {
    * (the lab applies its own variants).
    */
   tactics?: { A: TeamTactics; B: TeamTactics };
+  /**
+   * Fitness-coach injury multiplier per team. Omitted = derived from each squad's staff
+   * (`staffEffectsOf`: the human club's hired coach, the financial tier for AI clubs).
+   */
+  injuryMult?: { A?: number; B?: number };
 }
 
 export interface TeamTactics {
@@ -139,7 +145,10 @@ export function simulateMatch(
 
   // Build state — skip preMatch presentation so the loop starts in firstHalf
   let s: GameState = {
-    ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB),
+    ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB, {
+      A: options.injuryMult?.A ?? staffEffectsOf(squadA).injuryMult,
+      B: options.injuryMult?.B ?? staffEffectsOf(squadB).injuryMult,
+    }),
     matchPhase:            'firstHalf',
     presentationCountdown: 0,
     knockout:              options.knockout === true,

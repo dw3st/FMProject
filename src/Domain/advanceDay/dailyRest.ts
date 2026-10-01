@@ -3,6 +3,7 @@ import type { RestEvent } from "@/types/dayLogTypes";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import { clearHealed } from "@/Domain/injury/injury";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 
 export const MAX_POINTS_LOST_PER_REST = 2;
 
@@ -40,9 +41,10 @@ export function rollRestOutcome(
   load: number,
   stamina: number,
   rand: () => number = Math.random,
+  recoveryMult = 1,
 ): RestOutcome {
   const pointsLost = +(rand() * MAX_POINTS_LOST_PER_REST).toFixed(2);
-  const nextFitness = recoverDay(fitness, { age, load, stamina });
+  const nextFitness = recoverDay(fitness, { age, load, stamina, recoveryMult });
   const fitnessDelta = +(nextFitness - fitness).toFixed(1);
 
   return { fitnessDelta, pointsDelta: -pointsLost };
@@ -55,6 +57,7 @@ export function rollRestOutcome(
  * - `trainingSessions` (points) never goes below 0.
  */
 export function buildRestEvent(squadId: string, squad: Squad, date: string): RestResult {
+  const { recoveryMult } = staffEffectsOf(squad);
   // Clear a healed injury before anything else, same as `matches.ts` / `dailyTraining.ts`.
   const healedPlayerIds: string[] = [];
   const players = squad.players.map((p) => {
@@ -65,7 +68,7 @@ export function buildRestEvent(squadId: string, squad: Squad, date: string): Res
   const effects = players.map((p) => {
     const log = ensureSeasonLog(p).seasonLog!;
     const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
-    const { fitnessDelta, pointsDelta } = rollRestOutcome(p.age, log.fitness, log.load ?? 0, stamina);
+    const { fitnessDelta, pointsDelta } = rollRestOutcome(p.age, log.fitness, log.load ?? 0, stamina, Math.random, recoveryMult);
     return { playerId: String(p.id), name: p.name, fitnessDelta, pointsDelta };
   });
 

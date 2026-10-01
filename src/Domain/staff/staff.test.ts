@@ -72,3 +72,33 @@ describe("scout noise", () => {
     expect(overallRange(6, 0.6)).toEqual([5.4, 6.6]);
   });
 });
+
+import { recoverDay } from "@/Domain/fitness/fitness";
+import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
+import { contactInjuryChance, injuryRatePerMinute, trainingInjuryChance } from "@/Domain/injury/injury";
+import { DEFAULT_DP_WEIGHTS } from "@/GameEngine/PlayerDevelopment";
+
+describe("staff wiring in the pure models", () => {
+  test("recovery multiplier scales the recovered gap", () => {
+    const base = recoverDay(50, { age: 25, load: 0, stamina: 5 });
+    const better = recoverDay(50, { age: 25, load: 0, stamina: 5, recoveryMult: 1.1 });
+    expect(better - 50).toBeCloseTo((base - 50) * 1.1, 6);
+  });
+
+  test("injury multiplier scales rate, contact chance and training chance", () => {
+    const f = { energy: 100, load: 0, age: 25, strength: 5 };
+    expect(injuryRatePerMinute({ ...f, staffMult: 0.85 })).toBeCloseTo(injuryRatePerMinute(f) * 0.85, 12);
+    expect(contactInjuryChance({ ...f, staffMult: 1.1 })).toBeCloseTo(contactInjuryChance(f) * 1.1, 12);
+    expect(trainingInjuryChance("heavy", 0.85)).toBeCloseTo(trainingInjuryChance("heavy") * 0.85, 12);
+    expect(trainingInjuryChance("light", 0.85)).toBe(0);
+  });
+
+  test("assistant multiplier scales earned DP (a young player progresses faster)", () => {
+    const young = { ...player, age: 18 } as RosterPlayer;
+    const total = (r: ReturnType<typeof applyDevelopment>) =>
+      Object.values(r.updatedPlayer.progress ?? {}).reduce((a, b) => a + (b as number), 0);
+    const lo = total(applyDevelopment(young, 8, DEFAULT_DP_WEIGHTS, 0.9));
+    const hi = total(applyDevelopment(young, 8, DEFAULT_DP_WEIGHTS, 1.15));
+    expect(hi).toBeGreaterThan(lo);
+  });
+});
