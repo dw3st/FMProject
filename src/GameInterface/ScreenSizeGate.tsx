@@ -48,7 +48,7 @@ function UnsupportedScreen() {
         <Wordmark size="md" className="block mb-8" />
         <h1 className="text-xl font-semibold mb-2">{t("unsupportedScreen.title")}</h1>
         <p className="text-sm text-muted-foreground m-0">
-          {t("unsupportedScreen.current")} {size.w} × {size.h} · {t("unsupportedScreen.minimum")} {MIN_WIDTH} × {MIN_HEIGHT}
+          {t("unsupportedScreen.current")} {size.w} Ã— {size.h} Â· {t("unsupportedScreen.minimum")} {MIN_WIDTH} Ã— {MIN_HEIGHT}
         </p>
       </div>
     </div>
