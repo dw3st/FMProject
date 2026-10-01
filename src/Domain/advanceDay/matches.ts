@@ -20,6 +20,7 @@ import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 import { clearHealed, isInjured, mergeInjury, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
 
 /**
@@ -172,6 +173,7 @@ function finalizeSquadsAfterMatch(
   const healedPlayerIds: string[] = [];
 
   function applyMatchToSquad(squad: Squad): Squad {
+    const { recoveryMult } = staffEffectsOf(squad);
     return {
       ...squad,
       players: squad.players.map((p0) => {
@@ -223,7 +225,7 @@ function finalizeSquadsAfterMatch(
           const endEnergy = playerEnergy?.[p.id];
           const minutes = minutesPlayed[p.id] ?? 0;
           const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
-          const updated = applyMatchFitness(log, { age: p.age, stamina }, { endEnergy, minutes });
+          const updated = applyMatchFitness(log, { age: p.age, stamina, recoveryMult }, { endEnergy, minutes });
           log.fitness = updated.fitness;
           log.load = updated.load;
           log.morale = Math.min(100, log.morale + +(Math.random() * 2).toFixed(1));
@@ -233,7 +235,7 @@ function finalizeSquadsAfterMatch(
           // only chance to recover fitness and decay load today, on the same curve as an actual
           // rest day (`.claude/rules/game/fitness.md`).
           const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
-          const updated = applyMatchFitness(log, { age: p.age, stamina }, undefined);
+          const updated = applyMatchFitness(log, { age: p.age, stamina, recoveryMult }, undefined);
           log.fitness = updated.fitness;
           log.load = updated.load;
         }
@@ -253,12 +255,13 @@ function finalizeSquadsAfterMatch(
     squad: Squad,
   ): { updatedSquad: Squad; changes: PlayerDevelopmentChange[] } {
     const allChanges: PlayerDevelopmentChange[] = [];
+    const { devMult } = staffEffectsOf(squad);
     const updatedPlayers = squad.players.map((p) => {
       const roleKey = p.positions[0] ?? "CM";
       const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
       const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
       const rating = playerRatings[p.id] ?? 0;
-      const { updatedPlayer, levelChanges } = applyDevelopment(p, rating, weights);
+      const { updatedPlayer, levelChanges } = applyDevelopment(p, rating, weights, devMult);
       if (levelChanges) allChanges.push(levelChanges);
       return updatedPlayer;
     });

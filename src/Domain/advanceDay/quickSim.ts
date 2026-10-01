@@ -22,6 +22,7 @@ import {
 import { RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
 import { contactInjuryChance, injuryRatePerMinute, rollSeverity, type InjuryFactors } from "@/Domain/injury/injury";
 import { INJURY } from "@/Domain/injury/injuryConfig";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -355,6 +356,7 @@ function rollSideInjuries(
   tacklesFailed: Record<string, number>,
   minutesTotal: number,
   rng: Rng,
+  staffMult = 1,
 ): MatchInjury[] {
   const injuries: MatchInjury[] = [];
   for (const { p } of xi) {
@@ -363,6 +365,7 @@ function rollSideInjuries(
       load: startLoad(p),
       age: p.age,
       strength: stat(p, "strength"),
+      staffMult,
     };
     const contactEvents = (stats[p.id]?.tackles ?? 0) + (tacklesFailed[p.id] ?? 0);
     const lambda =
@@ -474,8 +477,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   // Same total-minutes convention as the extra-time energy drain above (120' once ET was played).
   const totalMinutes = decider?.extraTime ? 120 : 90;
   const injuries = [
-    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng),
-    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng),
+    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult),
+    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult),
   ].sort((a, b) => a.matchMinute - b.matchMinute);
 
   const recording: PlayedMatchRecording = {

@@ -333,6 +333,7 @@ function buildTeam(
  * @param formationB  Formation object for Team B.
  * @param lineupA     Optional ordered player IDs for Team A (index = slot index).
  * @param lineupB     Optional ordered player IDs for Team B (index = slot index).
+ * @param injuryMult  Fitness-coach injury multiplier per team (`Domain/staff`); default 1 each.
  */
 export function createMatchState(
   playersA:   RosterPlayer[],
@@ -341,9 +342,18 @@ export function createMatchState(
   formationB: Formation,
   lineupA?:   string[],
   lineupB?:   string[],
+  injuryMult: { A?: number; B?: number } = {},
 ): GameState {
-  const teamAResult = buildTeam(playersA, formationA, 'A', 0, lineupA);
-  const teamBResult = buildTeam(playersB, formationB, 'B', 200, lineupB);
+  const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
+    m === undefined || m === 1
+      ? r
+      : {
+          ...r,
+          starters: r.starters.map(p => ({ ...p, injuryMult: m })),
+          bench:    r.bench.map(p => ({ ...p, injuryMult: m })),
+        };
+  const teamAResult = withMult(buildTeam(playersA, formationA, 'A', 0, lineupA), injuryMult.A);
+  const teamBResult = withMult(buildTeam(playersB, formationB, 'B', 200, lineupB), injuryMult.B);
   const teamA = teamAResult.starters;
   const teamB = teamBResult.starters;
 
@@ -525,7 +535,7 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
 // (forced substitution, or "play on with 10" when none is available).
 
 function injuryFactorsOf(p: GamePlayer): InjuryFactors {
-  return { energy: p.energy, load: p.injuryLoad, age: p.age, strength: p.strengthAttr };
+  return { energy: p.energy, load: p.injuryLoad, age: p.age, strength: p.strengthAttr, staffMult: p.injuryMult ?? 1 };
 }
 
 /**

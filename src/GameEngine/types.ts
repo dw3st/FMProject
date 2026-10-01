@@ -352,6 +352,11 @@ export interface GamePlayer {
    * energy cost from the same source value.
    */
   injuryLoad: number;
+  /**
+   * Fitness-coach multiplier on this player's injury risk (`Domain/staff`), fixed for the match.
+   * Absent = 1 (hand-built test players).
+   */
+  injuryMult?: number;
 }
 
 /**
