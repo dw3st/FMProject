@@ -79,3 +79,28 @@ describe("simulateMatch knockout", () => {
     }
   }, 120_000);
 });
+
+describe("simulateMatch tactics option", () => {
+  test("applies tactics per match and does not leak between matches", async () => {
+    const { getTeamTacticalStyle } = await import("@/GameEngine/Configs/AttackConfig");
+    const { getDefenseTacticKeys } = await import("@/GameEngine/Configs/DefenseConfig");
+    const a = loadSquad("33.json");
+    const b = loadSquad("34.json");
+    simulateMatch(a, b, undefined, undefined, undefined, undefined, {
+      tactics: {
+        A: { style: "high_press" as never, axesOverride: { defensive_line: "deep" } },
+        B: { style: "balanced" as never },
+      },
+    });
+    expect(getTeamTacticalStyle("A")).toBe("high_press" as never);
+    expect(getDefenseTacticKeys("A").pressingStyle).toBe("high_press");
+    expect(getDefenseTacticKeys("A").defensiveLine).toBe("deep");
+    expect(getTeamTacticalStyle("B")).toBe("balanced" as never);
+    // The next match applies its own tactics: A's previous style must not survive.
+    simulateMatch(a, b, undefined, undefined, undefined, undefined, {
+      tactics: { A: { style: "balanced" as never }, B: { style: "balanced" as never } },
+    });
+    expect(getTeamTacticalStyle("A")).toBe("balanced" as never);
+    expect(getDefenseTacticKeys("A").defensiveLine).not.toBe("deep");
+  });
+});

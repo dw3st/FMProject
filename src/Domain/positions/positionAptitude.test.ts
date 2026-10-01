@@ -50,3 +50,17 @@ describe("positionAptitudes", () => {
     expect(scaleStats(mk(["Forward"], "right", { finishing: 8 }).stats, 0.5).finishing).toBe(4);
   });
 });
+
+describe("same-line neighbours", () => {
+  test("a midfielder is never flagged as a misfit across CDM/CM/CAM", () => {
+    const m = mk(["Midfielder"], "right");
+    for (const r of ["CDM", "CM", "CAM"]) {
+      expect(["natural", "apt"]).toContain(aptitudeFor(m, r));
+    }
+  });
+
+  test("a centre-back at full-back is still a misfit", () => {
+    const p = mk(["Defender"], "right", cb);
+    expect(["training", "unsuitable"]).toContain(aptitudeFor(p, "RB"));
+  });
+});
