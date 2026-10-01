@@ -60,6 +60,7 @@ export function NewGameWizard() {
   const { t, i18n } = useTranslation();
   const [manager, setManager] = useState<ManagerData>({ name: "", background: null, nationality: null });
   const [managerOpen, setManagerOpen] = useState(false);
+  const [step, setStep] = useState<"manager" | "club">("manager");
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryEntry | null>(null);
@@ -172,6 +173,28 @@ export function NewGameWizard() {
 
   if (preparing) return <PreSeasonLoadingScreen />;
 
+  if (step === "manager") {
+    return (
+      <div className="min-h-screen flex flex-col items-center bg-background text-foreground p-4 md:p-8">
+        <Wordmark size="sm" className="mb-8 block" />
+        <div className="w-full max-w-lg">
+          <h1 className="text-2xl m-0 mb-5">{t("newGame.createManagerTitle")}</h1>
+          <ManagerForm
+            initial={manager}
+            submitLabel={t("newGame.continue")}
+            onCancel={() => {
+              window.location.href = "/start";
+            }}
+            onSubmit={(m) => {
+              setManager(m);
+              setStep("club");
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const countryList = (
     <>
       <div className="relative mb-3">
@@ -208,7 +231,7 @@ export function NewGameWizard() {
                         selected ? "text-primary" : "text-foreground hover:text-primary"
                       }`}
                     >
-                      <span className={`fi fi-${country.flag} w-5 h-3.5 rounded-sm bg-cover bg-center shrink-0`} />
+                      <span className={`fi fi-${country.flag} w-5 h-5 rounded-sm bg-cover bg-center shrink-0`} />
                       <span className="truncate">{displayName(country)}</span>
                     </button>
                   </li>
@@ -280,7 +303,7 @@ export function NewGameWizard() {
                             logoUrl={squadLogoUrl(club.squadId)}
                             primaryColor={club.colors[0]}
                             secondaryColor={club.colors[1]}
-                            className="w-6 h-6 rounded-full shrink-0"
+                            className="w-8 h-8 rounded-full shrink-0"
                           />
                           <span className={`flex-1 truncate text-sm ${selected ? "text-primary" : ""}`}>{club.name}</span>
                           {level !== null && clubProfile && (
@@ -368,87 +391,105 @@ function ManagerModal({
   onSave:  (m: ManagerData) => void;
 }) {
   const { t } = useTranslation();
-  const [draft, setDraft] = useState<ManagerData>(initial);
-
-  useEffect(() => {
-    if (open) setDraft(initial);
-  }, [open, initial]);
-
-  const label = "block text-xs text-muted-foreground mb-2";
-
   return (
     <Modal open={open} onClose={onClose} size="lg">
       <div className="p-6">
         <h2 className="text-lg font-semibold m-0 mb-5">{t("newGame.createManagerTitle")}</h2>
-
-        <label className={label} htmlFor="manager-name">
-          {t("newGame.managerName")}
-        </label>
-        <input
-          id="manager-name"
-          type="text"
-          value={draft.name}
-          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          placeholder={t("newGame.enterName")}
-          className="w-full mb-5 bg-transparent border border-border rounded px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-        />
-
-        <span className={label}>{t("newGame.nationality")}</span>
-        <div className="flex flex-wrap gap-2 mb-5">
-          {MANAGER_NATIONALITIES.map((nat) => {
-            const on = draft.nationality?.id === nat.id;
-            return (
-              <button
-                key={nat.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setDraft({ ...draft, nationality: nat })}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded border text-sm bg-transparent cursor-pointer ${
-                  on ? "border-primary text-primary" : "border-border text-foreground hover:border-primary/50"
-                }`}
-              >
-                <span className={`fi fi-${nat.flag} w-5 h-3.5 rounded-sm bg-cover bg-center`} />
-                {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
-              </button>
-            );
-          })}
-        </div>
-
-        <span className={label}>{t("newGame.careerBackground")}</span>
-        <ul className="list-none p-0 m-0 mb-6">
-          {MANAGER_BACKGROUNDS.map((bg) => {
-            const on = draft.background?.id === bg.id;
-            return (
-              <li key={bg.id} className="border-t border-border first:border-t-0">
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setDraft({ ...draft, background: bg })}
-                  className={`w-full text-left py-2 px-2 border-0 cursor-pointer ${
-                    on ? "bg-primary/10" : "bg-transparent hover:bg-foreground/5"
-                  }`}
-                >
-                  <span className={`block text-sm ${on ? "text-primary" : ""}`}>
-                    {t(`newGame.backgrounds.${bg.id}.name`, { defaultValue: bg.name })}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {t(`newGame.backgrounds.${bg.id}.description`, { defaultValue: bg.description })}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button onClick={() => onSave({ ...draft, name: draft.name.trim() })} disabled={!isManagerValid(draft)}>
-            {t("common.save")}
-          </Button>
-        </div>
+        <ManagerForm initial={initial} submitLabel={t("common.save")} onCancel={onClose} onSubmit={onSave} />
       </div>
     </Modal>
+  );
+}
+
+function ManagerForm({
+  initial,
+  submitLabel,
+  onCancel,
+  onSubmit,
+}: {
+  initial:     ManagerData;
+  submitLabel: string;
+  onCancel:    () => void;
+  onSubmit:    (m: ManagerData) => void;
+}) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState<ManagerData>(initial);
+
+  useEffect(() => {
+    setDraft(initial);
+  }, [initial]);
+
+  const label = "block text-xs text-muted-foreground mb-2";
+
+  return (
+    <div>
+      <label className={label} htmlFor="manager-name">
+        {t("newGame.managerName")}
+      </label>
+      <input
+        id="manager-name"
+        type="text"
+        value={draft.name}
+        onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+        placeholder={t("newGame.enterName")}
+        className="w-full mb-5 bg-transparent border border-border rounded px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+      />
+
+      <span className={label}>{t("newGame.nationality")}</span>
+      <div className="flex flex-wrap gap-2 mb-5">
+        {MANAGER_NATIONALITIES.map((nat) => {
+          const on = draft.nationality?.id === nat.id;
+          return (
+            <button
+              key={nat.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setDraft({ ...draft, nationality: nat })}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded border text-sm bg-transparent cursor-pointer ${
+                on ? "border-primary text-primary" : "border-border text-foreground hover:border-primary/50"
+              }`}
+            >
+              <span className={`fi fi-${nat.flag} w-5 h-3.5 rounded-sm bg-cover bg-center`} />
+              {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
+            </button>
+          );
+        })}
+      </div>
+
+      <span className={label}>{t("newGame.careerBackground")}</span>
+      <ul className="list-none p-0 m-0 mb-6">
+        {MANAGER_BACKGROUNDS.map((bg) => {
+          const on = draft.background?.id === bg.id;
+          return (
+            <li key={bg.id} className="border-t border-border first:border-t-0">
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => setDraft({ ...draft, background: bg })}
+                className={`w-full text-left py-2 px-2 border-0 cursor-pointer ${
+                  on ? "bg-primary/10" : "bg-transparent hover:bg-foreground/5"
+                }`}
+              >
+                <span className={`block text-sm ${on ? "text-primary" : ""}`}>
+                  {t(`newGame.backgrounds.${bg.id}.name`, { defaultValue: bg.name })}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {t(`newGame.backgrounds.${bg.id}.description`, { defaultValue: bg.description })}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onCancel}>
+          {t("common.cancel")}
+        </Button>
+        <Button onClick={() => onSubmit({ ...draft, name: draft.name.trim() })} disabled={!isManagerValid(draft)}>
+          {submitLabel}
+        </Button>
+      </div>
+    </div>
   );
 }
