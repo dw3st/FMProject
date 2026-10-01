@@ -997,6 +997,22 @@ try {
   check(staleInjuries.length === 0,
     `lesões: no injury.returnDate earlier than currentDate left set at the end (${staleInjuries.length} stale, e.g. ${staleInjuries.slice(0, 3).join(", ")})`);
 
+  // ── Equipe técnica ───────────────────────────────────────────────────────
+  // See `.claude/rules/game/staff.md`. The ledger has a `staff` line on every Monday that has a
+  // `wages` line, the human club kept its three professionals, and AI clubs store none.
+  console.log("\n── Equipe técnica ──");
+  const humanFinal = allFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
+  check(!!humanFinal?.staff && Object.keys(humanFinal.staff).length === 3,
+    `staff: the human club has its 3 professionals at the end (${Object.keys(humanFinal?.staff ?? {}).join(", ")})`);
+  check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.staff === undefined),
+    "staff: no AI club stores staff (they use the implicit tier rating)");
+  const wageDates = new Set(allLedgerEntries.filter((e) => e.kind === "wages").map((e) => e.date));
+  const staffDates = new Set(allLedgerEntries.filter((e) => e.kind === "staff").map((e) => e.date));
+  check(staffDates.size > 0 && [...wageDates].every((d) => staffDates.has(d)),
+    `staff: a staff ledger line on every Monday with wages (${staffDates.size} staff lines, ${wageDates.size} wage lines)`);
+  const staffTotal = allLedgerEntries.filter((e) => e.kind === "staff").reduce((s, e) => s + e.amount, 0);
+  check(staffTotal < 0, `staff: total staff cost is an expense (${Math.round(staffTotal).toLocaleString("en-US")})`);
+
   // ── Fôlego ───────────────────────────────────────────────────────────────
   console.log("\n── Fôlego ──");
 

@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.2",
+    date: "2026-10-01",
+    items: [
+      { pt: "Nova tela Equipe técnica: auxiliar técnico, preparador físico e olheiro-chefe, cada um com nota de 1 a 10.", en: "New Technical staff screen: assistant coach, fitness coach and chief scout, each rated 1 to 10." },
+      { pt: "O auxiliar técnico acelera (ou atrasa) a evolução dos jogadores.", en: "The assistant coach speeds up (or slows down) player development." },
+      { pt: "O preparador físico melhora a recuperação do elenco e reduz o risco de lesão.", en: "The fitness coach improves squad recovery and lowers injury risk." },
+      { pt: "O olheiro-chefe define quão exatos são os atributos que você vê de jogadores de outros clubes: com um olheiro fraco, o overall aparece como uma faixa.", en: "The chief scout sets how accurate the attributes of other clubs' players look: with a weak scout, the overall shows as a range." },
+      { pt: "Todo começo de semana há cinco candidatos por função no mercado de profissionais. Os salários da equipe entram no extrato.", en: "Every week there are five candidates per role on the staff market. Staff wages appear in the ledger." },
+    ],
+  },
+  {
     version: "2.1.1",
     date: "2026-10-01",
     items: [
