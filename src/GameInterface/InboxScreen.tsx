@@ -293,6 +293,18 @@ function EmptyState() {
   );
 }
 
+/** Translated subject/preview for league prize messages; every other message keeps its stored text. */
+function leaguePrizeTexts(
+  message: InboxMessage,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): { subject: string; preview: string } | null {
+  if (message.category !== "season" || message.kind !== "league_prize") return null;
+  return {
+    subject: t("inbox.season.leaguePrizeSubject", { league: message.leagueName }),
+    preview: t("inbox.season.leaguePrizePreview", { league: message.leagueName }),
+  };
+}
+
 function MessageRow({
   message,
   active,
@@ -306,6 +318,7 @@ function MessageRow({
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
   const unread = !message.read;
+  const prizeTexts = leaguePrizeTexts(message, t);
 
   return (
     <button
@@ -327,13 +340,13 @@ function MessageRow({
               unread ? "font-black text-foreground" : "font-medium text-foreground/80"
             }`}
           >
-            {message.subject}
+            {prizeTexts?.subject ?? message.subject}
           </span>
           <span className="text-[10px] text-muted-foreground shrink-0">
             {formatInboxDate(message.date)}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground m-0 leading-snug truncate">{message.preview}</p>
+        <p className="text-xs text-muted-foreground m-0 leading-snug truncate">{prizeTexts?.preview ?? message.preview}</p>
       </div>
     </button>
   );
@@ -343,6 +356,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
   const { t } = useTranslation();
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
+  const prizeTexts = leaguePrizeTexts(message, t);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -360,7 +374,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
               {t(meta.labelKey)}
             </span>
             <h2 className="text-lg font-black font-display text-foreground m-0 leading-tight">
-              {message.subject}
+              {prizeTexts?.subject ?? message.subject}
             </h2>
           </div>
           <span className="text-xs text-muted-foreground shrink-0">
@@ -457,7 +471,7 @@ function SeasonBody({
   }
   return (
     <div>
-      <p className="text-sm text-foreground m-0">{message.preview}</p>
+      <p className="text-sm text-foreground m-0">{leaguePrizeTexts(message, t)?.preview ?? message.preview}</p>
       <PrizeLine prize={message.prize} />
     </div>
   );

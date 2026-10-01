@@ -153,13 +153,12 @@ export function StartScreen() {
           {t("startScreen.settings")}
         </button>
         <div className="flex items-center gap-3">
-          <span>{t("common.version", { version: CURRENT_VERSION })}</span>
           <button
             type="button"
             onClick={openChangelog}
             className="h-10 cursor-pointer border-0 bg-transparent p-0 text-inherit transition-colors hover:text-foreground"
           >
-            {t("startScreen.whatsNew")}
+            {t("common.version", { version: CURRENT_VERSION })} · {t("startScreen.whatsNew")}
           </button>
           {showChangelogNotice && (
             <ChangelogNoticePill

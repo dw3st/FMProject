@@ -25,6 +25,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.8",
+    date: "2026-10-01",
+    items: [
+      {
+        pt: "Nova tela Stats: artilheiros, assistências, melhor nota e mais jogos de qualquer liga, copa ou competição continental, e os números do seu elenco.",
+        en: "New Stats screen: top scorers, assists, best rating and most appearances for any league, cup or continental competition, plus your own squad's numbers.",
+      },
+      {
+        pt: "Estrelas coloridas ao lado do nome: dourada para o top 25 do mundo, azul para quem está em grande fase e verde para os prodígios.",
+        en: "Coloured stars next to names: gold for the world's top 25, blue for players in great form and green for prodigies.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "O extrato do clube e a mensagem de prêmio da liga agora aparecem no idioma escolhido.",
+        en: "The club ledger and the league prize message now show in the chosen language.",
+      },
+    ],
+  },
+  {
     version: "1.7",
     date: "2026-09-30",
     items: [

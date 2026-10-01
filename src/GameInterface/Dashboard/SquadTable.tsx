@@ -127,7 +127,7 @@ export function SquadTable({
             </div>
             <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate flex items-center gap-1.5">
               <span className="truncate">{player.name}</span>
-              {starIds.has(player.id) && <StarBadge />}
+              {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
             </div>
             <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">
