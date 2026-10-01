@@ -7,6 +7,7 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { Icon } from "@/GameInterface/Icons";
+import { readableOnDark } from "@/GameInterface/matchTeamColors";
 
 function energyBarColor(energy: number): string {
   if (energy >= 60) return "bg-chart-2/90";
@@ -95,6 +96,7 @@ function PlayerRow({
 
 export function TeamPanel({
   team,
+  teamName,
   accentColor,
   players,
   score,
@@ -110,6 +112,8 @@ export function TeamPanel({
   subbedInPlayerIds,
 }: {
   team:             "A" | "B";
+  /** Club name; falls back to "Team A/B" when unknown. */
+  teamName?:        string;
   accentColor:      string;
   players:          GamePlayer[];
   score:            number;
@@ -125,6 +129,7 @@ export function TeamPanel({
   subbedInPlayerIds?: Set<number>;
 }) {
   const color = accentColor;
+  const textColor = readableOnDark(accentColor);
   const { t } = useTranslation();
   const { session, currentDate } = useGameSave();
   const starIds = useStarPlayers(session?.saveId, currentDate);
@@ -136,7 +141,7 @@ export function TeamPanel({
       <div className={`flex items-center justify-between p-4 border-b border-border ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className={`flex items-center gap-2 ${isLeft ? "" : "flex-row-reverse"}`}>
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-          <span className="font-bold text-foreground">{t("common.team")} {team}</span>
+          <span className="font-bold text-foreground truncate">{teamName ?? `${t("common.team")} ${team}`}</span>
         </div>
         <div className={`flex items-center gap-2 ${isLeft ? "flex-row-reverse" : ""}`}>
           {subsRemaining !== undefined && (
@@ -150,7 +155,7 @@ export function TeamPanel({
               {subsRemaining}/5
             </span>
           )}
-          <span className="text-2xl font-black font-display tabular-nums" style={{ color }}>
+          <span className="text-2xl font-black font-display tabular-nums" style={{ color: textColor }}>
             {score}
           </span>
         </div>
