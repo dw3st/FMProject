@@ -39,6 +39,7 @@ export function SquadTable({
     { key: "training", label: t("dashboard.squadTable.train"), width: "w-20" },
     { key: "moral", label: t("dashboard.squadTable.moral"), width: "w-20" },
     { key: "salary", label: t("dashboard.squadTable.salary"), width: "w-20" },
+    { key: "contractUntil", label: t("dashboard.squadTable.contract"), width: "w-16" },
     { key: "valueMillions", label: t("dashboard.squadTable.value"), width: "w-16" },
     { key: "goals", label: t("dashboard.squadTable.goals"), width: "w-10" },
     { key: "assists", label: t("dashboard.squadTable.assists"), width: "w-10" },
@@ -150,6 +151,7 @@ export function SquadTable({
             <div className="px-3 py-2.5 w-20 text-muted-foreground font-medium">
               {player.salary}
             </div>
+            <div className="px-3 py-2.5 w-16 text-muted-foreground font-medium">{player.contractUntil ?? "—"}</div>
             <div className={`px-3 py-2.5 w-16 font-bold ${ratingTextClass10(player.avg)}`}>{player.value}</div>
             <div className="px-3 py-2.5 w-10 text-foreground font-bold">{player.goals}</div>
             <div className="px-3 py-2.5 w-10 text-muted-foreground font-bold">{player.assists}</div>

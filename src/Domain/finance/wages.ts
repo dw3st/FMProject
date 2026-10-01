@@ -48,8 +48,16 @@ export function playerWeeklyWage(p: RosterPlayer, factor: number): number {
   return Math.round(weeklyWage(overallAvg(p)) * factor);
 }
 
+/**
+ * What a player is actually paid per week: the fixed wage of his contract
+ * (`src/Domain/contracts`), or — only for a player without one — the curve at the club's factor.
+ */
+export function currentWage(p: RosterPlayer, factor: number): number {
+  return p.contract?.wage ?? playerWeeklyWage(p, factor);
+}
+
 export function squadWeeklyWages(players: RosterPlayer[], factor: number): number {
-  return players.reduce((sum, p) => sum + playerWeeklyWage(p, factor), 0);
+  return players.reduce((sum, p) => sum + currentWage(p, factor), 0);
 }
 
 /**
@@ -87,6 +95,17 @@ export function wageFactorOf(squad: Squad, homeGames: number = FALLBACK_HOME_GAM
 export function wageRevenueBasisOf(squad: Squad, homeGames: number = FALLBACK_HOME_GAMES): number {
   if (typeof squad.wageRevenueBasis === "number") return squad.wageRevenueBasis;
   return clubAnnualRevenue(squad, homeGames);
+}
+
+/**
+ * Pulls a carried-forward factor `TARGET_PULL` of the way back to `targetFactor` (the factor
+ * `clubWageFactor` gives for the club's new revenue and roster), so an over- or under-spending
+ * club drifts back toward `TARGET_SHARE` over a few seasons instead of keeping its standing
+ * forever (issue #23).
+ */
+export function pullWageFactorToTarget(factor: number, targetFactor: number): number {
+  const next = factor + WAGE_CONFIG.TARGET_PULL * (targetFactor - factor);
+  return Math.min(WAGE_CONFIG.MAX_FACTOR, Math.max(WAGE_CONFIG.MIN_FACTOR, next));
 }
 
 /**

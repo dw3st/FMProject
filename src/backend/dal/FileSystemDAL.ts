@@ -1,6 +1,6 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, Squad, StandingRow } from "@/types/playerTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
@@ -23,6 +23,7 @@ function seasonPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/season.j
 function seasonArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/season.json`;
 }
+function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
 function transfersPath(saveId: string) { return `${SAVES_DIR}/${saveId}/transfers.json`; }
 function transfersArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/transfers.json`;
@@ -122,6 +123,18 @@ export class FileSystemDAL implements ISaveDAL {
   }
 
   // ── Transfers ─────────────────────────────────────────────────────────────
+
+  async readFreeAgents(saveId: string): Promise<FreeAgent[]> {
+    const file = Bun.file(freeAgentsPath(saveId));
+    if (!(await file.exists())) return [];
+    return file.json() as Promise<FreeAgent[]>;
+  }
+
+  async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(freeAgentsPath(saveId), JSON.stringify(agents));
+    bumpSaveDataVersion(saveId);
+  }
 
   async readTransfers(saveId: string): Promise<TransferRecord[]> {
     const file = Bun.file(transfersPath(saveId));

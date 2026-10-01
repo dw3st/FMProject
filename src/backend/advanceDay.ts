@@ -6,7 +6,10 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
-import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
+import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
+import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
+import { processContractExpiries } from "@/Domain/contracts/expiry";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -18,6 +21,7 @@ import {
   buildCupMessage,
   buildDevelopmentMessage,
   buildInjuryMessage,
+  buildContractMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
   buildSeasonMessage,
@@ -38,6 +42,8 @@ import {
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
+import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
 import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
@@ -60,7 +66,7 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
-import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
+import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill } from "@/Domain/finance/wages";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
@@ -644,6 +650,20 @@ export async function advanceOneDay(
     // now. Queued into `deferredInjuryMessages` and flushed after `clearInbox`, same pattern as
     // `continentalMessages` / `negativeBalanceMessage`.
     const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
+    // Contract news (90-day warning, released at the rollover): same deferral, same reason.
+    const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
+    if (playerSquadId) {
+      const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
+      if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
+        const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
+        const ending = (humanSquad?.players ?? []).filter((p) => p.contract && p.contract.until <= leagueEnd);
+        if (ending.length > 0) {
+          deferredContractMessages.push({
+            date: currentDate, kind: "expiring", players: ending.map((p) => ({ id: p.id, name: p.name })),
+          });
+        }
+      }
+    }
     if (playerSquadId) {
       for (const inj of injuryInboxEvents) {
         if (inj.squadId !== playerSquadId) continue;
@@ -1033,6 +1053,8 @@ export async function advanceOneDay(
           excludePlayerSquadId: resolvedPlayerSquadId,
           playerSellList: marketForTick.playerSellList,
           playerSquad: playerSquadForMarket,
+          // Contract end for every signing: the buyer's league season end.
+          seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
         },
       );
 
@@ -1119,6 +1141,30 @@ export async function advanceOneDay(
       }
 
       await saveService.saveMarket(saveId, updatedMarket);
+
+      // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
+      // just traded today are skipped so their freshly saved rosters are never overwritten.
+      const rawFreeAgents = await saveService.getFreeAgents(saveId);
+      const freeAgentPool = pruneFreeAgents(rawFreeAgents, currentDate);
+      if (freeAgentPool.length !== rawFreeAgents.length) await saveService.writeFreeAgents(saveId, freeAgentPool);
+      if (freeAgentPool.length > 0) {
+        const tradedToday = new Set(completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]));
+        const hiringSquads = allSquadsMarket.filter((sq) => !tradedToday.has(sq.id));
+        const fa = freeAgentTick({
+          squads: hiringSquads,
+          pool: freeAgentPool,
+          date: currentDate,
+          rng: defaultRng,
+          excludeSquadId: resolvedPlayerSquadId,
+          seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end ?? defaultSeasonEnd(currentDate),
+        });
+        if (fa.signedIds.size > 0) {
+          for (const sq of fa.squads) {
+            if (fa.changedIds.has(sq.id)) await saveService.saveSquadById(saveId, sq);
+          }
+          await saveService.writeFreeAgents(saveId, freeAgentPool.filter((f) => !fa.signedIds.has(f.player.id)));
+        }
+      }
     }
 
     // ── Financial updates (player's club ledger) ─────────────────────────────
@@ -1326,10 +1372,13 @@ export async function advanceOneDay(
           // block.
           const homeGames = Math.max(0, leagueTeams.length - 1);
           const newRevenue = clubAnnualRevenue(next, homeGames);
+          const targetWageFactor = clubWageFactor(newRevenue, squadCurveBill(next.players));
           const newWageFactor =
             typeof next.wageFactor === "number" && typeof next.wageRevenueBasis === "number"
-              ? carryForwardWageFactor(next.wageFactor, next.wageRevenueBasis, newRevenue)
-              : clubWageFactor(newRevenue, squadCurveBill(next.players));
+              ? pullWageFactorToTarget(
+                  carryForwardWageFactor(next.wageFactor, next.wageRevenueBasis, newRevenue), targetWageFactor,
+                )
+              : targetWageFactor;
           next = { ...next, wageFactor: newWageFactor, wageRevenueBasis: newRevenue };
           await saveService.saveSquadById(saveId, next);
           if (squad.id === playerClubSquadId) {
@@ -1395,6 +1444,55 @@ export async function advanceOneDay(
           currentRound: 0,
           restDays: cal.meta.restDays,
         };
+      }
+
+      // 8. Contracts ending with the season: the AI renews who fits (wage cap permitting) and
+      //    releases the rest, the human club releases whoever it did not renew. Released players
+      //    wait in freeAgents.json. Runs on the NEW membership with the new season's end dates.
+      const releasedNow: FreeAgent[] = [];
+      const afterExpiry: { squad: Squad; nextEnd: string }[] = [];
+      for (const slug of unit.leagues) {
+        const nextEnd = updatedActiveLeagues[stateIdx(slug)]?.end;
+        if (!nextEnd) continue;
+        for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
+          const isHuman = sq.id === playerClubSquadId;
+          const res = processContractExpiries({ squad: sq, date: currentDate, nextSeasonEnd: nextEnd, isHuman });
+          afterExpiry.push({ squad: res.squad, nextEnd });
+          if (res.squad === sq) continue;
+          await saveService.saveSquadById(saveId, res.squad);
+          for (const p of res.released) releasedNow.push(toFreeAgent(p, currentDate));
+          if (isHuman && res.released.length > 0) {
+            const gone = new Set(res.released.map((p) => p.id));
+            const tac = await saveService.getTactics(saveId);
+            if (tac && tac.lineup.some((id) => gone.has(id))) {
+              await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !gone.has(id)) });
+            }
+            const mk = await saveService.getMarket(saveId);
+            if (mk?.playerSellList?.some((c) => gone.has(c.playerId))) {
+              await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !gone.has(c.playerId)) });
+            }
+            deferredContractMessages.push({
+              date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
+            });
+          }
+        }
+      }
+      if (releasedNow.length > 0 || due.units.length > 0) {
+        const existing = await saveService.getFreeAgents(saveId);
+        let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
+        // Refill: AI clubs below the minimums sign the best free agents that fit the wage cap, then
+        // filler youth; the human club only gets youth up to the per-role minimums.
+        for (const { squad: sq, nextEnd } of afterExpiry) {
+          const isHuman = sq.id === playerClubSquadId;
+          const r = refillSquad({ squad: sq, pool, nextSeasonEnd: nextEnd, isHuman, tagPrefix: `s${nextEnd.slice(0, 4)}` });
+          if (r.squad === sq) continue;
+          await saveService.saveSquadById(saveId, r.squad);
+          if (r.signed.length > 0) {
+            const ids = new Set(r.signed.map((p) => p.id));
+            pool = pool.filter((f) => !ids.has(f.player.id));
+          }
+        }
+        await saveService.writeFreeAgents(saveId, pool);
       }
 
       if (unit.leagues.includes(meta.leagueSlug)) {
@@ -1571,6 +1669,7 @@ export async function advanceOneDay(
     if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
+    for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};

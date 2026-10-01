@@ -39,6 +39,10 @@ export interface DisplayPlayer {
   /** Minutes-equivalent accumulated fatigue (`seasonLog.load`, absent = 0). See `FITNESS.LOAD_HIGH`. */
   load: number;
   salary: string;
+  /** Scout only: a free agent (no club). */
+  free?: boolean;
+  /** Year the contract ends ("—" when none). */
+  contractUntil?: string;
   value: string;
   goals: number;
   assists: number;
@@ -76,6 +80,12 @@ export function resolveSquadIdFromLeagues(
   return null;
 }
 
+/** Weekly wage label (same format as `Player.salaryLabel`). */
+export function formatWeeklyWage(weekly: number): string {
+  const w = Math.round(weekly);
+  return w >= 1000 ? `${(w / 1000).toFixed(0)}k` : `${w}`;
+}
+
 export function toDisplayPlayer(
   player: RosterPlayer,
   clubName: string,
@@ -107,7 +117,8 @@ export function toDisplayPlayer(
     avg: Math.round(avg * 10) / 10,
     energy: log ? Math.round(log.fitness) : 100,
     load: log?.load ?? 0,
-    salary: domain.salaryLabel(options?.wageFactor),
+    salary: player.contract ? formatWeeklyWage(player.contract.wage) : domain.salaryLabel(options?.wageFactor),
+    contractUntil: player.contract ? player.contract.until.slice(0, 4) : "—",
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,
     nationality: nat,

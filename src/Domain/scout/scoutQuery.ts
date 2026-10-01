@@ -4,7 +4,7 @@ import { toDisplayPlayer, resolveSquadIdFromLeagues } from "@/GameInterface/play
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
 import { wageFactorOf } from "@/Domain/finance/wages";
-import type { Squad } from "@/types/playerTypes";
+import type { FreeAgent, Squad } from "@/types/playerTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 
 export type ScoutSortDir = "asc" | "desc";
@@ -57,6 +57,15 @@ export function mapSquadsToScoutPlayers(squads: Squad[], leagueSlugs: string[]):
   return players;
 }
 
+/** Scout rows for the free-agent pool (`free: true`, no club). */
+export function mapFreeAgentsToScoutPlayers(agents: FreeAgent[]): DisplayPlayer[] {
+  return agents.map((f) => ({
+    ...toDisplayPlayer(f.player, "", { squadCountry: null }),
+    squadId: "",
+    free: true,
+  }));
+}
+
 /** Every player id on an AI club's sell list or on the human's sell list (same source as `/sell-listed-players`). */
 export function collectSellListedIds(market: MarketState | null): string[] {
   const ids: string[] = [];
@@ -84,6 +93,8 @@ export function filterScoutPlayers(
 ): DisplayPlayer[] {
   const name = filters.name ? filters.name.toLowerCase() : "";
   return players.filter((player) => {
+    // Free agents only show in the "free agents" view; every other search is club players only.
+    if (filters.onlyFree ? !player.free : player.free) return false;
     if (filters.onlyForSale && !sellListedIds.has(player.id)) return false;
     if (name && !player.name.toLowerCase().includes(name)) return false;
     if (filters.position !== "all" && getMainRole(player.pos) !== filters.position) return false;

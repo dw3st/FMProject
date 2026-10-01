@@ -1037,7 +1037,8 @@
       "season": "Temporada",
       "cup": "Copa",
       "continental": "Continental",
-      "injury": "Lesão"
+      "injury": "Lesão",
+      "contract": "Contratos"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1071,6 +1072,11 @@
         "medium": "média",
         "severe": "grave"
       }
+    },
+    "contract": {
+      "expiring": "Contratos que terminam nesta temporada: {{players}}",
+      "renewed": "{{players}} assinou novo contrato (até {{until}})",
+      "released": "Contrato encerrado, saiu como jogador livre: {{players}}"
     }
   },
   "finances": {
@@ -1344,7 +1350,8 @@
       "injuredToday": "Lesionado ({{severity}}) — retorna hoje",
       "sevLight": "leve",
       "sevMedium": "média",
-      "sevSevere": "grave"
+      "sevSevere": "grave",
+      "contract": "Contrato"
     },
     "assistsLabel": "assistências",
     "clubSidebar": {
@@ -1384,7 +1391,8 @@
       "injuredToday": "Lesionado ({{severity}}) — retorna hoje",
       "sevLight": "leve",
       "sevMedium": "média",
-      "sevSevere": "grave"
+      "sevSevere": "grave",
+      "contract": "Contrato"
     }
   },
   "squadScreen": {
@@ -1637,7 +1645,8 @@
       "nationality": "Nacionalidade",
       "allLeagues": "Todas as ligas",
       "allNationalities": "Todas as nacionalidades",
-      "forSaleOnly": "Apenas à Venda"
+      "forSaleOnly": "Apenas à Venda",
+      "freeAgentsOnly": "Só jogadores livres"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -1659,7 +1668,9 @@
       "loadError": "Não foi possível carregar os jogadores. Tente novamente.",
       "retry": "Tentar novamente",
       "action": "Ação",
-      "offer": "Oferta"
+      "offer": "Oferta",
+      "sign": "Contratar",
+      "signFree": "Contratar como jogador livre"
     },
     "statusBadges": {
       "bad": "Ruim",
@@ -1704,5 +1715,26 @@
     "sendCode": "Receber código",
     "signIn": "Entrar",
     "help": "Enviamos um código de 6 dígitos. Sem senha."
+  },
+  "contracts": {
+    "renew": "Renovar",
+    "renewTitle": "Renovar contrato",
+    "signTitle": "Contratar jogador livre",
+    "sign": "Contratar",
+    "terms": "Contrato",
+    "weeklyWage": "Salário semanal (€)",
+    "years": "Anos",
+    "asking": "Pede",
+    "perWeek": "por semana",
+    "loadingDemand": "Verificando o que o jogador pede…",
+    "currentUntil": "contrato até {{year}}",
+    "renewed": "Contrato renovado.",
+    "signed": "Jogador contratado.",
+    "refusal": {
+      "lowWage": "O salário é baixo demais para esse jogador.",
+      "tooManyYears": "O jogador não assina tantos anos na idade dele.",
+      "invalidYears": "Escolha entre 1 e 5 anos.",
+      "squadFull": "Seu elenco está cheio (30 jogadores)."
+    }
   }
 }

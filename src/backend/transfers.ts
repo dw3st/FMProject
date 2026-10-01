@@ -14,6 +14,8 @@ import { getSellPriority } from "@/Domain/transfer/sellList";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
+import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -88,7 +90,7 @@ export const transferRoutes = {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
 
-      const { playerId, fromSquadId, fee } = body as Record<string, unknown>;
+      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears } = body as Record<string, unknown>;
       if (typeof playerId !== "string" || playerId.length === 0) {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
@@ -119,6 +121,8 @@ export const transferRoutes = {
         if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
         if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
 
+        if (buyerSquad.players.length >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;
         if (budget < fee) {
@@ -135,6 +139,24 @@ export const transferRoutes = {
         const sellPriority = sellerProfile
           ? (getSellPriority(playerId, sellerProfile.sellList ?? []) ?? undefined)
           : undefined;
+
+        // ── Contract offer to the player ──────────────────────────────────────
+        // Every signing creates a contract. `wage` defaults to the player's demand and `years`
+        // to 3 (shortened to fit the age limit) when the client sends neither.
+        const demand = contractDemand(player, buyerSquad, meta.currentDate ?? "");
+        const contractYears = typeof offeredYears === "number"
+          ? offeredYears
+          : Math.min(3, Math.max(1, 36 - player.age));
+        const contractWage = typeof offeredWage === "number" ? offeredWage : demand;
+        const contractCheck = evaluateContractOffer(
+          { wage: contractWage, years: contractYears }, player, buyerSquad, meta.currentDate ?? "",
+        );
+        if (!contractCheck.accepted) {
+          return Response.json({ error: contractCheck.reason, demand: contractCheck.demand }, { status: 400 });
+        }
+        const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
+          ?? defaultSeasonEnd(meta.currentDate ?? new Date().toISOString().slice(0, 10));
+        const newContract = { until: contractEndFor(meta.currentDate ?? new Date().toISOString().slice(0, 10), seasonEnd, contractYears), wage: contractWage };
 
         // ── AI acceptance decision ────────────────────────────────────────────
         const { accepted, reason } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority);
@@ -169,6 +191,7 @@ export const transferRoutes = {
             buyerSquad,
             buyerSquad.id,
             playerId,
+            newContract,
           );
 
           // Exchange money via FinancialService — it also persists both squads (roster + money).

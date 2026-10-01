@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { AGE_MEDIAN_DAMPEN_K, ageDelta, agePlayerStats, youngGrowthDampen } from "@/../scripts/espn/aging";
+import { AGE_MEDIAN_DAMPEN_K, ageDelta, agePlayerStats, topDeclineFactor, youngGrowthDampen } from "@/../scripts/espn/aging";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
 
 const base: PlayerStatsRecord = {
@@ -89,5 +89,22 @@ describe("#14 — growthDampen reduces growth for a young player above the club 
   });
   test("deterministic with growthDampen", () => {
     expect(agePlayerStats("y", base, 19, 21, outfield, 0.6)).toEqual(agePlayerStats("y", base, 19, 21, outfield, 0.6));
+  });
+});
+
+describe("topDeclineFactor (#6)", () => {
+  test("1 up to p90, halves at p100, clamped", () => {
+    expect(topDeclineFactor(0.5)).toBe(1);
+    expect(topDeclineFactor(0.9)).toBe(1);
+    expect(topDeclineFactor(0.95)).toBeCloseTo(0.75);
+    expect(topDeclineFactor(1)).toBeCloseTo(0.5);
+  });
+  test("attenuates decline only, never growth", () => {
+    const hi = { ...base, passing: 9, vision: 9, finishing: 9, dribbling: 9 };
+    const full = agePlayerStats("p1", hi, 33, 35, outfield);
+    const soft = agePlayerStats("p1", hi, 33, 35, outfield, 1, 0.5);
+    expect(sum(soft)).toBeGreaterThan(sum(full));
+    const youngFull = agePlayerStats("p2", base, 19, 21, outfield);
+    expect(agePlayerStats("p2", base, 19, 21, outfield, 1, 0.5)).toEqual(youngFull);
   });
 });

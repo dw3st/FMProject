@@ -1037,7 +1037,8 @@
       "season": "Season",
       "cup": "Cup",
       "continental": "Continental",
-      "injury": "Injury"
+      "injury": "Injury",
+      "contract": "Contracts"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1071,6 +1072,11 @@
         "medium": "medium",
         "severe": "severe"
       }
+    },
+    "contract": {
+      "expiring": "Contracts ending this season: {{players}}",
+      "renewed": "{{players}} signed a new contract (until {{until}})",
+      "released": "Contract ended, left as a free agent: {{players}}"
     }
   },
   "finances": {
@@ -1344,7 +1350,8 @@
       "injuredToday": "Injured ({{severity}}) — returns today",
       "sevLight": "light",
       "sevMedium": "medium",
-      "sevSevere": "severe"
+      "sevSevere": "severe",
+      "contract": "Contract"
     },
     "assistsLabel": "assists",
     "clubSidebar": {
@@ -1384,7 +1391,8 @@
       "injuredToday": "Injured ({{severity}}) — returns today",
       "sevLight": "light",
       "sevMedium": "medium",
-      "sevSevere": "severe"
+      "sevSevere": "severe",
+      "contract": "Contract"
     }
   },
   "squadScreen": {
@@ -1637,7 +1645,8 @@
       "nationality": "Nationality",
       "allLeagues": "All leagues",
       "allNationalities": "All nationalities",
-      "forSaleOnly": "For Sale Only"
+      "forSaleOnly": "For Sale Only",
+      "freeAgentsOnly": "Free agents only"
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
@@ -1659,7 +1668,9 @@
       "loadError": "Could not load players. Try again.",
       "retry": "Retry",
       "action": "Action",
-      "offer": "Offer"
+      "offer": "Offer",
+      "sign": "Sign",
+      "signFree": "Sign as a free agent"
     },
     "statusBadges": {
       "bad": "Bad",
@@ -1704,5 +1715,26 @@
     "sendCode": "Send code",
     "signIn": "Sign in",
     "help": "We email you a 6-digit code. No password."
+  },
+  "contracts": {
+    "renew": "Renew",
+    "renewTitle": "Renew contract",
+    "signTitle": "Sign free agent",
+    "sign": "Sign",
+    "terms": "Contract terms",
+    "weeklyWage": "Weekly wage (€)",
+    "years": "Years",
+    "asking": "Asking",
+    "perWeek": "per week",
+    "loadingDemand": "Checking what the player asks…",
+    "currentUntil": "contract until {{year}}",
+    "renewed": "Contract renewed.",
+    "signed": "Player signed.",
+    "refusal": {
+      "lowWage": "The wage is too low for this player.",
+      "tooManyYears": "The player will not sign that many years at his age.",
+      "invalidYears": "Choose between 1 and 5 years.",
+      "squadFull": "Your squad is full (30 players)."
+    }
   }
 }

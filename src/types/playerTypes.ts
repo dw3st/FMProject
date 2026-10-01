@@ -84,6 +84,13 @@ export function emptyDevelopmentProgress(): DevelopmentProgress {
   };
 }
 
+/** Fixed-wage contract (`src/Domain/contracts`). `until` is the last day of a league season. */
+export interface PlayerContract {
+  until: string;
+  /** Weekly wage in EUR, fixed for the whole contract. */
+  wage: number;
+}
+
 export interface RosterPlayer {
   id: string;
   name: string;
@@ -106,6 +113,8 @@ export interface RosterPlayer {
    * before `returnDate`.
    */
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string };
+  /** Current contract. Assigned at career creation and on every signing/renewal. */
+  contract?: PlayerContract;
 }
 
 export interface ClubFinances {
@@ -244,4 +253,11 @@ export function isAttributeId(key: string): key is AttributeId {
     "stamina", "heading", "strength",
     "reflex", "jump",
   ].includes(key);
+}
+
+/** A player released at the end of his contract, waiting for a club (`saves/{id}/freeAgents.json`). */
+export interface FreeAgent {
+  player: RosterPlayer;
+  /** Release date (ISO). Free agents leave the world a season after this. */
+  since: string;
 }
