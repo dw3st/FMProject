@@ -4,6 +4,7 @@ import {
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
   replaceInjuredStarters,
+  suggestRotation,
 } from "@/Domain/lineupHelpers";
 import type { FormationSlot } from "@/types/formationSlots";
 import type { RosterPlayer } from "@/types/playerTypes";
@@ -336,5 +337,44 @@ describe("injured players are never picked", () => {
       if (i === 9) continue;
       expect(lineup[i]).toBe(aligned[i]);
     }
+  });
+});
+
+describe("suggestRotation", () => {
+  const tired = (id: string, pos = "ST") =>
+    makePlayer({ id, name: id, positions: [pos], seasonLog: makeSeasonLog({ fitness: 10 }) });
+  const fresh = (id: string, pos = "ST", extra: Partial<RosterPlayer> = {}) =>
+    makePlayer({ id, name: id, positions: [pos], seasonLog: makeSeasonLog({ fitness: 100 }), ...extra });
+
+  test("tired starter is swapped for a fresh bench player", () => {
+    expect(suggestRotation(stSlot, ["s"], [tired("s"), fresh("b")])).toEqual([{ out: "s", in: "b" }]);
+  });
+
+  test("GK exempt above 60 and without a bench keeper at 85+", () => {
+    const mid = makePlayer({ id: "g", name: "g", positions: ["GK"], seasonLog: makeSeasonLog({ fitness: 65 }) });
+    expect(suggestRotation(gkSlot, ["g"], [mid, fresh("gb", "GK")])).toEqual([]);
+    const low = makePlayer({ id: "g", name: "g", positions: ["GK"], seasonLog: makeSeasonLog({ fitness: 40 }) });
+    const weakBench = makePlayer({ id: "gb", name: "gb", positions: ["GK"], seasonLog: makeSeasonLog({ fitness: 80 }) });
+    expect(suggestRotation(gkSlot, ["g"], [low, weakBench])).toEqual([]);
+  });
+
+  test("no clearly better bench player gives empty", () => {
+    const s = makePlayer({ id: "s", name: "s", positions: ["ST"], stats: statsAt(9), seasonLog: makeSeasonLog({ fitness: 70 }) });
+    const b = fresh("b", "ST", { stats: statsAt(5) });
+    expect(suggestRotation(stSlot, ["s"], [s, b])).toEqual([]);
+  });
+
+  test("injured bench player never comes in", () => {
+    const inj = fresh("b", "ST", { injury: { severity: "medium", returnDate: "2027-05-01" } });
+    expect(suggestRotation(stSlot, ["s"], [tired("s"), inj], "2027-04-01")).toEqual([]);
+  });
+
+  test("a bench player is used only once", () => {
+    const slots: FormationSlot[] = [
+      { role: "ST", x: 40, y: 10 },
+      { role: "ST", x: 60, y: 10 },
+    ];
+    const swaps = suggestRotation(slots, ["s1", "s2"], [tired("s1"), tired("s2"), fresh("b")]);
+    expect(swaps).toEqual([{ out: "s1", in: "b" }]);
   });
 });

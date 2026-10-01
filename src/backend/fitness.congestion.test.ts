@@ -5,7 +5,9 @@ import { addOneDay } from "@/Domain/advanceDay/date";
 import {
   autoLineupDefaultFormation,
   autoLineupDefaultFormationWithFitness,
+  resolveUserLineup,
 } from "@/Domain/advanceDay/matchSimulationLineups";
+import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 
@@ -77,9 +79,9 @@ describe("fitness/load model under fixture congestion", () => {
       await saveService.writeDateIndex(saveId, competition, { [date]: [1] });
     }
 
-    type Snapshot = { plainXi: string[]; fitnessXi: string[]; avgFitness: number; avgLoad: number };
+    type Snapshot = { plainXi: string[]; fitnessXi: string[]; avgFitness: number; avgLoad: number; assistantRested: number };
 
-    function snapshotOf(squad: Squad): Snapshot {
+    function snapshotOf(squad: Squad, date: string): Snapshot {
       const plainXi = autoLineupDefaultFormation(squad);
       const fitnessXi = autoLineupDefaultFormationWithFitness(squad);
       const byId = new Map(squad.players.map((p) => [p.id, p]));
@@ -87,7 +89,11 @@ describe("fitness/load model under fixture congestion", () => {
         plainXi.reduce((sum, id) => sum + (byId.get(id)?.seasonLog?.fitness ?? 75), 0) / plainXi.length;
       const avgLoad =
         plainXi.reduce((sum, id) => sum + (byId.get(id)?.seasonLog?.load ?? 0), 0) / plainXi.length;
-      return { plainXi, fitnessXi, avgFitness, avgLoad };
+      // Human club with the rotation assistant ON and the stat-only XI saved as its lineup.
+      const assisted = resolveUserLineup(
+        squad, formationForSimId(DEFAULT_SIM_FORMATION_ID), plainXi, date, { assistantRotation: true },
+      );
+      return { plainXi, fitnessXi, avgFitness, avgLoad, assistantRested: assisted.rotationApplied.length };
     }
 
     const snapshots: Snapshot[] = [];
@@ -98,7 +104,7 @@ describe("fitness/load model under fixture congestion", () => {
       if (matchDates.includes(currentDate)) {
         const squad = await saveService.getSquadById(saveId, clubX);
         if (!squad) throw new Error(`clubX squad ${clubX} not found before match day ${currentDate}`);
-        snapshots.push(snapshotOf(squad));
+        snapshots.push(snapshotOf(squad, currentDate));
       }
 
       const outcome = await advanceOneDay(saveService, saveId);
@@ -126,5 +132,7 @@ describe("fitness/load model under fixture congestion", () => {
     // stat-only selector would still start.
     const restedSomeone = before3.plainXi.some((id, i) => id !== before3.fitnessXi[i]);
     expect(restedSomeone).toBe(true);
+    // Same for a human club with the assistant on: at least one starter rested by match 3.
+    expect(before3.assistantRested).toBeGreaterThanOrEqual(1);
   }, 90_000);
 });

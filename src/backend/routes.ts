@@ -453,7 +453,10 @@ export const apiRoutes = {
     // the fixture is played — `resolveUserLineup` swaps out any starter injured on `matchDate` for
     // the best eligible bench player, and we surface which slots changed (`injuredReplaced`) so the
     // preview screen can warn the user before kickoff.
-    const resolved = resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? [], matchDate);
+    const resolved = resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? [], matchDate, {
+      assistantRotation: myTactics.assistantRotation,
+      override: save.rotationOverride,
+    });
     myTactics = { ...myTactics, lineup: resolved.lineup };
 
     return Response.json({
@@ -467,6 +470,8 @@ export const apiRoutes = {
       myLineup:     myTactics.lineup,
       myTactics,
       injuredReplaced: resolved.injuredReplaced,
+      rotationSuggestion: resolved.rotationSuggestion,
+      rotationApplied: resolved.rotationApplied,
     });
   },
 

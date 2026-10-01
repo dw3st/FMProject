@@ -5,7 +5,7 @@ services:
     container_name: fmproject
     restart: unless-stopped
     ports:
-      - "9400:3000"
+      - "127.0.0.1:9400:3000"
     env_file: .env
     environment:
       NODE_ENV: production

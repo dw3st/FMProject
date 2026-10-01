@@ -157,12 +157,33 @@ export function autoFillLineupWithFitness(
 ): string[] {
   players = eligiblePool(players, date);
   const plain = autoFillLineup(slots, players);
+  return applyRotation(plain, suggestRotation(slots, plain, players, date));
+}
+
+/** Applies `{ out, in }` swaps to a slot-aligned lineup. */
+export function applyRotation(lineup: string[], swaps: { out: string; in: string }[]): string[] {
+  const map = new Map(swaps.map((s) => [s.out, s.in]));
+  return lineup.map((id) => map.get(id) ?? id);
+}
+
+/**
+ * Tired-starter swaps for a slot-aligned lineup: same rule the AI uses in
+ * `autoFillLineupWithFitness`. Injured bench players never come in (when `date` is given); a bench
+ * player is used at most once.
+ */
+export function suggestRotation(
+  slots: FormationSlot[],
+  lineupIds: string[],
+  players: RosterPlayer[],
+  date?: string,
+): { out: string; in: string }[] {
+  const pool = eligiblePool(players, date);
   const byId = new Map(players.map((p) => [p.id, p]));
-  const usedIds = new Set(plain.filter((id) => id));
-  const result = [...plain];
+  const usedIds = new Set(lineupIds.filter((id) => id));
+  const swaps: { out: string; in: string }[] = [];
 
   for (let i = 0; i < slots.length; i++) {
-    const starterId = result[i];
+    const starterId = lineupIds[i];
     if (!starterId) continue;
     const starter = byId.get(starterId);
     if (!starter) continue;
@@ -174,7 +195,7 @@ export function autoFillLineupWithFitness(
     if (fitness >= tiredThreshold) continue;
 
     const roleMain = getMainRole(role);
-    let bench = players.filter(
+    let bench = pool.filter(
       (p) =>
         !usedIds.has(p.id) &&
         (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
@@ -195,15 +216,13 @@ export function autoFillLineupWithFitness(
     }
     if (!best) continue;
 
-    const starterValue = fitnessAdjustedValue(starter, role);
-    if (bestValue >= starterValue * BENCH_SWAP_RATIO) {
+    if (bestValue >= fitnessAdjustedValue(starter, role) * BENCH_SWAP_RATIO) {
       usedIds.delete(starterId);
       usedIds.add(best.id);
-      result[i] = best.id;
+      swaps.push({ out: starterId, in: best.id });
     }
   }
-
-  return result;
+  return swaps;
 }
 
 /**

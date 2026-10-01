@@ -573,7 +573,9 @@
       "narrow": "Narrow",
       "normal": "Normal",
       "wide": "Wide"
-    }
+    },
+    "assistantRotation": "Assistant picks by fitness",
+    "assistantRotationHint": "Automatically rests tired starters before each match."
   },
   "formations": {
     "title": "Formation",
@@ -1428,7 +1430,13 @@
     "cancelSelection": "Cancel selection",
     "change": "change",
     "lowFitnessWarning": "Starting with low fitness: {{names}}",
-    "injuredReplaced": "{{out}} injured, replaced by {{in}}"
+    "injuredReplaced": "{{out}} injured, replaced by {{in}}",
+    "rotationTitle": "Rest {{count}} tired players?",
+    "rotationSwap": "{{out}} ({{outFit}}%) out, {{in}} ({{inFit}}%) in",
+    "rotationApply": "Apply",
+    "rotationIgnore": "Ignore",
+    "rotationApplied": "The assistant rested {{count}} players",
+    "rotationUndo": "Undo"
   },
   "matchResult": {
     "title": "Match result",
