@@ -30,7 +30,8 @@ describe("rollover with expiring contracts", () => {
     const expireFirst = async (id: string, n: number) => {
       const e = index.byId(id)!;
       const sq = (await saveService.getSquad(saveId, e.leagueSlug, e.stem))!;
-      const ids = sq.players.slice(0, n).map((p) => p.id);
+      // Young players only: players of 34+ may retire at the rollover before contracts expire.
+      const ids = sq.players.filter((p) => p.age < 32).slice(0, n).map((p) => p.id);
       await saveService.saveSquad(saveId, e.leagueSlug, e.stem, {
         ...sq,
         players: sq.players.map((p) => (ids.includes(p.id) ? { ...p, contract: { until: today, wage: p.contract!.wage } } : p)),
