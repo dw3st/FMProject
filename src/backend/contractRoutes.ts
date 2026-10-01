@@ -63,7 +63,7 @@ export const contractRoutes = {
   },
 
   /**
-   * `GET /api/saves/:saveId/players/:playerId/demand?from=<squadId>` — the weekly wage this player
+   * `GET /api/saves/:saveId/players/:playerId/demand?from=<squadId>` â€” the weekly wage this player
    * would ask of the human club. `from` is the player's current squad; omitted = the free-agent pool.
    */
   "/api/saves/:saveId/players/:playerId/demand": async (
@@ -95,7 +95,7 @@ export const contractRoutes = {
   },
 
   /**
-   * `POST /api/saves/:saveId/free-agents/:playerId/sign` `{ wage, years }` — sign a free agent for
+   * `POST /api/saves/:saveId/free-agents/:playerId/sign` `{ wage, years }` â€” sign a free agent for
    * the human club: no fee, offer judged by `evaluateContractOffer`, squad capped at 30.
    */
   "/api/saves/:saveId/free-agents/:playerId/sign": async (
