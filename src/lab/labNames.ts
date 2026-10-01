@@ -1,5 +1,6 @@
-import { TACTICAL_STYLE_OPTIONS, DEFAULT_MENTALITY } from "@/types/tacticsTypes";
-import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
+import { TACTICAL_STYLE_OPTIONS, DEFAULT_MENTALITY, hasAxesOverride } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality, TacticalAxes } from "@/types/tacticsTypes";
+import { customShape } from "@/Domain/formation/zones";
 import type { Variant } from "@/lab/types";
 
 export function tacticLabel(style: TacticalStyle): string {
@@ -21,10 +22,18 @@ export function generateVariantLabel(
   formation: string,
   style: TacticalStyle,
   mentality?: Mentality,
+  axesOverride?: Partial<TacticalAxes>,
 ): string {
-  const base = `${formation} · ${tacticLabel(style)}`;
+  const custom = hasAxesOverride(style, axesOverride) ? " (custom axes)" : "";
+  const base = `${formation} · ${tacticLabel(style)}${custom}`;
   if (!mentality || mentality === DEFAULT_MENTALITY) return base;
   return `${base} · ${MENTALITY_LABEL[mentality]}`;
+}
+
+/** Auto-label for a whole variant (free formations show as "Free 3-2-4-1"). */
+export function variantAutoLabel(v: Variant): string {
+  const formation = v.customFormation ? `Free ${customShape(v.customFormation.slots)}` : v.formation;
+  return generateVariantLabel(formation, v.tacticalStyle, v.mentality, v.axesOverride);
 }
 
 /** Auto-name for the whole scenario based on its variant pool. */

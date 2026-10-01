@@ -10,6 +10,9 @@
  *   // result.score, result.teamStats, result.playerStats, result.playerRatings
  */
 
+import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
+import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
+import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes } from '@/types/tacticsTypes';
 import type { GameState, GamePlayer, Formation, KnockoutDecider } from '@/GameEngine/types';
 import { tickState, createMatchState, knockoutDecider } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
@@ -48,6 +51,18 @@ export interface SimulateMatchOptions {
   knockout?: boolean;
   /** Second leg of a two-legged tie: first-leg goals per side of THIS match. */
   aggregate?: { A: number; B: number };
+  /**
+   * Tactics applied to each team before simulating (style + optional axes override, balanced
+   * mentality). The config stores are process-global, so a caller that passes this gets a
+   * per-match apply and nothing leaks from the previous match. Omit to keep whatever is applied
+   * (the lab applies its own variants).
+   */
+  tactics?: { A: TeamTactics; B: TeamTactics };
+}
+
+export interface TeamTactics {
+  style: TacticalStyle;
+  axesOverride?: Partial<TacticalAxes>;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -113,6 +128,14 @@ export function simulateMatch(
   options: SimulateMatchOptions = {},
 ): MatchResult {
   const startMs = performance.now();
+
+  if (options.tactics) {
+    for (const team of ['A', 'B'] as const) {
+      const t = options.tactics[team];
+      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride);
+      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride);
+    }
+  }
 
   // Build state — skip preMatch presentation so the loop starts in firstHalf
   let s: GameState = {

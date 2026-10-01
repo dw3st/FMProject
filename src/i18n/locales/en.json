@@ -393,6 +393,29 @@
     "players": "Players"
   },
   "tactics": {
+    "axes": {
+      "title": "Team instructions",
+      "hint": "Picking a style fills all four. Change any one to customise.",
+      "custom": "Custom (base {{style}})",
+      "reset": "Reset to style",
+      "pressing_style": "Pressing",
+      "defensive_line": "Defensive line",
+      "width": "Width",
+      "build_up": "Build-up",
+      "values": {
+        "low_block": "Low block",
+        "mid_block": "Mid block",
+        "high_press": "High press",
+        "deep": "Deep",
+        "normal": "Normal",
+        "high": "High",
+        "narrow": "Narrow",
+        "wide": "Wide",
+        "direct": "Direct",
+        "balanced": "Balanced",
+        "possession": "Possession"
+      }
+    },
     "tacticalStyle": "Tactical Style",
     "selectStyle": "Select tactical style",
     "buildUp": "Build-up",
@@ -494,6 +517,23 @@
     "assistantRotationHint": "Automatically rests tired starters before each match."
   },
   "formations": {
+    "custom": "Custom",
+    "editor": {
+      "edit": "Edit formation",
+      "title": "Editing formation",
+      "hint": "Drag a position onto a free zone. One position per zone.",
+      "cancel": "Cancel",
+      "apply": "Save formation",
+      "invalid": {
+        "count": "A formation needs exactly 11 positions",
+        "goalkeeper": "Exactly 1 goalkeeper is required",
+        "outfield": "Exactly 10 outfield players are required",
+        "defenders": "At least 3 defenders are required",
+        "attackers": "At least 1 forward is required",
+        "duplicate": "Two positions share a zone",
+        "zone": "A position is outside the grid"
+      }
+    },
     "title": "Formation",
     "subtitle": "Formation & Tactics",
     "subtitleTactics": "& Tactics",
@@ -518,7 +558,7 @@
     "playersInStartingLineup": "{{count}} players in starting lineup",
     "playersOnBench": "{{count}} players on bench",
     "preview": "Preview",
-    "clickPositionHint": "Click a position to swap players",
+    "clickPositionHint": "Click or drag a position to swap players",
     "outOfPosition": "Out of position",
     "outOfPositionPrimary": "Out of position — primary: {{position}} ({{role}})",
     "rating": "Rating",

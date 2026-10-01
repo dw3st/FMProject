@@ -131,6 +131,28 @@ export function axesFor(style: TacticalStyle): TacticalAxes {
   return STYLE_TO_AXES[style];
 }
 
+/** The style's axis bundle with the user's per-axis edits on top. */
+export function effectiveAxes(style: TacticalStyle, override?: Partial<TacticalAxes>): TacticalAxes {
+  return { ...axesFor(style), ...definedAxes(override) };
+}
+
+function definedAxes(o?: Partial<TacticalAxes>): Partial<TacticalAxes> {
+  const out: Partial<TacticalAxes> = {};
+  if (!o) return out;
+  if (o.pressing_style) out.pressing_style = o.pressing_style;
+  if (o.defensive_line) out.defensive_line = o.defensive_line;
+  if (o.width) out.width = o.width;
+  if (o.build_up) out.build_up = o.build_up;
+  return out;
+}
+
+/** True when `override` actually changes at least one axis of the style's bundle. */
+export function hasAxesOverride(style: TacticalStyle, override?: Partial<TacticalAxes>): boolean {
+  const base = axesFor(style);
+  const eff = effectiveAxes(style, override);
+  return (Object.keys(base) as (keyof TacticalAxes)[]).some((k) => base[k] !== eff[k]);
+}
+
 // ── Live match mentality ────────────────────────────────────────────────────
 //
 // Mentality is a temporary, unsaved shift applied on top of a team's chosen
@@ -167,8 +189,12 @@ function step<T>(steps: T[], value: T, delta: number): T {
  *
  * Pure function — does not mutate any per-team config.
  */
-export function axesWithMentality(style: TacticalStyle, mentality: Mentality): TacticalAxes {
-  const base = axesFor(style);
+export function axesWithMentality(
+  style: TacticalStyle,
+  mentality: Mentality,
+  override?: Partial<TacticalAxes>,
+): TacticalAxes {
+  const base = effectiveAxes(style, override);
   if (mentality === "balanced") return base;
   if (mentality === "attacking") {
     return {
@@ -187,12 +213,30 @@ export function axesWithMentality(style: TacticalStyle, mentality: Mentality): T
   };
 }
 
+// ── Free formation ───────────────────────────────────────────────────────────
+
+/** One slot of a custom formation: zone centre (yards, Team A frame) + the role the zone implies. */
+export interface CustomFormationSlot {
+  x: number;
+  y: number;
+  role: string;
+}
+
+export interface CustomFormation {
+  slots: CustomFormationSlot[];
+}
+
 // ── Save shape ────────────────────────────────────────────────────────────────
 
 /** Full tactics save: style + formation + explicit starting lineup (playerIds in slot order). */
 export interface TacticsSave {
   tactical_style: TacticalStyle;
+  /** Ready-made formation id, or "custom" when `customFormation` is active. */
   formation: string;
+  /** Free formation (zone grid). Slot order = lineup order. Active when `formation === "custom"`. */
+  customFormation?: CustomFormation;
+  /** Axes edited on top of the style's bundle ("Personalizado (base X)"). */
+  axesOverride?: Partial<TacticalAxes>;
   /** Ordered player IDs — index maps to formation slot index. May be shorter than 11 if not fully set. */
   lineup: string[];
   /** When true the assistant rests tired starters automatically (default false). */
