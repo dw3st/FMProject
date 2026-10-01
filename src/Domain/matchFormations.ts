@@ -1,4 +1,10 @@
 import type { Formation } from "@/GameEngine/types";
+import type { CustomFormation } from "@/types/tacticsTypes";
+import {
+  CUSTOM_FORMATION_ID,
+  customToFormation,
+  validateCustomFormation,
+} from "@/Domain/formation/zones";
 import f343 from "@/Data/formations/3-4-3.json";
 import f352 from "@/Data/formations/3-5-2.json";
 import f4141 from "@/Data/formations/4-1-4-1.json";
@@ -30,4 +36,19 @@ const REGISTRY: Record<string, Formation> = {
 export function formationForSimId(id: string | undefined): Formation {
   if (!id) return REGISTRY[DEFAULT_SIM_FORMATION_ID]!;
   return REGISTRY[id] ?? REGISTRY[DEFAULT_SIM_FORMATION_ID]!;
+}
+
+/**
+ * Engine formation for a tactics save: the free formation when active
+ * (`formation === "custom"` with a valid `customFormation`), otherwise the ready-made one by id.
+ */
+export function formationForTactics(
+  tactics: { formation?: string; customFormation?: CustomFormation } | null | undefined,
+): Formation {
+  if (tactics?.formation === CUSTOM_FORMATION_ID && tactics.customFormation) {
+    if (validateCustomFormation(tactics.customFormation.slots).ok) {
+      return customToFormation(tactics.customFormation);
+    }
+  }
+  return formationForSimId(tactics?.formation === CUSTOM_FORMATION_ID ? undefined : tactics?.formation);
 }
