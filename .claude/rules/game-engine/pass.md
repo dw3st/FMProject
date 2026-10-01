@@ -456,3 +456,37 @@ The **next design session should focus on Positioning**, because that system wil
 * defensive shape
 
 Improving positioning will amplify the effectiveness of both **carry and passing systems**.
+
+---
+
+# Possession style recovery (issue #8, v2.1.1)
+
+With both teams on `possession` the style had lost chances (premier_league, 300 matches, 4-3-3:
+goals 2.08 vs 2.70, shots 5.24 vs 6.07 for both-`balanced`; 103 passes, MID 5.3 passes/player,
+TB 14.9). Fixed with tactic-scoped levers only (`TeamPassWeights`/`BUILD_UP_CARRY` in
+`AttackConfig.ts`, no role changes, balanced/direct untouched):
+
+| Lever (possession) | Before | After |
+|---|---|---|
+| `CLEARANCE_WEIGHT` (carry) | 0.65 | 0.90 |
+| `ROLE_BIAS_WEIGHT` (new TeamPassWeights field, holder passBias scale) | 0.10 | 0.14 |
+| `THROUGH_BALL_BONUS` (new field, raw bonus on a viable TB cell in `evalThroughBall`) | 0 | 0.10 |
+
+Findings: lowering the carry threshold or clearance collapses shots (carries create most shots);
+`RECEIVER_ROLE_WEIGHT`, `MIN_PASS_SCORE` and `ROLE_BIAS_WEIGHT` alone barely move shots; raising the
+TB bonus alone trades passes for TBs (≥0.2 loses both). LM/RM and LWB/RWB `passBias`/`passTargetWeight`
+were not changed (global; the tactic-scoped levers were enough).
+
+Measured (premier_league, 400 matches each, same style both teams):
+
+| Formation / style | goals | shots | passes | MID passes/player | TB |
+|---|---|---|---|---|---|
+| 4-3-3 balanced | 2.65 | 6.16 | 44.3 | 2.36 | 20.0 |
+| 4-3-3 possession | 2.75 | 6.10 | 49.7 | 2.69 | 14.8 |
+| 4-3-3 direct_play | 3.03 | 6.62 | 30.2 | 1.08 | 20.1 |
+| 4-2-3-1 balanced | 2.90 | 6.42 | 37.2 | 1.41 | 20.0 |
+| 4-2-3-1 possession | 2.84 | 6.36 | 53.5 | 3.26 | 13.4 |
+| 4-2-3-1 direct_play | 3.05 | 6.75 | 26.5 | 0.64 | 19.4 |
+
+Balanced/direct before the change (300 matches): 2.70 / 6.07 / 44.2 and 2.97 / 6.68 / 30.0 — noise only.
+quickSim has no build_up/style effect on goals (it uses team strength only), so its calibration is unaffected.
