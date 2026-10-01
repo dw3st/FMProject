@@ -92,6 +92,10 @@ export interface TeamPassWeights {
   MIN_PASS_SCORE:          number;
   /** How much the receiver's role (roles.json passTargetWeight) steers the pass — midfield hub preference. */
   RECEIVER_ROLE_WEIGHT:    number;
+  /** Scales the holder role's passBias (roles.json) added to the pass action score. */
+  ROLE_BIAS_WEIGHT:        number;
+  /** Flat raw-score bonus on a viable through-ball cell (tactic appetite for splitting the line). */
+  THROUGH_BALL_BONUS:      number;
 }
 
 const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
@@ -102,6 +106,8 @@ const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
   GOAL_PROXIMITY_WEIGHT:   PASS_CONFIG.GOAL_PROXIMITY_WEIGHT,
   MIN_PASS_SCORE:          PASS_CONFIG.MIN_PASS_SCORE,
   RECEIVER_ROLE_WEIGHT:    PASS_CONFIG.RECEIVER_ROLE_WEIGHT,
+  ROLE_BIAS_WEIGHT:        PASS_CONFIG.ROLE_BIAS_WEIGHT,
+  THROUGH_BALL_BONUS:      PASS_CONFIG.THROUGH_BALL_BONUS,
 };
 
 /**
@@ -125,8 +131,12 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     DISTANCE_PENALTY_WEIGHT: 0.19,
     GOAL_PROXIMITY_WEIGHT:   0.12,
     MIN_PASS_SCORE:          0.38,
-    // Patient build-up routes through midfield more.
+    // Patient build-up routes through midfield more. ROLE_BIAS_WEIGHT 0.14 keeps
+    // MIDs circulating; THROUGH_BALL_BONUS 0.10 + CLEARANCE 0.90 (carry) win back the
+    // shots the extra passing cost (issue #8).
     RECEIVER_ROLE_WEIGHT:    0.14,
+    ROLE_BIAS_WEIGHT:        0.14,
+    THROUGH_BALL_BONUS:      0.10,
   },
   balanced: { ...PASS_WEIGHT_DEFAULTS },
   direct: {
@@ -140,6 +150,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     MIN_PASS_SCORE:          0.26,
     // Direct play skips midfield more readily.
     RECEIVER_ROLE_WEIGHT:    0.06,
+    ROLE_BIAS_WEIGHT:        0.10,
+    THROUGH_BALL_BONUS:      0,
   },
 };
 
@@ -199,7 +211,7 @@ const BUILD_UP_CARRY: Record<BuildUpStyle, TeamCarryWeights> = {
     // Moderate carries (clearance ~0.60) still fail the threshold — only clearly
     // open space qualifies. Progress is de-emphasised; possession carries sideways
     // or slightly backward when space is genuinely there.
-    CLEARANCE_WEIGHT:     0.65,
+    CLEARANCE_WEIGHT:     0.9,
     PROGRESS_WEIGHT:      0.15,
     ANGLE_WEIGHT:         0.10,
     CROWD_PENALTY_WEIGHT: 0.45,
