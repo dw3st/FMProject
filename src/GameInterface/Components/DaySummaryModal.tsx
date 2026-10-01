@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trophy, Dumbbell, Moon, X, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type {
   DayLog,
   DayEvent,
@@ -17,9 +16,13 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { getMainRole } from "@/GameInterface/positionHelpers";
-import { Icon } from "@/GameInterface/Icons";
+import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
+
+const Minus = iconOf("minus");
+const TrendingDown = iconOf("trend-down");
+const TrendingUp = iconOf("trend-up");
 
 /** One team's identity, resolved once per league set so per-match lookups are O(1). */
 interface TeamLookup {
@@ -63,17 +66,17 @@ function DayModeBadge({ mode, t }: { mode: "training" | "rest"; t: (key: string)
   return (
     <div className="flex justify-center">
       <div
-        className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/35 bg-primary/15 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-primary shadow-[0_0_12px_oklch(0.75_0.18_var(--team-hue)/0.2)]"
+        className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/35 bg-primary/15 px-6 py-2.5 text-[13px] font-bold uppercase tracking-[0.08em] text-primary font-display"
         role="status"
       >
         {isRest ? (
           <>
-            <Moon className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            <Icon name="rest" className="w-3.5 h-3.5 shrink-0" aria-hidden />
             {t("daySummary.restDay")}
           </>
         ) : (
           <>
-            <Dumbbell className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            <Icon name="training" className="w-3.5 h-3.5 shrink-0" aria-hidden />
             {t("daySummary.trainingDay")}
           </>
         )}
@@ -136,8 +139,8 @@ type OutcomeTone = "pos" | "neg" | "neu";
 
 function toneClass(tone: OutcomeTone): string {
   switch (tone) {
-    case "pos": return "text-emerald-400";
-    case "neg": return "text-red-400";
+    case "pos": return "text-chart-2";
+    case "neg": return "text-destructive";
     default:    return "text-muted-foreground";
   }
 }
@@ -145,7 +148,7 @@ function toneClass(tone: OutcomeTone): string {
 function OutcomePhrase({ text, tone, className = "" }: { text: string; tone: OutcomeTone; className?: string }) {
   const Icon = tone === "pos" ? TrendingUp : tone === "neg" ? TrendingDown : Minus;
   return (
-    <span className={`inline-flex items-center justify-end gap-1 font-bold text-[10px] leading-tight text-right ${toneClass(tone)} ${className}`}>
+    <span className={`inline-flex items-center justify-end gap-1 font-bold text-sm leading-tight text-right ${toneClass(tone)} ${className}`}>
       <Icon className="w-3 h-3 shrink-0 opacity-90" />
       <span className="break-words">{text}</span>
     </span>
@@ -163,16 +166,16 @@ function SquadTrainingRestCard({
 }) {
   const squadTitle = teamName.trim().toUpperCase() || t("daySummary.yourSquad");
   return (
-    <div className="rounded-2xl overflow-hidden border border-border/80 bg-gradient-to-b from-secondary/25 to-background/80 shadow-[inset_0_1px_0_oklch(1_0_0/0.06)]">
+    <div className="rounded-md overflow-hidden border border-border/80">
       <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(4.75rem,1fr)_minmax(4.75rem,1fr)] gap-x-2 items-center px-3 sm:px-4 py-3 border-b border-border/60 bg-black/20">
         <div aria-hidden />
-        <span className="text-[10px] font-black tracking-[0.2em] text-foreground min-w-0 truncate">{squadTitle}</span>
-        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70 text-right">{t("daySummary.fitness")}</span>
-        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70 text-right">{t("daySummary.training")}</span>
+        <span className="text-sm font-black tracking-[0.2em] text-foreground min-w-0 truncate">{squadTitle}</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 text-right font-display">{t("daySummary.fitness")}</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 text-right font-display">{t("daySummary.training")}</span>
       </div>
       <div className="divide-y divide-border/40">
         {effects.length === 0 ? (
-          <div className="px-4 py-6 text-center text-xs text-muted-foreground">{t("daySummary.noPlayersInSession")}</div>
+          <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t("daySummary.noPlayersInSession")}</div>
         ) : (
           effects.map((e, i) => {
             const p = playerById.get(String(e.playerId));
@@ -195,12 +198,12 @@ function SquadTrainingRestCard({
             }
             return (
               <div key={`${e.playerId}-${i}`} className="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(4.75rem,1fr)_minmax(4.75rem,1fr)] gap-x-2 items-center px-3 sm:px-4 py-3">
-                <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[11px] font-black text-primary-foreground bg-gradient-to-br from-primary/80 to-primary/40 border border-primary/50 shadow-sm" aria-hidden>
+                <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-black text-primary-foreground border border-primary/50" aria-hidden>
                   {initials}
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold text-sm text-foreground truncate">{e.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{role}</div>
+                  <div className="text-sm text-muted-foreground">{role}</div>
                 </div>
                 <OutcomePhrase text={fit.text} tone={fit.tone} className="min-w-0" />
                 <OutcomePhrase text={second.text} tone={second.tone} className="min-w-0" />
@@ -245,10 +248,10 @@ function MatchCard({
   const awayColors = awayTeam?.colors ?? ["#555", "#888"];
 
   return (
-    <div className="card-arcade rounded-xl overflow-hidden">
+    <div className="card-arcade rounded-md overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/20">
-        <Trophy className="w-3.5 h-3.5 text-primary" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        <Icon name="trophy" className="w-3.5 h-3.5 text-primary" />
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
           {isCupSlug(event.competition)
             ? t("daySummary.cupMatch", { competition: competitionName(event.competition, leagues, lang) })
             : t("daySummary.matchRound", { competition: competitionName(event.competition, leagues, lang), round: event.round })}
@@ -263,7 +266,7 @@ function MatchCard({
               logoUrl={homeLogoUrl}
               primaryColor={homeColors[0]}
               secondaryColor={homeColors[1]}
-              className="w-8 h-8 rounded shrink-0"
+              className="w-8 h-8 rounded-full shrink-0"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -280,7 +283,7 @@ function MatchCard({
               logoUrl={awayLogoUrl}
               primaryColor={awayColors[0]}
               secondaryColor={awayColors[1]}
-              className="w-8 h-8 rounded shrink-0"
+              className="w-8 h-8 rounded-full shrink-0"
             />
             <span className="text-sm font-semibold text-foreground truncate">{awayName}</span>
           </div>
@@ -289,7 +292,7 @@ function MatchCard({
         {event.scorers.length > 0 && (
           <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
             {event.scorers.map((s, i) => (
-              <span key={i} className="text-[11px] text-muted-foreground">
+              <span key={i} className="text-sm text-muted-foreground">
                 {s.playerName} {s.goals > 1 ? `(${s.goals})` : ""}
                 <span className="text-muted-foreground/40 ml-1">
                   {s.team === "home" ? homeName : awayName}
@@ -299,7 +302,7 @@ function MatchCard({
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-center">
+        <div className="mt-3 grid grid-cols-3 gap-2 text-sm text-center">
           <StatCell label={t("daySummary.shots")} home={event.teamStats.home.shots} away={event.teamStats.away.shots} />
           <StatCell label={t("daySummary.passes")} home={event.teamStats.home.passesCompleted} away={event.teamStats.away.passesCompleted} />
           <StatCell label={t("daySummary.tackles")} home={event.teamStats.home.tackles} away={event.teamStats.away.tackles} />
@@ -312,7 +315,7 @@ function MatchCard({
 function StatCell({ label, home, away }: { label: string; home: number; away: number }) {
   return (
     <div className="bg-muted/20 rounded-lg px-2 py-1.5">
-      <div className="text-muted-foreground/50 font-medium uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-muted-foreground/50 font-bold uppercase tracking-[0.08em] mb-1 font-display">{label}</div>
       <div className="flex justify-center gap-2">
         <span className="font-bold text-foreground tabular-nums">{home}</span>
         <span className="text-muted-foreground/30">-</span>
@@ -334,8 +337,8 @@ function OtherLeagueLine({
   const homeName = teamsById.get(event.home)?.name ?? fallbackTeamNameFromSquadId(event.home);
   const awayName = teamsById.get(event.away)?.name ?? fallbackTeamNameFromSquadId(event.away);
   return (
-    <div className="flex items-center gap-3 px-3 py-1.5 text-xs">
-      <span className="shrink-0 w-36 truncate text-muted-foreground/70 font-semibold uppercase tracking-wide text-[10px]">
+    <div className="flex items-center gap-3 px-3 py-1.5 text-sm">
+      <span className="shrink-0 w-36 truncate text-muted-foreground/70 font-semibold uppercase tracking-[0.08em] font-display text-[13px]">
         {competitionName(event.competition, leagues, lang)}
       </span>
       <span className="truncate text-foreground/80">
@@ -362,13 +365,13 @@ function OtherLeaguesSection({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-secondary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:bg-secondary/20 hover:text-foreground transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between gap-2 rounded border-0/60 px-4 h-10 text-[13px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer bg-transparent hover:text-foreground"
       >
         <span>{t("daySummary.otherLeagues", { count: matches.length })}</span>
         <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
       </button>
       {open && (
-        <div className="mt-2 rounded-xl border border-border/40 divide-y divide-border/30 overflow-hidden">
+        <div className="mt-2 rounded-md border border-border/40 divide-y divide-border/30 overflow-hidden">
           {matches.map((e) => (
             <OtherLeagueLine key={e.fixtureId} event={e} leagues={leagues} teamsById={teamsById} lang={lang} />
           ))}
@@ -391,33 +394,33 @@ function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t:
   if (ups.length === 0 && downs.length === 0) return null;
 
   return (
-    <div className="card-arcade rounded-xl overflow-hidden">
+    <div className="card-arcade rounded-md overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-secondary/20">
-        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        <Icon name="trend-up" className="w-3.5 h-3.5 text-chart-2" />
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
           {t("daySummary.playerDevelopment")}
         </span>
       </div>
       <div className="px-4 py-3 space-y-1">
         {ups.map((ch, i) => (
-          <div key={`up-${i}`} className="flex items-center justify-between text-[11px]">
+          <div key={`up-${i}`} className="flex items-center justify-between text-sm">
             <span className="text-foreground/80">{ch.name}</span>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground/60">{formatStatName(ch.stat)}</span>
-              <span className="flex items-center gap-0.5 text-emerald-400 font-bold">
-                <TrendingUp className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 text-chart-2 font-bold">
+                <Icon name="trend-up" className="w-3 h-3" />
                 {ch.newValue}
               </span>
             </div>
           </div>
         ))}
         {downs.map((ch, i) => (
-          <div key={`dn-${i}`} className="flex items-center justify-between text-[11px]">
+          <div key={`dn-${i}`} className="flex items-center justify-between text-sm">
             <span className="text-foreground/80">{ch.name}</span>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground/60">{formatStatName(ch.stat)}</span>
-              <span className="flex items-center gap-0.5 text-red-400 font-bold">
-                <TrendingDown className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 text-destructive font-bold">
+                <Icon name="trend-down" className="w-3 h-3" />
                 {ch.newValue}
               </span>
             </div>
@@ -496,23 +499,23 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="relative shrink-0 px-6 pt-6 pb-4 border-b border-border/80 bg-gradient-to-b from-card/90 to-card/50">
+        <div className="relative shrink-0 px-6 pt-6 pb-4 border-b border-border/80">
           <button
             type="button"
             onClick={onDismiss}
             className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer bg-transparent border-0"
             aria-label={t("common.close")}
           >
-            <X className="w-5 h-5 text-muted-foreground" />
+            <Icon name="close" className="w-5 h-5 text-muted-foreground" />
           </button>
           <div className="text-center pr-10">
-            <p className="text-[11px] font-black tracking-[0.22em] text-emerald-400/90 uppercase mb-2 m-0">
+            <p className="text-[13px] font-black tracking-[0.22em] text-chart-2/90 uppercase mb-2 m-0">
               {weekdayUpper(dayLog.date)} // {seasonEyebrow}
             </p>
-            <h2 className="text-2xl sm:text-3xl font-black italic font-display text-foreground uppercase tracking-tight m-0 glow-text">
+            <h2 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("daySummary.title")}
             </h2>
-            <p className="text-xs text-muted-foreground m-0 mt-2">{formatDate(dayLog.date)}</p>
+            <p className="text-sm text-muted-foreground m-0 mt-2">{formatDate(dayLog.date)}</p>
           </div>
         </div>
 
@@ -520,7 +523,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-8">
           {primaryMatches.length > 0 && (
             <section>
-              <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3 font-display">
+              <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">
                 {t("daySummary.matches", { count: primaryMatches.length })}
               </h3>
               <div className="space-y-3">
@@ -587,7 +590,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
           <button
             type="button"
             onClick={onDismiss}
-            className="min-w-[200px] px-8 py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm uppercase tracking-[0.15em] transition-all hover:scale-[1.02] active:scale-[0.98] glow-primary cursor-pointer border-0"
+            className="min-w-[200px] px-8 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm tracking-[0.15em] cursor-pointer border-0"
           >
             {t("common.continue")} »
           </button>

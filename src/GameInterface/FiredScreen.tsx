@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { XCircle, TrendingDown, Calendar, Trophy, ArrowRight } from "lucide-react";
+import { Icon } from "@/GameInterface/Icons";
 
 export interface FiringData {
   clubName: string;
@@ -35,23 +35,19 @@ export function FiredScreen() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden opacity-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-destructive blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-destructive/50 blur-3xl" />
-      </div>
 
       <div className="relative z-10 max-w-2xl w-full">
-        <div className="card-arcade rounded-2xl border-2 border-destructive/50 p-8 text-center space-y-6">
+        <div className="card-arcade rounded-md border-2 border-destructive/50 p-8 text-center space-y-6">
           {/* Icon */}
           <div className="flex justify-center">
-            <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center border-2 border-destructive">
-              <XCircle className="w-12 h-12 text-destructive" />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center border border-destructive">
+              <Icon name="xcircle" size={32} className="text-destructive" />
             </div>
           </div>
 
           {/* Title */}
           <div>
-            <h1 className="text-4xl font-black font-display uppercase tracking-wider text-destructive m-0">
+            <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0 text-destructive">
               {t("fired.youveFired")}
             </h1>
             <p className="text-muted-foreground mt-2 m-0">
@@ -60,35 +56,35 @@ export function FiredScreen() {
           </div>
 
           {/* Reason */}
-          <div className="card-arcade rounded-xl p-4 border border-destructive/30">
-            <p className="text-sm italic text-muted-foreground m-0">
+          <div className="card-arcade rounded-md p-4 border border-destructive/30">
+            <p className="text-sm text-muted-foreground m-0">
               "{data.boardReason}"
             </p>
-            <p className="text-xs text-destructive mt-2 font-semibold uppercase tracking-wider m-0">
+            <p className="text-[13px] text-destructive mt-2 font-bold uppercase tracking-[0.08em] m-0 font-display">
               {t("fired.chairmanQuote")}
             </p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card-arcade rounded-lg p-3 border-glow">
-              <Calendar className="w-5 h-5 text-primary mx-auto mb-1" />
+            <div className="card-arcade rounded-lg p-3">
+              <Icon name="calendar" className="w-5 h-5 text-primary mx-auto mb-1" />
               <p className="text-lg font-bold font-display m-0">{data.tenure}</p>
-              <p className="text-xs text-muted-foreground uppercase m-0">{t("fired.tenure")}</p>
+              <p className="text-[13px] text-muted-foreground uppercase m-0">{t("fired.tenure")}</p>
             </div>
-            <div className="card-arcade rounded-lg p-3 border-glow">
-              <Trophy className="w-5 h-5 text-primary mx-auto mb-1" />
+            <div className="card-arcade rounded-lg p-3">
+              <Icon name="trophy" className="w-5 h-5 text-primary mx-auto mb-1" />
               <p className="text-lg font-bold font-display m-0">{data.matchesManaged}</p>
-              <p className="text-xs text-muted-foreground uppercase m-0">{t("fired.matches")}</p>
+              <p className="text-[13px] text-muted-foreground uppercase m-0">{t("fired.matches")}</p>
             </div>
-            <div className="card-arcade rounded-lg p-3 border-glow">
-              <TrendingDown className="w-5 h-5 text-destructive mx-auto mb-1" />
+            <div className="card-arcade rounded-lg p-3">
+              <Icon name="trend-down" className="w-5 h-5 text-destructive mx-auto mb-1" />
               <p className="text-lg font-bold font-display m-0">{data.winRate}%</p>
-              <p className="text-xs text-muted-foreground uppercase m-0">{t("fired.winRate")}</p>
+              <p className="text-[13px] text-muted-foreground uppercase m-0">{t("fired.winRate")}</p>
             </div>
-            <div className="card-arcade rounded-lg p-3 border-glow">
+            <div className="card-arcade rounded-lg p-3">
               <p className="text-lg font-bold font-display text-destructive m-0">{data.lastPosition}th</p>
-              <p className="text-xs text-muted-foreground uppercase mt-1 m-0">{t("fired.finalPosition")}</p>
+              <p className="text-[13px] text-muted-foreground uppercase mt-1 m-0">{t("fired.finalPosition")}</p>
             </div>
           </div>
 
@@ -99,7 +95,7 @@ export function FiredScreen() {
               <span className="text-muted-foreground ml-1">{t("fired.wins")}</span>
             </div>
             <div>
-              <span className="text-yellow-500 font-bold">{data.draws}</span>
+              <span className="text-chart-4 font-bold">{data.draws}</span>
               <span className="text-muted-foreground ml-1">{t("fired.draws")}</span>
             </div>
             <div>
@@ -111,12 +107,12 @@ export function FiredScreen() {
           {/* Achievements */}
           {data.achievements.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider m-0">{t("fired.achievementsDuringTenure")}</p>
+              <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] m-0 font-display font-bold">{t("fired.achievementsDuringTenure")}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {data.achievements.map((achievement, i) => (
                   <span
                     key={i}
-                    className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium border border-primary/30"
+                    className="px-2 py-0.5 rounded border border-primary/40 text-primary text-sm"
                   >
                     {achievement}
                   </span>
@@ -129,16 +125,16 @@ export function FiredScreen() {
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <a
               href="/start"
-              className="flex-1 py-3 rounded-xl border border-border text-foreground hover:border-primary font-bold text-sm uppercase tracking-wider transition-all no-underline text-center"
+              className="flex-1 h-10 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground font-semibold text-sm no-underline"
             >
               {t("fired.returnToMenu")}
             </a>
             <a
               href="/coming-soon"
-              className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all no-underline text-center inline-flex items-center justify-center gap-2"
+              className="flex-1 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline inline-flex items-center justify-center gap-2"
             >
               {t("fired.findNewClub")}
-              <ArrowRight className="w-4 h-4" />
+              <Icon name="arrow-right" size={16} />
             </a>
           </div>
         </div>

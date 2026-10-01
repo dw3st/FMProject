@@ -27,7 +27,7 @@ export function SeasonNoticeModal({
   return (
     <Modal open onClose={onDismiss} size="sm">
       <div className="p-6 flex flex-col gap-4">
-        <h2 className="text-xl font-black font-display tracking-tight text-foreground">
+        <h2 className="font-display font-black uppercase text-xl leading-none m-0">
           {notice.archiveYear != null
             ? t("seasonNotice.titleYear", { year: notice.archiveYear })
             : t("seasonNotice.title")}
@@ -58,7 +58,7 @@ export function SeasonNoticeModal({
         )}
 
         {notice.moves.length > 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {t("seasonNotice.moves", { count: notice.moves.length })}
           </p>
         )}
@@ -66,7 +66,7 @@ export function SeasonNoticeModal({
         <button
           type="button"
           onClick={onDismiss}
-          className="self-end px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider cursor-pointer border-0 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="self-end px-4 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 px-5"
         >
           {t("seasonNotice.ok")}
         </button>
@@ -93,16 +93,16 @@ export function FastForwardModal({
   return (
     <Modal open onClose={failed ? onDismiss : () => {}} size="sm">
       <div className="p-6 flex flex-col gap-4">
-        <h2 className="flex items-center gap-2 text-lg font-black font-display tracking-tight text-foreground">
+        <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex items-center gap-2">
           <Icon name="fast-forward" size={18} className="text-primary" />
           {t("fastForward.title")}
         </h2>
 
-        <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+        <div className="h-2 w-full rounded-full bg-border overflow-hidden">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{t("fastForward.progress", { done: progress.daysAdvanced, total })}</span>
           <span>{t("fastForward.currentDate", { date: progress.currentDate })}</span>
         </div>
@@ -115,7 +115,7 @@ export function FastForwardModal({
           type="button"
           onClick={failed ? onDismiss : onStop}
           disabled={!failed && progress.stopping}
-          className="self-end px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] text-sm font-bold uppercase tracking-wider text-foreground cursor-pointer transition-all hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="self-end px-4 py-2 rounded-lg border border-border bg-foreground/5 text-sm font-bold uppercase tracking-[0.08em] text-foreground cursor-pointer transition-all hover:bg-foreground/10 disabled:opacity-50 disabled:cursor-not-allowed font-display"
         >
           {failed ? t("seasonNotice.ok") : progress.stopping ? t("fastForward.stopping") : t("fastForward.stop")}
         </button>
