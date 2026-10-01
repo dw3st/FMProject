@@ -107,11 +107,9 @@
     "footerText": "© 2026 FMProject · baseado em TouchLines (AGPL-3.0)"
   },
   "unsupportedScreen": {
-    "badge": "Em breve",
-    "title": "Tamanho de tela não suportado",
-    "description": "O FMProject foi feito para telas maiores no momento. Suporte para celular e telas pequenas está chegando — volte em um computador ou redimensione a janela.",
-    "minimum": "Mínimo",
-    "current": "Atual"
+    "title": "Use uma janela maior",
+    "minimum": "mínimo",
+    "current": "atual"
   },
   "startScreen": {
     "newGame": "Novo Jogo",
