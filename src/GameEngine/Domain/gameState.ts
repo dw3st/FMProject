@@ -29,6 +29,7 @@ import type { RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
+import { positionFactor, scaleStats } from '@/Domain/positions/positionAptitude';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import {
   SHOT_SPEED, TACKLE_COOLDOWN, TACKLE_RANGE,
@@ -207,7 +208,8 @@ function buildGamePlayerForSlot(
     minY: Math.max(0,           slotY - yRange),
     maxY: Math.min(PITCH_WIDTH, slotY + yRange),
   };
-  const baseStats = teamLineup(buffed, slotDef.role);
+  // Out-of-position penalty: attributes scaled by the player's aptitude for the slot's role.
+  const baseStats = teamLineup(scaleStats(buffed, positionFactor(rp, slotDef.role)), slotDef.role);
   // Match start energy is persisted fitness compressed toward the reference matchday fitness
   // (`matchStartEnergy` — see `.claude/rules/non-player-games.md` → "Fadiga"), not raw fitness.
   // No persisted history (a save-game player before their first advance-day, or a hand-built
@@ -228,6 +230,7 @@ function buildGamePlayerForSlot(
     x:                startPos.x,
     y:                startPos.y,
     baseStats,
+    fit:              { stats: buffed, aptitude: (r: string) => positionFactor(rp, r) },
     runtimeStats:     getRuntimeLineup(baseStats, { energy }),
     energy,
     startEnergy:      energy,
@@ -297,6 +300,7 @@ function buildTeam(
       x:                dummyPos.x,
       y:                dummyPos.y,
       baseStats,
+      fit:              { stats: buffed, aptitude: (r: string) => positionFactor(rp, r) },
       runtimeStats:     getRuntimeLineup(baseStats, { energy }),
       energy,
       startEnergy:      energy,
@@ -428,9 +432,11 @@ export function performSubstitution(
   const slotDef   = formation.attacking[outPlayer.slotIndex];
   const role      = slotDef?.role ?? outPlayer.role;
 
-  // Use the incoming player's existing baseStats (built at lineup time for their natural role).
-  // We don't have their raw PlayerStatsRecord anymore so we keep the existing stats as-is.
-  const newBaseStats = inPlayer.baseStats;
+  // Re-field the incoming player in the slot's role with the out-of-position penalty applied;
+  // players without `fit` (hand-built test states) keep the stats built at lineup time.
+  const newBaseStats = inPlayer.fit
+    ? teamLineup(scaleStats(inPlayer.fit.stats, inPlayer.fit.aptitude(role)), role)
+    : inPlayer.baseStats;
 
   const incoming: GamePlayer = {
     ...inPlayer,
