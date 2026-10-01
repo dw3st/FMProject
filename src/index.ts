@@ -22,6 +22,7 @@ import statsPage from "./pages/stats/index.html";
 import matchPreviewPage from "./pages/match-preview/index.html";
 import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
+import staffPage from "./pages/staff/index.html";
 
 const server = serve({
   routes: {
@@ -48,7 +49,7 @@ const server = serve({
     "/match-result": matchResultPage,
     "/development": developmentPage,
     "/finances": financesPage,
-    "/staff": comingSoonPage,
+    "/staff": staffPage,
     "/stats": statsPage,
     "/season-end": seasonEndPage,
     "/fired": firedPage,
