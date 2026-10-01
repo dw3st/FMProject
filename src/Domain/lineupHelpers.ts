@@ -100,6 +100,33 @@ export function autoFillLineup(
   return result;
 }
 
+/**
+ * Re-seats the current XI in a new formation's slots. The slot-indexed `lineup` would otherwise be
+ * reinterpreted against different slots (a CB landing on a wing). Starters are assigned by the same
+ * aptitude logic as `autoFillLineup`, restricted to the current starters; slots left empty (fewer
+ * starters than slots, or injured ones dropped via `date`) are then filled from the bench.
+ */
+export function remapLineupToFormation(
+  lineup: string[],
+  newSlots: FormationSlot[],
+  players: RosterPlayer[],
+  date?: string,
+): string[] {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const starters = [...new Set(lineup.filter(Boolean))].map((id) => byId.get(id)).filter((p): p is RosterPlayer => !!p);
+  const result = autoFillLineup(newSlots, starters, date);
+  const used = new Set(result.filter(Boolean));
+  const bench = eligiblePool(players, date).filter((p) => !used.has(p.id));
+  for (let i = 0; i < newSlots.length; i++) {
+    if (result[i]) continue;
+    const role = newSlots[i]!.role;
+    bench.sort((a, b) => slotValue(b, role) - slotValue(a, role));
+    const pick = bench.shift();
+    if (pick) result[i] = pick.id;
+  }
+  return result;
+}
+
 /** Fitness below this (0..100) makes a starter (from the plain `autoFillLineup`) a swap candidate. */
 const TIRED_FITNESS_THRESHOLD = 75;
 

@@ -50,6 +50,7 @@ import {
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
   slotRoleFitRank,
+  remapLineupToFormation,
 } from "@/Domain/lineupHelpers";
 import { isInjured } from "@/Domain/injury/injury";
 import { Icon } from "@/GameInterface/Icons";
@@ -192,8 +193,32 @@ export function FormationScreen() {
     if (!session || id === formationId || updating) return;
     setUpdating(true);
     try {
-      const updated = await updateSaveFormation(session.saveId, id);
-      mergeSession(updated);
+      // Resolve the target slots so the current XI follows its best-fit slots in the new shape.
+      let nextSlots: FormationSlot[] | null = null;
+      try {
+        if (id === CUSTOM_FORMATION_ID) {
+          if (customFormation) nextSlots = getFormationSlots(customToFormation(customFormation) as unknown as FormationShape);
+        } else {
+          const data = (await (await fetch(`/api/formations/${id}`)).json()) as { id: string; attacking: { role: string; x: number; y: number }[] };
+          nextSlots = getFormationSlots(data);
+        }
+      } catch {
+        nextSlots = null;
+      }
+      if (nextSlots && squad && savedLineup.length > 0) {
+        const remapped = remapLineupToFormation(savedLineup, nextSlots, squad.players, currentDate);
+        const updated = await saveFormationAndTactics(session.saveId, {
+          formation: id,
+          tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+          lineup: remapped,
+          ...(id === CUSTOM_FORMATION_ID && customFormation ? { customFormation } : {}),
+        });
+        mergeSession(updated);
+        setSavedLineup(remapped);
+      } else {
+        const updated = await updateSaveFormation(session.saveId, id);
+        mergeSession(updated);
+      }
     } finally {
       setUpdating(false);
     }

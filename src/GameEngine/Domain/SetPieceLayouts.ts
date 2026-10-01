@@ -518,3 +518,57 @@ export function generateKickoffLayout(formation: Formation): SetPieceLayout {
     })),
   };
 }
+
+const clampX = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
+
+/**
+ * Builds a full set of layouts from a formation's own slots, for formations without hand-made
+ * layouts (the custom formation). Roles come from the slots, so `applySetPieceToTeam` matches
+ * every player.
+ */
+export function generateSetPieces(formation: Formation): FormationSetPieces {
+  const def = (f: (s: Formation['defending'][number]) => { x: number; y: number }): SetPieceLayout => ({
+    slots: formation.defending.map(s => ({ role: s.role as PlayerRole, ...f(s) })),
+  });
+  const att = (f: (s: Formation['attacking'][number]) => { x: number; y: number }): SetPieceLayout => ({
+    slots: formation.attacking.map(s => ({ role: s.role as PlayerRole, ...f(s) })),
+  });
+  const gkOr = (role: string, gkX: number, other: { x: number; y: number }) =>
+    role === 'GK' ? { x: gkX, y: 37 } : other;
+
+  // Widest outfield slot takes corners and throw-ins.
+  const outfield = formation.attacking.filter(s => s.role !== 'GK');
+  const taker = outfield.reduce((b, s) => (Math.abs(s.y - 37) > Math.abs(b.y - 37) ? s : b), outfield[0]!);
+  let takerUsed = false;
+  const sideY = (y: number, edge: number) => (y < 37 ? edge : 74 - edge);
+
+  const cornerAttack = att(s => {
+    if (s === taker && !takerUsed) { takerUsed = true; return { x: PITCH_LENGTH, y: sideY(s.y, 3) }; }
+    return gkOr(s.role, 10, { x: clampX(s.x, 82, 104), y: s.y });
+  });
+  takerUsed = false;
+  const throwAttack = att(s => {
+    if (s === taker && !takerUsed) { takerUsed = true; return { x: clampX(s.x, 40, 80), y: sideY(s.y, 2) }; }
+    return gkOr(s.role, 10, { x: s.x, y: s.y });
+  });
+  const defShape = def(s => gkOr(s.role, 5, { x: Math.min(s.x, 57), y: s.y }));
+
+  return {
+    formationId: formation.id,
+    kickOff: generateKickoffLayout(formation),
+    kickOffDefend: generateKickoffLayout(formation),
+    goalKick: defShape,
+    corner_Attack: cornerAttack,
+    corner_Defend: def(s => gkOr(s.role, 5, { x: s.x > 45 ? 55 : Math.min(s.x, 25), y: s.y })),
+    throwIn_Attack: throwAttack,
+    throwIn_Defend: defShape,
+    freeKick_Attack: att(s => gkOr(s.role, 10, { x: clampX(s.x, 78, 103), y: s.y })),
+    freeKick_Defend: def(s => gkOr(s.role, 5, { x: s.x > 45 ? 55 : Math.min(s.x, 25), y: s.y })),
+    offside_fk: def(s => gkOr(s.role, 8, { x: Math.min(s.x + 10, 66), y: s.y })),
+  };
+}
+
+/** Hand-made layouts when the formation has them, otherwise layouts generated from its slots. */
+export function resolveFormationSetPieces(formation: Formation): FormationSetPieces {
+  return getFormationSetPieces(formation.id) ?? generateSetPieces(formation);
+}

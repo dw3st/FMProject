@@ -1,7 +1,7 @@
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import { weightedScore } from "@/Domain/playerRating";
 import { getMainRole, type MainRole } from "@/GameInterface/positionHelpers";
-import { APT_RATIO, POSITION_PENALTY, TRAINING_RATIO, type Aptitude } from "@/Domain/positions/positionConfig";
+import { APT_RATIO, NEIGHBOUR_APT_RATIO, POSITION_PENALTY, TRAINING_RATIO, type Aptitude } from "@/Domain/positions/positionConfig";
 
 export type { Aptitude } from "@/Domain/positions/positionConfig";
 
@@ -49,6 +49,22 @@ function naturalOf(stats: PlayerStatsRecord, line: MainRole, foot: string | unde
   return { role: best, score: bestScore };
 }
 
+/**
+ * Same-line neighbours that play the same job: a natural role in a group is at least `apt` in any
+ * other role of that group when its score is within `NEIGHBOUR_APT_RATIO`, and never worse than
+ * `training`. Centre-back stays out (a CB at full-back is a real misfit, see #20).
+ */
+const NEIGHBOUR_GROUPS: readonly (readonly DetailedRole[])[] = [
+  ["CDM", "CM", "CAM"],
+  ["CM", "LM", "RM"],
+  ["LB", "LWB"],
+  ["RB", "RWB"],
+];
+
+function neighbours(a: DetailedRole, b: DetailedRole): boolean {
+  return NEIGHBOUR_GROUPS.some((g) => g.includes(a) && g.includes(b));
+}
+
 function classify(
   stats: PlayerStatsRecord,
   line: MainRole,
@@ -60,6 +76,10 @@ function classify(
   if (line === "GK" || role === "GK") return "unsuitable";
   const ratio = nat.score > 0 ? weightedScore(stats, role) / nat.score : 0;
   let apt: Aptitude = ratio >= APT_RATIO ? "apt" : ratio >= TRAINING_RATIO ? "training" : "unsuitable";
+  if (neighbours(nat.role, role)) {
+    if (ratio >= NEIGHBOUR_APT_RATIO) apt = "apt";
+    else if (apt === "unsuitable") apt = "training";
+  }
   // Outside the player's own line: at most `training`.
   if (!LINE_ROLES[line].includes(role) && apt === "apt") apt = "training";
   return apt;
