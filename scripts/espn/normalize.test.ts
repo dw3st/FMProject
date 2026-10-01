@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { clubKey, looseClubKey, normalizeNationality, playerKey } from "@/../scripts/espn/normalize";
+import { fixNameCasing, clubKey, looseClubKey, normalizeNationality, playerKey } from "@/../scripts/espn/normalize";
 
 describe("clubKey", () => {
   test("drops club-type tokens and accents", () => {
@@ -70,5 +70,17 @@ describe("normalizeNationality", () => {
     expect(normalizeNationality("Narnia", world)).toBeNull();
     expect(normalizeNationality(null, world)).toBeNull();
     expect(normalizeNationality("  ", world)).toBeNull();
+  });
+});
+
+describe("fixNameCasing", () => {
+  test("lowercases capitals after a dotless i", () => {
+    expect(fixNameCasing("BahadıR Han Gungordu")).toBe("Bahadır Han Gungordu");
+    expect(fixNameCasing("Ibrahim AlkıS")).toBe("Ibrahim Alkıs");
+  });
+  test("leaves normal names alone", () => {
+    expect(fixNameCasing("Kenan Yıldız")).toBe("Kenan Yıldız");
+    expect(fixNameCasing("Mohamed Salah")).toBe("Mohamed Salah");
+    expect(fixNameCasing("Ali McDonald")).toBe("Ali McDonald");
   });
 });

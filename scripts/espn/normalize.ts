@@ -35,6 +35,16 @@ export function playerKey(name: string): string {
 }
 
 /**
+ * ESPN stores some Turkish names with the tail of a word upper-cased right after a dotless
+ * `ı` ("BahadıR", "AlkıS") — the classic i/İ casing bug. Lowercase (Turkish locale) any run of
+ * capitals that directly follows a lowercase `ı` inside a word.
+ */
+export function fixNameCasing(name: string | null | undefined): string {
+  if (!name) return "";
+  return name.replace(/ı(\p{Lu}+)/gu, (_m, caps: string) => "ı" + caps.toLocaleLowerCase("tr"));
+}
+
+/**
  * Known ESPN citizenship spellings that differ from this world's nationality convention
  * (see the `nationality` values already present in `src/example_data/squads`). Keyed by the
  * lowercased ESPN value; only synonyms are listed here — adjectives ("Italian", "French") are
