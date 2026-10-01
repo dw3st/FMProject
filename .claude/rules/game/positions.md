@@ -29,6 +29,10 @@ Spec: `docs/superpowers/specs/2026-10-01-positions-design.md`. Bloco C1 da Etapa
 da linha do jogador (`positions[0]` -> GK/DEF/MID/FWD), respeitando o pé: esquerdo nunca é natural em
 LB/LWB/LM/LW da direita e vice-versa (pé esquerdo só natural à esquerda ou no centro). Para as demais:
 `score >= 0,95 x natural` apt, `>= 0,88 x` training, senão unsuitable. Fora da linha: no máximo training.
+Vizinhas da mesma linha (grupos CDM/CM/CAM, CM/LM/RM, LB/LWB, RB/RWB; `NEIGHBOUR_APT_RATIO` 0,85) são
+no mínimo apt a partir de 0,85 x natural e nunca piores que training — o aviso laranja da Formação
+(`training`/`unsuitable`) só marca desajuste real. CB x lateral continua desajuste (#20), assim como
+ST x ponta. Medição (XI automático 4-3-3, 5 ligas, 1078 titulares): 38 marcados (3,5%) antes, 33 (3,1%) depois (só CB em lateral e ST em ponta restam).
 GK só GK; ninguém de linha é apto a GK. Empate de pontuação: vence a primeira da lista da linha
 (CB, LB, RB, LWB, RWB / CDM, CM, CAM, LM, RM / LW, RW, ST).
 

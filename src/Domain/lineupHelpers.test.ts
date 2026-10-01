@@ -404,3 +404,34 @@ describe("autoFillLineup — scarcest slot first", () => {
     expect(autoFillLineup(slots, [fullBack, centreBack])).toEqual(["cb", "fb"]);
   });
 });
+
+describe("remapLineupToFormation", () => {
+  test("re-seats starters by position fit and keeps the same players", async () => {
+    const { remapLineupToFormation } = await import("@/Domain/lineupHelpers");
+    const players = fullSlots.map((s, i) =>
+      makePlayer({ id: `p-${i}`, name: `P ${i}`, positions: [s.role] }),
+    );
+    const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(3) });
+    const lineup = players.map((p) => p.id);
+    // Same shape reversed: slot indexes no longer match the old array.
+    const reversed = [...fullSlots].reverse();
+    const out = remapLineupToFormation(lineup, reversed, [...players, bench]);
+    expect([...out].sort()).toEqual([...lineup].sort());
+    // Unique roles must land in their own slot (wingers/fullbacks are line-interchangeable).
+    for (const role of ["GK", "ST"]) {
+      const i = reversed.findIndex((s) => s.role === role);
+      expect(players.find((x) => x.id === out[i])!.positions[0]).toBe(role);
+    }
+  });
+
+  test("fills a gap from the bench when a starter is missing", async () => {
+    const { remapLineupToFormation } = await import("@/Domain/lineupHelpers");
+    const players = fullSlots.map((s, i) => makePlayer({ id: `p-${i}`, name: `P ${i}`, positions: [s.role] }));
+    const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"] });
+    const lineup = players.map((p) => p.id);
+    lineup[3] = "";
+    const out = remapLineupToFormation(lineup, fullSlots, [...players, bench]);
+    expect(out.every(Boolean)).toBe(true);
+    expect(new Set(out).size).toBe(11);
+  });
+});

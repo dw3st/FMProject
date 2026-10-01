@@ -6,7 +6,7 @@
  * matches per pair in parallel workers, and aggregates the results.
  */
 
-import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality, TacticalAxes, CustomFormation } from "@/types/tacticsTypes";
 
 // ── Squad spec — how to build the 20-player roster for a side ────────────────
 
@@ -76,6 +76,10 @@ export interface Variant {
    * to be missing; consumers must default it themselves.
    */
   mentality?: Mentality;
+  /** Axes edited on top of `tacticalStyle`'s bundle (Block C2). Absent = the style's own axes. */
+  axesOverride?: Partial<TacticalAxes>;
+  /** Free formation (zone grid). When set it replaces `formation` in the engine and quickSim. */
+  customFormation?: CustomFormation;
   /**
    * Field the squad with the best order per line, ignoring position fit (`lineOrderLineup`), to
    * measure the loss from out-of-position starters. Absent = fit-aware lineup.

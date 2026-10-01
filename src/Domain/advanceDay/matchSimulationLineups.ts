@@ -2,9 +2,10 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { Squad } from "@/types/playerTypes";
+import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
 import type { Formation } from "@/GameEngine/types";
 import { getFormationSlots, type FormationShape } from "@/types/formationSlots";
-import { DEFAULT_SIM_FORMATION_ID, formationForSimId } from "@/Domain/matchFormations";
+import { DEFAULT_SIM_FORMATION_ID, formationForSimId, formationForTactics } from "@/Domain/matchFormations";
 import {
   autoFillLineup,
   autoFillLineupWithFitness,
@@ -151,9 +152,12 @@ export function computeMatchSimulationLineups(
   /** Any of the human's saved-lineup starters swapped out for being injured on `fixture.date`. */
   userInjuredReplaced: InjuredReplacement[];
   userRotationApplied: { out: string; in: string }[];
+  /** Tactics per engine side (A = home): the user's saved style/axes, the AI's default style. */
+  tactics: { A: TeamTactics; B: TeamTactics };
 } {
   const date = fixture.date;
   const defaultAi = formationForSimId(DEFAULT_SIM_FORMATION_ID);
+  const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE };
   const userPlays =
     Boolean(playerSquadId) && (fixture.home === playerSquadId || fixture.away === playerSquadId);
 
@@ -165,6 +169,7 @@ export function computeMatchSimulationLineups(
       awayLineup: autoLineupDefaultFormationWithFitness(awaySquad, date),
       userInjuredReplaced: [],
       userRotationApplied: [],
+      tactics: { A: aiTactics, B: aiTactics },
     };
   }
 
@@ -174,7 +179,8 @@ export function computeMatchSimulationLineups(
     lineup: [],
   } satisfies TacticsSave);
 
-  const userFormation = formationForSimId(t.formation);
+  const userFormation = formationForTactics(t);
+  const userTactics: TeamTactics = { style: t.tactical_style, axesOverride: t.axesOverride };
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {
@@ -186,6 +192,7 @@ export function computeMatchSimulationLineups(
       awayLineup: autoLineupDefaultFormationWithFitness(awaySquad, date),
       userInjuredReplaced: user.injuredReplaced,
       userRotationApplied: user.rotationApplied,
+      tactics: { A: userTactics, B: aiTactics },
     };
   }
 
@@ -197,5 +204,6 @@ export function computeMatchSimulationLineups(
     awayLineup: user.lineup,
     userInjuredReplaced: user.injuredReplaced,
     userRotationApplied: user.rotationApplied,
+    tactics: { A: aiTactics, B: userTactics },
   };
 }

@@ -36,6 +36,7 @@ import type {
   Variant,
 } from "@/lab/types";
 import { fileURLToPath } from "node:url";
+import { customToFormation } from "@/Domain/formation/zones";
 
 const FORMATIONS_DIR = fileURLToPath(new URL("../Data/formations/", import.meta.url));
 
@@ -132,6 +133,11 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
 
 async function loadFormation(id: string): Promise<Formation> {
   return Bun.file(`${FORMATIONS_DIR}${id}.json`).json() as Promise<Formation>;
+}
+
+/** A variant's formation: the free formation when set, otherwise the ready-made one by id. */
+function loadVariantFormation(v: Variant): Promise<Formation> {
+  return v.customFormation ? Promise.resolve(customToFormation(v.customFormation)) : loadFormation(v.formation);
 }
 
 /**
@@ -281,8 +287,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     const { variantA, variantB, matches, simEngine = "full", knockout = false, congestion } = e.data;
 
     const [formationA, formationB] = await Promise.all([
-      loadFormation(variantA.formation),
-      loadFormation(variantB.formation),
+      loadVariantFormation(variantA),
+      loadVariantFormation(variantB),
     ]);
 
     const baseSquadA = prefixIds(buildSquad(variantA.squad, variantA.label), "A");
@@ -290,10 +296,10 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
 
     // Apply per-team tactics ONCE — all matches use them.
     // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
-    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY);
-    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY);
-    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY);
-    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY);
+    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride);
+    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride);
+    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride);
+    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride);
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on

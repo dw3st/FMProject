@@ -1,4 +1,5 @@
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
+import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -382,6 +383,7 @@ export function buildMatchEvent(
     homeLineup: string[];
     awayFormation: Formation;
     awayLineup: string[];
+    tactics?: { A: TeamTactics; B: TeamTactics };
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -402,6 +404,7 @@ export function buildMatchEvent(
     sim.awayLineup,
     {
       knockout: fixture.knockout === true,
+      ...(sim.tactics ? { tactics: sim.tactics } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
     },
   );

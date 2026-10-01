@@ -11,3 +11,6 @@ export const POSITION_PENALTY: Record<Aptitude, number> = {
 /** Score thresholds, as a fraction of the natural role's score. */
 export const APT_RATIO = 0.95;
 export const TRAINING_RATIO = 0.88;
+
+/** Same-line neighbour roles (CDM/CM/CAM, CM/LM/RM, LB/LWB, RB/RWB) are apt from this ratio. */
+export const NEIGHBOUR_APT_RATIO = 0.85;

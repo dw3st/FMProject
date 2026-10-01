@@ -16,6 +16,8 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Formation } from "@/GameEngine/types";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { formationForTactics } from "@/Domain/matchFormations";
+import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
 import { clubLineRating, clubProfileStem, reputationStars } from "@/backend/clubProfile";
 import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
@@ -406,14 +408,17 @@ export const apiRoutes = {
     const myFormationId = myTactics.formation;
     const oppFormationId = "4-3-3";
 
+    const isCustomForm = myFormationId === CUSTOM_FORMATION_ID && !!myTactics.customFormation;
     const myFormFile  = Bun.file(`${FORMATIONS_DIR}/${myFormationId}.json`);
     const oppFormFile = Bun.file(`${FORMATIONS_DIR}/${oppFormationId}.json`);
 
-    if (saveIdParam && !(await myFormFile.exists())) {
+    if (saveIdParam && !isCustomForm && !(await myFormFile.exists())) {
       return Response.json({ error: `formation "${myFormationId}" not found` }, { status: 404 });
     }
 
-    const myFormation  = (await myFormFile.exists())  ? await myFormFile.json()  : null;
+    const myFormation  = isCustomForm
+      ? formationForTactics(myTactics)
+      : (await myFormFile.exists()) ? await myFormFile.json() : null;
     const oppFormation = (await oppFormFile.exists()) ? await oppFormFile.json() : null;
 
     const defaultFormation = {

@@ -50,7 +50,7 @@ import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { getOffBallBias } from '@/GameEngine/Domain/OffBallMovement';
 import { OFF_BALL_CONFIG } from '@/GameEngine/Configs/OffBallConfig';
 import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS } from '@/GameEngine/Configs/AttackConfig';
-import { getFormationSetPieces, generateKickoffLayout } from '@/GameEngine/Domain/SetPieceLayouts';
+import { resolveFormationSetPieces, generateKickoffLayout } from '@/GameEngine/Domain/SetPieceLayouts';
 import type { FormationSetPieces, SetPieceLayout } from '@/GameEngine/Domain/SetPieceLayouts';
 import { applySetPieceToTeam, enforceKickoffCircleRule } from '@/GameEngine/Domain/SetPiecePositioning';
 import { evaluateAiSubstitutions, shouldCheckAiSubs, findBestBenchForRole } from '@/GameEngine/Domain/AiSubstitution';
@@ -348,8 +348,8 @@ export function createMatchState(
   const teamB = teamBResult.starters;
 
   // Team A kicks off — apply kickOff to A, kickOffDefend to B
-  const spA = getFormationSetPieces(formationA.id);
-  const spB = getFormationSetPieces(formationB.id);
+  const spA = resolveFormationSetPieces(formationA);
+  const spB = resolveFormationSetPieces(formationB);
   const kickoffLayoutA     = spA?.kickOff        ?? generateKickoffLayout(formationA);
   const kickoffDefendLayoutB = spB?.kickOffDefend ?? generateKickoffLayout(formationB);
   let players = [...teamA, ...teamB];
@@ -942,8 +942,8 @@ function resetToKickoff(state: GameState, kickoffTeam: import('../types').TeamId
   // Falls back to generating positions from defending slots for unsupported formations.
   let positioned = resetPlayers;
   const defendingTeam: import('../types').TeamId = kickoffTeam === 'A' ? 'B' : 'A';
-  const spA = getFormationSetPieces(state.formationA.id);
-  const spB = getFormationSetPieces(state.formationB.id);
+  const spA = resolveFormationSetPieces(state.formationA);
+  const spB = resolveFormationSetPieces(state.formationB);
   const attackLayoutA  = spA?.kickOff        ?? generateKickoffLayout(state.formationA);
   const attackLayoutB  = spB?.kickOff        ?? generateKickoffLayout(state.formationB);
   const defendLayoutA  = spA?.kickOffDefend  ?? generateKickoffLayout(state.formationA);
@@ -1012,8 +1012,8 @@ function switchSides(
   // so applySetPieceToTeam mirrors correctly.
   const defendingTeam: TeamId = kickoffTeam === 'A' ? 'B' : 'A';
   let positioned = switched;
-  const spA2 = getFormationSetPieces(state.formationA.id);
-  const spB2 = getFormationSetPieces(state.formationB.id);
+  const spA2 = resolveFormationSetPieces(state.formationA);
+  const spB2 = resolveFormationSetPieces(state.formationB);
   const layoutA = kickoffTeam === 'A'
     ? (spA2?.kickOff ?? generateKickoffLayout(state.formationA))
     : (spA2?.kickOffDefend ?? generateKickoffLayout(state.formationA));
@@ -1525,8 +1525,8 @@ function resolveOOBSetPiece(
   // Layouts — awarded team plays the _Attack shape, opposite team plays _Defend.
   const awFmt = awardedTeam === 'A' ? s.formationA : s.formationB;
   const opFmt = awardedTeam === 'A' ? s.formationB : s.formationA;
-  const aLay  = getFormationSetPieces(awFmt.id);
-  const oLay  = getFormationSetPieces(opFmt.id);
+  const aLay  = resolveFormationSetPieces(awFmt);
+  const oLay  = resolveFormationSetPieces(opFmt);
 
   let players = s.players;
   if (aLay) players = applySetPieceToTeam(players, awardedTeam,  oobLayoutFor(kind, 'attack', aLay));
@@ -2260,7 +2260,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         // GK save or shot off target — apply goal kick positioning for GK's team
         const gkOwner = defendingGK ?? shooter; // if no GK, shooter's team acts as "keeper"
         const gkFormation = gkOwner.team === 'A' ? s.formationA : s.formationB;
-        const goalKickLayout = getFormationSetPieces(gkFormation.id)?.goalKick;
+        const goalKickLayout = resolveFormationSetPieces(gkFormation).goalKick;
         let gkPlayers = s.players;
         if (defendingGK && inPosts && !isGoal) {
           gkPlayers = applyStaminaCost(gkPlayers, defendingGK.id, 'gkSave');
@@ -2652,7 +2652,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       // when a formation has no layout defined. The taker (nearestDefender) will
       // be spotted at the offside location — override their x/y after the layout.
       const defTeamFormation = nearestDefender.team === 'A' ? s.formationA : s.formationB;
-      const offsideLayout = getFormationSetPieces(defTeamFormation.id)?.offside_fk;
+      const offsideLayout = resolveFormationSetPieces(defTeamFormation).offside_fk;
       let players = s.players;
       if (offsideLayout) players = applySetPieceToTeam(players, nearestDefender.team, offsideLayout);
       // Move the taker to where offside was called (ball is spotted at the receiver's position)
