@@ -18,6 +18,7 @@ import developmentPage from "./pages/development/index.html";
 import seasonEndPage from "./pages/season-end/index.html";
 import firedPage from "./pages/fired/index.html";
 import financesPage from "./pages/finances/index.html";
+import statsPage from "./pages/stats/index.html";
 import matchPreviewPage from "./pages/match-preview/index.html";
 import matchResultPage from "./pages/match-result/index.html";
 import inboxPage from "./pages/inbox/index.html";
@@ -48,7 +49,7 @@ const server = serve({
     "/development": developmentPage,
     "/finances": financesPage,
     "/staff": comingSoonPage,
-    "/stats": comingSoonPage,
+    "/stats": statsPage,
     "/season-end": seasonEndPage,
     "/fired": firedPage,
 

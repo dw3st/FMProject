@@ -1703,6 +1703,21 @@
     "moves_other": "{{count}} clubs changed division in your country.",
     "ok": "OK"
   },
+  "statsScreen": {
+    "title": "Stats",
+    "rankings": "Rankings",
+    "myTeam": "My team",
+    "scorers": "Top scorers",
+    "assists": "Assists",
+    "ratings": "Average rating",
+    "appearances": "Appearances",
+    "player": "Player",
+    "games": "GP",
+    "goals": "G",
+    "rating": "Rating",
+    "loading": "Loading...",
+    "loadFailed": "Could not load the stats."
+  },
   "players": {
     "star": {"gold":"World top 25","blue":"Great form","green":"Prodigy"}
   },

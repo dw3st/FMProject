@@ -1703,6 +1703,21 @@
     "moves_other": "{{count}} clubes mudaram de divisão no seu país.",
     "ok": "OK"
   },
+  "statsScreen": {
+    "title": "Estatísticas",
+    "rankings": "Rankings",
+    "myTeam": "Meu time",
+    "scorers": "Artilheiros",
+    "assists": "Assistências",
+    "ratings": "Nota média",
+    "appearances": "Mais jogos",
+    "player": "Jogador",
+    "games": "J",
+    "goals": "G",
+    "rating": "Nota",
+    "loading": "Carregando...",
+    "loadFailed": "Não foi possível carregar as estatísticas."
+  },
   "players": {
     "star": {"gold":"Top 25 do mundo","blue":"Grande fase","green":"Prodígio"}
   },
