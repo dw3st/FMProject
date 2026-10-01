@@ -150,13 +150,13 @@ dentro de ±15% do motor.
 
 | Cenário | lesões/partida (os dois times) |
 |---|---|
-| Motor, elenco fresco (energia 100, carga 0) — usado para calibrar `BASE`/`CONTACT_BASE` | **0,287** (alvo 0,3) |
+| Motor, elenco fresco (energia 100, carga 0) — usado para calibrar `BASE`/`CONTACT_BASE`, staff implícito por tier (recalibrado na 2.3; antes 0,263 / 0,297 / 0,247 em três rodadas com as constantes antigas, média 0,269, antes de o staff existir 0,287) | **0,320** (alvo 0,3; ruído de 300 jogos ~ ±0,03) |
 | Motor, fôlego realista de dia de jogo (energia 88, carga 100 — `--realistic`, só relatório, nunca recalibra) | **0,310** |
-| quickSim (mesmos elencos) | **0,260** |
+| quickSim (mesmos elencos) | **0,307** (-4,2% do motor) |
 
 ```
-INJURY.BASE                  = 0.00007836990595611286
-INJURY.CONTACT_BASE          = 0.0020689655172413794
+INJURY.BASE                  = 0.0000874
+INJURY.CONTACT_BASE          = 0.002307
 INJURY.QUICKSIM_CONTACT_SCALE = 2.3248935431401576  (≈ 2,32)
 ```
 
