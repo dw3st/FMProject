@@ -84,7 +84,7 @@ export function TopNavigation({
   }
 
   const linkClass =
-    "flex items-center gap-1.5 px-2 py-1 text-sm no-underline text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap";
+    "flex items-center gap-1.5 px-2 py-1 font-display font-bold uppercase tracking-wide text-sm no-underline text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background">
