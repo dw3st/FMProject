@@ -28,6 +28,8 @@ export function isHighLoad(load: number): boolean {
 
 export interface DisplayPlayer {
   id: string;
+  /** Reborn academy star (own badge). */
+  reborn?: boolean;
   squadId?: string;
   /** Primary position (first in list), used for sorting. */
   pos: string;
@@ -143,5 +145,6 @@ export function toDisplayPlayer(
     stats: player.stats,
     preferredFoot: player.preferredFoot,
     injury: injuryInfo,
+    ...(player.reborn ? { reborn: true } : {}),
   };
 }
