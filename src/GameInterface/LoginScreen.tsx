@@ -120,7 +120,7 @@ export function LoginScreen() {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               placeholder="123456"
               disabled={submitting}
-              className={`${inputClass} text-center font-mono tracking-[0.5em]`}
+              className={`${inputClass} text-center tabular-nums tracking-[0.5em]`}
             />
             {error && <p role="alert" className="mt-1.5 text-sm text-destructive">{error}</p>}
             <button type="submit" disabled={submitting} className={buttonClass}>

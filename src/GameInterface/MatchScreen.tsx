@@ -716,7 +716,7 @@ export function MatchScreen() {
                 teamBColor={matchKitColors.teamB}
               />
             ) : (
-              <span className="text-muted-foreground text-sm font-mono">{t("common.sizingPitch")}</span>
+              <span className="text-muted-foreground text-sm">{t("common.sizingPitch")}</span>
             )}
           </div>
           {/* Broadcast ticker */}
