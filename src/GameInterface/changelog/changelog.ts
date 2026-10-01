@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.3",
+    date: "2026-10-01",
+    items: [
+      { pt: "Nova aba Base no elenco: todo fim de temporada chegam de 3 a 5 jovens de 16 e 17 anos, e você escolhe quem promover ao time principal ou dispensar.", en: "New Academy tab on the squad screen: every season end brings 3 to 5 youngsters aged 16 and 17, and you choose who to promote to the first team or release." },
+      { pt: "A lista mostra a posição, a idade, o nível atual e uma faixa de potencial. Quem chega aos 19 anos sem ser promovido deixa a base.", en: "The list shows position, age, current level and a potential range. Anyone who turns 19 without a promotion leaves the academy." },
+      { pt: "Um bom auxiliar técnico melhora o nível dos jovens que chegam, e uma promessa rara aparece de vez em quando.", en: "A good assistant coach raises the level of incoming youngsters, and a rare prospect shows up now and then." },
+      { pt: "Os clubes rivais também renovam seus elencos com a própria base.", en: "Rival clubs also refresh their squads with their own academy players." },
+    ],
+    fixes: [
+      { pt: "Notas altas demais para atacantes em jogos de ligas que você não acompanha.", en: "Too many very high ratings for forwards in leagues you do not follow." },
+    ],
+  },
+  {
     version: "2.2",
     date: "2026-10-01",
     items: [

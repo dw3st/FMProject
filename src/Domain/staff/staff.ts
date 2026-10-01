@@ -51,6 +51,8 @@ export const NEUTRAL_EFFECTS: StaffEffects = { devMult: 1, recoveryMult: 1, inju
  */
 export function effectiveRating(squad: Squad, role: StaffRole): number {
   if (squad.staff) return squad.staff[role]?.rating ?? STAFF.VACANT_RATING;
+  // Hand-built squads (/lab, /test, unit tests) have no finances: stay neutral instead of the LOW tier.
+  if (!squad.finances) return STAFF.NEUTRAL_RATING;
   return STAFF.IMPLIED_RATING[financialTierOf(squad)];
 }
 

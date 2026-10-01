@@ -8,7 +8,8 @@ export type InboxCategory =
   | "cup"
   | "continental"
   | "injury"
-  | "contract";
+  | "contract"
+  | "youth";
 
 export interface InboxMessageBase {
   id:        string;
@@ -150,6 +151,22 @@ export interface ContractInboxMessage extends InboxMessageBase {
   until?:   string;
 }
 
+/**
+ * Academy news for the human club (`.claude/rules/game/youth.md`): the new intake at the rollover,
+ * or players released for reaching the age limit.
+ */
+export interface YouthInboxMessage extends InboxMessageBase {
+  category: "youth";
+  kind:     "intake" | "released";
+  /** Intake only. */
+  year?:    number;
+  count?:   number;
+  /** Intake only: the standout of the class. */
+  best?:    { id: string; name: string; position: string };
+  /** Released only. */
+  players?: { id: string; name: string }[];
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -158,4 +175,5 @@ export type InboxMessage =
   | CupInboxMessage
   | ContinentalInboxMessage
   | InjuryInboxMessage
-  | ContractInboxMessage;
+  | ContractInboxMessage
+  | YouthInboxMessage;

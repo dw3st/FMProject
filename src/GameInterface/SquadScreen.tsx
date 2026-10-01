@@ -6,6 +6,8 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
+import { Tabs } from "@/GameInterface/ui/Tabs";
+import { YouthTable } from "@/GameInterface/Components/YouthTable";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -17,6 +19,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
+  const [tab, setTab] = useState<"squad" | "youth">("squad");
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
@@ -104,13 +107,28 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
           </span>
         </PageHeadline>
 
-        <SquadRosterTable
-          squad={squad}
-          leagueSlug={league}
-          clubSlug={club}
-          mySquadId={mySquadId}
-          onOffer={setOfferTarget}
-        />
+        {squad.id === mySquadId && (
+          <Tabs
+            tabs={[
+              { key: "squad", label: t("squadScreen.tabSquad") },
+              { key: "youth", label: t("squadScreen.tabYouth") },
+            ]}
+            active={tab}
+            onChange={setTab}
+          />
+        )}
+
+        {tab === "youth" && squad.id === mySquadId ? (
+          <YouthTable />
+        ) : (
+          <SquadRosterTable
+            squad={squad}
+            leagueSlug={league}
+            clubSlug={club}
+            mySquadId={mySquadId}
+            onOffer={setOfferTarget}
+          />
+        )}
       </div>
 
       <PlayerOfferModal

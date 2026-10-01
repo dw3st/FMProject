@@ -164,6 +164,17 @@ export const QUICK_SIM_CONFIG = {
   TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.39, MID: -0.81, FWD: -0.36 } as Record<LineGroup, number>,
 
   /**
+   * Rating-tail correction (#9). A quickSim starter carries the goals and assists of the whole slot
+   * (there is no bench), so his rating spreads wider than a full-engine starter's, who shares the slot
+   * with a substitute: too many ratings >= 8.5 (and too many very low ones) on the attacking lines.
+   * The raw rating is shrunk toward `RATING_SHRINK_CENTER` by `RATING_SHRINK` (1 = off) before the
+   * clamp, which narrows both tails and keeps the line mean. Fitted with
+   * `bun scripts/quicksim-spread.ts events` (share of >= 8.5 and mean starter rating per line).
+   */
+  RATING_SHRINK:        { GK: 1, DEF: 0.9, MID: 0.94, FWD: 0.92 } as Record<LineGroup, number>,
+  RATING_SHRINK_CENTER: { GK: 6.04, DEF: 6.14, MID: 6.22, FWD: 6.7 } as Record<LineGroup, number>,
+
+  /**
    * Energy spent over 90' for an average-stamina player, per line — calibrated against the full
    * engine's average end-of-match energy loss for players who play the whole 90' (fitness 100,
    * load 0), pooled across premier_league / of_allsvenskan / of_kenyan_premier_division (60 pairs
