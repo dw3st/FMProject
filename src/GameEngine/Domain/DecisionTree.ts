@@ -18,6 +18,8 @@
 
 import type { GamePlayer, SetPiece, TeamIntent } from '@/GameEngine/types';
 
+const PITCH_CENTER_Y = PITCH_WIDTH / 2;
+
 /** A player in recovery from a duel (tackle or dribble) cannot make defensive decisions. */
 export function isPlayerInRecovery(player: GamePlayer): boolean {
   return player.recoveryTime > 0;
@@ -292,11 +294,24 @@ function getBestCarryLane(
       bylinePenalty = t * forwardComp * cfg.BYLINE_MAX_PENALTY * penaltyDamper;
     }
 
-    const score = rawScore - rolePenalty - bylinePenalty + (lane.scoreBonus ?? 0);
+    // Byline run: a lane ending within BYLINE_RUN_ZONE of the end line, outside the box width,
+    // is a run along the goal line — penalised; cutting inside (toward centre) is rewarded.
+    const targetToEnd = (endLineX - targetX) * player.attackDir;
+    const outsideBox  = Math.abs(targetY - PITCH_CENTER_Y) > cfg.BYLINE_RUN_BOX_HALF_WIDTH;
+    let bylineRunAdj = 0;
+    if (targetToEnd < cfg.BYLINE_RUN_ZONE && outsideBox) {
+      bylineRunAdj -= cfg.BYLINE_RUN_PENALTY;
+    }
+    if (distToEndLine < cfg.BYLINE_RUN_ZONE * 2 && Math.abs(player.y - PITCH_CENTER_Y) > cfg.BYLINE_RUN_BOX_HALF_WIDTH) {
+      const inward = Math.max(0, -Math.sign(player.y - PITCH_CENTER_Y) * lane.dy);
+      bylineRunAdj += inward * cfg.BYLINE_CUT_INSIDE_BONUS;
+    }
+
+    const score = rawScore - rolePenalty - bylinePenalty + bylineRunAdj + (lane.scoreBonus ?? 0);
 
     if (score > bestScore) {
       bestScore = score;
-      bestLane  = { dx: lane.dx, dy: lane.dy, score, breakdown, rolePenalty, bylinePenalty, laneBonus: lane.scoreBonus ?? 0, rawScore };
+      bestLane  = { dx: lane.dx, dy: lane.dy, score, breakdown, rolePenalty, bylinePenalty: bylinePenalty - bylineRunAdj, laneBonus: lane.scoreBonus ?? 0, rawScore };
     }
   }
 
