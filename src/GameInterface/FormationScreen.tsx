@@ -9,9 +9,8 @@ import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
 import { TACTICAL_STYLE_OPTIONS, DEFAULT_TACTICAL_STYLE, getTacticalStyleMeta } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import { Player } from "@/Domain/Player";
 import { getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
-import { aptitudeFor, type Aptitude } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 
 /** Aptitudes that deserve a warning on the formation screen. */
 const isPoorFit = (apt: Aptitude) => apt === "training" || apt === "unsuitable";
@@ -252,7 +251,7 @@ export function FormationScreen() {
           const fit = slotRoleFitRank(b, targetSlotRole) - slotRoleFitRank(a, targetSlotRole);
           if (fit !== 0) return fit;
           return (
-            Player.weightedScore(b.stats, targetSlotRole) - Player.weightedScore(a.stats, targetSlotRole)
+            slotValue(b, targetSlotRole) - slotValue(a, targetSlotRole)
           );
         })
       : bench;
@@ -579,7 +578,7 @@ function SquadPlayerRow({
 }) {
   const { t } = useTranslation();
   const scorePos = ratingRole ?? slotLabel ?? player.positions[0] ?? "CM";
-  const avg = Player.weightedScore(player.stats, scorePos);
+  const avg = slotValue(player, scorePos);
   const energy = player.seasonLog?.fitness ?? 100;
   const badgePos =
     showSlot && slotLabel
@@ -717,7 +716,7 @@ function FormationPitch({
           const player = players[i];
           const isSelected = selectedSlotIdx === i;
           const oop = player && getOutOfPosition ? getOutOfPosition(player, slot.role) : false;
-          const avg = player ? Player.weightedScore(player.stats, slot.role ?? player.positions[0] ?? "CM") : 0;
+          const avg = player ? slotValue(player, slot.role ?? player.positions[0] ?? "CM") : 0;
           const energy = player?.seasonLog?.fitness ?? 100;
           const tipAlign =
             slot.x < 38 ? "left" : slot.x > 62 ? "right" : "center";

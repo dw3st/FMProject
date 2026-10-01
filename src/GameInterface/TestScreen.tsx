@@ -36,6 +36,7 @@ import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import playersJson from "@/Data/players.json";
 import rolesJson from "@/Data/roles.json";
 import formation433Fallback from "@/Data/formations/4-3-3.json";
+import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -219,7 +220,7 @@ function PlayerRow({
         : DECISION_BADGE[decision.type])
     : null;
   const dot   = player.team === 'A' ? 'bg-blue-500' : 'bg-red-500';
-  const fitK  = player.fit?.aptitude(player.role) ?? 1;
+  const fitK  = factorFromAptitudes(player.fit?.aptitudes, player.role);
   return (
     <button
       onClick={() => onClick(player)}
