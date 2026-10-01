@@ -107,11 +107,9 @@
     "footerText": "© 2026 FMProject · based on TouchLines (AGPL-3.0)"
   },
   "unsupportedScreen": {
-    "badge": "Coming Soon",
-    "title": "Screen size not supported",
-    "description": "FMProject is currently designed for larger displays. Mobile and small-screen support is coming soon — please return on a desktop or resize your window.",
-    "minimum": "Minimum",
-    "current": "Current"
+    "title": "Use a larger window",
+    "minimum": "minimum",
+    "current": "current"
   },
   "startScreen": {
     "newGame": "New Game",
@@ -130,49 +128,11 @@
     "whatsNew": "What's new"
   },
   "newGame": {
-    "phase01": "Phase 01: Origin",
-    "matchPrep": "Match Prep",
-    "step": "Step {{current}} of {{total}}",
-    "selectDatabase": "Select Database",
-    "createManager": "Create Manager",
     "selectTerritory": "Select Territory",
-    "chooseClub": "Choose Club",
-    "confirmStart": "Confirm & Start",
-    "confirmSelection": "Confirm Selection",
     "startCareer": "Start Career",
     "creatingSeave": "Creating Save...",
     "preparingTitle": "Preparing your world",
     "preparingSubtitle": "Simulating the leagues that kicked off before your season so the tables are up to date when you start…",
-    "startDate": "Start Date",
-    "creator": "Creator",
-    "lastUpdated": "Last Updated",
-    "official": "Official",
-    "territoryProfile": "Territory Profile",
-    "established": "Est. {{year}}",
-    "establishedUnknown": "Est. —",
-    "yourName": "Your Name",
-    "databases": {
-      "official-2024": {
-        "name": "Official 2026/27",
-        "description": "The complete official database with verified player data and accurate squad compositions.",
-        "creator": "FMPROJECT Team"
-      },
-      "official-2023": {
-        "name": "Official 2023/24",
-        "description": "Last season's database for those who want to rewrite history.",
-        "creator": "FMPROJECT Team"
-      },
-      "community-legends": {
-        "name": "Legends Database",
-        "description": "Classic players from the golden eras. Manage legendary squads with historic ratings.",
-        "creator": "FutLegends"
-      },
-      "community-realistic": {
-        "name": "Realistic Overhaul",
-        "description": "Community-curated database with realistic player ratings and detailed attributes.",
-        "creator": "RealisticFC"
-      }
-    },
     "countries": {
       "england": {
         "name": "England",
@@ -258,37 +218,12 @@
       "nl": "Dutch",
       "us": "American"
     },
-    "dataSourceTerminal": "Data Source Terminal",
-    "selectDatabaseTitle": "Select",
-    "databaseDescription": "Choose your data source. Each database contains different player rosters, ratings, and competition structures.",
-    "recommended": "Recommended",
-    "soon": "Soon",
-    "countriesStat": "Countries",
-    "moreDatabasesSoon": "More databases coming soon",
-    "createDatabase": "Create a new database",
-    "databaseContents": "Database Contents",
-    "totalCountries": "Total Countries",
-    "playableCountries": "Playable Countries",
-    "totalLeagues": "Total Leagues",
-    "playableLeagues": "Playable Leagues",
-    "totalPlayers": "Total Players",
-    "selectDatabaseDetail": "Select a database to view details",
-    "identityConfiguration": "Identity Configuration",
     "createManagerTitle": "Create Your Manager",
-    "managerDescription": "Define your managerial identity. Your background will influence your starting attributes and how players and boards perceive you.",
     "managerName": "Manager Name",
     "enterName": "Enter your name...",
     "nationality": "Nationality",
     "careerBackground": "Career Background",
-    "background": "Background",
-    "startingBonuses": "Starting Bonuses",
-    "selectBackgroundDetail": "Select a background to see your bonuses",
-    "regionalSelection": "Regional Selection Terminal",
-    "chooseTerritory": "Choose Your Territory",
-    "territoryDescription": "Define the foundation of your dynasty. Select a host nation to unlock local professional divisions and begin your tactical ascent.",
     "searchTerritory": "Search territory...",
-    "countriesCount": "{{count}} countries",
-    "countriesCount_one": "{{count}} country",
     "continents": {
       "europe": "Europe",
       "south_america": "South America",
@@ -298,21 +233,8 @@
       "oceania": "Oceania",
       "other": "Other"
     },
-    "genericHeadline": "In {{country}}, every match writes a new chapter in the story of the game.",
-    "division": "Division",
-    "teams": "Teams",
-    "divisions": "Divisions",
-    "theSpirit": "The Spirit",
     "selectTerritoryDetail": "Select a territory to view details",
-    "selectionPhase": "Selection Phase",
-    "clubProfile": "Club Profile",
-    "city": "City",
-    "stadium": "Stadium",
-    "founded": "Founded",
-    "league": "League",
-    "noProfileData": "No profile data available.",
     "squadRating": "Squad Rating",
-    "reputation": "Reputation",
     "reputationLevel": {
       "1": "Local Outfit",
       "2": "Regional Side",
@@ -320,34 +242,11 @@
       "4": "Continental Force",
       "5": "World Elite"
     },
-    "selectClubDetail": "Select a club to view details",
-    "squadStrength": "Squad Strength",
-    "keyPlayers": "Key Players",
-    "noData": "No data.",
-    "attack": "Attack",
-    "midfield": "Midfield",
-    "defense": "Defense",
-    "position": "Position",
-    "age": "Age",
-    "ovr": "OVR",
-    "finalConfirmation": "Final Confirmation",
-    "readyBegin": "Ready to Begin?",
-    "reviewSelection": "Review your selections before starting your managerial journey.",
-    "database": "Database",
-    "manager": "Manager",
-    "leagueSeason": "League Season",
-    "currently": "Currently Selecting",
-    "readyToBegin": "Ready to",
-    "begin": "Begin?",
-    "reviewSelectionsBeforeStart": "Review your selections before starting your managerial journey.",
-    "userRank": "User Rank",
-    "eliteTactician": "Elite Tactician",
-    "back": "Back",
-    "est": "Est.",
-    "userRankTitle": "User Rank",
-    "noSelection": "Please make a selection before continuing.",
-    "leagues": "Leagues",
-    "players": "Players"
+    "managerLine": "Manager: {{name}} ({{country}})",
+    "managerEmpty": "Manager not set",
+    "edit": "Edit",
+    "define": "Set up",
+    "startWith": "Start with {{club}}"
   },
   "seasonEnd": {
     "seasonComplete": "Season Complete",
@@ -1045,8 +944,8 @@
     "prizeAmount": "+ {{amount}}",
     "season": {
       "leaguePrizeSubject": "League prize: {{league}}",
-    "leaguePrizePreview": "The club received the {{league}} prize money for its final position.",
-    "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
+      "leaguePrizePreview": "The club received the {{league}} prize money for its final position.",
+      "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
     },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
@@ -1738,7 +1637,11 @@
     "loadFailed": "Could not load the stats."
   },
   "players": {
-    "star": {"gold":"World top 25","blue":"Great form","green":"Prodigy"}
+    "star": {
+      "gold": "World top 25",
+      "blue": "Great form",
+      "green": "Prodigy"
+    }
   },
   "fitness": {
     "highLoadTooltip": "High load: recovers slowly and tires faster"

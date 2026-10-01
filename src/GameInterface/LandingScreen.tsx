@@ -19,14 +19,14 @@ export function LandingScreen() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-7 h-14 text-sm">
+      <header className="fixed top-0 inset-x-0 z-10 flex items-center justify-between px-4 sm:px-7 h-14 text-sm">
         <a href="/" className="no-underline"><Wordmark size="sm" /></a>
         <a href="/start" className={LINK}>{t("landing.signIn")}</a>
       </header>
 
       <section className="relative h-[calc(100svh-8rem)] min-h-[420px] flex flex-col items-center justify-center px-6 text-center">
         <PitchBackdrop />
-        <div className="relative flex flex-col items-center">
+        <div className="relative flex max-w-full flex-col items-center">
           <Wordmark size="lg" />
           <p className="mt-2 text-muted-foreground">{t("landing.tagline")}</p>
           <a

@@ -182,3 +182,9 @@
   *, ::before, ::after { animation: none !important; }
 }
 
+
+/* Thin, dark scrollbars everywhere (default ones are bright white on the dark theme). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.3 0.02 var(--team-hue)) transparent;
+}
