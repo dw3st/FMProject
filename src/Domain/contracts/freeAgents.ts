@@ -1,7 +1,7 @@
 import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
-import { aiRenewalYears, renewalContract } from "@/Domain/contracts/contracts";
+import { addYearsIso, aiRenewalYears, contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
 import { overallAvg } from "@/Domain/playerRating";
 import { seedFrom } from "@/Domain/cups/cupIds";
 import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/transfer/transferNeeds";
@@ -173,6 +173,7 @@ export function freeAgentTick(args: {
         if (rating < need.targetMin || rating > need.targetMax) continue;
         if (need.intentType === "future_investment" && p.age > 23) continue;
         const contract = renewalContract(p, squad, seasonEndOf(squad), aiRenewalYears(p));
+        contract.until = contractEndFor(date, seasonEndOf(squad), aiRenewalYears(p));
         if (finance.wageBill + contract.wage > finance.maxWageBudget * (AI_FINANCE_CONFIG.NEAR_LIMIT_RATIO - C.REFILL_HEADROOM)) continue;
         if (!passesWageGate(finance, contract.wage, 0)) continue;
         const score = scoreCandidate(p, need, 0, 1, rng, [], avg);
@@ -180,6 +181,7 @@ export function freeAgentTick(args: {
       }
       if (!best) continue;
       const contract = renewalContract(best.player, squad, seasonEndOf(squad), aiRenewalYears(best.player));
+      contract.until = contractEndFor(date, seasonEndOf(squad), aiRenewalYears(best.player));
       squads[idx] = { ...squad, players: [...squad.players, { ...best.player, squadId: squad.id, contract }] };
       signedIds.add(best.player.id);
       changedIds.add(squad.id);
@@ -187,4 +189,15 @@ export function freeAgentTick(args: {
     }
   }
   return { squads, changedIds, signedIds };
+}
+
+/** Drops free agents released more than a year before `date`. */
+export function pruneFreeAgents(pool: FreeAgent[], date: string): FreeAgent[] {
+  const keepSince = addYearsIso(date, -1);
+  return pool.filter((f) => f.since > keepSince);
+}
+
+/** A released player enters the pool healthy and with no club/contract. */
+export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
+  return { player: { ...player, squadId: "", contract: undefined, injury: undefined }, since: date };
 }

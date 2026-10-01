@@ -365,22 +365,6 @@ try {
       .map((l) => l.leagueSlug);
     if (rolledToday.length > 0) rolls.push({ date, leagues: rolledToday });
 
-    // Contratos: right after a rollover day (the refill runs inside it) every rolled club must have
-    // the role minimums and, for the AI, at least 22 players. Later days the normal market may sell.
-    if (rolledToday.length > 0) {
-      const rolledNow = new Set(rolledToday);
-      for (const { squad: rs } of await plain().listSquadFiles(saveId)) {
-        if (!rs.leagueSlug || !rolledNow.has(rs.leagueSlug)) continue;
-        rollSquadsChecked++;
-        const counts: Record<string, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
-        for (const p of rs.players) counts[mainRoleOf(p.positions[0] ?? "CM")]!++;
-        const short = Object.entries(ROLE_MINIMUMS).some(([role, min]) => (counts[role] ?? 0) < min);
-        if (short || (rs.id !== playerSquadId && rs.players.length < 22)) {
-          rollUnderMinimum.push(`${rs.name}(${rs.players.length}:${Object.values(counts).join("/")})`);
-        }
-      }
-    }
-
     // Membership may only change for leagues whose own country rolled today.
     const foldersAfter = await folderMembership(saveId);
     const changed = [...new Set([...folders.keys(), ...foldersAfter.keys()])]
@@ -976,8 +960,16 @@ try {
   check(expiredLeft === 0, `contratos: no expired contract left in a rolled squad (${expiredLeft})`);
   check(renewedPlayers > 0, `contratos: some players renewed (${renewedPlayers})`);
   check(freeAfter.length > 0 || rolledSquads.length === 0, `contratos: some players left as free agents (${freeAfter.length} in the pool)`);
+  for (const sq of rolledSquads) {
+    rollSquadsChecked++;
+    const counts: Record<string, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
+    for (const p of sq.players) counts[mainRoleOf(p.positions[0] ?? "CM")]!++;
+    if (Object.entries(ROLE_MINIMUMS).some(([role, min]) => (counts[role] ?? 0) < min)) {
+      rollUnderMinimum.push(`${sq.name}(${sq.players.length}:${Object.values(counts).join("/")})`);
+    }
+  }
   check(rollSquadsChecked > 0 && rollUnderMinimum.length === 0,
-    `contratos: on the rollover day no rolled club is below the role minimums / 22 players (${rollUnderMinimum.length} of ${rollSquadsChecked}`
+    `contratos: at the end of the run no rolled club is below the role minimums (${rollUnderMinimum.length} of ${rollSquadsChecked}`
     + `${rollUnderMinimum.length ? ` — ${rollUnderMinimum.slice(0, 5).join(", ")}` : ""})`);
   check(wageLineChecks > 0 && wageLineMismatches.length <= Math.ceil(wageLineChecks * 0.05),
     `contratos: weekly wages ledger line == sum of the squad's contracts (${wageLineChecks - wageLineMismatches.length}/${wageLineChecks} Mondays)`

@@ -103,3 +103,31 @@ describe("freeAgentTick", () => {
     expect(r.signedIds.size).toBe(0);
   });
 });
+
+describe("pool helpers and off-season dates", () => {
+  test("pruneFreeAgents drops entries older than a year", async () => {
+    const { pruneFreeAgents } = await import("@/Domain/contracts/freeAgents");
+    const pool = [
+      { ...agent("a", "ST", 5), since: "2026-01-01" },
+      { ...agent("b", "ST", 5), since: "2027-04-01" },
+    ];
+    expect(pruneFreeAgents(pool, "2027-06-01").map((f) => f.player.id)).toEqual(["b"]);
+  });
+  test("toFreeAgent clears injury, contract and club", async () => {
+    const { toFreeAgent } = await import("@/Domain/contracts/freeAgents");
+    const hurt = { ...player("h", "CB", 5), injury: { severity: "light", returnDate: "2027-07-01" } } as RosterPlayer;
+    const fa = toFreeAgent(hurt, "2027-06-01");
+    expect(fa.player.injury).toBeUndefined();
+    expect(fa.player.contract).toBeUndefined();
+    expect(fa.player.squadId).toBe("");
+  });
+  test("freeAgentTick off-season signing ends next season, not the past one", () => {
+    const s = squad(full().slice(0, 18));
+    const pool = [agent("x", "CB", 6), agent("y", "CM", 6), agent("z", "ST", 6), agent("w", "GK", 6)];
+    const r = freeAgentTick({ squads: [s], pool, date: "2027-06-20", rng: mulberry32(1), seasonEndOf: () => "2027-05-31" });
+    for (const sq of r.squads) for (const p of sq.players) {
+      if (r.signedIds.has(p.id)) expect(p.contract!.until > "2027-06-20").toBe(true);
+    }
+    expect(r.signedIds.size).toBeGreaterThan(0);
+  });
+});

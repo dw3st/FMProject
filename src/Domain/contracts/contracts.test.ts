@@ -113,3 +113,24 @@ describe("currentWage", () => {
     expect(currentWage(b, 1)).toBeGreaterThan(0);
   });
 });
+
+describe("contractEndFor / renewalWithinLimits", () => {
+  test("in-season signing counts the current season as year one", async () => {
+    const { contractEndFor } = await import("@/Domain/contracts/contracts");
+    expect(contractEndFor("2027-03-01", "2027-05-31", 2)).toBe("2028-05-31");
+  });
+  test("off-season signing (date past the season end) is based on the next season", async () => {
+    const { contractEndFor } = await import("@/Domain/contracts/contracts");
+    expect(contractEndFor("2027-06-20", "2027-05-31", 1)).toBe("2028-05-31");
+    expect(contractEndFor("2027-06-20", "2027-05-31", 3)).toBe("2030-05-31");
+  });
+  test("renewal is capped by total remaining years and by age", async () => {
+    const { renewalWithinLimits } = await import("@/Domain/contracts/contracts");
+    const p = { age: 25, contract: { until: "2029-05-31", wage: 1 } } as never;
+    // remaining 3 seasons (2027, 2028, 2029) + 2 = 5 ok; + 3 = 6 refused
+    expect(renewalWithinLimits(p, "2027-01-10", "2027-05-31", 2)).toBe(true);
+    expect(renewalWithinLimits(p, "2027-01-10", "2027-05-31", 3)).toBe(false);
+    const old = { age: 34, contract: { until: "2027-05-31", wage: 1 } } as never;
+    expect(renewalWithinLimits(old, "2027-01-10", "2027-05-31", 3)).toBe(false);
+  });
+});

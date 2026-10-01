@@ -21,7 +21,7 @@ describe("POST /api/saves/:saveId/players/:playerId/renew", () => {
     recordSaveOwnership(saveId, user.id);
 
     const squad = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
-    const player = squad.players.find((p) => p.age <= 28)!;
+    const player = [...squad.players].filter((p) => p.age <= 26 && p.contract).sort((x, y) => x.contract!.until.localeCompare(y.contract!.until))[0]!;
     const demand = contractDemand(player, squad, meta.currentDate!);
     const handler = apiRoutes["/api/saves/:saveId/players/:playerId/renew"];
     const call = (wage: number, years: number) => handler(Object.assign(
@@ -37,7 +37,11 @@ describe("POST /api/saves/:saveId/players/:playerId/renew", () => {
     expect(low.status).toBe(400);
     expect(await low.json()).toMatchObject({ error: "lowWage", demand });
 
-    const ok = await call(demand, 3);
+    const tooLong = await call(demand, 5);
+    expect(tooLong.status).toBe(400);
+    expect(await tooLong.json()).toMatchObject({ error: "tooManyYears" });
+
+    const ok = await call(demand, 1);
     expect(ok.status).toBe(200);
     const after = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!.players.find((p) => p.id === player.id)!;
     expect(after.contract!.wage).toBe(demand);
