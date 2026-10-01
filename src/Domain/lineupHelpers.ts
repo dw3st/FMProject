@@ -1,7 +1,7 @@
 import type { RosterPlayer } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { FormationSlot } from "@/types/formationSlots";
-import { Player } from "@/Domain/Player";
+import { slotValue } from "@/Domain/positions/positionAptitude";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
@@ -52,7 +52,7 @@ export function autoFillLineup(
           !used.has(p.id) &&
           (p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain),
       )
-      .sort((a, b) => Player.weightedScore(b.stats, role) - Player.weightedScore(a.stats, role));
+      .sort((a, b) => slotValue(b, role) - slotValue(a, role));
 
     if (candidates[0]) {
       result[i] = candidates[0].id;
@@ -66,7 +66,7 @@ export function autoFillLineup(
     const role = slots[i]!.role;
     const remaining = players
       .filter((p) => !used.has(p.id))
-      .sort((a, b) => Player.weightedScore(b.stats, role) - Player.weightedScore(a.stats, role));
+      .sort((a, b) => slotValue(b, role) - slotValue(a, role));
 
     if (remaining[0]) {
       result[i] = remaining[0].id;
@@ -117,7 +117,7 @@ const GK_BENCH_FITNESS_FLOOR = 85;
  * This does not simulate the match; it is only a cheap proxy used to rank lineup candidates.
  */
 function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
-  const stat = Player.weightedScore(player.stats, role);
+  const stat = slotValue(player, role);
   const fitness = player.seasonLog?.fitness ?? DEFAULT_FITNESS;
   const load = player.seasonLog?.load ?? 0;
   // Value the player by what the ENGINE will actually play him at — the match's compressed
