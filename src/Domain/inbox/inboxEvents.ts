@@ -8,6 +8,7 @@ import type {
   DevelopmentInboxMessage,
   InboxMessage,
   InjuryInboxMessage,
+  ContractInboxMessage,
   SeasonInboxMessage,
   TransferInInboxMessage,
   TransferOutInboxMessage,
@@ -279,6 +280,31 @@ export function buildInjuryMessage(args: {
     playerName,
     ...(kind === "injured" ? { severity, returnDate: retDate } : {}),
   } as InjuryInboxMessage;
+}
+
+/** Contract news for the human club: expiring soon, renewed, or released at the rollover. */
+export function buildContractMessage(args: {
+  date:    string;
+  kind:    ContractInboxMessage["kind"];
+  players: { id: string; name: string }[];
+  until?:  string;
+}): ContractInboxMessage {
+  const { date, kind, players, until } = args;
+  const names = players.map((p) => p.name).join(", ");
+  const subject = kind === "expiring" ? "Contracts ending soon"
+    : kind === "renewed" ? "Contract renewed" : "Players left on a free transfer";
+  return {
+    id:        `contract-${date}-${kind}-${players.map((p) => p.id).join("_")}-${randomUUID()}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "contract",
+    subject,
+    preview:   names.slice(0, 120),
+    kind,
+    players,
+    ...(until ? { until } : {}),
+  };
 }
 
 function formatCount(n: number): string {

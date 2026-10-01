@@ -212,6 +212,19 @@ try {
   const trackedInjured = new Map<string, string>(); // playerId → returnDate last observed
   let healedObserved = 0;
 
+  // ── Contratos (see "Contratos" section below) ────────────────────────────
+  // Contract end per player at career start; weekly-wage ledger line vs the sum of contracts.
+  const startContractUntil = new Map<string, string>();
+  for (const { squad } of await plain().listSquadFiles(saveId)) {
+    for (const p of squad.players) if (p.contract) startContractUntil.set(p.id, p.contract.until);
+  }
+  const ROLE_MINIMUMS: Record<string, number> = { GK: 3, Defender: 7, Midfielder: 7, Forward: 4 };
+  const { getMainRole: mainRoleOf } = await import("@/GameInterface/positionHelpers");
+  let rollSquadsChecked = 0;
+  const rollUnderMinimum: string[] = [];
+  let wageLineChecks = 0;
+  const wageLineMismatches: string[] = [];
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -481,6 +494,22 @@ try {
       await checkFiles(saveId, `after rollover ${date}`);
     } else if (playerRollDay) {
       daysAfterRoll++;
+    }
+
+    // Contratos: the weekly wages ledger line (Mondays) must equal the sum of the contracts of the
+    // player's squad. Skipped on a rollover day (contracts change mid-day there).
+    if (rolledToday.length === 0 && new Date(`${date}T12:00:00`).getDay() === 1) {
+      const sq = await plain().getSquadById(saveId, playerSquadId);
+      const seasons = await plain().listLedgerSeasons(saveId);
+      const entries: LedgerEntry[] = [];
+      for (const season of seasons) entries.push(...(await plain().getLedger(saveId, season)));
+      const line = entries.find((e) => e.kind === "wages" && e.date === date);
+      if (sq && line) {
+        const sum = sq.players.reduce((n, p) => n + (p.contract?.wage ?? 0), 0);
+        wageLineChecks++;
+        // A sale/signing later the same day may legitimately move the sum; tolerate it.
+        if (Math.abs(-line.amount - sum) > 1) wageLineMismatches.push(`${date}: ledger ${Math.round(-line.amount)} vs contracts ${Math.round(sum)}`);
+      }
     }
 
     if (days % 20 === 0) {
@@ -906,6 +935,45 @@ try {
   for (const [kind, amount] of Object.entries(totalsByKind(allLedgerEntries))) {
     console.log(`    ${kind.padEnd(14)} ${Math.round(amount).toLocaleString("en-US").padStart(16)}`);
   }
+
+  // ── Contratos ────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/contracts.md`. `allFiles` (final world state) already fetched above.
+  console.log("\n── Contratos ──");
+  const rolledLeagueSlugs = new Set(rolls.flatMap((r) => r.leagues));
+  const rolledSquads = allFiles.map((f) => f.squad).filter((sq) => sq.leagueSlug && rolledLeagueSlugs.has(sq.leagueSlug));
+  const lastRollDate = rolls.length > 0 ? rolls[rolls.length - 1]!.date : endDate;
+  let expiredLeft = 0;
+  let noContract = 0;
+  let renewedPlayers = 0;
+  for (const sq of rolledSquads) {
+    for (const p of sq.players) {
+      if (!p.contract) noContract++;
+      else if (p.contract.until < lastRollDate) expiredLeft++;
+      const start = startContractUntil.get(p.id);
+      if (p.contract && start && p.contract.until > start) renewedPlayers++;
+    }
+  }
+  const freeAfter = await plain().getFreeAgents(saveId);
+  console.log(`  ${rolledSquads.length} squads in rolled leagues; ${renewedPlayers} renewed players; ${freeAfter.length} free agents left`);
+  check(rolledSquads.length > 0, `contratos: ${rolledSquads.length} rolled squads inspected`);
+  check(noContract === 0, `contratos: every player of a rolled squad has a contract (${noContract} without)`);
+  check(expiredLeft === 0, `contratos: no expired contract left in a rolled squad (${expiredLeft})`);
+  check(renewedPlayers > 0, `contratos: some players renewed (${renewedPlayers})`);
+  check(freeAfter.length > 0 || rolledSquads.length === 0, `contratos: some players left as free agents (${freeAfter.length} in the pool)`);
+  for (const sq of rolledSquads) {
+    rollSquadsChecked++;
+    const counts: Record<string, number> = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 };
+    for (const p of sq.players) counts[mainRoleOf(p.positions[0] ?? "CM")]!++;
+    if (Object.entries(ROLE_MINIMUMS).some(([role, min]) => (counts[role] ?? 0) < min)) {
+      rollUnderMinimum.push(`${sq.name}(${sq.players.length}:${Object.values(counts).join("/")})`);
+    }
+  }
+  check(rollSquadsChecked > 0 && rollUnderMinimum.length === 0,
+    `contratos: at the end of the run no rolled club is below the role minimums (${rollUnderMinimum.length} of ${rollSquadsChecked}`
+    + `${rollUnderMinimum.length ? ` — ${rollUnderMinimum.slice(0, 5).join(", ")}` : ""})`);
+  check(wageLineChecks > 0 && wageLineMismatches.length <= Math.ceil(wageLineChecks * 0.05),
+    `contratos: weekly wages ledger line == sum of the squad's contracts (${wageLineChecks - wageLineMismatches.length}/${wageLineChecks} Mondays)`
+    + (wageLineMismatches.length ? ` — e.g. ${wageLineMismatches.slice(0, 3).join("; ")}` : ""));
 
   // ── Lesões ───────────────────────────────────────────────────────────────
   // See `.claude/rules/game/injuries.md`. `allFiles` (final world state) already fetched above.

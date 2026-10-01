@@ -16,6 +16,8 @@ export interface ScoutFilterState {
   attributeRanges: Record<AttributeId, { min: number; max: number }>;
   /** When true, only show players who appear on any team's sell list. */
   onlyForSale: boolean;
+  /** When true, only the free-agent pool (and never club players). */
+  onlyFree: boolean;
 }
 
 export function defaultAttributeRanges(): Record<AttributeId, { min: number; max: number }> {
@@ -40,5 +42,6 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     nationality: "all",
     attributeRanges: defaultAttributeRanges(),
     onlyForSale: false,
+    onlyFree: false,
   };
 }

@@ -1,4 +1,4 @@
-import { agePlayerStats, youngGrowthDampen } from "@/../scripts/espn/aging";
+import { agePlayerStats, topDeclineFactor, youngGrowthDampen } from "@/../scripts/espn/aging";
 import { estimateStats, fillSquad, lineMedians, makePlayer, trimSquad } from "@/../scripts/espn/estimate";
 import { planLineup, type LeagueRef } from "@/../scripts/espn/lineup";
 import { matchClubs } from "@/../scripts/espn/matchClubs";
@@ -162,6 +162,22 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   const nativeLeagueOf = new Map([...leagueOfSquad].filter(([, l]) => NATIVE_LEAGUES.has(l)));
   const playerById = new Map<string, RosterPlayer & { fullName?: string }>();
   for (const s of squadById.values()) for (const p of s.players) playerById.set(p.id, p);
+  // #6 — overall percentile of a player within their role (line), across the whole PRE-aging world.
+  const sortedByLine = new Map<MainRole, number[]>();
+  for (const p of playerById.values()) {
+    const arr = sortedByLine.get(lineOf(p)) ?? [];
+    arr.push(opts.overall(p));
+    sortedByLine.set(lineOf(p), arr);
+  }
+  for (const arr of sortedByLine.values()) arr.sort((a, b) => a - b);
+  const declineFactorOf = (p: RosterPlayer): number => {
+    const arr = sortedByLine.get(lineOf(p));
+    if (!arr || arr.length === 0) return 1;
+    const o = opts.overall(p);
+    let lo = 0, hi = arr.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid]! <= o) lo = mid + 1; else hi = mid; }
+    return topDeclineFactor(lo / arr.length);
+  };
   const overallBefore = [...playerById.values()].map((p) => ({ age: p.age, ovr: opts.overall(p) }));
   /** Nationalities already known to the world — the source of truth `normalizeNationality` matches ESPN's `citizenship` against. */
   const worldNationalities = new Set([...playerById.values()].map((p) => p.nationality).filter((n): n is string => !!n));
@@ -330,7 +346,7 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
         const role = er ?? lineOf(src);
         const clubLineMedian = median(lineOverallsBySid.get(role) ?? []);
         const dampen = youngGrowthDampen(opts.overall(src), clubLineMedian);
-        p.stats = agePlayerStats(p.id, src.stats, src.age, newAge, opts.roleWeights(src), dampen);
+        p.stats = agePlayerStats(p.id, src.stats, src.age, newAge, opts.roleWeights(src), dampen, declineFactorOf(src));
         p.age = newAge;
         p.squadId = sid;
         // Keep the world's own nationality when ESPN's citizenship doesn't normalize to a known
@@ -397,7 +413,7 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
       s.players = remaining.map((p) => {
         const newAge = p.age + typicalGap;
         const dampen = youngGrowthDampen(opts.overall(p), median(lineOveralls.get(lineOf(p)) ?? []));
-        const aged: RosterPlayer & { fullName?: string } = { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p), dampen) };
+        const aged: RosterPlayer & { fullName?: string } = { ...p, age: newAge, stats: agePlayerStats(p.id, p.stats, p.age, newAge, opts.roleWeights(p), dampen, declineFactorOf(p)) };
         delete aged.overallAvg;
         return aged;
       });

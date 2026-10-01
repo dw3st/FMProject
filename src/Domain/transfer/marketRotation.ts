@@ -2,7 +2,7 @@ import {
   evaluateTransferOffer,
   squadsAfterAcceptedTransfer,
 } from "@/Domain/transfer/transferAcceptance";
-import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import type { Squad, RosterPlayer, PlayerContract } from "@/types/playerTypes";
 import type { MarketState, SellCandidate, SquadMarketProfile, TransferNeed } from "@/types/transferMarketTypes";
 import { defaultRng, generateTransferNeeds, playerMatchesBand, playerOverallRating, processTeamTransferAttempt } from "@/Domain/transfer/transferNeeds";
 import { generateSellList, getSellPriority } from "@/Domain/transfer/sellList";
@@ -10,6 +10,8 @@ import { Player } from "@/Domain/Player";
 import { debugLog } from "@/Logger";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
+import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
 export const TEAMS_PER_DAY_ATTEMPTS = 10;
@@ -81,6 +83,15 @@ export interface DailyMarketTickOptions {
   playerSellList?: SellCandidate[];
   /** Squad object for the human's club (needed for sell-list matching). */
   playerSquad?: Squad | null;
+  /** Last day of the squad's league season (contract end). Falls back to the next May 31. */
+  seasonEndOf?: (squad: Squad) => string | undefined;
+}
+
+/** Contract an AI club gives a signing: the curve wage at its factor, length by age. */
+function aiSigningContract(player: RosterPlayer, buyer: Squad, date: string, options?: DailyMarketTickOptions) {
+  const end = options?.seasonEndOf?.(buyer) ?? defaultSeasonEnd(date);
+  const contract = renewalContract(player, buyer, end, aiRenewalYears(player));
+  return { ...contract, until: contractEndFor(date, end, aiRenewalYears(player)) };
 }
 
 /** Strip needs that pre-date the intentType field so old saves don't feed stale data into scoring. */
@@ -119,6 +130,7 @@ function tryMatchPlayerSellList(
   profiles: Record<string, SquadMarketProfile>,
   excludePlayerSquadId: string | null,
   rng: () => number,
+  contractFor: (player: RosterPlayer, buyer: Squad) => PlayerContract,
 ): CompletedAITransfer | null {
   if (playerSellList.length === 0) return null;
 
@@ -143,7 +155,7 @@ function tryMatchPlayerSellList(
   // Pick the best-scoring buyer (or random among top candidates)
   const buyerId = buyerIds[Math.floor(rng() * buyerIds.length)]!;
   const buyerSquad = squads.get(buyerId);
-  if (!buyerSquad) return null;
+  if (!buyerSquad || buyerSquad.players.length >= MAX_SQUAD) return null;
 
   const buyerProfile = profiles[buyerId]!;
   const matchingNeed = buyerProfile.needs.find((n) => playerMatchesBand(listedPlayer, n.position));
@@ -167,6 +179,7 @@ function tryMatchPlayerSellList(
     buyerSquad,
     buyerId,
     listedPlayer.id,
+    contractFor(listedPlayer, buyerSquad),
   );
 
   squads.set(playerSquad.id, selling);
@@ -251,7 +264,7 @@ export function dailyMarketTick(
   for (const pi of pickIdx) {
     const buyerId = poolIds[pi]!;
     const buyerSquad = squads.get(buyerId);
-    if (!buyerSquad) continue;
+    if (!buyerSquad || buyerSquad.players.length >= MAX_SQUAD) continue;
 
     const profile = profiles[buyerId] ?? null;
     const latestList = Array.from(squads.values());
@@ -280,6 +293,7 @@ export function dailyMarketTick(
       buyer,
       buyer.id,
       player.id,
+      aiSigningContract(player, buyer, currentDate, options),
     );
 
     squads.set(sellerSquad.id, selling);
@@ -340,6 +354,7 @@ export function dailyMarketTick(
       profiles,
       excludePlayerSquadId,
       rng,
+      (p, b) => aiSigningContract(p, b, currentDate, options),
     );
     if (matchResult) {
       debugLog(

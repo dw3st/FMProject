@@ -9,7 +9,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
-import type { Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, Squad, StandingRow } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -19,6 +19,7 @@ import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/type
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
+import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
@@ -178,6 +179,16 @@ export class SaveService {
 
   saveMarket(saveId: string, market: MarketState): Promise<void> {
     return this.dal.writeMarket(saveId, market);
+  }
+
+  // ── Free agents ────────────────────────────────────────────────────────────
+
+  getFreeAgents(saveId: string): Promise<FreeAgent[]> {
+    return this.dal.readFreeAgents(saveId);
+  }
+
+  writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
+    return this.dal.writeFreeAgents(saveId, agents);
   }
 
   // ── Transfers ──────────────────────────────────────────────────────────────
@@ -734,10 +745,15 @@ export class SaveService {
         const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
         squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
         squad.wageRevenueBasis = wageRevenueBasis;
+        // Every player starts with a fixed-wage contract ending on his league's season end
+        // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
+        const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end
+          ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
+        const contracted = withContracts(squad, leagueEnd);
 
-        await this.dal.writeSquad(id, league, clubSlug, squad);
+        await this.dal.writeSquad(id, league, clubSlug, contracted);
         this.squadIndexCache.delete(id);
-        squadCache.set(squad.id, squad);
+        squadCache.set(squad.id, contracted);
         copied++;
       }
     }

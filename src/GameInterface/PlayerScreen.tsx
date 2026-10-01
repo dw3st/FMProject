@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { UserPlus } from "lucide-react";
+import { UserPlus, FileSignature } from "lucide-react";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -12,6 +12,7 @@ import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import type { TransferRecord } from "@/types/transferTypes";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { wageFactorOf } from "@/Domain/finance/wages";
+import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 
 export function PlayerScreen({
   playerId,
@@ -31,6 +32,7 @@ export function PlayerScreen({
   const [squadWageFactor, setSquadWageFactor] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
+  const [renewOpen, setRenewOpen] = useState(false);
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
   useEffect(() => {
@@ -118,7 +120,16 @@ export function PlayerScreen({
                 <UserPlus className="w-4 h-4" />
                 {t("playerScreen.makeOffer")}
               </button>
-            ) : undefined
+            ) : (
+              <button
+                type="button"
+                onClick={() => setRenewOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all cursor-pointer border-0 shrink-0"
+              >
+                <FileSignature className="w-4 h-4" />
+                {t("contracts.renew")}
+              </button>
+            )
           }
         />
 
@@ -146,6 +157,16 @@ export function PlayerScreen({
 
         <PlayerCard player={displayPlayer} layout="wide" />
       </div>
+
+      <ContractOfferModal
+        mode="renew"
+        player={renewOpen ? {
+          id: player.id, name: player.name, age: player.age, squadId: player.squadId,
+          contractUntil: player.contract?.until.slice(0, 4),
+        } : null}
+        onClose={() => setRenewOpen(false)}
+        onDone={() => void refresh()}
+      />
 
       <PlayerOfferModal
         player={offerTarget}

@@ -8,6 +8,7 @@ import type { CountryEntry } from "@/types/worldTypes";
 import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
 import { loadSession } from "@/GameInterface/gameSession";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
+import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ScoutQuery, ScoutSearchResponse, ScoutSortDir } from "@/Domain/scout/scoutQuery";
@@ -67,6 +68,7 @@ export function ScoutScreen() {
   const [leagueRows, setLeagueRows] = useState<LeagueData[]>([]);
   const [mySquadId, setMySquadId] = useState<string>("");
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
+  const [signTarget, setSignTarget] = useState<DisplayPlayer | null>(null);
 
   const isFiltering = filters !== debouncedFilters || fetching;
 
@@ -196,7 +198,7 @@ export function ScoutScreen() {
           loading={!result && fetching}
           filtering={isFiltering}
           mySquadId={mySquadId}
-          onOffer={setOfferTarget}
+          onOffer={(p) => (p.free ? setSignTarget(p) : setOfferTarget(p))}
           sellListedIds={sellListedIds}
           error={fetchError}
           onRetry={() => setRefreshTick((n) => n + 1)}
@@ -207,6 +209,13 @@ export function ScoutScreen() {
         player={offerTarget}
         onClose={() => setOfferTarget(null)}
         onTransferComplete={refreshAfterTransfer}
+      />
+
+      <ContractOfferModal
+        mode="sign"
+        player={signTarget ? { id: signTarget.id, name: signTarget.name, age: signTarget.age } : null}
+        onClose={() => setSignTarget(null)}
+        onDone={() => setRefreshTick((n) => n + 1)}
       />
     </>
   );

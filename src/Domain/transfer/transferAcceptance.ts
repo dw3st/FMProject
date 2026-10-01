@@ -1,4 +1,5 @@
-import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import type { Squad, RosterPlayer, PlayerContract } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { aiFinancialPressure } from "@/Domain/aiFinance/aiClubFinance";
 
@@ -52,6 +53,12 @@ export function evaluateTransferOffer(
     return { accepted: false, reason: "squadDepth" };
   }
 
+  if (!opts.humanSeller) {
+    const role = roleOf(player);
+    const inRole = fromSquad.players.filter((p) => roleOf(p) === role).length;
+    if (inRole - 1 < MIN_BY_ROLE[role]) return { accepted: false, reason: "squadDepth" };
+  }
+
   const pRating = playerOverallRating(player);
   const teamAvg = teamAvgRating(fromSquad);
   const relativeStrength = pRating - teamAvg;
@@ -100,8 +107,10 @@ export function squadsAfterAcceptedTransfer(
   buyingSquad: Squad,
   buyerSquadId: string,
   playerId: string,
+  /** The new club's contract for the player (every signing creates one). */
+  contract?: PlayerContract,
 ): { selling: Squad; buying: Squad } {
-  const updatedPlayer: RosterPlayer = { ...player, squadId: buyerSquadId };
+  const updatedPlayer: RosterPlayer = { ...player, squadId: buyerSquadId, ...(contract ? { contract } : {}) };
   return {
     selling: {
       ...sellingSquad,

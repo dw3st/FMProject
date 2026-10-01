@@ -349,6 +349,18 @@ specifically is applied AFTER `applyAISeasonReaction` has already re-granted the
 seasonal budget, so the prize stacks on top of the fresh grant, never a stale one. See
 `.claude/rules/game/finances.md` § "Premiação" for the full prize tables.
 
+## Wage factor pull-back and contracts (#23, Etapa 7)
+
+- At every rollover, after `carryForwardWageFactor`, the factor is pulled toward its target:
+  `factor += TARGET_PULL (0.3) x (target - factor)`, `target = clubWageFactor(new revenue, curve bill)`
+  (`pullWageFactorToTarget`). A club that overspent no longer keeps an inflated factor forever.
+- The bill is now the sum of fixed contract wages. Expiring contracts are renewed (if the new wage fits the
+  cap) or released, and the squad is refilled afterwards with free agents that fit under
+  `cap x (0.9 - REFILL_HEADROOM 0.03)`, then filler youth. Daily, 10 AI clubs also try the free pool with the
+  same headroom. See `.claude/rules/game/contracts.md`.
+- 3-season simulation (`bun scripts/contracts-sim.ts 3`), hiring state sampled monthly: LOW 93.0% open,
+  MEDIUM 93.6%, HIGH 92.3%, ELITE 97.3% (ELITE no longer permanently `tight`); average squad 26.9 / 25.2 / 24.4.
+
 ## Wage control (AI transfer market)
 
 `hiring = frozen` if `wageBill >= maxWageBudget`, `tight` if `>= 0.9 x maxWageBudget`, else `open`.

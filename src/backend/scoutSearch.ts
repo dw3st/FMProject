@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import {
-  collectNationalities, collectSellListedIds, mapSquadsToScoutPlayers, runScoutQuery,
+  collectNationalities, collectSellListedIds, mapFreeAgentsToScoutPlayers, mapSquadsToScoutPlayers, runScoutQuery,
   type ScoutQuery, type ScoutSearchResponse,
 } from "@/Domain/scout/scoutQuery";
 import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
@@ -42,12 +42,13 @@ async function leagueSlugs(): Promise<string[]> {
  * transfer or sell-list edit invalidates the entry).
  */
 async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex> {
-  const [squads, market, slugs] = await Promise.all([
+  const [squads, market, slugs, freeAgents] = await Promise.all([
     saveService.getAllSquads(saveId),
     saveService.getMarket(saveId),
     leagueSlugs(),
+    saveService.getFreeAgents(saveId),
   ]);
-  const players = mapSquadsToScoutPlayers(squads, slugs);
+  const players = [...mapSquadsToScoutPlayers(squads, slugs), ...mapFreeAgentsToScoutPlayers(freeAgents)];
   const entry: ScoutIndex = {
     key,
     players,
@@ -139,6 +140,7 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       nationality: asString(f.nationality, defaults.nationality),
       attributeRanges: asAttributeRanges(f.attributeRanges, defaults.attributeRanges),
       onlyForSale: f.onlyForSale === true,
+      onlyFree: f.onlyFree === true,
     },
     sortKey: typeof b.sortKey === "string" ? b.sortKey : "avg",
     sortDir: b.sortDir === "asc" ? "asc" : "desc",

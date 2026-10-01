@@ -7,7 +7,8 @@ export type InboxCategory =
   | "season"
   | "cup"
   | "continental"
-  | "injury";
+  | "injury"
+  | "contract";
 
 export interface InboxMessageBase {
   id:        string;
@@ -137,6 +138,18 @@ export interface InjuryInboxMessage extends InboxMessageBase {
   returnDate?: string;
 }
 
+/**
+ * Contract news for the human club (`docs/superpowers/specs/2026-09-30-contracts-design.md` §2):
+ * contracts about to end (90 days before the season's end), a renewal, or players who left free.
+ */
+export interface ContractInboxMessage extends InboxMessageBase {
+  category: "contract";
+  kind:     "expiring" | "renewed" | "released";
+  players:  { id: string; name: string }[];
+  /** Renewed only: new contract end (ISO). */
+  until?:   string;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -144,4 +157,5 @@ export type InboxMessage =
   | SeasonInboxMessage
   | CupInboxMessage
   | ContinentalInboxMessage
-  | InjuryInboxMessage;
+  | InjuryInboxMessage
+  | ContractInboxMessage;

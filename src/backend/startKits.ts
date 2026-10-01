@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { readdir, stat, mkdir } from "fs/promises";
 import { saveService } from "@/backend/SaveService";
 import { isCupSlug } from "@/Domain/cups/cupIds";
+import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import type { Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta, LeagueDateIndex, RoundFixtures } from "@/types/calendarTypes";
@@ -121,13 +122,20 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
     }
   }
 
+  // Kit squads predate contracts: give every player without one a contract ending on his
+  // league's current season end (the fresh save's `activeLeagues`).
+  const kitMeta = await saveService.getMeta(saveId);
+  const leagueEnds = new Map((kitMeta?.activeLeagues ?? []).map((l) => [l.leagueSlug, l.end] as const));
+  const fallbackEnd = defaultSeasonEnd(kitMeta?.currentDate ?? "2026-08-01");
+
   for (const { league, club, squad } of world.squads) {
     // The kit's folder is the club's league in that world: if the fresh save holds
     // the club elsewhere, move it first so the write never leaves a duplicate.
     const e = (await saveService.getSquadIndex(saveId)).byId(squad.id);
     if (e && e.leagueSlug !== league) await saveService.moveSquad(saveId, squad.id, league);
     const wage = freshWage.get(squad.id);
-    const toWrite = wage !== undefined ? { ...squad, ...wage } : squad;
+    const withWage = wage !== undefined ? { ...squad, ...wage } : squad;
+    const toWrite = withContracts(withWage, leagueEnds.get(league) ?? fallbackEnd);
     // `club` is the file stem (older kits stored the slug; saveSquad resolves either).
     await saveService.saveSquad(saveId, league, club, toWrite);
   }
