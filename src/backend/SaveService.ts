@@ -19,6 +19,7 @@ import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/type
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
+import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
@@ -734,10 +735,15 @@ export class SaveService {
         const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
         squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
         squad.wageRevenueBasis = wageRevenueBasis;
+        // Every player starts with a fixed-wage contract ending on his league's season end
+        // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
+        const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end
+          ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
+        const contracted = withContracts(squad, leagueEnd);
 
-        await this.dal.writeSquad(id, league, clubSlug, squad);
+        await this.dal.writeSquad(id, league, clubSlug, contracted);
         this.squadIndexCache.delete(id);
-        squadCache.set(squad.id, squad);
+        squadCache.set(squad.id, contracted);
         copied++;
       }
     }

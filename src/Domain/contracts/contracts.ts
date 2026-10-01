@@ -111,3 +111,18 @@ export function isExpired(contract: PlayerContract | undefined, date: string, gr
   if (!contract) return false;
   return contract.until <= (graceDays > 0 ? addDaysIso(date, graceDays) : date);
 }
+
+/** The next May 31 on or after `date` — only a fallback when a squad's league end is unknown. */
+export function defaultSeasonEnd(date: string): string {
+  const y = Number(date.slice(0, 4));
+  return date <= `${y}-05-31` ? `${y}-05-31` : `${y + 1}-05-31`;
+}
+
+/** The squad with an initial contract on every player that has none (others untouched). */
+export function withContracts(squad: Squad, seasonEnd: string): Squad {
+  if (squad.players.every((p) => p.contract)) return squad;
+  return {
+    ...squad,
+    players: squad.players.map((p) => (p.contract ? p : { ...p, contract: initialContract(p, squad, seasonEnd) })),
+  };
+}

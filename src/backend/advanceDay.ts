@@ -1033,6 +1033,8 @@ export async function advanceOneDay(
           excludePlayerSquadId: resolvedPlayerSquadId,
           playerSellList: marketForTick.playerSellList,
           playerSquad: playerSquadForMarket,
+          // Contract end for every signing: the buyer's league season end.
+          seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
         },
       );
 
