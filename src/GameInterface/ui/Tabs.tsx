@@ -13,10 +13,10 @@ interface Props<K extends string> {
   className?: string;
 }
 
-/** Text tabs; the active one gets a thin underline. */
+/** Text tabs; the active one is foreground with a primary underline. */
 export function Tabs<K extends string>({ tabs, active, onChange, className = "" }: Props<K>) {
   return (
-    <div role="tablist" className={`flex gap-5 border-b border-border ${className}`}>
+    <div role="tablist" className={`flex gap-6 border-b border-border ${className}`}>
       {tabs.map((tab) => {
         const on = tab.key === active;
         return (
@@ -27,9 +27,9 @@ export function Tabs<K extends string>({ tabs, active, onChange, className = "" 
             aria-selected={on}
             disabled={tab.disabled}
             onClick={() => onChange(tab.key)}
-            className={`-mb-px py-2 text-sm bg-transparent border-0 border-b cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`-mb-px h-10 text-sm bg-transparent border-0 border-b-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               on
-                ? "border-foreground text-foreground"
+                ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >

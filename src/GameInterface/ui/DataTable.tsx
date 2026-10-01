@@ -15,7 +15,7 @@ interface Props<T> {
   className?: string;
 }
 
-/** Muted header, rows separated by a thin top border, optional highlighted row. */
+/** Label-style header, rows separated by a thin top border, optional highlighted row. */
 export function DataTable<T>({ columns, rows, rowKey, isHighlighted, className = "" }: Props<T>) {
   return (
     <div className={`overflow-x-auto ${className}`}>
@@ -25,7 +25,7 @@ export function DataTable<T>({ columns, rows, rowKey, isHighlighted, className =
             {columns.map((c) => (
               <th
                 key={c.key}
-                className={`px-2 py-2 text-left text-xs font-medium text-muted-foreground ${c.className ?? ""}`}
+                className={`px-2 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground ${c.className ?? ""}`}
               >
                 {c.header}
               </th>
@@ -33,18 +33,18 @@ export function DataTable<T>({ columns, rows, rowKey, isHighlighted, className =
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              key={rowKey(row)}
-              className={`border-t border-border ${isHighlighted?.(row) ? "bg-primary/10" : ""}`}
-            >
-              {columns.map((c) => (
-                <td key={c.key} className={`px-2 py-2 ${c.className ?? ""}`}>
-                  {c.cell(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const on = isHighlighted?.(row) ?? false;
+            return (
+              <tr key={rowKey(row)} className={`border-t border-border h-10 ${on ? "bg-primary/10 text-primary" : ""}`}>
+                {columns.map((c) => (
+                  <td key={c.key} className={`px-2 py-2 ${c.className ?? ""}`}>
+                    {c.cell(row)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
