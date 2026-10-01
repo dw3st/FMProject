@@ -203,6 +203,11 @@ export interface Squad {
    * Present-but-empty role = vacant.
    */
   staff?: StaffRecord;
+  /**
+   * Academy players (human club only, `src/Domain/youth`): the yearly intake lands here, not in
+   * `players`. They train and age at the rollover but do not play until promoted.
+   */
+  youth?: RosterPlayer[];
 }
 
 export interface LeagueTeam {

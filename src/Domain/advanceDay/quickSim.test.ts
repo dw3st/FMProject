@@ -382,6 +382,17 @@ describe("calibração de notas", () => {
   });
 });
 
+describe("ratingFromStats tail shrink (#9)", () => {
+  const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };
+  test("a big forward night is pulled toward the line centre, a quiet one barely moves", () => {
+    const big = { ...zero, goals: 1, shots: 2, assists: 1 };
+    expect(ratingFromStats(big, 0, "FWD")).toBeLessThan(ratingFromStats(big));
+    expect(ratingFromStats(big, 0, "FWD")).toBeGreaterThan(8);
+    expect(Math.abs(ratingFromStats(zero, 0, "FWD") - ratingFromStats(zero))).toBeLessThan(0.1);
+    expect(ratingFromStats(zero, 0, "GK")).toBe(ratingFromStats(zero));
+  });
+});
+
 describe("ratingFromStats", () => {
   test("baseline 6.0 sem ações e gol sobe a nota", () => {
     const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };

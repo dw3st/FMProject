@@ -253,7 +253,7 @@ function emptyStats(): MatchPlayerStats {
  * recording shape) — quickSim tracks it separately and passes it in explicitly.
  * Defaults to 0 so existing single-arg call sites remain valid.
  */
-export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0): number {
+export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0, group?: LineGroup): number {
   const W = RATING_WEIGHTS;
   const raw =
     W.BASELINE +
@@ -265,7 +265,11 @@ export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0): number 
     s.tackles * W.TACKLE_WON +
     tacklesFailed * W.TACKLE_FAILED +
     s.interceptions * W.INTERCEPTION;
-  return Math.round(clamp(raw, 0, 10) * 10) / 10;
+  // #9: shrink toward the line's centre so the slot-carrying starter's tail matches the engine's.
+  const k = group ? C.RATING_SHRINK[group] : 1;
+  const c = group ? C.RATING_SHRINK_CENTER[group] : 0;
+  const shaped = k === 1 ? raw : c + (raw - c) * k;
+  return Math.round(clamp(shaped, 0, 10) * 10) / 10;
 }
 
 /** Skips empty / unknown / duplicate ids; each kept player takes the role of his own slot index. */
@@ -464,7 +468,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const playerEnergy: Record<string, number> = {};
   for (const x of [...homeXI, ...awayXI]) {
     const { p } = x;
-    playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0);
+    playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0, groupOf(x));
     const startEnergy = startFitness(p);
     const drain =
       C.ENERGY_DRAIN_BY_LINE[groupOf(x)] *

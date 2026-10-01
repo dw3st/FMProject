@@ -10,6 +10,8 @@ import type { FreeAgent, LeagueData, LeagueTeam, Squad, StandingRow } from "@/ty
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
+import { processYouthRollover } from "@/Domain/youth/youth";
+import { overallAvg } from "@/Domain/playerRating";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -22,6 +24,7 @@ import {
   buildDevelopmentMessage,
   buildInjuryMessage,
   buildContractMessage,
+  buildYouthMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
   buildSeasonMessage,
@@ -652,6 +655,8 @@ export async function advanceOneDay(
     const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
     // Contract news (90-day warning, released at the rollover): same deferral, same reason.
     const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
+    // Academy news (new intake, released at 19): same deferral.
+    const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
     if (playerSquadId) {
       const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
       if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
@@ -1495,6 +1500,37 @@ export async function advanceOneDay(
         await saveService.writeFreeAgents(saveId, pool);
       }
 
+      // 9. Academy (.claude/rules/game/youth.md): every club gets a yearly intake of 16-17 year olds.
+      //    The human club keeps them in `squad.youth` (ages and trains the old ones, releases who hit
+      //    19); AI clubs promote the best 1-2 straight into the squad and discard the rest.
+      let youthReleased: FreeAgent[] = [];
+      for (const slug of unit.leagues) {
+        const state = updatedActiveLeagues[stateIdx(slug)];
+        if (!state) continue;
+        const nextEnd = state.end;
+        if (!nextEnd) continue;
+        for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
+          const isHuman = sq.id === playerClubSquadId;
+          const res = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman });
+          await saveService.saveSquadById(saveId, res.squad);
+          if (!isHuman) continue;
+          youthReleased = youthReleased.concat(res.autoReleased.map((p) => toFreeAgent(p, currentDate)));
+          if (res.autoReleased.length > 0) {
+            deferredYouthMessages.push({
+              date: currentDate, kind: "released", players: res.autoReleased.map((p) => ({ id: p.id, name: p.name })),
+            });
+          }
+          const best = [...res.intake].sort((a, b) => overallAvg(b) - overallAvg(a))[0];
+          deferredYouthMessages.push({
+            date: currentDate, kind: "intake", year: state.year, count: res.intake.length,
+            best: best ? { id: best.id, name: best.name, position: best.positions[0] ?? "" } : undefined,
+          });
+        }
+      }
+      if (youthReleased.length > 0) {
+        await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...youthReleased]);
+      }
+
       if (unit.leagues.includes(meta.leagueSlug)) {
         seasonEnded = true;
         archiveYear = closedYear.get(meta.leagueSlug);
@@ -1670,6 +1706,7 @@ export async function advanceOneDay(
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
+    for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};

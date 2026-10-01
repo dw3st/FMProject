@@ -1067,7 +1067,8 @@
       "cup": "Cup",
       "continental": "Continental",
       "injury": "Injury",
-      "contract": "Contracts"
+      "contract": "Contracts",
+      "youth": "Academy"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1108,6 +1109,10 @@
       "expiring": "Contracts ending this season: {{players}}",
       "renewed": "{{players}} signed a new contract (until {{until}})",
       "released": "Contract ended, left as a free agent: {{players}}"
+    },
+    "youth": {
+      "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",
+      "released": "Reached 19 without a promotion and left the academy: {{players}}"
     }
   },
   "finances": {
@@ -1429,7 +1434,26 @@
   "squadScreen": {
     "loadingSquad": "Loading squad...",
     "squadNotFound": "Squad not found.",
-    "players": "players"
+    "players": "players",
+    "tabSquad": "Squad",
+    "tabYouth": "Academy"
+  },
+  "youth": {
+    "loading": "Loading academy...",
+    "loadFailed": "Could not load the academy.",
+    "actionFailed": "Something went wrong. Try again.",
+    "squadFull": "The squad is full (30). Release or sell a player first.",
+    "subtitle": "Players arrive at 16-17 each season and leave at 19. Squad: {{size}}/{{limit}}.",
+    "empty": "No academy players yet. The first class arrives at the end of the season.",
+    "player": "Player",
+    "position": "Pos",
+    "age": "Age",
+    "level": "Level",
+    "potential": "Potential",
+    "promote": "Promote",
+    "release": "Release",
+    "confirmRelease": "Confirm release",
+    "cancel": "Cancel"
   },
   "matchPreview": {
     "title": "Match Preview",

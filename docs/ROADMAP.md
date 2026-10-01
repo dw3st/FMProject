@@ -79,7 +79,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 8 ✅ | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato + #28/#29 estrelas (#7, #24, #28, #29 fechados — #7: no mundo atual Bundesliga +1,3% e Serie A +7,6%, dentro de ±10%) | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato. As estrelas (regra de quem recebe + cores com legenda) usam as mesmas notas e estatísticas da tela |
 | 9 | 3.3 Tela Tactics (blocos A — novo visual dentro do jogo — e B — novo jogo em uma tela — já feitos, na 1.9; bloco C1 (posições detalhadas, #20 #30 #31) feito na 2.0; bloco C2 (arrastar, formação livre e eixos táticos, #21) feito na 2.1; falta C3 estilo posse #8) | #8 estilo posse + #20 zagueiro × lateral na escalação + #21 arrastar e formação livre + #30 cor por posição + #31 posições estilo FM | Tactics mexe nas instruções; o estilo posse é um dos alvos. A posição detalhada (cor e aptidão por posição) é a base da escalação e das instruções |
 | 10 ✅ | 3.4 Staff (2.2) | #13 nomes turcos (sai à parte, numa branch só de dados) | Etapa grande + correção pequena de dados. Equipe técnica do clube do jogador feita; a IA usa a nota implícita do tier |
-| 11 | 3.5 Base | #9 notas ≥ 8,5 no quickSim | Jovens gerados passam pelo quickSim; notas precisam estar calibradas |
+| 11 ✅ | 3.5 Base (2.3) | #9 notas ≥ 8,5 no quickSim | Safra anual de 3–5 jovens por clube; aba Base para o jogador, a IA promove 1–2. Cauda de notas do quickSim corrigida (#9) |
 | 11b | 3.6 Aposentadoria e renascimento de craques | — | Usa a geração de jovens da Base (3.5); entra logo depois dela |
 | 11c | 3.7 Histórico do jogador | #32 | Carreira clube a clube; precisa de contratos (3.1) e aposentadoria (3.6) para ter história de verdade |
 | 11d | 3.8 Ranking de técnicos | #33 | Pontuação por títulos; base para convites de clubes maiores e seleções e um futuro multiplayer |
@@ -136,7 +136,7 @@ reserva entra em campo; quickSim e motor concordam no volume de lesões.
 3.3 **Tela Tactics:** instruções além do estilo (hoje só formação + estilo + mentalidade ao vivo).
 3.4 **Staff:** treinadores, preparador físico, olheiros, com efeito em desenvolvimento, lesões e
    observação. Feito na 2.2 (`.claude/rules/game/staff.md`).
-3.5 **Base:** jovens gerados por temporada, promoção ao elenco principal.
+3.5 **Base:** jovens gerados por temporada, promoção ao elenco principal. Feito na 2.3 (`.claude/rules/game/youth.md`).
 3.6 **Aposentadoria e "renascimento" de craques (estilo Brasfoot):** jogadores se aposentam por idade
    e declínio. Quando um craque de classe mundial do clube do jogador se aposenta, o jogador pode
    escolher trazê-lo de volta como um jovem de 17–19 anos na base do clube — mesmo nome/perfil, com
