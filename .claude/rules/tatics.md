@@ -92,3 +92,17 @@ Weights must sum to 1.0. They reflect role identity — a CB grows defending; a 
 - Formation screen lets users drag/click to assign players to slots.
 - `buildTeam()` in `gameState.ts` uses the lineup first; falls back to `pickForRole()` if a slot is unset or the player is unavailable.
 - Match-setup endpoint returns `myLineup` to the frontend.
+
+---
+
+## Formação livre e eixos (C2, versão 2.1)
+
+Spec: `docs/superpowers/specs/2026-10-01-formation-tactics-design.md`.
+
+- `TacticsSave.customFormation?: { slots: { x, y, role }[] }` + `formation: "custom"`; `TacticsSave.axesOverride?: Partial<TacticalAxes>`.
+- `src/Domain/formation/zones.ts`: grade de 5 faixas x 6 profundidades, tabela fixa zona -> posição, `validateCustomFormation` (1 GK, 10 de linha, >= 3 defensores, >= 1 atacante, uma vaga por zona), `customToFormation` (vira um `Formation` comum; ordem dos slots = ordem do `lineup`), `parseCustomFormation`/`parseAxesOverride` (PUT), `CUSTOM_PRESETS` (/lab e /test).
+- `formationForTactics(tactics)` (`matchFormations.ts`) substitui `formationForSimId` onde há tactics do jogador (partida simulada, `match-setup`, rotação).
+- Eixos efetivos: `effectiveAxes(style, override)`; `axesWithMentality(style, mentality, override?)`, `applyTeamTacticsConfig/applyTeamAttackConfig(team, style, mentality, override?)`. O **estilo** continua dirigindo as intenções.
+- UI: `FormationScreen` (arrastar via `useDragDrop`/`lineupDrop.ts`, botão "Editar formação", painel "Instruções da equipe"). `/lab`: `Variant.customFormation`/`axesOverride`; `/test`: formações `free:<preset>` e seletores de eixos.
+- quickSim e jogos simulados do jogador só usam a formação (papéis dos slots); os eixos só valem no motor completo, como antes.
+
