@@ -1,24 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  LayoutGrid,
-  DollarSign,
-  Users,
-  Trophy,
-  Shirt,
-  Search,
-  Newspaper,
-  BarChart3,
-  ShoppingBag,
-  TrendingUp,
-  ChevronRight,
-  Swords,
-  Dumbbell,
-  Moon,
-} from "lucide-react";
-import type { ComponentType, SVGProps } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { Icon } from "@/GameInterface/Icons";
+import { Icon, type IconName } from "@/GameInterface/Icons";
+import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
@@ -26,21 +10,21 @@ import type { LeagueData } from "@/types/playerTypes";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
 interface NavItem {
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  icon: IconName;
   labelKey: string;
   href: string;
 }
 
 const navItems: NavItem[] = [
-  { icon: Shirt,       labelKey: "nav.squad",       href: "/dashboard" },
-  { icon: LayoutGrid,  labelKey: "nav.formation",   href: "/formation" },
-  { icon: TrendingUp,  labelKey: "nav.development", href: "/development" },
-  { icon: DollarSign,  labelKey: "nav.finances",    href: "/finances" },
-  { icon: Users,       labelKey: "nav.staff",       href: "/staff" },
-  { icon: Trophy,      labelKey: "nav.leagues",     href: "/leagues" },
-  { icon: ShoppingBag, labelKey: "nav.transfers",   href: "/transfers" },
-  { icon: Search,      labelKey: "nav.scout",       href: "/scout" },
-  { icon: BarChart3,   labelKey: "nav.stats",       href: "/stats" },
+  { icon: "squad", labelKey: "nav.squad",       href: "/dashboard" },
+  { icon: "formation", labelKey: "nav.formation",   href: "/formation" },
+  { icon: "trend-up", labelKey: "nav.development", href: "/development" },
+  { icon: "finances", labelKey: "nav.finances",    href: "/finances" },
+  { icon: "staff", labelKey: "nav.staff",       href: "/staff" },
+  { icon: "trophy", labelKey: "nav.leagues",     href: "/leagues" },
+  { icon: "transfers", labelKey: "nav.transfers",   href: "/transfers" },
+  { icon: "search", labelKey: "nav.scout",       href: "/scout" },
+  { icon: "stats", labelKey: "nav.stats",       href: "/stats" },
 ];
 
 interface Props {
@@ -99,30 +83,23 @@ export function TopNavigation({
     nextEventLabel = t("nav.restDay");
   }
 
+  const linkClass =
+    "flex items-center gap-1.5 px-2 py-1 text-sm no-underline text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap";
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-border bg-card/90 backdrop-blur-md">
-      <nav className="h-full flex items-center justify-between gap-2 px-2 xl:px-4">
-        <a href="/dashboard" className="flex items-center gap-2 no-underline shrink-0">
-          <span className="text-xl 2xl:text-2xl font-black font-display tracking-tight">
-            <span className="text-foreground">FM</span>
-            <span className="text-primary glow-text">PROJECT</span>
-          </span>
+    <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background">
+      <nav className="h-full flex items-center justify-between gap-3 px-3 xl:px-5">
+        <a href="/dashboard" className="no-underline shrink-0">
+          <Wordmark size="sm" />
         </a>
 
-        <div className="flex items-center gap-0.5 xl:gap-1">
+        <div className="flex items-center gap-0.5 xl:gap-1 min-w-0">
           {navItems.map((item) => {
             const label = t(item.labelKey);
             return (
-              <a
-                key={item.labelKey}
-                href={item.href}
-                className="group flex flex-col items-center gap-1 px-2 py-1.5 xl:px-3 xl:py-2 2xl:px-4 rounded-lg transition-all hover:bg-primary/10 no-underline"
-                title={label}
-              >
-                <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="hidden lg:block text-[9px] 2xl:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
-                  {label}
-                </span>
+              <a key={item.labelKey} href={item.href} className={linkClass} title={label}>
+                <Icon name={item.icon} size={16} />
+                <span className="hidden xl:block">{label}</span>
               </a>
             );
           })}
@@ -130,18 +107,12 @@ export function TopNavigation({
             <button
               type="button"
               onClick={() => setReportOpen(true)}
-              className="group flex flex-col items-center gap-1 px-2 py-1.5 xl:px-3 xl:py-2 2xl:px-4 rounded-lg transition-all hover:bg-primary/10 cursor-pointer bg-transparent border-0"
+              className={`${linkClass} cursor-pointer bg-transparent border-0`}
               title={t("nav.report")}
               aria-label={t("nav.report")}
             >
-              <Icon
-                name="report"
-                size={20}
-                className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors"
-              />
-              <span className="hidden lg:block text-[9px] 2xl:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
-                {t("nav.report")}
-              </span>
+              <Icon name="report" size={16} />
+              <span className="hidden xl:block">{t("nav.report")}</span>
             </button>
           )}
         </div>
@@ -158,21 +129,11 @@ export function TopNavigation({
 
           {currentDate && (
             <div
-              className={`flex items-center gap-1.5 xl:gap-2 text-xs xl:text-sm font-bold px-2.5 py-1.5 xl:px-4 xl:py-2 rounded-lg border font-display tracking-wider whitespace-nowrap ${
-                isMatch
-                  ? "text-destructive bg-destructive/10 border-destructive/20"
-                  : isRest
-                    ? "text-indigo-400 bg-indigo-500/15 border-indigo-500/35"
-                    : "text-primary bg-primary/10 border-primary/20"
+              className={`flex items-center gap-1.5 text-sm whitespace-nowrap ${
+                isMatch ? "text-destructive" : "text-muted-foreground"
               }`}
             >
-              {isMatch ? (
-                <Swords className="w-4 h-4 shrink-0" />
-              ) : isRest ? (
-                <Moon className="w-4 h-4 shrink-0" />
-              ) : (
-                <Dumbbell className="w-4 h-4 shrink-0" />
-              )}
+              <Icon name={isMatch ? "match" : isRest ? "rest" : "training"} size={16} className="shrink-0" />
               {nextEventLabel}
             </div>
           )}
@@ -183,7 +144,7 @@ export function TopNavigation({
               onClick={onFastForward}
               disabled={advancing}
               title={t("fastForward.button")}
-              className="flex items-center gap-1.5 px-3 py-1.5 xl:px-4 xl:py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs xl:text-sm font-bold uppercase tracking-wider transition-all hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 px-2 py-1 bg-transparent border-0 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
             >
               <Icon name="fast-forward" size={16} />
               <span className="hidden xl:inline">{t("fastForward.button")}</span>
@@ -195,10 +156,10 @@ export function TopNavigation({
               type="button"
               onClick={onAdvanceDay}
               disabled={advancing}
-              className="flex items-center gap-1.5 px-3 py-1.5 xl:px-4 xl:py-2 rounded-lg bg-primary text-primary-foreground text-xs xl:text-sm font-bold uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed glow-primary cursor-pointer border-0 whitespace-nowrap shrink-0"
+              className="flex items-center gap-1 px-3.5 py-1.5 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0"
             >
               {advancing ? t("common.simulating") : t("common.continue")}
-              {!advancing && <ChevronRight className="w-4 h-4" />}
+              {!advancing && <Icon name="chevron-right" size={16} />}
             </button>
           )}
         </div>
