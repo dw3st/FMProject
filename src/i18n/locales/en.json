@@ -1044,7 +1044,9 @@
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
     "prizeAmount": "+ {{amount}}",
     "season": {
-      "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
+      "leaguePrizeSubject": "League prize: {{league}}",
+    "leaguePrizePreview": "The club received the {{league}} prize money for its final position.",
+    "negativeBalance": "The club's cash balance has gone negative: {{balance}}."
     },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
@@ -1606,6 +1608,23 @@
     "gateProjection": "Gate Projection",
     "noUpcomingHomeGames": "No upcoming home games.",
     "weeklyProjection": "Weekly Projection",
+    "ledgerText": {
+      "broadcasting": "Broadcasting revenue",
+      "commercial": "Weekly commercial revenue",
+      "wages": "Weekly wages",
+      "operational": "Operational costs",
+      "gate": "Gate: {{competition}}",
+      "leaguePrize": "{{competition}} prize: position {{position}}",
+      "cupStage": "{{competition}} prize: {{stage}}",
+      "cupRunnerUp": "{{competition}} prize: runner-up",
+      "contParticipation": "{{competition}} prize: participation",
+      "contGroupDraw": "{{competition}} prize: group draw",
+      "contGroupWin": "{{competition}} prize: group win",
+      "contStage": "{{competition}} prize: {{stage}}",
+      "contTitle": "{{competition}} prize: title",
+      "transferIn": "Transfer fee from {{club}}",
+      "transferOut": "Transfer fee paid to {{club}}"
+    },
     "seasonBasis": "Season to date"
   },
   "developmentScreen": {
