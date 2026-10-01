@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, XCircle } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import type { TransferRecord } from "@/types/transferTypes";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -10,12 +9,16 @@ import {
   MAIN_ROLE_BADGE_CLASSES,
   getMainRole,
 } from "@/GameInterface/positionHelpers";
+import { Icon, iconOf } from "@/GameInterface/Icons";
+
+const CheckCircle2 = iconOf("check-circle");
+const XCircle = iconOf("xcircle");
 
 type TransferStatus = TransferRecord["status"];
 
 const statusConfig: Record<TransferStatus, { icon: ComponentType<SVGProps<SVGSVGElement>>; labelKey: string; class: string }> = {
-  accepted: { icon: CheckCircle2, labelKey: "transfers.complete", class: "text-emerald-400 bg-emerald-500/20 border-emerald-500/30" },
-  rejected: { icon: XCircle,      labelKey: "transfers.rejected", class: "text-red-400 bg-red-500/20 border-red-500/30" },
+  accepted: { icon: CheckCircle2, labelKey: "transfers.complete", class: "text-chart-2 bg-chart-2/20 border-chart-2/30" },
+  rejected: { icon: XCircle,      labelKey: "transfers.rejected", class: "text-destructive bg-destructive/20 border-destructive/30" },
 };
 
 const KNOWN_REJECT_CODES = new Set(["squadDepth", "playerImportant", "offerTooLow", "clubRejected"]);
@@ -73,7 +76,7 @@ function ClubLogo({ club, squadId }: { club?: string; squadId?: string }) {
   const id = squadId ?? club;
   const src = id ? squadLogoUrl(id) : undefined;
   if (!src || failed) {
-    return <div className="w-7 h-7 rounded-md bg-muted/80 border border-border shrink-0" aria-hidden />;
+    return <div className="w-8 h-8 rounded-full bg-border shrink-0" aria-hidden />;
   }
   return (
     <img
@@ -138,7 +141,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
         gap={6}
         trigger={
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-help ${cfg.class}`}
+            className={`text-sm px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-help ${cfg.class}`}
           >
             <StatusIcon className="w-3 h-3" />
             {cfgLabel}
@@ -149,7 +152,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
         }
       />
     ) : (
-      <span className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1 ${cfg.class}`}>
+      <span className={`text-sm px-2 py-0.5 rounded-full border flex items-center gap-1 ${cfg.class}`}>
         <StatusIcon className="w-3 h-3" />
         {cfgLabel}
       </span>
@@ -161,7 +164,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span
-              className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider shrink-0 ${posBadgeClass}`}
+              className={`text-[13px] font-black px-1.5 py-0.5 rounded border uppercase tracking-[0.08em] shrink-0 ${posBadgeClass}`}
               title={hasPos ? rawPos : undefined}
             >
               {mainRole != null ? MAIN_ROLE_ABBR[mainRole] : "—"}
@@ -176,9 +179,9 @@ export function TransferRow({ record }: { record: TransferRecord }) {
             ) : (
               <span className="font-bold text-foreground min-w-0">{record.playerName}</span>
             )}
-            <span className="text-xs text-muted-foreground">{record.playerAge}y</span>
+            <span className="text-sm text-muted-foreground">{record.playerAge}y</span>
           </div>
-          <p className="text-xs text-muted-foreground m-0 leading-snug">
+          <p className="text-sm text-muted-foreground m-0 leading-snug">
             <ClubLink league={record.fromLeagueSlug} club={record.fromClubSlug} squadId={record.fromSquadId} name={record.fromSquadName} />
             <span className="text-muted-foreground/80 mx-0.5">→</span>
             <ClubLink league={record.toLeagueSlug} club={record.toClubSlug} squadId={record.toSquadId} name={record.toSquadName} />
@@ -188,7 +191,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
           <p className="font-black font-display text-primary m-0">{formatTransferFee(record.fee)}</p>
           <div className="flex items-center gap-1.5 mt-1 justify-end flex-wrap">
             {statusBadge}
-            <span className="text-[10px] text-muted-foreground">{formatTransferDate(record.date)}</span>
+            <span className="text-sm text-muted-foreground">{formatTransferDate(record.date)}</span>
           </div>
         </div>
       </div>

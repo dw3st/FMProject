@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Trophy, X, Star, ArrowRightLeft } from "lucide-react";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
@@ -29,9 +28,9 @@ const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, C
 const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
 
 const resultColors: Record<string, string> = {
-  W: "bg-emerald-500 text-white",
+  W: "bg-chart-2 text-white",
   D: "bg-zinc-600 text-white",
-  L: "bg-red-500 text-white",
+  L: "bg-destructive text-white",
 };
 
 const ZONE_BORDER: Record<LeagueZoneColor, string> = {
@@ -44,12 +43,12 @@ const ZONE_BORDER: Record<LeagueZoneColor, string> = {
 };
 
 const ZONE_DOT: Record<LeagueZoneColor, string> = {
-  blue: "bg-blue-500",
-  orange: "bg-orange-500",
-  cyan: "bg-cyan-500",
-  green: "bg-green-500",
-  red: "bg-red-500",
-  purple: "bg-purple-500",
+  blue: "bg-chart-3",
+  orange: "bg-chart-4",
+  cyan: "bg-chart-3",
+  green: "bg-chart-2",
+  red: "bg-destructive",
+  purple: "bg-primary",
 };
 
 function getZone(rank: number, total: number, zones: LeagueZone[]): LeagueZone | null {
@@ -75,8 +74,8 @@ function StandingsTable({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-xl overflow-hidden border-glow">
-      <div className="grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-3 bg-secondary/30 border-b border-border text-xs font-bold uppercase tracking-wider text-muted-foreground">
+    <div className="card-arcade rounded-md overflow-hidden">
+      <div className="grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-3 bg-secondary/30 border-b border-border text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
         <div className="text-center">{t("leagues.rank")}</div>
         <div>{t("leagues.club")}</div>
         <div className="text-center">{t("leagues.matches")}</div>
@@ -110,7 +109,7 @@ function StandingsTable({
                   logoUrl={squadLogoUrl(row.squadId)}
                   primaryColor={row.colors[0]}
                   secondaryColor={row.colors[1]}
-                  className="w-6 h-6 rounded shrink-0"
+                  className="w-8 h-8 rounded-full shrink-0"
                   imgClassName="w-full h-full object-contain"
                 />
                 <span className="font-semibold text-foreground">{row.name}</span>
@@ -122,17 +121,17 @@ function StandingsTable({
               <div className="text-center text-muted-foreground">{row.l}</div>
               <div className="text-center text-muted-foreground">{row.gf}</div>
               <div className="text-center text-muted-foreground">{row.ga}</div>
-              <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-red-400"}`}>
+              <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-destructive"}`}>
                 {row.gd > 0 ? `+${row.gd}` : row.gd}
               </div>
-              <div className="text-center font-black font-display text-primary glow-text">
+              <div className="text-center font-black font-display text-primary">
                 {row.pts}
               </div>
               <div className="flex items-center justify-center gap-1">
                 {row.form.map((result, i) => (
                   <span
                     key={i}
-                    className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${resultColors[result]}`}
+                    className={`w-5 h-5 rounded text-sm font-bold flex items-center justify-center ${resultColors[result]}`}
                   >
                     {result}
                   </span>
@@ -200,21 +199,21 @@ function FixturesPanel({
   return (
     <div className="space-y-4">
       {/* Round navigator */}
-      <div className="flex items-center justify-between card-arcade rounded-xl px-4 py-3">
+      <div className="flex items-center justify-between card-arcade rounded-md px-4 py-3">
         <button
           onClick={() => setRound(r => Math.max(1, r - 1))}
           disabled={round <= 1}
           className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-30 cursor-pointer bg-transparent border-0"
         >
-          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+          <Icon name="chevron-left" className="w-5 h-5 text-muted-foreground" />
         </button>
 
         <div className="text-center">
-          <p className="text-sm font-black font-display uppercase tracking-wider text-foreground">
+          <p className="text-sm font-bold font-display uppercase tracking-[0.08em] text-foreground">
             {t("leagues.matchday", { round })}
           </p>
           {roundDate && (
-            <p className="text-xs text-muted-foreground mt-0.5">{roundDate}</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{roundDate}</p>
           )}
         </div>
 
@@ -223,12 +222,12 @@ function FixturesPanel({
           disabled={round >= maxRound}
           className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-30 cursor-pointer bg-transparent border-0"
         >
-          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          <Icon name="chevron-right" className="w-5 h-5 text-muted-foreground" />
         </button>
       </div>
 
       {/* Match list */}
-      <div className="card-arcade rounded-xl overflow-hidden border-glow divide-y divide-border/50">
+      <div className="card-arcade rounded-md overflow-hidden divide-y divide-border/50">
         {roundFixtures.map((f, i) => {
           const isPlayed = f.played && !!f.result;
           return (
@@ -248,7 +247,7 @@ function FixturesPanel({
                   logoUrl={squadLogoUrl(f.home)}
                   primaryColor={teamColors(f.home)[0]}
                   secondaryColor={teamColors(f.home)[1]}
-                  className="w-6 h-6 rounded shrink-0"
+                  className="w-8 h-8 rounded-full shrink-0"
                   imgClassName="w-full h-full object-contain"
                 />
               </div>
@@ -260,7 +259,7 @@ function FixturesPanel({
                     {f.result!.home} – {f.result!.away}
                   </span>
                 ) : (
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t("leagues.vs")}</span>
+                  <span className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">{t("leagues.vs")}</span>
                 )}
               </div>
 
@@ -270,7 +269,7 @@ function FixturesPanel({
                   logoUrl={squadLogoUrl(f.away)}
                   primaryColor={teamColors(f.away)[0]}
                   secondaryColor={teamColors(f.away)[1]}
-                  className="w-6 h-6 rounded shrink-0"
+                  className="w-8 h-8 rounded-full shrink-0"
                   imgClassName="w-full h-full object-contain"
                 />
                 <span className="font-semibold text-foreground text-sm">{teamName(f.away)}</span>
@@ -290,13 +289,13 @@ function StatBar({ homeVal, awayVal, label }: { homeVal: number; awayVal: number
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
       <div className="flex items-center justify-end gap-2">
         <span className="text-sm font-black text-foreground">{homeVal}</span>
-        <div className="flex-1 h-2 bg-muted/20 rounded-full overflow-hidden max-w-[120px]">
+        <div className="flex-1 h-2 bg-border rounded-full overflow-hidden max-w-[120px]">
           <div className="h-full bg-primary rounded-full ml-auto" style={{ width: `${homePct}%` }} />
         </div>
       </div>
-      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground w-28 text-center shrink-0">{label}</span>
+      <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground w-28 text-center shrink-0 font-display">{label}</span>
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-2 bg-muted/20 rounded-full overflow-hidden max-w-[120px]">
+        <div className="flex-1 h-2 bg-border rounded-full overflow-hidden max-w-[120px]">
           <div className="h-full bg-chart-2 rounded-full" style={{ width: `${100 - homePct}%` }} />
         </div>
         <span className="text-sm font-black text-foreground">{awayVal}</span>
@@ -352,9 +351,9 @@ function MatchStatsModal({
   function PlayerTable({ players, side }: { players: PlayerRow[]; side: "home" | "away" }) {
     return (
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <tr className="border-b border-border text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
               <th className={`py-2 font-bold ${side === "away" ? "text-right pr-3" : "text-left pl-3"}`}>{t("leagues.playerTable.player")}</th>
               <th className="px-2 text-center">{t("leagues.playerTable.rating")}</th>
               <th className="px-2 text-center">{t("leagues.playerTable.goals")}</th>
@@ -372,12 +371,12 @@ function MatchStatsModal({
                 <td className="px-2 text-center">
                   {p.rating > 0 ? (
                     <span className={`inline-flex items-center gap-0.5 font-black ${ratingTextClass10(p.rating)}`}>
-                      <Star className="w-2.5 h-2.5 fill-current" />{p.rating.toFixed(1)}
+                      <Icon name="star" className="w-2.5 h-2.5 fill-current" />{p.rating.toFixed(1)}
                     </span>
                   ) : <span className="text-muted-foreground/40">—</span>}
                 </td>
                 <td className="px-2 text-center font-bold text-foreground">{p.goals > 0 ? p.goals : "—"}</td>
-                <td className="px-2 text-center font-bold text-emerald-400">{p.assists > 0 ? p.assists : "—"}</td>
+                <td className="px-2 text-center font-bold text-chart-2">{p.assists > 0 ? p.assists : "—"}</td>
                 <td className="px-2 text-center text-muted-foreground">{p.shots}</td>
                 <td className="px-2 text-center text-muted-foreground">{passAcc(p.passesCompleted, p.passesAttempted)}</td>
                 <td className="px-2 text-center text-muted-foreground">{p.tackles}</td>
@@ -398,9 +397,9 @@ function MatchStatsModal({
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer bg-transparent border-0"
           >
-            <X className="w-4 h-4 text-muted-foreground" />
+            <Icon name="close" className="w-4 h-4 text-muted-foreground" />
           </button>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 text-center">
+          <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3 text-center font-display">
             {t("leagues.matchday", { round: event.round })}
           </p>
           <div className="flex items-center justify-center gap-6">
@@ -410,12 +409,12 @@ function MatchStatsModal({
                 logoUrl={squadLogoUrl(event.home)}
                 primaryColor={teamColors(event.home)[0]}
                 secondaryColor={teamColors(event.home)[1]}
-                className="w-8 h-8 rounded shrink-0"
+                className="w-8 h-8 rounded-full shrink-0"
                 imgClassName="w-full h-full object-contain"
               />
             </div>
             <div className="text-center px-4">
-              <span className="font-black text-3xl font-display text-foreground tracking-wider">
+              <span className="font-black text-3xl font-display text-foreground tracking-[0.08em]">
                 {event.score.home} – {event.score.away}
               </span>
             </div>
@@ -424,14 +423,14 @@ function MatchStatsModal({
                 logoUrl={squadLogoUrl(event.away)}
                 primaryColor={teamColors(event.away)[0]}
                 secondaryColor={teamColors(event.away)[1]}
-                className="w-8 h-8 rounded shrink-0"
+                className="w-8 h-8 rounded-full shrink-0"
                 imgClassName="w-full h-full object-contain"
               />
               <span className="font-black text-lg text-foreground">{awayName}</span>
             </div>
           </div>
           {event.scorers.length > 0 && (
-            <p className="text-center text-xs text-muted-foreground mt-2">
+            <p className="text-center text-sm text-muted-foreground mt-2">
               {event.scorers.map(s => `${s.playerName}${s.goals > 1 ? ` ×${s.goals}` : ""}`).join(" · ")}
             </p>
           )}
@@ -448,15 +447,15 @@ function MatchStatsModal({
 
           {/* Player stats */}
           {event.compact ? (
-            <p className="text-xs text-white/40 m-0">{t("leagues.quickSimNoDetail")}</p>
+            <p className="text-sm text-muted-foreground m-0">{t("leagues.quickSimNoDetail")}</p>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 pl-3">{homeName}</p>
+                <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2 pl-3 font-display">{homeName}</p>
                 <PlayerTable players={homePlayers} side="home" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 pl-3">{awayName}</p>
+                <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2 pl-3 font-display">{awayName}</p>
                 <PlayerTable players={awayPlayers} side="away" />
               </div>
             </div>
@@ -466,24 +465,24 @@ function MatchStatsModal({
           {event.substitutions && event.substitutions.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <ArrowRightLeft className="w-3 h-3 text-muted-foreground" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground m-0">{t("leagues.substitutions")}</p>
+                <Icon name="arrow-right-left" className="w-3 h-3 text-muted-foreground" />
+                <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground m-0 font-display">{t("leagues.substitutions")}</p>
               </div>
               <div className="space-y-1">
                 {event.substitutions
                   .slice()
                   .sort((a, b) => a.matchMinute - b.matchMinute)
                   .map((sub, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                      <span className="text-[10px] font-black tabular-nums text-muted-foreground w-6 shrink-0">
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className="text-sm font-black tabular-nums text-muted-foreground w-6 shrink-0">
                         {sub.matchMinute}&apos;
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground shrink-0 w-14 truncate">
+                      <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0 w-14 truncate">
                         {sub.team === "home" ? homeName : awayName}
                       </span>
-                      <span className="text-red-400 font-medium truncate flex-1">{sub.playerOutName}</span>
-                      <ArrowRightLeft className="w-2.5 h-2.5 text-muted-foreground/60 shrink-0" />
-                      <span className="text-emerald-400 font-medium truncate flex-1 text-right">{sub.playerInName}</span>
+                      <span className="text-destructive font-medium truncate flex-1">{sub.playerOutName}</span>
+                      <Icon name="arrow-right-left" className="w-2.5 h-2.5 text-muted-foreground/60 shrink-0" />
+                      <span className="text-chart-2 font-medium truncate flex-1 text-right">{sub.playerInName}</span>
                     </div>
                   ))}
               </div>
@@ -774,7 +773,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
             ) : undefined
           }
         >
-          {t("leagues.title")} <span className="text-primary glow-text">{t("leagues.table")}</span>
+          {t("leagues.title")} <span className="text-primary">{t("leagues.table")}</span>
         </PageHeadline>
 
         {leagues.length > 0 && (
@@ -785,7 +784,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               value={activeSlug}
               onChange={setActiveSlug}
               options={leagueOptions}
-              leadingIcon={<Trophy className="w-4 h-4 text-primary shrink-0" aria-hidden />}
+              leadingIcon={<Icon name="trophy" className="w-4 h-4 text-primary shrink-0" aria-hidden />}
               placeholder={t("leagues.searchLeaguesPlaceholder")}
               className="w-full max-w-sm"
             />
@@ -801,13 +800,13 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               <Icon
                 name={isFollowed ? "star-filled" : "star"}
                 size={18}
-                className={isFollowed ? "text-amber-400" : "text-muted-foreground"}
+                className={isFollowed ? "text-chart-4" : "text-muted-foreground"}
               />
             </button>
             {simMode === "fast" && (
               <span
                 title={t("leagues.simulatedBadgeTooltip")}
-                className="shrink-0 inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400"
+                className="shrink-0 inline-flex items-center gap-1 rounded-full border border-chart-4/40 bg-chart-4/10 px-2.5 py-1.5 text-sm font-bold text-chart-4"
               >
                 {t("leagues.simulatedBadge")}
               </span>
@@ -822,7 +821,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               <button
                 type="button"
                 onClick={() => setTab("table")}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
+                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 ${
                   tab === "table"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground bg-transparent"
@@ -834,7 +833,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 type="button"
                 onClick={() => setTab("fixtures")}
                 disabled={!hasFixtures}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                   tab === "fixtures"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground bg-transparent"
@@ -846,7 +845,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 type="button"
                 onClick={() => setTab("finances")}
                 disabled={!session}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                   tab === "finances"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground bg-transparent"
@@ -859,7 +858,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   type="button"
                   onClick={() => setTab("cup")}
                   disabled={!session}
-                  className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                     tab === "cup"
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground bg-transparent"
@@ -872,7 +871,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 type="button"
                 onClick={() => setTab("continental")}
                 disabled={!session}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                   tab === "continental"
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground bg-transparent"
@@ -895,7 +894,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 )}
 
                 {(active?.zones?.length ?? 0) > 0 && (
-                  <div className="flex items-center gap-6 text-xs text-muted-foreground flex-wrap">
+                  <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                     {active!.zones!.map(z => (
                       <div key={z.id} className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${ZONE_DOT[z.color]}`} />
@@ -914,7 +913,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                     rows={financeRows}
                     onClickSquad={handleClickSquad}
                   />
-                  <p className="text-xs text-muted-foreground m-0">{t("leagues.finances.note")}</p>
+                  <p className="text-sm text-muted-foreground m-0">{t("leagues.finances.note")}</p>
                 </div>
               )
             ) : tab === "cup" ? (
@@ -938,7 +937,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                         setContinentalSlug(slug);
                         setContinentalSlugTouched(true);
                       }}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border-0 ${
+                      className={`px-3 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 ${
                         continentalSlug === slug
                           ? "bg-card text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground bg-transparent"
