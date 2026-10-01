@@ -598,7 +598,50 @@
       "Defender": "Defensores",
       "Midfielder": "Meio-campistas",
       "Forward": "Atacantes"
-    }
+    },
+    "detailed": {
+      "GK": "Goleiro",
+      "CB": "Zagueiro",
+      "LB": "Lateral esquerdo",
+      "RB": "Lateral direito",
+      "LWB": "Ala esquerdo",
+      "RWB": "Ala direito",
+      "CDM": "Volante",
+      "CM": "Meio-campista",
+      "CAM": "Meia atacante",
+      "LM": "Meia esquerdo",
+      "RM": "Meia direito",
+      "LW": "Ponta esquerda",
+      "RW": "Ponta direita",
+      "ST": "Centroavante"
+    },
+    "detailedAbbr": {
+      "GK": "GOL",
+      "CB": "ZAG",
+      "LB": "LE",
+      "RB": "LD",
+      "LWB": "ALE",
+      "RWB": "ALD",
+      "CDM": "VOL",
+      "CM": "MC",
+      "CAM": "MEI",
+      "LM": "ME",
+      "RM": "MD",
+      "LW": "PE",
+      "RW": "PD",
+      "ST": "CA"
+    },
+    "aptitude": {
+      "natural": "Natural",
+      "apt": "Apto",
+      "training": "Precisa treinar",
+      "unsuitable": "Inadequado"
+    },
+    "aptitudeTitle": "Posições",
+    "legendNatural": "Natural",
+    "legendApt": "Apto",
+    "legendTraining": "Precisa treinar",
+    "atSlot": "{{aptitude}} como {{role}}"
   },
   "stats": {
     "matchStatistics": "Estatísticas da Partida",

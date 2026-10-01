@@ -5,7 +5,7 @@ import type { Squad } from "@/types/playerTypes";
 import { comparePositions } from "@/types/positionOrder";
 import { toDisplayPlayer, capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { getPositionColor, getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -133,10 +133,10 @@ export function SquadRosterTable({
             }`}
           >
             <div
-              className={`px-3 py-2.5 font-black text-[11px] ${getPositionColor(player.pos)} w-24 min-w-[4.5rem]`}
+              className={`px-3 py-2.5 font-black text-[11px] ${player.natural ? getDetailedPositionColor(player.natural) : getPositionColor(player.pos)} w-24 min-w-[4.5rem]`}
               title={player.positions.join(", ")}
             >
-              {MAIN_ROLE_ABBR[getMainRole(player.pos)]}
+              {player.natural ? t(`roles.detailedAbbr.${player.natural}` as never) : MAIN_ROLE_ABBR[getMainRole(player.pos)]}
             </div>
             <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
               <a

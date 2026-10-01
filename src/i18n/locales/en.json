@@ -598,7 +598,50 @@
       "Defender": "Defenders",
       "Midfielder": "Midfielders",
       "Forward": "Forwards"
-    }
+    },
+    "detailed": {
+      "GK": "Goalkeeper",
+      "CB": "Centre-back",
+      "LB": "Left-back",
+      "RB": "Right-back",
+      "LWB": "Left wing-back",
+      "RWB": "Right wing-back",
+      "CDM": "Defensive midfielder",
+      "CM": "Central midfielder",
+      "CAM": "Attacking midfielder",
+      "LM": "Left midfielder",
+      "RM": "Right midfielder",
+      "LW": "Left winger",
+      "RW": "Right winger",
+      "ST": "Striker"
+    },
+    "detailedAbbr": {
+      "GK": "GK",
+      "CB": "CB",
+      "LB": "LB",
+      "RB": "RB",
+      "LWB": "LWB",
+      "RWB": "RWB",
+      "CDM": "CDM",
+      "CM": "CM",
+      "CAM": "CAM",
+      "LM": "LM",
+      "RM": "RM",
+      "LW": "LW",
+      "RW": "RW",
+      "ST": "ST"
+    },
+    "aptitude": {
+      "natural": "Natural",
+      "apt": "Suited",
+      "training": "Needs training",
+      "unsuitable": "Unsuitable"
+    },
+    "aptitudeTitle": "Positions",
+    "legendNatural": "Natural",
+    "legendApt": "Suited",
+    "legendTraining": "Needs training",
+    "atSlot": "{{aptitude}} at {{role}}"
   },
   "stats": {
     "matchStatistics": "Match Statistics",

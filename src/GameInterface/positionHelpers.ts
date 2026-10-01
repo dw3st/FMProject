@@ -78,6 +78,22 @@ export function getPositionColor(pos: string): string {
   }
 }
 
+/**
+ * Colour per detailed role (#30): shades inside the colour of the role's line. Defenders walk the
+ * blue scale (centre-backs darkest, wing-backs lightest); the other lines fade their line colour.
+ */
+const DETAILED_COLOR: Record<string, string> = {
+  GK: "text-chart-4",
+  CB: "text-blue-500", LB: "text-blue-400", RB: "text-blue-400", LWB: "text-blue-300", RWB: "text-blue-300",
+  CDM: "text-primary", CM: "text-primary/85", CAM: "text-primary/70", LM: "text-primary/60", RM: "text-primary/60",
+  ST: "text-destructive", LW: "text-destructive/80", RW: "text-destructive/80",
+};
+
+/** Tailwind colour class for a detailed role; falls back to the line colour for main/unknown codes. */
+export function getDetailedPositionColor(role: string): string {
+  return DETAILED_COLOR[role] ?? getPositionColor(role);
+}
+
 /** Group label used to bucket players in squad / scout views. */
 export function getPositionGroup(pos: string): string {
   const main = getMainRole(pos);
