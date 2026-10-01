@@ -1,5 +1,10 @@
 @import "tailwindcss";
+@import "@fontsource/barlow-condensed/600.css";
 @import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/500.css";
+@import "@fontsource/barlow/600.css";
+@import "@fontsource/barlow/700.css";
 
 :root {
   --team-hue: 262;
@@ -70,8 +75,8 @@
 [data-team="cyan"] { --team-hue: 195; }
 
 @theme inline {
-  --font-sans: system-ui, -apple-system, sans-serif;
-  --font-display: system-ui, -apple-system, sans-serif;
+  --font-sans: "Barlow", system-ui, -apple-system, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", system-ui, sans-serif;
   --font-wordmark: "Barlow Condensed", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", monospace;
   --color-background: var(--background);
@@ -117,7 +122,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground min-w-[320px] min-h-screen m-0;
+    @apply bg-background text-foreground font-sans min-w-[320px] min-h-screen m-0;
+  }
+  h1, h2, h3 {
+    @apply font-display uppercase tracking-wide;
   }
 }
 

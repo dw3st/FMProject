@@ -48,3 +48,11 @@ To swap icon libraries: change only `Icons.tsx` — no other file needs to chang
 ## Imports
 - Use relative imports within `src/` (the `@` alias is configured but not enforced)
 - CSS imported once in `App.tsx` via `import "./index.css"`
+
+## Tipografia
+- Duas fontes, embutidas via `@fontsource` (nunca Google Fonts), definidas em `src/index.css`:
+  **Barlow** (400/500/600/700, `font-sans`, padrão do `body`) para texto e UI; **Barlow Condensed**
+  (600/700, `font-display`) para títulos, painéis e números de destaque. `h1`/`h2`/`h3` já saem em
+  `font-display` uppercase (`@layer base`).
+- Não usar `font-family` inline nem `font-mono` decorativo. `font-mono` só em telas de debug
+  (`/test`, `DebugPanel`, heatmap) onde o dado é tabular de verdade; números alinhados: `tabular-nums`.
