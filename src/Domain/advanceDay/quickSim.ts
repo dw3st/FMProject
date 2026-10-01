@@ -8,6 +8,7 @@
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MatchInjury, MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import { positionFactor } from "@/Domain/positions/positionAptitude";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 import { resolvePenaltyShootout, type PenaltySide } from "@/GameEngine/Infrastructure/PenaltyShootout";
@@ -78,6 +79,13 @@ const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.le
 interface XIPlayer {
   p: RosterPlayer;
   role: string;
+  /** Out-of-position multiplier on the player's attributes in this slot (`POSITION_PENALTY`). */
+  k: number;
+}
+
+function xiPlayer(p: RosterPlayer, slotRole?: string): XIPlayer {
+  const role = resolveRole(p, slotRole);
+  return { p, role, k: positionFactor(p, role) };
 }
 
 /** Slot role if provided and known to ROLE_GROUP, else the roster's `positions[0]`. */
@@ -128,17 +136,17 @@ function paceOf(p: RosterPlayer): number {
 
 function linePace(players: XIPlayer[], fallback: XIPlayer[]): number {
   const pool = players.length ? players : fallback;
-  return avg(pool.map(({ p }) => paceOf(p)));
+  return avg(pool.map(({ p, k }) => paceOf(p) * k));
 }
 
 function lineValue(players: XIPlayer[], keys: readonly string[], fallback: XIPlayer[]): number {
   const pool = players.length ? players : fallback;
-  return avg(pool.map(({ p }) => avg(keys.map((k) => stat(p, k))) * fitnessFactor(p))) + C.STRENGTH_FLOOR;
+  return avg(pool.map(({ p, k }) => avg(keys.map((key) => stat(p, key))) * fitnessFactor(p) * k)) + C.STRENGTH_FLOOR;
 }
 
 /** `roles`, when given, is aligned with `players` (the slot role each one plays). */
 export function teamStrength(players: RosterPlayer[], roles?: string[]): TeamStrength {
-  return strengthOf(players.map((p, i) => ({ p, role: resolveRole(p, roles?.[i]) })));
+  return strengthOf(players.map((p, i) => xiPlayer(p, roles?.[i])));
 }
 
 function strengthOf(xi: XIPlayer[]): TeamStrength {
@@ -265,7 +273,7 @@ function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[]
   const xi: XIPlayer[] = [];
   lineup.forEach((id, i) => {
     const p = id ? byId.get(id) : undefined;
-    if (p && !xi.some((x) => x.p === p)) xi.push({ p, role: resolveRole(p, roles?.[i]) });
+    if (p && !xi.some((x) => x.p === p)) xi.push(xiPlayer(p, roles?.[i]));
   });
   return xi;
 }
