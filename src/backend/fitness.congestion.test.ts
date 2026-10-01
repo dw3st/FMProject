@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
+import { INJURY } from "@/Domain/injury/injuryConfig";
 import { addOneDay } from "@/Domain/advanceDay/date";
 import {
   autoLineupDefaultFormation,
@@ -32,6 +33,15 @@ describe("fitness/load model under fixture congestion", () => {
   });
 
   test("fitness drops and load rises match to match, and a starter is rested by the third match", async () => {
+    // Injury draws (unseeded Math.random, interleaved across the day's async work) are the only
+    // random input that changes this scenario: an injured starter is replaced by a fresh reserve
+    // in BOTH selectors, so nobody is left to rest (issue #35). This test is about fitness/load,
+    // so injuries are switched off for its duration; injuries have their own tests.
+    const savedInjury = { base: INJURY.BASE, contact: INJURY.CONTACT_BASE, training: INJURY.HEAVY_TRAINING_CHANCE };
+    INJURY.BASE = 0;
+    INJURY.CONTACT_BASE = 0;
+    INJURY.HEAVY_TRAINING_CHANCE = 0;
+    try {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league",
       leagueName: "Premier League",
@@ -138,5 +148,10 @@ describe("fitness/load model under fixture congestion", () => {
     expect(restedSomeone).toBe(true);
     // Same for a human club with the assistant on: at least one starter rested by match 3.
     expect(before3.assistantRested).toBeGreaterThanOrEqual(1);
+    } finally {
+      INJURY.BASE = savedInjury.base;
+      INJURY.CONTACT_BASE = savedInjury.contact;
+      INJURY.HEAVY_TRAINING_CHANCE = savedInjury.training;
+    }
   }, 90_000);
 });

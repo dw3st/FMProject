@@ -8,7 +8,7 @@ import { normName, unitHash } from "@/../scripts/openfootball/ids";
 import { coachName } from "@/../scripts/openfootball/derive";
 import { buildPyramid, pyramidGroupOf, zonesFromPyramid, type BoundaryOverrides } from "@/../scripts/openfootball/pyramid";
 import { MAX_SQUAD, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
-import { normalizeNationality } from "@/../scripts/espn/normalize";
+import { fixNameCasing, normalizeNationality } from "@/../scripts/espn/normalize";
 import type { LeagueEntry, SquadFile, StandingRow } from "@/../scripts/world/types";
 import { tierIncomeRatio } from "@/Domain/advanceDay/tierFinances";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
@@ -478,8 +478,8 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     const age = a.age ?? 25;
     const stats = estimateStats(id, age, b, shift);
     const nationality = normalizeNationality(a.citizenship, worldNationalities);
-    const draft = makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality, stats }, 0);
-    built.get(squadId)!.players.push(makePlayer({ id, name: a.displayName, fullName: a.fullName, age, role: line, squadId, nationality, stats }, opts.overall(draft)));
+    const draft = makePlayer({ id, name: fixNameCasing(a.displayName), fullName: a.fullName ? fixNameCasing(a.fullName) : a.fullName, age, role: line, squadId, nationality, stats }, 0);
+    built.get(squadId)!.players.push(makePlayer({ id, name: fixNameCasing(a.displayName), fullName: a.fullName ? fixNameCasing(a.fullName) : a.fullName, age, role: line, squadId, nationality, stats }, opts.overall(draft)));
   }
 
   // ── New club metadata: a brand-new `es_` club is, by definition, an arrival from outside our
