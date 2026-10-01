@@ -563,6 +563,8 @@ export function MatchScreen() {
         score={goalFlash?.score ?? gameState.score}
         kitColorA={matchKitColors.teamA}
         kitColorB={matchKitColors.teamB}
+        nameA={teamAWithCrest?.name}
+        nameB={teamBWithCrest?.name}
       />
       {injuryNotice && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border border-destructive/40 rounded-lg px-4 py-2 text-sm text-foreground">
@@ -685,6 +687,7 @@ export function MatchScreen() {
       <main className="flex-1 flex overflow-hidden min-h-0">
         <TeamPanel
           team="A"
+          teamName={teamAWithCrest?.name}
           accentColor={matchKitColors.teamA}
           players={teamA}
           score={score.A}
@@ -735,6 +738,8 @@ export function MatchScreen() {
               substitutions={gameState.substitutions ?? []}
               teamColorA={matchKitColors.teamA}
               teamColorB={matchKitColors.teamB}
+              teamNameA={teamAWithCrest?.name}
+              teamNameB={teamBWithCrest?.name}
             />
           )}
           {DebugPanel && debug && (
@@ -746,6 +751,7 @@ export function MatchScreen() {
 
         <TeamPanel
           team="B"
+          teamName={teamBWithCrest?.name}
           accentColor={matchKitColors.teamB}
           players={teamB}
           score={score.B}
