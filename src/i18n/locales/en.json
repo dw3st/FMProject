@@ -1704,7 +1704,7 @@
     "ok": "OK"
   },
   "players": {
-    "star": "Current legend"
+    "star": {"gold":"World top 25","blue":"Great form","green":"Prodigy"}
   },
   "fitness": {
     "highLoadTooltip": "High load: recovers slowly and tires faster"

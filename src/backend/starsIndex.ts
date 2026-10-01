@@ -1,10 +1,10 @@
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
-import { topPlayerIds } from "@/Domain/world/stars";
+import { computeStars, type StarKind } from "@/Domain/world/stars";
 
 interface StarsIndex {
   key: string;
-  playerIds: string[];
+  stars: Record<string, StarKind>;
 }
 
 /** One entry per save being played; a save's world doesn't change until its data version bumps. */
@@ -24,7 +24,7 @@ let nextSeq = 0;
 
 async function buildStarsIndex(saveId: string, key: string, seq: number): Promise<StarsIndex> {
   const squads = await saveService.getAllSquads(saveId);
-  const entry: StarsIndex = { key, playerIds: [...topPlayerIds(squads)] };
+  const entry: StarsIndex = { key, stars: computeStars(squads) };
   // Only commit if nothing newer has landed in the meantime.
   if (seq >= (committedSeq.get(saveId) ?? -1)) {
     cache.set(saveId, entry);
@@ -34,24 +34,24 @@ async function buildStarsIndex(saveId: string, key: string, seq: number): Promis
 }
 
 /**
- * Ids of the top-50 (by `Player.computeOverallAvg`) players in the save's world, cached per save
+ * Star kind per player (gold/blue/green, see `computeStars`) in the save's world, cached per save
  * and invalidated when the save's data (any squad/market write) or current date changes.
  */
-export async function getStarPlayerIds(saveId: string): Promise<string[] | null> {
+export async function getStarPlayers(saveId: string): Promise<Record<string, StarKind> | null> {
   const meta = await saveService.getMeta(saveId);
   if (!meta) return null;
   const key = `${meta.currentDate ?? ""}#${getSaveDataVersion(saveId)}`;
   const hit = cache.get(saveId);
-  if (hit && hit.key === key) return hit.playerIds;
+  if (hit && hit.key === key) return hit.stars;
 
   const flightKey = `${saveId}#${key}`;
   const pending = inFlight.get(flightKey);
-  if (pending) return (await pending).playerIds;
+  if (pending) return (await pending).stars;
 
   const seq = nextSeq++;
   const promise = buildStarsIndex(saveId, key, seq).finally(() => {
     inFlight.delete(flightKey);
   });
   inFlight.set(flightKey, promise);
-  return (await promise).playerIds;
+  return (await promise).stars;
 }

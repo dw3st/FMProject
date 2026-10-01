@@ -147,7 +147,7 @@ export function ScoutTable({
                 ) : (
                   <span className="text-foreground truncate">{player.name}</span>
                 )}
-                {starIds.has(player.id) && <StarBadge />}
+                {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
               </div>
               <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
               <div className="px-3 py-2.5 w-32 truncate font-medium">

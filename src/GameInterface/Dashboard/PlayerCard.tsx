@@ -98,7 +98,7 @@ export function PlayerCard({
   const { t } = useTranslation();
   const { session, currentDate } = useGameSave();
   const starIds = useStarPlayers(session?.saveId, currentDate);
-  const isStar = starIds.has(player.id);
+  const starKind = starIds.get(player.id);
   const mainRole = getMainRole(player.pos);
   const posColor = MAIN_ROLE_BADGE_CLASSES[mainRole] ?? "bg-muted/20 text-muted-foreground border-border";
 
@@ -137,7 +137,7 @@ export function PlayerCard({
           <div className="flex-1 min-w-0 text-center sm:text-left">
             <h2 className="text-2xl md:text-3xl font-black text-foreground font-display tracking-tight m-0 leading-tight inline-flex items-center gap-2">
               {player.name}
-              {isStar && <StarBadge className="mt-0.5" />}
+              {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
@@ -224,7 +224,7 @@ export function PlayerCard({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-foreground truncate leading-tight flex items-center gap-1.5">
             <span className="truncate">{player.name}</span>
-            {isStar && <StarBadge />}
+            {starKind && <StarBadge kind={starKind} />}
           </p>
           <p className="text-[10px] text-muted-foreground truncate">{player.club}</p>
           <div className="flex items-center gap-1.5 mt-1">
