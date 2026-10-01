@@ -1050,6 +1050,27 @@ try {
   check(rotationDiffered,
     "rotação: with assistantRotation on, at least one player match day fielded an XI different from the saved lineup because of fitness");
 
+  // ── Posições ─────────────────────────────────────────────────────────────
+  console.log("\n── Posições ──");
+  {
+    const { autoLineupDefaultFormation } = await import("@/Domain/advanceDay/matchSimulationLineups");
+    const { slotRoles: slotRolesOf } = await import("@/Domain/advanceDay/matchSimulationLineups");
+    const { formationForSimId, DEFAULT_SIM_FORMATION_ID } = await import("@/Domain/matchFormations");
+    const { unsuitableWithAlternative } = await import("@/Domain/positions/positionLineup");
+    const roles = slotRolesOf(formationForSimId(DEFAULT_SIM_FORMATION_ID));
+    let squadsChecked = 0;
+    const offenders: string[] = [];
+    for (const { squad } of allFiles) {
+      if (squad.id === playerSquadId || squad.players.length < 15) continue;
+      squadsChecked++;
+      const n = unsuitableWithAlternative(squad.players, autoLineupDefaultFormation(squad), roles);
+      if (n > 0) offenders.push(`${squad.id} (${n})`);
+    }
+    check(squadsChecked > 0, `posições: ${squadsChecked} AI squad(s) checked`);
+    check(offenders.length === 0,
+      `posições: no AI XI fields an unsuitable player when a same-line alternative existed (${offenders.length} squad(s): ${offenders.slice(0, 5).join(", ")})`);
+  }
+
   await checkFiles(saveId, "end");
   const el = (performance.now() - t0) / 1000;
   console.log(`\nSummary: ${days} days (${startDate} → ${endDate}), ${el.toFixed(0)} s total, avg ${(dayMsTotal / days).toFixed(0)} ms/day, `

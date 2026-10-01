@@ -25,3 +25,16 @@ describe("lineup weighs position fit", () => {
     expect(picked).toBe(best.id);
   });
 });
+
+describe("lab / smoke helpers", () => {
+  test("lineOrderLineup ignores fit but keeps lines; poorFitStarters counts bad fits", async () => {
+    const { lineOrderLineup, poorFitStarters, unsuitableWithAlternative } = await import("@/Domain/positions/positionLineup");
+    const a = mk("a", "right", { tackling: 9, heading: 9, strength: 9 });
+    const b = mk("b", "right", { tackling: 6 });
+    const order = lineOrderLineup(["LB", "CB"], [b, a]);
+    expect(order).toHaveLength(2);
+    expect(new Set(order)).toEqual(new Set(["a", "b"]));
+    expect(poorFitStarters([a, b], ["a", "b"], ["CB", "CB"])).toBeGreaterThanOrEqual(0);
+    expect(unsuitableWithAlternative([a, b], ["a"], ["CB"])).toBe(0);
+  });
+});

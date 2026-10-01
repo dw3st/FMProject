@@ -180,6 +180,7 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgEndEnergy: r2(t.avgEndEnergySum / matches),
     avgFatigueSubs: r2(t.fatigueSubstitutions / matches),
     avgInjuries: r2(t.injuries / matches),
+    avgOutOfPosition: r2(t.outOfPosition / matches),
   };
 }
 
@@ -204,7 +205,7 @@ function emptyTotals(): VariantTotals {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -239,6 +240,7 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.avgEndEnergySum      += src.avgEndEnergySum;
   dst.fatigueSubstitutions += src.fatigueSubstitutions;
   dst.injuries              += src.injuries;
+  dst.outOfPosition         += src.outOfPosition;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -284,6 +286,7 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgEndEnergy: r2(totals.avgEndEnergySum / games),
     avgFatigueSubs: r2(totals.fatigueSubstitutions / games),
     avgInjuries: r2(totals.injuries / games),
+    avgOutOfPosition: r2(totals.outOfPosition / games),
   };
 }
 
