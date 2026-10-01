@@ -12,6 +12,7 @@
  */
 
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { GamePlayer, SubstitutionRecord } from "@/GameEngine/types";
@@ -101,13 +102,14 @@ export function quickSimAppearances(
  * would skip them entirely; this is their only chance to recover on this day.
  */
 export function applyMatchToSquad(squad: Squad, appearances: MatchAppearances): Squad {
+  const { recoveryMult } = staffEffectsOf(squad);
   return {
     ...squad,
     players: squad.players.map((p) => {
       const log = { ...(p.seasonLog ?? emptySeasonLog()) };
       const appearance = appearances.get(p.id);
       const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
-      const updated = applyMatchFitness(log, { age: p.age, stamina }, appearance);
+      const updated = applyMatchFitness(log, { age: p.age, stamina, recoveryMult }, appearance);
       return { ...p, seasonLog: { ...log, fitness: updated.fitness, load: updated.load } };
     }),
   };
@@ -120,13 +122,14 @@ export function applyMatchToSquad(squad: Squad, appearances: MatchAppearances): 
  */
 export function applyRestDays(squad: Squad, days: number): Squad {
   if (days <= 0) return squad;
+  const { recoveryMult } = staffEffectsOf(squad);
   return {
     ...squad,
     players: squad.players.map((p) => {
       let log = { ...(p.seasonLog ?? emptySeasonLog()) };
       const stamina = p.stats.stamina ?? DEFAULT_STAMINA;
       for (let d = 0; d < days; d++) {
-        const updated = applyMatchFitness(log, { age: p.age, stamina }, undefined);
+        const updated = applyMatchFitness(log, { age: p.age, stamina, recoveryMult }, undefined);
         log = { ...log, fitness: updated.fitness, load: updated.load };
       }
       return { ...p, seasonLog: log };

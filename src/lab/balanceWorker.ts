@@ -16,6 +16,7 @@ import { emptySeasonLog } from "@/types/playerTypes";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { DEFAULT_MENTALITY } from "@/types/tacticsTypes";
+import { withFitnessCoach } from "@/Domain/staff/staff";
 import {
   applyMatchToSquad,
   applyRestDays,
@@ -291,8 +292,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       loadVariantFormation(variantB),
     ]);
 
-    const baseSquadA = prefixIds(buildSquad(variantA.squad, variantA.label), "A");
-    const baseSquadB = prefixIds(buildSquad(variantB.squad, variantB.label), "B");
+    const baseSquadA = withFitnessCoach(prefixIds(buildSquad(variantA.squad, variantA.label), "A"), variantA.staffRating);
+    const baseSquadB = withFitnessCoach(prefixIds(buildSquad(variantB.squad, variantB.label), "B"), variantB.staffRating);
 
     // Apply per-team tactics ONCE — all matches use them.
     // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
