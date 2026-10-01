@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, XCircle } from "lucide-react";
 import { loadSession } from "@/GameInterface/gameSession";
 import { capture } from "@/analytics";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -9,6 +8,7 @@ import { translateTransferReason } from "@/GameInterface/Transfers/transferShare
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { TransferRecord } from "@/types/transferTypes";
 import { ContractTermsFields, useContractDemand, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
+import { Icon } from "@/GameInterface/Icons";
 
 export function rawTransferOfferValue(avg: number, age: number): number {
   const base = avg * avg * 0.8;
@@ -145,10 +145,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     <Modal open onClose={onClose} size="sm">
       <div className="flex flex-col">
         <div className="px-6 py-4 border-b border-border bg-card/50">
-          <h2 className="text-lg font-black font-display text-foreground uppercase tracking-wider m-0">
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0">
             {t("transfers.makeOffer")}
           </h2>
-          <p className="text-xs text-muted-foreground m-0 mt-0.5">
+          <p className="text-sm text-muted-foreground m-0 mt-0.5">
             {player.name} · {player.pos} · {player.age}y · {player.club}
           </p>
         </div>
@@ -157,15 +157,15 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
           {!result ? (
             <>
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                <label className="block text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-2 font-display">
                   {t("transfers.fee")}
                 </label>
-                <p className="text-[11px] text-muted-foreground mb-2 m-0">
+                <p className="text-sm text-muted-foreground mb-2 m-0">
                   {t("transfers.availableBudget")}:{" "}
                   <span className="text-primary font-semibold">{formatTransferFee(budget)}</span>
                 </p>
                 {!slider.canOffer ? (
-                  <p className="text-sm text-red-400 m-0">
+                  <p className="text-sm text-destructive m-0">
                     {t("transfers.insufficientBudget")}
                   </p>
                 ) : (
@@ -184,24 +184,24 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                     </span>
                   </div>
                 )}
-                <p className="text-[11px] text-muted-foreground mt-1 m-0">
+                <p className="text-sm text-muted-foreground mt-1 m-0">
                   {t("transfers.estValue")}: <span className="text-foreground/80 font-semibold">{player.value}</span>
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                <label className="block text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-2 font-display">
                   {t("contracts.terms")}
                 </label>
                 <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
-                {contractError && <p className="text-sm text-red-400 m-0 mt-2" role="alert">{contractError}</p>}
+                {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-bold uppercase tracking-wider text-muted-foreground hover:bg-muted/30 transition-colors cursor-pointer bg-transparent"
+                  className="flex-1 h-10 rounded border-0 text-sm font-semibold text-muted-foreground cursor-pointer bg-transparent hover:text-foreground"
                 >
                   {t("common.cancel")}
                 </button>
@@ -209,7 +209,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                   type="button"
                   onClick={submitOffer}
                   disabled={submitting || !slider.canOffer}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all cursor-pointer border-0 disabled:opacity-60"
+                  className="flex-1 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 disabled:opacity-60"
                 >
                   {submitting ? t("transfers.sending") : t("transfers.sendOffer")}
                 </button>
@@ -219,23 +219,23 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
             <div className="text-center py-4">
               {result.status === "accepted" ? (
                 <>
-                  <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-                  <p className="text-base font-black text-emerald-400 m-0">{translateTransferReason(t, result.reason, true)}</p>
+                  <Icon name="check-circle" className="w-12 h-12 text-chart-2 mx-auto mb-3" />
+                  <p className="text-base font-black text-chart-2 m-0">{translateTransferReason(t, result.reason, true)}</p>
                   <p className="text-sm text-muted-foreground mt-1 m-0">
                     {t("transfers.acceptedSummary", { name: player.name, fee: formatTransferFee(result.fee) })}
                   </p>
                 </>
               ) : (
                 <>
-                  <XCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                  <p className="text-base font-black text-red-400 m-0">{t("transfers.offerRejected")}</p>
+                  <Icon name="xcircle" className="w-12 h-12 text-destructive mx-auto mb-3" />
+                  <p className="text-base font-black text-destructive m-0">{t("transfers.offerRejected")}</p>
                   <p className="text-sm text-muted-foreground mt-1 m-0">{translateTransferReason(t, result.reason, false)}</p>
                 </>
               )}
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-5 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary cursor-pointer border-0"
+                className="mt-5 px-6 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm cursor-pointer border-0"
               >
                 {t("common.close")}
               </button>

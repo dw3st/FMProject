@@ -39,7 +39,7 @@ function AttributePillRow({
           return (
             <span
               key={i}
-              className="h-2.5 w-5 sm:w-6 rounded-sm bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.45)] shrink-0"
+              className="h-2.5 w-5 sm:w-6 rounded-sm bg-chart-2 shrink-0"
               aria-hidden
             />
           );
@@ -48,7 +48,7 @@ function AttributePillRow({
           return (
             <span
               key={i}
-              className="h-2.5 w-5 sm:w-6 rounded-sm border-2 border-emerald-400 bg-background/60 shadow-[0_0_6px_rgba(52,211,153,0.35)] shrink-0 box-border"
+              className="h-2.5 w-5 sm:w-6 rounded-sm border-2 border-chart-2 bg-background/60 shrink-0 box-border"
               aria-hidden
             />
           );
@@ -68,8 +68,8 @@ function AttributePillRow({
 export function AttributesPanel({ attributes }: AttributesPanelProps) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-xl p-5">
-      <h3 className="text-lg font-bold font-display uppercase tracking-wider mb-4 m-0">
+    <div className="card-arcade rounded-md p-5">
+      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">
         {t("development.attributesTitle")}
       </h3>
 
@@ -80,21 +80,21 @@ export function AttributesPanel({ attributes }: AttributesPanelProps) {
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-bold text-foreground truncate text-[11px] sm:text-xs uppercase tracking-wide">
+                    <span className="font-bold text-foreground truncate text-[13px] sm:text-[13px] uppercase tracking-[0.08em] font-display">
                       {attr.name}
                     </span>
                     {attr.focus === "primary" && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-primary/50 text-primary font-bold uppercase bg-transparent shrink-0">
+                      <span className="text-sm px-2.5 py-0.5 rounded border border-primary/50 text-primary font-bold bg-transparent shrink-0">
                         {t("development.attributesPrimary")}
                       </span>
                     )}
                     {attr.focus === "secondary" && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-blue-400/50 text-blue-400 font-bold uppercase bg-transparent shrink-0">
+                      <span className="text-sm px-2.5 py-0.5 rounded border border-chart-3/50 text-chart-3 font-bold bg-transparent shrink-0">
                         {t("development.attributesSecondary")}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground tabular-nums mt-0.5 block">
+                  <span className="text-sm text-muted-foreground tabular-nums mt-0.5 block">
                     {t("development.developmentProgress")}:{" "}
                     {Math.round((attr.progressPct ?? 0) * 100)}%
                   </span>

@@ -169,14 +169,14 @@ export function FinancesScreen() {
   const maxExpenseBar = totals ? Math.max(...EXPENSE_KINDS.map((k) => Math.abs(totals[k])), 1) : 1;
 
   return (
-    <main className="flex-1 p-4 lg:p-6 overflow-auto">
+    <main className="flex-1 px-6 py-5 overflow-auto">
       <div className="max-w-7xl mx-auto space-y-6">
         <PageHeadline
           backHref="/dashboard"
           trailing={
             ledger && ledger.seasons.length > 1 ? (
               <select
-                className="bg-white/[0.03] border border-white/10 rounded-lg text-xs text-foreground px-2 py-1.5"
+                className="bg-foreground/5 border border-border rounded-lg text-sm text-foreground px-2 py-1.5"
                 value={ledger.season}
                 onChange={(e) => setSelectedSeason(Number(e.target.value))}
               >
@@ -198,56 +198,56 @@ export function FinancesScreen() {
             iconColor="text-primary"
             label={t("financesScreen.budget")}
             value={formatCurrency(balance)}
-            valueColor={balance >= 0 ? "text-primary" : "text-red-400"}
+            valueColor={balance >= 0 ? "text-primary" : "text-destructive"}
           />
           <OverviewCard
             icon="trend-up"
-            iconBg="bg-emerald-500/20"
-            iconColor="text-emerald-400"
+            iconBg="bg-chart-2/20"
+            iconColor="text-chart-2"
             label={t("financesScreen.seasonIncome")}
             value={formatCurrency(seasonIncome)}
-            valueColor="text-emerald-400"
+            valueColor="text-chart-2"
           />
           <OverviewCard
             icon="trend-down"
-            iconBg="bg-red-500/20"
-            iconColor="text-red-400"
+            iconBg="bg-destructive/20"
+            iconColor="text-destructive"
             label={t("financesScreen.seasonExpenses")}
             value={formatCurrency(seasonExpenses)}
-            valueColor="text-red-400"
+            valueColor="text-destructive"
           />
           <OverviewCard
             icon="trophy"
-            iconBg="bg-yellow-500/20"
-            iconColor="text-yellow-400"
+            iconBg="bg-chart-4/20"
+            iconColor="text-chart-4"
             label={t("financesScreen.seasonPrizes")}
             value={formatCurrency(seasonPrizes)}
-            valueColor="text-yellow-400"
+            valueColor="text-chart-4"
           />
         </div>
 
         {balance < 0 && (
-          <div className="card-arcade rounded-xl p-4 border border-red-500/50 bg-red-500/10 flex items-start gap-3">
-            <Icon name="alert" size={20} className="text-red-400 shrink-0 mt-0.5" />
+          <div className="card-arcade rounded-md p-4 border border-destructive/50 bg-destructive/10 flex items-start gap-3">
+            <Icon name="alert" size={20} className="text-destructive shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-foreground m-0">{t("finances.warnings.negativeBudgetTitle")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 m-0">{t("finances.warnings.negativeBudget")}</p>
+              <p className="text-sm text-muted-foreground mt-0.5 m-0">{t("finances.warnings.negativeBudget")}</p>
             </div>
           </div>
         )}
 
         {/* Weekly net chart (real ledger data) */}
-        <div className="card-arcade rounded-xl p-4">
+        <div className="card-arcade rounded-md p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold font-display uppercase tracking-wider text-primary">
+            <h3 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("financesScreen.weeklyNet")}
             </h3>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider bg-muted/40 px-2 py-1 rounded">
+            <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] bg-muted/40 px-2 py-1 rounded font-display font-bold">
               {t("financesScreen.last12Weeks")}
             </span>
           </div>
           {weeklyChart.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("financesScreen.noEntries")}</p>
+            <p className="text-sm text-muted-foreground">{t("financesScreen.noEntries")}</p>
           ) : (
             <div className="flex items-end gap-2 h-40">
               {weeklyChart.map((w) => {
@@ -256,18 +256,18 @@ export function FinancesScreen() {
                   <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
                     <div className="relative w-full flex-1 flex items-end justify-center group">
                       <div
-                        className={`w-full rounded-t ${w.net >= 0 ? "bg-emerald-500/50" : "bg-red-500/50"}`}
+                        className={`w-full rounded-t ${w.net >= 0 ? "bg-chart-2/50" : "bg-destructive/50"}`}
                         style={{ height: `${h}%` }}
                       />
                       <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        <div className="bg-card border border-border rounded-lg px-2 py-1 text-[10px] whitespace-nowrap shadow-lg">
-                          <span className={w.net >= 0 ? "text-emerald-400" : "text-red-400"}>
+                        <div className="bg-card border border-border rounded-lg px-2 py-1 text-sm whitespace-nowrap">
+                          <span className={w.net >= 0 ? "text-chart-2" : "text-destructive"}>
                             {w.net >= 0 ? "+" : ""}{formatCurrency(w.net)}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{formatWeekLabel(w.weekStart)}</span>
+                    <span className="text-sm text-muted-foreground">{formatWeekLabel(w.weekStart)}</span>
                   </div>
                 );
               })}
@@ -279,31 +279,31 @@ export function FinancesScreen() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <KindBreakdown
             titleKey="financesScreen.revenueBreakdown"
-            titleColor="text-emerald-400"
+            titleColor="text-chart-2"
             kinds={INCOME_KINDS}
             totals={totals}
             maxBar={maxIncomeBar}
-            barColor="bg-emerald-500"
+            barColor="bg-chart-2"
             total={seasonIncome}
-            totalColor="text-emerald-400"
+            totalColor="text-chart-2"
           />
           <KindBreakdown
             titleKey="financesScreen.expenses"
-            titleColor="text-red-400"
+            titleColor="text-destructive"
             kinds={EXPENSE_KINDS}
             totals={totals}
             maxBar={maxExpenseBar}
-            barColor="bg-red-500"
+            barColor="bg-destructive"
             total={seasonExpenses}
-            totalColor="text-red-400"
+            totalColor="text-destructive"
             absolute
           />
         </div>
 
         {/* Projections: weekly cost bill + upcoming gate revenue */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card-arcade rounded-xl p-4">
-            <h3 className="text-sm font-bold font-display uppercase tracking-wider text-primary mb-4">
+          <div className="card-arcade rounded-md p-4">
+            <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">
               {t("financesScreen.weeklyProjection")}
             </h3>
             {weeklyProjection ? (
@@ -312,11 +312,11 @@ export function FinancesScreen() {
                 <ProjectionRow icon="staff" label={t("financesScreen.playerSalaries")} value={-weeklyProjection.wages} />
                 <ProjectionRow icon="building" label={t("financesScreen.operational")} value={-weeklyProjection.operational} />
                 <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">{t("financesScreen.weeklyProfitLoss")}</span>
+                  <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.weeklyProfitLoss")}</span>
                   {(() => {
                     const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.operational;
                     return (
-                      <span className={`text-lg font-black font-display ${net >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      <span className={`text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
                         {net >= 0 ? "+" : ""}{formatCurrency(net)}
                       </span>
                     );
@@ -324,45 +324,45 @@ export function FinancesScreen() {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">{t("financesScreen.loading")}</p>
+              <p className="text-sm text-muted-foreground">{t("financesScreen.loading")}</p>
             )}
           </div>
 
-          <div className="card-arcade rounded-xl p-4">
+          <div className="card-arcade rounded-md p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold font-display uppercase tracking-wider text-primary flex items-center gap-2">
+              <h3 className="font-display font-black uppercase text-xl leading-none m-0 flex items-center gap-2">
                 <Icon name="building" size={16} />
                 {t("financesScreen.gateProjection")}
               </h3>
               {squad?.venue && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <Icon name="map-pin" size={12} />
                   {squad.venue.city}
                 </span>
               )}
             </div>
             {gateProjections.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("financesScreen.noUpcomingHomeGames")}</p>
+              <p className="text-sm text-muted-foreground">{t("financesScreen.noUpcomingHomeGames")}</p>
             ) : (
               <>
                 <div className="space-y-2 max-h-56 overflow-auto">
                   {gateProjections.slice(0, 6).map((g) => (
-                    <div key={g.fixture.id} className="flex items-center justify-between text-xs">
+                    <div key={g.fixture.id} className="flex items-center justify-between text-sm">
                       <div className="min-w-0">
                         <p className="text-foreground m-0 truncate">
                           {competitionName(g.fixture.competition, leagues, i18n.language)}
                         </p>
-                        <p className="text-[10px] text-muted-foreground m-0">{g.fixture.date}</p>
+                        <p className="text-sm text-muted-foreground m-0">{g.fixture.date}</p>
                       </div>
-                      <span className="text-emerald-400 font-semibold shrink-0 ml-2">{formatCurrency(g.projected)}</span>
+                      <span className="text-chart-2 font-semibold shrink-0 ml-2">{formatCurrency(g.projected)}</span>
                     </div>
                   ))}
                 </div>
                 <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">
                     {t("financesScreen.homeGames", { count: gateProjections.length })}
                   </span>
-                  <span className="text-sm font-bold text-emerald-400">{formatCurrency(projectedRemainingGate)}</span>
+                  <span className="text-sm font-bold text-chart-2">{formatCurrency(projectedRemainingGate)}</span>
                 </div>
               </>
             )}
@@ -370,13 +370,13 @@ export function FinancesScreen() {
         </div>
 
         {/* Ledger list */}
-        <div className="card-arcade rounded-xl p-4">
+        <div className="card-arcade rounded-md p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h3 className="text-sm font-bold font-display uppercase tracking-wider text-primary">
+            <h3 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("financesScreen.ledgerTitle")}
             </h3>
             <select
-              className="bg-white/[0.03] border border-white/10 rounded-lg text-xs text-foreground px-2 py-1.5"
+              className="bg-foreground/5 border border-border rounded-lg text-sm text-foreground px-2 py-1.5"
               value={kindFilter}
               onChange={(e) => setKindFilter(e.target.value as LedgerKind | "all")}
             >
@@ -388,7 +388,7 @@ export function FinancesScreen() {
           </div>
 
           {filteredEntries.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("financesScreen.noEntries")}</p>
+            <p className="text-sm text-muted-foreground">{t("financesScreen.noEntries")}</p>
           ) : (
             <div className="space-y-1 max-h-96 overflow-auto">
               {filteredEntries.map((entry, i) => {
@@ -396,18 +396,18 @@ export function FinancesScreen() {
                 return (
                   <div
                     key={`${entry.date}-${entry.kind}-${i}`}
-                    className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.03]"
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-foreground/5"
                   >
                     <div className="w-7 h-7 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
                       <Icon name={meta.icon} size={14} className="text-muted-foreground" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-foreground m-0 truncate">{ledgerText(entry)}</p>
-                      <p className="text-[10px] text-muted-foreground m-0">
+                      <p className="text-sm text-foreground m-0 truncate">{ledgerText(entry)}</p>
+                      <p className="text-sm text-muted-foreground m-0">
                         {entry.date} · {t(meta.labelKey)}
                       </p>
                     </div>
-                    <span className={`text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    <span className={`text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-chart-2" : "text-destructive"}`}>
                       {entry.amount >= 0 ? "+" : ""}{formatCurrency(entry.amount)}
                     </span>
                   </div>
@@ -430,12 +430,12 @@ function OverviewCard({
   label: string; value: string; valueColor: string;
 }) {
   return (
-    <div className="card-arcade rounded-xl p-4">
+    <div className="card-arcade rounded-md p-4">
       <div className="flex items-center gap-2 mb-2">
         <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>
           <Icon name={icon} size={16} className={iconColor} />
         </div>
-        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{label}</span>
+        <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-bold font-display">{label}</span>
       </div>
       <p className={`text-2xl font-black font-display ${valueColor} m-0`}>{value}</p>
     </div>
@@ -457,10 +457,10 @@ function KindBreakdown({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-xl p-4">
+    <div className="card-arcade rounded-md p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className={`text-sm font-bold font-display uppercase tracking-wider ${titleColor}`}>{t(titleKey)}</h3>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider bg-muted/40 px-2 py-1 rounded">
+        <h3 className={`text-sm font-bold font-display uppercase tracking-[0.08em] ${titleColor}`}>{t(titleKey)}</h3>
+        <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] bg-muted/40 px-2 py-1 rounded font-display font-bold">
           {t("financesScreen.seasonBasis")}
         </span>
       </div>
@@ -477,11 +477,11 @@ function KindBreakdown({
                   <div className="w-6 h-6 rounded bg-muted/40 flex items-center justify-center">
                     <Icon name={meta.icon} size={12} className="text-muted-foreground" />
                   </div>
-                  <span className="text-xs text-muted-foreground">{t(meta.labelKey)}</span>
+                  <span className="text-sm text-muted-foreground">{t(meta.labelKey)}</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">{formatCurrency(value)}</span>
               </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
                 <div className={`h-full ${barColor} rounded-full`} style={{ width: `${Math.min(100, pct)}%` }} />
               </div>
             </div>
@@ -489,7 +489,7 @@ function KindBreakdown({
         })}
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-        <span className="text-xs text-muted-foreground uppercase tracking-wider">{t("financesScreen.seasonTotal")}</span>
+        <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.seasonTotal")}</span>
         <span className={`text-lg font-black font-display ${totalColor}`}>{formatCurrency(total)}</span>
       </div>
     </div>
@@ -498,9 +498,9 @@ function KindBreakdown({
 
 function ProjectionRow({ icon, label, value, positive }: { icon: IconName; label: string; value: number; positive?: boolean }) {
   const { t } = useTranslation();
-  const color = positive ? "text-emerald-400" : value < 0 ? "text-red-400" : "text-foreground";
+  const color = positive ? "text-chart-2" : value < 0 ? "text-destructive" : "text-foreground";
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon name={icon} size={12} />
         {label}

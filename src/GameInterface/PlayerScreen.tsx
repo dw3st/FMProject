@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { UserPlus, FileSignature } from "lucide-react";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -13,6 +12,7 @@ import type { TransferRecord } from "@/types/transferTypes";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
+import { Icon } from "@/GameInterface/Icons";
 
 export function PlayerScreen({
   playerId,
@@ -97,7 +97,7 @@ export function PlayerScreen({
 
   if (!player || !displayPlayer) {
     return (
-      <div className="space-y-4 max-w-2xl p-6">
+      <div className="space-y-4 max-w-2xl px-6 py-5">
         <PageHeadline hideTitle backHref={backTo} backLabel={t("playerScreen.backToSquad")} />
         <p className="text-muted-foreground text-sm">{t("playerScreen.playerNotFound")}</p>
       </div>
@@ -105,7 +105,7 @@ export function PlayerScreen({
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-12 overflow-auto">
+    <div className="px-6 py-5 pb-12 overflow-auto">
       <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
         <PageHeadline
           hideTitle
@@ -115,18 +115,18 @@ export function PlayerScreen({
               <button
                 type="button"
                 onClick={() => setOfferTarget(displayPlayer)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all cursor-pointer border-0 shrink-0"
+                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-[13px] font-semibold cursor-pointer border-0 shrink-0"
               >
-                <UserPlus className="w-4 h-4" />
+                <Icon name="user-plus" className="w-4 h-4" />
                 {t("playerScreen.makeOffer")}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setRenewOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider glow-primary hover:scale-[1.02] transition-all cursor-pointer border-0 shrink-0"
+                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-[13px] font-semibold cursor-pointer border-0 shrink-0"
               >
-                <FileSignature className="w-4 h-4" />
+                <Icon name="file-signature" className="w-4 h-4" />
                 {t("contracts.renew")}
               </button>
             )
@@ -135,23 +135,23 @@ export function PlayerScreen({
 
         <a
           href={backTo}
-          className="card-arcade rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4 md:gap-6 border border-border hover:border-primary/40 transition-colors no-underline group"
+          className="card-arcade rounded-md p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4 md:gap-6 border border-border hover:border-primary/40 transition-colors no-underline group"
         >
           <ClubLogo
             logoUrl={squadLogoUrl(squadId)}
             primaryColor={squadColors[0]}
             secondaryColor={squadColors[1]}
-            className="w-14 h-14 md:w-16 md:h-16 rounded-full shrink-0 border border-border/50"
+            className="w-16 h-16 rounded-full shrink-0"
             imgClassName="w-full h-full object-contain p-1"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider m-0">
+            <p className="text-[13px] md:text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] m-0 font-display">
               {t("playerScreen.currentTeam")}
             </p>
             <p className="text-lg md:text-xl font-black text-foreground font-display truncate m-0 group-hover:text-primary transition-colors">
               {squadName}
             </p>
-            <p className="text-xs text-primary font-semibold m-0 mt-1">{t("playerScreen.openSquadPage")}</p>
+            <p className="text-sm text-primary font-semibold m-0 mt-1">{t("playerScreen.openSquadPage")}</p>
           </div>
         </a>
 
