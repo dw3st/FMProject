@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Construction } from "lucide-react";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { Icon } from "@/GameInterface/Icons";
 
 const getPageMeta = (t: any): Record<string, { title: string; description: string }> => ({
   tactics:   { title: t("comingSoon.tactics"), description: t("comingSoon.tacticsDesc") },
@@ -17,7 +17,7 @@ export function ComingSoonScreen() {
   const meta = PAGE_META[slug] ?? { title: slug.charAt(0).toUpperCase() + slug.slice(1), description: t("comingSoon.underDevelopment") };
 
   return (
-    <main className="flex-1 flex flex-col items-center p-6 pt-8">
+    <main className="flex-1 flex flex-col items-center px-6 py-5">
       <div className="max-w-lg w-full space-y-8">
         <PageHeadline backHref="/dashboard" backLabel="Back to Dashboard">
           {meta.title}
@@ -26,8 +26,8 @@ export function ComingSoonScreen() {
         <div className="relative flex justify-center w-full">
           <div className="relative inline-flex items-center justify-center">
           <div className="absolute w-32 h-32 rounded-full bg-primary/10 animate-pulse" />
-          <div className="relative w-24 h-24 rounded-2xl card-arcade border-glow flex items-center justify-center">
-            <Construction className="w-10 h-10 text-primary" />
+          <div className="relative w-24 h-24 rounded-md card-arcade flex items-center justify-center">
+            <Icon name="construction" className="w-10 h-10 text-primary" />
           </div>
           </div>
         </div>
@@ -38,11 +38,11 @@ export function ComingSoonScreen() {
           </p>
         </div>
 
-        <div className="card-arcade rounded-xl p-6 border-glow space-y-4 text-center">
-          <p className="text-lg font-bold text-primary glow-text uppercase tracking-wider m-0 font-display">
+        <div className="card-arcade rounded-md p-6 space-y-4 text-center">
+          <p className="text-lg font-bold text-primary uppercase tracking-[0.08em] m-0 font-display">
             {t("comingSoon.comingSoon")}
           </p>
-          <p className="text-xs text-muted-foreground m-0">
+          <p className="text-sm text-muted-foreground m-0">
             {t("comingSoon.stillBeingBuilt")}
           </p>
           <div className="flex justify-center gap-2">

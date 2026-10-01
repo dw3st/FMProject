@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Shield } from "lucide-react";
 import LOGO_INDEX from "@/Data/logoIndex.json";
 import { logoUrlFromIndex } from "@/Domain/world/logos";
+import { Icon } from "@/GameInterface/Icons";
 
 /** URLs that already 404'd this page load — avoid re-requesting them from every mounted instance. */
 const failedLogoUrls = new Set<string>();
@@ -58,7 +58,7 @@ export function ClubLogo({
       className={`${className} flex items-center justify-center overflow-hidden`}
       style={{ background: `linear-gradient(145deg, ${primaryColor} 0%, ${secondaryColor} 100%)` }}
     >
-      <Shield className="w-[50%] h-[50%] text-white drop-shadow-lg" />
+      <Icon name="shield" className="w-[50%] h-[50%] text-white" />
     </div>
   );
 }

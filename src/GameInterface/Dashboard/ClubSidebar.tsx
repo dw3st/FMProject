@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { Shield, Zap, Tag, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -13,6 +12,7 @@ import { loadSession } from "@/GameInterface/gameSession";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
+import { Icon } from "@/GameInterface/Icons";
 
 interface Props {
   session: GameSession;
@@ -108,7 +108,7 @@ export function ClubSidebar({
   const isListed = selectedPlayer ? sellListIds.has(selectedPlayer.id) : false;
 
   return (
-    <aside className="w-72 border-r border-border bg-sidebar/80 backdrop-blur-sm p-4 flex flex-col gap-4 shrink-0 overflow-y-auto">
+    <aside className="w-72 border-r border-border bg-sidebar p-4 flex flex-col gap-4 shrink-0 overflow-y-auto">
       <div className="pb-4 border-b border-sidebar-border">
         <ClubIdentity
           variant="sidebar"
@@ -120,7 +120,7 @@ export function ClubSidebar({
           logoUrl={myLogoUrl}
         />
         <div className="mt-2 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest m-0">
+          <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] m-0 font-display font-bold">
             {t("dashboard.clubSidebar.manager")}
           </p>
           <p className="text-sm text-primary font-bold m-0 mt-0.5">
@@ -147,7 +147,7 @@ export function ClubSidebar({
             type="button"
             onClick={() => void toggleSellList()}
             disabled={sellToggling}
-            className={`w-full py-2.5 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all border cursor-pointer ${
+            className={`w-full py-2.5 rounded-md font-black uppercase tracking-[0.08em] text-[13px] flex items-center justify-center gap-2 transition-all border cursor-pointer ${
               isListed
                 ? "bg-destructive/20 text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground"
                 : "bg-muted/30 text-muted-foreground border-border hover:bg-primary/20 hover:text-primary hover:border-primary/40"
@@ -155,12 +155,12 @@ export function ClubSidebar({
           >
             {isListed ? (
               <>
-                <X className="w-3.5 h-3.5" />
+                <Icon name="close" size={16} />
                 {t("dashboard.clubSidebar.removeFromSale")}
               </>
             ) : (
               <>
-                <Tag className="w-3.5 h-3.5" />
+                <Icon name="tag" size={16} />
                 {t("dashboard.clubSidebar.listForSale")}
               </>
             )}
@@ -169,27 +169,27 @@ export function ClubSidebar({
       )}
 
       <div className="mt-auto space-y-3">
-        <div className="card-arcade rounded-xl p-4">
+        <div className="card-arcade rounded-md p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("dashboard.clubSidebar.budget")}</span>
-            <span className="text-lg font-black text-primary font-display">{money}</span>
+            <span className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">{t("dashboard.clubSidebar.budget")}</span>
+            <span className="text-lg font-bold tabular-nums font-display">{money}</span>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("dashboard.clubSidebar.squad")}</span>
+            <span className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">{t("dashboard.clubSidebar.squad")}</span>
             <span className="text-sm font-bold text-foreground">{playerCount} {t("dashboard.clubSidebar.players")}</span>
           </div>
         </div>
 
-        <div className="card-arcade rounded-xl p-4 border-glow">
+        <div className="card-arcade rounded-md p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-primary" />
-            <span className="text-xs font-black text-primary uppercase tracking-wider font-display">
+            <Icon name="zap" className="w-4 h-4 text-primary" />
+            <span className="text-[13px] font-bold text-primary uppercase tracking-[0.08em] font-display">
               {t("dashboard.clubSidebar.nextMatch")}
             </span>
           </div>
           {!nextFixture ? (
             <div className="text-center">
-              <p className="text-xs text-muted-foreground italic m-0">{t("dashboard.clubSidebar.noMatchScheduled")}</p>
+              <p className="text-sm text-muted-foreground m-0">{t("dashboard.clubSidebar.noMatchScheduled")}</p>
             </div>
           ) : (
             <div className="flex items-start justify-between gap-3">
@@ -198,15 +198,15 @@ export function ClubSidebar({
                   {isHome ? t("common.vs") + " " : "@ "}
                   {opponentName}
                 </p>
-                <p className="text-xs text-muted-foreground font-medium m-0">
+                <p className="text-sm text-muted-foreground font-medium m-0">
                   {isCupSlug(nextFixture.competition)
                     ? competitionName(nextFixture.competition, leagues, i18n.language)
                     : `${competitionName(nextFixture.competition, leagues, i18n.language)} · ${t("common.round")} ${nextFixture.round}`}
                 </p>
-                <p className="text-xs text-primary font-bold uppercase m-0">{venueLabel}</p>
+                <p className="text-[13px] text-primary font-bold uppercase m-0">{venueLabel}</p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-xs font-black text-primary font-display m-0">
+                <p className="text-sm font-black text-primary font-display m-0">
                   {formatDateLabel(nextFixture.date)}
                 </p>
               </div>
@@ -216,9 +216,9 @@ export function ClubSidebar({
 
         <a
           href={`/squad/${session.leagueSlug}/${session.clubId}`}
-          className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-black uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 glow-primary cursor-pointer border-0 no-underline"
+          className="w-full h-10 bg-primary text-primary-foreground rounded font-semibold flex items-center justify-center gap-2 cursor-pointer border-0 no-underline"
         >
-          <Shield className="w-5 h-5" />
+          <Icon name="shield" size={16} />
           {t("dashboard.clubSidebar.viewFullSquad")}
         </a>
       </div>
@@ -228,16 +228,16 @@ export function ClubSidebar({
 
 function ConfidenceBar({ label, value }: { label: string; value: number }) {
   return (
-    <div className="card-arcade rounded-lg p-3">
-      <div className="flex justify-between text-xs mb-2">
-        <span className="text-muted-foreground font-semibold uppercase tracking-wider">
+    <div className="border border-border rounded-md p-3">
+      <div className="flex justify-between text-sm mb-2">
+        <span className="text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
           {label}
         </span>
         <span className="text-primary font-black font-display">{value}%</span>
       </div>
-      <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-border rounded overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-primary/80 to-primary rounded-full transition-all"
+          className="h-full rounded-full transition-all"
           style={{ width: `${value}%` }}
         />
       </div>
