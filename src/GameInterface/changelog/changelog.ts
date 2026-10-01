@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.9.1",
+    date: "2026-10-01",
+    items: [
+      { pt: "Novo jogo começa pela criação do técnico", en: "New game starts with creating your manager" },
+    ],
+    fixes: [
+      { pt: "Fontes e visual uniformes em todas as telas", en: "Uniform fonts and look on every screen" },
+      { pt: "Escudos e bandeiras maiores na escolha do clube", en: "Bigger crests and flags when choosing a club" },
+    ],
+  },
+  {
     version: "1.9",
     date: "2026-10-01",
     items: [
