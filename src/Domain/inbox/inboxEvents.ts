@@ -12,6 +12,7 @@ import type {
   SeasonInboxMessage,
   TransferInInboxMessage,
   TransferOutInboxMessage,
+  YouthInboxMessage,
 } from "@/types/inboxTypes";
 
 /**
@@ -304,6 +305,31 @@ export function buildContractMessage(args: {
     kind,
     players,
     ...(until ? { until } : {}),
+  };
+}
+
+/** Academy news for the human club: the new intake, or players released at the age limit. */
+export function buildYouthMessage(args: {
+  date:     string;
+  kind:     YouthInboxMessage["kind"];
+  year?:    number;
+  count?:   number;
+  best?:    YouthInboxMessage["best"];
+  players?: { id: string; name: string }[];
+}): YouthInboxMessage {
+  const { date, kind, year, count, best, players } = args;
+  const subject = kind === "intake" ? `Academy intake ${year}: ${count} youngsters` : "Academy players released";
+  const preview = kind === "intake" ? (best ? `Standout: ${best.name}` : "") : (players ?? []).map((p) => p.name).join(", ");
+  return {
+    id:        `youth-${date}-${kind}-${randomUUID()}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "youth",
+    subject,
+    preview:   preview.slice(0, 120),
+    kind,
+    ...(kind === "intake" ? { year, count, best } : { players }),
   };
 }
 
