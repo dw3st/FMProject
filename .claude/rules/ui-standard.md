@@ -19,6 +19,16 @@ Tipografia.
 Nada de `font-mono` (salvo debug), nada de caixa-alta em texto corrido, nada de frases longas: um
 subtítulo de uma linha no máximo.
 
+## Tamanho mínimo (legibilidade)
+
+- Nenhum texto abaixo de **13px** (`text-[13px]`) nas telas do jogo; texto de tabela e de badge/pílula
+  (fôlego, moral, forma, status) no mínimo **14px** (`text-sm`). Proibido `text-[10px]`, `text-[11px]`,
+  `text-xs` em dado que o jogador precisa ler (só rótulos de cabeçalho podem ser `text-xs`, e em
+  maiúsculas condensadas).
+- Barras de fôlego/força: altura mínima 6px, largura mínima 64px, sempre com o número ao lado.
+- Badges de estado (moral, forma, trato): texto `text-sm`, padding `px-2 py-0.5`, sem caixa-alta minúscula.
+- Alvos clicáveis: altura mínima 32px em tabelas, 40px em botões.
+
 ## Componentes (`src/GameInterface/ui/`)
 
 - **Botão primário:** `bg-primary text-primary-foreground font-semibold rounded h-10 px-5`, hover só
