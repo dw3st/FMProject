@@ -27,16 +27,25 @@ export function youngGrowthDampen(overall: number, clubLineMedian: number): numb
 }
 
 /**
+ * #6 — decline is attenuated for players at the very top of their role: below the 90th overall
+ * percentile (of the role, across the world) nothing changes (1); at the 100th the decline is
+ * halved (0.5, the floor). `pctl` is 0..1.
+ */
+export function topDeclineFactor(pctl: number): number {
+  return Math.max(0.5, Math.min(1, 1 - (pctl - 0.9) * 5));
+}
+
+/**
  * Ages `stats` from `fromAge` to `toAge` (at most MAX_YEARS years). Each year the total
  * `ageDelta × (attributes with weight > 0)` is split over those attributes by `weights`
  * (the attrWeights of the player's best specific role). Growth is damped by `1 − (v/10)²`, and
  * further scaled by `growthDampen` (see `youngGrowthDampen`, #14) — decline (`d < 0`) is never
- * affected by `growthDampen`. Decline weighs speed, acceleration and stamina double. Fractions
+ * affected by `growthDampen`, but is scaled by `declineFactor` (see `topDeclineFactor`, #6). Decline weighs speed, acceleration and stamina double. Fractions
  * are rounded with a per-player, per-attribute hash, so the result is deterministic.
  */
 export function agePlayerStats(
   playerId: string, stats: PlayerStatsRecord, fromAge: number, toAge: number, weights: Record<string, number>,
-  growthDampen = 1,
+  growthDampen = 1, declineFactor = 1,
 ): PlayerStatsRecord {
   const years = Math.max(0, Math.min(MAX_YEARS, toAge - fromAge));
   if (years === 0) return { ...stats };
@@ -44,7 +53,7 @@ export function agePlayerStats(
   const x: Record<string, number> = { ...stats };
   for (let y = 0; y < years; y++) {
     const raw = ageDelta(fromAge + y);
-    const d = raw > 0 ? raw * growthDampen : raw;
+    const d = raw > 0 ? raw * growthDampen : raw * declineFactor;
     if (d === 0 || keys.length === 0) continue;
     const w = keys.map((k) => weights[k]! * (d < 0 && PHYSICAL.has(k) ? 2 : 1));
     const wSum = w.reduce((a, b) => a + b, 0);
