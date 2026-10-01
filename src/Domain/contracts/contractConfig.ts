@@ -25,4 +25,12 @@ export const CONTRACT_CONFIG = {
   MIN_SQUAD_AFTER_EXPIRY: 18,
   /** Inbox warning: days before the league's season end. */
   WARNING_DAYS_BEFORE: 90,
+  /** AI clubs refill to this many players after the rollover expiries. */
+  MIN_SQUAD_AI: 24,
+  /** Refill keeps the wage bill this far (share of the cap) below the "tight" threshold. */
+  REFILL_HEADROOM: 0.03,
+  /** Contract length (years) of a filler youngster. */
+  YOUTH_CONTRACT_YEARS: 3,
+  /** AI clubs that try the free pool each day. */
+  FREE_AGENT_CLUBS_PER_DAY: 10,
 } as const;
