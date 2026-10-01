@@ -87,14 +87,15 @@ export function refillSquad(args: {
   const taken = new Set<string>();
   const minTotal = isHuman ? 0 : C.MIN_SQUAD_AI;
 
-  for (let guard = 0; guard < MAX_SQUAD; guard++) {
+  for (let guard = 0; guard < MAX_SQUAD + 8; guard++) {
     const counts = countByRole(squad.players);
     const ratio = (r: MainRole) => counts[r] / MIN_BY_ROLE[r];
     const deficits = ROLES.filter((r) => counts[r] < MIN_BY_ROLE[r]);
     let role: MainRole | null = null;
     if (deficits.length > 0) role = [...deficits].sort((a, b) => ratio(a) - ratio(b))[0]!;
     else if (squad.players.length < minTotal) role = [...ROLES].sort((a, b) => ratio(a) - ratio(b))[0]!;
-    if (!role || squad.players.length >= MAX_SQUAD) break;
+    // The 30-player cap never blocks a role minimum (a lopsided full squad still gets its missing GK).
+    if (!role || (deficits.length === 0 && squad.players.length >= MAX_SQUAD)) break;
 
     let added: RosterPlayer | null = null;
     if (!isHuman) {

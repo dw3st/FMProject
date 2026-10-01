@@ -41,6 +41,12 @@ salário e as mesmas verbas de prêmio).
 
 ## 1. Salários
 
+> **Desde a Etapa 7 (contratos, 1.7)** a folha de um clube é a soma de `contract.wage` de cada jogador
+> (`squadWeeklyWages`), um salário FIXO gravado quando o contrato nasce (criação da carreira, contratação,
+> renovação). A curva + fator abaixo só calcula esse valor na hora de criar/renovar um contrato. Ver
+> `.claude/rules/game/contracts.md`. A linha semanal `wages` do extrato é a soma dos contratos do elenco
+> naquela segunda-feira (checada no smoke).
+
 ### Curva + fator de clube
 
 Uma curva baseada só na nota do jogador não fecha: dentro de um único nível de pirâmide (ex.
