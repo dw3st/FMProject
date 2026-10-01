@@ -1,4 +1,4 @@
-import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import type { Squad, RosterPlayer, PlayerContract } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { aiFinancialPressure } from "@/Domain/aiFinance/aiClubFinance";
 
@@ -100,8 +100,10 @@ export function squadsAfterAcceptedTransfer(
   buyingSquad: Squad,
   buyerSquadId: string,
   playerId: string,
+  /** The new club's contract for the player (every signing creates one). */
+  contract?: PlayerContract,
 ): { selling: Squad; buying: Squad } {
-  const updatedPlayer: RosterPlayer = { ...player, squadId: buyerSquadId };
+  const updatedPlayer: RosterPlayer = { ...player, squadId: buyerSquadId, ...(contract ? { contract } : {}) };
   return {
     selling: {
       ...sellingSquad,

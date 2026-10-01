@@ -113,6 +113,8 @@ export interface RosterPlayer {
    * before `returnDate`.
    */
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string };
+  /** Current contract. Assigned at career creation and on every signing/renewal. */
+  contract?: PlayerContract;
 }
 
 export interface ClubFinances {
