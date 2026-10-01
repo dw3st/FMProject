@@ -165,7 +165,8 @@ com `/test` e `/lab` exibindo as novas estatísticas.
 
 - **Reports dos testers:** triagem semanal com `bun scripts/fetchReports.ts`.
 - **Issues abertos** (abaixo), atacados entre as fases.
-- Mapa-m�ndi clic�vel na escolha de pa�s do novo jogo (pedido do usu�rio, 2026-10-01).
+- Mapa-múndi clicável na escolha de país do novo jogo (pedido do usuário, 2026-10-01).
+- Rostos gerados para os jogadores (`facesjs`, MIT, estilo Football GM): determinísticos pelo id, com a camisa do clube; na ficha, elenco, prévia e partida. Fotos reais da ESPN descartadas por direitos de imagem (pedido do usuário, 2026-10-01).
 
 ---
 
