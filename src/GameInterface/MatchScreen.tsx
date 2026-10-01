@@ -119,6 +119,7 @@ export function MatchScreen() {
   const [mentality, setMentality] = useState<Mentality>(DEFAULT_MENTALITY);
   /** Team A's saved tactical style — set once from match-setup, read by mentality changes. */
   const myTacticalStyleRef = useRef<TacticalStyle>(DEFAULT_TACTICAL_STYLE);
+  const myAxesOverrideRef = useRef<TacticsSave["axesOverride"]>(undefined);
   const [showSubPanel, setShowSubPanel] = useState(false);
   const [goalFlash, setGoalFlash] = useState<{
     team: TeamId;
@@ -229,8 +230,9 @@ export function MatchScreen() {
 
         const tactics = data.myTactics;
         myTacticalStyleRef.current = tactics.tactical_style;
-        applyTeamTacticsConfig("A", tactics.tactical_style, DEFAULT_MENTALITY);
-        applyTeamAttackConfig("A", tactics.tactical_style, DEFAULT_MENTALITY);
+        myAxesOverrideRef.current = tactics.axesOverride;
+        applyTeamTacticsConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride);
+        applyTeamAttackConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride);
         applyTeamTacticsConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY);
         applyTeamAttackConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY);
 
@@ -456,8 +458,8 @@ export function MatchScreen() {
 
   function handleMentalityChange(next: Mentality) {
     setMentality(next);
-    applyTeamTacticsConfig("A", myTacticalStyleRef.current, next);
-    applyTeamAttackConfig("A", myTacticalStyleRef.current, next);
+    applyTeamTacticsConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current);
+    applyTeamAttackConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current);
   }
 
   function handleOpenSubPanel() {

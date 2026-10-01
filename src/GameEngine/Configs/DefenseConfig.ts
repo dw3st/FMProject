@@ -120,8 +120,9 @@ export function applyTeamTacticsConfig(
   team: TeamId,
   style: TacticalStyle,
   mentality: Mentality = DEFAULT_MENTALITY,
+  axesOverride?: Partial<TacticalAxes>,
 ): void {
-  const axes = axesWithMentality(style, mentality);
+  const axes = axesWithMentality(style, mentality, axesOverride);
   Object.assign(TEAM_CONFIGS[team], mapAxesToDefense(axes));
   TEAM_TACTIC_KEYS[team].pressingStyle = axes.pressing_style;
   TEAM_TACTIC_KEYS[team].defensiveLine = axes.defensive_line;

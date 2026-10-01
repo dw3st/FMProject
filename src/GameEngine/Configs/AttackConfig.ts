@@ -15,7 +15,7 @@
  */
 
 import type { TeamId } from '@/GameEngine/types';
-import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality } from '@/types/tacticsTypes';
+import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality, TacticalAxes } from '@/types/tacticsTypes';
 import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
@@ -283,8 +283,9 @@ export function applyTeamAttackConfig(
   team: TeamId,
   style: TacticalStyle,
   mentality: Mentality = DEFAULT_MENTALITY,
+  axesOverride?: Partial<TacticalAxes>,
 ): void {
-  const axes = axesWithMentality(style, mentality);
+  const axes = axesWithMentality(style, mentality, axesOverride);
   Object.assign(TEAM_PASS_WEIGHTS[team], BUILD_UP_PASS[axes.build_up]);
   Object.assign(TEAM_CARRY_WEIGHTS[team], BUILD_UP_CARRY[axes.build_up]);
   TEAM_ATTACK_WIDTH[team]    = WIDTH_ATTACK_WIDTH[axes.width];

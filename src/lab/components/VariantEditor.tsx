@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { TACTICAL_STYLE_OPTIONS, MENTALITY_OPTIONS, DEFAULT_MENTALITY } from "@/types/tacticsTypes";
-import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
+import { TACTICAL_STYLE_OPTIONS, MENTALITY_OPTIONS, DEFAULT_MENTALITY, axesFor } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality, TacticalAxes } from "@/types/tacticsTypes";
+import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
 import type { RawAttributes, Variant } from "@/lab/types";
 import { RAW_ATTRIBUTE_KEYS } from "@/lab/types";
 import type { FormationCatalog } from "@/lab/api";
-import { generateVariantLabel } from "@/lab/labNames";
+import { variantAutoLabel } from "@/lab/labNames";
+
+const AXIS_OPTIONS: { key: keyof TacticalAxes; label: string; values: string[] }[] = [
+  { key: "pressing_style", label: "Pressing", values: ["low_block", "mid_block", "high_press"] },
+  { key: "defensive_line", label: "Line", values: ["deep", "normal", "high"] },
+  { key: "width", label: "Width", values: ["narrow", "normal", "wide"] },
+  { key: "build_up", label: "Build-up", values: ["direct", "balanced", "possession"] },
+];
 
 interface Props {
   variant: Variant;
@@ -20,10 +28,9 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
     const next = { ...variant, ...p };
     // If formation, tactic or mentality changed (not label), and the current label is
     // still the auto-generated one, keep it in sync.
-    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p) && !('label' in p)) {
-      const autoNow = generateVariantLabel(variant.formation, variant.tacticalStyle, variant.mentality);
-      if (variant.label === autoNow) {
-        next.label = generateVariantLabel(next.formation, next.tacticalStyle, next.mentality);
+    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p || 'axesOverride' in p || 'customFormation' in p) && !('label' in p)) {
+      if (variant.label === variantAutoLabel(variant)) {
+        next.label = variantAutoLabel(next);
       }
     }
     onChange(next);
@@ -100,6 +107,42 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20">Free form.</span>
+        <select
+          value={variant.customFormation ? Object.keys(CUSTOM_PRESETS).find((k) => JSON.stringify(CUSTOM_PRESETS[k]) === JSON.stringify(variant.customFormation)) ?? "" : ""}
+          onChange={(e) => patch({ customFormation: e.target.value ? CUSTOM_PRESETS[e.target.value] : undefined })}
+          className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs flex-1"
+          title="Zone-grid formation (replaces the formation above)"
+        >
+          <option value="">off (use formation above)</option>
+          {Object.keys(CUSTOM_PRESETS).map((k) => (
+            <option key={k} value={k}>{k}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        {AXIS_OPTIONS.map((a) => (
+          <label key={a.key} className="flex items-center gap-2">
+            <span className="text-white/50 w-16">{a.label}</span>
+            <select
+              value={variant.axesOverride?.[a.key] ?? ""}
+              onChange={(e) => {
+                const next = { ...(variant.axesOverride ?? {}) } as Record<string, string>;
+                if (e.target.value) next[a.key] = e.target.value;
+                else delete next[a.key];
+                patch({ axesOverride: Object.keys(next).length ? (next as Partial<TacticalAxes>) : undefined });
+              }}
+              className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs flex-1"
+            >
+              <option value="">style ({axesFor(variant.tacticalStyle)[a.key]})</option>
+              {a.values.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </label>
+        ))}
       </div>
 
       <div className="flex items-center gap-2 text-xs">

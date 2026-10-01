@@ -5,7 +5,8 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
-import { formationForSimId } from "@/Domain/matchFormations";
+import { formationForTactics } from "@/Domain/matchFormations";
+import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
@@ -201,11 +202,30 @@ export const saveRoutes = {
         lineup:         [],
       } satisfies TacticsSave;
 
+      let customFormation = existing.customFormation;
+      if (body.customFormation !== undefined) {
+        const parsed = parseCustomFormation(body.customFormation);
+        if (!parsed) return Response.json({ error: "invalid custom formation" }, { status: 400 });
+        customFormation = parsed;
+      }
+      let axesOverride = existing.axesOverride;
+      if (body.axesOverride !== undefined) {
+        const parsed = parseAxesOverride(body.axesOverride);
+        if (!parsed) return Response.json({ error: "invalid axes override" }, { status: 400 });
+        axesOverride = Object.keys(parsed).length ? parsed : undefined;
+      }
+      const formationId = body.formation ?? existing.formation;
+      if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
+        return Response.json({ error: "custom formation missing" }, { status: 400 });
+      }
+
       const updated: TacticsSave = {
-        formation:      body.formation      ?? existing.formation,
+        formation:      formationId,
         tactical_style: body.tactical_style ?? existing.tactical_style,
         lineup:         body.lineup         ?? existing.lineup,
         assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
+        ...(customFormation ? { customFormation } : {}),
+        ...(axesOverride ? { axesOverride } : {}),
       };
 
       await saveService.saveTactics(id, updated);
@@ -246,7 +266,7 @@ export const saveRoutes = {
       const tactics = await saveService.getTactics(id);
       const valid = resolveUserLineup(
         squad,
-        formationForSimId(tactics?.formation ?? meta.formation ?? "4-3-3"),
+        formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" }),
         tactics?.lineup ?? [],
         meta.currentDate,
       ).rotationSuggestion;
