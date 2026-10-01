@@ -4,7 +4,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { Formation } from "@/GameEngine/types";
 import { getFormationSlots, type FormationShape } from "@/types/formationSlots";
-import { DEFAULT_SIM_FORMATION_ID, formationForSimId } from "@/Domain/matchFormations";
+import { DEFAULT_SIM_FORMATION_ID, formationForSimId, formationForTactics } from "@/Domain/matchFormations";
 import {
   autoFillLineup,
   autoFillLineupWithFitness,
@@ -174,7 +174,7 @@ export function computeMatchSimulationLineups(
     lineup: [],
   } satisfies TacticsSave);
 
-  const userFormation = formationForSimId(t.formation);
+  const userFormation = formationForTactics(t);
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {

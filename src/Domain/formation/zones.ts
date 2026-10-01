@@ -7,7 +7,7 @@
  * (Team A frame, x = depth 0..115, y = 0..74 from the left/top touchline).
  */
 import type { Formation, FormationSlotDef, PlayerRole } from "@/GameEngine/types";
-import type { CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
+import type { CustomFormation, CustomFormationSlot, TacticalAxes } from "@/types/tacticsTypes";
 
 export const ZONE_COLS = 5;
 export const ZONE_ROWS = 6;
@@ -137,6 +137,52 @@ export function customFromFormation(f: {
     slots.push(slotForZone(z.row, z.col)!);
   }
   return { slots: sortCustomSlots(slots) };
+}
+
+function fromZones(zones: [number, number][]): CustomFormation {
+  return { slots: sortCustomSlots(zones.map(([r, c]) => slotForZone(r, c)!)) };
+}
+
+/** Free-formation presets for tooling (/lab, /test) — shapes no ready-made formation offers. */
+export const CUSTOM_PRESETS: Record<string, CustomFormation> = {
+  "3-2-4-1": fromZones([[0, 2], [1, 1], [1, 2], [1, 3], [2, 1], [2, 3], [3, 0], [4, 1], [4, 3], [3, 4], [5, 2]]),
+  "4-1-3-2": fromZones([[0, 2], [1, 0], [1, 1], [1, 3], [1, 4], [2, 2], [3, 1], [3, 2], [3, 3], [5, 1], [5, 3]]),
+  "3-4-1-2": fromZones([[0, 2], [1, 1], [1, 2], [1, 3], [3, 0], [3, 1], [3, 3], [3, 4], [4, 2], [5, 1], [5, 3]]),
+};
+
+const AXIS_VALUES: Record<string, readonly string[]> = {
+  pressing_style: ["low_block", "mid_block", "high_press"],
+  defensive_line: ["deep", "normal", "high"],
+  width: ["narrow", "normal", "wide"],
+  build_up: ["direct", "balanced", "possession"],
+};
+
+/** Parses an untrusted axes override; null = invalid, `{}` = no override. */
+export function parseAxesOverride(raw: unknown): Partial<TacticalAxes> | null {
+  if (raw === null || raw === undefined) return {};
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!AXIS_VALUES[k] || typeof v !== "string" || !AXIS_VALUES[k]!.includes(v)) return null;
+    out[k] = v;
+  }
+  return out as Partial<TacticalAxes>;
+}
+
+/** Parses an untrusted custom formation body; null = invalid. Slots come back in canonical order. */
+export function parseCustomFormation(raw: unknown): CustomFormation | null {
+  if (!raw || typeof raw !== "object") return null;
+  const slots = (raw as { slots?: unknown }).slots;
+  if (!Array.isArray(slots)) return null;
+  const clean: CustomFormationSlot[] = [];
+  for (const s of slots) {
+    if (!s || typeof s !== "object") return null;
+    const { x, y, role } = s as Record<string, unknown>;
+    if (typeof x !== "number" || typeof y !== "number" || typeof role !== "string") return null;
+    clean.push({ x, y, role });
+  }
+  const sorted = sortCustomSlots(clean);
+  return validateCustomFormation(sorted).ok ? { slots: sorted } : null;
 }
 
 /** "D-M-F" shape (goalkeeper excluded). */

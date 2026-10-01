@@ -36,6 +36,23 @@ import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import playersJson from "@/Data/players.json";
 import rolesJson from "@/Data/roles.json";
 import formation433Fallback from "@/Data/formations/4-3-3.json";
+import { CUSTOM_PRESETS, customToFormation } from "@/Domain/formation/zones";
+import type { TacticalAxes } from "@/types/tacticsTypes";
+import { axesFor } from "@/types/tacticsTypes";
+
+/** `/test` formation ids starting with "free:" are zone-grid presets (Block C2), resolved locally. */
+const FREE_PREFIX = "free:";
+const FREE_IDS = Object.keys(CUSTOM_PRESETS).map((k) => FREE_PREFIX + k);
+function freeFormation(id: string): Formation | null {
+  const preset = id.startsWith(FREE_PREFIX) ? CUSTOM_PRESETS[id.slice(FREE_PREFIX.length)] : undefined;
+  return preset ? customToFormation(preset) : null;
+}
+const AXIS_ROWS: { key: keyof TacticalAxes; label: string; values: string[] }[] = [
+  { key: "pressing_style", label: "Press", values: ["low_block", "mid_block", "high_press"] },
+  { key: "defensive_line", label: "Line", values: ["deep", "normal", "high"] },
+  { key: "width", label: "Width", values: ["narrow", "normal", "wide"] },
+  { key: "build_up", label: "Build", values: ["direct", "balanced", "possession"] },
+];
 import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -323,6 +340,8 @@ export function TestScreen() {
     const v = urlStr('Btac'); return (TACTICAL_STYLE_OPTIONS.some(o => o.value === v) ? v : DEFAULT_TACTICAL_STYLE) as TacticalStyle;
   });
   // Live-match mentality shift per team (spec §1) — layered on top of the tactical style.
+  const [axesA, setAxesA] = useState<Partial<TacticalAxes> | undefined>(undefined);
+  const [axesB, setAxesB] = useState<Partial<TacticalAxes> | undefined>(undefined);
   const [mentalityA, setMentalityA] = useState<Mentality>(() => {
     const v = urlStr('Amen'); return (MENTALITY_OPTIONS as string[]).includes(v ?? '') ? (v as Mentality) : DEFAULT_MENTALITY;
   });
@@ -460,16 +479,18 @@ export function TestScreen() {
         if (!r.ok) throw new Error(String(r.status));
         return r.json() as Promise<{ id: string }[]>;
       })
-      .then(list => setFormations(list.map(f => f.id)))
+      .then(list => setFormations([...list.map(f => f.id), ...FREE_IDS]))
       .catch(() => {
         console.warn(
           "[Test] /api/formations failed — open this app via `bun dev` (same origin as the API). Using bundled formation list.",
         );
-        setFormations([...FORMATION_IDS_FALLBACK]);
+        setFormations([...FORMATION_IDS_FALLBACK, ...FREE_IDS]);
       });
   }, []);
 
   useEffect(() => {
+    const free = freeFormation(formIdA);
+    if (free) { setFormObjA(free); return; }
     fetch(`/api/formations/${formIdA}`)
       .then(r => {
         if (!r.ok) throw new Error(String(r.status));
@@ -480,6 +501,8 @@ export function TestScreen() {
   }, [formIdA]);
 
   useEffect(() => {
+    const free = freeFormation(formIdB);
+    if (free) { setFormObjB(free); return; }
     fetch(`/api/formations/${formIdB}`)
       .then(r => {
         if (!r.ok) throw new Error(String(r.status));
@@ -509,8 +532,8 @@ export function TestScreen() {
     setLivePlayer(null);
   }, [scenario, resetKey]);
 
-  useEffect(() => { applyTeamTacticsConfig('A', tacticsA, mentalityA); applyTeamAttackConfig('A', tacticsA, mentalityA); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA]);
-  useEffect(() => { applyTeamTacticsConfig('B', tacticsB, mentalityB); applyTeamAttackConfig('B', tacticsB, mentalityB); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB]);
+  useEffect(() => { applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA]);
+  useEffect(() => { applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB]);
 
   // When attr sliders change, patch live player stats immediately
   useEffect(() => {
@@ -887,10 +910,10 @@ export function TestScreen() {
           <div className="grid grid-cols-2 gap-4">
             {(
               [
-                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, mentality: mentalityA, setMentality: setMentalityA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
-                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, mentality: mentalityB, setMentality: setMentalityB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
+                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, axes: axesA, setAxes: setAxesA, mentality: mentalityA, setMentality: setMentalityA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
+                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, axes: axesB, setAxes: setAxesB, mentality: mentalityB, setMentality: setMentalityB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
               ] as const
-            ).map(({ team, label, cls, tactics, setTactics: setT, mentality, setMentality: setM, intentOverride, setIntentOverride: setIO }) => {
+            ).map(({ team, label, cls, tactics, setTactics: setT, axes, setAxes: setAX, mentality, setMentality: setM, intentOverride, setIntentOverride: setIO }) => {
               const liveIntent = liveTeamIntent[team];
               const badge = INTENT_BADGE[liveIntent];
               return (
@@ -920,6 +943,28 @@ export function TestScreen() {
                         {opt.label}
                       </button>
                     ))}
+                  </div>
+                  {/* Axes override — per-axis edit on top of the style (Block C2) */}
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-bold text-muted-foreground tracking-widest uppercase">Axes</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {AXIS_ROWS.map(a => (
+                        <select
+                          key={a.key}
+                          value={axes?.[a.key] ?? ''}
+                          onChange={e => {
+                            const next = { ...(axes ?? {}) } as Record<string, string>;
+                            if (e.target.value) next[a.key] = e.target.value; else delete next[a.key];
+                            setAX(Object.keys(next).length ? (next as Partial<TacticalAxes>) : undefined);
+                          }}
+                          title={a.label}
+                          className="bg-secondary/40 border border-border rounded px-1 py-0.5 text-[9px] text-foreground cursor-pointer"
+                        >
+                          <option value="">{a.label}: {axesFor(tactics)[a.key]}</option>
+                          {a.values.map(v => <option key={v} value={v}>{a.label}: {v}</option>)}
+                        </select>
+                      ))}
+                    </div>
                   </div>
                   {/* Mentality — live-match shift on top of the tactical style */}
                   <div className="space-y-1">
