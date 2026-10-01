@@ -254,3 +254,10 @@ export function isAttributeId(key: string): key is AttributeId {
     "reflex", "jump",
   ].includes(key);
 }
+
+/** A player released at the end of his contract, waiting for a club (`saves/{id}/freeAgents.json`). */
+export interface FreeAgent {
+  player: RosterPlayer;
+  /** Release date (ISO). Free agents leave the world a season after this. */
+  since: string;
+}

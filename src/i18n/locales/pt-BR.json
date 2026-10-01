@@ -1037,7 +1037,8 @@
       "season": "Temporada",
       "cup": "Copa",
       "continental": "Continental",
-      "injury": "Lesão"
+      "injury": "Lesão",
+      "contract": "Contratos"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1071,6 +1072,11 @@
         "medium": "média",
         "severe": "grave"
       }
+    },
+    "contract": {
+      "expiring": "Contratos que terminam nesta temporada: {{players}}",
+      "renewed": "{{players}} assinou novo contrato (até {{until}})",
+      "released": "Contrato encerrado, saiu como jogador livre: {{players}}"
     }
   },
   "finances": {

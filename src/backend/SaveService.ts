@@ -9,7 +9,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
-import type { Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, Squad, StandingRow } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -179,6 +179,16 @@ export class SaveService {
 
   saveMarket(saveId: string, market: MarketState): Promise<void> {
     return this.dal.writeMarket(saveId, market);
+  }
+
+  // ── Free agents ────────────────────────────────────────────────────────────
+
+  getFreeAgents(saveId: string): Promise<FreeAgent[]> {
+    return this.dal.readFreeAgents(saveId);
+  }
+
+  writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
+    return this.dal.writeFreeAgents(saveId, agents);
   }
 
   // ── Transfers ──────────────────────────────────────────────────────────────
