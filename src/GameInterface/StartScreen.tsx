@@ -101,7 +101,7 @@ export function StartScreen() {
           <p className="mt-2 text-center text-sm text-muted-foreground">{t("common.saveLimitReached")}</p>
         )}
 
-        <h2 className="mb-2 mt-8 font-display text-xl font-black uppercase leading-none">{t("startScreen.savedGames")}</h2>
+        <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-2 mt-8">{t("startScreen.savedGames")}</h2>
         {saves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
