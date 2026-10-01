@@ -1704,7 +1704,7 @@
     "ok": "OK"
   },
   "players": {
-    "star": "Mito da atualidade"
+    "star": {"gold":"Top 25 do mundo","blue":"Grande fase","green":"Prodígio"}
   },
   "fitness": {
     "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"
