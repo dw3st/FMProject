@@ -12,12 +12,22 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { aptitudeFor, type Aptitude } from "@/Domain/positions/positionAptitude";
+
+/** Aptitudes that deserve a warning on the formation screen. */
+const isPoorFit = (apt: Aptitude) => apt === "training" || apt === "unsuitable";
+
+const APT_DOT: Record<Aptitude, string> = {
+  natural: "bg-emerald-500",
+  apt: "bg-emerald-300",
+  training: "bg-amber-400",
+  unsuitable: "bg-destructive",
+};
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import {
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
-  isOutOfPosition,
   slotRoleFitRank,
 } from "@/Domain/lineupHelpers";
 import { isInjured } from "@/Domain/injury/injury";
@@ -360,7 +370,7 @@ export function FormationScreen() {
                 players={startingBySlot}
                 selectedSlotIdx={selectedSlotIdx}
                 onSlotClick={handleSlotClick}
-                getOutOfPosition={(player, slotRole) => isOutOfPosition(player, slotRole)}
+                getOutOfPosition={(player, slotRole) => isPoorFit(aptitudeFor(player, slotRole))}
               />
             </div>
 
@@ -413,7 +423,8 @@ export function FormationScreen() {
                           ratingRole={slots[idx]?.role}
                           showSlot
                           selected={selectedSlotIdx === idx}
-                          outOfPosition={slots[idx] ? isOutOfPosition(player, slots[idx]!.role) : false}
+                          outOfPosition={slots[idx] ? isPoorFit(aptitudeFor(player, slots[idx]!.role)) : false}
+                          aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
                           onClick={() => handleSlotClick(idx)}
                           injured={isInjured(player, currentDate)}
                         />
@@ -549,6 +560,7 @@ function SquadPlayerRow({
   selected,
   highlight,
   outOfPosition,
+  aptitude,
   onClick,
   injured,
 }: {
@@ -560,6 +572,8 @@ function SquadPlayerRow({
   selected?: boolean;
   highlight?: boolean;
   outOfPosition?: boolean;
+  /** Aptitude of the player for the slot's role (coloured dot). */
+  aptitude?: Aptitude;
   onClick?: () => void;
   injured?: boolean;
 }) {
@@ -606,6 +620,12 @@ function SquadPlayerRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="font-semibold text-sm text-foreground truncate m-0">{player.name}</p>
+            {aptitude && (
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${APT_DOT[aptitude]}`}
+                title={t("roles.atSlot", { aptitude: t(`roles.aptitude.${aptitude}` as never), role: t(`roles.detailed.${ratingRole ?? slotLabel}` as never) })}
+              />
+            )}
             {outOfPosition && (
               <span title={t("formations.outOfPosition")}>
                 <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" aria-hidden />

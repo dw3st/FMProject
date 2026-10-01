@@ -6,6 +6,7 @@ import { ATTRIBUTE_LABELS } from "@/GameInterface/AttributeLabels";
 import type { AttributeId } from "@/GameInterface/AttributeLabels";
 import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
+import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -181,6 +182,7 @@ export function PlayerCard({
                 <p className="text-lg md:text-xl font-black text-foreground font-display m-0">{player.energy}%</p>
               </div>
             </div>
+            {player.aptitudes && <PositionPitch aptitudes={player.aptitudes} />}
           </div>
 
           <div className="p-6 md:p-8">
@@ -229,7 +231,7 @@ export function PlayerCard({
           <p className="text-[10px] text-muted-foreground truncate">{player.club}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${posColor}`}>
-              {MAIN_ROLE_ABBR[mainRole]}
+              {player.natural ? t(`roles.detailedAbbr.${player.natural}` as never) : MAIN_ROLE_ABBR[mainRole]}
             </span>
             <span className="text-[9px] text-muted-foreground">
               {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} · {player.age}y
