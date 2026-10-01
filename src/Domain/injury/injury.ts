@@ -18,6 +18,8 @@ export interface InjuryFactors {
   age: number;
   /** Strength attribute, 0..10 scale. */
   strength: number;
+  /** Fitness-coach multiplier on the whole rate (`src/Domain/staff`); absent = 1. */
+  staffMult?: number;
 }
 
 /** Energy (0..100) → injury-rate multiplier: 1 at 100, up to `ENERGY_MAX_MULT` at 0, linear. */
@@ -53,7 +55,8 @@ function combinedFactor(p: InjuryFactors): number {
     energyInjuryFactor(p.energy) *
     loadInjuryFactor(p.load) *
     ageInjuryFactor(p.age) *
-    strengthInjuryFactor(p.strength)
+    strengthInjuryFactor(p.strength) *
+    (p.staffMult ?? 1)
   );
 }
 
@@ -75,8 +78,8 @@ export function contactInjuryChance(p: InjuryFactors): number {
 }
 
 /** Heavy training's small flat chance of a light injury. Light/normal training never injures. */
-export function trainingInjuryChance(intensity: "light" | "normal" | "heavy"): number {
-  return intensity === "heavy" ? INJURY.HEAVY_TRAINING_CHANCE : 0;
+export function trainingInjuryChance(intensity: "light" | "normal" | "heavy", staffMult = 1): number {
+  return intensity === "heavy" ? INJURY.HEAVY_TRAINING_CHANCE * staffMult : 0;
 }
 
 /** Rolls a severity from `INJURY.SEVERITY_WEIGHTS` (60% light / 30% medium / 10% severe). */

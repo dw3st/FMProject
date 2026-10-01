@@ -23,6 +23,7 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
     case "commercial":
     case "wages":
     case "operational":
+    case "staff":
       return { key: entry.kind };
     case "gate":
       return ref?.competition ? { key: "gate", competition: ref.competition } : null;

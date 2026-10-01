@@ -9,6 +9,7 @@ export type LedgerKind =
   | "commercial"
   | "wages"
   | "operational"
+  | "staff"
   | "gate"
   | "prize"
   | "transfer_in"
@@ -40,6 +41,7 @@ const LEDGER_KINDS: LedgerKind[] = [
   "commercial",
   "wages",
   "operational",
+  "staff",
   "gate",
   "prize",
   "transfer_in",

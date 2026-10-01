@@ -4,6 +4,8 @@ import { advanceDayRoutes } from "@/backend/advanceDay";
 import { advanceUntilRoutes } from "@/backend/advanceUntil";
 import { transferRoutes } from "@/backend/transfers";
 import { contractRoutes } from "@/backend/contractRoutes";
+import { staffRoutes } from "@/backend/staffRoutes";
+import { obscureSquad, staffEffectsOf } from "@/Domain/staff/staff";
 import { inboxRoutes } from "@/backend/inbox";
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
@@ -67,6 +69,7 @@ export const apiRoutes = {
   ...advanceUntilRoutes,
   ...transferRoutes,
   ...contractRoutes,
+  ...staffRoutes,
   ...inboxRoutes,
 
   // Public runtime config for the frontend. PostHog is only enabled when
@@ -211,7 +214,18 @@ export const apiRoutes = {
     const loc = resolveSquadRoute(await saveService.getSquadIndex(saveId!), league!, club!);
     const found = loc ? await saveService.getSquad(saveId!, loc.leagueSlug, loc.stem) : null;
     if (!loc || !found) return Response.json({ error: "save squad not found" }, { status: 404 });
-    const squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
+    let squad: Squad = { ...found, leagueSlug: loc.leagueSlug };
+    // `?scouted=1`: the view of a club's players on the screens (squad, player sheet). Anyone
+    // outside the user's own club is blurred by the chief scout's uncertainty; the engine paths
+    // (match setup, advance day) never pass it and always get exact values.
+    if (new URL(req.url).searchParams.get("scouted") === "1") {
+      const meta = await saveService.getMeta(saveId!);
+      if (meta && meta.clubId !== squad.id) {
+        const ownRef = await saveService.resolveSquadId(saveId!, meta.clubId);
+        const own = ownRef ? await saveService.getSquad(saveId!, ownRef.leagueSlug, ownRef.clubSlug) : null;
+        if (own) squad = obscureSquad(squad, staffEffectsOf(own).scoutNoise, saveId!);
+      }
+    }
     if (req.method === "PUT") {
       // `finances` is never accepted from the client here — every money movement for the
       // player's club goes through the ledger (`FinancialService.recordMoney`), never a raw

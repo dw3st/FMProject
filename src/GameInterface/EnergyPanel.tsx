@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
 import type { GameState, GamePlayer } from "@/GameEngine/types";
+import type { StaffEffects } from "@/Domain/staff/staff";
 
 /**
  * `/test` debug panel — live per-player energy and drain-per-game-minute, computed from the
@@ -17,9 +18,12 @@ interface Props {
   gameState: GameState | null;
   teamColorA: string;
   teamColorB: string;
+  /** Technical-staff effects of each side (`staffEffectsOf`): recovery between games, injury risk. */
+  staffA?: StaffEffects;
+  staffB?: StaffEffects;
 }
 
-export function EnergyPanel({ gameState, teamColorA, teamColorB }: Props) {
+export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB }: Props) {
   const prevRef = useRef<Map<number, { energy: number; matchTime: number }>>(new Map());
   const smoothedDrainRef = useRef<Map<number, number>>(new Map());
   const lastMatchTimeRef = useRef(0);
@@ -67,8 +71,8 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB }: Props) {
         </h3>
       </div>
       <div className="flex gap-4 p-2">
-        <EnergyTeamTable accentColor={teamColorA} players={teamA} drain={drainByPlayer} side="left" />
-        <EnergyTeamTable accentColor={teamColorB} players={teamB} drain={drainByPlayer} side="right" />
+        <EnergyTeamTable accentColor={teamColorA} players={teamA} drain={drainByPlayer} side="left" staff={staffA} />
+        <EnergyTeamTable accentColor={teamColorB} players={teamB} drain={drainByPlayer} side="right" staff={staffB} />
       </div>
     </div>
   );
@@ -85,14 +89,21 @@ function EnergyTeamTable({
   players,
   drain,
   side,
+  staff,
 }: {
   accentColor: string;
   players: GamePlayer[];
   drain: Map<number, number>;
   side: "left" | "right";
+  staff?: StaffEffects;
 }) {
   return (
     <div className="flex-1 min-w-0">
+      {staff && (
+        <div className="px-3 py-1 text-[10px] text-muted-foreground tabular-nums">
+          Staff: recovery x{staff.recoveryMult.toFixed(2)} / injury x{staff.injuryMult.toFixed(2)}
+        </div>
+      )}
       <div className="grid grid-cols-[40px_1fr_60px_90px] gap-1 px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground border-b border-border/50">
         <div />
         <div className={side === "right" ? "text-right" : ""}>Name</div>

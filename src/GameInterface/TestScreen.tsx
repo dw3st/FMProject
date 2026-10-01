@@ -22,6 +22,12 @@ import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import { TEST_SCENARIOS } from "@/GameEngine/Suport/TestCases";
 import type { TestScenario } from "@/GameEngine/Suport/TestCases";
 import { createMatchState, getBallPos } from "@/GameEngine/Domain/gameState";
+import { staffEffectsOf } from "@/Domain/staff/staff";
+import type { Squad } from "@/types/playerTypes";
+
+/** `/test` squads are bare rosters without finances: staff effects come from the implicit LOW-tier club. */
+const staffOfTestSquad = (s: { label: string; players: Squad["players"] }) =>
+  staffEffectsOf({ id: s.label, name: s.label, colors: ["#000000", "#ffffff"], money: 0, players: s.players });
 import { teamLineup } from "@/GameEngine/Domain/TeamLineup";
 import { getRuntimeLineup, normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
@@ -514,7 +520,10 @@ export function TestScreen() {
 
   useEffect(() => {
     if (!formObjA || !formObjB) return;
-    const base = createMatchState(SQUADS[squadA]!.players, formObjA, SQUADS[squadB]!.players, formObjB);
+    const base = createMatchState(SQUADS[squadA]!.players, formObjA, SQUADS[squadB]!.players, formObjB, undefined, undefined, {
+      A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
+      B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
+    });
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
     setMatchState(state);
     setPlayerList(state.players);
@@ -1246,7 +1255,13 @@ export function TestScreen() {
       )}
       {energyOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
-          <EnergyPanel gameState={liveGameState} teamColorA="#2d6cdf" teamColorB="#df3b2d" />
+          <EnergyPanel
+            gameState={liveGameState}
+            teamColorA="#2d6cdf"
+            teamColorB="#df3b2d"
+            staffA={staffOfTestSquad(SQUADS[squadA]!)}
+            staffB={staffOfTestSquad(SQUADS[squadB]!)}
+          />
         </div>
       )}
 

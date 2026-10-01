@@ -13,7 +13,7 @@ const columns = [
   { key: "name", label: "Name", width: "flex-1 min-w-[140px]" },
   { key: "age", label: "Age", width: "w-12" },
   { key: "club", label: "Club", width: "w-32" },
-  { key: "avg", label: "OVR", width: "w-14" },
+  { key: "avg", label: "OVR", width: "w-20" },
   { key: "phase", label: "Phase", width: "w-16" },
   { key: "training", label: "Train", width: "w-16" },
   { key: "moral", label: "Moral", width: "w-16" },
@@ -161,8 +161,8 @@ export function ScoutTable({
                   <span className="text-muted-foreground">{player.club}</span>
                 )}
               </div>
-              <div className="px-3 py-2.5 w-14">
-                <AvgBadge value={player.avg} />
+              <div className="px-3 py-2.5 w-20">
+                <AvgBadge value={player.avg} range={player.avgRange} />
               </div>
               <div className="px-3 py-2.5 w-16">
                 <StatusBadge level={player.phase} />
