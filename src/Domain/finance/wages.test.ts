@@ -4,6 +4,7 @@ import {
   clubAnnualRevenue,
   clubWageFactor,
   playerWeeklyWage,
+  pullWageFactorToTarget,
   squadCurveBill,
   squadWeeklyWages,
   wageFactorOf,
@@ -197,5 +198,24 @@ describe("carryForwardWageFactor", () => {
     expect(carryForwardWageFactor(1.5, 0, 10_000_000)).toBe(1.5);
     expect(carryForwardWageFactor(1.5, -1, 10_000_000)).toBe(1.5);
     expect(carryForwardWageFactor(100, 0, 10_000_000)).toBe(WAGE_CONFIG.MAX_FACTOR);
+  });
+});
+
+describe("pullWageFactorToTarget (#23)", () => {
+  test("moves TARGET_PULL of the way to the target", () => {
+    expect(pullWageFactorToTarget(2, 1)).toBeCloseTo(2 - WAGE_CONFIG.TARGET_PULL, 6);
+    expect(pullWageFactorToTarget(0.5, 1)).toBeCloseTo(0.5 + WAGE_CONFIG.TARGET_PULL * 0.5, 6);
+  });
+  test("a factor already at the target stays", () => {
+    expect(pullWageFactorToTarget(1.3, 1.3)).toBeCloseTo(1.3, 9);
+  });
+  test("is clamped like the factor itself", () => {
+    expect(pullWageFactorToTarget(WAGE_CONFIG.MAX_FACTOR, 100)).toBe(WAGE_CONFIG.MAX_FACTOR);
+    expect(pullWageFactorToTarget(WAGE_CONFIG.MIN_FACTOR, -100)).toBe(WAGE_CONFIG.MIN_FACTOR);
+  });
+  test("repeated pulls converge on the target", () => {
+    let f = 3;
+    for (let i = 0; i < 20; i++) f = pullWageFactorToTarget(f, 1);
+    expect(f).toBeCloseTo(1, 2);
   });
 });
