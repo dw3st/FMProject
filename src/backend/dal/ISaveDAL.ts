@@ -1,5 +1,5 @@
 import type { SaveMeta } from "@/backend/SaveService";
-import type { FreeAgent, Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { SeasonArchive, SeasonData, LeagueCalendarResult, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
@@ -36,6 +36,10 @@ export interface ISaveDAL {
   // ── Free agents ───────────────────────────────────────────────────────────
   readFreeAgents(saveId: string): Promise<FreeAgent[]>;
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void>;
+
+  // ── Retired players ───────────────────────────────────────────────────────
+  readRetired(saveId: string): Promise<RetiredPlayer[]>;
+  writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void>;
 
   // ── Squads ────────────────────────────────────────────────────────────────
   readSquad(saveId: string, leagueSlug: string, clubSlug: string): Promise<Squad | null>;
