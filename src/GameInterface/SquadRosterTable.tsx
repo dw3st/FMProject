@@ -35,6 +35,7 @@ export function SquadRosterTable({
     { key: "age", label: t("dashboard.squadRosterTable.age"), width: "w-12" },
     { key: "avg", label: t("dashboard.squadRosterTable.avg"), width: "w-14" },
     { key: "salary", label: t("dashboard.squadRosterTable.salary"), width: "w-20" },
+    { key: "contractUntil", label: t("dashboard.squadRosterTable.contract"), width: "w-16" },
     { key: "valueMillions", label: t("dashboard.squadRosterTable.value"), width: "w-16" },
     { key: "goals", label: t("dashboard.squadRosterTable.goals"), width: "w-10" },
     { key: "avgRating", label: t("dashboard.squadRosterTable.rating"), width: "w-20" },
@@ -153,6 +154,7 @@ export function SquadRosterTable({
               <AvgBadge value={player.avg} />
             </div>
             <div className="px-3 py-2.5 w-20 text-muted-foreground font-medium">{player.salary}</div>
+            <div className="px-3 py-2.5 w-16 text-muted-foreground font-medium">{player.contractUntil ?? "—"}</div>
             <div className={`px-3 py-2.5 w-16 font-bold ${ratingTextClass10(player.avg)}`}>{player.value}</div>
             <div className="px-3 py-2.5 w-10 text-foreground font-bold">{player.goals}</div>
             <div className="px-3 py-2.5 w-20">

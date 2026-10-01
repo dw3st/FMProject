@@ -133,6 +133,7 @@ export class FileSystemDAL implements ISaveDAL {
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(freeAgentsPath(saveId), JSON.stringify(agents));
+    bumpSaveDataVersion(saveId);
   }
 
   async readTransfers(saveId: string): Promise<TransferRecord[]> {

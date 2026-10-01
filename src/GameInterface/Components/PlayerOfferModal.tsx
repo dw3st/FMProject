@@ -8,6 +8,7 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { translateTransferReason } from "@/GameInterface/Transfers/transferShared";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { TransferRecord } from "@/types/transferTypes";
+import { ContractTermsFields, useContractDemand, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 
 export function rawTransferOfferValue(avg: number, age: number): number {
   const base = avg * avg * 0.8;
@@ -51,6 +52,12 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [offerFee, setOfferFee] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<TransferRecord | null>(null);
+  const refusalText = useRefusalText();
+  const demand = useContractDemand(loadSession()?.saveId, player?.id ?? null, player?.squadId);
+  const [wage, setWage] = useState(0);
+  const [years, setYears] = useState(3);
+  const [contractError, setContractError] = useState<string | null>(null);
+  useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
 
   const slider = useMemo(
     () =>
@@ -64,6 +71,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const playerId = player?.id ?? null;
   useEffect(() => {
     setResult(null);
+    setContractError(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId]);
 
@@ -94,6 +102,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     }
 
     setSubmitting(true);
+    setContractError(null);
     try {
       const res = await fetch(`/api/saves/${session.saveId}/transfers`, {
         method: "POST",
@@ -102,11 +111,17 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
           playerId: activePlayer.id,
           fromSquadId: activePlayer.squadId,
           fee: offerFee,
+          wage,
+          years,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json() as { error: string };
+        if (["lowWage", "tooManyYears", "invalidYears"].includes(err.error)) {
+          setContractError(refusalText(err.error));
+          return;
+        }
         alert(err.error ?? "Transfer failed");
         return;
       }
@@ -172,6 +187,14 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 <p className="text-[11px] text-muted-foreground mt-1 m-0">
                   {t("transfers.estValue")}: <span className="text-foreground/80 font-semibold">{player.value}</span>
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  {t("contracts.terms")}
+                </label>
+                <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
+                {contractError && <p className="text-sm text-red-400 m-0 mt-2" role="alert">{contractError}</p>}
               </div>
 
               <div className="flex gap-3 pt-2">
