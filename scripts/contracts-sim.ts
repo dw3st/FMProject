@@ -18,13 +18,14 @@ import { aiClubFinance, financialTierOf } from "@/Domain/aiFinance/aiClubFinance
 import { FINANCIAL_TIERS } from "@/Domain/aiFinance/aiFinanceConfig";
 import { withContracts, addDaysIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
+import { freeAgentTick, refillSquad } from "@/Domain/contracts/freeAgents";
 import {
   carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill,
 } from "@/Domain/finance/wages";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
 import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { mulberry32 } from "@/Domain/rng";
-import type { FinancialTier, Squad } from "@/types/playerTypes";
+import type { FinancialTier, FreeAgent, Squad } from "@/types/playerTypes";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SQUADS_DIR = join(ROOT, "src", "Data", "squads");
@@ -50,6 +51,7 @@ console.log(`${squads.length} clubs, ${squads.reduce((n, s) => n + s.players.len
 
 const rng = mulberry32(12345);
 let market = initMarketState(squads, rng);
+let pool: FreeAgent[] = [];
 
 type Counts = Record<FinancialTier, { open: number; tight: number; frozen: number }>;
 const empty = (): Counts => Object.fromEntries(
@@ -83,6 +85,9 @@ for (let season = 0; season < seasons; season++) {
   const year = START_YEAR + season;
   const seasonCounts = empty();
   let signings = 0;
+  let freeSigned = 0;
+  let refillFree = 0;
+  let refillYouth = 0;
   const signingsByTier: Record<FinancialTier, number> = { LOW: 0, MEDIUM: 0, HIGH: 0, ELITE: 0 };
   let date = `${year}-06-01`;
   const end = `${year + 1}-05-31`;
@@ -98,6 +103,14 @@ for (let season = 0; season < seasons; season++) {
       squads[si] = applyAITransferSale(tx.updatedSeller, tx.fee);
       signings++;
       signingsByTier[financialTierOf(tx.buyerSquad)]++;
+    }
+    const fa = freeAgentTick({
+      squads, pool, date, rng, seasonEndOf: () => end,
+    });
+    if (fa.signedIds.size > 0) {
+      squads = fa.squads;
+      pool = pool.filter((f) => !fa.signedIds.has(f.player.id));
+      freeSigned += fa.signedIds.size;
     }
     if (day % 30 === 0) { sample(seasonCounts); sample(total); }
     date = addDaysIso(date, 1);
@@ -117,14 +130,28 @@ for (let season = 0; season < seasons; season++) {
     const res = processContractExpiries({ squad: next, date: end, nextSeasonEnd: `${year + 2}-05-31`, isHuman: false });
     released += res.released.length;
     renewed += res.renewed.length;
+    pool.push(...res.released.map((p) => ({ player: { ...p, squadId: "", contract: undefined }, since: end })));
     const { aiTransferBudget: _drop, ...fresh } = res.squad;
     void _drop;
     return fresh as Squad;
   });
 
+  // Refill after expiries (AI: free agents first, then filler youth).
+  squads = squads.map((s) => {
+    const r = refillSquad({ squad: s, pool, nextSeasonEnd: `${year + 2}-05-31`, isHuman: false, tagPrefix: `s${year}` });
+    if (r.signed.length > 0) {
+      const ids = new Set(r.signed.map((p) => p.id));
+      pool = pool.filter((f) => !ids.has(f.player.id));
+    }
+    refillFree += r.signed.length;
+    refillYouth += r.youth.length;
+    return r.squad;
+  });
+  pool = pool.filter((f) => f.since > `${year}-01-01`);
+
   const avgSquad = squads.reduce((n, s) => n + s.players.length, 0) / squads.length;
   console.log(`\nseason ${year}/${String(year + 1).slice(2)}: ${signings} signings (${FINANCIAL_TIERS.map((t) => `${t} ${signingsByTier[t]}`).join(", ")}), ` +
-    `${renewed} renewed, ${released} released, avg squad ${avgSquad.toFixed(1)}`);
+    `${renewed} renewed, ${released} released, ${freeSigned} free signings in-season, refill ${refillFree} free + ${refillYouth} youth, avg squad ${avgSquad.toFixed(1)}`);
   report("hiring state, sampled monthly", seasonCounts);
 }
 

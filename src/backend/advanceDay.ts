@@ -42,6 +42,8 @@ import {
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
+import { freeAgentTick, refillSquad } from "@/Domain/contracts/freeAgents";
+import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
 import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
@@ -1139,6 +1141,28 @@ export async function advanceOneDay(
       }
 
       await saveService.saveMarket(saveId, updatedMarket);
+
+      // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
+      // just traded today are skipped so their freshly saved rosters are never overwritten.
+      const freeAgentPool = await saveService.getFreeAgents(saveId);
+      if (freeAgentPool.length > 0) {
+        const tradedToday = new Set(completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]));
+        const hiringSquads = allSquadsMarket.filter((sq) => !tradedToday.has(sq.id));
+        const fa = freeAgentTick({
+          squads: hiringSquads,
+          pool: freeAgentPool,
+          date: currentDate,
+          rng: defaultRng,
+          excludeSquadId: resolvedPlayerSquadId,
+          seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end ?? defaultSeasonEnd(currentDate),
+        });
+        if (fa.signedIds.size > 0) {
+          for (const sq of fa.squads) {
+            if (fa.changedIds.has(sq.id)) await saveService.saveSquadById(saveId, sq);
+          }
+          await saveService.writeFreeAgents(saveId, freeAgentPool.filter((f) => !fa.signedIds.has(f.player.id)));
+        }
+      }
     }
 
     // ── Financial updates (player's club ledger) ─────────────────────────────
@@ -1424,12 +1448,14 @@ export async function advanceOneDay(
       //    releases the rest, the human club releases whoever it did not renew. Released players
       //    wait in freeAgents.json. Runs on the NEW membership with the new season's end dates.
       const releasedNow: FreeAgent[] = [];
+      const afterExpiry: { squad: Squad; nextEnd: string }[] = [];
       for (const slug of unit.leagues) {
         const nextEnd = updatedActiveLeagues[stateIdx(slug)]?.end;
         if (!nextEnd) continue;
         for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
           const isHuman = sq.id === playerClubSquadId;
           const res = processContractExpiries({ squad: sq, date: currentDate, nextSeasonEnd: nextEnd, isHuman });
+          afterExpiry.push({ squad: res.squad, nextEnd });
           if (res.squad === sq) continue;
           await saveService.saveSquadById(saveId, res.squad);
           for (const p of res.released) releasedNow.push({ player: { ...p, squadId: "", contract: undefined }, since: currentDate });
@@ -1443,9 +1469,20 @@ export async function advanceOneDay(
       if (releasedNow.length > 0 || due.units.length > 0) {
         const keepSince = addYearsIso(currentDate, -1);
         const existing = await saveService.getFreeAgents(saveId);
-        await saveService.writeFreeAgents(
-          saveId, [...existing.filter((f) => f.since > keepSince), ...releasedNow],
-        );
+        let pool = [...existing.filter((f) => f.since > keepSince), ...releasedNow];
+        // Refill: AI clubs below the minimums sign the best free agents that fit the wage cap, then
+        // filler youth; the human club only gets youth up to the per-role minimums.
+        for (const { squad: sq, nextEnd } of afterExpiry) {
+          const isHuman = sq.id === playerClubSquadId;
+          const r = refillSquad({ squad: sq, pool, nextSeasonEnd: nextEnd, isHuman, tagPrefix: `s${nextEnd.slice(0, 4)}` });
+          if (r.squad === sq) continue;
+          await saveService.saveSquadById(saveId, r.squad);
+          if (r.signed.length > 0) {
+            const ids = new Set(r.signed.map((p) => p.id));
+            pool = pool.filter((f) => !ids.has(f.player.id));
+          }
+        }
+        await saveService.writeFreeAgents(saveId, pool);
       }
 
       if (unit.leagues.includes(meta.leagueSlug)) {
