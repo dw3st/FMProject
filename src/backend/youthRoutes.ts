@@ -56,9 +56,10 @@ export const youthRoutes = {
       const player = squad.youth?.find((p) => p.id === playerId);
       if (!player) return Response.json({ error: "player not found" }, { status: 404 });
       if (squad.players.length >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+      if (!player.contract) return Response.json({ error: "noContract" }, { status: 409 });
       const promoted: RosterPlayer = {
         ...player,
-        contract: { until: player.contract!.until, wage: playerWeeklyWage(player, wageFactorOf(squad)) },
+        contract: { until: player.contract.until, wage: playerWeeklyWage(player, wageFactorOf(squad)) },
       };
       const next: Squad = {
         ...squad,

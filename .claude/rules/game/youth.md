@@ -103,3 +103,12 @@ jovem; nenhum clube da IA guarda `youth` ou passa de 30; ids de jogador únicos 
 mensagem de safra.
 
 Ultima rodada (2026-10-01): todas as checagens passaram; 77 de 83 clubes da IA das ligas viradas (93%) promoveram um jovem, o clube do jogador terminou com 5 na base.
+
+## Decisões registradas (revisão 2.3)
+
+- **Base não custa salário:** o contrato de base (3 anos) existe só para dar a data e o valor de
+  referência; os jovens em `squad.youth` não entram na folha, no extrato nem no `wageBill`. Ao promover,
+  o salário é recalculado pela curva do clube e passa a ser pago; a data de fim do contrato de base é
+  mantida.
+- **Carreira nova começa com a base vazia;** a primeira safra chega na primeira virada do país.
+- Promover um jovem sem contrato (não deveria existir) devolve 409 `noContract` em vez de quebrar.
