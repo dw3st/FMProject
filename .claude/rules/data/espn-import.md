@@ -197,6 +197,14 @@ que inflava demais um clube recém-promovido (ex.: Coventry City virava clube EL
 com orçamento de transferência de ~€149M só porque a mediana da Premier League é alta). Ver
 `.claude/rules/AI-clubs/finance.md` para tier/orçamento a partir das finanças.
 
+## Caixa de nomes turcos (#13)
+
+A ESPN grava alguns nomes turcos com a cauda da palavra em maiúsculas depois de `ı` (`BahadıR Han
+Gungordu`, `Ibrahim AlkıS`). `fixNameCasing` (`scripts/espn/normalize.ts`) passa para minúsculas
+(`toLocaleLowerCase("tr")`) qualquer sequência de maiúsculas logo após um `ı` e é aplicada a
+`name`/`fullName` dos jogadores criados do zero (`es_*`) em `apply.ts`. Jogadores casados com o mundo
+mantêm o nome do mundo. Nomes normais (`Kenan Yıldız`, `McDonald`) não são tocados.
+
 ## Entidades HTML nos nomes
 
 `checkWorldIntegrity` (`scripts/world/integrity.ts`, chamado por `importOpenFootball` e
