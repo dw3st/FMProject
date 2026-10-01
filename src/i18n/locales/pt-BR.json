@@ -128,36 +128,6 @@
     "whatsNew": "Novidades"
   },
   "newGame": {
-    "startDate": "Data de Início",
-    "creator": "Criador",
-    "lastUpdated": "Última atualização",
-    "official": "Oficial",
-    "territoryProfile": "Perfil do Território",
-    "established": "Fund. {{year}}",
-    "establishedUnknown": "Fund. —",
-    "yourName": "Seu Nome",
-    "databases": {
-      "official-2024": {
-        "name": "Oficial 2026/27",
-        "description": "Base de dados oficial completa, com dados verificados de jogadores e composições de elenco precisas.",
-        "creator": "Time FMPROJECT"
-      },
-      "official-2023": {
-        "name": "Oficial 2023/24",
-        "description": "Base da temporada passada para quem quer reescrever a história.",
-        "creator": "Time FMPROJECT"
-      },
-      "community-legends": {
-        "name": "Base de Lendas",
-        "description": "Jogadores clássicos das eras de ouro. Comande elencos lendários com notas históricas.",
-        "creator": "FutLegends"
-      },
-      "community-realistic": {
-        "name": "Realismo Total",
-        "description": "Base curada pela comunidade com notas realistas e atributos detalhados.",
-        "creator": "RealisticFC"
-      }
-    },
     "countries": {
       "england": {
         "name": "Inglaterra",
@@ -243,50 +213,17 @@
       "nl": "Holandês",
       "us": "Americano"
     },
-    "phase01": "Fase 01: Origem",
-    "matchPrep": "Preparação",
-    "step": "Passo {{current}} de {{total}}",
-    "selectDatabase": "Selecionar Banco de Dados",
-    "createManager": "Criar Técnico",
     "selectTerritory": "Selecionar Território",
-    "chooseClub": "Escolher Clube",
-    "confirmStart": "Confirmar e Iniciar",
-    "confirmSelection": "Confirmar Seleção",
     "startCareer": "Começar Carreira",
     "creatingSeave": "Criando Jogo...",
     "preparingTitle": "Preparando seu mundo",
     "preparingSubtitle": "Simulando as ligas que começaram antes da sua temporada para que as tabelas estejam atualizadas quando você começar…",
-    "dataSourceTerminal": "Terminal de Fonte de Dados",
-    "selectDatabaseTitle": "Selecionar",
-    "databaseDescription": "Escolha sua fonte de dados. Cada banco de dados contém diferentes elencos de jogadores, classificações e estruturas de competição.",
-    "recommended": "Recomendado",
-    "soon": "Em Breve",
-    "countriesStat": "Países",
-    "moreDatabasesSoon": "Mais bancos de dados em breve",
-    "createDatabase": "Criar um novo banco de dados",
-    "databaseContents": "Conteúdo do Banco de Dados",
-    "totalCountries": "Total de Países",
-    "playableCountries": "Países Jogáveis",
-    "totalLeagues": "Total de Ligas",
-    "playableLeagues": "Ligas Jogáveis",
-    "totalPlayers": "Total de Jogadores",
-    "selectDatabaseDetail": "Selecione um banco de dados para ver detalhes",
-    "identityConfiguration": "Configuração de Identidade",
     "createManagerTitle": "Criar Seu Técnico",
-    "managerDescription": "Defina sua identidade técnica. Seu histórico influenciará seus atributos iniciais e como os jogadores e a diretoria o perceberão.",
     "managerName": "Nome do Técnico",
     "enterName": "Digite seu nome...",
     "nationality": "Nacionalidade",
     "careerBackground": "Histórico de Carreira",
-    "background": "Histórico",
-    "startingBonuses": "Bônus Iniciais",
-    "selectBackgroundDetail": "Selecione um histórico para ver seus bônus",
-    "regionalSelection": "Terminal de Seleção Regional",
-    "chooseTerritory": "Escolha Seu Território",
-    "territoryDescription": "Defina a base de sua dinastia. Selecione uma nação para desbloquear divisões profissionais locais e comece sua ascensão tática.",
     "searchTerritory": "Buscar território...",
-    "countriesCount": "{{count}} países",
-    "countriesCount_one": "{{count}} país",
     "continents": {
       "europe": "Europa",
       "south_america": "América do Sul",
@@ -296,21 +233,8 @@
       "oceania": "Oceania",
       "other": "Outros"
     },
-    "genericHeadline": "Em {{country}}, cada partida escreve um novo capítulo na história do jogo.",
-    "division": "Divisão",
-    "teams": "Clubes",
-    "divisions": "Divisões",
-    "theSpirit": "O Espírito",
     "selectTerritoryDetail": "Selecione um território para ver detalhes",
-    "selectionPhase": "Fase de Seleção",
-    "clubProfile": "Perfil do Clube",
-    "city": "Cidade",
-    "stadium": "Estádio",
-    "founded": "Fundado",
-    "league": "Liga",
-    "noProfileData": "Nenhum dado de perfil disponível.",
     "squadRating": "Classificação do Elenco",
-    "reputation": "Reputação",
     "reputationLevel": {
       "1": "Time Local",
       "2": "Time Regional",
@@ -318,34 +242,11 @@
       "4": "Força Continental",
       "5": "Elite Mundial"
     },
-    "selectClubDetail": "Selecione um clube para ver detalhes",
-    "squadStrength": "Força do Elenco",
-    "keyPlayers": "Jogadores Chave",
-    "noData": "Sem dados.",
-    "attack": "Ataque",
-    "midfield": "Meio de campo",
-    "defense": "Defesa",
-    "position": "Posição",
-    "age": "Idade",
-    "ovr": "OVR",
-    "finalConfirmation": "Confirmação Final",
-    "readyBegin": "Pronto para Começar?",
-    "reviewSelection": "Revise suas seleções antes de iniciar sua jornada como técnico.",
-    "database": "Banco de Dados",
-    "manager": "Técnico",
-    "leagueSeason": "Temporada da Liga",
-    "currently": "Selecionando Atualmente",
-    "readyToBegin": "Pronto para",
-    "begin": "Começar?",
-    "reviewSelectionsBeforeStart": "Revise suas seleções antes de iniciar sua jornada como técnico.",
-    "userRank": "Classificação do Usuário",
-    "eliteTactician": "Técnico de Elite",
-    "back": "Voltar",
-    "est": "Fund.",
-    "userRankTitle": "Classificação do Usuário",
-    "noSelection": "Por favor, faça uma seleção antes de continuar.",
-    "leagues": "Ligas",
-    "players": "Jogadores"
+    "managerLine": "Técnico: {{name}} ({{country}})",
+    "managerEmpty": "Técnico não definido",
+    "edit": "Editar",
+    "define": "Definir",
+    "startWith": "Começar com {{club}}"
   },
   "seasonEnd": {
     "seasonComplete": "Temporada Concluída",
@@ -1043,8 +944,8 @@
     "prizeAmount": "+ {{amount}}",
     "season": {
       "leaguePrizeSubject": "Prêmio da liga: {{league}}",
-    "leaguePrizePreview": "O clube recebeu a premiação da {{league}} pela colocação final.",
-    "negativeBalance": "O caixa do clube ficou negativo: {{balance}}."
+      "leaguePrizePreview": "O clube recebeu a premiação da {{league}} pela colocação final.",
+      "negativeBalance": "O caixa do clube ficou negativo: {{balance}}."
     },
     "cup": {
       "draw": "{{cup}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
@@ -1736,7 +1637,11 @@
     "loadFailed": "Não foi possível carregar as estatísticas."
   },
   "players": {
-    "star": {"gold":"Top 25 do mundo","blue":"Grande fase","green":"Prodígio"}
+    "star": {
+      "gold": "Top 25 do mundo",
+      "blue": "Grande fase",
+      "green": "Prodígio"
+    }
   },
   "fitness": {
     "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"
