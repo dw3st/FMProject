@@ -1,5 +1,5 @@
-import { AlertTriangle, CheckCircle2 as CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Icon } from "@/GameInterface/Icons";
 
 interface DevelopmentWarningsProps {
   /** Stable warning codes; translated via `warnings.development.<code>`. */
@@ -13,15 +13,15 @@ export function DevelopmentWarnings({ warnings }: DevelopmentWarningsProps) {
 
   if (warnings.length === 0) {
     return (
-      <div className="card-arcade rounded-xl p-5">
+      <div className="card-arcade rounded-md p-5">
         <div className="flex items-center gap-2 mb-3">
-          <CheckCircle className="w-5 h-5 text-green-400" />
-          <h3 className="text-lg font-bold font-display uppercase tracking-wider m-0">
+          <Icon name="check-circle" className="w-5 h-5 text-chart-2" />
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0">
             {t("development.statusTitle")}
           </h3>
         </div>
         <div className="bg-background/50 border border-border/30 rounded-lg p-4">
-          <p className="text-green-400 font-medium m-0">{t("development.noConcerns")}</p>
+          <p className="text-chart-2 font-medium m-0">{t("development.noConcerns")}</p>
           <p className="text-sm text-muted-foreground mt-1 m-0">{t("development.progressingExpected")}</p>
         </div>
       </div>
@@ -29,10 +29,10 @@ export function DevelopmentWarnings({ warnings }: DevelopmentWarningsProps) {
   }
 
   return (
-    <div className="card-arcade rounded-xl p-5">
+    <div className="card-arcade rounded-md p-5">
       <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-5 h-5 text-yellow-400" />
-        <h3 className="text-lg font-bold font-display uppercase tracking-wider m-0">
+        <Icon name="alert" className="w-5 h-5 text-chart-4" />
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">
           {t("development.warningsTitle")}
         </h3>
       </div>
@@ -44,7 +44,7 @@ export function DevelopmentWarnings({ warnings }: DevelopmentWarningsProps) {
               key={idx}
               className="bg-background/50 border border-border/30 rounded-lg p-3 flex items-start gap-3"
             >
-              <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+              <Icon name="alert" className="w-4 h-4 text-chart-4 shrink-0 mt-0.5" />
               <p className="text-sm text-foreground font-medium m-0">{text}</p>
             </div>
           );
