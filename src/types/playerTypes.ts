@@ -1,4 +1,5 @@
 import type { AttributeId } from "@/GameInterface/AttributeLabels";
+import type { StaffRecord } from "@/Domain/staff/staffTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -196,6 +197,12 @@ export interface Squad {
    * generic fallback home-game count. Always set together with `wageFactor`.
    */
   wageRevenueBasis?: number;
+  /**
+   * Technical staff, one professional per role (`src/Domain/staff`). Only the human club writes
+   * this; clubs without it (every AI club) use the implicit rating of their financial tier.
+   * Present-but-empty role = vacant.
+   */
+  staff?: StaffRecord;
 }
 
 export interface LeagueTeam {
