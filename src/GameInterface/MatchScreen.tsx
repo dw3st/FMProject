@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } fro
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
-import { Pause, Play, BarChart3, Settings, ArrowRightLeft } from "lucide-react";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
 import { createMatchState, changeFormation, PRESENTATION_DURATION } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
@@ -60,6 +59,7 @@ import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
 import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
+import { Icon } from "@/GameInterface/Icons";
 
 // Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
 // No max cap — the pitch fills the available host space (which is itself constrained by the column
@@ -513,7 +513,7 @@ export function MatchScreen() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-lg text-center space-y-3">
-          <p className="text-destructive font-black font-display uppercase tracking-wider text-sm">{t("common.cannotStartMatch")}</p>
+          <p className="text-destructive font-bold font-display uppercase tracking-[0.08em] text-sm">{t("common.cannotStartMatch")}</p>
           <p className="text-muted-foreground text-sm leading-relaxed m-0">{loadError}</p>
         </div>
       </div>
@@ -563,7 +563,7 @@ export function MatchScreen() {
         kitColorB={matchKitColors.teamB}
       />
       {injuryNotice && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border border-destructive/40 rounded-lg px-4 py-2 shadow-lg text-sm text-foreground">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border border-destructive/40 rounded-lg px-4 py-2 text-sm text-foreground">
           {t("match.injuryNotice", {
             player: injuryNotice.playerName,
             severity: t(`match.injurySeverity.${injuryNotice.severity}`),
@@ -607,7 +607,7 @@ export function MatchScreen() {
               onClick={() => setPaused((p) => !p)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
             >
-              {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              {paused ? <Icon name="play" className="w-4 h-4" /> : <Icon name="pause" className="w-4 h-4" />}
               {paused ? t("match.play") : t("match.pause")}
             </button>
             <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1">
@@ -630,7 +630,7 @@ export function MatchScreen() {
                 <button
                   key={m}
                   onClick={() => handleMentalityChange(m)}
-                  className={`px-3 py-1.5 rounded-md font-semibold text-xs cursor-pointer transition-all ${
+                  className={`px-3 py-1.5 rounded-md font-semibold text-sm cursor-pointer transition-all ${
                     mentality === m
                       ? "bg-primary/20 text-primary"
                       : "text-foreground hover:text-primary"
@@ -644,24 +644,24 @@ export function MatchScreen() {
               onClick={handleOpenSubPanel}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
                 gameState.pendingSubsA.length > 0
-                  ? "bg-amber-500/20 text-amber-400 border-amber-500/50"
+                  ? "bg-chart-4/20 text-chart-4 border-chart-4/50"
                   : gameState.subsRemainingA > 0
                   ? "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
                   : "bg-secondary/30 border-border/50 text-muted-foreground cursor-not-allowed"
               }`}
             >
-              <ArrowRightLeft className="w-4 h-4" />
+              <Icon name="arrow-right-left" className="w-4 h-4" />
               {t("match.subs", { remaining: gameState.subsRemainingA })}
             </button>
             <button
               onClick={() => setShowStats((s) => !s)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
                 showStats
-                  ? "bg-primary text-primary-foreground border-primary glow-primary-sm"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
               }`}
             >
-              <BarChart3 className="w-4 h-4" />
+              <Icon name="stats" className="w-4 h-4" />
               {t("nav.stats")}
             </button>
             <button
@@ -672,7 +672,7 @@ export function MatchScreen() {
                   : "bg-secondary/50 border-border hover:border-primary/50 text-foreground"
               }`}
             >
-              <Settings className="w-4 h-4" />
+              <Icon name="settings" className="w-4 h-4" />
               {t("match.debug")}
             </button>
           </div>
@@ -721,9 +721,9 @@ export function MatchScreen() {
           </div>
           {/* Broadcast ticker */}
           <div className="px-4 py-2 border-t border-border bg-card/40">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mr-2">{t("common.broadcast")}</span>
+            <span className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mr-2 font-display">{t("common.broadcast")}</span>
             <span className="text-sm text-foreground">
-              {broadcastLine || <span className="text-muted-foreground italic">{t("common.waitingForAction")}</span>}
+              {broadcastLine || <span className="text-muted-foreground">{t("common.waitingForAction")}</span>}
             </span>
           </div>
 

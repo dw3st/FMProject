@@ -2,16 +2,16 @@ import { useTranslation } from "react-i18next";
 import type { GamePlayer } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
-import { ArrowRightLeft } from "lucide-react";
 import type { StarKind } from "@/Domain/world/stars";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
+import { Icon } from "@/GameInterface/Icons";
 
 function energyBarColor(energy: number): string {
-  if (energy >= 60) return "bg-emerald-500/90";
-  if (energy >= 35) return "bg-amber-500/90";
-  return "bg-red-500/85";
+  if (energy >= 60) return "bg-chart-2/90";
+  if (energy >= 35) return "bg-chart-4/90";
+  return "bg-destructive/85";
 }
 
 function EnergyReadout({ energy }: { energy: number }) {
@@ -19,10 +19,10 @@ function EnergyReadout({ energy }: { energy: number }) {
   const barClass = energyBarColor(v);
   return (
     <div className="flex items-center gap-2 min-w-[5.5rem] shrink-0">
-      <div className="h-1.5 flex-1 rounded-full bg-muted/80 overflow-hidden min-w-[2.5rem]">
+      <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
         <div className={`h-full rounded-full transition-[width] ${barClass}`} style={{ width: `${v}%` }} />
       </div>
-      <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
+      <span className="text-[13px] font-bold tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
     </div>
   );
 }
@@ -73,13 +73,13 @@ function PlayerRow({
     >
       <div className={`flex items-center gap-2 w-full ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className={`w-2 h-2 rounded-full shrink-0`} style={{ background: color }} />
-        <span className="w-8 text-xs font-bold text-muted-foreground uppercase shrink-0">{player.role}</span>
+        <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase shrink-0">{player.role}</span>
         <span className={`flex-1 min-w-0 text-sm font-medium text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
           <span className="truncate">{player.name}</span>
           {starKind && <StarBadge kind={starKind} />}
         </span>
         {isSubbedIn && (
-          <ArrowRightLeft className="w-3 h-3 text-emerald-400 shrink-0" aria-label={t("common.substitutedIn")} />
+          <Icon name="arrow-right-left" className="w-3 h-3 text-chart-2 shrink-0" aria-label={t("common.substitutedIn")} />
         )}
         {rating !== undefined && (
           <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingTextClass10(rating)}`}>{rating.toFixed(1)}</span>
@@ -140,9 +140,9 @@ export function TeamPanel({
         </div>
         <div className={`flex items-center gap-2 ${isLeft ? "flex-row-reverse" : ""}`}>
           {subsRemaining !== undefined && (
-            <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+            <span className={`text-sm font-semibold px-2 py-0.5 rounded border ${
               pendingSubsCount && pendingSubsCount > 0
-                ? "text-amber-400 border-amber-400/40 bg-amber-400/10"
+                ? "text-chart-4 border-chart-4/40 bg-chart-4/10"
                 : subsRemaining > 0
                 ? "text-muted-foreground border-border"
                 : "text-muted-foreground/40 border-border/30"

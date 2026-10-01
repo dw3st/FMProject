@@ -79,10 +79,10 @@ export function ScoreBar({
           logoUrl={teamA?.logoUrl}
           primaryColor={teamA?.primaryColor}
           secondaryColor={teamA?.secondaryColor}
-          className="w-9 h-9 rounded-lg shrink-0"
+          className="w-8 h-8 rounded-full shrink-0"
           imgClassName="w-full h-full object-contain p-0.5"
         />
-        <span className="font-black text-foreground uppercase tracking-wider text-sm hidden sm:block">
+        <span className="font-bold text-foreground uppercase tracking-[0.08em] text-sm hidden sm:block font-display">
           {nameA}
         </span>
       </div>
@@ -106,12 +106,12 @@ export function ScoreBar({
               isSpecial ? "bg-primary/15 border-primary/40" : "bg-card/60 border-border"
             }`}
           >
-            <span className={`font-display font-black text-base tracking-widest tabular-nums ${isSpecial ? "text-primary" : "text-foreground"}`}>
+            <span className={`font-display font-black text-base tracking-[0.08em] tabular-nums ${isSpecial ? "text-primary" : "text-foreground"}`}>
               {clockStr}
             </span>
           </div>
           {aggregate && (
-            <span className="text-[10px] text-muted-foreground font-bold tabular-nums mt-0.5">
+            <span className="text-[13px] text-muted-foreground font-bold tabular-nums mt-0.5">
               {t("continental.aggregate", { home: aggregate.A + scoreA, away: aggregate.B + scoreB })}
             </span>
           )}
@@ -130,14 +130,14 @@ export function ScoreBar({
 
       {/* Team B */}
       <div className="flex items-center gap-3 pl-5">
-        <span className="font-black text-foreground uppercase tracking-wider text-sm hidden sm:block">
+        <span className="font-bold text-foreground uppercase tracking-[0.08em] text-sm hidden sm:block font-display">
           {nameB}
         </span>
         <ClubLogo
           logoUrl={teamB?.logoUrl}
           primaryColor={teamB?.primaryColor}
           secondaryColor={teamB?.secondaryColor}
-          className="w-9 h-9 rounded-lg shrink-0"
+          className="w-8 h-8 rounded-full shrink-0"
           imgClassName="w-full h-full object-contain p-0.5"
         />
       </div>

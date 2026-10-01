@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, ArrowRightLeft } from "lucide-react";
 import type { GamePlayer, GameState, PendingSub } from "@/GameEngine/types";
 import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
 import { getMainRole, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
+import { Icon } from "@/GameInterface/Icons";
 
 // ── Energy bar helpers ───────────────────────────────────────────────────────
 
 function energyBarClass(energy: number): string {
-  if (energy >= 60) return "bg-emerald-500";
-  if (energy >= 35) return "bg-amber-500";
-  return "bg-red-500";
+  if (energy >= 60) return "bg-chart-2";
+  if (energy >= 35) return "bg-chart-4";
+  return "bg-destructive";
 }
 
 function energyLabel(energy: number): string {
@@ -117,7 +117,7 @@ export function SubstitutionPanel({
     const cls = MAIN_ROLE_BADGE_CLASSES[main];
     return (
       <span
-        className={`inline-flex items-center justify-center min-w-[2rem] px-1 py-0.5 rounded text-[9px] font-black uppercase border shrink-0 ${cls}`}
+        className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded text-sm font-semibold border shrink-0 ${cls}`}
       >
         {role}
       </span>
@@ -130,18 +130,18 @@ export function SubstitutionPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-[80vw] h-[80vh] max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] flex flex-col overflow-hidden">
+      <div className="bg-card border border-border rounded-md w-[80vw] h-[80vh] max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <ArrowRightLeft className="w-5 h-5 text-primary" />
-            <h2 className="font-black font-display uppercase tracking-wider text-foreground m-0 text-base">
+            <Icon name="arrow-right-left" className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("substitutionPanel.title")}
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline text-[10px] font-bold tabular-nums text-muted-foreground">
+            <span className="hidden sm:inline text-[13px] font-bold tabular-nums text-muted-foreground">
               {t("substitutionPanel.xiAvg")} <span className={ratingTextClass10(xiAvg)}>{xiAvg.toFixed(1)}</span>
               <span className="mx-1.5 text-border">·</span>
               {t("substitutionPanel.benchAvg")} <span className={ratingTextClass10(benchAvg)}>{benchAvg.toFixed(1)}</span>
@@ -156,7 +156,7 @@ export function SubstitutionPanel({
               {t("substitutionPanel.remaining", { remaining: subsRemaining - pendingCount })}
             </span>
             {pendingCount > 0 && (
-              <span className="text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 px-2 py-1 rounded-full">
+              <span className="text-sm font-bold text-chart-4 bg-chart-4/10 border border-chart-4/30 px-2 py-1 rounded-full">
                 {t("substitutionPanel.pending", { count: pendingCount })}
               </span>
             )}
@@ -164,7 +164,7 @@ export function SubstitutionPanel({
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <Icon name="close" className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -176,7 +176,7 @@ export function SubstitutionPanel({
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              className={`flex-1 py-2.5 text-sm font-bold uppercase tracking-[0.08em] transition-colors cursor-pointer ${
                 activeTab === tab
                   ? "text-primary border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -192,8 +192,8 @@ export function SubstitutionPanel({
             <>
               {/* Pending — full width strip */}
               {pendingQueue.length > 0 && (
-                <div className="shrink-0 px-4 py-2 border-b border-border/60 bg-amber-400/5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-amber-400 m-0 mb-1.5">
+                <div className="shrink-0 px-4 py-2 border-b border-border/60 bg-chart-4/5">
+                  <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-chart-4 m-0 mb-1.5 font-display">
                     {t("substitutionPanel.pendingSubstitutions")}
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -204,11 +204,11 @@ export function SubstitutionPanel({
                       return (
                         <div
                           key={`${pq.outId}-${pq.inId}`}
-                          className="flex items-center gap-2 px-2 py-1 rounded-lg bg-amber-400/10 border border-amber-400/20 text-xs"
+                          className="flex items-center gap-2 px-2 py-1 rounded-lg bg-chart-4/10 border border-chart-4/20 text-sm"
                         >
-                          <span className="text-red-400 font-medium truncate max-w-[8rem]">{out?.name ?? "?"}</span>
-                          <ArrowRightLeft className="w-3 h-3 text-amber-400 shrink-0" />
-                          <span className="text-emerald-400 font-medium truncate max-w-[8rem]">{inP?.name ?? "?"}</span>
+                          <span className="text-destructive font-medium truncate max-w-[8rem]">{out?.name ?? "?"}</span>
+                          <Icon name="arrow-right-left" className="w-3 h-3 text-chart-4 shrink-0" />
+                          <span className="text-chart-2 font-medium truncate max-w-[8rem]">{inP?.name ?? "?"}</span>
                         </div>
                       );
                     })}
@@ -216,7 +216,7 @@ export function SubstitutionPanel({
                 </div>
               )}
 
-              <p className="shrink-0 px-4 pt-2 pb-1 text-xs text-muted-foreground">
+              <p className="shrink-0 px-4 pt-2 pb-1 text-[13px] text-muted-foreground">
                 {selectedOutId
                   ? t("substitutionPanel.chooseBench")
                   : canAddMore
@@ -227,16 +227,16 @@ export function SubstitutionPanel({
               {/* Horizontal 1v1 preview — out vs in, same row (not stacked) */}
               {selectedOut && (
                 <div className="shrink-0 px-4 pb-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-2 items-stretch rounded-xl border border-primary/30 bg-primary/5 p-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-2 items-stretch rounded-md border border-primary/30 bg-primary/5 p-3">
                     <div className="flex flex-col gap-1 min-w-0 rounded-lg border border-border/60 bg-card/80 px-3 py-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t("substitutionPanel.out")}</span>
+                      <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">{t("substitutionPanel.out")}</span>
                       <div className="flex items-center gap-2 min-w-0">
                         <RoleBadge role={selectedOut.role} />
                         <span className={`text-sm font-bold truncate ${roleNameClass(selectedOut.role)}`}>
                           {selectedOut.name}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <div className="flex items-center justify-between text-[13px] text-muted-foreground">
                         <span className={ratingTextClass10(displayRating10(selectedOut, ratings))}>
                           {displayRating10(selectedOut, ratings).toFixed(1)} {t("substitutionPanel.rating")}
                         </span>
@@ -244,10 +244,10 @@ export function SubstitutionPanel({
                       </div>
                     </div>
                     <div className="flex items-center justify-center py-1 sm:py-0">
-                      <ArrowRightLeft className="w-6 h-6 text-primary shrink-0" aria-hidden />
+                      <Icon name="arrow-right-left" className="w-6 h-6 text-primary shrink-0" aria-hidden />
                     </div>
-                    <div className="flex flex-col gap-1 min-w-0 rounded-lg border border-dashed border-emerald-500/40 bg-emerald-500/5 px-3 py-2 justify-center">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                    <div className="flex flex-col gap-1 min-w-0 rounded-lg border border-dashed border-chart-2/40 bg-chart-2/5 px-3 py-2 justify-center">
+                      <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-chart-2 dark:text-chart-2 font-display">
                         {t("substitutionPanel.in")}
                       </span>
                       <p className="text-sm text-muted-foreground m-0">{t("substitutionPanel.selectBench")}</p>
@@ -259,12 +259,12 @@ export function SubstitutionPanel({
               {/* Side by side: XI | Bench */}
               <div className="flex-1 min-h-0 flex gap-3 px-4 pb-3">
                 {/* Starting XI */}
-                <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-xl overflow-hidden bg-secondary/20">
+                <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-md overflow-hidden bg-secondary/20">
                   <div className="shrink-0 px-3 py-2 border-b border-border/50 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
                       {t("substitutionPanel.startingXi")}
                     </span>
-                    <span className="text-[10px] font-bold tabular-nums text-muted-foreground">
+                    <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
                       {t("common.average")} <span className={ratingTextClass10(xiAvg)}>{xiAvg.toFixed(1)}</span>
                     </span>
                   </div>
@@ -296,22 +296,22 @@ export function SubstitutionPanel({
                           >
                             {p.name}
                           </span>
-                          <span className={`text-xs font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>
+                          <span className={`text-[13px] font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>
                             {r10.toFixed(1)}
                           </span>
                           <div className="flex items-center gap-1 shrink-0 w-[4.5rem]">
-                            <div className="h-1.5 flex-1 rounded-full bg-muted/60 overflow-hidden min-w-0">
+                            <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
                               <div
                                 className={`h-full rounded-full ${energyBarClass(p.energy)}`}
                                 style={{ width: `${p.energy}%` }}
                               />
                             </div>
-                            <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-5 text-right">
+                            <span className="text-[13px] font-bold tabular-nums text-muted-foreground w-5 text-right">
                               {energyLabel(p.energy)}
                             </span>
                           </div>
                           {isOut && (
-                            <span className="text-[8px] font-black text-amber-400 uppercase shrink-0">{t("substitutionPanel.off")}</span>
+                            <span className="text-[13px] font-black text-chart-4 uppercase shrink-0">{t("substitutionPanel.off")}</span>
                           )}
                         </button>
                       );
@@ -322,7 +322,7 @@ export function SubstitutionPanel({
                       <button
                         type="button"
                         onClick={() => setSelectedOutId(null)}
-                        className="text-xs text-muted-foreground hover:text-foreground w-full py-1 cursor-pointer"
+                        className="text-[13px] text-muted-foreground hover:text-foreground w-full py-1 cursor-pointer"
                       >
                         {t("substitutionPanel.cancelSelection")}
                       </button>
@@ -331,18 +331,18 @@ export function SubstitutionPanel({
                 </div>
 
                 {/* Bench */}
-                <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-xl overflow-hidden bg-secondary/10">
+                <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-md overflow-hidden bg-secondary/10">
                   <div className="shrink-0 px-3 py-2 border-b border-border/50 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
                       {t("substitutionPanel.bench")}
                     </span>
-                    <span className="text-[10px] font-bold tabular-nums text-muted-foreground">
+                    <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
                       {t("common.average")} <span className={ratingTextClass10(benchAvg)}>{benchAvg.toFixed(1)}</span>
                     </span>
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
                     {availableBench.length === 0 ? (
-                      <p className="text-xs text-muted-foreground px-2 py-4 text-center">{t("substitutionPanel.noAvailable")}</p>
+                      <p className="text-[13px] text-muted-foreground px-2 py-4 text-center">{t("substitutionPanel.noAvailable")}</p>
                     ) : (
                       availableBench.map((p) => {
                         const r10 = displayRating10(p, ratings);
@@ -355,7 +355,7 @@ export function SubstitutionPanel({
                             disabled={!canPick}
                             className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg border text-left transition-all ${
                               canPick
-                                ? "border-emerald-500/25 hover:border-emerald-500/60 hover:bg-emerald-500/10 cursor-pointer"
+                                ? "border-chart-2/25 hover:border-chart-2/60 hover:bg-chart-2/10 cursor-pointer"
                                 : "border-border/40 opacity-70 cursor-default"
                             }`}
                           >
@@ -365,17 +365,17 @@ export function SubstitutionPanel({
                             >
                               {p.name}
                             </span>
-                            <span className={`text-xs font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>
+                            <span className={`text-[13px] font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>
                               {r10.toFixed(1)}
                             </span>
                             <div className="flex items-center gap-1 shrink-0 w-[4.5rem]">
-                              <div className="h-1.5 flex-1 rounded-full bg-muted/60 overflow-hidden min-w-0">
+                              <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
                                 <div
                                   className={`h-full rounded-full ${energyBarClass(p.energy)}`}
                                   style={{ width: `${p.energy}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-5 text-right">
+                              <span className="text-[13px] font-bold tabular-nums text-muted-foreground w-5 text-right">
                                 {energyLabel(p.energy)}
                               </span>
                             </div>
@@ -391,7 +391,7 @@ export function SubstitutionPanel({
 
           {activeTab === "formation" && (
             <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
-              <p className="text-xs text-muted-foreground m-0">
+              <p className="text-[13px] text-muted-foreground m-0">
                 {t("substitutionPanel.changeFormationHint")}
               </p>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -402,7 +402,7 @@ export function SubstitutionPanel({
                       key={fid}
                       type="button"
                       onClick={() => onChangeFormation(fid)}
-                      className={`py-3 rounded-xl border font-bold text-sm transition-all cursor-pointer ${
+                      className={`py-3 rounded-md border font-bold text-sm transition-all cursor-pointer ${
                         isActive
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-secondary/40 border-border hover:border-primary/40 hover:bg-secondary/60 text-foreground"
@@ -421,7 +421,7 @@ export function SubstitutionPanel({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-secondary/60 border border-border hover:border-primary/40 text-sm font-bold text-foreground transition-colors cursor-pointer"
+            className="w-full py-2.5 rounded-md bg-secondary/60 border border-border hover:border-primary/40 text-sm font-bold text-foreground transition-colors cursor-pointer"
           >
             {t("common.close")}
           </button>

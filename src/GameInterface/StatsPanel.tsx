@@ -84,10 +84,10 @@ function TeamTable({
     <div className="flex-1 min-w-0">
       <div className={`flex items-center gap-2 px-3 py-2 border-b border-border ${side === "right" ? "flex-row-reverse" : ""}`}>
         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: accentColor }} />
-        <span className="font-bold text-sm text-foreground uppercase tracking-wider">{t("stats.team", { team, defaultValue: `Team ${team}` })}</span>
+        <span className="font-bold text-sm text-foreground uppercase tracking-[0.08em] font-display">{t("stats.team", { team, defaultValue: `Team ${team}` })}</span>
       </div>
 
-      <div className="grid grid-cols-[40px_1fr_repeat(7,36px)] gap-1 px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground border-b border-border/50">
+      <div className="grid grid-cols-[40px_1fr_repeat(7,36px)] gap-1 px-3 py-1.5 text-[13px] font-bold uppercase text-muted-foreground border-b border-border/50">
         <div />
         <div className={side === "right" ? "text-right" : ""}>{t("stats.headers.NAME")}</div>
         {COLS.map((col) => (
@@ -97,7 +97,7 @@ function TeamTable({
         ))}
       </div>
 
-      <div className="text-xs">
+      <div className="text-[13px]">
         {players.map((p) => {
           const s = stats[p.id] ?? EMPTY_STATS;
           return (
@@ -107,7 +107,7 @@ function TeamTable({
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
-                <span className="text-[10px] font-bold text-muted-foreground">{p.role}</span>
+                <span className="text-[13px] font-bold text-muted-foreground">{p.role}</span>
               </div>
               <div className={`font-medium text-foreground ${side === "right" ? "text-right" : ""}`}>
                 {p.name}
@@ -132,9 +132,9 @@ function TeamTable({
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
-                <span className="text-[10px] font-bold text-muted-foreground">↓</span>
+                <span className="text-[13px] font-bold text-muted-foreground">↓</span>
               </div>
-              <div className={`font-medium text-foreground/60 italic ${side === "right" ? "text-right" : ""}`}>
+              <div className={`font-medium text-foreground/60  ${side === "right" ? "text-right" : ""}`}>
                 {sub.playerOutName}
               </div>
               {COLS.map((c) => (
@@ -164,7 +164,7 @@ function TeamTable({
 function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-4 px-4 py-1.5 border-b border-border/50 text-xs text-muted-foreground">
+    <div className="flex items-center gap-4 px-4 py-1.5 border-b border-border/50 text-[13px] text-muted-foreground">
       <span>
         {t("stats.avgEndEnergy")}:{" "}
         <span className="text-foreground font-bold tabular-nums">{Math.round(teamA.avgEndEnergy)}</span>
@@ -197,8 +197,8 @@ function KnockoutSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats 
   const hadShootout = teamA.penaltiesTaken > 0 || teamB.penaltiesTaken > 0;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50 text-xs">
-      <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold uppercase tracking-wide">
+    <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50 text-[13px]">
+      <span className="px-2 py-0.5 rounded bg-chart-4/10 text-chart-4 font-semibold">
         {t("stats.extraTime", { defaultValue: "Extra time" })}
       </span>
       {hadShootout && (
@@ -244,7 +244,7 @@ export function StatsPanel({
   return (
     <div className="bg-card/80 backdrop-blur-sm border-t border-border">
       <div className="px-4 py-2 border-b border-border">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">
           {t("stats.matchStatistics")}
         </h3>
       </div>

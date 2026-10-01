@@ -19,13 +19,13 @@ export function PenaltyShootoutStrip({
     const pending = complete ? 0 : Math.max(0, 5 - kicks.length);
     return (
       <div className="flex items-center gap-2">
-        <span className="w-28 truncate text-xs text-white/70">{name}</span>
+        <span className="w-28 truncate text-[13px] text-foreground">{name}</span>
         <div className="flex flex-wrap gap-1">
           {kicks.map((k, i) => (
-            <span key={i} className={`h-3 w-3 rounded-full ${k.scored ? "bg-emerald-500" : "bg-rose-500"}`} />
+            <span key={i} className={`h-3 w-3 rounded-full ${k.scored ? "bg-chart-2" : "bg-destructive"}`} />
           ))}
           {Array.from({ length: pending }, (_, i) => (
-            <span key={`p${i}`} className="h-3 w-3 rounded-full bg-white/15" />
+            <span key={`p${i}`} className="h-3 w-3 rounded-full bg-foreground/15" />
           ))}
         </div>
         <span className="ml-auto font-display font-black tabular-nums">{shootout.score[team]}</span>
@@ -33,8 +33,8 @@ export function PenaltyShootoutStrip({
     );
   };
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 space-y-1 min-w-64">
-      <div className="text-[10px] uppercase tracking-widest text-white/40">{t("match.penalties")}</div>
+    <div className="rounded-lg border border-border bg-foreground/5 px-3 py-2 space-y-1 min-w-64">
+      <div className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground font-display font-bold">{t("match.penalties")}</div>
       {row("A", nameA)}
       {row("B", nameB)}
     </div>

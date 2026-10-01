@@ -42,10 +42,9 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore
       <div className="absolute inset-0 bg-background/60 backdrop-blur-[3px]" />
 
       <div
-        className="relative max-w-lg w-[min(100%,28rem)] mx-4 rounded-2xl overflow-hidden border border-border/60 bg-card/90 backdrop-blur-md shadow-2xl"
+        className="relative max-w-lg w-[min(100%,28rem)] mx-4 rounded-md overflow-hidden border border-border/60 bg-card/90 backdrop-blur-md"
         style={{
           animation: "goal-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both",
-          boxShadow: "0 24px 80px -20px rgba(0,0,0,0.45)",
         }}
       >
         {/* TeamCard-style side accents — solid strips, no blend */}
@@ -59,7 +58,7 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore
         </div>
 
         <div className="relative flex flex-col items-center gap-3 px-10 py-10 sm:px-14 sm:py-11">
-          <h2 className="text-4xl sm:text-5xl font-black tracking-widest leading-none font-display text-foreground uppercase m-0">
+          <h2 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
             {title}
           </h2>
 
@@ -85,13 +84,13 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm font-semibold tracking-widest text-muted-foreground uppercase m-0 text-center max-w-sm leading-relaxed">
+          <p className="text-[13px] sm:text-sm font-bold tracking-[0.08em] text-muted-foreground uppercase m-0 text-center max-w-sm leading-relaxed font-display">
             {subtitle}
           </p>
         </div>
 
         {progress != null && (
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10" aria-hidden>
+          <div className="absolute inset-x-0 bottom-0 h-1.5 bg-foreground/10" aria-hidden>
             <div
               className="h-full bg-primary/70"
               style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%` }}
