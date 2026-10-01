@@ -54,7 +54,7 @@ export function Layout({ children }: { children: ReactNode }) {
         }
       />
 
-      <main className="h-full pt-16 pb-14 overflow-y-auto flex flex-col">
+      <main className="h-full pt-12 pb-9 overflow-y-auto flex flex-col">
         {children}
       </main>
 

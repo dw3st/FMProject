@@ -1,7 +1,6 @@
-import { DollarSign, Newspaper, Users, Calendar, Settings, Sparkles } from "lucide-react";
-import type { ComponentType, SVGProps } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { Icon } from "@/GameInterface/Icons";
 
 function formatBudgetShort(value: number) {
   // The balance can go negative now (see .claude/rules/game/finances.md): abbreviate |value|, keep the sign.
@@ -18,6 +17,10 @@ function formatSimDate(dateStr: string): string {
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
+
+const ITEM = "flex items-center gap-1.5 text-sm text-muted-foreground";
+const ICON_BTN =
+  "flex items-center justify-center w-8 h-8 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent";
 
 export function StatusBar({
   onOpenInbox,
@@ -37,75 +40,40 @@ export function StatusBar({
   const unreadLabel = String(unreadInboxCount);
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-50 h-14 border-t border-border bg-card/90 backdrop-blur-md px-4">
+    <footer className="fixed bottom-0 left-0 right-0 z-50 h-9 border-t border-border bg-background px-4">
       <div className="h-full flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <StatusItem icon={DollarSign} label={budgetLabel} sublabel={t("status.budget")} color="text-primary" />
+        <div className="flex items-center gap-5">
+          <span className={ITEM} title={t("status.budget")}>
+            <Icon name="finances" size={14} />
+            {budgetLabel}
+          </span>
           <button
             type="button"
             onClick={onOpenInbox}
-            className="rounded-lg transition-colors hover:bg-white/5 px-1 -mx-1 border-0 bg-transparent cursor-pointer"
+            title={t("status.unread")}
+            className={`${ITEM} border-0 bg-transparent cursor-pointer hover:text-foreground`}
           >
-            <StatusItem
-              icon={Newspaper}
-              label={unreadLabel}
-              sublabel={t("status.unread")}
-              color="text-chart-4"
-            />
+            <Icon name="news" size={14} />
+            {unreadLabel}
           </button>
-          <StatusItem icon={Users} label={playersLabel} sublabel={t("status.players")} color="text-accent" />
+          <span className={ITEM} title={t("status.players")}>
+            <Icon name="staff" size={14} />
+            {playersLabel}
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-primary bg-primary/10 px-4 py-2 rounded-lg border border-primary/20 font-display tracking-wider">
-            <Calendar className="w-4 h-4 shrink-0" />
+          <span className={ITEM}>
+            <Icon name="calendar" size={14} />
             {dateLabel}
-          </div>
-          <button
-            type="button"
-            onClick={onOpenChangelog}
-            title={t("nav.changelog")}
-            aria-label={t("nav.changelog")}
-            className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer border-0 bg-transparent"
-          >
-            <Sparkles className="w-4 h-4" />
+          </span>
+          <button type="button" onClick={onOpenChangelog} title={t("nav.changelog")} aria-label={t("nav.changelog")} className={ICON_BTN}>
+            <Icon name="sparkles" size={16} />
           </button>
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            title={t("nav.settings")}
-            aria-label={t("nav.settings")}
-            className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer border-0 bg-transparent"
-          >
-            <Settings className="w-4 h-4" />
+          <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
+            <Icon name="settings" size={16} />
           </button>
         </div>
       </div>
     </footer>
-  );
-}
-
-function StatusItem({
-  icon: Icon,
-  label,
-  sublabel,
-  color,
-  highlight = false,
-}: {
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
-  label: string;
-  sublabel: string;
-  color: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className={`flex items-center gap-3 ${highlight ? "animate-pulse" : ""}`}>
-      <div className={`w-9 h-9 rounded-lg ${color.replace("text-", "bg-")}/20 flex items-center justify-center`}>
-        <Icon className={`w-5 h-5 ${color}`} />
-      </div>
-      <div className="flex flex-col">
-        <span className="text-sm font-black text-foreground font-display">{label}</span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{sublabel}</span>
-      </div>
-    </div>
   );
 }
