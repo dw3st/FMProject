@@ -67,4 +67,10 @@ export const WAGE_CONFIG = {
    *  real headroom to reach its actual (very low) affordable wage, not to be floored above it. */
   MIN_FACTOR: 0.08,
   MAX_FACTOR: 4,
+  /**
+   * Each rollover the carried-forward factor moves this share of the way back to the factor that
+   * would put the club exactly at `TARGET_SHARE` (`pullWageFactorToTarget`, issue #23). Without
+   * it a club that overspends keeps its inflated factor forever and stays `tight`/`frozen`.
+   */
+  TARGET_PULL: 0.3,
 } as const;

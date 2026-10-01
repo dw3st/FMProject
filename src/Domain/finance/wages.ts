@@ -98,6 +98,17 @@ export function wageRevenueBasisOf(squad: Squad, homeGames: number = FALLBACK_HO
 }
 
 /**
+ * Pulls a carried-forward factor `TARGET_PULL` of the way back to `targetFactor` (the factor
+ * `clubWageFactor` gives for the club's new revenue and roster), so an over- or under-spending
+ * club drifts back toward `TARGET_SHARE` over a few seasons instead of keeping its standing
+ * forever (issue #23).
+ */
+export function pullWageFactorToTarget(factor: number, targetFactor: number): number {
+  const next = factor + WAGE_CONFIG.TARGET_PULL * (targetFactor - factor);
+  return Math.min(WAGE_CONFIG.MAX_FACTOR, Math.max(WAGE_CONFIG.MIN_FACTOR, next));
+}
+
+/**
  * Carries a club's wage factor forward across a season boundary instead of snapping it back to
  * exactly `TARGET_SHARE` of the new revenue (`clubWageFactor` computed fresh would do that every
  * time). A club that was over/under its calibrated target keeps that same relative standing,

@@ -64,7 +64,7 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
-import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
+import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill } from "@/Domain/finance/wages";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
@@ -1346,10 +1346,13 @@ export async function advanceOneDay(
           // block.
           const homeGames = Math.max(0, leagueTeams.length - 1);
           const newRevenue = clubAnnualRevenue(next, homeGames);
+          const targetWageFactor = clubWageFactor(newRevenue, squadCurveBill(next.players));
           const newWageFactor =
             typeof next.wageFactor === "number" && typeof next.wageRevenueBasis === "number"
-              ? carryForwardWageFactor(next.wageFactor, next.wageRevenueBasis, newRevenue)
-              : clubWageFactor(newRevenue, squadCurveBill(next.players));
+              ? pullWageFactorToTarget(
+                  carryForwardWageFactor(next.wageFactor, next.wageRevenueBasis, newRevenue), targetWageFactor,
+                )
+              : targetWageFactor;
           next = { ...next, wageFactor: newWageFactor, wageRevenueBasis: newRevenue };
           await saveService.saveSquadById(saveId, next);
           if (squad.id === playerClubSquadId) {
