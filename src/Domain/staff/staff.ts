@@ -70,10 +70,13 @@ export function staffWeeklyWage(rating: number, clubFactor: number): number {
   return Math.round(weeklyWage(STAFF.WAGE_BASE + STAFF.WAGE_SLOPE * rating) * clubFactor * STAFF.WAGE_SHARE);
 }
 
-/** Sum of the staff's weekly wages (what the Monday ledger line charges). */
-export function squadStaffWages(staff: StaffRecord | undefined): number {
+/**
+ * Sum of the staff's weekly wages at the club's CURRENT wage factor (what the Monday ledger line
+ * charges), so the bill follows the club's growth instead of the factor at hiring time.
+ */
+export function squadStaffWages(staff: StaffRecord | undefined, clubFactor: number): number {
   if (!staff) return 0;
-  return STAFF_ROLES.reduce((sum, role) => sum + (staff[role]?.wage ?? 0), 0);
+  return STAFF_ROLES.reduce((sum, role) => sum + (staff[role] ? staffWeeklyWage(staff[role]!.rating, clubFactor) : 0), 0);
 }
 
 // -- Generation -------------------------------------------------------------

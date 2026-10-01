@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
+import { obscurePlayer, obscureSquad, overallRange, staffEffectsOf } from "@/Domain/staff/staff";
+import { STAFF } from "@/Domain/staff/staffConfig";
 import {
   collectNationalities, collectSellListedIds, mapFreeAgentsToScoutPlayers, mapSquadsToScoutPlayers, runScoutQuery,
   type ScoutQuery, type ScoutSearchResponse,
@@ -48,7 +50,28 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
     leagueSlugs(),
     saveService.getFreeAgents(saveId),
   ]);
-  const players = [...mapSquadsToScoutPlayers(squads, slugs), ...mapFreeAgentsToScoutPlayers(freeAgents)];
+  // What the user sees of players outside his own squad is blurred by the chief scout's
+  // uncertainty (`.claude/rules/game/staff.md`); his own squad is always exact.
+  const meta = await saveService.getMeta(saveId);
+  const own = squads.find((s) => s.id === meta?.clubId);
+  const noise = own ? staffEffectsOf(own).scoutNoise : 0;
+  const seen = noise > 0
+    ? squads.map((s) => (s.id === meta?.clubId ? s : obscureSquad(s, noise, saveId)))
+    : squads;
+  const seenAgents = noise > 0
+    ? freeAgents.map((f) => ({ ...f, player: obscurePlayer(f.player, noise, saveId) }))
+    : freeAgents;
+  const withRange = (rows: DisplayPlayer[], ownSquadId: string | undefined) =>
+    noise >= STAFF.RANGE_THRESHOLD
+      ? rows.map((r) => {
+          const range = r.squadId === ownSquadId ? undefined : overallRange(r.avg, noise);
+          return range ? { ...r, avgRange: range } : r;
+        })
+      : rows;
+  const players = withRange(
+    [...mapSquadsToScoutPlayers(seen, slugs), ...mapFreeAgentsToScoutPlayers(seenAgents)],
+    meta?.clubId,
+  );
   const entry: ScoutIndex = {
     key,
     players,

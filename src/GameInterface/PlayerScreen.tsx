@@ -52,7 +52,7 @@ export function PlayerScreen({
       setLoading(false);
       return;
     }
-    fetch(`/api/saves/${session.saveId}/squad/${league}/${club}`)
+    fetch(`/api/saves/${session.saveId}/squad/${league}/${club}?scouted=1`)
       .then((r) => r.json())
       .then((data: Squad) => {
         const found = data.players.find((p) => p.id === playerId) ?? null;

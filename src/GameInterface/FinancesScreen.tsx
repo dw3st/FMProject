@@ -10,6 +10,7 @@ import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { competitionName } from "@/Domain/world/labels";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { weeklyOperationalCost } from "@/Domain/advanceDay/financial";
+import { squadStaffWages } from "@/Domain/staff/staff";
 import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
 import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
@@ -43,7 +44,7 @@ function formatWeekLabel(weekStart: string) {
 // ── Per-kind display metadata ────────────────────────────────────────────────
 
 const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in"];
-const EXPENSE_KINDS: LedgerKind[] = ["wages", "operational", "transfer_out"];
+const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "operational", "transfer_out"];
 const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS];
 
 const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
@@ -53,6 +54,7 @@ const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   prize: { icon: "trophy", labelKey: "financesScreen.prize" },
   transfer_in: { icon: "arrow-down-left", labelKey: "financesScreen.transfersIn" },
   wages: { icon: "staff", labelKey: "financesScreen.playerSalaries" },
+  staff: { icon: "staff", labelKey: "financesScreen.staffSalaries" },
   operational: { icon: "building", labelKey: "financesScreen.operational" },
   transfer_out: { icon: "arrow-up-right", labelKey: "financesScreen.transfersOut" },
 };
@@ -113,6 +115,7 @@ export function FinancesScreen() {
     if (!squad) return null;
     return {
       wages: squadWeeklyWages(squad.players, wageFactorOf(squad)),
+      staff: squadStaffWages(squad.staff, wageFactorOf(squad)),
       operational: weeklyOperationalCost(squad),
       commercial: Math.round((squad.finances?.commercial ?? 0) / 52),
     };
@@ -310,11 +313,12 @@ export function FinancesScreen() {
               <div className="space-y-2">
                 <ProjectionRow icon="handshake" label={t("financesScreen.commercial")} value={weeklyProjection.commercial} positive />
                 <ProjectionRow icon="staff" label={t("financesScreen.playerSalaries")} value={-weeklyProjection.wages} />
+                <ProjectionRow icon="staff" label={t("financesScreen.staffSalaries")} value={-weeklyProjection.staff} />
                 <ProjectionRow icon="building" label={t("financesScreen.operational")} value={-weeklyProjection.operational} />
                 <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
                   <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.weeklyProfitLoss")}</span>
                   {(() => {
-                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.operational;
+                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.operational;
                     return (
                       <span className={`text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
                         {net >= 0 ? "+" : ""}{formatCurrency(net)}
