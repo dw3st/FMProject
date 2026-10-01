@@ -38,11 +38,13 @@ posição da linha como natural; as demais viram apt/training.
 ## Onde o fator entra
 
 - **Motor:** `teamLineup(scaleStats(buffed, fator), papel)` ao montar o titular e ao entrar um reserva
-  (`GamePlayer.fit` guarda os atributos e a função de aptidão). `strengthAttr`/`stamina` ficam sem escala.
+  (`GamePlayer.fit` guarda os atributos e o registro de aptidões por posição, dado puro; `factorFromAptitudes` converte em fator). `strengthAttr`/`stamina` ficam sem escala.
 - **quickSim:** a força do titular na vaga (`lineValue`) e o pace (`linePace`) vezes o fator. Papel de
   vaga desconhecido (ex. `positions[0]` = "Defender") conta como natural.
 - **Seleção:** valor na vaga = `weightedScore(vaga) x fator`. Na primeira passada do `autoFillLineup` um
-  `unsuitable` só entra se não sobrou ninguém da linha.
+  `unsuitable` só entra se não sobrou ninguém da linha, e as vagas são preenchidas da mais escassa (menos
+  candidatos natural/apt) para a menos. Aptidões e pontuações são memoizadas por objeto `stats` (WeakMap).
+  Trocas da IA em jogo (`AiSubstitution`) e as telas Formação/Prévia usam o mesmo valor ajustado.
 
 ## Medição de gols (2026-10-01, `quicksim-calibrate.ts`, 150 pares x 2, `QS_QUICK_REPEATS=50`)
 

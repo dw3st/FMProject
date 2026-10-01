@@ -29,7 +29,7 @@ import type { RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
-import { positionFactor, scaleStats } from '@/Domain/positions/positionAptitude';
+import { factorFromAptitudes, positionAptitudes, positionFactor, scaleStats } from '@/Domain/positions/positionAptitude';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import {
   SHOT_SPEED, TACKLE_COOLDOWN, TACKLE_RANGE,
@@ -230,7 +230,7 @@ function buildGamePlayerForSlot(
     x:                startPos.x,
     y:                startPos.y,
     baseStats,
-    fit:              { stats: buffed, aptitude: (r: string) => positionFactor(rp, r) },
+    fit:              { stats: buffed, aptitudes: positionAptitudes(rp) },
     runtimeStats:     getRuntimeLineup(baseStats, { energy }),
     energy,
     startEnergy:      energy,
@@ -300,7 +300,7 @@ function buildTeam(
       x:                dummyPos.x,
       y:                dummyPos.y,
       baseStats,
-      fit:              { stats: buffed, aptitude: (r: string) => positionFactor(rp, r) },
+      fit:              { stats: buffed, aptitudes: positionAptitudes(rp) },
       runtimeStats:     getRuntimeLineup(baseStats, { energy }),
       energy,
       startEnergy:      energy,
@@ -435,7 +435,7 @@ export function performSubstitution(
   // Re-field the incoming player in the slot's role with the out-of-position penalty applied;
   // players without `fit` (hand-built test states) keep the stats built at lineup time.
   const newBaseStats = inPlayer.fit
-    ? teamLineup(scaleStats(inPlayer.fit.stats, inPlayer.fit.aptitude(role)), role)
+    ? teamLineup(scaleStats(inPlayer.fit.stats, factorFromAptitudes(inPlayer.fit.aptitudes, role)), role)
     : inPlayer.baseStats;
 
   const incoming: GamePlayer = {

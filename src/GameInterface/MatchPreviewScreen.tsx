@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { slotValue } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
@@ -132,7 +133,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
 
 function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: string }) {
   const role = slotRole ?? player.positions[0] ?? "CM";
-  const avg = Player.weightedScore(player.stats, role);
+  const avg = slotValue(player, role);
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
@@ -149,7 +150,7 @@ function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
 
 function AwayPlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: string }) {
   const role = slotRole ?? player.positions[0] ?? "CM";
-  const avg = Player.weightedScore(player.stats, role);
+  const avg = slotValue(player, role);
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
@@ -429,8 +430,8 @@ function LastMinuteSubsModal({
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span className={ratingTextClass10(Player.weightedScore(selectedOut.player.stats, selectedOut.role))}>
-                      {Player.weightedScore(selectedOut.player.stats, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
+                    <span className={ratingTextClass10(slotValue(selectedOut.player, selectedOut.role))}>
+                      {slotValue(selectedOut.player, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
                     </span>
                     <span className="inline-flex items-center gap-1">
                       {t("matchPreview.fitness")} {Math.round(selectedOut.player.seasonLog?.fitness ?? 100)}
@@ -459,7 +460,7 @@ function LastMinuteSubsModal({
               <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
                 {starters.map(({ player, slotIndex, role }) => {
                   const isSelected = slotIndex === selectedSlot;
-                  const avg = Player.weightedScore(player.stats, role);
+                  const avg = slotValue(player, role);
                   const lastName = player.name.split(" ").pop() ?? player.name;
                   return (
                     <button
@@ -519,7 +520,7 @@ function LastMinuteSubsModal({
                 ) : (
                   bench.map((p) => {
                     const role = p.positions[0] ?? "CM";
-                    const avg = Player.weightedScore(p.stats, role);
+                    const avg = slotValue(p, role);
                     const canPick = selectedSlot !== null;
                     const lastName = p.name.split(" ").pop() ?? p.name;
                     return (

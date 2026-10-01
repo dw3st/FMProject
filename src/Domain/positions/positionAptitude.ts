@@ -65,26 +65,66 @@ function classify(
   return apt;
 }
 
+interface Profile {
+  sig: number;
+  line: MainRole;
+  foot: string | undefined;
+  natural: DetailedRole;
+  scores: Record<DetailedRole, number>;
+  aptitudes: Record<DetailedRole, Aptitude>;
+}
+
+/** Cheap fingerprint so an in-place edit of the stats record invalidates the memo. */
+function statsSignature(stats: PlayerStatsRecord): number {
+  let sig = 0;
+  let i = 1;
+  for (const v of Object.values(stats as unknown as Record<string, number>)) sig += v * i++;
+  return sig;
+}
+
+// Pure memo: everything below is a function of (stats, line, foot); keyed by the stats object.
+const PROFILES = new WeakMap<object, Profile>();
+
+function profileOf(player: RosterPlayer): Profile {
+  const line = lineOf(player);
+  const foot = player.preferredFoot;
+  const sig = statsSignature(player.stats);
+  const hit = PROFILES.get(player.stats);
+  if (hit && hit.sig === sig && hit.line === line && hit.foot === foot) return hit;
+  const nat = naturalOf(player.stats, line, foot);
+  const scores = {} as Record<DetailedRole, number>;
+  const aptitudes = {} as Record<DetailedRole, Aptitude>;
+  for (const r of DETAILED_ROLES) {
+    scores[r] = weightedScore(player.stats, r);
+    aptitudes[r] = classify(player.stats, line, foot, nat, r);
+  }
+  const profile: Profile = { sig, line, foot, natural: nat.role, scores, aptitudes };
+  PROFILES.set(player.stats, profile);
+  return profile;
+}
+
 /** Aptitude of the player for each detailed role. Pure and deterministic. */
 export function positionAptitudes(player: RosterPlayer): Record<DetailedRole, Aptitude> {
-  const line = lineOf(player);
-  const nat = naturalOf(player.stats, line, player.preferredFoot);
-  const out = {} as Record<DetailedRole, Aptitude>;
-  for (const r of DETAILED_ROLES) out[r] = classify(player.stats, line, player.preferredFoot, nat, r);
-  return out;
+  return { ...profileOf(player).aptitudes };
 }
 
 /** The player's natural detailed role. */
 export function preferredRole(player: RosterPlayer): DetailedRole {
-  return naturalOf(player.stats, lineOf(player), player.preferredFoot).role;
+  return profileOf(player).natural;
 }
 
-/** Aptitude for one role (cheaper than the full map). Unknown role codes count as natural. */
+/** Aptitude for one role. Unknown role codes count as natural. */
 export function aptitudeFor(player: RosterPlayer, role: string): Aptitude {
   if (!isDetailedRole(role)) return "natural";
-  const line = lineOf(player);
-  const nat = naturalOf(player.stats, line, player.preferredFoot);
-  return classify(player.stats, line, player.preferredFoot, nat, role);
+  return profileOf(player).aptitudes[role];
+}
+
+/** Multiplier for a role given a plain aptitude record (what `GamePlayer.fit` stores). */
+export function factorFromAptitudes(
+  aptitudes: Partial<Record<string, Aptitude>> | undefined,
+  role: string,
+): number {
+  return POSITION_PENALTY[aptitudes?.[role] ?? "natural"];
 }
 
 /** Multiplier on the player's attributes when fielded as `role`. */
@@ -94,7 +134,9 @@ export function positionFactor(player: RosterPlayer, role: string): number {
 
 /** Value of a player in a slot: the role's weighted score times the aptitude penalty. */
 export function slotValue(player: RosterPlayer, role: string): number {
-  return weightedScore(player.stats, role) * positionFactor(player, role);
+  if (!isDetailedRole(role)) return weightedScore(player.stats, role);
+  const p = profileOf(player);
+  return p.scores[role] * POSITION_PENALTY[p.aptitudes[role]];
 }
 
 /** Scales every attribute (a 0-10 record) by `factor`. */
