@@ -3,6 +3,7 @@ import { saveRoutes } from "@/backend/saves";
 import { advanceDayRoutes } from "@/backend/advanceDay";
 import { advanceUntilRoutes } from "@/backend/advanceUntil";
 import { transferRoutes } from "@/backend/transfers";
+import { contractRoutes } from "@/backend/contractRoutes";
 import { inboxRoutes } from "@/backend/inbox";
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
@@ -61,6 +62,7 @@ export const apiRoutes = {
   ...advanceDayRoutes,
   ...advanceUntilRoutes,
   ...transferRoutes,
+  ...contractRoutes,
   ...inboxRoutes,
 
   // Public runtime config for the frontend. PostHog is only enabled when

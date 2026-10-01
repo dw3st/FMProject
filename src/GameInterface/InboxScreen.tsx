@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award, HeartPulse } from "lucide-react";
+import { Newspaper, TrendingUp, ArrowDownLeft, ArrowUpRight, ArrowRight, CheckCheck, X, Trophy, Award, HeartPulse, FileText } from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
@@ -68,6 +68,13 @@ const CATEGORY_META: Record<
     bg: "bg-red-500/15",
     border: "border-red-500/30",
     Icon: HeartPulse,
+  },
+  contract: {
+    labelKey: "inbox.categories.contract",
+    color: "text-amber-400",
+    bg: "bg-amber-500/15",
+    border: "border-amber-500/30",
+    Icon: FileText,
   },
 };
 
@@ -385,6 +392,14 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
         {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
         {message.category === "injury" && <InjuryBody message={message} />}
+        {message.category === "contract" && (
+          <p className="text-sm text-foreground m-0">
+            {t(`inbox.contract.${message.kind}`, {
+              players: message.players.map((p) => p.name).join(", "),
+              until: formatInboxDate(message.until ?? ""),
+            })}
+          </p>
+        )}
       </div>
     </div>
   );

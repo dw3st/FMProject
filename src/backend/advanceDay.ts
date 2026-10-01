@@ -6,7 +6,10 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
-import type { LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
+import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
+import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
+import { processContractExpiries } from "@/Domain/contracts/expiry";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -18,6 +21,7 @@ import {
   buildCupMessage,
   buildDevelopmentMessage,
   buildInjuryMessage,
+  buildContractMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
   buildSeasonMessage,
@@ -644,6 +648,20 @@ export async function advanceOneDay(
     // now. Queued into `deferredInjuryMessages` and flushed after `clearInbox`, same pattern as
     // `continentalMessages` / `negativeBalanceMessage`.
     const deferredInjuryMessages: Parameters<typeof buildInjuryMessage>[0][] = [];
+    // Contract news (90-day warning, released at the rollover): same deferral, same reason.
+    const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
+    if (playerSquadId) {
+      const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
+      if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
+        const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
+        const ending = (humanSquad?.players ?? []).filter((p) => p.contract && p.contract.until <= leagueEnd);
+        if (ending.length > 0) {
+          deferredContractMessages.push({
+            date: currentDate, kind: "expiring", players: ending.map((p) => ({ id: p.id, name: p.name })),
+          });
+        }
+      }
+    }
     if (playerSquadId) {
       for (const inj of injuryInboxEvents) {
         if (inj.squadId !== playerSquadId) continue;
@@ -1399,6 +1417,34 @@ export async function advanceOneDay(
         };
       }
 
+      // 8. Contracts ending with the season: the AI renews who fits (wage cap permitting) and
+      //    releases the rest, the human club releases whoever it did not renew. Released players
+      //    wait in freeAgents.json. Runs on the NEW membership with the new season's end dates.
+      const releasedNow: FreeAgent[] = [];
+      for (const slug of unit.leagues) {
+        const nextEnd = updatedActiveLeagues[stateIdx(slug)]?.end;
+        if (!nextEnd) continue;
+        for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
+          const isHuman = sq.id === playerClubSquadId;
+          const res = processContractExpiries({ squad: sq, date: currentDate, nextSeasonEnd: nextEnd, isHuman });
+          if (res.squad === sq) continue;
+          await saveService.saveSquadById(saveId, res.squad);
+          for (const p of res.released) releasedNow.push({ player: { ...p, squadId: "", contract: undefined }, since: currentDate });
+          if (isHuman && res.released.length > 0) {
+            deferredContractMessages.push({
+              date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
+            });
+          }
+        }
+      }
+      if (releasedNow.length > 0 || due.units.length > 0) {
+        const keepSince = addYearsIso(currentDate, -1);
+        const existing = await saveService.getFreeAgents(saveId);
+        await saveService.writeFreeAgents(
+          saveId, [...existing.filter((f) => f.since > keepSince), ...releasedNow],
+        );
+      }
+
       if (unit.leagues.includes(meta.leagueSlug)) {
         seasonEnded = true;
         archiveYear = closedYear.get(meta.leagueSlug);
@@ -1573,6 +1619,7 @@ export async function advanceOneDay(
     if (negativeBalanceMessage) await emitInboxMessage(saveId, buildSeasonMessage(negativeBalanceMessage), saveService);
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
+    for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};

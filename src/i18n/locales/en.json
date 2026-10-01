@@ -1037,7 +1037,8 @@
       "season": "Season",
       "cup": "Cup",
       "continental": "Continental",
-      "injury": "Injury"
+      "injury": "Injury",
+      "contract": "Contracts"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1071,6 +1072,11 @@
         "medium": "medium",
         "severe": "severe"
       }
+    },
+    "contract": {
+      "expiring": "Contracts ending this season: {{players}}",
+      "renewed": "{{players}} signed a new contract (until {{until}})",
+      "released": "Contract ended, left as a free agent: {{players}}"
     }
   },
   "finances": {
