@@ -165,6 +165,7 @@ com `/test` e `/lab` exibindo as novas estatÃ­sticas.
 
 - **Reports dos testers:** triagem semanal com `bun scripts/fetchReports.ts`.
 - **Issues abertos** (abaixo), atacados entre as fases.
+- Mapa-múndi clicável na escolha de país do novo jogo (pedido do usuário, 2026-10-01).
 
 ---
 
