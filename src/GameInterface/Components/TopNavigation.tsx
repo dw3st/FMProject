@@ -96,8 +96,15 @@ export function TopNavigation({
         <div className="flex items-center gap-0.5 xl:gap-1 min-w-0">
           {navItems.map((item) => {
             const label = t(item.labelKey);
+            const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
             return (
-              <a key={item.labelKey} href={item.href} className={linkClass} title={label}>
+              <a
+                key={item.labelKey}
+                href={item.href}
+                className={active ? linkClass.replace("text-muted-foreground", "text-foreground") : linkClass}
+                title={label}
+                aria-current={active ? "page" : undefined}
+              >
                 <Icon name={item.icon} size={16} />
                 <span className="hidden xl:block">{label}</span>
               </a>
