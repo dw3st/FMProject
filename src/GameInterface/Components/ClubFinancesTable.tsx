@@ -6,21 +6,21 @@ import type { FinancialTier } from "@/types/playerTypes";
 
 const TIER_BADGE: Record<FinancialTier, string> = {
   LOW: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
-  MEDIUM: "bg-sky-500/15 text-sky-300 border-sky-500/40",
-  HIGH: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-  ELITE: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+  MEDIUM: "bg-chart-3/15 text-chart-3 border-chart-3/40",
+  HIGH: "bg-chart-2/15 text-chart-2 border-chart-2/40",
+  ELITE: "bg-chart-4/15 text-chart-4 border-chart-4/40",
 };
 
 const HIRING_BADGE: Record<HiringState, string> = {
-  open: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-  tight: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-  frozen: "bg-red-500/15 text-red-300 border-red-500/40",
+  open: "bg-chart-2/15 text-chart-2 border-chart-2/40",
+  tight: "bg-chart-4/15 text-chart-4 border-chart-4/40",
+  frozen: "bg-destructive/15 text-destructive border-destructive/40",
 };
 
 const WAGE_BAR: Record<HiringState, string> = {
-  open: "bg-emerald-500",
-  tight: "bg-amber-500",
-  frozen: "bg-red-500",
+  open: "bg-chart-2",
+  tight: "bg-chart-4",
+  frozen: "bg-destructive",
 };
 
 /** €12.3M / €450k / €900 */
@@ -46,9 +46,9 @@ export function ClubFinancesTable({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-xl overflow-x-auto border-glow">
+    <div className="card-arcade rounded-md overflow-x-auto">
       <div className="min-w-[900px]">
-        <div className={`${GRID} px-4 py-3 bg-secondary/30 border-b border-border text-xs font-bold uppercase tracking-wider text-muted-foreground`}>
+        <div className={`${GRID} px-4 py-3 bg-secondary/30 border-b border-border text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground`}>
           <div>{t("leagues.club")}</div>
           <div className="text-center">{t("leagues.finances.tier")}</div>
           <div className="text-center">{t("leagues.finances.popularity")}</div>
@@ -72,7 +72,7 @@ export function ClubFinancesTable({
                     logoUrl={squadLogoUrl(row.squadId)}
                     primaryColor={row.colors[0]}
                     secondaryColor={row.colors[1]}
-                    className="w-6 h-6 rounded shrink-0"
+                    className="w-8 h-8 rounded-full shrink-0"
                     imgClassName="w-full h-full object-contain"
                   />
                   <span className="font-semibold text-foreground truncate">{row.name}</span>
@@ -80,19 +80,19 @@ export function ClubFinancesTable({
 
                 <div className="flex justify-center">
                   {row.tier ? (
-                    <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-widest ${TIER_BADGE[row.tier]}`}>
+                    <span className={`px-2 py-0.5 rounded border text-sm ${TIER_BADGE[row.tier]}`}>
                       {t(`leagues.finances.tiers.${row.tier}`)}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{t("leagues.finances.yourClub")}</span>
+                    <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-primary font-display">{t("leagues.finances.yourClub")}</span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-secondary/40 overflow-hidden">
+                  <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
                     <div className="h-full bg-primary" style={{ width: `${row.popularity}%` }} />
                   </div>
-                  <span className="text-xs tabular-nums text-muted-foreground w-6 text-right">{Math.round(row.popularity)}</span>
+                  <span className="text-sm tabular-nums text-muted-foreground w-6 text-right">{Math.round(row.popularity)}</span>
                 </div>
 
                 <div className="text-right text-sm tabular-nums text-muted-foreground">
@@ -100,14 +100,14 @@ export function ClubFinancesTable({
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex justify-between text-xs tabular-nums">
+                  <div className="flex justify-between text-sm tabular-nums">
                     <span className="text-foreground">{formatEuros(row.wageBill)}</span>
                     <span className="text-muted-foreground">
                       {row.maxWageBudget != null ? `/ ${formatEuros(row.maxWageBudget)}` : ""}
                     </span>
                   </div>
                   {row.maxWageBudget != null && row.hiring && (
-                    <div className="h-1.5 rounded-full bg-secondary/40 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-border overflow-hidden">
                       <div className={`h-full ${WAGE_BAR[row.hiring]}`} style={{ width: `${wagePct}%` }} />
                     </div>
                   )}
@@ -117,7 +117,7 @@ export function ClubFinancesTable({
                   {row.hiring ? (
                     <span
                       title={t(`leagues.finances.hiringHint.${row.hiring}`)}
-                      className={`px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-widest ${HIRING_BADGE[row.hiring]}`}
+                      className={`px-2 py-0.5 rounded border text-sm ${HIRING_BADGE[row.hiring]}`}
                     >
                       {t(`leagues.finances.hiringState.${row.hiring}`)}
                     </span>
@@ -130,7 +130,7 @@ export function ClubFinancesTable({
                   {row.transferBudget != null && row.seasonalTransferBudget != null ? (
                     <>
                       <span className="text-foreground font-semibold">{formatEuros(row.transferBudget)}</span>
-                      <span className="text-muted-foreground text-xs"> / {formatEuros(row.seasonalTransferBudget)}</span>
+                      <span className="text-muted-foreground text-sm"> / {formatEuros(row.seasonalTransferBudget)}</span>
                     </>
                   ) : (
                     <span className="text-muted-foreground">—</span>

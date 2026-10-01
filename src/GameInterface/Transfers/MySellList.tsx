@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Tag, Trash2 } from "lucide-react";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { SellCandidate } from "@/types/transferMarketTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { getMainRole, getPositionColor, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { Icon } from "@/GameInterface/Icons";
 
 export function MySellList() {
   const { t } = useTranslation();
@@ -71,7 +71,7 @@ export function MySellList() {
 
   if (!session) {
     return (
-      <div className="card-arcade rounded-xl p-12 border-glow text-center">
+      <div className="card-arcade rounded-md p-12 text-center">
         <p className="text-muted-foreground text-sm m-0">{t("transfers.mySellList.noSaveLoaded")}</p>
       </div>
     );
@@ -79,8 +79,8 @@ export function MySellList() {
 
   if (loading) {
     return (
-      <div className="card-arcade rounded-xl p-12 text-center flex flex-col items-center gap-3">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" aria-hidden />
+      <div className="card-arcade rounded-md p-12 text-center flex flex-col items-center gap-3">
+        <Icon name="loader2" className="w-8 h-8 text-primary animate-spin" aria-hidden />
         <p className="text-muted-foreground text-sm m-0">{t("transfers.mySellList.loading")}</p>
       </div>
     );
@@ -88,7 +88,7 @@ export function MySellList() {
 
   if (error) {
     return (
-      <div className="card-arcade rounded-xl p-8 border-glow border-destructive/40 text-center space-y-3">
+      <div className="card-arcade rounded-md p-8 border-destructive/40 text-center space-y-3">
         <p className="text-destructive text-sm m-0">{error}</p>
         <button
           type="button"
@@ -103,8 +103,8 @@ export function MySellList() {
 
   if (candidates.length === 0) {
     return (
-      <div className="card-arcade rounded-xl p-12 border-glow text-center space-y-2">
-        <Tag className="w-10 h-10 mx-auto text-muted-foreground opacity-50" aria-hidden />
+      <div className="card-arcade rounded-md p-12 text-center space-y-2">
+        <Icon name="tag" className="w-10 h-10 mx-auto text-muted-foreground opacity-50" aria-hidden />
         <p className="text-muted-foreground text-sm m-0 max-w-md mx-auto">
           {t("transfers.mySellList.instructions.part1")}{" "}
           <strong className="text-foreground">{t("transfers.mySellList.instructions.listForSale")}</strong> {t("transfers.mySellList.instructions.part2")}
@@ -120,13 +120,13 @@ export function MySellList() {
     `/player/${encodeURIComponent(leagueSlug!)}/${encodeURIComponent(clubId!)}/${encodeURIComponent(playerId)}`;
 
   return (
-    <div className="card-arcade rounded-xl border-glow overflow-hidden">
+    <div className="card-arcade rounded-md overflow-hidden">
       <div className="p-4 border-b border-border flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-          <Tag className="w-4 h-4 text-primary" />
+          <Icon name="tag" className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="font-bold uppercase tracking-wider text-foreground m-0">{t("transfers.mySellList.listedForSale")}</h3>
-        <span className="ml-auto text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">{candidates.length}</span>
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("transfers.mySellList.listedForSale")}</h3>
+        <span className="ml-auto text-sm bg-muted px-2 py-1 rounded-full text-muted-foreground">{candidates.length}</span>
       </div>
       <ul className="divide-y divide-border m-0 p-0 list-none">
         {candidates.map((c) => {
@@ -139,7 +139,7 @@ export function MySellList() {
           return (
             <li key={c.playerId} className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4">
               <div
-                className={`px-2 py-1 rounded text-[10px] font-black shrink-0 w-10 text-center ${getPositionColor(pos)}`}
+                className={`px-2 py-1 rounded text-sm font-black shrink-0 w-10 text-center ${getPositionColor(pos)}`}
               >
                 {MAIN_ROLE_ABBR[role]}
               </div>
@@ -150,7 +150,7 @@ export function MySellList() {
                 >
                   {name}
                 </a>
-                <p className="text-[11px] text-muted-foreground m-0 mt-0.5">
+                <p className="text-sm text-muted-foreground m-0 mt-0.5">
                   {t("transfers.mySellList.sellingPriority")} {Math.round(c.priority * 100)}%
                 </p>
               </div>
@@ -158,15 +158,13 @@ export function MySellList() {
                 type="button"
                 disabled={busy}
                 onClick={() => void removeFromList(c.playerId)}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold
-                  border border-border bg-muted/50 text-muted-foreground hover:text-destructive hover:border-destructive/50
-                  hover:bg-destructive/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-border bg-muted/50 text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title={t("common.removeFromSaleList")}
               >
                 {busy ? (
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                  <Icon name="loader2" className="w-4 h-4 animate-spin" aria-hidden />
                 ) : (
-                  <Trash2 className="w-4 h-4" aria-hidden />
+                  <Icon name="trash2" className="w-4 h-4" aria-hidden />
                 )}
                 <span className="hidden sm:inline">{t("common.remove")}</span>
               </button>

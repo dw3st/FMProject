@@ -37,18 +37,18 @@ export function TransfersScreen() {
   }, []);
 
   return (
-    <main className="flex-1 p-4 lg:p-6 overflow-auto">
+    <main className="flex-1 px-6 py-5 overflow-auto">
       <div className="max-w-7xl mx-auto space-y-6">
         <PageHeadline
           backHref="/dashboard"
           trailing={
-            <div className="flex flex-wrap rounded-xl overflow-hidden border border-border bg-card/50">
+            <div className="flex flex-wrap rounded-md overflow-hidden border border-border bg-card/50">
               <button
                 type="button"
                 onClick={() => setActiveTab("my")}
-                className={`px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+                className={`px-3 sm:px-5 py-2.5 text-[13px] sm:text-sm font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
                   activeTab === "my"
-                    ? "bg-primary text-primary-foreground glow-primary-sm"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
                 }`}
               >
@@ -57,9 +57,9 @@ export function TransfersScreen() {
               <button
                 type="button"
                 onClick={() => setActiveTab("world")}
-                className={`px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+                className={`px-3 sm:px-5 py-2.5 text-[13px] sm:text-sm font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
                   activeTab === "world"
-                    ? "bg-primary text-primary-foreground glow-primary-sm"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
                 }`}
               >
@@ -69,9 +69,9 @@ export function TransfersScreen() {
               <button
                 type="button"
                 onClick={() => setActiveTab("sell")}
-                className={`px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+                className={`px-3 sm:px-5 py-2.5 text-[13px] sm:text-sm font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
                   activeTab === "sell"
-                    ? "bg-primary text-primary-foreground glow-primary-sm"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
                 }`}
               >
@@ -80,11 +80,11 @@ export function TransfersScreen() {
             </div>
           }
         >
-          {t("transfers.title")} <span className="text-primary glow-text">{t("common.market")}</span>
+          {t("transfers.title")} <span className="text-primary">{t("common.market")}</span>
         </PageHeadline>
 
         {loading && activeTab !== "sell" ? (
-          <div className="card-arcade rounded-xl p-12 text-center">
+          <div className="card-arcade rounded-md p-12 text-center">
             <p className="text-muted-foreground text-sm m-0">{t("transfers.loadingTransfers")}</p>
           </div>
         ) : activeTab === "my" ? (

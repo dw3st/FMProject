@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { Search, RotateCcw, Tag } from "lucide-react";
 import { SelectListbox, formSelectBoxClass } from "@/GameInterface/Components/SelectListbox";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { ScoutAttributeFiltersDisclosure } from "@/GameInterface/Scout/ScoutAttributeFiltersDisclosure";
@@ -7,6 +6,7 @@ import {
   createDefaultScoutFilters,
   type ScoutFilterState,
 } from "@/GameInterface/Scout/scoutFilterState";
+import { Icon } from "@/GameInterface/Icons";
 
 export type { ScoutFilterState };
 export { createDefaultScoutFilters, defaultAttributeRanges } from "@/GameInterface/Scout/scoutFilterState";
@@ -43,16 +43,16 @@ export function ScoutFilters({
   const positionOptions = MAIN_POSITION_FILTERS;
 
   return (
-    <div className="card-arcade rounded-xl p-5">
+    <div className="card-arcade rounded-md p-5">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-sm font-black text-foreground font-display uppercase tracking-wider m-0">
+        <h2 className="font-display font-black uppercase text-xl leading-none m-0">
           {t("scout.filters.searchFilters")}
         </h2>
         <button
           onClick={handleReset}
-          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors font-semibold uppercase tracking-wider cursor-pointer bg-transparent border-0"
+          className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-primary transition-colors font-bold uppercase tracking-[0.08em] cursor-pointer bg-transparent border-0 font-display"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <Icon name="rotate-ccw" className="w-3.5 h-3.5" />
           {t("scout.filters.reset")}
         </button>
       </div>
@@ -60,11 +60,11 @@ export function ScoutFilters({
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
         {/* Name Search */}
         <div className="col-span-2">
-          <label className="block text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">
+          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
             {t("scout.filters.playerName")}
           </label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={filters.name}
@@ -85,7 +85,7 @@ export function ScoutFilters({
 
         {/* Age Range */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">
+          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
             {t("scout.filters.ageRange")}
           </label>
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export function ScoutFilters({
               onChange={(e) => setFilters({ ...filters, minAge: parseInt(e.target.value) || 16 })}
               className={inputClass}
             />
-            <span className="text-muted-foreground text-xs font-bold">-</span>
+            <span className="text-muted-foreground text-sm font-bold">-</span>
             <input
               type="number"
               min={16}
@@ -111,7 +111,7 @@ export function ScoutFilters({
 
         {/* Avg Skill Range */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">
+          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
             {t("common.avgSkill")}
           </label>
           <div className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export function ScoutFilters({
               onChange={(e) => setFilters({ ...filters, minAvg: parseFloat(e.target.value) || 0 })}
               className={inputClass}
             />
-            <span className="text-muted-foreground text-xs font-bold">-</span>
+            <span className="text-muted-foreground text-sm font-bold">-</span>
             <input
               type="number"
               min={0}
@@ -139,7 +139,7 @@ export function ScoutFilters({
 
         {/* Value (transfer price), millions £ */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">
+          <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
             Value (M £)
           </label>
           <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export function ScoutFilters({
               placeholder={t("common.min")}
               className={inputClass}
             />
-            <span className="text-muted-foreground text-xs font-bold">-</span>
+            <span className="text-muted-foreground text-sm font-bold">-</span>
             <input
               type="number"
               min={0}
@@ -186,25 +186,25 @@ export function ScoutFilters({
         <button
           type="button"
           onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-bold uppercase tracking-[0.08em] border transition-all cursor-pointer ${
             filters.onlyForSale
               ? "bg-primary/20 text-primary border-primary/40"
               : "bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/30"
           }`}
         >
-          <Tag className="w-3.5 h-3.5" />
+          <Icon name="tag" className="w-3.5 h-3.5" />
           {t("scout.filters.forSaleOnly")}
         </button>
         <button
           type="button"
           onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-bold uppercase tracking-[0.08em] border transition-all cursor-pointer ${
             filters.onlyFree
               ? "bg-primary/20 text-primary border-primary/40"
               : "bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/30"
           }`}
         >
-          <Tag className="w-3.5 h-3.5" />
+          <Icon name="tag" className="w-3.5 h-3.5" />
           {t("scout.filters.freeAgentsOnly")}
         </button>
       </div>

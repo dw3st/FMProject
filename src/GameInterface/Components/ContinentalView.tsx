@@ -52,7 +52,7 @@ function LegScore({
   return (
     <span className="whitespace-nowrap tabular-nums">
       <span className={winner === f.home ? "font-bold text-white" : ""}>{name(f.home)}</span>{" "}
-      <span className="text-white/70">{played ? `${f.result!.home}–${f.result!.away}` : vsLabel}</span>{" "}
+      <span className="text-foreground">{played ? `${f.result!.home}–${f.result!.away}` : vsLabel}</span>{" "}
       <span className={winner === f.away ? "font-bold text-white" : ""}>{name(f.away)}</span>
     </span>
   );
@@ -73,52 +73,52 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
   return (
     <div className="space-y-6">
       {continental.championId && (
-        <div className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm">
-          <span className="text-white/60">{t("continental.champion")}: </span>
-          <span className="font-bold text-amber-300">{name(continental.championId)}</span>
+        <div className="rounded-lg border border-chart-4/40 bg-chart-4/10 px-4 py-3 text-sm">
+          <span className="text-muted-foreground">{t("continental.champion")}: </span>
+          <span className="font-bold text-chart-4">{name(continental.championId)}</span>
         </div>
       )}
 
       <section className="space-y-3">
-        <h3 className="text-sm font-bold text-white/80">{t("continental.groups")}</h3>
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.groups")}</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           {data.groups.map((group) => (
-            <div key={group.name} className="rounded-lg border border-white/10 bg-white/[0.03] overflow-hidden">
-              <header className="px-3 py-2 border-b border-white/10 text-xs font-semibold text-white/70">
+            <div key={group.name} className="rounded-lg border border-border bg-foreground/5 overflow-hidden">
+              <header className="px-3 py-2 border-b border-border text-sm font-semibold text-foreground">
                 {t("continental.group", { name: group.name })}
               </header>
-              <div className="grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+              <div className="grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
                 <div />
                 <div>{t("leagues.club")}</div>
                 <div className="text-center">{t("leagues.matches")}</div>
                 <div className="text-center">{t("leagues.goalDifference")}</div>
                 <div className="text-center">{t("leagues.points")}</div>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border">
                 {group.rows.map((row, idx) => {
                   const qualified = idx < 2;
                   const mine = row.squadId === myClubId;
                   return (
                     <div
                       key={row.squadId}
-                      className={`grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 items-center px-3 py-1.5 text-xs border-l-2 ${
-                        qualified ? "border-emerald-500" : "border-transparent"
+                      className={`grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 items-center px-3 py-1.5 text-sm border-l-2 ${
+                        qualified ? "border-chart-2" : "border-transparent"
                       } ${mine ? "bg-primary/10" : ""}`}
                     >
-                      <div className="flex items-center justify-center gap-1 text-white/40">
-                        {qualified && <Icon name="check-circle" size={12} className="text-emerald-400" />}
+                      <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                        {qualified && <Icon name="check-circle" size={12} className="text-chart-2" />}
                         <span>{idx + 1}</span>
                       </div>
                       <div className="flex items-center gap-2 min-w-0">
                         <ClubLogo
                           logoUrl={squadLogoUrl(row.squadId)}
-                          className="w-5 h-5 rounded shrink-0"
+                          className="w-8 h-8 rounded-full shrink-0"
                           imgClassName="w-full h-full object-contain"
                         />
-                        <span className="truncate font-semibold text-white/90">{name(row.squadId)}</span>
+                        <span className="truncate font-semibold text-foreground">{name(row.squadId)}</span>
                       </div>
-                      <div className="text-center text-white/60">{row.mp}</div>
-                      <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-red-400"}`}>
+                      <div className="text-center text-muted-foreground">{row.mp}</div>
+                      <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-destructive"}`}>
                         {row.gd > 0 ? `+${row.gd}` : row.gd}
                       </div>
                       <div className="text-center font-black text-primary">{row.pts}</div>
@@ -132,7 +132,7 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-bold text-white/80">{t("continental.knockout")}</h3>
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.knockout")}</h3>
         <div className="space-y-4">
           {knockoutStages.map((stage) => {
             const isFinal = stage.name === "final";
@@ -143,14 +143,14 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
             const hasContent = isFinal ? !!finalFixture : ties.length > 0;
 
             return (
-              <section key={stage.name} className="rounded-lg border border-white/10 bg-white/[0.03]">
-                <header className="flex items-center justify-between px-4 py-2 border-b border-white/10">
+              <section key={stage.name} className="rounded-lg border border-border bg-foreground/5">
+                <header className="flex items-center justify-between px-4 py-2 border-b border-border">
                   <h4 className="text-sm font-semibold">{t(`continental.stage.${stage.name}`)}</h4>
                 </header>
                 {!stage.drawn || !hasContent ? (
-                  <p className="px-4 py-3 text-xs text-white/40">{t("continental.notDrawn")}</p>
+                  <p className="px-4 py-3 text-sm text-muted-foreground">{t("continental.notDrawn")}</p>
                 ) : isFinal && finalFixture ? (
-                  <ul className="divide-y divide-white/5">
+                  <ul className="divide-y divide-border">
                     <li
                       className={`px-4 py-2 text-sm ${
                         finalFixture.home === myClubId || finalFixture.away === myClubId ? "bg-primary/10" : ""
@@ -158,10 +158,10 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                     >
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <LegScore f={finalFixture} winner={finalWinner(finalFixture)} name={name} vsLabel={vsLabel} />
-                        <span className="text-[10px] text-white/40">{t("cups.neutral")}</span>
+                        <span className="text-sm text-muted-foreground">{t("cups.neutral")}</span>
                       </div>
                       {finalFixture.decider && (
-                        <div className="text-[10px] text-white/50 mt-0.5">
+                        <div className="text-sm text-muted-foreground mt-0.5">
                           {finalFixture.decider.penalties
                             ? t("cups.pens", {
                                 home: finalFixture.decider.penalties.home,
@@ -173,7 +173,7 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                     </li>
                   </ul>
                 ) : (
-                  <ul className="divide-y divide-white/5">
+                  <ul className="divide-y divide-border">
                     {ties.map((legs) => {
                       const leg1 = legs[0]!;
                       const leg2 = legs[1];
@@ -187,14 +187,14 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                             <LegScore f={leg1} winner={winner} name={name} vsLabel={vsLabel} />
                             {leg2 && (
                               <>
-                                <span className="text-white/30">·</span>
+                                <span className="text-muted-foreground">·</span>
                                 <LegScore f={leg2} winner={winner} name={name} vsLabel={vsLabel} />
                               </>
                             )}
                             {agg && (
                               <>
-                                <span className="text-white/30">·</span>
-                                <span className="text-white/60">
+                                <span className="text-muted-foreground">·</span>
+                                <span className="text-muted-foreground">
                                   {t("continental.aggregateNamed", {
                                     homeName: name(leg1.home), home: agg.home,
                                     away: agg.away, awayName: name(leg1.away),
@@ -204,7 +204,7 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                             )}
                           </div>
                           {decider && (
-                            <div className="text-[10px] text-white/50 mt-0.5">
+                            <div className="text-sm text-muted-foreground mt-0.5">
                               {decider.penalties
                                 ? t("continental.pensNamed", {
                                     homeName: name(leg2!.home), home: decider.penalties.home,
