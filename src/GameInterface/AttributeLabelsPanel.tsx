@@ -7,7 +7,7 @@ export function AttributeLabelsPanel() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="card-arcade rounded-xl overflow-hidden">
+    <div className="card-arcade rounded-md overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
@@ -18,7 +18,7 @@ export function AttributeLabelsPanel() {
       </button>
       {expanded && (
         <div className="px-3 pb-3 pt-0 border-t border-border">
-          <ul className="space-y-2 text-xs mt-3 list-none p-0 m-0">
+          <ul className="space-y-2 text-sm mt-3 list-none p-0 m-0">
             {ATTRIBUTE_LIST.map((attr) => (
               <li key={attr.id}>
                 <span className="font-semibold text-foreground">{t(`attributes.${attr.id}.label`, attr.label)}</span>

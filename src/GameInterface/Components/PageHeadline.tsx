@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
 const titleLg =
-  "text-2xl font-black font-display text-foreground uppercase tracking-wider m-0";
+  "text-2xl font-black font-display text-foreground uppercase tracking-[0.08em] m-0";
 
 const titleMd =
-  "text-xl font-black font-display text-foreground m-0 uppercase tracking-wider";
+  "text-xl font-black font-display text-foreground m-0 uppercase tracking-[0.08em]";
 
 export function PageHeadline({
   backHref: _backHref,
@@ -44,7 +44,7 @@ export function PageHeadline({
     <div className="min-w-0 flex-1">
       {children != null && children !== false && <h1 className={hClass}>{children}</h1>}
       {subtitle != null && subtitle !== false && (
-        <div className="text-sm text-muted-foreground mt-1 m-0">{subtitle}</div>
+        <div className="text-sm text-muted-foreground mt-2 m-0">{subtitle}</div>
       )}
     </div>
   );

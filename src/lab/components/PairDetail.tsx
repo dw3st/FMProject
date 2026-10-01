@@ -59,6 +59,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Avg end energy",    key: "avgEndEnergy" },
     { stat: "Fatigue subs",      key: "avgFatigueSubs" },
     { stat: "Injuries",          key: "avgInjuries" },
+    { stat: "Out of position",   key: "avgOutOfPosition" },
   ];
 
   const data = {

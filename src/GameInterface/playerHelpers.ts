@@ -1,3 +1,4 @@
+import { positionAptitudes, preferredRole, type Aptitude, type DetailedRole } from "@/Domain/positions/positionAptitude";
 import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
@@ -30,6 +31,10 @@ export interface DisplayPlayer {
   squadId?: string;
   /** Primary position (first in list), used for sorting. */
   pos: string;
+  /** Natural detailed role (aptitude model, `src/Domain/positions`). */
+  natural?: DetailedRole;
+  /** Aptitude per detailed role. */
+  aptitudes?: Record<DetailedRole, Aptitude>;
   /** All positions the player can play, in preference order. */
   positions: string[];
   name: string;

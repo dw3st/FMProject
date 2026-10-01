@@ -288,6 +288,8 @@ export interface GamePlayer {
   y: number;
   /** Static output of `teamLineup()` — recomputed only when the lineup is built, not each tick. */
   baseStats: PlayerStats;
+  /** Buffed roster attributes + per-role aptitude, kept so a substitute can be re-fielded in the slot's role. */
+  fit?: { stats: import('@/types/playerTypes').PlayerStatsRecord; aptitudes: Record<string, import('@/Domain/positions/positionConfig').Aptitude> };
   /** Effective stats after fatigue; the engine must use this for all in-match behaviour. */
   runtimeStats: PlayerStats;
   /** Current stamina reserve 0–100; drained by actions each tick. */

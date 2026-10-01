@@ -80,10 +80,10 @@ export function StartScreen() {
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background pb-14">
-      <PitchBackdrop players={false} />
+      <PitchBackdrop />
 
       <div className="relative w-full max-w-[400px] px-4">
-        <Wordmark size="md" className="mb-6 block text-center" />
+        <Wordmark size="lg" className="mb-8 block text-center" />
 
         {atLimit ? (
           <div aria-disabled className={`${newGameClass} cursor-not-allowed opacity-40`}>
@@ -101,7 +101,7 @@ export function StartScreen() {
           <p className="mt-2 text-center text-sm text-muted-foreground">{t("common.saveLimitReached")}</p>
         )}
 
-        <p className="mb-2 mt-6 text-sm text-muted-foreground">{t("startScreen.savedGames")}</p>
+        <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-2 mt-8">{t("startScreen.savedGames")}</h2>
         {saves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
@@ -144,7 +144,7 @@ export function StartScreen() {
         )}
       </div>
 
-      <div className="absolute inset-x-6 bottom-4 flex items-center justify-between text-sm text-muted-foreground">
+      <div className="absolute inset-x-6 bottom-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
         <button
           type="button"
           onClick={() => setIsSettingsOpen(true)}

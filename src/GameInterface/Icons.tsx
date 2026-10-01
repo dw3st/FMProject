@@ -48,6 +48,35 @@ import {
   Dumbbell,
   Moon,
   Calendar,
+  Construction,
+  Minus,
+  XCircle,
+  Check,
+  Tag,
+  ChevronsLeft,
+  ChevronsRight,
+  MessageSquare,
+  Target,
+  User,
+  Activity,
+  ArrowRight,
+  UserPlus,
+  CheckCheck,
+  Award,
+  HeartPulse,
+  FileText,
+  ArrowRightLeft,
+  Cloud,
+  Clock,
+  FileSignature,
+  Loader2,
+  SlidersHorizontal,
+  RotateCcw,
+  Medal,
+  Crown,
+  LogOut,
+  Home,
+  Trash2,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -107,7 +136,37 @@ export type IconName =
   | "match"
   | "training"
   | "rest"
-  | "calendar";
+  | "calendar"
+  | "construction"
+  | "minus"
+  | "xcircle"
+  | "check"
+  | "tag"
+  | "chevrons-left"
+  | "chevrons-right"
+  | "message-square"
+  | "target"
+  | "user"
+  | "activity"
+  | "arrow-right"
+  | "user-plus"
+  | "check-check"
+  | "award"
+  | "heart-pulse"
+  | "file-text"
+  | "arrow-right-left"
+  | "cloud"
+  | "clock"
+  | "file-signature"
+  | "loader2"
+  | "sliders-horizontal"
+  | "rotate-ccw"
+  | "medal"
+  | "crown"
+  | "log-out"
+  | "home"
+  | "trash2"
+;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -163,6 +222,35 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "training":     Dumbbell,
   "rest":         Moon,
   "calendar":     Calendar,
+  "construction": Construction,
+  "minus": Minus,
+  "xcircle": XCircle,
+  "check": Check,
+  "tag": Tag,
+  "chevrons-left": ChevronsLeft,
+  "chevrons-right": ChevronsRight,
+  "message-square": MessageSquare,
+  "target": Target,
+  "user": User,
+  "activity": Activity,
+  "arrow-right": ArrowRight,
+  "user-plus": UserPlus,
+  "check-check": CheckCheck,
+  "award": Award,
+  "heart-pulse": HeartPulse,
+  "file-text": FileText,
+  "arrow-right-left": ArrowRightLeft,
+  "cloud": Cloud,
+  "clock": Clock,
+  "file-signature": FileSignature,
+  "loader2": Loader2,
+  "sliders-horizontal": SlidersHorizontal,
+  "rotate-ccw": RotateCcw,
+  "medal": Medal,
+  "crown": Crown,
+  "log-out": LogOut,
+  "home": Home,
+  "trash2": Trash2,
 };
 
 export interface IconProps {
@@ -175,4 +263,11 @@ export interface IconProps {
 export function Icon({ name, size = 16, className, strokeWidth = 1.5 }: IconProps) {
   const Component = ICON_MAP[name];
   return <Component width={size} height={size} className={className} strokeWidth={strokeWidth} />;
+}
+
+/** An icon as a component, for icon tables (`{ icon: iconOf("trophy") }`) rendered as `<Cmp className=... />`. */
+export function iconOf(name: IconName, size = 16): React.ComponentType<{ className?: string }> {
+  return function IconOf({ className }) {
+    return <Icon name={name} size={size} className={className} />;
+  };
 }

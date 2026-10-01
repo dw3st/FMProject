@@ -1,15 +1,15 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronUp, ChevronDown, Star, UserPlus } from "lucide-react";
 import type { Squad } from "@/types/playerTypes";
 import { comparePositions } from "@/types/positionOrder";
 import { toDisplayPlayer, capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { getPositionColor, getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { Icon } from "@/GameInterface/Icons";
 
 export function SquadRosterTable({
   squad,
@@ -91,14 +91,14 @@ export function SquadRosterTable({
   }
 
   return (
-    <div className="flex-1 card-arcade rounded-xl overflow-hidden flex flex-col">
+    <div className="flex-1 card-arcade rounded-md overflow-hidden flex flex-col">
       <div className="px-4 py-3 bg-muted/20 border-b border-border flex items-center justify-between">
-        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+        <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
           <span className="text-primary font-black font-display">{players.length}</span> {t("dashboard.squadRosterTable.players")}
         </span>
       </div>
 
-      <div className="flex items-center bg-muted/30 border-b border-border text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+      <div className="flex items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
         {columns.map((col) => (
           <button
             key={col.key}
@@ -109,9 +109,9 @@ export function SquadRosterTable({
             {col.label}
             {sortKey === col.key &&
               (sortDir === "asc" ? (
-                <ChevronUp className="w-3 h-3 text-primary" />
+                <Icon name="chevron-up" className="w-3 h-3 text-primary" />
               ) : (
-                <ChevronDown className="w-3 h-3 text-primary" />
+                <Icon name="chevron-down" className="w-3 h-3 text-primary" />
               ))}
           </button>
         ))}
@@ -126,17 +126,17 @@ export function SquadRosterTable({
             onClick={() => {
               window.location.href = playerDetailHref(player);
             }}
-            className={`flex items-center text-xs border-b border-border/30 cursor-pointer transition-all ${
+            className={`flex items-center text-sm border-b border-border/30 cursor-pointer transition-all ${
               index % 2 === 0
                 ? "bg-transparent hover:bg-muted/20"
                 : "bg-muted/5 hover:bg-muted/20"
             }`}
           >
             <div
-              className={`px-3 py-2.5 font-black text-[11px] ${getPositionColor(player.pos)} w-24 min-w-[4.5rem]`}
+              className={`px-3 py-2.5 font-black text-sm ${player.natural ? getDetailedPositionColor(player.natural) : getPositionColor(player.pos)} w-24 min-w-[4.5rem]`}
               title={player.positions.join(", ")}
             >
-              {MAIN_ROLE_ABBR[getMainRole(player.pos)]}
+              {player.natural ? t(`roles.detailedAbbr.${player.natural}` as never) : MAIN_ROLE_ABBR[getMainRole(player.pos)]}
             </div>
             <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
               <a
@@ -172,13 +172,13 @@ export function SquadRosterTable({
                   onOffer(player);
                 }}
                 title={!!mySquadId && player.squadId === mySquadId ? t("dashboard.squadRosterTable.yourPlayer") : t("dashboard.squadRosterTable.makeOffer")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] border rounded-lg transition-all ${
                   !!mySquadId && player.squadId === mySquadId
                     ? "bg-muted/30 text-muted-foreground border-border cursor-not-allowed opacity-60"
                     : "bg-primary/20 text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground cursor-pointer"
                 }`}
               >
-                <UserPlus className="w-3 h-3" />
+                <Icon name="user-plus" className="w-3 h-3" />
                 {t("dashboard.squadRosterTable.offer")}
               </button>
             </div>
@@ -191,11 +191,11 @@ export function SquadRosterTable({
 
 function RatingBadge({ value }: { value: number }) {
   if (value === 0) {
-    return <span className="text-[11px] text-muted-foreground/40 font-medium">—</span>;
+    return <span className="text-sm text-muted-foreground/40 font-medium">—</span>;
   }
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-black ${ratingTextClass10(value)}`}>
-      <Star className="w-3 h-3 fill-current" />
+    <span className={`inline-flex items-center gap-1 text-sm font-black ${ratingTextClass10(value)}`}>
+      <Icon name="star" className="w-3 h-3 fill-current" />
       {value.toFixed(1)}
     </span>
   );
@@ -209,7 +209,7 @@ function FitStatusIcon({
   injury?: { severity: "light" | "medium" | "severe"; daysLeft: number };
 }) {
   const { t } = useTranslation();
-  if (status === "fit") return <div className="w-3 h-3 rounded-full bg-primary glow-primary-sm" title={t("dashboard.squadRosterTable.fit")} />;
+  if (status === "fit") return <div className="w-3 h-3 rounded-full bg-primary" title={t("dashboard.squadRosterTable.fit")} />;
   if (status === "injured") {
     const severity = injury ? t(`dashboard.squadRosterTable.sev${capitalizeSeverity(injury.severity)}` as never) : "";
     const title = injury
@@ -217,9 +217,9 @@ function FitStatusIcon({
         ? t("dashboard.squadRosterTable.injuredDays", { severity, days: injury.daysLeft })
         : t("dashboard.squadRosterTable.injuredToday", { severity })
       : t("dashboard.squadRosterTable.injured");
-    return <div className="w-3 h-3 rounded-full bg-destructive" title={title} style={{ boxShadow: "0 0 8px rgb(239 68 68 / 0.5)" }} />;
+    return <div className="w-3 h-3 rounded-full bg-destructive" title={title} />;
   }
   if (status === "suspended")
-    return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadRosterTable.suspended")} style={{ boxShadow: "0 0 8px rgb(250 204 21 / 0.5)" }} />;
+    return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadRosterTable.suspended")} />;
   return null;
 }

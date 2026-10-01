@@ -130,35 +130,10 @@
 }
 
 @layer utilities {
-  .glow-primary {
-    box-shadow: 0 0 20px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.4),
-                0 0 40px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.2),
-                inset 0 1px 0 oklch(1 0 0 / 0.1);
-  }
-
-  .glow-primary-sm {
-    box-shadow: 0 0 10px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.3),
-                0 0 20px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.15);
-  }
-
-  .glow-text {
-    text-shadow: 0 0 10px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.5),
-                 0 0 20px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.3);
-  }
-
+  /* Flat bordered surface (modals, cards). No gradient, glow or shadow. */
   .card-arcade {
-    background: linear-gradient(
-      145deg,
-      oklch(0.18 0.025 var(--team-hue)) 0%,
-      oklch(0.12 0.02 var(--team-hue)) 100%
-    );
-    border: 1px solid oklch(0.30 0.04 var(--team-hue));
-  }
-
-  .border-glow {
-    border: 1px solid oklch(0.40 0.08 var(--team-hue));
-    box-shadow: 0 0 8px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.2),
-                inset 0 0 8px oklch(var(--primary-l) 0.18 var(--team-hue) / 0.05);
+    background: var(--card);
+    border: 1px solid var(--border);
   }
 
   .font-display {

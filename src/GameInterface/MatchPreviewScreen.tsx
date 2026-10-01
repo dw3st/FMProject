@@ -1,18 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { slotValue } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
-import {
-  Cloud,
-  MapPin,
-  Clock,
-  User,
-  ChevronRight,
-  Settings,
-  Search,
-  Swords,
-  ArrowRightLeft,
-  Play,
-  X,
-} from "lucide-react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
@@ -31,7 +19,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
-import { Icon } from "@/GameInterface/Icons";
+import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName } from "@/Domain/world/labels";
 import {
   FALLBACK_AWAY_ACCENT,
@@ -42,6 +30,11 @@ import {
   squadSecondaryColor,
   tacticPillStyle,
 } from "@/GameInterface/matchTeamColors";
+
+const Clock = iconOf("clock");
+const Cloud = iconOf("cloud");
+const MapPin = iconOf("map-pin");
+const User = iconOf("user");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -131,7 +124,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
   const color = getPositionColor(role);
   return (
     <span
-      className={`text-[9px] font-black uppercase tracking-wider shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
+      className={`text-[13px] font-black uppercase tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
     >
       {roleLabel(role)}
     </span>
@@ -140,15 +133,15 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
 
 function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: string }) {
   const role = slotRole ?? player.positions[0] ?? "CM";
-  const avg = Player.weightedScore(player.stats, role);
+  const avg = slotValue(player, role);
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
     <div className="flex items-center gap-2 py-[3px]">
       <RoleBadge role={role} align="left" />
-      <span className="flex-1 text-[13px] text-foreground font-medium truncate">{lastName}</span>
+      <span className="flex-1 text-sm text-foreground font-medium truncate">{lastName}</span>
       <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-      <span className={`text-[13px] font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
+      <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
         {rating}
       </span>
     </div>
@@ -157,16 +150,16 @@ function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
 
 function AwayPlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: string }) {
   const role = slotRole ?? player.positions[0] ?? "CM";
-  const avg = Player.weightedScore(player.stats, role);
+  const avg = slotValue(player, role);
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
     <div className="flex items-center gap-2 py-[3px]">
-      <span className={`text-[13px] font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
+      <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
         {rating}
       </span>
       <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-      <span className="flex-1 text-[13px] text-foreground font-medium truncate text-right">{lastName}</span>
+      <span className="flex-1 text-sm text-foreground font-medium truncate text-right">{lastName}</span>
       <RoleBadge role={role} align="right" />
     </div>
   );
@@ -188,9 +181,9 @@ function TacticsRow({
   return (
     <div className="flex items-center gap-2 pt-3 border-t border-border/30">
       <div className={`flex-1 flex items-center gap-2 ${isHome ? "" : "flex-row-reverse"}`}>
-        <Swords className="w-3 h-3 text-muted-foreground shrink-0" />
-        <span className="text-[10px] text-muted-foreground">{t("matchPreview.style")}</span>
-        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-border" style={pillStyle}>
+        <Icon name="match" className="w-3 h-3 text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground">{t("matchPreview.style")}</span>
+        <span className="text-sm font-bold px-2.5 py-0.5 rounded border border-border" style={pillStyle}>
           {tacticalStyleLabel(tacticalStyle)}
         </span>
       </div>
@@ -234,7 +227,7 @@ function TeamCard({
 
   return (
     <div
-      className="flex-1 rounded-xl bg-card/60 backdrop-blur-sm p-5 flex flex-col gap-3 border border-border"
+      className="flex-1 rounded-md bg-card/60 backdrop-blur-sm p-5 flex flex-col gap-3 border border-border"
       style={accentBorder}
     >
       {/* Club header */}
@@ -243,30 +236,30 @@ function TeamCard({
           <a href={squadUrl} className="shrink-0 rounded-full hover:opacity-80 transition-opacity">
             <ClubLogo
               logoUrl={logoUrl}
-              className="w-10 h-10 rounded-full"
+              className="w-8 h-8 rounded-full"
               imgClassName="w-full h-full object-contain p-1"
             />
           </a>
         ) : (
           <ClubLogo
             logoUrl={logoUrl}
-            className="w-10 h-10 rounded-full shrink-0"
+            className="w-8 h-8 rounded-full shrink-0"
             imgClassName="w-full h-full object-contain p-1"
           />
         )}
         <div className={`min-w-0 ${isHome ? "" : "text-right"}`}>
           {squadUrl ? (
             <a href={squadUrl} className="no-underline hover:opacity-70 transition-opacity">
-              <h2 className="text-base font-black font-display text-foreground uppercase tracking-wider m-0 leading-tight truncate">
+              <h2 className="font-display font-black uppercase text-xl leading-none m-0 truncate">
                 {squadName}
               </h2>
             </a>
           ) : (
-            <h2 className="text-base font-black font-display text-foreground uppercase tracking-wider m-0 leading-tight truncate">
+            <h2 className="font-display font-black uppercase text-xl leading-none m-0 truncate">
               {squadName}
             </h2>
           )}
-          <p className="text-[10px] font-bold uppercase tracking-widest m-0" style={{ color: accentHex }}>
+          <p className="text-[13px] font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
             {formation}
           </p>
         </div>
@@ -277,12 +270,12 @@ function TeamCard({
 
       {/* Starting XI — all 11 */}
       <div className="flex-1">
-        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
+        <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-1.5 font-display">
           {t("matchPreview.startingXI")}
         </p>
         <div>
           {starting.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground italic">{t("matchPreview.noLineupSet")}</p>
+            <p className="text-sm text-muted-foreground">{t("matchPreview.noLineupSet")}</p>
           ) : (
             starting.map((player, idx) => {
               const slotRole = formationSlots[idx]?.role;
@@ -296,7 +289,7 @@ function TeamCard({
         </div>
 
         {benchCount > 0 && (
-          <p className={`text-[10px] text-muted-foreground mt-2 m-0 ${isHome ? "" : "text-right"}`}>
+          <p className={`text-sm text-muted-foreground mt-2 m-0 ${isHome ? "" : "text-right"}`}>
             + {benchCount} {t(benchCount !== 1 ? "matchPreview.substitutes" : "matchPreview.substitutes")}
           </p>
         )}
@@ -311,9 +304,9 @@ function TeamCard({
 // ── Last-Minute Subs Modal ────────────────────────────────────────────────────
 
 function fitnessBarClass(v: number): string {
-  if (v >= 60) return "bg-emerald-500";
-  if (v >= 35) return "bg-amber-500";
-  return "bg-red-500";
+  if (v >= 60) return "bg-chart-2";
+  if (v >= 35) return "bg-chart-4";
+  return "bg-destructive";
 }
 
 function LastMinuteSubsModal({
@@ -366,7 +359,7 @@ function LastMinuteSubsModal({
     const main = getMainRole(role);
     const cls = MAIN_ROLE_BADGE_CLASSES[main];
     return (
-      <span className={`inline-flex items-center justify-center min-w-[2rem] px-1 py-0.5 rounded text-[9px] font-black uppercase border shrink-0 ${cls}`}>
+      <span className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded text-sm font-semibold border shrink-0 ${cls}`}>
         {role}
       </span>
     );
@@ -374,19 +367,19 @@ function LastMinuteSubsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-[80vw] h-[80vh] max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] flex flex-col overflow-hidden">
+      <div className="bg-card border border-border rounded-md w-[80vw] h-[80vh] max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <ArrowRightLeft className="w-5 h-5 text-primary" />
-            <h2 className="font-black font-display uppercase tracking-wider text-foreground m-0 text-base">
+            <Icon name="arrow-right-left" className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-black uppercase text-xl leading-none m-0">
               {t("matchPreview.lastMinuteSubs")}
             </h2>
           </div>
           <div className="flex items-center gap-3">
             {swapLog.length > 0 && (
-              <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-2 py-1 rounded-full">
+              <span className="text-sm font-bold text-chart-2 bg-chart-2/10 border border-chart-2/30 px-2 py-1 rounded-full">
                 {swapLog.length} {t(swapLog.length !== 1 ? "matchPreview.changes" : "matchPreview.change")}
               </span>
             )}
@@ -394,7 +387,7 @@ function LastMinuteSubsModal({
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent"
             >
-              <X className="w-5 h-5" />
+              <Icon name="close" className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -402,23 +395,23 @@ function LastMinuteSubsModal({
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* Swap log strip */}
           {swapLog.length > 0 && (
-            <div className="shrink-0 px-4 py-2 border-b border-border/60 bg-emerald-400/5">
-              <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400 m-0 mb-1.5">
+            <div className="shrink-0 px-4 py-2 border-b border-border/60 bg-chart-2/5">
+              <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-chart-2 m-0 mb-1.5 font-display">
                 {t("matchPreview.changesThisSession")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {swapLog.map((s, i) => (
-                  <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-xs">
-                    <span className="text-red-400 font-medium truncate max-w-[8rem]">{s.outName}</span>
-                    <ArrowRightLeft className="w-3 h-3 text-emerald-400 shrink-0" />
-                    <span className="text-emerald-400 font-medium truncate max-w-[8rem]">{s.inName}</span>
+                  <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-chart-2/10 border border-chart-2/20 text-sm">
+                    <span className="text-destructive font-medium truncate max-w-[8rem]">{s.outName}</span>
+                    <Icon name="arrow-right-left" className="w-3 h-3 text-chart-2 shrink-0" />
+                    <span className="text-chart-2 font-medium truncate max-w-[8rem]">{s.inName}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <p className="shrink-0 px-4 pt-2 pb-1 text-xs text-muted-foreground">
+          <p className="shrink-0 px-4 pt-2 pb-1 text-sm text-muted-foreground">
             {selectedSlot !== null
               ? t("matchPreview.chooseABench")
               : t("matchPreview.chooseStarter")}
@@ -427,18 +420,18 @@ function LastMinuteSubsModal({
           {/* 1v1 preview strip */}
           {selectedOut && (
             <div className="shrink-0 px-4 pb-2">
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-2 items-stretch rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-2 items-stretch rounded-md border border-primary/30 bg-primary/5 p-3">
                 <div className="flex flex-col gap-1 min-w-0 rounded-lg border border-border/60 bg-card/80 px-3 py-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t("matchPreview.out")}</span>
+                  <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">{t("matchPreview.out")}</span>
                   <div className="flex items-center gap-2 min-w-0">
                     <SubRoleBadge role={selectedOut.role} />
                     <span className={`text-sm font-bold truncate ${getPositionColor(selectedOut.role)}`}>
                       {selectedOut.player.name}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span className={ratingTextClass10(Player.weightedScore(selectedOut.player.stats, selectedOut.role))}>
-                      {Player.weightedScore(selectedOut.player.stats, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span className={ratingTextClass10(slotValue(selectedOut.player, selectedOut.role))}>
+                      {slotValue(selectedOut.player, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
                     </span>
                     <span className="inline-flex items-center gap-1">
                       {t("matchPreview.fitness")} {Math.round(selectedOut.player.seasonLog?.fitness ?? 100)}
@@ -447,10 +440,10 @@ function LastMinuteSubsModal({
                   </div>
                 </div>
                 <div className="flex items-center justify-center py-1 sm:py-0">
-                  <ArrowRightLeft className="w-6 h-6 text-primary shrink-0" aria-hidden />
+                  <Icon name="arrow-right-left" className="w-6 h-6 text-primary shrink-0" aria-hidden />
                 </div>
-                <div className="flex flex-col gap-1 min-w-0 rounded-lg border border-dashed border-emerald-500/40 bg-emerald-500/5 px-3 py-2 justify-center">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">{t("matchPreview.in")}</span>
+                <div className="flex flex-col gap-1 min-w-0 rounded-lg border border-dashed border-chart-2/40 bg-chart-2/5 px-3 py-2 justify-center">
+                  <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-chart-2 dark:text-chart-2 font-display">{t("matchPreview.in")}</span>
                   <p className="text-sm text-muted-foreground m-0">{t("matchPreview.tapAPlayer")}</p>
                 </div>
               </div>
@@ -460,14 +453,14 @@ function LastMinuteSubsModal({
           {/* Side by side: XI | Bench */}
           <div className="flex-1 min-h-0 flex gap-3 px-4 pb-3">
             {/* Starting XI */}
-            <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-xl overflow-hidden bg-secondary/20">
+            <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-md overflow-hidden bg-secondary/20">
               <div className="shrink-0 px-3 py-2 border-b border-border/50">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t("matchPreview.startingXI")}</span>
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">{t("matchPreview.startingXI")}</span>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
                 {starters.map(({ player, slotIndex, role }) => {
                   const isSelected = slotIndex === selectedSlot;
-                  const avg = Player.weightedScore(player.stats, role);
+                  const avg = slotValue(player, role);
                   const lastName = player.name.split(" ").pop() ?? player.name;
                   return (
                     <button
@@ -484,17 +477,17 @@ function LastMinuteSubsModal({
                       <span className={`flex-1 min-w-0 text-sm font-semibold truncate ${getPositionColor(role)}`}>
                         {lastName}
                       </span>
-                      <span className={`text-xs font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
+                      <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
                         {avg.toFixed(1)}
                       </span>
                       <div className="flex items-center gap-1 shrink-0 w-[5.5rem]">
-                        <div className="h-1.5 flex-1 rounded-full bg-muted/60 overflow-hidden min-w-0">
+                        <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
                           <div
                             className={`h-full rounded-full ${fitnessBarClass(player.seasonLog?.fitness ?? 100)}`}
                             style={{ width: `${player.seasonLog?.fitness ?? 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-5 text-right">
+                        <span className="text-sm font-bold tabular-nums text-muted-foreground w-5 text-right">
                           {Math.round(player.seasonLog?.fitness ?? 100)}
                         </span>
                         <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
@@ -508,7 +501,7 @@ function LastMinuteSubsModal({
                   <button
                     type="button"
                     onClick={() => setSelectedSlot(null)}
-                    className="text-xs text-muted-foreground hover:text-foreground w-full py-1 cursor-pointer bg-transparent border-0"
+                    className="text-sm text-muted-foreground hover:text-foreground w-full py-1 cursor-pointer bg-transparent border-0"
                   >
                     {t("matchPreview.cancelSelection")}
                   </button>
@@ -517,17 +510,17 @@ function LastMinuteSubsModal({
             </div>
 
             {/* Bench */}
-            <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-xl overflow-hidden bg-secondary/10">
+            <div className="flex-1 min-w-0 flex flex-col border border-border/50 rounded-md overflow-hidden bg-secondary/10">
               <div className="shrink-0 px-3 py-2 border-b border-border/50">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t("matchPreview.bench")}</span>
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">{t("matchPreview.bench")}</span>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
                 {bench.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-2 py-4 text-center">{t("matchPreview.noBenchPlayers")}</p>
+                  <p className="text-sm text-muted-foreground px-2 py-4 text-center">{t("matchPreview.noBenchPlayers")}</p>
                 ) : (
                   bench.map((p) => {
                     const role = p.positions[0] ?? "CM";
-                    const avg = Player.weightedScore(p.stats, role);
+                    const avg = slotValue(p, role);
                     const canPick = selectedSlot !== null;
                     const lastName = p.name.split(" ").pop() ?? p.name;
                     return (
@@ -538,7 +531,7 @@ function LastMinuteSubsModal({
                         disabled={!canPick}
                         className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg border text-left transition-all ${
                           canPick
-                            ? "border-emerald-500/25 hover:border-emerald-500/60 hover:bg-emerald-500/10 cursor-pointer"
+                            ? "border-chart-2/25 hover:border-chart-2/60 hover:bg-chart-2/10 cursor-pointer"
                             : "border-border/40 opacity-70 cursor-default"
                         }`}
                       >
@@ -546,17 +539,17 @@ function LastMinuteSubsModal({
                         <span className={`flex-1 min-w-0 text-sm font-semibold truncate ${getPositionColor(role)}`}>
                           {lastName}
                         </span>
-                        <span className={`text-xs font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
+                        <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
                           {avg.toFixed(1)}
                         </span>
                         <div className="flex items-center gap-1 shrink-0 w-[5.5rem]">
-                          <div className="h-1.5 flex-1 rounded-full bg-muted/60 overflow-hidden min-w-0">
+                          <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
                             <div
                               className={`h-full rounded-full ${fitnessBarClass(p.seasonLog?.fitness ?? 100)}`}
                               style={{ width: `${p.seasonLog?.fitness ?? 100}%` }}
                             />
                           </div>
-                          <span className="text-[10px] font-bold tabular-nums text-muted-foreground w-5 text-right">
+                          <span className="text-sm font-bold tabular-nums text-muted-foreground w-5 text-right">
                             {Math.round(p.seasonLog?.fitness ?? 100)}
                           </span>
                           <LoadIndicator load={p.seasonLog?.load ?? 0} size={11} />
@@ -821,7 +814,7 @@ export function MatchPreviewScreen() {
         <div className="max-w-lg text-center space-y-3">
           <p className="text-destructive font-bold text-lg">{t("matchPreview.cannotLoadMatchSetup")}</p>
           <p className="text-muted-foreground text-sm m-0">{matchSetupError}</p>
-          <p className="text-muted-foreground text-xs m-0">Save Formation and Tactics (11 starters) then try again.</p>
+          <p className="text-muted-foreground text-sm m-0">Save Formation and Tactics (11 starters) then try again.</p>
         </div>
       </div>
     );
@@ -842,15 +835,15 @@ export function MatchPreviewScreen() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
-          <Settings className="w-10 h-10 text-primary mx-auto" />
+          <Icon name="settings" className="w-10 h-10 text-primary mx-auto" />
           <p className="text-foreground font-bold text-lg m-0">{t("matchPreview.noTacticsTitle")}</p>
           <p className="text-muted-foreground text-sm m-0">{t("matchPreview.noTacticsSubtitle")}</p>
           <a
             href="/formation"
-            className="inline-flex items-center gap-2 mt-1 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] active:scale-[0.98] transition-all no-underline"
+            className="inline-flex items-center gap-2 mt-1 px-6 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline"
           >
             {t("matchPreview.goToTacticsNow")}
-            <ChevronRight className="w-4 h-4" />
+            <Icon name="chevron-right" className="w-4 h-4" />
           </a>
         </div>
       </div>
@@ -979,7 +972,7 @@ export function MatchPreviewScreen() {
       {/* Match title */}
       <div className="text-center space-y-1 shrink-0">
         <p
-          className="text-[11px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
+          className="text-[13px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
           style={{
             backgroundImage: `linear-gradient(90deg, ${homeHex}, ${awayHex})`,
             WebkitBackgroundClip: "text",
@@ -992,26 +985,26 @@ export function MatchPreviewScreen() {
             ? (continentalPhase ? <>{continentalPhase} &bull; {competition}</> : competition)
             : <>{t("leagues.matchday", { round: matchday })} &bull; {competition}</>}
         </p>
-        <h1 className="text-4xl font-black font-display text-foreground uppercase tracking-wider m-0">
+        <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
           {t("matchPreview.title")}
         </h1>
         <div
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"
-          style={{ background: `linear-gradient(to right, ${homeHex}, ${awayHex})` }}
+          style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
         />
         {isContinentalTie && fixture?.leg === 2 && fixture.aggregate && (
           <div className="pt-1 space-y-0.5">
             {/* fixture.home/away are this (2nd) leg's sides; the 1st leg had them swapped, and
                 `aggregate` holds each side's 1st-leg goals from THIS fixture's home/away point of
                 view — so the 1st leg's home team is this fixture's AWAY side, and vice versa. */}
-            <p className="text-xs text-muted-foreground m-0">
+            <p className="text-sm text-muted-foreground m-0">
               {t("continental.firstLeg", {
                 home: awaySquadName,
                 away: homeSquadName,
                 score: `${fixture.aggregate.away}–${fixture.aggregate.home}`,
               })}
             </p>
-            <p className="text-[11px] text-muted-foreground/70 m-0">{t("continental.aggregateNote")}</p>
+            <p className="text-sm text-muted-foreground/70 m-0">{t("continental.aggregateNote")}</p>
           </div>
         )}
       </div>
@@ -1035,7 +1028,7 @@ export function MatchPreviewScreen() {
         <div className="flex flex-col items-center justify-center shrink-0 gap-3 py-4">
           <div className="w-px flex-1 bg-border/30" />
           <div className="w-11 h-11 rounded-full border border-border/50 bg-card/40 flex items-center justify-center">
-            <span className="text-xs font-black text-muted-foreground/50 uppercase tracking-wider">
+            <span className="text-[13px] font-bold text-muted-foreground/50 uppercase tracking-[0.08em] font-display">
               vs
             </span>
           </div>
@@ -1058,7 +1051,7 @@ export function MatchPreviewScreen() {
 
       {/* Match info */}
       <div className="w-full max-w-5xl shrink-0">
-        <div className="card-arcade rounded-xl px-6 py-4">
+        <div className="card-arcade rounded-md px-6 py-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <InfoCell icon={MapPin} label={t("matchPreview.venue")} value={venue} />
             <InfoCell icon={Cloud} label={t("matchPreview.weather")} value={`${weather.icon} ${weather.label}`} />
@@ -1068,7 +1061,7 @@ export function MatchPreviewScreen() {
           {/* A 2nd leg with an aggregate already shows continental.aggregateNote under the header
               (same "extra time / penalties if level" info) — don't repeat it here. */}
           {fixture?.knockout && !fixture.aggregate && (
-            <p className="text-xs text-muted-foreground text-center mt-3 mb-0">{t("cups.knockoutNote")}</p>
+            <p className="text-sm text-muted-foreground text-center mt-3 mb-0">{t("cups.knockoutNote")}</p>
           )}
         </div>
       </div>
@@ -1076,9 +1069,9 @@ export function MatchPreviewScreen() {
       {/* Low-fitness warning — starters of the player's own XI below the risk threshold */}
       {lowFitnessStarterNames.length > 0 && (
         <div className="w-full max-w-5xl shrink-0">
-          <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
-            <Icon name="alert" size={16} className="text-amber-400 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-300 m-0">
+          <div className="flex items-start gap-2 rounded-md border border-chart-4/40 bg-chart-4/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-chart-4 mt-0.5 shrink-0" />
+            <p className="text-sm text-chart-4 m-0">
               {t("matchPreview.lowFitnessWarning", { names: lowFitnessStarterNames.join(", ") })}
             </p>
           </div>
@@ -1088,9 +1081,9 @@ export function MatchPreviewScreen() {
       {/* Rotation suggestion — tired starters the user can rest for this match */}
       {!rotationHidden && !!matchSetup?.rotationSuggestion && matchSetup.rotationSuggestion.length > 0 && (
         <div className="w-full max-w-5xl shrink-0">
-          <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
-            <Icon name="alert" size={16} className="text-amber-400 mt-0.5 shrink-0" />
-            <div className="text-xs text-amber-300 m-0 space-y-0.5 flex-1">
+          <div className="flex items-start gap-2 rounded-md border border-chart-4/40 bg-chart-4/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-chart-4 mt-0.5 shrink-0" />
+            <div className="text-sm text-chart-4 m-0 space-y-0.5 flex-1">
               <p className="m-0 font-bold">
                 {t("matchPreview.rotationTitle", { count: matchSetup.rotationSuggestion.length })}
               </p>
@@ -1108,14 +1101,14 @@ export function MatchPreviewScreen() {
                 type="button"
                 disabled={rotationBusy}
                 onClick={() => postRotation(matchSetup.rotationSuggestion ?? [])}
-                className="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-200 text-xs font-bold hover:bg-amber-500/30 disabled:opacity-50 cursor-pointer"
+                className="px-3 py-1 rounded-lg bg-chart-4/20 text-chart-4 text-sm font-bold hover:bg-chart-4/30 disabled:opacity-50 cursor-pointer"
               >
                 {t("matchPreview.rotationApply")}
               </button>
               <button
                 type="button"
                 onClick={() => setRotationHidden(true)}
-                className="px-3 py-1 rounded-lg text-amber-300 text-xs hover:bg-white/10 cursor-pointer"
+                className="px-3 py-1 rounded-lg text-chart-4 text-sm hover:bg-foreground/10 cursor-pointer"
               >
                 {t("matchPreview.rotationIgnore")}
               </button>
@@ -1127,9 +1120,9 @@ export function MatchPreviewScreen() {
       {/* Rotation already applied (assistant or accepted suggestion) */}
       {!!matchSetup?.rotationApplied && matchSetup.rotationApplied.length > 0 && (
         <div className="w-full max-w-5xl shrink-0">
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5">
-            <Icon name="check-circle" size={16} className="text-emerald-400 mt-0.5 shrink-0" />
-            <div className="text-xs text-emerald-300 m-0 space-y-0.5 flex-1">
+          <div className="flex items-start gap-2 rounded-md border border-chart-2/40 bg-chart-2/10 px-4 py-2.5">
+            <Icon name="check-circle" size={16} className="text-chart-2 mt-0.5 shrink-0" />
+            <div className="text-sm text-chart-2 m-0 space-y-0.5 flex-1">
               <p className="m-0 font-bold">
                 {t("matchPreview.rotationApplied", { count: matchSetup.rotationApplied.length })}
               </p>
@@ -1146,7 +1139,7 @@ export function MatchPreviewScreen() {
               type="button"
               disabled={rotationBusy}
               onClick={() => postRotation([], true)}
-              className="px-3 py-1 rounded-lg text-emerald-300 text-xs font-bold hover:bg-white/10 disabled:opacity-50 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-lg text-chart-2 text-sm font-bold hover:bg-foreground/10 disabled:opacity-50 cursor-pointer shrink-0"
             >
               {t("matchPreview.rotationUndo")}
             </button>
@@ -1157,9 +1150,9 @@ export function MatchPreviewScreen() {
       {/* Injured-starter replacements — players the saved lineup wanted who were swapped out for being injured */}
       {!!matchSetup?.injuredReplaced && matchSetup.injuredReplaced.length > 0 && (
         <div className="w-full max-w-5xl shrink-0">
-          <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2.5">
+          <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2.5">
             <Icon name="alert" size={16} className="text-destructive mt-0.5 shrink-0" />
-            <div className="text-xs text-destructive m-0 space-y-0.5">
+            <div className="text-sm text-destructive m-0 space-y-0.5">
               {matchSetup.injuredReplaced.map((swap, i) => (
                 <p key={i} className="m-0">
                   {t("matchPreview.injuredReplaced", { out: playerName(swap.out), in: playerName(swap.in) })}
@@ -1174,18 +1167,18 @@ export function MatchPreviewScreen() {
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
         <a
           href="/formation"
-          className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-wider hover:bg-card hover:border-border/80 transition-all no-underline"
+          className="flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-[0.08em] hover:bg-card hover:border-border/80 transition-all no-underline font-display"
         >
-          <Settings className="w-4 h-4" />
+          <Icon name="settings" className="w-4 h-4" />
           {t("matchPreview.editTactics")}
         </a>
 
         <button
           type="button"
           onClick={() => setShowLastMinuteSubs(true)}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-wider hover:bg-card hover:border-border/80 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-[0.08em] hover:bg-card hover:border-border/80 transition-all cursor-pointer font-display"
         >
-          <ArrowRightLeft className="w-4 h-4" />
+          <Icon name="arrow-right-left" className="w-4 h-4" />
           {t("matchPreview.lastMinuteSubs")}
         </button>
 
@@ -1193,20 +1186,20 @@ export function MatchPreviewScreen() {
           type="button"
           onClick={handleSendAssistant}
           disabled={commencing}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-wider hover:bg-card hover:border-border/80 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-[0.08em] hover:bg-card hover:border-border/80 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed font-display"
         >
           {commencing ? t("matchPreview.simulating") : t("matchPreview.sendAssistant")}
-          {!commencing && <ChevronRight className="w-4 h-4" />}
+          {!commencing && <Icon name="chevron-right" className="w-4 h-4" />}
         </button>
 
         <button
           type="button"
           onClick={handleStartGame}
           disabled={commencing}
-          className="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer border-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+          className="flex items-center gap-2 px-8 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm cursor-pointer border-0 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {t("matchPreview.startGame")}
-          <Play className="w-4 h-4" />
+          <Icon name="play" className="w-4 h-4" />
         </button>
       </div>
 
@@ -1236,7 +1229,7 @@ function InfoCell({
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="w-3.5 h-3.5" />
-        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
       <p className="text-sm font-semibold text-foreground m-0">{value}</p>
     </div>

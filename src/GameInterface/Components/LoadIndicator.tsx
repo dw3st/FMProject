@@ -10,7 +10,7 @@ import { isHighLoad } from "@/GameInterface/playerHelpers";
 export function LoadIndicator({
   load,
   size = 14,
-  className = "text-orange-400",
+  className = "text-chart-4",
 }: {
   load: number;
   size?: number;

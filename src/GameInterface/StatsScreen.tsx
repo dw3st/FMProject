@@ -37,7 +37,7 @@ function RankingTable({
 }) {
   return (
     <section className="min-w-0">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground m-0 mb-2">{title}</h2>
+      <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-2">{title}</h2>
       <div className="overflow-x-auto border border-border rounded-lg">
         <table className="w-full text-sm">
           <tbody>
@@ -50,7 +50,7 @@ function RankingTable({
                 >
                   <td className="w-8 px-2 py-1.5 text-center text-muted-foreground tabular-nums">{i + 1}</td>
                   <td className="w-8 py-1.5">
-                    <ClubLogo logoUrl={squadLogoUrl(r.squadId)} className="w-5 h-5" />
+                    <ClubLogo logoUrl={squadLogoUrl(r.squadId)} className="w-8 h-8 rounded-full" />
                   </td>
                   <td className="px-2 py-1.5 max-w-[12rem]">
                     <a
@@ -106,7 +106,7 @@ function TeamTable({ stars }: { stars: Stars }) {
           if (sort === key) setDir((d) => (d === 1 ? -1 : 1));
           else { setSort(key); setDir(key === "name" ? 1 : -1); }
         }}
-        className="bg-transparent border-0 p-0 text-inherit uppercase tracking-wider text-xs cursor-pointer hover:text-foreground"
+        className="bg-transparent border-0 p-0 text-inherit uppercase tracking-[0.08em] text-[13px] cursor-pointer hover:text-foreground font-display font-bold"
       >
         {label}{sort === key ? (dir === 1 ? " ↑" : " ↓") : ""}
       </button>
@@ -261,7 +261,7 @@ export function StatsScreen() {
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground m-0 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <p className="text-sm text-muted-foreground m-0 flex flex-wrap items-center gap-x-4 gap-y-1">
           {(["gold", "blue", "green"] as const).map((k) => (
             <span key={k} className="inline-flex items-center gap-1">
               <StarBadge kind={k} /> {t(`players.star.${k}`)}

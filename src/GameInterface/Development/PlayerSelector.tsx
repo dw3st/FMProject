@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Search } from "lucide-react";
 import type { AgePhase } from "@/GameInterface/Development/PlayerProfile";
 import { getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
 import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
+import { Icon } from "@/GameInterface/Icons";
 
 export interface PlayerOption {
   id:       string;
@@ -37,13 +37,13 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
   if (players.length === 0) return null;
 
   return (
-    <div className="card-arcade rounded-xl p-4 flex flex-col gap-3 min-h-0 max-h-[min(70vh,42rem)] w-full">
-      <h2 className="text-xs font-black text-foreground font-display uppercase tracking-wider m-0 shrink-0">
+    <div className="card-arcade rounded-md p-4 flex flex-col gap-3 min-h-0 max-h-[min(70vh,42rem)] w-full">
+      <h2 className="font-display font-black uppercase text-xl leading-none m-0 shrink-0">
         {t("developmentScreen.squad")}
       </h2>
 
-      <div className="flex items-center gap-2 bg-card/50 border border-border/50 hover:border-primary/40 focus-within:border-primary/70 rounded-xl transition-colors px-3 shrink-0">
-        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+      <div className="flex items-center gap-2 bg-card/50 border border-border/50 hover:border-primary/40 focus-within:border-primary/70 rounded-md transition-colors px-3 shrink-0">
+        <Icon name="search" className="w-4 h-4 text-muted-foreground shrink-0" />
         <input
           type="search"
           value={query}
@@ -54,7 +54,7 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
         />
       </div>
 
-      <div className="flex-1 min-h-[12rem] overflow-y-auto rounded-xl border border-border/40 bg-card/30 py-1.5 -mx-0.5">
+      <div className="flex-1 min-h-[12rem] overflow-y-auto rounded-md border border-border/40 bg-card/30 py-1.5 -mx-0.5">
         {filtered.length === 0 && (
           <div className="px-4 py-6 text-sm text-muted-foreground text-center">
             {t("developmentScreen.noPlayersMatch", { query })}
@@ -73,16 +73,14 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
               key={player.id}
               type="button"
               onClick={() => onSelect(player.id)}
-              className={`group flex w-full items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none text-left transition-colors rounded-lg mx-1
-                ${
+              className={`group flex w-full items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none text-left transition-colors rounded-lg mx-1 ${
                   isSelected
                     ? "bg-primary/15 border border-primary/35"
                     : "border border-transparent hover:bg-primary/10"
-                }
-              `}
+                } `}
             >
               <span
-                className={`shrink-0 min-w-[2.25rem] text-center text-[10px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wider ${badgeClass}`}
+                className={`shrink-0 min-w-[2.25rem] text-center text-sm font-semibold px-2 py-0.5 rounded border ${badgeClass}`}
                 title={player.position}
               >
                 {MAIN_ROLE_ABBR[mainRole]}
@@ -92,7 +90,7 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold text-sm text-foreground truncate min-w-0 flex-1">{player.name}</span>
                   <span
-                    className={`text-[10px] font-semibold shrink-0 whitespace-nowrap ${phase.color}`}
+                    className={`text-sm font-semibold shrink-0 whitespace-nowrap ${phase.color}`}
                     title={phase.label}
                   >
                     {phase.label}
@@ -100,7 +98,7 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
                 </div>
               </div>
 
-              <Check
+              <Icon name="check"
                 className={`w-4 h-4 text-primary shrink-0 transition-opacity ${isSelected ? "opacity-100" : "opacity-0"}`}
               />
             </button>

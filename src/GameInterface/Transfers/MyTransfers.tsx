@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import type { TransferRecord } from "@/types/transferTypes";
 import { formatTransferFee, TransferRow } from "@/GameInterface/Transfers/transferShared";
+import { Icon } from "@/GameInterface/Icons";
 
 function byDateDesc(a: TransferRecord, b: TransferRecord): number {
   return b.date.localeCompare(a.date);
@@ -55,7 +55,7 @@ export function MyTransfers({
 
   if (records.length === 0) {
     return (
-      <div className="card-arcade rounded-xl p-12 border-glow text-center">
+      <div className="card-arcade rounded-md p-12 text-center">
         <p className="text-muted-foreground text-sm m-0">
           {t("transfers.noTransfers")}
         </p>
@@ -66,17 +66,17 @@ export function MyTransfers({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card-arcade rounded-xl p-4 border-glow">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1 m-0">{t("transfers.totalSpent")}</p>
-          <p className="text-2xl font-black font-display text-red-400 m-0">{formatTransferFee(totalSpent)}</p>
+        <div className="card-arcade rounded-md p-4">
+          <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.totalSpent")}</p>
+          <p className="text-2xl font-black font-display text-destructive m-0">{formatTransferFee(totalSpent)}</p>
         </div>
-        <div className="card-arcade rounded-xl p-4 border-glow">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1 m-0">{t("transfers.totalEarned")}</p>
-          <p className="text-2xl font-black font-display text-emerald-400 m-0">{formatTransferFee(totalEarned)}</p>
+        <div className="card-arcade rounded-md p-4">
+          <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.totalEarned")}</p>
+          <p className="text-2xl font-black font-display text-chart-2 m-0">{formatTransferFee(totalEarned)}</p>
         </div>
-        <div className="card-arcade rounded-xl p-4 border-glow">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1 m-0">{t("transfers.netBalance")}</p>
-          <p className={`text-2xl font-black font-display m-0 ${net >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+        <div className="card-arcade rounded-md p-4">
+          <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.netBalance")}</p>
+          <p className={`text-2xl font-black font-display m-0 ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
             {net >= 0 ? "+" : ""}
             {formatTransferFee(Math.abs(net))}
           </p>
@@ -86,14 +86,14 @@ export function MyTransfers({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TransferList
           title={t("transfers.incoming")}
-          icon={<ArrowDownLeft className="w-4 h-4 text-emerald-400" />}
-          iconBg="bg-emerald-500/20"
+          icon={<Icon name="arrow-down-left" className="w-4 h-4 text-chart-2" />}
+          iconBg="bg-chart-2/20"
           transfers={incoming}
         />
         <TransferList
           title={t("transfers.outgoing")}
-          icon={<ArrowUpRight className="w-4 h-4 text-red-400" />}
-          iconBg="bg-red-500/20"
+          icon={<Icon name="arrow-up-right" className="w-4 h-4 text-destructive" />}
+          iconBg="bg-destructive/20"
           transfers={outgoing}
         />
       </div>
@@ -114,11 +114,11 @@ function TransferList({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-xl border-glow overflow-visible">
+    <div className="card-arcade rounded-md overflow-visible">
       <div className="p-4 border-b border-border flex items-center gap-3">
         <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center`}>{icon}</div>
-        <h3 className="font-bold uppercase tracking-wider text-foreground m-0">{title}</h3>
-        <span className="ml-auto text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">{transfers.length}</span>
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{title}</h3>
+        <span className="ml-auto text-sm bg-muted px-2 py-1 rounded-full text-muted-foreground">{transfers.length}</span>
       </div>
       <div className="divide-y divide-border">
         {transfers.length === 0 ? (

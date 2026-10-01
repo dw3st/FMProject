@@ -23,7 +23,7 @@ describe("ui components", () => {
     expect(html).toContain("bg-primary/10");
   });
   test("Button variants", () => {
-    expect(renderToStaticMarkup(<Button variant="danger">x</Button>)).toContain("bg-destructive");
+    expect(renderToStaticMarkup(<Button variant="danger">x</Button>)).toContain("text-destructive");
   });
   test("Tabs marks active", () => {
     const html = renderToStaticMarkup(<Tabs tabs={[{ key: "a", label: "A" }, { key: "b", label: "B" }]} active="b" onChange={() => {}} />);
@@ -31,5 +31,42 @@ describe("ui components", () => {
   });
   test("Notice error has alert role", () => {
     expect(renderToStaticMarkup(<Notice kind="error">x</Notice>)).toContain('role="alert"');
+  });
+});
+
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
+import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { Label } from "@/GameInterface/ui/Label";
+import { ChoiceCard } from "@/GameInterface/ui/ChoiceCard";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { TextField } from "@/GameInterface/ui/TextField";
+import { StatBar } from "@/GameInterface/ui/StatBar";
+import { Badge } from "@/GameInterface/ui/Badge";
+
+describe("ui standard components", () => {
+  test("ScreenTitle uses the heavy display style", () => {
+    const html = renderToStaticMarkup(<ScreenTitle subtitle="sub">Elenco</ScreenTitle>);
+    expect(html).toContain("font-black");
+    expect(html).toContain("text-3xl");
+    expect(html).toContain("sub");
+  });
+  test("SectionTitle and Label", () => {
+    expect(renderToStaticMarkup(<SectionTitle>S</SectionTitle>)).toContain("text-xl");
+    expect(renderToStaticMarkup(<Label>L</Label>)).toContain("tracking-[0.08em]");
+  });
+  test("ChoiceCard / Chip mark selection", () => {
+    expect(renderToStaticMarkup(<ChoiceCard title="A" selected onSelect={() => {}} />)).toContain("ring-primary");
+    expect(renderToStaticMarkup(<Chip selected>x</Chip>)).toContain("border-primary");
+  });
+  test("TextField shows its label", () => {
+    expect(renderToStaticMarkup(<TextField id="n" label="Nome" />)).toContain("Nome");
+  });
+  test("StatBar shows the number and a 6px track", () => {
+    const html = renderToStaticMarkup(<StatBar value={5} />);
+    expect(html).toContain("h-1.5");
+    expect(html).toContain("5.0");
+  });
+  test("Badge is at least text-sm", () => {
+    expect(renderToStaticMarkup(<Badge>ok</Badge>)).toContain("text-sm");
   });
 });

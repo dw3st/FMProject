@@ -1,12 +1,12 @@
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import {
   defaultAttributeRanges,
   type ScoutFilterState,
 } from "@/GameInterface/Scout/scoutFilterState";
 import { ATTRIBUTE_LIST, ATTRIBUTE_LABELS, type AttributeId } from "@/GameInterface/AttributeLabels";
+import { Icon } from "@/GameInterface/Icons";
 
 // ── Range slider (adapted from TacticSlider in FormationScreen) ───────────────
 
@@ -60,11 +60,11 @@ function AttrRangeSlider({
     >
       {/* Label + value */}
       <div className="flex items-center justify-between gap-1 mb-1">
-        <span className="text-[11px] font-semibold text-foreground truncate" title={description}>
+        <span className="text-sm font-semibold text-foreground truncate" title={description}>
           {label}
         </span>
         <span
-          className={`text-[11px] font-bold tabular-nums shrink-0 ${
+          className={`text-sm font-bold tabular-nums shrink-0 ${
             isActive ? "text-primary" : "text-muted-foreground/50"
           }`}
         >
@@ -88,12 +88,12 @@ function AttrRangeSlider({
 
         {/* Min thumb */}
         <div
-          className="absolute top-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-primary -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 pointer-events-none"
+          className="absolute top-1/2 w-4 h-4 bg-white rounded-full border-2 border-primary -translate-x-1/2 -translate-y-1/2 transition-all duration-150 pointer-events-none"
           style={{ left: `${minPct}%` }}
         />
         {/* Max thumb */}
         <div
-          className="absolute top-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-primary -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 pointer-events-none"
+          className="absolute top-1/2 w-4 h-4 bg-white rounded-full border-2 border-primary -translate-x-1/2 -translate-y-1/2 transition-all duration-150 pointer-events-none"
           style={{ left: `${maxPct}%` }}
         />
       </div>
@@ -137,27 +137,27 @@ export function ScoutAttributeFiltersDisclosure({
         <>
           <DisclosureButton
             type="button"
-            className="card-arcade flex w-full items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-left transition-colors hover:bg-muted/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="card-arcade flex w-full items-center justify-between gap-3 rounded-md border border-border px-4 py-3 text-left transition-colors hover:bg-muted/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             <span className="flex items-center gap-3 min-w-0">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 border border-primary/30">
-                <SlidersHorizontal className="h-4 w-4 text-primary" aria-hidden />
+                <Icon name="sliders-horizontal" className="h-4 w-4 text-primary" aria-hidden />
               </span>
               <span>
-                <span className="block text-sm font-black uppercase tracking-wider text-foreground font-display">
+                <span className="block text-sm font-bold uppercase tracking-[0.08em] text-foreground font-display">
                   {t("scout.attributeFilters.attributes")}
                 </span>
-                <span className="block text-[11px] text-muted-foreground font-medium mt-0.5">
+                <span className="block text-sm text-muted-foreground font-medium mt-0.5">
                   {t("scout.attributeFilters.description")}
                 </span>
               </span>
               {active > 0 && (
-                <span className="min-w-[1.5rem] h-6 px-1.5 rounded-md bg-primary text-[11px] font-black text-primary-foreground leading-none flex items-center justify-center shrink-0">
+                <span className="min-w-[1.5rem] h-6 px-1.5 rounded-md bg-primary text-sm font-black text-primary-foreground leading-none flex items-center justify-center shrink-0">
                   {active}
                 </span>
               )}
             </span>
-            <ChevronDown
+            <Icon name="chevron-down"
               className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
             />
           </DisclosureButton>
@@ -171,7 +171,7 @@ export function ScoutAttributeFiltersDisclosure({
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline cursor-pointer bg-transparent border-0 p-0"
+                    className="text-[13px] font-bold uppercase tracking-[0.08em] text-primary hover:underline cursor-pointer bg-transparent border-0 p-0 font-display"
                     onClick={() =>
                       setFilters({ ...filters, attributeRanges: defaultAttributeRanges() })
                     }
@@ -180,7 +180,7 @@ export function ScoutAttributeFiltersDisclosure({
                   </button>
                 </div>
 
-                <div className="card-arcade rounded-xl border border-border/50 p-4 w-full">
+                <div className="card-arcade rounded-md border border-border/50 p-4 w-full">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 w-full">
                     {ATTRIBUTE_LIST.map((attr) => {
                       const row = filters.attributeRanges[attr.id] ?? { min: 0, max: 10 };

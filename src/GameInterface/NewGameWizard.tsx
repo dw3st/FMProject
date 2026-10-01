@@ -6,12 +6,21 @@ import { createGameSave } from "@/GameInterface/gameSession";
 import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { Modal } from "@/GameInterface/Components/Modal";
+import { formatEuros } from "@/GameInterface/Components/ClubFinancesTable";
+import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { Button } from "@/GameInterface/ui/Button";
+import { ChoiceCard } from "@/GameInterface/ui/ChoiceCard";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { Label } from "@/GameInterface/ui/Label";
 import { Notice } from "@/GameInterface/ui/Notice";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
+import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { StatBar } from "@/GameInterface/ui/StatBar";
 import { Tabs } from "@/GameInterface/ui/Tabs";
+import { TextField } from "@/GameInterface/ui/TextField";
 import { Icon } from "@/GameInterface/Icons";
+import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import {
   continentI18nKey,
   countryDisplayName,
@@ -35,11 +44,19 @@ type DatabaseEntry = {
   playable:  boolean;
 };
 
+/** `GET /api/club-profile/:league/:club` — all values come from the club's squad file. */
 type ClubProfile = {
-  attack:     number;
-  midfield:   number;
-  defense:    number;
-  reputation: number;
+  squadId:       string;
+  founded:       number | null;
+  stadium:       string | null;
+  city:          string | null;
+  attack:        number;
+  midfield:      number;
+  defense:       number;
+  reputation:    number;
+  annualRevenue: number;
+  weeklyWages:   number;
+  keyPlayers: Array<{ id: string; name: string; position: string; age: number; ovr: number }>;
 };
 
 type Nationality = (typeof MANAGER_NATIONALITIES)[number];
@@ -59,7 +76,6 @@ const isManagerValid = (m: ManagerData) =>
 export function NewGameWizard() {
   const { t, i18n } = useTranslation();
   const [manager, setManager] = useState<ManagerData>({ name: "", background: null, nationality: null });
-  const [managerOpen, setManagerOpen] = useState(false);
   const [step, setStep] = useState<"manager" | "club">("manager");
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
@@ -67,7 +83,7 @@ export function NewGameWizard() {
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [selectedLeagueSlug, setSelectedLeagueSlug] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<LeagueTeam | null>(null);
-  const [clubProfile, setClubProfile] = useState<ClubProfile | null>(null);
+  const [profiles, setProfiles] = useState<Record<string, ClubProfile>>({});
   const [starting, setStarting] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -79,32 +95,13 @@ export function NewGameWizard() {
       .catch(() => {});
   }, []);
 
-  // Reset team / profile when country changes.
+  // Reset team when country changes.
   useEffect(() => {
     setSelectedTeam(null);
-    setClubProfile(null);
     if (selectedCountry) {
       setSelectedLeagueSlug(leaguesOfCountry(leagues, selectedCountry.name)[0]?.slug ?? "");
     }
   }, [selectedCountry, leagues]);
-
-  // Fetch profile (squad level) for the selected club.
-  useEffect(() => {
-    if (!selectedTeam || !selectedLeagueSlug) {
-      setClubProfile(null);
-      return;
-    }
-    let cancelled = false;
-    fetch(`/api/club-profile/${selectedLeagueSlug}/${selectedTeam.squadId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: ClubProfile | null) => {
-        if (!cancelled) setClubProfile(data);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedTeam, selectedLeagueSlug]);
 
   const displayName = (c: CountryEntry) => countryDisplayName(c, i18n.language, t);
   const filteredCountries = countries.filter((c) => {
@@ -120,6 +117,26 @@ export function NewGameWizard() {
   const teams = activeLeague?.standings ?? [];
   const managerValid = isManagerValid(manager);
   const canStart = !!selectedTeam && managerValid && !starting;
+  const selectedProfile = selectedTeam ? (profiles[selectedTeam.squadId] ?? null) : null;
+
+  // Profiles of the visible division: reputation stars in the list, the full profile on the right.
+  useEffect(() => {
+    if (!selectedLeagueSlug) return;
+    let cancelled = false;
+    for (const club of teams) {
+      if (profiles[club.squadId]) continue;
+      fetch(`/api/club-profile/${selectedLeagueSlug}/${club.squadId}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: ClubProfile | null) => {
+          if (!cancelled && data) setProfiles((prev) => ({ ...prev, [club.squadId]: data }));
+        })
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeagueSlug, activeLeague]);
 
   async function handleStartCareer() {
     if (!database || !managerValid || !selectedTeam || !activeLeague || !manager.background || !manager.nationality || starting) {
@@ -175,21 +192,22 @@ export function NewGameWizard() {
 
   if (step === "manager") {
     return (
-      <div className="min-h-screen flex flex-col items-center bg-background text-foreground p-4 md:p-8">
-        <Wordmark size="sm" className="mb-8 block" />
-        <div className="w-full max-w-lg">
-          <h1 className="text-2xl m-0 mb-5">{t("newGame.createManagerTitle")}</h1>
-          <ManagerForm
-            initial={manager}
-            submitLabel={t("newGame.continue")}
-            onCancel={() => {
-              window.location.href = "/start";
-            }}
-            onSubmit={(m) => {
-              setManager(m);
-              setStep("club");
-            }}
-          />
+      <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+        <PitchBackdrop players={false} />
+        <div className="relative flex min-h-screen flex-col items-center px-6 py-8">
+          <Wordmark size="lg" className="mb-10 block text-center" />
+          <div className="w-full max-w-4xl">
+            <ManagerForm
+              initial={manager}
+              onCancel={() => {
+                window.location.href = "/start";
+              }}
+              onSubmit={(m) => {
+                setManager(m);
+                setStep("club");
+              }}
+            />
+          </div>
         </div>
       </div>
     );
@@ -198,22 +216,22 @@ export function NewGameWizard() {
   const countryList = (
     <>
       <div className="relative mb-3">
-        <Icon name="search" size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Icon name="search" size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t("newGame.searchTerritory")}
           aria-label={t("newGame.searchTerritory")}
-          className="w-full bg-transparent border border-border rounded pl-8 pr-2 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+          className="w-full h-10 bg-transparent border border-border rounded pl-9 pr-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
         />
       </div>
       <div className="flex-1 overflow-y-auto min-h-0">
         {groups.map((group) => (
           <div key={group.continent} className="mb-4">
-            <h3 className="text-xs text-muted-foreground mb-1 m-0 font-normal">
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground mb-1 mt-0">
               {t(`newGame.continents.${continentI18nKey(group.continent)}`, { defaultValue: group.continent })}
-            </h3>
+            </p>
             <ul className="list-none p-0 m-0">
               {group.countries.map((country) => {
                 const selected = selectedCountry?.slug === country.slug;
@@ -227,7 +245,7 @@ export function NewGameWizard() {
                         setSelectedCountry(country);
                         setCountriesOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2 py-1.5 text-left text-sm bg-transparent border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      className={`w-full h-8 flex items-center gap-2 text-left text-sm bg-transparent border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                         selected ? "text-primary" : "text-foreground hover:text-primary"
                       }`}
                     >
@@ -246,13 +264,13 @@ export function NewGameWizard() {
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-background text-foreground">
-      <aside className="md:w-60 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
+      <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
         <Wordmark size="sm" className="mb-4 block" />
         <button
           type="button"
           onClick={() => setCountriesOpen((o) => !o)}
           aria-expanded={countriesOpen}
-          className="md:hidden flex items-center justify-between w-full py-2 text-sm bg-transparent border-0 text-foreground cursor-pointer"
+          className="md:hidden flex items-center justify-between w-full h-10 text-sm bg-transparent border-0 text-foreground cursor-pointer"
         >
           <span>{selectedCountry ? displayName(selectedCountry) : t("newGame.selectTerritory")}</span>
           <Icon name={countriesOpen ? "chevron-up" : "chevron-down"} size={16} />
@@ -262,13 +280,15 @@ export function NewGameWizard() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-h-0 min-w-0">
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <main className="flex-1 flex flex-col md:flex-row min-h-0 min-w-0">
+        <section className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
+          <p className="text-sm text-muted-foreground m-0 mb-1">{t("newGame.stepOf", { n: 2 })}</p>
+          <ScreenTitle>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
-            <p className="text-muted-foreground text-sm">{t("newGame.selectTerritoryDetail")}</p>
+            <p className="text-sm text-muted-foreground mt-6">{t("newGame.selectTerritoryDetail")}</p>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto mt-4">
                 <Tabs
                   tabs={countryLeagues.map((l) => ({ key: l.slug, label: l.name }))}
                   active={selectedLeagueSlug}
@@ -276,26 +296,23 @@ export function NewGameWizard() {
                     setSelectedLeagueSlug(slug);
                     setSelectedTeam(null);
                   }}
-                  className="whitespace-nowrap mb-2"
+                  className="whitespace-nowrap"
                 />
               </div>
               {countryLeagues.length === 0 ? (
-                <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+                <p className="text-sm text-muted-foreground mt-4">{t("common.loading")}</p>
               ) : (
-                <ul className="list-none p-0 m-0">
+                <ul className="list-none p-0 m-0 mt-2">
                   {teams.map((club) => {
                     const selected = selectedTeam?.squadId === club.squadId;
-                    const level =
-                      selected && clubProfile
-                        ? Math.round((clubProfile.attack + clubProfile.midfield + clubProfile.defense) / 3)
-                        : null;
+                    const profile = profiles[club.squadId];
                     return (
-                      <li key={club.squadId} className="border-t border-border first:border-t-0">
+                      <li key={club.squadId}>
                         <button
                           type="button"
                           onClick={() => setSelectedTeam(club)}
                           aria-pressed={selected}
-                          className={`w-full flex items-center gap-3 py-2 px-2 text-left border-0 cursor-pointer ${
+                          className={`w-full flex items-center gap-3 min-h-12 px-2 py-2 text-left border-0 border-t border-border cursor-pointer ${
                             selected ? "bg-primary/10" : "bg-transparent hover:bg-foreground/5"
                           }`}
                         >
@@ -305,13 +322,8 @@ export function NewGameWizard() {
                             secondaryColor={club.colors[1]}
                             className="w-8 h-8 rounded-full shrink-0"
                           />
-                          <span className={`flex-1 truncate text-sm ${selected ? "text-primary" : ""}`}>{club.name}</span>
-                          {level !== null && clubProfile && (
-                            <span className="text-xs text-muted-foreground">
-                              {t("newGame.squadRating")} {level} ·{" "}
-                              {t(`newGame.reputationLevel.${clubProfile.reputation}`, { defaultValue: "" })}
-                            </span>
-                          )}
+                          <span className={`flex-1 truncate text-base ${selected ? "text-primary" : ""}`}>{club.name}</span>
+                          {profile && <ReputationStars value={profile.reputation} />}
                         </button>
                       </li>
                     );
@@ -320,17 +332,22 @@ export function NewGameWizard() {
               )}
             </>
           )}
-        </div>
+        </section>
 
-        {startError && (
-          <Notice kind="error" className="mx-4 md:mx-6 mb-2">
-            {startError}
-          </Notice>
-        )}
+        <aside className="md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-border px-6 py-5 flex flex-col md:overflow-y-auto">
+          {selectedTeam ? (
+            <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
+          ) : (
+            <p className="text-sm text-muted-foreground m-0">{t("newGame.selectClubDetail")}</p>
+          )}
 
-        <footer className="border-t border-border p-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex-1 min-w-0 text-sm text-muted-foreground flex items-center gap-2">
-            <span className="truncate">
+          <div className="mt-auto pt-6">
+            {startError && (
+              <Notice kind="error" className="mb-3">
+                {startError}
+              </Notice>
+            )}
+            <p className="text-sm text-muted-foreground m-0 mb-3 truncate">
               {manager.nationality && managerValid
                 ? t("newGame.managerLine", {
                     name: manager.name.trim(),
@@ -339,78 +356,120 @@ export function NewGameWizard() {
                     }),
                   })
                 : t("newGame.managerEmpty")}
-            </span>
-            <button
-              type="button"
-              onClick={() => setManagerOpen(true)}
-              className="text-primary bg-transparent border-0 cursor-pointer text-sm p-0 hover:underline"
-            >
-              {managerValid ? t("newGame.edit") : t("newGame.define")}
-            </button>
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" className="px-3" onClick={() => setStep("manager")}>
+                {t("newGame.back")}
+              </Button>
+              <Button className="flex-1" onClick={handleStartCareer} disabled={!canStart}>
+                {starting
+                  ? t("newGame.creatingSeave")
+                  : selectedTeam
+                    ? t("newGame.startWith", { club: selectedTeam.name })
+                    : t("newGame.startCareer")}
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              window.location.href = "/start";
-            }}
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button onClick={handleStartCareer} disabled={!canStart}>
-            {starting
-              ? t("newGame.creatingSeave")
-              : selectedTeam
-                ? t("newGame.startWith", { club: selectedTeam.name })
-                : t("newGame.startCareer")}
-          </Button>
-        </footer>
+        </aside>
       </main>
-
-      <ManagerModal
-        open={managerOpen}
-        initial={manager}
-        onClose={() => setManagerOpen(false)}
-        onSave={(m) => {
-          setManager(m);
-          setManagerOpen(false);
-        }}
-      />
     </div>
   );
 }
 
-function ManagerModal({
-  open,
-  initial,
-  onClose,
-  onSave,
-}: {
-  open:    boolean;
-  initial: ManagerData;
-  onClose: () => void;
-  onSave:  (m: ManagerData) => void;
-}) {
+function ReputationStars({ value }: { value: number }) {
   const { t } = useTranslation();
   return (
-    <Modal open={open} onClose={onClose} size="lg">
-      <div className="p-6">
-        <h2 className="text-lg font-semibold m-0 mb-5">{t("newGame.createManagerTitle")}</h2>
-        <ManagerForm initial={initial} submitLabel={t("common.save")} onCancel={onClose} onSubmit={onSave} />
-      </div>
-    </Modal>
+    <span
+      className="flex items-center gap-0.5 shrink-0"
+      role="img"
+      aria-label={`${t("newGame.reputation")}: ${t(`newGame.reputationLevel.${value}`, { defaultValue: String(value) })}`}
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Icon
+          key={n}
+          name={n <= value ? "star-filled" : "star"}
+          size={16}
+          className={n <= value ? "text-chart-4" : "text-muted-foreground/50"}
+        />
+      ))}
+    </span>
   );
+}
+
+function ClubProfilePanel({ club, profile }: { club: LeagueTeam; profile: ClubProfile | null }) {
+  const { t, i18n } = useTranslation();
+  const score = (v: number) => (v / 10).toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const place = [profile?.city, profile?.stadium, profile?.founded].filter((v) => v != null && v !== "").join(" · ");
+
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <ClubLogo
+          logoUrl={squadLogoUrl(club.squadId)}
+          primaryColor={club.colors[0]}
+          secondaryColor={club.colors[1]}
+          className="w-16 h-16 rounded-full shrink-0"
+        />
+        <div className="min-w-0">
+          <h2 className="font-display font-black uppercase text-2xl leading-none m-0">{club.name}</h2>
+          {place && <p className="text-sm text-muted-foreground mt-1 mb-0">{place}</p>}
+        </div>
+      </div>
+
+      {!profile ? (
+        <p className="text-sm text-muted-foreground mt-6">{t("common.loading")}</p>
+      ) : (
+        <>
+          <SectionLabel>{t("newGame.squadLabel")}</SectionLabel>
+          <div className="flex flex-col gap-2">
+            <StatBar label={t("newGame.attack")} value={profile.attack} max={100} display={score(profile.attack)} />
+            <StatBar label={t("newGame.midfield")} value={profile.midfield} max={100} display={score(profile.midfield)} />
+            <StatBar label={t("newGame.defense")} value={profile.defense} max={100} display={score(profile.defense)} />
+          </div>
+
+          <SectionLabel>{t("newGame.keyPlayers")}</SectionLabel>
+          <ul className="list-none p-0 m-0 flex flex-col gap-1.5">
+            {profile.keyPlayers.slice(0, 3).map((p) => (
+              <li key={p.id} className="flex items-baseline gap-2 text-sm">
+                <span className="flex-1 truncate">{p.name}</span>
+                <span className={`${getDetailedPositionColor(p.position)} w-10 text-right`}>{p.position}</span>
+                <span className="w-9 text-right tabular-nums text-muted-foreground">{score(p.ovr)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <SectionLabel>{t("newGame.finances")}</SectionLabel>
+          <dl className="m-0 flex flex-col gap-1 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">{t("newGame.annualRevenue")}</dt>
+              <dd className="m-0 tabular-nums">{formatEuros(profile.annualRevenue)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">{t("newGame.weeklyWages")}</dt>
+              <dd className="m-0 tabular-nums">
+                {formatEuros(profile.weeklyWages)}
+                {t("newGame.perWeek")}
+              </dd>
+            </div>
+          </dl>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground mt-6 mb-2">{children}</p>;
 }
 
 function ManagerForm({
   initial,
-  submitLabel,
   onCancel,
   onSubmit,
 }: {
-  initial:     ManagerData;
-  submitLabel: string;
-  onCancel:    () => void;
-  onSubmit:    (m: ManagerData) => void;
+  initial:  ManagerData;
+  onCancel: () => void;
+  onSubmit: (m: ManagerData) => void;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<ManagerData>(initial);
@@ -419,75 +478,63 @@ function ManagerForm({
     setDraft(initial);
   }, [initial]);
 
-  const label = "block text-xs text-muted-foreground mb-2";
-
   return (
-    <div>
-      <label className={label} htmlFor="manager-name">
-        {t("newGame.managerName")}
-      </label>
-      <input
-        id="manager-name"
-        type="text"
-        value={draft.name}
-        onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-        placeholder={t("newGame.enterName")}
-        className="w-full mb-5 bg-transparent border border-border rounded px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-      />
+    <div className="pb-24">
+      <p className="text-sm text-muted-foreground m-0 mb-1">{t("newGame.stepOf", { n: 1 })}</p>
+      <ScreenTitle subtitle={t("newGame.managerSubtitle")}>{t("newGame.createManagerTitle")}</ScreenTitle>
 
-      <span className={label}>{t("newGame.nationality")}</span>
-      <div className="flex flex-wrap gap-2 mb-5">
-        {MANAGER_NATIONALITIES.map((nat) => {
-          const on = draft.nationality?.id === nat.id;
-          return (
-            <button
-              key={nat.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => setDraft({ ...draft, nationality: nat })}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded border text-sm bg-transparent cursor-pointer ${
-                on ? "border-primary text-primary" : "border-border text-foreground hover:border-primary/50"
-              }`}
-            >
-              <span className={`fi fi-${nat.flag} w-5 h-3.5 rounded-sm bg-cover bg-center`} />
-              {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
-            </button>
-          );
-        })}
+      <div className="grid gap-8 mt-8 md:grid-cols-[1fr_1.4fr]">
+        <div>
+          <TextField
+            id="manager-name"
+            label={t("newGame.managerName")}
+            type="text"
+            value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            placeholder={t("newGame.enterName")}
+          />
+
+          <Label className="mt-6 mb-2">{t("newGame.nationality")}</Label>
+          <div className="flex flex-wrap gap-2">
+            {MANAGER_NATIONALITIES.map((nat) => (
+              <Chip
+                key={nat.id}
+                selected={draft.nationality?.id === nat.id}
+                onClick={() => setDraft({ ...draft, nationality: nat })}
+              >
+                <span className={`fi fi-${nat.flag} w-5 h-3.5 rounded-sm bg-cover bg-center`} />
+                {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="mb-2">{t("newGame.careerBackground")}</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {MANAGER_BACKGROUNDS.map((bg) => (
+              <ChoiceCard
+                key={bg.id}
+                selected={draft.background?.id === bg.id}
+                onSelect={() => setDraft({ ...draft, background: bg })}
+                title={t(`newGame.backgrounds.${bg.id}.name`, { defaultValue: bg.name })}
+                description={
+                  <span className="line-clamp-2">
+                    {t(`newGame.backgrounds.${bg.id}.description`, { defaultValue: bg.description })}
+                  </span>
+                }
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
-      <span className={label}>{t("newGame.careerBackground")}</span>
-      <ul className="list-none p-0 m-0 mb-6">
-        {MANAGER_BACKGROUNDS.map((bg) => {
-          const on = draft.background?.id === bg.id;
-          return (
-            <li key={bg.id} className="border-t border-border first:border-t-0">
-              <button
-                type="button"
-                aria-pressed={on}
-                onClick={() => setDraft({ ...draft, background: bg })}
-                className={`w-full text-left py-2 px-2 border-0 cursor-pointer ${
-                  on ? "bg-primary/10" : "bg-transparent hover:bg-foreground/5"
-                }`}
-              >
-                <span className={`block text-sm ${on ? "text-primary" : ""}`}>
-                  {t(`newGame.backgrounds.${bg.id}.name`, { defaultValue: bg.name })}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  {t(`newGame.backgrounds.${bg.id}.description`, { defaultValue: bg.description })}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={onCancel}>
+      <div className="flex items-center justify-end gap-4 mt-8">
+        <Button variant="secondary" onClick={onCancel}>
           {t("common.cancel")}
         </Button>
         <Button onClick={() => onSubmit({ ...draft, name: draft.name.trim() })} disabled={!isManagerValid(draft)}>
-          {submitLabel}
+          {t("newGame.chooseClub")}
         </Button>
       </div>
     </div>

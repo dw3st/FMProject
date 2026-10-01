@@ -11,6 +11,7 @@
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { lineOrderLineup, poorFitStarters } from "@/Domain/positions/positionLineup";
 import { emptySeasonLog } from "@/types/playerTypes";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
@@ -94,7 +95,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
   };
 }
 
@@ -126,6 +127,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.avgEndEnergySum             += src.avgEndEnergySum;
   dst.fatigueSubstitutions        += src.fatigueSubstitutions;
   dst.injuries                    += src.injuries;
+  dst.outOfPosition               += src.outOfPosition;
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -157,6 +159,14 @@ interface OneMatchResult {
   appearancesB: ReturnType<typeof fullEngineAppearances>;
 }
 
+/** Per-pair lineup-fit info: explicit lineups for the full engine (only when `outOfPosition`) and poor-fit counts. */
+interface LineupFit {
+  fullLineupA?: string[];
+  fullLineupB?: string[];
+  poorA: number;
+  poorB: number;
+}
+
 function runOneMatch(
   squadA: Squad,
   squadB: Squad,
@@ -169,9 +179,12 @@ function runOneMatch(
   simEngine: "full" | "quick",
   knockout: boolean,
   matchSeed: number,
+  fit: LineupFit,
 ): OneMatchResult {
   const teamA = emptyTeamRaw();
   const teamB = emptyTeamRaw();
+  teamA.outOfPosition = fit.poorA;
+  teamB.outOfPosition = fit.poorB;
 
   if (simEngine === "quick") {
     const q = quickSimMatch({
@@ -222,7 +235,7 @@ function runOneMatch(
     return { teamA, teamB, draw: !homeWon && !awayWon, appearancesA, appearancesB };
   }
 
-  const r = simulateMatch(squadA, squadB, formationA, formationB, undefined, undefined, { knockout });
+  const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, { knockout });
   const sA = r.teamStats.A;
   const sB = r.teamStats.B;
 
@@ -286,10 +299,18 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on
     // fitness here (congestion never re-picks the XI — see fitnessCarry.ts doc comment),
     // only each named player's own seasonLog.fitness/.load (mutated between congestion games).
-    const quickLineupA = autoLineupForFormation(baseSquadA, formationA);
-    const quickLineupB = autoLineupForFormation(baseSquadB, formationB);
     const quickRolesA = slotRoles(formationA);
     const quickRolesB = slotRoles(formationB);
+    const quickLineupA = variantA.outOfPosition ? lineOrderLineup(quickRolesA, baseSquadA.players) : autoLineupForFormation(baseSquadA, formationA);
+    const quickLineupB = variantB.outOfPosition ? lineOrderLineup(quickRolesB, baseSquadB.players) : autoLineupForFormation(baseSquadB, formationB);
+    // The full engine only gets explicit lineups for out-of-position variants (otherwise its own
+    // role picker runs, unchanged); the poor-fit count uses the lineup the quickSim would field.
+    const fit: LineupFit = {
+      fullLineupA: variantA.outOfPosition ? quickLineupA : undefined,
+      fullLineupB: variantB.outOfPosition ? quickLineupB : undefined,
+      poorA: poorFitStarters(baseSquadA.players, quickLineupA, quickRolesA),
+      poorB: poorFitStarters(baseSquadB.players, quickLineupB, quickRolesB),
+    };
 
     const start = performance.now();
 
@@ -311,7 +332,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
           const one = runOneMatch(
             curSquadA, curSquadB, formationA, formationB,
             quickLineupA, quickLineupB, quickRolesA, quickRolesB,
-            simEngine, knockout, rep * congestion.matches + g,
+            simEngine, knockout, rep * congestion.matches + g, fit,
           );
           addTeamRaw(perIndex[0]![g]!, one.teamA);
           addTeamRaw(perIndex[1]![g]!, one.teamB);
@@ -366,7 +387,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       const one = runOneMatch(
         baseSquadA, baseSquadB, formationA, formationB,
         quickLineupA, quickLineupB, quickRolesA, quickRolesB,
-        simEngine, knockout, m,
+        simEngine, knockout, m, fit,
       );
       addTeamRaw(teamA, one.teamA);
       addTeamRaw(teamB, one.teamB);
