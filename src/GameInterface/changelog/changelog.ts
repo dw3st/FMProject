@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.1.1",
+    date: "2026-10-01",
+    items: [
+      { pt: "O estilo Posse volta a criar chances de gol como os outros estilos.", en: "The Possession style creates chances again, like the other styles." },
+    ],
+  },
+  {
     version: "2.1",
     date: "2026-10-01",
     items: [
