@@ -125,14 +125,14 @@ export async function executeTransferFee(
       entries.push({
         date, kind: "transfer_out", amount: -fee,
         label: `Transfer fee paid to ${seller.squad.name}`,
-        ref: { opponentId: seller.squad.id },
+        ref: { opponentId: seller.squad.id, clubName: seller.squad.name },
       });
     }
     if (seller.isPlayerClub) {
       entries.push({
         date, kind: "transfer_in", amount: fee,
         label: `Transfer fee from ${buyer.squad.name}`,
-        ref: { opponentId: buyer.squad.id },
+        ref: { opponentId: buyer.squad.id, clubName: buyer.squad.name },
       });
     }
     await service.appendLedger(saveId, season, entries);
