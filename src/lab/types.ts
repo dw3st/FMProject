@@ -85,6 +85,12 @@ export interface Variant {
    * measure the loss from out-of-position starters. Absent = fit-aware lineup.
    */
   outOfPosition?: boolean;
+  /**
+   * Fitness-coach rating 1..10 of this side (`src/Domain/staff`): scales the injury risk (engine and
+   * quickSim) and the fitness recovery between congestion games. Absent = the squad's tier-implicit
+   * staff, same as in the game for an AI club.
+   */
+  staffRating?: number;
   squad: SquadSpec;
 }
 

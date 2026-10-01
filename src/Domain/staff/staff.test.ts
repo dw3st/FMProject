@@ -102,3 +102,19 @@ describe("staff wiring in the pure models", () => {
     expect(hi).toBeGreaterThan(lo);
   });
 });
+
+import { withFitnessCoach } from "@/Domain/staff/staff";
+import { applyRestDays } from "@/lab/fitnessCarry";
+import { emptySeasonLog } from "@/types/playerTypes";
+
+describe("lab fitness coach", () => {
+  test("a better fitness coach recovers more between congestion games and cuts injury risk", () => {
+    const tired = { ...player, seasonLog: { ...emptySeasonLog(), fitness: 50, load: 0 } } as RosterPlayer;
+    const base = squad({ players: [tired] });
+    const weak = applyRestDays(withFitnessCoach(base, 1), 2).players[0]!.seasonLog!.fitness;
+    const strong = applyRestDays(withFitnessCoach(base, 10), 2).players[0]!.seasonLog!.fitness;
+    expect(strong).toBeGreaterThan(weak);
+    expect(staffEffectsOf(withFitnessCoach(base, 10)).injuryMult).toBeCloseTo(0.85);
+    expect(withFitnessCoach(base, undefined)).toBe(base);
+  });
+});

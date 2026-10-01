@@ -63,6 +63,15 @@ export function staffEffectsOf(squad: Squad): StaffEffects {
   };
 }
 
+/**
+ * A squad whose fitness coach is a professional of `rating` (other roles vacant). Used by `/lab`
+ * to compare staff levels; `undefined` keeps the squad as it is (tier-implicit staff).
+ */
+export function withFitnessCoach(squad: Squad, rating: number | undefined): Squad {
+  if (rating === undefined) return squad;
+  return { ...squad, staff: { fitness: makeStaffMember(`lab:${squad.id}`, "fitness", rating, 1) } };
+}
+
 // -- Wages ------------------------------------------------------------------
 
 /** Weekly wage of a professional of `rating`, at the club's wage factor. */
