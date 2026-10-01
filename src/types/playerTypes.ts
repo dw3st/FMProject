@@ -84,6 +84,13 @@ export function emptyDevelopmentProgress(): DevelopmentProgress {
   };
 }
 
+/** Fixed-wage contract (`src/Domain/contracts`). `until` is the last day of a league season. */
+export interface PlayerContract {
+  until: string;
+  /** Weekly wage in EUR, fixed for the whole contract. */
+  wage: number;
+}
+
 export interface RosterPlayer {
   id: string;
   name: string;

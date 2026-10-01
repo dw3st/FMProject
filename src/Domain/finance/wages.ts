@@ -48,8 +48,16 @@ export function playerWeeklyWage(p: RosterPlayer, factor: number): number {
   return Math.round(weeklyWage(overallAvg(p)) * factor);
 }
 
+/**
+ * What a player is actually paid per week: the fixed wage of his contract
+ * (`src/Domain/contracts`), or — only for a player without one — the curve at the club's factor.
+ */
+export function currentWage(p: RosterPlayer, factor: number): number {
+  return p.contract?.wage ?? playerWeeklyWage(p, factor);
+}
+
 export function squadWeeklyWages(players: RosterPlayer[], factor: number): number {
-  return players.reduce((sum, p) => sum + playerWeeklyWage(p, factor), 0);
+  return players.reduce((sum, p) => sum + currentWage(p, factor), 0);
 }
 
 /**
