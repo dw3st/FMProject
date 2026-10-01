@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "1.9",
+    date: "2026-10-01",
+    items: [
+      { pt: "Novo visual dentro do jogo", en: "New in-game look" },
+      { pt: "Novo jogo em uma tela", en: "New game on a single screen" },
+    ],
+    fixes: [
+      { pt: "Aviso de tela pequena só abaixo de 1024×600", en: "Small-screen notice only below 1024×600" },
+    ],
+  },
+  {
     version: "1.8",
     date: "2026-10-01",
     items: [

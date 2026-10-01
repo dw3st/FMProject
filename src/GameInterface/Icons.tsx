@@ -44,6 +44,10 @@ import {
   Flame,
   Sparkles,
   Image as ImageIcon,
+  Swords,
+  Dumbbell,
+  Moon,
+  Calendar,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -99,7 +103,11 @@ export type IconName =
   | "map-pin"
   | "load"
   | "sparkles"
-  | "image";
+  | "image"
+  | "match"
+  | "training"
+  | "rest"
+  | "calendar";
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -151,6 +159,10 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "load":         Flame,
   "sparkles":     Sparkles,
   "image":        ImageIcon,
+  "match":        Swords,
+  "training":     Dumbbell,
+  "rest":         Moon,
+  "calendar":     Calendar,
 };
 
 export interface IconProps {
