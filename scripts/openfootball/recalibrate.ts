@@ -145,5 +145,44 @@ export function shiftToOverall(
     const rounded = Math.floor(continuous[k] + unitHash(`${playerId}:recal:round:${k}`));
     out[k] = Math.max(0, Math.min(10, rounded));
   }
-  return out;
+  return repairRounding(out, weights, target, overallOf);
+}
+
+/** Integer attributes quantise the overall in steps of ~0.1–0.3, so the stochastic rounding can
+ * miss the target by a lot (Bellingham: target 5.86, rounded 5.62 — issue #34). */
+const REPAIR_TOLERANCE = 0.04;
+const REPAIR_MAX_STEPS = 12;
+
+/**
+ * Deterministic repair after rounding: while the overall is further than `REPAIR_TOLERANCE` from
+ * `target`, move the single weighted attribute by ±1 that brings it closest, stopping when no
+ * move improves it. Only attributes with weight > 0 move, so the profile shape is preserved and
+ * the quantile multiset is hit far more tightly (no bias — it only removes rounding noise).
+ */
+export function repairRounding(
+  stats: PlayerStatsRecord,
+  weights: Record<string, number>,
+  target: number,
+  overallOf: (s: PlayerStatsRecord) => number,
+): PlayerStatsRecord {
+  let cur = stats;
+  let err = Math.abs(overallOf(cur) - target);
+  for (let step = 0; step < REPAIR_MAX_STEPS && err > REPAIR_TOLERANCE; step++) {
+    let best: PlayerStatsRecord | null = null;
+    let bestErr = err;
+    for (const k of Object.keys(cur) as (keyof PlayerStatsRecord)[]) {
+      if ((weights[k] ?? 0) <= 0) continue;
+      for (const d of [-1, 1]) {
+        const v = cur[k] + d;
+        if (v < 0 || v > 10) continue;
+        const cand = { ...cur, [k]: v };
+        const e = Math.abs(overallOf(cand) - target);
+        if (e < bestErr - 1e-9) { bestErr = e; best = cand; }
+      }
+    }
+    if (!best) break;
+    cur = best;
+    err = bestErr;
+  }
+  return cur;
 }

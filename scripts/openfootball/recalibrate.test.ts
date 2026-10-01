@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  applyShift, findShift, fitLevelPredictor, predictLevel, quantileTargets, shiftToOverall,
+  applyShift, findShift, fitLevelPredictor, predictLevel, quantileTargets, repairRounding, shiftToOverall,
   type LevelPair, type QuantileInput,
 } from "@/../scripts/openfootball/recalibrate";
 import { Player } from "@/Domain/Player";
@@ -157,6 +157,29 @@ describe("findShift + shiftToOverall", () => {
     const out = shiftToOverall("player-z", stats, weights, target, overallOf);
     // Rounding on 2 weighted attributes can move the overall a bit; stay in a sane band.
     expect(Math.abs(overallOf(out) - target)).toBeLessThan(0.6);
+  });
+});
+
+describe("repairRounding (#34)", () => {
+  const weights = { passing: 1, vision: 1, dribbling: 1, tackling: 0 };
+  const overallOf = (s: PlayerStatsRecord) =>
+    Math.sqrt((s.passing ** 2 + s.vision ** 2 + s.dribbling ** 2) / 3);
+
+  test("moves a badly rounded profile to within tolerance of the target", () => {
+    const stats = st({ passing: 5, vision: 5, dribbling: 5, tackling: 2 });
+    const out = repairRounding(stats, weights, 5.86, overallOf);
+    expect(Math.abs(overallOf(out) - 5.86)).toBeLessThan(Math.abs(overallOf(stats) - 5.86));
+    expect(Math.abs(overallOf(out) - 5.86)).toBeLessThanOrEqual(0.15);
+    expect(out.tackling).toBe(2);
+  });
+  test("leaves an already-close profile untouched and is deterministic", () => {
+    const stats = st({ passing: 6, vision: 6, dribbling: 6 });
+    expect(repairRounding(stats, weights, 6.02, overallOf)).toEqual(stats);
+    expect(repairRounding(stats, weights, 7.3, overallOf)).toEqual(repairRounding(stats, weights, 7.3, overallOf));
+  });
+  test("never leaves 0..10", () => {
+    const out = repairRounding(st({ passing: 10, vision: 10, dribbling: 10 }), weights, 12, overallOf);
+    for (const k of ["passing", "vision", "dribbling"] as const) expect(out[k]).toBeLessThanOrEqual(10);
   });
 });
 
