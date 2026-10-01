@@ -25,7 +25,7 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
-import { getTeamCarryConfig } from '@/GameEngine/Configs/AttackConfig';
+import { getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
 import { evaluateCarryLane, evaluateCarryLaneBreakdown, rot } from '@/GameEngine/Domain/CarryLaneEval';
@@ -448,7 +448,7 @@ function evalPass(player: GamePlayer, opponents: GamePlayer[], allPlayers: GameP
   // pass ACTION competes with carry / through ball on its quality plus the
   // holder role's pass tendency (roles.json passBias — the pass mirror of
   // carryBias): midfielders circulate, centre-backs recycle less.
-  const roleBias = roleEngine(player.role).passBias * PASS_CONFIG.ROLE_BIAS_WEIGHT;
+  const roleBias = roleEngine(player.role).passBias * getTeamPassConfig(player.team).ROLE_BIAS_WEIGHT;
   const raw      = Math.max(0, best.quality + roleBias);
   const score    = compress(raw, PASS_STRONG_RAW);
   return {
@@ -528,7 +528,7 @@ function evalThroughBall(
     return { action: { type: 'through_ball', score: 0 }, cells };
   }
   const best = cells[0]!;
-  const score = compress(best.score, THROUGH_BALL_STRONG_RAW);
+  const score = compress(best.score + (best.score > 0 ? getTeamPassConfig(player.team).THROUGH_BALL_BONUS : 0), THROUGH_BALL_STRONG_RAW);
   return {
     action: {
       type: 'through_ball',
