@@ -1,5 +1,5 @@
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord } from '@/GameEngine/types';
-import { resolvePenaltyShootout, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece } from '@/GameEngine/types';
+import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from './DecisionTree';
 import type { PlayerDecision, DecisionPath } from './DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
@@ -42,7 +42,9 @@ import {
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
-import { getInterceptionPerpDist } from './PositionalAwareness';
+import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from './PositionalAwareness';
+import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine/Domain/Fouls';
+import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
@@ -379,6 +381,7 @@ export function createMatchState(
     benchB:                teamBResult.bench,
     substitutions:         [],
     injuries:              [],
+    cards:                 [],
     subsRemainingA:        5,
     subsRemainingB:        5,
     pendingSubsA:          [],
@@ -755,6 +758,234 @@ function rollContactInjuries(state: GameState, ids: [number, number], minute: nu
     }
   }
   return s;
+}
+
+// ── Discipline: fouls, cards, free kicks, penalties ───────────────────────────
+// `docs/superpowers/specs/2026-10-02-fouls-cards-design.md` §1–3, `.claude/rules/game-engine/fouls.md`.
+// Pure probabilities live in `Domain/Fouls.ts`; this section reads the players involved and
+// executes the outcome (card, sending-off, free-kick / penalty restart).
+
+function yellowsOf(state: GameState, playerId: number): number {
+  return state.cards.filter(c => c.playerId === playerId && c.card === 'yellow').length;
+}
+
+function angleFromModifier(mod: number): RelativePosition {
+  if (mod > 0.2) return 'front';
+  if (mod < -0.2) return 'behind';
+  return 'side';
+}
+
+/**
+ * Records a card (and the red that a second yellow becomes), emits `card`, and sends the player
+ * off on a red: removed outright, no substitute (same path as an injured player with no bench),
+ * then the goalkeeper safety net (`ensureCompetentGK`).
+ */
+export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' | 'red', minute: number): GameState {
+  const record = (c: 'yellow' | 'red', secondYellow: boolean): CardRecord => ({
+    team: player.team, playerId: player.id, playerName: player.name, playerRosterId: player.rosterId,
+    card: c, secondYellow, matchMinute: minute, energy: player.energy,
+  });
+  const emit = (c: 'yellow' | 'red', secondYellow: boolean) => {
+    gameBus.emit('card', { playerId: player.id, playerName: player.name, team: player.team, card: c, secondYellow, minute });
+    const label = c === 'red' ? (secondYellow ? 'Second yellow -> RED' : 'RED card') : 'Yellow card';
+    debugLog('card', `${label}: ${player.name} (team ${player.team}), minute ${minute}`, {
+      playerId: player.id, data: { card: c, secondYellow, minute },
+    });
+  };
+
+  let s = state;
+  let sentOff = card === 'red';
+  if (card === 'yellow') {
+    const secondYellow = yellowsOf(s, player.id) >= 1;
+    s = { ...s, cards: [...s.cards, record('yellow', false)] };
+    emit('yellow', false);
+    if (secondYellow) {
+      s = { ...s, cards: [...s.cards, record('red', true)] };
+      emit('red', true);
+      sentOff = true;
+    }
+  } else {
+    s = { ...s, cards: [...s.cards, record('red', false)] };
+    emit('red', false);
+  }
+  if (!sentOff) return s;
+  return ensureCompetentGK(removeInjuredPlayer(s, player), player.team);
+}
+
+/** Penalty spot of the goal whose goal line is at `goalX`. */
+function penaltySpot(goalX: number): { x: number; y: number } {
+  const d = FOUL_CONFIG.PENALTY_SPOT_DIST;
+  return { x: goalX === 0 ? d : PITCH_LENGTH - d, y: (GOAL_Y_MIN + GOAL_Y_MAX) / 2 };
+}
+
+/**
+ * Sets up the restart for a foul against `fouledTeam` at `spot`: a penalty when `inBox`, else a
+ * free kick (layouts `freeKick_Attack`/`_Defend` only when the spot is within
+ * `DANGEROUS_FREE_KICK_DIST` of the goal it attacks — elsewhere the players stay where they are
+ * and the nearest player of the fouled team takes a quick free kick).
+ */
+function awardFoulRestart(
+  state: GameState,
+  fouledTeam: TeamId,
+  spot: { x: number; y: number },
+  inBox: boolean,
+  offenderId: number,
+  minute: number,
+): GameState {
+  const oppTeam: TeamId = fouledTeam === 'A' ? 'B' : 'A';
+  const awarded = state.players.filter(p => p.team === fouledTeam);
+  if (awarded.length === 0) return state;
+  const outfield = awarded.filter(p => p.role !== 'GK');
+  const pool = outfield.length > 0 ? outfield : awarded;
+  const goalX = awarded[0]!.attackDir === 1 ? PITCH_LENGTH : 0;
+  let players = state.players;
+  let setPiece: SetPiece;
+
+  if (inBox) {
+    const pos = penaltySpot(goalX);
+    const taker = pool.reduce((best, p) =>
+      p.runtimeStats.withBall.shootAccuracy > best.runtimeStats.withBall.shootAccuracy ? p : best);
+    const edge = FOUL_CONFIG.PENALTY_SPOT_DIST + 8; // everyone else waits outside the box (~20 yds out)
+    players = players.map(p => {
+      if (p.id === taker.id) return { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } };
+      if (p.team === oppTeam && p.role === 'GK') {
+        const gx = goalX === 0 ? 0.5 : PITCH_LENGTH - 0.5;
+        return { ...p, x: gx, y: pos.y, targetPosition: { x: gx, y: pos.y } };
+      }
+      if (Math.abs(p.x - goalX) < edge) {
+        const nx = goalX === 0 ? edge : PITCH_LENGTH - edge;
+        return { ...p, x: nx, targetPosition: { x: nx, y: p.y } };
+      }
+      return p;
+    });
+    setPiece = { type: 'penalty', takerId: taker.id, countdown: FOUL_CONFIG.PENALTY_COUNTDOWN, position: pos };
+    gameBus.emit('penaltyAwarded', { team: fouledTeam, takerId: taker.id, offenderId, minute });
+    debugLog('foul', `PENALTY to team ${fouledTeam} — ${taker.name} to take it`, { playerId: taker.id, data: { offenderId, minute } });
+  } else {
+    const pos = { x: Math.max(1, Math.min(PITCH_LENGTH - 1, spot.x)), y: Math.max(1, Math.min(PITCH_WIDTH - 1, spot.y)) };
+    const taker = nearestPlayerTo(pool, pos);
+    const dangerous = Math.abs(goalX - pos.x) <= FOUL_CONFIG.DANGEROUS_FREE_KICK_DIST;
+    if (dangerous) {
+      const aLay = resolveFormationSetPieces(fouledTeam === 'A' ? state.formationA : state.formationB);
+      const oLay = resolveFormationSetPieces(oppTeam === 'A' ? state.formationA : state.formationB);
+      if (aLay) players = applySetPieceToTeam(players, fouledTeam, aLay.freeKick_Attack);
+      if (oLay) players = applySetPieceToTeam(players, oppTeam, oLay.freeKick_Defend);
+    }
+    players = players.map(p => (p.id === taker.id ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p));
+    setPiece = { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos };
+    gameBus.emit('freeKickAwarded', { team: fouledTeam, takerId: taker.id, x: pos.x, y: pos.y, dangerous, minute });
+    debugLog('foul', `Free kick to team ${fouledTeam}${dangerous ? ' (dangerous)' : ''} at (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) — ${taker.name}`, {
+      playerId: taker.id, data: { offenderId, dangerous, minute },
+    });
+  }
+
+  const prevHolderId = state.ballHolderId;
+  const keptPossession = state.players.find(p => p.id === prevHolderId)?.team === fouledTeam;
+  return onPossessionTransfer({
+    ...state,
+    players,
+    pass:           null,
+    shot:           null,
+    looseBall:      null,
+    ballHolderId:   setPiece.takerId,
+    possessionTime: keptPossession ? state.possessionTime : 0,
+    lastPasserId:   null,
+    setPiece,
+  }, prevHolderId);
+}
+
+/**
+ * Rolls whether a resolved challenge was a foul. On a foul: emits `foul`, rolls the card
+ * (`cardRoll`; a second yellow turns red and sends the player off), puts the offender into the
+ * failed-tackle recovery and awards the restart (free kick or penalty) to the fouled team —
+ * overturning the challenge's own outcome. Returns `null` when it was not a foul.
+ */
+export function maybeFoul(
+  state: GameState,
+  offender: GamePlayer,
+  fouled: GamePlayer,
+  kind: FoulKind,
+  tackleWon: boolean,
+  rng: () => number = Math.random,
+): GameState | null {
+  const ownGoalX = offender.attackDir === 1 ? 0 : PITCH_LENGTH;
+  const inOwnBox = isInGoalScoreArea(fouled.x, fouled.y, ownGoalX);
+  // Tackle: real approach angle. Dribble: head-on when the defender won it, from behind when he was
+  // beaten and chases back (a cynical stop). Loose-ball duel: shoulder to shoulder.
+  const angle: RelativePosition =
+    kind === 'tackle'  ? angleFromModifier(tackleAngleModifier(offender, fouled)) :
+    kind === 'dribble' ? (tackleWon ? 'front' : 'behind') :
+                         'side';
+  const onYellow = yellowsOf(state, offender.id) > 0;
+  const chance = foulChance({
+    kind, angle, inOwnBox, tackleWon, onYellow,
+    aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
+    tackling:   offender.runtimeStats.withoutBall.tackling,
+    energy:     offender.energy,
+  });
+  if (rng() >= chance) return null;
+
+  const minute = matchMinute(state);
+  const spot = { x: fouled.x, y: fouled.y };
+  gameBus.emit('foul', {
+    offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
+    x: spot.x, y: spot.y, inBox: inOwnBox, minute,
+  });
+  debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
+    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y },
+  });
+
+  let s: GameState = {
+    ...state,
+    players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
+  };
+  const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
+  const { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow }, rng);
+  if (card !== 'none') s = bookPlayer(s, s.players.find(p => p.id === offender.id) ?? offender, card, minute);
+  return awardFoulRestart(s, fouled.team, spot, inOwnBox, offender.id, minute);
+}
+
+/**
+ * Resolves an in-match penalty once its freeze ends: `penaltyChance` for the taker against the
+ * defending goalkeeper. Goal → kickoff for the conceding team; miss/save → the goalkeeper's goal kick.
+ */
+function resolveInMatchPenalty(state: GameState, rng: () => number = Math.random): TickResult {
+  const sp = state.setPiece!;
+  const taker = state.players.find(p => p.id === sp.takerId) ?? state.players.find(p => p.id === state.ballHolderId)!;
+  const gk = state.players.find(p => p.team !== taker.team && p.role === 'GK') ?? null;
+  const chance = penaltyChance(
+    taker.runtimeStats.withBall.shootAccuracy,
+    gk ? { id: gk.id, reflex: gk.runtimeStats.withoutBall.gkReflex, diving: gk.runtimeStats.withoutBall.gkDiving } : null,
+  );
+  const scored = rng() < chance;
+  gameBus.emit('shot', { player: taker.id, xg: chance });
+  gameBus.emit('penaltyResolved', { team: taker.team, takerId: taker.id, keeperId: gk?.id ?? null, scored, chance });
+  debugLog('foul', `Penalty by ${taker.name}: ${scored ? 'GOAL' : 'saved/missed'} (chance ${(chance * 100).toFixed(0)}%)`, {
+    playerId: taker.id, data: { chance, scored },
+  });
+  const s: GameState = { ...state, setPiece: null };
+  if (scored) {
+    const newScore = { ...s.score, [taker.team]: s.score[taker.team] + 1 };
+    gameBus.emit('goalScored', { team: taker.team, score: newScore, scorerId: taker.id });
+    const concedingTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
+    return { state: resetToKickoff({ ...s, score: newScore }, concedingTeam), passCompleted: false, tackled: false, goalScored: taker.team };
+  }
+  const defTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
+  const defenders = s.players.filter(p => p.team === defTeam);
+  const keeper = gk ?? (defenders.length > 0 ? nearestPlayerTo(defenders, taker) : taker);
+  const goalKick = resolveFormationSetPieces(defTeam === 'A' ? s.formationA : s.formationB).goalKick;
+  const players = goalKick ? applySetPieceToTeam(s.players, defTeam, goalKick) : s.players;
+  return {
+    state: onPossessionTransfer({
+      ...s,
+      players,
+      ballHolderId:   keeper.id,
+      possessionTime: 0,
+      lastPasserId:   null,
+      setPiece:       { type: 'goal_kick', takerId: keeper.id, countdown: 1 },
+    }, s.ballHolderId),
+    passCompleted: false, tackled: false, goalScored: null,
+  };
 }
 
 // ── Formation change mid-match ────────────────────────────────────────────────
@@ -1712,10 +1943,6 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
         return p;
       }),
     };
-    if (winner.team !== lb.fromTeamLastTouch) {
-      gameBus.emit('throughBallLostInDuel', { player: lb.fromPasserId, defenderWinnerId: winner.id });
-      duelLost = true;
-    }
     duelParticipants = [a.id, b.id];
   } else {
     winner = inTouch[0]!.p;
@@ -1757,6 +1984,28 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
       }, prevHolderId),
       passCompleted: false, tackled: false, goalScored: null,
     });
+  }
+
+  // ── Foul in a contested duel (`.claude/rules/game-engine/fouls.md`) — either player may be the
+  // offender (50/50); the fouled side gets the restart, whoever won the duel.
+  if (duelParticipants) {
+    const [aId, bId] = duelParticipants;
+    const pa = s.players.find(p => p.id === aId)!;
+    const pb = s.players.find(p => p.id === bId)!;
+    const [offender, victim] = Math.random() < 0.5 ? [pa, pb] : [pb, pa];
+    const fouledState = maybeFoul(s, offender, victim, 'duel', false);
+    if (fouledState) {
+      if (victim.team === lb.fromTeamLastTouch) {
+        gameBus.emit('throughBallCompleted', { player: lb.fromPasserId, winnerId: victim.id, intendedRunnerId: lb.intendedRunnerId });
+      } else {
+        gameBus.emit('throughBallLostInDuel', { player: lb.fromPasserId, defenderWinnerId: victim.id });
+      }
+      return finishLooseBall({ state: fouledState, passCompleted: false, tackled: false, goalScored: null });
+    }
+    if (winner.team !== lb.fromTeamLastTouch) {
+      gameBus.emit('throughBallLostInDuel', { player: lb.fromPasserId, defenderWinnerId: winner.id });
+      duelLost = true;
+    }
   }
 
   const wonByTeam = winner.team === lb.fromTeamLastTouch;
@@ -1907,6 +2156,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     if (frozenState.pendingSubsA.length > 0 || frozenState.pendingSubsB.length > 0) {
       frozenState = flushPendingSubs(frozenState, 'A');
       frozenState = flushPendingSubs(frozenState, 'B');
+    }
+    if (nextCountdown === 0 && frozenState.setPiece?.type === 'penalty') {
+      return resolveInMatchPenalty(frozenState);
     }
     return noop(frozenState);
   }
@@ -2419,7 +2671,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         pressingLoad = Math.min(1, pressingLoad); // cap at 1
 
         const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad);
-        gameBus.emit('tackle', { player: tackler.id, targetId: updatedHolder.id, success, chance });
+        // Foul check (`.claude/rules/game-engine/fouls.md`): a foul overturns the challenge — the
+        // holder's team gets a free kick / penalty even when the tackle itself won the ball.
+        const fouled = maybeFoul(s, tacklerNow, updatedHolder, 'tackle', success);
+        gameBus.emit('tackle', { player: tackler.id, targetId: updatedHolder.id, success: success && fouled === null, chance });
+        if (fouled) {
+          s = rollContactInjuries(fouled, [tackler.id, updatedHolder.id], matchMinute(fouled));
+          return { state: s, passCompleted: false, tackled: false, goalScored: null };
+        }
         if (success) {
           const prevHolderId = s.ballHolderId;
           s = onPossessionTransfer({
@@ -2554,7 +2813,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         dribblePressLoad = Math.min(1, dribblePressLoad);
 
         const { attackerWins, winProb } = resolveDribble(attacker, defender, dribblePressLoad);
-        gameBus.emit('dribble', { player: attacker.id, targetId: defender.id, success: attackerWins, chance: winProb });
+        // Foul check (`.claude/rules/game-engine/fouls.md`): the defender may bring the dribbler
+        // down — beaten (a cynical stop) or winning the ball unfairly; either way the attacker's
+        // team gets the restart.
+        const fouledDribble = maybeFoul(s, defender, attacker, 'dribble', !attackerWins);
+        gameBus.emit('dribble', { player: attacker.id, targetId: defender.id, success: attackerWins || fouledDribble !== null, chance: winProb });
+        if (fouledDribble) {
+          return { state: fouledDribble, passCompleted: false, tackled: false, goalScored: null };
+        }
         if (attackerWins) {
           // Attacker beats the defender — defender frozen, attacker keeps the ball
           s = {

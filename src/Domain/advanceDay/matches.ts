@@ -1,6 +1,7 @@
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
+import { toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -9,6 +10,7 @@ import type {
   MatchTeamStats,
   MatchSubstitution,
   MatchInjury,
+  MatchCard,
   Scorer,
   MatchPlayerStats,
   PlayerDevelopmentChange,
@@ -109,6 +111,8 @@ export interface PlayedMatchRecording {
   substitutions: import("@/types/dayLogTypes").MatchSubstitution[];
   /** In-match injuries, in chronological order. */
   injuries?: import("@/types/dayLogTypes").MatchInjury[];
+  /** Cards shown, in chronological order (a second yellow = the yellow, then a red). */
+  cards?: MatchCard[];
   durationMs: number;
   /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
   decider?: import("@/types/calendarTypes").MatchDecider;
@@ -136,6 +140,12 @@ function finalizeSquadsAfterMatch(
    * at the injury minute for a substitution that never happened.
    */
   fullMinutesForInjured = false,
+  /**
+   * Cards shown this match (roster ids). Today only used to stop a sent-off player's clock at the
+   * red-card minute (he leaves without a substitute, like an injured player with no bench);
+   * suspensions (Etapa 12 part 2) are derived from this list too.
+   */
+  cards: MatchCard[] = [],
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -156,6 +166,7 @@ function finalizeSquadsAfterMatch(
   // `minutes[id]` for ids it was given in `playerIds` (now includes injured-removed players — see
   // both collectors, `buildMatchEvent`/`buildPlayedMatchRecording.ts`).
   const subbedOutIds = new Set(substitutions.map((s) => s.playerOutId));
+  const injuredOutIds = new Set(injuries.map((inj) => inj.playerId));
   const minutesSubstitutions = fullMinutesForInjured
     ? substitutions
     : [
@@ -166,6 +177,14 @@ function finalizeSquadsAfterMatch(
             playerOutId: inj.playerId,
             playerInId: `__injured_out_${inj.playerId}`,
             matchMinute: inj.matchMinute,
+          })),
+        // Sent off: off the pitch at the red-card minute, no substitute.
+        ...cards
+          .filter((c) => c.card === "red" && !subbedOutIds.has(c.playerId) && !injuredOutIds.has(c.playerId))
+          .map((c) => ({
+            playerOutId: c.playerId,
+            playerInId: `__sent_off_${c.playerId}`,
+            matchMinute: c.matchMinute,
           })),
       ];
   const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), minutesSubstitutions, totalMinutes);
@@ -352,6 +371,7 @@ export function buildMatchEventFromRecording(
     recording.injuries ?? [],
     rng,
     fullMinutesForInjured,
+    recording.cards ?? [],
   );
 
   const event: MatchEvent = {
@@ -370,6 +390,7 @@ export function buildMatchEventFromRecording(
     scorers,
     substitutions: recording.substitutions ?? [],
     injuries: recording.injuries ?? [],
+    ...(recording.cards && recording.cards.length > 0 ? { cards: recording.cards } : {}),
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
     ...(recording.decider ? { decider: recording.decider } : {}),
@@ -439,6 +460,12 @@ export function buildMatchEvent(
       engineIdToRosterId.set(inj.playerId, inj.playerRosterId);
     }
   }
+  // Same for players sent off (removed outright, no substitute).
+  for (const c of result.cards) {
+    if (!engineIdToRosterId.has(c.playerId)) {
+      engineIdToRosterId.set(c.playerId, c.playerRosterId);
+    }
+  }
 
   const playerStats: Record<string, MatchPlayerStats> = {};
   for (const [id, stats] of result.playerStats) {
@@ -482,6 +509,13 @@ export function buildMatchEvent(
       playerEnergy[rosterId] = Math.max(0, Math.min(100, inj.energy));
     }
   }
+  // Sent off — energy captured at the red card.
+  for (const c of result.cards) {
+    const rosterId = c.playerRosterId;
+    if (c.card === "red" && rosterId && !(rosterId in playerEnergy)) {
+      playerEnergy[rosterId] = Math.max(0, Math.min(100, c.energy));
+    }
+  }
 
   const playerNames: Record<string, string> = {};
   const playerTeams: Record<string, "home" | "away"> = {};
@@ -506,6 +540,14 @@ export function buildMatchEvent(
     if (rosterId && !playerNames[rosterId]) {
       playerNames[rosterId] = inj.playerName;
       playerTeams[rosterId] = inj.team === "A" ? "home" : "away";
+    }
+  }
+  // ... and for sent-off players from the card log.
+  for (const c of result.cards) {
+    const rosterId = c.playerRosterId;
+    if (rosterId && !playerNames[rosterId]) {
+      playerNames[rosterId] = c.playerName;
+      playerTeams[rosterId] = c.team === "A" ? "home" : "away";
     }
   }
 
@@ -545,12 +587,21 @@ export function buildMatchEvent(
     energy:      inj.energy,
   }));
 
+  const cards: MatchCard[] = result.cards.map((c) => ({
+    team:         c.team === "A" ? "home" : "away",
+    playerId:     c.playerRosterId,
+    playerName:   c.playerName,
+    card:         c.card,
+    secondYellow: c.secondYellow,
+    matchMinute:  c.matchMinute,
+  }));
+
   const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds } =
     finalizeSquadsAfterMatch(
       homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
       substitutions, totalMatchMinutes(result.decider),
       isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
-      fixture.date, injuries, rng,
+      fixture.date, injuries, rng, false, cards,
     );
 
   const event: MatchEvent = {
@@ -562,20 +613,8 @@ export function buildMatchEvent(
     away: fixture.away,
     score: { home: result.score.A, away: result.score.B },
     teamStats: {
-      home: {
-        shots: result.teamStats.A.shots,
-        passesCompleted: result.teamStats.A.passesCompleted,
-        passesAttempted: result.teamStats.A.passesAttempted,
-        tackles: result.teamStats.A.tackles,
-        interceptions: result.teamStats.A.interceptions,
-      },
-      away: {
-        shots: result.teamStats.B.shots,
-        passesCompleted: result.teamStats.B.passesCompleted,
-        passesAttempted: result.teamStats.B.passesAttempted,
-        tackles: result.teamStats.B.tackles,
-        interceptions: result.teamStats.B.interceptions,
-      },
+      home: toMatchTeamStats(result.teamStats.A),
+      away: toMatchTeamStats(result.teamStats.B),
     },
     playerStats,
     playerRatings,
@@ -584,6 +623,7 @@ export function buildMatchEvent(
     scorers,
     substitutions,
     injuries,
+    ...(cards.length > 0 ? { cards } : {}),
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: result.durationMs,
     ...(result.decider
