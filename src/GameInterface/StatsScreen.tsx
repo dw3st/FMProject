@@ -12,12 +12,14 @@ import { isContinentalSlug } from "@/Domain/continental/competitions";
 import type { CompetitionRankings, RankingRow } from "@/Domain/stats/rankings";
 import type { LeagueData, RetiredPlayer } from "@/types/playerTypes";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
-type Tab = "rankings" | "team" | "retired";
+type Tab = "rankings" | "team" | "retired" | "managers";
+const TABS: Tab[] = ["rankings", "team", "retired", "managers"];
 type TableKey = keyof CompetitionRankings;
 const TABLES: TableKey[] = ["scorers", "assists", "ratings", "appearances"];
 type Stars = ReturnType<typeof useStarPlayers>;
@@ -300,7 +302,10 @@ export function StatsScreen() {
   const stars = useStarPlayers(session?.saveId, currentDate);
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
-  const [tab, setTab] = useState<Tab>("rankings");
+  const [tab, setTab] = useState<Tab>(() => {
+    const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
+    return TABS.includes(q as Tab) ? (q as Tab) : "rankings";
+  });
   const [competition, setCompetition] = useState<string | null>(null);
   const [data, setData] = useState<CompetitionRankings | null>(null);
   const [error, setError] = useState(false);
@@ -369,6 +374,7 @@ export function StatsScreen() {
             {tabButton("rankings", t("statsScreen.rankings"))}
             {tabButton("team", t("statsScreen.myTeam"))}
             {tabButton("retired", t("statsScreen.retired.tab"))}
+            {tabButton("managers", t("statsScreen.managers.tab"))}
           </div>
           {tab === "rankings" && options.length > 0 && (
             <SelectCombobox
@@ -386,6 +392,8 @@ export function StatsScreen() {
           <TeamTable stars={stars} />
         ) : tab === "retired" ? (
           session?.saveId ? <RetiredList saveId={session.saveId} leagues={leagues} /> : null
+        ) : tab === "managers" ? (
+          session?.saveId ? <ManagerRanking saveId={session.saveId} leagues={leagues} refreshKey={currentDate} /> : null
         ) : error ? (
           <p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p>
         ) : !data ? (
