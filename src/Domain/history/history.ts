@@ -90,13 +90,19 @@ export function closePartialSeason(player: RosterPlayer, club: HistoryClub, seas
   return row ? appendHistoryRow(player, { ...row, partial: true, open: true }) : player;
 }
 
-/** The season log was reset (rollover): its open partial rows are settled. */
-function settleOpenPartials(history: PlayerHistoryRow[] | undefined): PlayerHistoryRow[] | undefined {
+/**
+ * The season log was reset (rollover): its open partial rows are settled. An open partial row at a
+ * club of `titlesByClub` (a club of the same rolled league) also gets that club's titles.
+ */
+function settleOpenPartials(
+  history: PlayerHistoryRow[] | undefined, titlesByClub: Record<string, string[]>,
+): PlayerHistoryRow[] | undefined {
   if (!history?.some((r) => r.open)) return history;
   return history.map((r) => {
     if (!r.open) return r;
     const { open: _, ...rest } = r;
-    return rest;
+    const extra = (titlesByClub[r.squadId] ?? []).filter((t) => !rest.titles.includes(t));
+    return extra.length > 0 ? { ...rest, titles: [...rest.titles, ...extra] } : rest;
   });
 }
 
@@ -112,15 +118,18 @@ export function addPendingTitle(
 /**
  * Season-end rows for one squad at rollover: every player gets the row of his closed log (from the
  * archive, since the squad is already reset) minus his open partial rows (stints at clubs he left
- * this season), plus `titles` (league + pending titles). The open partials are then settled. A
- * player without games here gets no row (and no title).
+ * this season), plus the club's titles (`titlesByClub[club.squadId]`: league + pending titles). The
+ * open partials are then settled; one at a club of `titlesByClub` (same league, e.g. a player sold
+ * by the champion to a rival) gets that club's titles too. A player without games here gets no row.
  */
 export function closeSeasonForPlayers(
-  players: RosterPlayer[], logs: Record<string, PlayerSeasonLog>, club: HistoryClub, season: string, titles: string[],
+  players: RosterPlayer[], logs: Record<string, PlayerSeasonLog>, club: HistoryClub, season: string,
+  titlesByClub: Record<string, string[]>,
 ): RosterPlayer[] {
+  const titles = titlesByClub[club.squadId] ?? [];
   return players.map((p) => {
     const row = historyRowFromLog(logs[p.id], club, season, titles, p.history);
-    const history = settleOpenPartials(p.history);
+    const history = settleOpenPartials(p.history, titlesByClub);
     const settled = history === p.history ? p : { ...p, history };
     return appendHistoryRow(settled, row);
   });
