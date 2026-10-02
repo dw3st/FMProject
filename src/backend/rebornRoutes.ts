@@ -9,6 +9,21 @@ type Req = Request & { params: Record<string, string> };
 
 /** Reborn offers (`.claude/rules/game/retirement.md`): world-class retirees of the human club. */
 export const rebornRoutes = {
+  /** `GET` - every retired player, newest first, with the last club's name (`.claude/rules/game/history.md`). */
+  "/api/saves/:saveId/retired": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSaveOwner(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const retired = await saveService.getRetired(saveId);
+    const index = await saveService.getSquadIndex(saveId);
+    const rows = [...retired].reverse().map((r) => ({
+      ...r,
+      clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null,
+    }));
+    return Response.json({ retired: rows });
+  },
+
   /** `GET` - the offers still pending. */
   "/api/saves/:saveId/reborn": async (req: Req) => {
     const saveId = req.params.saveId!;

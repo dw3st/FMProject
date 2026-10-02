@@ -45,6 +45,15 @@ describe("reborn routes", () => {
     await saveService.writeRetired(saveId, [mkRetired("a"), mkRetired("b"), mkRetired("c")]);
 
     expect((await call(key, `/api/saves/${saveId}/reborn/a`, "POST", other.session.token, { accept: true })).status).toBe(404);
+
+    // Retired list: owner only, newest first, with the last club's name.
+    const rKey = "/api/saves/:saveId/retired";
+    expect((await call(rKey, `/api/saves/${saveId}/retired`, "GET", other.session.token)).status).toBe(404);
+    const list = await call(rKey, `/api/saves/${saveId}/retired`, "GET", session.token);
+    expect(list.status).toBe(200);
+    const body = (await list.json()) as { retired: (RetiredPlayer & { clubName: string | null })[] };
+    expect(body.retired.map((r) => r.id)).toEqual(["c", "b", "a"]);
+    expect(typeof body.retired[0]!.clubName).toBe("string");
     expect((await call(key, `/api/saves/${saveId}/reborn/a`, "POST", session.token, {})).status).toBe(400);
     expect((await call(key, `/api/saves/${saveId}/reborn/zzz`, "POST", session.token, { accept: true })).status).toBe(404);
 
