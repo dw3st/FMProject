@@ -87,6 +87,11 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore
           <p className="text-[13px] sm:text-sm font-bold tracking-[0.08em] text-muted-foreground uppercase m-0 text-center max-w-sm leading-relaxed font-display">
             {subtitle}
           </p>
+          {kind === "matchEnd" && (
+            <p className="text-xs text-muted-foreground m-0 text-center animate-pulse">
+              {t("common.loadingMatchResult")}
+            </p>
+          )}
         </div>
 
         {progress != null && (
