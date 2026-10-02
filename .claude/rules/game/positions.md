@@ -19,7 +19,7 @@ Spec: `docs/superpowers/specs/2026-10-01-positions-design.md`. Bloco C1 da Etapa
 | `src/Domain/positions/positionLineup.ts` | `lineOrderLineup` (`/lab`), `poorFitStarters`, `unsuitableWithAlternative` (smoke) |
 | `src/GameEngine/Domain/gameState.ts` | `buildGamePlayerForSlot` e `performSubstitution` aplicam o fator |
 | `src/Domain/advanceDay/quickSim.ts` | `xiPlayer` guarda `k`; `lineValue` e `linePace` multiplicam por ele |
-| `src/Domain/lineupHelpers.ts` | `autoFillLineup`, `suggestRotation`, `replaceInjuredStarters` usam `slotValue` |
+| `src/Domain/lineupHelpers.ts` | `autoFillLineup`, `suggestRotation`, `replaceUnavailableStarters` usam `slotValue` |
 | `src/GameInterface/positionHelpers.ts` | `getDetailedPositionColor` |
 | `src/GameInterface/Components/PositionPitch.tsx` | campinho de aptidões na ficha do jogador |
 
