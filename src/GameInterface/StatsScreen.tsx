@@ -8,10 +8,8 @@ import {
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
-import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world/labels";
-import { cupSlugOf } from "@/Domain/cups/cupIds";
-import { isContinentalSlug } from "@/Domain/continental/competitions";
-import type { CompetitionRankings, RankingRow } from "@/Domain/stats/rankings";
+import { ALL_COMPETITIONS, type CompetitionRankings, type RankingRow } from "@/Domain/stats/rankings";
+import { statsCompetitionOptions } from "@/GameInterface/statsCompetitionOptions";
 import type { LeagueData, RetiredPlayer } from "@/types/playerTypes";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
@@ -283,7 +281,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
 
 export function StatsScreen() {
   const { t, i18n } = useTranslation();
-  const { session, currentDate, loading: saveLoading, fixtures } = useGameSave();
+  const { session, currentDate, loading: saveLoading } = useGameSave();
   const stars = useStarPlayers(session?.saveId, currentDate);
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
@@ -304,23 +302,12 @@ export function StatsScreen() {
   }, []);
 
   const ownLeague = session?.leagueSlug ?? "";
-  const active = competition ?? ownLeague;
+  const active = competition ?? ALL_COMPETITIONS;
 
-  const options = useMemo(() => {
-    const own = leagues.find((l) => l.slug === ownLeague);
-    const cup = own ? cupSlugOf(own.country) : null;
-    const continental = [...new Set(fixtures.map((f) => f.competition))].filter(isContinentalSlug);
-    const special = [...(cup ? [cup] : []), ...continental].map((slug) => ({
-      value: slug,
-      label: competitionName(slug, leagues, i18n.language),
-    }));
-    const leagueOpts = leagues.map((l) => {
-      const c = COUNTRY_BY_NAME.get(l.country);
-      return { value: l.slug, label: leagueLabel(l, c ? countryDisplayName(c, i18n.language, t) : l.country) };
-    });
-    const first = leagueOpts.filter((o) => o.value === ownLeague);
-    return [...first, ...special, ...leagueOpts.filter((o) => o.value !== ownLeague)];
-  }, [leagues, fixtures, ownLeague, i18n.language, t]);
+  const options = useMemo(
+    () => (leagues.length > 0 ? statsCompetitionOptions(leagues, COUNTRY_BY_NAME, i18n.language, t) : []),
+    [leagues, i18n.language, t],
+  );
 
   useEffect(() => {
     if (!session?.saveId || !active || tab !== "rankings") return;
