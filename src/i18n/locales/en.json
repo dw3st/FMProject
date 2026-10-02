@@ -1842,6 +1842,7 @@
   },
   "statsScreen": {
     "allLeagues": "All leagues",
+    "competition": "Competition",
     "title": "Stats",
     "rankings": "Rankings",
     "myTeam": "My team",
