@@ -3,18 +3,20 @@
  * per player id: `facesjs.generate` draws from `Math.random`, so it runs with a seeded RNG swapped
  * in for the duration of the (synchronous) call. The jersey uses the club colours.
  *
- * Imported lazily by `PlayerFace` so facesjs (~300 KB of SVG parts) only loads where a face shows.
+ * Server-only in practice: `GET /api/faces/:playerId.svg` (`src/backend/faces.ts`) renders it, so
+ * facesjs (~350 KB of SVG parts) never ships in a page bundle. The client only builds the URL
+ * (`faceUrl.ts`).
  */
 import { faceToSvgString, generate } from "facesjs";
 import { faceRng, pickFaceRace } from "@/Domain/faces/faceProfile";
 
 const DEFAULT_COLORS = ["#4b5563", "#e5e7eb", "#111827"];
 
-/** Same id + nationality + colours → byte-identical SVG. */
+/** Same id + nationality + colours → byte-identical SVG (full 400×600 facesjs portrait). */
 export function playerFaceSvg(
   playerId: string,
   nationality: string | undefined | null,
-  clubColors: readonly string[] | undefined,
+  clubColors: readonly (string | undefined)[] | undefined,
 ): string {
   const rng = faceRng(playerId);
   const race = pickFaceRace(nationality, rng);
@@ -39,4 +41,17 @@ export function playerFaceSvg(
   } finally {
     Math.random = original;
   }
+}
+
+/** Square crop of the 400×600 portrait (hair to jersey collar), ready for a round `<img>`. */
+export function croppedPlayerFaceSvg(
+  playerId: string,
+  nationality: string | undefined | null,
+  clubColors: readonly (string | undefined)[] | undefined,
+): string {
+  return playerFaceSvg(playerId, nationality, clubColors)
+    .replace(/viewBox="[^"]*"/, 'viewBox="-80 40 560 560"')
+    .replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="xMidYMin slice"')
+    .replace(/ width="[^"]*"/, ' width="560"')
+    .replace(/ height="[^"]*"/, ' height="560"');
 }

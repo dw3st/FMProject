@@ -29,6 +29,7 @@ import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { authRoutes } from "@/backend/auth/routes";
 import { reportRoutes } from "@/backend/reports";
+import { faceRoutes } from "@/backend/faces";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
@@ -67,6 +68,7 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
 export const apiRoutes = {
   ...authRoutes,
   ...reportRoutes,
+  ...faceRoutes,
   ...saveRoutes,
   ...advanceDayRoutes,
   ...advanceUntilRoutes,

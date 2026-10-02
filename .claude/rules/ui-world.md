@@ -59,8 +59,16 @@ com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` d
 
 ## Rostos dos jogadores
 
-`PlayerFace` (`src/GameInterface/Components/PlayerFace.tsx`) desenha um rosto `facesjs` (MIT),
-determinístico pelo id (`playerFaceSvg`: RNG semeado trocado no `Math.random` durante o `generate`),
-camisa com as cores do clube, aparência sorteada de faixas amplas por região da nacionalidade
-(`src/Domain/faces/faceProfile.ts`). Só na ficha do jogador (96px) e no cartão do painel (64px),
-nunca em tabelas. O `facesjs` é importado sob demanda; nada é salvo no save.
+`PlayerFace` (`src/GameInterface/Components/PlayerFace.tsx`) mostra um rosto `facesjs` (MIT),
+determinístico pelo id (`playerFaceSvg`, `src/Domain/faces/playerFaceSvg.ts`: RNG semeado trocado no
+`Math.random` durante o `generate`), camisa com as cores do clube, aparência sorteada de faixas amplas
+por região da nacionalidade (`src/Domain/faces/faceProfile.ts`). Só na ficha do jogador (96px) e no
+cartão do painel (64px), nunca em tabelas. Nada é salvo no save.
+
+**O `facesjs` nunca vai para o bundle da página.** O SVG é gerado no servidor:
+`GET /api/faces/:playerId.svg?v=&nat=&colors=` (`src/backend/faces.ts`, pública, cache em memória
+limitado, `Cache-Control: public, max-age=31536000, immutable`), e o `PlayerFace` é só um `<img>`
+(letra inicial até carregar ou se falhar). A URL vem de `faceUrl` (`src/Domain/faces/faceUrl.ts`, sem
+import do `facesjs`). Mudou a saída do rosto (versão do `facesjs`, recorte, mistura por região)? Suba
+`FACE_VERSION`, senão o navegador continua com o SVG antigo. O `import()` dinâmico anterior não era
+separado pelo bundler do `Bun.serve` em produção (+346 KB min / +110 KB gzip na ficha e no painel).
