@@ -58,6 +58,10 @@ describe("manager ranking at the rollover", () => {
     expect(league!.points).toBeGreaterThanOrEqual(20);
     expect(league!.points).toBeLessThanOrEqual(120);
     expect(me.points).toBe(me.titles.reduce((s, t) => s + t.points, 0));
+    // The country weight is cached once per country per season in the meta.
+    const w = (await saveService.getMeta(saveId))!.managerWeights?.England;
+    expect(w?.season).toBe(league!.season);
+    expect(league!.points).toBe(Math.round(100 * w!.weight));
 
     // Every Premier League manager got a season; promoted Championship clubs scored 20.
     for (const id of plIds) expect(after.find((m) => m.squadId === id)!.seasons).toBe(1);

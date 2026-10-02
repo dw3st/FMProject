@@ -773,6 +773,7 @@ export async function advanceOneDay(
     // Manager ranking (`.claude/rules/game/managers.md`): titles and seasons of the day, written once at the end.
     const managerTracker = createManagerTracker({
       service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids,
+      weights: meta.managerWeights,
     });
     const recordTitle = (squadId: string, title: string) => {
       const next = addPendingTitle(pendingTitles, squadId, title);
@@ -822,7 +823,8 @@ export async function advanceOneDay(
           recordTitle(winnerId, `cup:${cSlug}`);
           await managerTracker.credit({
             season: seasonLabel(cupMeta.year, cupMeta.start, cupMeta.end), kind: "cup", competition: cSlug,
-            squadId: winnerId, points: cupPoints(await managerTracker.weightOf(cupMeta.cup.country)),
+            squadId: winnerId,
+            points: cupPoints(await managerTracker.weightOf(cupMeta.cup.country, seasonLabel(cupMeta.year, cupMeta.start, cupMeta.end))),
           });
           const loserPrize = cupRunnerUpPrize(base);
           const paidToLoser = await awardClubPrize(loserId, loserPrize, `${label} · runner-up`, { competition: cSlug, stage: "runner_up" });
@@ -1348,6 +1350,12 @@ export async function advanceOneDay(
       // 2. Plan the moves.
       const plan = planCountryRollover(unit, standings, playerSquadId);
 
+      // Manager ranking: the country weight is taken now, before any league of the unit is reset
+      // (cached per country per season in meta.managerWeights, `.claude/rules/game/managers.md`).
+      const unitCountry = unit.country ?? (await managerTracker.countryOfLeague(unit.leagues[0]!));
+      const unitState = updatedActiveLeagues[stateIdx(unit.leagues[0]!)]!;
+      const unitWeight = await managerTracker.weightOf(unitCountry, seasonLabel(unitState.year, unitState.start, unitState.end));
+
       // 3. Archive + reset every league with the OLD membership. Reset squads are saved where
       //    they live now, before any move; moved clubs get their new tier's income here.
       const closedYear = new Map<string, number>();
@@ -1373,12 +1381,11 @@ export async function advanceOneDay(
           const championId = table.length > 0 && table[0]!.mp > 0 ? table[0]!.squadId : null;
           // Manager ranking: league title (tier × country weight), promotions out of this league, one more season.
           {
-            const country = unit.country ?? (await managerTracker.countryOfLeague(slug));
             const tier = unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1;
             if (championId) {
               await managerTracker.credit({
                 season, kind: "league", competition: slug, squadId: championId,
-                points: leaguePoints(tier, await managerTracker.weightOf(country)),
+                points: leaguePoints(tier, unitWeight),
               });
             }
             for (const m of plan.moves) {
@@ -1855,6 +1862,7 @@ export async function advanceOneDay(
     const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
+    if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();

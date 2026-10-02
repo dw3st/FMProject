@@ -24,3 +24,9 @@ export interface ManagerRecord {
   lastSeason?: string;
   titles: ManagerTitle[];
 }
+
+/** Cached country weight (`meta.managerWeights[country]`): computed once per country per season. */
+export interface CountryWeight {
+  season: string;
+  weight: number;
+}
