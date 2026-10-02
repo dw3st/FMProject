@@ -536,6 +536,13 @@ function InjuryBody({
   message: Extract<InboxMessage, { category: "injury" }>;
 }) {
   const { t } = useTranslation();
+  if (message.kind === "suspended") {
+    return (
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.injury.suspended", { player: message.playerName, count: message.matches ?? 1 })}
+      </p>
+    );
+  }
   if (message.kind === "returned") {
     return (
       <p className="text-sm text-foreground m-0">

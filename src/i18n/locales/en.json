@@ -1112,7 +1112,9 @@
         "light": "light",
         "medium": "medium",
         "severe": "severe"
-      }
+      },
+      "suspended_one": "{{player}} is suspended for the next match",
+      "suspended_other": "{{player}} is suspended for the next {{count}} matches"
     },
     "contract": {
       "expiring": "Contracts ending this season: {{players}}",

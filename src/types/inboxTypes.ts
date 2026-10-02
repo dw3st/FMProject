@@ -128,16 +128,19 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
 /**
  * Injury news for the human club (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1):
  * a player got injured (in a match or heavy training), or a previously injured player returned.
+ * `suspended` (Etapa 12, `.claude/rules/game/discipline.md`): a player was banned by his cards.
  */
 export interface InjuryInboxMessage extends InboxMessageBase {
   category:   "injury";
-  kind:       "injured" | "returned";
+  kind:       "injured" | "returned" | "suspended";
   playerId:   string;
   playerName: string;
   /** Injured only. */
   severity?:   "light" | "medium" | "severe";
   /** Injured only: expected return date (ISO). */
   returnDate?: string;
+  /** Suspended only: matches still to serve. */
+  matches?: number;
 }
 
 /**
