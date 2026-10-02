@@ -80,7 +80,7 @@ const SIM_DT = 0.2;
 const MAX_TICKS = 2_000_000;
 
 /** Default 4-3-3 formation used for both teams when none is specified. */
-const DEFAULT_FORMATION: Formation = {
+export const DEFAULT_FORMATION: Formation = {
   id: '4-3-3',
   attacking: [
     { role: 'GK',  x: 10, y: 37 },
