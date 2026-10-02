@@ -1,7 +1,7 @@
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece } from '@/GameEngine/types';
 import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
-import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from './DecisionTree';
-import type { PlayerDecision, DecisionPath } from './DecisionTree';
+import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
+import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { resolveBasePosition } from '@/GameEngine/FormationSlots';
@@ -42,7 +42,7 @@ import {
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
-import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from './PositionalAwareness';
+import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
 import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine/Domain/Fouls';
 import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
