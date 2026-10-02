@@ -201,6 +201,10 @@ export interface WithoutBallStats {
   gkDiving: number;
   /** 0..1 normalised physical strength — how much pressure this defender applies when close. */
   strength: number;
+  /** 0..1 normalised heading (roster `heading` / 10) — aerial duels and headers (`aerial.md`). */
+  heading: number;
+  /** 0..1 normalised jump (roster `jump` / 10) — aerial duels. GK diving reads the same attribute. */
+  jump: number;
 }
 
 export interface PlayerStats {
@@ -385,11 +389,20 @@ export interface GamePlayer {
 
 /**
  * Pass kind discriminator.
- *   'regular' — pass to a teammate's feet; on landing the named receiver collects.
- *   'through' — pass into space (a cell). On landing, possession is contested
- *               (Phase 3: nearest player picks up; Phase 5: sprint race + duel).
+ *   'regular'   — pass to a teammate's feet; on landing the named receiver collects.
+ *   'through'   — pass into space (a cell). On landing, possession is contested
+ *                 (Phase 3: nearest player picks up; Phase 5: sprint race + duel).
+ *   'cross'     — high ball into the box (`aerial.md`). Not interceptable in flight; contested in
+ *                 the air at the landing point (aerial duel / keeper claim / header).
+ *   'long_ball' — high ball over the line to a forward or the space behind; landing resolved
+ *                 like a cross (aerial duel if contested, else first touch / loose ball).
  */
-export type PassKind = 'regular' | 'through';
+export type PassKind = 'regular' | 'through' | 'cross' | 'long_ball';
+
+/** True for the high-ball kinds resolved in the air at the landing point. */
+export function isAerialKind(kind: PassKind): kind is 'cross' | 'long_ball' {
+  return kind === 'cross' || kind === 'long_ball';
+}
 
 export interface PassState {
   fromId: number;
@@ -423,7 +436,18 @@ export interface PassState {
    * arrives first wins the loose ball (Phase 5). Null for regular passes.
    */
   intendedRunnerId: number | null;
+  /**
+   * High balls only (`cross` / `long_ball`): attackers in an offside position at the kick. A player
+   * in this list who wins the ball at the landing point is flagged offside.
+   */
+  aerialOffsideIds?: number[];
 }
+
+/**
+ * What put the ball loose: a through ball (default — through-ball stats), a high ball nobody
+ * reached (`cross` / `long_ball`) or a defensive header / keeper punch / block (`clearance`).
+ */
+export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
 
 /**
  * Loose-ball state — ball drifting in space after a through ball lands. The ball
@@ -453,6 +477,8 @@ export interface LooseBallState {
   intendedRunnerId: number | null;
   /** Snapshot of intended runner's offside status at kick time. Enforced if the intended runner picks up. */
   receiverOffside: boolean;
+  /** Origin of the loose ball — absent = 'through'. Only through balls feed the through-ball stats. */
+  source?: LooseBallSource;
 }
 
 export interface ShotState {
@@ -467,6 +493,8 @@ export interface ShotState {
   t: number;
   /** Base shot quality (expected goals) — distance, angle, pressure only. */
   xg: number;
+  /** A header (`aerial.md`): heading replaces finishing in the resolution. */
+  header?: boolean;
 }
 
 export interface GameState {
