@@ -119,14 +119,21 @@ describe("cross targets", () => {
     expect(rHigh).toBeGreaterThan(rLow);
   });
 
-  test("a target the keeper can claim (small box) is penalised", () => {
+  test("a target the keeper can reach is penalised", () => {
     let s = baseState();
     const lw = find(s, "A", "LW");
     const st = find(s, "A", "ST");
     s = clearTeam(clearTeam(s, "A", [lw.id, st.id]), "B");
     s = place(place(s, lw.id, PITCH_LENGTH - 15, 6), st.id, PITCH_LENGTH - A.NEAR_POST_DEPTH, GOAL_Y_MIN);
-    const near = evaluateCrossTargets(s.players.find(p => p.id === lw.id)!, s.players).find(t => t.kind === "near_post")!;
+    const gk = find(s, "B", "GK");
+    const holder = () => s.players.find(p => p.id === lw.id)!;
+    s = place(s, gk.id, PITCH_LENGTH - 1, 37);
+    const away = evaluateCrossTargets(holder(), s.players).find(t => t.kind === "near_post")!;
+    s = place(s, gk.id, PITCH_LENGTH - 5, GOAL_Y_MIN + 1);
+    const near = evaluateCrossTargets(holder(), s.players).find(t => t.kind === "near_post")!;
+    expect(away.gkClaim).toBe(false);
     expect(near.gkClaim).toBe(true);
+    expect(near.raw).toBeCloseTo(Math.max(0, away.raw - A.CROSS_GK_PENALTY), 6);
   });
 });
 
@@ -169,6 +176,11 @@ describe("evaluateLongBall", () => {
     const { s, cb } = setup();
     expect(evaluateLongBall(cb, s.players, 0)).toBeNull();
     expect(evaluateLongBall(cb, s.players, 1.5)!.raw).toBeGreaterThan(evaluateLongBall(cb, s.players, 1)!.raw);
+  });
+  test("a striker beyond the offside line is not a target", () => {
+    const { s, cb, st } = setup();
+    expect(evaluateLongBall(cb, s.players, 1, st.x - 1)).toBeNull();
+    expect(evaluateLongBall(cb, s.players, 1, st.x + 1)!.targetId).toBe(st.id);
   });
   test("a holder deep in the opponent half does not play long balls", () => {
     const { s, cb } = setup();

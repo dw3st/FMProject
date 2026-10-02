@@ -145,6 +145,8 @@ const DECISION_BADGE: Record<PlayerDecision["type"], { label: string; cls: strin
   shoot:                { label: "SHOOT",   cls: "text-red-400 border-red-400/50" },
   pass:                 { label: "PASS",    cls: "text-blue-400 border-blue-400/50" },
   through_ball:         { label: "TB",      cls: "text-purple-400 border-purple-400/50" },
+  cross:                { label: "CROSS",   cls: "text-teal-300 border-teal-300/50" },
+  long_ball:            { label: "LONG",    cls: "text-sky-400 border-sky-400/50" },
   dribble:              { label: "DRIBBLE", cls: "text-fuchsia-400 border-fuchsia-400/50" },
   tackle:               { label: "TACKLE",  cls: "text-orange-400 border-orange-400/50" },
   press:                { label: "PRESS",   cls: "text-yellow-400 border-yellow-400/50" },
