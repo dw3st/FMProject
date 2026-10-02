@@ -453,3 +453,25 @@ describe("buildMatchEventFromRecording — fullMinutesForInjured (quickSim)", ()
     expect(updatedHome.players[0]!.seasonLog!.load).toBe(90);
   });
 });
+
+// Etapa 12 — a sent-off player leaves without a substitute: his clock stops at the red card.
+describe("buildMatchEventFromRecording — cards", () => {
+  test("a red card stops the player's clock and the cards reach the match event", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      cards: [
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "yellow", secondYellow: false, matchMinute: 12 },
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "yellow", secondYellow: false, matchMinute: 35 },
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "red", secondYellow: true, matchMinute: 35 },
+      ],
+    });
+    const { event, updatedHome, updatedAway } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(updatedHome.players[0]!.seasonLog!.load).toBe(35);
+    expect(updatedAway.players[0]!.seasonLog!.load).toBe(90);
+    expect(event.cards?.map((c) => c.card)).toEqual(["yellow", "yellow", "red"]);
+  });
+});
