@@ -4,7 +4,7 @@ import type { Squad } from "@/types/playerTypes";
 import { comparePositions } from "@/types/positionOrder";
 import { toDisplayPlayer, capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
-import { getPositionColor, getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
@@ -119,8 +119,8 @@ export function SquadTable({
               selectedId === player.id ? "bg-primary/10 text-primary" : "hover:bg-foreground/5"
             }`}
           >
-            <div className={`px-3 py-2.5 font-bold text-sm ${player.natural ? getDetailedPositionColor(player.natural) : getPositionColor(player.pos)} w-24 min-w-[4.5rem]`} title={player.positions.join(", ")}>
-              {player.natural ? t(`roles.detailedAbbr.${player.natural}` as never) : MAIN_ROLE_ABBR[getMainRole(player.pos)]}
+            <div className={`px-3 py-2.5 font-bold text-sm ${positionLabelColor(player.natural, player.pos)} w-24 min-w-[4.5rem]`} title={player.positions.join(", ")}>
+              {positionLabel(t, player.natural, player.pos)}
             </div>
             <div className="px-3 py-2 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
               <span className="truncate">{player.name}</span>

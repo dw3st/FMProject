@@ -32,8 +32,8 @@ import {
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import { getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
-import { aptitudeFor, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
+import { getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 
 /** Aptitudes that deserve a warning on the formation screen. */
 const isPoorFit = (apt: Aptitude) => apt === "training" || apt === "unsuitable";
@@ -73,13 +73,6 @@ function getEnergyColor(energy: number) {
   if (energy >= 50) return "bg-chart-4";
   return "bg-destructive";
 }
-
-const ROLE_BADGE_COLORS: Record<string, string> = {
-  GK:         "text-chart-4",
-  Defender:   "text-chart-3",
-  Midfielder: "text-primary",
-  Forward:    "text-destructive",
-};
 
 export function FormationScreen() {
   const { t } = useTranslation();
@@ -921,14 +914,10 @@ function SquadPlayerRow({
   const scorePos = ratingRole ?? slotLabel ?? player.positions[0] ?? "CM";
   const avg = slotValue(player, scorePos);
   const energy = player.seasonLog?.fitness ?? 100;
-  const badgePos =
-    showSlot && slotLabel
-      ? slotLabel
-      : ratingRole != null && !slotLabel
-        ? (player.positions[0] ?? "CM")
-        : (slotLabel ?? player.positions[0] ?? "CM");
-  const mainRole = getMainRole(badgePos);
-  const textColor = ROLE_BADGE_COLORS[mainRole] ?? "text-muted-foreground";
+  // Slot rows show the slot's detailed role; bench rows show the player's natural one (#40).
+  const badgeRole = showSlot && slotLabel ? slotLabel : preferredRole(player);
+  const badgeLabel = positionLabel(t, badgeRole, badgeRole);
+  const textColor = positionLabelColor(badgeRole, badgeRole);
 
   return (
     <div
@@ -939,13 +928,13 @@ function SquadPlayerRow({
       {(showSlot && slotLabel) ? (
         <div className="flex items-center justify-center shrink-0 touch-none" data-drag-handle>
           <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
-            {MAIN_ROLE_ABBR[mainRole]}
+            {badgeLabel}
           </span>
         </div>
       ) : (
         <div className="shrink-0 touch-none" data-drag-handle>
           <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
-            {MAIN_ROLE_ABBR[mainRole]}
+            {badgeLabel}
           </span>
         </div>
       )}
@@ -1159,7 +1148,7 @@ function FormationPitch({
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-bold text-foreground text-sm">{player.name}</span>
                         <span className={`text-sm px-2 py-0.5 rounded font-semibold ${oop ? "bg-chart-4/20 text-chart-4" : "bg-primary/20 text-primary"}`}>
-                          {player.positions[0]}
+                          {positionLabel(t, preferredRole(player), player.positions[0] ?? "CM")}
                         </span>
                       </div>
                       {oop && (
@@ -1167,7 +1156,7 @@ function FormationPitch({
                           <Icon name="alert" className="w-3 h-3" />
                           <span>
                             {t("formations.outOfPositionPrimary", {
-                              position: player.positions[0] ?? "—",
+                              position: positionLabel(t, preferredRole(player), player.positions[0] ?? "CM"),
                               role: MAIN_ROLE_ABBR[getMainRole(player.positions[0] ?? "CM")],
                             })}
                           </span>

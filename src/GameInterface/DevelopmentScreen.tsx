@@ -17,7 +17,8 @@ import type { AgePhase, DevStatus } from "@/GameInterface/Development/PlayerProf
 import type { DevAttribute, AttrFocus } from "@/GameInterface/Development/AttributesPanel";
 import type { PlayerOption } from "@/GameInterface/Development/PlayerSelector";
 import type { TrendDirection } from "@/GameInterface/Development/RecentTrend";
-import { roleForDevelopmentWeights } from "@/GameInterface/positionHelpers";
+import { positionLabel, roleForDevelopmentWeights } from "@/GameInterface/positionHelpers";
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 
 function getAgePhase(age: number): AgePhase {
   if (age <= 23) return "developing";
@@ -170,7 +171,7 @@ export function DevelopmentScreen() {
     return squad.players.map((p) => ({
       id:       p.id,
       name:     p.name,
-      position: p.positions[0] ?? "—",
+      position: p.stats ? preferredRole(p) : (p.positions[0] ?? "—"),
       agePhase: getAgePhase(p.age),
     }));
   }, [squad]);
@@ -216,7 +217,7 @@ export function DevelopmentScreen() {
                     player={{
                       name: player.name,
                       age: player.age,
-                      role: player.positions[0] || "Player",
+                      role: player.stats ? positionLabel(t, preferredRole(player), player.positions[0] ?? "CM") : (player.positions[0] || "Player"),
                       agePhase,
                       developmentStatus: devStatus,
                     }}

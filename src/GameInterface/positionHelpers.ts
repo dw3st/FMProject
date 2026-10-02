@@ -107,3 +107,16 @@ export function getPositionGroup(pos: string): string {
 
 /** Ordered section keys for squad / scout group rendering. */
 export const POSITION_GROUP_ORDER = ["Goalkeepers", "Defenders", "Midfielders", "Forwards"] as const;
+
+/**
+ * Display label of a player's position: the natural detailed role (`roles.detailedAbbr.*`) when
+ * known, otherwise the main-role abbreviation of `pos`. Single entry point for roster lists (#40).
+ */
+export function positionLabel(t: (key: string) => string, natural: string | undefined, pos: string): string {
+  return natural && DETAILED_COLOR[natural] ? t(`roles.detailedAbbr.${natural}`) : MAIN_ROLE_ABBR[getMainRole(pos)];
+}
+
+/** Colour class matching `positionLabel`. */
+export function positionLabelColor(natural: string | undefined, pos: string): string {
+  return natural && DETAILED_COLOR[natural] ? getDetailedPositionColor(natural) : getPositionColor(pos);
+}
