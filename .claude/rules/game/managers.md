@@ -35,6 +35,8 @@ interface ManagerRecord {
 Arredondados para inteiro. **Peso do país** (`countryWeight`) = nível médio (`clubLevel`, o `teamLevel` do XI
 4-3-3 automático) dos clubes da liga de nível 1 do país (`topLeagueOf`) ÷ média dos níveis das 5 grandes
 (Inglaterra, Espanha, Alemanha, Itália, França), limitado a [0,2; 1,2]. País sem liga de nível 1 = 0,2.
+Calculado **uma vez por país por temporada** e guardado em `meta.managerWeights[país] = { season, weight }`
+(rótulo `seasonLabel` da liga na virada, da copa na final); as demais pontuações da mesma temporada usam o cache.
 
 Ordenação (`rankManagers`): pontos desc, depois número de títulos desc, depois nome, depois id.
 `rankingPage` filtra pelo escopo, numera dentro dele e acha a posição do técnico do jogador.
@@ -48,10 +50,12 @@ jogador. Start kits (`applyRandomStartKit`) não tocam o arquivo.
 
 ## Onde pontua (`src/backend/advanceDay.ts` + `src/backend/managerWorld.ts`)
 
-`createManagerTracker` (por dia): lê o arquivo na primeira vez, aplica títulos/temporadas em memória, memoiza o
-peso de cada país no dia e grava uma vez (`flush`, antes do patch da meta) no `BufferingSaveDAL` do dia.
+`createManagerTracker` (por dia): lê o arquivo na primeira vez, aplica títulos/temporadas em memória, lê/grava o
+cache de pesos (`meta.managerWeights`, no patch da meta) e grava o arquivo uma vez (`flush`, antes do patch da meta)
+no `BufferingSaveDAL` do dia.
 
-- **Virada do país** (passo 3, junto das linhas de histórico): o 1º da tabela (com jogos) pontua a liga
+- **Virada do país:** o peso do país é tomado logo depois do plano (passo 2), **antes** de
+  `runSeasonTransition` zerar as ligas da unidade. Depois, no passo 3 (junto das linhas de histórico), o 1º da tabela (com jogos) pontua a liga
   (nível da pirâmide, ou 1 sem pirâmide); cada clube que sobe de nível (`plan.tierChanges`, `to < from`) pontua o
   acesso com `competition` = liga de onde saiu; todo clube da liga ganha `seasons += 1`.
 - **Copa:** no dia em que a final é decidida (bloco de prêmios de copa), temporada = `seasonLabel` da meta da copa.
@@ -84,11 +88,16 @@ imprime o top 5 e a posição do jogador.
 
 ## Limitações
 
-- **Repetição de um dia que falhou.** Títulos repetidos (mesma temporada, tipo, competição e clube) e temporadas
-  repetidas (`lastSeason`) são ignorados, então um dia refeito depois de um `flush` parcial não pontua duas vezes.
-  Um dia refeito em que o arquivo não chegou a ser gravado simplesmente pontua de novo do zero (correto).
-- **Peso calculado no momento.** O peso usa o nível dos elencos no dia do título (virada ou final), não uma
-  média da temporada; um país muda de peso conforme os elencos mudam.
+- **Repetição de um dia que falhou (fase 1 do `flush` não atômica).** `managers.json` é mais um recurso da fase 1
+  do `BufferingSaveDAL`, como o extrato (`.claude/rules/game/finances.md` → "Extrato"). Títulos e temporadas
+  repetidos (mesma temporada, tipo, competição e clube; `lastSeason`) são ignorados, então um dia refeito depois
+  de o arquivo ter sido gravado não pontua duas vezes. O inverso **perde pontos**: se a fase 1 gravou a meta nova
+  da liga (ano novo) mas não `managers.json`, o dia refeito vê a liga como já virada (resync, sem virada) e o
+  título da liga, os acessos e as temporadas daquela virada se perdem; o mesmo vale para uma final de copa cuja
+  rodada e `championId` foram gravados sem `managers.json` (o dia refeito não decide a final de novo). Não
+  corrigido; só acontece com falha de E/S no meio do `flush`.
+- **Peso de uma temporada.** O peso é o nível dos elencos na primeira pontuação do país naquela temporada (final
+  da copa ou virada), não uma média da temporada; na temporada seguinte é recalculado.
 - **Título continental decidido depois da virada** entra com a temporada da competição (`seasonLabel` da meta
   continental), não com a da liga do clube.
 - **Técnicos fixos.** O técnico da IA nunca troca de clube nem se aposenta; quando houver demissões/convites, o
