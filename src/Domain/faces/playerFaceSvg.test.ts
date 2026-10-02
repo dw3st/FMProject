@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { playerFaceSvg } from "@/GameInterface/Components/playerFaceSvg";
+import { croppedPlayerFaceSvg, playerFaceSvg } from "@/Domain/faces/playerFaceSvg";
+import { FACE_VERSION, faceUrl } from "@/Domain/faces/faceUrl";
 import { faceRegionOf, faceRng, pickFaceRace } from "@/Domain/faces/faceProfile";
 
 describe("player faces", () => {
@@ -32,5 +33,25 @@ describe("player faces", () => {
     const rng = faceRng("x");
     const races = new Set(Array.from({ length: 400 }, () => pickFaceRace("England", rng)));
     expect(races.size).toBeGreaterThan(2); // broad, never a single fixed look
+  });
+});
+
+describe("cropped face + url", () => {
+  test("crop is a square, sized viewBox over the same face", () => {
+    const svg = croppedPlayerFaceSvg("player_42", "Brazil", ["#DA291C", "#FFE500"]);
+    expect(svg).toContain('viewBox="-80 40 560 560"');
+    expect(svg).toContain('width="560" height="560"');
+    expect(svg).toContain('preserveAspectRatio="xMidYMin slice"');
+    expect(svg).toBe(croppedPlayerFaceSvg("player_42", "Brazil", ["#DA291C", "#FFE500"]));
+  });
+
+  test("faceUrl carries version, nationality and colours without '#'", () => {
+    const url = faceUrl("player_42", "Côte d'Ivoire", ["#DA291C", "#FFE500"]);
+    expect(url.startsWith("/api/faces/player_42.svg?")).toBe(true);
+    const q = new URL(url, "http://x").searchParams;
+    expect(q.get("v")).toBe(String(FACE_VERSION));
+    expect(q.get("nat")).toBe("Côte d'Ivoire");
+    expect(q.get("colors")).toBe("DA291C,FFE500");
+    expect(faceUrl("p", null, undefined)).toBe(`/api/faces/p.svg?v=${FACE_VERSION}`);
   });
 });
