@@ -69,13 +69,10 @@ describe("simulateMatch knockout", () => {
         knockout: true,
         aggregate: { A: 3, B: 0 },
       });
-      const diff = r.score.B - r.score.A;
-      if (diff < 3) {
-        expect(r.decider).toBeNull();
-      } else {
-        expect(r.decider).not.toBeNull();
-        expect(diff).toBe(3);
-      }
+      // Extra time happens only when the 90' score levels the aggregate (B ahead by exactly 3).
+      const et = r.decider?.extraTime ?? { A: 0, B: 0 };
+      const regulationDiff = r.score.B - et.B - (r.score.A - et.A);
+      expect(r.decider !== null).toBe(regulationDiff === 3);
     }
   }, 120_000);
 });

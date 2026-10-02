@@ -136,8 +136,8 @@ export const GK_DISTANCE_SCALE  = 20;            // yards — far vs close GK th
 // data clusters finishing low (even elite forwards ~6-9, most players 0-3), so a
 // wide [0.7,1.3] swing crushed low-rated teams' conversion. A poor finisher still
 // buries a clear chance; an elite one gains ~30% over them, not 80%.
-export const SHOOTER_EFFECT_MIN = 0.85;
-export const SHOOTER_EFFECT_MAX = 1.2;
+export const SHOOTER_EFFECT_MIN = 0.96;
+export const SHOOTER_EFFECT_MAX = 1.36;
 export const GK_EFFECT_MIN      = 0.55;
 export const GK_EFFECT_MAX      = 0.9;
 
