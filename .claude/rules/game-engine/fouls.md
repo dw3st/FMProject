@@ -2,7 +2,7 @@
 
 Spec: `docs/superpowers/specs/2026-10-02-fouls-cards-design.md` (§1, §2, §3 parte em campo, §4, §6).
 Etapa 12, parte 1 (motor). A parte fora de campo (suspensão, `seasonLog.yellowCards`, seletores,
-inbox, quickSim) e a tela ao vivo (§5) são a parte 2.
+inbox, quickSim) e a tela ao vivo (§5) são a parte 2: `.claude/rules/game/discipline.md`.
 
 ## Arquivos
 
