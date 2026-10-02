@@ -24,6 +24,12 @@ describe("buildCompetitionRankings", () => {
     expect(r.assists[0]?.playerId).toBe("a2");
   });
 
+  test("world ranking (all leagues) combines every club with league-only numbers", () => {
+    const r = buildCompetitionRankings(squads, { kind: "league", clubIds: new Set(["a", "b", "out"]) });
+    expect(r.scorers.map((x) => [x.playerId, x.value])).toEqual([["o1", 30], ["a1", 5], ["a2", 1]]);
+    expect(r.ratings[0]?.playerId).toBe("o1");
+  });
+
   test("ratings need 5 league games", () => {
     const r = buildCompetitionRankings(squads, { kind: "league", clubIds: new Set(["a", "b"]) });
     expect(r.ratings.map((x) => x.playerId)).toEqual(["a1", "b1"]);

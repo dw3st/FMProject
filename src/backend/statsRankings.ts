@@ -3,7 +3,7 @@ import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { getLeagueData } from "@/backend/advanceDay";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
-import { buildCompetitionRankings, type CompetitionKind, type CompetitionRankings } from "@/Domain/stats/rankings";
+import { ALL_COMPETITIONS, buildCompetitionRankings, type CompetitionKind, type CompetitionRankings } from "@/Domain/stats/rankings";
 
 interface Entry { key: string; rankings: CompetitionRankings }
 
@@ -11,7 +11,7 @@ interface Entry { key: string; rankings: CompetitionRankings }
 const cache = new Map<string, Entry>();
 const MAX_ENTRIES = 24;
 
-/** Rankings for one competition slug (league, `cup_<country>` or continental); null for an unknown save/competition. */
+/** Rankings for one competition slug (`all`, league, `cup_<country>` or continental); null for an unknown save/competition. */
 export async function getCompetitionRankings(
   saveId: string,
   competition: string,
@@ -26,7 +26,12 @@ export async function getCompetitionRankings(
   const index = await saveService.getSquadIndex(saveId);
   let kind: CompetitionKind;
   let clubIds: Set<string>;
-  if (isContinentalSlug(competition)) {
+  if (competition === ALL_COMPETITIONS) {
+    // Every league of the world: league-only numbers (total - cup - continental), like a single league.
+    kind = "league";
+    clubIds = new Set(index.leagues().filter((l) => !isCupSlug(l) && !isContinentalSlug(l))
+      .flatMap((l) => index.inLeague(l).map((t) => t.squadId)));
+  } else if (isContinentalSlug(competition)) {
     const lm = await saveService.getLeagueMeta(saveId, competition);
     if (!lm?.continental) return "not_found";
     kind = "continental";
