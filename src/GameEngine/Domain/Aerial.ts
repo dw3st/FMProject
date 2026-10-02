@@ -27,7 +27,7 @@ export interface CrossTarget {
   defenders: number;
   /** Best proximity-weighted heading (0..1) of an attacker in the zone. */
   heading: number;
-  /** The defending goalkeeper can claim this target (small box). */
+  /** The defending goalkeeper can claim this target (small box, or within his reach). */
   gkClaim: boolean;
   /** Raw score before compression (0 = not viable). */
   raw: number;
@@ -125,6 +125,7 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
   const goalX = attackGoalX(holder);
   const passing = holder.runtimeStats.withBall.passingSkill;
   const R = A.TARGET_ZONE_RADIUS;
+  const RA = A.ATTACKER_REACH_RADIUS;
 
   const out: CrossTarget[] = crossTargetPoints(holder).map(t => {
     let att = 0;
@@ -134,8 +135,8 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
     let bestDist = Infinity;
     for (const p of attackers) {
       const d = Math.hypot(p.x - t.x, p.y - t.y);
-      if (d >= R) continue;
-      const w = 1 - d / R;
+      if (d >= RA) continue;
+      const w = 1 - d / RA;
       att += w;
       heading = Math.max(heading, headingOf(p) * w);
       if (d < bestDist) { bestDist = d; bestAttackerId = p.id; }
@@ -144,7 +145,9 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
       const d = Math.hypot(p.x - t.x, p.y - t.y);
       if (d < R) def += 1 - d / R;
     }
-    const gkClaim = gk !== null && isInSmallBox(t.x, t.y, goalX);
+    const gkClaim = gk !== null && (
+      isInSmallBox(t.x, t.y, goalX)
+      || Math.hypot(gk.x - t.x, gk.y - t.y) <= A.AERIAL_RADIUS + A.GK_EXTRA_REACH);
     const raw = att <= 0 ? 0 : Math.max(0,
       A.CROSS_BASE
       + (att - def * A.CROSS_DEFENDER_WEIGHT) * A.CROSS_NUMBERS_WEIGHT
@@ -160,9 +163,15 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
  * Best long ball for `holder`: a teammate at least LONG_BALL_MIN_PROGRESS ahead and
  * LONG_BALL_MIN_DIST..MAX_DIST away, the ball aimed LONG_BALL_LEAD yards in front of him.
  * `weight` is the team's build_up appetite (`TeamPassWeights.LONG_BALL_WEIGHT`); 0 disables it.
+ * Teammates beyond `offsideLine` (when given) are skipped.
  * Null when the holder is too far up the pitch or nobody qualifies.
  */
-export function evaluateLongBall(holder: GamePlayer, allPlayers: GamePlayer[], weight: number): LongBallTarget | null {
+export function evaluateLongBall(
+  holder: GamePlayer,
+  allPlayers: GamePlayer[],
+  weight: number,
+  offsideLine: number | null = null,
+): LongBallTarget | null {
   if (weight <= 0) return null;
   const ownGoalX = holder.attackDir === 1 ? 0 : PITCH_LENGTH;
   if (Math.abs(holder.x - ownGoalX) > A.LONG_BALL_MAX_HOLDER_DEPTH) return null;
@@ -173,6 +182,8 @@ export function evaluateLongBall(holder: GamePlayer, allPlayers: GamePlayer[], w
     if (mate.team !== holder.team || mate.id === holder.id || mate.role === 'GK') continue;
     const progress = (mate.x - holder.x) * holder.attackDir;
     if (progress < A.LONG_BALL_MIN_PROGRESS) continue;
+    // The passer reads the line: never aim at a teammate standing offside.
+    if (offsideLine !== null && (mate.x - offsideLine) * holder.attackDir > 0) continue;
     const x = clamp(mate.x + holder.attackDir * A.LONG_BALL_LEAD, 1, PITCH_LENGTH - 1);
     const y = clamp(mate.y, 1, PITCH_WIDTH - 1);
     const dist = Math.hypot(x - holder.x, y - holder.y);

@@ -23,7 +23,8 @@ export type DebugCategory =
   | 'throughBall'   // through-ball lifecycle (started, race, contested, won)
   | 'injury'        // in-match injuries (forced substitution)
   | 'foul'          // fouls, free kicks and penalties
-  | 'card';         // yellow / red cards and sendings-off
+  | 'card'          // yellow / red cards and sendings-off
+  | 'aerial';       // crosses, long balls, aerial duels, keeper claims, headers
 
 export interface DebugEntry {
   id:        number;

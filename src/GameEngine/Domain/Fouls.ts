@@ -9,8 +9,8 @@ import { FOUL_CONFIG as C } from '@/GameEngine/Configs/FoulConfig';
 import type { RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
 import { PITCH_LENGTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 
-/** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball. */
-export type FoulKind = 'tackle' | 'dribble' | 'duel';
+/** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
+export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
 export type CardColour = 'yellow' | 'red';
 
 export interface FoulContext {
@@ -35,7 +35,10 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 
 /** Probability that a resolved tackle / loose-ball duel is a foul. */
 export function foulChance(ctx: FoulContext): number {
-  const base     = ctx.kind === 'tackle' ? C.TACKLE_BASE : ctx.kind === 'dribble' ? C.DRIBBLE_BASE : C.DUEL_BASE;
+  const base     = ctx.kind === 'tackle' ? C.TACKLE_BASE
+    : ctx.kind === 'dribble' ? C.DRIBBLE_BASE
+    : ctx.kind === 'aerial' ? C.AERIAL_BASE
+    : C.DUEL_BASE;
   const angle    = C.ANGLE_MULT[ctx.angle];
   const aggr     = Math.max(0, 1 + C.AGGRESSION_WEIGHT * (ctx.aggression - C.AGGRESSION_REF));
   const skill    = Math.max(0, 1 + C.LOW_TACKLING_WEIGHT * (0.5 - ctx.tackling));

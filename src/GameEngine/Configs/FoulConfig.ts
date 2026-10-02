@@ -13,6 +13,8 @@ export const FOUL_CONFIG = {
   DRIBBLE_BASE: 0.55,
   /** Base foul chance for a contested loose-ball duel. */
   DUEL_BASE: 0.4,
+  /** Base foul chance for an aerial duel (`.claude/rules/game-engine/aerial.md`) — either player may be the offender. */
+  AERIAL_BASE: 0.06,
   /** Multiplier when the tackle itself won the ball — most fouls come from mistimed (failed) challenges. */
   TACKLE_WON_MULT: 0.15,
   /** Approach-angle multipliers (`classifyPosition` of the tackler relative to the holder). */

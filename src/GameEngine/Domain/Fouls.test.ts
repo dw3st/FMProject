@@ -30,6 +30,7 @@ describe('foulChance', () => {
   });
   test('duels use their own base and defenders hold back in their own box', () => {
     expect(foulChance({ ...base, kind: 'duel' })).toBeCloseTo(C.DUEL_BASE, 6);
+    expect(foulChance({ ...base, kind: 'aerial' })).toBeCloseTo(C.AERIAL_BASE, 6);
     expect(foulChance({ ...base, inOwnBox: true })).toBeCloseTo(C.TACKLE_BASE * C.IN_BOX_MULT, 6);
   });
   test('always a probability', () => {

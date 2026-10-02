@@ -27,13 +27,16 @@ export const AERIAL_CONFIG = {
   CROSS_BYLINE_DIST: 12,
 
   // ── Cross targets (yards from the goal line / goal mouth) ──────────────────
-  NEAR_POST_DEPTH: 6,
+  /** Just outside the small box, so the near-post ball is not an automatic keeper claim. */
+  NEAR_POST_DEPTH: 7.5,
   PENALTY_SPOT_DEPTH: 12,
   FAR_POST_DEPTH: 7,
   /** Far-post target sits this far outside the far post (yards). */
   FAR_POST_OUTSIDE: 2,
-  /** Attackers / defenders within this radius of a target count in its zone (yards). */
+  /** Defenders within this radius of a target count in its zone (yards). */
   TARGET_ZONE_RADIUS: 8,
+  /** Attackers within this radius can attack the target during the flight (they run onto it). */
+  ATTACKER_REACH_RADIUS: 14,
 
   // ── Cross scoring ──────────────────────────────────────────────────────────
   /** Raw base of any viable target (at least one attacker in the zone). */
@@ -46,7 +49,7 @@ export const AERIAL_CONFIG = {
   CROSS_PASS_WEIGHT: 0.15,
   /** Best heading of an attacker in the zone (0..1, proximity-weighted). */
   CROSS_HEADING_WEIGHT: 0.30,
-  /** Penalty when the defending goalkeeper can claim the target (small box). */
+  /** Penalty when the defending goalkeeper can claim the target (small box, or he is within reach). */
   CROSS_GK_PENALTY: 0.20,
   /** compress() calibration — a raw cross this good scores 0.632. */
   CROSS_STRONG_RAW: 1.0,

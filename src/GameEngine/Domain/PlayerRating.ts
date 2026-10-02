@@ -40,6 +40,7 @@ gameBus.on('tackle',        e => adjust(e.player,   e.success ? RATING_WEIGHTS.T
 gameBus.on('interception',  e => { if (e.success) adjust(e.player, RATING_WEIGHTS.INTERCEPTION); });
 gameBus.on('card',          e => adjust(e.playerId, e.card === 'yellow' ? RATING_WEIGHTS.YELLOW_CARD : RATING_WEIGHTS.RED_CARD));
 gameBus.on('penaltyAwarded', e => adjust(e.offenderId, RATING_WEIGHTS.PENALTY_CONCEDED));
+gameBus.on('aerialDuel',    e => adjust(e.winnerId, RATING_WEIGHTS.AERIAL_DUEL_WON));
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
