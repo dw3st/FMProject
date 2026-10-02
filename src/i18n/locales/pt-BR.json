@@ -805,6 +805,35 @@
       "light": "leve",
       "medium": "média",
       "severe": "grave"
+    },
+    "summary": {
+      "title": "Resumo",
+      "possession": "Posse",
+      "shots": "Chutes",
+      "passes": "Passes",
+      "fouls": "Faltas",
+      "cards": "Cartões (A/V)",
+      "offsides": "Impedimentos",
+      "events": "Lances",
+      "noEvents": "Nada ainda.",
+      "kind": {
+        "goal": "Gol — {{player}}",
+        "penaltyGoal": "Gol de pênalti — {{player}}",
+        "penaltyMissed": "Pênalti perdido — {{player}}",
+        "yellow": "Cartão amarelo — {{player}}",
+        "red": "Cartão vermelho — {{player}}",
+        "offside": "Impedimento — {{player}}",
+        "sub": "Entra {{playerIn}}, sai {{player}}",
+        "injury": "Lesão — {{player}}"
+      }
+    },
+    "notice": {
+      "offside": "Impedimento: {{player}} ({{team}})",
+      "freeKick": "Falta perigosa — tiro livre para {{team}}",
+      "yellow": "Cartão amarelo: {{player}} ({{team}})",
+      "red": "Cartão vermelho! {{player}} ({{team}}) expulso",
+      "secondYellow": "Segundo amarelo: {{player}} ({{team}}) expulso",
+      "penalty": "Pênalti para {{team}}!"
     }
   },
   "broadcast": {
@@ -1545,7 +1574,13 @@
     "weather": "Tempo",
     "date": "Data",
     "officials": "Árbitros",
-    "back": "Voltar ao painel"
+    "back": "Voltar ao painel",
+    "yellowCards": "Cartões amarelos",
+    "redCards": "Cartões vermelhos",
+    "cards": "Cartões",
+    "yellowCard": "Cartão amarelo",
+    "redCard": "Cartão vermelho",
+    "secondYellow": "segundo amarelo"
   },
   "substitutionPanel": {
     "title": "Substituições",

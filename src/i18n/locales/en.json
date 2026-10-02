@@ -805,6 +805,35 @@
       "light": "light",
       "medium": "medium",
       "severe": "severe"
+    },
+    "summary": {
+      "title": "Summary",
+      "possession": "Possession",
+      "shots": "Shots",
+      "passes": "Passes",
+      "fouls": "Fouls",
+      "cards": "Cards (Y/R)",
+      "offsides": "Offsides",
+      "events": "Events",
+      "noEvents": "Nothing yet.",
+      "kind": {
+        "goal": "Goal — {{player}}",
+        "penaltyGoal": "Penalty goal — {{player}}",
+        "penaltyMissed": "Penalty missed — {{player}}",
+        "yellow": "Yellow card — {{player}}",
+        "red": "Red card — {{player}}",
+        "offside": "Offside — {{player}}",
+        "sub": "{{playerIn}} on for {{player}}",
+        "injury": "Injury — {{player}}"
+      }
+    },
+    "notice": {
+      "offside": "Offside: {{player}} ({{team}})",
+      "freeKick": "Foul near the box — free kick to {{team}}",
+      "yellow": "Yellow card: {{player}} ({{team}})",
+      "red": "Red card! {{player}} ({{team}}) is sent off",
+      "secondYellow": "Second yellow: {{player}} ({{team}}) is sent off",
+      "penalty": "Penalty to {{team}}!"
     }
   },
   "broadcast": {
@@ -1545,7 +1574,13 @@
     "weather": "Weather",
     "date": "Date",
     "officials": "Officials",
-    "back": "Back to dashboard"
+    "back": "Back to dashboard",
+    "yellowCards": "Yellow cards",
+    "redCards": "Red cards",
+    "cards": "Cards",
+    "yellowCard": "Yellow card",
+    "redCard": "Red card",
+    "secondYellow": "second yellow"
   },
   "substitutionPanel": {
     "title": "Substitutions",
