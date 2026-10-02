@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.7",
+    date: "2026-10-02",
+    items: [
+      { pt: "Faltas, cartões amarelos e vermelhos, tiros livres e pênaltis durante as partidas.", en: "Fouls, yellow and red cards, free kicks and penalties during matches." },
+      { pt: "Suspensões: vermelho tira o jogador do próximo jogo, e a cada 5 amarelos ele cumpre um jogo. Você recebe um aviso na caixa de entrada.", en: "Suspensions: a red card rules the player out of the next match, and every 5 yellow cards cost one match. You get a note in your inbox." },
+      { pt: "Jogadores suspensos aparecem marcados no elenco e na formação e não podem ser escalados.", en: "Suspended players are marked in the squad and formation screens and can't be picked." },
+      { pt: "Partida ao vivo: avisos de impedimento, falta perigosa, cartão e pênalti, e o novo painel \"Resumo\" com as estatísticas dos dois times e os lances com o minuto.", en: "Live match: notices for offside, dangerous fouls, cards and penalties, and the new \"Summary\" panel with both teams' stats and the key moments with the minute." },
+      { pt: "Cartões, faltas e impedimentos também na tela de resultado.", en: "Cards, fouls and offsides on the result screen too." },
+      { pt: "Estatísticas: ranking geral com todas as ligas e seletor agrupado por continente e país.", en: "Stats: an all-leagues ranking and a selector grouped by continent and country." },
+      { pt: "Testers podem enviar um report durante a partida.", en: "Testers can send a report during a match." },
+      { pt: "Formação: reservas ordenados por linha, posição e nota.", en: "Formation: substitutes sorted by line, position and rating." },
+    ],
+  },
+  {
     version: "2.6",
     date: "2026-10-02",
     items: [

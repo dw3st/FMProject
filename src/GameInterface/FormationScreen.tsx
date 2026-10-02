@@ -34,6 +34,7 @@ import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomF
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
+import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
 /** Aptitudes that deserve a warning on the formation screen. */
 const isPoorFit = (apt: Aptitude) => apt === "training" || apt === "unsuitable";
@@ -52,7 +53,7 @@ import {
   slotRoleFitRank,
   remapLineupToFormation,
 } from "@/Domain/lineupHelpers";
-import { isInjured } from "@/Domain/injury/injury";
+import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
 
 interface FormationOption {
@@ -315,7 +316,7 @@ export function FormationScreen() {
     const to = target.kind === "slot" ? { kind: "slot" as const, index: target.index } : { kind: "bench" as const, playerId: target.playerId };
     const next = dropOnLineup(lineup, from, to, (id) => {
       const p = squad?.players.find((x) => x.id === id);
-      return p ? isInjured(p, currentDate) : false;
+      return p ? isUnavailable(p, currentDate) : false;
     });
     if (next) {
       setLineup(next);
@@ -387,7 +388,7 @@ export function FormationScreen() {
   function handleAssignPlayer(player: RosterPlayer) {
     if (consumeClick()) return;
     if (selectedSlotIdx === null) return;
-    if (isInjured(player, currentDate)) return;
+    if (isUnavailable(player, currentDate)) return;
     const newLineup = [...lineup];
     while (newLineup.length <= selectedSlotIdx) newLineup.push("");
     // If player is already in lineup, swap positions
@@ -429,7 +430,7 @@ export function FormationScreen() {
   const usedInXi = new Set(
     startingBySlot.filter((p): p is RosterPlayer => p !== undefined).map((p) => p.id),
   );
-  const bench = squad ? squad.players.filter((p) => !usedInXi.has(p.id)) : [];
+  const bench = squad ? sortBenchByPosition(squad.players.filter((p) => !usedInXi.has(p.id))) : [];
 
   const targetSlotRole =
     selectedSlotIdx !== null && slots[selectedSlotIdx] ? slots[selectedSlotIdx]!.role : undefined;
@@ -683,7 +684,7 @@ export function FormationScreen() {
                           outOfPosition={slots[idx] ? isPoorFit(aptitudeFor(player, slots[idx]!.role)) : false}
                           aptitude={slots[idx] ? aptitudeFor(player, slots[idx]!.role) : undefined}
                           onClick={() => handleSlotClick(idx)}
-                          injured={isInjured(player, currentDate)}
+                          injured={isUnavailable(player, currentDate)}
                         />
                       ) : (
                         <button
@@ -711,7 +712,7 @@ export function FormationScreen() {
                       <p className="text-sm text-muted-foreground text-center py-4 m-0">{t("formations.noBenchPlayers")}</p>
                     ) : (
                       benchOrderedForSlot.map((player) => {
-                        const injured = isInjured(player, currentDate);
+                        const injured = isUnavailable(player, currentDate);
                         return (
                           <SquadPlayerRow
                             key={player.id}
@@ -969,6 +970,14 @@ function SquadPlayerRow({
                 title={t(`formations.injurySeverity.${player.injury.severity}` as never)}
               >
                 {t("formations.injuredUntil", { date: player.injury.returnDate })}
+              </span>
+            )}
+            {injured && isSuspended(player) && (
+              <span
+                className="text-sm font-black px-2 py-0.5 rounded bg-chart-4/20 text-chart-4 border border-chart-4/40 shrink-0"
+                title={t("formations.suspendedMatches", { count: player.suspension!.matches })}
+              >
+                {t("formations.suspended")}
               </span>
             )}
           </div>

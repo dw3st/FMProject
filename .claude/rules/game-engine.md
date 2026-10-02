@@ -109,3 +109,8 @@ Team B is x-mirrored. Each role has `bounds` clamping movement.
 |---|---|---|
 | `stateChanged` | `GameState` | Every tick |
 | `goalScored` | `{ team, score }` | Shot resolves as goal |
+| `foul` | `{ offenderId, fouledId, team, kind, x, y, inBox, minute }` | A tackle / dribble duel / loose-ball duel was a foul (`fouls.md`) |
+| `card` | `{ playerId, playerName, team, card, secondYellow, minute }` | Yellow or red shown (a second yellow emits the yellow, then a red) |
+| `freeKickAwarded` | `{ team, takerId, x, y, dangerous, minute }` | Foul outside the box — free-kick restart |
+| `penaltyAwarded` | `{ team, takerId, offenderId, minute }` | Foul inside the offender's box |
+| `penaltyResolved` | `{ team, takerId, keeperId, scored, chance }` | In-match penalty taken (shootout kicks use `penaltyKick`) |

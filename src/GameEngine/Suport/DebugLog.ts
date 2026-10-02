@@ -21,7 +21,9 @@ export type DebugCategory =
   | 'offside'       // offside violations
   | 'dribble'       // dribble attempt outcomes
   | 'throughBall'   // through-ball lifecycle (started, race, contested, won)
-  | 'injury';       // in-match injuries (forced substitution)
+  | 'injury'        // in-match injuries (forced substitution)
+  | 'foul'          // fouls, free kicks and penalties
+  | 'card';         // yellow / red cards and sendings-off
 
 export interface DebugEntry {
   id:        number;

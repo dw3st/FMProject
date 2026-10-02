@@ -41,12 +41,34 @@ subtítulo de uma linha no máximo.
   `border-primary text-primary`.
 - **Campo de texto:** sublinhado (`border-b border-border focus:border-primary bg-transparent`) ou caixa
   `rounded border border-border h-10 px-3`; sempre com rótulo visível acima.
-- **Tabela:** cabeçalho no estilo rótulo; linhas `border-t border-border py-2`; linha destacada
-  (clube do jogador / selecionada) `bg-primary/10` e texto `text-primary` no nome.
+- **Tabela (ranking, classificação, listas de jogadores/clubes):** o visual da tabela de Ligas
+  (`StandingsTable`) é o padrão. As classes ficam em `ui/leagueTableStyle.ts` (`TABLE_STYLE`,
+  `TABLE_CELL`) e nunca são copiadas à mão: uma tabela nova importa de lá (ou usa as peças de
+  `Components/StatsTable.tsx`, que já as aplicam a um `<table>`). O visual:
+  - caixa `card-arcade rounded-md overflow-hidden` (fundo de cartão, borda fina);
+  - cabeçalho com fundo `bg-secondary/30`, borda inferior e texto de rótulo (`font-display`
+    bold uppercase `text-[13px]` `tracking-[0.08em]` muted), `px-4 py-3` nas pontas;
+  - linhas separadas por `divide-y divide-border/50`, `py-2.5`, hover `bg-secondary/30`;
+  - nome do clube/jogador `font-semibold text-foreground` no tamanho base (16px, nunca `text-sm`),
+    escudo de 32px (`w-8 h-8`) ao lado;
+  - posição `font-bold` muted e centralizada; números secundários centralizados e muted;
+  - a coluna que importa (pontos, gols, nota, a coluna ordenada) em `font-black font-display
+    text-primary`;
+  - linha do clube do jogador / selecionada: `bg-primary/10` e nome em `text-primary`.
+  As tabelas densas de elenco (`SquadTable`, `DataTable` da Base/Equipe técnica) seguem o seu próprio
+  formato compacto.
 - **Painel:** sem caixa por padrão (só espaçamento e um título de seção); quando precisar de limite,
   `border border-border rounded-md` sem fundo forte e sem sombra.
 - **Barras (força, fôlego):** trilho `bg-border h-1.5 rounded`, preenchimento `bg-primary`.
-- **Abas:** texto; ativa `text-foreground` com sublinhado `border-b-2 border-primary`.
+- **Abas de tela:** a barra de abas de Ligas é o padrão — `ui/SegmentedTabs.tsx`: abas em
+  `font-display` bold uppercase `text-[13px]` dentro de um contêiner `rounded-lg border border-border
+  bg-secondary/20 p-1`; a ativa vira um cartão (`bg-card text-foreground shadow-sm`). Um seletor
+  secundário dentro de uma aba usa o mesmo componente com `compact`/`wrap`. As abas de texto com
+  sublinhado (`ui/Tabs.tsx`) ficam só onde já existem (Elenco, Novo jogo, Equipe técnica).
+- **Seletor de competição/liga:** sempre com rótulo acima no estilo rótulo (`SelectCombobox`
+  com `label`, ex. "LIGA", "COMPETIÇÃO").
+- **Título de tela:** um só, o nome da tela ("LIGAS", "ESTATÍSTICAS"); nunca acrescentar o nome da
+  aba ativa ao título.
 
 ## Logo (FMPROJECT)
 

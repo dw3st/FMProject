@@ -342,6 +342,7 @@ export async function advanceOneDay(
     const injuryInboxEvents: Array<
       | { kind: "injured"; squadId: string; playerId: string; playerName: string; severity: "light" | "medium" | "severe"; returnDate: string }
       | { kind: "returned"; squadId: string; playerId: string; playerName: string }
+      | { kind: "suspended"; squadId: string; playerId: string; playerName: string; matches: number }
     > = [];
     // The player's club home fixtures today, across every competition (league, cup, continental —
     // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
@@ -491,6 +492,9 @@ export async function advanceOneDay(
                 returnDate: inj.returnDate,
               });
             }
+            for (const sus of r.suspensionsApplied) {
+              injuryInboxEvents.push({ kind: "suspended", ...sus });
+            }
             for (const playerId of r.healedPlayerIds) {
               const onHome = homeSquad.players.some((p) => p.id === playerId);
               const squadId = onHome ? fixture.home : fixture.away;
@@ -530,6 +534,9 @@ export async function advanceOneDay(
                 severity: inj.severity,
                 returnDate: inj.returnDate,
               });
+            }
+            for (const sus of r.suspensionsApplied) {
+              injuryInboxEvents.push({ kind: "suspended", ...sus });
             }
             for (const playerId of r.healedPlayerIds) {
               const onHome = homeSquad.players.some((p) => p.id === playerId);
@@ -688,7 +695,9 @@ export async function advanceOneDay(
                 date: currentDate, kind: "injured", playerId: inj.playerId, playerName: inj.playerName,
                 severity: inj.severity, returnDate: inj.returnDate,
               }
-            : { date: currentDate, kind: "returned", playerId: inj.playerId, playerName: inj.playerName },
+            : inj.kind === "suspended"
+              ? { date: currentDate, kind: "suspended", playerId: inj.playerId, playerName: inj.playerName, matches: inj.matches }
+              : { date: currentDate, kind: "returned", playerId: inj.playerId, playerName: inj.playerName },
         );
       }
     }

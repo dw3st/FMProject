@@ -11,6 +11,10 @@ calendário e todas as ligas do catálogo (rótulos só por `src/Domain/world/la
 
 - Dados: `GET /api/saves/:id/stats?competition=<slug>` (`src/backend/statsRankings.ts`, cache por
   save+competição com chave `currentDate#versão de dados`; 404 para competição inexistente).
+- **Geral (`competition=all`, #45):** primeira opção e padrão do seletor; todos os clubes de todas as
+  ligas do mundo, só números de liga (mesma regra). O seletor (`statsCompetitionOptions`) agrupa por
+  continente (continentais primeiro) → país (ligas por nível, depois a copa), com cabeçalhos de grupo
+  do `SelectCombobox` (`group`/`subgroup` opcionais na opção).
 - Função pura: `buildCompetitionRankings` (`src/Domain/stats/rankings.ts`). Liga = total − copa −
   continental do `seasonLog`; copa/continental = `seasonLog.cup`/`.continental`. Nota média só existe
   para a liga (mínimo 5 jogos); copa e continental omitem essa tabela.

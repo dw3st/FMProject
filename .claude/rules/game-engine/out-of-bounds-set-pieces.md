@@ -109,6 +109,8 @@ Countdown values:
 export type SetPieceType = 'kickoff' | 'offside_fk' | 'goal_kick' | 'throw_in' | 'corner';
 ```
 
+Etapa 12 added `'free_kick'` and `'penalty'` (foul restarts) — see `fouls.md`.
+
 The countdown drain and "taker cannot carry" gates already key off the *presence* of `setPiece`, not the specific type, so adding new variants is mechanically safe. No other consumer needs a switch update unless we want type-specific behaviour later (e.g. "throw-in cannot directly score").
 
 ---

@@ -453,3 +453,76 @@ describe("buildMatchEventFromRecording — fullMinutesForInjured (quickSim)", ()
     expect(updatedHome.players[0]!.seasonLog!.load).toBe(90);
   });
 });
+
+// Etapa 12 — a sent-off player leaves without a substitute: his clock stops at the red card.
+describe("buildMatchEventFromRecording — cards", () => {
+  test("a red card stops the player's clock and the cards reach the match event", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      cards: [
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "yellow", secondYellow: false, matchMinute: 12 },
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "yellow", secondYellow: false, matchMinute: 35 },
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "red", secondYellow: true, matchMinute: 35 },
+      ],
+    });
+    const { event, updatedHome, updatedAway } = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(updatedHome.players[0]!.seasonLog!.load).toBe(35);
+    expect(updatedAway.players[0]!.seasonLog!.load).toBe(90);
+    expect(event.cards?.map((c) => c.card)).toEqual(["yellow", "yellow", "red"]);
+  });
+});
+
+// Etapa 12 part 2 — suspensions (`.claude/rules/game/discipline.md`).
+describe("buildMatchEventFromRecording — suspensions", () => {
+  const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+
+  test("a red card books the season log and bans the player for one match", () => {
+    const home = makeSquad("h", 1);
+    const away = makeSquad("a", 1);
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      cards: [{ team: "home", playerId: "h-p0", playerName: "h0", card: "red", secondYellow: false, matchMinute: 50 }],
+    });
+    const r = buildMatchEventFromRecording(fixture, home, away, recording);
+    const p = r.updatedHome.players[0]!;
+    expect(p.suspension).toEqual({ matches: 1 });
+    expect(p.seasonLog!.redCards).toBe(1);
+    expect(r.suspensionsApplied).toEqual([{ squadId: "h", playerId: "h-p0", playerName: "h0", matches: 1 }]);
+  });
+
+  test("the fifth yellow bans; the fourth does not", () => {
+    const home = makeSquad("h", 2);
+    home.players[0]!.seasonLog = { ...emptySeasonLog(), yellowCards: 4 };
+    home.players[1]!.seasonLog = { ...emptySeasonLog(), yellowCards: 3 };
+    const away = makeSquad("a", 1);
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "h-p1": emptyStats(), "a-p0": emptyStats() },
+      cards: [
+        { team: "home", playerId: "h-p0", playerName: "h0", card: "yellow", secondYellow: false, matchMinute: 10 },
+        { team: "home", playerId: "h-p1", playerName: "h1", card: "yellow", secondYellow: false, matchMinute: 20 },
+      ],
+    });
+    const r = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(r.updatedHome.players[0]!.suspension).toEqual({ matches: 1 });
+    expect(r.updatedHome.players[1]!.suspension).toBeUndefined();
+    expect(r.updatedHome.players[1]!.seasonLog!.yellowCards).toBe(4);
+  });
+
+  test("a suspended player of either club serves one match (before this match's cards)", () => {
+    const home = makeSquad("h", 2);
+    home.players[1]!.suspension = { matches: 1 };
+    const away = makeSquad("a", 2);
+    away.players[1]!.suspension = { matches: 2 };
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+    });
+    const r = buildMatchEventFromRecording(fixture, home, away, recording);
+    expect(r.updatedHome.players[1]!.suspension).toBeUndefined();
+    expect(r.updatedAway.players[1]!.suspension).toEqual({ matches: 1 });
+    expect(r.suspensionsServed).toBe(2);
+  });
+});

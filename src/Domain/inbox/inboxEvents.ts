@@ -263,13 +263,17 @@ export function buildInjuryMessage(args: {
   playerName:  string;
   severity?:   "light" | "medium" | "severe";
   returnDate?: string;
+  matches?:    number;
 }): InjuryInboxMessage {
-  const { date, kind, playerId, playerName, severity, returnDate: retDate } = args;
-  const subject = kind === "injured" ? `${playerName} injured` : `${playerName} is back`;
+  const { date, kind, playerId, playerName, severity, returnDate: retDate, matches } = args;
+  const subject = kind === "injured" ? `${playerName} injured`
+    : kind === "suspended" ? `${playerName} suspended` : `${playerName} is back`;
   const preview =
     kind === "injured"
       ? `${severity ?? "light"} injury — expected back ${retDate ?? "?"}.`
-      : `${playerName} has recovered and is available again.`;
+      : kind === "suspended"
+        ? `Suspended for the next ${matches ?? 1} match(es).`
+        : `${playerName} has recovered and is available again.`;
   return {
     id:        `injury-${date}-${kind}-${playerId}-${randomUUID()}`,
     date,
@@ -282,6 +286,7 @@ export function buildInjuryMessage(args: {
     playerId,
     playerName,
     ...(kind === "injured" ? { severity, returnDate: retDate } : {}),
+    ...(kind === "suspended" ? { matches: matches ?? 1 } : {}),
   } as InjuryInboxMessage;
 }
 

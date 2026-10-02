@@ -45,6 +45,7 @@ function emptyTeam(): TeamStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     penaltiesTaken: 0, penaltiesScored: 0,
+    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltiesConceded: 0, penaltyGoals: 0, offsides: 0,
     extraTimePlayed: 0, shootoutsWon: 0,
     avgEndEnergy: 0, fatigueSubstitutions: 0, injuries: 0,
   };

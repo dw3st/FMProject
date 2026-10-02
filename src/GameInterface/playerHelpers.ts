@@ -3,6 +3,7 @@ import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 import { isInjured } from "@/Domain/injury/injury";
+import { isSuspended } from "@/Domain/discipline/discipline";
 
 /** Capitalizes an injury severity string ("light" → "Light") for i18n key lookup. */
 export function capitalizeSeverity(severity: "light" | "medium" | "severe"): string {
@@ -75,6 +76,8 @@ export interface DisplayPlayer {
   avgRange?: [number, number];
   /** Active injury details, when `status === "injured"` and `currentDate` was supplied. */
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string; daysLeft: number };
+  /** Matches of a ban still to serve, when `status === "suspended"`. */
+  suspendedMatches?: number;
 }
 
 /** Split `squadId` (e.g. `premier_league_arsenal`) using known league slugs (longest match first). */
@@ -141,7 +144,8 @@ export function toDisplayPlayer(
     phase: Player.formToStatus(log?.recentRatings ?? []),
     training: log ? Player.trainingToStatus(log.trainingSessions) : (3 as StatusLevel),
     moral: log ? Player.moraleToStatus(log.morale) : (3 as StatusLevel),
-    status: injured ? "injured" : "fit",
+    status: injured ? "injured" : isSuspended(player) ? "suspended" : "fit",
+    ...(!injured && isSuspended(player) ? { suspendedMatches: player.suspension!.matches } : {}),
     club: clubName,
     stats: player.stats,
     preferredFoot: player.preferredFoot,
