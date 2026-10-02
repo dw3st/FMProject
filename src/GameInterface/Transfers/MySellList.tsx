@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { SellCandidate } from "@/types/transferMarketTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import { getMainRole, getPositionColor, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { Icon } from "@/GameInterface/Icons";
 
 export function MySellList() {
@@ -133,15 +134,15 @@ export function MySellList() {
           const p = byId.get(c.playerId);
           const name = p?.name ?? `Player ${c.playerId.slice(0, 8)}…`;
           const pos = p?.positions?.[0] ?? "—";
-          const role = getMainRole(pos);
+          const natural = p?.stats ? preferredRole(p) : undefined;
           const busy = removingId === c.playerId;
 
           return (
             <li key={c.playerId} className="p-4 hover:bg-muted/30 transition-colors flex items-center gap-4">
               <div
-                className={`px-2 py-1 rounded text-sm font-black shrink-0 w-10 text-center ${getPositionColor(pos)}`}
+                className={`px-2 py-1 rounded text-sm font-black shrink-0 w-10 text-center ${positionLabelColor(natural, pos)}`}
               >
-                {MAIN_ROLE_ABBR[role]}
+                {positionLabel(t, natural, pos)}
               </div>
               <div className="flex-1 min-w-0">
                 <a

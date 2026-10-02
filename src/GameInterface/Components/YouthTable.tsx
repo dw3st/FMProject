@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
+import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { Button } from "@/GameInterface/ui/Button";
 import { DataTable, type DataTableColumn } from "@/GameInterface/ui/DataTable";
 import { Notice } from "@/GameInterface/ui/Notice";
@@ -80,8 +81,8 @@ export function YouthTable() {
       key: "pos",
       header: t("youth.position"),
       cell: (r) => (
-        <span className={`font-display font-bold ${getDetailedPositionColor(r.player.positions[0] ?? "CM")}`}>
-          {r.player.positions[0]}
+        <span className={`font-display font-bold ${positionLabelColor(preferredRole(r.player), r.player.positions[0] ?? "CM")}`}>
+          {positionLabel(t, preferredRole(r.player), r.player.positions[0] ?? "CM")}
         </span>
       ),
     },

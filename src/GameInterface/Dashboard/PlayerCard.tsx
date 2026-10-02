@@ -4,7 +4,7 @@ import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
 import { ATTRIBUTE_LABELS } from "@/GameInterface/AttributeLabels";
 import type { AttributeId } from "@/GameInterface/AttributeLabels";
-import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
+import { getMainRole, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
 import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
@@ -140,7 +140,7 @@ export function PlayerCard({
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
               <span className={`text-sm font-bold px-2 py-0.5 rounded border ${posColor}`}>
-                {MAIN_ROLE_ABBR[mainRole]}
+                {positionLabel(t, player.natural, player.pos)}
               </span>
               <span className="text-sm text-muted-foreground">
                 {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} {t("common.foot")} · {player.age} {t("dashboard.playerCard.yearsOld")}
@@ -226,7 +226,7 @@ export function PlayerCard({
           <p className="text-sm text-muted-foreground truncate">{player.club}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <span className={`text-sm font-bold px-2 py-0.5 rounded border ${posColor}`}>
-              {player.natural ? t(`roles.detailedAbbr.${player.natural}` as never) : MAIN_ROLE_ABBR[mainRole]}
+              {positionLabel(t, player.natural, player.pos)}
             </span>
             <span className="text-sm text-muted-foreground">
               {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} · {player.age}y

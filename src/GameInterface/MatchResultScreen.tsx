@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
@@ -113,7 +114,7 @@ function ResultPlayerRow({
 }) {
   const name = event.playerNames[playerId] ?? roster?.name ?? playerId;
   const lastName = name.split(" ").pop() ?? name;
-  const role = roster?.positions[0] ?? "CM";
+  const role = roster ? preferredRole(roster) : "CM";
   const rating = event.playerRatings[playerId];
   const goals = event.playerStats[playerId]?.goals ?? 0;
   const assists = event.playerStats[playerId]?.assists ?? 0;

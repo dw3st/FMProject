@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
-import { getPositionColor, getMainRole, MAIN_ROLE_ABBR } from "@/GameInterface/positionHelpers";
+import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -129,8 +129,8 @@ export function ScoutTable({
             >
               {/** Disable offer for your own squad */ }
               {/** (we still show your players in the scout DB) */ }
-              <div className={`px-3 py-2.5 font-black ${getPositionColor(player.pos)} w-14`}>
-                {MAIN_ROLE_ABBR[getMainRole(player.pos)]}
+              <div className={`px-3 py-2.5 font-black ${positionLabelColor(player.natural, player.pos)} w-14`}>
+                {positionLabel(t, player.natural, player.pos)}
               </div>
               <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
                 {sellListedIds.has(player.id) && (
