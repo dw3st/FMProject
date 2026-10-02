@@ -1802,6 +1802,7 @@
     "games": "GP",
     "goals": "G",
     "rating": "Rating",
+    "club": "Club",
     "loading": "Loading...",
     "loadFailed": "Could not load the stats.",
     "retired": {
@@ -1821,7 +1822,6 @@
       "world": "World",
       "country": "My country",
       "name": "Manager",
-      "club": "Club",
       "points": "Points",
       "titles": "Titles",
       "promotion": "Promotion · {{league}}",
