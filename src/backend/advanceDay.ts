@@ -661,6 +661,9 @@ export async function advanceOneDay(
     const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
     // Retirement news for the human club: same deferral.
     const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
+    // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
+    // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
+    let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
     if (playerSquadId) {
       const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
       if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
@@ -1466,7 +1469,8 @@ export async function advanceOneDay(
       {
         const unitSquads: Squad[] = [];
         for (const slug of unit.leagues) unitSquads.push(...(await saveService.getSquadsInLeague(saveId, slug)));
-        const levels = buildWorldLevels(await saveService.getAllSquads(saveId));
+        worldLevelsMemo ??= buildWorldLevels(await saveService.getAllSquads(saveId));
+        const levels = worldLevelsMemo;
         const rYear = closedYear.get(unit.leagues[0]!)! + 1;
         const faDone = (freeAgentsRetiredYear ?? meta.freeAgentsRetiredYear) === rYear;
         const res = processRetirements({
