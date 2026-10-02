@@ -279,8 +279,6 @@ export interface FreeAgent {
 /** Marks the academy player reborn from a retired world-class star (`.claude/rules/game/retirement.md`). */
 export interface RebornMark {
   fromId: string;
-  /** Season year in which he turns 23 (DP bonus ends). */
-  until: number;
 }
 
 /** Minimal record of a retired player (`saves/{id}/retired.json`). */
@@ -300,5 +298,7 @@ export interface RetiredPlayer {
   appearances: number;
   goals: number;
   /** Human club world-class retiree only: reborn offer state. */
+  /** Retired from the free-agent pool (not from a squad). */
+  freeAgent?: true;
   rebornOffer?: "pending" | "accepted" | "declined" | "expired";
 }

@@ -1122,6 +1122,8 @@ try {
     const retired = await plain().getRetired(saveId);
     check(retired.length > 0, `aposentadoria: ${retired.length} player(s) retired during the run`);
     const byDate = new Map<string, number[]>();
+    const fa = retired.filter((r) => r.freeAgent).length;
+    console.log(`  retirees: ${retired.length - fa} from squads, ${fa} from the free-agent pool`);
     for (const r of retired) byDate.set(r.retiredOn, [...(byDate.get(r.retiredOn) ?? []), r.age]);
     for (const [d, ages] of [...byDate].sort()) {
       console.log(`  ${d}: ${ages.length} retirements, ages ${Math.min(...ages)}-${Math.max(...ages)}, `

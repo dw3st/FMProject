@@ -99,6 +99,17 @@ describe("processRetirements", () => {
   });
 });
 
+describe("free agent pool is drawn once per year", () => {
+  test("processFreeAgents:false leaves the pool untouched", () => {
+    const free: FreeAgent[] = [{ player: mk("fa-old", "CM", 4, 41), since: "2027-01-01" }];
+    const s = squad([mk("a", "CM", 5, 27)]);
+    const base = { saveId: "s", year: 2027, date: "d", squads: [s], freeAgents: free, levels: buildWorldLevels([s]), humanSquadId: null };
+    expect(processRetirements({ ...base, processFreeAgents: false }).freeAgents).toBe(free);
+    expect(processRetirements({ ...base, processFreeAgents: false }).retired).toEqual([]);
+    expect(processRetirements(base).freeAgents).toEqual([]);
+  });
+});
+
 describe("generateReborn", () => {
   const retired: RetiredPlayer = {
     id: "star", name: "Old Star", nationality: "Brazil", positions: ["ST"], preferredFoot: "left",
@@ -119,7 +130,7 @@ describe("generateReborn", () => {
     expect(p.nationality).toBe("Brazil");
     expect(p.positions).toEqual(["ST"]);
     expect(p.preferredFoot).toBe("left");
-    expect(p.reborn).toEqual({ fromId: "star", until: 2033 });
+    expect(p.reborn).toEqual({ fromId: "star" });
     expect(p.contract?.wage).toBeGreaterThan(0);
     const target = lineAverage(sq, roleOf(p)) - 0.8;
     expect(Math.abs(overallAvg(p) - target)).toBeLessThan(0.5);

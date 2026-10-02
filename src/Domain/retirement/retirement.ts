@@ -102,6 +102,8 @@ export function processRetirements(args: {
   freeAgents: FreeAgent[];
   levels: WorldLevels;
   humanSquadId: string | null;
+  /** Draw the free-agent pool too. The caller does this at most once per world year. Default true. */
+  processFreeAgents?: boolean;
   /** Last season logs by player id (the squad logs were already reset by the transition). */
   logs?: Record<string, { appearances: number; goals: number }>;
 }): RetirementResult {
@@ -127,15 +129,15 @@ export function processRetirements(args: {
   });
 
   const keptFree: FreeAgent[] = [];
-  for (const f of freeAgents) {
+  for (const f of args.processFreeAgents === false ? [] : freeAgents) {
     const p = f.player;
     const age = p.age + R.FREE_AGENT_AGE_BONUS;
     if (age >= R.MIN_AGE
       && retires(saveId, p.id, year, age, levelPercentile(levels.byRole[roleOf(p)], overallAvg(p)))) {
-      records.push(toRetiredRecord(p, date, p.squadId, false));
+      records.push({ ...toRetiredRecord(p, date, p.squadId, false), freeAgent: true });
     } else keptFree.push(f);
   }
-  return { squads, freeAgents: keptFree, retired: records, humanRetired };
+  return { squads, freeAgents: args.processFreeAgents === false ? freeAgents : keptFree, retired: records, humanRetired };
 }
 
 /** Expires every pending reborn offer (the offer lives until the next country rollover). */
@@ -180,7 +182,7 @@ export function generateReborn(args: {
     id, name: retired.name, age: R.REBORN_AGE, squadId: squad.id, preferredFoot: retired.preferredFoot,
     positions: retired.positions, stats: stats as unknown as PlayerStatsRecord, profile: retired.profile,
     nationality: retired.nationality,
-    reborn: { fromId: retired.id, until: year + (R.REBORN_UNTIL_AGE - R.REBORN_AGE) },
+    reborn: { fromId: retired.id },
   };
   return { ...player, contract: renewalContract(player, squad, nextSeasonEnd, YOUTH.CONTRACT_YEARS) };
 }

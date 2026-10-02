@@ -486,7 +486,11 @@ function RetirementBody({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error === "youthFull" ? t("inbox.retirement.youthFull") : t("inbox.retirement.actionFailed"));
+        setError(
+          body.error === "youthFull" ? t("inbox.retirement.youthFull")
+            : body.error === "offerClosed" ? t("inbox.retirement.closed")
+              : t("inbox.retirement.actionFailed"),
+        );
         return;
       }
       setResult(accept ? "accepted" : "declined");
