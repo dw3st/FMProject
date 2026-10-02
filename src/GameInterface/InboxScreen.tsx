@@ -5,6 +5,7 @@ import { Icon, iconOf } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
+import { Button } from "@/GameInterface/ui/Button";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -89,6 +90,13 @@ const CATEGORY_META: Record<
     color: "text-chart-2",
     bg: "bg-chart-2/15",
     border: "border-chart-2/30",
+    Icon: Prospect,
+  },
+  retirement: {
+    labelKey: "inbox.categories.retirement",
+    color: "text-chart-5",
+    bg: "bg-chart-5/15",
+    border: "border-chart-5/30",
     Icon: Prospect,
   },
 };
@@ -431,6 +439,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
               : t("inbox.youth.released", { players: (message.players ?? []).map((p) => p.name).join(", ") })}
           </p>
         )}
+        {message.category === "retirement" && <RetirementBody message={message} />}
         {message.category === "contract" && (
           <p className="text-sm text-foreground m-0">
             {t(`inbox.contract.${message.kind}`, {
@@ -440,6 +449,83 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function RetirementBody({
+  message,
+}: {
+  message: Extract<InboxMessage, { category: "retirement" }>;
+}) {
+  const { t } = useTranslation();
+  const { session, refresh } = useGameSave();
+  const saveId = session?.saveId;
+  const [pending, setPending] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<"accepted" | "declined" | null>(null);
+
+  useEffect(() => {
+    if (message.kind !== "reborn" || !saveId) return;
+    fetch(`/api/saves/${saveId}/reborn`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("load"))))
+      .then((d: { offers: { id: string }[] }) => setPending(d.offers.some((o) => o.id === message.retiredId)))
+      .catch(() => setPending(false));
+  }, [message.kind, message.retiredId, saveId]);
+
+  async function answer(accept: boolean) {
+    if (!saveId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/reborn/${message.retiredId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accept }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(
+          body.error === "youthFull" ? t("inbox.retirement.youthFull")
+            : body.error === "offerClosed" ? t("inbox.retirement.closed")
+              : t("inbox.retirement.actionFailed"),
+        );
+        return;
+      }
+      setResult(accept ? "accepted" : "declined");
+      setPending(false);
+      if (accept) void refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-foreground m-0">
+        {t("inbox.retirement.retired", {
+          player: message.playerName, age: message.age, games: message.appearances, goals: message.goals,
+        })}
+      </p>
+      {message.kind === "reborn" && (
+        <div className="space-y-3">
+          <p className="text-sm text-foreground m-0">{t("inbox.retirement.rebornOffer", { player: message.playerName })}</p>
+          {result ? (
+            <p className="text-sm text-muted-foreground m-0">{t(`inbox.retirement.${result}`)}</p>
+          ) : pending ? (
+            <div className="flex items-center gap-4">
+              <Button disabled={busy} onClick={() => void answer(true)}>{t("inbox.retirement.accept")}</Button>
+              <Button variant="secondary" disabled={busy} onClick={() => void answer(false)}>
+                {t("inbox.retirement.decline")}
+              </Button>
+            </div>
+          ) : pending === false ? (
+            <p className="text-sm text-muted-foreground m-0">{t("inbox.retirement.closed")}</p>
+          ) : null}
+          {error && <p className="text-sm text-destructive m-0">{error}</p>}
+        </div>
+      )}
     </div>
   );
 }

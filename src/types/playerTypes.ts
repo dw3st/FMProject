@@ -116,6 +116,8 @@ export interface RosterPlayer {
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string };
   /** Current contract. Assigned at career creation and on every signing/renewal. */
   contract?: PlayerContract;
+  /** Reborn academy star (+30% DP while young). */
+  reborn?: RebornMark;
 }
 
 export interface ClubFinances {
@@ -272,4 +274,31 @@ export interface FreeAgent {
   player: RosterPlayer;
   /** Release date (ISO). Free agents leave the world a season after this. */
   since: string;
+}
+
+/** Marks the academy player reborn from a retired world-class star (`.claude/rules/game/retirement.md`). */
+export interface RebornMark {
+  fromId: string;
+}
+
+/** Minimal record of a retired player (`saves/{id}/retired.json`). */
+export interface RetiredPlayer {
+  id: string;
+  name: string;
+  nationality: string | null;
+  positions: string[];
+  preferredFoot: "left" | "right";
+  profile: PlayerProfile;
+  retiredOn: string;
+  squadId: string;
+  age: number;
+  wasWorldClass: boolean;
+  statsAtRetirement: PlayerStatsRecord;
+  /** Last season's games / goals for the club (for the inbox line). */
+  appearances: number;
+  goals: number;
+  /** Human club world-class retiree only: reborn offer state. */
+  /** Retired from the free-agent pool (not from a squad). */
+  freeAgent?: true;
+  rebornOffer?: "pending" | "accepted" | "declined" | "expired";
 }

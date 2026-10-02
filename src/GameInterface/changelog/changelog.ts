@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.4",
+    date: "2026-10-01",
+    items: [
+      { pt: "Jogadores de 34 anos ou mais podem se aposentar no fim da temporada, em todos os clubes e também entre os sem clube. Quem passa dos 40 sempre pendura as chuteiras.", en: "Players aged 34 or older can retire at the end of the season, at every club and among free agents too. Anyone past 40 always hangs up the boots." },
+      { pt: "Quando alguém do seu elenco se aposenta, você recebe uma mensagem com os jogos e gols da última temporada.", en: "When someone from your squad retires, you get a message with last season's games and goals." },
+      { pt: "Se uma lenda do seu clube se aposentar (entre os 50 melhores do mundo), você pode aceitar que ela renasça na base, aos 17 anos, com o mesmo estilo de jogo.", en: "If a legend of your club retires (among the world's 50 best), you can let them be reborn in the academy at 17, with the same style of play." },
+      { pt: "O craque renascido evolui mais rápido até os 23 anos e ganha uma estrela própria no elenco e na base.", en: "The reborn star develops faster until 23 and gets a star of their own in the squad and academy." },
+    ],
+  },
+  {
     version: "2.3",
     date: "2026-10-01",
     items: [

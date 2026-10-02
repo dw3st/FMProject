@@ -1068,7 +1068,8 @@
       "continental": "Continental",
       "injury": "Lesão",
       "contract": "Contratos",
-      "youth": "Base"
+      "youth": "Base",
+      "retirement": "Aposentadoria"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1113,6 +1114,17 @@
     "youth": {
       "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",
       "released": "Chegou aos 19 anos sem ser promovido e saiu da base: {{players}}"
+    },
+    "retirement": {
+      "retired": "{{player}} ({{age}}) se aposentou do futebol. Na última temporada: {{games}} jogos, {{goals}} gols.",
+      "rebornOffer": "Uma lenda do jogo. {{player}} pode renascer aos 17 anos na sua base, com o mesmo estilo e crescimento mais rápido.",
+      "accept": "Aceitar",
+      "decline": "Recusar",
+      "accepted": "{{player}} entrou na base.",
+      "declined": "Você recusou a oferta.",
+      "closed": "Esta oferta não está mais disponível.",
+      "youthFull": "A base está cheia.",
+      "actionFailed": "Não foi possível responder à oferta."
     }
   },
   "finances": {
@@ -1797,7 +1809,8 @@
       "gold": "Top 25 do mundo",
       "blue": "Grande fase",
       "green": "Prodígio"
-    }
+    },
+    "reborn": "Renascido"
   },
   "fitness": {
     "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"

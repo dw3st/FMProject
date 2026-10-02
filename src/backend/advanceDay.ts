@@ -11,6 +11,7 @@ import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover } from "@/Domain/youth/youth";
+import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
 import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
@@ -24,6 +25,7 @@ import {
   buildDevelopmentMessage,
   buildInjuryMessage,
   buildContractMessage,
+  buildRetirementMessage,
   buildYouthMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
@@ -657,6 +659,11 @@ export async function advanceOneDay(
     const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
     // Academy news (new intake, released at 19): same deferral.
     const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
+    // Retirement news for the human club: same deferral.
+    const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
+    // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
+    // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
+    let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
     if (playerSquadId) {
       const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
       if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
@@ -1239,6 +1246,7 @@ export async function advanceOneDay(
     // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
     // champion/promoted/relegated season message below. 0 when no rollover happens this day.
     let playerLeaguePrizeThisRollover = 0;
+    let freeAgentsRetiredYear: number | undefined;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -1307,6 +1315,8 @@ export async function advanceOneDay(
       // 3. Archive + reset every league with the OLD membership. Reset squads are saved where
       //    they live now, before any move; moved clubs get their new tier's income here.
       const closedYear = new Map<string, number>();
+      // Last season's games/goals per player (the squad logs are reset by the transition).
+      const closedLogs: Record<string, { appearances: number; goals: number }> = {};
       for (const slug of unit.leagues) {
         const state = updatedActiveLeagues[stateIdx(slug)]!;
         closedYear.set(slug, state.year);
@@ -1320,6 +1330,9 @@ export async function advanceOneDay(
           playerClubSquadId,
         });
         await saveService.writeLeagueSeasonArchive(saveId, transition.archive);
+        for (const [pid, log] of Object.entries(transition.archive.playerLogs)) {
+          closedLogs[pid] = { appearances: log.appearances, goals: log.goals };
+        }
         await saveService.writeLeagueTransfersArchive(saveId, slug, transition.archive.year, transfersAtSeasonEnd);
 
         // The human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
@@ -1449,6 +1462,50 @@ export async function advanceOneDay(
           currentRound: 0,
           restDays: cal.meta.restDays,
         };
+      }
+
+      // 7b. Retirement (.claude/rules/game/retirement.md): players >= 34 (squads and free agents) may
+      //     retire before contracts expire. Pending reborn offers of the human club expire here.
+      {
+        const unitSquads: Squad[] = [];
+        for (const slug of unit.leagues) unitSquads.push(...(await saveService.getSquadsInLeague(saveId, slug)));
+        worldLevelsMemo ??= buildWorldLevels(await saveService.getAllSquads(saveId));
+        const levels = worldLevelsMemo;
+        const rYear = closedYear.get(unit.leagues[0]!)! + 1;
+        const faDone = (freeAgentsRetiredYear ?? meta.freeAgentsRetiredYear) === rYear;
+        const res = processRetirements({
+          saveId, year: rYear, processFreeAgents: !faDone, date: currentDate, squads: unitSquads,
+          freeAgents: await saveService.getFreeAgents(saveId), levels, humanSquadId: playerClubSquadId, logs: closedLogs,
+        });
+        const humanInUnit = unitSquads.some((s) => s.id === playerClubSquadId);
+        let retiredAll = await saveService.getRetired(saveId);
+        if (humanInUnit) retiredAll = expireOffers(retiredAll);
+        if (res.retired.length > 0 || retiredAll.length > 0) {
+          await saveService.writeRetired(saveId, [...retiredAll, ...res.retired]);
+        }
+        const before = new Map(unitSquads.map((s) => [s.id, s]));
+        for (const sq of res.squads) {
+          if (sq === before.get(sq.id)) continue;
+          await saveService.saveSquadById(saveId, sq);
+        }
+        if (!faDone) {
+          await saveService.writeFreeAgents(saveId, res.freeAgents);
+          freeAgentsRetiredYear = rYear;
+        }
+        const goneHuman = new Set(res.humanRetired.map((r) => r.id));
+        if (goneHuman.size > 0) {
+          const tac = await saveService.getTactics(saveId);
+          if (tac && tac.lineup.some((id) => goneHuman.has(id))) {
+            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (goneHuman.has(id) ? "" : id)) });
+          }
+          const mk = await saveService.getMarket(saveId);
+          if (mk?.playerSellList?.some((c) => goneHuman.has(c.playerId))) {
+            await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) });
+          }
+        }
+        for (const r of res.humanRetired) {
+          deferredRetirementMessages.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
+        }
       }
 
       // 8. Contracts ending with the season: the AI renews who fits (wage cap permitting) and
@@ -1707,9 +1764,11 @@ export async function advanceOneDay(
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
+    for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};
+    if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();

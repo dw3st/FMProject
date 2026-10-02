@@ -1068,7 +1068,8 @@
       "continental": "Continental",
       "injury": "Injury",
       "contract": "Contracts",
-      "youth": "Academy"
+      "youth": "Academy",
+      "retirement": "Retirement"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1113,6 +1114,17 @@
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",
       "released": "Reached 19 without a promotion and left the academy: {{players}}"
+    },
+    "retirement": {
+      "retired": "{{player}} ({{age}}) has retired from football. Last season: {{games}} games, {{goals}} goals.",
+      "rebornOffer": "A legend of the game. {{player}} can be reborn as a 17-year-old in your academy, with the same style and faster growth.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "accepted": "{{player}} joined the academy.",
+      "declined": "You turned down the offer.",
+      "closed": "This offer is no longer available.",
+      "youthFull": "The academy is full.",
+      "actionFailed": "Could not answer the offer."
     }
   },
   "finances": {
@@ -1797,7 +1809,8 @@
       "gold": "World top 25",
       "blue": "Great form",
       "green": "Prodigy"
-    }
+    },
+    "reborn": "Reborn"
   },
   "fitness": {
     "highLoadTooltip": "High load: recovers slowly and tires faster"

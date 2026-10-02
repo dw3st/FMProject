@@ -9,7 +9,8 @@ export type InboxCategory =
   | "continental"
   | "injury"
   | "contract"
-  | "youth";
+  | "youth"
+  | "retirement";
 
 export interface InboxMessageBase {
   id:        string;
@@ -167,6 +168,23 @@ export interface YouthInboxMessage extends InboxMessageBase {
   players?: { id: string; name: string }[];
 }
 
+/**
+ * Retirement news for the human club (`.claude/rules/game/retirement.md`): a player retired at the
+ * rollover, or a world-class retiree offers to be reborn in the academy (`kind: "reborn"`, answered
+ * through `POST /api/saves/:id/reborn/:retiredId`).
+ */
+export interface RetirementInboxMessage extends InboxMessageBase {
+  category:     "retirement";
+  kind:         "retired" | "reborn";
+  /** Id of the retired player (the reborn route key). */
+  retiredId:    string;
+  playerName:   string;
+  position:     string;
+  age:          number;
+  appearances:  number;
+  goals:        number;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -176,4 +194,5 @@ export type InboxMessage =
   | ContinentalInboxMessage
   | InjuryInboxMessage
   | ContractInboxMessage
-  | YouthInboxMessage;
+  | YouthInboxMessage
+  | RetirementInboxMessage;

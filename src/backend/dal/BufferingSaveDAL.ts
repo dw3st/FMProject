@@ -1,7 +1,7 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { FreeAgent, Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type {
   SeasonArchive,
   SeasonData,
@@ -158,6 +158,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     this.buffer(`freeAgents:${saveId}`, agents, () => this.inner.writeFreeAgents(saveId, agents));
+  }
+
+  // ── Retired players ───────────────────────────────────────────────────────────
+  readRetired(saveId: string): Promise<RetiredPlayer[]> {
+    return this.readThrough(`retired:${saveId}`, () => this.inner.readRetired(saveId));
+  }
+  async writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
+    this.buffer(`retired:${saveId}`, retired, () => this.inner.writeRetired(saveId, retired));
   }
 
   // ── Transfers ─────────────────────────────────────────────────────────────────

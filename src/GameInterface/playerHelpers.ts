@@ -28,6 +28,8 @@ export function isHighLoad(load: number): boolean {
 
 export interface DisplayPlayer {
   id: string;
+  /** Reborn academy star (own badge). */
+  reborn?: boolean;
   squadId?: string;
   /** Primary position (first in list), used for sorting. */
   pos: string;
@@ -46,7 +48,7 @@ export interface DisplayPlayer {
   salary: string;
   /** Scout only: a free agent (no club). */
   free?: boolean;
-  /** Year the contract ends ("—" when none). */
+  /** Year the contract ends ("â€”" when none). */
   contractUntil?: string;
   value: string;
   goals: number;
@@ -128,7 +130,7 @@ export function toDisplayPlayer(
     energy: log ? Math.round(log.fitness) : 100,
     load: log?.load ?? 0,
     salary: player.contract ? formatWeeklyWage(player.contract.wage) : domain.salaryLabel(options?.wageFactor),
-    contractUntil: player.contract ? player.contract.until.slice(0, 4) : "—",
+    contractUntil: player.contract ? player.contract.until.slice(0, 4) : "â€”",
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,
     nationality: nat,
@@ -143,5 +145,6 @@ export function toDisplayPlayer(
     stats: player.stats,
     preferredFoot: player.preferredFoot,
     injury: injuryInfo,
+    ...(player.reborn ? { reborn: true } : {}),
   };
 }
