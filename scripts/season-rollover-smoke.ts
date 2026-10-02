@@ -1113,6 +1113,39 @@ try {
     check(inbox.some((m) => m.category === "youth" && m.kind === "intake"), "base: inbox has the intake message");
   }
 
+  // ── Histórico ────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/history.md`: at the country rollover every player with games gets a row
+  // of the closed season; the league champion's rows carry the league title.
+  console.log("\n── Histórico ──");
+  {
+    const rcH = [...rolledCountries.values()].find((r) => r.closed.has(PLAYER_LEAGUE));
+    const closedYear = rcH?.closed.get(PLAYER_LEAGUE);
+    const arch = closedYear !== undefined ? await fsDal.readLeagueSeasonArchive(saveId, PLAYER_LEAGUE, closedYear) : null;
+    check(!!arch, `histórico: ${PLAYER_LEAGUE} archive found`);
+    if (arch) {
+      const files = await plain().listSquadFiles(saveId);
+      const players = files.flatMap(({ squad }) => squad.players.map((p) => ({ p, squadId: squad.id })));
+      const played = Object.entries(arch.playerLogs).filter(([, l]) => l.appearances > 0);
+      let withRow = 0;
+      let appsMatch = 0;
+      for (const [pid, log] of played) {
+        const hit = players.find(({ p }) => p.id === pid);
+        if (!hit) continue; // retired or released
+        const row = hit.p.history?.find((h) => h.league === PLAYER_LEAGUE && h.titles !== undefined && h.apps === log.appearances);
+        if (hit.p.history?.some((h) => h.league === PLAYER_LEAGUE)) withRow++;
+        if (row) appsMatch++;
+      }
+      const alive = played.filter(([pid]) => players.some(({ p }) => p.id === pid)).length;
+      check(alive > 0 && withRow === alive, `histórico: ${withRow}/${alive} ${PLAYER_LEAGUE} players with games have a row`);
+      check(appsMatch === alive, `histórico: ${appsMatch}/${alive} rows match the archived appearances`);
+      const champ = arch.standings[0]?.squadId;
+      const champRows = players.filter(({ squadId }) => squadId === champ)
+        .flatMap(({ p }) => p.history ?? []).filter((h) => h.squadId === champ);
+      check(champRows.length > 0 && champRows.some((h) => h.titles.includes(`league:${PLAYER_LEAGUE}`)),
+        `histórico: champion ${String(champ)} rows carry the league title`);
+    }
+  }
+
   // ── Aposentadoria ────────────────────────────────────────────────────────
   // See `.claude/rules/game/retirement.md`: at each country rollover players >= 34 may retire (squads and
   // free agents), leaving a minimal record in `retired.json`. A world-class retiree of the human club
