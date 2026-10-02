@@ -21,6 +21,7 @@ import { Tabs } from "@/GameInterface/ui/Tabs";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { Icon } from "@/GameInterface/Icons";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
+import { WorldMap } from "@/GameInterface/NewGame/WorldMap";
 import {
   continentI18nKey,
   countryDisplayName,
@@ -286,9 +287,27 @@ export function NewGameWizard() {
           <p className="text-sm text-muted-foreground m-0 mb-1">{t("newGame.stepOf", { n: 2 })}</p>
           <ScreenTitle>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
-            <p className="text-sm text-muted-foreground mt-6">{t("newGame.selectTerritoryDetail")}</p>
+            <>
+              <p className="text-sm text-muted-foreground mt-6 md:hidden">{t("newGame.selectTerritoryDetail")}</p>
+              <div className="hidden md:block mt-6">
+                <WorldMap
+                  countries={countries}
+                  selectedSlug={null}
+                  displayName={displayName}
+                  onSelect={setSelectedCountry}
+                />
+              </div>
+            </>
           ) : (
             <>
+              <button
+                type="button"
+                onClick={() => setSelectedCountry(null)}
+                className="hidden md:inline-flex items-center gap-1.5 mt-3 h-8 text-sm bg-transparent border-0 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <Icon name="chevron-left" size={16} />
+                {t("newGame.showMap")}
+              </button>
               <div className="overflow-x-auto mt-4">
                 <Tabs
                   tabs={countryLeagues.map((l) => ({ key: l.slug, label: l.name }))}

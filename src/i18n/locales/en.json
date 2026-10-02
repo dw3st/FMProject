@@ -235,6 +235,9 @@
       "other": "Other"
     },
     "selectTerritoryDetail": "Select a territory to view details",
+    "mapHint": "Click a highlighted country, or pick one from the list",
+    "mapAttribution": "Map: Natural Earth (public domain)",
+    "showMap": "World map",
     "squadRating": "Squad Rating",
     "reputationLevel": {
       "1": "Local Outfit",
@@ -415,7 +418,10 @@
     "subtitle": "Recent updates to the game",
     "version": "Version {{version}}",
     "fixes": "Fixes",
-    "notice": "New: v{{version}}"
+    "notice": "New: v{{version}}",
+    "tabNews": "What's new",
+    "tabUpcoming": "Coming soon",
+    "upcomingSubtitle": "What we are working on next"
   },
   "status": {
     "budget": "Budget",
