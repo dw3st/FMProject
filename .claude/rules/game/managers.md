@@ -66,6 +66,8 @@ peso de cada país no dia e grava uma vez (`flush`, antes do patch da meta) no `
 - Aba **Técnicos** na `StatsScreen` (`Components/ManagerRanking.tsx`): #, técnico, clube com escudo, pontos,
   títulos; chips Mundo / Meu país; linha do jogador destacada; clicar (ou Enter) abre os títulos
   (`competitionName`, acesso como "Acesso · <liga>"); "Carregar mais". `/stats?tab=managers` abre direto na aba.
+  Toda tabela da `StatsScreen` (Rankings, Meu time, Aposentados, Técnicos) usa as peças de
+  `Components/StatsTable.tsx` (cabeçalho, coluna de escudo 32px, nome no mesmo peso, linhas de 44px).
 - Painel do clube (`Dashboard/ClubSidebar.tsx`): "Ranking de técnicos: Nº X" abaixo do nome do técnico, link para a aba.
 - i18n: `statsScreen.managers.*`, `dashboard.clubSidebar.managerRank` (en, pt-BR).
 
