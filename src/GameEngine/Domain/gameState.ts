@@ -86,6 +86,10 @@ const REAL_HALF_DURATION = 150;
 
 /** Game-seconds per real-second: 45 game-minutes / REAL_HALF_DURATION. */
 const TIME_SCALE = 2700 / REAL_HALF_DURATION;
+/** Yards off-ball targets keep from the touchlines (#37). */
+const OFF_BALL_TOUCHLINE_MARGIN = 2.5;
+/** Minimum yards an off-ball target keeps from a teammate's position (#37). */
+const OFF_BALL_MIN_SEPARATION = 3;
 /** Duration of one half in game-seconds (45 minutes). */
 const HALF_DURATION = 2700;
 /**
@@ -2236,6 +2240,28 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const committedMarkId = decision?.type === 'track_mark' ? decision.markTargetId : undefined;
         const markTargetId = committedMarkId ?? markAssignments.get(player.id);
         target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime);
+      }
+
+      // Keep off-ball targets off the touchline itself (#37): wide bounds (LB yRange 50) and
+      // off-ball runs past the line clamp to y = 0 / 74, stacking teammates on the line.
+      if (player.role !== 'GK' && !isPressing) {
+        let ty = Math.max(OFF_BALL_TOUCHLINE_MARGIN, Math.min(PITCH_WIDTH - OFF_BALL_TOUCHLINE_MARGIN, target.y));
+        let tx = target.x;
+        // Light separation: don't settle on top of a teammate (they stacked on the line).
+        for (const mate of s.players) {
+          if (mate.id === player.id || mate.team !== player.team || mate.id === s.ballHolderId) continue;
+          const sx = tx - mate.x;
+          const sy = ty - mate.y;
+          const d  = Math.hypot(sx, sy);
+          if (d >= OFF_BALL_MIN_SEPARATION) continue;
+          const push = OFF_BALL_MIN_SEPARATION - d;
+          if (d > 0.01) { tx += (sx / d) * push; ty += (sy / d) * push; }
+          else { ty += ty < PITCH_WIDTH / 2 ? push : -push; }
+        }
+        target = {
+          x: Math.max(0, Math.min(PITCH_LENGTH, tx)),
+          y: Math.max(OFF_BALL_TOUCHLINE_MARGIN, Math.min(PITCH_WIDTH - OFF_BALL_TOUCHLINE_MARGIN, ty)),
+        };
       }
 
       const dx   = target.x - player.x;
