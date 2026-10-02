@@ -8,6 +8,7 @@ import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInte
 import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
 import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -134,6 +135,7 @@ export function PlayerCard({
             <h2 className="font-display font-black uppercase text-xl leading-none m-0 inline-flex items-center gap-2">
               {player.name}
               {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
+              {player.reborn && <RebornBadge className="mt-0.5" />}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
@@ -219,6 +221,7 @@ export function PlayerCard({
           <p className="text-sm font-black text-foreground truncate leading-tight flex items-center gap-1.5">
             <span className="truncate">{player.name}</span>
             {starKind && <StarBadge kind={starKind} />}
+            {player.reborn && <RebornBadge />}
           </p>
           <p className="text-sm text-muted-foreground truncate">{player.club}</p>
           <div className="flex items-center gap-1.5 mt-1">

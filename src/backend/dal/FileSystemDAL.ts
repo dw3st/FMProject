@@ -1,6 +1,6 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
-import type { FreeAgent, Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
@@ -24,6 +24,7 @@ function seasonArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/season.json`;
 }
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
+function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
 function transfersPath(saveId: string) { return `${SAVES_DIR}/${saveId}/transfers.json`; }
 function transfersArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/transfers.json`;
@@ -134,6 +135,17 @@ export class FileSystemDAL implements ISaveDAL {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(freeAgentsPath(saveId), JSON.stringify(agents));
     bumpSaveDataVersion(saveId);
+  }
+
+  async readRetired(saveId: string): Promise<RetiredPlayer[]> {
+    const file = Bun.file(retiredPath(saveId));
+    if (!(await file.exists())) return [];
+    return file.json() as Promise<RetiredPlayer[]>;
+  }
+
+  async writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(retiredPath(saveId), JSON.stringify(retired));
   }
 
   async readTransfers(saveId: string): Promise<TransferRecord[]> {

@@ -18,6 +18,8 @@ export const YOUTH = {
   ASSISTANT_BONUS: 0.3,
   /** Contract length of an academy player (years). */
   CONTRACT_YEARS: 3,
+  /** Largest academy a reborn star can still join. */
+  MAX_SIZE: 18,
   /** A youth player not promoted by this age is released at the rollover. */
   RELEASE_AGE: 19,
   /** Training sessions simulated per season for the academy (no matches). */

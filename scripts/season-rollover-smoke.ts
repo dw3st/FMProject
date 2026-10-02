@@ -1096,7 +1096,7 @@ try {
     check(youthN >= 3 && youthN <= 5, `base: the human club has ${youthN} academy player(s) (3-5)`);
     check((humanFinal?.youth ?? []).every((p) => p.age >= 16 && p.age <= 17 && !!p.contract),
       "base: academy players are 16-17 with a contract");
-    check(!(humanFinal?.players ?? []).some((p) => p.id.startsWith("youth_")),
+    check(!(humanFinal?.players ?? []).some((p) => /^youth_.+_\d{4}_\d+$/.test(p.id)),
       "base: no academy player entered the human first team on its own");
     const rolledLeagues = new Set(["premier_league", "of_championship", "serie_a", "of_italian_serie_b"]);
     const rolledAI = allFiles.filter(({ squad }) => squad.id !== playerSquadId && rolledLeagues.has(squad.leagueSlug ?? ""));
@@ -1111,6 +1111,71 @@ try {
     check(new Set(allIds).size === allIds.length, `base: player ids unique across the world (${allIds.length - new Set(allIds).size} dupes)`);
     const inbox = await plain().getInbox(saveId);
     check(inbox.some((m) => m.category === "youth" && m.kind === "intake"), "base: inbox has the intake message");
+  }
+
+  // ── Aposentadoria ────────────────────────────────────────────────────────
+  // See `.claude/rules/game/retirement.md`: at each country rollover players >= 34 may retire (squads and
+  // free agents), leaving a minimal record in `retired.json`. A world-class retiree of the human club
+  // can be reborn in the academy (forced path below).
+  console.log("\n── Aposentadoria ──");
+  {
+    const retired = await plain().getRetired(saveId);
+    check(retired.length > 0, `aposentadoria: ${retired.length} player(s) retired during the run`);
+    const byDate = new Map<string, number[]>();
+    const fa = retired.filter((r) => r.freeAgent).length;
+    console.log(`  retirees: ${retired.length - fa} from squads, ${fa} from the free-agent pool`);
+    for (const r of retired) byDate.set(r.retiredOn, [...(byDate.get(r.retiredOn) ?? []), r.age]);
+    for (const [d, ages] of [...byDate].sort()) {
+      console.log(`  ${d}: ${ages.length} retirements, ages ${Math.min(...ages)}-${Math.max(...ages)}, `
+        + `mean ${(ages.reduce((x, y) => x + y, 0) / ages.length).toFixed(1)}`);
+    }
+    check(retired.every((r) => r.age >= 33 && r.name && r.positions.length > 0 && r.statsAtRetirement && r.retiredOn),
+      "aposentadoria: every record has age >= 33 (free agents retire at age + 1 >= 34), name, positions, stats and date");
+    const retiredIds = new Set(retired.map((r) => r.id));
+    check(new Set(retired.map((r) => r.id)).size === retired.length, "aposentadoria: retired ids are unique");
+    const alive = new Set([
+      ...allFiles.flatMap(({ squad }) => [...squad.players, ...(squad.youth ?? [])].map((p) => p.id)),
+      ...(await plain().getFreeAgents(saveId)).map((f) => f.player.id),
+    ]);
+    check(![...retiredIds].some((id) => alive.has(id)), "aposentadoria: no retired player is still in a squad, academy or the free pool");
+    const rolledAges = allFiles.filter(({ squad }) => new Set(rolls.flatMap((r) => r.leagues)).has(squad.leagueSlug ?? ""))
+      .flatMap(({ squad }) => squad.players.map((p) => p.age));
+    check(rolledAges.every((a) => a < 40), `aposentadoria: nobody aged 40+ in a rolled league (max ${Math.max(...rolledAges)})`);
+    const pool = await plain().getFreeAgents(saveId);
+    check(pool.every((f) => f.player.age < 40), "aposentadoria: nobody aged 40+ in the free pool");
+    const humanRetired = retired.filter((r) => r.squadId === playerSquadId);
+    const inboxR = await plain().getInbox(saveId);
+    check(inboxR.filter((m) => m.category === "retirement").length >= humanRetired.length,
+      `aposentadoria: inbox has a message for each of the ${humanRetired.length} human retiree(s)`);
+
+    // Forced reborn: a pending world-class record, accepted through the route.
+    const { apiRoutes } = await import("@/backend/routes");
+    const { devAutoLogin } = await import("@/backend/auth/AuthService");
+    const { recordSaveOwnership } = await import("@/backend/auth/saveOwnership");
+    const { user, session } = devAutoLogin("smoke-reborn@test.local");
+    recordSaveOwnership(saveId, user.id);
+    const template = humanFinal!.players[0]!;
+    const legend = {
+      id: "smoke_legend", name: "Smoke Legend", nationality: template.nationality ?? null, positions: ["ST"],
+      preferredFoot: "left" as const, profile: template.profile, retiredOn: endDate, squadId: playerSquadId,
+      age: 39, wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending" as const,
+      statsAtRetirement: { ...template.stats, finishing: 10, tackling: 2 },
+    };
+    await plain().writeRetired(saveId, [...(await plain().getRetired(saveId)), legend]);
+    const handler = apiRoutes["/api/saves/:saveId/reborn/:retiredId" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    const res = await handler(Object.assign(
+      new Request(`http://localhost/api/saves/${saveId}/reborn/smoke_legend`, {
+        method: "POST", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+        body: JSON.stringify({ accept: true }),
+      }),
+      { params: { saveId, retiredId: "smoke_legend" } },
+    ));
+    check(res.status === 200, `aposentadoria: forced reborn accepted (status ${res.status})`);
+    const after = (await plain().listSquadFiles(saveId)).find(({ squad }) => squad.id === playerSquadId)?.squad;
+    const born = after?.youth?.find((p) => p.reborn?.fromId === "smoke_legend");
+    check(!!born && born.age === 17 && !!born.contract, "aposentadoria: the reborn player is a 17-year-old with a contract in the academy");
+    check(!!born && (await plain().getRetired(saveId)).find((r) => r.id === "smoke_legend")?.rebornOffer === "accepted",
+      "aposentadoria: the offer is marked accepted");
   }
 
   await checkFiles(saveId, "end");

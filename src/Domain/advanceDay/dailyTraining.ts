@@ -1,3 +1,4 @@
+import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import type { Squad } from "@/types/playerTypes";
 import type { TrainingEffect, TrainingEvent } from "@/types/dayLogTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -207,7 +208,7 @@ export function buildTrainingEvent(
         const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
         const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
         const { updatedPlayer, levelChanges, dpGained } =
-          applyTrainingDevelopment(p, policy.intensity, weights, devMult);
+          applyTrainingDevelopment(p, policy.intensity, weights, devMult * rebornDpMult(p));
         next = updatedPlayer;
         if (dpGained > 0) {
           eff!.dpGained = +dpGained.toFixed(2);

@@ -1,3 +1,5 @@
+import { RETIREMENT } from "@/Domain/retirement/retirementConfig";
+import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { YOUTH as Y } from "@/Domain/youth/youthConfig";
 import { aiClubFinance, financialTierOf, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { renewalContract } from "@/Domain/contracts/contracts";
@@ -160,7 +162,7 @@ export function developYouthSeason(player: RosterPlayer, dpMult: number): Roster
   const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
   let p: RosterPlayer = { ...player, overallAvg: undefined };
   for (let i = 0; i < Y.SESSIONS_PER_SEASON; i++) {
-    p = applyTrainingDevelopment(p, "normal", weights, dpMult).updatedPlayer;
+    p = applyTrainingDevelopment(p, "normal", weights, dpMult * rebornDpMult(player)).updatedPlayer;
   }
   return { ...p, age: p.age + 1, overallAvg: undefined };
 }
@@ -192,8 +194,10 @@ export function processYouthRollover(args: {
     const assistantRating = effectiveRating(squad, "assistant");
     const devMult = staffEffectsOf(squad).devMult;
     const aged = (squad.youth ?? []).map((p) => developYouthSeason(p, devMult));
-    const autoReleased = aged.filter((p) => p.age >= Y.RELEASE_AGE);
-    const kept = aged.filter((p) => p.age < Y.RELEASE_AGE);
+    // Reborn players may stay until the end of their x1.3 window (REBORN_UNTIL_AGE).
+    const leaves = (p: RosterPlayer) => p.age >= (p.reborn ? RETIREMENT.REBORN_UNTIL_AGE : Y.RELEASE_AGE);
+    const autoReleased = aged.filter(leaves);
+    const kept = aged.filter((p) => !leaves(p));
     const base = { ...squad, youth: kept };
     const intake = generateIntake({ saveId, squad: base, year, nextSeasonEnd, assistantRating });
     return { squad: { ...base, youth: [...kept, ...intake] }, intake, autoReleased, promoted: [] };

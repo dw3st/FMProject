@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { saveService, type SaveService } from "@/backend/SaveService";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
+import type { RetiredPlayer } from "@/types/playerTypes";
 import type {
   ContinentalInboxMessage,
   CupInboxMessage,
@@ -13,6 +14,7 @@ import type {
   TransferInInboxMessage,
   TransferOutInboxMessage,
   YouthInboxMessage,
+  RetirementInboxMessage,
 } from "@/types/inboxTypes";
 
 /**
@@ -330,6 +332,31 @@ export function buildYouthMessage(args: {
     preview:   preview.slice(0, 120),
     kind,
     ...(kind === "intake" ? { year, count, best } : { players }),
+  };
+}
+
+/** Retirement news for the human club; `reborn` is the world-class retiree offering a second life. */
+export function buildRetirementMessage(args: {
+  date: string;
+  kind: RetirementInboxMessage["kind"];
+  retired: RetiredPlayer;
+}): RetirementInboxMessage {
+  const { date, kind, retired } = args;
+  return {
+    id:          `retirement-${date}-${kind}-${retired.id}`,
+    date,
+    createdAt:   date,
+    read:        false,
+    category:    "retirement",
+    subject:     kind === "reborn" ? `${retired.name} retires, a legend` : `${retired.name} retires`,
+    preview:     `${retired.name} (${retired.age}) hung up his boots`,
+    kind,
+    retiredId:   retired.id,
+    playerName:  retired.name,
+    position:    retired.positions[0] ?? "",
+    age:         retired.age,
+    appearances: retired.appearances,
+    goals:       retired.goals,
   };
 }
 
