@@ -367,4 +367,29 @@ export const TEST_SCENARIOS: TestScenario[] = [
       return forceInjurySubstitution(base, target, 1, 'severe');
     },
   },
+
+  {
+    id:          'orphan-loose-ball',
+    name:        '11v11 — Orphan Loose Ball (#36)',
+    description: 'A resting loose ball in Team A defensive corner with NOBODY committed to chase it (as after a chaser leaves injured). Watch the engine re-commit chasers ("throughBall" debug log) — and, if nobody can arrive, the watchdog award it to the nearest player.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const passer = base.players.find(p => p.team === 'A' && p.role !== 'GK')!;
+      return {
+        ...base,
+        kickoffCountdown: 0,
+        setPiece: null,
+        players: base.players.map(p => ({ ...p, decisionMemory: EMPTY_DECISION_MEMORY })),
+        looseBall: {
+          x: 20, y: 60, vx: 0, vy: 0,
+          startTime: base.matchTime,
+          fromPasserId: passer.id,
+          fromTeamLastTouch: 'A',
+          intendedRunnerId: null,
+          receiverOffside: false,
+        },
+      };
+    },
+  },
 ];

@@ -1267,10 +1267,13 @@ function commitLooseBallChasers(
   passerId: number,
   toX:      number,
   toY:      number,
+  passerTeamFallback?: TeamId,
 ): GameState {
   const passer = state.players.find(p => p.id === passerId);
-  if (!passer) return state;
-  const passerTeam = passer.team;
+  // The passer may have left the pitch (injury) while the ball was loose — fall back to the
+  // team of the last touch so the re-commit still works (#36).
+  const passerTeam = passer?.team ?? passerTeamFallback;
+  if (!passerTeam) return state;
 
   type Cand = { id: number; team: TeamId; eta: number; role: PlayerRole };
   const collect = (team: TeamId, isAttacking: boolean): Cand[] => {
@@ -1638,6 +1641,17 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   lb = s.looseBall!;
   const passer = s.players.find(p => p.id === lb.fromPasserId);
 
+  // ── 3b. Nobody chasing? Re-commit chasers (#36) ─────────────────────────
+  // Chasers can vanish mid-race: injury removal/substitution (the incoming player has no
+  // chase memory), or nobody passed the role/recovery gate at landing. Without a chaser the
+  // ball can sit forever in empty space.
+  if (!s.players.some(p => p.decisionMemory?.decision?.type === 'chase_loose_ball')) {
+    s = commitLooseBallChasers(s, lb.fromPasserId, lb.x, lb.y, lb.fromTeamLastTouch);
+    debugLog('throughBall', `Loose ball had no chaser — re-committed at (${lb.x.toFixed(1)}, ${lb.y.toFixed(1)})`, {
+      playerId: lb.fromPasserId,
+    });
+  }
+
   // Sort players by distance to the loose ball
   const ranked = s.players
     .filter(p => !isPlayerInRecovery(p))
@@ -1645,7 +1659,21 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     .sort((a, b) => a.dist - b.dist);
 
   // Players within touch radius — they can pick up
-  const inTouch = ranked.filter(r => r.dist <= cfg.LOOSE_BALL_TOUCH_RADIUS);
+  let inTouch = ranked.filter(r => r.dist <= cfg.LOOSE_BALL_TOUCH_RADIUS);
+
+  // ── Watchdog (#36): a loose ball can never outlive the timeout — award it to the nearest
+  // player (recovering players included) so play always resumes.
+  if (inTouch.length === 0 && s.matchTime - lb.startTime >= cfg.LOOSE_BALL_WATCHDOG_REAL_SECONDS * TIME_SCALE) {
+    const nearest = s.players
+      .map(p => ({ p, dist: Math.hypot(p.x - lb.x, p.y - lb.y) }))
+      .sort((a, b) => a.dist - b.dist)[0];
+    if (nearest) {
+      debugLog('throughBall', `Loose-ball watchdog: awarded to nearest player ${nearest.p.name} (${nearest.dist.toFixed(1)} yds)`, {
+        playerId: nearest.p.id, data: { fromId: lb.fromPasserId },
+      });
+      inTouch = [nearest];
+    }
+  }
 
   // ── 4. No one in reach yet — ball keeps drifting (or sits if v = 0) ──────
   if (inTouch.length === 0) {
