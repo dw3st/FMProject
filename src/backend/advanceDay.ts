@@ -1351,21 +1351,27 @@ export async function advanceOneDay(
           const season = seasonLabel(state.year, state.start, state.end);
           const table = standings[slug] ?? [];
           const championId = table.length > 0 && table[0]!.mp > 0 ? table[0]!.squadId : null;
+          // Titles of every club of the league first, so a player sold to a rival of the same
+          // league gets his old club's titles on his partial row too.
+          const titlesByClub: Record<string, string[]> = {};
           for (const ref of transition.squadsToSave) {
             const titles = [
               ...(ref.squad.id === championId ? [`league:${slug}`] : []),
               ...(pendingTitles[ref.squad.id] ?? []),
             ];
+            if (titles.length > 0) titlesByClub[ref.squad.id] = titles;
             if (pendingTitles[ref.squad.id]) {
               const { [ref.squad.id]: _, ...rest } = pendingTitles;
               pendingTitles = rest;
               pendingTitlesChanged = true;
             }
+          }
+          for (const ref of transition.squadsToSave) {
             ref.squad = {
               ...ref.squad,
               players: closeSeasonForPlayers(
                 ref.squad.players, transition.archive.playerLogs,
-                { squadId: ref.squad.id, clubName: ref.squad.name, league: slug }, season, titles,
+                { squadId: ref.squad.id, clubName: ref.squad.name, league: slug }, season, titlesByClub,
               ),
             };
           }
