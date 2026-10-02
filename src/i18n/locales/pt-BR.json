@@ -1809,7 +1809,11 @@
       "age": "Idade",
       "lastClub": "Último clube",
       "show": "Ver carreira",
-      "hide": "Ocultar carreira"
+      "hide": "Ocultar carreira",
+      "mine": "Do meu clube",
+      "all": "Todos",
+      "emptyMine": "Nenhum jogador do seu clube se aposentou ainda.",
+      "loadMore": "Carregar mais"
     }
   },
   "players": {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
@@ -161,73 +161,135 @@ function TeamTable({ stars }: { stars: Stars }) {
 
 type RetiredRow = RetiredPlayer & { clubName: string | null };
 
+const RETIRED_PAGE = 50;
+
 function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[] }) {
   const { t } = useTranslation();
+  const [mine, setMine] = useState(true);
   const [rows, setRows] = useState<RetiredRow[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  // Bumped on every filter change, so a "load more" answer for the old filter is dropped.
+  const generation = useRef(0);
+
+  const fetchPage = (offset: number) =>
+    fetch(`/api/saves/${saveId}/retired?offset=${offset}&limit=${RETIRED_PAGE}${mine ? "&mine=1" : ""}`)
+      .then((r) => (r.ok
+        ? (r.json() as Promise<{ total: number; items: RetiredRow[] }>)
+        : Promise.reject(new Error(String(r.status)))));
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/saves/${saveId}/retired`)
-      .then((r) => (r.ok ? (r.json() as Promise<{ retired: RetiredRow[] }>) : Promise.reject(new Error(String(r.status)))))
-      .then((d) => { if (!cancelled) setRows(d.retired); })
+    generation.current++;
+    setRows(null);
+    setError(false);
+    setOpen(null);
+    setLoadingMore(false);
+    fetchPage(0)
+      .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); } })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
-  }, [saveId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveId, mine]);
 
-  if (error) return <p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p>;
-  if (!rows) return <p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p>;
-  if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("statsScreen.retired.empty")}</p>;
+  const loadMore = () => {
+    if (!rows || loadingMore) return;
+    const gen = generation.current;
+    setLoadingMore(true);
+    fetchPage(rows.length)
+      .then((d) => { if (gen === generation.current) { setRows([...rows, ...d.items]); setTotal(d.total); } })
+      .catch(() => { if (gen === generation.current) setError(true); })
+      .finally(() => { if (gen === generation.current) setLoadingMore(false); });
+  };
+
+  const chip = (value: boolean, label: string) => (
+    <button
+      type="button"
+      aria-pressed={mine === value}
+      onClick={() => setMine(value)}
+      className={`rounded border px-3 py-1.5 text-sm bg-transparent cursor-pointer min-h-8 ${
+        mine === value ? "border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
+  const filters = (
+    <div className="flex gap-2 mb-3">
+      {chip(true, t("statsScreen.retired.mine"))}
+      {chip(false, t("statsScreen.retired.all"))}
+    </div>
+  );
+
+  if (error) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p></>;
+  if (!rows) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p></>;
+  if (rows.length === 0) {
+    return <>{filters}<p className="text-sm text-muted-foreground">{t(mine ? "statsScreen.retired.emptyMine" : "statsScreen.retired.empty")}</p></>;
+  }
   const th = TH;
   return (
-    <div className="overflow-x-auto border border-border rounded-lg max-w-4xl">
-      <table className={TABLE}>
-        <thead className="border-b border-border">
-          <tr>
-            <th className={`${th} text-left`}>{t("statsScreen.player")}</th>
-            <th className={`${th} text-right`}>{t("statsScreen.retired.age")}</th>
-            <th className={`${th} text-left`}>{t("statsScreen.retired.lastClub")}</th>
-            <th className={`${th} text-right`}>{t("career.apps")}</th>
-            <th className={`${th} text-right`}>{t("career.goals")}</th>
-            <th className={th} />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => {
-            const hist = r.history ?? [];
-            const apps = hist.reduce((a, h) => a + h.apps, 0);
-            const goals = hist.reduce((a, h) => a + h.goals, 0);
-            const isOpen = open === r.id;
-            return [
-              <tr key={r.id} className={ROW}>
-                <td className={TD}>{r.name}</td>
-                <td className={`${TD} text-right tabular-nums`}>{r.age}</td>
-                <td className={`${TD} text-muted-foreground truncate max-w-[12rem]`}>{r.clubName ?? "-"}</td>
-                <td className={`${TD} text-right tabular-nums`}>{apps}</td>
-                <td className={`${TD} text-right tabular-nums`}>{goals}</td>
-                <td className={`${TD} text-right`}>
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpen(isOpen ? null : r.id)}
-                    className="min-h-8 bg-transparent border-0 p-0 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    {isOpen ? t("statsScreen.retired.hide") : t("statsScreen.retired.show")}
-                  </button>
-                </td>
-              </tr>,
-              isOpen && (
-                <tr key={`${r.id}-career`} className="border-b border-border last:border-0">
-                  <td colSpan={6} className="px-2 py-3">
-                    <CareerTable rows={hist} leagues={leagues} />
+    <div className="max-w-4xl">
+      {filters}
+      <div className="overflow-x-auto border border-border rounded-lg">
+        <table className={TABLE}>
+          <thead className="border-b border-border">
+            <tr>
+              <th className={`${th} text-left`}>{t("statsScreen.player")}</th>
+              <th className={`${th} text-right`}>{t("statsScreen.retired.age")}</th>
+              <th className={`${th} text-left`}>{t("statsScreen.retired.lastClub")}</th>
+              <th className={`${th} text-right`}>{t("career.apps")}</th>
+              <th className={`${th} text-right`}>{t("career.goals")}</th>
+              <th className={th} />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const hist = r.history ?? [];
+              const apps = hist.reduce((a, h) => a + h.apps, 0);
+              const goals = hist.reduce((a, h) => a + h.goals, 0);
+              const isOpen = open === r.id;
+              return [
+                <tr key={r.id} className={ROW}>
+                  <td className={TD}>{r.name}</td>
+                  <td className={`${TD} text-right tabular-nums`}>{r.age}</td>
+                  <td className={`${TD} text-muted-foreground truncate max-w-[12rem]`}>{r.clubName ?? "-"}</td>
+                  <td className={`${TD} text-right tabular-nums`}>{apps}</td>
+                  <td className={`${TD} text-right tabular-nums`}>{goals}</td>
+                  <td className={`${TD} text-right`}>
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      onClick={() => setOpen(isOpen ? null : r.id)}
+                      className="min-h-8 bg-transparent border-0 p-0 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {isOpen ? t("statsScreen.retired.hide") : t("statsScreen.retired.show")}
+                    </button>
                   </td>
-                </tr>
-              ),
-            ];
-          })}
-        </tbody>
-      </table>
+                </tr>,
+                isOpen && (
+                  <tr key={`${r.id}-career`} className="border-b border-border last:border-0">
+                    <td colSpan={6} className="px-2 py-3">
+                      <CareerTable rows={hist} leagues={leagues} />
+                    </td>
+                  </tr>
+                ),
+              ];
+            })}
+          </tbody>
+        </table>
+      </div>
+      {rows.length < total && (
+        <button
+          type="button"
+          onClick={loadMore}
+          disabled={loadingMore}
+          className="mt-3 h-10 px-5 bg-transparent border-0 text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
+        >
+          {loadingMore ? t("statsScreen.loading") : t("statsScreen.retired.loadMore")}
+        </button>
+      )}
     </div>
   );
 }

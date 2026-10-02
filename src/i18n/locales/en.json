@@ -1809,7 +1809,11 @@
       "age": "Age",
       "lastClub": "Last club",
       "show": "Show career",
-      "hide": "Hide career"
+      "hide": "Hide career",
+      "mine": "My club",
+      "all": "All",
+      "emptyMine": "No player of your club has retired yet.",
+      "loadMore": "Load more"
     }
   },
   "players": {
