@@ -1403,6 +1403,7 @@
     },
     "assistsLabel": "assists",
     "clubSidebar": {
+      "managerRank": "Manager ranking: #{{rank}}",
       "manager": "Manager",
       "board": "Board",
       "fans": "Fans",
@@ -1814,6 +1815,19 @@
       "all": "All",
       "emptyMine": "No player of your club has retired yet.",
       "loadMore": "Load more"
+    },
+    "managers": {
+      "tab": "Managers",
+      "world": "World",
+      "country": "My country",
+      "name": "Manager",
+      "club": "Club",
+      "points": "Points",
+      "titles": "Titles",
+      "promotion": "Promotion · {{league}}",
+      "yourRank": "You are #{{rank}} of {{total}}",
+      "empty": "No managers yet.",
+      "hint": "Click a manager to see his titles. Points: league titles and national cups weighted by the country's strength, continental titles and promotions."
     }
   },
   "players": {
