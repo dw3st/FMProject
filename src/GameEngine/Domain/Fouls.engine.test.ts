@@ -2,6 +2,7 @@ import { describe, expect, test, spyOn, afterEach } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState, tickState, maybeFoul, bookPlayer, restartHoldsPeriod } from "@/GameEngine/Domain/gameState";
+import { TACKLE_COOLDOWN } from "@/GameEngine/Infrastructure/ActionOutcomes";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Squad } from "@/types/playerTypes";
@@ -166,5 +167,16 @@ describe("fouls in the engine", () => {
     const mid = maybeFoul(s, defender, attacker, "tackle", false, seq(0, 0.99, 0.99))!;
     expect(mid.setPiece?.type).toBe("free_kick");
     expect(restartHoldsPeriod(mid, 2701, 2700)).toBe(false);
+  });
+
+  test("the free-kick taker can't be challenged right after the freeze (tackle cooldown)", () => {
+    const { s, attacker, defender } = boxSituation(60);
+    const out = maybeFoul({ ...s, tackleCooldown: 0 }, defender, attacker, "dribble", false, seq(0, 0.99, 0.99))!;
+    expect(out.setPiece?.type).toBe("free_kick");
+    expect(out.tackleCooldown).toBe(TACKLE_COOLDOWN);
+    // The freeze doesn't drain it: the cooldown is still full when play restarts.
+    const afterFreeze = tickState(out, out.setPiece!.countdown).state;
+    expect(afterFreeze.setPiece?.countdown).toBe(0);
+    expect(afterFreeze.tackleCooldown).toBe(TACKLE_COOLDOWN);
   });
 });
