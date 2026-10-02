@@ -88,7 +88,7 @@ describe("resolveUserLineup", () => {
     const before = resolveUserLineup(squad, formation, saved, "2027-04-05");
     expect(before.lineup).not.toContain("p9");
     expect(before.lineup).toContain("bench-st");
-    expect(before.injuredReplaced).toEqual([{ out: "p9", in: "bench-st" }]);
+    expect(before.injuredReplaced).toEqual([{ out: "p9", in: "bench-st", reason: "injured" }]);
 
     // On returnDate, the saved lineup plays as originally saved — no replacement needed.
     const onReturn = resolveUserLineup(squad, formation, saved, "2027-04-10");

@@ -263,7 +263,7 @@ no 3º jogo) passando.
   extraída: `autoFillLineupWithFitness` a usa, e o clube do jogador também. `applyRotation`
   aplica as trocas.
 - `resolveUserLineup(..., date, { assistantRotation, override })` (`matchSimulationLineups.ts`):
-  depois de `replaceInjuredStarters`, calcula a sugestão. Override da data (`meta.rotationOverride`)
+  depois de `replaceUnavailableStarters`, calcula a sugestão. Override da data (`meta.rotationOverride`)
   aplica as trocas aceitas (ou nada com `optOut`); sem override, `TacticsSave.assistantRotation`
   ligado aplica tudo sozinho; senão só sugere. Devolve `rotationSuggestion` e `rotationApplied`.
 - `POST /api/saves/:id/rotation-override { date, swaps, optOut? }` grava `meta.rotationOverride`

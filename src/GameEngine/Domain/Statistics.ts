@@ -47,6 +47,21 @@ export interface PlayerStats {
   /** Shootout kicks taken / scored (never counted as goals). */
   penaltiesTaken:           number;
   penaltiesScored:          number;
+  // ── Discipline (`.claude/rules/game-engine/fouls.md`) ──────────────────────
+  /** Fouls committed. */
+  fouls:                    number;
+  /** Yellow cards (a second yellow counts here AND as a red). */
+  yellowCards:              number;
+  /** Red cards (straight or second yellow). */
+  redCards:                 number;
+  /** In-match penalties awarded to this player's team, credited to the taker. */
+  penaltiesAwarded:         number;
+  /** In-match penalties conceded (fouls in the own box). */
+  penaltiesConceded:        number;
+  /** In-match penalties scored (never shootout kicks). */
+  penaltyGoals:             number;
+  /** Times caught offside (the receiver). */
+  offsides:                 number;
 }
 
 export interface TeamStats extends PlayerStats {
@@ -88,6 +103,13 @@ function emptyStats(): PlayerStats {
     switchPlays:              0,
     penaltiesTaken:           0,
     penaltiesScored:          0,
+    fouls:                    0,
+    yellowCards:              0,
+    redCards:                 0,
+    penaltiesAwarded:         0,
+    penaltiesConceded:        0,
+    penaltyGoals:             0,
+    offsides:                 0,
   };
 }
 
@@ -213,6 +235,21 @@ gameBus.on('injury', e => {
   notify();
 });
 
+// ── Discipline stats ──────────────────────────────────────────────────────────
+gameBus.on('foul', e => { get(e.offenderId).fouls++; notify(); });
+gameBus.on('card', e => {
+  const s = get(e.playerId);
+  if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
+  notify();
+});
+gameBus.on('penaltyAwarded', e => {
+  get(e.takerId).penaltiesAwarded++;
+  get(e.offenderId).penaltiesConceded++;
+  notify();
+});
+gameBus.on('penaltyResolved', e => { if (e.scored) { get(e.takerId).penaltyGoals++; notify(); } });
+gameBus.on('offsideCalled', e => { get(e.receiverId).offsides++; notify(); });
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -269,6 +306,13 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.switchPlays              += stats.switchPlays;
     result.penaltiesTaken           += stats.penaltiesTaken;
     result.penaltiesScored          += stats.penaltiesScored;
+    result.fouls                    += stats.fouls;
+    result.yellowCards              += stats.yellowCards;
+    result.redCards                 += stats.redCards;
+    result.penaltiesAwarded         += stats.penaltiesAwarded;
+    result.penaltiesConceded        += stats.penaltiesConceded;
+    result.penaltyGoals             += stats.penaltyGoals;
+    result.offsides                 += stats.offsides;
   }
   return result;
 }

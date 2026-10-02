@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import {
   Combobox,
   ComboboxButton,
@@ -10,7 +10,12 @@ import { useTranslation } from "react-i18next";
 import { formSelectBoxClass } from "@/GameInterface/Components/SelectListbox";
 import { Icon } from "@/GameInterface/Icons";
 
-type Option<T extends string> = { value: T; label: string };
+/**
+ * `group`/`subgroup` (optional) render a header row whenever they change from the previous
+ * visible option, so the list can be grouped (e.g. continent -> country -> competition).
+ * Options must already be sorted by group.
+ */
+type Option<T extends string> = { value: T; label: string; group?: string; subgroup?: string };
 
 export function SelectCombobox<T extends string>({
   label,
@@ -45,7 +50,7 @@ export function SelectCombobox<T extends string>({
     query === ""
       ? options
       : options.filter((o) =>
-          `${o.label} ${o.value}`.toLowerCase().includes(query.trim().toLowerCase()),
+          `${o.label} ${o.value} ${o.group ?? ""} ${o.subgroup ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()),
         );
 
   const displayForValue = (v: T) => options.find((o) => o.value === v)?.label ?? "";
@@ -88,16 +93,30 @@ export function SelectCombobox<T extends string>({
             {filtered.length === 0 && (
               <div className="px-3 py-2.5 text-sm text-muted-foreground text-center">{finalEmptyMessage}</div>
             )}
-            {filtered.map((opt) => (
+            {filtered.map((opt, i) => {
+              const prev = filtered[i - 1];
+              const newGroup = opt.group !== undefined && opt.group !== prev?.group;
+              const newSubgroup = opt.subgroup !== undefined && (newGroup || opt.subgroup !== prev?.subgroup);
+              return (
+              <Fragment key={opt.value}>
+              {newGroup && (
+                <div className="px-3 pt-3 pb-1 font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground">
+                  {opt.group}
+                </div>
+              )}
+              {newSubgroup && (
+                <div className="px-3 pt-1.5 pb-0.5 text-[13px] font-semibold text-muted-foreground">{opt.subgroup}</div>
+              )}
               <ComboboxOption
-                key={opt.value}
                 value={opt.value}
-                className="group flex items-center justify-between gap-2 px-3 py-2 cursor-pointer transition-colors data-[focus]:bg-primary/10 data-[selected]:text-primary"
+                className={`group flex items-center justify-between gap-2 ${opt.subgroup ? "pl-6 pr-3" : "px-3"} py-2 cursor-pointer transition-colors data-[focus]:bg-primary/10 data-[selected]:text-primary`}
               >
                 <span className="font-medium truncate">{opt.label}</span>
                 <Icon name="check" className="w-4 h-4 opacity-0 group-data-[selected]:opacity-100 text-primary shrink-0" />
               </ComboboxOption>
-            ))}
+              </Fragment>
+              );
+            })}
           </ComboboxOptions>
         </div>
       </Combobox>

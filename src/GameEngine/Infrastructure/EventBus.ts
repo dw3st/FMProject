@@ -66,6 +66,28 @@ export interface GameEvents {
   /** Emitted after any stat change. Payload is a full snapshot of all player stats. */
   statsUpdated: Record<number, import('@/GameEngine/Domain/Statistics').PlayerStats>;
 
+  // ── Discipline events (`.claude/rules/game-engine/fouls.md`) ─────────────
+  /** A resolved tackle / loose-ball duel was a foul. `team` is the offender's team; `x`/`y` the foul spot. */
+  foul: {
+    offenderId: number;
+    fouledId:   number;
+    team:       TeamId;
+    kind:       import('@/GameEngine/Domain/Fouls').FoulKind;
+    x:          number;
+    y:          number;
+    /** Inside the offender's penalty area — the restart is a penalty. */
+    inBox:      boolean;
+    minute:     number;
+  };
+  /** A card was shown. A second yellow emits the yellow and then a red with `secondYellow: true`. */
+  card: { playerId: number; playerName: string; team: TeamId; card: 'yellow' | 'red'; secondYellow: boolean; minute: number };
+  /** A free kick was awarded to `team` (the fouled side). `dangerous` = taken with the freeKick_* layouts. */
+  freeKickAwarded: { team: TeamId; takerId: number; x: number; y: number; dangerous: boolean; minute: number };
+  /** A penalty was awarded to `team` (the fouled side). */
+  penaltyAwarded: { team: TeamId; takerId: number; offenderId: number; minute: number };
+  /** An in-match penalty was taken (shootout kicks use `penaltyKick` instead). */
+  penaltyResolved: { team: TeamId; takerId: number; keeperId: number | null; scored: boolean; chance: number };
+
   // ── Offside event ─────────────────────────────────────────────────────────
   /** Emitted when a pass completion is cancelled due to the receiver being offside. */
   offsideCalled: { team: TeamId; receiverId: number };

@@ -16,6 +16,8 @@ import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world
 import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { ClubFinancesTable } from "@/GameInterface/Components/ClubFinancesTable";
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
 import { CupBracket, type CupBracketData } from "@/GameInterface/Components/CupBracket";
@@ -74,8 +76,8 @@ function StandingsTable({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-md overflow-hidden">
-      <div className="grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-3 bg-secondary/30 border-b border-border text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
+    <div className={TABLE_STYLE.shell}>
+      <div className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-3 ${TABLE_STYLE.head}`}>
         <div className="text-center">{t("leagues.rank")}</div>
         <div>{t("leagues.club")}</div>
         <div className="text-center">{t("leagues.matches")}</div>
@@ -89,7 +91,7 @@ function StandingsTable({
         <div className="text-center">{t("leagues.lastFive")}</div>
       </div>
 
-      <div className="divide-y divide-border/50">
+      <div className={TABLE_STYLE.body}>
         {standings.map((row, idx) => {
           const rank = idx + 1;
           const zone = getZone(rank, standings.length, zones);
@@ -98,21 +100,21 @@ function StandingsTable({
             <div
               key={row.squadId}
               onClick={() => onClickSquad(row)}
-              className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-2.5 hover:bg-secondary/30 transition-colors cursor-pointer border-l-4 ${
+              className={`grid grid-cols-[40px_1fr_50px_40px_40px_40px_40px_40px_50px_60px_120px] gap-2 px-4 py-2.5 ${TABLE_STYLE.row} ${TABLE_STYLE.rowClickable} border-l-4 ${
                 zone ? ZONE_BORDER[zone.color] : "border-l-transparent"
               }`}
             >
-              <div className="text-center font-bold text-muted-foreground">{rank}</div>
+              <div className={TABLE_STYLE.rank}>{rank}</div>
 
               <div className="flex items-center gap-3">
                 <ClubLogo
                   logoUrl={squadLogoUrl(row.squadId)}
                   primaryColor={row.colors[0]}
                   secondaryColor={row.colors[1]}
-                  className="w-8 h-8 rounded-full shrink-0"
+                  className={TABLE_STYLE.crest}
                   imgClassName="w-full h-full object-contain"
                 />
-                <span className="font-semibold text-foreground">{row.name}</span>
+                <span className={TABLE_STYLE.name}>{row.name}</span>
               </div>
 
               <div className="text-center text-muted-foreground">{row.mp}</div>
@@ -124,7 +126,7 @@ function StandingsTable({
               <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-destructive"}`}>
                 {row.gd > 0 ? `+${row.gd}` : row.gd}
               </div>
-              <div className="text-center font-black font-display text-primary">
+              <div className={TABLE_STYLE.key}>
                 {row.pts}
               </div>
               <div className="flex items-center justify-center gap-1">
@@ -773,7 +775,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
             ) : undefined
           }
         >
-          {t("leagues.title")} <span className="text-primary">{t("leagues.table")}</span>
+          {t("leagues.title")}
         </PageHeadline>
 
         {leagues.length > 0 && (
@@ -816,70 +818,19 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
 
         {active && (
           <>
-            {/* Table / Fixtures view toggle */}
-            <div className="flex gap-1 p-1 bg-secondary/20 rounded-lg w-fit border border-border">
-              <button
-                type="button"
-                onClick={() => setTab("table")}
-                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 ${
-                  tab === "table"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                }`}
-              >
-                {t("leagues.table")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("fixtures")}
-                disabled={!hasFixtures}
-                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  tab === "fixtures"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                }`}
-              >
-                {t("leagues.fixtures")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("finances")}
-                disabled={!session}
-                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  tab === "finances"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                }`}
-              >
-                {t("leagues.finances.tab")}
-              </button>
-              {cupSlug && (
-                <button
-                  type="button"
-                  onClick={() => setTab("cup")}
-                  disabled={!session}
-                  className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                    tab === "cup"
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground bg-transparent"
-                  }`}
-                >
-                  {competitionName(cupSlug, leagues, i18n.language)}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setTab("continental")}
-                disabled={!session}
-                className={`px-4 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  tab === "continental"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground bg-transparent"
-                }`}
-              >
-                {t("continental.tab")}
-              </button>
-            </div>
+            <SegmentedTabs
+              tabs={[
+                { key: "table" as const, label: t("leagues.table") },
+                { key: "fixtures" as const, label: t("leagues.fixtures"), disabled: !hasFixtures },
+                { key: "finances" as const, label: t("leagues.finances.tab"), disabled: !session },
+                ...(cupSlug
+                  ? [{ key: "cup" as const, label: competitionName(cupSlug, leagues, i18n.language), disabled: !session }]
+                  : []),
+                { key: "continental" as const, label: t("continental.tab"), disabled: !session },
+              ]}
+              active={tab}
+              onChange={setTab}
+            />
 
             {tab === "table" ? (
               <>
@@ -928,25 +879,16 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
               )
             ) : tab === "continental" ? (
               <div className="space-y-4">
-                <div className="flex gap-1 p-1 bg-secondary/20 rounded-lg w-fit border border-border flex-wrap">
-                  {CONTINENTAL_SLUGS.map((slug) => (
-                    <button
-                      key={slug}
-                      type="button"
-                      onClick={() => {
-                        setContinentalSlug(slug);
-                        setContinentalSlugTouched(true);
-                      }}
-                      className={`px-3 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 ${
-                        continentalSlug === slug
-                          ? "bg-card text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground bg-transparent"
-                      }`}
-                    >
-                      {competitionName(slug, leagues, i18n.language)}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedTabs
+                  wrap
+                  compact
+                  tabs={CONTINENTAL_SLUGS.map((slug) => ({ key: slug, label: competitionName(slug, leagues, i18n.language) }))}
+                  active={continentalSlug}
+                  onChange={(slug) => {
+                    setContinentalSlug(slug);
+                    setContinentalSlugTouched(true);
+                  }}
+                />
 
                 {continentalError ? (
                   <p className="text-destructive text-sm p-6">{t("warnings.errors.loadFailed")}</p>

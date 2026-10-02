@@ -70,3 +70,42 @@ describe("ui standard components", () => {
     expect(renderToStaticMarkup(<Badge>ok</Badge>)).toContain("text-sm");
   });
 });
+
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { StatsTable, StatsHead, StatsRow, NumberCell, NameCell } from "@/GameInterface/Components/StatsTable";
+import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
+
+describe("Leagues look shared with Stats", () => {
+  test("SegmentedTabs marks the active tab and disables tabs", () => {
+    const html = renderToStaticMarkup(
+      <SegmentedTabs
+        tabs={[{ key: "a", label: "A" }, { key: "b", label: "B", disabled: true }]}
+        active="a"
+        onChange={() => {}}
+      />,
+    );
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain("disabled");
+  });
+  test("SegmentedTabs accepts no active tab", () => {
+    const html = renderToStaticMarkup(<SegmentedTabs tabs={[{ key: "a", label: "A" }]} active={null} onChange={() => {}} />);
+    expect(html).not.toContain('aria-selected="true"');
+  });
+  test("StatsTable uses the Leagues table classes", () => {
+    const html = renderToStaticMarkup(
+      <StatsTable head={<StatsHead>Jogador</StatsHead>}>
+        <StatsRow highlight>
+          <NameCell>Fulano</NameCell>
+          <NumberCell strong>7</NumberCell>
+          <NumberCell>3</NumberCell>
+        </StatsRow>
+      </StatsTable>,
+    );
+    expect(html).toContain(TABLE_STYLE.shell);
+    expect(html).toContain(TABLE_STYLE.head);
+    expect(html).toContain(TABLE_STYLE.key);
+    expect(html).toContain(TABLE_STYLE.number);
+    expect(html).toContain(TABLE_STYLE.rowHighlight);
+  });
+});

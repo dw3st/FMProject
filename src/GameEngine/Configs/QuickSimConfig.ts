@@ -185,4 +185,23 @@ export const QUICK_SIM_CONFIG = {
    * pressing/tackling and carrying/pressing respectively); MID sits in between.
    */
   ENERGY_DRAIN_BY_LINE: { GK: 38.1, DEF: 53.5, MID: 48.3, FWD: 52.1 } as Record<LineGroup, number>,
+
+  /**
+   * Discipline (Etapa 12, `.claude/rules/game/discipline.md`): fouls, cards, penalties and offsides
+   * per side, Poisson around the full engine's per-match means (`.claude/rules/game-engine/fouls.md`:
+   * PL 11.3 fouls / 2.89 yellows / 0.15 reds / 0.24 penalties / 1.05 offsides per match, two teams).
+   * No level trend in the engine except offsides. Fitted by `bun scripts/quicksim-discipline.ts`.
+   */
+  FOULS_PER_SIDE: 5.75,
+  /** Who commits a foul: weight per line × (1 + 0.6 × (0.5 − tackling/10)). */
+  FOUL_LINE_WEIGHT: { GK: 0.05, DEF: 1.2, MID: 1.0, FWD: 0.7 } as Record<LineGroup, number>,
+  /** A booked player fouls less (same idea as the engine's `YELLOW_MULT`). */
+  BOOKED_FOUL_MULT: 0.35,
+  YELLOW_PER_FOUL: 0.245,
+  /** Card chance on a booked player's foul (engine: 1.15). */
+  BOOKED_CARD_MULT: 1.15,
+  DIRECT_RED_PER_FOUL: 0.0026,
+  PENALTIES_PER_SIDE: 0.115,
+  OFFSIDES_PER_SIDE: 0.45,
+  OFFSIDE_LEVEL_EXPONENT: 1.5,
 } as const;

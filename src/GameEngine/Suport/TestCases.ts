@@ -15,7 +15,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { createMatchState, forceInjurySubstitution } from '@/GameEngine/Domain/gameState';
+import { createMatchState, forceInjurySubstitution, maybeFoul } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
@@ -413,6 +413,34 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const target = base.players.find(p => p.team === 'A' && p.role !== 'GK');
       if (!target) return base;
       return forceInjurySubstitution(base, target, 1, 'severe');
+    },
+  },
+
+  {
+    id:          'foul-in-box',
+    name:        '11v11 — Foul in the Box (penalty)',
+    description: 'Team B CB tackles Team A ST from behind inside the Team B box. The foul is forced (maybeFoul with a fixed roll): a yellow card and a penalty, resolved with penaltyChance when the 2-second freeze ends. Watch the "foul" and "card" debug log categories and the FL/YC/PEN columns.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      const cb = base.players.find(p => p.team === 'B' && p.role === 'CB');
+      if (!st || !cb) return base;
+      const goalX = st.attackDir === 1 ? PITCH_LENGTH : 0;
+      const x = goalX - st.attackDir * 10;
+      const placed: GameState = {
+        ...base,
+        setPiece: null,
+        ballHolderId: st.id,
+        players: base.players.map(p =>
+          p.id === st.id ? { ...p, x, y: 37 } :
+          p.id === cb.id ? { ...p, x: x - st.attackDir * 1.5, y: 37 } : p),
+      };
+      // Rolls: foul (0 < chance), no straight red (0.99), yellow (0).
+      const rolls = [0, 0.99, 0];
+      let i = 0;
+      const fouled = maybeFoul(placed, placed.players.find(p => p.id === cb.id)!, placed.players.find(p => p.id === st.id)!, 'tackle', false, () => rolls[i++] ?? 0.5);
+      return fouled ?? placed;
     },
   },
 

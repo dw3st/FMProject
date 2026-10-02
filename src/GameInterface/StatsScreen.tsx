@@ -6,12 +6,11 @@ import {
   ClubCell, CrestCell, LoadMoreButton, NameCell, NumberCell, RankCell, StatsCell, StatsDetailRow, StatsHead, StatsRow, StatsTable,
 } from "@/GameInterface/Components/StatsTable";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
-import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world/labels";
-import { cupSlugOf } from "@/Domain/cups/cupIds";
-import { isContinentalSlug } from "@/Domain/continental/competitions";
-import type { CompetitionRankings, RankingRow } from "@/Domain/stats/rankings";
+import { ALL_COMPETITIONS, type CompetitionRankings, type RankingRow } from "@/Domain/stats/rankings";
+import { statsCompetitionOptions } from "@/GameInterface/statsCompetitionOptions";
 import type { LeagueData, RetiredPlayer } from "@/types/playerTypes";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
@@ -48,14 +47,14 @@ function RankingTable({
   const { t } = useTranslation();
   return (
     <section className="min-w-0">
-      <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-2">{title}</h2>
+      <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">{title}</h2>
       <StatsTable
         head={<>
           <StatsHead align="center">#</StatsHead>
           <StatsHead />
           <StatsHead>{t("statsScreen.player")}</StatsHead>
           <StatsHead>{t("statsScreen.club")}</StatsHead>
-          <StatsHead align="right">{valueLabel}</StatsHead>
+          <StatsHead align="center">{valueLabel}</StatsHead>
         </>}
       >
         {rows.map((r, i) => {
@@ -101,7 +100,7 @@ function TeamTable({ stars }: { stars: Stars }) {
     });
   }, [squad, sort, dir]);
 
-  const header = (key: TeamSort, label: string, align: "left" | "right" = "right") => (
+  const header = (key: TeamSort, label: string, align: "left" | "center" = "center") => (
     <StatsHead align={align}>
       <button
         type="button"
@@ -138,10 +137,10 @@ function TeamTable({ stars }: { stars: Stars }) {
               <span className="truncate">{r.name}</span>
               {kind && <StarBadge kind={kind} />}
             </NameCell>
-            <NumberCell>{r.games}</NumberCell>
-            <NumberCell>{r.goals}</NumberCell>
-            <NumberCell>{r.assists}</NumberCell>
-            <NumberCell>{r.games > 0 ? r.rating.toFixed(2) : "-"}</NumberCell>
+            <NumberCell strong={sort === "games"}>{r.games}</NumberCell>
+            <NumberCell strong={sort === "goals"}>{r.goals}</NumberCell>
+            <NumberCell strong={sort === "assists"}>{r.assists}</NumberCell>
+            <NumberCell strong={sort === "rating"}>{r.games > 0 ? r.rating.toFixed(2) : "-"}</NumberCell>
           </StatsRow>
         );
       })}
@@ -228,10 +227,10 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
         head={<>
           <StatsHead />
           <StatsHead>{t("statsScreen.player")}</StatsHead>
-          <StatsHead align="right">{t("statsScreen.retired.age")}</StatsHead>
+          <StatsHead align="center">{t("statsScreen.retired.age")}</StatsHead>
           <StatsHead>{t("statsScreen.retired.lastClub")}</StatsHead>
-          <StatsHead align="right">{t("career.apps")}</StatsHead>
-          <StatsHead align="right">{t("career.goals")}</StatsHead>
+          <StatsHead align="center">{t("career.apps")}</StatsHead>
+          <StatsHead align="center">{t("career.goals")}</StatsHead>
           <StatsHead />
         </>}
       >
@@ -283,7 +282,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
 
 export function StatsScreen() {
   const { t, i18n } = useTranslation();
-  const { session, currentDate, loading: saveLoading, fixtures } = useGameSave();
+  const { session, currentDate, loading: saveLoading } = useGameSave();
   const stars = useStarPlayers(session?.saveId, currentDate);
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
@@ -304,23 +303,12 @@ export function StatsScreen() {
   }, []);
 
   const ownLeague = session?.leagueSlug ?? "";
-  const active = competition ?? ownLeague;
+  const active = competition ?? ALL_COMPETITIONS;
 
-  const options = useMemo(() => {
-    const own = leagues.find((l) => l.slug === ownLeague);
-    const cup = own ? cupSlugOf(own.country) : null;
-    const continental = [...new Set(fixtures.map((f) => f.competition))].filter(isContinentalSlug);
-    const special = [...(cup ? [cup] : []), ...continental].map((slug) => ({
-      value: slug,
-      label: competitionName(slug, leagues, i18n.language),
-    }));
-    const leagueOpts = leagues.map((l) => {
-      const c = COUNTRY_BY_NAME.get(l.country);
-      return { value: l.slug, label: leagueLabel(l, c ? countryDisplayName(c, i18n.language, t) : l.country) };
-    });
-    const first = leagueOpts.filter((o) => o.value === ownLeague);
-    return [...first, ...special, ...leagueOpts.filter((o) => o.value !== ownLeague)];
-  }, [leagues, fixtures, ownLeague, i18n.language, t]);
+  const options = useMemo(
+    () => (leagues.length > 0 ? statsCompetitionOptions(leagues, COUNTRY_BY_NAME, i18n.language, t) : []),
+    [leagues, i18n.language, t],
+  );
 
   useEffect(() => {
     if (!session?.saveId || !active || tab !== "rankings") return;
@@ -334,44 +322,33 @@ export function StatsScreen() {
     return () => { cancelled = true; };
   }, [session?.saveId, active, tab, currentDate]);
 
-  const tabButton = (value: Tab, label: string) => (
-    <button
-      type="button"
-      onClick={() => setTab(value)}
-      aria-pressed={tab === value}
-      className={`px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
-        tab === value
-          ? "border-primary text-foreground bg-primary/10"
-          : "border-border text-muted-foreground bg-transparent hover:text-foreground"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <div className="p-4 overflow-auto">
-      <div className="max-w-6xl mx-auto space-y-5">
+      <div className="max-w-6xl mx-auto space-y-6">
         <PageHeadline backHref="/dashboard">{t("statsScreen.title")}</PageHeadline>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex gap-2">
-            {tabButton("rankings", t("statsScreen.rankings"))}
-            {tabButton("team", t("statsScreen.myTeam"))}
-            {tabButton("retired", t("statsScreen.retired.tab"))}
-            {tabButton("managers", t("statsScreen.managers.tab"))}
-          </div>
-          {tab === "rankings" && options.length > 0 && (
-            <SelectCombobox
-              labelId="stats-competition"
-              value={active}
-              onChange={setCompetition}
-              options={options}
-              placeholder={t("leagues.searchLeaguesPlaceholder")}
-              className="w-full max-w-sm"
-            />
-          )}
-        </div>
+        <SegmentedTabs
+          tabs={[
+            { key: "rankings" as const, label: t("statsScreen.rankings") },
+            { key: "team" as const, label: t("statsScreen.myTeam") },
+            { key: "retired" as const, label: t("statsScreen.retired.tab") },
+            { key: "managers" as const, label: t("statsScreen.managers.tab") },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
+
+        {tab === "rankings" && options.length > 0 && (
+          <SelectCombobox
+            label={t("statsScreen.competition")}
+            labelId="stats-competition"
+            value={active}
+            onChange={setCompetition}
+            options={options}
+            placeholder={t("leagues.searchLeaguesPlaceholder")}
+            className="w-full max-w-sm"
+          />
+        )}
 
         {tab === "team" ? (
           <TeamTable stars={stars} />

@@ -3,7 +3,7 @@ import {
   autoFillLineup,
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
-  replaceInjuredStarters,
+  replaceUnavailableStarters,
   suggestRotation,
 } from "@/Domain/lineupHelpers";
 import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
@@ -265,7 +265,7 @@ describe("injured players are never picked", () => {
     expect(autoFillLineupWithFitness(stSlot, squad, "2027-04-01")).toEqual(["healthy-bench"]);
   });
 
-  test("replaceInjuredStarters swaps out a saved-lineup starter injured on the match date", () => {
+  test("replaceUnavailableStarters swaps out a saved-lineup starter injured on the match date", () => {
     const starter = makePlayer({
       id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
       injury: { severity: "medium", returnDate: "2027-05-01" },
@@ -276,23 +276,36 @@ describe("injured players are never picked", () => {
     const squad = [starter, bench];
     const savedLineup = ["starter"];
 
-    const { lineup, replaced } = replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-15");
+    const { lineup, replaced } = replaceUnavailableStarters(stSlot, savedLineup, squad, "2027-04-15");
     expect(lineup).toEqual(["bench"]);
-    expect(replaced).toEqual([{ out: "starter", in: "bench" }]);
+    expect(replaced).toEqual([{ out: "starter", in: "bench", reason: "injured" }]);
   });
 
-  test("replaceInjuredStarters leaves a healthy saved lineup untouched", () => {
+  test("a suspended player is never auto-selected and is swapped out of a saved lineup", () => {
+    const suspended = makePlayer({
+      id: "susp", name: "Susp", positions: ["ST"], stats: statsAt(9), suspension: { matches: 1 },
+    });
+    const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(4) });
+    const squad = [suspended, bench];
+    expect(autoFillLineup(stSlot, squad, "2027-04-01")).toEqual(["bench"]);
+    expect(autoFillLineupWithFitness(stSlot, squad, "2027-04-01")).toEqual(["bench"]);
+    const { lineup, replaced } = replaceUnavailableStarters(stSlot, ["susp"], squad, "2027-04-01");
+    expect(lineup).toEqual(["bench"]);
+    expect(replaced).toEqual([{ out: "susp", in: "bench", reason: "suspended" }]);
+  });
+
+  test("replaceUnavailableStarters leaves a healthy saved lineup untouched", () => {
     const starter = makePlayer({ id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7) });
     const bench = makePlayer({ id: "bench", name: "Bench", positions: ["ST"], stats: statsAt(5) });
     const squad = [starter, bench];
     const savedLineup = ["starter"];
 
-    const { lineup, replaced } = replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-15");
+    const { lineup, replaced } = replaceUnavailableStarters(stSlot, savedLineup, squad, "2027-04-15");
     expect(lineup).toEqual(["starter"]);
     expect(replaced).toEqual([]);
   });
 
-  test("replaceInjuredStarters becomes eligible again exactly on returnDate", () => {
+  test("replaceUnavailableStarters becomes eligible again exactly on returnDate", () => {
     const starter = makePlayer({
       id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
       injury: { severity: "light", returnDate: "2027-04-10" },
@@ -301,11 +314,11 @@ describe("injured players are never picked", () => {
     const squad = [starter, bench];
     const savedLineup = ["starter"];
 
-    expect(replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-09").lineup).toEqual(["bench"]);
-    expect(replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-10").lineup).toEqual(["starter"]);
+    expect(replaceUnavailableStarters(stSlot, savedLineup, squad, "2027-04-09").lineup).toEqual(["bench"]);
+    expect(replaceUnavailableStarters(stSlot, savedLineup, squad, "2027-04-10").lineup).toEqual(["starter"]);
   });
 
-  test("replaceInjuredStarters leaves the injured player in place when no eligible replacement exists", () => {
+  test("replaceUnavailableStarters leaves the injured player in place when no eligible replacement exists", () => {
     const starter = makePlayer({
       id: "starter", name: "Starter", positions: ["ST"], stats: statsAt(7),
       injury: { severity: "severe", returnDate: "2027-06-01" },
@@ -313,12 +326,12 @@ describe("injured players are never picked", () => {
     const squad = [starter];
     const savedLineup = ["starter"];
 
-    const { lineup, replaced } = replaceInjuredStarters(stSlot, savedLineup, squad, "2027-04-15");
+    const { lineup, replaced } = replaceUnavailableStarters(stSlot, savedLineup, squad, "2027-04-15");
     expect(lineup).toEqual(["starter"]);
     expect(replaced).toEqual([]);
   });
 
-  test("buildSlotAlignedLineup + replaceInjuredStarters round-trip: full saved lineup, one injured", () => {
+  test("buildSlotAlignedLineup + replaceUnavailableStarters round-trip: full saved lineup, one injured", () => {
     const players = fullSlots.map((s, i) =>
       makePlayer({ id: `starter-${i}`, name: `Starter ${i}`, positions: [s.role], stats: statsAt(6) }),
     );
@@ -329,10 +342,10 @@ describe("injured players are never picked", () => {
     const saved = players.map((p) => p.id);
 
     const aligned = buildSlotAlignedLineup(squad, saved).map((p) => p?.id ?? "");
-    const { lineup, replaced } = replaceInjuredStarters(fullSlots, aligned, squad, "2027-04-15");
+    const { lineup, replaced } = replaceUnavailableStarters(fullSlots, aligned, squad, "2027-04-15");
 
     expect(lineup[9]).toBe("bench-fwd");
-    expect(replaced).toEqual([{ out: "starter-9", in: "bench-fwd" }]);
+    expect(replaced).toEqual([{ out: "starter-9", in: "bench-fwd", reason: "injured" }]);
     // Every other slot is untouched.
     for (let i = 0; i < fullSlots.length; i++) {
       if (i === 9) continue;

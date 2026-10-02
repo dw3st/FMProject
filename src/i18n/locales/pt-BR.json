@@ -603,7 +603,10 @@
       "light": "Lesão leve",
       "medium": "Lesão média",
       "severe": "Lesão grave"
-    }
+    },
+    "suspended": "Suspenso",
+    "suspendedMatches_one": "Suspenso para o próximo jogo",
+    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
   },
   "attributes": {
     "title": "Atributos do jogador",
@@ -748,6 +751,11 @@
       "TBPCT": "Aproveitamento em Profundidade %",
       "TK": "Desarmes",
       "IN": "Interceptações",
+      "FL": "Faltas Cometidas",
+      "YC": "Cartões Amarelos",
+      "RC": "Cartões Vermelhos",
+      "OFF": "Impedimentos",
+      "PEN": "Gols de Pênalti",
       "POS": "Pos",
       "NAME": "Nome",
       "AGE": "Idade",
@@ -797,6 +805,35 @@
       "light": "leve",
       "medium": "média",
       "severe": "grave"
+    },
+    "summary": {
+      "title": "Resumo",
+      "possession": "Posse",
+      "shots": "Chutes",
+      "passes": "Passes",
+      "fouls": "Faltas",
+      "cards": "Cartões (A/V)",
+      "offsides": "Impedimentos",
+      "events": "Lances",
+      "noEvents": "Nada ainda.",
+      "kind": {
+        "goal": "Gol — {{player}}",
+        "penaltyGoal": "Gol de pênalti — {{player}}",
+        "penaltyMissed": "Pênalti perdido — {{player}}",
+        "yellow": "Cartão amarelo — {{player}}",
+        "red": "Cartão vermelho — {{player}}",
+        "offside": "Impedimento — {{player}}",
+        "sub": "Entra {{playerIn}}, sai {{player}}",
+        "injury": "Lesão — {{player}}"
+      }
+    },
+    "notice": {
+      "offside": "Impedimento: {{player}} ({{team}})",
+      "freeKick": "Falta perigosa — tiro livre para {{team}}",
+      "yellow": "Cartão amarelo: {{player}} ({{team}})",
+      "red": "Cartão vermelho! {{player}} ({{team}}) expulso",
+      "secondYellow": "Segundo amarelo: {{player}} ({{team}}) expulso",
+      "penalty": "Pênalti para {{team}}!"
     }
   },
   "broadcast": {
@@ -1104,7 +1141,9 @@
         "light": "leve",
         "medium": "média",
         "severe": "grave"
-      }
+      },
+      "suspended_one": "{{player}} suspenso para o próximo jogo",
+      "suspended_other": "{{player}} suspenso pelos próximos {{count}} jogos"
     },
     "contract": {
       "expiring": "Contratos que terminam nesta temporada: {{players}}",
@@ -1399,7 +1438,9 @@
       "sevLight": "leve",
       "sevMedium": "média",
       "sevSevere": "grave",
-      "contract": "Contrato"
+      "contract": "Contrato",
+      "suspendedMatches_one": "Suspenso para o próximo jogo",
+      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
     },
     "assistsLabel": "assistências",
     "clubSidebar": {
@@ -1441,7 +1482,9 @@
       "sevLight": "leve",
       "sevMedium": "média",
       "sevSevere": "grave",
-      "contract": "Contrato"
+      "contract": "Contrato",
+      "suspendedMatches_one": "Suspenso para o próximo jogo",
+      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
     }
   },
   "squadScreen": {
@@ -1512,7 +1555,8 @@
     "rotationApply": "Aplicar",
     "rotationIgnore": "Ignorar",
     "rotationApplied": "O assistente poupou {{count}} jogadores",
-    "rotationUndo": "Desfazer"
+    "rotationUndo": "Desfazer",
+    "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}"
   },
   "matchResult": {
     "title": "Resultado da partida",
@@ -1530,7 +1574,13 @@
     "weather": "Tempo",
     "date": "Data",
     "officials": "Árbitros",
-    "back": "Voltar ao painel"
+    "back": "Voltar ao painel",
+    "yellowCards": "Cartões amarelos",
+    "redCards": "Cartões vermelhos",
+    "cards": "Cartões",
+    "yellowCard": "Cartão amarelo",
+    "redCard": "Cartão vermelho",
+    "secondYellow": "segundo amarelo"
   },
   "substitutionPanel": {
     "title": "Substituições",
@@ -1791,6 +1841,8 @@
     "ok": "OK"
   },
   "statsScreen": {
+    "allLeagues": "Geral (todas as ligas)",
+    "competition": "Competição",
     "title": "Estatísticas",
     "rankings": "Rankings",
     "myTeam": "Meu time",
@@ -1836,7 +1888,10 @@
       "blue": "Grande fase",
       "green": "Prodígio"
     },
-    "reborn": "Renascido"
+    "reborn": "Renascido",
+    "suspended": "Suspenso",
+    "suspendedMatches_one": "Suspenso para o próximo jogo",
+    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
   },
   "fitness": {
     "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"

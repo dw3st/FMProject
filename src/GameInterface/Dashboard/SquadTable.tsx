@@ -9,6 +9,7 @@ import { wageFactorOf } from "@/Domain/finance/wages";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
+import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -126,6 +127,7 @@ export function SquadTable({
               <span className="truncate">{player.name}</span>
               {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
               {player.reborn && <RebornBadge />}
+              {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} />}
             </div>
             <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">
@@ -157,7 +159,7 @@ export function SquadTable({
               <RatingBadge value={player.avgRating} />
             </div>
             <div className="w-10 px-3 py-2.5">
-              <FitStatusIcon status={player.status} injury={player.injury} />
+              <FitStatusIcon status={player.status} injury={player.injury} suspendedMatches={player.suspendedMatches} />
             </div>
           </div>
         ))}
@@ -221,9 +223,11 @@ function StatusBadge({ level }: { level: StatusLevel }) {
 function FitStatusIcon({
   status,
   injury,
+  suspendedMatches,
 }: {
   status: string;
   injury?: { severity: "light" | "medium" | "severe"; daysLeft: number };
+  suspendedMatches?: number;
 }) {
   const { t } = useTranslation();
   if (status === "fit") return <div className="w-3 h-3 rounded-full bg-primary" title={t("dashboard.squadTable.fit")} />;
@@ -236,7 +240,7 @@ function FitStatusIcon({
       : t("dashboard.squadTable.injured");
     return <div className="w-3 h-3 rounded-full bg-destructive" title={title} />;
   }
-  if (status === "suspended") return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadTable.suspended")} />;
+  if (status === "suspended") return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadTable.suspendedMatches", { count: suspendedMatches ?? 1 })} />;
   return null;
 }
 
