@@ -1842,6 +1842,7 @@
   },
   "statsScreen": {
     "allLeagues": "Geral (todas as ligas)",
+    "competition": "Competição",
     "title": "Estatísticas",
     "rankings": "Rankings",
     "myTeam": "Meu time",
