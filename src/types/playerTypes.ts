@@ -49,6 +49,12 @@ export interface PlayerSeasonLog {
   cup?: { appearances: number; goals: number; assists: number };
   /** Continental competition games only (ucl/uel/lib/sud) — the fields above are the season total. */
   continental?: { appearances: number; goals: number; assists: number };
+  /**
+   * Cards this season, all competitions together (league + cup + continental share one count —
+   * `.claude/rules/game/discipline.md`). A second yellow adds one yellow and one red. Absent = 0.
+   */
+  yellowCards?: number;
+  redCards?: number;
 }
 
 export function emptySeasonLog(): PlayerSeasonLog {
@@ -114,6 +120,11 @@ export interface RosterPlayer {
    * before `returnDate`.
    */
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string };
+  /**
+   * Match ban still to serve (`src/Domain/discipline/discipline.ts`). One match is served each
+   * time the club plays an official match. Absent = available. Carries over the season rollover.
+   */
+  suspension?: { matches: number };
   /** Current contract. Assigned at career creation and on every signing/renewal. */
   contract?: PlayerContract;
   /** Reborn academy star (+30% DP while young). */

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildContinentalMessage, buildCupMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
+import { buildContinentalMessage, buildCupMessage, buildInjuryMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
 
 describe("buildSeasonMessage", () => {
   test("promoted names the new league and keeps the one left", () => {
@@ -158,5 +158,15 @@ describe("buildContinentalMessage", () => {
       date: "d", kind: "champion" as const, competition: "sud" as const, competitionName: "Copa Sudamericana", stage: "final" as const,
     };
     expect(buildContinentalMessage(args).id).not.toBe(buildContinentalMessage(args).id);
+  });
+});
+
+describe("buildInjuryMessage — suspended", () => {
+  test("carries the matches to serve", () => {
+    const m = buildInjuryMessage({ date: "2027-03-10", kind: "suspended", playerId: "p1", playerName: "Silva", matches: 1 });
+    expect(m.category).toBe("injury");
+    expect(m.kind).toBe("suspended");
+    expect(m.matches).toBe(1);
+    expect(m.subject).toContain("Silva");
   });
 });

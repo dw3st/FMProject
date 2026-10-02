@@ -38,3 +38,24 @@ describe("lab / smoke helpers", () => {
     expect(unsuitableWithAlternative([a, b], ["a"], ["CB"])).toBe(0);
   });
 });
+
+describe("sortBenchByPosition (#47)", () => {
+  test("GK, DEF, MID, FWD, then role order inside the line, then value desc", async () => {
+    const { sortBenchByPosition } = await import("@/Domain/positions/positionLineup");
+    const { preferredRole, DETAILED_ROLES } = await import("@/Domain/positions/positionAptitude");
+    const at = (id: string, line: string, stats: Partial<PlayerStatsRecord>) => ({ ...mk(id, "right", stats), positions: [line] });
+    const fwd = at("fwd", "Forward", { finishing: 8 });
+    const mid = at("mid", "Midfielder", {});
+    const gk = at("gk", "GK", { reflex: 7, jump: 7 });
+    const defWeak = at("defWeak", "Defender", {});
+    const defStrong = at("defStrong", "Defender", { tackling: 8, heading: 8, strength: 8, pressing: 8 });
+    const sorted = sortBenchByPosition([fwd, mid, defWeak, gk, defStrong]);
+    expect(sorted[0]!.id).toBe("gk");
+    expect(sorted.at(-1)!.id).toBe("fwd");
+    expect(sorted[3]!.id).toBe("mid");
+    const orders = sorted.map((p) => DETAILED_ROLES.indexOf(preferredRole(p)));
+    expect([...orders].sort((a, b) => a - b)).toEqual(orders);
+    const defs = sorted.filter((p) => p.positions[0] === "Defender");
+    if (preferredRole(defs[0]!) === preferredRole(defs[1]!)) expect(defs[0]!.id).toBe("defStrong");
+  });
+});

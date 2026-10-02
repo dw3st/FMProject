@@ -663,3 +663,74 @@ describe("quickSimMatch — injuries", () => {
     throw new Error("expected at least one injury across 200 seeds under extreme risk factors");
   });
 });
+
+// Etapa 12 part 2 — fouls, cards, penalties and offsides (`.claude/rules/game/discipline.md`).
+describe("quickSimMatch — discipline", () => {
+  test("per-match means match the engine's and the cards are consistent", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const n = 3000;
+    let fouls = 0, yellows = 0, reds = 0, pens = 0;
+    for (let i = 0; i < n; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      const ids = new Set([...lineupOf(home), ...lineupOf(away)]);
+      for (const side of [r.teamStats.home, r.teamStats.away]) {
+        fouls += side.fouls!;
+        yellows += side.yellowCards!;
+        reds += side.redCards!;
+        pens += side.penaltiesAwarded!;
+      }
+      const cards = r.cards ?? [];
+      expect(cards.filter((c) => c.card === "yellow").length).toBe(r.teamStats.home.yellowCards! + r.teamStats.away.yellowCards!);
+      for (const c of cards) expect(ids.has(c.playerId)).toBe(true);
+      // A second-yellow red always follows that player's earlier yellow.
+      for (const c of cards.filter((x) => x.secondYellow)) {
+        expect(cards.filter((x) => x.playerId === c.playerId && x.card === "yellow").length).toBe(2);
+      }
+      // Penalties never add goals: per-player goals still sum to the score.
+      const goals = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(goals(home)).toBe(r.score.home);
+      expect(goals(away)).toBe(r.score.away);
+    }
+    expect(fouls / n).toBeGreaterThan(10);
+    expect(fouls / n).toBeLessThan(13);
+    expect(yellows / n).toBeGreaterThan(2.4);
+    expect(yellows / n).toBeLessThan(3.3);
+    expect(reds / n).toBeLessThan(0.25);
+    expect(pens / n).toBeGreaterThan(0.17);
+    expect(pens / n).toBeLessThan(0.3);
+  });
+
+  test("a goal turned into a penalty goal has no assist (penalty goals never carry one)", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let penaltyGoals = 0;
+    for (let i = 0; i < 4000; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      for (const [side, squad] of [["home", home], ["away", away]] as const) {
+        const ids = lineupOf(squad);
+        const pens = r.teamStats[side].penaltyGoals!;
+        expect(pens).toBeLessThanOrEqual(r.teamStats[side].penaltiesAwarded!);
+        penaltyGoals += pens;
+        const assists = ids.reduce((s, id) => s + (r.playerStats[id]?.assists ?? 0), 0);
+        // Only non-penalty goals may carry an assist.
+        expect(assists).toBeLessThanOrEqual(r.score[side] - pens);
+        for (const id of ids) expect(r.playerStats[id]?.assists ?? 0).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(penaltyGoals).toBeGreaterThan(100);
+  });
+
+  test("a red card names a player of the carded side's XI", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    for (let seed = 1; seed < 5000; seed++) {
+      const r = run(home, away, seed).recording;
+      const red = r.cards?.find((c) => c.card === "red");
+      if (!red) continue;
+      expect(red.team === "home" ? lineupOf(home) : lineupOf(away)).toContain(red.playerId);
+      return;
+    }
+    throw new Error("no red card in 5000 seeds");
+  });
+});

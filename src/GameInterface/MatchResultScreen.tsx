@@ -623,6 +623,32 @@ export function MatchResultScreen() {
                 homeColor={homeHex}
                 awayColor={awayHex}
               />
+              {th.fouls != null && ta.fouls != null && (
+                <>
+                  <StatsCompareBar label={t("match.summary.fouls")} home={th.fouls} away={ta.fouls} homeColor={homeHex} awayColor={awayHex} />
+                  <StatsCompareBar
+                    label={t("matchResult.yellowCards")}
+                    home={th.yellowCards ?? 0}
+                    away={ta.yellowCards ?? 0}
+                    homeColor={homeHex}
+                    awayColor={awayHex}
+                  />
+                  <StatsCompareBar
+                    label={t("matchResult.redCards")}
+                    home={th.redCards ?? 0}
+                    away={ta.redCards ?? 0}
+                    homeColor={homeHex}
+                    awayColor={awayHex}
+                  />
+                  <StatsCompareBar
+                    label={t("match.summary.offsides")}
+                    home={th.offsides ?? 0}
+                    away={ta.offsides ?? 0}
+                    homeColor={homeHex}
+                    awayColor={awayHex}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -644,7 +670,7 @@ export function MatchResultScreen() {
                 .map((sub, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
                     <span className="text-sm font-black tabular-nums text-muted-foreground w-7 shrink-0">
-                      {sub.matchMinute}&apos;
+                      {sub.matchMinute + 1}&apos;
                     </span>
                     <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
                       {sub.team === "home" ? homeName : awayName}
@@ -658,6 +684,36 @@ export function MatchResultScreen() {
                     </span>
                   </div>
                 ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {matchEvent.cards && matchEvent.cards.length > 0 && (
+        <div className="w-full max-w-5xl shrink-0">
+          <div className="card-arcade rounded-md px-6 py-4">
+            <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-3 m-0 font-display">
+              {t("matchResult.cards")}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+              {matchEvent.cards.map((c, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span className="text-sm font-black tabular-nums text-muted-foreground w-7 shrink-0">
+                    {c.matchMinute + 1}&apos;
+                  </span>
+                  <span
+                    className={`inline-block w-2.5 h-3.5 rounded-sm shrink-0 ${c.card === "yellow" ? "bg-chart-4" : "bg-destructive"}`}
+                    aria-label={c.card === "yellow" ? t("matchResult.yellowCard") : t("matchResult.redCard")}
+                  />
+                  <span className="text-foreground font-medium truncate flex-1">
+                    {c.playerName}
+                    {c.secondYellow ? ` (${t("matchResult.secondYellow")})` : ""}
+                  </span>
+                  <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
+                    {c.team === "home" ? homeName : awayName}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -181,6 +181,12 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgFatigueSubs: r2(t.fatigueSubstitutions / matches),
     avgInjuries: r2(t.injuries / matches),
     avgOutOfPosition: r2(t.outOfPosition / matches),
+    avgFouls: r2(t.fouls / matches),
+    avgYellowCards: r2(t.yellowCards / matches),
+    avgRedCards: r2(t.redCards / matches),
+    avgPenaltiesAwarded: r2(t.penaltiesAwarded / matches),
+    avgPenaltyGoals: r2(t.penaltyGoals / matches),
+    avgOffsides: r2(t.offsides / matches),
   };
 }
 
@@ -206,6 +212,7 @@ function emptyTotals(): VariantTotals {
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
+    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -241,6 +248,12 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.fatigueSubstitutions += src.fatigueSubstitutions;
   dst.injuries              += src.injuries;
   dst.outOfPosition         += src.outOfPosition;
+  dst.fouls                 += src.fouls;
+  dst.yellowCards           += src.yellowCards;
+  dst.redCards              += src.redCards;
+  dst.penaltiesAwarded      += src.penaltiesAwarded;
+  dst.penaltyGoals          += src.penaltyGoals;
+  dst.offsides              += src.offsides;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -287,6 +300,12 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgFatigueSubs: r2(totals.fatigueSubstitutions / games),
     avgInjuries: r2(totals.injuries / games),
     avgOutOfPosition: r2(totals.outOfPosition / games),
+    avgFouls: r2(totals.fouls / games),
+    avgYellowCards: r2(totals.yellowCards / games),
+    avgRedCards: r2(totals.redCards / games),
+    avgPenaltiesAwarded: r2(totals.penaltiesAwarded / games),
+    avgPenaltyGoals: r2(totals.penaltyGoals / games),
+    avgOffsides: r2(totals.offsides / games),
   };
 }
 

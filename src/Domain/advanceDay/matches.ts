@@ -1,6 +1,7 @@
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
+import { toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -9,6 +10,7 @@ import type {
   MatchTeamStats,
   MatchSubstitution,
   MatchInjury,
+  MatchCard,
   Scorer,
   MatchPlayerStats,
   PlayerDevelopmentChange,
@@ -22,7 +24,17 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
 import { staffEffectsOf } from "@/Domain/staff/staff";
-import { clearHealed, isInjured, mergeInjury, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
+import { clearHealed, mergeInjury, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
+import { applyMatchCards, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
+
+/** A new match ban from this match's cards (`.claude/rules/game/discipline.md`) — for the inbox. */
+export interface AppliedSuspension {
+  squadId: string;
+  playerId: string;
+  playerName: string;
+  /** Total matches still to serve after this match. */
+  matches: number;
+}
 
 /**
  * An in-match injury after `player.injury` has been written (`returnDate` computed) — Task 3
@@ -94,6 +106,10 @@ export interface MatchSimResult {
   injuriesApplied: AppliedInjury[];
   /** Players whose injury cleared today (`clearHealed`) — for the "return" inbox message. */
   healedPlayerIds: string[];
+  /** New bans from this match's cards (both clubs). */
+  suspensionsApplied: AppliedSuspension[];
+  /** Players (both clubs) who served one match of a ban in this match. */
+  suspensionsServed: number;
 }
 
 /** Payload from a live /match playthrough — advance-day uses this instead of simulating again. */
@@ -109,6 +125,8 @@ export interface PlayedMatchRecording {
   substitutions: import("@/types/dayLogTypes").MatchSubstitution[];
   /** In-match injuries, in chronological order. */
   injuries?: import("@/types/dayLogTypes").MatchInjury[];
+  /** Cards shown, in chronological order (a second yellow = the yellow, then a red). */
+  cards?: MatchCard[];
   durationMs: number;
   /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
   decider?: import("@/types/calendarTypes").MatchDecider;
@@ -136,6 +154,12 @@ function finalizeSquadsAfterMatch(
    * at the injury minute for a substitution that never happened.
    */
   fullMinutesForInjured = false,
+  /**
+   * Cards shown this match (roster ids). Today only used to stop a sent-off player's clock at the
+   * red-card minute (he leaves without a substitute, like an injured player with no bench);
+   * suspensions (Etapa 12 part 2) are derived from this list too.
+   */
+  cards: MatchCard[] = [],
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -145,6 +169,8 @@ function finalizeSquadsAfterMatch(
   injuriesApplied: AppliedInjury[];
   /** Players whose injury cleared today (`clearHealed`) — for the "return" inbox message. */
   healedPlayerIds: string[];
+  suspensionsApplied: AppliedSuspension[];
+  suspensionsServed: number;
 } {
   // Shared across both squads — `playerStats` already combines home + away.
   //
@@ -156,6 +182,7 @@ function finalizeSquadsAfterMatch(
   // `minutes[id]` for ids it was given in `playerIds` (now includes injured-removed players — see
   // both collectors, `buildMatchEvent`/`buildPlayedMatchRecording.ts`).
   const subbedOutIds = new Set(substitutions.map((s) => s.playerOutId));
+  const injuredOutIds = new Set(injuries.map((inj) => inj.playerId));
   const minutesSubstitutions = fullMinutesForInjured
     ? substitutions
     : [
@@ -167,11 +194,23 @@ function finalizeSquadsAfterMatch(
             playerInId: `__injured_out_${inj.playerId}`,
             matchMinute: inj.matchMinute,
           })),
+        // Sent off: off the pitch at the red-card minute, no substitute.
+        ...cards
+          .filter((c) => c.card === "red" && !subbedOutIds.has(c.playerId) && !injuredOutIds.has(c.playerId))
+          .map((c) => ({
+            playerOutId: c.playerId,
+            playerInId: `__sent_off_${c.playerId}`,
+            matchMinute: c.matchMinute,
+          })),
       ];
   const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), minutesSubstitutions, totalMinutes);
   const injuryByPlayer = new Map(injuries.map((inj) => [inj.playerId, inj]));
   const injuriesApplied: AppliedInjury[] = [];
   const healedPlayerIds: string[] = [];
+  const suspensionsApplied: AppliedSuspension[] = [];
+  let suspensionsServed = 0;
+  const cardsByPlayer = new Map<string, MatchCard[]>();
+  for (const c of cards) cardsByPlayer.set(c.playerId, [...(cardsByPlayer.get(c.playerId) ?? []), c]);
 
   function applyMatchToSquad(squad: Squad): Squad {
     const { recoveryMult } = staffEffectsOf(squad);
@@ -183,9 +222,23 @@ function finalizeSquadsAfterMatch(
         // — Task 1's `clearHealed`, resets `seasonLog.fitness` to `INJURY.RETURN_FITNESS`, which
         // the fitness update below then further adjusts for the match itself).
         if (p0.injury && !clearHealed(p0, matchDate).injury) healedPlayerIds.push(String(p0.id));
-        const p = clearHealed(p0, matchDate);
-        const pl = ensureSeasonLog(p);
-        const log = { ...pl.seasonLog! };
+        // A ban is served by every official match the club plays — before this match's own cards.
+        const served = serveSuspension(p0);
+        if (served !== p0) suspensionsServed++;
+        const p = clearHealed(served, matchDate);
+        let pl = ensureSeasonLog(p);
+        let log = { ...pl.seasonLog! };
+        const myCards = cardsByPlayer.get(p.id);
+        if (myCards) {
+          const booked = applyMatchCards(pl, log, myCards);
+          pl = booked.player;
+          log = booked.log;
+          if (booked.banned > 0) {
+            suspensionsApplied.push({
+              squadId: squad.id, playerId: p.id, playerName: p.name, matches: pl.suspension!.matches,
+            });
+          }
+        }
         const ps = playerStats[p.id];
         const rating = playerRatings[p.id];
         if (ps) {
@@ -283,6 +336,8 @@ function finalizeSquadsAfterMatch(
     awayDevChanges,
     injuriesApplied,
     healedPlayerIds,
+    suspensionsApplied,
+    suspensionsServed,
   };
 }
 
@@ -338,7 +393,7 @@ export function buildMatchEventFromRecording(
   const { playerNames, playerTeams } = rosterNameAndTeamMaps(homeSquad, awaySquad);
   const scorers = buildScorers(recording.playerStats, playerNames, playerTeams);
 
-  const { updatedHome, updatedAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds } = finalizeSquadsAfterMatch(
+  const { updatedHome, updatedAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed } = finalizeSquadsAfterMatch(
     homeSquad,
     awaySquad,
     recording.playerStats,
@@ -352,6 +407,7 @@ export function buildMatchEventFromRecording(
     recording.injuries ?? [],
     rng,
     fullMinutesForInjured,
+    recording.cards ?? [],
   );
 
   const event: MatchEvent = {
@@ -370,12 +426,13 @@ export function buildMatchEventFromRecording(
     scorers,
     substitutions: recording.substitutions ?? [],
     injuries: recording.injuries ?? [],
+    ...(recording.cards && recording.cards.length > 0 ? { cards: recording.cards } : {}),
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
     ...(recording.decider ? { decider: recording.decider } : {}),
   };
 
-  return { event, updatedHome, updatedAway, injuriesApplied, healedPlayerIds };
+  return { event, updatedHome, updatedAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
 export function buildMatchEvent(
@@ -397,8 +454,8 @@ export function buildMatchEvent(
   // pool otherwise still comes straight from the full roster. Filter injured players out here too,
   // so an injured player is never subbed on mid-match. `homeSquad`/`awaySquad` themselves (used
   // below for name/roster-id mapping and post-match writes) stay the full, unfiltered roster.
-  const eligibleHome = { ...homeSquad, players: homeSquad.players.filter((p) => !isInjured(p, fixture.date)) };
-  const eligibleAway = { ...awaySquad, players: awaySquad.players.filter((p) => !isInjured(p, fixture.date)) };
+  const eligibleHome = { ...homeSquad, players: homeSquad.players.filter((p) => !isUnavailable(p, fixture.date)) };
+  const eligibleAway = { ...awaySquad, players: awaySquad.players.filter((p) => !isUnavailable(p, fixture.date)) };
   const result = simulateMatch(
     eligibleHome,
     eligibleAway,
@@ -437,6 +494,12 @@ export function buildMatchEvent(
   for (const inj of result.injuries) {
     if (!engineIdToRosterId.has(inj.playerId)) {
       engineIdToRosterId.set(inj.playerId, inj.playerRosterId);
+    }
+  }
+  // Same for players sent off (removed outright, no substitute).
+  for (const c of result.cards) {
+    if (!engineIdToRosterId.has(c.playerId)) {
+      engineIdToRosterId.set(c.playerId, c.playerRosterId);
     }
   }
 
@@ -482,6 +545,13 @@ export function buildMatchEvent(
       playerEnergy[rosterId] = Math.max(0, Math.min(100, inj.energy));
     }
   }
+  // Sent off — energy captured at the red card.
+  for (const c of result.cards) {
+    const rosterId = c.playerRosterId;
+    if (c.card === "red" && rosterId && !(rosterId in playerEnergy)) {
+      playerEnergy[rosterId] = Math.max(0, Math.min(100, c.energy));
+    }
+  }
 
   const playerNames: Record<string, string> = {};
   const playerTeams: Record<string, "home" | "away"> = {};
@@ -506,6 +576,14 @@ export function buildMatchEvent(
     if (rosterId && !playerNames[rosterId]) {
       playerNames[rosterId] = inj.playerName;
       playerTeams[rosterId] = inj.team === "A" ? "home" : "away";
+    }
+  }
+  // ... and for sent-off players from the card log.
+  for (const c of result.cards) {
+    const rosterId = c.playerRosterId;
+    if (rosterId && !playerNames[rosterId]) {
+      playerNames[rosterId] = c.playerName;
+      playerTeams[rosterId] = c.team === "A" ? "home" : "away";
     }
   }
 
@@ -545,12 +623,21 @@ export function buildMatchEvent(
     energy:      inj.energy,
   }));
 
-  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds } =
+  const cards: MatchCard[] = result.cards.map((c) => ({
+    team:         c.team === "A" ? "home" : "away",
+    playerId:     c.playerRosterId,
+    playerName:   c.playerName,
+    card:         c.card,
+    secondYellow: c.secondYellow,
+    matchMinute:  c.matchMinute,
+  }));
+
+  const { updatedHome: devHome, updatedAway: devAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed } =
     finalizeSquadsAfterMatch(
       homeSquad, awaySquad, playerStats, playerRatings, playerEnergy,
       substitutions, totalMatchMinutes(result.decider),
       isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
-      fixture.date, injuries, rng,
+      fixture.date, injuries, rng, false, cards,
     );
 
   const event: MatchEvent = {
@@ -562,20 +649,8 @@ export function buildMatchEvent(
     away: fixture.away,
     score: { home: result.score.A, away: result.score.B },
     teamStats: {
-      home: {
-        shots: result.teamStats.A.shots,
-        passesCompleted: result.teamStats.A.passesCompleted,
-        passesAttempted: result.teamStats.A.passesAttempted,
-        tackles: result.teamStats.A.tackles,
-        interceptions: result.teamStats.A.interceptions,
-      },
-      away: {
-        shots: result.teamStats.B.shots,
-        passesCompleted: result.teamStats.B.passesCompleted,
-        passesAttempted: result.teamStats.B.passesAttempted,
-        tackles: result.teamStats.B.tackles,
-        interceptions: result.teamStats.B.interceptions,
-      },
+      home: toMatchTeamStats(result.teamStats.A),
+      away: toMatchTeamStats(result.teamStats.B),
     },
     playerStats,
     playerRatings,
@@ -584,6 +659,7 @@ export function buildMatchEvent(
     scorers,
     substitutions,
     injuries,
+    ...(cards.length > 0 ? { cards } : {}),
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: result.durationMs,
     ...(result.decider
@@ -598,7 +674,7 @@ export function buildMatchEvent(
       : {}),
   };
 
-  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds };
+  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { useTranslation } from "react-i18next";
 import type { Squad } from "@/types/playerTypes";
 import { comparePositions } from "@/types/positionOrder";
@@ -148,6 +149,7 @@ export function SquadRosterTable({
               >
                 {player.name}
               </a>
+              {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
             </div>
             <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">
@@ -161,7 +163,7 @@ export function SquadRosterTable({
               <RatingBadge value={player.avgRating} />
             </div>
             <div className="w-10 px-3 py-2.5">
-              <FitStatusIcon status={player.status} injury={player.injury} />
+              <FitStatusIcon status={player.status} injury={player.injury} suspendedMatches={player.suspendedMatches} />
             </div>
             <div className="w-20 px-3 py-2.5 flex justify-center">
               <button
@@ -204,9 +206,11 @@ function RatingBadge({ value }: { value: number }) {
 function FitStatusIcon({
   status,
   injury,
+  suspendedMatches,
 }: {
   status: string;
   injury?: { severity: "light" | "medium" | "severe"; daysLeft: number };
+  suspendedMatches?: number;
 }) {
   const { t } = useTranslation();
   if (status === "fit") return <div className="w-3 h-3 rounded-full bg-primary" title={t("dashboard.squadRosterTable.fit")} />;
@@ -220,6 +224,6 @@ function FitStatusIcon({
     return <div className="w-3 h-3 rounded-full bg-destructive" title={title} />;
   }
   if (status === "suspended")
-    return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadRosterTable.suspended")} />;
+    return <div className="w-3 h-3 rounded-full bg-chart-4" title={t("dashboard.squadRosterTable.suspendedMatches", { count: suspendedMatches ?? 1 })} />;
   return null;
 }

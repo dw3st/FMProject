@@ -24,6 +24,7 @@ import {
   fullEngineAppearances,
   quickSimAppearances,
 } from "@/lab/fitnessCarry";
+import { addDayLogDiscipline } from "@/lab/disciplineStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
@@ -98,6 +99,7 @@ function emptyTeamRaw(): TeamRawStats {
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
+    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
   };
 }
 
@@ -130,6 +132,12 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.fatigueSubstitutions        += src.fatigueSubstitutions;
   dst.injuries                    += src.injuries;
   dst.outOfPosition               += src.outOfPosition;
+  dst.fouls                       += src.fouls;
+  dst.yellowCards                 += src.yellowCards;
+  dst.redCards                    += src.redCards;
+  dst.penaltiesAwarded            += src.penaltiesAwarded;
+  dst.penaltyGoals                += src.penaltyGoals;
+  dst.offsides                    += src.offsides;
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -225,6 +233,9 @@ function runOneMatch(
     for (const inj of q.recording.injuries ?? []) {
       if (inj.team === "home") teamA.injuries++; else teamB.injuries++;
     }
+    // Discipline: optional on the day-log team stats (quickSim fills them, see rollDiscipline).
+    addDayLogDiscipline(teamA, hA);
+    addDayLogDiscipline(teamB, hB);
     const qd = q.recording.decider;
     if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
     const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
@@ -271,6 +282,12 @@ function runOneMatch(
   teamA.avgEndEnergySum      += sA.avgEndEnergy;         teamB.avgEndEnergySum      += sB.avgEndEnergy;
   teamA.fatigueSubstitutions += sA.fatigueSubstitutions; teamB.fatigueSubstitutions += sB.fatigueSubstitutions;
   teamA.injuries += sA.injuries; teamB.injuries += sB.injuries;
+  teamA.fouls            += sA.fouls;            teamB.fouls            += sB.fouls;
+  teamA.yellowCards      += sA.yellowCards;      teamB.yellowCards      += sB.yellowCards;
+  teamA.redCards         += sA.redCards;         teamB.redCards         += sB.redCards;
+  teamA.penaltiesAwarded += sA.penaltiesAwarded; teamB.penaltiesAwarded += sB.penaltiesAwarded;
+  teamA.penaltyGoals     += sA.penaltyGoals;     teamB.penaltyGoals     += sB.penaltyGoals;
+  teamA.offsides         += sA.offsides;         teamB.offsides         += sB.offsides;
 
   const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
   if (winner === "A") teamA.wins++;

@@ -29,7 +29,7 @@ Spec: `docs/superpowers/specs/2026-09-28-injuries-design.md`. Plano:
 | `src/Domain/advanceDay/matches.ts` | `finalizeSquadsAfterMatch` — grava `injury` com `returnDate` no pós-jogo, cura (`clearHealed`) antes de tudo |
 | `src/Domain/advanceDay/dailyTraining.ts` | Lesão de treino pesado (`trainingInjuryChance`), cura do dia |
 | `src/Domain/advanceDay/dailyRest.ts` | Cura (`clearHealed`) para quem descansa |
-| `src/Domain/lineupHelpers.ts` | `filterEligiblePlayers`, `replaceInjuredStarters` — nunca escala lesionado |
+| `src/Domain/lineupHelpers.ts` | `filterEligiblePlayers`, `replaceUnavailableStarters` — nunca escala lesionado |
 | `src/Domain/advanceDay/matchSimulationLineups.ts` | `resolveUserLineup`/`computeMatchSimulationLineups` — troca automática do titular lesionado, `injuredReplaced` |
 | `src/Domain/inbox/inboxEvents.ts` + `src/types/inboxTypes.ts` | `buildInjuryMessage`, categoria `injury` (`kind: "injured" | "returned"`) |
 | `src/backend/advanceDay.ts` | Junta as lesões do dia (partida + treino + volta) e emite a inbox do clube do jogador uma única vez, depois de tudo |
@@ -201,7 +201,7 @@ já recalibrado do motor).
 
 - `filterEligiblePlayers(players, date)` (`src/Domain/lineupHelpers.ts`) — usado por todo seletor
   automático (IA, botão "auto", adversário da prévia): filtra fora quem está `isInjured` na data.
-- `replaceInjuredStarters(slots, lineup, players, date)` — para uma escalação **salva** do
+- `replaceUnavailableStarters(slots, lineup, players, date)` — para uma escalação **salva** do
   jogador: troca todo titular lesionado na data pelo melhor reserva elegível do mesmo papel
   específico (ou do papel principal, se nenhum bater exatamente); um slot sem reserva elegível
   fica como está (melhor jogar com um lesionado do que com um slot vazio). Devolve
@@ -272,7 +272,7 @@ lesão no motor tirando o jogador de campo com substituição forçada, o caso s
 campo) e a rede de segurança do goleiro (`Injury.engine.test.ts`); cura antes de elegibilidade no
 treino/descanso; gravação de `injury`/`returnDate` no pós-jogo e o minuto sintético de saída;
 `rollSideInjuries` do quickSim; os seletores de escalação nunca devolvendo um lesionado, e
-`replaceInjuredStarters` trocando o titular certo.
+`replaceUnavailableStarters` trocando o titular certo.
 
 ## 11. Smoke de temporada (`scripts/season-rollover-smoke.ts`, seção "Lesões")
 

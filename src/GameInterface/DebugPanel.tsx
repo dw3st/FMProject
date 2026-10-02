@@ -18,6 +18,8 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   dribble:      "text-fuchsia-400",
   throughBall:  "text-purple-400",
   injury:       "text-rose-500",
+  foul:         "text-amber-400",
+  card:         "text-yellow-300",
 };
 
 type ActionScoreKey = 'shoot' | 'pass' | 'carry' | 'dribble' | 'throughBall';

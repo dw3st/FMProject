@@ -77,13 +77,13 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 6 ✅ | 2.3 Rotação (IA e assistente) | #10 compose exposto na rede local | Correção rápida de segurança; etapa de IA não mexe em infra |
 | 7 ✅ | 3.1 Contratos e salários | #6 Kane/Bellingham/Van Dijk (curva de idade) + #23 ELITE 'tight' (#23 fechado; #6 fechado) | Contratos usam idade e nível; revisar a curva de declínio junto. Contratos mudam a folha da IA — mesma hora de afinar a folga dos ELITE |
 | 8 ✅ | 3.2 Tela Stats | #7 Bundesliga × Serie A + #24 rótulos do extrato + #28/#29 estrelas (#7, #24, #28, #29 fechados — #7: no mundo atual Bundesliga +1,3% e Serie A +7,6%, dentro de ±10%) | A tela Stats expõe os números por liga que o issue investiga; mesma passada de UI/i18n nos textos do extrato. As estrelas (regra de quem recebe + cores com legenda) usam as mesmas notas e estatísticas da tela |
-| 9 | 3.3 Tela Tactics (blocos A — novo visual dentro do jogo — e B — novo jogo em uma tela — já feitos, na 1.9; bloco C1 (posições detalhadas, #20 #30 #31) feito na 2.0; bloco C2 (arrastar, formação livre e eixos táticos, #21) feito na 2.1; falta C3 estilo posse #8) | #8 estilo posse + #20 zagueiro × lateral na escalação + #21 arrastar e formação livre + #30 cor por posição + #31 posições estilo FM | Tactics mexe nas instruções; o estilo posse é um dos alvos. A posição detalhada (cor e aptidão por posição) é a base da escalação e das instruções |
+| 9 ✅ | 3.3 Tela Tactics (blocos A — novo visual dentro do jogo — e B — novo jogo em uma tela — feitos na 1.9; bloco C1 (posições detalhadas, #20 #30 #31) na 2.0; bloco C2 (arrastar, formação livre e eixos táticos, #21) na 2.1; bloco C3 estilo posse #8 na 2.1.1) | #8 estilo posse + #20 zagueiro × lateral na escalação + #21 arrastar e formação livre + #30 cor por posição + #31 posições estilo FM | Tactics mexe nas instruções; o estilo posse é um dos alvos. A posição detalhada (cor e aptidão por posição) é a base da escalação e das instruções |
 | 10 ✅ | 3.4 Staff (2.2) | #13 nomes turcos (sai à parte, numa branch só de dados) | Etapa grande + correção pequena de dados. Equipe técnica do clube do jogador feita; a IA usa a nota implícita do tier |
 | 11 ✅ | 3.5 Base (2.3) | #9 notas ≥ 8,5 no quickSim | Safra anual de 3–5 jovens por clube; aba Base para o jogador, a IA promove 1–2. Cauda de notas do quickSim corrigida (#9) |
 | 11b ✅ | 3.6 Aposentadoria e renascimento de craques (2.4) | — | Aposentadoria na virada (34+), registro em retired.json; craque de classe mundial do clube do jogador pode renascer na base (DP x1,3) |
 | 11c ✅ | 3.7 Histórico do jogador | #32 (fechado) | Carreira clube a clube; precisa de contratos (3.1) e aposentadoria (3.6) para ter história de verdade |
 | 11d ✅ | 3.8 Ranking de técnicos (2.6) | #33 | Pontuação por títulos; base para convites de clubes maiores e seleções e um futuro multiplayer |
-| 12 | 4.1 Faltas e cartões | #17 impedimento visível, faltas, cartões e pênaltis + #19 resumo ao vivo do adversário | Faltas e cartões entram no mesmo painel ao vivo que substitui a escalação do adversário |
+| 12 ✅ | 4.1 Faltas e cartões (2.7) | #17 impedimento visível, faltas, cartões e pênaltis + #19 resumo ao vivo do adversário | Faltas e cartões entram no mesmo painel ao vivo que substitui a escalação do adversário |
 | 13 | 4.2 Jogo aéreo | — | |
 | 14 | 4.3 Bolas paradas | — | |
 | 15 | 4.4 Treino de estilos de jogo | #43 | Treinar estilos (bola longa, linha de impedimento, linha alta, posse curta, pressão alta com mais desgaste) que dão bônus na partida, combinados com a mentalidade |
@@ -201,6 +201,11 @@ https://github.com/dw3st/FMProject/issues
 
 Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
 (`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
+
+Fechados na 2.7 (2026-10-02): **#17** impedimento visível, faltas, cartões e pênaltis · **#19** resumo
+ao vivo (painel "Resumo" no lugar da escalação do adversário) · **#45** ranking geral de todas as ligas
+na Stats e seletor agrupado por continente e país · **#46** botão de report durante a partida (testers)
+· **#47** reservas ordenados por linha, posição e nota na Formação.
 
 Fechados na 2.5 (2026-10-02): **#39** fonte da aba "Meu time" igual à de Rankings · **#40** posições
 detalhadas no elenco aberto pelo menu · **#41** botão "Continuar" no topo da tela de resultado ·

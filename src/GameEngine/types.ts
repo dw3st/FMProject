@@ -110,7 +110,11 @@ export type SetPieceType =
   /** Awarded when the ball goes over a touchline. The taker plays from the sideline. */
   | 'throw_in'
   /** Awarded when a defender's team puts the ball over their own goal line. Taken from the corner flag on the side the ball went out. */
-  | 'corner';
+  | 'corner'
+  /** Foul outside the offender's penalty area — taken from the foul spot (`.claude/rules/game-engine/fouls.md`). */
+  | 'free_kick'
+  /** Foul inside the offender's penalty area — resolved with `penaltyChance` when the countdown ends. */
+  | 'penalty';
 
 /**
  * Active set-piece freeze. When non-null the engine is waiting for players to
@@ -266,6 +270,26 @@ export interface InjuryRecord {
    * left / no bench candidate) never appears in `GameState.players` again, nor in
    * `substitutions` (that log only covers replaced players), so this is the only place their
    * final in-match energy is recorded (`buildPlayedMatchRecording.ts` / `matches.ts`).
+   */
+  energy: number;
+}
+
+/** One card shown in the match (`docs/superpowers/specs/2026-10-02-fouls-cards-design.md` §3). */
+export interface CardRecord {
+  team: TeamId;
+  /** Engine player ID of the booked player. */
+  playerId: number;
+  playerName: string;
+  /** Roster player ID — links back to the squad JSON. */
+  playerRosterId: string;
+  card: 'yellow' | 'red';
+  /** True when this red is the player's second yellow (the yellow itself is also logged before it). */
+  secondYellow: boolean;
+  /** Game-minute of the card. */
+  matchMinute: number;
+  /**
+   * Energy (0–100) when booked. A sent-off player leaves the pitch for good (no substitute), so for
+   * a red this is the only record of their final in-match energy (same role as `InjuryRecord.energy`).
    */
   energy: number;
 }
@@ -455,6 +479,8 @@ export interface GameState {
   substitutions: SubstitutionRecord[];
   /** In-match injuries, in chronological order (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). */
   injuries: InjuryRecord[];
+  /** Cards shown, in chronological order. A second yellow appears as the yellow followed by a red. */
+  cards: CardRecord[];
   /** Substitutions remaining for Team A (starts at 5). */
   subsRemainingA: number;
   /** Substitutions remaining for Team B (starts at 5). */
