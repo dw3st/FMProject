@@ -6,12 +6,12 @@
  * post-match pipeline (seasonLog, energy, development) applies unchanged.
  */
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import type { MatchInjury, MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
+import type { MatchCard, MatchInjury, MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { positionFactor } from "@/Domain/positions/positionAptitude";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
-import { resolvePenaltyShootout, type PenaltySide } from "@/GameEngine/Infrastructure/PenaltyShootout";
+import { penaltyChance, resolvePenaltyShootout, type PenaltySide } from "@/GameEngine/Infrastructure/PenaltyShootout";
 import {
   ATTACKING_MID_ROLES,
   DEFENSIVE_MID_ROLES,
@@ -391,6 +391,113 @@ function rollSideInjuries(
   return injuries;
 }
 
+/** Per-side discipline totals (team stats). */
+interface SideDiscipline {
+  fouls: number;
+  yellowCards: number;
+  redCards: number;
+  offsides: number;
+  penaltiesAwarded: number;
+}
+
+/**
+ * Discipline (Etapa 12, `.claude/rules/game/discipline.md`): `xi` commits the fouls; `opp` is the
+ * side that suffers them (and is awarded the penalties and the offside calls are counted for it).
+ * Penalties keep the already-sampled goal volume: each of `opp`'s regular goals becomes a penalty
+ * goal with probability `q = λ·c / xG`, and missed penalties are a separate Poisson (`λ·(1 − c)`),
+ * so `E[penalty goals] = λ·c`, `E[awarded] = λ`, and the score never changes. A converted goal
+ * moves from its scorer to the penalty taker (the assist is kept).
+ */
+function rollDiscipline(
+  xi: XIPlayer[],
+  team: "home" | "away",
+  opp: XIPlayer[],
+  oppGoals: number,
+  oppXg: number,
+  oppLevel: number,
+  minutesTotal: number,
+  stats: Record<string, MatchPlayerStats>,
+  ratingDelta: Record<string, number>,
+  cards: MatchCard[],
+  rng: Rng,
+): { committed: number; yellow: number; red: number; oppPenalties: number; oppOffsides: number } {
+  const W = RATING_WEIGHTS;
+  const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppOffsides: 0 };
+  if (xi.length === 0 || opp.length === 0) return out;
+
+  // Penalties for `opp` (fouls by `xi` in its own box).
+  const outfieldOpp = opp.filter((x) => groupOf(x) !== "GK");
+  const taker = [...outfieldOpp].sort((a, b) => stat(b.p, "finishing") - stat(a.p, "finishing"))[0];
+  const gk = xi.find((x) => groupOf(x) === "GK");
+  const keeper = gk ? { id: gk.p.id, reflex: stat(gk.p, "reflex") / 10, diving: stat(gk.p, "jump") / 10 } : null;
+  const c = taker ? penaltyChance(Math.min(0.95, stat(taker.p, "finishing") / 10), keeper) : 0;
+  const lam = C.PENALTIES_PER_SIDE;
+  let penaltyGoals = 0;
+  if (taker && oppGoals > 0) {
+    const q = Math.min(0.9, (lam * c) / Math.max(oppXg, lam * c));
+    for (let g = 0; g < oppGoals; g++) if (rng() < q) penaltyGoals++;
+  }
+  const missed = taker ? samplePoisson(lam * (1 - c), rng) : 0;
+  for (let k = 0; k < penaltyGoals; k++) {
+    const scorers = opp.filter((x) => (stats[x.p.id]?.goals ?? 0) > 0);
+    const from = weightedPick(scorers, (x) => stats[x.p.id]!.goals, rng);
+    if (from && from.p.id !== taker!.p.id) {
+      stats[from.p.id]!.goals--;
+      stats[from.p.id]!.shots--;
+      stats[taker!.p.id]!.goals++;
+      stats[taker!.p.id]!.shots++;
+    }
+  }
+  if (taker) stats[taker.p.id]!.shots += missed;
+  out.oppPenalties = penaltyGoals + missed;
+
+  out.oppOffsides = samplePoisson(C.OFFSIDES_PER_SIDE * Math.pow(oppLevel / C.LEVEL_REF, C.OFFSIDE_LEVEL_EXPONENT), rng);
+
+  // Fouls by `xi` (penalty fouls included), in minute order so a second yellow follows the first.
+  const n = Math.max(samplePoisson(C.FOULS_PER_SIDE, rng), out.oppPenalties);
+  const minutes = Array.from({ length: n }, () => 1 + Math.floor(rng() * minutesTotal)).sort((a, b) => a - b);
+  const booked = new Set<string>();
+  const sentOff = new Set<string>();
+  const weight = (x: XIPlayer) =>
+    C.FOUL_LINE_WEIGHT[groupOf(x)] * Math.max(0.2, 1 + 0.6 * (0.5 - stat(x.p, "tackling") / 10)) *
+    (booked.has(x.p.id) ? C.BOOKED_FOUL_MULT : 1);
+  const penaltyFoulIdx = new Set<number>();
+  while (penaltyFoulIdx.size < out.oppPenalties) penaltyFoulIdx.add(Math.floor(rng() * n));
+  minutes.forEach((minute, i) => {
+    const pool = xi.filter((x) => !sentOff.has(x.p.id));
+    const fouler = weightedPick(pool, weight, rng);
+    if (!fouler) return;
+    out.committed++;
+    const id = fouler.p.id;
+    const add = (d: number) => { ratingDelta[id] = (ratingDelta[id] ?? 0) + d; };
+    if (penaltyFoulIdx.has(i)) add(W.PENALTY_CONCEDED);
+    const card = (kind: "yellow" | "red", secondYellow: boolean) =>
+      cards.push({ team, playerId: id, playerName: fouler.p.name, card: kind, secondYellow, matchMinute: minute });
+    if (rng() < C.DIRECT_RED_PER_FOUL) {
+      card("red", false);
+      sentOff.add(id);
+      out.red++;
+      add(W.RED_CARD);
+      return;
+    }
+    const wasBooked = booked.has(id);
+    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1)) {
+      card("yellow", false);
+      out.yellow++;
+      add(W.YELLOW_CARD);
+      if (wasBooked) {
+        card("red", true);
+        sentOff.add(id);
+        out.red++;
+        add(W.RED_CARD);
+      } else {
+        booked.add(id);
+      }
+    }
+  });
+  return out;
+}
+
 function sumTeamStats(xi: XIPlayer[], stats: Record<string, MatchPlayerStats>): MatchTeamStats {
   const t: MatchTeamStats = { shots: 0, passesCompleted: 0, passesAttempted: 0, tackles: 0, interceptions: 0 };
   for (const { p } of xi) {
@@ -461,6 +568,26 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     }
   }
 
+  // Same total-minutes convention as the extra-time energy drain above (120' once ET was played).
+  const totalMinutes = decider?.extraTime ? 120 : 90;
+  const injuries = [
+    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult),
+    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult),
+  ].sort((a, b) => a.matchMinute - b.matchMinute);
+
+  // Discipline last, so every earlier rng draw (goals, events, injuries) is unchanged by it.
+  const cards: MatchCard[] = [];
+  const ratingDelta: Record<string, number> = {};
+  const homeDisc = rollDiscipline(homeXI, "home", awayXI, goalsAway - (decider?.extraTime?.away ?? 0), xgAwayDay,
+    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng);
+  const awayDisc = rollDiscipline(awayXI, "away", homeXI, goalsHome - (decider?.extraTime?.home ?? 0), xgHomeDay,
+    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng);
+  cards.sort((a, b) => a.matchMinute - b.matchMinute);
+  const sideDisc = (own: typeof homeDisc, other: typeof homeDisc): SideDiscipline => ({
+    fouls: own.committed, yellowCards: own.yellow, redCards: own.red,
+    offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties,
+  });
+
   // Extra time (30' on top of 90') drains the whole XI proportionally longer, same as the
   // full engine's match-minute tracking treats 120' matches.
   const extraTimeMult = decider?.extraTime ? 4 / 3 : 1;
@@ -468,7 +595,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const playerEnergy: Record<string, number> = {};
   for (const x of [...homeXI, ...awayXI]) {
     const { p } = x;
-    playerRatings[p.id] = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0, groupOf(x));
+    const base = ratingFromStats(playerStats[p.id]!, tacklesFailed[p.id] ?? 0, groupOf(x));
+    const delta = ratingDelta[p.id] ?? 0;
+    playerRatings[p.id] = delta === 0 ? base : Math.round(clamp(base + delta, 0, 10) * 10) / 10;
     const startEnergy = startFitness(p);
     const drain =
       C.ENERGY_DRAIN_BY_LINE[groupOf(x)] *
@@ -478,17 +607,14 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     playerEnergy[p.id] = clamp(startEnergy - drain, 0, 100);
   }
 
-  // Same total-minutes convention as the extra-time energy drain above (120' once ET was played).
-  const totalMinutes = decider?.extraTime ? 120 : 90;
-  const injuries = [
-    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult),
-    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult),
-  ].sort((a, b) => a.matchMinute - b.matchMinute);
 
   const recording: PlayedMatchRecording = {
     fixtureId: input.fixtureId,
     score: { home: goalsHome, away: goalsAway },
-    teamStats: { home: sumTeamStats(homeXI, playerStats), away: sumTeamStats(awayXI, playerStats) },
+    teamStats: {
+      home: { ...sumTeamStats(homeXI, playerStats), ...sideDisc(homeDisc, awayDisc) },
+      away: { ...sumTeamStats(awayXI, playerStats), ...sideDisc(awayDisc, homeDisc) },
+    },
     playerStats,
     playerRatings,
     playerEnergy,
@@ -496,6 +622,7 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     durationMs: Math.round(performance.now() - start),
     ...(decider ? { decider } : {}),
     ...(injuries.length > 0 ? { injuries } : {}),
+    ...(cards.length > 0 ? { cards } : {}),
   };
 
   return { recording, breakdown: { home, away, xgHome, xgAway } };
