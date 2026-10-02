@@ -45,3 +45,22 @@ Classificação (`LeagueTableScreen.tsx`), onde a liga já está selecionada.
 
 O `DaySummaryModal` usa `partitionDayMatches` para mostrar direto as partidas da liga do jogador
 e das ligas seguidas, e recolhe o resto atrás de um `OtherLeaguesSection` fechado por padrão.
+
+## Mapa-múndi do novo jogo
+
+`src/GameInterface/NewGame/WorldMap.tsx` no passo de país do `NewGameWizard` (só a partir de `md`;
+abaixo disso só a lista). Geometria Natural Earth 1:50m (domínio público, via `world-atlas`),
+simplificada e gerada em `worldMapPaths.ts` por `bun scripts/generate-world-map.ts` — não editar à mão.
+Só os países com liga têm path próprio (chave = ISO2 do jogo; `GB` = Inglaterra, desenhada com o
+contorno do Reino Unido); o resto é um path de fundo. Países pequenos demais (Malta, Chipre, Albânia)
+ganham um ponto clicável. O mapa é `aria-hidden`: a lista cobre teclado e leitor de tela. País novo
+com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` do script e regerar
+(`worldMapCountries.test.ts` falha se faltar).
+
+## Rostos dos jogadores
+
+`PlayerFace` (`src/GameInterface/Components/PlayerFace.tsx`) desenha um rosto `facesjs` (MIT),
+determinístico pelo id (`playerFaceSvg`: RNG semeado trocado no `Math.random` durante o `generate`),
+camisa com as cores do clube, aparência sorteada de faixas amplas por região da nacionalidade
+(`src/Domain/faces/faceProfile.ts`). Só na ficha do jogador (96px) e no cartão do painel (64px),
+nunca em tabelas. O `facesjs` é importado sob demanda; nada é salvo no save.
