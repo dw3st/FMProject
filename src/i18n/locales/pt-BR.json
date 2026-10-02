@@ -1791,6 +1791,7 @@
     "ok": "OK"
   },
   "statsScreen": {
+    "allLeagues": "Geral (todas as ligas)",
     "title": "Estatísticas",
     "rankings": "Rankings",
     "myTeam": "Meu time",
