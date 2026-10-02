@@ -912,6 +912,9 @@ function awardFoulRestart(
     ballHolderId:   setPiece.takerId,
     possessionTime: keptPossession ? state.possessionTime : 0,
     lastPasserId:   null,
+    // The taker can't be challenged right after the freeze (the dribble/duel foul paths don't set
+    // a cooldown of their own, and the freeze doesn't drain it).
+    tackleCooldown: TACKLE_COOLDOWN,
     setPiece,
   }, prevHolderId);
 }
@@ -2002,6 +2005,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
         ballHolderId: nearestDefender.id,
         possessionTime: 0,
         lastPasserId: null,
+        tackleCooldown: TACKLE_COOLDOWN,
         setPiece: { type: 'offside_fk', takerId: nearestDefender.id, countdown: 2, position: { x: lb.x, y: lb.y } },
       }, prevHolderId),
       passCompleted: false, tackled: false, goalScored: null,
@@ -3022,6 +3026,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           possessionTime: 0,
           lastPasserId: null,
           players,
+          tackleCooldown: TACKLE_COOLDOWN,
           setPiece: {
             type: 'offside_fk',
             takerId: nearestDefender.id,
