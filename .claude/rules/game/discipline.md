@@ -53,7 +53,10 @@ passar; a indisponibilidade vale de qualquer jeito).
   (maior `finishing` do adversário × goleiro de quem cede). **O placar não muda:** cada gol normal
   já sorteado do adversário vira gol de pênalti com probabilidade `q = λ·c / xG do dia`; os perdidos
   são Poisson(`λ·(1 − c)`). Assim `E[gols de pênalti] = λ·c`, `E[pênaltis] = λ`, e o volume de gols
-  calibrado fica igual. O gol convertido passa do autor para o cobrador (a assistência fica).
+  calibrado fica igual. O gol convertido passa do autor para o cobrador e **perde a assistência**
+  (gol de pênalti não tem assistência, como no motor): `assignGoals` guarda autor e assistente de cada
+  gol, e o sorteio de conversão é feito gol a gol (só os do tempo normal). `teamStats.penaltyGoals` conta
+  os convertidos.
 - **Impedimentos** do adversário: Poisson(`OFFSIDES_PER_SIDE` 0,45 × (nível/5)^1,5) — única
   tendência por nível do motor (PL 1,05 × Championship 0,76).
 - Nota: amarelo −0,3, vermelho −1,0, pênalti cometido −0,5 (`RATING_WEIGHTS`), somados depois do encolhimento.

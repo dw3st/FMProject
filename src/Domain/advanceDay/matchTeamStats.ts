@@ -14,5 +14,6 @@ export function toMatchTeamStats(t: EngineTeamStats): MatchTeamStats {
     redCards: t.redCards,
     offsides: t.offsides,
     penaltiesAwarded: t.penaltiesAwarded,
+    penaltyGoals: t.penaltyGoals,
   };
 }

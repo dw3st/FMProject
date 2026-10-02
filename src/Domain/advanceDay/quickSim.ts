@@ -283,19 +283,33 @@ function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[]
   return xi;
 }
 
-function assignGoals(xi: XIPlayer[], goals: number, stats: Record<string, MatchPlayerStats>, rng: Rng): void {
+/** One sampled goal: its scorer and (optional) assister — kept so a goal later turned into a penalty
+ *  goal by `rollDiscipline` can move to the taker and drop its assist. */
+interface GoalRecord {
+  scorerId: string;
+  assisterId: string | null;
+}
+
+function assignGoals(xi: XIPlayer[], goals: number, stats: Record<string, MatchPlayerStats>, rng: Rng): GoalRecord[] {
   const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
   const assistWeight = (x: XIPlayer) => C.ROLE_ASSIST_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "passing") / 10);
+  const records: GoalRecord[] = [];
   for (let g = 0; g < goals; g++) {
     const scorer = weightedPick(xi, scorerWeight, rng) ?? uniformPick(xi, rng);
     if (!scorer) break;
     stats[scorer.p.id]!.goals++;
     stats[scorer.p.id]!.shots++;
+    let assisterId: string | null = null;
     if (rng() >= C.NO_ASSIST_RATE) {
       const assister = weightedPick(xi.filter((x) => x.p.id !== scorer.p.id), assistWeight, rng);
-      if (assister) stats[assister.p.id]!.assists++;
+      if (assister) {
+        stats[assister.p.id]!.assists++;
+        assisterId = assister.p.id;
+      }
     }
+    records.push({ scorerId: scorer.p.id, assisterId });
   }
+  return records;
 }
 
 function fillSide(
@@ -307,10 +321,10 @@ function fillSide(
   level: number,
   matchLevel: number,
   rng: Rng,
-): void {
+): GoalRecord[] {
   const scorerWeight = (x: XIPlayer) => C.ROLE_GOAL_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "finishing") / 10);
 
-  assignGoals(xi, goals, stats, rng);
+  const goalRecords = assignGoals(xi, goals, stats, rng);
 
   const shotsPerXg = C.SHOTS_PER_XG * Math.pow(matchLevel / C.LEVEL_REF, C.SHOTS_LEVEL_EXPONENT);
   const extraShots = samplePoisson(xg * shotsPerXg, rng);
@@ -337,6 +351,7 @@ function fillSide(
     s.interceptions = samplePoisson(
       C.INTERCEPTIONS_PER_MATCH[group] * lv(C.INTERCEPTION_LEVEL_EXPONENT) * (0.5 + stat(p, "pressing") / 10), rng);
   }
+  return goalRecords;
 }
 
 /**
@@ -398,6 +413,7 @@ interface SideDiscipline {
   redCards: number;
   offsides: number;
   penaltiesAwarded: number;
+  penaltyGoals: number;
 }
 
 /**
@@ -406,13 +422,14 @@ interface SideDiscipline {
  * Penalties keep the already-sampled goal volume: each of `opp`'s regular goals becomes a penalty
  * goal with probability `q = λ·c / xG`, and missed penalties are a separate Poisson (`λ·(1 − c)`),
  * so `E[penalty goals] = λ·c`, `E[awarded] = λ`, and the score never changes. A converted goal
- * moves from its scorer to the penalty taker (the assist is kept).
+ * moves from its scorer to the penalty taker and loses its assist (a penalty goal has none, as in
+ * the engine's `resolveInMatchPenalty`). `oppGoals` are `opp`'s regular-time goals (no extra time).
  */
 function rollDiscipline(
   xi: XIPlayer[],
   team: "home" | "away",
   opp: XIPlayer[],
-  oppGoals: number,
+  oppGoals: GoalRecord[],
   oppXg: number,
   oppLevel: number,
   minutesTotal: number,
@@ -420,9 +437,9 @@ function rollDiscipline(
   ratingDelta: Record<string, number>,
   cards: MatchCard[],
   rng: Rng,
-): { committed: number; yellow: number; red: number; oppPenalties: number; oppOffsides: number } {
+): { committed: number; yellow: number; red: number; oppPenalties: number; oppPenaltyGoals: number; oppOffsides: number } {
   const W = RATING_WEIGHTS;
-  const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppOffsides: 0 };
+  const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppPenaltyGoals: 0, oppOffsides: 0 };
   if (xi.length === 0 || opp.length === 0) return out;
 
   // Penalties for `opp` (fouls by `xi` in its own box).
@@ -432,24 +449,25 @@ function rollDiscipline(
   const keeper = gk ? { id: gk.p.id, reflex: stat(gk.p, "reflex") / 10, diving: stat(gk.p, "jump") / 10 } : null;
   const c = taker ? penaltyChance(Math.min(0.95, stat(taker.p, "finishing") / 10), keeper) : 0;
   const lam = C.PENALTIES_PER_SIDE;
-  let penaltyGoals = 0;
-  if (taker && oppGoals > 0) {
+  const converted: GoalRecord[] = [];
+  if (taker && oppGoals.length > 0) {
     const q = Math.min(0.9, (lam * c) / Math.max(oppXg, lam * c));
-    for (let g = 0; g < oppGoals; g++) if (rng() < q) penaltyGoals++;
+    for (const goal of oppGoals) if (rng() < q) converted.push(goal);
   }
+  const penaltyGoals = converted.length;
   const missed = taker ? samplePoisson(lam * (1 - c), rng) : 0;
-  for (let k = 0; k < penaltyGoals; k++) {
-    const scorers = opp.filter((x) => (stats[x.p.id]?.goals ?? 0) > 0);
-    const from = weightedPick(scorers, (x) => stats[x.p.id]!.goals, rng);
-    if (from && from.p.id !== taker!.p.id) {
-      stats[from.p.id]!.goals--;
-      stats[from.p.id]!.shots--;
+  for (const goal of converted) {
+    if (goal.assisterId) stats[goal.assisterId]!.assists--;
+    if (goal.scorerId !== taker!.p.id) {
+      stats[goal.scorerId]!.goals--;
+      stats[goal.scorerId]!.shots--;
       stats[taker!.p.id]!.goals++;
       stats[taker!.p.id]!.shots++;
     }
   }
   if (taker) stats[taker.p.id]!.shots += missed;
   out.oppPenalties = penaltyGoals + missed;
+  out.oppPenaltyGoals = penaltyGoals;
 
   out.oppOffsides = samplePoisson(C.OFFSIDES_PER_SIDE * Math.pow(oppLevel / C.LEVEL_REF, C.OFFSIDE_LEVEL_EXPONENT), rng);
 
@@ -548,8 +566,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const tacklesFailed: Record<string, number> = {};
   for (const { p } of [...homeXI, ...awayXI]) playerStats[p.id] = emptyStats();
   const matchLevel = (teamLevel(home) + teamLevel(away)) / 2;
-  fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, teamLevel(home), matchLevel, rng);
-  fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
+  const homeGoals = fillSide(homeXI, goalsHome, xgHomeDay, playerStats, tacklesFailed, teamLevel(home), matchLevel, rng);
+  const awayGoals = fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
 
   let decider: PlayedMatchRecording["decider"];
   const agg = input.aggregate ?? { home: 0, away: 0 };
@@ -578,14 +596,14 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   // Discipline last, so every earlier rng draw (goals, events, injuries) is unchanged by it.
   const cards: MatchCard[] = [];
   const ratingDelta: Record<string, number> = {};
-  const homeDisc = rollDiscipline(homeXI, "home", awayXI, goalsAway - (decider?.extraTime?.away ?? 0), xgAwayDay,
+  const homeDisc = rollDiscipline(homeXI, "home", awayXI, awayGoals, xgAwayDay,
     teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng);
-  const awayDisc = rollDiscipline(awayXI, "away", homeXI, goalsHome - (decider?.extraTime?.home ?? 0), xgHomeDay,
+  const awayDisc = rollDiscipline(awayXI, "away", homeXI, homeGoals, xgHomeDay,
     teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng);
   cards.sort((a, b) => a.matchMinute - b.matchMinute);
   const sideDisc = (own: typeof homeDisc, other: typeof homeDisc): SideDiscipline => ({
     fouls: own.committed, yellowCards: own.yellow, redCards: own.red,
-    offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties,
+    offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties, penaltyGoals: other.oppPenaltyGoals,
   });
 
   // Extra time (30' on top of 90') drains the whole XI proportionally longer, same as the

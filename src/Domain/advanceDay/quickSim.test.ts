@@ -701,6 +701,26 @@ describe("quickSimMatch — discipline", () => {
     expect(pens / n).toBeLessThan(0.3);
   });
 
+  test("a goal turned into a penalty goal has no assist (penalty goals never carry one)", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let penaltyGoals = 0;
+    for (let i = 0; i < 4000; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      for (const [side, squad] of [["home", home], ["away", away]] as const) {
+        const ids = lineupOf(squad);
+        const pens = r.teamStats[side].penaltyGoals!;
+        expect(pens).toBeLessThanOrEqual(r.teamStats[side].penaltiesAwarded!);
+        penaltyGoals += pens;
+        const assists = ids.reduce((s, id) => s + (r.playerStats[id]?.assists ?? 0), 0);
+        // Only non-penalty goals may carry an assist.
+        expect(assists).toBeLessThanOrEqual(r.score[side] - pens);
+        for (const id of ids) expect(r.playerStats[id]?.assists ?? 0).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(penaltyGoals).toBeGreaterThan(100);
+  });
+
   test("a red card names a player of the carded side's XI", () => {
     const home = makeSquad("h", 6);
     const away = makeSquad("a", 6);
