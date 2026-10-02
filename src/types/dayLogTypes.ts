@@ -14,6 +14,8 @@ export interface MatchTeamStats {
   redCards?:       number;
   offsides?:       number;
   penaltiesAwarded?: number;
+  /** Goals scored from in-match penalties (part of the score, never extra). */
+  penaltyGoals?:   number;
 }
 
 export interface MatchPlayerStats {
