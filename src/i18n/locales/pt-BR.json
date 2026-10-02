@@ -235,6 +235,9 @@
       "other": "Outros"
     },
     "selectTerritoryDetail": "Selecione um território para ver detalhes",
+    "mapHint": "Clique num país destacado ou escolha na lista",
+    "mapAttribution": "Mapa: Natural Earth (domínio público)",
+    "showMap": "Mapa-múndi",
     "squadRating": "Classificação do Elenco",
     "reputationLevel": {
       "1": "Time Local",
@@ -415,7 +418,10 @@
     "subtitle": "Atualizações recentes do jogo",
     "version": "Versão {{version}}",
     "fixes": "Correções",
-    "notice": "Novo: v{{version}}"
+    "notice": "Novo: v{{version}}",
+    "tabNews": "Novidades",
+    "tabUpcoming": "Em breve",
+    "upcomingSubtitle": "No que estamos trabalhando agora"
   },
   "status": {
     "budget": "Orçamento",

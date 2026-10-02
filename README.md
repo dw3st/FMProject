@@ -51,6 +51,10 @@ Most leagues (`of_*`) are generated from the open-football dataset; see
 for how to regenerate them and [`data_process/openfootball/NOTICE.md`](data_process/openfootball/NOTICE.md)
 for attribution and license.
 
+The world map on the new-game screen uses [Natural Earth](https://www.naturalearthdata.com/)
+1:50m country geometry (public domain), via the `world-atlas` package; it is generated into
+`src/GameInterface/NewGame/worldMapPaths.ts` by `bun scripts/generate-world-map.ts`.
+
 The auth database (`fmproject.db`) and the dev email log are **not** part of the
 snapshot — they are created automatically on first run.
 
