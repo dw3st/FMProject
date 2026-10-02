@@ -94,3 +94,22 @@ export function buildInitialManagers(
   }
   return out;
 }
+
+/**
+ * A page of the ranking: `ranked` already sorted (`rankManagers`), filtered by `inScope`, ranks are
+ * 1-based within the scope. `playerRank` is the human manager's rank in the scope (null outside it).
+ */
+export function rankingPage(
+  ranked: ManagerRecord[],
+  inScope: (m: ManagerRecord) => boolean,
+  offset: number,
+  limit: number,
+): { total: number; playerRank: number | null; items: (ManagerRecord & { rank: number })[] } {
+  const scoped = ranked.filter(inScope);
+  const p = scoped.findIndex((m) => m.isPlayer);
+  return {
+    total: scoped.length,
+    playerRank: p >= 0 ? p + 1 : null,
+    items: scoped.slice(offset, offset + limit).map((m, i) => ({ ...m, rank: offset + i + 1 })),
+  };
+}

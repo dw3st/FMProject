@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   addSeason, awardTitle, buildInitialManagers, continentalPoints, countryWeight, cupPoints,
-  leaguePoints, managerOfSquad, promotionPoints, rankManagers,
+  leaguePoints, managerOfSquad, promotionPoints, rankManagers, rankingPage,
 } from "@/Domain/managers/managers";
 import { MANAGERS } from "@/Domain/managers/managerConfig";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -90,5 +90,20 @@ describe("records", () => {
     ] as unknown as Squad[];
     const ids = buildInitialManagers(squads, null).map((m) => m.id);
     expect(new Set(ids).size).toBe(2);
+  });
+});
+
+describe("rankingPage", () => {
+  test("filters by scope, ranks within it, pages and finds the player", () => {
+    const ranked = rankManagers([
+      rec("a", { points: 50 }), rec("b", { points: 40 }), rec("me", { points: 30, isPlayer: true }), rec("c", { points: 20 }),
+    ]);
+    const all = rankingPage(ranked, () => true, 1, 2);
+    expect(all.total).toBe(4);
+    expect(all.playerRank).toBe(3);
+    expect(all.items.map((m) => [m.id, m.rank])).toEqual([["b", 2], ["me", 3]]);
+    const noB = rankingPage(ranked, (m) => m.id !== "b", 0, 10);
+    expect(noB.playerRank).toBe(2);
+    expect(rankingPage(ranked, (m) => !m.isPlayer, 0, 10).playerRank).toBeNull();
   });
 });
