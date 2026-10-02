@@ -201,6 +201,11 @@ https://github.com/dw3st/FMProject/issues
 Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
 (`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
 
+Fechados na 2.4.1 (2026-10-01): **#36** partida travada com bola solta sem perseguidor (o perseguidor
+saía de campo por lesão/substituição e ninguém era recomprometido; agora há recomprometimento e um
+watchdog de 7 s reais) · **#37** condutor colado na linha lateral e na linha de fundo ao lado da
+trave · **#38** texto "Carregando o resultado da partida" no fim do jogo.
+
 Abertos em 2026-09-25: #2 quickSim × motor em gols · #5 revisão final + smoke
 da recalibração · #8 estilo posse · #9 notas
 ≥ 8,5 no quickSim · #10 compose exposto na rede local (fechado na Etapa 6) · #11 ligas de ano civil com a composição de
