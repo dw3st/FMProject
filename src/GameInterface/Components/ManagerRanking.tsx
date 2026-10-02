@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ClubCell, CrestCell, NameCell, NumberCell, RankCell, StatsDetailRow, StatsHead, StatsRow, StatsTable,
+  ClubCell, CrestCell, NameCell, NumberCell, RankCell, LoadMoreButton, StatsDetailRow, StatsHead, StatsRow, StatsTable,
 } from "@/GameInterface/Components/StatsTable";
 import { competitionName } from "@/Domain/world/labels";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -21,6 +21,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
   const [total, setTotal] = useState(0);
   const [playerRank, setPlayerRank] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
   const [error, setError] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   // Bumped on every scope change, so a "load more" answer for the old scope is dropped.
@@ -37,6 +38,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
     setError(false);
     setOpen(null);
     setLoadingMore(false);
+    setMoreFailed(false);
     fetchPage(0)
       .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); setPlayerRank(d.playerRank); } })
       .catch(() => { if (!cancelled) setError(true); });
@@ -48,9 +50,10 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
     if (!rows || loadingMore) return;
     const gen = generation.current;
     setLoadingMore(true);
+    setMoreFailed(false);
     fetchPage(rows.length)
       .then((d) => { if (gen === generation.current) { setRows([...rows, ...d.items]); setTotal(d.total); } })
-      .catch(() => { if (gen === generation.current) setError(true); })
+      .catch(() => { if (gen === generation.current) setMoreFailed(true); })
       .finally(() => { if (gen === generation.current) setLoadingMore(false); });
   };
 
@@ -135,14 +138,14 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
         })}
       </StatsTable>
       {rows.length < total && (
-        <button
-          type="button"
+        <LoadMoreButton
           onClick={loadMore}
-          disabled={loadingMore}
-          className="mt-3 h-10 px-5 bg-transparent border-0 text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
-        >
-          {loadingMore ? t("statsScreen.loading") : t("statsScreen.retired.loadMore")}
-        </button>
+          loading={loadingMore}
+          failed={moreFailed}
+          label={t("statsScreen.retired.loadMore")}
+          loadingLabel={t("statsScreen.loading")}
+          failedLabel={t("statsScreen.loadFailed")}
+        />
       )}
       <p className="text-sm text-muted-foreground mt-3">{t("statsScreen.managers.hint")}</p>
     </div>
