@@ -674,17 +674,6 @@ export function MatchResultScreen() {
         </div>
       </div>
 
-      {/* Action — same placement & style as primary actions on /match-preview */}
-      <div className="flex items-center gap-4 shrink-0 pb-2">
-        <a
-          href="/dashboard"
-          className="flex items-center gap-2 px-8 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline border-0"
-        >
-          {t("common.continue")}
-          <Icon name="chevron-right" className="w-4 h-4" />
-        </a>
-      </div>
-
       <div className="h-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0" aria-hidden />
     </div>
   );
