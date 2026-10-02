@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import {
-  ClubCell, CrestCell, NameCell, NumberCell, RankCell, StatsCell, StatsDetailRow, StatsHead, StatsRow, StatsTable,
+  ClubCell, CrestCell, LoadMoreButton, NameCell, NumberCell, RankCell, StatsCell, StatsDetailRow, StatsHead, StatsRow, StatsTable,
 } from "@/GameInterface/Components/StatsTable";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -159,6 +159,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   const [rows, setRows] = useState<RetiredRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
   const [error, setError] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   // Bumped on every filter change, so a "load more" answer for the old filter is dropped.
@@ -177,6 +178,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
     setError(false);
     setOpen(null);
     setLoadingMore(false);
+    setMoreFailed(false);
     fetchPage(0)
       .then((d) => { if (!cancelled) { setRows(d.items); setTotal(d.total); } })
       .catch(() => { if (!cancelled) setError(true); });
@@ -188,9 +190,10 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
     if (!rows || loadingMore) return;
     const gen = generation.current;
     setLoadingMore(true);
+    setMoreFailed(false);
     fetchPage(rows.length)
       .then((d) => { if (gen === generation.current) { setRows([...rows, ...d.items]); setTotal(d.total); } })
-      .catch(() => { if (gen === generation.current) setError(true); })
+      .catch(() => { if (gen === generation.current) setMoreFailed(true); })
       .finally(() => { if (gen === generation.current) setLoadingMore(false); });
   };
 
@@ -265,14 +268,14 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
         })}
       </StatsTable>
       {rows.length < total && (
-        <button
-          type="button"
+        <LoadMoreButton
           onClick={loadMore}
-          disabled={loadingMore}
-          className="mt-3 h-10 px-5 bg-transparent border-0 text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
-        >
-          {loadingMore ? t("statsScreen.loading") : t("statsScreen.retired.loadMore")}
-        </button>
+          loading={loadingMore}
+          failed={moreFailed}
+          label={t("statsScreen.retired.loadMore")}
+          loadingLabel={t("statsScreen.loading")}
+          failedLabel={t("statsScreen.loadFailed")}
+        />
       )}
     </div>
   );

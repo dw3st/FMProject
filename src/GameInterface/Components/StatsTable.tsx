@@ -103,3 +103,27 @@ export function ClubCell({ children }: { children: ReactNode }) {
 export function NumberCell({ children, strong }: { children: ReactNode; strong?: boolean }) {
   return <td className={`${TD} text-right tabular-nums ${strong ? "font-display font-bold" : ""}`}>{children}</td>;
 }
+
+/** "Load more" under a paginated Stats table; a failed page shows the error next to the button and keeps the rows. */
+export function LoadMoreButton({ onClick, loading, failed, label, loadingLabel, failedLabel }: {
+  onClick: () => void;
+  loading: boolean;
+  failed: boolean;
+  label: string;
+  loadingLabel: string;
+  failedLabel: string;
+}) {
+  return (
+    <div className="mt-3 flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={loading}
+        className="h-10 px-5 bg-transparent border-0 text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50"
+      >
+        {loading ? loadingLabel : label}
+      </button>
+      {failed && !loading && <span role="alert" className="text-sm text-destructive">{failedLabel}</span>}
+    </div>
+  );
+}
