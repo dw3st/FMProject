@@ -577,7 +577,7 @@ interface MatchSetupData {
   myLineup: string[];
   myTactics?: TacticsSave;
   /** Saved-lineup starters auto-swapped for being injured on the match date — see Task 5 (UI warning). */
-  injuredReplaced?: { out: string; in: string }[];
+  injuredReplaced?: { out: string; in: string; reason?: "injured" | "suspended" }[];
   /** Tired-starter swaps the user can accept for this match. */
   rotationSuggestion?: { out: string; in: string }[];
   /** Tired-starter swaps already in the XI (assistant on, or accepted). */
@@ -1155,7 +1155,7 @@ export function MatchPreviewScreen() {
             <div className="text-sm text-destructive m-0 space-y-0.5">
               {matchSetup.injuredReplaced.map((swap, i) => (
                 <p key={i} className="m-0">
-                  {t("matchPreview.injuredReplaced", { out: playerName(swap.out), in: playerName(swap.in) })}
+                  {t(swap.reason === "suspended" ? "matchPreview.suspendedReplaced" : "matchPreview.injuredReplaced", { out: playerName(swap.out), in: playerName(swap.in) })}
                 </p>
               ))}
             </div>

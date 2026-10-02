@@ -603,7 +603,10 @@
       "light": "Light injury",
       "medium": "Medium injury",
       "severe": "Severe injury"
-    }
+    },
+    "suspended": "Suspended",
+    "suspendedMatches_one": "Suspended for the next match",
+    "suspendedMatches_other": "Suspended for the next {{count}} matches"
   },
   "attributes": {
     "title": "Player attributes",
@@ -1404,7 +1407,9 @@
       "sevLight": "light",
       "sevMedium": "medium",
       "sevSevere": "severe",
-      "contract": "Contract"
+      "contract": "Contract",
+      "suspendedMatches_one": "Suspended for the next match",
+      "suspendedMatches_other": "Suspended for the next {{count}} matches"
     },
     "assistsLabel": "assists",
     "clubSidebar": {
@@ -1446,7 +1451,9 @@
       "sevLight": "light",
       "sevMedium": "medium",
       "sevSevere": "severe",
-      "contract": "Contract"
+      "contract": "Contract",
+      "suspendedMatches_one": "Suspended for the next match",
+      "suspendedMatches_other": "Suspended for the next {{count}} matches"
     }
   },
   "squadScreen": {
@@ -1517,7 +1524,8 @@
     "rotationApply": "Apply",
     "rotationIgnore": "Ignore",
     "rotationApplied": "The assistant rested {{count}} players",
-    "rotationUndo": "Undo"
+    "rotationUndo": "Undo",
+    "suspendedReplaced": "{{out}} suspended, replaced by {{in}}"
   },
   "matchResult": {
     "title": "Match result",
@@ -1842,7 +1850,10 @@
       "blue": "Great form",
       "green": "Prodigy"
     },
-    "reborn": "Reborn"
+    "reborn": "Reborn",
+    "suspended": "Suspended",
+    "suspendedMatches_one": "Suspended for the next match",
+    "suspendedMatches_other": "Suspended for the next {{count}} matches"
   },
   "fitness": {
     "highLoadTooltip": "High load: recovers slowly and tires faster"

@@ -18,7 +18,7 @@ import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
-import { isInjured } from "@/Domain/injury/injury";
+import { isUnavailable } from "@/Domain/discipline/discipline";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
@@ -247,9 +247,9 @@ export function MatchScreen() {
         // injury-aware (`/api/match-setup` → `resolveUserLineup`), but the full squad list itself
         // (used here as the bench source too) is not filtered until now.
         const matchDate = data.fixture.date;
-        const myEligiblePlayers = data.mySquad.players.filter((p) => !isInjured(p, matchDate));
+        const myEligiblePlayers = data.mySquad.players.filter((p) => !isUnavailable(p, matchDate));
         const opponentPlayers = (data.opponentSquad?.players ?? data.mySquad.players).filter(
-          (p) => !isInjured(p, matchDate),
+          (p) => !isUnavailable(p, matchDate),
         );
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
         const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers, matchDate);

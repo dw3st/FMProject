@@ -603,7 +603,10 @@
       "light": "Lesão leve",
       "medium": "Lesão média",
       "severe": "Lesão grave"
-    }
+    },
+    "suspended": "Suspenso",
+    "suspendedMatches_one": "Suspenso para o próximo jogo",
+    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
   },
   "attributes": {
     "title": "Atributos do jogador",
@@ -1404,7 +1407,9 @@
       "sevLight": "leve",
       "sevMedium": "média",
       "sevSevere": "grave",
-      "contract": "Contrato"
+      "contract": "Contrato",
+      "suspendedMatches_one": "Suspenso para o próximo jogo",
+      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
     },
     "assistsLabel": "assistências",
     "clubSidebar": {
@@ -1446,7 +1451,9 @@
       "sevLight": "leve",
       "sevMedium": "média",
       "sevSevere": "grave",
-      "contract": "Contrato"
+      "contract": "Contrato",
+      "suspendedMatches_one": "Suspenso para o próximo jogo",
+      "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
     }
   },
   "squadScreen": {
@@ -1517,7 +1524,8 @@
     "rotationApply": "Aplicar",
     "rotationIgnore": "Ignorar",
     "rotationApplied": "O assistente poupou {{count}} jogadores",
-    "rotationUndo": "Desfazer"
+    "rotationUndo": "Desfazer",
+    "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}"
   },
   "matchResult": {
     "title": "Resultado da partida",
@@ -1842,7 +1850,10 @@
       "blue": "Grande fase",
       "green": "Prodígio"
     },
-    "reborn": "Renascido"
+    "reborn": "Renascido",
+    "suspended": "Suspenso",
+    "suspendedMatches_one": "Suspenso para o próximo jogo",
+    "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
   },
   "fitness": {
     "highLoadTooltip": "Carga alta: recupera devagar e cansa mais rápido"
