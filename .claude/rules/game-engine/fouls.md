@@ -75,6 +75,13 @@ vira goleiro com o piso de atributos).
   `resolveInMatchPenalty` usa `penaltyChance` (o mesmo de `PenaltyShootout.ts`): gol → saída do
   adversário; defesa/fora → tiro de meta do goleiro. Conta como chute (`shot`, xG = chance) e gol normal
   (`goalScored`, sem assistência).
+- **Cooldown de desarme:** toda retomada de falta (tiro livre ou pênalti) e todo tiro livre de
+  impedimento aplicam `tackleCooldown = TACKLE_COOLDOWN`. O congelamento não drena o cooldown, então o
+  cobrador nunca é desarmado (nem sofre outra falta) logo depois de cobrar.
+- **Fim de período:** `restartHoldsPeriod` segura o apito (até 60 s de jogo depois do fim do período)
+  enquanto há um pênalti pendente, um tiro livre perigoso ainda com o cobrador ou um chute no ar. Antes
+  disso, um pênalti marcado nos últimos ~36 s de jogo era descartado no intervalo, no fim do jogo ou no
+  fim da prorrogação.
 
 ## Eventos, estatísticas, nota
 
@@ -118,6 +125,12 @@ deram 2,235 e 2,362 gols (±5% entre rodadas), por isso a comparação usa as ro
 | Tiros livres | — | 11,1 (2,1 perigosos) | — | 11,5 (2,2) |
 
 Origem das faltas na PL: desarme 4,7 · drible 4,7 · bola solta 1,8.
+
+**Depois do cooldown na retomada e do apito segurado** (2026-10-02, PL, 2 × 200 jogos somados):
+gols 2,34, chutes 5,60, xG 3,42, faltas 11,2, amarelos 2,75, vermelhos 0,18 (0,125 de segundo
+amarelo), pênaltis 0,28 (0,22 gol), impedimentos 1,03, tiros livres 10,9 (2,2 perigosos); origem
+desarme 4,6 · drible 4,7 · bola solta 1,9. Tudo dentro do ruído das rodadas anteriores (as duas
+rodadas de 200 deram vermelhos 0,205 e 0,150, pênaltis 0,31 e 0,25).
 
 **O que move gols/chutes:** os pênaltis somam ~0,18 gol por partida; os gols sem pênalti caem
 ~4,6% (as interrupções quebram jogadas), o que compensa quase tudo. Os layouts de tiro livre perigoso
