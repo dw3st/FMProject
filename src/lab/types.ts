@@ -175,6 +175,17 @@ export interface TeamRawStats {
   injuries: number;
   /** Starters with `training`/`unsuitable` aptitude for their slot, summed across games. */
   outOfPosition: number;
+  // Discipline (`.claude/rules/game-engine/fouls.md`), summed across games.
+  /** Fouls committed. */
+  fouls: number;
+  yellowCards: number;
+  redCards: number;
+  /** In-match penalties awarded to this team. */
+  penaltiesAwarded: number;
+  /** In-match penalties scored by this team (never shootout kicks). */
+  penaltyGoals: number;
+  /** Times this team was caught offside. */
+  offsides: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -248,6 +259,15 @@ export interface PerMatchView {
   /** Injuries per match. */
   avgInjuries: number;
   avgOutOfPosition: number;
+  /** Fouls committed per match. */
+  avgFouls: number;
+  avgYellowCards: number;
+  avgRedCards: number;
+  /** In-match penalties awarded per match. */
+  avgPenaltiesAwarded: number;
+  /** In-match penalty goals per match. */
+  avgPenaltyGoals: number;
+  avgOffsides: number;
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -314,6 +334,15 @@ export interface VariantSummary {
   /** Injuries per match. */
   avgInjuries: number;
   avgOutOfPosition: number;
+  /** Fouls committed per match. */
+  avgFouls: number;
+  avgYellowCards: number;
+  avgRedCards: number;
+  /** In-match penalties awarded per match. */
+  avgPenaltiesAwarded: number;
+  /** In-match penalty goals per match. */
+  avgPenaltyGoals: number;
+  avgOffsides: number;
 }
 
 export interface ScenarioResult {
