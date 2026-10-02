@@ -85,6 +85,8 @@ export interface DailyMarketTickOptions {
   playerSquad?: Squad | null;
   /** Last day of the squad's league season (contract end). Falls back to the next May 31. */
   seasonEndOf?: (squad: Squad) => string | undefined;
+  /** League + season label of a selling squad, for the player's partial history row. */
+  historyFrom?: (squad: Squad) => { league: string; season: string } | null;
 }
 
 /** Contract an AI club gives a signing: the curve wage at its factor, length by age. */
@@ -131,6 +133,7 @@ function tryMatchPlayerSellList(
   excludePlayerSquadId: string | null,
   rng: () => number,
   contractFor: (player: RosterPlayer, buyer: Squad) => PlayerContract,
+  historyFrom?: (squad: Squad) => { league: string; season: string } | null,
 ): CompletedAITransfer | null {
   if (playerSellList.length === 0) return null;
 
@@ -180,6 +183,7 @@ function tryMatchPlayerSellList(
     buyerId,
     listedPlayer.id,
     contractFor(listedPlayer, buyerSquad),
+    historyFrom?.(playerSquadCurrent) ?? null,
   );
 
   squads.set(playerSquad.id, selling);
@@ -294,6 +298,7 @@ export function dailyMarketTick(
       buyer.id,
       player.id,
       aiSigningContract(player, buyer, currentDate, options),
+      options?.historyFrom?.(sellerSquad) ?? null,
     );
 
     squads.set(sellerSquad.id, selling);
@@ -355,6 +360,7 @@ export function dailyMarketTick(
       excludePlayerSquadId,
       rng,
       (p, b) => aiSigningContract(p, b, currentDate, options),
+      options?.historyFrom,
     );
     if (matchResult) {
       debugLog(
