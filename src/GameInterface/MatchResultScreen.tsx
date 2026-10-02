@@ -393,7 +393,10 @@ export function MatchResultScreen() {
   if (saveLoading || !session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground text-sm">{t("common.loadingMatchResult")}</p>
+        </div>
       </div>
     );
   }
