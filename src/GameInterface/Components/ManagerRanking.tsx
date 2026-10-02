@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import {
+  ClubCell, CrestCell, NameCell, NumberCell, RankCell, StatsDetailRow, StatsHead, StatsRow, StatsTable,
+} from "@/GameInterface/Components/StatsTable";
 import { competitionName } from "@/Domain/world/labels";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -10,9 +12,6 @@ type Page = { total: number; playerRank: number | null; items: Row[] };
 type Scope = "world" | "country";
 
 const PAGE = 50;
-const TH = "px-2 py-2 font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground";
-const TD = "px-2 py-1.5";
-const ROW = "h-11 border-b border-border last:border-0";
 
 /** "Técnicos" tab of the Stats screen (`.claude/rules/game/managers.md`). */
 export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string; leagues: LeagueData[]; refreshKey?: string }) {
@@ -91,65 +90,50 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
   return (
     <div className="max-w-4xl">
       {header}
-      <div className="overflow-x-auto border border-border rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border">
-            <tr>
-              <th className={`${TH} text-center w-10`}>#</th>
-              <th className={`${TH} text-left`}>{t("statsScreen.managers.name")}</th>
-              <th className={`${TH} text-left`}>{t("statsScreen.managers.club")}</th>
-              <th className={`${TH} text-right`}>{t("statsScreen.managers.points")}</th>
-              <th className={`${TH} text-right`}>{t("statsScreen.managers.titles")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((m) => {
-              const isOpen = open === m.id;
-              const canOpen = m.titles.length > 0;
-              return [
-                <tr
-                  key={m.id}
-                  className={`${ROW} ${m.isPlayer ? "bg-primary/10" : ""} ${canOpen ? "cursor-pointer hover:bg-white/5" : ""}`}
-                  onClick={canOpen ? () => setOpen(isOpen ? null : m.id) : undefined}
-                  onKeyDown={canOpen ? (e) => {
-                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(isOpen ? null : m.id); }
-                  } : undefined}
-                  tabIndex={canOpen ? 0 : undefined}
-                  aria-expanded={canOpen ? isOpen : undefined}
-                >
-                  <td className={`${TD} text-center text-muted-foreground tabular-nums`}>{m.rank}</td>
-                  <td className={`${TD} ${m.isPlayer ? "text-primary font-semibold" : ""}`}>{m.name}</td>
-                  <td className={`${TD} max-w-[14rem]`}>
-                    <span className="inline-flex items-center gap-2 max-w-full">
-                      <ClubLogo logoUrl={squadLogoUrl(m.squadId)} className="w-8 h-8 rounded-full shrink-0" />
-                      <span className="truncate text-muted-foreground">{m.clubName ?? "-"}</span>
-                    </span>
-                  </td>
-                  <td className={`${TD} text-right font-display font-bold tabular-nums`}>{m.points}</td>
-                  <td className={`${TD} text-right tabular-nums`}>{m.titles.length}</td>
-                </tr>,
-                isOpen && (
-                  <tr key={`${m.id}-titles`} className="border-b border-border last:border-0">
-                    <td colSpan={5} className="px-4 py-3">
-                      <ul className="m-0 p-0 list-none space-y-1">
-                        {[...m.titles].reverse().map((ti, i) => (
-                          <li key={i} className="flex justify-between gap-4 text-sm">
-                            <span>
-                              <span className="text-muted-foreground tabular-nums mr-2">{ti.season}</span>
-                              {titleLabel(ti.kind, ti.competition)}
-                            </span>
-                            <span className="tabular-nums text-muted-foreground">+{ti.points}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                ),
-              ];
-            })}
-          </tbody>
-        </table>
-      </div>
+      <StatsTable
+        head={<>
+          <StatsHead align="center">#</StatsHead>
+          <StatsHead />
+          <StatsHead>{t("statsScreen.managers.name")}</StatsHead>
+          <StatsHead>{t("statsScreen.club")}</StatsHead>
+          <StatsHead align="right">{t("statsScreen.managers.points")}</StatsHead>
+          <StatsHead align="right">{t("statsScreen.managers.titles")}</StatsHead>
+        </>}
+      >
+        {rows.map((m) => {
+          const isOpen = open === m.id;
+          return [
+            <StatsRow
+              key={m.id}
+              highlight={m.isPlayer}
+              onActivate={m.titles.length > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              expanded={isOpen}
+            >
+              <RankCell rank={m.rank} />
+              <CrestCell squadId={m.squadId} />
+              <NameCell highlight={m.isPlayer}><span className="truncate">{m.name}</span></NameCell>
+              <ClubCell>{m.clubName ?? "-"}</ClubCell>
+              <NumberCell strong>{m.points}</NumberCell>
+              <NumberCell>{m.titles.length}</NumberCell>
+            </StatsRow>,
+            isOpen && (
+              <StatsDetailRow key={`${m.id}-titles`} colSpan={6}>
+                <ul className="m-0 p-0 list-none space-y-1">
+                  {[...m.titles].reverse().map((ti, i) => (
+                    <li key={i} className="flex justify-between gap-4 text-sm">
+                      <span>
+                        <span className="text-muted-foreground tabular-nums mr-2">{ti.season}</span>
+                        {titleLabel(ti.kind, ti.competition)}
+                      </span>
+                      <span className="tabular-nums text-muted-foreground">+{ti.points}</span>
+                    </li>
+                  ))}
+                </ul>
+              </StatsDetailRow>
+            ),
+          ];
+        })}
+      </StatsTable>
       {rows.length < total && (
         <button
           type="button"

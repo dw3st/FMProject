@@ -1802,6 +1802,7 @@
     "games": "J",
     "goals": "G",
     "rating": "Nota",
+    "club": "Clube",
     "loading": "Carregando...",
     "loadFailed": "Não foi possível carregar as estatísticas.",
     "retired": {
@@ -1821,7 +1822,6 @@
       "world": "Mundo",
       "country": "Meu país",
       "name": "Técnico",
-      "club": "Clube",
       "points": "Pontos",
       "titles": "Títulos",
       "promotion": "Acesso · {{league}}",
