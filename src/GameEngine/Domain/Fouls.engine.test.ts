@@ -67,7 +67,7 @@ describe("fouls in the engine", () => {
 
   test("no foul when the roll misses", () => {
     const { s, attacker, defender } = boxSituation(60);
-    expect(maybeFoul(s, defender, attacker, "tackle", false, () => 0.9999)).toBeNull();
+    expect(maybeFoul(s, defender, attacker, "tackle", false, () => 0.95)).toBeNull();
   });
 
   test("a foul in the box becomes a penalty, resolved with penaltyChance when the countdown ends", () => {

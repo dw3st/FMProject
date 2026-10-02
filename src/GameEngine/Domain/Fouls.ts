@@ -43,7 +43,7 @@ export function foulChance(ctx: FoulContext): number {
   const yellow   = ctx.onYellow ? C.ON_YELLOW_MULT : 1;
   const won      = ctx.tackleWon ? C.TACKLE_WON_MULT : 1;
   const box      = ctx.inOwnBox ? C.IN_BOX_MULT : 1;
-  return clamp(base * angle * aggr * skill * tired * yellow * won * box, 0, 1);
+  return clamp(base * angle * aggr * skill * tired * yellow * won * box, 0, C.MAX_CHANCE);
 }
 
 export interface CardContext {

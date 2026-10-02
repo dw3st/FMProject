@@ -35,7 +35,7 @@ describe('foulChance', () => {
   test('always a probability', () => {
     const p = foulChance({ ...base, angle: 'behind', aggression: 1, tackling: 0, energy: 0 });
     expect(p).toBeGreaterThan(0);
-    expect(p).toBeLessThanOrEqual(1);
+    expect(p).toBeLessThanOrEqual(C.MAX_CHANCE);
   });
 });
 
