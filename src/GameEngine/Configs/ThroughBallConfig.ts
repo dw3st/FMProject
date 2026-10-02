@@ -140,6 +140,11 @@ export const THROUGH_BALL_CONFIG = {
    * From INITIAL_SPEED=4 with DECEL=2 the ball comes to rest in ~2 real seconds.
    */
   LOOSE_BALL_DECELERATION: 2,
+  /**
+   * Watchdog (#36): a loose ball older than this many REAL seconds is awarded to the nearest
+   * player outright. Normal races resolve in < ~5.5 s; this only fires when nobody can reach it.
+   */
+  LOOSE_BALL_WATCHDOG_REAL_SECONDS: 7,
 } as const;
 
 import type { PlayerRole } from '@/GameEngine/types';

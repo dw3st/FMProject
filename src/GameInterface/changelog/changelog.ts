@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.4.1",
+    date: "2026-10-01",
+    items: [
+      { pt: "Correções na partida ao vivo.", en: "Live match fixes." },
+    ],
+    fixes: [
+      { pt: "A partida não trava mais com a bola parada sozinha no campo.", en: "Matches no longer freeze with the ball sitting alone on the pitch." },
+      { pt: "Jogadores não conduzem mais colados na linha lateral nem pela linha de fundo ao lado da trave.", en: "Players no longer carry hugging the touchline or along the goal line next to the post." },
+      { pt: "A mensagem \"Carregando o resultado da partida\" aparece no fim do jogo.", en: "The \"Loading match result\" message shows at full time." },
+    ],
+  },
+  {
     version: "2.4",
     date: "2026-10-01",
     items: [
