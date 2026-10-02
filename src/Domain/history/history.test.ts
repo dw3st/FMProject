@@ -52,3 +52,17 @@ describe("history", () => {
     expect(p).toEqual({ s1: ["cup:a"] });
   });
 });
+
+import { squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
+import type { Squad } from "@/types/playerTypes";
+
+test("a transfer closes a partial row at the selling club", () => {
+  const p = player({ seasonLog: log(8) });
+  const seller = { id: "s1", name: "Old", players: [p] } as unknown as Squad;
+  const buyer = { id: "s2", name: "New", players: [] } as unknown as Squad;
+  const { buying } = squadsAfterAcceptedTransfer(p, seller, buyer, "s2", "p1", undefined, { league: "l", season: "2027" });
+  const moved = buying.players[0]!;
+  expect(moved.history![0]!.clubName).toBe("Old");
+  expect(moved.history![0]!.apps).toBe(8);
+  expect(moved.seasonLog!.appearances).toBe(0);
+});

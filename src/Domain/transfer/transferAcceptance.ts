@@ -1,3 +1,4 @@
+import { closePartialSeason } from "@/Domain/history/history";
 import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import type { Squad, RosterPlayer, PlayerContract } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
@@ -109,8 +110,13 @@ export function squadsAfterAcceptedTransfer(
   playerId: string,
   /** The new club's contract for the player (every signing creates one). */
   contract?: PlayerContract,
+  /** Selling club's league + season label: closes a partial history row (`.claude/rules/game/history.md`). */
+  from?: { league: string; season: string } | null,
 ): { selling: Squad; buying: Squad } {
-  const updatedPlayer: RosterPlayer = { ...player, squadId: buyerSquadId, ...(contract ? { contract } : {}) };
+  const closed = from
+    ? closePartialSeason(player, { squadId: sellingSquad.id, clubName: sellingSquad.name, league: from.league }, from.season)
+    : player;
+  const updatedPlayer: RosterPlayer = { ...closed, squadId: buyerSquadId, ...(contract ? { contract } : {}) };
   return {
     selling: {
       ...sellingSquad,
