@@ -86,6 +86,8 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 12 | 4.1 Faltas e cartões | #17 impedimento visível, faltas, cartões e pênaltis + #19 resumo ao vivo do adversário | Faltas e cartões entram no mesmo painel ao vivo que substitui a escalação do adversário |
 | 13 | 4.2 Jogo aéreo | — | |
 | 14 | 4.3 Bolas paradas | — | |
+| 15 | 4.4 Treino de estilos de jogo | #43 | Treinar estilos (bola longa, linha de impedimento, linha alta, posse curta, pressão alta com mais desgaste) que dão bônus na partida, combinados com a mentalidade |
+| 16 | Polimento | #44 | Mapa-múndi clicável para escolher o país no novo jogo; rostos gerados dos jogadores (`facesjs`, MIT, estilo Football GM: determinísticos pelo id, com a camisa do clube; fotos reais da ESPN descartadas por direitos de imagem); aba "Em breve" nas novidades |
 
 **Com data:** #11 (ligas de ano civil com a composição de 2026) entra assim que a ESPN virar essas
 ligas para 2027 (previsão: janeiro/fevereiro de 2027): `fetchEspn` + regenerar a cadeia.
@@ -165,8 +167,7 @@ com `/test` e `/lab` exibindo as novas estatísticas.
 
 - **Reports dos testers:** triagem semanal com `bun scripts/fetchReports.ts`.
 - **Issues abertos** (abaixo), atacados entre as fases.
-- Mapa-múndi clicável na escolha de país do novo jogo (pedido do usuário, 2026-10-01).
-- Rostos gerados para os jogadores (`facesjs`, MIT, estilo Football GM): determinísticos pelo id, com a camisa do clube; na ficha, elenco, prévia e partida. Fotos reais da ESPN descartadas por direitos de imagem (pedido do usuário, 2026-10-01).
+- Mapa-múndi e rostos dos jogadores foram para a etapa 16 (Polimento).
 
 ---
 
@@ -200,6 +201,10 @@ https://github.com/dw3st/FMProject/issues
 
 Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
 (`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
+
+Fechados na 2.5 (2026-10-02): **#39** fonte da aba "Meu time" igual à de Rankings · **#40** posições
+detalhadas no elenco aberto pelo menu · **#41** botão "Continuar" no topo da tela de resultado ·
+**#42** condução sobre a linha de fundo.
 
 Fechados na 2.4.1 (2026-10-01): **#36** partida travada com bola solta sem perseguidor (o perseguidor
 saía de campo por lesão/substituição e ninguém era recomprometido; agora há recomprometimento e um
