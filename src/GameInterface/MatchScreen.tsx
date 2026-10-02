@@ -46,6 +46,8 @@ import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
+import { useCurrentUser } from "@/GameInterface/AuthGate";
+import { ReportModal } from "@/GameInterface/Components/ReportModal";
 
 // Dev-only: DebugPanel pulls in react-json-view-lite (and its CSS, a side-effect
 // import that prevents tree-shaking). Loading it via a lazy() guarded by
@@ -114,6 +116,9 @@ export function MatchScreen() {
   const [crestIds, setCrestIds] = useState<{ a: string; b?: string } | null>(null);
   const [debug, setDebug] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  // Testers can file a report without leaving the match (#46), same gate as TopNavigation.
+  const isTester = !!useCurrentUser()?.isTester;
+  const [reportOpen, setReportOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   /** Live-match mentality for team A (my club). Team B (AI) always stays balanced. Not saved. */
@@ -588,6 +593,8 @@ export function MatchScreen() {
         progress={overlayProgress}
       />
 
+      {isTester && <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />}
+
       {/* Scoreboard Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-3 shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
@@ -673,6 +680,17 @@ export function MatchScreen() {
               <Icon name="stats" className="w-4 h-4" />
               {t("nav.stats")}
             </button>
+            {isTester && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer bg-secondary/50 border-border hover:border-primary/50 text-foreground"
+                aria-label={t("nav.report")}
+              >
+                <Icon name="report" className="w-4 h-4" />
+                {t("nav.report")}
+              </button>
+            )}
             <button
               onClick={() => setDebug((d) => !d)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
