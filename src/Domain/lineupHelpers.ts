@@ -6,19 +6,21 @@ import { getMainRole } from "@/GameInterface/positionHelpers";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 import { isInjured } from "@/Domain/injury/injury";
+import { isUnavailable } from "@/Domain/discipline/discipline";
 
 /** Same default as `ensureSeasonLog`/`emptySeasonLog` — a player never touched by the fitness model yet. */
 const DEFAULT_FITNESS = emptySeasonLog().fitness;
 
 /**
- * Filters `players` down to those eligible to play on `date` — i.e. not currently injured. When
+ * Filters `players` down to those eligible to play on `date` — i.e. not injured and not
+ * suspended (`isUnavailable`). When
  * `date` is omitted the pool is returned unchanged: some callers (continental club-strength
  * ratings, `/test` and `/lab` tooling) deliberately compare squads on their own terms, independent
  * of any specific matchday, and must not have injuries silently filtered in.
  */
 function eligiblePool(players: RosterPlayer[], date: string | undefined): RosterPlayer[] {
   if (!date) return players;
-  return players.filter((p) => !isInjured(p, date));
+  return players.filter((p) => !isUnavailable(p, date));
 }
 
 /**
@@ -327,15 +329,16 @@ export function slotRoleFitRank(player: RosterPlayer, slotRole: string): number 
   return 0;
 }
 
-/** One starter swapped out because they were injured on the match date. */
+/** One starter swapped out because they were injured or suspended on the match date. */
 export interface InjuredReplacement {
   out: string;
   in: string;
+  reason: "injured" | "suspended";
 }
 
 /**
  * Takes a slot-aligned lineup (e.g. from `buildSlotAlignedLineup`, index i = formation slot i) and
- * swaps out any player injured on `date` for the best eligible bench player — same-role/main-role
+ * swaps out any player injured or suspended on `date` (`isUnavailable`) for the best eligible bench player — same-role/main-role
  * candidates ranked by `fitnessAdjustedValue` first, falling back to any remaining eligible player
  * if none fit the role. A slot whose player is injured but no eligible replacement exists (squad
  * too thin) is left as-is — better to field an injured player than an empty slot.
@@ -344,7 +347,7 @@ export interface InjuredReplacement {
  * was saved and the day the fixture is actually played — see `resolveUserLineup`
  * (`matchSimulationLineups.ts`).
  */
-export function replaceInjuredStarters(
+export function replaceUnavailableStarters(
   slots: FormationSlot[],
   lineupIds: string[],
   players: RosterPlayer[],
@@ -359,11 +362,11 @@ export function replaceInjuredStarters(
     const starterId = lineupIds[i];
     if (!starterId) continue;
     const starter = byId.get(starterId);
-    if (!starter || !isInjured(starter, date)) continue;
+    if (!starter || !isUnavailable(starter, date)) continue;
 
     const role = slots[i]!.role;
     const roleMain = getMainRole(role);
-    const eligible = players.filter((p) => !used.has(p.id) && !isInjured(p, date));
+    const eligible = players.filter((p) => !used.has(p.id) && !isUnavailable(p, date));
     const sameRole = eligible.filter(
       (p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === roleMain,
     );
@@ -383,7 +386,7 @@ export function replaceInjuredStarters(
     used.delete(starterId);
     used.add(best.id);
     result[i] = best.id;
-    replaced.push({ out: starterId, in: best.id });
+    replaced.push({ out: starterId, in: best.id, reason: isInjured(starter, date) ? "injured" : "suspended" });
   }
 
   return { lineup: result, replaced };

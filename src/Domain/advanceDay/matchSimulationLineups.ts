@@ -10,7 +10,7 @@ import {
   autoFillLineup,
   autoFillLineupWithFitness,
   buildSlotAlignedLineup,
-  replaceInjuredStarters,
+  replaceUnavailableStarters,
   suggestRotation,
   applyRotation,
   type InjuredReplacement,
@@ -29,7 +29,7 @@ function slotsFor(formation: Formation): ReturnType<typeof getFormationSlots> {
  * (used when the human's fixture is resolved without the match screen) already fell back here.
  *
  * `date`, when given, excludes injured players from an auto-fill and, for a SAVED lineup, swaps out
- * any starter injured on `date` for the best eligible bench player (`replaceInjuredStarters`) — a
+ * any starter injured on `date` for the best eligible bench player (`replaceUnavailableStarters`) — a
  * saved lineup can go stale between the day it was saved and the day the fixture is played.
  * `injuredReplaced` lists any such swaps so a preview screen can warn the user.
  */
@@ -68,7 +68,7 @@ export function resolveUserLineup(
   const aligned = buildSlotAlignedLineup(squad.players, savedLineup);
   const lineup = aligned.map((p) => p?.id ?? "");
   if (!date) return { lineup, injuredReplaced: [], rotationSuggestion: [], rotationApplied: [] };
-  const { lineup: fixed, replaced } = replaceInjuredStarters(slots, lineup, squad.players, date);
+  const { lineup: fixed, replaced } = replaceUnavailableStarters(slots, lineup, squad.players, date);
 
   const suggestions = suggestRotation(slots, fixed, squad.players, date);
   const override = rotation?.override?.date === date ? rotation.override : null;
