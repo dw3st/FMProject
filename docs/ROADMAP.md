@@ -81,7 +81,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 10 ✅ | 3.4 Staff (2.2) | #13 nomes turcos (sai à parte, numa branch só de dados) | Etapa grande + correção pequena de dados. Equipe técnica do clube do jogador feita; a IA usa a nota implícita do tier |
 | 11 ✅ | 3.5 Base (2.3) | #9 notas ≥ 8,5 no quickSim | Safra anual de 3–5 jovens por clube; aba Base para o jogador, a IA promove 1–2. Cauda de notas do quickSim corrigida (#9) |
 | 11b ✅ | 3.6 Aposentadoria e renascimento de craques (2.4) | — | Aposentadoria na virada (34+), registro em retired.json; craque de classe mundial do clube do jogador pode renascer na base (DP x1,3) |
-| 11c | 3.7 Histórico do jogador | #32 | Carreira clube a clube; precisa de contratos (3.1) e aposentadoria (3.6) para ter história de verdade |
+| 11c ✅ | 3.7 Histórico do jogador | #32 (fechado) | Carreira clube a clube; precisa de contratos (3.1) e aposentadoria (3.6) para ter história de verdade |
 | 11d | 3.8 Ranking de técnicos | #33 | Pontuação por títulos; base para convites de clubes maiores e seleções e um futuro multiplayer |
 | 12 | 4.1 Faltas e cartões | #17 impedimento visível, faltas, cartões e pênaltis + #19 resumo ao vivo do adversário | Faltas e cartões entram no mesmo painel ao vivo que substitui a escalação do adversário |
 | 13 | 4.2 Jogo aéreo | — | |
