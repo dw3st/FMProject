@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { slotValue } from "@/Domain/positions/positionAptitude";
+import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
@@ -132,7 +132,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
 }
 
 function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: string }) {
-  const role = slotRole ?? player.positions[0] ?? "CM";
+  const role = slotRole ?? preferredRole(player);
   const avg = slotValue(player, role);
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
@@ -149,7 +149,7 @@ function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
 }
 
 function AwayPlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: string }) {
-  const role = slotRole ?? player.positions[0] ?? "CM";
+  const role = slotRole ?? preferredRole(player);
   const avg = slotValue(player, role);
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
@@ -519,7 +519,7 @@ function LastMinuteSubsModal({
                   <p className="text-sm text-muted-foreground px-2 py-4 text-center">{t("matchPreview.noBenchPlayers")}</p>
                 ) : (
                   bench.map((p) => {
-                    const role = p.positions[0] ?? "CM";
+                    const role = preferredRole(p);
                     const avg = slotValue(p, role);
                     const canPick = selectedSlot !== null;
                     const lastName = p.name.split(" ").pop() ?? p.name;

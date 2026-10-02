@@ -123,6 +123,7 @@ export function toDisplayPlayer(
     id: player.id,
     squadId: player.squadId,
     pos: player.positions[0] ?? "—",
+    ...(player.stats ? { natural: preferredRole(player), aptitudes: positionAptitudes(player) } : {}),
     positions: player.positions.length > 0 ? player.positions : ["—"],
     name: player.name,
     age: player.age,

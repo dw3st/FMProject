@@ -7,8 +7,44 @@ import type { RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
+const RETIRED_PAGE_DEFAULT = 50;
+const RETIRED_PAGE_MAX = 100;
+
 /** Reborn offers (`.claude/rules/game/retirement.md`): world-class retirees of the human club. */
 export const rebornRoutes = {
+  /**
+   * `GET` - retired players, newest first, with the last club's name (`.claude/rules/game/history.md`).
+   * `?offset=&limit=` (limit 1..100, default 50), `?mine=1` = only retirees of the player's club.
+   * Response `{ total, items }`; `statsAtRetirement` is left out (only the reborn offer needs it).
+   */
+  "/api/saves/:saveId/retired": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSaveOwner(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const q = new URL(req.url).searchParams;
+    const int = (v: string | null, def: number) => {
+      const n = v === null || v === "" ? def : Number(v);
+      return Number.isInteger(n) ? n : NaN;
+    };
+    const offset = int(q.get("offset"), 0);
+    const limit = int(q.get("limit"), RETIRED_PAGE_DEFAULT);
+    if (!(offset >= 0) || !(limit >= 1 && limit <= RETIRED_PAGE_MAX)) {
+      return Response.json({ error: "invalid offset/limit" }, { status: 400 });
+    }
+    let retired = [...(await saveService.getRetired(saveId))].reverse();
+    if (q.get("mine") === "1") {
+      const meta = await saveService.getMeta(saveId);
+      retired = retired.filter((r) => r.squadId === meta?.clubId);
+    }
+    const index = await saveService.getSquadIndex(saveId);
+    const items = retired.slice(offset, offset + limit).map(({ statsAtRetirement: _, ...r }) => ({
+      ...r,
+      clubName: index.byId(r.squadId)?.name ?? r.history?.at(-1)?.clubName ?? null,
+    }));
+    return Response.json({ total: retired.length, items });
+  },
+
   /** `GET` - the offers still pending. */
   "/api/saves/:saveId/reborn": async (req: Req) => {
     const saveId = req.params.saveId!;

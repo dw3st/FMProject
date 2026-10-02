@@ -232,8 +232,17 @@ function getBestCarryLane(
   const rolePenaltyScale = 1 - teamAdvanceFactor * MAX_ADVANCE_SOFTENING;
   const goalX       = player.attackDir === 1 ? PITCH_LENGTH : 0;
   const goalTargetY = Math.max(GOAL_Y_MIN, Math.min(GOAL_Y_MAX, player.y));
-  const tgDx        = goalX - player.x;
-  const tgDy        = goalTargetY - player.y;
+  // #42: near the end line and wide of the posts, aiming at the post itself drives the carrier
+  // into the goal line, where the pitch clamp turns every forward lane into a run along the line.
+  // Aim at a point in front of the goal mouth instead (cut inside toward the 6-yd box).
+  const distToLine0 = (goalX - player.x) * player.attackDir;
+  const wideOfPosts = player.y < GOAL_Y_MIN || player.y > GOAL_Y_MAX;
+  const aimX = wideOfPosts && distToLine0 < cfg.BYLINE_AIM_ZONE
+    ? goalX - player.attackDir * cfg.BYLINE_AIM_DEPTH
+    : goalX;
+  const aimY = aimX !== goalX ? PITCH_CENTER_Y : goalTargetY;
+  const tgDx        = aimX - player.x;
+  const tgDy        = aimY - player.y;
   const tgDist      = Math.sqrt(tgDx * tgDx + tgDy * tgDy);
   if (tgDist < 0.01) return null;
 
@@ -265,11 +274,17 @@ function getBestCarryLane(
   let bestLane: BestCarryLane | null = null;
   let bestScore: number = cfg.MIN_TOTAL_SCORE;
 
-  // Path clearness fades both penalties when no defender stands between the carrier
-  // and goal — being out of zone or near the byline only matters when defenders can
+  // Path clearness fades the role-fit and forward-byline penalties when no defender stands between
+  // the carrier and goal — being out of zone or near the byline only matters when defenders can
   // punish it. Wide-open run → penalty fades to 0; choked path → penalty full strength.
   const clearness     = forwardPathClearness(player, defendingOutfield);
   const penaltyDamper = 1 - clearness;
+  // #42: forwardPathClearness scans the columns ahead of the carrier — at the end line there are
+  // none (it returns 1), so a carrier on the goal line looked "clear" and the in-box goal-line run
+  // penalty faded to zero. `bylineDamper` keeps ONLY that penalty (BYLINE_RUN_PENALTY_IN_BOX) at
+  // full strength wide of the posts. The forward byline penalty below keeps `penaltyDamper` on
+  // purpose: dropping the damper there too killed carries in the last yards.
+  const bylineDamper = wideOfPosts ? 1 : penaltyDamper;
 
   for (const lane of lanes) {
     const breakdown = evaluateCarryLaneBreakdown(player, lane.dx, lane.dy, goalTargetY, opponents, cfg);
@@ -308,7 +323,7 @@ function getBestCarryLane(
     const carrierInBoxWidth = Math.abs(player.y - PITCH_CENTER_Y) <= cfg.BYLINE_RUN_BOX_HALF_WIDTH;
     const alongLine = Math.abs(lane.dy) > 0.6 || targetToEnd < cfg.BYLINE_RUN_ZONE;
     if (carrierInBoxWidth && distToEndLine < cfg.BYLINE_RUN_ZONE + 2 && alongLine) {
-      bylineRunAdj -= cfg.BYLINE_RUN_PENALTY_IN_BOX * penaltyDamper;
+      bylineRunAdj -= cfg.BYLINE_RUN_PENALTY_IN_BOX * bylineDamper;
     }
     // Touchline run (#37): a lane target hugging a touchline — the carrier gets pinned there.
     const edgeDist = Math.min(targetY, PITCH_WIDTH - targetY);

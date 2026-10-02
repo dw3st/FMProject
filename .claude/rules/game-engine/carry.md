@@ -464,3 +464,35 @@ Keep only these pieces:
 * minimum threshold
 
 That is enough to guide the real implementation without overbuilding it.
+
+---
+
+# Goal-line runs (#42, v2.4.2)
+
+## Root cause
+
+The v2.4.1 penalties (`BYLINE_RUN_*`, `TOUCHLINE_RUN_*`) never fired where it mattered, for two reasons in `getBestCarryLane` (`DecisionTree.ts`):
+
+1. **Forward lane aimed at the post.** The base lane points at `(goalX, clamp(y, GOAL_Y_MIN, GOAL_Y_MAX))`. A winger at `x=106, y=20` runs diagonally to the near post and reaches the goal line wide of it. There `tgDx = 0`, the base lane is purely lateral and the ±30° lane `(0.5, 0.87)` still has a forward part; the carry step clamps `x` to the pitch (`gameState.ts`, carry execution), so the carrier slides along `x = 115` toward the post.
+2. **Path clearness read 1 on the line.** `forwardPathClearness` scans the grid columns ahead of the carrier. At the end line there are none, so it returns 1 → `penaltyDamper = 0` → every byline penalty faded to zero.
+
+The slide ended inside the posts on the goal line, and the shot from there had xG ≈ 0.85. Baseline premier_league (200 matches): **2.80 of 6.00 shots/match and 1.17 of 2.46 goals/match were taken < 3 yds from the end line.** That is why testers saw the run "right before goals".
+
+## Fix
+
+- `CARRY_CONFIG.BYLINE_AIM_ZONE = 18`, `BYLINE_AIM_DEPTH = 8`: a carrier wide of the posts and within 18 yds of the end line aims at `(goalX − attackDir × 8, centre)`, so he cuts inside toward the front of goal instead of the post.
+- Wide of the posts the along-the-line penalty (`BYLINE_RUN_PENALTY_IN_BOX`) uses damper 1 (`bylineDamper`), never the meaningless end-line clearness. The forward `bylinePenalty` keeps the clearness damper (using 1 there killed carries and cost ~30% of goals).
+- Finishing compensation: `SHOOTER_EFFECT_MIN/MAX` 0.85/1.2 → 0.96/1.36 (×1.13). Removing the goal-line tap-ins cost ~19% of goals; this restores the engine goal volume so the quickSim calibration stays valid.
+- `/test` scenario `byline-diagonal-run`. Measurement: `bun scripts/byline-diagnostic.ts <league> <matches>` (holder ticks < 3 yds from the end line and outside the posts, ticks sliding along it, shots by distance from the end line).
+
+## Numbers
+
+| | premier_league 200 before | after | of_championship 150 before | after |
+|---|---|---|---|---|
+| holder ticks on the goal line (outside posts) / match | 68.1 | 8.5 | 55.1 | 5.7 |
+| sliding-along-the-line ticks / match | 40.6 | 4.3 | 32.3 | 2.9 |
+| shots < 3 yds from end line / match | 2.80 | 0.15 | — | — |
+| goals / match | 2.46 | 2.38 (−3.3%) | 1.49 | 1.45 (−2.7%) |
+| shots / match | 6.00 | 5.91 (−1.5%) | 4.36 | 4.49 (+3.0%) |
+
+Without the finishing compensation: 1.99 goals / 5.66 shots (premier_league 200).

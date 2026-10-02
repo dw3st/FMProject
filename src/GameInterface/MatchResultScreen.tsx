@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
@@ -113,7 +114,7 @@ function ResultPlayerRow({
 }) {
   const name = event.playerNames[playerId] ?? roster?.name ?? playerId;
   const lastName = name.split(" ").pop() ?? name;
-  const role = roster?.positions[0] ?? "CM";
+  const role = roster ? preferredRole(roster) : "CM";
   const rating = event.playerRatings[playerId];
   const goals = event.playerStats[playerId]?.goals ?? 0;
   const assists = event.playerStats[playerId]?.assists ?? 0;
@@ -463,7 +464,10 @@ export function MatchResultScreen() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
-      <div className="text-center space-y-2 shrink-0">
+      {/* Header: title + score centred, Continue on the right so it needs no scrolling (#41) */}
+      <div className="w-full max-w-5xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">
+      <div aria-hidden />
+      <div className="text-center space-y-2 min-w-0">
         <p
           className="text-[13px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
           style={{
@@ -540,6 +544,16 @@ export function MatchResultScreen() {
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"
           style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
         />
+      </div>
+      <div className="flex justify-end">
+        <a
+          href="/dashboard"
+          className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline border-0"
+        >
+          {t("common.continue")}
+          <Icon name="chevron-right" className="w-4 h-4" />
+        </a>
+      </div>
       </div>
 
       <div className="w-full max-w-5xl flex items-stretch gap-5">

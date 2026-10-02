@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.5",
+    date: "2026-10-02",
+    items: [
+      { pt: "Ficha do jogador com a carreira: temporada a temporada, clube, jogos, gols, assistências, nota e títulos.", en: "Player profile shows the career: season by season, club, games, goals, assists, rating and titles." },
+      { pt: "Quem troca de clube no meio da temporada guarda a passagem pelo clube anterior.", en: "Players who move mid-season keep their spell at the previous club." },
+      { pt: "Nova aba \"Aposentados\" em Estatísticas, com a carreira de cada jogador que pendurou as chuteiras.", en: "New \"Retired\" tab in Stats, with the career of every player who hung up his boots." },
+    ],
+  },
+  {
     version: "2.4.1",
     date: "2026-10-01",
     items: [

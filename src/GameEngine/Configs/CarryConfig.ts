@@ -51,6 +51,14 @@ export const CARRY_CONFIG = {
    * Lateral lanes (cross, cutback) are unaffected — only the forward component is penalised.
    */
   BYLINE_MAX_PENALTY: 0.8,
+  /**
+   * #42: when the carrier is within BYLINE_PENALTY_START of the end line and wide of the posts,
+   * the forward lane aims this many yards in front of the goal line (not at the post) so the
+   * carrier cuts inside instead of reaching the line and sliding along it.
+   */
+  BYLINE_AIM_DEPTH: 8,
+  /** Yards from the end line within which a carrier wide of the posts aims in front of goal (BYLINE_AIM_DEPTH) instead of at the post. */
+  BYLINE_AIM_ZONE: 18,
 
   // ── Byline run (carrying along the goal line) ────────────────────────────
   /** Yards from the end line within which a lane target counts as "on the byline". */
