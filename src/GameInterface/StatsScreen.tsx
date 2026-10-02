@@ -10,13 +10,14 @@ import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import type { CompetitionRankings, RankingRow } from "@/Domain/stats/rankings";
-import type { LeagueData } from "@/types/playerTypes";
+import type { LeagueData, RetiredPlayer } from "@/types/playerTypes";
+import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
-type Tab = "rankings" | "team";
+type Tab = "rankings" | "team" | "retired";
 type TableKey = keyof CompetitionRankings;
 const TABLES: TableKey[] = ["scorers", "assists", "ratings", "appearances"];
 type Stars = ReturnType<typeof useStarPlayers>;
@@ -152,6 +153,79 @@ function TeamTable({ stars }: { stars: Stars }) {
   );
 }
 
+type RetiredRow = RetiredPlayer & { clubName: string | null };
+
+function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[] }) {
+  const { t } = useTranslation();
+  const [rows, setRows] = useState<RetiredRow[] | null>(null);
+  const [error, setError] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/retired`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ retired: RetiredRow[] }>) : Promise.reject(new Error(String(r.status)))))
+      .then((d) => { if (!cancelled) setRows(d.retired); })
+      .catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
+  }, [saveId]);
+
+  if (error) return <p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p>;
+  if (!rows) return <p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p>;
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("statsScreen.retired.empty")}</p>;
+  const th = "px-2 py-2 font-display font-bold uppercase tracking-[0.08em] text-xs";
+  return (
+    <div className="overflow-x-auto border border-border rounded-lg max-w-4xl">
+      <table className="w-full text-sm">
+        <thead className="text-muted-foreground">
+          <tr>
+            <th className={`${th} text-left`}>{t("statsScreen.player")}</th>
+            <th className={`${th} text-right`}>{t("statsScreen.retired.age")}</th>
+            <th className={`${th} text-left`}>{t("statsScreen.retired.lastClub")}</th>
+            <th className={`${th} text-right`}>{t("career.apps")}</th>
+            <th className={`${th} text-right`}>{t("career.goals")}</th>
+            <th className={th} />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const hist = r.history ?? [];
+            const apps = hist.reduce((a, h) => a + h.apps, 0);
+            const goals = hist.reduce((a, h) => a + h.goals, 0);
+            const isOpen = open === r.id;
+            return [
+              <tr key={r.id} className="border-t border-border">
+                <td className="px-2 py-2">{r.name}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{r.age}</td>
+                <td className="px-2 py-2 text-muted-foreground truncate max-w-[12rem]">{r.clubName ?? "-"}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{apps}</td>
+                <td className="px-2 py-2 text-right tabular-nums">{goals}</td>
+                <td className="px-2 py-2 text-right">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpen(isOpen ? null : r.id)}
+                    className="min-h-8 bg-transparent border-0 p-0 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {isOpen ? t("statsScreen.retired.hide") : t("statsScreen.retired.show")}
+                  </button>
+                </td>
+              </tr>,
+              isOpen && (
+                <tr key={`${r.id}-career`} className="border-t border-border">
+                  <td colSpan={6} className="px-2 py-3">
+                    <CareerTable rows={hist} leagues={leagues} />
+                  </td>
+                </tr>
+              ),
+            ];
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function StatsScreen() {
   const { t, i18n } = useTranslation();
   const { session, currentDate, loading: saveLoading, fixtures } = useGameSave();
@@ -226,6 +300,7 @@ export function StatsScreen() {
           <div className="flex gap-2">
             {tabButton("rankings", t("statsScreen.rankings"))}
             {tabButton("team", t("statsScreen.myTeam"))}
+            {tabButton("retired", t("statsScreen.retired.tab"))}
           </div>
           {tab === "rankings" && options.length > 0 && (
             <SelectCombobox
@@ -241,6 +316,8 @@ export function StatsScreen() {
 
         {tab === "team" ? (
           <TeamTable stars={stars} />
+        ) : tab === "retired" ? (
+          session?.saveId ? <RetiredList saveId={session.saveId} leagues={leagues} /> : null
         ) : error ? (
           <p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p>
         ) : !data ? (

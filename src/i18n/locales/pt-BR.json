@@ -1802,7 +1802,15 @@
     "goals": "G",
     "rating": "Nota",
     "loading": "Carregando...",
-    "loadFailed": "Não foi possível carregar as estatísticas."
+    "loadFailed": "Não foi possível carregar as estatísticas.",
+    "retired": {
+      "tab": "Aposentados",
+      "empty": "Nenhum jogador aposentado ainda.",
+      "age": "Idade",
+      "lastClub": "Último clube",
+      "show": "Ver carreira",
+      "hide": "Ocultar carreira"
+    }
   },
   "players": {
     "star": {
@@ -1842,5 +1850,18 @@
       "invalidYears": "Escolha entre 1 e 5 anos.",
       "squadFull": "Seu elenco está cheio (30 jogadores)."
     }
+  },
+  "career": {
+    "title": "Carreira",
+    "empty": "Ainda sem temporadas jogadas.",
+    "current": "Atual",
+    "season": "Temporada",
+    "club": "Clube",
+    "apps": "J",
+    "goals": "G",
+    "assists": "A",
+    "rating": "Nota",
+    "titles": "Títulos",
+    "total": "Total"
   }
 }
