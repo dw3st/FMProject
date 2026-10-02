@@ -345,6 +345,38 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'byline-near-post',
+    name:        'Byline — Winger Next to the Post (#37)',
+    description: 'Winger with the ball 2 yds from the end line INSIDE the box width, next to the post, next to the post. Byline lanes inside the box are now penalised too (CARRY_CONFIG.BYLINE_RUN_PENALTY_IN_BOX); expect a shot or a cut-back pass to Santos instead of a run along the goal line.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW', 113, 22, WINGER),
+        makePlayer('Santos',   'A', 'ST', 104, 40, STRIKER),
+        makePlayer('Okeke',    'B', 'CB', 108, 38, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 36, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'touchline-carrier',
+    name:        'Touchline — Carrier Hugging the Line (#37)',
+    description: 'Winger with the ball 1 yd from the top touchline in midfield. Carry lanes ending within CARRY_CONFIG.TOUCHLINE_RUN_ZONE of a touchline are penalised, and off-ball teammates keep OFF_BALL_TOUCHLINE_MARGIN off the line with a 3-yd separation — expect a carry/pass infield, no teammates stacked on the line.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW',  70, 1,  WINGER),
+        makePlayer('Lopes',    'A', 'LB',  60, 3,  DEFENDER),
+        makePlayer('Garcia',   'A', 'CM',  62, 12, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  85, 30, STRIKER),
+        makePlayer('Okeke',    'B', 'CM',  72, 14, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK', 112, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'tired-team',
     name:        '11v11 — Tired Team (fixture congestion)',
     description: 'Team A starts at 60 energy with the load-derived drain multiplier from FITNESS.LOAD_HIGH (fresh Team B) — mirrors a squad deep into a congested fixture list. Toggle the Energy panel to watch Team A fade and the AI make fatigue substitutions.',

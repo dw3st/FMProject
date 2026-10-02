@@ -302,6 +302,19 @@ function getBestCarryLane(
     if (targetToEnd < cfg.BYLINE_RUN_ZONE && outsideBox) {
       bylineRunAdj -= cfg.BYLINE_RUN_PENALTY;
     }
+    // Inside the box width (#37): a carrier already on the goal line running along it toward the
+    // post (lateral lane, or a target still on the line) — near the post the right play is a
+    // shot, a cut-back or a pass. Faded by clearness so a genuinely open run still works.
+    const carrierInBoxWidth = Math.abs(player.y - PITCH_CENTER_Y) <= cfg.BYLINE_RUN_BOX_HALF_WIDTH;
+    const alongLine = Math.abs(lane.dy) > 0.6 || targetToEnd < cfg.BYLINE_RUN_ZONE;
+    if (carrierInBoxWidth && distToEndLine < cfg.BYLINE_RUN_ZONE + 2 && alongLine) {
+      bylineRunAdj -= cfg.BYLINE_RUN_PENALTY_IN_BOX * penaltyDamper;
+    }
+    // Touchline run (#37): a lane target hugging a touchline — the carrier gets pinned there.
+    const edgeDist = Math.min(targetY, PITCH_WIDTH - targetY);
+    if (edgeDist < cfg.TOUCHLINE_RUN_ZONE) {
+      bylineRunAdj -= cfg.TOUCHLINE_RUN_PENALTY * (1 - Math.max(0, edgeDist) / cfg.TOUCHLINE_RUN_ZONE);
+    }
     if (distToEndLine < cfg.BYLINE_RUN_ZONE * 2 && Math.abs(player.y - PITCH_CENTER_Y) > cfg.BYLINE_RUN_BOX_HALF_WIDTH) {
       const inward = Math.max(0, -Math.sign(player.y - PITCH_CENTER_Y) * lane.dy);
       bylineRunAdj += inward * cfg.BYLINE_CUT_INSIDE_BONUS;

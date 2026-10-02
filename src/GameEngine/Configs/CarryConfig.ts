@@ -61,6 +61,18 @@ export const CARRY_CONFIG = {
   BYLINE_RUN_PENALTY: 0.3,
   /** Bonus per unit of inward (toward the centre line) lane component when the carrier is in the byline zone. */
   BYLINE_CUT_INSIDE_BONUS: 0.15,
+  /**
+   * Penalty for a byline-zone lane target INSIDE the box width (#37) — running along the goal
+   * line next to the post. Faded by forward-path clearness like the other penalties: near the
+   * post the carrier should shoot, cut back or pass instead.
+   */
+  BYLINE_RUN_PENALTY_IN_BOX: 0.3,
+
+  // ── Touchline run (#37) ──────────────────────────────────────────────────
+  /** Yards from a touchline within which a lane target counts as "hugging the line". */
+  TOUCHLINE_RUN_ZONE: 3,
+  /** Penalty at the touchline itself, ramping linearly to 0 at TOUCHLINE_RUN_ZONE. */
+  TOUCHLINE_RUN_PENALTY: 0.2,
 
   // ── Clear run on goal ────────────────────────────────────────────────────
   /**
