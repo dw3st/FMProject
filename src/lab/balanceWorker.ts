@@ -24,6 +24,7 @@ import {
   fullEngineAppearances,
   quickSimAppearances,
 } from "@/lab/fitnessCarry";
+import { addDayLogDiscipline } from "@/lab/disciplineStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
@@ -232,12 +233,9 @@ function runOneMatch(
     for (const inj of q.recording.injuries ?? []) {
       if (inj.team === "home") teamA.injuries++; else teamB.injuries++;
     }
-    // Discipline: optional on the day-log team stats (quickSim fills them once it models fouls).
-    teamA.fouls += hA.fouls ?? 0;             teamB.fouls += hB.fouls ?? 0;
-    teamA.yellowCards += hA.yellowCards ?? 0; teamB.yellowCards += hB.yellowCards ?? 0;
-    teamA.redCards += hA.redCards ?? 0;       teamB.redCards += hB.redCards ?? 0;
-    teamA.offsides += hA.offsides ?? 0;       teamB.offsides += hB.offsides ?? 0;
-    teamA.penaltiesAwarded += hA.penaltiesAwarded ?? 0; teamB.penaltiesAwarded += hB.penaltiesAwarded ?? 0;
+    // Discipline: optional on the day-log team stats (quickSim fills them, see rollDiscipline).
+    addDayLogDiscipline(teamA, hA);
+    addDayLogDiscipline(teamB, hB);
     const qd = q.recording.decider;
     if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
     const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
