@@ -9,6 +9,7 @@ import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
 import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
+import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -161,6 +162,7 @@ export function PlayerCard({
                   : t("dashboard.playerCard.injuredToday")}
               </p>
             )}
+            {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="mt-2" />}
           </div>
 
           <AvgRing value={player.avg} size="lg" />

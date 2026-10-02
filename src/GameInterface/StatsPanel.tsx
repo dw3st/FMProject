@@ -36,6 +36,11 @@ const COLS: Col[] = [
   },
   { label: "TK",   titleKey: "stats.headers.TK",    value: (s) => s.tackles },
   { label: "IN",   titleKey: "stats.headers.IN",    value: (s) => s.interceptions },
+  { label: "FL",   titleKey: "stats.headers.FL",    value: (s) => s.fouls },
+  { label: "YC",   titleKey: "stats.headers.YC",    value: (s) => s.yellowCards },
+  { label: "RC",   titleKey: "stats.headers.RC",    value: (s) => s.redCards },
+  { label: "OFF",  titleKey: "stats.headers.OFF",   value: (s) => s.offsides },
+  { label: "PEN",  titleKey: "stats.headers.PEN",   value: (s) => s.penaltyGoals },
 ];
 
 const EMPTY_STATS: PlayerStats = {
@@ -59,6 +64,13 @@ const EMPTY_STATS: PlayerStats = {
   switchPlays: 0,
   penaltiesTaken: 0,
   penaltiesScored: 0,
+  fouls: 0,
+  yellowCards: 0,
+  redCards: 0,
+  penaltiesAwarded: 0,
+  penaltiesConceded: 0,
+  penaltyGoals: 0,
+  offsides: 0,
 };
 
 function TeamTable({

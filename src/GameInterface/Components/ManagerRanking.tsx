@@ -99,8 +99,8 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
           <StatsHead />
           <StatsHead>{t("statsScreen.managers.name")}</StatsHead>
           <StatsHead>{t("statsScreen.club")}</StatsHead>
-          <StatsHead align="right">{t("statsScreen.managers.points")}</StatsHead>
-          <StatsHead align="right">{t("statsScreen.managers.titles")}</StatsHead>
+          <StatsHead align="center">{t("statsScreen.managers.points")}</StatsHead>
+          <StatsHead align="center">{t("statsScreen.managers.titles")}</StatsHead>
         </>}
       >
         {rows.map((m) => {

@@ -65,6 +65,7 @@ const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig")
 const { leaguePrize } = await import("@/Domain/finance/prizes");
 const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
+const { isSuspended } = await import("@/Domain/discipline/discipline");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
@@ -215,6 +216,14 @@ try {
   const trackedInjured = new Map<string, string>(); // playerId → returnDate last observed
   let healedObserved = 0;
 
+  // ── Disciplina (see "Disciplina" section below) ──────────────────────────
+  let discMatches = 0;
+  const disc = { fouls: 0, yellows: 0, reds: 0, penalties: 0 };
+  let suspendedXIChecks = 0;
+  let suspendedXIViolations = 0;
+  const trackedSuspended = new Map<string, number>(); // playerId → matches left last observed
+  let suspensionsServedObserved = 0;
+
   // ── Contratos (see "Contratos" section below) ────────────────────────────
   // Contract end per player at career start; weekly-wage ledger line vs the sum of contracts.
   const startContractUntil = new Map<string, string>();
@@ -271,10 +280,13 @@ try {
     // `runBufferedDay` runs — this is the state the lineup selectors actually saw. Also doubles as
     // an injury-bookkeeping sample point (tracked-injured set + healed transitions).
     let preDayInjured: Map<string, boolean> | null = null;
+    // Disciplina: same pre-day snapshot, for suspensions.
+    let preDaySuspended: Set<string> | null = null;
     if (playerFixtureToday) {
       const month = date.slice(0, 7);
       const opponentId = playerFixtureToday.home === playerSquadId ? playerFixtureToday.away : playerFixtureToday.home;
       preDayInjured = new Map<string, boolean>();
+      preDaySuspended = new Set<string>();
       const sid: string = saveId;
       const playerSquadPreDay = await svc.getSquadById(sid, playerSquadId);
       const squadsToday = [
@@ -288,6 +300,12 @@ try {
       for (const squad of squadsToday) {
         for (const p of squad.players) {
           preDayInjured.set(p.id, isInjured(p, date));
+          if (isSuspended(p)) preDaySuspended.add(p.id);
+          const left = p.suspension?.matches ?? 0;
+          const before = trackedSuspended.get(p.id);
+          if (before !== undefined && left < before) suspensionsServedObserved += before - left;
+          if (left > 0) trackedSuspended.set(p.id, left);
+          else trackedSuspended.delete(p.id);
           if (p.injury) {
             trackedInjured.set(p.id, p.injury.returnDate);
           } else if (trackedInjured.has(p.id)) {
@@ -348,6 +366,21 @@ try {
         if (event.kind !== "match") continue;
         totalMatchesLogged++;
         totalMatchInjuries += event.injuries?.length ?? 0;
+        const th = event.teamStats.home;
+        const ta = event.teamStats.away;
+        if (th.fouls !== undefined && ta.fouls !== undefined) {
+          discMatches++;
+          disc.fouls += th.fouls + ta.fouls;
+          disc.yellows += (th.yellowCards ?? 0) + (ta.yellowCards ?? 0);
+          disc.reds += (th.redCards ?? 0) + (ta.redCards ?? 0);
+          disc.penalties += (th.penaltiesAwarded ?? 0) + (ta.penaltiesAwarded ?? 0);
+        }
+        if (preDaySuspended && event.competition === meta.leagueSlug) {
+          for (const playerId of Object.keys(event.playerStats)) {
+            suspendedXIChecks++;
+            if (preDaySuspended.has(playerId)) suspendedXIViolations++;
+          }
+        }
         if (preDayInjured && event.competition === meta.leagueSlug) {
           for (const playerId of Object.keys(event.playerStats)) {
             injuredXIChecks++;
@@ -1003,6 +1036,24 @@ try {
     squad.players.filter((p) => p.injury && p.injury.returnDate < endDateForInjuryCheck).map((p) => `${squad.id}/${p.id}`));
   check(staleInjuries.length === 0,
     `lesões: no injury.returnDate earlier than currentDate left set at the end (${staleInjuries.length} stale, e.g. ${staleInjuries.slice(0, 3).join(", ")})`);
+
+  // ── Disciplina ───────────────────────────────────────────────────────────
+  // See `.claude/rules/game/discipline.md`. Per-match averages over every logged match (engine and
+  // quickSim), no suspended player in a played XI of the player's league (pre-day snapshot, like
+  // injuries), and at least one ban served during the run.
+  console.log("\n── Disciplina ──");
+  const per = (v: number) => (discMatches > 0 ? v / discMatches : NaN);
+  console.log(`  ${discMatches} matches: fouls ${per(disc.fouls).toFixed(2)}, yellows ${per(disc.yellows).toFixed(2)}, ` +
+    `reds ${per(disc.reds).toFixed(3)}, penalties ${per(disc.penalties).toFixed(3)} per match`);
+  check(discMatches > 0, `disciplina: ${discMatches} logged match(es) carry discipline stats`);
+  check(per(disc.fouls) >= 8 && per(disc.fouls) <= 16, `disciplina: fouls/match ${per(disc.fouls).toFixed(2)} within 8..16`);
+  check(per(disc.yellows) >= 1.5 && per(disc.yellows) <= 4.5, `disciplina: yellows/match ${per(disc.yellows).toFixed(2)} within 1.5..4.5`);
+  check(per(disc.reds) <= 0.3, `disciplina: reds/match ${per(disc.reds).toFixed(3)} <= 0.3`);
+  check(per(disc.penalties) >= 0.1 && per(disc.penalties) <= 0.4, `disciplina: penalties/match ${per(disc.penalties).toFixed(3)} within 0.1..0.4`);
+  check(suspendedXIChecks > 0, `disciplina: ${suspendedXIChecks} player-appearance(s) checked against the pre-day suspension snapshot`);
+  check(suspendedXIViolations === 0,
+    `disciplina: no suspended player appeared in a played XI (${suspendedXIViolations} of ${suspendedXIChecks} violated)`);
+  check(suspensionsServedObserved > 0, `disciplina: at least one suspension served during the run (${suspensionsServedObserved} observed)`);
 
   // ── Equipe técnica ───────────────────────────────────────────────────────
   // See `.claude/rules/game/staff.md`. The ledger has a `staff` line on every Monday that has a

@@ -1,33 +1,32 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 
 /**
- * Shared table pieces for every Stats tab (Rankings, My team, Retired, Managers) so they look the
- * same (`.claude/rules/ui-standard.md`): label-style header row, text-sm, 44px rows, a 32px crest
- * column and the name in the same weight everywhere.
+ * Shared table pieces for every Stats tab (Rankings, My team, Retired, Managers). They use the
+ * Leagues table look (`TABLE_STYLE`, `.claude/rules/ui-standard.md` → Tabela): card box, tinted
+ * label-style header, base-size semibold names, 32px crests, muted numbers and the key column in
+ * primary.
  */
-
-const TH = "px-2 py-2 font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground";
-const TD = "px-2 py-1.5";
 
 export type Align = "left" | "right" | "center";
 const alignClass = (a: Align) => (a === "right" ? "text-right" : a === "center" ? "text-center" : "text-left");
 
 export function StatsTable({ head, children, className = "" }: { head: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <div className={`overflow-x-auto border border-border rounded-lg ${className}`}>
-      <table className="w-full text-sm">
-        <thead className="border-b border-border">
+    <div className={`${TABLE_STYLE.shell} overflow-x-auto ${className}`}>
+      <table className="w-full">
+        <thead className={TABLE_STYLE.head}>
           <tr>{head}</tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody className={TABLE_STYLE.body}>{children}</tbody>
       </table>
     </div>
   );
 }
 
 export function StatsHead({ children, align = "left", className = "" }: { children?: ReactNode; align?: Align; className?: string }) {
-  return <th className={`${TH} ${alignClass(align)} ${className}`}>{children}</th>;
+  return <th className={`${TABLE_CELL.head} font-bold ${alignClass(align)} ${className}`}>{children}</th>;
 }
 
 export function StatsRow({
@@ -46,9 +45,7 @@ export function StatsRow({
     : undefined;
   return (
     <tr
-      className={`h-11 border-b border-border last:border-0 ${highlight ? "bg-primary/10" : ""} ${
-        onActivate ? "cursor-pointer hover:bg-white/5" : ""
-      }`}
+      className={`${TABLE_STYLE.row} ${highlight ? TABLE_STYLE.rowHighlight : ""} ${onActivate ? TABLE_STYLE.rowClickable : ""}`}
       onClick={onActivate}
       onKeyDown={onKeyDown}
       tabIndex={onActivate ? 0 : undefined}
@@ -62,33 +59,37 @@ export function StatsRow({
 /** Full-width detail row under an expanded row. */
 export function StatsDetailRow({ colSpan, children }: { colSpan: number; children: ReactNode }) {
   return (
-    <tr className="border-b border-border last:border-0">
-      <td colSpan={colSpan} className="px-4 py-3">{children}</td>
+    <tr className="bg-secondary/10">
+      <td colSpan={colSpan} className="px-4 py-3 text-sm">{children}</td>
     </tr>
   );
 }
 
 export function StatsCell({ children, align = "left", className = "" }: { children?: ReactNode; align?: Align; className?: string }) {
-  return <td className={`${TD} ${alignClass(align)} ${className}`}>{children}</td>;
+  return <td className={`${TABLE_CELL.body} ${alignClass(align)} ${className}`}>{children}</td>;
 }
 
 export function RankCell({ rank }: { rank: number }) {
-  return <td className={`w-10 ${TD} text-center text-muted-foreground tabular-nums`}>{rank}</td>;
+  return <td className={`w-12 ${TABLE_CELL.body} ${TABLE_STYLE.rank} tabular-nums`}>{rank}</td>;
 }
 
 export function CrestCell({ squadId }: { squadId: string | null | undefined }) {
   return (
-    <td className="w-10 px-1 py-1.5">
-      <ClubLogo logoUrl={squadId ? squadLogoUrl(squadId) : undefined} className="w-8 h-8 rounded-full" />
+    <td className={`w-12 ${TABLE_CELL.body}`}>
+      <ClubLogo
+        logoUrl={squadId ? squadLogoUrl(squadId) : undefined}
+        className={TABLE_STYLE.crest}
+        imgClassName="w-full h-full object-contain"
+      />
     </td>
   );
 }
 
 /** Name column: same weight everywhere; `href` makes it a link, `highlight` colours the player's own row. */
 export function NameCell({ children, href, highlight }: { children: ReactNode; href?: string; highlight?: boolean }) {
-  const cls = `inline-flex items-center gap-1.5 max-w-full font-medium ${highlight ? "text-primary" : "text-foreground"}`;
+  const cls = `inline-flex items-center gap-1.5 max-w-full ${highlight ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`;
   return (
-    <td className={`${TD} max-w-[14rem]`}>
+    <td className={`${TABLE_CELL.body} max-w-[16rem]`}>
       {href
         ? <a href={href} className={`${cls} no-underline hover:underline`} onClick={(e) => e.stopPropagation()}>{children}</a>
         : <span className={cls}>{children}</span>}
@@ -97,11 +98,12 @@ export function NameCell({ children, href, highlight }: { children: ReactNode; h
 }
 
 export function ClubCell({ children }: { children: ReactNode }) {
-  return <td className={`${TD} text-muted-foreground truncate max-w-[12rem]`}>{children}</td>;
+  return <td className={`${TABLE_CELL.body} text-muted-foreground truncate max-w-[12rem]`}>{children}</td>;
 }
 
+/** Numeric column: muted, centred; `strong` marks the table's key value (primary, display font). */
 export function NumberCell({ children, strong }: { children: ReactNode; strong?: boolean }) {
-  return <td className={`${TD} text-right tabular-nums ${strong ? "font-display font-bold" : ""}`}>{children}</td>;
+  return <td className={`${TABLE_CELL.body} ${strong ? TABLE_STYLE.key : TABLE_STYLE.number}`}>{children}</td>;
 }
 
 /** "Load more" under a paginated Stats table; a failed page shows the error next to the button and keeps the rows. */
