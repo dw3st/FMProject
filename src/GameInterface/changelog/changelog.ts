@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.6",
+    date: "2026-10-02",
+    items: [
+      { pt: "Ranking de técnicos: títulos de liga, copa, continentais e acessos valem pontos, pesados pela força do país.", en: "Manager ranking: league, cup and continental titles and promotions earn points, weighted by the country's strength." },
+      { pt: "Nova aba \"Técnicos\" em Estatísticas, com o mundo inteiro ou só o seu país, e os títulos de cada técnico.", en: "New \"Managers\" tab in Stats, for the whole world or just your country, with each manager's titles." },
+      { pt: "Sua posição no ranking aparece no painel do clube.", en: "Your ranking position shows on the club dashboard." },
+    ],
+  },
+  {
     version: "2.5",
     date: "2026-10-02",
     items: [
