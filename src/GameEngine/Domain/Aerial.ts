@@ -1,0 +1,196 @@
+/**
+ * Aerial — pure decision-side evaluation of high balls (Etapa 13,
+ * `.claude/rules/game-engine/aerial.md`).
+ *
+ *   - Cross candidates: is the holder in a crossing position, which targets in the box
+ *     (near post / penalty spot / far post) and how good is each one.
+ *   - Long-ball candidates: a forward teammate over the defensive line.
+ *   - Aerial ability / duel score of a player for a landing point.
+ *
+ * No state mutation, no randomness. Outcome rolls (duel, keeper claim, header effect) live in
+ * `Infrastructure/ActionOutcomes.ts`; execution in `gameState.ts`.
+ */
+import type { GamePlayer } from '@/GameEngine/types';
+import { AERIAL_CONFIG as A } from '@/GameEngine/Configs/AerialConfig';
+import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
+
+const CENTRE_Y = PITCH_WIDTH / 2;
+
+export type CrossTargetKind = 'near_post' | 'penalty_spot' | 'far_post';
+
+export interface CrossTarget {
+  kind: CrossTargetKind;
+  x: number;
+  y: number;
+  /** Proximity-weighted attackers / defenders in the target zone. */
+  attackers: number;
+  defenders: number;
+  /** Best proximity-weighted heading (0..1) of an attacker in the zone. */
+  heading: number;
+  /** The defending goalkeeper can claim this target (small box). */
+  gkClaim: boolean;
+  /** Raw score before compression (0 = not viable). */
+  raw: number;
+  /** Attacker most likely to attack the ball (closest in the zone). */
+  bestAttackerId: number | null;
+}
+
+export interface LongBallTarget {
+  targetId: number;
+  x: number;
+  y: number;
+  progress: number;
+  space: number;
+  aerial: number;
+  raw: number;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+/** Goal line the player attacks. */
+function attackGoalX(p: Pick<GamePlayer, 'attackDir'>): number {
+  return p.attackDir === 1 ? PITCH_LENGTH : 0;
+}
+
+/** True when (x, y) is inside the small box (6-yard box) of the goal whose line is at `goalX`. */
+export function isInSmallBox(x: number, y: number, goalX: number): boolean {
+  if (Math.abs(x - goalX) > A.SMALL_BOX_DEPTH) return false;
+  return y >= GOAL_Y_MIN - A.SMALL_BOX_WIDE && y <= GOAL_Y_MAX + A.SMALL_BOX_WIDE;
+}
+
+/**
+ * Crossing position: in the final third AND either outside the central corridor or wide of the
+ * posts close to the byline. Goalkeepers never cross.
+ */
+export function isCrossPosition(p: GamePlayer): boolean {
+  if (p.role === 'GK') return false;
+  const distToLine = (attackGoalX(p) - p.x) * p.attackDir;
+  if (distToLine < 0 || distToLine > A.CROSS_MAX_DIST_TO_LINE) return false;
+  const width = Math.abs(p.y - CENTRE_Y);
+  if (width >= A.CROSS_MIN_WIDTH) return true;
+  const wideOfPosts = p.y < GOAL_Y_MIN || p.y > GOAL_Y_MAX;
+  return wideOfPosts && distToLine <= A.CROSS_BYLINE_DIST;
+}
+
+/** The three cross targets for a holder: near post (his side), penalty spot, far post. */
+export function crossTargetPoints(p: GamePlayer): Array<{ kind: CrossTargetKind; x: number; y: number }> {
+  const goalX = attackGoalX(p);
+  const fromLine = (d: number) => goalX - p.attackDir * d;
+  const nearSideLow = p.y < CENTRE_Y; // crosser on the low-y touchline side
+  const nearPostY = nearSideLow ? GOAL_Y_MIN : GOAL_Y_MAX;
+  const farPostY = nearSideLow ? GOAL_Y_MAX + A.FAR_POST_OUTSIDE : GOAL_Y_MIN - A.FAR_POST_OUTSIDE;
+  return [
+    { kind: 'near_post',    x: fromLine(A.NEAR_POST_DEPTH),    y: nearPostY },
+    { kind: 'penalty_spot', x: fromLine(A.PENALTY_SPOT_DEPTH), y: CENTRE_Y },
+    { kind: 'far_post',     x: fromLine(A.FAR_POST_DEPTH),     y: farPostY },
+  ];
+}
+
+/** Heading ability (0..1); 0.5 when a snapshot predates the field. */
+export function headingOf(p: GamePlayer): number {
+  return p.runtimeStats.withoutBall.heading ?? 0.5;
+}
+
+/** Jump ability (0..1); 0.5 when a snapshot predates the field. */
+export function jumpOf(p: GamePlayer): number {
+  return p.runtimeStats.withoutBall.jump ?? 0.5;
+}
+
+/** Positional-free aerial ability: heading / jump / strength with the duel weights. */
+export function aerialAbility(p: GamePlayer): number {
+  return headingOf(p) * A.DUEL_HEADING_WEIGHT
+    + jumpOf(p) * A.DUEL_JUMP_WEIGHT
+    + (p.runtimeStats.withoutBall.strength ?? 0.5) * A.DUEL_STRENGTH_WEIGHT;
+}
+
+/**
+ * Duel score of `p` for a ball landing at `point`:
+ * heading × 0.45 + jump × 0.25 + strength × 0.15 + position × 0.15, position = 1 − dist / AERIAL_RADIUS.
+ */
+export function aerialDuelScore(p: GamePlayer, point: { x: number; y: number }): number {
+  const d = Math.hypot(p.x - point.x, p.y - point.y);
+  const position = clamp(1 - d / A.AERIAL_RADIUS, 0, 1);
+  return aerialAbility(p) + position * A.DUEL_POSITION_WEIGHT;
+}
+
+/**
+ * Score every cross target for `holder`. Empty when the holder is not in a crossing position.
+ * Sorted by raw score, best first. A target with no attacker in its zone has raw 0.
+ */
+export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[]): CrossTarget[] {
+  if (!isCrossPosition(holder)) return [];
+  const attackers = allPlayers.filter(p => p.team === holder.team && p.id !== holder.id && p.role !== 'GK');
+  const defenders = allPlayers.filter(p => p.team !== holder.team && p.role !== 'GK' && p.recoveryTime <= 0);
+  const gk = allPlayers.find(p => p.team !== holder.team && p.role === 'GK') ?? null;
+  const goalX = attackGoalX(holder);
+  const passing = holder.runtimeStats.withBall.passingSkill;
+  const R = A.TARGET_ZONE_RADIUS;
+
+  const out: CrossTarget[] = crossTargetPoints(holder).map(t => {
+    let att = 0;
+    let def = 0;
+    let heading = 0;
+    let bestAttackerId: number | null = null;
+    let bestDist = Infinity;
+    for (const p of attackers) {
+      const d = Math.hypot(p.x - t.x, p.y - t.y);
+      if (d >= R) continue;
+      const w = 1 - d / R;
+      att += w;
+      heading = Math.max(heading, headingOf(p) * w);
+      if (d < bestDist) { bestDist = d; bestAttackerId = p.id; }
+    }
+    for (const p of defenders) {
+      const d = Math.hypot(p.x - t.x, p.y - t.y);
+      if (d < R) def += 1 - d / R;
+    }
+    const gkClaim = gk !== null && isInSmallBox(t.x, t.y, goalX);
+    const raw = att <= 0 ? 0 : Math.max(0,
+      A.CROSS_BASE
+      + (att - def * A.CROSS_DEFENDER_WEIGHT) * A.CROSS_NUMBERS_WEIGHT
+      + passing * A.CROSS_PASS_WEIGHT
+      + heading * A.CROSS_HEADING_WEIGHT
+      - (gkClaim ? A.CROSS_GK_PENALTY : 0));
+    return { ...t, attackers: att, defenders: def, heading, gkClaim, raw, bestAttackerId };
+  });
+  return out.sort((a, b) => b.raw - a.raw);
+}
+
+/**
+ * Best long ball for `holder`: a teammate at least LONG_BALL_MIN_PROGRESS ahead and
+ * LONG_BALL_MIN_DIST..MAX_DIST away, the ball aimed LONG_BALL_LEAD yards in front of him.
+ * `weight` is the team's build_up appetite (`TeamPassWeights.LONG_BALL_WEIGHT`); 0 disables it.
+ * Null when the holder is too far up the pitch or nobody qualifies.
+ */
+export function evaluateLongBall(holder: GamePlayer, allPlayers: GamePlayer[], weight: number): LongBallTarget | null {
+  if (weight <= 0) return null;
+  const ownGoalX = holder.attackDir === 1 ? 0 : PITCH_LENGTH;
+  if (Math.abs(holder.x - ownGoalX) > A.LONG_BALL_MAX_HOLDER_DEPTH) return null;
+  const defenders = allPlayers.filter(p => p.team !== holder.team && p.role !== 'GK');
+  const passing = holder.runtimeStats.withBall.passingSkill;
+  let best: LongBallTarget | null = null;
+  for (const mate of allPlayers) {
+    if (mate.team !== holder.team || mate.id === holder.id || mate.role === 'GK') continue;
+    const progress = (mate.x - holder.x) * holder.attackDir;
+    if (progress < A.LONG_BALL_MIN_PROGRESS) continue;
+    const x = clamp(mate.x + holder.attackDir * A.LONG_BALL_LEAD, 1, PITCH_LENGTH - 1);
+    const y = clamp(mate.y, 1, PITCH_WIDTH - 1);
+    const dist = Math.hypot(x - holder.x, y - holder.y);
+    if (dist < A.LONG_BALL_MIN_DIST || dist > A.LONG_BALL_MAX_DIST) continue;
+    let contest = 0;
+    for (const d of defenders) {
+      const dd = Math.hypot(d.x - x, d.y - y);
+      if (dd < A.LONG_BALL_CONTEST_RADIUS) contest += 1 - dd / A.LONG_BALL_CONTEST_RADIUS;
+    }
+    const space = 1 - Math.min(1, contest / 1.5);
+    const progressNorm = clamp(progress / 50, 0, 1);
+    const aerial = aerialAbility(mate);
+    const raw = weight * (
+      progressNorm * A.LONG_BALL_PROGRESS_WEIGHT
+      + space * A.LONG_BALL_SPACE_WEIGHT
+      + aerial * A.LONG_BALL_AERIAL_WEIGHT
+      + passing * A.LONG_BALL_PASS_WEIGHT);
+    if (!best || raw > best.raw) best = { targetId: mate.id, x, y, progress, space, aerial, raw };
+  }
+  return best;
+}
