@@ -10,6 +10,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { ManagerRecord } from "@/types/managerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -194,6 +195,16 @@ export class SaveService {
 
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     return this.dal.writeFreeAgents(saveId, agents);
+  }
+
+  // ── Manager ranking ────────────────────────────────────────────────────────
+
+  getManagers(saveId: string): Promise<ManagerRecord[]> {
+    return this.dal.readManagers(saveId);
+  }
+
+  writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void> {
+    return this.dal.writeManagers(saveId, managers);
   }
 
   // ── Retired players ────────────────────────────────────────────────────────
