@@ -10,7 +10,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
-import type { ManagerRecord } from "@/types/managerTypes";
+import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -74,6 +74,8 @@ export interface SaveMeta {
   freeAgentsRetiredYear?: number;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */
   pendingTitles?: Record<string, string[]>;
+  /** Manager-ranking country weights, computed once per country per season (`.claude/rules/game/managers.md`). */
+  managerWeights?: Record<string, CountryWeight>;
   /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
 }

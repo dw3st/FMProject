@@ -2,7 +2,7 @@ import type { SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import type { LeagueDataEntry } from "@/backend/advanceDay";
 import type { Pyramids } from "@/types/pyramidTypes";
-import type { ManagerRecord, ManagerTitle } from "@/types/managerTypes";
+import type { CountryWeight, ManagerRecord, ManagerTitle } from "@/types/managerTypes";
 import { clubLevel, topLeagueOf } from "@/backend/continentalWorld";
 import { MANAGERS } from "@/Domain/managers/managerConfig";
 import { addSeason, awardTitle, countryWeight } from "@/Domain/managers/managers";
@@ -11,7 +11,8 @@ import { logError } from "@/Logger";
 /**
  * Manager-ranking I/O for one advance-day (`.claude/rules/game/managers.md`): the ranking file is
  * read once on first use, titles/seasons are applied in memory and `flush` writes it back (into the
- * day's buffered DAL). Country weights are memoized for the day.
+ * day's buffered DAL). Country weights are computed once per country per season and cached in the
+ * save meta (`meta.managerWeights`, written by the caller from `weights()` when `weightsChanged()`).
  */
 export function createManagerTracker(args: {
   service: SaveService;
@@ -19,12 +20,16 @@ export function createManagerTracker(args: {
   getIndex: () => SquadIndex;
   catalog: () => Promise<LeagueDataEntry[]>;
   pyramids: () => Promise<Pyramids>;
+  /** Weights already computed this save (`meta.managerWeights`). */
+  weights?: Record<string, CountryWeight>;
 }) {
   const { service, saveId } = args;
   let managers: ManagerRecord[] | null = null;
   let changed = false;
   const levels = new Map<string, number | null>();
   let big5: number | null | undefined;
+  let weights: Record<string, CountryWeight> = args.weights ?? {};
+  let weightsChanged = false;
 
   const load = async (): Promise<ManagerRecord[]> => (managers ??= await service.getManagers(saveId));
 
@@ -47,9 +52,14 @@ export function createManagerTracker(args: {
     countryOfLeague: async (slug: string): Promise<string | null> =>
       (await args.catalog()).find((l) => l.slug === slug)?.country ?? null,
 
-    /** Tier-1 level of the country ÷ the big-5 average, clamped (`countryWeight`). */
-    async weightOf(country: string | null): Promise<number> {
+    /**
+     * Tier-1 level of the country ÷ the big-5 average, clamped (`countryWeight`). Computed once per
+     * country per season label, then served from the cache.
+     */
+    async weightOf(country: string | null, season: string): Promise<number> {
       if (!country) return MANAGERS.WEIGHT_MIN;
+      const cached = weights[country];
+      if (cached && cached.season === season) return cached.weight;
       if (big5 === undefined) {
         const vs: number[] = [];
         for (const c of MANAGERS.BIG5) {
@@ -58,8 +68,14 @@ export function createManagerTracker(args: {
         }
         big5 = vs.length > 0 ? vs.reduce((a, b) => a + b, 0) / vs.length : null;
       }
-      return countryWeight((await countryLevel(country)) ?? 0, big5 ?? 0);
+      const weight = countryWeight((await countryLevel(country)) ?? 0, big5 ?? 0);
+      weights = { ...weights, [country]: { season, weight } };
+      weightsChanged = true;
+      return weight;
     },
+
+    weights: () => weights,
+    weightsChanged: () => weightsChanged,
 
     async credit(title: ManagerTitle): Promise<void> {
       const cur = await load();
