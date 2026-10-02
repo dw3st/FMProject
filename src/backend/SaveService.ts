@@ -21,6 +21,7 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
+import { buildInitialManagers } from "@/Domain/managers/managers";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
@@ -730,6 +731,7 @@ export class SaveService {
     // Kept so createContinentalSeason (below) can reuse these already-in-memory squads for
     // clubLevel instead of re-reading every one of them back off disk via getSquadById.
     const squadCache = new Map<string, Squad>();
+    let playerSquadId: string | null = null;
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
@@ -743,6 +745,7 @@ export class SaveService {
         const clubSlug = p.replace(".json", "");
 
         const isPlayerClub = league === body.leagueSlug && clubSlug === body.clubId;
+        if (isPlayerClub) playerSquadId = raw.id;
         const srcFin = raw.finances;
         // The player's club always starts at 0 — the initial balance is the ledger's own
         // broadcasting entry (applyBroadcasting, right after createSave returns), never a
@@ -788,6 +791,12 @@ export class SaveService {
     }
 
     if (copied === 0) throw new Error("no squads found to copy");
+
+    // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
+    // replacing the imported coach of his club. Start kits never touch this file.
+    await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
+      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName }
+      : null));
 
     // National cups: one per country, over the country's league window (membership = squad folders).
     // Each country is generated independently — one country's failure must not skip the rest.
