@@ -108,6 +108,16 @@ describe("youth intake", () => {
 describe("youth rollover", () => {
   const args = { saveId: "save1", year: 2027, nextSeasonEnd: "2028-05-31" };
 
+  test("reborn academy players are not auto-released at 19, only at 23", () => {
+    const s = squad();
+    const base = generateIntake({ ...args, squad: s, year: 2025 })[0]!;
+    const r19 = { ...base, age: 18, reborn: { fromId: "x" } };
+    const r22 = { ...base, id: "r22", age: 22, reborn: { fromId: "x" } };
+    const res = processYouthRollover({ ...args, squad: { ...s, youth: [r19, r22] }, isHuman: true });
+    expect(res.autoReleased.map((p) => p.id)).toEqual(["r22"]);
+    expect(res.squad.youth!.some((p) => p.id === r19.id)).toBe(true);
+  });
+
   test("human: intake goes to squad.youth, 19-year-olds are released, squad untouched", () => {
     const s = squad();
     const old = { ...generateIntake({ ...args, squad: s, year: 2025 })[0]!, age: 18 };

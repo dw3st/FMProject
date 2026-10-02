@@ -1243,6 +1243,7 @@ export async function advanceOneDay(
     // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
     // champion/promoted/relegated season message below. 0 when no rollover happens this day.
     let playerLeaguePrizeThisRollover = 0;
+    let freeAgentsRetiredYear: number | undefined;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -1467,8 +1468,9 @@ export async function advanceOneDay(
         for (const slug of unit.leagues) unitSquads.push(...(await saveService.getSquadsInLeague(saveId, slug)));
         const levels = buildWorldLevels(await saveService.getAllSquads(saveId));
         const rYear = closedYear.get(unit.leagues[0]!)! + 1;
+        const faDone = (freeAgentsRetiredYear ?? meta.freeAgentsRetiredYear) === rYear;
         const res = processRetirements({
-          saveId, year: rYear, date: currentDate, squads: unitSquads,
+          saveId, year: rYear, processFreeAgents: !faDone, date: currentDate, squads: unitSquads,
           freeAgents: await saveService.getFreeAgents(saveId), levels, humanSquadId: playerClubSquadId, logs: closedLogs,
         });
         const humanInUnit = unitSquads.some((s) => s.id === playerClubSquadId);
@@ -1482,12 +1484,15 @@ export async function advanceOneDay(
           if (sq === before.get(sq.id)) continue;
           await saveService.saveSquadById(saveId, sq);
         }
-        await saveService.writeFreeAgents(saveId, res.freeAgents);
+        if (!faDone) {
+          await saveService.writeFreeAgents(saveId, res.freeAgents);
+          freeAgentsRetiredYear = rYear;
+        }
         const goneHuman = new Set(res.humanRetired.map((r) => r.id));
         if (goneHuman.size > 0) {
           const tac = await saveService.getTactics(saveId);
           if (tac && tac.lineup.some((id) => goneHuman.has(id))) {
-            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.filter((id) => !goneHuman.has(id)) });
+            await saveService.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (goneHuman.has(id) ? "" : id)) });
           }
           const mk = await saveService.getMarket(saveId);
           if (mk?.playerSellList?.some((c) => goneHuman.has(c.playerId))) {
@@ -1759,6 +1764,7 @@ export async function advanceOneDay(
 
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};
+    if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();

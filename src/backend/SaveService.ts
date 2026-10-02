@@ -68,6 +68,8 @@ export interface SaveMeta {
   activeLeagues?: LeagueSeasonState[];
   /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
   followedLeagues?: string[];
+  /** World year whose free-agent retirement draw already ran (it runs once per year, not per country rollover). */
+  freeAgentsRetiredYear?: number;
   /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
 }

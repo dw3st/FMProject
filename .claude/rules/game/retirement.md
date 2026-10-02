@@ -31,7 +31,7 @@ base   = 34: 0,10 · 35: 0,25 · 36: 0,45 · 37: 0,65 · 38: 0,85 · >= 39: 1,0
 - `RetiredPlayer` (`playerTypes.ts`): `id, name, nationality, positions, preferredFoot, profile, retiredOn,
   squadId, age, wasWorldClass, statsAtRetirement, appearances, goals, rebornOffer?`.
 - DAL: `readRetired`/`writeRetired` (`getRetired`/`writeRetired` no `SaveService`), bufferizado como
-  `freeAgents`. Tiradas do `tactics.lineup` e da `playerSellList` do clube do jogador.
+  `freeAgents`. Tiradas do `tactics.lineup` (o id vira "" para os demais manterem o slot) e da `playerSellList` do clube do jogador.
 
 ## Inbox `retirement`
 
@@ -50,9 +50,9 @@ gravada depois do `clearInbox`. Uma mensagem por aposentado do clube do jogador;
 - **Aceitar** (`generateReborn`): novo id `reborn_<id>_<ano>`, mesmo nome, nacionalidade, posições, pé e perfil;
   17 anos; um único deslocamento somado a todos os atributos originais (a forma relativa preservada) até o
   `weightedScore` bater média da linha do clube - 0,8 (limitada a 1,5-8); contrato de base (3 anos). Entra em
-  `squad.youth` com `reborn: { fromId, until: ano + 6 }`.
+  `squad.youth` com `reborn: { fromId }`.
 - **Crescimento:** `rebornDpMult` = 1,3 enquanto idade < 23, aplicado no treino da base (`developYouthSeason`), no
-  treino diário e nas partidas (`dailyTraining.ts`, `matches.ts`). Vale pela idade; `until` é informativo.
+  treino diário e nas partidas (`dailyTraining.ts`, `matches.ts`). Vale pela idade (< 23). Reborn não é dispensado da base aos 19: fica até os 23 ou até ser promovido (`youth.ts`).
 - Badge `RebornBadge` (estrela `chart-5` + "Renascido") no elenco, na ficha e na base.
 
 ## Testes e smoke
@@ -65,3 +65,8 @@ bun test src/Domain/retirement src/backend/reborn.routes.test.ts
 >= 34, ids únicos, ninguém aposentado em elenco/base/livres), ninguém com 40+ nas ligas viradas nem nos livres,
 mensagem na inbox para cada aposentado do clube do jogador, e um caminho forçado de renascido aceito pela rota
 (17 anos, contrato, na base, oferta `accepted`).
+
+
+## Livres: sorteio uma vez por ano
+
+O pool de livres só é sorteado uma vez por ano de mundo (`meta.freeAgentsRetiredYear`, `processRetirements({ processFreeAgents })`), não a cada virada de país; senão quase todo livre de 33+ se aposentaria na primeira temporada. Registros de livres têm `freeAgent: true` em `retired.json`. Erros `youthFull`/`offerClosed` da rota de oferta têm texto traduzido na `InboxScreen`.
