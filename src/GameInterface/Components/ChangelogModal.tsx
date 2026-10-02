@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { DialogTitle } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
-import { changelog } from "@/GameInterface/changelog/changelog";
+import { Tabs } from "@/GameInterface/ui/Tabs";
+import { changelog, upcoming } from "@/GameInterface/changelog/changelog";
 
 interface Props {
   open: boolean;
@@ -19,6 +21,7 @@ export function ChangelogModal({ open, onClose }: Props) {
   const { t, i18n } = useTranslation();
   const lang: "pt" | "en" = i18n.language?.toLowerCase().startsWith("pt") ? "pt" : "en";
   const dateLocale = lang === "pt" ? "pt-BR" : "en-US";
+  const [tab, setTab] = useState<"news" | "upcoming">("news");
 
   return (
     <Modal open={open} onClose={onClose} size="md">
@@ -30,11 +33,29 @@ export function ChangelogModal({ open, onClose }: Props) {
           >
             {t("changelog.title")}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground m-0 mt-0.5">{t("changelog.subtitle")}</p>
+          <p className="text-sm text-muted-foreground m-0 mt-0.5">
+            {t(tab === "news" ? "changelog.subtitle" : "changelog.upcomingSubtitle")}
+          </p>
+          <Tabs
+            className="mt-3"
+            tabs={[
+              { key: "news", label: t("changelog.tabNews") },
+              { key: "upcoming", label: t("changelog.tabUpcoming") },
+            ]}
+            active={tab}
+            onChange={setTab}
+          />
         </div>
 
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-          {changelog.map((entry) => (
+          {tab === "upcoming" && (
+            <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/90 m-0">
+              {upcoming.map((item, i) => (
+                <li key={i}>{item[lang]}</li>
+              ))}
+            </ul>
+          )}
+          {tab === "news" && changelog.map((entry) => (
             <section key={entry.version}>
               <div className="flex items-baseline gap-2 mb-2">
                 <h3 className="font-display font-black uppercase text-xl leading-none m-0">

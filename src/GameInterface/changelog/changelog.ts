@@ -381,3 +381,13 @@ if (!latest) {
 }
 
 export const CURRENT_VERSION = latest.version;
+
+/**
+ * "Em breve" / "Coming soon": what the next stages bring, in player-facing words. Replaced at every
+ * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
+ */
+export const upcoming: ChangelogText[] = [
+  { pt: "Jogo aéreo e cruzamentos", en: "Aerial play and crosses" },
+  { pt: "Bolas paradas com barreira e cobradores", en: "Set pieces with walls and designated takers" },
+  { pt: "Treino de estilos de jogo", en: "Training for playing styles" },
+];
