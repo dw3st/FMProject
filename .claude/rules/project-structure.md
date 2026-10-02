@@ -141,6 +141,8 @@ debugLog('tackle', 'Silva wins tackle vs Ronaldo', { playerId: 2, data: { succes
 | `possession` | green | Pass received or tackle wins possession |
 | `tackle` | orange | Every tackle attempt (win or lose) |
 | `decision` | gray | (reserved — not per-frame logged, derived in UI) |
+| `foul` | amber | Fouls, free kicks, penalties (`maybeFoul`, `resolveInMatchPenalty`) |
+| `card` | yellow | Yellow / red cards and sendings-off (`bookPlayer`) |
 
 ### Debug UI
 - **Toggle**: DEBUG button in header (`App.tsx`)
@@ -154,6 +156,11 @@ debugLog('tackle', 'Silva wins tackle vs Ronaldo', { playerId: 2, data: { succes
 | Event | Payload | Emitted when |
 |---|---|---|
 | `stateChanged` | `GameState` | Pass completes or tackle changes possession |
+| `foul` | `{ offenderId, fouledId, team, kind, x, y, inBox, minute }` | A tackle / dribble duel / loose-ball duel was a foul (`fouls.md`) |
+| `card` | `{ playerId, playerName, team, card, secondYellow, minute }` | Yellow or red shown (a second yellow emits the yellow, then a red) |
+| `freeKickAwarded` | `{ team, takerId, x, y, dangerous, minute }` | Foul outside the box — free-kick restart |
+| `penaltyAwarded` | `{ team, takerId, offenderId, minute }` | Foul inside the offender's box |
+| `penaltyResolved` | `{ team, takerId, keeperId, scored, chance }` | In-match penalty taken (shootout kicks use `penaltyKick`) |
 
 ---
 
