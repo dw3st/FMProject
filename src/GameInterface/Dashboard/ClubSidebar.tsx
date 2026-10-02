@@ -75,6 +75,17 @@ export function ClubSidebar({
 
   const [sellListIds, setSellListIds] = useState<Set<string>>(new Set());
   const [sellToggling, setSellToggling] = useState(false);
+  const [managerRank, setManagerRank] = useState<number | null>(null);
+
+  // Manager ranking line (`.claude/rules/game/managers.md`): the player's world rank.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/saves/${session.saveId}/managers?scope=world&limit=1`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ playerRank: number | null }>) : null))
+      .then((d) => { if (!cancelled) setManagerRank(d?.playerRank ?? null); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [session.saveId, currentDate]);
 
   useEffect(() => {
     const s = loadSession();
@@ -126,6 +137,14 @@ export function ClubSidebar({
           <p className="text-sm text-primary font-bold m-0 mt-0.5">
             {session.manager?.name ?? "—"}
           </p>
+          {managerRank !== null && (
+            <a
+              href="/stats?tab=managers"
+              className="text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline"
+            >
+              {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
+            </a>
+          )}
         </div>
         <div className="mt-2">
           <ClubGradientAccent

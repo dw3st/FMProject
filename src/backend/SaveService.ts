@@ -10,6 +10,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -20,6 +21,7 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
+import { buildInitialManagers } from "@/Domain/managers/managers";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
@@ -72,6 +74,8 @@ export interface SaveMeta {
   freeAgentsRetiredYear?: number;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */
   pendingTitles?: Record<string, string[]>;
+  /** Manager-ranking country weights, computed once per country per season (`.claude/rules/game/managers.md`). */
+  managerWeights?: Record<string, CountryWeight>;
   /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
 }
@@ -194,6 +198,16 @@ export class SaveService {
 
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     return this.dal.writeFreeAgents(saveId, agents);
+  }
+
+  // ── Manager ranking ────────────────────────────────────────────────────────
+
+  getManagers(saveId: string): Promise<ManagerRecord[]> {
+    return this.dal.readManagers(saveId);
+  }
+
+  writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void> {
+    return this.dal.writeManagers(saveId, managers);
   }
 
   // ── Retired players ────────────────────────────────────────────────────────
@@ -719,6 +733,7 @@ export class SaveService {
     // Kept so createContinentalSeason (below) can reuse these already-in-memory squads for
     // clubLevel instead of re-reading every one of them back off disk via getSquadById.
     const squadCache = new Map<string, Squad>();
+    let playerSquadId: string | null = null;
 
     for (const league of leagues) {
       const srcDir = `${squadsRootSrc}/${league}`;
@@ -732,6 +747,7 @@ export class SaveService {
         const clubSlug = p.replace(".json", "");
 
         const isPlayerClub = league === body.leagueSlug && clubSlug === body.clubId;
+        if (isPlayerClub) playerSquadId = raw.id;
         const srcFin = raw.finances;
         // The player's club always starts at 0 — the initial balance is the ledger's own
         // broadcasting entry (applyBroadcasting, right after createSave returns), never a
@@ -777,6 +793,12 @@ export class SaveService {
     }
 
     if (copied === 0) throw new Error("no squads found to copy");
+
+    // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
+    // replacing the imported coach of his club. Start kits never touch this file.
+    await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
+      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName }
+      : null));
 
     // National cups: one per country, over the country's league window (membership = squad folders).
     // Each country is generated independently — one country's failure must not skip the rest.
