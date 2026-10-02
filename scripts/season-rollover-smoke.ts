@@ -29,6 +29,7 @@
  */
 import { fileURLToPath } from "node:url";
 import { readdir } from "fs/promises";
+import { seasonLabel } from "@/Domain/history/history";
 
 // Windows-safe default for the runtime dir; must be set before backend modules load.
 process.env.RUNTIME_DATA_DIR ||= fileURLToPath(new URL("../src/Data", import.meta.url));
@@ -1126,18 +1127,24 @@ try {
       const files = await plain().listSquadFiles(saveId);
       const players = files.flatMap(({ squad }) => squad.players.map((p) => ({ p, squadId: squad.id })));
       const played = Object.entries(arch.playerLogs).filter(([, l]) => l.appearances > 0);
+      // The archived log is the whole season; a player transferred into the league mid-season has
+      // open-then-settled partial rows plus the row of this club, which together add up to it.
+      const label = seasonLabel(arch.year, arch.start, arch.end);
       let withRow = 0;
       let appsMatch = 0;
+      let openLeft = 0;
       for (const [pid, log] of played) {
         const hit = players.find(({ p }) => p.id === pid);
         if (!hit) continue; // retired or released
-        const row = hit.p.history?.find((h) => h.league === PLAYER_LEAGUE && h.titles !== undefined && h.apps === log.appearances);
-        if (hit.p.history?.some((h) => h.league === PLAYER_LEAGUE)) withRow++;
-        if (row) appsMatch++;
+        const seasonRows = (hit.p.history ?? []).filter((h) => h.season === label);
+        if (seasonRows.length > 0) withRow++;
+        if (seasonRows.reduce((a, h) => a + h.apps, 0) === log.appearances) appsMatch++;
+        if (seasonRows.some((h) => h.open)) openLeft++;
       }
       const alive = played.filter(([pid]) => players.some(({ p }) => p.id === pid)).length;
       check(alive > 0 && withRow === alive, `histórico: ${withRow}/${alive} ${PLAYER_LEAGUE} players with games have a row`);
-      check(appsMatch === alive, `histórico: ${appsMatch}/${alive} rows match the archived appearances`);
+      check(appsMatch === alive, `histórico: ${appsMatch}/${alive} season rows add up to the archived appearances`);
+      check(openLeft === 0, `histórico: no open partial row left after the rollover (${openLeft})`);
       const champ = arch.standings[0]?.squadId;
       const champRows = players.filter(({ squadId }) => squadId === champ)
         .flatMap(({ p }) => p.history ?? []).filter((h) => h.squadId === champ);

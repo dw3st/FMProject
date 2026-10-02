@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  addPendingTitle, addTitle, closePartialSeason, closeSeasonForPlayers, historyRowFromLog, seasonLabel,
+  addPendingTitle, closePartialSeason, closeSeasonForPlayers, historyRowFromLog, seasonLabel,
 } from "@/Domain/history/history";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { RosterPlayer } from "@/types/playerTypes";
@@ -27,25 +27,54 @@ describe("history", () => {
     expect(r.cupApps).toBe(2);
     expect(r.titles).toEqual(["league:x"]);
   });
-  test("partial season closes a row and resets counters, keeping fitness and load", () => {
-    const p = closePartialSeason(player({ seasonLog: log(5) }), club, "2027");
+  test("partial season appends an open row and leaves the seasonLog untouched", () => {
+    const sl = { ...log(5), recentRatings: [7, 6.5], trainingSessions: 9 };
+    const p = closePartialSeason(player({ seasonLog: sl }), club, "2027");
     expect(p.history!.length).toBe(1);
-    expect(p.seasonLog!.appearances).toBe(0);
-    expect(p.seasonLog!.fitness).toBe(60);
-    expect(p.seasonLog!.load).toBe(40);
+    expect(p.history![0]).toMatchObject({ apps: 5, partial: true, open: true, clubName: "Club" });
+    expect(p.seasonLog).toBe(sl);
   });
-  test("addTitle never creates a row and does not duplicate", () => {
-    expect(addTitle(player(), "cup:x").history).toBeUndefined();
+  test("no partial row without games", () => {
+    const p = player({ seasonLog: log(0) });
+    expect(closePartialSeason(p, club, "2027")).toBe(p);
+  });
+  test("two transfers in a season: each row subtracts the earlier open partials", () => {
+    const a = { squadId: "a", clubName: "A", league: "l" };
+    const b = { squadId: "b", clubName: "B", league: "l" };
+    const c = { squadId: "c", clubName: "C", league: "l" };
+    // 4 games at A (rating 6), then 6 more at B (rating 8): log avg = (24 + 48) / 10 = 7.2.
+    let p = player({ seasonLog: { ...emptySeasonLog(), appearances: 4, goals: 1, assists: 0, avgRating: 6,
+      cup: { appearances: 1, goals: 1, assists: 0 } } });
+    p = closePartialSeason(p, a, "2027");
+    p = { ...p, seasonLog: { ...p.seasonLog!, appearances: 10, goals: 3, assists: 2, avgRating: 7.2,
+      cup: { appearances: 2, goals: 1, assists: 0 } } };
+    p = closePartialSeason(p, b, "2027");
+    expect(p.history!.map((r) => r.apps)).toEqual([4, 6]);
+    expect(p.history![1]).toMatchObject({ goals: 2, assists: 2, avgRating: 8, cupApps: 1, cupGoals: 0 });
+    // 5 more at C (rating 7): log 15 games, avg (72 + 35) / 15.
+    const closed = { ...emptySeasonLog(), appearances: 15, goals: 5, assists: 2, avgRating: 107 / 15,
+      cup: { appearances: 2, goals: 1, assists: 0 } };
+    const [out] = closeSeasonForPlayers([p], { p1: closed }, c, "2027", ["league:l"]);
+    expect(out!.history!.map((r) => r.apps)).toEqual([4, 6, 5]);
+    expect(out!.history![2]).toMatchObject({ goals: 2, avgRating: 7, cupApps: 0, titles: ["league:l"] });
+    expect(out!.history![2]!.partial).toBeUndefined();
+    // Rollover settles the open partials: the next season does not subtract them again.
+    expect(out!.history!.some((r) => r.open)).toBe(false);
+    expect(out!.history![0]!.partial).toBe(true);
+    const [next] = closeSeasonForPlayers([out!], { p1: log(3) }, c, "2028", []);
+    expect(next!.history![3]!.apps).toBe(3);
+  });
+  test("rollover with no games after a transfer still settles the partial", () => {
     const p = closePartialSeason(player({ seasonLog: log(5) }), club, "2027");
-    const t = addTitle(addTitle(p, "cup:x"), "cup:x");
-    expect(t.history![0]!.titles).toEqual(["cup:x"]);
+    const [out] = closeSeasonForPlayers([p], { p1: log(5) }, { ...club, squadId: "s2" }, "2027", ["league:x"]);
+    expect(out!.history!.length).toBe(1);
+    expect(out!.history![0]!.open).toBeUndefined();
+    expect(out!.history![0]!.titles).toEqual([]);
   });
   test("season close: row with titles, no row without games", () => {
-    const withOld = closePartialSeason(player({ id: "p2", seasonLog: log(5) }), club, "2026");
-    const out = closeSeasonForPlayers([player(), withOld], { p1: log(30) }, club, "2027", ["league:premier_league"]);
+    const out = closeSeasonForPlayers([player(), player({ id: "p2" })], { p1: log(30) }, club, "2027", ["league:premier_league"]);
     expect(out[0]!.history![0]!.titles).toEqual(["league:premier_league"]);
-    expect(out[1]!.history!.length).toBe(1);
-    expect(out[1]!.history![0]!.titles).toEqual([]);
+    expect(out[1]!.history).toBeUndefined();
   });
   test("pending titles merge without duplicates", () => {
     const p = addPendingTitle(addPendingTitle({}, "s1", "cup:a"), "s1", "cup:a");
@@ -64,5 +93,6 @@ test("a transfer closes a partial row at the selling club", () => {
   const moved = buying.players[0]!;
   expect(moved.history![0]!.clubName).toBe("Old");
   expect(moved.history![0]!.apps).toBe(8);
-  expect(moved.seasonLog!.appearances).toBe(0);
+  expect(moved.history![0]!.partial).toBe(true);
+  expect(moved.seasonLog).toBe(p.seasonLog);
 });
