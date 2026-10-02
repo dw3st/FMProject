@@ -169,7 +169,7 @@ export function PlayerScreen({
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("career.title")}</h2>
           <CareerTable
             rows={player.history ?? []}
-            current={historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "")}
+            current={historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "", [], player.history)}
             leagues={leagues}
           />
         </section>

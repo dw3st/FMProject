@@ -324,4 +324,8 @@ export interface PlayerHistoryRow {
   contGoals: number;
   /** "league:<slug>" | "cup:<slug>" | "continental:<slug>". */
   titles: string[];
+  /** Stint at a club the player left mid-season (transfer). */
+  partial?: true;
+  /** Partial row whose stats are still inside the current `seasonLog` (cleared at the next rollover). */
+  open?: true;
 }
