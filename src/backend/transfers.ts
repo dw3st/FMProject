@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { seasonLabel } from "@/Domain/history/history";
 import { saveService } from "@/backend/SaveService";
 import { executeTransferFee } from "@/backend/FinancialService";
 import { isPlayerSquadId } from "@/Domain/clubLookup";
@@ -192,6 +193,10 @@ export const transferRoutes = {
             buyerSquad.id,
             playerId,
             newContract,
+            (() => {
+              const l = (meta.activeLeagues ?? []).find((x) => x.leagueSlug === sellerResolved.leagueSlug);
+              return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
+            })(),
           );
 
           // Exchange money via FinancialService — it also persists both squads (roster + money).

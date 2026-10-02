@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { AgePhase } from "@/GameInterface/Development/PlayerProfile";
 import { getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
-import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
+import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { Icon } from "@/GameInterface/Icons";
 
 export interface PlayerOption {
@@ -28,11 +28,11 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
     const q = query.trim().toLowerCase();
     if (!q) return players;
     return players.filter((p) => {
-      const abbr = MAIN_ROLE_ABBR[getMainRole(p.position)];
+      const abbr = `${MAIN_ROLE_ABBR[getMainRole(p.position)]} ${positionLabel(t, p.position, p.position)}`;
       const phaseLabel = agePhaseDisplay[p.agePhase].label;
       return `${p.position} ${abbr} ${phaseLabel} ${p.name}`.toLowerCase().includes(q);
     });
-  }, [players, query, agePhaseDisplay]);
+  }, [players, query, agePhaseDisplay, t]);
 
   if (players.length === 0) return null;
 
@@ -83,7 +83,7 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
                 className={`shrink-0 min-w-[2.25rem] text-center text-sm font-semibold px-2 py-0.5 rounded border ${badgeClass}`}
                 title={player.position}
               >
-                {MAIN_ROLE_ABBR[mainRole]}
+                {positionLabel(t, player.position, player.position)}
               </span>
 
               <div className="flex-1 min-w-0">

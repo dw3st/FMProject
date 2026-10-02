@@ -45,6 +45,32 @@ describe("reborn routes", () => {
     await saveService.writeRetired(saveId, [mkRetired("a"), mkRetired("b"), mkRetired("c")]);
 
     expect((await call(key, `/api/saves/${saveId}/reborn/a`, "POST", other.session.token, { accept: true })).status).toBe(404);
+
+    // Retired list: owner only, newest first, with the last club's name, paginated, `mine` filter.
+    const rKey = "/api/saves/:saveId/retired";
+    const list = async (qs = "") => {
+      const res = await call(rKey, `/api/saves/${saveId}/retired${qs}`, "GET", session.token);
+      expect(res.status).toBe(200);
+      return (await res.json()) as { total: number; items: (RetiredPlayer & { clubName: string | null })[] };
+    };
+    expect((await call(rKey, `/api/saves/${saveId}/retired`, "GET", other.session.token)).status).toBe(404);
+    const all = await list();
+    expect(all.total).toBe(3);
+    expect(all.items.map((r) => r.id)).toEqual(["c", "b", "a"]);
+    expect(typeof all.items[0]!.clubName).toBe("string");
+    expect("statsAtRetirement" in all.items[0]!).toBe(false);
+    const page = await list("?offset=1&limit=1");
+    expect(page.total).toBe(3);
+    expect(page.items.map((r) => r.id)).toEqual(["b"]);
+    await saveService.writeRetired(saveId, [{ ...mkRetired("x"), squadId: "not-mine" }, mkRetired("a"), mkRetired("b"), mkRetired("c")]);
+    expect((await list()).total).toBe(4);
+    const mine = await list("?mine=1");
+    expect(mine.total).toBe(3);
+    expect(mine.items.map((r) => r.id)).toEqual(["c", "b", "a"]);
+    await saveService.writeRetired(saveId, [mkRetired("a"), mkRetired("b"), mkRetired("c")]);
+    for (const bad of ["?limit=0", "?limit=101", "?offset=-1", "?limit=abc"]) {
+      expect((await call(rKey, `/api/saves/${saveId}/retired${bad}`, "GET", session.token)).status).toBe(400);
+    }
     expect((await call(key, `/api/saves/${saveId}/reborn/a`, "POST", session.token, {})).status).toBe(400);
     expect((await call(key, `/api/saves/${saveId}/reborn/zzz`, "POST", session.token, { accept: true })).status).toBe(404);
 

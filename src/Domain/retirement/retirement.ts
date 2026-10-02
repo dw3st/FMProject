@@ -77,6 +77,7 @@ export function toRetiredRecord(
     id: p.id, name: p.name, nationality: p.nationality ?? null, positions: p.positions,
     preferredFoot: p.preferredFoot, profile: p.profile, retiredOn: date, squadId, age: p.age,
     wasWorldClass, statsAtRetirement: p.stats,
+    ...(p.history?.length ? { history: p.history } : {}),
     appearances: log?.appearances ?? p.seasonLog?.appearances ?? 0,
     goals: log?.goals ?? p.seasonLog?.goals ?? 0,
   };

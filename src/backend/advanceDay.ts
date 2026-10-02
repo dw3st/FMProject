@@ -74,6 +74,7 @@ import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill } from "@/Domain/finance/wages";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
+import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
 import {
   advanceContinentalStages,
@@ -763,6 +764,15 @@ export async function advanceOneDay(
       return amount;
     };
 
+    // Cup/continental titles won today wait in meta.pendingTitles until the club's next country
+    // rollover writes its history row (`.claude/rules/game/history.md`).
+    let pendingTitles: Record<string, string[]> = meta.pendingTitles ?? {};
+    let pendingTitlesChanged = false;
+    const recordTitle = (squadId: string, title: string) => {
+      const next = addPendingTitle(pendingTitles, squadId, title);
+      if (next !== pendingTitles) { pendingTitles = next; pendingTitlesChanged = true; }
+    };
+
     // ── National cup prizes: every country, every tie decided today ──────────
     // `cupPrizeAwardedTo` feeds the player's own cup inbox messages below (champion / eliminated).
     const cupPrizeAwardedTo = new Map<string, number>();
@@ -803,6 +813,7 @@ export async function advanceOneDay(
         if (paidToWinner > 0) cupPrizeAwardedTo.set(winnerId, (cupPrizeAwardedTo.get(winnerId) ?? 0) + paidToWinner);
 
         if (stage === "final") {
+          recordTitle(winnerId, `cup:${cSlug}`);
           const loserPrize = cupRunnerUpPrize(base);
           const paidToLoser = await awardClubPrize(loserId, loserPrize, `${label} · runner-up`, { competition: cSlug, stage: "runner_up" });
           if (paidToLoser > 0) cupPrizeAwardedTo.set(loserId, (cupPrizeAwardedTo.get(loserId) ?? 0) + paidToLoser);
@@ -873,6 +884,7 @@ export async function advanceOneDay(
         if (!isContinentalSlug(cSlug)) continue;
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
+        for (const ev of events) if (ev.kind === "champion") recordTitle(ev.clubId, `continental:${cSlug}`);
         for (const award of continentalStagePrizesFromEvents(compSlug, events)) {
           const paid = await awardClubPrize(
             award.clubId, award.amount, `${label} · ${award.reason}`, { competition: cSlug, stage: award.reason },
@@ -1067,6 +1079,10 @@ export async function advanceOneDay(
           playerSquad: playerSquadForMarket,
           // Contract end for every signing: the buyer's league season end.
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end,
+          historyFrom: (sq) => {
+            const l = activeLeagues.find((x) => x.leagueSlug === sq.leagueSlug);
+            return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
+          },
         },
       );
 
@@ -1330,6 +1346,36 @@ export async function advanceOneDay(
           playerClubSquadId,
         });
         await saveService.writeLeagueSeasonArchive(saveId, transition.archive);
+        // History rows of the closed season (the squads are already reset: logs come from the archive).
+        {
+          const season = seasonLabel(state.year, state.start, state.end);
+          const table = standings[slug] ?? [];
+          const championId = table.length > 0 && table[0]!.mp > 0 ? table[0]!.squadId : null;
+          // Titles of every club of the league first, so a player sold to a rival of the same
+          // league gets his old club's titles on his partial row too.
+          const titlesByClub: Record<string, string[]> = {};
+          for (const ref of transition.squadsToSave) {
+            const titles = [
+              ...(ref.squad.id === championId ? [`league:${slug}`] : []),
+              ...(pendingTitles[ref.squad.id] ?? []),
+            ];
+            if (titles.length > 0) titlesByClub[ref.squad.id] = titles;
+            if (pendingTitles[ref.squad.id]) {
+              const { [ref.squad.id]: _, ...rest } = pendingTitles;
+              pendingTitles = rest;
+              pendingTitlesChanged = true;
+            }
+          }
+          for (const ref of transition.squadsToSave) {
+            ref.squad = {
+              ...ref.squad,
+              players: closeSeasonForPlayers(
+                ref.squad.players, transition.archive.playerLogs,
+                { squadId: ref.squad.id, clubName: ref.squad.name, league: slug }, season, titlesByClub,
+              ),
+            };
+          }
+        }
         for (const [pid, log] of Object.entries(transition.archive.playerLogs)) {
           closedLogs[pid] = { appearances: log.appearances, goals: log.goals };
         }
@@ -1769,6 +1815,7 @@ export async function advanceOneDay(
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
+    if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();

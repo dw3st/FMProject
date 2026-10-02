@@ -13,6 +13,9 @@ import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import { Icon } from "@/GameInterface/Icons";
+import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { historyRowFromLog } from "@/Domain/history/history";
+import type { LeagueData } from "@/types/playerTypes";
 
 export function PlayerScreen({
   playerId,
@@ -34,6 +37,11 @@ export function PlayerScreen({
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
   const [renewOpen, setRenewOpen] = useState(false);
   const lastTransferResult = useRef<TransferRecord | null>(null);
+  const [leagues, setLeagues] = useState<LeagueData[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/leagues").then((r) => (r.ok ? r.json() : [])).then(setLeagues).catch(() => setLeagues([]));
+  }, []);
 
   useEffect(() => {
     if (saveLoading) return;
@@ -156,6 +164,15 @@ export function PlayerScreen({
         </a>
 
         <PlayerCard player={displayPlayer} layout="wide" />
+
+        <section className="space-y-2">
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("career.title")}</h2>
+          <CareerTable
+            rows={player.history ?? []}
+            current={historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "", [], player.history)}
+            leagues={leagues}
+          />
+        </section>
       </div>
 
       <ContractOfferModal

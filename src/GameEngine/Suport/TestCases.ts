@@ -360,6 +360,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'byline-diagonal-run',
+    name:        'Byline — Diagonal Run Into the Goal Line (#42)',
+    description: 'Winger carrying at 106,20 with no outfield defender ahead (only the GK). Before #42 the forward lane aimed at the near post, the carrier reached the goal line and the pitch clamp turned the lane into a slide along the line (path clearness read 1 at the end line, so every byline penalty faded). Expect a cut inside toward the front of goal (CARRY_CONFIG.BYLINE_AIM_*), then a shot or a pass — never a run along x=115.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW', 106, 20, WINGER),
+        makePlayer('Santos',   'A', 'ST',  96, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  95, 30, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB',  94, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'touchline-carrier',
     name:        'Touchline — Carrier Hugging the Line (#37)',
     description: 'Winger with the ball 1 yd from the top touchline in midfield. Carry lanes ending within CARRY_CONFIG.TOUCHLINE_RUN_ZONE of a touchline are penalised, and off-ball teammates keep OFF_BALL_TOUCHLINE_MARGIN off the line with a 3-yd separation — expect a carry/pass infield, no teammates stacked on the line.',

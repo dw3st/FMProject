@@ -118,6 +118,8 @@ export interface RosterPlayer {
   contract?: PlayerContract;
   /** Reborn academy star (+30% DP while young). */
   reborn?: RebornMark;
+  /** Closed seasons (and partial stints), oldest first (`.claude/rules/game/history.md`). */
+  history?: PlayerHistoryRow[];
 }
 
 export interface ClubFinances {
@@ -301,4 +303,29 @@ export interface RetiredPlayer {
   /** Retired from the free-agent pool (not from a squad). */
   freeAgent?: true;
   rebornOffer?: "pending" | "accepted" | "declined" | "expired";
+  /** Career history at retirement. */
+  history?: PlayerHistoryRow[];
+}
+
+/** One closed season (or partial stint) of a player at one club. */
+export interface PlayerHistoryRow {
+  /** League season label of the club ("2026-27" / "2027"). */
+  season: string;
+  squadId: string;
+  clubName: string;
+  league: string;
+  apps: number;
+  goals: number;
+  assists: number;
+  avgRating: number | null;
+  cupApps: number;
+  cupGoals: number;
+  contApps: number;
+  contGoals: number;
+  /** "league:<slug>" | "cup:<slug>" | "continental:<slug>". */
+  titles: string[];
+  /** Stint at a club the player left mid-season (transfer). */
+  partial?: true;
+  /** Partial row whose stats are still inside the current `seasonLog` (cleared at the next rollover). */
+  open?: true;
 }

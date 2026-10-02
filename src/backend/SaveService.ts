@@ -70,6 +70,8 @@ export interface SaveMeta {
   followedLeagues?: string[];
   /** World year whose free-agent retirement draw already ran (it runs once per year, not per country rollover). */
   freeAgentsRetiredYear?: number;
+  /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */
+  pendingTitles?: Record<string, string[]>;
   /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
 }
