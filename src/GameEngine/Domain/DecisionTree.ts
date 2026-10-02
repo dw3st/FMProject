@@ -274,14 +274,16 @@ function getBestCarryLane(
   let bestLane: BestCarryLane | null = null;
   let bestScore: number = cfg.MIN_TOTAL_SCORE;
 
-  // Path clearness fades both penalties when no defender stands between the carrier
-  // and goal — being out of zone or near the byline only matters when defenders can
+  // Path clearness fades the role-fit and forward-byline penalties when no defender stands between
+  // the carrier and goal — being out of zone or near the byline only matters when defenders can
   // punish it. Wide-open run → penalty fades to 0; choked path → penalty full strength.
   const clearness     = forwardPathClearness(player, defendingOutfield);
   const penaltyDamper = 1 - clearness;
-  // #42: forwardPathClearness scans the columns ahead of the carrier � at the end line there are
-  // none (it returns 1), so a carrier on the goal line looked "clear" and every byline penalty
-  // faded to zero. Wide of the posts there is no run on goal to protect: keep byline penalties full.
+  // #42: forwardPathClearness scans the columns ahead of the carrier — at the end line there are
+  // none (it returns 1), so a carrier on the goal line looked "clear" and the in-box goal-line run
+  // penalty faded to zero. `bylineDamper` keeps ONLY that penalty (BYLINE_RUN_PENALTY_IN_BOX) at
+  // full strength wide of the posts. The forward byline penalty below keeps `penaltyDamper` on
+  // purpose: dropping the damper there too killed carries in the last yards.
   const bylineDamper = wideOfPosts ? 1 : penaltyDamper;
 
   for (const lane of lanes) {

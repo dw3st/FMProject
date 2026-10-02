@@ -361,8 +361,8 @@ export const TEST_SCENARIOS: TestScenario[] = [
 
   {
     id:          'byline-diagonal-run',
-    name:        'Byline — Diagonal Run Into the Goal Line (#42)',
-    description: 'Winger carrying at 106,20 with no outfield defender ahead (only the GK). Before #42 the forward lane aimed at the near post, the carrier reached the goal line and the pitch clamp turned the lane into a slide along the line (path clearness read 1 at the end line, so every byline penalty faded). Expect a cut inside toward the front of goal (CARRY_CONFIG.BYLINE_AIM_*), then a shot or a pass — never a run along x=115.',
+    name:        'Byline â€” Diagonal Run Into the Goal Line (#42)',
+    description: 'Winger carrying at 106,20 with no outfield defender ahead (only the GK). Before #42 the forward lane aimed at the near post, the carrier reached the goal line and the pitch clamp turned the lane into a slide along the line (path clearness read 1 at the end line, so every byline penalty faded). Expect a cut inside toward the front of goal (CARRY_CONFIG.BYLINE_AIM_*), then a shot or a pass â€” never a run along x=115.',
     createState() {
       _nextId = 1;
       return buildState([
