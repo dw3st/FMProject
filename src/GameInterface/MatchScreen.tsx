@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation, PRESENTATION_DURATION } from "@/GameEngine/Domain/gameState";
+import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Suport/DebugLog";
 import { initRatings, getAllRatings } from "@/GameEngine/Domain/PlayerRating";
-import { initStats } from "@/GameEngine/Domain/Statistics";
+import { getTeamStats, initStats } from "@/GameEngine/Domain/Statistics";
 import "@/GameEngine/Suport/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
@@ -45,6 +45,7 @@ import { TeamPanel } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
+import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
@@ -131,12 +132,17 @@ export function MatchScreen() {
     team: TeamId;
     score: { A: number; B: number };
   } | null>(null);
-  /** Brief on-screen notice for an in-match injury (`docs/superpowers/specs/2026-09-28-injuries-design.md`). */
-  const [injuryNotice, setInjuryNotice] = useState<{
-    team: TeamId;
-    playerName: string;
-    severity: "light" | "medium" | "severe";
-  } | null>(null);
+  /**
+   * Brief on-screen notice: injury (`docs/superpowers/specs/2026-09-28-injuries-design.md`), and
+   * offside, dangerous free kick, card and penalty (Etapa 12, #17/#19).
+   */
+  const [notice, setNotice] = useState<{ text: string; tone: "danger" | "warn" | "info" } | null>(null);
+  /** Goals, penalties and offsides as they happen (cards, subs and injuries come from `gameState`). */
+  const [eventFeed, setEventFeed] = useState<MatchFeedItem[]>([]);
+  const penaltyGoalPendingRef = useRef(false);
+  /** Game-seconds of possession per team, accumulated from `gameState` (live phases only). */
+  const possessionRef = useRef<{ A: number; B: number; lastTime: number; lastPhase: string }>({ A: 0, B: 0, lastTime: 0, lastPhase: "" });
+  const teamNamesRef = useRef<{ A: string; B: string }>({ A: "A", B: "B" });
   const [matchOverlay, setMatchOverlay] = useState<"halfTime" | "extraTime" | "matchEnd" | null>(null);
   /**
    * 0..1 elapsed fraction driving the full-time overlay's progress bar. Unlike half-time /
@@ -344,13 +350,64 @@ export function MatchScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    return gameBus.on("injury", (data) => {
-      if (injuryTimerRef.current) clearTimeout(injuryTimerRef.current);
-      setInjuryNotice({ team: data.team, playerName: data.playerName, severity: data.severity });
-      injuryTimerRef.current = setTimeout(() => setInjuryNotice(null), 4000);
-    });
+  const showNotice = useCallback((text: string, tone: "danger" | "warn" | "info") => {
+    if (injuryTimerRef.current) clearTimeout(injuryTimerRef.current);
+    setNotice({ text, tone });
+    injuryTimerRef.current = setTimeout(() => setNotice(null), 3500);
   }, []);
+
+  useEffect(() => {
+    const nameOf = (id: number) => gameStateRef.current?.players.find((p) => p.id === id)?.name ?? "";
+    const minuteNow = () => (gameStateRef.current ? matchMinute(gameStateRef.current) : 0);
+    const team = (tm: TeamId) => teamNamesRef.current[tm];
+    const push = (item: MatchFeedItem) => setEventFeed((f) => [...f, item]);
+    const offs = [
+      gameBus.on("injury", (data) => {
+        showNotice(
+          t("match.injuryNotice", { player: data.playerName, severity: t(`match.injurySeverity.${data.severity}`) }),
+          "danger",
+        );
+      }),
+      gameBus.on("offsideCalled", (e) => {
+        push({ minute: minuteNow(), team: e.team, kind: "offside", player: nameOf(e.receiverId) });
+        showNotice(t("match.notice.offside", { player: nameOf(e.receiverId), team: team(e.team) }), "info");
+      }),
+      gameBus.on("freeKickAwarded", (e) => {
+        if (e.dangerous) showNotice(t("match.notice.freeKick", { team: team(e.team) }), "warn");
+      }),
+      gameBus.on("card", (e) => {
+        const key = e.card === "yellow" ? "yellow" : e.secondYellow ? "secondYellow" : "red";
+        showNotice(t(`match.notice.${key}`, { player: e.playerName, team: team(e.team) }), e.card === "red" ? "danger" : "warn");
+      }),
+      gameBus.on("penaltyAwarded", (e) => {
+        showNotice(t("match.notice.penalty", { team: team(e.team) }), "warn");
+      }),
+      gameBus.on("penaltyResolved", (e) => {
+        if (e.scored) penaltyGoalPendingRef.current = true;
+        else push({ minute: minuteNow(), team: e.team, kind: "penaltyMissed", player: nameOf(e.takerId) });
+      }),
+      gameBus.on("goalScored", (e) => {
+        const kind = penaltyGoalPendingRef.current ? "penaltyGoal" : "goal";
+        penaltyGoalPendingRef.current = false;
+        push({ minute: minuteNow(), team: e.team, kind, player: nameOf(e.scorerId) });
+      }),
+    ];
+    return () => offs.forEach((off) => off());
+  }, [t, showNotice]);
+
+  // Possession: game-seconds with the ball per team, only while the ball is in play.
+  useEffect(() => {
+    if (!gameState) return;
+    const acc = possessionRef.current;
+    const phase = gameState.matchPhase ?? "";
+    const dtGame = phase === acc.lastPhase ? gameState.matchTime - acc.lastTime : 0;
+    if (dtGame > 0 && isLivePhase(gameState.matchPhase) && gameState.ballHolderId != null) {
+      const holder = gameState.players.find((p) => p.id === gameState.ballHolderId);
+      if (holder) acc[holder.team] += dtGame;
+    }
+    acc.lastTime = gameState.matchTime;
+    acc.lastPhase = phase;
+  }, [gameState]);
 
   useEffect(() => {
     return gameBus.on("halfTime", () => {
@@ -541,18 +598,40 @@ export function MatchScreen() {
   }
 
   const teamA = gameState.players.filter((p) => p.team === "A");
-  const teamB = gameState.players.filter((p) => p.team === "B");
   const passFromId = gameState.pass?.fromId;
   // toId is null during a through ball — the receiver is undetermined until landing.
   const passToId = gameState.pass?.toId ?? undefined;
   const score = gameState.score ?? { A: 0, B: 0 };
   const decisions = gameState.decisions;
 
+  teamNamesRef.current = { A: teamAWithCrest?.name ?? "A", B: teamBWithCrest?.name ?? "B" };
+  const summaryStats = (tm: TeamId): SummaryTeamStats => {
+    const st = getTeamStats(tm);
+    return {
+      shots: st.shots, passesCompleted: st.passesCompleted, passesAttempted: st.passesAttempted,
+      fouls: st.fouls, yellowCards: st.yellowCards, redCards: st.redCards, offsides: st.offsides,
+    };
+  };
+  const possTotal = possessionRef.current.A + possessionRef.current.B;
+  const possessionA = possTotal > 0 ? possessionRef.current.A / possTotal : 0.5;
+  const feed: MatchFeedItem[] = [
+    ...eventFeed,
+    ...gameState.cards.map((c): MatchFeedItem => ({
+      minute: c.matchMinute, team: c.team, kind: c.card === "yellow" ? "yellow" : "red", player: c.playerName,
+    })),
+    ...gameState.substitutions.map((sub): MatchFeedItem => ({
+      minute: sub.matchMinute, team: sub.team, kind: "sub", player: sub.playerOutName, playerIn: sub.playerInName,
+    })),
+    ...gameState.injuries.map((inj): MatchFeedItem => ({
+      minute: inj.matchMinute, team: inj.team, kind: "injury", player: inj.playerName,
+    })),
+  ]
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => a.item.minute - b.item.minute || a.i - b.i)
+    .map(({ item }) => ({ ...item, minute: item.minute + 1 }));
+
   const subbedInA = new Set(
     gameState.substitutions.filter((s) => s.team === "A").map((s) => s.playerInId),
-  );
-  const subbedInB = new Set(
-    gameState.substitutions.filter((s) => s.team === "B").map((s) => s.playerInId),
   );
 
   // Half-time/extra-time: read straight off the engine's own countdown, so the bar tracks
@@ -576,12 +655,14 @@ export function MatchScreen() {
         nameA={teamAWithCrest?.name}
         nameB={teamBWithCrest?.name}
       />
-      {injuryNotice && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border border-destructive/40 rounded-lg px-4 py-2 text-sm text-foreground">
-          {t("match.injuryNotice", {
-            player: injuryNotice.playerName,
-            severity: t(`match.injurySeverity.${injuryNotice.severity}`),
-          })}
+      {notice && (
+        <div
+          role="status"
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border rounded-lg px-4 py-2 text-sm font-semibold text-foreground ${
+            notice.tone === "danger" ? "border-destructive/60" : notice.tone === "warn" ? "border-chart-4/60" : "border-border"
+          }`}
+        >
+          {notice.text}
         </div>
       )}
       <MatchOverlay
@@ -772,22 +853,15 @@ export function MatchScreen() {
           )}
         </div>
 
-        <TeamPanel
-          team="B"
-          teamName={teamBWithCrest?.name}
-          accentColor={matchKitColors.teamB}
-          players={teamB}
-          score={score.B}
-          ballHolderId={gameState.ballHolderId}
-          passFromId={passFromId}
-          passToId={passToId}
-          decisions={decisions}
-          ratings={ratings}
-          selectedPlayerId={selectedPlayerId}
-          onSelectPlayer={setSelectedPlayerId}
-          subsRemaining={gameState.subsRemainingB}
-          pendingSubsCount={gameState.pendingSubsB.length}
-          subbedInPlayerIds={subbedInB}
+        <MatchSummaryPanel
+          nameA={teamAWithCrest?.name}
+          nameB={teamBWithCrest?.name}
+          colorA={matchKitColors.teamA}
+          colorB={matchKitColors.teamB}
+          statsA={summaryStats("A")}
+          statsB={summaryStats("B")}
+          possessionA={possessionA}
+          feed={feed}
         />
       </main>
 
