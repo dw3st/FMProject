@@ -9,6 +9,8 @@ export const FOUL_CONFIG = {
   // ── Foul chance (`foulChance`) ──────────────────────────────────────────────
   /** Base foul chance for a resolved tackle attempt (side angle, neutral aggression/skill/energy). */
   TACKLE_BASE: 0.2,
+  /** Base foul chance for a resolved 1v1 dribble duel (the defender is the possible offender). */
+  DRIBBLE_BASE: 0.2,
   /** Base foul chance for a contested loose-ball duel. */
   DUEL_BASE: 0.12,
   /** Multiplier when the tackle itself won the ball — most fouls come from mistimed (failed) challenges. */

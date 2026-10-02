@@ -765,8 +765,13 @@ export function decide(
 
   // ── With ball — unified scoring ─────────────────────────────────────────
   if (hasBall) {
-    // Set-piece taker must play the ball — no carrying, no dribbling, no shooting
+    // Set-piece taker must play the ball — no carrying, no dribbling. A free-kick taker may also
+    // shoot or play a through ball when that is the normal best action (a direct free kick near goal).
     if (setPiece && player.id === setPiece.takerId) {
+      if (setPiece.type === 'free_kick') {
+        const d = decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);
+        if (d.type === 'shoot' || d.type === 'through_ball') return d;
+      }
       return { type: 'pass' };
     }
     return decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);

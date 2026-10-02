@@ -3,21 +3,10 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import { toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
 import { getTeamStats, getPlayerStats } from "@/GameEngine/Domain/Statistics";
-import type { TeamStats } from "@/GameEngine/Domain/Statistics";
 import { getPlayerRating } from "@/GameEngine/Domain/PlayerRating";
 import { knockoutDecider } from "@/GameEngine/Domain/gameState";
-import type { MatchTeamStats } from "@/types/dayLogTypes";
-
-function toMatchTeamStats(t: TeamStats): MatchTeamStats {
-  return {
-    shots: t.shots,
-    passesCompleted: t.passesCompleted,
-    passesAttempted: t.passesAttempted,
-    tackles: t.tackles,
-    interceptions: t.interceptions,
-  };
-}
 
 /**
  * For any `playerStats` entry with no valid (finite) recorded energy, fall back to that player's
@@ -131,6 +120,25 @@ export function buildPlayedMatchRecording(
     playerRatings[rid] = getPlayerRating(inj.playerId);
   }
 
+  // Players sent off (removed outright, no substitute) — same reasoning as the injured above.
+  for (const c of gameState.cards ?? []) {
+    const rid = c.playerRosterId;
+    if (c.card !== "red" || !rid || playerStats[rid]) continue;
+    playerEnergy[rid] = Math.max(0, Math.min(100, c.energy));
+    const ps = getPlayerStats(c.playerId);
+    playerStats[rid] = {
+      passesAttempted: ps.passesAttempted,
+      passesCompleted: ps.passesCompleted,
+      passesFailed: ps.passesFailed,
+      shots: ps.shots,
+      goals: ps.goals,
+      assists: ps.assists,
+      interceptions: ps.interceptions,
+      tackles: ps.tackles,
+    };
+    playerRatings[rid] = getPlayerRating(c.playerId);
+  }
+
   // Defensive: ensure every playerStats key has a corresponding playerEnergy entry
   // so the server-side validation never silently falls back to headless simulation.
   fillMissingEnergy(playerStats, playerEnergy, startFitness);
@@ -158,6 +166,15 @@ export function buildPlayedMatchRecording(
     energy:      inj.energy,
   }));
 
+  const cards: import("@/types/dayLogTypes").MatchCard[] = (gameState.cards ?? []).map((c) => ({
+    team:         c.team === "A" ? (myIsHome ? "home" : "away") : (myIsHome ? "away" : "home"),
+    playerId:     c.playerRosterId,
+    playerName:   c.playerName,
+    card:         c.card,
+    secondYellow: c.secondYellow,
+    matchMinute:  c.matchMinute,
+  }));
+
   const kd = knockoutDecider(gameState);
   const side = <T extends { A: number; B: number }>(v: T) =>
     ({ home: myIsHome ? v.A : v.B, away: myIsHome ? v.B : v.A });
@@ -177,6 +194,7 @@ export function buildPlayedMatchRecording(
     playerEnergy,
     substitutions,
     injuries,
+    ...(cards.length > 0 ? { cards } : {}),
     durationMs,
     ...(decider ? { decider } : {}),
   };

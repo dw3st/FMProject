@@ -8,6 +8,12 @@ export interface MatchTeamStats {
   passesAttempted: number;
   tackles:         number;
   interceptions:   number;
+  /** Discipline (`.claude/rules/game-engine/fouls.md`). Optional: older events and quickSim may omit them. */
+  fouls?:          number;
+  yellowCards?:    number;
+  redCards?:       number;
+  offsides?:       number;
+  penaltiesAwarded?: number;
 }
 
 export interface MatchPlayerStats {
@@ -67,6 +73,20 @@ export interface MatchInjury {
   energy: number;
 }
 
+/**
+ * One card shown in a match (`docs/superpowers/specs/2026-10-02-fouls-cards-design.md` §3). A second
+ * yellow appears as the yellow followed by a red with `secondYellow: true`. Read by the post-match
+ * pipeline (`finalizeSquadsAfterMatch`) — suspensions are derived from this list.
+ */
+export interface MatchCard {
+  team:         "home" | "away";
+  playerId:     string;
+  playerName:   string;
+  card:         "yellow" | "red";
+  secondYellow: boolean;
+  matchMinute:  number;
+}
+
 export interface MatchEvent {
   kind:          "match";
   fixtureId:     string;
@@ -87,6 +107,8 @@ export interface MatchEvent {
   substitutions: MatchSubstitution[];
   /** In-match injuries, in chronological order. Absent/omitted means none occurred. */
   injuries?: MatchInjury[];
+  /** Cards, in chronological order. Absent/omitted means none were shown. */
+  cards?: MatchCard[];
   /** Attribute level-ups/downs that occurred this match. */
   developmentChanges: PlayerDevelopmentChange[];
   durationMs:    number;

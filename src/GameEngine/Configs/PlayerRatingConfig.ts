@@ -20,4 +20,9 @@ export const RATING_WEIGHTS = {
   INTERCEPTION:    +0.4,
   TACKLE_WON:      +0.4,
   TACKLE_FAILED:   -0.2,
+
+  // Discipline (`.claude/rules/game-engine/fouls.md`)
+  YELLOW_CARD:       -0.3,
+  RED_CARD:          -1.0,
+  PENALTY_CONCEDED:  -0.5,
 } as const;
