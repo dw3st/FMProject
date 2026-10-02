@@ -1802,7 +1802,15 @@
     "goals": "G",
     "rating": "Rating",
     "loading": "Loading...",
-    "loadFailed": "Could not load the stats."
+    "loadFailed": "Could not load the stats.",
+    "retired": {
+      "tab": "Retired",
+      "empty": "No retired players yet.",
+      "age": "Age",
+      "lastClub": "Last club",
+      "show": "Show career",
+      "hide": "Hide career"
+    }
   },
   "players": {
     "star": {
@@ -1842,5 +1850,18 @@
       "invalidYears": "Choose between 1 and 5 years.",
       "squadFull": "Your squad is full (30 players)."
     }
+  },
+  "career": {
+    "title": "Career",
+    "empty": "No seasons played yet.",
+    "current": "Current",
+    "season": "Season",
+    "club": "Club",
+    "apps": "G",
+    "goals": "Gls",
+    "assists": "Ast",
+    "rating": "Rating",
+    "titles": "Titles",
+    "total": "Total"
   }
 }
