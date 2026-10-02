@@ -16,6 +16,16 @@ export interface MatchTeamStats {
   penaltiesAwarded?: number;
   /** Goals scored from in-match penalties (part of the score, never extra). */
   penaltyGoals?:   number;
+  /** Aerial play (`.claude/rules/game-engine/aerial.md`). Optional: older events may omit them. */
+  crosses?:            number;
+  crossesCompleted?:   number;
+  /** Aerial duels contested by this team (= duels in the match) / won. */
+  aerialDuels?:        number;
+  aerialDuelsWon?:     number;
+  /** Header goals (part of the score). */
+  headerGoals?:        number;
+  longBalls?:          number;
+  longBallsCompleted?: number;
 }
 
 export interface MatchPlayerStats {

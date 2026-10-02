@@ -187,6 +187,11 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgPenaltiesAwarded: r2(t.penaltiesAwarded / matches),
     avgPenaltyGoals: r2(t.penaltyGoals / matches),
     avgOffsides: r2(t.offsides / matches),
+    avgCrosses: r2(t.crosses / matches),
+    crossCompletionPct: pct(t.crossesCompleted, t.crosses),
+    avgAerialDuelsWon: r2(t.aerialDuelsWon / matches),
+    avgHeaderGoals: r2(t.headerGoals / matches),
+    avgLongBalls: r2(t.longBalls / matches),
   };
 }
 
@@ -213,6 +218,7 @@ function emptyTotals(): VariantTotals {
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
+    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -254,6 +260,13 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.penaltiesAwarded      += src.penaltiesAwarded;
   dst.penaltyGoals          += src.penaltyGoals;
   dst.offsides              += src.offsides;
+  dst.crosses               += src.crosses;
+  dst.crossesCompleted      += src.crossesCompleted;
+  dst.aerialDuels           += src.aerialDuels;
+  dst.aerialDuelsWon        += src.aerialDuelsWon;
+  dst.headerGoals           += src.headerGoals;
+  dst.longBalls             += src.longBalls;
+  dst.longBallsCompleted    += src.longBallsCompleted;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -306,6 +319,11 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgPenaltiesAwarded: r2(totals.penaltiesAwarded / games),
     avgPenaltyGoals: r2(totals.penaltyGoals / games),
     avgOffsides: r2(totals.offsides / games),
+    avgCrosses: r2(totals.crosses / games),
+    crossCompletionPct: pct(totals.crossesCompleted, totals.crosses),
+    avgAerialDuelsWon: r2(totals.aerialDuelsWon / games),
+    avgHeaderGoals: r2(totals.headerGoals / games),
+    avgLongBalls: r2(totals.longBalls / games),
   };
 }
 

@@ -66,6 +66,11 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Penalties won",     key: "avgPenaltiesAwarded" },
     { stat: "Penalty goals",     key: "avgPenaltyGoals" },
     { stat: "Offsides",          key: "avgOffsides" },
+    { stat: "Crosses",           key: "avgCrosses" },
+    { stat: "Cross completion%", key: "crossCompletionPct" },
+    { stat: "Aerial duels won",  key: "avgAerialDuelsWon" },
+    { stat: "Header goals",      key: "avgHeaderGoals" },
+    { stat: "Long balls",        key: "avgLongBalls" },
   ];
 
   const data = {
