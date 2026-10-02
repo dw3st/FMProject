@@ -56,6 +56,7 @@ const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial")
 const { addOneDay } = await import("@/Domain/advanceDay/date");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
+const { continentalGoodClubsThisSeason } = await import("@/backend/continentalWorld");
 const { isCupSlug } = await import("@/Domain/cups/cupIds");
 const { isContinentalSlug, competitionsOf } = await import("@/Domain/continental/competitions");
 const { totalsByKind } = await import("@/Domain/finance/ledger");
@@ -237,6 +238,9 @@ try {
     // Candidate rollover day: capture the closed season + the player squad before the day.
     let preIndex: Map<string, string> | null = null;
     let prePlayerSquad: Squad | null = null;
+    // Continental final/title status as advanceDay reads it at the rollover (before the continental
+    // metas are regenerated later the same day) — the human followers reaction depends on it.
+    let preContinental: { good: Set<string>; title: Set<string> } | undefined;
     let prePlayerFixtures: import("@/types/calendarTypes").Fixture[] = [];
     if (ending.length > 0) {
       preIndex = await idMembership(saveId);
@@ -252,6 +256,7 @@ try {
       }
       if (ending.some((l) => playerCountrySlugs.has(l.leagueSlug))) {
         prePlayerSquad = await svc.getSquadById(saveId, playerSquadId);
+        preContinental = await continentalGoodClubsThisSeason(svc, saveId);
         prePlayerFixtures = (await svc.getFixturesForDate(saveId, date)).filter((f) => f.competition === meta.leagueSlug);
       }
     }
@@ -470,7 +475,7 @@ try {
           : prePlayerSquad;
         const expected = applyHumanSeasonReaction(
           base,
-          clubSeasonOutcome(archive.standings, playerSquadId, obsPlayer ? [obsPlayer] : []),
+          clubSeasonOutcome(archive.standings, playerSquadId, obsPlayer ? [obsPlayer] : [], preContinental),
         ).followersAfter;
         check(followersAfter === expected, `human followers ${followersBefore} → ${followersAfter} (expected ${expected})`);
       }
