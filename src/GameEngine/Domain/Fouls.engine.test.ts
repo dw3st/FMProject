@@ -1,7 +1,7 @@
 import { describe, expect, test, spyOn, afterEach } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
-import { createMatchState, tickState, maybeFoul, bookPlayer } from "@/GameEngine/Domain/gameState";
+import { createMatchState, tickState, maybeFoul, bookPlayer, restartHoldsPeriod } from "@/GameEngine/Domain/gameState";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Squad } from "@/types/playerTypes";
@@ -139,5 +139,32 @@ describe("fouls in the engine", () => {
     const keeper = teamB.find(p => p.role === "GK");
     expect(keeper).toBeDefined();
     expect(keeper!.runtimeStats.withoutBall.gkReflex).toBeGreaterThan(0);
+  });
+
+  test("a penalty awarded right before the whistle is taken before half time", () => {
+    const { s, attacker, defender } = boxSituation(PITCH_LENGTH - 10);
+    const out = maybeFoul({ ...s, extraTimeFirst: 0, matchTime: 2700 - 5 }, defender, attacker, "tackle", false, seq(0, 0.99, 0.99))!;
+    expect(out.setPiece?.type).toBe("penalty");
+    randomSpy = spyOn(Math, "random").mockImplementation(() => 0);
+    const resolved: unknown[] = [];
+    const unsub = gameBus.on("penaltyResolved", e => resolved.push(e));
+    let state = out;
+    for (let i = 0; i < 40 && state.matchPhase === "firstHalf"; i++) state = tickState(state, 0.2).state;
+    unsub();
+    expect(resolved).toHaveLength(1);
+    expect(state.score.A).toBe(1);
+    expect(state.matchPhase).toBe("halfTime");
+  });
+
+  test("a dangerous free kick still held by its taker delays the whistle; a midfield one does not", () => {
+    const n = boxSituation(PITCH_LENGTH - 22);
+    const near = maybeFoul(n.s, n.defender, n.attacker, "tackle", false, seq(0, 0.99, 0.99))!;
+    expect(near.setPiece?.type).toBe("free_kick");
+    expect(restartHoldsPeriod(near, 2701, 2700)).toBe(true);
+    expect(restartHoldsPeriod(near, 2700 + 61, 2700)).toBe(false); // capped
+    const { s, attacker, defender } = boxSituation(60);
+    const mid = maybeFoul(s, defender, attacker, "tackle", false, seq(0, 0.99, 0.99))!;
+    expect(mid.setPiece?.type).toBe("free_kick");
+    expect(restartHoldsPeriod(mid, 2701, 2700)).toBe(false);
   });
 });

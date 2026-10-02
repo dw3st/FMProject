@@ -813,6 +813,27 @@ export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' 
   return ensureCompetentGK(removeInjuredPlayer(s, player), player.team);
 }
 
+/** Game-seconds past the period's end that a pending penalty / dangerous free kick may still use. */
+const RESTART_HOLD_MAX = 60;
+
+/**
+ * True when the whistle must wait for a pending restart: a penalty (resolved at the end of its
+ * freeze), a free kick within `DANGEROUS_FREE_KICK_DIST` of the goal still held by its taker, or a
+ * shot already in flight (so a direct free kick is resolved too).
+ * Capped at `RESTART_HOLD_MAX` game-seconds past `periodEnd` so a stuck restart never stops the clock.
+ */
+export function restartHoldsPeriod(state: GameState, newMatchTime: number, periodEnd: number): boolean {
+  const sp = state.setPiece;
+  if (state.shot && newMatchTime < periodEnd + RESTART_HOLD_MAX) return true;
+  if (!sp || newMatchTime >= periodEnd + RESTART_HOLD_MAX) return false;
+  if (sp.type === 'penalty') return true;
+  if (sp.type !== 'free_kick' || !sp.position || state.ballHolderId !== sp.takerId) return false;
+  const taker = state.players.find(p => p.id === sp.takerId);
+  if (!taker) return false;
+  const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
+  return Math.abs(goalX - sp.position.x) <= FOUL_CONFIG.DANGEROUS_FREE_KICK_DIST;
+}
+
 /** Penalty spot of the goal whose goal line is at `goalX`. */
 function penaltySpot(goalX: number): { x: number; y: number } {
   const d = FOUL_CONFIG.PENALTY_SPOT_DIST;
@@ -2139,7 +2160,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     state.matchPhase === 'extraTimeFirst'  ? ET_HALF_DURATION + (state.etStoppageFirst ?? 0) :
                                              ET_HALF_DURATION + (state.etStoppageSecond ?? 0);
 
-  if (!state.testMode && newMatchTime >= periodEnd) {
+  if (!state.testMode && newMatchTime >= periodEnd && !restartHoldsPeriod(state, newMatchTime, periodEnd)) {
     return noop(endCurrentPeriod(state, newMatchTime));
   }
 
