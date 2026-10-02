@@ -2,6 +2,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { ManagerRecord } from "@/types/managerTypes";
 import type {
   SeasonArchive,
   SeasonData,
@@ -158,6 +159,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     this.buffer(`freeAgents:${saveId}`, agents, () => this.inner.writeFreeAgents(saveId, agents));
+  }
+
+  // ── Manager ranking ───────────────────────────────────────────────────────────
+  readManagers(saveId: string): Promise<ManagerRecord[]> {
+    return this.readThrough(`managers:${saveId}`, () => this.inner.readManagers(saveId));
+  }
+  async writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void> {
+    this.buffer(`managers:${saveId}`, managers, () => this.inner.writeManagers(saveId, managers));
   }
 
   // ── Retired players ───────────────────────────────────────────────────────────

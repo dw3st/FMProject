@@ -47,17 +47,35 @@ describe("rollover with expiring contracts", () => {
     const human = (await saveService.getSquadById(saveId, "33"))!;
     for (const id of humanIds) expect(human.players.some((p) => p.id === id)).toBe(false);
     const free = await saveService.getFreeAgents(saveId);
+    // A released player may already be signed the same day by an AI club's rollover refill,
+    // so "not in the free pool" is fine as long as another club holds them on a fresh contract.
+    const signedElsewhere = async (id: string, from: string) => {
+      const index = await saveService.getSquadIndex(saveId);
+      for (const league of index.leagues()) {
+        for (const entry of index.inLeague(league)) {
+          if (entry.squadId === from) continue;
+          const squad = await saveService.getSquadById(saveId, entry.squadId);
+          const p = squad?.players.find((x) => x.id === id);
+          if (p) return p.contract!.until > today;
+        }
+      }
+      return false;
+    };
     for (const id of humanIds) {
       const f = free.find((x) => x.player.id === id);
-      expect(f?.since).toBe(today);
-      expect(f?.player.contract).toBeUndefined();
+      if (f) {
+        expect(f.since).toBe(today);
+        expect(f.player.contract).toBeUndefined();
+      } else {
+        expect(await signedElsewhere(id, "33")).toBe(true);
+      }
     }
 
     const ai = (await saveService.getSquadById(saveId, aiId))!;
     for (const id of aiIds) {
       const p = ai.players.find((x) => x.id === id);
       if (p) expect(p.contract!.until > today).toBe(true);
-      else expect(free.some((x) => x.player.id === id)).toBe(true);
+      else if (!free.some((x) => x.player.id === id)) expect(await signedElsewhere(id, aiId)).toBe(true);
     }
     for (const p of ai.players) expect(p.contract!.until > today).toBe(true);
 

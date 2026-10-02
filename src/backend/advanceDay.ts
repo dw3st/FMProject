@@ -50,7 +50,7 @@ import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotati
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
-import { findDueRollovers, planCountryRollover } from "@/Domain/season/countryRollover";
+import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
@@ -75,6 +75,8 @@ import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFact
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
+import { continentalPoints, cupPoints, leaguePoints, promotionPoints } from "@/Domain/managers/managers";
+import { createManagerTracker } from "@/backend/managerWorld";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
 import {
   advanceContinentalStages,
@@ -768,6 +770,11 @@ export async function advanceOneDay(
     // rollover writes its history row (`.claude/rules/game/history.md`).
     let pendingTitles: Record<string, string[]> = meta.pendingTitles ?? {};
     let pendingTitlesChanged = false;
+    // Manager ranking (`.claude/rules/game/managers.md`): titles and seasons of the day, written once at the end.
+    const managerTracker = createManagerTracker({
+      service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids,
+      weights: meta.managerWeights,
+    });
     const recordTitle = (squadId: string, title: string) => {
       const next = addPendingTitle(pendingTitles, squadId, title);
       if (next !== pendingTitles) { pendingTitles = next; pendingTitlesChanged = true; }
@@ -814,6 +821,11 @@ export async function advanceOneDay(
 
         if (stage === "final") {
           recordTitle(winnerId, `cup:${cSlug}`);
+          await managerTracker.credit({
+            season: seasonLabel(cupMeta.year, cupMeta.start, cupMeta.end), kind: "cup", competition: cSlug,
+            squadId: winnerId,
+            points: cupPoints(await managerTracker.weightOf(cupMeta.cup.country, seasonLabel(cupMeta.year, cupMeta.start, cupMeta.end))),
+          });
           const loserPrize = cupRunnerUpPrize(base);
           const paidToLoser = await awardClubPrize(loserId, loserPrize, `${label} · runner-up`, { competition: cSlug, stage: "runner_up" });
           if (paidToLoser > 0) cupPrizeAwardedTo.set(loserId, (cupPrizeAwardedTo.get(loserId) ?? 0) + paidToLoser);
@@ -884,7 +896,17 @@ export async function advanceOneDay(
         if (!isContinentalSlug(cSlug)) continue;
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
-        for (const ev of events) if (ev.kind === "champion") recordTitle(ev.clubId, `continental:${cSlug}`);
+        for (const ev of events) {
+          if (ev.kind !== "champion") continue;
+          recordTitle(ev.clubId, `continental:${cSlug}`);
+          const contMeta = await saveService.getLeagueMeta(saveId, cSlug);
+          if (contMeta) {
+            await managerTracker.credit({
+              season: seasonLabel(contMeta.year, contMeta.start, contMeta.end), kind: "continental",
+              competition: cSlug, squadId: ev.clubId, points: continentalPoints(cSlug),
+            });
+          }
+        }
         for (const award of continentalStagePrizesFromEvents(compSlug, events)) {
           const paid = await awardClubPrize(
             award.clubId, award.amount, `${label} · ${award.reason}`, { competition: cSlug, stage: award.reason },
@@ -1328,6 +1350,12 @@ export async function advanceOneDay(
       // 2. Plan the moves.
       const plan = planCountryRollover(unit, standings, playerSquadId);
 
+      // Manager ranking: the country weight is taken now, before any league of the unit is reset
+      // (cached per country per season in meta.managerWeights, `.claude/rules/game/managers.md`).
+      const unitCountry = unit.country ?? (await managerTracker.countryOfLeague(unit.leagues[0]!));
+      const unitState = updatedActiveLeagues[stateIdx(unit.leagues[0]!)]!;
+      const unitWeight = await managerTracker.weightOf(unitCountry, seasonLabel(unitState.year, unitState.start, unitState.end));
+
       // 3. Archive + reset every league with the OLD membership. Reset squads are saved where
       //    they live now, before any move; moved clubs get their new tier's income here.
       const closedYear = new Map<string, number>();
@@ -1351,6 +1379,22 @@ export async function advanceOneDay(
           const season = seasonLabel(state.year, state.start, state.end);
           const table = standings[slug] ?? [];
           const championId = table.length > 0 && table[0]!.mp > 0 ? table[0]!.squadId : null;
+          // Manager ranking: league title (tier × country weight), promotions out of this league, one more season.
+          {
+            const tier = unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1;
+            if (championId) {
+              await managerTracker.credit({
+                season, kind: "league", competition: slug, squadId: championId,
+                points: leaguePoints(tier, unitWeight),
+              });
+            }
+            for (const m of plan.moves) {
+              const tc = plan.tierChanges[m.squadId];
+              if (m.from !== slug || !tc || tc.to >= tc.from) continue;
+              await managerTracker.credit({ season, kind: "promotion", competition: slug, squadId: m.squadId, points: promotionPoints() });
+            }
+            for (const ref of transition.squadsToSave) await managerTracker.countSeason(ref.squad.id, season);
+          }
           // Titles of every club of the league first, so a player sold to a rival of the same
           // league gets his old club's titles on his partial row too.
           const titlesByClub: Record<string, string[]> = {};
@@ -1812,10 +1856,13 @@ export async function advanceOneDay(
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
 
+    await managerTracker.flush();
+
     // The career follows the club to its new league (also repairs a meta left stale by a partial flush).
     const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
+    if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();

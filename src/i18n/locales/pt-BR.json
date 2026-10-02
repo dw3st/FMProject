@@ -1403,6 +1403,7 @@
     },
     "assistsLabel": "assistências",
     "clubSidebar": {
+      "managerRank": "Ranking de técnicos: Nº {{rank}}",
       "manager": "Técnico",
       "board": "Diretoria",
       "fans": "Torcida",
@@ -1801,6 +1802,7 @@
     "games": "J",
     "goals": "G",
     "rating": "Nota",
+    "club": "Clube",
     "loading": "Carregando...",
     "loadFailed": "Não foi possível carregar as estatísticas.",
     "retired": {
@@ -1814,6 +1816,18 @@
       "all": "Todos",
       "emptyMine": "Nenhum jogador do seu clube se aposentou ainda.",
       "loadMore": "Carregar mais"
+    },
+    "managers": {
+      "tab": "Técnicos",
+      "world": "Mundo",
+      "country": "Meu país",
+      "name": "Técnico",
+      "points": "Pontos",
+      "titles": "Títulos",
+      "promotion": "Acesso · {{league}}",
+      "yourRank": "Você é o Nº {{rank}} de {{total}}",
+      "empty": "Nenhum técnico ainda.",
+      "hint": "Clique num técnico para ver os títulos. Pontos: ligas e copas nacionais pesadas pela força do país, títulos continentais e acessos."
     }
   },
   "players": {

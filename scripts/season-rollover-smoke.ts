@@ -30,6 +30,7 @@
 import { fileURLToPath } from "node:url";
 import { readdir } from "fs/promises";
 import { seasonLabel } from "@/Domain/history/history";
+import { rankManagers } from "@/Domain/managers/managers";
 
 // Windows-safe default for the runtime dir; must be set before backend modules load.
 process.env.RUNTIME_DATA_DIR ||= fileURLToPath(new URL("../src/Data", import.meta.url));
@@ -55,6 +56,7 @@ const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial")
 const { addOneDay } = await import("@/Domain/advanceDay/date");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
+const { continentalGoodClubsThisSeason } = await import("@/backend/continentalWorld");
 const { isCupSlug } = await import("@/Domain/cups/cupIds");
 const { isContinentalSlug, competitionsOf } = await import("@/Domain/continental/competitions");
 const { totalsByKind } = await import("@/Domain/finance/ledger");
@@ -236,6 +238,9 @@ try {
     // Candidate rollover day: capture the closed season + the player squad before the day.
     let preIndex: Map<string, string> | null = null;
     let prePlayerSquad: Squad | null = null;
+    // Continental final/title status as advanceDay reads it at the rollover (before the continental
+    // metas are regenerated later the same day) — the human followers reaction depends on it.
+    let preContinental: { good: Set<string>; title: Set<string> } | undefined;
     let prePlayerFixtures: import("@/types/calendarTypes").Fixture[] = [];
     if (ending.length > 0) {
       preIndex = await idMembership(saveId);
@@ -251,6 +256,7 @@ try {
       }
       if (ending.some((l) => playerCountrySlugs.has(l.leagueSlug))) {
         prePlayerSquad = await svc.getSquadById(saveId, playerSquadId);
+        preContinental = await continentalGoodClubsThisSeason(svc, saveId);
         prePlayerFixtures = (await svc.getFixturesForDate(saveId, date)).filter((f) => f.competition === meta.leagueSlug);
       }
     }
@@ -469,7 +475,7 @@ try {
           : prePlayerSquad;
         const expected = applyHumanSeasonReaction(
           base,
-          clubSeasonOutcome(archive.standings, playerSquadId, obsPlayer ? [obsPlayer] : []),
+          clubSeasonOutcome(archive.standings, playerSquadId, obsPlayer ? [obsPlayer] : [], preContinental),
         ).followersAfter;
         check(followersAfter === expected, `human followers ${followersBefore} → ${followersAfter} (expected ${expected})`);
       }
@@ -1151,6 +1157,41 @@ try {
       check(champRows.length > 0 && champRows.some((h) => h.titles.includes(`league:${PLAYER_LEAGUE}`)),
         `histórico: champion ${String(champ)} rows carry the league title`);
     }
+  }
+
+  // ── Técnicos ─────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/managers.md`: one manager per club (the player's replacing his club's coach);
+  // the league champion's manager scores the league title at the rollover; cup and continental
+  // champions score on the day of the final.
+  console.log("\n── Técnicos ──");
+  {
+    const managers = await plain().getManagers(saveId);
+    const mine = managers.filter((m) => m.isPlayer);
+    check(mine.length === 1 && mine[0]!.squadId === playerSquadId, `técnicos: exactly one player manager, at ${playerSquadId}`);
+    check(new Set(managers.map((m) => m.squadId)).size === managers.length, "técnicos: one manager per club");
+    check(managers.every((m) => m.points >= 0), "técnicos: no manager with negative points");
+    check(managers.every((m) => m.points === m.titles.reduce((a, t) => a + t.points, 0)), "técnicos: points add up to the titles");
+    const rcT = [...rolledCountries.values()].find((r) => r.closed.has(PLAYER_LEAGUE));
+    const closedYearT = rcT?.closed.get(PLAYER_LEAGUE);
+    const archT = closedYearT !== undefined ? await fsDal.readLeagueSeasonArchive(saveId, PLAYER_LEAGUE, closedYearT) : null;
+    const champT = archT?.standings[0]?.squadId;
+    const champMgr = managers.find((m) => m.squadId === champT);
+    check(!!champMgr && champMgr.titles.some((t) => t.kind === "league" && t.competition === PLAYER_LEAGUE && t.points > 0),
+      `técnicos: ${PLAYER_LEAGUE} champion ${String(champT)}'s manager scored the league title`);
+    const rolledLeagueSet = new Set(rolls.flatMap((r) => r.leagues));
+    const rolledClubs = allFiles.filter(({ squad }) => rolledLeagueSet.has(squad.leagueSlug ?? "")).map(({ squad }) => squad.id);
+    check(rolledClubs.every((id) => (managers.find((m) => m.squadId === id)?.seasons ?? 0) >= 1),
+      `técnicos: every manager of the ${rolledClubs.length} rolled clubs has a season`);
+    const titles = managers.flatMap((m) => m.titles);
+    check(titles.some((t) => t.kind === "cup"), "técnicos: at least one national cup title credited");
+    check(titles.some((t) => t.kind === "continental"), "técnicos: at least one continental title credited");
+    console.log(`  titles credited: ${titles.length} (league ${titles.filter((t) => t.kind === "league").length}, `
+      + `cup ${titles.filter((t) => t.kind === "cup").length}, continental ${titles.filter((t) => t.kind === "continental").length}, `
+      + `promotion ${titles.filter((t) => t.kind === "promotion").length})`);
+    const top = rankManagers(managers).slice(0, 5);
+    for (const [i, m] of top.entries()) console.log(`  ${i + 1}. ${m.name} (${m.squadId}) ${m.points} pts, ${m.titles.length} titles`);
+    const myRank = rankManagers(managers).findIndex((m) => m.isPlayer) + 1;
+    console.log(`  player manager: #${myRank} of ${managers.length}, ${mine[0]?.points ?? 0} pts`);
   }
 
   // ── Aposentadoria ────────────────────────────────────────────────────────
