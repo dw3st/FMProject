@@ -26,6 +26,12 @@ function playerHref(leagueSlug: string, squadId: string, playerId: string) {
   return `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(squadId)}/${encodeURIComponent(playerId)}`;
 }
 
+// Shared table styles for every Stats tab (ui-standard: text-sm rows, label-style header, 44px rows).
+const TABLE = "w-full text-sm";
+const TH = "px-2 py-2 font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground";
+const TD = "px-2 py-1.5";
+const ROW = "h-11 border-b border-border last:border-0";
+
 function RankingTable({
   title, rows, myClubId, decimals, leagueSlug, stars,
 }: {
@@ -40,20 +46,20 @@ function RankingTable({
     <section className="min-w-0">
       <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-2">{title}</h2>
       <div className="overflow-x-auto border border-border rounded-lg">
-        <table className="w-full text-sm">
+        <table className={TABLE}>
           <tbody>
             {rows.map((r, i) => {
               const kind = stars.get(r.playerId);
               return (
                 <tr
                   key={r.playerId}
-                  className={`border-b border-border last:border-0 ${r.squadId === myClubId ? "bg-primary/10" : ""}`}
+                  className={`${ROW} ${r.squadId === myClubId ? "bg-primary/10" : ""}`}
                 >
-                  <td className="w-8 px-2 py-1.5 text-center text-muted-foreground tabular-nums">{i + 1}</td>
+                  <td className={`w-8 ${TD} text-center text-muted-foreground tabular-nums`}>{i + 1}</td>
                   <td className="w-8 py-1.5">
                     <ClubLogo logoUrl={squadLogoUrl(r.squadId)} className="w-8 h-8 rounded-full" />
                   </td>
-                  <td className="px-2 py-1.5 max-w-[12rem]">
+                  <td className={`${TD} max-w-[12rem]`}>
                     <a
                       href={playerHref(leagueSlug, r.squadId, r.playerId)}
                       className="text-foreground no-underline hover:underline inline-flex items-center gap-1.5 max-w-full"
@@ -62,8 +68,8 @@ function RankingTable({
                       {kind && <StarBadge kind={kind} />}
                     </a>
                   </td>
-                  <td className="px-2 py-1.5 text-muted-foreground truncate max-w-[10rem]">{r.clubName}</td>
-                  <td className="px-2 py-1.5 text-right font-bold tabular-nums">
+                  <td className={`${TD} text-muted-foreground truncate max-w-[10rem]`}>{r.clubName}</td>
+                  <td className={`${TD} text-right font-bold tabular-nums`}>
                     {decimals ? r.value.toFixed(2) : r.value}
                   </td>
                 </tr>
@@ -100,14 +106,14 @@ function TeamTable({ stars }: { stars: Stars }) {
   }, [squad, sort, dir]);
 
   const header = (key: TeamSort, label: string, align = "text-right") => (
-    <th className={`px-2 py-2 font-semibold ${align}`}>
+    <th className={`${TH} ${align}`}>
       <button
         type="button"
         onClick={() => {
           if (sort === key) setDir((d) => (d === 1 ? -1 : 1));
           else { setSort(key); setDir(key === "name" ? 1 : -1); }
         }}
-        className="bg-transparent border-0 p-0 text-inherit uppercase tracking-[0.08em] text-[13px] cursor-pointer hover:text-foreground font-display font-bold"
+        className="bg-transparent border-0 p-0 [font:inherit] tracking-[inherit] uppercase text-inherit cursor-pointer hover:text-foreground"
       >
         {label}{sort === key ? (dir === 1 ? " ↑" : " ↓") : ""}
       </button>
@@ -116,8 +122,8 @@ function TeamTable({ stars }: { stars: Stars }) {
 
   return (
     <div className="overflow-x-auto border border-border rounded-lg max-w-3xl">
-      <table className="w-full text-sm">
-        <thead className="text-muted-foreground border-b border-border">
+      <table className={TABLE}>
+        <thead className="border-b border-border">
           <tr>
             {header("name", t("statsScreen.player"), "text-left")}
             {header("games", t("statsScreen.games"))}
@@ -130,8 +136,8 @@ function TeamTable({ stars }: { stars: Stars }) {
           {rows.map((r) => {
             const kind = stars.get(r.id);
             return (
-              <tr key={r.id} className="border-b border-border last:border-0">
-                <td className="px-2 py-1.5">
+              <tr key={r.id} className={ROW}>
+                <td className={TD}>
                   <a
                     href={playerHref(session?.leagueSlug ?? "", session?.clubId ?? "", r.id)}
                     className="text-foreground no-underline hover:underline inline-flex items-center gap-1.5"
@@ -140,10 +146,10 @@ function TeamTable({ stars }: { stars: Stars }) {
                     {kind && <StarBadge kind={kind} />}
                   </a>
                 </td>
-                <td className="px-2 py-1.5 text-right tabular-nums">{r.games}</td>
-                <td className="px-2 py-1.5 text-right tabular-nums">{r.goals}</td>
-                <td className="px-2 py-1.5 text-right tabular-nums">{r.assists}</td>
-                <td className="px-2 py-1.5 text-right tabular-nums">{r.games > 0 ? r.rating.toFixed(2) : "-"}</td>
+                <td className={`${TD} text-right tabular-nums`}>{r.games}</td>
+                <td className={`${TD} text-right tabular-nums`}>{r.goals}</td>
+                <td className={`${TD} text-right tabular-nums`}>{r.assists}</td>
+                <td className={`${TD} text-right tabular-nums`}>{r.games > 0 ? r.rating.toFixed(2) : "-"}</td>
               </tr>
             );
           })}
@@ -173,11 +179,11 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   if (error) return <p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p>;
   if (!rows) return <p className="text-sm text-muted-foreground">{t("statsScreen.loading")}</p>;
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("statsScreen.retired.empty")}</p>;
-  const th = "px-2 py-2 font-display font-bold uppercase tracking-[0.08em] text-xs";
+  const th = TH;
   return (
     <div className="overflow-x-auto border border-border rounded-lg max-w-4xl">
-      <table className="w-full text-sm">
-        <thead className="text-muted-foreground">
+      <table className={TABLE}>
+        <thead className="border-b border-border">
           <tr>
             <th className={`${th} text-left`}>{t("statsScreen.player")}</th>
             <th className={`${th} text-right`}>{t("statsScreen.retired.age")}</th>
@@ -194,13 +200,13 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
             const goals = hist.reduce((a, h) => a + h.goals, 0);
             const isOpen = open === r.id;
             return [
-              <tr key={r.id} className="border-t border-border">
-                <td className="px-2 py-2">{r.name}</td>
-                <td className="px-2 py-2 text-right tabular-nums">{r.age}</td>
-                <td className="px-2 py-2 text-muted-foreground truncate max-w-[12rem]">{r.clubName ?? "-"}</td>
-                <td className="px-2 py-2 text-right tabular-nums">{apps}</td>
-                <td className="px-2 py-2 text-right tabular-nums">{goals}</td>
-                <td className="px-2 py-2 text-right">
+              <tr key={r.id} className={ROW}>
+                <td className={TD}>{r.name}</td>
+                <td className={`${TD} text-right tabular-nums`}>{r.age}</td>
+                <td className={`${TD} text-muted-foreground truncate max-w-[12rem]`}>{r.clubName ?? "-"}</td>
+                <td className={`${TD} text-right tabular-nums`}>{apps}</td>
+                <td className={`${TD} text-right tabular-nums`}>{goals}</td>
+                <td className={`${TD} text-right`}>
                   <button
                     type="button"
                     aria-expanded={isOpen}
@@ -212,7 +218,7 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
                 </td>
               </tr>,
               isOpen && (
-                <tr key={`${r.id}-career`} className="border-t border-border">
+                <tr key={`${r.id}-career`} className="border-b border-border last:border-0">
                   <td colSpan={6} className="px-2 py-3">
                     <CareerTable rows={hist} leagues={leagues} />
                   </td>
