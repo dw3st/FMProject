@@ -1796,6 +1796,7 @@
     "ok": "OK"
   },
   "statsScreen": {
+    "allLeagues": "All leagues",
     "title": "Stats",
     "rankings": "Rankings",
     "myTeam": "My team",

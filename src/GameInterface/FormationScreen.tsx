@@ -34,6 +34,7 @@ import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomF
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
+import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
 /** Aptitudes that deserve a warning on the formation screen. */
 const isPoorFit = (apt: Aptitude) => apt === "training" || apt === "unsuitable";
@@ -429,7 +430,7 @@ export function FormationScreen() {
   const usedInXi = new Set(
     startingBySlot.filter((p): p is RosterPlayer => p !== undefined).map((p) => p.id),
   );
-  const bench = squad ? squad.players.filter((p) => !usedInXi.has(p.id)) : [];
+  const bench = squad ? sortBenchByPosition(squad.players.filter((p) => !usedInXi.has(p.id))) : [];
 
   const targetSlotRole =
     selectedSlotIdx !== null && slots[selectedSlotIdx] ? slots[selectedSlotIdx]!.role : undefined;

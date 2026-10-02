@@ -1,7 +1,7 @@
 import type { RosterPlayer } from "@/types/playerTypes";
 import { overallAvg } from "@/Domain/playerRating";
 import { getMainRole } from "@/GameInterface/positionHelpers";
-import { aptitudeFor } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, DETAILED_ROLES, preferredRole, slotValue } from "@/Domain/positions/positionAptitude";
 
 /**
  * Lineup that ignores position fit: inside each line (GK/DEF/MID/FWD) the best players by overall
@@ -73,4 +73,18 @@ export function unsuitableWithAlternative(
     if (alt) n++;
   });
   return n;
+}
+
+/**
+ * Bench/reserves order for the Formation screen (#47): GK, DEF, MID, FWD (the line of the natural
+ * position), then the detailed role order inside the line (CB, LB, RB, LWB, RWB / CDM, CM, CAM, LM,
+ * RM / LW, RW, ST), then the value at that natural position, highest first. Pure; returns a copy.
+ */
+export function sortBenchByPosition(players: RosterPlayer[]): RosterPlayer[] {
+  const keyed = players.map((p) => {
+    const role = preferredRole(p);
+    return { p, order: DETAILED_ROLES.indexOf(role), value: slotValue(p, role) };
+  });
+  keyed.sort((a, b) => a.order - b.order || b.value - a.value || (a.p.id < b.p.id ? -1 : a.p.id > b.p.id ? 1 : 0));
+  return keyed.map((k) => k.p);
 }
