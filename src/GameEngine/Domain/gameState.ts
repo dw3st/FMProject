@@ -766,7 +766,8 @@ function rollContactInjuries(state: GameState, ids: [number, number], minute: nu
 // executes the outcome (card, sending-off, free-kick / penalty restart).
 
 function yellowsOf(state: GameState, playerId: number): number {
-  return state.cards.filter(c => c.playerId === playerId && c.card === 'yellow').length;
+  // `?? []`: debug snapshots captured before cards existed have no `cards` field.
+  return (state.cards ?? []).filter(c => c.playerId === playerId && c.card === 'yellow').length;
 }
 
 function angleFromModifier(mod: number): RelativePosition {
@@ -797,15 +798,15 @@ export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' 
   let sentOff = card === 'red';
   if (card === 'yellow') {
     const secondYellow = yellowsOf(s, player.id) >= 1;
-    s = { ...s, cards: [...s.cards, record('yellow', false)] };
+    s = { ...s, cards: [...(s.cards ?? []), record('yellow', false)] };
     emit('yellow', false);
     if (secondYellow) {
-      s = { ...s, cards: [...s.cards, record('red', true)] };
+      s = { ...s, cards: [...(s.cards ?? []), record('red', true)] };
       emit('red', true);
       sentOff = true;
     }
   } else {
-    s = { ...s, cards: [...s.cards, record('red', false)] };
+    s = { ...s, cards: [...(s.cards ?? []), record('red', false)] };
     emit('red', false);
   }
   if (!sentOff) return s;

@@ -8,13 +8,13 @@
 export const FOUL_CONFIG = {
   // ── Foul chance (`foulChance`) ──────────────────────────────────────────────
   /** Base foul chance for a resolved tackle attempt (side angle, neutral aggression/skill/energy). */
-  TACKLE_BASE: 0.2,
+  TACKLE_BASE: 0.75,
   /** Base foul chance for a resolved 1v1 dribble duel (the defender is the possible offender). */
-  DRIBBLE_BASE: 0.2,
+  DRIBBLE_BASE: 0.55,
   /** Base foul chance for a contested loose-ball duel. */
-  DUEL_BASE: 0.12,
+  DUEL_BASE: 0.4,
   /** Multiplier when the tackle itself won the ball — most fouls come from mistimed (failed) challenges. */
-  TACKLE_WON_MULT: 0.35,
+  TACKLE_WON_MULT: 0.15,
   /** Approach-angle multipliers (`classifyPosition` of the tackler relative to the holder). */
   ANGLE_MULT: { front: 0.7, side: 1.0, behind: 1.8 },
   /** `TACKLE_AGGRESSION` (team pressing style) around which the aggression multiplier is neutral. */
@@ -28,26 +28,28 @@ export const FOUL_CONFIG = {
   /** Multiplier = 1 + LOW_ENERGY_WEIGHT × max(0, (ENERGY_REF − energy) / ENERGY_REF). */
   LOW_ENERGY_WEIGHT: 0.6,
   /** A player already on a yellow is more careful. */
-  ON_YELLOW_MULT: 0.6,
+  ON_YELLOW_MULT: 0.15,
   /**
    * Inside the defending team's own penalty area defenders hold back (a foul there is a penalty).
    * Tuned so penalties land at ~0.2–0.3 per match.
    */
-  IN_BOX_MULT: 0.5,
+  IN_BOX_MULT: 0.13,
+  /** A challenge is never a certain foul (a desperate lunge from behind by a tired poor tackler caps here). */
+  MAX_CHANCE: 0.9,
 
   // ── Cards (`cardRoll`) ──────────────────────────────────────────────────────
   /** Yellow-card chance for a plain foul (front/side, no clear chance). */
-  YELLOW_BASE: 0.2,
+  YELLOW_BASE: 0.17,
   /** Straight-red chance for a plain foul. */
-  RED_BASE: 0.004,
+  RED_BASE: 0.0008,
   /** Card-severity multipliers for a challenge from behind. */
-  BEHIND_YELLOW_MULT: 1.6,
-  BEHIND_RED_MULT: 2.5,
+  BEHIND_YELLOW_MULT: 1.4,
+  BEHIND_RED_MULT: 2,
   /** Card-severity multipliers when the fouled player had a clear run on goal (DOGSO). */
-  CLEAR_CHANCE_YELLOW_MULT: 2.5,
-  CLEAR_CHANCE_RED_MULT: 12,
+  CLEAR_CHANCE_YELLOW_MULT: 1.8,
+  CLEAR_CHANCE_RED_MULT: 8,
   /** Card-severity multipliers for a player already on a yellow (the referee's patience is shorter). */
-  ON_YELLOW_YELLOW_MULT: 1.3,
+  ON_YELLOW_YELLOW_MULT: 1.15,
   ON_YELLOW_RED_MULT: 1.0,
   /** Cap on the card chances so the roll never saturates. */
   MAX_YELLOW: 0.85,
@@ -61,9 +63,9 @@ export const FOUL_CONFIG = {
 
   // ── Restarts ────────────────────────────────────────────────────────────────
   /** Free kick freeze (real seconds). */
-  FREE_KICK_COUNTDOWN: 1.0,
+  FREE_KICK_COUNTDOWN: 0.4,
   /** A free kick within this many yards of the goal it attacks uses the freeKick_Attack/_Defend layouts. */
-  DANGEROUS_FREE_KICK_DIST: 35,
+  DANGEROUS_FREE_KICK_DIST: 25,
   /** Penalty freeze (real seconds) before the kick is resolved. */
   PENALTY_COUNTDOWN: 2.0,
   /** Penalty spot distance from the goal line (yards). */
