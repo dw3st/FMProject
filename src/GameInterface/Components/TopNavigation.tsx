@@ -163,7 +163,7 @@ export function TopNavigation({
               type="button"
               onClick={onAdvanceDay}
               disabled={advancing}
-              className="flex items-center gap-1 px-3.5 py-1.5 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0"
+              className="flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0"
             >
               {advancing ? t("common.simulating") : t("common.continue")}
               {!advancing && <Icon name="chevron-right" size={16} />}

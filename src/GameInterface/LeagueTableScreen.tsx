@@ -290,7 +290,7 @@ function StatBar({ homeVal, awayVal, label }: { homeVal: number; awayVal: number
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
       <div className="flex items-center justify-end gap-2">
-        <span className="text-sm font-black text-foreground">{homeVal}</span>
+        <span className="text-sm font-black tabular-nums text-foreground">{homeVal}</span>
         <div className="flex-1 h-2 bg-border rounded-full overflow-hidden max-w-[120px]">
           <div className="h-full bg-primary rounded-full ml-auto" style={{ width: `${homePct}%` }} />
         </div>
@@ -300,7 +300,7 @@ function StatBar({ homeVal, awayVal, label }: { homeVal: number; awayVal: number
         <div className="flex-1 h-2 bg-border rounded-full overflow-hidden max-w-[120px]">
           <div className="h-full bg-chart-2 rounded-full" style={{ width: `${100 - homePct}%` }} />
         </div>
-        <span className="text-sm font-black text-foreground">{awayVal}</span>
+        <span className="text-sm font-black tabular-nums text-foreground">{awayVal}</span>
       </div>
     </div>
   );
@@ -372,7 +372,7 @@ function MatchStatsModal({
                 <td className={`py-1.5 font-semibold text-foreground ${side === "away" ? "text-right pr-3" : "pl-3"}`}>{p.name}</td>
                 <td className="px-2 text-center">
                   {p.rating > 0 ? (
-                    <span className={`inline-flex items-center gap-0.5 font-black ${ratingTextClass10(p.rating)}`}>
+                    <span className={`tabular-nums inline-flex items-center gap-0.5 font-black ${ratingTextClass10(p.rating)}`}>
                       <Icon name="star" className="w-2.5 h-2.5 fill-current" />{p.rating.toFixed(1)}
                     </span>
                   ) : <span className="text-muted-foreground/40">—</span>}

@@ -4,6 +4,7 @@ import type { GroupRow } from "@/Domain/continental/groupTable";
 import { finalWinner, tieWinner } from "@/Domain/continental/knockout";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
+import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 
 /** Response shape of `GET /api/saves/:id/continental/:slug` (see Task 2 Step 5 of the UI plan). */
 export interface ContinentalData {
@@ -83,29 +84,29 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.groups")}</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           {data.groups.map((group) => (
-            <div key={group.name} className="rounded-lg border border-border bg-foreground/5 overflow-hidden">
-              <header className="px-3 py-2 border-b border-border text-sm font-semibold text-foreground">
+            <div key={group.name} className={TABLE_STYLE.shell}>
+              <header className="px-3 py-2.5 border-b border-border font-display font-black uppercase text-base leading-none text-foreground">
                 {t("continental.group", { name: group.name })}
               </header>
-              <div className="grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
+              <div className={`grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 px-3 py-2 ${TABLE_STYLE.head}`}>
                 <div />
                 <div>{t("leagues.club")}</div>
                 <div className="text-center">{t("leagues.matches")}</div>
                 <div className="text-center">{t("leagues.goalDifference")}</div>
                 <div className="text-center">{t("leagues.points")}</div>
               </div>
-              <div className="divide-y divide-border">
+              <div className={TABLE_STYLE.body}>
                 {group.rows.map((row, idx) => {
                   const qualified = idx < 2;
                   const mine = row.squadId === myClubId;
                   return (
                     <div
                       key={row.squadId}
-                      className={`grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 items-center px-3 py-1.5 text-sm border-l-2 ${
+                      className={`grid grid-cols-[24px_1fr_32px_36px_36px] gap-2 items-center px-3 py-2 tabular-nums border-l-2 ${
                         qualified ? "border-chart-2" : "border-transparent"
-                      } ${mine ? "bg-primary/10" : ""}`}
+                      } ${mine ? TABLE_STYLE.rowHighlight : ""}`}
                     >
-                      <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                      <div className="flex items-center justify-center gap-1 font-bold text-muted-foreground">
                         {qualified && <Icon name="check-circle" size={12} className="text-chart-2" />}
                         <span>{idx + 1}</span>
                       </div>
@@ -115,13 +116,13 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
                           className="w-8 h-8 rounded-full shrink-0"
                           imgClassName="w-full h-full object-contain"
                         />
-                        <span className="truncate font-semibold text-foreground">{name(row.squadId)}</span>
+                        <span className={`truncate ${mine ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{name(row.squadId)}</span>
                       </div>
-                      <div className="text-center text-muted-foreground">{row.mp}</div>
+                      <div className={TABLE_STYLE.number}>{row.mp}</div>
                       <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-destructive"}`}>
                         {row.gd > 0 ? `+${row.gd}` : row.gd}
                       </div>
-                      <div className="text-center font-black text-primary">{row.pts}</div>
+                      <div className={TABLE_STYLE.key}>{row.pts}</div>
                     </div>
                   );
                 })}
@@ -145,7 +146,7 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
             return (
               <section key={stage.name} className="rounded-lg border border-border bg-foreground/5">
                 <header className="flex items-center justify-between px-4 py-2 border-b border-border">
-                  <h4 className="text-sm font-semibold">{t(`continental.stage.${stage.name}`)}</h4>
+                  <h4 className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t(`continental.stage.${stage.name}`)}</h4>
                 </header>
                 {!stage.drawn || !hasContent ? (
                   <p className="px-4 py-3 text-sm text-muted-foreground">{t("continental.notDrawn")}</p>

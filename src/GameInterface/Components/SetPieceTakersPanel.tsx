@@ -61,7 +61,7 @@ export function SetPieceTakersPanel({ saveId, players }: { saveId: string; playe
           const options = [...outfield].sort((a, b) => dutyScore(duty, b) - dutyScore(duty, a));
           return (
             <label key={duty} className="block">
-              <span className="block font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground mb-1">
+              <span className="block font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mb-1">
                 {t(`tactics.setPieceTakers.${duty}`)}
               </span>
               <select

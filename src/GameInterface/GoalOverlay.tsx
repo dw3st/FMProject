@@ -41,11 +41,11 @@ export function GoalOverlay({ scoringTeam, score, kitColorA, kitColorB, nameA, n
         </div>
 
         <div className="flex items-center gap-4 mt-1">
-          <span className="text-4xl font-black tabular-nums" style={{ color: a }}>
+          <span className="text-4xl font-black font-display tabular-nums" style={{ color: a }}>
             {score.A}
           </span>
-          <span className="text-2xl font-bold text-muted-foreground/40">–</span>
-          <span className="text-4xl font-black tabular-nums" style={{ color: b }}>
+          <span className="text-2xl font-bold font-display text-muted-foreground/40">–</span>
+          <span className="text-4xl font-black font-display tabular-nums" style={{ color: b }}>
             {score.B}
           </span>
         </div>

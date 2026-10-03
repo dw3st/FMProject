@@ -38,7 +38,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
   const color = getPositionColor(role);
   return (
     <span
-      className={`text-[13px] font-black uppercase tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
+      className={`text-[13px] font-black uppercase font-display tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
     >
       {roleLabel(role)}
     </span>
@@ -468,14 +468,7 @@ export function MatchResultScreen() {
       <div className="w-full max-w-5xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">
       <div aria-hidden />
       <div className="text-center space-y-2 min-w-0">
-        <p
-          className="text-[13px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
-          style={{
-            backgroundImage: `linear-gradient(90deg, ${homeHex}, ${awayHex})`,
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-          }}
-        >
+        <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">
           {t("matchResult.matchdayRound", { round: matchEvent.round, competition })}
         </p>
         <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
@@ -492,7 +485,7 @@ export function MatchResultScreen() {
             <span className="text-5xl font-black font-display" style={{ color: homeHex }}>
               {matchEvent.score.home}
             </span>
-            <span className="text-2xl text-muted-foreground/50">–</span>
+            <span className="text-2xl font-display text-muted-foreground/50">–</span>
             <span className="text-5xl font-black font-display" style={{ color: awayHex }}>
               {matchEvent.score.away}
             </span>

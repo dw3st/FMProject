@@ -230,7 +230,7 @@ export function NewGameWizard() {
       <div className="flex-1 overflow-y-auto min-h-0">
         {groups.map((group) => (
           <div key={group.continent} className="mb-4">
-            <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground mb-1 mt-0">
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mb-1 mt-0">
               {t(`newGame.continents.${continentI18nKey(group.continent)}`, { defaultValue: group.continent })}
             </p>
             <ul className="list-none p-0 m-0">
@@ -480,7 +480,7 @@ function ClubProfilePanel({ club, profile }: { club: LeagueTeam; profile: ClubPr
 }
 
 function SectionLabel({ children }: { children: string }) {
-  return <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground mt-6 mb-2">{children}</p>;
+  return <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mt-6 mb-2">{children}</p>;
 }
 
 function ManagerForm({

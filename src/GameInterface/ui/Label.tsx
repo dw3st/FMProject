@@ -4,7 +4,7 @@ import type { LabelHTMLAttributes } from "react";
 export function Label({ className = "", ...rest }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={`block font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground ${className}`}
+      className={`block font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground ${className}`}
       {...rest}
     />
   );

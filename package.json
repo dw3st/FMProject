@@ -1,6 +1,6 @@
 {
   "name": "bun-react-template",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "repository": {
@@ -19,6 +19,7 @@
     "lab": "bun --hot src/lab/server.ts",
     "mcp": "bun src/mcp/server.ts",
     "i18n:lint": "bun scripts/find-untranslated.ts",
+    "ui:audit": "bun scripts/ui-audit.ts",
     "kits:generate": "bun scripts/generateStartKits.ts"
   },
   "dependencies": {

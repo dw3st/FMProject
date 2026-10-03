@@ -4,10 +4,12 @@ import type { AgePhase } from "@/GameInterface/Development/PlayerProfile";
 import { getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
 import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { Icon } from "@/GameInterface/Icons";
+import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 
 export interface PlayerOption {
   id:       string;
   name:     string;
+  nationality?: string | null;
   /** Primary position tag e.g. "ST", "CB" */
   position: string;
   agePhase: AgePhase;
@@ -17,9 +19,11 @@ interface PlayerSelectorProps {
   players:    PlayerOption[];
   selectedId: string;
   onSelect:   (id: string) => void;
+  /** Kit colours of the club, used for the generated faces. */
+  clubColors?: readonly string[];
 }
 
-export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelectorProps) {
+export function PlayerSelector({ players, selectedId, onSelect, clubColors }: PlayerSelectorProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const agePhaseDisplay = getAgePhaseDisplay(t);
@@ -79,6 +83,14 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
                     : "border border-transparent hover:bg-primary/10"
                 } `}
             >
+              <PlayerFace
+                playerId={player.id}
+                nationality={player.nationality}
+                clubColors={clubColors}
+                size={32}
+                fallback={playerInitials(player.name)}
+                ringClassName="border border-border"
+              />
               <span
                 className={`shrink-0 min-w-[2.25rem] text-center text-sm font-semibold px-2 py-0.5 rounded border ${badgeClass}`}
                 title={player.position}
@@ -87,15 +99,10 @@ export function PlayerSelector({ players, selectedId, onSelect }: PlayerSelector
               </span>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold text-sm text-foreground truncate min-w-0 flex-1">{player.name}</span>
-                  <span
-                    className={`text-sm font-semibold shrink-0 whitespace-nowrap ${phase.color}`}
-                    title={phase.label}
-                  >
-                    {phase.label}
-                  </span>
-                </div>
+                <span className="block font-semibold text-sm text-foreground truncate">{player.name}</span>
+                <span className={`block text-sm font-semibold truncate ${phase.color}`} title={phase.label}>
+                  {phase.label}
+                </span>
               </div>
 
               <Icon name="check"

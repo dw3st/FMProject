@@ -14,6 +14,14 @@ export function squadLogoUrl(squadId: string): string | undefined {
   return logoUrlFromIndex(LOGO_INDEX as Record<string, string>, squadId);
 }
 
+/** Drops the clipping classes from a logo box when it shows a real crest image. */
+function crestBoxClass(className: string): string {
+  return className
+    .split(/\s+/)
+    .filter((c) => c && !/^rounded(-|$)/.test(c) && c !== "overflow-hidden")
+    .join(" ");
+}
+
 /**
  * Renders a club logo image.
  * Falls back to a gradient shield if `logoUrl` is not provided or the image fails to load.
@@ -38,12 +46,16 @@ export function ClubLogo({
   const failed = !!logoUrl && (failedLogoUrls.has(logoUrl) || failedUrl === logoUrl);
 
   if (logoUrl && !failed) {
+    // A real crest is never clipped (#53): a circular mask (`rounded-full` + `overflow-hidden`,
+    // meant for the generated fallback shield) cuts the corners of square-topped crests such as
+    // São Paulo's. The box keeps its size; the image is contained inside it.
     return (
-      <div className={`${className} flex items-center justify-center overflow-hidden`}>
+      <div className={`${crestBoxClass(className)} flex items-center justify-center shrink-0`}>
         <img
           src={logoUrl}
           alt=""
-          className={imgClassName}
+          draggable={false}
+          className={`${imgClassName} max-w-full max-h-full object-contain`}
           onError={() => {
             failedLogoUrls.add(logoUrl);
             setFailedUrl(logoUrl);

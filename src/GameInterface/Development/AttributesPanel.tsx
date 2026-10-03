@@ -80,7 +80,7 @@ export function AttributesPanel({ attributes }: AttributesPanelProps) {
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-bold text-foreground truncate text-[13px] sm:text-[13px] uppercase tracking-[0.08em] font-display">
+                    <span className="font-bold text-foreground truncate text-[13px] uppercase tracking-[0.08em] font-display">
                       {attr.name}
                     </span>
                     {attr.focus === "primary" && (

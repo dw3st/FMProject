@@ -46,8 +46,8 @@ function StatBar({
   return (
     <div className="relative flex items-center gap-2 group/stat">
       <span
-        className={`font-black text-muted-foreground uppercase tracking-[0.08em] shrink-0 cursor-default ${
-          wide ? "text-[13px] w-8" : "text-[13px] w-7"
+        className={`font-black text-muted-foreground uppercase font-display tracking-[0.08em] shrink-0 cursor-default ${
+          wide ? "text-sm w-8" : "text-sm w-7"
         }`}
       >
         {STAT_ABBR[statKey]}
@@ -58,7 +58,7 @@ function StatBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`font-black w-4 text-right ${wide ? "text-sm" : "text-sm"} ${ratingTextClass10(value)}`}>{value}</span>
+      <span className={`font-black w-4 text-right text-sm tabular-nums ${ratingTextClass10(value)}`}>{value}</span>
 
       <StatHoverPopover label={attr.label} description={attr.description} />
     </div>

@@ -835,6 +835,9 @@
       "fouls": "Faltas",
       "cards": "Cartões (A/V)",
       "offsides": "Impedimentos",
+      "corners": "Escanteios",
+      "freeKicks": "Tiros livres",
+      "showTeam": "Ver {{team}}",
       "events": "Lances",
       "noEvents": "Nada ainda.",
       "kind": {

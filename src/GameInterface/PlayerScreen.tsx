@@ -123,7 +123,7 @@ export function PlayerScreen({
               <button
                 type="button"
                 onClick={() => setOfferTarget(displayPlayer)}
-                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-[13px] font-semibold cursor-pointer border-0 shrink-0"
+                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0"
               >
                 <Icon name="user-plus" className="w-4 h-4" />
                 {t("playerScreen.makeOffer")}
@@ -132,7 +132,7 @@ export function PlayerScreen({
               <button
                 type="button"
                 onClick={() => setRenewOpen(true)}
-                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-[13px] font-semibold cursor-pointer border-0 shrink-0"
+                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0"
               >
                 <Icon name="file-signature" className="w-4 h-4" />
                 {t("contracts.renew")}
@@ -153,7 +153,7 @@ export function PlayerScreen({
             imgClassName="w-full h-full object-contain p-1"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] md:text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] m-0 font-display">
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">
               {t("playerScreen.currentTeam")}
             </p>
             <p className="text-lg md:text-xl font-black text-foreground font-display truncate m-0 group-hover:text-primary transition-colors">
