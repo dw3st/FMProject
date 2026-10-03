@@ -90,7 +90,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 16 ✅ | Polimento (3.1) | #44 (fechado na 3.1) | Mapa-múndi clicável para escolher o país no novo jogo; rostos gerados dos jogadores (`facesjs`, Apache-2.0, estilo Football GM: determinísticos pelo id, com a camisa do clube; fotos reais da ESPN descartadas por direitos de imagem); aba "Em breve" nas novidades |
 | 17 ✅ | Diretoria e torcida (3.2) | #58 (fechado na 3.2) | Medidores da diretoria e da torcida (só o clube do jogador) reagindo a resultados, posição × meta da temporada, títulos, finanças e transferências; meta da temporada, aviso, ultimato e demissão opcional (escolhida no novo jogo); torcida move a ocupação do estádio e o ganho de seguidores; bônus da diretoria no fim da temporada |
 | 18 ✅ | Mais formações (3.3) | #59 (fechado na 3.3) | Formações que faltam (4-4-1-1, 4-3-2-1, 3-4-2-1, 3-4-1-2, 5-4-1, 5-2-3, 4-1-2-1-2 losango) com posicionamentos de bola parada e comparação no `/lab`; as 17 formações liberadas para o jogador e a IA escolhendo a formação conforme o elenco |
-| 19 | Equilíbrio entre formações | #63 | Motor: todas as formações dentro de ~±8 p.p. de aproveitamento sem mudar o volume de gols; depois liberar a IA para as formações abertas |
+| 19 ✅ | Equilíbrio entre formações (3.4) | #63 (fechado na 3.4) | Motor: o bloco defensivo desliza para o lado da bola, os atacantes de lado fecham na área no terço final, linha de três em 22/37/52 e volantes do 3-4-3 juntos; a largura da equipe volta a valer no ataque; IA liberada para todas as formações (sem a penalidade de volume de gols); matriz de formações no `/lab` (`/matrix`) e em `scripts/formation-matrix.ts` |
 
 **Com data:** #11 (ligas de ano civil com a composição de 2026) entra assim que a ESPN virar essas
 ligas para 2027 (previsão: janeiro/fevereiro de 2027): `fetchEspn` + regenerar a cadeia.
@@ -204,6 +204,8 @@ https://github.com/dw3st/FMProject/issues
 
 Commits e PRs fecham o issue com `fixes #N`. Na triagem semanal dos reports
 (`bun scripts/fetchReports.ts`), cada report útil vira um issue com `tester-report` + o rótulo do tipo.
+
+Fechados na 3.4 (2026-10-03): **#63** equilíbrio entre formações.
 
 Fechados na 3.3 (2026-10-03): **#59** mais formações.
 

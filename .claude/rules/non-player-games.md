@@ -908,3 +908,14 @@ Os números de jogo aéreo e passes foram reajustados à mesma medição: `HEADE
 DEF 0,95 / MID 0,44 / FWD 0,72, e `PASSES_PER_MATCH` por linha × GK 0,62 (defesas viram escanteio,
 menos tiros de meta), DEF 0,93, MID 0,89, FWD 0,955. O volume de gols do quickSim não mudou (o motor
 ficou dentro de ±5% em gols e chutes).
+
+### `BASE_GOALS` 0,84 → 0,78 (3.4, Etapa 19, #63)
+
+O equilíbrio entre formações (bloco defensivo que desliza para o lado da bola, ataque que fecha na
+área — `.claude/rules/game/formations.md` → "Equilíbrio entre formações") tirou ~7% dos gols do motor
+com 4-3-3 dos dois lados (`scripts/ai-formation-goals.ts`, 800 jogos por modo, fôlego 88: Premier
+2,462 → 2,319, Championship 1,810 → 1,657). O quickSim foi calibrado nesse modo, então `BASE_GOALS`
+caiu pelo mesmo fator (−7%). Depois: quickSim main Premier 2,531 (motor +9%; antes +10,6%),
+Championship 1,583 (−4,5%; antes −6%); no mundo como jogado (cada clube da IA na própria formação)
+Premier 2,638 (motor 2,445, +8%) e Championship 1,693 (motor 1,765, −4%). As demais constantes
+(eventos por vaga, notas) não foram refeitas: a mudança é de volume, não de distribuição.

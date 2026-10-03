@@ -100,14 +100,20 @@ Effective depth behind ball by tactic:
 ### Y: Lateral Block Shift
 
 ```ts
-const blockShiftY = (ballPos.y - base.y) * cfg.BLOCK_SHIFT_WEIGHT * 0.15;
+const blockShiftY = (ballPos.y - base.y) * cfg.BLOCK_SHIFT_WEIGHT * BLOCK_SHIFT_SCALE; // 0.45
 rawY = base.y + blockShiftY;
 ```
+
+`BLOCK_SHIFT_SCALE` was 0.15 until 3.4 (Etapa 19, #63): the block slid only ~12% of the ball's
+lateral offset, so each formation defended where its slots were drawn and the shape alone decided
+matches (narrow shapes unbeatable, wide shapes leaving the centre open). At 0.45 (× the `normal`
+width's 0.8 = 36%) a far-side winger tucks in ~20 yards when the ball is on the other flank. See
+`.claude/rules/game/formations.md` → "Equilíbrio entre formações".
 
 ### Y: Horizontal Compactness
 
 ```ts
-rawY += (PITCH_CENTER_Y - rawY) * cfg.HORIZONTAL_COMPACTNESS * 0.12;
+rawY += (PITCH_CENTER_Y - rawY) * cfg.HORIZONTAL_COMPACTNESS * COMPACTNESS_SCALE; // 0.12
 ```
 
 ### X: Lane Blocking
