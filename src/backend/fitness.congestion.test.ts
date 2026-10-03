@@ -2,6 +2,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
 import { INJURY } from "@/Domain/injury/injuryConfig";
+import { QUICK_SIM_CONFIG } from "@/GameEngine/Configs/QuickSimConfig";
+import { FOUL_CONFIG } from "@/GameEngine/Configs/FoulConfig";
 import { addOneDay } from "@/Domain/advanceDay/date";
 import {
   autoLineupDefaultFormation,
@@ -43,6 +45,15 @@ describe("fitness/load model under fixture congestion", () => {
     injuryCfg.BASE = 0;
     injuryCfg.CONTACT_BASE = 0;
     injuryCfg.HEAVY_TRAINING_CHANCE = 0;
+    // Same for cards: a booking that reaches a suspension changes the reference (stat-only) XI
+    // too, so it could leave nobody to rest. Cards are switched off (quickSim and full engine).
+    const qsCfg = QUICK_SIM_CONFIG as unknown as { YELLOW_PER_FOUL: number; DIRECT_RED_PER_FOUL: number };
+    const foulCfg = FOUL_CONFIG as unknown as { YELLOW_BASE: number; RED_BASE: number };
+    const savedCards = { qsYellow: qsCfg.YELLOW_PER_FOUL, qsRed: qsCfg.DIRECT_RED_PER_FOUL, yellow: foulCfg.YELLOW_BASE, red: foulCfg.RED_BASE };
+    qsCfg.YELLOW_PER_FOUL = 0;
+    qsCfg.DIRECT_RED_PER_FOUL = 0;
+    foulCfg.YELLOW_BASE = 0;
+    foulCfg.RED_BASE = 0;
     try {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league",
@@ -154,6 +165,10 @@ describe("fitness/load model under fixture congestion", () => {
       injuryCfg.BASE = savedInjury.base;
       injuryCfg.CONTACT_BASE = savedInjury.contact;
       injuryCfg.HEAVY_TRAINING_CHANCE = savedInjury.training;
+      qsCfg.YELLOW_PER_FOUL = savedCards.qsYellow;
+      qsCfg.DIRECT_RED_PER_FOUL = savedCards.qsRed;
+      foulCfg.YELLOW_BASE = savedCards.yellow;
+      foulCfg.RED_BASE = savedCards.red;
     }
   }, 90_000);
 });
