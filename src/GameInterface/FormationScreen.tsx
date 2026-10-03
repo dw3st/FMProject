@@ -32,7 +32,8 @@ import {
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import { getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
@@ -626,6 +627,7 @@ export function FormationScreen() {
                 selectedSlotIdx={selectedSlotIdx}
                 onSlotClick={handleSlotClick}
                 getOutOfPosition={(player, slotRole) => isPoorFit(aptitudeFor(player, slotRole))}
+                clubColors={squad?.colors}
               />
             </div>
 
@@ -1023,7 +1025,10 @@ function FormationPitch({
   occupiedZones,
   dragProps,
   dropHover,
+  clubColors,
 }: {
+  /** Kit colours of the club, used for the generated faces on the markers. */
+  clubColors?: readonly string[];
   editing?: boolean;
   /** "row:col" of the zones already used by a position (edit mode). */
   occupiedZones?: Set<string>;
@@ -1125,17 +1130,35 @@ function FormationPitch({
                 data-drop={`slot:${i}`}
                 data-pitch-marker
                 {...dragProps({ kind: "slot", key: String(i) }, player ? player.name : slot.role)}
-                className={`w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer select-none touch-none border-0 ${
-                  dropHover === `slot:${i}`
-                    ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
-                    : isSelected
-                    ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                className={`relative w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer select-none touch-none border-0 p-0 ${
+                  dropHover === `slot:${i}` || isSelected
+                    ? `${player ? "bg-transparent" : "bg-primary"} ring-2 ring-primary ring-offset-2 ring-offset-background`
+                    : player
+                    ? "bg-transparent hover:brightness-110"
                     : "bg-primary/80 hover:bg-primary border-2 border-primary/50"
                 }`}
               >
-                <span className="text-[13px] font-bold text-primary-foreground uppercase">
-                  {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
-                </span>
+                {player ? (
+                  <>
+                    <PlayerFace
+                      playerId={player.id}
+                      nationality={player.nationality}
+                      clubColors={clubColors}
+                      size={48}
+                      fallback={playerInitials(player.name)}
+                      ringClassName={`border-2 border-current ${getDetailedPositionColor(slot.role)}`}
+                    />
+                    <span
+                      className={`absolute -top-2 -left-3 min-w-7 rounded border border-current bg-background/95 px-1 text-center text-[13px] font-bold uppercase leading-tight pointer-events-none ${getDetailedPositionColor(slot.role)}`}
+                    >
+                      {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[13px] font-bold text-primary-foreground uppercase">
+                    {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
+                  </span>
+                )}
               </button>
 
               {oop && !isSelected && (

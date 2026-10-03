@@ -15,6 +15,7 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
@@ -98,13 +99,6 @@ function primaryRoleLabel(positions: string[], t: (key: string) => string): stri
   }
 }
 
-function playerInitials(name: string): string {
-  const parts = name.trim().split(/\s+/u).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
-}
-
 function trainingFitnessLabel(delta: number, t: (key: string) => string): { text: string; tone: "neg" | "neu" } {
   const a = Math.abs(delta);
   if (a < 0.05) return { text: t("daySummary.noChange"), tone: "neu" };
@@ -156,12 +150,14 @@ function OutcomePhrase({ text, tone, className = "" }: { text: string; tone: Out
 }
 
 function SquadTrainingRestCard({
-  mode, teamName, effects, playerById, t,
+  mode, teamName, effects, playerById, clubColors, t,
 }: {
   mode: "training" | "rest";
   teamName: string;
   effects: TrainingEffect[] | RestEffect[];
   playerById: Map<string, RosterPlayer>;
+  /** Kit colours of the club, used for the generated faces. */
+  clubColors?: readonly string[];
   t: (key: string) => string;
 }) {
   const squadTitle = teamName.trim().toUpperCase() || t("daySummary.yourSquad");
@@ -198,9 +194,13 @@ function SquadTrainingRestCard({
             }
             return (
               <div key={`${e.playerId}-${i}`} className="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(4.75rem,1fr)_minmax(4.75rem,1fr)] gap-x-2 items-center px-3 sm:px-4 py-3">
-                <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-black text-primary-foreground border border-primary/50" aria-hidden>
-                  {initials}
-                </div>
+                <PlayerFace
+                  playerId={String(e.playerId)}
+                  nationality={p?.nationality}
+                  clubColors={clubColors}
+                  size={40}
+                  fallback={initials}
+                />
                 <div className="min-w-0">
                   <div className="font-bold text-sm text-foreground truncate">{e.name}</div>
                   <div className="text-sm text-muted-foreground">{role}</div>
@@ -554,6 +554,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
                   teamName={teamDisplayNameFromLeagues(e.squadId, leagues)}
                   effects={e.effects ?? []}
                   playerById={playerById}
+                  clubColors={e.squadId === squad?.id ? squad?.colors : undefined}
                   t={t}
                 />
               ))}
@@ -570,6 +571,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
                   teamName={teamDisplayNameFromLeagues(e.squadId, leagues)}
                   effects={e.effects ?? []}
                   playerById={playerById}
+                  clubColors={e.squadId === squad?.id ? squad?.colors : undefined}
                   t={t}
                 />
               ))}
