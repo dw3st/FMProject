@@ -673,8 +673,9 @@ export function MatchScreen() {
       {isTester && <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />}
 
       {/* Scoreboard Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-3 shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+      {/* Scoreboard on its own row so the score + clock is centred on the page (#60); controls below. */}
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-2 shrink-0">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
           <ScoreBar
             scoreA={score.A}
             scoreB={score.B}
@@ -688,14 +689,16 @@ export function MatchScreen() {
           />
 
           {gameState.shootout && (
-            <PenaltyShootoutStrip
-              shootout={gameState.shootout}
-              nameA={teamAWithCrest?.name ?? "A"}
-              nameB={teamBWithCrest?.name ?? "B"}
-            />
+            <div className="flex justify-center">
+              <PenaltyShootoutStrip
+                shootout={gameState.shootout}
+                nameA={teamAWithCrest?.name ?? "A"}
+                nameB={teamBWithCrest?.name ?? "B"}
+              />
+            </div>
           )}
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
             <button
               onClick={() => setPaused((p) => !p)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground"
