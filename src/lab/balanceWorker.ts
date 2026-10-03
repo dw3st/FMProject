@@ -28,6 +28,7 @@ import { addDayLogDiscipline } from "@/lab/disciplineStats";
 import { addDayLogAerial } from "@/lab/aerialStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type {
   CongestionMatchRaw,
   CongestionSpec,
@@ -191,6 +192,13 @@ interface LineupFit {
   poorB: number;
 }
 
+/** Familiarity of each side with its own style, for the quickSim path (set per worker message). */
+let quickFamiliarity: { A?: number; B?: number } = {};
+
+function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
+  return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
+}
+
 function runOneMatch(
   squadA: Squad,
   squadB: Squad,
@@ -220,6 +228,8 @@ function runOneMatch(
       homeRoles: quickRolesA,
       awayRoles: quickRolesB,
       knockout,
+      homeFamiliarity: quickFamiliarity.A,
+      awayFamiliarity: quickFamiliarity.B,
     });
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
@@ -332,10 +342,14 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
 
     // Apply per-team tactics ONCE — all matches use them.
     // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
-    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride);
-    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride);
-    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride);
-    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride);
+    // `familiarity` (absent = neutral): the side's familiarity with its own style.
+    const famA = variantFamiliarity(variantA);
+    const famB = variantFamiliarity(variantB);
+    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
+    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
+    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
+    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
+    quickFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on
