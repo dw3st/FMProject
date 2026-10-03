@@ -288,8 +288,8 @@ export function NewGameWizard() {
           <ScreenTitle>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
             <>
-              <p className="text-sm text-muted-foreground mt-6 md:hidden">{t("newGame.selectTerritoryDetail")}</p>
-              <div className="hidden md:block mt-6">
+              <p className="text-sm text-muted-foreground mt-6 xl:hidden">{t("newGame.selectTerritoryDetail")}</p>
+              <div className="hidden xl:block mt-6">
                 <WorldMap
                   countries={countries}
                   selectedSlug={null}
@@ -303,7 +303,7 @@ export function NewGameWizard() {
               <button
                 type="button"
                 onClick={() => setSelectedCountry(null)}
-                className="hidden md:inline-flex items-center gap-1.5 mt-3 h-8 text-sm bg-transparent border-0 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="hidden xl:inline-flex items-center gap-1.5 mt-3 h-8 text-sm bg-transparent border-0 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <Icon name="chevron-left" size={16} />
                 {t("newGame.showMap")}
