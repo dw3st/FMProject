@@ -6,6 +6,7 @@ import {
 import { competitionName } from "@/Domain/world/labels";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData } from "@/types/playerTypes";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 
 type Row = ManagerRecord & { rank: number; clubName: string | null };
 type Page = { total: number; playerRank: number | null; items: Row[] };
@@ -57,24 +58,16 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
       .finally(() => { if (gen === generation.current) setLoadingMore(false); });
   };
 
-  const chip = (value: Scope, label: string) => (
-    <button
-      type="button"
-      aria-pressed={scope === value}
-      onClick={() => setScope(value)}
-      className={`rounded border px-3 py-1.5 text-sm bg-transparent cursor-pointer min-h-8 ${
-        scope === value ? "border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {label}
-    </button>
-  );
   const header = (
     <div className="flex flex-wrap items-center gap-3 mb-3">
-      <div className="flex gap-2">
-        {chip("world", t("statsScreen.managers.world"))}
-        {chip("country", t("statsScreen.managers.country"))}
-      </div>
+      <OptionChips<Scope>
+        options={[
+          { key: "world", label: t("statsScreen.managers.world") },
+          { key: "country", label: t("statsScreen.managers.country") },
+        ]}
+        value={scope}
+        onChange={setScope}
+      />
       {playerRank !== null && (
         <span className="text-sm text-muted-foreground">{t("statsScreen.managers.yourRank", { rank: playerRank, total })}</span>
       )}

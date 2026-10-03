@@ -6,6 +6,7 @@ import { getMainRole, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameIn
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { Chip } from "@/GameInterface/ui/Chip";
 
 // ── Energy bar helpers ───────────────────────────────────────────────────────
 
@@ -393,18 +394,9 @@ export function SubstitutionPanel({
                 {FORMATION_LIST.map((fid) => {
                   const isActive = fid === currentFormationId;
                   return (
-                    <button
-                      key={fid}
-                      type="button"
-                      onClick={() => onChangeFormation(fid)}
-                      className={`py-3 rounded border bg-transparent font-bold text-sm tabular-nums transition-colors cursor-pointer ${
-                        isActive
-                          ? "border-primary text-primary bg-primary/10"
-                          : "border-border hover:border-primary/50 text-foreground"
-                      }`}
-                    >
+                    <Chip key={fid} selected={isActive} onClick={() => onChangeFormation(fid)} className="py-2.5 tabular-nums">
                       {fid}
-                    </button>
+                    </Chip>
                   );
                 })}
               </div>

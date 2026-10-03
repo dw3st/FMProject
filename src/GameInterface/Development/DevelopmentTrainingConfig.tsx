@@ -5,7 +5,7 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import { updateSaveDevelopmentTraining } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
-import { Chip } from "@/GameInterface/ui/Chip";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { familiarityKeyLabel } from "@/GameInterface/Components/FamiliarityBars";
 import { FAMILIARITY_KEYS, type FamiliarityKey } from "@/types/familiarityTypes";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
@@ -100,27 +100,13 @@ export function DevelopmentTrainingConfig() {
           <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
             {t("development.intensityLabel")}
           </span>
-          <div className="flex flex-wrap gap-1.5">
-            {INTENSITY_OPTIONS.map((opt) => {
-              const active = intensity === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={saving || !session}
-                  title={opt.hint}
-                  onClick={() => setIntensity(opt.value)}
-                  className={`text-[13px] font-black uppercase tracking-[0.08em] font-display px-2.5 py-1.5 rounded-lg border transition-colors ${
-                    active
-                      ? "border-primary bg-primary/15 text-primary"
-                      : "border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+          <OptionChips
+            aria-label={t("development.intensityLabel")}
+            options={INTENSITY_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label, title: opt.hint }))}
+            value={intensity}
+            onChange={setIntensity}
+            disabled={saving || !session}
+          />
         </div>
       </div>
 
@@ -128,21 +114,16 @@ export function DevelopmentTrainingConfig() {
         <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
           {t("familiarity.focusLabel")}
         </span>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip selected={styleFocus === null} disabled={saving || !session} onClick={() => setStyleFocus(null)}>
-            {t("familiarity.focusAuto", { style: familiarityKeyLabel(tacticsStyle, t) })}
-          </Chip>
-          {FAMILIARITY_KEYS.map((key) => (
-            <Chip
-              key={key}
-              selected={styleFocus === key}
-              disabled={saving || !session}
-              onClick={() => setStyleFocus(key)}
-            >
-              {familiarityKeyLabel(key, t)}
-            </Chip>
-          ))}
-        </div>
+        <OptionChips<FamiliarityKey | "auto">
+          aria-label={t("familiarity.focusLabel")}
+          options={[
+            { key: "auto", label: t("familiarity.focusAuto", { style: familiarityKeyLabel(tacticsStyle, t) }) },
+            ...FAMILIARITY_KEYS.map((key) => ({ key, label: familiarityKeyLabel(key, t) })),
+          ]}
+          value={styleFocus ?? "auto"}
+          onChange={(k) => setStyleFocus(k === "auto" ? null : k)}
+          disabled={saving || !session}
+        />
         <p className="text-sm text-muted-foreground mt-1 m-0">
           {t("familiarity.focusHint")}
         </p>
