@@ -38,7 +38,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
   const color = getPositionColor(role);
   return (
     <span
-      className={`text-[13px] font-black uppercase font-display tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
+      className={`text-sm font-black uppercase font-display tracking-[0.06em] shrink-0 w-10 ${align === "right" ? "text-right" : ""} ${color}`}
     >
       {roleLabel(role)}
     </span>
@@ -129,40 +129,40 @@ function ResultPlayerRow({
 
   if (align === "left") {
     return (
-      <div className={`flex items-center gap-2 py-[3px] px-1 -mx-1 ${rowClass}`}>
+      <div className={`flex items-center gap-2.5 min-h-9 [@media(min-height:900px)]:min-h-11 px-1.5 -mx-1.5 ${rowClass}`}>
         <RoleBadge role={role} align="left" />
-        <span className="flex-1 text-sm text-foreground font-medium truncate">{lastName}</span>
+        <span className="flex-1 text-base text-foreground font-medium truncate">{lastName}</span>
         {goals > 0 && (
           <span className="flex items-center gap-0.5 text-chart-4 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
-            <Icon name="target" className="w-3 h-3" />
-            {goals > 1 && <span className="text-sm font-black tabular-nums">{goals}</span>}
+            <Icon name="target" className="w-4 h-4" />
+            {goals > 1 && <span className="text-base font-black tabular-nums">{goals}</span>}
           </span>
         )}
         {assists > 0 && (
           <span className="flex items-center gap-0.5 text-chart-3 shrink-0" title={`${assists} assist${assists > 1 ? "s" : ""}`}>
-            <span className="text-sm font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
+            <span className="text-base font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
           </span>
         )}
-        <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
+        <span className={`w-10 text-lg font-display font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
       </div>
     );
   }
 
   return (
-    <div className={`flex items-center gap-2 py-[3px] px-1 -mx-1 ${rowClass}`}>
-      <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
+    <div className={`flex items-center gap-2.5 min-h-9 [@media(min-height:900px)]:min-h-11 px-1.5 -mx-1.5 ${rowClass}`}>
+      <span className={`w-10 text-lg font-display font-bold tabular-nums shrink-0 ${ratingClass}`}>{ratingLabel}</span>
       {assists > 0 && (
         <span className="flex items-center gap-0.5 text-chart-3 shrink-0" title={`${assists} assist${assists > 1 ? "s" : ""}`}>
-          <span className="text-sm font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
+          <span className="text-base font-black tabular-nums">{assists > 1 ? assists : ""}A</span>
         </span>
       )}
       {goals > 0 && (
         <span className="flex items-center gap-0.5 text-chart-4 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
-          {goals > 1 && <span className="text-sm font-black tabular-nums">{goals}</span>}
-          <Icon name="target" className="w-3 h-3" />
+          {goals > 1 && <span className="text-base font-black tabular-nums">{goals}</span>}
+          <Icon name="target" className="w-4 h-4" />
         </span>
       )}
-      <span className="flex-1 text-sm text-foreground font-medium truncate text-right">{lastName}</span>
+      <span className="flex-1 text-base text-foreground font-medium truncate text-right">{lastName}</span>
       <RoleBadge role={role} align="right" />
     </div>
   );
@@ -186,7 +186,7 @@ function StatsCompareBar({
   const awayPct = sum === 0 ? 50 : (away / sum) * 100;
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
+      <div className="flex justify-between text-sm font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
         <span>{label}</span>
         <span className="tabular-nums text-foreground">
           <span style={{ color: homeColor }}>{home}</span>
@@ -194,7 +194,7 @@ function StatsCompareBar({
           <span style={{ color: awayColor }}>{away}</span>
         </span>
       </div>
-      <div className="h-2 rounded-full bg-border overflow-hidden flex">
+      <div className="h-2.5 rounded-full bg-border overflow-hidden flex">
         <div
           className="h-full shrink-0 transition-all"
           style={{ width: `${homePct}%`, backgroundColor: homeColor }}
@@ -237,19 +237,19 @@ function ResultTeamCard({
   return (
     <div
       className="flex-1 rounded-md bg-card/60 backdrop-blur-sm p-5 flex flex-col gap-3 border border-border"
-      style={{ ...accentBorder, height: "40vh", overflow: "scroll" }}
+      style={{ ...accentBorder, height: "48vh", overflow: "scroll" }}
     >
       <div className={`flex items-center gap-3 ${isHome ? "" : "flex-row-reverse"}`}>
         <ClubLogo
           logoUrl={logoUrl}
-          className="w-8 h-8 rounded-full shrink-0"
+          className="w-10 h-10 rounded-full shrink-0"
           imgClassName="w-full h-full object-contain p-1"
         />
         <div className={`min-w-0 ${isHome ? "" : "text-right"}`}>
-          <h2 className="font-display font-black uppercase text-xl leading-none m-0 truncate">
+          <h2 className="font-display font-black uppercase text-2xl leading-none m-0 truncate">
             {squadName}
           </h2>
-          <p className="text-[13px] font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
+          <p className="text-sm font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
             {t("matchResult.matchRatings")}
           </p>
         </div>
@@ -259,7 +259,7 @@ function ResultTeamCard({
       <div className="border-t border-border/30" />
 
       <div className="flex-1">
-        <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-1.5 font-display">
+        <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.08em] mb-1.5 font-display">
           {t("matchResult.squadPerformance")}
         </p>
         <div>
@@ -465,7 +465,7 @@ export function MatchResultScreen() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-6 py-8 gap-7 overflow-y-auto">
       {/* Header: title + score centred, Continue on the right so it needs no scrolling (#41) */}
-      <div className="w-full max-w-5xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">
+      <div className="w-full max-w-5xl min-[1600px]:max-w-6xl grid grid-cols-[1fr_auto_1fr] items-start gap-4 shrink-0">
       <div aria-hidden />
       <div className="text-center space-y-2 min-w-0">
         <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">
@@ -476,7 +476,7 @@ export function MatchResultScreen() {
         </h1>
         <div className="flex items-center justify-center gap-6 pt-2">
           <span
-            className="text-lg font-bold truncate max-w-[40%]"
+            className="text-xl font-bold truncate max-w-[40%]"
             style={{ color: homeHex }}
           >
             {homeName}
@@ -491,7 +491,7 @@ export function MatchResultScreen() {
             </span>
           </div>
           <span
-            className="text-lg font-bold truncate max-w-[40%]"
+            className="text-xl font-bold truncate max-w-[40%]"
             style={{ color: awayHex }}
           >
             {awayName}
@@ -503,7 +503,7 @@ export function MatchResultScreen() {
               {matchEvent.scorers.map((s, i) => (
                 <span
                   key={i}
-                  className="text-sm font-semibold text-chart-4/90 flex items-center gap-1"
+                  className="text-base font-semibold text-chart-4/90 flex items-center gap-1"
                 >
                   <Icon name="target" className="w-3.5 h-3.5 shrink-0" />
                   {s.playerName}
@@ -519,7 +519,7 @@ export function MatchResultScreen() {
                   .map(([pid, ps]) => (
                     <span
                       key={pid}
-                      className="text-sm font-semibold text-chart-3/90 flex items-center gap-1"
+                      className="text-base font-semibold text-chart-3/90 flex items-center gap-1"
                     >
                       <span className="font-black">A</span>
                       {matchEvent.playerNames[pid] ?? pid}
@@ -549,7 +549,7 @@ export function MatchResultScreen() {
       </div>
       </div>
 
-      <div className="w-full max-w-5xl flex items-stretch gap-5">
+      <div className="w-full max-w-5xl min-[1600px]:max-w-6xl flex items-stretch gap-5">
         <ResultTeamCard
           side="home"
           squadName={homeName}
@@ -577,14 +577,14 @@ export function MatchResultScreen() {
         />
       </div>
 
-      <div className="w-full max-w-5xl shrink-0">
+      <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
         <div className="card-arcade rounded-md overflow-hidden">
           <div
             className="h-1.5 w-full shrink-0"
             style={{ background: `linear-gradient(to right, ${homeHex} 50%, ${awayHex} 50%)` }}
           />
           <div className="px-6 py-4">
-            <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-4 m-0 font-display">
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.08em] mb-4 m-0 font-display">
               {t("matchResult.matchStatistics")}
             </p>
             <div className="grid gap-4 md:grid-cols-2">
@@ -648,11 +648,11 @@ export function MatchResultScreen() {
       </div>
 
       {matchEvent.substitutions && matchEvent.substitutions.length > 0 && (
-        <div className="w-full max-w-5xl shrink-0">
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="card-arcade rounded-md px-6 py-4">
             <div className="flex items-center gap-2 mb-3">
               <Icon name="arrow-right-left" className="w-3.5 h-3.5 text-muted-foreground" />
-              <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] m-0 font-display">
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.08em] m-0 font-display">
                 {t("match.lastMinuteSubs")}
               </p>
             </div>
@@ -661,11 +661,11 @@ export function MatchResultScreen() {
                 .slice()
                 .sort((a, b) => a.matchMinute - b.matchMinute)
                 .map((sub, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className="text-sm font-black tabular-nums text-muted-foreground w-7 shrink-0">
+                  <div key={i} className="flex items-center gap-2 text-base">
+                    <span className="text-base font-black tabular-nums text-muted-foreground w-7 shrink-0">
                       {sub.matchMinute + 1}&apos;
                     </span>
-                    <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
+                    <span className="text-sm font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
                       {sub.team === "home" ? homeName : awayName}
                     </span>
                     <span className="text-destructive font-medium truncate flex-1">
@@ -683,15 +683,15 @@ export function MatchResultScreen() {
       )}
 
       {matchEvent.cards && matchEvent.cards.length > 0 && (
-        <div className="w-full max-w-5xl shrink-0">
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="card-arcade rounded-md px-6 py-4">
-            <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-3 m-0 font-display">
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.08em] mb-3 m-0 font-display">
               {t("matchResult.cards")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
               {matchEvent.cards.map((c, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm">
-                  <span className="text-sm font-black tabular-nums text-muted-foreground w-7 shrink-0">
+                <div key={i} className="flex items-center gap-2 text-base">
+                  <span className="text-base font-black tabular-nums text-muted-foreground w-7 shrink-0">
                     {c.matchMinute + 1}&apos;
                   </span>
                   <span
@@ -702,7 +702,7 @@ export function MatchResultScreen() {
                     {c.playerName}
                     {c.secondYellow ? ` (${t("matchResult.secondYellow")})` : ""}
                   </span>
-                  <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
+                  <span className="text-sm font-bold uppercase tracking-[0.08em] font-display text-muted-foreground shrink-0">
                     {c.team === "home" ? homeName : awayName}
                   </span>
                 </div>
@@ -712,7 +712,7 @@ export function MatchResultScreen() {
         </div>
       )}
 
-      <div className="w-full max-w-5xl shrink-0">
+      <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
         <div className="card-arcade rounded-md px-6 py-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <InfoCell icon={MapPin} label={t("matchResult.venue")} value={venue} />
@@ -740,10 +740,10 @@ function InfoCell({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Icon className="w-3.5 h-3.5" />
+        <Icon className="w-4 h-4" />
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
-      <p className="text-sm font-semibold text-foreground m-0">{value}</p>
+      <p className="text-base font-semibold text-foreground m-0">{value}</p>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
+import { Button } from "@/GameInterface/ui/Button";
 import { competitionName } from "@/Domain/world/labels";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import {
@@ -133,7 +134,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
   const color = getPositionColor(role);
   return (
     <span
-      className={`text-[13px] font-black uppercase font-display tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
+      className={`text-sm font-black uppercase font-display tracking-[0.06em] shrink-0 w-10 ${align === "right" ? "text-right" : ""} ${color}`}
     >
       {roleLabel(role)}
     </span>
@@ -146,11 +147,11 @@ function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
-    <div className="flex items-center gap-2 py-1">
+    <div className="flex items-center gap-2.5 min-h-9 [@media(min-height:900px)]:min-h-11">
       <RoleBadge role={role} align="left" />
-      <span className="flex-1 text-sm text-foreground font-medium truncate">{lastName}</span>
+      <span className="flex-1 text-base text-foreground font-medium truncate">{lastName}</span>
       <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-      <span className={`w-8 text-right text-sm font-display font-bold tabular-nums shrink-0 ${previewRatingClass(avg)}`}>
+      <span className={`w-10 text-right text-lg font-display font-bold tabular-nums shrink-0 ${previewRatingClass(avg)}`}>
         {rating}
       </span>
     </div>
@@ -163,12 +164,12 @@ function AwayPlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
-    <div className="flex items-center gap-2 py-1">
-      <span className={`w-8 text-left text-sm font-display font-bold tabular-nums shrink-0 ${previewRatingClass(avg)}`}>
+    <div className="flex items-center gap-2.5 min-h-9 [@media(min-height:900px)]:min-h-11">
+      <span className={`w-10 text-left text-lg font-display font-bold tabular-nums shrink-0 ${previewRatingClass(avg)}`}>
         {rating}
       </span>
       <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-      <span className="flex-1 text-sm text-foreground font-medium truncate text-right">{lastName}</span>
+      <span className="flex-1 text-base text-foreground font-medium truncate text-right">{lastName}</span>
       <RoleBadge role={role} align="right" />
     </div>
   );
@@ -190,9 +191,9 @@ function TacticsRow({
   return (
     <div className="flex items-center gap-2 pt-3 border-t border-border/30">
       <div className={`flex-1 flex items-center gap-2 ${isHome ? "" : "flex-row-reverse"}`}>
-        <Icon name="match" className="w-3 h-3 text-muted-foreground shrink-0" />
-        <span className="text-sm text-muted-foreground">{t("matchPreview.style")}</span>
-        <span className="text-sm font-bold px-2.5 py-0.5 rounded border border-border" style={pillStyle}>
+        <Icon name="match" className="w-4 h-4 text-muted-foreground shrink-0" />
+        <span className="text-base text-muted-foreground">{t("matchPreview.style")}</span>
+        <span className="text-base font-bold px-2.5 py-0.5 rounded border border-border" style={pillStyle}>
           {tacticalStyleLabel(tacticalStyle)}
         </span>
       </div>
@@ -245,30 +246,30 @@ function TeamCard({
           <a href={squadUrl} className="shrink-0 rounded-full hover:opacity-80 transition-opacity">
             <ClubLogo
               logoUrl={logoUrl}
-              className="w-8 h-8 rounded-full"
+              className="w-10 h-10 rounded-full"
               imgClassName="w-full h-full object-contain p-1"
             />
           </a>
         ) : (
           <ClubLogo
             logoUrl={logoUrl}
-            className="w-8 h-8 rounded-full shrink-0"
+            className="w-10 h-10 rounded-full shrink-0"
             imgClassName="w-full h-full object-contain p-1"
           />
         )}
         <div className={`min-w-0 ${isHome ? "" : "text-right"}`}>
           {squadUrl ? (
             <a href={squadUrl} className="no-underline hover:opacity-70 transition-opacity">
-              <h2 className="font-display font-black uppercase text-xl leading-none m-0 truncate">
+              <h2 className="font-display font-black uppercase text-2xl leading-none m-0 truncate">
                 {squadName}
               </h2>
             </a>
           ) : (
-            <h2 className="font-display font-black uppercase text-xl leading-none m-0 truncate">
+            <h2 className="font-display font-black uppercase text-2xl leading-none m-0 truncate">
               {squadName}
             </h2>
           )}
-          <p className="text-[13px] font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
+          <p className="text-sm font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
             {formation}
           </p>
         </div>
@@ -279,7 +280,7 @@ function TeamCard({
 
       {/* Starting XI — all 11 */}
       <div className="flex-1">
-        <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-1.5 font-display">
+        <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.08em] mb-1.5 font-display">
           {t("matchPreview.startingXI")}
         </p>
         <div>
@@ -298,7 +299,7 @@ function TeamCard({
         </div>
 
         {benchCount > 0 && (
-          <p className={`text-sm text-muted-foreground mt-2 m-0 ${isHome ? "" : "text-right"}`}>
+          <p className={`text-base text-muted-foreground mt-2 m-0 ${isHome ? "" : "text-right"}`}>
             + {benchCount} {t(benchCount !== 1 ? "matchPreview.substitutes" : "matchPreview.substitutes")}
           </p>
         )}
@@ -1014,7 +1015,7 @@ export function MatchPreviewScreen() {
       </div>
 
       {/* Team cards */}
-      <div className="w-full max-w-5xl flex items-stretch gap-5">
+      <div className="w-full max-w-5xl min-[1600px]:max-w-6xl flex items-stretch gap-5">
         <TeamCard
           side="home"
           squadName={homeSquadName}
@@ -1054,7 +1055,7 @@ export function MatchPreviewScreen() {
       </div>
 
       {/* Match info */}
-      <div className="w-full max-w-5xl shrink-0">
+      <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
         <div className="card-arcade rounded-md px-6 py-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <InfoCell icon={MapPin} label={t("matchPreview.venue")} value={venue} />
@@ -1072,7 +1073,7 @@ export function MatchPreviewScreen() {
 
       {/* Low-fitness warning — starters of the player's own XI below the risk threshold */}
       {lowFitnessStarterNames.length > 0 && (
-        <div className="w-full max-w-5xl shrink-0">
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="flex items-start gap-2 rounded-md border border-chart-4/40 bg-chart-4/10 px-4 py-2.5">
             <Icon name="alert" size={16} className="text-chart-4 mt-0.5 shrink-0" />
             <p className="text-sm text-chart-4 m-0">
@@ -1084,7 +1085,7 @@ export function MatchPreviewScreen() {
 
       {/* Rotation suggestion — tired starters the user can rest for this match */}
       {!rotationHidden && !!matchSetup?.rotationSuggestion && matchSetup.rotationSuggestion.length > 0 && (
-        <div className="w-full max-w-5xl shrink-0">
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="flex items-start gap-2 rounded-md border border-chart-4/40 bg-chart-4/10 px-4 py-2.5">
             <Icon name="alert" size={16} className="text-chart-4 mt-0.5 shrink-0" />
             <div className="text-sm text-chart-4 m-0 space-y-0.5 flex-1">
@@ -1123,7 +1124,7 @@ export function MatchPreviewScreen() {
 
       {/* Rotation already applied (assistant or accepted suggestion) */}
       {!!matchSetup?.rotationApplied && matchSetup.rotationApplied.length > 0 && (
-        <div className="w-full max-w-5xl shrink-0">
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="flex items-start gap-2 rounded-md border border-chart-2/40 bg-chart-2/10 px-4 py-2.5">
             <Icon name="check-circle" size={16} className="text-chart-2 mt-0.5 shrink-0" />
             <div className="text-sm text-chart-2 m-0 space-y-0.5 flex-1">
@@ -1153,7 +1154,7 @@ export function MatchPreviewScreen() {
 
       {/* Injured-starter replacements — players the saved lineup wanted who were swapped out for being injured */}
       {!!matchSetup?.injuredReplaced && matchSetup.injuredReplaced.length > 0 && (
-        <div className="w-full max-w-5xl shrink-0">
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2.5">
             <Icon name="alert" size={16} className="text-destructive mt-0.5 shrink-0" />
             <div className="text-sm text-destructive m-0 space-y-0.5">
@@ -1167,44 +1168,28 @@ export function MatchPreviewScreen() {
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons: the standard Button for all four (#65 follow-up) — secondary for the
+          side actions, primary for Start game, same font and height. */}
       <div className="flex items-center gap-4 shrink-0 pb-2 flex-wrap justify-center">
-        <a
-          href="/formation"
-          className="flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-[0.08em] hover:bg-card hover:border-border/80 transition-all no-underline font-display"
-        >
-          <Icon name="settings" className="w-4 h-4" />
+        <Button variant="secondary" onClick={() => { window.location.href = "/formation"; }}>
+          <Icon name="settings" size={16} />
           {t("matchPreview.editTactics")}
-        </a>
+        </Button>
 
-        <button
-          type="button"
-          onClick={() => setShowLastMinuteSubs(true)}
-          className="flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-[0.08em] hover:bg-card hover:border-border/80 transition-all cursor-pointer font-display"
-        >
-          <Icon name="arrow-right-left" className="w-4 h-4" />
+        <Button variant="secondary" onClick={() => setShowLastMinuteSubs(true)}>
+          <Icon name="arrow-right-left" size={16} />
           {t("matchPreview.lastMinuteSubs")}
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          onClick={handleSendAssistant}
-          disabled={commencing}
-          className="flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card/60 text-foreground font-bold text-sm uppercase tracking-[0.08em] hover:bg-card hover:border-border/80 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed font-display"
-        >
+        <Button variant="secondary" onClick={handleSendAssistant} disabled={commencing}>
           {commencing ? t("matchPreview.simulating") : t("matchPreview.sendAssistant")}
-          {!commencing && <Icon name="chevron-right" className="w-4 h-4" />}
-        </button>
+          {!commencing && <Icon name="chevron-right" size={16} />}
+        </Button>
 
-        <button
-          type="button"
-          onClick={handleStartGame}
-          disabled={commencing}
-          className="flex items-center gap-2 px-8 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm cursor-pointer border-0 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
+        <Button variant="primary" onClick={handleStartGame} disabled={commencing}>
           {t("matchPreview.startGame")}
-          <Icon name="play" className="w-4 h-4" />
-        </button>
+          <Icon name="play" size={16} />
+        </Button>
       </div>
 
       {showLastMinuteSubs && matchSetup && (
@@ -1232,10 +1217,10 @@ function InfoCell({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Icon className="w-3.5 h-3.5" />
+        <Icon className="w-4 h-4" />
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
-      <p className="text-sm font-semibold text-foreground m-0">{value}</p>
+      <p className="text-base font-semibold text-foreground m-0">{value}</p>
     </div>
   );
 }
