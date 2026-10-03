@@ -2484,10 +2484,9 @@ export function startAerialBall(
     const s0: GameState = { ...state, setPiece: null };
     const goalX = holder.attackDir === 1 ? PITCH_LENGTH : 0;
     const distToLine = (goalX - holder.x) * holder.attackDir;
-    // A blocked cross goes behind for a corner (`set-pieces-play.md`); a blocked long ball only near the line.
-    const behind = kind === 'cross'
-      ? rng() < SET_PIECE_CONFIG.CROSS_BLOCK_CORNER_CHANCE
-      : distToLine <= C.CLEARANCE_CORNER_DEPTH && rng() < C.CLEARANCE_CORNER_CHANCE;
+    // Near the line a block goes behind for a corner (`set-pieces-play.md`): crosses more often.
+    const behind = distToLine <= C.CLEARANCE_CORNER_DEPTH
+      && rng() < (kind === 'cross' ? SET_PIECE_CONFIG.CROSS_BLOCK_CORNER_CHANCE : C.CLEARANCE_CORNER_CHANCE);
     if (behind) {
       const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
       return resolveOOBSetPiece(s0, 'corner', holder.team, exitX, holder.y, blocker.id, 'clearance', 'cross_block').state;
