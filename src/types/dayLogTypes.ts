@@ -26,6 +26,13 @@ export interface MatchTeamStats {
   headerGoals?:        number;
   longBalls?:          number;
   longBallsCompleted?: number;
+  /** Set pieces (`.claude/rules/game-engine/set-pieces-play.md`). Optional: older events may omit them. */
+  corners?:             number;
+  freeKicks?:           number;
+  directFreeKickShots?: number;
+  /** Goals straight from a direct free kick / from any set piece (penalties included) — part of the score. */
+  directFreeKickGoals?: number;
+  setPieceGoals?:       number;
 }
 
 export interface MatchPlayerStats {
