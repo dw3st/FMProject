@@ -513,6 +513,11 @@ export function performSubstitution(
 
   const newPlayers = state.players.map(p => p.id === outPlayerId ? incoming : p);
   const newBench   = bench.filter(p => p.id !== inPlayerId);
+  // A wall player subbed during a direct free kick: the incoming player takes his spot in the wall.
+  const sp = state.setPiece;
+  const setPiece = sp?.wallIds?.includes(outPlayerId)
+    ? { ...sp, wallIds: sp.wallIds.map(id => (id === outPlayerId ? inPlayerId : id)) }
+    : sp;
 
   return cleanupAfterPlayerLeft({
     ...state,
@@ -523,6 +528,7 @@ export function performSubstitution(
     subsRemainingB:  team === 'B' ? state.subsRemainingB - 1 : state.subsRemainingB,
     substitutions:   [...state.substitutions, record],
     ballHolderId,
+    setPiece,
   }, outPlayerId);
 }
 
@@ -530,13 +536,19 @@ export function performSubstitution(
  * Process all pending substitutions for a team, capped by remaining subs.
  */
 function flushPendingSubs(state: GameState, team: TeamId): GameState {
-  const pending = team === 'A' ? state.pendingSubsA : state.pendingSubsB;
+  const all = team === 'A' ? state.pendingSubsA : state.pendingSubsB;
+  if (all.length === 0) return state;
+  // The taker of a set piece being set up keeps his place until the ball is played: subbing him
+  // during the freeze would hand the ball to whoever stands nearest, off the restart spot.
+  const takerId = state.setPiece?.takerId;
+  const deferred = all.filter(req => req.outId === takerId);
+  const pending = all.filter(req => req.outId !== takerId);
   if (pending.length === 0) return state;
 
   let s = {
     ...state,
-    pendingSubsA: team === 'A' ? [] : state.pendingSubsA,
-    pendingSubsB: team === 'B' ? [] : state.pendingSubsB,
+    pendingSubsA: team === 'A' ? deferred : state.pendingSubsA,
+    pendingSubsB: team === 'B' ? deferred : state.pendingSubsB,
   };
 
   for (const req of pending) {

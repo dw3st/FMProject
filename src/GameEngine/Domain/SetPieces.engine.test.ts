@@ -113,6 +113,26 @@ describe("free kicks", () => {
   });
 });
 
+describe("substitutions during a set-piece freeze", () => {
+  test("the taker is not subbed before the kick; a subbed wall player is replaced in the wall", () => {
+    const { s, attacker, defender } = foulSituation(PITCH_LENGTH - 22, 37);
+    let fk = foul(s, defender, attacker);
+    const takerId = fk.setPiece!.takerId;
+    const wallOut = fk.setPiece!.wallIds![0]!;
+    const inA = fk.benchA[0]!.id;
+    const inB = fk.benchB[0]!.id;
+    fk = { ...fk, pendingSubsA: [{ outId: takerId, inId: inA }], pendingSubsB: [{ outId: wallOut, inId: inB }] } as GameState;
+    const out = tickState(fk, 0.2).state;
+    expect(out.ballHolderId).toBe(takerId);
+    expect(out.setPiece?.takerId).toBe(takerId);
+    expect(holder(out).x).toBeCloseTo(PITCH_LENGTH - 22, 5);
+    expect(out.pendingSubsA.map(p => p.outId)).toEqual([takerId]);
+    expect(out.players.some(p => p.id === inB)).toBe(true);
+    expect(out.setPiece!.wallIds).toContain(inB);
+    expect(out.setPiece!.wallIds).not.toContain(wallOut);
+  });
+});
+
 describe("corners", () => {
   test("box layout, the taker on the flag, cornerAwarded, a set-piece phase", () => {
     const s = buildState();
