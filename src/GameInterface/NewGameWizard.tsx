@@ -73,6 +73,21 @@ type ManagerData = {
 const database = (databasesRaw as DatabaseEntry[]).find((d) => d.playable) ?? null;
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
 
+/**
+ * Free-text fields of the wizard never show the browser's own autofill / history popup (issue
+ * #66: it pops up in the browser's font over the manager name). `autoComplete="off"` covers the
+ * history list; the neutral `name`s plus the password-manager opt-outs keep Chrome's name/address
+ * heuristics and LastPass/1Password/Dashlane from attaching to them.
+ */
+const NO_AUTOFILL = {
+  autoComplete: "off",
+  autoCorrect: "off",
+  spellCheck: false,
+  "data-form-type": "other",
+  "data-lpignore": "true",
+  "data-1p-ignore": "true",
+} as const;
+
 const isManagerValid = (m: ManagerData) =>
   m.name.trim().length >= 2 && !!m.background && !!m.nationality;
 
@@ -225,6 +240,8 @@ export function NewGameWizard() {
         <input
           id="new-game-country-search"
           type="text"
+          {...NO_AUTOFILL}
+          name="fmp-territory"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t("newGame.searchTerritory")}
@@ -270,11 +287,14 @@ export function NewGameWizard() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-background px-4 py-6 text-foreground">
-      <Wordmark size="lg" className="mb-6 block text-center" />
+    // From `md` the page is exactly one viewport tall: the card takes what the wordmark leaves,
+    // its three columns share that height and each scrolls on its own, so the action row at the
+    // bottom of the right column is always visible (issue #66).
+    <div className="min-h-screen md:h-dvh md:min-h-0 md:overflow-hidden flex flex-col items-center bg-background px-4 py-6 text-foreground">
+      <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
       {/* Wider frame and a narrower profile column while picking the country, so the world map
           gets most of the width; back to 1200 px once a country (and its club list) is shown. */}
-      <div className={`flex w-full ${selectedCountry ? "max-w-[1200px]" : "max-w-[1600px]"} flex-1 flex-col md:flex-row min-h-0 md:h-[calc(100vh-9rem)] overflow-hidden rounded-md border border-border bg-background/90`}>
+      <div className={`flex w-full ${selectedCountry ? "max-w-[1200px]" : "max-w-[1600px]"} flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90`}>
       <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
         <button
           type="button"
@@ -291,11 +311,11 @@ export function NewGameWizard() {
       </aside>
 
       <main className="flex-1 flex flex-col md:flex-row min-h-0 min-w-0">
-        <section className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
+        <section className="flex-1 min-w-0 min-h-0 flex flex-col px-6 pt-5 md:pb-0 pb-5">
           <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 2 })}</p>
           <ScreenTitle>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
-            <>
+            <div className="flex-1 min-h-0 overflow-y-auto pb-5">
               <p className="text-sm text-muted-foreground mt-6 xl:hidden">{t("newGame.selectTerritoryDetail")}</p>
               <div className="hidden xl:block mt-6">
                 <WorldMap
@@ -305,7 +325,7 @@ export function NewGameWizard() {
                   onSelect={setSelectedCountry}
                 />
               </div>
-            </>
+            </div>
           ) : (
             <>
               <button
@@ -316,7 +336,7 @@ export function NewGameWizard() {
                 <Icon name="chevron-left" size={16} />
                 {t("newGame.showMap")}
               </button>
-              <div className="overflow-x-auto mt-4">
+              <div className="overflow-x-auto mt-4 shrink-0">
                 <Tabs
                   tabs={countryLeagues.map((l) => ({ key: l.slug, label: l.name }))}
                   active={selectedLeagueSlug}
@@ -330,7 +350,7 @@ export function NewGameWizard() {
               {countryLeagues.length === 0 ? (
                 <p className="text-sm text-muted-foreground mt-4">{t("common.loading")}</p>
               ) : (
-                <ul className="list-none p-0 m-0 mt-2">
+                <ul className="list-none p-0 m-0 mt-2 flex-1 min-h-0 md:overflow-y-auto pb-5">
                   {teams.map((club) => {
                     const selected = selectedTeam?.squadId === club.squadId;
                     const profile = profiles[club.squadId];
@@ -362,14 +382,17 @@ export function NewGameWizard() {
           )}
         </section>
 
-        <aside className={`${selectedCountry ? "md:w-80" : "md:w-64"} shrink-0 md:border-l border-t md:border-t-0 border-border px-6 py-5 flex flex-col md:overflow-y-auto`}>
-          {selectedTeam ? (
-            <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
-          ) : (
-            <p className="text-sm text-muted-foreground m-0">{t("newGame.selectClubDetail")}</p>
-          )}
+        <aside className={`${selectedCountry ? "md:w-80" : "md:w-64"} shrink-0 md:border-l border-t md:border-t-0 border-border flex flex-col min-h-0`}>
+          <div className="flex-1 min-h-0 md:overflow-y-auto px-6 pt-5 pb-4">
+            {selectedTeam ? (
+              <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
+            ) : (
+              <p className="text-sm text-muted-foreground m-0">{t("newGame.selectClubDetail")}</p>
+            )}
+          </div>
 
-          <div className="mt-auto pt-6">
+          {/* Action row: outside the scrolling area, always at the bottom of the card. */}
+          <div className="shrink-0 border-t border-border px-6 py-4">
             {startError && (
               <Notice kind="error" className="mb-3">
                 {startError}
@@ -515,9 +538,11 @@ function ManagerForm({
       <div className="grid gap-8 mt-8 md:grid-cols-[1fr_1.4fr]">
         <div>
           <TextField
-            id="manager-name"
+            id="new-game-coach"
             label={t("newGame.managerName")}
             type="text"
+            {...NO_AUTOFILL}
+            name="fmp-coach"
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             placeholder={t("newGame.enterName")}
