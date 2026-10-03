@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData, LeagueTeam } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
@@ -105,6 +105,9 @@ export function NewGameWizard() {
   const [starting, setStarting] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  /** Country highlighted in both the list and the map; `from` says which side the pointer is on. */
+  const [hovered, setHovered] = useState<{ slug: string; from: "list" | "map" } | null>(null);
+  const countryListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/leagues")
@@ -155,6 +158,28 @@ export function NewGameWizard() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeagueSlug, activeLeague]);
+
+  // Hovering a country on the map brings its row into view in the list. Only the list scrolls
+  // (never `scrollIntoView`, which also moves the page), smoothly unless reduced motion is on.
+  useEffect(() => {
+    if (hovered?.from !== "map") return;
+    const list = countryListRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-country-slug="${hovered.slug}"]`);
+    if (!list || !row) return;
+    const listRect = list.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const margin = 8;
+    let delta = 0;
+    if (rowRect.top < listRect.top) delta = rowRect.top - listRect.top - margin;
+    else if (rowRect.bottom > listRect.bottom) delta = rowRect.bottom - listRect.bottom + margin;
+    if (delta === 0) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    list.scrollBy({ top: delta, behavior: reduceMotion ? "auto" : "smooth" });
+  }, [hovered]);
+
+  const hoverFromList = (slug: string) => setHovered({ slug, from: "list" });
+  const leaveFromList = (slug: string) =>
+    setHovered((h) => (h?.slug === slug && h.from === "list" ? null : h));
 
   async function handleStartCareer() {
     if (!database || !managerValid || !selectedTeam || !activeLeague || !manager.background || !manager.nationality || starting) {
@@ -250,7 +275,7 @@ export function NewGameWizard() {
           className="w-full h-10 bg-transparent border border-border rounded pl-9 pr-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
         />
       </div>
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div ref={countryListRef} className="flex-1 overflow-y-auto min-h-0">
         {groups.map((group) => (
           <div key={group.continent} className="mb-4">
             <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mb-1 mt-0 px-2">
@@ -259,10 +284,16 @@ export function NewGameWizard() {
             <ul className="list-none p-0 m-0">
               {group.countries.map((country) => {
                 const selected = selectedCountry?.slug === country.slug;
+                const lit = hovered?.slug === country.slug;
                 return (
                   <li key={country.slug}>
                     <button
                       type="button"
+                      data-country-slug={country.slug}
+                      onMouseEnter={() => hoverFromList(country.slug)}
+                      onMouseLeave={() => leaveFromList(country.slug)}
+                      onFocus={() => hoverFromList(country.slug)}
+                      onBlur={() => leaveFromList(country.slug)}
                       disabled={!country.playable}
                       title={!country.playable ? t("common.comingSoon") : undefined}
                       onClick={() => {
@@ -271,7 +302,11 @@ export function NewGameWizard() {
                       }}
                       aria-pressed={selected}
                       className={`w-full h-8 flex items-center gap-2 px-2 rounded text-left text-sm border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                        selected ? "bg-primary/10 text-primary" : "bg-transparent text-foreground hover:bg-foreground/5"
+                        selected
+                          ? "bg-primary/10 text-primary"
+                          : lit
+                            ? "bg-foreground/10 text-foreground"
+                            : "bg-transparent text-foreground hover:bg-foreground/5"
                       }`}
                     >
                       <span className={`fi fi-${country.flag} w-5 h-[15px] rounded-sm bg-cover bg-center shrink-0`} />
@@ -317,6 +352,8 @@ export function NewGameWizard() {
                   selectedSlug={null}
                   displayName={displayName}
                   onSelect={setSelectedCountry}
+                  hoveredSlug={hovered?.slug ?? null}
+                  onHover={(c) => setHovered(c ? { slug: c.slug, from: "map" } : null)}
                 />
               </div>
             </div>

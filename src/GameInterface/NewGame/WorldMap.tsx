@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { CountryEntry } from "@/types/worldTypes";
 import {
@@ -30,28 +30,35 @@ interface WorldMapProps {
   selectedSlug: string | null;
   displayName: (c: CountryEntry) => string;
   onSelect: (c: CountryEntry) => void;
+  /** Country highlighted right now, shared with the country list (hover or keyboard focus there). */
+  hoveredSlug: string | null;
+  /** The pointer entered a playable country on the map (`null` when it leaves the map). */
+  onHover: (c: CountryEntry | null) => void;
 }
 
 /**
  * Clickable world map for the new-game country step. Complementary to the country list (which
- * covers keyboard and screen-reader use), so the drawing itself is `aria-hidden`.
+ * covers keyboard and screen-reader use), so the drawing itself is `aria-hidden`. The highlighted
+ * country is shared with the list: hovering or focusing a row lights the country here, and
+ * hovering a country here lights its row.
  */
-export function WorldMap({ countries, selectedSlug, displayName, onSelect }: WorldMapProps) {
+export function WorldMap({ countries, selectedSlug, displayName, onSelect, hoveredSlug, onHover }: WorldMapProps) {
   const { t } = useTranslation();
-  const [hovered, setHovered] = useState<CountryEntry | null>(null);
   const byIso = useMemo(() => [...mappableCountries(countries).entries()], [countries]);
   const selected = countries.find((c) => c.slug === selectedSlug) ?? null;
+  const hovered = countries.find((c) => c.slug === hoveredSlug) ?? null;
   const caption = hovered ?? selected;
+  const hoveredIsos = byIso.filter(([, c]) => c.slug === hoveredSlug).map(([iso]) => iso);
 
   const fillFor = (country: CountryEntry) =>
     country.slug === selectedSlug
       ? "fill-primary"
-      : hovered?.slug === country.slug
+      : country.slug === hoveredSlug
         ? "fill-primary/70"
         : "fill-primary/35";
   const handlersFor = (country: CountryEntry) =>
     country.playable
-      ? { onMouseEnter: () => setHovered(country), onClick: () => onSelect(country) }
+      ? { onMouseEnter: () => onHover(country), onClick: () => onSelect(country) }
       : {};
 
   return (
@@ -67,30 +74,41 @@ export function WorldMap({ countries, selectedSlug, displayName, onSelect }: Wor
         viewBox={VIEWBOX}
         className="w-full h-auto block"
         aria-hidden="true"
-        onMouseLeave={() => setHovered(null)}
+        onMouseLeave={() => onHover(null)}
       >
         <path d={WORLD_BACKGROUND_PATH} className="fill-border" />
         {byIso.map(([iso, country]) => (
           <g
             key={iso}
             {...handlersFor(country)}
-            className={`${fillFor(country)} ${country.playable ? "cursor-pointer" : "opacity-40"} transition-colors`}
+            className={`${fillFor(country)} ${country.playable ? "cursor-pointer" : "opacity-40"} transition-colors motion-reduce:transition-none`}
           >
             <path d={COUNTRY_PATHS[iso]} />
           </g>
+        ))}
+        {/* Outline of the highlighted country, drawn over its neighbours (borders are shared). */}
+        {hoveredIsos.map((iso) => (
+          <path
+            key={`h-${iso}`}
+            d={COUNTRY_PATHS[iso]}
+            className="fill-none stroke-foreground pointer-events-none"
+            strokeWidth={1.2}
+            strokeLinejoin="round"
+          />
         ))}
         {/* Markers last, so a neighbour's shape (Malta next to Sicily) never covers them. */}
         {byIso.map(([iso, country]) => {
           const marker = COUNTRY_MARKERS[iso];
           if (!marker) return null;
+          const lit = country.slug === hoveredSlug;
           return (
             <circle
               key={`m-${iso}`}
               cx={marker[0]}
               cy={marker[1]}
-              r={MARKER_RADIUS}
+              r={lit ? MARKER_RADIUS * 1.4 : MARKER_RADIUS}
               {...handlersFor(country)}
-              className={`${fillFor(country)} stroke-background ${country.playable ? "cursor-pointer" : "opacity-40"} transition-colors`}
+              className={`${fillFor(country)} ${lit ? "stroke-foreground" : "stroke-background"} ${country.playable ? "cursor-pointer" : "opacity-40"} transition-colors motion-reduce:transition-none`}
               strokeWidth={1.5}
             />
           );
