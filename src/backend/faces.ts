@@ -7,6 +7,7 @@
  * `FACE_VERSION`, so a face change is a new URL.
  */
 import { croppedPlayerFaceSvg } from "@/Domain/faces/playerFaceSvg";
+import { faceRegionOf } from "@/Domain/faces/faceProfile";
 import {
   FACE_COLOR_RE,
   FACE_ID_RE,
@@ -39,7 +40,9 @@ export function parseFaceRequest(file: string, search: URLSearchParams): FaceReq
 }
 
 export function renderFace(req: FaceRequest): string {
-  const key = `${req.playerId}|${req.nationality ?? ""}|${req.colors.map((c) => c ?? "").join(",")}`;
+  // The face depends on the nationality only through its region, so key on the region: arbitrary
+  // `nat` strings can't each take a cache slot for the same SVG.
+  const key = `${req.playerId}|${faceRegionOf(req.nationality)}|${req.colors.map((c) => c ?? "").join(",")}`;
   const hit = cache.get(key);
   if (hit !== undefined) {
     // Refresh recency (Map keeps insertion order → oldest first).
@@ -55,13 +58,16 @@ export function renderFace(req: FaceRequest): string {
 
 export const faceRoutes = {
   "/api/faces/:file": (req: Request & { params: { file: string } }) => {
-    const parsed = parseFaceRequest(decodeURIComponent(req.params.file), new URL(req.url).searchParams);
+    // Bun already percent-decodes route params; decoding again would turn `%25zz` into a URIError.
+    const parsed = parseFaceRequest(req.params.file, new URL(req.url).searchParams);
     if (!parsed) return new Response("Not found", { status: 404 });
     return new Response(renderFace(parsed), {
       headers: {
         "content-type": "image/svg+xml",
         "cache-control": "public, max-age=31536000, immutable",
         "x-content-type-options": "nosniff",
+        // Opened directly, the SVG must not run scripts or load anything; facesjs uses inline styles.
+        "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'",
       },
     });
   },
