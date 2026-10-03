@@ -77,6 +77,14 @@ import {
   LogOut,
   Home,
   Trash2,
+  Sun,
+  CloudSun,
+  CloudRain,
+  Wind,
+  Snowflake,
+  ThermometerSun,
+  ThermometerSnowflake,
+  Landmark,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -166,6 +174,14 @@ export type IconName =
   | "log-out"
   | "home"
   | "trash2"
+  | "sun"
+  | "cloud-sun"
+  | "cloud-rain"
+  | "wind"
+  | "snowflake"
+  | "thermometer-sun"
+  | "thermometer-snowflake"
+  | "stadium"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -251,6 +267,14 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "log-out": LogOut,
   "home": Home,
   "trash2": Trash2,
+  "sun": Sun,
+  "cloud-sun": CloudSun,
+  "cloud-rain": CloudRain,
+  "wind": Wind,
+  "snowflake": Snowflake,
+  "thermometer-sun": ThermometerSun,
+  "thermometer-snowflake": ThermometerSnowflake,
+  "stadium": Landmark,
 };
 
 export interface IconProps {

@@ -1606,7 +1606,19 @@
       "income": "Income",
       "expenses": "Expenses",
       "weekNet": "Week balance",
-      "balance": "Cash"
+      "balance": "Cash",
+      "capacity": "{{seats}} seats",
+      "kickoff": "Kick-off",
+      "weather": {
+        "sunny": "Sunny",
+        "partlyCloudy": "Partly cloudy",
+        "cloudy": "Cloudy",
+        "rain": "Rain",
+        "wind": "Windy",
+        "cold": "Cold",
+        "snow": "Snow",
+        "hot": "Hot"
+      }
     }
   },
   "squadScreen": {

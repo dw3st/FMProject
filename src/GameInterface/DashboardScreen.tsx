@@ -10,7 +10,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
-import type { LeagueData, StandingRow } from "@/types/playerTypes";
+import type { ClubVenue, LeagueData, Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import {
@@ -61,6 +61,7 @@ export function DashboardScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [stageMeta, setStageMeta] = useState<LeagueSeasonMeta | null>(null);
   const [managerRank, setManagerRank] = useState<number | null>(null);
+  const [opponentHome, setOpponentHome] = useState<{ id: string; venue: ClubVenue | null; country: string | null } | null>(null);
 
   useEffect(() => {
     if (!saveLoading && !session) {
@@ -111,6 +112,20 @@ export function DashboardScreen() {
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
   const next = useMemo(() => nextFixture(fixtures, mySquadId, currentDate), [fixtures, mySquadId, currentDate]);
+
+  // Away game: the home ground (stadium, country for the weather) is the opponent's.
+  const awayOpponentId = next && !next.neutral && next.away === mySquadId ? next.home : null;
+  useEffect(() => {
+    if (!saveId || !leagueSlug || !awayOpponentId) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/squad/${leagueSlug}/${encodeURIComponent(awayOpponentId)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<Squad>) : null))
+      .catch(() => null)
+      .then((s) => {
+        if (!cancelled) setOpponentHome({ id: awayOpponentId, venue: s?.venue ?? null, country: s?.country ?? null });
+      });
+    return () => { cancelled = true; };
+  }, [saveId, leagueSlug, awayOpponentId]);
 
   // Cup / continental tie: the stage name ("Quarter-finals") comes from the competition's meta.
   const nextCompetition = next?.competition ?? null;
@@ -163,6 +178,15 @@ export function DashboardScreen() {
     competitionLabel = stage ? `${name} · ${stage}` : name;
   }
 
+  // Home ground of the next match: ours, the opponent's, or none on a neutral ground (a final).
+  const homeGround = !next || next.neutral
+    ? null
+    : next.home === mySquadId
+      ? { venue: squad?.venue ?? null, country: squad?.country ?? null }
+      : opponentHome?.id === next.home
+        ? { venue: opponentHome.venue, country: opponentHome.country }
+        : null;
+
   const round = currentRound(fixtures, mySquadId, session.leagueSlug, currentDate);
   const dateLabel = currentDate ? formatDay(currentDate, i18n.language, "long") : "";
   const subtitle = [dateLabel, round != null ? `${t("common.round")} ${round}` : null].filter(Boolean).join(" · ");
@@ -211,6 +235,8 @@ export function DashboardScreen() {
           competitionLabel={competitionLabel}
           today={currentDate}
           form={lastResults(fixtures, mySquadId)}
+          stadium={homeGround?.venue ?? null}
+          homeCountry={homeGround?.country ?? null}
         />
         <LeagueMiniTable
           title={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}

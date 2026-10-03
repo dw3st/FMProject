@@ -1606,7 +1606,19 @@
       "income": "Receitas",
       "expenses": "Despesas",
       "weekNet": "Saldo da semana",
-      "balance": "Caixa"
+      "balance": "Caixa",
+      "capacity": "{{seats}} lugares",
+      "kickoff": "Horário",
+      "weather": {
+        "sunny": "Sol",
+        "partlyCloudy": "Parcialmente nublado",
+        "cloudy": "Nublado",
+        "rain": "Chuva",
+        "wind": "Vento",
+        "cold": "Frio",
+        "snow": "Neve",
+        "hot": "Calor"
+      }
     }
   },
   "squadScreen": {
