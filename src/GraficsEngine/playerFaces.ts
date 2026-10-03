@@ -8,13 +8,62 @@
  * decoded once per match. Pixi textures are per application and are owned by the caller.
  */
 
+export const MARKER_RADIUS_MIN = 16;
+export const MARKER_RADIUS_MAX = 30;
+
 /**
- * Player marker radius in px. Was a flat 14; now follows the pitch scale (~2.3 yds) so the face
- * inside stays legible (#61), clamped to 16..20 px: a small pitch still gets a bigger dot than
- * before, and a very large one doesn't crowd the players together.
+ * Player marker radius in px. Was a flat 14; follows the pitch scale (~2.3 yds) so the face
+ * inside stays legible (#61). Clamped to 16..30 px: a small pitch still gets a readable dot, and
+ * a very large pitch gets proportionally bigger dots instead of stopping at 20 px.
  */
 export function playerMarkerRadius(scale: number): number {
-  return Math.max(16, Math.min(20, Math.round(scale * 2.3)));
+  return Math.max(MARKER_RADIUS_MIN, Math.min(MARKER_RADIUS_MAX, Math.round(scale * 2.3)));
+}
+
+/** Name label font size for a marker radius: 11 px on the smallest dots, growing slowly with them. */
+export function markerLabelFontSize(radius: number): number {
+  return Math.round(11 + Math.max(0, radius - MARKER_RADIUS_MIN) * 0.25);
+}
+
+/** Pitch background colour (`PixiPitch` → `app.init({ background })`). */
+export const PITCH_COLOR = 0x0b6b2f;
+
+function channels(hex: number): [number, number, number] {
+  return [(hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff];
+}
+
+/** WCAG relative luminance of a 0xRRGGBB colour. */
+export function relativeLuminance(hex: number): number {
+  const [r, g, b] = channels(hex).map((c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio between two colours (1 = identical, 21 = black on white). */
+export function contrastRatio(a: number, b: number): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** Perceptual-ish RGB distance ("redmean"), 0..~765. */
+export function colorDistance(a: number, b: number): number {
+  const [r1, g1, b1] = channels(a);
+  const [r2, g2, b2] = channels(b);
+  const rm = (r1 + r2) / 2;
+  const dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
+  return Math.sqrt((2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db);
+}
+
+/**
+ * True when a team colour would blend into the pitch (e.g. a dark green kit): close in both
+ * brightness and hue. Such a team's markers get a thin light outline so they stay visible. A red
+ * or blue kit is as dark as the grass but clearly a different colour, so it needs nothing.
+ */
+export function needsLightOutline(teamColor: number, pitchColor: number = PITCH_COLOR): boolean {
+  return contrastRatio(teamColor, pitchColor) < 1.6 && colorDistance(teamColor, pitchColor) < 160;
 }
 
 const cache = new Map<string, Promise<HTMLCanvasElement | null>>();
