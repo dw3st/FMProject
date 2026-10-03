@@ -13,10 +13,12 @@ export type GateKind = "league" | "cup" | "continental";
 
 /**
  * Home gate revenue for one fixture of the given competition kind. 0 on a neutral-venue fixture
- * (a cup/continental final) or when the club has no stadium capacity on record.
+ * (a cup/continental final) or when the club has no stadium capacity on record. `fillRate` is the
+ * share of the stadium sold: the human club's comes from its fans (`stadiumFillRate`,
+ * `.claude/rules/game/board-fans.md`, 0.45..0.9); everyone else uses `GATE.FILL_RATE`.
  */
-export function gateRevenue(capacity: number, kind: GateKind, neutral = false): number {
+export function gateRevenue(capacity: number, kind: GateKind, neutral = false, fillRate: number = GATE.FILL_RATE): number {
   if (neutral || capacity <= 0) return 0;
   const price = GATE.TICKET_PRICE * (kind === "continental" ? GATE.CONTINENTAL_MULT : 1);
-  return Math.round(capacity * GATE.FILL_RATE * price);
+  return Math.round(capacity * fillRate * price);
 }
