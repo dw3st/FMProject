@@ -1,6 +1,6 @@
 # Treino de estilos de jogo (familiaridade)
 
-Spec: `docs/superpowers/specs/2026-10-02-style-training-design.md`. Etapa 15 do `docs/ROADMAP.md`, versão **2.10**.
+Spec: `docs/superpowers/specs/2026-10-02-style-training-design.md`. Etapa 15 do `docs/ROADMAP.md`, versão **2.9**.
 Visual: `.claude/rules/ui-standard.md`. Pesos de tática: `.claude/rules/game-engine/tactical-config.md`.
 
 ## Regra
@@ -8,7 +8,8 @@ Visual: `.claude/rules/ui-standard.md`. Pesos de tática: `.claude/rules/game-en
 - Familiaridade 0..100 por chave: os 5 `TacticalStyle` + `high_line_trap` + `long_ball`
   (`FamiliarityKey`, `src/types/familiarityTypes.ts`).
 - **Só o clube do jogador grava** (`Squad.styleFamiliarity`). Criada em `createSave`: tudo em 50, o estilo
-  salvo em `tactics.json` em 70. O start kit não apaga (restaurada como o staff, `applyRandomStartKit`).
+  salvo em `tactics.json` em 75 — o mesmo valor implícito da IA no próprio estilo, para a largada ser justa. O start kit não apaga (restaurada como o staff, `applyRandomStartKit`), e nenhum clube de um kit carrega
+  `staff`/`styleFamiliarity` (`stripHumanOnly` no snapshot e ao aplicar).
 - **IA não simula** (`.claude/rules/AI-clubs/finance.md`): 75 no próprio estilo (sempre `balanced`), 50 nos
   demais (`aiFamiliarity`), nada gravado.
 - `familiarityFactor(v)` linear: 0 em 50, +1 em 100, −1 em 0. **Em 50 nada muda, por construção.**
@@ -38,13 +39,16 @@ Visual: `.claude/rules/ui-standard.md`. Pesos de tática: `.claude/rules/game-en
 Cada dia de treino do clube do jogador (`buildTrainingEvent`, só se o elenco grava familiaridade):
 
 ```
-foco   += GAIN_PER_SESSION (2) × devMult do auxiliar × (1 − v/100)      // teto suave
-demais −= DECAY_PER_DAY (0,15), nunca abaixo de DECAY_FLOOR (30)         // abaixo do piso: fica como está
+foco   += GAIN_PER_SESSION (2) × devMult do auxiliar × intensidade × (1 − v/100)   // teto suave
+demais −= DECAY_PER_DAY (0,15), nunca abaixo de DECAY_FLOOR (30)                    // abaixo do piso: fica como está
+intensidade = INTENSITY_GAIN: leve 0,7 · normal 1 · pesado 1,3
 ```
 
-Foco = `meta.style_focus` (tela de treino; PUT `/api/saves/:id` valida com `isFamiliarityKey`), senão o estilo
-de `tactics.json`. Dias de jogo e de descanso não mexem. De 50, um foco constante chega a ~82 em 50 sessões e
-~93 em 100 (auxiliar nota 5).
+- O foco só ganha se **pelo menos um jogador treinou** no dia (alguém acima da energia mínima e sem lesão);
+  senão o foco também cai, como as demais chaves.
+- Foco = `meta.style_focus` (tela de treino; PUT `/api/saves/:id` valida com `isFamiliarityKey`; `null` limpa =
+  "Auto"), senão o estilo de `tactics.json`. Dias de jogo e de descanso não mexem.
+- De 50, um foco constante (normal, auxiliar nota 5) chega a ~82 em 50 sessões e ~93 em 100.
 
 ## Efeito no motor (`FamiliarityConfig.ts`)
 
@@ -56,7 +60,7 @@ de `tactics.json`. Dias de jogo e de descanso não mexem. De 50, um foco constan
    | `high_press` | `PRESS_INTENSITY` + 0,05 |
    | `counter_attack`, `direct_play` | `PROGRESS_WEIGHT` (passe e condução) × 1,03 |
    | `balanced` | `LANE_WEIGHT`, `PROGRESS_WEIGHT` × 1,015 |
-   | `high_line_trap` (só com linha alta) | `DEFENSIVE_LINE_HEIGHT` + 0,03 |
+   | `high_line_trap` (só com linha alta) | `DEFENSIVE_LINE_HEIGHT` + 0,03 (só a altura da linha; a consciência de impedimento, `ATTACK_CONFIG.OFFSIDE_AWARENESS`, é global e não muda) |
    | `long_ball` (sempre) | `LONG_BALL_WEIGHT` × 1,05 |
 
    Medido (abaixo): esses ajustes sozinhos não mudam o resultado (≈ 0 p.p.).
@@ -82,7 +86,7 @@ nada (IA × IA; o clube do jogador sempre joga no motor completo), então a cali
 
 - Táticas (`FormationScreen`): painel "Familiaridade com o estilo", uma barra por chave, o estilo em uso
   destacado. Lê `squad.styleFamiliarity`.
-- Desenvolvimento → Configuração de treinamento: chips "Foco de estilo" (sem escolha = estilo da tática).
+- Desenvolvimento → Configuração de treinamento: chips "Foco de estilo": "Auto" (estilo da tática, padrão) + as 7 chaves.
 - i18n: `familiarity.*` (en, pt-BR).
 
 ## `/test`, `/lab`

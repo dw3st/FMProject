@@ -200,7 +200,7 @@ describe("finance ledger — start kit reconciliation", () => {
 
     expect(postKitSquad?.finances?.budget).toBe(preKitBudget);
     // Style familiarity (human club only) is set by createSave and survives the kit, like the staff.
-    expect(preKitSquad!.styleFamiliarity?.balanced).toBe(70);
+    expect(preKitSquad!.styleFamiliarity?.balanced).toBe(75);
     expect(postKitSquad?.styleFamiliarity).toEqual(preKitSquad!.styleFamiliarity);
     // ...and no other club of the kit world carries a human-only field.
     const others = (await saveService.listSquadFiles(saveIdKit)).filter((f) => f.squad.id !== postKitSquad!.id);

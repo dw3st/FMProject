@@ -3,6 +3,7 @@ import { saveService } from "@/backend/SaveService";
 import { saveRoutes } from "@/backend/saves";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
+import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 
 describe("style familiarity: career start + training focus", () => {
   let saveId = "";
@@ -18,7 +19,8 @@ describe("style familiarity: career start + training focus", () => {
     });
     saveId = meta.id;
     const mine = await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId);
-    expect(mine?.styleFamiliarity?.possession).toBe(70);
+    expect(mine?.styleFamiliarity?.possession).toBe(FAMILIARITY.SAVED_STYLE_INITIAL);
+    expect(FAMILIARITY.SAVED_STYLE_INITIAL).toBe(FAMILIARITY.AI_OWN_STYLE);
     expect(mine?.styleFamiliarity?.high_press).toBe(50);
     const index = await saveService.getSquadIndex(saveId);
     const otherRow = index.inLeague(meta.leagueSlug).find((r) => r.squadId !== mine!.id)!;
