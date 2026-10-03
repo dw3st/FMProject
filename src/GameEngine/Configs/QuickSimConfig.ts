@@ -221,7 +221,7 @@ export const QUICK_SIM_CONFIG = {
    * by HEADER_LINE_WEIGHT × (0.5 + heading/10) — the score never changes.
    */
   /** Etapa 14 (set pieces): 0.105 → 0.19 (corners and crossed free kicks are headed in). */
-  HEADER_GOAL_SHARE: 0.19,
+  HEADER_GOAL_SHARE: 0.195,
   /**
    * Engine header goals per starter slot with set pieces: DEF ≈ FWD (centre-backs go up for corners),
    * MID ≈ 0.22 × FWD. Was DEF 0.01, MID 0.11 before set pieces.
@@ -246,10 +246,10 @@ export const QUICK_SIM_CONFIG = {
    * already a header is re-attributed by SET_PIECE_LINE_WEIGHT × (0.5 + heading/10). Penalty goals
    * count as set-piece goals too. The score never changes.
    */
-  CORNERS_PER_SIDE: 3.24,
-  DIRECT_FK_SHOTS_PER_SIDE: 0.11,
-  SET_PIECE_GOAL_SHARE: 0.117,
-  DIRECT_FK_GOAL_SHARE: 0.036,
+  CORNERS_PER_SIDE: 3.12,
+  DIRECT_FK_SHOTS_PER_SIDE: 0.13,
+  SET_PIECE_GOAL_SHARE: 0.125,
+  DIRECT_FK_GOAL_SHARE: 0.038,
   /** Non-header set-piece goals: second balls and edge-of-the-box shots, mostly forwards and midfielders. */
   SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.5, MID: 0.5, FWD: 1.0 } as Record<LineGroup, number>,
 } as const;

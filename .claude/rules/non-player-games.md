@@ -889,14 +889,15 @@ Ambas dentro de ±10% (ruído do motor ±3,6% / ±3,3%; rms 5,5%). O desvio anti
 ### Bolas paradas no quickSim (Etapa 14, 3.0)
 
 `rollSetPieces` (`quickSim.ts`, último sorteio da partida): escanteios por Poisson
-(`CORNERS_PER_SIDE` 3,24), tiros livres = faltas do adversário − pênaltis a favor, chutes de falta
-direta por Poisson (`DIRECT_FK_SHOTS_PER_SIDE` 0,11); `SET_PIECE_GOAL_SHARE` (0,117) dos gols viram gols
-de bola parada sem pênalti, `DIRECT_FK_GOAL_SHARE` (0,036) dos gols são faltas diretas (para o melhor
+(`CORNERS_PER_SIDE` 3,12), tiros livres = faltas do adversário − pênaltis a favor, chutes de falta
+direta por Poisson (`DIRECT_FK_SHOTS_PER_SIDE` 0,13); `SET_PIECE_GOAL_SHARE` (0,125) dos gols viram gols
+de bola parada sem pênalti, `DIRECT_FK_GOAL_SHARE` (0,038) dos gols são faltas diretas (sorteadas entre
+todos os gols de bola parada — uma cabeçada escolhida deixa de ser cabeçada —, para o melhor
 finalizador, sem assistência), o resto vai para um defensor/atacante ponderado pelo cabeceio. O
 placar nunca muda. Medido no motor (`bun scripts/setpiece-calibrate.ts` / `aerial-calibrate.ts`, PL
 1600 + Championship 1200); ver `.claude/rules/game-engine/set-pieces-play.md`.
 
-Os números de jogo aéreo e passes foram reajustados à mesma medição: `HEADER_GOAL_SHARE` 0,105 → 0,19,
+Os números de jogo aéreo e passes foram reajustados à mesma medição: `HEADER_GOAL_SHARE` 0,105 → 0,195,
 `HEADER_LINE_WEIGHT` DEF 0,01 → 0,9 (zagueiros cabeceiam nas bolas paradas), `CROSSES_PER_SIDE`
 5,5 → 8,1 (escanteios e faltas cruzadas contam como cruzamento), `CROSS_COMPLETION` 0,21 → 0,15,
 `LONG_BALLS_PER_SIDE` 3,1 → 2,85, `AERIAL_DUELS_PER_MATCH` 9,8 → 14,5, `AERIAL_DUEL_LINE_WEIGHT`
