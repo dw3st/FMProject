@@ -16,7 +16,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: "squad", labelKey: "nav.squad",       href: "/dashboard" },
+  { icon: "home", labelKey: "nav.dashboard",   href: "/dashboard" },
+  // `/squad` is a prefix: the real link is the player's own club (see `hrefOf`).
+  { icon: "squad", labelKey: "nav.squad",       href: "/squad" },
   { icon: "formation", labelKey: "nav.formation",   href: "/formation" },
   { icon: "trend-up", labelKey: "nav.development", href: "/development" },
   { icon: "finances", labelKey: "nav.finances",    href: "/finances" },
@@ -97,16 +99,22 @@ export function TopNavigation({
           {navItems.map((item) => {
             const label = t(item.labelKey);
             const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
+            const href =
+              item.href === "/squad"
+                ? session
+                  ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
+                  : "/dashboard"
+                : item.href;
             return (
               <a
                 key={item.labelKey}
-                href={item.href}
+                href={href}
                 className={active ? linkClass.replace("text-muted-foreground", "text-foreground") : linkClass}
                 title={label}
                 aria-current={active ? "page" : undefined}
               >
                 <Icon name={item.icon} size={16} />
-                <span className="hidden xl:block">{label}</span>
+                <span className="hidden min-[1360px]:block">{label}</span>
               </a>
             );
           })}
@@ -119,7 +127,7 @@ export function TopNavigation({
               aria-label={t("nav.report")}
             >
               <Icon name="report" size={16} />
-              <span className="hidden xl:block">{t("nav.report")}</span>
+              <span className="hidden min-[1360px]:block">{t("nav.report")}</span>
             </button>
           )}
         </div>
@@ -154,7 +162,7 @@ export function TopNavigation({
               className="flex items-center gap-1.5 px-2 py-1 bg-transparent border-0 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
             >
               <Icon name="fast-forward" size={16} />
-              <span className="hidden xl:inline">{t("fastForward.button")}</span>
+              <span className="hidden 2xl:inline">{t("fastForward.button")}</span>
             </button>
           )}
 

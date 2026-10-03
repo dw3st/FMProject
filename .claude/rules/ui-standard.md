@@ -73,7 +73,7 @@ texto (`bg-clip-text`).
   - a coluna que importa (pontos, gols, nota, a coluna ordenada) em `font-black font-display
     text-primary`;
   - linha do clube do jogador / selecionada: `bg-primary/10` e nome em `text-primary`.
-  As tabelas densas de elenco (`SquadTable`, `DataTable` da Base/Equipe técnica) seguem o seu próprio
+  As tabelas densas de elenco (`SquadRosterTable`, `DataTable` da Base/Equipe técnica) seguem o seu próprio
   formato compacto.
 - **Painel:** sem caixa por padrão (só espaçamento e um título de seção); quando precisar de limite,
   `border border-border rounded-md` sem fundo forte e sem sombra.

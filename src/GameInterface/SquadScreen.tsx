@@ -20,7 +20,9 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
-  const [tab, setTab] = useState<"squad" | "youth">("squad");
+  const [tab, setTab] = useState<"squad" | "youth">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "youth" ? "youth" : "squad",
+  );
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";

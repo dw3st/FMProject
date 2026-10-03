@@ -1,20 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClubSidebar } from "@/GameInterface/Dashboard/ClubSidebar";
-import { SquadTable } from "@/GameInterface/Dashboard/SquadTable";
 import { WeekCalendar } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-import type { LeagueData } from "@/types/playerTypes";
+import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
+import { competitionName } from "@/Domain/world/labels";
+import { isCupSlug } from "@/Domain/cups/cupIds";
+import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { inboxSubject } from "@/GameInterface/InboxScreen";
+import type { LeagueData, StandingRow } from "@/types/playerTypes";
+import type { LeagueSeasonMeta } from "@/types/calendarTypes";
+import type { LedgerEntry } from "@/Domain/finance/ledger";
+import {
+  attentionItems,
+  currentRound,
+  lastResults,
+  latestWeekMoney,
+  nextFixture,
+  seasonHighlights,
+  standingsWindow,
+} from "@/GameInterface/Dashboard/dashboardData";
+import {
+  AttentionCard,
+  HighlightsCard,
+  InboxCard,
+  LeagueMiniTable,
+  NextMatchCard,
+  WeekFinancesCard,
+  formatDay,
+  type MatchSide,
+} from "@/GameInterface/Dashboard/HomeCards";
+
+interface LedgerApiResponse {
+  entries: LedgerEntry[];
+  balance: number;
+}
+
+function colorsOf(squadId: string, leagues: LeagueData[], standings: StandingRow[]): [string, string] {
+  const row = standings.find((s) => s.squadId === squadId);
+  if (row) return row.colors;
+  for (const league of leagues) {
+    const team = league.standings.find((s) => s.squadId === squadId);
+    if (team) return team.colors;
+  }
+  return ["#555", "#888"];
+}
 
 export function DashboardScreen() {
-  const { t } = useTranslation();
-  const { session, squad, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType } = useGameSave();
+  const { t, i18n } = useTranslation();
+  const {
+    session, squad, save, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType,
+    inboxMessages, unreadInboxCount,
+  } = useGameSave();
 
-  const [selectedPlayer, setSelectedPlayer] = useState<DisplayPlayer | null>(null);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  const [standings, setStandings] = useState<StandingRow[] | null>(null);
+  const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
+  const [stageMeta, setStageMeta] = useState<LeagueSeasonMeta | null>(null);
   const [calendarCollapsed, setCalendarCollapsed] = useState<boolean>(
     () => typeof window !== "undefined" && window.localStorage.getItem("dashboard.calendarCollapsed") === "1",
   );
@@ -38,18 +82,104 @@ export function DashboardScreen() {
       .catch(() => setLeagues([]));
   }, []);
 
+  const saveId = session?.saveId;
+  const leagueSlug = session?.leagueSlug;
+
+  useEffect(() => {
+    if (!saveId || !leagueSlug) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/leagues/${leagueSlug}/standings`)
+      .then((r) => (r.ok ? (r.json() as Promise<StandingRow[]>) : []))
+      .catch(() => [])
+      .then((rows) => { if (!cancelled) setStandings(Array.isArray(rows) ? rows : []); });
+    return () => { cancelled = true; };
+  }, [saveId, leagueSlug, currentDate]);
+
+  useEffect(() => {
+    if (!saveId) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/ledger`)
+      .then((r) => (r.ok ? (r.json() as Promise<LedgerApiResponse>) : null))
+      .catch(() => null)
+      .then((d) => { if (!cancelled) setLedger(d); });
+    return () => { cancelled = true; };
+  }, [saveId, currentDate]);
+
+  const mySquadId = squad?.id ?? session?.clubId ?? "";
+  const next = useMemo(() => nextFixture(fixtures, mySquadId, currentDate), [fixtures, mySquadId, currentDate]);
+
+  // Cup / continental tie: the stage name ("Quarter-finals") comes from the competition's meta.
+  const nextCompetition = next?.competition ?? null;
+  useEffect(() => {
+    setStageMeta(null);
+    if (!saveId || !nextCompetition) return;
+    const path = isCupSlug(nextCompetition)
+      ? `cups/${nextCompetition}`
+      : isContinentalSlug(nextCompetition)
+        ? `continental/${nextCompetition}`
+        : null;
+    if (!path) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/${path}`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ meta: LeagueSeasonMeta }>) : null))
+      .catch(() => null)
+      .then((d) => { if (!cancelled) setStageMeta(d?.meta ?? null); });
+    return () => { cancelled = true; };
+  }, [saveId, nextCompetition]);
+
   if (saveLoading || !session) {
     return null;
   }
 
-  const mySquadId = squad?.id ?? session.clubId;
+  const clubColors = session.clubColors;
+  const standingRows = standings ?? [];
+  const me: MatchSide = { id: mySquadId, name: session.clubName, colors: [clubColors[0] ?? "#555", clubColors[1] ?? "#888"] };
+  const opponentId = next ? (next.home === mySquadId ? next.away : next.home) : null;
+  const opponent: MatchSide | null = opponentId
+    ? { id: opponentId, name: teamDisplayNameFromLeagues(opponentId, leagues), colors: colorsOf(opponentId, leagues, standingRows) }
+    : null;
+
+  let competitionLabel = "";
+  if (next) {
+    const name = competitionName(next.competition, leagues, i18n.language);
+    let stage: string | undefined;
+    if (isCupSlug(next.competition)) {
+      const s = stageMeta?.cup?.stages.find((st) => st.round === next.round)?.name;
+      stage = s ? t(`cups.stage.${s}`) : undefined;
+    } else if (isContinentalSlug(next.competition)) {
+      const s = stageMeta?.continental?.stages.find((st) => st.rounds.includes(next.round))?.name;
+      const group = stageMeta?.continental?.groups.find((g) => g.clubs.includes(mySquadId))?.name;
+      const leg = next.leg === 1 ? t("continental.leg1") : next.leg === 2 ? t("continental.leg2") : undefined;
+      stage = s === "group"
+        ? t("continental.groupRound", { group: group ?? "?", round: next.round })
+        : s ? [t(`continental.stage.${s}`), leg].filter(Boolean).join(" · ") : undefined;
+    } else {
+      stage = `${t("common.round")} ${next.round}`;
+    }
+    competitionLabel = stage ? `${name} · ${stage}` : name;
+  }
+
+  const round = currentRound(fixtures, mySquadId, session.leagueSlug, currentDate);
+  const dateLabel = currentDate ? formatDay(currentDate, i18n.language, "long") : "";
+  const subtitle = [dateLabel, round != null ? `${t("common.round")} ${round}` : null].filter(Boolean).join(" · ");
+
+  const players = squad?.players ?? [];
+  const inbox = inboxMessages ?? [];
+  const attention = attentionItems({ players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox });
+  const highlights = seasonHighlights(players);
+  // Unread first, then the newest read ones (the inbox is newest first).
+  const recentMessages = [...inbox.filter((m) => !m.read), ...inbox.filter((m) => m.read)].slice(0, 3);
+  const week = latestWeekMoney(ledger?.entries ?? []);
+
+  const squadHref = `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`;
+  const playerHref = (playerId: string) => `${squadHref.replace("/squad/", "/player/")}/${encodeURIComponent(playerId)}`;
 
   return (
     <div className="flex-1 flex overflow-hidden">
       <ClubSidebar
         session={session}
         squad={squad}
-        selectedPlayer={selectedPlayer}
+        selectedPlayer={null}
         fixtures={fixtures}
         currentDate={currentDate}
         mySquadId={mySquadId}
@@ -57,12 +187,44 @@ export function DashboardScreen() {
       />
 
       <ScreenContainer>
-        <ScreenTitle subtitle={squad ? `${squad.players.length} ${t("squadScreen.players")}` : undefined}>{t("nav.squad")}</ScreenTitle>
-        <SquadTable
-          squad={squad}
-          selectedId={selectedPlayer?.id ?? ""}
-          onSelectPlayer={setSelectedPlayer}
+        <ScreenTitle subtitle={subtitle || undefined}>{t("dashboard.home.title")}</ScreenTitle>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <NextMatchCard
+            fixture={next}
+            me={me}
+            opponent={opponent}
+            competitionLabel={competitionLabel}
+            today={currentDate}
+            form={lastResults(fixtures, mySquadId)}
+          />
+          <LeagueMiniTable
+            title={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
+            rows={standingsWindow(standingRows, mySquadId)}
+            myId={mySquadId}
+            loading={standings === null}
+          />
+        </div>
+
+        <AttentionCard
+          items={attention}
+          playerHref={playerHref}
+          squadHref={squadHref}
+          youthHref={`${squadHref}?tab=youth`}
         />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <HighlightsCard
+            mode={highlights.mode}
+            items={highlights.items}
+            clubColors={clubColors}
+            playerHref={playerHref}
+            statsHref="/stats?tab=team"
+          />
+          <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} />
+        </div>
+
+        <WeekFinancesCard week={week} balance={ledger?.balance ?? session.budget ?? null} />
       </ScreenContainer>
 
       <aside
