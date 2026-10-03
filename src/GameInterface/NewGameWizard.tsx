@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData, LeagueTeam } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
@@ -105,6 +105,9 @@ export function NewGameWizard() {
   const [starting, setStarting] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  /** Country highlighted in both the list and the map; `from` says which side the pointer is on. */
+  const [hovered, setHovered] = useState<{ slug: string; from: "list" | "map" } | null>(null);
+  const countryListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/leagues")
@@ -155,6 +158,28 @@ export function NewGameWizard() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeagueSlug, activeLeague]);
+
+  // Hovering a country on the map brings its row into view in the list. Only the list scrolls
+  // (never `scrollIntoView`, which also moves the page), smoothly unless reduced motion is on.
+  useEffect(() => {
+    if (hovered?.from !== "map") return;
+    const list = countryListRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-country-slug="${hovered.slug}"]`);
+    if (!list || !row) return;
+    const listRect = list.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const margin = 8;
+    let delta = 0;
+    if (rowRect.top < listRect.top) delta = rowRect.top - listRect.top - margin;
+    else if (rowRect.bottom > listRect.bottom) delta = rowRect.bottom - listRect.bottom + margin;
+    if (delta === 0) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    list.scrollBy({ top: delta, behavior: reduceMotion ? "auto" : "smooth" });
+  }, [hovered]);
+
+  const hoverFromList = (slug: string) => setHovered({ slug, from: "list" });
+  const leaveFromList = (slug: string) =>
+    setHovered((h) => (h?.slug === slug && h.from === "list" ? null : h));
 
   async function handleStartCareer() {
     if (!database || !managerValid || !selectedTeam || !activeLeague || !manager.background || !manager.nationality || starting) {
@@ -211,24 +236,25 @@ export function NewGameWizard() {
 
   if (step === "manager") {
     return (
-      <div className="flex min-h-screen flex-col items-center bg-background px-6 pt-8 text-foreground">
-        <Wordmark size="lg" className="mb-6 block text-center" />
-        <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden pb-8">
-          <PitchBackdrop players={false} />
-          <div className="relative w-full max-w-[1000px] rounded-md border border-border bg-background/90 p-6 md:p-8">
-            <ManagerForm
-              initial={manager}
-              onCancel={() => {
-                window.location.href = "/start";
-              }}
-              onSubmit={(m) => {
-                setManager(m);
-                setStep("club");
-              }}
-            />
+      <WizardFrame backdrop>
+        {/* Same card as the club step; the form keeps its reading width and scrolls inside. */}
+        <div className="flex-1 min-h-0 md:overflow-y-auto">
+          <div className="flex min-h-full flex-col">
+            <div className="m-auto w-full max-w-[1000px] p-6 md:p-8">
+              <ManagerForm
+                initial={manager}
+                onCancel={() => {
+                  window.location.href = "/start";
+                }}
+                onSubmit={(m) => {
+                  setManager(m);
+                  setStep("club");
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </WizardFrame>
     );
   }
 
@@ -249,7 +275,7 @@ export function NewGameWizard() {
           className="w-full h-10 bg-transparent border border-border rounded pl-9 pr-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
         />
       </div>
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div ref={countryListRef} className="flex-1 overflow-y-auto min-h-0">
         {groups.map((group) => (
           <div key={group.continent} className="mb-4">
             <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mb-1 mt-0 px-2">
@@ -258,10 +284,16 @@ export function NewGameWizard() {
             <ul className="list-none p-0 m-0">
               {group.countries.map((country) => {
                 const selected = selectedCountry?.slug === country.slug;
+                const lit = hovered?.slug === country.slug;
                 return (
                   <li key={country.slug}>
                     <button
                       type="button"
+                      data-country-slug={country.slug}
+                      onMouseEnter={() => hoverFromList(country.slug)}
+                      onMouseLeave={() => leaveFromList(country.slug)}
+                      onFocus={() => hoverFromList(country.slug)}
+                      onBlur={() => leaveFromList(country.slug)}
                       disabled={!country.playable}
                       title={!country.playable ? t("common.comingSoon") : undefined}
                       onClick={() => {
@@ -270,7 +302,11 @@ export function NewGameWizard() {
                       }}
                       aria-pressed={selected}
                       className={`w-full h-8 flex items-center gap-2 px-2 rounded text-left text-sm border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                        selected ? "bg-primary/10 text-primary" : "bg-transparent text-foreground hover:bg-foreground/5"
+                        selected
+                          ? "bg-primary/10 text-primary"
+                          : lit
+                            ? "bg-foreground/10 text-foreground"
+                            : "bg-transparent text-foreground hover:bg-foreground/5"
                       }`}
                     >
                       <span className={`fi fi-${country.flag} w-5 h-[15px] rounded-sm bg-cover bg-center shrink-0`} />
@@ -287,14 +323,7 @@ export function NewGameWizard() {
   );
 
   return (
-    // From `md` the page is exactly one viewport tall: the card takes what the wordmark leaves,
-    // its three columns share that height and each scrolls on its own, so the action row at the
-    // bottom of the right column is always visible (issue #66).
-    <div className="min-h-screen md:h-dvh md:min-h-0 md:overflow-hidden flex flex-col items-center bg-background px-4 py-6 text-foreground">
-      <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
-      {/* Wider frame and a narrower profile column while picking the country, so the world map
-          gets most of the width; back to 1200 px once a country (and its club list) is shown. */}
-      <div className={`flex w-full ${selectedCountry ? "max-w-[1200px]" : "max-w-[1600px]"} flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90`}>
+    <WizardFrame>
       <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
         <button
           type="button"
@@ -323,6 +352,8 @@ export function NewGameWizard() {
                   selectedSlug={null}
                   displayName={displayName}
                   onSelect={setSelectedCountry}
+                  hoveredSlug={hovered?.slug ?? null}
+                  onHover={(c) => setHovered(c ? { slug: c.slug, from: "map" } : null)}
                 />
               </div>
             </div>
@@ -382,7 +413,7 @@ export function NewGameWizard() {
           )}
         </section>
 
-        <aside className={`${selectedCountry ? "md:w-80" : "md:w-64"} shrink-0 md:border-l border-t md:border-t-0 border-border flex flex-col min-h-0`}>
+        <aside className="md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-border flex flex-col min-h-0">
           <div className="flex-1 min-h-0 md:overflow-y-auto px-6 pt-5 pb-4">
             {selectedTeam ? (
               <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
@@ -423,6 +454,25 @@ export function NewGameWizard() {
           </div>
         </aside>
       </main>
+    </WizardFrame>
+  );
+}
+
+/**
+ * Page and card shared by both wizard steps. From `md` the page is exactly one viewport tall and
+ * the card always has the same frame (1600 px max, the height the wordmark leaves), so moving
+ * between the manager form, the world map and a country's club list never resizes it; each column
+ * scrolls on its own, so the action row stays visible (issue #66).
+ */
+function WizardFrame({ backdrop = false, children }: { backdrop?: boolean; children: ReactNode }) {
+  return (
+    <div className="min-h-screen md:h-dvh md:min-h-0 md:overflow-hidden flex flex-col items-center bg-background px-4 py-6 text-foreground">
+      <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
+      <div className="relative flex w-full max-w-[1600px] flex-1 min-h-0">
+        {backdrop && <PitchBackdrop players={false} />}
+        <div className="relative flex w-full flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90">
+          {children}
+        </div>
       </div>
     </div>
   );
