@@ -180,7 +180,11 @@ export function computeMatchSimulationLineups(
   } satisfies TacticsSave);
 
   const userFormation = formationForTactics(t);
-  const userTactics: TeamTactics = { style: t.tactical_style, axesOverride: t.axesOverride };
+  const userTactics: TeamTactics = {
+    style: t.tactical_style,
+    axesOverride: t.axesOverride,
+    ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
+  };
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {

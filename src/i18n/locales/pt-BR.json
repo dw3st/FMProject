@@ -544,7 +544,15 @@
       "wide": "Aberta"
     },
     "assistantRotation": "Assistente escala por fôlego",
-    "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo."
+    "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo.",
+    "setPieceTakers": {
+      "title": "Cobradores",
+      "hint": "Automático escolhe o melhor em campo. Se o escolhido não estiver jogando, volta ao automático.",
+      "auto": "Automático",
+      "corners": "Escanteios",
+      "freeKicks": "Faltas",
+      "penalties": "Pênaltis"
+    }
   },
   "formations": {
     "custom": "Personalizada",

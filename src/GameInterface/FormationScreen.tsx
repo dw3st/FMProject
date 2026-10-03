@@ -55,6 +55,7 @@ import {
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
+import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 
 interface FormationOption {
   id: string;
@@ -759,6 +760,8 @@ export function FormationScreen() {
               onChange={(e) => handleAssistantRotation(e.target.checked)}
             />
           </label>
+
+          {session && squad && <SetPieceTakersPanel saveId={session.saveId} players={squad.players} />}
 
           {/* Tactical Style */}
           <div className="card-arcade rounded-md p-5">
