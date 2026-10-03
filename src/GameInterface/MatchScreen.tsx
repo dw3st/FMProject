@@ -41,6 +41,8 @@ const MATCH_END_TO_RESULT_MS = 3500;
 const GAME_SPEEDS = [1, 2, 4] as const;
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
+import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
+import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import { TeamPanel } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -127,6 +129,7 @@ export function MatchScreen() {
   /** Team A's saved tactical style — set once from match-setup, read by mentality changes. */
   const myTacticalStyleRef = useRef<TacticalStyle>(DEFAULT_TACTICAL_STYLE);
   const myAxesOverrideRef = useRef<TacticsSave["axesOverride"]>(undefined);
+  const myFamiliarityRef = useRef<FamiliarityLevels | undefined>(undefined);
   const [showSubPanel, setShowSubPanel] = useState(false);
   const [goalFlash, setGoalFlash] = useState<{
     team: TeamId;
@@ -243,10 +246,13 @@ export function MatchScreen() {
         const tactics = data.myTactics;
         myTacticalStyleRef.current = tactics.tactical_style;
         myAxesOverrideRef.current = tactics.axesOverride;
-        applyTeamTacticsConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride);
-        applyTeamAttackConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride);
-        applyTeamTacticsConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY);
-        applyTeamAttackConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY);
+        // Style familiarity (`src/Domain/familiarity`): the club's trained record; the AI its rule.
+        myFamiliarityRef.current = squadFamiliarityLevels(data.mySquad, tactics.tactical_style);
+        const aiFam = aiFamiliarity(DEFAULT_TACTICAL_STYLE);
+        applyTeamTacticsConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride, myFamiliarityRef.current);
+        applyTeamAttackConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride, myFamiliarityRef.current);
+        applyTeamTacticsConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, undefined, aiFam);
+        applyTeamAttackConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, undefined, aiFam);
 
         // Exclude injured players from the whole candidate pool — starters AND bench (an injured
         // player must never be available as a substitute either). `data.myLineup` is already
@@ -525,8 +531,8 @@ export function MatchScreen() {
 
   function handleMentalityChange(next: Mentality) {
     setMentality(next);
-    applyTeamTacticsConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current);
-    applyTeamAttackConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current);
+    applyTeamTacticsConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current, myFamiliarityRef.current);
+    applyTeamAttackConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current, myFamiliarityRef.current);
   }
 
   function handleOpenSubPanel() {
