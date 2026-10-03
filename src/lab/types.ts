@@ -195,6 +195,13 @@ export interface TeamRawStats {
   headerGoals: number;
   longBalls: number;
   longBallsCompleted: number;
+  // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
+  corners: number;
+  freeKicks: number;
+  directFreeKickShots: number;
+  directFreeKickGoals: number;
+  /** Goals from corners, free kicks in the attacking third and penalties. */
+  setPieceGoals: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -283,6 +290,13 @@ export interface PerMatchView {
   avgAerialDuelsWon: number;
   avgHeaderGoals: number;
   avgLongBalls: number;
+  /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
+  avgCorners: number;
+  avgFreeKicks: number;
+  avgDirectFreeKickShots: number;
+  avgDirectFreeKickGoals: number;
+  avgSetPieceGoals: number;
+  setPieceGoalPct: number;
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -364,6 +378,13 @@ export interface VariantSummary {
   avgAerialDuelsWon: number;
   avgHeaderGoals: number;
   avgLongBalls: number;
+  /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
+  avgCorners: number;
+  avgFreeKicks: number;
+  avgDirectFreeKickShots: number;
+  avgDirectFreeKickGoals: number;
+  avgSetPieceGoals: number;
+  setPieceGoalPct: number;
 }
 
 export interface ScenarioResult {
