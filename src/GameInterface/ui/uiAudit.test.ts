@@ -14,9 +14,10 @@ describe("ui audit rules", () => {
     expect(rules(`<p className="text-[10px]">x</p>`)).toContain("hard:small-text");
     expect(rules(`<p className="text-[10px]">x</p>`, true)).not.toContain("hard:small-text");
   });
-  test("text-xs is fine on a label, not on body text", () => {
-    expect(rules(`<p className="font-display font-bold uppercase tracking-[0.08em] text-xs">x</p>`)).toEqual([]);
+  test("text-xs is too small even on a label; the 13px label is fine", () => {
+    expect(rules(`<p className="font-display font-bold uppercase tracking-[0.08em] text-xs">x</p>`)).toContain("hard:small-text");
     expect(rules(`<p className="text-xs text-muted-foreground">x</p>`)).toContain("hard:small-text");
+    expect(rules(`<p className="font-display font-bold uppercase tracking-[0.08em] text-[13px]">x</p>`)).toEqual([]);
   });
   test("font-mono and inline font styles", () => {
     expect(rules(`<p className="font-mono">x</p>`)).toContain("hard:font-mono");

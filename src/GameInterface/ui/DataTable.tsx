@@ -25,7 +25,7 @@ export function DataTable<T>({ columns, rows, rowKey, isHighlighted, className =
             {columns.map((c) => (
               <th
                 key={c.key}
-                className={`px-2 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground ${c.className ?? ""}`}
+                className={`px-2 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground ${c.className ?? ""}`}
               >
                 {c.header}
               </th>

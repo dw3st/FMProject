@@ -7,8 +7,8 @@
  *   bun run ui:audit --json     # machine-readable findings
  *
  * Hard rules (fail the audit and `scripts/ui-audit.test.ts`):
- *   - `small-text`   readable text below 13px (`text-[Npx]` with N < 13, rem equivalents, and
- *                    `text-xs` / `text-[12px]` outside a label: font-display + uppercase);
+ *   - `small-text`   any text below 13px (`text-xs`, `text-[Npx]` with N < 13, rem equivalents);
+ *                    labels and table heads are `text-[13px]`, readable text `text-sm` or larger;
  *   - `font-mono`    `font-mono` outside the debug screens;
  *   - `inline-font`  font styles inline (`style={{ fontSize | fontFamily | fontWeight |
  *                    letterSpacing | lineHeight }}`, or an SVG `fontSize`/`fontFamily` attribute).
@@ -181,12 +181,8 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
         const b = base(tok);
         const px = textSizePx(tok);
         if (px != null && !debug) {
-          if (px < 12) {
-            add(node, "small-text", "hard", `${b} (${px}px) is below the 13px minimum`);
-          } else if (px < 13) {
-            if (!hasAll(contextOf(node, sf), LABEL)) {
-              add(node, "small-text", "hard", `${b} (12px) on non-label text; use text-[13px]/text-sm, or the label style`);
-            }
+          if (px < 13) {
+            add(node, "small-text", "hard", `${b} (${px}px) is below the 13px minimum (labels are text-[13px], text is text-sm)`);
           }
         }
         if (px === 13 && !debug && !isUiKit && !hasAll(contextOf(node, sf), LABEL)) {
@@ -275,7 +271,12 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
       if (own) {
         let tabular = false;
         for (let cur: ts.Node | undefined = node; cur && !tabular; cur = cur.parent) {
-          if (ts.isJsxElement(cur)) tabular = /tabular-nums|TABLE_STYLE.(number|key)/.test(classOf(cur.openingElement, sf));
+          if (ts.isJsxElement(cur)) {
+            // NumberCell/RankCell (StatsTable) already apply tabular-nums.
+            tabular =
+              /^(NumberCell|RankCell)$/.test(cur.openingElement.tagName.getText(sf)) ||
+              /tabular-nums|TABLE_STYLE\.(number|key)/.test(classOf(cur.openingElement, sf));
+          }
           if (ts.isFunctionLike(cur)) break;
         }
         if (!tabular) add(node, "tabular", "soft", "number without tabular-nums");

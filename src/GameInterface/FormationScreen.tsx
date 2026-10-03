@@ -852,7 +852,7 @@ export function FormationScreen() {
                 const current = effectiveAxes(activeStyle, axesOverride)[axis.key];
                 return (
                   <div key={axis.key}>
-                    <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground m-0 mb-2">
+                    <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">
                       {t(`tactics.axes.${axis.key}` as never)}
                     </p>
                     <div className="flex flex-wrap gap-2">

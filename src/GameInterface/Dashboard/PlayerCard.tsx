@@ -46,8 +46,8 @@ function StatBar({
   return (
     <div className="relative flex items-center gap-2 group/stat">
       <span
-        className={`font-black text-muted-foreground uppercase tracking-[0.08em] shrink-0 cursor-default ${
-          wide ? "text-[13px] w-8" : "text-[13px] w-7"
+        className={`font-black text-muted-foreground uppercase font-display tracking-[0.08em] shrink-0 cursor-default ${
+          wide ? "text-sm w-8" : "text-sm w-7"
         }`}
       >
         {STAT_ABBR[statKey]}
