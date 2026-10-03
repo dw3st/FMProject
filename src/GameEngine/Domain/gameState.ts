@@ -2506,6 +2506,7 @@ export function startAerialBall(
     intendedRunnerId: intendedId,
     aerialOffsideIds: offsideIdsAt(holder, state.players),
     ...(state.setPiece ? { fromSetPiece: true } : {}),
+    ...(state.setPiece?.variant ? { setPieceVariant: state.setPiece.variant } : {}),
   };
   // A set-piece delivery into the box: everyone who went up attacks it (`set-pieces-play.md`).
   const boxDelivery = kind === 'cross' && state.setPiece?.variant === 'box';
@@ -2623,7 +2624,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
       return done(aerialOffsideFreeKick(s, a, { x: a.x, y: a.y }));
     }
     // A set-piece delivery: the defenders are set, goal-side of their man (`set-pieces-play.md`).
-    const setPieceCross = pass.fromSetPiece === true && kind === 'cross';
+    const setPieceCross = pass.setPieceVariant === 'box' && kind === 'cross';
     const { winnerId, probA } = resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_MULT : 1);
     winner = winnerId === a.id ? a : d;
     const loser = winner.id === a.id ? d : a;
@@ -2733,7 +2734,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     if (Math.abs(goalX - point.x) <= C.HEADER_RANGE && angle >= C.HEADER_MIN_ANGLE) {
       resolved(w.id, true, 'header');
       return done(startHeader({ ...s, ballHolderId: w.id, lastPasserId: pass.fromId }, w.id,
-        pass.fromSetPiece === true && kind === 'cross' ? SET_PIECE_CONFIG.SET_PIECE_HEADER_PRESSURE_MULT : 1));
+        pass.setPieceVariant === 'box' && kind === 'cross' ? SET_PIECE_CONFIG.SET_PIECE_HEADER_PRESSURE_MULT : 1));
     }
     // Headed lay-off to a teammate closer to goal.
     let mate: GamePlayer | null = null;
