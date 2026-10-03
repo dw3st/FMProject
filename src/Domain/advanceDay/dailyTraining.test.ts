@@ -427,3 +427,30 @@ describe("buildTrainingEvent — injuries", () => {
     expect(healedPlayerIds).toEqual(["p1"]);
   });
 });
+
+describe("style familiarity on a training day", () => {
+  const squad = (extra: Partial<Squad> = {}): Squad => ({
+    id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+    players: [basePlayer({ id: "p1", name: "One" })],
+    ...extra,
+  });
+
+  test("human club: the focus gains (× assistant), the rest decay", () => {
+    const s = squad({ styleFamiliarity: { possession: 50, high_press: 60 } });
+    const { updatedSquad } = buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity: "normal", styleFocus: "possession" }, "2027-02-05");
+    const dev = staffEffectsOf(s).devMult;
+    expect(updatedSquad.styleFamiliarity?.possession).toBeCloseTo(50 + 2 * dev * 0.5, 2);
+    expect(updatedSquad.styleFamiliarity?.high_press).toBeCloseTo(60 - 0.15, 2);
+  });
+
+  test("AI club (nothing stored): nothing is written", () => {
+    const { updatedSquad } = buildTrainingEvent("s", squad(), { minEnergyToTrain: 0, intensity: "normal", styleFocus: "possession" }, "2027-02-05");
+    expect(updatedSquad.styleFamiliarity).toBeUndefined();
+  });
+
+  test("resolveTrainingPolicy: the focus only for the user's club", () => {
+    const meta = { clubId: "s", style_focus: "high_press" as const };
+    expect(resolveTrainingPolicy(meta, "s", "s").styleFocus).toBe("high_press");
+    expect(resolveTrainingPolicy(meta, "other", "other").styleFocus).toBeUndefined();
+  });
+});
