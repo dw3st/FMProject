@@ -1485,13 +1485,9 @@
       "manager": "Técnico",
       "board": "Diretoria",
       "fans": "Torcida",
-      "removeFromSale": "Remover da Venda",
-      "listForSale": "Colocar à Venda",
       "budget": "Orçamento",
       "squad": "Elenco",
-      "nextMatch": "Próxima Partida",
       "noMatchScheduled": "Nenhuma partida agendada",
-      "viewFullSquad": "Ver Elenco Completo",
       "players": "jogadores",
       "home": "Casa",
       "away": "Visitante"
@@ -1754,9 +1750,10 @@
     "today": "Hoje",
     "switchToTraining": "Mudar para Treino",
     "switchToRest": "Mudar para Folga",
-    "tapToSwitch": "toque para alternar",
-    "collapse": "Recolher",
-    "expand": "Expandir"
+    "thisWeek": "Esta semana",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Próxima semana",
+    "switchHint": "Clique num dia de treino ou descanso para trocar"
   },
   "financesScreen": {
     "budget": "Orçamento",
