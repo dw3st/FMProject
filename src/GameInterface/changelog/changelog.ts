@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.1.1",
+    date: "2026-10-03",
+    items: [
+      { pt: "Visual revisado em todas as telas: títulos, rótulos, números e botões de opção no mesmo padrão e mais legíveis.", en: "Visual pass on every screen: titles, labels, numbers and option buttons now share one style and are easier to read." },
+      { pt: "Rostos dos jogadores também no resumo do dia, no desenvolvimento e nas bolinhas da formação.", en: "Player faces now also show in the day summary, development and on the formation pitch." },
+      { pt: "Partida ao vivo: vire o card para ver o time adversário; escanteios e tiros livres no resumo.", en: "Live match: flip the card to see the opponent; corners and free kicks in the summary." },
+    ],
+    fixes: [
+      { pt: "Notas dos jogadores apagadas na prévia da partida.", en: "Faded player ratings in the match preview." },
+      { pt: "Escudos cortados no painel do clube.", en: "Cropped crests on the club dashboard." },
+    ],
+  },
+  {
     version: "3.1",
     date: "2026-10-03",
     items: [
