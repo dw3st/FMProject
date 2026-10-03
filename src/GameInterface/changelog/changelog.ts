@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3",
+    date: "2026-10-03",
+    items: [
+      {
+        pt: "17 formações para escolher: chegam 4-4-1-1, 4-3-2-1, 3-4-2-1, 3-4-1-2, 5-4-1, 5-2-3 e o losango, e todas as formações antigas ficam liberadas na tática, na partida ao vivo e no laboratório.",
+        en: "17 formations to choose from: 4-4-1-1, 4-3-2-1, 3-4-2-1, 3-4-1-2, 5-4-1, 5-2-3 and the diamond arrive, and every older formation is now available in tactics, the live match and the lab.",
+      },
+      {
+        pt: "Os adversários variam a formação conforme o elenco que têm.",
+        en: "Opponents vary their formation to suit the squad they have.",
+      },
+    ],
+  },
+  {
     version: "3.2",
     date: "2026-10-03",
     items: [
@@ -520,5 +534,5 @@ export const CURRENT_VERSION = latest.version;
 export const upcoming: ChangelogText[] = [
   { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
   { pt: "Convites de clubes maiores para técnicos bem colocados no ranking", en: "Offers from bigger clubs for managers high in the ranking" },
-  { pt: "Mais formações táticas, como 4-4-1-1, 3-4-2-1, 5-4-1 e o losango", en: "More tactical formations, such as 4-4-1-1, 3-4-2-1, 5-4-1 and the diamond" },
+  { pt: "Formações mais equilibradas entre si", en: "Formations more evenly balanced against each other" },
 ];
