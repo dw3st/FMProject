@@ -66,7 +66,7 @@ export const ATTACK_CONFIG = {
    * the final third (`attackingAnchor`). Etapa 19 (#63): without it wingers stayed on the
    * touchline while the shot came from the middle, so every wide slot was a lost attacker.
    */
-  BOX_CONVERGENCE: 0.75,
+  BOX_CONVERGENCE: 0.6,
   /** Yards — optimal spacing between support players. */
   SUPPORT_DISTANCE: 12,
   /** 0..1 — frequency of forward attacking runs (future use). */
