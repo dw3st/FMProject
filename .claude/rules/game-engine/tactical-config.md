@@ -99,11 +99,14 @@ Positive weights (PROGRESS + LANE + SPACE + GOAL) sum to exactly **1.0** per sty
 `LONG_BALL_WEIGHT` (also a `TeamPassWeights` field) multiplies the raw long-ball score
 (`DecisionTree.evalLongBall`, `.claude/rules/game-engine/aerial.md`):
 
-| Style      | LONG_BALL_WEIGHT | Long balls / match (PL, both teams) |
-|------------|------------------|--------------------------------------|
-| possession | 0.6              | ~0.4 |
-| balanced   | 1.0              | ~6.4 |
-| direct     | 1.3              | ~11.9 |
+| Style      | LONG_BALL_WEIGHT | Long balls / match (PL, both teams) | Keeper restarts played long |
+|------------|------------------|--------------------------------------|-----------------------------|
+| possession | 0.6              | ~0.7 | ~10% |
+| balanced   | 1.0              | ~6.4 | ~43% |
+| direct     | 1.3              | ~15.2 | ~86% |
+
+The long-ball score is situational (pressure on the holder, marked short options, numbers at the
+landing point), so the share moves with the game rather than flipping at a threshold.
 
 `RECEIVER_ROLE_WEIGHT` (also a `TeamPassWeights` field) scales the receiver-role routing term (roles.json `passTargetWeight`, see pass.md → "Midfield as the Circulation Hub"):
 

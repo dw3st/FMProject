@@ -134,9 +134,9 @@ amarelo), pênaltis 0,28 (0,22 gol), impedimentos 1,03, tiros livres 10,9 (2,2 p
 desarme 4,6 · drible 4,7 · bola solta 1,9. Tudo dentro do ruído das rodadas anteriores (as duas
 rodadas de 200 deram vermelhos 0,205 e 0,150, pênaltis 0,31 e 0,25).
 
-**Depois do jogo aéreo** (Etapa 13, `aerial.md`, PL 800 / Championship 1200 jogos, `IN_BOX_MULT`
-0,13 → 0,30 e faltas em disputa aérea): faltas 10,7 / 11,5, pênaltis 0,27 / 0,29 (0,22 gol), gols e
-chutes dentro de ±5% do motor anterior.
+**Depois do jogo aéreo** (Etapa 13, `aerial.md`, PL 1200 / Championship 1200 jogos, `IN_BOX_MULT`
+0,13 → 0,30 e faltas em disputa aérea): faltas 10,6 / 11,5, pênaltis 0,29 / 0,28 (0,23 / 0,22 gol),
+gols +4,0% / −4,1% e chutes +2,2% / −0,7% em relação ao motor anterior.
 
 **O que move gols/chutes:** os pênaltis somam ~0,18 gol por partida; os gols sem pênalti caem
 ~4,6% (as interrupções quebram jogadas), o que compensa quase tudo. Os layouts de tiro livre perigoso
