@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 const titleLg =
-  "text-2xl font-black font-display text-foreground uppercase tracking-[0.08em] m-0";
+  "font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none text-foreground m-0";
 
 const titleMd =
   "text-xl font-black font-display text-foreground m-0 uppercase tracking-[0.08em]";

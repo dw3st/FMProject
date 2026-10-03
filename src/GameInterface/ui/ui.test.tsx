@@ -109,3 +109,14 @@ describe("Leagues look shared with Stats", () => {
     expect(html).toContain(TABLE_STYLE.rowHighlight);
   });
 });
+
+import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+
+describe("screen titles", () => {
+  test("PageHeadline uses the standard screen-title classes (same as ScreenTitle)", () => {
+    const html = renderToStaticMarkup(<PageHeadline>Ligas</PageHeadline>);
+    for (const c of ["font-display", "font-black", "uppercase", "tracking-tight", "text-3xl", "md:text-4xl"]) {
+      expect(html).toContain(c);
+    }
+  });
+});
