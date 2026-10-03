@@ -26,6 +26,7 @@ alwaysApply: false
 - `TeamLineup.ts` — maps raw player attributes → `PlayerStats` per role
 - `Positioning.ts` — computes `targetPosition` per player per phase (attacking/defending)
 - `PassLanes.ts` — open/closed lane detection; used by `startPass()` and the debug overlay
+- `Aerial.ts` + `Configs/AerialConfig.ts` — crosses, long balls, aerial duels, keeper claims, headers (see `game-engine/aerial.md`)
 - `TestCases.ts` — predefined `GameState` factories for the `/test` screen
 - `DebugLog.ts` — engine-side structured log (`debugLog()`, `setDebugMode()`, `clearDebugLog()`)
 - `EventBus.ts` — typed pub/sub; only cross-layer communication channel

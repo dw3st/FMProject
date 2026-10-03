@@ -256,6 +256,24 @@ desenvolvimento) é o mesmo do motor.
   - A soma dos gols por jogador (`playerStats[...].goals`) sempre bate com `recording.score` —
     cobranças de pênalti não contam como gol, só os gols de tempo normal e de prorrogação.
 
+### Jogo aéreo no quickSim (Etapa 13, 2026-10-02)
+
+Ver `.claude/rules/game-engine/aerial.md`. Tudo no fim de `quickSimMatch`, depois da disciplina, para
+não mudar nenhum sorteio anterior (`rollAerial`):
+
+- **Gols de cabeça:** cada gol já sorteado que não virou pênalti é de cabeça com probabilidade
+  `HEADER_GOAL_SHARE × gols / elegíveis` (`HEADER_GOAL_SHARE = 0,105`, medido no motor) e passa para um
+  cabeceador escolhido por `HEADER_LINE_WEIGHT[linha] × (0,5 + heading/10)` (FWD 1, MID 0,13, DEF 0,01,
+  GK 0). O placar nunca muda; a assistência fica, salvo se era do próprio cabeceador.
+- **Cruzamentos / lançamentos:** Poisson por lado (`CROSSES_PER_SIDE 5,7`, `LONG_BALLS_PER_SIDE 3,0`) e
+  binomial de acerto (`CROSS_COMPLETION 0,21`, `LONG_BALL_COMPLETION 0,45`).
+- **Disputas aéreas:** `AERIAL_DUELS_PER_MATCH 10,2` disputas por jogo (Poisson), as duas equipes
+  disputam todas; a fatia de cada uma é binomial pela força aérea média do XI (heading/jump/strength com
+  os pesos do motor). Cada disputa ganha vai a um jogador por `AERIAL_DUEL_LINE_WEIGHT × (0,5 +
+  heading/10)` e vale `RATING_WEIGHTS.AERIAL_DUEL_WON` (+0,05) na nota, como no motor.
+- **Passes:** `PASSES_PER_MATCH` foi escalado por linha pela queda medida no motor (o goleiro agora
+  lança longo quase sempre): GK ×0,19, DEF ×0,98, MID ×0,875, FWD ×0,79.
+
 ### Limitações conhecidas (calibração de 2026-09-23)
 
 - **Volume de gols (recalibrado em 2026-09-24, 26 ligas, motor com `PASS_STRONG_RAW = 0.8`):**

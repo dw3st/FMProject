@@ -96,6 +96,15 @@ Positive weights (PROGRESS + LANE + SPACE + GOAL) sum to exactly **1.0** per sty
 
 **direct** — progressive play. Forward progress dominates. Tight lanes and long balls are acceptable. Lower bar to attempt a pass.
 
+`LONG_BALL_WEIGHT` (also a `TeamPassWeights` field) multiplies the raw long-ball score
+(`DecisionTree.evalLongBall`, `.claude/rules/game-engine/aerial.md`):
+
+| Style      | LONG_BALL_WEIGHT | Long balls / match (PL, both teams) |
+|------------|------------------|--------------------------------------|
+| possession | 0.6              | ~0.4 |
+| balanced   | 1.0              | ~6.4 |
+| direct     | 1.3              | ~11.9 |
+
 `RECEIVER_ROLE_WEIGHT` (also a `TeamPassWeights` field) scales the receiver-role routing term (roles.json `passTargetWeight`, see pass.md → "Midfield as the Circulation Hub"):
 
 | Style      | RECEIVER_ROLE_WEIGHT |
