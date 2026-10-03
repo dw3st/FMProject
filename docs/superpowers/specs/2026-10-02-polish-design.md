@@ -9,7 +9,7 @@ Data: 2026-10-02. Status: aprovado. Versão **3.1** (fecha a Fase 4). Visual: `.
   Atribuição em `NOTICE`/README.
 - Países com liga no `leagueData` destacados (`primary` suave), hover mostra o nome
   (`countryDisplayName`), clique escolhe o país (mesmo estado da lista atual). Inglaterra = `GB`.
-- A lista atual continua ao lado (busca). Em telas estreitas (< md) só a lista.
+- A lista atual continua ao lado (busca). Em telas mais estreitas que `xl` só a lista (o mapa ficaria pequeno demais).
 - Teclado: a lista cobre a acessibilidade; o mapa é complementar (`aria-hidden` nos paths, botão por país não).
 
 ## 2. Rostos (`facesjs`, Apache-2.0)

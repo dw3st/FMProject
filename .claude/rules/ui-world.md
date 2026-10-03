@@ -48,12 +48,14 @@ e das ligas seguidas, e recolhe o resto atrás de um `OtherLeaguesSection` fecha
 
 ## Mapa-múndi do novo jogo
 
-`src/GameInterface/NewGame/WorldMap.tsx` no passo de país do `NewGameWizard` (só a partir de `md`;
-abaixo disso só a lista). Geometria Natural Earth 1:50m (domínio público, via `world-atlas`),
+`src/GameInterface/NewGame/WorldMap.tsx` no passo de país do `NewGameWizard` (só a partir de `xl`,
+onde ele tem ~600 px; abaixo disso só a lista). Geometria Natural Earth 1:50m (domínio público, via `world-atlas`),
 simplificada e gerada em `worldMapPaths.ts` por `bun scripts/generate-world-map.ts` — não editar à mão.
 Só os países com liga têm path próprio (chave = ISO2 do jogo; `GB` = Inglaterra, desenhada com o
-contorno do Reino Unido); o resto é um path de fundo. Países pequenos demais (Malta, Chipre, Albânia)
-ganham um ponto clicável. O mapa é `aria-hidden`: a lista cobre teclado e leitor de tela. País novo
+contorno do Reino Unido); o resto é um path de fundo. Países pequenos demais (peça maior abaixo de
+`MARKER_MAX_SIZE`: Malta, Chipre, Fiji, Albânia) ganham um ponto clicável (raio 7 no viewBox, ~8,5 px
+de diâmetro na tela), desenhado depois de todos os países; o teste confere que todo país jogável é
+grande o bastante ou tem ponto. O mapa é `aria-hidden`: a lista cobre teclado e leitor de tela. País novo
 com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` do script e regerar
 (`worldMapCountries.test.ts` falha se faltar).
 
