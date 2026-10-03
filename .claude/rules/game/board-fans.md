@@ -52,7 +52,7 @@ e na virada do país do jogador, com a composição nova (depois das mudanças d
 
 | Evento | Diretoria | Torcida |
 |---|---|---|
-| Jogo oficial (liga, copa, continental) | V +0,8 / E 0 / D −0,8 (×1,5 clássico) | V +2,5 / E −0,3 / D −2,5; derrota em casa ×1,5; clássico ×1,5; forma: (pontos dos últimos 5 − 7 × n/5) × 0,3 |
+| Jogo oficial (liga, copa, continental) | V +0,8 × (1 − 0,6e) / E −0,4e / D −0,8 × (1 + 0,6e) (×1,5 clássico) | V +2,5 × (1 − 0,6e) / E −0,3 − e / D −2,5 × (1 + 0,6e); derrota em casa ×1,5; clássico ×1,5; forma: (pontos dos últimos n − n × (1,4 + 1,1e)) × 0,25 |
 | Jogo da liga | + 2,5 × (meta − posição) / tamanho × peso (0,4 → 1 ao longo da temporada) | — |
 | Mata-mata decidido nos pênaltis | conta como vitória/derrota | idem |
 | Título (liga na virada; copa/continental no dia) | +12 | +12 |
@@ -65,6 +65,13 @@ e na virada do país do jogador, com a composição nova (depois das mudanças d
 | Segunda-feira, saldo negativo | −1 a −2,5 (mais fundo, mais cai) | — |
 | Segunda-feira, saldo ≥ 0 | +0,2 | — |
 | Segunda-feira, deriva para 60 | 2% da distância | 3% da distância |
+
+**Expectativa `e`** (−1..1, +1 = favorito claro, `matchExpectation`): (nível do clube − nível do adversário + 0,1 em
+casa) / 0,8, com `clubLevel`. Grande que vence pequeno ganha pouco e perde muito quando perde; o azarão, o contrário; o
+empate do favorito custa, o do azarão agrada. A forma compara os pontos com os esperados para o favoritismo.
+
+**Ganhos decrescentes no topo:** todo ganho acima de 60 vale × max(0,1; 1 − (v − 60)/45) na torcida e
+× max(0,1; 1 − (v − 60)/70) na diretoria (perdas sem amortecimento): 90+ exige uma temporada de fato excelente.
 
 Clássico: mesma cidade (`venue.city`, sem acento/caixa); sem rival da cidade, o líder da liga.
 

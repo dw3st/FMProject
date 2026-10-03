@@ -262,3 +262,49 @@ describe("history, trend and effects", () => {
     expect(followersAfterMood(2000, 1000, 100)).toBe(1200);
   });
 });
+
+describe("expectation-adjusted results and diminishing gains", () => {
+  const m = (goalsFor: number, goalsAgainst: number, expectation: number) =>
+    ({ goalsFor, goalsAgainst, home: false, derby: false, expectation });
+  const calm = () => base();
+  test("a favourite gains little from a win and loses more from a defeat; an underdog the opposite", () => {
+    const favWin = applyMatchResult(calm(), m(1, 0, 1)).fans - 60;
+    const dogWin = applyMatchResult(calm(), m(1, 0, -1)).fans - 60;
+    const evenWin = applyMatchResult(calm(), m(1, 0, 0)).fans - 60;
+    expect(favWin).toBeGreaterThan(0);
+    expect(favWin).toBeLessThan(evenWin);
+    expect(dogWin).toBeGreaterThan(evenWin);
+    const favLoss = applyMatchResult(calm(), m(0, 1, 1)).fans - 60;
+    const dogLoss = applyMatchResult(calm(), m(0, 1, -1)).fans - 60;
+    expect(favLoss).toBeLessThan(dogLoss);
+    expect(dogLoss).toBeLessThan(0);
+  });
+  test("the board result term follows the same expectation", () => {
+    const fav = applyMatchResult(calm(), m(1, 0, 1)).board - 60;
+    const dog = applyMatchResult(calm(), m(1, 0, -1)).board - 60;
+    expect(fav).toBeLessThan(dog);
+  });
+  test("a favourite's draw costs, an underdog's draw pleases", () => {
+    expect(applyMatchResult(calm(), m(1, 1, 1)).fans).toBeLessThan(60);
+    expect(applyMatchResult(calm(), m(1, 1, -1)).fans).toBeGreaterThan(60);
+  });
+  test("gains shrink near the top: the same title adds less at 90 than at 60", () => {
+    const at60 = applyCompetitionEvent(base({ fans: 60 }), { kind: "title", title: "x" }).fans - 60;
+    const at90 = applyCompetitionEvent(base({ fans: 90 }), { kind: "title", title: "x" }).fans - 90;
+    expect(at90).toBeLessThan(at60 * 0.5);
+    expect(at90).toBeGreaterThan(0);
+    // Losses are not damped.
+    const loss90 = applyCompetitionEvent(base({ fans: 90 }), { kind: "early_exit" }).fans - 90;
+    expect(loss90).toBe(BOARD_FANS.events.EARLY_EXIT_FANS);
+  });
+  test("a season of easy wins does not push a favourite's fans to 100", () => {
+    let s = base();
+    // One win a week all season (with the Monday drift), as a clear favourite.
+    for (let i = 0; i < 38; i++) {
+      s = applyMatchResult(s, m(2, 0, 0.8));
+      s = applyWeekly(s, { balance: 1, weeklyRevenue: 1 });
+    }
+    expect(s.fans).toBeLessThan(92);
+    expect(s.fans).toBeGreaterThan(70);
+  });
+});

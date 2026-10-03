@@ -7,6 +7,13 @@ export const BOARD_FANS = {
   START: 60,
   MIN: 0,
   MAX: 100,
+  /**
+   * Diminishing gains near the top: a positive change is × max(DAMP_MIN, 1 − (v − START) / span)
+   * above START, so 90+ needs a genuinely great season. Losses are not damped.
+   */
+  DAMP_SPAN_FANS: 45,
+  DAMP_SPAN_BOARD: 70,
+  DAMP_MIN: 0.1,
   /** Daily snapshots kept in `BoardState.history` (the dashboard trend compares with 7 days ago). */
   HISTORY_DAYS: 14,
   TREND_DAYS: 7,
@@ -22,9 +29,24 @@ export const BOARD_FANS = {
     HOME_LOSS_MULT: 1.5,
     /** Derby / big match: the whole result delta. */
     DERBY_MULT: 1.5,
-    /** Fans: (points in the last 5 official games − FORM_PIVOT) × FORM_WEIGHT. */
-    FORM_PIVOT: 7,
-    FORM_WEIGHT: 0.3,
+    /**
+     * Fans: (points in the last 5 official games − expected points) × FORM_WEIGHT, expected points
+     * per game = FORM_EXPECTED_BASE + FORM_EXPECTED_SPAN × expectation (a favourite must win more).
+     */
+    FORM_EXPECTED_BASE: 1.4,
+    FORM_EXPECTED_SPAN: 1.1,
+    FORM_WEIGHT: 0.25,
+    /**
+     * Expectation of a match in −1..1 (+1 = clear favourite): (own level − opponent level + home
+     * bonus) / EXPECTATION_SCALE, from `clubLevel`. A win is worth × (1 − WIN_EXPECT × e), a defeat
+     * × (1 + LOSS_EXPECT × e); a draw moves by −DRAW_EXPECT_* × e (a favourite's draw costs).
+     */
+    EXPECTATION_SCALE: 0.8,
+    EXPECTATION_HOME_BONUS: 0.1,
+    WIN_EXPECT: 0.6,
+    LOSS_EXPECT: 0.6,
+    DRAW_EXPECT_FANS: 1,
+    DRAW_EXPECT_BOARD: 0.4,
     /** Board per result. */
     BOARD_WIN: 0.8,
     BOARD_DRAW: 0,
