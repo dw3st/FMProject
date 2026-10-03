@@ -10,6 +10,9 @@ export interface SummaryTeamStats {
   yellowCards: number;
   redCards: number;
   offsides: number;
+  corners: number;
+  /** Free kicks won from fouls. */
+  freeKicks: number;
 }
 
 /** One line of the live match feed. */
@@ -85,6 +88,8 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.passes")} a={statsA.passesCompleted} b={statsB.passesCompleted} />
         <StatRow label={t("match.summary.fouls")} a={statsA.fouls} b={statsB.fouls} />
         <StatRow label={t("match.summary.cards")} a={cards(statsA)} b={cards(statsB)} />
+        <StatRow label={t("match.summary.corners")} a={statsA.corners} b={statsB.corners} />
+        <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
       <div className="px-3 pt-4 pb-1">
