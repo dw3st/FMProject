@@ -17,7 +17,7 @@
  * headings that don't use the title classes, `<table>`s that don't use the Leagues table style,
  * hand-made tab bars, and decorative button styles (glow, gradient, scale).
  *
- * Justified exceptions to a hard rule go in `ALLOWLIST` with a reason.
+ * Justified exceptions (hard or soft) go in `ALLOWLIST` with a reason.
  */
 import ts from "typescript";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -32,6 +32,8 @@ export interface Finding {
   severity: Severity;
   message: string;
   snippet: string;
+  /** Source of the flagged node (used to match the allowlist). */
+  source: string;
 }
 
 /** Folders that hold the game UI. */
@@ -47,7 +49,7 @@ export const DEBUG_FILES = [
   "src/GameInterface/SimulationScreen.tsx",
 ];
 
-/** Justified exceptions to a hard rule: file + rule + a substring of the offending source line. */
+/** Justified exceptions: file + rule + a substring of the offending source line. */
 export const ALLOWLIST: { file: string; rule: string; match: string; reason: string }[] = [
   {
     file: "src/GameInterface/Dashboard/PlayerCard.tsx",
@@ -60,6 +62,12 @@ export const ALLOWLIST: { file: string; rule: string; match: string; reason: str
     rule: "inline-font",
     match: 'fontSize="3.4"',
     reason: "SVG mini pitch: position labels in viewBox units, scale with the drawing",
+  },
+  {
+    file: "src/GameInterface/Components/TopNavigation.tsx",
+    rule: "button",
+    match: "h-9 px-4 rounded bg-primary",
+    reason: "Continue in the 48px top bar: 36px tall so it fits the bar with its padding",
   },
 ];
 
@@ -168,7 +176,8 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
   const findings: Finding[] = [];
   const add = (node: ts.Node, rule: string, severity: Severity, message: string) => {
     const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
-    findings.push({ file: path, line, rule, severity, message, snippet: (lines[line - 1] ?? "").trim().slice(0, 160) });
+    const snippet = (lines[line - 1] ?? "").trim().slice(0, 160);
+    findings.push({ file: path, line, rule, severity, message, snippet, source: node.getText(sf).slice(0, 800) });
   };
   const usesTableStyle = /TABLE_STYLE|TABLE_CELL|StatsTable|DataTable/.test(source);
   const isUiKit = path.includes("/ui/");
@@ -289,7 +298,7 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
 }
 
 function allowed(f: Finding): boolean {
-  return ALLOWLIST.some((a) => a.file === f.file && a.rule === f.rule && f.snippet.includes(a.match));
+  return ALLOWLIST.some((a) => a.file === f.file && a.rule === f.rule && (f.snippet.includes(a.match) || f.source.includes(a.match)));
 }
 
 export function auditUi(root = process.cwd()): Finding[] {
@@ -298,7 +307,7 @@ export function auditUi(root = process.cwd()): Finding[] {
     for (const full of listFiles(join(root, dir))) {
       const rel = norm(relative(root, full));
       const debug = DEBUG_FILES.includes(rel);
-      out.push(...auditFile(rel, readFileSync(full, "utf8"), debug).filter((f) => !(f.severity === "hard" && allowed(f))));
+      out.push(...auditFile(rel, readFileSync(full, "utf8"), debug).filter((f) => !allowed(f)));
     }
   }
   return out;
