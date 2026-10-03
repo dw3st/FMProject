@@ -11,6 +11,7 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
+import type { BoardState, CareerEnded } from "@/types/boardTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -82,6 +83,12 @@ export interface SaveMeta {
   managerWeights?: Record<string, CountryWeight>;
   /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
+  /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
+  board?: BoardState;
+  /** New-game option: the board may sack the manager (default on). */
+  sackingEnabled?: boolean;
+  /** Set when the manager is sacked: the career is over and the day can no longer advance. */
+  ended?: CareerEnded;
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────
@@ -628,6 +635,8 @@ export class SaveService {
     tactical_style?: TacticalStyle;
     database?: SaveDatabase;
     manager?:  SaveManager;
+    /** The board may sack the manager (`.claude/rules/game/board-fans.md`); default true. */
+    sackingEnabled?: boolean;
   }): Promise<SaveMeta> {
     const id  = randomUUID();
     const now = new Date().toISOString();
@@ -722,6 +731,7 @@ export class SaveService {
       min_energy_to_train: DEFAULT_MIN_ENERGY_TO_TRAIN,
       training_intensity: DEFAULT_TRAINING_INTENSITY,
       activeLeagues,
+      sackingEnabled: body.sackingEnabled !== false,
     };
 
     await this.dal.writeMeta(meta);
@@ -800,6 +810,33 @@ export class SaveService {
     }
 
     if (copied === 0) throw new Error("no squads found to copy");
+
+    // Board and fans (`.claude/rules/game/board-fans.md`): 60/60 and the first season objective,
+    // from the squads of the player's league (membership = the folder they were copied into).
+    if (playerSquadId) {
+      try {
+        const { getLeagueData } = await import("@/backend/advanceDay");
+        const { objectiveFromSquads } = await import("@/backend/boardWorld");
+        const { initialBoardState } = await import("@/Domain/boardFans/boardFans");
+        const { seasonLabel } = await import("@/Domain/history/history");
+        const catalog = await getLeagueData();
+        const state = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug);
+        const leagueSquads = (await this.getSquadIndex(id)).inLeague(body.leagueSlug)
+          .map((t) => squadCache.get(t.squadId))
+          .filter((s): s is Squad => !!s);
+        const objective = objectiveFromSquads({
+          squads: leagueSquads,
+          playerSquadId,
+          leagueSlug: body.leagueSlug,
+          zones: catalog.find((l) => l.slug === body.leagueSlug)?.zones ?? [],
+          season: state ? seasonLabel(state.year, state.start, state.end) : "",
+        });
+        meta.board = initialBoardState(playerLeagueStart ?? now.slice(0, 10), objective);
+        await this.dal.writeMeta(meta);
+      } catch (e) {
+        logError("board", `save ${id}: failed to set the board objective`, e);
+      }
+    }
 
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
     // replacing the imported coach of his club. Start kits never touch this file.

@@ -1,4 +1,5 @@
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
+import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 
 export type InboxCategory =
   | "development"
@@ -10,7 +11,8 @@ export type InboxCategory =
   | "injury"
   | "contract"
   | "youth"
-  | "retirement";
+  | "retirement"
+  | "board";
 
 export interface InboxMessageBase {
   id:        string;
@@ -188,6 +190,27 @@ export interface RetirementInboxMessage extends InboxMessageBase {
   goals:        number;
 }
 
+/**
+ * Board news for the human club (`.claude/rules/game/board-fans.md`): the season objective, a
+ * warning, an ultimatum (and meeting it), praise, the end-of-season bonus, the sacking.
+ */
+export interface BoardInboxMessage extends InboxMessageBase {
+  category: "board";
+  kind: BoardMessageKind;
+  /** objective */
+  objective?: SeasonObjective;
+  /** League name (English fallback; the screen uses `competitionName`). */
+  leagueName?: string;
+  /** Board confidence on the day (0..100). */
+  board?: number;
+  /** ultimatum: points demanded over the next league matches. */
+  ultimatum?: { matches: number; points: number };
+  /** bonus: euros credited to the budget. */
+  bonus?: number;
+  /** sacked */
+  reason?: SackReason;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -198,4 +221,5 @@ export type InboxMessage =
   | InjuryInboxMessage
   | ContractInboxMessage
   | YouthInboxMessage
-  | RetirementInboxMessage;
+  | RetirementInboxMessage
+  | BoardInboxMessage;

@@ -85,6 +85,8 @@ export interface AdvanceBatchResult {
   matchDate: string | null;
   done: boolean;
   seasonEvents: SeasonEvent[];
+  /** The manager was sacked on the last simulated day (the career ended). */
+  sacked?: boolean;
   error?: { status: number; message: string };
 }
 
@@ -134,6 +136,8 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
     if (typeof step.payload.newDate === "string") result.newDate = step.payload.newDate;
     const ev = seasonEventOf(step.date, step.payload);
     if (ev) result.seasonEvents.push(ev);
+    // Sacked (`.claude/rules/game/board-fans.md`): the career is over, nothing more to simulate.
+    if (step.payload.sacked === true) { result.sacked = true; result.done = true; return result; }
   }
 }
 
