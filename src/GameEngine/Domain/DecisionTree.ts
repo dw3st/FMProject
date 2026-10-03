@@ -27,7 +27,7 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
-import { getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
+import { getTeamBuildUp, getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
 import { evaluateCarryLane, evaluateCarryLaneBreakdown, rot } from '@/GameEngine/Domain/CarryLaneEval';
@@ -49,6 +49,7 @@ import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
+import { evaluateBoxSetPiece } from '@/GameEngine/Domain/SetPieces';
 
 export type PlayerDecision =
   | { type: 'carry'; dx: number; dy: number }          // withBall  → advancing with the ball
@@ -796,6 +797,24 @@ function decideBallHolder(
   }
 }
 
+/**
+ * Corner / crossed free-kick taker (`set-pieces-play.md` §1–2): the best of `evaluateBoxSetPiece`
+ * — a cross to the near post / penalty spot / far post, or the short pass (`pass`, which
+ * `startPass` sends to the nearest teammate).
+ */
+function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: 'corner' | 'free_kick'): PlayerDecision {
+  const options = evaluateBoxSetPiece(player, allPlayers, getTeamBuildUp(player.team), kind);
+  const best = options[0];
+  if (isDebugEnabled() && best) {
+    gameBus.emit('setPieceScores', {
+      playerId: player.id, playerName: player.name, kind, chosen: best.kind,
+      options: options.map(o => ({ kind: o.kind, x: o.x, y: o.y, raw: o.raw, attackers: o.attackers, defenders: o.defenders })),
+    });
+  }
+  if (!best || best.kind === 'short' || best.raw <= 0) return { type: 'pass' };
+  return { type: 'cross', toX: best.x, toY: best.y, intendedRunnerId: best.targetId };
+}
+
 // ── Public decision entry point ───────────────────────────────────────────────
 
 /**
@@ -832,6 +851,10 @@ export function decide(
     // shoot, cross or play a through ball when that is the normal best action (a direct free kick
     // near goal, a free kick from wide); a goal-kick taker may go long (`aerial.md`).
     if (setPiece && player.id === setPiece.takerId) {
+      // Set-piece play (`set-pieces-play.md`): a direct free kick is shot at goal; a corner or a
+      // crossed free kick is delivered to the best zone in the box, or played short.
+      if (setPiece.variant === 'direct') return { type: 'shoot' };
+      if (setPiece.variant === 'box') return decideBoxSetPiece(player, allPlayers, setPiece.type === 'corner' ? 'corner' : 'free_kick');
       if (setPiece.type === 'free_kick' || setPiece.type === 'goal_kick') {
         const d = decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);
         if (setPiece.type === 'free_kick' && (d.type === 'shoot' || d.type === 'through_ball' || d.type === 'cross')) return d;

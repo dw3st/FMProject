@@ -420,9 +420,11 @@ export function resolveAerialDuel(
   b: GamePlayer,
   point: { x: number; y: number },
   rng: () => number = Math.random,
+  /** Added to `b`'s score — the set defender at a set-piece delivery (`set-pieces-play.md`). */
+  bBonus = 0,
 ): AerialDuelResult {
   const sA = aerialDuelScore(a, point) + AERIAL_CONFIG.DUEL_BASE;
-  const sB = aerialDuelScore(b, point) + AERIAL_CONFIG.DUEL_BASE;
+  const sB = aerialDuelScore(b, point) + AERIAL_CONFIG.DUEL_BASE + bBonus;
   const probA = sA / (sA + sB);
   return { winnerId: rng() < probA ? a.id : b.id, probA };
 }

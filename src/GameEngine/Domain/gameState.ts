@@ -1,7 +1,13 @@
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind } from '@/GameEngine/types';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
-import { aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
+import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
+import { SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
+import {
+  attackingBoxPositions, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick,
+  pickSetPieceTaker, wallBlockChance, wallSize, wallSpots, type SetPieceDuty,
+} from '@/GameEngine/Domain/SetPieces';
+import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
 import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
@@ -833,7 +839,10 @@ export function restartHoldsPeriod(state: GameState, newMatchTime: number, perio
   if (state.pass?.fromSetPiece && isAerialKind(state.pass.kind) && newMatchTime < periodEnd + RESTART_HOLD_MAX) return true;
   if (!sp || newMatchTime >= periodEnd + RESTART_HOLD_MAX) return false;
   if (sp.type === 'penalty') return true;
+  // A corner still with its taker is taken before the whistle (`set-pieces-play.md`).
+  if (sp.type === 'corner' && state.ballHolderId === sp.takerId) return true;
   if (sp.type !== 'free_kick' || !sp.position || state.ballHolderId !== sp.takerId) return false;
+  if (sp.variant) return true;
   const taker = state.players.find(p => p.id === sp.takerId);
   if (!taker) return false;
   const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
@@ -844,6 +853,130 @@ export function restartHoldsPeriod(state: GameState, newMatchTime: number, perio
 function penaltySpot(goalX: number): { x: number; y: number } {
   const d = FOUL_CONFIG.PENALTY_SPOT_DIST;
   return { x: goalX === 0 ? d : PITCH_LENGTH - d, y: (GOAL_Y_MIN + GOAL_Y_MAX) / 2 };
+}
+
+// ── Set-piece play (`.claude/rules/game-engine/set-pieces-play.md`) ──────────
+
+/** Set-piece taker for `duty` among `team`'s players on the pitch (manager's choice, else automatic). */
+function setPieceTakerOf(state: GameState, team: TeamId, duty: SetPieceDuty): GamePlayer | null {
+  return pickSetPieceTaker(duty, state.players.filter(p => p.team === team), state.setPieceTakers?.[team]?.[duty]);
+}
+
+/** Opens a set-piece phase for `team`: a goal before it closes counts as a set-piece goal of `kind`. */
+function openSetPiecePhase(state: GameState, team: TeamId, kind: SetPieceGoalKind, countdown: number): GameState {
+  return {
+    ...state,
+    setPiecePhase: { team, kind, until: state.matchTime + countdown * TIME_SCALE + SET_PIECE_CONFIG.SET_PIECE_PHASE_SECONDS },
+  };
+}
+
+/** The set-piece kind of a goal `team` scores right now, if a phase of theirs is open. */
+function setPieceGoalOf(state: GameState, team: TeamId): SetPieceGoalKind | undefined {
+  const ph = state.setPiecePhase;
+  return ph && ph.team === team && state.matchTime <= ph.until ? ph.kind : undefined;
+}
+
+/**
+ * Both teams into the box set-piece layout (corner / crossed free kick) with `taker` on `ball`:
+ * `attackingBoxPositions` for his team, `defendingBoxPositions` for the other.
+ */
+function applyBoxSetPiece(
+  players: GamePlayer[],
+  taker: GamePlayer,
+  ball: { x: number; y: number },
+  kind: 'corner' | 'free_kick',
+  rng: () => number,
+): GamePlayer[] {
+  const att = attackingBoxPositions(players.filter(p => p.team === taker.team), taker.id, ball, taker.attackDir, kind, rng);
+  const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
+  const def = defendingBoxPositions(players.filter(p => p.team !== taker.team), att, ball, goalX, kind);
+  return players.map(p => {
+    const pos = att.positions.get(p.id) ?? def.positions.get(p.id);
+    return pos ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p;
+  });
+}
+
+/**
+ * Direct free kick by `taker` at `pos`: the free-kick layouts, then the wall — `wallSize` defenders
+ * (not the three best in the air, who stay in the box) moved onto `wallSpots`.
+ */
+function applyDirectFreeKick(
+  state: GameState,
+  players: GamePlayer[],
+  taker: GamePlayer,
+  pos: { x: number; y: number },
+): { players: GamePlayer[]; wallIds: number[] } {
+  const oppTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
+  const aLay = resolveFormationSetPieces(taker.team === 'A' ? state.formationA : state.formationB);
+  const oLay = resolveFormationSetPieces(oppTeam === 'A' ? state.formationA : state.formationB);
+  let out = players;
+  if (aLay) out = applySetPieceToTeam(out, taker.team, aLay.freeKick_Attack);
+  if (oLay) out = applySetPieceToTeam(out, oppTeam, oLay.freeKick_Defend);
+  const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
+  const spots = wallSpots(pos, goalX, wallSize(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX)));
+  const defOut = out.filter(p => p.team === oppTeam && p.role !== 'GK');
+  const aerialBest = new Set([...defOut].sort((a, b) => aerialAbility(b) - aerialAbility(a)).slice(0, 3).map(p => p.id));
+  const pool = defOut.length - aerialBest.size >= spots.length ? defOut.filter(p => !aerialBest.has(p.id)) : defOut;
+  const moved = new Map<number, { x: number; y: number }>();
+  for (const spot of spots) {
+    const cand = pool.filter(p => !moved.has(p.id));
+    if (cand.length === 0) break;
+    moved.set(nearestPlayerTo(cand, spot).id, spot);
+  }
+  out = out.map(p => {
+    const m = moved.get(p.id);
+    return m ? { ...p, x: m.x, y: m.y, targetPosition: { ...m } } : p;
+  });
+  return { players: out, wallIds: [...moved.keys()] };
+}
+
+/**
+ * Direct free kick at goal (`set-pieces-play.md` §2–3): xG = `directFreeKickXG` (distance, angle);
+ * the wall takes `wallBlockChance(n)` of it — the shot strikes the wall with that chance and drops
+ * loose (rebound off a defender), else it flies with the unblocked xG. Counts as a shot either way.
+ */
+export function startDirectFreeKick(state: GameState, rng: () => number = Math.random): GameState {
+  const sp = state.setPiece!;
+  const taker = state.players.find(p => p.id === state.ballHolderId)!;
+  const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
+  const pos = { x: taker.x, y: taker.y };
+  const base = directFreeKickXG(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX));
+  const wall = (sp.wallIds ?? []).map(id => state.players.find(p => p.id === id)).filter((p): p is GamePlayer => !!p);
+  const pBlock = wallBlockChance(wall.length);
+  const xg = base * (1 - pBlock);
+  const blocked = wall.length > 0 && rng() < pBlock;
+  gameBus.emit('shot', { player: taker.id, xg });
+  gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked });
+  debugLog('setPiece', `${taker.name} shoots the free kick (xG ${xg.toFixed(3)}, wall ${wall.length})${blocked ? ' — hits the wall' : ''}`, {
+    playerId: taker.id, data: { base, xg, wallSize: wall.length, blocked },
+  });
+  if (blocked) {
+    const w = wall[Math.floor(rng() * wall.length)]!;
+    const a = Math.atan2(taker.y - w.y, taker.x - w.x) + (rng() * 2 - 1) * SET_PIECE_CONFIG.WALL_REBOUND_SPREAD;
+    const v = SET_PIECE_CONFIG.WALL_REBOUND_SPEED;
+    const prevHolderId = state.ballHolderId;
+    return onPossessionTransfer({
+      ...state,
+      setPiece:     null,
+      ballHolderId: w.id,
+      lastPasserId: null,
+      looseBall: {
+        x: w.x, y: w.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        startTime: state.matchTime,
+        fromPasserId: w.id,
+        fromTeamLastTouch: w.team,
+        intendedRunnerId: null,
+        receiverOffside: false,
+        source: 'clearance',
+      },
+    }, prevHolderId);
+  }
+  const { toX, toY } = computeShotAim(taker);
+  return {
+    ...state,
+    setPiece: null,
+    shot: { shooterId: taker.id, fromX: taker.x, fromY: taker.y, toX, toY, t: 0, xg: base, freeKick: true },
+  };
 }
 
 /**
@@ -871,8 +1004,7 @@ function awardFoulRestart(
 
   if (inBox) {
     const pos = penaltySpot(goalX);
-    const taker = pool.reduce((best, p) =>
-      p.runtimeStats.withBall.shootAccuracy > best.runtimeStats.withBall.shootAccuracy ? p : best);
+    const taker = setPieceTakerOf(state, fouledTeam, 'penalties') ?? pool[0]!;
     const edge = FOUL_CONFIG.PENALTY_SPOT_DIST + 8; // everyone else waits outside the box (~20 yds out)
     players = players.map(p => {
       if (p.id === taker.id) return { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } };
@@ -891,16 +1023,22 @@ function awardFoulRestart(
     debugLog('foul', `PENALTY to team ${fouledTeam} — ${taker.name} to take it`, { playerId: taker.id, data: { offenderId, minute } });
   } else {
     const pos = { x: Math.max(1, Math.min(PITCH_LENGTH - 1, spot.x)), y: Math.max(1, Math.min(PITCH_WIDTH - 1, spot.y)) };
-    const taker = nearestPlayerTo(pool, pos);
-    const dangerous = Math.abs(goalX - pos.x) <= FOUL_CONFIG.DANGEROUS_FREE_KICK_DIST;
-    if (dangerous) {
-      const aLay = resolveFormationSetPieces(fouledTeam === 'A' ? state.formationA : state.formationB);
-      const oLay = resolveFormationSetPieces(oppTeam === 'A' ? state.formationA : state.formationB);
-      if (aLay) players = applySetPieceToTeam(players, fouledTeam, aLay.freeKick_Attack);
-      if (oLay) players = applySetPieceToTeam(players, oppTeam, oLay.freeKick_Defend);
-    }
+    const distToLine = Math.abs(goalX - pos.x);
+    const dangerous = distToLine <= FOUL_CONFIG.DANGEROUS_FREE_KICK_DIST;
+    // `set-pieces-play.md` §2: direct shot over a wall when close and central; crossed into the box
+    // (or short) within FK_CROSS_RANGE; elsewhere a quick free kick by the nearest player.
+    const direct = isDirectFreeKick(pos, awarded[0]!.attackDir);
+    const box = !direct && distToLine <= SET_PIECE_CONFIG.FK_CROSS_RANGE;
+    const taker = direct || box ? (setPieceTakerOf(state, fouledTeam, 'freeKicks') ?? nearestPlayerTo(pool, pos)) : nearestPlayerTo(pool, pos);
+    let wallIds: number[] | undefined;
+    if (direct) ({ players, wallIds } = applyDirectFreeKick(state, players, taker, pos));
+    else if (box) players = applyBoxSetPiece(players, taker, pos, 'free_kick', Math.random);
     players = players.map(p => (p.id === taker.id ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p));
-    setPiece = { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos };
+    setPiece = direct
+      ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN, position: pos, variant: 'direct', wallIds }
+      : box
+        ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.BOX_FREE_KICK_COUNTDOWN, position: pos, variant: 'box' }
+        : { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos };
     gameBus.emit('freeKickAwarded', { team: fouledTeam, takerId: taker.id, x: pos.x, y: pos.y, dangerous, minute });
     debugLog('foul', `Free kick to team ${fouledTeam}${dangerous ? ' (dangerous)' : ''} at (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) — ${taker.name}`, {
       playerId: taker.id, data: { offenderId, dangerous, minute },
@@ -909,7 +1047,11 @@ function awardFoulRestart(
 
   const prevHolderId = state.ballHolderId;
   const keptPossession = state.players.find(p => p.id === prevHolderId)?.team === fouledTeam;
-  return onPossessionTransfer({
+  const phaseKind: SetPieceGoalKind | null =
+    setPiece.type === 'penalty' ? 'penalty'
+    : Math.abs(goalX - setPiece.position!.x) <= SET_PIECE_CONFIG.SET_PIECE_FK_ZONE ? 'free_kick'
+    : null;
+  const restarted = onPossessionTransfer({
     ...state,
     players,
     pass:           null,
@@ -923,6 +1065,7 @@ function awardFoulRestart(
     tackleCooldown: TACKLE_COOLDOWN,
     setPiece,
   }, prevHolderId);
+  return phaseKind ? openSetPiecePhase(restarted, fouledTeam, phaseKind, setPiece.countdown) : restarted;
 }
 
 /**
@@ -997,7 +1140,7 @@ function resolveInMatchPenalty(state: GameState, rng: () => number = Math.random
   const s: GameState = { ...state, setPiece: null };
   if (scored) {
     const newScore = { ...s.score, [taker.team]: s.score[taker.team] + 1 };
-    gameBus.emit('goalScored', { team: taker.team, score: newScore, scorerId: taker.id });
+    gameBus.emit('goalScored', { team: taker.team, score: newScore, scorerId: taker.id, setPiece: 'penalty' });
     const concedingTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
     return { state: resetToKickoff({ ...s, score: newScore }, concedingTeam), passCompleted: false, tackled: false, goalScored: taker.team };
   }
@@ -1244,6 +1387,7 @@ function resetToKickoff(state0: GameState, kickoffTeam: import('../types').TeamI
     shot:          null,
     looseBall:     null,
     setPiece:      { type: 'kickoff', takerId: kickoffHolder.id, countdown: 2 },
+    setPiecePhase: null,
     possessionTime: 0,
     lastPasserId: null,
   }, prevHolderId);
@@ -1320,6 +1464,7 @@ function switchSides(
     matchTime:             0,
     presentationCountdown: 0,
     setPiece:              { type: 'kickoff', takerId: kickoffHolder.id, countdown: 2 },
+    setPiecePhase:         null,
     possessionTime:        0,
     lastPasserId:          null,
   }, prevHolderId);
@@ -1411,6 +1556,7 @@ export function endCurrentPeriod(state: GameState, newMatchTime: number = state.
 }
 
 function startShot(state: GameState): GameState {
+  if (state.setPiece?.variant === 'direct' && state.setPiece.takerId === state.ballHolderId) return startDirectFreeKick(state);
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
   const { toX, toY } = computeShotAim(shooter);
 
@@ -1453,8 +1599,22 @@ function checkReceiverOffside(
 
 function startPass(state: GameState): GameState {
   const holder    = state.players.find(p => p.id === state.ballHolderId)!;
-  const teammates = getTeammates(state, holder.id);
+  let teammates   = getTeammates(state, holder.id);
   if (teammates.length === 0) return state;
+  // Set-piece restrictions (`set-pieces-play.md`): a throw-in only reaches THROW_IN_RANGE; the
+  // short corner / free kick goes to the nearest outfield teammate.
+  const sp = state.setPiece;
+  if (sp && sp.takerId === holder.id) {
+    const dist = (p: GamePlayer) => Math.hypot(p.x - holder.x, p.y - holder.y);
+    const nearest = (pool: GamePlayer[]) => pool.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    if (sp.type === 'throw_in') {
+      const inRange = teammates.filter(p => p.role !== 'GK' && dist(p) <= SET_PIECE_CONFIG.THROW_IN_RANGE);
+      teammates = inRange.length > 0 ? inRange : [nearest(teammates)];
+    } else if (sp.variant === 'box') {
+      const outfield = teammates.filter(p => p.role !== 'GK');
+      teammates = [nearest(outfield.length > 0 ? outfield : teammates)];
+    }
+  }
 
   const opponents = state.players.filter(p => p.team !== holder.team);
   const intent    = state.teamIntent[holder.team];
@@ -1831,10 +1991,12 @@ function resolveOOBSetPiece(
   exitY:         number,
   fromPasserId:  number,
   source:        LooseBallSource = 'through',
+  cornerSource:  CornerSource = 'loose',
 ): TickResult {
   const oppositeTeam: TeamId = awardedTeam === 'A' ? 'B' : 'A';
 
   const position = computeOOBRestartPosition(kind, exitX, exitY, awardedTeam, s.players);
+  if (kind === 'corner') return awardCorner(s, awardedTeam, position, fromPasserId, source, cornerSource);
   const taker    = pickOOBTaker(kind, awardedTeam, position, s.players);
 
   // Layouts — awarded team plays the _Attack shape, opposite team plays _Defend.
@@ -1878,6 +2040,42 @@ function resolveOOBSetPiece(
     }, prevHolderId),
     passCompleted: false, tackled: false, goalScored: null,
   };
+}
+
+/**
+ * Corner for `awardedTeam` from the flag at `position` (`set-pieces-play.md` §1): the corner taker
+ * (manager's choice, else the best delivery) on the ball, both teams in the box layout, a
+ * CORNER_COUNTDOWN freeze, and a set-piece phase for the goal attribution.
+ */
+export function awardCorner(
+  s:            GameState,
+  awardedTeam:  TeamId,
+  position:     { x: number; y: number },
+  fromPasserId: number,
+  source:       LooseBallSource,
+  cornerSource: CornerSource,
+): TickResult {
+  const s0 = clearAllChasers({ ...s, pass: null, shot: null, looseBall: null });
+  const taker = setPieceTakerOf(s0, awardedTeam, 'corners')
+    ?? pickOOBTaker('corner', awardedTeam, position, s0.players);
+  const players = applyBoxSetPiece(s0.players, taker, position, 'corner', Math.random);
+  if (source === 'through') gameBus.emit('throughBallLostInRace', { player: fromPasserId, defenderWinnerId: taker.id });
+  gameBus.emit('cornerAwarded', { team: awardedTeam, takerId: taker.id, source: cornerSource });
+  debugLog('setPiece', `Corner to team ${awardedTeam} (${cornerSource}) — ${taker.name} to take it`, {
+    playerId: taker.id, data: { fromId: fromPasserId, source: cornerSource, restart: position },
+  });
+  const prevHolderId = s0.ballHolderId;
+  const countdown = SET_PIECE_CONFIG.CORNER_COUNTDOWN;
+  const st = onPossessionTransfer({
+    ...s0,
+    players,
+    ballHolderId:   taker.id,
+    possessionTime: 0,
+    lastPasserId:   null,
+    tackleCooldown: TACKLE_COOLDOWN,
+    setPiece: { type: 'corner', takerId: taker.id, countdown, position, variant: 'box' },
+  }, prevHolderId);
+  return { state: openSetPiecePhase(st, awardedTeam, 'corner', countdown), passCompleted: false, tackled: false, goalScored: null };
 }
 
 /**
@@ -1945,6 +2143,15 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     }
 
     aerialOutcome(null, false);
+    // Over the defending team's line with one of them on it: his touch put it out — corner.
+    if (kind === 'goal_kick') {
+      const exit = { x: Math.max(0, Math.min(PITCH_LENGTH, x)), y: Math.max(0, Math.min(PITCH_WIDTH, y)) };
+      const touched = s.players.some(p => p.team === awardedTeam
+        && Math.hypot(p.x - exit.x, p.y - exit.y) <= SET_PIECE_CONFIG.LOOSE_CORNER_RADIUS);
+      if (touched && Math.random() < SET_PIECE_CONFIG.LOOSE_CORNER_CHANCE) {
+        return resolveOOBSetPiece(s, 'corner', lb.fromTeamLastTouch, x, y, lb.fromPasserId, source, 'loose');
+      }
+    }
     return resolveOOBSetPiece(s, kind, awardedTeam, x, y, lb.fromPasserId, source);
   }
 
@@ -2256,9 +2463,13 @@ export function startAerialBall(
     const s0: GameState = { ...state, setPiece: null };
     const goalX = holder.attackDir === 1 ? PITCH_LENGTH : 0;
     const distToLine = (goalX - holder.x) * holder.attackDir;
-    if (distToLine <= C.CLEARANCE_CORNER_DEPTH && rng() < C.CLEARANCE_CORNER_CHANCE) {
+    // A blocked cross goes behind for a corner (`set-pieces-play.md`); a blocked long ball only near the line.
+    const behind = kind === 'cross'
+      ? rng() < SET_PIECE_CONFIG.CROSS_BLOCK_CORNER_CHANCE
+      : distToLine <= C.CLEARANCE_CORNER_DEPTH && rng() < C.CLEARANCE_CORNER_CHANCE;
+    if (behind) {
       const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
-      return resolveOOBSetPiece(s0, 'corner', holder.team, exitX, holder.y, blocker.id, 'clearance').state;
+      return resolveOOBSetPiece(s0, 'corner', holder.team, exitX, holder.y, blocker.id, 'clearance', 'cross_block').state;
     }
     return clearanceBall(s0, blocker, { x: holder.x, y: holder.y }, uniform(rng, C.BLOCK_DIST_MIN, C.BLOCK_DIST_MAX), rng);
   }
@@ -2289,12 +2500,12 @@ function highBallControlChance(p: GamePlayer): number {
 }
 
 /** A header at goal by `headerId` (`aerial.md`): own xG (× HEADER_XG_MULT), aim from heading. */
-function startHeader(state: GameState, headerId: number): GameState {
+function startHeader(state: GameState, headerId: number, pressureMult = 1): GameState {
   const p = state.players.find(pl => pl.id === headerId)!;
   const goalX = p.attackDir === 1 ? PITCH_LENGTH : 0;
   const dist = Math.abs(goalX - p.x);
   const openAngle = computeOpenAngle(p.x, p.y, goalX);
-  const pressure = computeWeightedPressure(p, state.players.filter(o => o.team !== p.team));
+  const pressure = computeWeightedPressure(p, state.players.filter(o => o.team !== p.team)) * pressureMult;
   const xg = computeXG(dist, openAngle, pressure) * AERIAL_CONFIG.HEADER_XG_MULT;
   // Heading stands in for finishing in the aim spread.
   const aimAs: GamePlayer = {
@@ -2387,7 +2598,9 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
       resolved(a.id, false, 'offside');
       return done(aerialOffsideFreeKick(s, a, { x: a.x, y: a.y }));
     }
-    const { winnerId, probA } = resolveAerialDuel(a, d, point, rng);
+    // A set-piece delivery: the defenders are set, goal-side of their man (`set-pieces-play.md`).
+    const setPieceCross = pass.fromSetPiece === true && kind === 'cross';
+    const { winnerId, probA } = resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_BONUS : 0);
     winner = winnerId === a.id ? a : d;
     const loser = winner.id === a.id ? d : a;
     contested = true;
@@ -2406,7 +2619,9 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     // Foul in the air (`fouls.md`, kind 'aerial') — either player may be the offender.
     const pa = s.players.find(p => p.id === a.id)!;
     const pd = s.players.find(p => p.id === d.id)!;
-    const [offender, victim] = rng() < 0.5 ? [pa, pd] : [pd, pa];
+    // At a set piece most fouls in the air are the attacker's (pushing, blocking the keeper).
+    const attackerFouls = rng() < (setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_ATTACKER_FOUL_SHARE : 0.5);
+    const [offender, victim] = attackerFouls ? [pa, pd] : [pd, pa];
     const fouled = maybeFoul(s, offender, victim, 'aerial', false, rng);
     if (fouled) {
       resolved(victim.id, victim.team === passerTeam, 'foul');
@@ -2493,7 +2708,8 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const angle = computeOpenAngle(point.x, point.y, goalX);
     if (Math.abs(goalX - point.x) <= C.HEADER_RANGE && angle >= C.HEADER_MIN_ANGLE) {
       resolved(w.id, true, 'header');
-      return done(startHeader({ ...s, ballHolderId: w.id, lastPasserId: pass.fromId }, w.id));
+      return done(startHeader({ ...s, ballHolderId: w.id, lastPasserId: pass.fromId }, w.id,
+        pass.fromSetPiece === true && kind === 'cross' ? SET_PIECE_CONFIG.SET_PIECE_HEADER_PRESSURE_MULT : 1));
     }
     // Headed lay-off to a teammate closer to goal.
     let mate: GamePlayer | null = null;
@@ -2533,9 +2749,11 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
   if (contested || isInGoalScoreArea(point.x, point.y, ownGoalX)) {
     resolved(winner.id, false, 'clearance');
     debugLog('aerial', `${winner.name} heads it clear`, { playerId: winner.id });
-    if (kind === 'cross' && Math.abs(point.x - ownGoalX) <= C.CLEARANCE_CORNER_DEPTH && rng() < C.CLEARANCE_CORNER_CHANCE) {
+    // A cross headed clear in the box (or near the byline) goes behind for a corner sometimes.
+    const deep = isInGoalScoreArea(point.x, point.y, ownGoalX) || Math.abs(point.x - ownGoalX) <= C.CLEARANCE_CORNER_DEPTH;
+    if (kind === 'cross' && deep && rng() < SET_PIECE_CONFIG.CROSS_CLEAR_CORNER_CHANCE) {
       const exitX = ownGoalX === 0 ? -1 : PITCH_LENGTH + 1;
-      return resolveOOBSetPiece(s, 'corner', passerTeam, exitX, point.y, winner.id, 'clearance');
+      return resolveOOBSetPiece(s, 'corner', passerTeam, exitX, point.y, winner.id, 'clearance', 'cross_clearance');
     }
     return done(clearanceBall(s, winner, point, uniform(rng, C.CLEARANCE_DIST_MIN, C.CLEARANCE_DIST_MAX), rng));
   }
@@ -2680,6 +2898,15 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       return Object.keys(updates).length > 0 ? { ...p, ...updates } : p;
     }),
   };
+
+  // ── Set-piece phase (`set-pieces-play.md`): expires, or closes once the other team has the ball.
+  if (s.setPiecePhase) {
+    const ph = s.setPiecePhase;
+    const h = s.players.find(p => p.id === s.ballHolderId);
+    if (s.matchTime > ph.until || (h && h.team !== ph.team && !s.looseBall && s.pass?.kind !== 'clearance')) {
+      s = { ...s, setPiecePhase: null };
+    }
+  }
 
   // ── Per-minute injury risk (energy/load/age/strength) — every on-pitch player, every tick ──
   // Skipped while a pass/shot is in flight: `rollInMatchInjuries` can remove or substitute ANY
@@ -3065,7 +3292,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       if (inPosts && isGoal) {
         const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };
         const assistId = s.lastPasserId !== null && s.lastPasserId !== shooter.id ? s.lastPasserId : undefined;
-        gameBus.emit('goalScored', { team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: s.shot.header === true });
+        const setPieceKind = s.shot.freeKick ? 'direct_free_kick' : setPieceGoalOf(s, shooter.team);
+        gameBus.emit('goalScored', {
+          team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: s.shot.header === true,
+          ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+        });
         const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
         return {
           state: resetToKickoff({ ...s, score: newScore }, concedingTeam),
@@ -3078,6 +3309,23 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           passCompleted: false, tackled: false, goalScored: null,
         };
       } else {
+        // Behind for a corner (`set-pieces-play.md`): a save parried wide, or an off-target shot
+        // deflected by a defender close to the shooter.
+        let cornerSource: CornerSource | null = null;
+        if (inPosts && defendingGK) {
+          if (Math.random() < SET_PIECE_CONFIG.SAVE_CORNER_CHANCE) cornerSource = 'save';
+        } else if (!inPosts) {
+          const deflector = s.players.some(p => p.team !== shooter.team && p.role !== 'GK'
+            && Math.hypot(p.x - s.shot!.fromX, p.y - s.shot!.fromY) <= SET_PIECE_CONFIG.SHOT_DEFLECT_RADIUS);
+          if (deflector && Math.random() < SET_PIECE_CONFIG.OFF_TARGET_CORNER_CHANCE) cornerSource = 'deflection';
+        }
+        if (cornerSource) {
+          const goalLineX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+          const exitX = goalLineX === 0 ? -1 : PITCH_LENGTH + 1;
+          const saved = defendingGK && inPosts ? { ...s, players: applyStaminaCost(s.players, defendingGK.id, 'gkSave') } : s;
+          return resolveOOBSetPiece({ ...saved, shot: null }, 'corner', shooter.team, exitX, s.shot.toY,
+            defendingGK?.id ?? shooter.id, 'clearance', cornerSource);
+        }
         // GK save or shot off target — apply goal kick positioning for GK's team
         const gkOwner = defendingGK ?? shooter; // if no GK, shooter's team acts as "keeper"
         const gkFormation = gkOwner.team === 'A' ? s.formationA : s.formationB;
@@ -3185,6 +3433,15 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           return { state: s, passCompleted: false, tackled: false, goalScored: null };
         }
         if (success) {
+          // Won near the byline, wide of the posts: the ball goes behind for a corner sometimes.
+          const hGoalX = updatedHolder.attackDir === 1 ? PITCH_LENGTH : 0;
+          if (Math.abs(hGoalX - updatedHolder.x) <= SET_PIECE_CONFIG.TACKLE_CORNER_DEPTH
+            && (updatedHolder.y < GOAL_Y_MIN || updatedHolder.y > GOAL_Y_MAX)
+            && Math.random() < SET_PIECE_CONFIG.TACKLE_CORNER_CHANCE) {
+            const exitX = hGoalX === 0 ? -1 : PITCH_LENGTH + 1;
+            const r = resolveOOBSetPiece(s, 'corner', updatedHolder.team, exitX, updatedHolder.y, tackler.id, 'clearance', 'tackle');
+            return { ...r, state: rollContactInjuries(r.state, [tackler.id, updatedHolder.id], matchMinute(r.state)), tackled: true };
+          }
           const prevHolderId = s.ballHolderId;
           s = onPossessionTransfer({
             ...s,
