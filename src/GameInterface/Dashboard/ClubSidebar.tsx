@@ -249,10 +249,10 @@ function ConfidenceBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="border border-border rounded-md p-3">
       <div className="flex justify-between text-sm mb-2">
-        <span className="text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
+        <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
           {label}
         </span>
-        <span className="text-primary font-black font-display">{value}%</span>
+        <span className="text-primary font-black font-display tabular-nums">{value}%</span>
       </div>
       <div className="h-1.5 bg-border rounded overflow-hidden">
         <div

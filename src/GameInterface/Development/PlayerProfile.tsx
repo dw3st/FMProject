@@ -64,7 +64,7 @@ export function PlayerProfile({ player, clubColors }: PlayerProfileProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-background/50 rounded-lg p-3 border border-border/30">
           <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{t("development.profileAge")}</p>
-          <p className="text-2xl font-bold font-display m-0">{player.age}</p>
+          <p className="text-2xl font-bold font-display tabular-nums m-0">{player.age}</p>
         </div>
         <div className="bg-background/50 rounded-lg p-3 border border-border/30">
           <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{t("development.profilePhase")}</p>
