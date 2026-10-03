@@ -311,6 +311,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'cross-to-box',
+    name:        'Aerial — Cross to the Box',
+    description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW',  89, 6,  WINGER),     // crosser
+        makePlayer('Santos',   'A', 'ST', 101, 36, STRIKER),    // attacks the penalty spot / near post
+        makePlayer('Rossi',    'A', 'CAM', 96, 44, MIDFIELDER), // arrives at the far post
+        makePlayer('Silva',    'B', 'CB', 104, 33, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB', 104, 41, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'switch-play-wide',
     name:        'Switch Play — Wide Hold',
     description: 'LW holds wide on the near touchline with the near side congested and the far flank open. Override intent to "switch_play" and toggle "Switch" to see the far-flank carry lane + far-side receivers.',
