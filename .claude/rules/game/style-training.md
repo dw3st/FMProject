@@ -60,7 +60,7 @@ de `tactics.json`. Dias de jogo e de descanso não mexem. De 50, um foco constan
    | `long_ball` (sempre) | `LONG_BALL_WEIGHT` × 1,05 |
 
    Medido (abaixo): esses ajustes sozinhos não mudam o resultado (≈ 0 p.p.).
-2. **Execução:** atributos dos jogadores do time × (1 + `EXECUTION_STAT_SCALE` × fator), teto 10, aplicados na
+2. **Execução:** atributos dos jogadores do time × (1 + `EXECUTION_STAT_SCALE` (0,02) × fator), teto 10, aplicados na
    montagem do titular e do banco (`withTeamExecution`). É o termo que faz um time treinado ganhar mais — o
    equivalente do quickSim. Guardado por time em `FamiliarityConfig` e definido por `applyTeamAttackConfig`;
    por isso as táticas têm de ser aplicadas **antes** de `createMatchState` (todos os caminhos fazem isso; o
@@ -92,7 +92,26 @@ nada (IA × IA; o clube do jogador sempre joga no motor completo), então a cali
 ## Medição (`scripts/familiarity-measure.ts`)
 
 Mesma liga, os dois lados no mesmo estilo, um em 100 e o outro em 50; cada par joga duas vezes com a
-familiaridade trocada (mando igual), fôlego 88. Ver números na seção "Resultados".
+familiaridade trocada (mando igual), fôlego 88. "Ganho" = vitórias do lado treinado − a taxa de vitória de um
+50×50 (≈ (V − D)/2). O motor não tem semente: uma rodada de 800–1200 jogos ainda varia ±1–2 p.p. no ganho.
+
+### Resultados (premier_league, 2026-10-02)
+
+| Configuração | balanced | possession | high_press | counter_attack | direct_play |
+|---|---|---|---|---|---|
+| Só os pesos (sem execução), 1200 jogos | −0,2 | −1,1 | 0,0 | −0,2 | — |
+| Execução 0,02 (final), 2000 jogos (1200 + 800) | **+3,5** | **+3,8** | **+3,9** | **+3,1** | **+3,4** |
+| Execução 0,025, 1200 jogos | +4,7 | +5,0 | +4,3 | +5,1 | +4,8 |
+| Execução 0,03, 1200 jogos | +5,8 | +8,1 | — | — | — |
+
+- 100 × 50 com execução 0,02: ganho médio ≈ +3,5 p.p. (meta +2..+4). O time treinado faz ~+0,2 gol e ~+0,3
+  chute por jogo.
+- 50 × 50: idêntico por construção (fator 0: pesos iguais, execução 1). Medido 1200 jogos: V/E/D 38,5/22,6/38,9,
+  2,51 gols, 5,86 chutes.
+- 75 × 75 (IA × IA, regra implícita): 2,56 gols, 5,93 chutes (+2% / +1%, dentro do ruído) — a calibração
+  motor × quickSim não muda de forma mensurável.
+- quickSim (×(1 + 0,02 × fator), 20 000 jogos): ganho +1,3 p.p. (menor que o motor; o quickSim só entra em
+  IA × IA, então isso não afeta o jogador).
 
 ```
 bun scripts/familiarity-measure.ts premier_league 400 --style possession --seed 1 --out a.json
