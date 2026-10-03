@@ -88,12 +88,12 @@ describe("high ball flight", () => {
     s = place(place(s, lw.id, 100, 8), rb.id, 101, 8);
     s = { ...s, ballHolderId: lw.id };
     const resolved = collect("aerialResolved");
-    // error 0, block roll 0 (< BLOCK_CHANCE), no corner (0.99), spread 0.5
-    s = startAerialBall(s, "cross", { x: 104, y: 37 }, null, seq(1, 0, 0, 0.99, 0.5));
+    // error 0, block roll 0 (< BLOCK_CHANCE), no corner (0.99), spread 0.5, distance 0.5
+    s = startAerialBall(s, "cross", { x: 104, y: 37 }, null, seq(1, 0, 0, 0.99, 0.5, 0.5));
     resolved.off();
-    expect(s.pass).toBeNull();
     expect(resolved.events[0]!.outcome).toBe("blocked");
-    expect(s.looseBall?.source).toBe("clearance");
+    expect(s.pass?.kind).toBe("clearance");
+    expect(s.pass?.fromId).toBe(rb.id);
   });
 });
 
@@ -133,21 +133,26 @@ describe("landing resolution", () => {
     expect(s.shot?.header).toBe(true);
   });
 
-  test("a defender winning in his box heads it clear — a clearance loose ball, no through-ball stats", () => {
+  test("a defender winning in his box heads it clear — a second ball, no through-ball stats", () => {
     const { s: s0 } = landing({ x: 104, y: 37 });
     const st = find(s0, "A", "ST");
     const cb = find(s0, "B", "CB");
     const gk = find(s0, "B", "GK");
     let s = place(place(place(s0, st.id, 104.5, 37), cb.id, 103.5, 37), gk.id, 114, 50);
     const tb = collect("throughBallLostInRace");
-    // duel 0.99 → defender; offender 0.5; no foul 0.99; no corner 0.99; spread 0.5
-    s = resolveAerialLanding(s, seq(0.99, 0.5, 0.99, 0.99, 0.5)).state;
+    // duel 0.99 → defender; offender 0.5; no foul 0.99; no corner 0.99; distance 0.5; spread 0.5
+    s = resolveAerialLanding(s, seq(0.99, 0.5, 0.99, 0.99, 0.5, 0.5)).state;
     tb.off();
-    expect(s.looseBall?.source).toBe("clearance");
-    expect(s.looseBall?.fromTeamLastTouch).toBe("B");
+    expect(s.pass?.kind).toBe("clearance");
+    expect(s.pass?.fromId).toBe(cb.id);
     expect(s.ballHolderId).toBe(cb.id);
-    expect(s.looseBall!.vx).toBeLessThan(0); // away from the goal B defends (x = 115)
+    expect(s.pass!.toX).toBeLessThan(103.5); // away from the goal B defends (x = 115)
     expect(tb.events).toHaveLength(0);
+    // The second ball: an attacker waiting where it lands wins it.
+    const cam = find(s, "A", "CAM");
+    s = place(s, cam.id, s.pass!.toX, s.pass!.toY);
+    s = resolveAerialLanding(s, seq(0.5)).state;
+    expect(s.ballHolderId).toBe(cam.id);
   });
 
   test("the keeper claims a ball dropping in his small box", () => {
@@ -167,8 +172,8 @@ describe("landing resolution", () => {
     const gk = find(s0, "B", "GK");
     let s = place(s0, gk.id, 113, 37);
     s = resolveAerialLanding(s, seq(0.99, 0.5)).state;
-    expect(s.looseBall?.source).toBe("clearance");
-    expect(s.looseBall?.fromPasserId).toBe(gk.id);
+    expect(s.pass?.kind).toBe("clearance");
+    expect(s.pass?.fromId).toBe(gk.id);
   });
 
   test("nobody there: a loose ball from the cross; the team that picks it up completes it", () => {
@@ -202,11 +207,21 @@ describe("landing resolution", () => {
     initStats(s0.players.map(p => ({ id: p.id, team: p.team })));
     const st = find(s0, "A", "ST");
     let s = place(s0, st.id, 70.5, 37);
-    const r = resolveAerialLanding(s, seq(0.5));
+    const r = resolveAerialLanding(s, seq(0)); // control roll succeeds
     s = r.state;
     expect(r.passCompleted).toBe(true);
     expect(s.ballHolderId).toBe(st.id);
     expect(getPlayerStats(s0.ballHolderId).longBallsCompleted).toBe(1);
+  });
+});
+
+describe("first touch", () => {
+  test("a failed first touch drops the ball loose at the landing point", () => {
+    const { s: s0 } = landing({ x: 70, y: 37 }, "long_ball");
+    const st = find(s0, "A", "ST");
+    const s = resolveAerialLanding(place(s0, st.id, 70.5, 37), seq(0.999, 0.25)).state;
+    expect(s.looseBall?.source).toBe("long_ball");
+    expect(s.looseBall?.x).toBe(70);
   });
 });
 
@@ -230,5 +245,17 @@ describe("header goals", () => {
     expect(r.goalScored).toBe("A");
     expect(goals.events[0]!.header).toBe(true);
     expect(getPlayerStats(st.id).headerGoals).toBe(1);
+  });
+});
+
+describe("/test scenario cross-to-box", () => {
+  test("the winger with the ball chooses to cross", async () => {
+    const { TEST_SCENARIOS } = await import("@/GameEngine/Suport/TestCases");
+    const { decide } = await import("@/GameEngine/Domain/DecisionTree");
+    const sc = TEST_SCENARIOS.find(t => t.id === "cross-to-box")!;
+    const s = sc.createState();
+    const holder = s.players.find(p => p.id === s.ballHolderId)!;
+    const d = decide(holder, holder, true, false, s.players, null, 0);
+    expect(d.type).toBe("cross");
   });
 });
