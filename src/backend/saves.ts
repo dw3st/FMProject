@@ -4,9 +4,11 @@ import { applyBroadcasting } from "@/backend/FinancialService";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
+import { isFamiliarityKey } from "@/types/familiarityTypes";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
+import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
@@ -147,6 +149,13 @@ export const saveRoutes = {
           return Response.json({ error: "invalid training_intensity" }, { status: 400 });
         patch.training_intensity = ti as TrainingIntensity;
       }
+      if (body.style_focus !== undefined) {
+        // null = auto: drill the tactics style (the key is cleared from the meta).
+        if (body.style_focus === null) patch.style_focus = undefined;
+        else if (!isFamiliarityKey(body.style_focus))
+          return Response.json({ error: "invalid style_focus" }, { status: 400 });
+        else patch.style_focus = body.style_focus;
+      }
       if (body.followedLeagues !== undefined) {
         const leagues = await getLeagueData();
         patch.followedLeagues = sanitizeFollowedLeagues(
@@ -214,6 +223,12 @@ export const saveRoutes = {
         if (!parsed) return Response.json({ error: "invalid axes override" }, { status: 400 });
         axesOverride = Object.keys(parsed).length ? parsed : undefined;
       }
+      let setPieceTakers = existing.setPieceTakers;
+      if (body.setPieceTakers !== undefined) {
+        const parsed = parseSetPieceTakers(body.setPieceTakers);
+        if (!parsed) return Response.json({ error: "invalid set-piece takers" }, { status: 400 });
+        setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
+      }
       const formationId = body.formation ?? existing.formation;
       if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
         return Response.json({ error: "custom formation missing" }, { status: 400 });
@@ -226,6 +241,7 @@ export const saveRoutes = {
         assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
         ...(customFormation ? { customFormation } : {}),
         ...(axesOverride ? { axesOverride } : {}),
+        ...(setPieceTakers ? { setPieceTakers } : {}),
       };
 
       await saveService.saveTactics(id, updated);

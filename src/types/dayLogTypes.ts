@@ -16,6 +16,23 @@ export interface MatchTeamStats {
   penaltiesAwarded?: number;
   /** Goals scored from in-match penalties (part of the score, never extra). */
   penaltyGoals?:   number;
+  /** Aerial play (`.claude/rules/game-engine/aerial.md`). Optional: older events may omit them. */
+  crosses?:            number;
+  crossesCompleted?:   number;
+  /** Aerial duels contested by this team (= duels in the match) / won. */
+  aerialDuels?:        number;
+  aerialDuelsWon?:     number;
+  /** Header goals (part of the score). */
+  headerGoals?:        number;
+  longBalls?:          number;
+  longBallsCompleted?: number;
+  /** Set pieces (`.claude/rules/game-engine/set-pieces-play.md`). Optional: older events may omit them. */
+  corners?:             number;
+  freeKicks?:           number;
+  directFreeKickShots?: number;
+  /** Goals straight from a direct free kick / from any set piece (penalties included) — part of the score. */
+  directFreeKickGoals?: number;
+  setPieceGoals?:       number;
 }
 
 export interface MatchPlayerStats {

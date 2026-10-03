@@ -166,7 +166,9 @@ describe("slot roles", () => {
     const stGoals = goals.get("h-p9") ?? 0;
     const others = [...goals.entries()].filter(([id]) => id !== "h-p9").map(([, g]) => g);
     expect(stGoals).toBeGreaterThan(0);
-    for (const g of others) expect(stGoals).toBeGreaterThan(g * 3);
+    // Centre-backs head in set pieces (Etapa 14: HEADER_LINE_WEIGHT DEF ≈ FWD), so the margin over a
+    // defender slot is smaller than before; the ST slot still outscores every other slot clearly.
+    for (const g of others) expect(stGoals).toBeGreaterThan(g * 1.5);
   });
 
   test("vagas puladas não desalinham os papéis", () => {
@@ -732,5 +734,139 @@ describe("quickSimMatch — discipline", () => {
       return;
     }
     throw new Error("no red card in 5000 seeds");
+  });
+});
+
+describe("quickSimMatch — aerial play", () => {
+  test("header goals follow HEADER_GOAL_SHARE; crosses, duels and long balls follow the engine means", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const n = 3000;
+    let goals = 0, headerGoals = 0, crosses = 0, duels = 0, longBalls = 0;
+    for (let i = 0; i < n; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      const h = r.teamStats.home;
+      const a = r.teamStats.away;
+      goals += r.score.home + r.score.away;
+      headerGoals += h.headerGoals! + a.headerGoals!;
+      crosses += h.crosses! + a.crosses!;
+      longBalls += h.longBalls! + a.longBalls!;
+      // Both teams contest every duel; each duel has exactly one winner.
+      expect(h.aerialDuels).toBe(a.aerialDuels);
+      expect(h.aerialDuelsWon! + a.aerialDuelsWon!).toBe(h.aerialDuels!);
+      duels += h.aerialDuels!;
+      for (const side of [h, a]) {
+        expect(side.crossesCompleted!).toBeLessThanOrEqual(side.crosses!);
+        expect(side.longBallsCompleted!).toBeLessThanOrEqual(side.longBalls!);
+      }
+      expect(h.headerGoals!).toBeLessThanOrEqual(r.score.home - (h.penaltyGoals ?? 0));
+      // Header goals move goals between players, never add any.
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+    }
+    expect(headerGoals / goals).toBeGreaterThan(C.HEADER_GOAL_SHARE * 0.8);
+    expect(headerGoals / goals).toBeLessThan(C.HEADER_GOAL_SHARE * 1.2);
+    expect(crosses / n).toBeCloseTo(2 * C.CROSSES_PER_SIDE, 0);
+    expect(longBalls / n).toBeCloseTo(2 * C.LONG_BALLS_PER_SIDE, 0);
+    expect(duels / n).toBeCloseTo(C.AERIAL_DUELS_PER_MATCH, 0);
+  });
+
+  test("header goals go to good headers, never to the goalkeeper", () => {
+    const home = makeSquad("h", 6);
+    home.players = home.players.map((p) => (p.positions[0] === "ST" ? { ...p, stats: { ...p.stats, heading: 10 } } : p));
+    const away = makeSquad("a", 6);
+    let stGoals = 0, others = 0;
+    for (let i = 0; i < 3000; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      expect(r.playerStats[home.players[0]!.id]?.goals ?? 0).toBe(0); // GK
+      stGoals += r.playerStats[home.players.find((p) => p.positions[0] === "ST")!.id]!.goals;
+      others += r.score.home;
+    }
+    expect(stGoals / others).toBeGreaterThan(0.2);
+  });
+});
+
+describe("quickSimMatch — set pieces", () => {
+  test("set-piece and direct free-kick goals follow the engine shares; corners and free kicks are counted", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const n = 3000;
+    let goals = 0, setPiece = 0, penalties = 0, direct = 0, corners = 0;
+    for (let i = 0; i < n; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      for (const [side, other] of [["home", "away"], ["away", "home"]] as const) {
+        const t = r.teamStats[side];
+        const o = r.teamStats[other];
+        expect(t.setPieceGoals!).toBeGreaterThanOrEqual(t.penaltyGoals ?? 0);
+        expect(t.setPieceGoals!).toBeLessThanOrEqual(r.score[side]);
+        expect(t.directFreeKickGoals!).toBeLessThanOrEqual(t.directFreeKickShots!);
+        expect(t.freeKicks).toBe(Math.max(0, (o.fouls ?? 0) - (t.penaltiesAwarded ?? 0)));
+        setPiece += t.setPieceGoals!;
+        penalties += t.penaltyGoals ?? 0;
+        direct += t.directFreeKickGoals!;
+        corners += t.corners!;
+      }
+      goals += r.score.home + r.score.away;
+      // Set-piece goals move goals between players, never add any.
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+    }
+    expect((setPiece - penalties) / goals).toBeGreaterThan(C.SET_PIECE_GOAL_SHARE * 0.8);
+    expect((setPiece - penalties) / goals).toBeLessThan(C.SET_PIECE_GOAL_SHARE * 1.2);
+    expect(direct / goals).toBeGreaterThan(C.DIRECT_FK_GOAL_SHARE * 0.85);
+    expect(direct / goals).toBeLessThan(C.DIRECT_FK_GOAL_SHARE * 1.15);
+    expect(corners / n).toBeCloseTo(2 * C.CORNERS_PER_SIDE, 0);
+  });
+});
+
+describe("quickSimMatch — extra-time header goals", () => {
+  test("an extra-time goal can be a header; goals still add up", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let etOnlyHeaders = 0;
+    for (let i = 0; i < 6000; i++) {
+      const r = quickSimMatch(
+        { fixtureId: "f", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away), knockout: true },
+        mulberry32(500 + i),
+      ).recording;
+      const et = r.decider?.extraTime;
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+      // Only extra-time goals and no regular-time goals: any header goal is an extra-time one.
+      if (et && r.score.home === et.home && r.score.away === et.away) {
+        etOnlyHeaders += r.teamStats.home.headerGoals! + r.teamStats.away.headerGoals!;
+      }
+    }
+    expect(etOnlyHeaders).toBeGreaterThan(0);
+  });
+});
+
+describe("quickSim: style familiarity", () => {
+  const input = (hf?: number, af?: number) => ({
+    fixtureId: "f",
+    home: makeSquad("h", 5),
+    away: makeSquad("a", 5),
+    homeLineup: ROLES.map((_, i) => `h-p${i}`),
+    awayLineup: ROLES.map((_, i) => `a-p${i}`),
+    homeRoles: ROLES,
+    awayRoles: ROLES,
+    ...(hf !== undefined ? { homeFamiliarity: hf } : {}),
+    ...(af !== undefined ? { awayFamiliarity: af } : {}),
+  });
+
+  test("50 (or absent) changes nothing; 100 lifts every line ×(1 + 0.02)", () => {
+    const base = quickSimMatch(input(), mulberry32(7)).breakdown;
+    const neutral = quickSimMatch(input(50, 50), mulberry32(7)).breakdown;
+    expect(neutral).toEqual(base);
+    const hi = quickSimMatch(input(100, 50), mulberry32(7)).breakdown;
+    for (const k of ["attack", "midfield", "defense", "goalkeeper"] as const) {
+      expect(hi.home[k]).toBeCloseTo(base.home[k] * 1.02);
+      expect(hi.away[k]).toBe(base.away[k]);
+    }
+    expect(hi.xgHome).toBeGreaterThan(base.xgHome);
+    expect(hi.xgAway).toBeLessThan(base.xgAway);
   });
 });

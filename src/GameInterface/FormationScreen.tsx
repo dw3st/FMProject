@@ -55,6 +55,8 @@ import {
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
+import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
+import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 
 interface FormationOption {
   id: string;
@@ -760,6 +762,8 @@ export function FormationScreen() {
             />
           </label>
 
+          {session && squad && <SetPieceTakersPanel saveId={session.saveId} players={squad.players} />}
+
           {/* Tactical Style */}
           <div className="card-arcade rounded-md p-5">
             <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-6">
@@ -813,6 +817,8 @@ export function FormationScreen() {
               })}
             </div>
           </div>
+
+          <FamiliarityBars familiarity={squad?.styleFamiliarity} current={activeStyle} />
 
           {/* Team instructions (the four axes) */}
           <div className="rounded-md border border-border p-5">

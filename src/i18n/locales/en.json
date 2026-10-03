@@ -550,7 +550,15 @@
       "wide": "Wide"
     },
     "assistantRotation": "Assistant picks by fitness",
-    "assistantRotationHint": "Automatically rests tired starters before each match."
+    "assistantRotationHint": "Automatically rests tired starters before each match.",
+    "setPieceTakers": {
+      "title": "Set-piece takers",
+      "hint": "Automatic picks the best on the pitch. If your choice isn't playing, it goes back to automatic.",
+      "auto": "Automatic",
+      "corners": "Corners",
+      "freeKicks": "Free kicks",
+      "penalties": "Penalties"
+    }
   },
   "formations": {
     "custom": "Custom",
@@ -762,6 +770,13 @@
       "RC": "Red Cards",
       "OFF": "Offsides",
       "PEN": "Penalty Goals",
+      "CR": "Crosses",
+      "AD": "Aerial Duels Won",
+      "HG": "Header Goals",
+      "LB": "Long Balls",
+      "CK": "Corners",
+      "DFK": "Direct Free Kicks (goals)",
+      "SPG": "Set-Piece Goals",
       "POS": "Pos",
       "NAME": "Name",
       "AGE": "Age",
@@ -1395,6 +1410,18 @@
     "savedToFile": "Saved to your career file.",
     "savingButton": "Saving…",
     "saveButton": "Save"
+  },
+  "familiarity": {
+    "title": "Style familiarity",
+    "hint": "Train a style so the team plays it better. What is not trained slowly fades.",
+    "focusLabel": "Style focus",
+    "focusHint": "Each training day adds familiarity to the focus, more with a good assistant; the rest slowly fade.",
+    "focusAuto": "Auto (tactics style: {{style}})",
+    "current": "In use",
+    "keys": {
+      "high_line_trap": "High line & offside trap",
+      "long_ball": "Long ball"
+    }
   },
   "dashboard": {
     "playerCard": {

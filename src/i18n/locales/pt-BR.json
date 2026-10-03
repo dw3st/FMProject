@@ -550,7 +550,15 @@
       "wide": "Aberta"
     },
     "assistantRotation": "Assistente escala por fôlego",
-    "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo."
+    "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo.",
+    "setPieceTakers": {
+      "title": "Cobradores",
+      "hint": "Automático escolhe o melhor em campo. Se o escolhido não estiver jogando, volta ao automático.",
+      "auto": "Automático",
+      "corners": "Escanteios",
+      "freeKicks": "Faltas",
+      "penalties": "Pênaltis"
+    }
   },
   "formations": {
     "custom": "Personalizada",
@@ -762,6 +770,13 @@
       "RC": "Cartões Vermelhos",
       "OFF": "Impedimentos",
       "PEN": "Gols de Pênalti",
+      "CR": "Cruzamentos",
+      "AD": "Disputas Aéreas Vencidas",
+      "HG": "Gols de Cabeça",
+      "LB": "Lançamentos Longos",
+      "CK": "Escanteios",
+      "DFK": "Faltas Diretas (gols)",
+      "SPG": "Gols de Bola Parada",
       "POS": "Pos",
       "NAME": "Nome",
       "AGE": "Idade",
@@ -1395,6 +1410,18 @@
     "savedToFile": "Salvo no arquivo de carreira.",
     "savingButton": "Salvando…",
     "saveButton": "Salvar"
+  },
+  "familiarity": {
+    "title": "Familiaridade com o estilo",
+    "hint": "Treine um estilo para o time jogá-lo melhor. O que não é treinado cai devagar.",
+    "focusLabel": "Foco de estilo",
+    "focusHint": "Cada dia de treino soma familiaridade ao foco, mais com um bom auxiliar técnico; os demais caem devagar.",
+    "focusAuto": "Auto (estilo da tática: {{style}})",
+    "current": "Em uso",
+    "keys": {
+      "high_line_trap": "Linha alta e impedimento",
+      "long_ball": "Bola longa"
+    }
   },
   "dashboard": {
     "playerCard": {

@@ -19,6 +19,9 @@ import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality, TacticalAxes } 
 import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
+import type { FamiliarityLevels } from '@/types/familiarityTypes';
+import { familiarityFactor } from '@/Domain/familiarity/familiarity';
+import { STYLE_FAMILIARITY_EFFECTS, LONG_BALL_EFFECT, applyMult, setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 
 // ── Possession push-up — drives the defensive line forward during sustained possession ──
 
@@ -96,6 +99,8 @@ export interface TeamPassWeights {
   ROLE_BIAS_WEIGHT:        number;
   /** Flat raw-score bonus on a viable through-ball cell (tactic appetite for splitting the line). */
   THROUGH_BALL_BONUS:      number;
+  /** Multiplier on the long-ball raw score (`aerial.md`) — direct goes long the most. */
+  LONG_BALL_WEIGHT:        number;
 }
 
 const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
@@ -108,6 +113,7 @@ const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
   RECEIVER_ROLE_WEIGHT:    PASS_CONFIG.RECEIVER_ROLE_WEIGHT,
   ROLE_BIAS_WEIGHT:        PASS_CONFIG.ROLE_BIAS_WEIGHT,
   THROUGH_BALL_BONUS:      PASS_CONFIG.THROUGH_BALL_BONUS,
+  LONG_BALL_WEIGHT:        PASS_CONFIG.LONG_BALL_WEIGHT,
 };
 
 /**
@@ -137,6 +143,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     RECEIVER_ROLE_WEIGHT:    0.14,
     ROLE_BIAS_WEIGHT:        0.14,
     THROUGH_BALL_BONUS:      0.10,
+    // Patient build-up rarely goes long.
+    LONG_BALL_WEIGHT:        0.6,
   },
   balanced: { ...PASS_WEIGHT_DEFAULTS },
   direct: {
@@ -152,6 +160,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     RECEIVER_ROLE_WEIGHT:    0.06,
     ROLE_BIAS_WEIGHT:        0.10,
     THROUGH_BALL_BONUS:      0,
+    // Direct play goes over the line the most.
+    LONG_BALL_WEIGHT:        1.3,
   },
 };
 
@@ -290,16 +300,26 @@ export function getTeamTacticalStyle(team: TeamId): TacticalStyle {
  * top of the style's axes. `TEAM_TACTICAL_STYLE` always records the style
  * itself (never shifted by mentality) — `getTeamTacticalStyle` is what
  * IntentDetection reads to gate team intents.
+ *
+ * `familiarity` (style training, `FamiliarityConfig.ts`) nudges the weights the style already
+ * drives; absent or 50 = no change.
  */
 export function applyTeamAttackConfig(
   team: TeamId,
   style: TacticalStyle,
   mentality: Mentality = DEFAULT_MENTALITY,
   axesOverride?: Partial<TacticalAxes>,
+  familiarity?: FamiliarityLevels,
 ): void {
   const axes = axesWithMentality(style, mentality, axesOverride);
   Object.assign(TEAM_PASS_WEIGHTS[team], BUILD_UP_PASS[axes.build_up]);
   Object.assign(TEAM_CARRY_WEIGHTS[team], BUILD_UP_CARRY[axes.build_up]);
+  const styleFactor = familiarityFactor(familiarity?.[style]);
+  const styleEffect = STYLE_FAMILIARITY_EFFECTS[style];
+  applyMult(TEAM_PASS_WEIGHTS[team], styleEffect.passMult, styleFactor);
+  applyMult(TEAM_CARRY_WEIGHTS[team], styleEffect.carryMult, styleFactor);
+  applyMult(TEAM_PASS_WEIGHTS[team], LONG_BALL_EFFECT.passMult, familiarityFactor(familiarity?.long_ball));
+  setTeamExecution(team, styleFactor);
   TEAM_ATTACK_WIDTH[team]    = WIDTH_ATTACK_WIDTH[axes.width];
   TEAM_BUILD_UP[team]        = axes.build_up;
   TEAM_WIDTH[team]           = axes.width;

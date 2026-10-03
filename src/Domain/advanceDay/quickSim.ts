@@ -23,6 +23,8 @@ import { RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
 import { contactInjuryChance, injuryRatePerMinute, rollSeverity, type InjuryFactors } from "@/Domain/injury/injury";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { familiarityFactor } from "@/Domain/familiarity/familiarity";
+import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -66,6 +68,12 @@ export interface QuickSimInput {
   aggregate?: { home: number; away: number };
   /** Neutral venue: no home advantage for either side. */
   neutral?: boolean;
+  /**
+   * Familiarity (0..100) of each side with the style it plays (`src/Domain/familiarity`): line
+   * strengths × (1 + QUICKSIM_STRENGTH × familiarityFactor). Absent = neutral (no change).
+   */
+  homeFamiliarity?: number;
+  awayFamiliarity?: number;
 }
 
 export interface QuickSimResult {
@@ -164,6 +172,14 @@ function strengthOf(xi: XIPlayer[]): TeamStrength {
     forwardPace: linePace(xi.filter((x) => groupOf(x) === "FWD"), attackers.length ? attackers : outfield),
     defensePace: linePace(xi.filter((x) => groupOf(x) === "DEF"), defenders.length ? defenders : outfield),
   };
+}
+
+/** Style familiarity scales the four line strengths (not pace); 50 / absent = unchanged. */
+function withFamiliarity(s: TeamStrength, familiarity: number | undefined): TeamStrength {
+  const f = familiarityFactor(familiarity);
+  if (f === 0) return s;
+  const k = 1 + FAMILIARITY.QUICKSIM_STRENGTH * f;
+  return { ...s, attack: s.attack * k, midfield: s.midfield * k, defense: s.defense * k, goalkeeper: s.goalkeeper * k };
 }
 
 /** A team's overall level: the mean of its 4 line strengths. */
@@ -288,6 +304,10 @@ function resolveXI(squad: Squad, lineup: string[], roles?: string[]): XIPlayer[]
 interface GoalRecord {
   scorerId: string;
   assisterId: string | null;
+  /** Turned into a penalty goal by `rollDiscipline` (never a header). */
+  penalty?: boolean;
+  /** Turned into a header goal by `rollAerial`. */
+  header?: boolean;
 }
 
 function assignGoals(xi: XIPlayer[], goals: number, stats: Record<string, MatchPlayerStats>, rng: Rng): GoalRecord[] {
@@ -457,6 +477,7 @@ function rollDiscipline(
   const penaltyGoals = converted.length;
   const missed = taker ? samplePoisson(lam * (1 - c), rng) : 0;
   for (const goal of converted) {
+    goal.penalty = true;
     if (goal.assisterId) stats[goal.assisterId]!.assists--;
     if (goal.scorerId !== taker!.p.id) {
       stats[goal.scorerId]!.goals--;
@@ -516,6 +537,166 @@ function rollDiscipline(
   return out;
 }
 
+/** Per-side aerial totals (team stats). */
+interface SideAerial {
+  crosses: number;
+  crossesCompleted: number;
+  aerialDuels: number;
+  aerialDuelsWon: number;
+  headerGoals: number;
+  longBalls: number;
+  longBallsCompleted: number;
+}
+
+function binomial(n: number, p: number, rng: Rng): number {
+  let k = 0;
+  for (let i = 0; i < n; i++) if (rng() < p) k++;
+  return k;
+}
+
+/** Mean aerial ability of an XI (heading / jump / strength, 0..10), the engine's duel weights. */
+function aerialStrength(xi: XIPlayer[]): number {
+  const outfield = xi.filter((x) => groupOf(x) !== "GK");
+  return avg(outfield.map((x) => 0.45 * stat(x.p, "heading") + 0.25 * stat(x.p, "jump") + 0.15 * stat(x.p, "strength"))) + 0.5;
+}
+
+/**
+ * Aerial play for one side (Etapa 13, `.claude/rules/game-engine/aerial.md`): crosses / long balls
+ * by Poisson and binomial completion, the side's share `won` of the match's `duels` handed to
+ * players by line weight × heading (each won duel = RATING_WEIGHTS.AERIAL_DUEL_WON), and header
+ * goals: each non-penalty goal already sampled is a header with probability
+ * HEADER_GOAL_SHARE × goals / eligible, moved to a header scorer (the assist is kept unless it was
+ * his own). The score never changes.
+ */
+function rollAerial(
+  xi: XIPlayer[],
+  goals: GoalRecord[],
+  duels: number,
+  won: number,
+  stats: Record<string, MatchPlayerStats>,
+  ratingDelta: Record<string, number>,
+  rng: Rng,
+): SideAerial {
+  const out: SideAerial = {
+    crosses: 0, crossesCompleted: 0, aerialDuels: duels, aerialDuelsWon: won,
+    headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
+  };
+  if (xi.length === 0) return out;
+  out.crosses = samplePoisson(C.CROSSES_PER_SIDE, rng);
+  out.crossesCompleted = binomial(out.crosses, C.CROSS_COMPLETION, rng);
+  out.longBalls = samplePoisson(C.LONG_BALLS_PER_SIDE, rng);
+  out.longBallsCompleted = binomial(out.longBalls, C.LONG_BALL_COMPLETION, rng);
+
+  const duelWeight = (x: XIPlayer) => C.AERIAL_DUEL_LINE_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "heading") / 10);
+  for (let i = 0; i < won; i++) {
+    const p = weightedPick(xi, duelWeight, rng);
+    if (p) ratingDelta[p.p.id] = (ratingDelta[p.p.id] ?? 0) + RATING_WEIGHTS.AERIAL_DUEL_WON;
+  }
+
+  const eligible = goals.filter((g) => !g.penalty);
+  if (eligible.length === 0) return out;
+  const q = Math.min(1, (C.HEADER_GOAL_SHARE * goals.length) / eligible.length);
+  const headerWeight = (x: XIPlayer) => C.HEADER_LINE_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "heading") / 10);
+  for (const goal of eligible) {
+    if (rng() >= q) continue;
+    const header = weightedPick(xi, headerWeight, rng);
+    if (!header) continue;
+    out.headerGoals++;
+    goal.header = true;
+    const id = header.p.id;
+    if (id === goal.scorerId) continue;
+    stats[goal.scorerId]!.goals--;
+    stats[goal.scorerId]!.shots--;
+    stats[id]!.goals++;
+    stats[id]!.shots++;
+    if (goal.assisterId === id) {
+      stats[id]!.assists--;
+      goal.assisterId = null;
+    }
+    goal.scorerId = id;
+  }
+  return out;
+}
+
+/** Per-side set-piece totals (team stats). */
+interface SideSetPieces {
+  corners: number;
+  freeKicks: number;
+  directFreeKickShots: number;
+  directFreeKickGoals: number;
+  setPieceGoals: number;
+}
+
+/** Moves `goal` to `toId` (keeps the assist unless it was his own or `dropAssist`). */
+function moveGoal(goal: GoalRecord, toId: string, stats: Record<string, MatchPlayerStats>, dropAssist: boolean): void {
+  if (goal.scorerId !== toId) {
+    stats[goal.scorerId]!.goals--;
+    stats[goal.scorerId]!.shots--;
+    stats[toId]!.goals++;
+    stats[toId]!.shots++;
+  }
+  if (goal.assisterId && (dropAssist || goal.assisterId === toId)) {
+    stats[goal.assisterId]!.assists--;
+    goal.assisterId = null;
+  }
+  goal.scorerId = toId;
+}
+
+/**
+ * Set pieces for one side (Etapa 14, `.claude/rules/game-engine/set-pieces-play.md`): corners and
+ * direct free-kick shots by Poisson, free kicks = the opponent's fouls that were not penalties. Of the
+ * side's non-penalty goals already sampled, a share become set-piece goals so that
+ * E[non-penalty set-piece goals] = SET_PIECE_GOAL_SHARE × goals: a DIRECT_FK_GOAL_SHARE / SET_PIECE_GOAL_SHARE
+ * part are direct free kicks (moved to the best finisher, no assist; a header picked here stops being one, so
+ * E[direct] = DIRECT_FK_GOAL_SHARE × goals), the rest keep a header's scorer
+ * or move to a heading-weighted defender / forward. Penalty goals count as set-piece goals. The score
+ * never changes.
+ */
+function rollSetPieces(
+  xi: XIPlayer[],
+  goals: GoalRecord[],
+  oppFouls: number,
+  penaltiesAwarded: number,
+  stats: Record<string, MatchPlayerStats>,
+  rng: Rng,
+  /** Incremented for each header goal turned into a direct free kick (the caller fixes headerGoals). */
+  headersToDirect: { value: number } = { value: 0 },
+): SideSetPieces {
+  const out: SideSetPieces = { corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0 };
+  if (xi.length === 0) return out;
+  out.corners = samplePoisson(C.CORNERS_PER_SIDE, rng);
+  out.freeKicks = Math.max(0, oppFouls - penaltiesAwarded);
+  out.setPieceGoals = goals.filter((g) => g.penalty).length;
+  const eligible = goals.filter((g) => !g.penalty);
+  if (eligible.length > 0) {
+    const q = Math.min(0.9, (C.SET_PIECE_GOAL_SHARE * goals.length) / eligible.length);
+    // Any set-piece goal may be the direct free kick (a header picked here stops being a header),
+    // so E[direct free-kick goals] = DIRECT_FK_GOAL_SHARE × goals exactly.
+    const directShare = C.DIRECT_FK_GOAL_SHARE / C.SET_PIECE_GOAL_SHARE;
+    const outfield = xi.filter((x) => groupOf(x) !== "GK");
+    const taker = [...outfield].sort((a, b) => stat(b.p, "finishing") - stat(a.p, "finishing"))[0];
+    const spWeight = (x: XIPlayer) => C.SET_PIECE_LINE_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "heading") / 10);
+    for (const goal of eligible) {
+      if (rng() >= q) continue;
+      out.setPieceGoals++;
+      if (taker && rng() < directShare) {
+        out.directFreeKickGoals++;
+        if (goal.header) {
+          goal.header = false;
+          headersToDirect.value++;
+        }
+        moveGoal(goal, taker.p.id, stats, true);
+        continue;
+      }
+      if (goal.header) continue;
+      const scorer = weightedPick(xi, spWeight, rng);
+      if (scorer) moveGoal(goal, scorer.p.id, stats, false);
+    }
+  }
+  out.directFreeKickShots = Math.max(samplePoisson(C.DIRECT_FK_SHOTS_PER_SIDE, rng), out.directFreeKickGoals);
+  return out;
+}
+
 function sumTeamStats(xi: XIPlayer[], stats: Record<string, MatchPlayerStats>): MatchTeamStats {
   const t: MatchTeamStats = { shots: 0, passesCompleted: 0, passesAttempted: 0, tackles: 0, interceptions: 0 };
   for (const { p } of xi) {
@@ -546,8 +727,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const homeXI = resolveXI(input.home, input.homeLineup, input.homeRoles);
   const awayXI = resolveXI(input.away, input.awayLineup, input.awayRoles);
 
-  const home = strengthOf(homeXI);
-  const away = strengthOf(awayXI);
+  const home = withFamiliarity(strengthOf(homeXI), input.homeFamiliarity);
+  const away = withFamiliarity(strengthOf(awayXI), input.awayFamiliarity);
   const xgHome = expectedGoals(home, away, !input.neutral);
   const xgAway = expectedGoals(away, home, false);
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,
@@ -570,13 +751,16 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const awayGoals = fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
 
   let decider: PlayedMatchRecording["decider"];
+  // Extra-time goals: not offered to the penalty conversion, but can be headers (`rollAerial`).
+  const homeEtGoals: GoalRecord[] = [];
+  const awayEtGoals: GoalRecord[] = [];
   const agg = input.aggregate ?? { home: 0, away: 0 };
   const levelNow = () => goalsHome + agg.home === goalsAway + agg.away;
   if (input.knockout && levelNow()) {
     const etHome = homeXI.length > 0 ? sampleGoals(xgHomeDay * (30 / 90), rng) : 0;
     const etAway = awayXI.length > 0 ? sampleGoals(xgAwayDay * (30 / 90), rng) : 0;
-    assignGoals(homeXI, etHome, playerStats, rng);
-    assignGoals(awayXI, etAway, playerStats, rng);
+    homeEtGoals.push(...assignGoals(homeXI, etHome, playerStats, rng));
+    awayEtGoals.push(...assignGoals(awayXI, etAway, playerStats, rng));
     goalsHome += etHome;
     goalsAway += etAway;
     decider = { extraTime: { home: etHome, away: etAway } };
@@ -601,6 +785,21 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const awayDisc = rollDiscipline(awayXI, "away", homeXI, homeGoals, xgHomeDay,
     teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng);
   cards.sort((a, b) => a.matchMinute - b.matchMinute);
+
+  // Aerial play last (`aerial.md`), so every earlier rng draw is unchanged by it.
+  const duels = homeXI.length > 0 && awayXI.length > 0 ? samplePoisson(C.AERIAL_DUELS_PER_MATCH, rng) : 0;
+  const aH = aerialStrength(homeXI);
+  const aA = aerialStrength(awayXI);
+  const homeDuelsWon = binomial(duels, aH / (aH + aA), rng);
+  const homeAir = rollAerial(homeXI, [...homeGoals, ...homeEtGoals], duels, homeDuelsWon, playerStats, ratingDelta, rng);
+  const awayAir = rollAerial(awayXI, [...awayGoals, ...awayEtGoals], duels, duels - homeDuelsWon, playerStats, ratingDelta, rng);
+  // Set pieces last (`set-pieces-play.md`), so every earlier rng draw is unchanged by them.
+  const homeHeadersToDirect = { value: 0 };
+  const awayHeadersToDirect = { value: 0 };
+  const homeSet = rollSetPieces(homeXI, [...homeGoals, ...homeEtGoals], awayDisc.committed, awayDisc.oppPenalties, playerStats, rng, homeHeadersToDirect);
+  const awaySet = rollSetPieces(awayXI, [...awayGoals, ...awayEtGoals], homeDisc.committed, homeDisc.oppPenalties, playerStats, rng, awayHeadersToDirect);
+  homeAir.headerGoals -= homeHeadersToDirect.value;
+  awayAir.headerGoals -= awayHeadersToDirect.value;
   const sideDisc = (own: typeof homeDisc, other: typeof homeDisc): SideDiscipline => ({
     fouls: own.committed, yellowCards: own.yellow, redCards: own.red,
     offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties, penaltyGoals: other.oppPenaltyGoals,
@@ -630,8 +829,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     fixtureId: input.fixtureId,
     score: { home: goalsHome, away: goalsAway },
     teamStats: {
-      home: { ...sumTeamStats(homeXI, playerStats), ...sideDisc(homeDisc, awayDisc) },
-      away: { ...sumTeamStats(awayXI, playerStats), ...sideDisc(awayDisc, homeDisc) },
+      home: { ...sumTeamStats(homeXI, playerStats), ...sideDisc(homeDisc, awayDisc), ...homeAir, ...homeSet },
+      away: { ...sumTeamStats(awayXI, playerStats), ...sideDisc(awayDisc, homeDisc), ...awayAir, ...awaySet },
     },
     playerStats,
     playerRatings,

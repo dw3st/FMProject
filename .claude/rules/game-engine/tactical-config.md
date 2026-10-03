@@ -96,6 +96,18 @@ Positive weights (PROGRESS + LANE + SPACE + GOAL) sum to exactly **1.0** per sty
 
 **direct** — progressive play. Forward progress dominates. Tight lanes and long balls are acceptable. Lower bar to attempt a pass.
 
+`LONG_BALL_WEIGHT` (also a `TeamPassWeights` field) multiplies the raw long-ball score
+(`DecisionTree.evalLongBall`, `.claude/rules/game-engine/aerial.md`):
+
+| Style      | LONG_BALL_WEIGHT | Long balls / match (PL, both teams) | Keeper restarts played long |
+|------------|------------------|--------------------------------------|-----------------------------|
+| possession | 0.6              | ~0.7 | ~10% |
+| balanced   | 1.0              | ~6.4 | ~43% |
+| direct     | 1.3              | ~15.2 | ~86% |
+
+The long-ball score is situational (pressure on the holder, marked short options, numbers at the
+landing point), so the share moves with the game rather than flipping at a threshold.
+
 `RECEIVER_ROLE_WEIGHT` (also a `TeamPassWeights` field) scales the receiver-role routing term (roles.json `passTargetWeight`, see pass.md → "Midfield as the Circulation Hub"):
 
 | Style      | RECEIVER_ROLE_WEIGHT |
@@ -185,3 +197,15 @@ always records the *style* in `TEAM_TACTICAL_STYLE[team]` (read by `getTeamTacti
   scenario config, not a game save, so no migration is needed for older saved scenarios). Set in
   `VariantEditor`, applied in `balanceWorker.ts` alongside the style, shown in the auto-generated
   variant label (`generateVariantLabel`) only when it isn't `balanced`.
+
+---
+
+## Familiaridade com o estilo (Etapa 15)
+
+`applyTeamTacticsConfig`/`applyTeamAttackConfig` aceitam um 5º parâmetro opcional `familiarity`
+(`FamiliarityLevels`). Depois de montar os pesos do estilo (e da mentalidade), aplicam os ajustes da
+tabela `STYLE_FAMILIARITY_EFFECTS` (`src/GameEngine/Configs/FamiliarityConfig.ts`) escalados por
+`familiarityFactor` — só sobre pesos que o estilo já dirige, nenhum campo novo de viés. Familiaridade 50 /
+ausente = pesos idênticos. `DefenseConfigValues.PRESS_STAMINA_MULT` (1,10 em `high_press`) é o custo de
+fôlego do press. O mesmo `applyTeamAttackConfig` define o multiplicador de execução do time (atributos), lido
+na montagem do estado. Ver `.claude/rules/game/style-training.md`.

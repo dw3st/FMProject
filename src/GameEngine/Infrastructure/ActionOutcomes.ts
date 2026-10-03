@@ -13,6 +13,8 @@
 
 import type { GamePlayer } from '@/GameEngine/types';
 import { tackleAngleModifier } from '@/GameEngine/Domain/PositionalAwareness';
+import { aerialDuelScore, headingOf } from '@/GameEngine/Domain/Aerial';
+import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import {
   PITCH_LENGTH,
   PITCH_WIDTH,
@@ -218,6 +220,15 @@ export function computeShooterEffect(shooter: GamePlayer): number {
 }
 
 /**
+ * Header execution quality (`aerial.md`): heading replaces finishing — maps heading 0..1 to
+ * HEADER_EFFECT_MIN..HEADER_EFFECT_MAX.
+ */
+export function computeHeaderEffect(header: GamePlayer): number {
+  const { HEADER_EFFECT_MIN: lo, HEADER_EFFECT_MAX: hi } = AERIAL_CONFIG;
+  return clamp(lo + headingOf(header) * (hi - lo), lo, hi);
+}
+
+/**
  * How well the GK is positioned on the ideal angle-bisector arc (0=poor, 1=perfect).
  * The optimal position sits on the line from the goal centre toward the ball,
  * at a come-out distance that scales with attacker proximity.
@@ -291,7 +302,7 @@ export function resolveShot(
   const inPosts = shot.toY >= GOAL_Y_MIN && shot.toY <= GOAL_Y_MAX;
   if (!inPosts) return { isGoal: false, goalChance: 0, inPosts };
 
-  const shooterEffect = computeShooterEffect(shooter);
+  const shooterEffect = shot.header ? computeHeaderEffect(shooter) : computeShooterEffect(shooter);
   const gkEffect      = gk
     ? computeGKEffect(gk, Math.hypot(shooter.x - shot.toX, shooter.y - shot.toY), { x: shooter.x, y: shooter.y })
     : 1.0;
@@ -389,6 +400,46 @@ export function resolveLooseBallDuel(
   const sB = score(b, false);
   const probA = sA / (sA + sB + 0.001);
   return { winnerId: Math.random() < probA ? a.id : b.id, probA };
+}
+
+// ── Aerial duel / goalkeeper claim (`aerial.md`) ─────────────────────────────
+
+export interface AerialDuelResult {
+  winnerId: number;
+  /** Win probability of `a`. */
+  probA: number;
+}
+
+/**
+ * Resolve a contested high ball between the best contestant of each team.
+ * Score = heading × 0.45 + jump × 0.25 + strength × 0.15 + position × 0.15 (`aerialDuelScore`),
+ * plus a small DUEL_BASE floor so a poor header still wins sometimes.
+ */
+export function resolveAerialDuel(
+  a: GamePlayer,
+  b: GamePlayer,
+  point: { x: number; y: number },
+  rng: () => number = Math.random,
+  /** Multiplies `b`'s score — the set defender at a set-piece delivery (`set-pieces-play.md`). */
+  bMult = 1,
+): AerialDuelResult {
+  const sA = aerialDuelScore(a, point) + AERIAL_CONFIG.DUEL_BASE;
+  const sB = (aerialDuelScore(b, point) + AERIAL_CONFIG.DUEL_BASE) * bMult;
+  const probA = sA / (sA + sB);
+  return { winnerId: rng() < probA ? a.id : b.id, probA };
+}
+
+/**
+ * Chance that a goalkeeper coming for a high ball catches it (otherwise he punches it):
+ * base + positioning + reflex, minus a crowd term per attacker within AERIAL_RADIUS.
+ */
+export function gkClaimChance(gk: GamePlayer, attackersNear: number): number {
+  const C = AERIAL_CONFIG;
+  const { gkPositioning, gkReflex } = gk.runtimeStats.withoutBall;
+  return clamp(
+    C.GK_CLAIM_BASE + gkPositioning * C.GK_CLAIM_POSITIONING + gkReflex * C.GK_CLAIM_REFLEX - attackersNear * C.GK_CLAIM_CROWD,
+    0, 1,
+  );
 }
 
 // ── Tackle ───────────────────────────────────────────────────────────────────

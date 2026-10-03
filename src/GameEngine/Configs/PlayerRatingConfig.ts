@@ -21,6 +21,9 @@ export const RATING_WEIGHTS = {
   TACKLE_WON:      +0.4,
   TACKLE_FAILED:   -0.2,
 
+  // Aerial (`.claude/rules/game-engine/aerial.md`) — a header goal is a GOAL like any other.
+  AERIAL_DUEL_WON: +0.05,
+
   // Discipline (`.claude/rules/game-engine/fouls.md`)
   YELLOW_CARD:       -0.3,
   RED_CARD:          -1.0,

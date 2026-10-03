@@ -1,5 +1,6 @@
 import type { AttributeId } from "@/GameInterface/AttributeLabels";
 import type { StaffRecord } from "@/Domain/staff/staffTypes";
+import type { FamiliarityLevels } from "@/types/familiarityTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -218,6 +219,11 @@ export interface Squad {
    * Present-but-empty role = vacant.
    */
   staff?: StaffRecord;
+  /**
+   * Style familiarity 0..100 (`src/Domain/familiarity`). Human club only, set at career creation
+   * and moved by daily training; AI clubs store none and follow the implicit rule.
+   */
+  styleFamiliarity?: FamiliarityLevels;
   /**
    * Academy players (human club only, `src/Domain/youth`): the yearly intake lands here, not in
    * `players`. They train and age at the rollover but do not play until promoted.

@@ -86,6 +86,12 @@ shipped + what is deferred.
     else: throughBallLostInRace
 ```
 
+**Loose-ball source (Etapa 13).** `LooseBallState.source` (`through` default, `cross`, `long_ball`,
+`clearance`) — a high ball that nobody reached, a bad first touch or a clearance that lands untouched
+also becomes a loose ball. Only `through` feeds the through-ball stats (`throughBall*` events and the
+`throughBallLostInRace` of an OOB restart); `cross` / `long_ball` report `aerialResolved` (outcome
+`loose`) at pickup or when the ball goes out. See `aerial.md`.
+
 The ball's behaviour after landing is "physical drift, then arrival or set piece": it carries small residual velocity in the pass direction (initial speed `LOOSE_BALL_INITIAL_SPEED = 4 yds/s`) and decelerates via `LOOSE_BALL_DECELERATION = 2 yds/s²` until it comes to rest (~2 real seconds). Because chase decisions are pinned to the *current* loose-ball position each tick, sprinting players track the moving ball naturally. `getBallPos(state)` continues to return `state.looseBall.{x,y}`, so the rendered ball drifts on screen instead of teleporting.
 
 If the ball drifts past any pitch edge before a player reaches it, `resolveOOBSetPiece` (in gameState.ts) classifies the boundary and applies the matching set piece:
