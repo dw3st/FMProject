@@ -140,6 +140,22 @@ function classOf(el: ts.JsxOpeningElement | ts.JsxSelfClosingElement, sf: ts.Sou
     .join(" ");
 }
 
+function containsJsx(node: ts.Node): boolean {
+  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true;
+  return ts.forEachChild(node, (c) => (containsJsx(c) ? true : undefined)) ?? false;
+}
+
+/** Tag name of the JSX element whose attributes contain this node ("" when none). */
+function enclosingTag(node: ts.Node, sf: ts.SourceFile): string {
+  let cur: ts.Node | undefined = node.parent;
+  while (cur) {
+    if (ts.isJsxOpeningElement(cur) || ts.isJsxSelfClosingElement(cur)) return cur.tagName.getText(sf);
+    if (ts.isBlock(cur) || ts.isSourceFile(cur)) return "";
+    cur = cur.parent;
+  }
+  return "";
+}
+
 function literalText(node: ts.Node): string | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
   if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) return node.text;
@@ -182,6 +198,21 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
             add(node, "arbitrary-size", "soft", `arbitrary size ${b}; prefer the scale (text-sm/base/lg/xl…)`);
           }
         }
+        if (b === "uppercase" && !debug && !isUiKit) {
+          const ctx = contextOf(node, sf);
+          const tag = enclosingTag(node, sf);
+          if (!hasAll(ctx, ["font-display"]) && !/^h[1-3]$/.test(tag) && !ctx.includes("[font:inherit]")) {
+            add(node, "label-font", "soft", "uppercase text in the body font; labels use font-display (label style)");
+          }
+        }
+        const bigText = /^text-(2xl|3xl|4xl|5xl|6xl|7xl)$/.test(b);
+        if (bigText && !debug && !isUiKit && !path.endsWith("Wordmark.tsx") && !/^h[1-3]$/.test(enclosingTag(node, sf))) {
+          const ctx = contextOf(node, sf);
+          // Flag icons (`fi fi-xx`) are sized with text-*: not text.
+          if (!hasAll(ctx, ["font-display"]) && !/\bfi fi-/.test(ctx)) {
+            add(node, "display-font", "soft", `${b} in the body font; big numbers and titles use font-display`);
+          }
+        }
         if (b === "font-mono" && !debug) add(node, "font-mono", "hard", "font-mono outside the debug screens");
         if (!debug && DECORATIVE.test(tok)) add(node, "decorative", "soft", `decorative style ${tok} (no glow, gradient or scale)`);
         if (b === "font-wordmark" && !path.endsWith("Wordmark.tsx")) {
@@ -215,7 +246,8 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
       if ((tag === "h2" || tag === "h3") && !hasAll(cls, TITLE_SECTION) && !hasAll(cls, LABEL)) {
         add(node, "heading", "soft", `<${tag}> without the section-title (or label) classes; use <SectionTitle>`);
       }
-      if (tag === "button" && /(^|[\s"`])bg-primary([\s"`]|$)/.test(cls)) {
+      // A filled primary button (a plain class string, not the selected state of a chip/toggle).
+      if (tag === "button" && !cls.includes("?") && /(^|[\s"`])bg-primary([\s"`]|$)/.test(cls)) {
         const missing = ["h-10", "font-semibold", "text-sm"].filter((c) => !hasAll(cls, [c]));
         if (missing.length > 0) add(node, "button", "soft", `raw primary button without ${missing.join(", ")}; use <Button>`);
       }
@@ -231,15 +263,22 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
         }
       }
     }
-    // Numbers (money, ratings, decimals) shown without tabular-nums on the element or its parent.
+    // Numbers (money, ratings, decimals) shown without tabular-nums on the element or an ancestor.
     if (ts.isJsxElement(node) && !debug && !isUiKit) {
       const own = node.children.some(
-        (c) => ts.isJsxExpression(c) && c.expression != null && NUMBER_EXPR.test(c.expression.getText(sf)),
+        (c) =>
+          ts.isJsxExpression(c) &&
+          c.expression != null &&
+          !containsJsx(c.expression) &&
+          NUMBER_EXPR.test(c.expression.getText(sf)),
       );
-      if (own && !classOf(node.openingElement, sf).includes("tabular-nums")) {
-        const parent = node.parent;
-        const parentCls = ts.isJsxElement(parent) ? classOf(parent.openingElement, sf) : "";
-        if (!parentCls.includes("tabular-nums")) add(node, "tabular", "soft", "number without tabular-nums");
+      if (own) {
+        let tabular = false;
+        for (let cur: ts.Node | undefined = node; cur && !tabular; cur = cur.parent) {
+          if (ts.isJsxElement(cur)) tabular = /tabular-nums|TABLE_STYLE.(number|key)/.test(classOf(cur.openingElement, sf));
+          if (ts.isFunctionLike(cur)) break;
+        }
+        if (!tabular) add(node, "tabular", "soft", "number without tabular-nums");
       }
     }
     ts.forEachChild(node, visit);

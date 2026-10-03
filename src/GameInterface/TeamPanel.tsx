@@ -23,7 +23,7 @@ function EnergyReadout({ energy }: { energy: number }) {
       <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
         <div className={`h-full rounded-full transition-[width] ${barClass}`} style={{ width: `${v}%` }} />
       </div>
-      <span className="text-[13px] font-bold tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
+      <span className="text-sm font-bold tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
     </div>
   );
 }
@@ -74,7 +74,7 @@ function PlayerRow({
     >
       <div className={`flex items-center gap-2 w-full ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className={`w-2 h-2 rounded-full shrink-0`} style={{ background: color }} />
-        <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase shrink-0">{player.role}</span>
+        <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase font-display shrink-0">{player.role}</span>
         <span className={`flex-1 min-w-0 text-sm font-medium text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
           <span className="truncate">{player.name}</span>
           {starKind && <StarBadge kind={starKind} />}

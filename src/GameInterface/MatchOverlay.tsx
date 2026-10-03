@@ -72,7 +72,7 @@ export function MatchOverlay({ kind, score, kitColorA, kitColorB, penaltiesScore
             >
               {score.A}
             </span>
-            <span className="text-3xl font-bold text-muted-foreground/40">–</span>
+            <span className="text-3xl font-bold font-display text-muted-foreground/40">–</span>
             <span
               className="text-5xl font-black tabular-nums font-display"
               style={{
