@@ -19,7 +19,7 @@ export function PenaltyShootoutStrip({
     const pending = complete ? 0 : Math.max(0, 5 - kicks.length);
     return (
       <div className="flex items-center gap-2">
-        <span className="w-28 truncate text-[13px] text-foreground">{name}</span>
+        <span className="w-28 truncate text-sm text-foreground">{name}</span>
         <div className="flex flex-wrap gap-1">
           {kicks.map((k, i) => (
             <span key={i} className={`h-3 w-3 rounded-full ${k.scored ? "bg-chart-2" : "bg-destructive"}`} />

@@ -132,7 +132,7 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
   const color = getPositionColor(role);
   return (
     <span
-      className={`text-[13px] font-black uppercase tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
+      className={`text-[13px] font-black uppercase font-display tracking-[0.08em] shrink-0 w-7 ${align === "right" ? "text-right" : ""} ${color}`}
     >
       {roleLabel(role)}
     </span>
@@ -437,7 +437,7 @@ function LastMinuteSubsModal({
                       {selectedOut.player.name}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground tabular-nums">
                     <span className={previewRatingClass(slotValue(selectedOut.player, selectedOut.role))}>
                       {slotValue(selectedOut.player, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
                     </span>
@@ -979,14 +979,7 @@ export function MatchPreviewScreen() {
 
       {/* Match title */}
       <div className="text-center space-y-1 shrink-0">
-        <p
-          className="text-[13px] font-bold uppercase tracking-[0.2em] m-0 bg-clip-text text-transparent"
-          style={{
-            backgroundImage: `linear-gradient(90deg, ${homeHex}, ${awayHex})`,
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-          }}
-        >
+        <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">
           {isCupTie
             ? (cupStageName ? <>{t(`cups.stage.${cupStageName}`)} &bull; {competition}</> : competition)
             : isContinentalTie

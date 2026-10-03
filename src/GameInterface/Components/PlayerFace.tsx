@@ -2,11 +2,11 @@ import { useState } from "react";
 import { faceUrl } from "@/Domain/faces/faceUrl";
 
 const SIZE_CLASSES = {
-  32: { box: "w-8 h-8", text: "text-[13px]" },
-  40: { box: "w-10 h-10", text: "text-sm" },
-  48: { box: "w-12 h-12", text: "text-base" },
-  64: { box: "w-16 h-16", text: "text-2xl" },
-  96: { box: "w-24 h-24", text: "text-4xl" },
+  32: { box: "w-8 h-8", text: "font-display text-sm" },
+  40: { box: "w-10 h-10", text: "font-display text-sm" },
+  48: { box: "w-12 h-12", text: "font-display text-base" },
+  64: { box: "w-16 h-16", text: "font-display text-2xl" },
+  96: { box: "w-24 h-24", text: "font-display text-4xl" },
 } as const;
 
 export type PlayerFaceSize = keyof typeof SIZE_CLASSES;
@@ -53,7 +53,7 @@ export function PlayerFace({
       className={`relative ${SIZE_CLASSES[size].box} rounded-full ${ringClassName} bg-muted/30 overflow-hidden flex items-center justify-center shrink-0 ${className}`}
     >
       {state !== "loaded" && (
-        <span className={`${SIZE_CLASSES[size].text} font-black text-primary font-display leading-none`}>
+        <span className={`${SIZE_CLASSES[size].text} font-black text-primary leading-none`}>
           {fallback}
         </span>
       )}
