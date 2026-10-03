@@ -34,6 +34,7 @@ Always call `summary` first to get player IDs.
 | `evaluate_shot` | xG breakdown — distance, open angle, pressure, shooter/GK effects, final goalChance. `fromX/fromY` to test hypothetical positions |
 | `gk_position_quality` | How well a GK is on the optimal angle-bisector arc |
 | `interception_corridors` | Each defender's interception corridor (yards) |
+| `evaluate_cross` | Holder's crossing position, the three cross targets (zone numbers, heading, keeper claim, score) and the best long ball (`aerial.md`) |
 
 ---
 

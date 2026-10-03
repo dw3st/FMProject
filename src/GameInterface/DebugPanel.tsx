@@ -20,9 +20,10 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   injury:       "text-rose-500",
   foul:         "text-amber-400",
   card:         "text-yellow-300",
+  aerial:       "text-teal-300",
 };
 
-type ActionScoreKey = 'shoot' | 'pass' | 'carry' | 'dribble' | 'throughBall';
+type ActionScoreKey = 'shoot' | 'pass' | 'carry' | 'dribble' | 'throughBall' | 'cross' | 'longBall';
 
 const ACTION_ROWS: { key: ActionScoreKey; label: string; color: string; bestKey: GameEvents['decisionScores']['best'] }[] = [
   { key: 'shoot',       label: 'SHOOT',   color: 'bg-red-500',     bestKey: 'shoot' },
@@ -30,6 +31,8 @@ const ACTION_ROWS: { key: ActionScoreKey; label: string; color: string; bestKey:
   { key: 'carry',       label: 'CARRY',   color: 'bg-emerald-500', bestKey: 'carry' },
   { key: 'dribble',     label: 'DRIBBLE', color: 'bg-fuchsia-500', bestKey: 'dribble' },
   { key: 'throughBall', label: 'TB',      color: 'bg-purple-500',  bestKey: 'through_ball' },
+  { key: 'cross',       label: 'CROSS',   color: 'bg-teal-500',    bestKey: 'cross' },
+  { key: 'longBall',    label: 'LONG',    color: 'bg-sky-500',     bestKey: 'long_ball' },
 ];
 
 /** Single component row inside an action breakdown grid. */

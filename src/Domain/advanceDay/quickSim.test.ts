@@ -734,3 +734,76 @@ describe("quickSimMatch — discipline", () => {
     throw new Error("no red card in 5000 seeds");
   });
 });
+
+describe("quickSimMatch — aerial play", () => {
+  test("header goals follow HEADER_GOAL_SHARE; crosses, duels and long balls follow the engine means", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const n = 3000;
+    let goals = 0, headerGoals = 0, crosses = 0, duels = 0, longBalls = 0;
+    for (let i = 0; i < n; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      const h = r.teamStats.home;
+      const a = r.teamStats.away;
+      goals += r.score.home + r.score.away;
+      headerGoals += h.headerGoals! + a.headerGoals!;
+      crosses += h.crosses! + a.crosses!;
+      longBalls += h.longBalls! + a.longBalls!;
+      // Both teams contest every duel; each duel has exactly one winner.
+      expect(h.aerialDuels).toBe(a.aerialDuels);
+      expect(h.aerialDuelsWon! + a.aerialDuelsWon!).toBe(h.aerialDuels!);
+      duels += h.aerialDuels!;
+      for (const side of [h, a]) {
+        expect(side.crossesCompleted!).toBeLessThanOrEqual(side.crosses!);
+        expect(side.longBallsCompleted!).toBeLessThanOrEqual(side.longBalls!);
+      }
+      expect(h.headerGoals!).toBeLessThanOrEqual(r.score.home - (h.penaltyGoals ?? 0));
+      // Header goals move goals between players, never add any.
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+    }
+    expect(headerGoals / goals).toBeGreaterThan(C.HEADER_GOAL_SHARE * 0.8);
+    expect(headerGoals / goals).toBeLessThan(C.HEADER_GOAL_SHARE * 1.2);
+    expect(crosses / n).toBeCloseTo(2 * C.CROSSES_PER_SIDE, 0);
+    expect(longBalls / n).toBeCloseTo(2 * C.LONG_BALLS_PER_SIDE, 0);
+    expect(duels / n).toBeCloseTo(C.AERIAL_DUELS_PER_MATCH, 0);
+  });
+
+  test("header goals go to good headers, never to the goalkeeper", () => {
+    const home = makeSquad("h", 6);
+    home.players = home.players.map((p) => (p.positions[0] === "ST" ? { ...p, stats: { ...p.stats, heading: 10 } } : p));
+    const away = makeSquad("a", 6);
+    let stGoals = 0, others = 0;
+    for (let i = 0; i < 3000; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      expect(r.playerStats[home.players[0]!.id]?.goals ?? 0).toBe(0); // GK
+      stGoals += r.playerStats[home.players.find((p) => p.positions[0] === "ST")!.id]!.goals;
+      others += r.score.home;
+    }
+    expect(stGoals / others).toBeGreaterThan(0.2);
+  });
+});
+
+describe("quickSimMatch — extra-time header goals", () => {
+  test("an extra-time goal can be a header; goals still add up", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let etOnlyHeaders = 0;
+    for (let i = 0; i < 6000; i++) {
+      const r = quickSimMatch(
+        { fixtureId: "f", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away), knockout: true },
+        mulberry32(500 + i),
+      ).recording;
+      const et = r.decider?.extraTime;
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+      // Only extra-time goals and no regular-time goals: any header goal is an extra-time one.
+      if (et && r.score.home === et.home && r.score.away === et.away) {
+        etOnlyHeaders += r.teamStats.home.headerGoals! + r.teamStats.away.headerGoals!;
+      }
+    }
+    expect(etOnlyHeaders).toBeGreaterThan(0);
+  });
+});

@@ -39,6 +39,12 @@ export const PASS_CONFIG = {
   /** Flat raw bonus on a viable through-ball cell; 0 here, raised per build_up in AttackConfig. */
   THROUGH_BALL_BONUS:      0,
 
+  /**
+   * Long-ball appetite (`aerial.md`): multiplies the raw long-ball score in DecisionTree.evalLongBall.
+   * Per build_up in AttackConfig.BUILD_UP_PASS — direct plays the most long balls.
+   */
+  LONG_BALL_WEIGHT:        1.0,
+
   // ── Player modifier weights ──────────────────────────────────────────────
   PASSING_SKILL_WEIGHT:    0.15,
   VISION_WEIGHT:           0.15,

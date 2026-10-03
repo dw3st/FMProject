@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.8",
+    date: "2026-10-02",
+    items: [
+      { pt: "Jogo aéreo: cruzamentos na área, disputas pelo alto e gols de cabeça.", en: "Aerial play: crosses into the box, aerial duels and headed goals." },
+      { pt: "Lançamentos longos por cima da defesa, mais frequentes no jogo direto.", en: "Long balls over the defence, more frequent with direct play." },
+      { pt: "Goleiros saem para agarrar ou socar as bolas altas perto do gol.", en: "Keepers come out to catch or punch high balls near goal." },
+      { pt: "O cabeceio agora conta: quem cabeceia bem ganha mais bolas pelo alto e marca mais de cabeça.", en: "Heading now matters: good headers win more balls in the air and score more headers." },
+      { pt: "Novas estatísticas de partida: cruzamentos, disputas aéreas, gols de cabeça e lançamentos.", en: "New match stats: crosses, aerial duels, headed goals and long balls." },
+    ],
+  },
+  {
     version: "2.7",
     date: "2026-10-02",
     items: [

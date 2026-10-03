@@ -96,6 +96,8 @@ export interface TeamPassWeights {
   ROLE_BIAS_WEIGHT:        number;
   /** Flat raw-score bonus on a viable through-ball cell (tactic appetite for splitting the line). */
   THROUGH_BALL_BONUS:      number;
+  /** Multiplier on the long-ball raw score (`aerial.md`) — direct goes long the most. */
+  LONG_BALL_WEIGHT:        number;
 }
 
 const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
@@ -108,6 +110,7 @@ const PASS_WEIGHT_DEFAULTS: TeamPassWeights = {
   RECEIVER_ROLE_WEIGHT:    PASS_CONFIG.RECEIVER_ROLE_WEIGHT,
   ROLE_BIAS_WEIGHT:        PASS_CONFIG.ROLE_BIAS_WEIGHT,
   THROUGH_BALL_BONUS:      PASS_CONFIG.THROUGH_BALL_BONUS,
+  LONG_BALL_WEIGHT:        PASS_CONFIG.LONG_BALL_WEIGHT,
 };
 
 /**
@@ -137,6 +140,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     RECEIVER_ROLE_WEIGHT:    0.14,
     ROLE_BIAS_WEIGHT:        0.14,
     THROUGH_BALL_BONUS:      0.10,
+    // Patient build-up rarely goes long.
+    LONG_BALL_WEIGHT:        0.6,
   },
   balanced: { ...PASS_WEIGHT_DEFAULTS },
   direct: {
@@ -152,6 +157,8 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     RECEIVER_ROLE_WEIGHT:    0.06,
     ROLE_BIAS_WEIGHT:        0.10,
     THROUGH_BALL_BONUS:      0,
+    // Direct play goes over the line the most.
+    LONG_BALL_WEIGHT:        1.3,
   },
 };
 
