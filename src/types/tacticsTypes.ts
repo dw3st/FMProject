@@ -241,6 +241,15 @@ export interface TacticsSave {
   lineup: string[];
   /** When true the assistant rests tired starters automatically (default false). */
   assistantRotation?: boolean;
+  /** Set-piece takers (player ids); a missing duty = automatic (`set-pieces-play.md` §4). */
+  setPieceTakers?: SetPieceTakersSave;
+}
+
+/** Manager's set-piece takers per duty (player ids). Absent duty = automatic. */
+export interface SetPieceTakersSave {
+  corners?:   string;
+  freeKicks?: string;
+  penalties?: string;
 }
 
 export const DEFAULT_TACTICAL_STYLE: TacticalStyle = "balanced";

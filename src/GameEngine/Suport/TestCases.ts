@@ -15,7 +15,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { createMatchState, forceInjurySubstitution, maybeFoul } from '@/GameEngine/Domain/gameState';
+import { awardCorner, createMatchState, forceInjurySubstitution, maybeFoul } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
@@ -311,6 +311,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'cross-to-box',
+    name:        'Aerial — Cross to the Box',
+    description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW',  89, 6,  WINGER),     // crosser
+        makePlayer('Santos',   'A', 'ST', 101, 36, STRIKER),    // attacks the penalty spot / near post
+        makePlayer('Rossi',    'A', 'CAM', 96, 44, MIDFIELDER), // arrives at the far post
+        makePlayer('Silva',    'B', 'CB', 104, 33, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB', 104, 41, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'switch-play-wide',
     name:        'Switch Play — Wide Hold',
     description: 'LW holds wide on the near touchline with the near side congested and the far flank open. Override intent to "switch_play" and toggle "Switch" to see the far-flank carry lane + far-side receivers.',
@@ -438,6 +455,47 @@ export const TEST_SCENARIOS: TestScenario[] = [
       };
       // Rolls: foul (0 < chance), no straight red (0.99), yellow (0).
       const rolls = [0, 0.99, 0];
+      let i = 0;
+      const fouled = maybeFoul(placed, placed.players.find(p => p.id === cb.id)!, placed.players.find(p => p.id === st.id)!, 'tackle', false, () => rolls[i++] ?? 0.5);
+      return fouled ?? placed;
+    },
+  },
+
+  {
+    id:          'corner-attack',
+    name:        '11v11 — Corner (box layout)',
+    description: 'Team A corner from the left flag: the two best aerial defenders, the centre-forward and the next best headers go up, a midfielder waits on the edge of the box, a short option by the flag; Team B marks every attacker goal-side, a man on the near post, its fastest forward left up. Turn on the "Set pieces" overlay to see the delivery options (near post / penalty spot / far post / short) and the "setPiece" / "aerial" debug log.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const a = base.players.find(p => p.team === 'A')!;
+      const goalX = a.attackDir === 1 ? PITCH_LENGTH : 0;
+      return awardCorner({ ...base, setPiece: null }, 'A', { x: goalX, y: 0 }, a.id, 'clearance', 'other').state;
+    },
+  },
+
+  {
+    id:          'direct-free-kick',
+    name:        '11v11 — Direct Free Kick (wall)',
+    description: 'Team B CB fouls Team A ST 22 yards out, central (forced foul, no card): a direct free kick by the Team A free-kick taker over a 2–5 man wall 10 yards from the ball. The "Set pieces" overlay draws the wall and the line to goal; the "setPiece" debug log shows the xG and whether it struck the wall (rebound = loose ball).',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      const cb = base.players.find(p => p.team === 'B' && p.role === 'CB');
+      if (!st || !cb) return base;
+      const goalX = st.attackDir === 1 ? PITCH_LENGTH : 0;
+      const x = goalX - st.attackDir * 22;
+      const placed: GameState = {
+        ...base,
+        setPiece: null,
+        ballHolderId: st.id,
+        players: base.players.map(p =>
+          p.id === st.id ? { ...p, x, y: 37 } :
+          p.id === cb.id ? { ...p, x: x - st.attackDir * 1.5, y: 37 } : p),
+      };
+      // Rolls: foul (0 < chance), no straight red (0.99), no yellow (0.99).
+      const rolls = [0, 0.99, 0.99];
       let i = 0;
       const fouled = maybeFoul(placed, placed.players.find(p => p.id === cb.id)!, placed.players.find(p => p.id === st.id)!, 'tackle', false, () => rolls[i++] ?? 0.5);
       return fouled ?? placed;

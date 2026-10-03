@@ -1,11 +1,14 @@
-import type { GameState, TeamId } from '@/GameEngine/types';
+import type { GameState, TeamId, SetPieceGoalKind } from '@/GameEngine/types';
+
+/** What put the ball behind for a corner (`cornerAwarded`). */
+export type CornerSource = 'save' | 'deflection' | 'cross_block' | 'cross_clearance' | 'tackle' | 'loose' | 'other';
 
 /** All game events the engine can emit. Add new ones here as the engine grows. */
 export interface GameEvents {
   /** Emitted whenever possession or pass state changes significantly. */
   stateChanged: GameState;
   /** Emitted the moment a goal is scored. */
-  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number };
+  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
   shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean };
 
@@ -46,6 +49,29 @@ export interface GameEvents {
     chasers: Array<{ id: number; team: TeamId; eta: number }>;
   };
 
+  // ── Aerial events (`.claude/rules/game-engine/aerial.md`) ─────────────────
+  /** A cross was played toward (`toX`, `toY`) — the landing point after the error model. */
+  crossStarted:    { player: number; toX: number; toY: number; intendedRunnerId: number | null };
+  /** A long ball was played over the line toward `targetId`. */
+  longBallStarted: { player: number; toX: number; toY: number; targetId: number | null };
+  /**
+   * A high ball (cross / long ball) was resolved. `completed` = the passer's team won the first
+   * contact (header, knock-down, control, or the loose ball it later picked up).
+   */
+  aerialResolved: {
+    kind:      'cross' | 'long_ball';
+    fromId:    number;
+    winnerId:  number | null;
+    completed: boolean;
+    outcome:   'header' | 'knockdown' | 'control' | 'clearance' | 'claim' | 'punch' | 'blocked' | 'loose' | 'offside' | 'foul';
+  };
+  /** Two players contested a high ball in the air (best contestant of each team). */
+  aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
+  /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
+  gkClaim: { keeperId: number; claimed: boolean; chance: number };
+  /** A header at goal (also emitted as a `shot`). */
+  header: { player: number; xg: number };
+
   // ── Shot event ───────────────────────────────────────────────────────────
   /** Emitted the moment a player takes a shot. */
   shot: { player: number; xg: number };
@@ -83,6 +109,21 @@ export interface GameEvents {
   card: { playerId: number; playerName: string; team: TeamId; card: 'yellow' | 'red'; secondYellow: boolean; minute: number };
   /** A free kick was awarded to `team` (the fouled side). `dangerous` = taken with the freeKick_* layouts. */
   freeKickAwarded: { team: TeamId; takerId: number; x: number; y: number; dangerous: boolean; minute: number };
+  /**
+   * A corner was awarded to `team` (`set-pieces-play.md`). `source` is what put the ball behind:
+   * a keeper's save, a deflected shot, a blocked / headed-clear cross, a tackle, a loose ball.
+   */
+  cornerAwarded: { team: TeamId; takerId: number; source: CornerSource };
+  /** A direct free kick at goal: `xg` after the wall, `wallSize` men, `blocked` = it struck the wall. */
+  directFreeKick: { player: number; xg: number; wallSize: number; blocked: boolean };
+  /** Delivery chosen by a corner / crossed free-kick taker (/test set-piece overlay; debug only). */
+  setPieceScores: {
+    playerId: number;
+    playerName: string;
+    kind: 'corner' | 'free_kick';
+    chosen: 'near_post' | 'penalty_spot' | 'far_post' | 'short';
+    options: Array<{ kind: 'near_post' | 'penalty_spot' | 'far_post' | 'short'; x: number; y: number; raw: number; attackers: number; defenders: number }>;
+  };
   /** A penalty was awarded to `team` (the fouled side). */
   penaltyAwarded: { team: TeamId; takerId: number; offenderId: number; minute: number };
   /** An in-match penalty was taken (shootout kicks use `penaltyKick` instead). */
@@ -102,7 +143,9 @@ export interface GameEvents {
     carry: number;
     dribble: number;
     throughBall: number;
-    best: 'shoot' | 'pass' | 'carry' | 'dribble' | 'through_ball';
+    cross: number;
+    longBall: number;
+    best: 'shoot' | 'pass' | 'carry' | 'dribble' | 'through_ball' | 'cross' | 'long_ball';
     /** Component breakdown for each action's chosen target (best lane / best receiver). */
     breakdowns: {
       shoot: {
@@ -218,6 +261,26 @@ export interface GameEvents {
       pathClearScore:     number;
       laneRiskPenalty:    number;
       offsideRiskPenalty: number;
+    }>;
+  };
+
+  /**
+   * Emitted every tick for the ball holder when debug mode is on and he is in a crossing
+   * position — the three cross targets with their score breakdown (/test aerial overlay).
+   */
+  crossScores: {
+    playerId:   number;
+    playerName: string;
+    targets: Array<{
+      kind:      'near_post' | 'penalty_spot' | 'far_post';
+      x:         number;
+      y:         number;
+      attackers: number;
+      defenders: number;
+      heading:   number;
+      gkClaim:   boolean;
+      raw:       number;
+      score:     number;
     }>;
   };
 

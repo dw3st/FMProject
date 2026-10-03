@@ -129,7 +129,21 @@ export interface SetPiece {
   countdown: number;
   /** Optional ball location for restarts that happen away from centre (offside). */
   position?: { x: number; y: number };
+  /**
+   * Set-piece play (`set-pieces-play.md`): `box` = corner / crossed free kick with both teams in the
+   * box layout (the taker crosses or plays short); `direct` = direct free kick at goal over a wall.
+   * Absent = a plain restart.
+   */
+  variant?: 'box' | 'direct';
+  /** Direct free kick: engine ids of the defenders in the wall. */
+  wallIds?: number[];
 }
+
+/** What a set-piece goal came from (`GameState.setPiecePhase`, `goalScored.setPiece`). */
+export type SetPieceGoalKind = 'corner' | 'free_kick' | 'direct_free_kick' | 'penalty';
+
+/** Manager's set-piece takers (roster ids); absent = automatic (`Domain/SetPieces.pickSetPieceTaker`). */
+export interface SetPieceTakers { corners?: string; freeKicks?: string; penalties?: string }
 
 // ── Player stats ────────────────────────────────────────────────────────────
 
@@ -201,6 +215,10 @@ export interface WithoutBallStats {
   gkDiving: number;
   /** 0..1 normalised physical strength — how much pressure this defender applies when close. */
   strength: number;
+  /** 0..1 normalised heading (roster `heading` / 10) — aerial duels and headers (`aerial.md`). */
+  heading: number;
+  /** 0..1 normalised jump (roster `jump` / 10) — aerial duels. GK diving reads the same attribute. */
+  jump: number;
 }
 
 export interface PlayerStats {
@@ -385,11 +403,22 @@ export interface GamePlayer {
 
 /**
  * Pass kind discriminator.
- *   'regular' — pass to a teammate's feet; on landing the named receiver collects.
- *   'through' — pass into space (a cell). On landing, possession is contested
- *               (Phase 3: nearest player picks up; Phase 5: sprint race + duel).
+ *   'regular'   — pass to a teammate's feet; on landing the named receiver collects.
+ *   'through'   — pass into space (a cell). On landing, possession is contested
+ *                 (Phase 3: nearest player picks up; Phase 5: sprint race + duel).
+ *   'cross'     — high ball into the box (`aerial.md`). Not interceptable in flight; contested in
+ *                 the air at the landing point (aerial duel / keeper claim / header).
+ *   'long_ball' — high ball over the line to a forward or the space behind; landing resolved
+ *                 like a cross (aerial duel if contested, else first touch / loose ball).
+ *   'clearance' — headed clearance / keeper punch / block: a short high ball away from goal, the
+ *                 "second ball" contested where it lands (never counted as a pass or long ball).
  */
-export type PassKind = 'regular' | 'through';
+export type PassKind = 'regular' | 'through' | 'cross' | 'long_ball' | 'clearance';
+
+/** True for the high-ball kinds resolved in the air at the landing point. */
+export function isAerialKind(kind: PassKind): kind is 'cross' | 'long_ball' | 'clearance' {
+  return kind === 'cross' || kind === 'long_ball' || kind === 'clearance';
+}
 
 export interface PassState {
   fromId: number;
@@ -423,7 +452,25 @@ export interface PassState {
    * arrives first wins the loose ball (Phase 5). Null for regular passes.
    */
   intendedRunnerId: number | null;
+  /**
+   * High balls only (`cross` / `long_ball`): attackers in an offside position at the kick. A player
+   * in this list who wins the ball at the landing point is flagged offside.
+   */
+  aerialOffsideIds?: number[];
+  /** High ball played by a set-piece taker (free kick / goal kick): the whistle waits for it to land. */
+  fromSetPiece?: boolean;
+  /**
+   * The set piece's `variant` when it was played from one (`set-pieces-play.md`): only a `box`
+   * delivery (corner / crossed free kick with both teams set) gets the set-piece rules in the air.
+   */
+  setPieceVariant?: 'box' | 'direct';
 }
+
+/**
+ * What put the ball loose: a through ball (default — through-ball stats), a high ball nobody
+ * reached (`cross` / `long_ball`) or a defensive header / keeper punch / block (`clearance`).
+ */
+export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
 
 /**
  * Loose-ball state — ball drifting in space after a through ball lands. The ball
@@ -453,6 +500,13 @@ export interface LooseBallState {
   intendedRunnerId: number | null;
   /** Snapshot of intended runner's offside status at kick time. Enforced if the intended runner picks up. */
   receiverOffside: boolean;
+  /** Origin of the loose ball — absent = 'through'. Only through balls feed the through-ball stats. */
+  source?: LooseBallSource;
+  /**
+   * High balls that dropped loose: attackers of `fromTeamLastTouch` offside at the kick
+   * (`PassState.aerialOffsideIds`). One of them collecting the loose ball is flagged offside.
+   */
+  offsideIds?: number[];
 }
 
 export interface ShotState {
@@ -467,6 +521,10 @@ export interface ShotState {
   t: number;
   /** Base shot quality (expected goals) — distance, angle, pressure only. */
   xg: number;
+  /** A header (`aerial.md`): heading replaces finishing in the resolution. */
+  header?: boolean;
+  /** A direct free kick (`set-pieces-play.md`): `xg` is the shot's xG before the wall. */
+  freeKick?: boolean;
 }
 
 export interface GameState {
@@ -563,6 +621,18 @@ export interface GameState {
    * re-evaluate after a turnover.
    */
   lastIntentEvalTime?: number;
+
+  /**
+   * Manager-chosen set-piece takers per team (roster ids). Absent / unavailable = automatic.
+   * The AI never sets this.
+   */
+  setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
+  /**
+   * Open set-piece phase: a goal by `team` before `until` (match-time, game-seconds) counts as a
+   * set-piece goal of `kind`. Opened by a corner, a free kick in the attacking third or a penalty;
+   * closed when the other team wins the ball, at a kickoff and at half-time.
+   */
+  setPiecePhase?: { team: TeamId; kind: SetPieceGoalKind; until: number } | null;
 
   /**
    * Cached through-ball candidate cells for the current ball holder. Refreshed

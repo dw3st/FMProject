@@ -256,6 +256,26 @@ desenvolvimento) é o mesmo do motor.
   - A soma dos gols por jogador (`playerStats[...].goals`) sempre bate com `recording.score` —
     cobranças de pênalti não contam como gol, só os gols de tempo normal e de prorrogação.
 
+### Jogo aéreo no quickSim (Etapa 13, 2026-10-02)
+
+Ver `.claude/rules/game-engine/aerial.md`. Tudo no fim de `quickSimMatch`, depois da disciplina, para
+não mudar nenhum sorteio anterior (`rollAerial`):
+
+- **Gols de cabeça:** cada gol já sorteado que não virou pênalti é de cabeça com probabilidade
+  `HEADER_GOAL_SHARE × gols / elegíveis` (`HEADER_GOAL_SHARE = 0,105`, medido no motor) e passa para um
+  cabeceador escolhido por `HEADER_LINE_WEIGHT[linha] × (0,5 + heading/10)` (FWD 1, MID 0,11, DEF 0,01,
+  GK 0). O placar nunca muda; a assistência fica, salvo se era do próprio cabeceador.
+- **Cruzamentos / lançamentos:** Poisson por lado (`CROSSES_PER_SIDE 5,5`, `LONG_BALLS_PER_SIDE 3,1`) e
+  binomial de acerto (`CROSS_COMPLETION 0,21`, `LONG_BALL_COMPLETION 0,52`).
+- **Disputas aéreas:** `AERIAL_DUELS_PER_MATCH 9,8` disputas por jogo (Poisson), as duas equipes
+  disputam todas; a fatia de cada uma é binomial pela força aérea média do XI (heading/jump/strength com
+  os pesos do motor). Cada disputa ganha vai a um jogador por `AERIAL_DUEL_LINE_WEIGHT × (0,5 +
+  heading/10)` e vale `RATING_WEIGHTS.AERIAL_DUEL_WON` (+0,05) na nota, como no motor.
+- **Passes:** `PASSES_PER_MATCH` foi escalado por linha pela queda medida no motor (o goleiro lança
+  longo em ~40% das reposições no estilo equilibrado): GK ×0,53, DEF ×0,86, MID ×0,87, FWD ×0,80.
+- Gols de prorrogação também podem virar gol de cabeça (os registros de `assignGoals` entram no
+  `rollAerial`, nunca na conversão em pênalti).
+
 ### Limitações conhecidas (calibração de 2026-09-23)
 
 - **Volume de gols (recalibrado em 2026-09-24, 26 ligas, motor com `PASS_STRONG_RAW = 0.8`):**
@@ -865,3 +885,22 @@ Mundo atual, `collect <liga> 200 2 --fitness 88` (400 jogos de motor cada), cons
 | serie_a | 5,34 | 0,67 | 2,26 | 2,43 | +7,6% |
 
 Ambas dentro de ±10% (ruído do motor ±3,6% / ±3,3%; rms 5,5%). O desvio antigo (Bundesliga −17,5%, Serie A −9,7%) não se reproduz no mundo atual, então nenhuma constante foi alterada.
+
+### Bolas paradas no quickSim (Etapa 14, 3.0)
+
+`rollSetPieces` (`quickSim.ts`, último sorteio da partida): escanteios por Poisson
+(`CORNERS_PER_SIDE` 3,12), tiros livres = faltas do adversário − pênaltis a favor, chutes de falta
+direta por Poisson (`DIRECT_FK_SHOTS_PER_SIDE` 0,13); `SET_PIECE_GOAL_SHARE` (0,125) dos gols viram gols
+de bola parada sem pênalti, `DIRECT_FK_GOAL_SHARE` (0,038) dos gols são faltas diretas (sorteadas entre
+todos os gols de bola parada — uma cabeçada escolhida deixa de ser cabeçada —, para o melhor
+finalizador, sem assistência), o resto vai para um defensor/atacante ponderado pelo cabeceio. O
+placar nunca muda. Medido no motor (`bun scripts/setpiece-calibrate.ts` / `aerial-calibrate.ts`, PL
+1600 + Championship 1200); ver `.claude/rules/game-engine/set-pieces-play.md`.
+
+Os números de jogo aéreo e passes foram reajustados à mesma medição: `HEADER_GOAL_SHARE` 0,105 → 0,195,
+`HEADER_LINE_WEIGHT` DEF 0,01 → 0,9 (zagueiros cabeceiam nas bolas paradas), `CROSSES_PER_SIDE`
+5,5 → 8,1 (escanteios e faltas cruzadas contam como cruzamento), `CROSS_COMPLETION` 0,21 → 0,15,
+`LONG_BALLS_PER_SIDE` 3,1 → 2,85, `AERIAL_DUELS_PER_MATCH` 9,8 → 14,5, `AERIAL_DUEL_LINE_WEIGHT`
+DEF 0,95 / MID 0,44 / FWD 0,72, e `PASSES_PER_MATCH` por linha × GK 0,62 (defesas viram escanteio,
+menos tiros de meta), DEF 0,93, MID 0,89, FWD 0,955. O volume de gols do quickSim não mudou (o motor
+ficou dentro de ±5% em gols e chutes).

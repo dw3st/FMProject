@@ -30,7 +30,8 @@ const AWAY = squadFrom(newcastleSquad as RawSquadFile);
 /** Both sides play the default formation — same as non-followed league fixtures. */
 const ROLES = slotRoles(formationForSimId(DEFAULT_SIM_FORMATION_ID));
 
-function runOnce(knockout = false): QuickSimResult {
+/** `fam` = style familiarity of each side (the /test selectors; 50 = neutral). */
+function runOnce(knockout = false, fam: { home: number; away: number } = { home: 50, away: 50 }): QuickSimResult {
   return quickSimMatch({
     fixtureId: "test",
     home: HOME,
@@ -40,12 +41,14 @@ function runOnce(knockout = false): QuickSimResult {
     homeRoles: ROLES,
     awayRoles: ROLES,
     knockout,
+    homeFamiliarity: fam.home,
+    awayFamiliarity: fam.away,
   });
 }
 
 interface Batch { n: number; goals: number; home: number; draw: number; away: number; extraTime: number; penalties: number }
 
-export function QuickSimPanel() {
+export function QuickSimPanel({ familiarity }: { familiarity?: { home: number; away: number } } = {}) {
   const [last, setLast] = useState<QuickSimResult | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
   const [knockout, setKnockout] = useState(false);
@@ -53,7 +56,7 @@ export function QuickSimPanel() {
   function runBatch(n: number) {
     const b: Batch = { n, goals: 0, home: 0, draw: 0, away: 0, extraTime: 0, penalties: 0 };
     for (let i = 0; i < n; i++) {
-      const { score, decider } = runOnce(knockout).recording;
+      const { score, decider } = runOnce(knockout, familiarity).recording;
       b.goals += score.home + score.away;
       if (decider) b.extraTime++;
       const pens = decider?.penalties;
@@ -78,7 +81,7 @@ export function QuickSimPanel() {
   return (
     <div className="bg-white/[0.03] border border-white/10 rounded p-3 space-y-2 max-w-md">
       <div className="flex items-center gap-2">
-        <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => setLast(runOnce(knockout))}>
+        <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => setLast(runOnce(knockout, familiarity))}>
           Simular 1
         </button>
         <button className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10" onClick={() => runBatch(500)}>

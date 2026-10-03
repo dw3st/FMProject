@@ -91,6 +91,11 @@ export interface Variant {
    * staff, same as in the game for an AI club.
    */
   staffRating?: number;
+  /**
+   * Familiarity 0..100 of this side with its own `tacticalStyle` (`src/Domain/familiarity`): nudges
+   * the style's tactic weights (engine) or the line strengths (quickSim). Absent = neutral (50).
+   */
+  familiarity?: number;
   squad: SquadSpec;
 }
 
@@ -186,6 +191,22 @@ export interface TeamRawStats {
   penaltyGoals: number;
   /** Times this team was caught offside. */
   offsides: number;
+  // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
+  crosses: number;
+  crossesCompleted: number;
+  /** Aerial duels contested (each duel counts once per team). */
+  aerialDuels: number;
+  aerialDuelsWon: number;
+  headerGoals: number;
+  longBalls: number;
+  longBallsCompleted: number;
+  // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
+  corners: number;
+  freeKicks: number;
+  directFreeKickShots: number;
+  directFreeKickGoals: number;
+  /** Goals from corners, free kicks in the attacking third and penalties. */
+  setPieceGoals: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -268,6 +289,19 @@ export interface PerMatchView {
   /** In-match penalty goals per match. */
   avgPenaltyGoals: number;
   avgOffsides: number;
+  /** Aerial play per match (`aerial.md`). */
+  avgCrosses: number;
+  crossCompletionPct: number;
+  avgAerialDuelsWon: number;
+  avgHeaderGoals: number;
+  avgLongBalls: number;
+  /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
+  avgCorners: number;
+  avgFreeKicks: number;
+  avgDirectFreeKickShots: number;
+  avgDirectFreeKickGoals: number;
+  avgSetPieceGoals: number;
+  setPieceGoalPct: number;
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -343,6 +377,19 @@ export interface VariantSummary {
   /** In-match penalty goals per match. */
   avgPenaltyGoals: number;
   avgOffsides: number;
+  /** Aerial play per match (`aerial.md`). */
+  avgCrosses: number;
+  crossCompletionPct: number;
+  avgAerialDuelsWon: number;
+  avgHeaderGoals: number;
+  avgLongBalls: number;
+  /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
+  avgCorners: number;
+  avgFreeKicks: number;
+  avgDirectFreeKickShots: number;
+  avgDirectFreeKickGoals: number;
+  avgSetPieceGoals: number;
+  setPieceGoalPct: number;
 }
 
 export interface ScenarioResult {

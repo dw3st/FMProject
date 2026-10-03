@@ -62,6 +62,34 @@ export interface PlayerStats {
   penaltyGoals:             number;
   /** Times caught offside (the receiver). */
   offsides:                 number;
+  // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
+  /** Crosses played. */
+  crosses:                  number;
+  /** Crosses whose first contact was won by the crossing team (credited to the crosser). */
+  crossesCompleted:         number;
+  /** Aerial duels contested (the best contestant of each team takes part). */
+  aerialDuels:              number;
+  /** Aerial duels won. Team total over both teams = duels in the match. */
+  aerialDuelsWon:           number;
+  /** Headers at goal (also counted in `shots`). */
+  headers:                  number;
+  /** Goals scored with a header (also counted in `goals`). */
+  headerGoals:              number;
+  /** Long balls played over the line. */
+  longBalls:                number;
+  /** Long balls whose first contact was won by the passing team. */
+  longBallsCompleted:       number;
+  // ── Set pieces (`.claude/rules/game-engine/set-pieces-play.md`) ──────────────
+  /** Corners won by the team, credited to the taker. */
+  corners:                  number;
+  /** Free kicks won from fouls (not offside), credited to the taker. */
+  freeKicks:                number;
+  /** Direct free kicks at goal (also counted in `shots`). */
+  directFreeKickShots:      number;
+  /** Goals scored straight from a direct free kick (also in `goals` and `setPieceGoals`). */
+  directFreeKickGoals:      number;
+  /** Goals from a set piece: corner, free kick in the attacking third, penalty (also in `goals`). */
+  setPieceGoals:            number;
 }
 
 export interface TeamStats extends PlayerStats {
@@ -79,6 +107,11 @@ export interface TeamStats extends PlayerStats {
   fatigueSubstitutions: number;
   /** Count of in-match injuries suffered by this team (`injury` event). */
   injuries: number;
+}
+
+/** Zeroed player stats — shared with UI tables that need a placeholder row. */
+export function emptyPlayerStats(): PlayerStats {
+  return emptyStats();
 }
 
 function emptyStats(): PlayerStats {
@@ -110,6 +143,19 @@ function emptyStats(): PlayerStats {
     penaltiesConceded:        0,
     penaltyGoals:             0,
     offsides:                 0,
+    crosses:                  0,
+    crossesCompleted:         0,
+    aerialDuels:              0,
+    aerialDuelsWon:           0,
+    headers:                  0,
+    headerGoals:              0,
+    longBalls:                0,
+    longBallsCompleted:       0,
+    corners:                  0,
+    freeKicks:                0,
+    directFreeKickShots:      0,
+    directFreeKickGoals:      0,
+    setPieceGoals:            0,
   };
 }
 
@@ -165,6 +211,9 @@ gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); })
 gameBus.on('shot',          e => { const s = get(e.player); s.shots++; s.xg += e.xg; notify(); });
 gameBus.on('goalScored',    e => {
   get(e.scorerId).goals++;
+  if (e.header) get(e.scorerId).headerGoals++;
+  if (e.setPiece) get(e.scorerId).setPieceGoals++;
+  if (e.setPiece === 'direct_free_kick') get(e.scorerId).directFreeKickGoals++;
   if (e.assistId != null) get(e.assistId).assists++;
   notify();
 });
@@ -250,6 +299,28 @@ gameBus.on('penaltyAwarded', e => {
 gameBus.on('penaltyResolved', e => { if (e.scored) { get(e.takerId).penaltyGoals++; notify(); } });
 gameBus.on('offsideCalled', e => { get(e.receiverId).offsides++; notify(); });
 
+// ── Aerial stats ──────────────────────────────────────────────────────────────
+gameBus.on('crossStarted',    e => { get(e.player).crosses++; notify(); });
+gameBus.on('longBallStarted', e => { get(e.player).longBalls++; notify(); });
+gameBus.on('aerialResolved',  e => {
+  if (!e.completed) return;
+  if (e.kind === 'cross') get(e.fromId).crossesCompleted++;
+  else get(e.fromId).longBallsCompleted++;
+  notify();
+});
+gameBus.on('aerialDuel', e => {
+  get(e.winnerId).aerialDuels++;
+  get(e.winnerId).aerialDuelsWon++;
+  get(e.loserId).aerialDuels++;
+  notify();
+});
+gameBus.on('header', e => { get(e.player).headers++; notify(); });
+
+// ── Set-piece stats ───────────────────────────────────────────────────────────
+gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
+gameBus.on('freeKickAwarded', e => { get(e.takerId).freeKicks++; notify(); });
+gameBus.on('directFreeKick',  e => { get(e.player).directFreeKickShots++; notify(); });
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -313,6 +384,19 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.penaltiesConceded        += stats.penaltiesConceded;
     result.penaltyGoals             += stats.penaltyGoals;
     result.offsides                 += stats.offsides;
+    result.crosses                  += stats.crosses;
+    result.crossesCompleted         += stats.crossesCompleted;
+    result.aerialDuels              += stats.aerialDuels;
+    result.aerialDuelsWon           += stats.aerialDuelsWon;
+    result.headers                  += stats.headers;
+    result.headerGoals              += stats.headerGoals;
+    result.longBalls                += stats.longBalls;
+    result.longBallsCompleted       += stats.longBallsCompleted;
+    result.corners                  += stats.corners;
+    result.freeKicks                += stats.freeKicks;
+    result.directFreeKickShots      += stats.directFreeKickShots;
+    result.directFreeKickGoals      += stats.directFreeKickGoals;
+    result.setPieceGoals            += stats.setPieceGoals;
   }
   return result;
 }

@@ -36,6 +36,8 @@ const sampleBase: PlayerStats = {
     gkReflex: 0,
     gkDiving: 0,
     strength: 0.5,
+    heading: 0.6,
+    jump: 0.3,
   },
 };
 

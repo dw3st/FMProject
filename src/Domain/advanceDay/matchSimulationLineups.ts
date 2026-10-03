@@ -3,6 +3,7 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
+import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
 import type { Formation } from "@/GameEngine/types";
 import { getFormationSlots, type FormationShape } from "@/types/formationSlots";
 import { DEFAULT_SIM_FORMATION_ID, formationForSimId, formationForTactics } from "@/Domain/matchFormations";
@@ -157,7 +158,8 @@ export function computeMatchSimulationLineups(
 } {
   const date = fixture.date;
   const defaultAi = formationForSimId(DEFAULT_SIM_FORMATION_ID);
-  const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE };
+  // AI clubs follow the implicit familiarity rule (`src/Domain/familiarity`), nothing stored.
+  const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE, familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE) };
   const userPlays =
     Boolean(playerSquadId) && (fixture.home === playerSquadId || fixture.away === playerSquadId);
 
@@ -180,7 +182,13 @@ export function computeMatchSimulationLineups(
   } satisfies TacticsSave);
 
   const userFormation = formationForTactics(t);
-  const userTactics: TeamTactics = { style: t.tactical_style, axesOverride: t.axesOverride };
+  const userSquad = fixture.home === playerSquadId ? homeSquad : awaySquad;
+  const userTactics: TeamTactics = {
+    style: t.tactical_style,
+    axesOverride: t.axesOverride,
+    familiarity: squadFamiliarityLevels(userSquad, t.tactical_style),
+    ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
+  };
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {

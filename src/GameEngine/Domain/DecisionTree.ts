@@ -27,7 +27,7 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
-import { getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
+import { getTeamBuildUp, getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
 import { evaluateCarryLane, evaluateCarryLaneBreakdown, rot } from '@/GameEngine/Domain/CarryLaneEval';
@@ -47,12 +47,17 @@ import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
+import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
+import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
+import { evaluateBoxSetPiece } from '@/GameEngine/Domain/SetPieces';
 
 export type PlayerDecision =
   | { type: 'carry'; dx: number; dy: number }          // withBall  → advancing with the ball
   | { type: 'shoot' }                                   // withBall  → will shoot
   | { type: 'pass' }                                    // withBall  → will pass to a teammate
   | { type: 'through_ball'; cellX: number; cellY: number; intendedRunnerId: number | null } // withBall → ball into space
+  | { type: 'cross'; toX: number; toY: number; intendedRunnerId: number | null } // withBall → high ball into the box
+  | { type: 'long_ball'; toX: number; toY: number; targetId: number } // withBall → high ball over the line
   | { type: 'dribble'; targetId: number }               // withBall  → attempt to beat a close defender 1v1
   | { type: 'tackle'; targetId: number }                // withoutBall → close enough to attempt a tackle
   | { type: 'press';  targetId: number }                // withoutBall → sprinting toward the ball holder
@@ -87,6 +92,8 @@ export const COMMIT_TICKS: Record<PlayerDecision['type'], number> = {
   carry:                5,
   pass:                 0,
   through_ball:         0,
+  cross:                0,
+  long_ball:            0,
   dribble:              4,
   tackle:               0,
   press:                8,
@@ -402,7 +409,7 @@ interface PassActionBreakdown extends PassBreakdown {
 }
 
 interface ActionScore {
-  type: 'shoot' | 'pass' | 'carry' | 'dribble' | 'through_ball';
+  type: 'shoot' | 'pass' | 'carry' | 'dribble' | 'through_ball' | 'cross' | 'long_ball';
   score: number;
   targetId?: number;
   dx?: number;
@@ -410,6 +417,8 @@ interface ActionScore {
   cellX?: number;
   cellY?: number;
   intendedRunnerId?: number | null;
+  toX?: number;
+  toY?: number;
   shootBreakdown?:   ShootBreakdown;
   passBreakdown?:    PassActionBreakdown;
   carryBreakdown?:   CarryActionBreakdown | null;
@@ -584,6 +593,42 @@ function evalThroughBall(
   };
 }
 
+/**
+ * Cross (`aerial.md`): best of the three box targets (near post / penalty spot / far post) when
+ * the holder is in a crossing position. Compressed with CROSS_STRONG_RAW like every other action.
+ */
+function evalCross(
+  player: GamePlayer,
+  allPlayers: GamePlayer[],
+): { action: ActionScore; targets: ReturnType<typeof evaluateCrossTargets> } {
+  const targets = evaluateCrossTargets(player, allPlayers);
+  const best = targets[0];
+  if (!best || best.raw <= 0) return { action: { type: 'cross', score: 0 }, targets };
+  return {
+    action: {
+      type: 'cross',
+      score: compress(best.raw, AERIAL_CONFIG.CROSS_STRONG_RAW),
+      toX: best.x, toY: best.y, intendedRunnerId: best.bestAttackerId,
+    },
+    targets,
+  };
+}
+
+/**
+ * Long ball (`aerial.md`): a forward teammate over the line, weighted by the team's build_up
+ * appetite (`TeamPassWeights.LONG_BALL_WEIGHT` — direct plays more of them).
+ */
+function evalLongBall(player: GamePlayer, allPlayers: GamePlayer[]): ActionScore {
+  const offsideLine = computeOffsideLine(player.attackDir, allPlayers, player.team, player.x);
+  const lb = evaluateLongBall(player, allPlayers, getTeamPassConfig(player.team).LONG_BALL_WEIGHT, offsideLine);
+  if (!lb || lb.raw <= 0) return { type: 'long_ball', score: 0 };
+  return {
+    type: 'long_ball',
+    score: compress(lb.raw, AERIAL_CONFIG.LONG_BALL_STRONG_RAW),
+    toX: lb.x, toY: lb.y, targetId: lb.targetId,
+  };
+}
+
 function evalDribble(player: GamePlayer, opponents: GamePlayer[]): ActionScore {
   const roleTendency = roleEngine(player.role).carryBias;
   if (roleTendency < DRIBBLE_MIN_BIAS) {
@@ -648,7 +693,10 @@ function decideBallHolder(
   const dr = evalDribble(player, outfieldOpponents); // GK excluded — don't dribble the GK
   const tbResult = evalThroughBall(player, allPlayers, crowdGrid, tbCachedCells);
   const tb = tbResult.action;
-  const actions: ActionScore[] = [sh, ca, ps, dr, tb];
+  const crResult = evalCross(player, allPlayers);
+  const cr = crResult.action;
+  const lb = evalLongBall(player, allPlayers);
+  const actions: ActionScore[] = [sh, ca, ps, dr, tb, cr, lb];
 
   const best = actions.reduce((a, b) => b.score > a.score ? b : a);
 
@@ -678,6 +726,8 @@ function decideBallHolder(
       carry:       ca.score,
       dribble:     dr.score,
       throughBall: tb.score,
+      cross:       cr.score,
+      longBall:    lb.score,
       best:        best.type,
       breakdowns: {
         shoot:   shootBd,
@@ -686,6 +736,18 @@ function decideBallHolder(
         dribble: dribbleBd,
       },
     });
+
+    if (crResult.targets.length > 0) {
+      gameBus.emit('crossScores', {
+        playerId:   player.id,
+        playerName: player.name,
+        targets: crResult.targets.map(t => ({
+          kind: t.kind, x: t.x, y: t.y, attackers: t.attackers, defenders: t.defenders,
+          heading: t.heading, gkClaim: t.gkClaim, raw: t.raw,
+          score: t.raw > 0 ? compress(t.raw, AERIAL_CONFIG.CROSS_STRONG_RAW) : 0,
+        })),
+      });
+    }
 
     // Emit through-ball candidate cells (re-uses the same cells already scored
     // by evalThroughBall — no double work).
@@ -730,7 +792,27 @@ function decideBallHolder(
       cellY:            best.cellY!,
       intendedRunnerId: best.intendedRunnerId ?? null,
     };
+    case 'cross':         return { type: 'cross', toX: best.toX!, toY: best.toY!, intendedRunnerId: best.intendedRunnerId ?? null };
+    case 'long_ball':     return { type: 'long_ball', toX: best.toX!, toY: best.toY!, targetId: best.targetId! };
   }
+}
+
+/**
+ * Corner / crossed free-kick taker (`set-pieces-play.md` §1–2): the best of `evaluateBoxSetPiece`
+ * — a cross to the near post / penalty spot / far post, or the short pass (`pass`, which
+ * `startPass` sends to the nearest teammate).
+ */
+function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: 'corner' | 'free_kick'): PlayerDecision {
+  const options = evaluateBoxSetPiece(player, allPlayers, getTeamBuildUp(player.team), kind);
+  const best = options[0];
+  if (isDebugEnabled() && best) {
+    gameBus.emit('setPieceScores', {
+      playerId: player.id, playerName: player.name, kind, chosen: best.kind,
+      options: options.map(o => ({ kind: o.kind, x: o.x, y: o.y, raw: o.raw, attackers: o.attackers, defenders: o.defenders })),
+    });
+  }
+  if (!best || best.kind === 'short' || best.raw <= 0) return { type: 'pass' };
+  return { type: 'cross', toX: best.x, toY: best.y, intendedRunnerId: best.targetId };
 }
 
 // ── Public decision entry point ───────────────────────────────────────────────
@@ -766,11 +848,17 @@ export function decide(
   // ── With ball — unified scoring ─────────────────────────────────────────
   if (hasBall) {
     // Set-piece taker must play the ball — no carrying, no dribbling. A free-kick taker may also
-    // shoot or play a through ball when that is the normal best action (a direct free kick near goal).
+    // shoot, cross or play a through ball when that is the normal best action (a direct free kick
+    // near goal, a free kick from wide); a goal-kick taker may go long (`aerial.md`).
     if (setPiece && player.id === setPiece.takerId) {
-      if (setPiece.type === 'free_kick') {
+      // Set-piece play (`set-pieces-play.md`): a direct free kick is shot at goal; a corner or a
+      // crossed free kick is delivered to the best zone in the box, or played short.
+      if (setPiece.variant === 'direct') return { type: 'shoot' };
+      if (setPiece.variant === 'box') return decideBoxSetPiece(player, allPlayers, setPiece.type === 'corner' ? 'corner' : 'free_kick');
+      if (setPiece.type === 'free_kick' || setPiece.type === 'goal_kick') {
         const d = decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);
-        if (d.type === 'shoot' || d.type === 'through_ball') return d;
+        if (setPiece.type === 'free_kick' && (d.type === 'shoot' || d.type === 'through_ball' || d.type === 'cross')) return d;
+        if (d.type === 'long_ball') return d;
       }
       return { type: 'pass' };
     }

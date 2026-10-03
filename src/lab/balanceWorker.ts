@@ -25,8 +25,11 @@ import {
   quickSimAppearances,
 } from "@/lab/fitnessCarry";
 import { addDayLogDiscipline } from "@/lab/disciplineStats";
+import { addDayLogAerial } from "@/lab/aerialStats";
+import { addDayLogSetPieces } from "@/lab/setPieceStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type {
   CongestionMatchRaw,
   CongestionSpec,
@@ -100,6 +103,8 @@ function emptyTeamRaw(): TeamRawStats {
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
+    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
+    corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
   };
 }
 
@@ -138,6 +143,18 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.penaltiesAwarded            += src.penaltiesAwarded;
   dst.penaltyGoals                += src.penaltyGoals;
   dst.offsides                    += src.offsides;
+  dst.crosses                     += src.crosses;
+  dst.crossesCompleted            += src.crossesCompleted;
+  dst.aerialDuels                 += src.aerialDuels;
+  dst.aerialDuelsWon              += src.aerialDuelsWon;
+  dst.headerGoals                 += src.headerGoals;
+  dst.longBalls                   += src.longBalls;
+  dst.longBallsCompleted          += src.longBallsCompleted;
+  dst.corners                     += src.corners;
+  dst.freeKicks                   += src.freeKicks;
+  dst.directFreeKickShots         += src.directFreeKickShots;
+  dst.directFreeKickGoals         += src.directFreeKickGoals;
+  dst.setPieceGoals               += src.setPieceGoals;
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -182,6 +199,13 @@ interface LineupFit {
   poorB: number;
 }
 
+/** Familiarity of each side with its own style (set per worker message): quickSim strength + engine execution. */
+let sideFamiliarity: { A?: number; B?: number } = {};
+
+function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
+  return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
+}
+
 function runOneMatch(
   squadA: Squad,
   squadB: Squad,
@@ -211,6 +235,8 @@ function runOneMatch(
       homeRoles: quickRolesA,
       awayRoles: quickRolesB,
       knockout,
+      homeFamiliarity: sideFamiliarity.A,
+      awayFamiliarity: sideFamiliarity.B,
     });
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
@@ -236,6 +262,10 @@ function runOneMatch(
     // Discipline: optional on the day-log team stats (quickSim fills them, see rollDiscipline).
     addDayLogDiscipline(teamA, hA);
     addDayLogDiscipline(teamB, hB);
+    addDayLogAerial(teamA, hA);
+    addDayLogAerial(teamB, hB);
+    addDayLogSetPieces(teamA, hA);
+    addDayLogSetPieces(teamB, hB);
     const qd = q.recording.decider;
     if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
     const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
@@ -253,7 +283,10 @@ function runOneMatch(
     return { teamA, teamB, draw: !homeWon && !awayWon, appearancesA, appearancesB };
   }
 
-  const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, { knockout });
+  const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, {
+    knockout,
+    executionFamiliarity: sideFamiliarity,
+  });
   const sA = r.teamStats.A;
   const sB = r.teamStats.B;
 
@@ -288,6 +321,18 @@ function runOneMatch(
   teamA.penaltiesAwarded += sA.penaltiesAwarded; teamB.penaltiesAwarded += sB.penaltiesAwarded;
   teamA.penaltyGoals     += sA.penaltyGoals;     teamB.penaltyGoals     += sB.penaltyGoals;
   teamA.offsides         += sA.offsides;         teamB.offsides         += sB.offsides;
+  teamA.crosses            += sA.crosses;            teamB.crosses            += sB.crosses;
+  teamA.crossesCompleted   += sA.crossesCompleted;   teamB.crossesCompleted   += sB.crossesCompleted;
+  teamA.aerialDuels        += sA.aerialDuels;        teamB.aerialDuels        += sB.aerialDuels;
+  teamA.aerialDuelsWon     += sA.aerialDuelsWon;     teamB.aerialDuelsWon     += sB.aerialDuelsWon;
+  teamA.headerGoals        += sA.headerGoals;        teamB.headerGoals        += sB.headerGoals;
+  teamA.longBalls          += sA.longBalls;          teamB.longBalls          += sB.longBalls;
+  teamA.longBallsCompleted += sA.longBallsCompleted; teamB.longBallsCompleted += sB.longBallsCompleted;
+  teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
+  teamA.freeKicks           += sA.freeKicks;           teamB.freeKicks           += sB.freeKicks;
+  teamA.directFreeKickShots += sA.directFreeKickShots; teamB.directFreeKickShots += sB.directFreeKickShots;
+  teamA.directFreeKickGoals += sA.directFreeKickGoals; teamB.directFreeKickGoals += sB.directFreeKickGoals;
+  teamA.setPieceGoals       += sA.setPieceGoals;       teamB.setPieceGoals       += sB.setPieceGoals;
 
   const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
   if (winner === "A") teamA.wins++;
@@ -314,10 +359,14 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
 
     // Apply per-team tactics ONCE — all matches use them.
     // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
-    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride);
-    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride);
-    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride);
-    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride);
+    // `familiarity` (absent = neutral): the side's familiarity with its own style.
+    const famA = variantFamiliarity(variantA);
+    const famB = variantFamiliarity(variantB);
+    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
+    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
+    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
+    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
+    sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on

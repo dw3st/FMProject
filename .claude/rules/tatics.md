@@ -50,8 +50,14 @@ interface TacticsSave {
   build_up:       BuildUpStyle;
   offside_trap:   boolean;
   lineup:         string[];  // ordered playerIds — index = formation slot index
+  setPieceTakers?: { corners?: string; freeKicks?: string; penalties?: string }; // player ids; absent = automatic
 }
 ```
+
+`setPieceTakers` (Etapa 14): three selectors on the tactics screen (`SetPieceTakersPanel`), "Automatic"
+by default; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; reaches the engine as
+`GameState.setPieceTakers` (simulated matches and the live match). The AI never sets it. See
+`.claude/rules/game-engine/set-pieces-play.md` → "Cobradores".
 
 API: `GET /api/saves/:id/tactics` · `PUT /api/saves/:id/tactics`
 

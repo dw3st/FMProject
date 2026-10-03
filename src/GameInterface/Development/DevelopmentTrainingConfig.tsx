@@ -5,6 +5,10 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import { updateSaveDevelopmentTraining } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { familiarityKeyLabel } from "@/GameInterface/Components/FamiliarityBars";
+import { FAMILIARITY_KEYS, type FamiliarityKey } from "@/types/familiarityTypes";
+import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 
 export function DevelopmentTrainingConfig() {
   const { t } = useTranslation();
@@ -12,6 +16,11 @@ export function DevelopmentTrainingConfig() {
   const [minEnergy, setMinEnergy] = useState(DEFAULT_MIN_ENERGY_TO_TRAIN);
   const [intensity, setIntensity] = useState<TrainingIntensity>(DEFAULT_TRAINING_INTENSITY);
   const [saving, setSaving] = useState(false);
+  // Style focus (`src/Domain/familiarity`): null = auto, the tactics style is drilled.
+  const tacticsStyle = session?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
+  const canonicalFocus: FamiliarityKey | null = save?.style_focus ?? null;
+  const [styleFocus, setStyleFocus] = useState<FamiliarityKey | null>(canonicalFocus);
+  useEffect(() => setStyleFocus(canonicalFocus), [canonicalFocus]);
 
   const INTENSITY_OPTIONS: { value: TrainingIntensity; label: string; hint: string }[] = useMemo(() => [
     { value: "light",  label: t("development.intensityLight"),  hint: t("development.intensityLightHint") },
@@ -31,8 +40,8 @@ export function DevelopmentTrainingConfig() {
     save?.training_intensity ?? session?.training_intensity ?? DEFAULT_TRAINING_INTENSITY;
 
   const dirty = useMemo(
-    () => minEnergy !== canonicalMin || intensity !== canonicalIntensity,
-    [minEnergy, intensity, canonicalMin, canonicalIntensity],
+    () => minEnergy !== canonicalMin || intensity !== canonicalIntensity || styleFocus !== canonicalFocus,
+    [minEnergy, intensity, canonicalMin, canonicalIntensity, styleFocus, canonicalFocus],
   );
 
   const saveToFile = useCallback(async () => {
@@ -42,6 +51,7 @@ export function DevelopmentTrainingConfig() {
       const updated = await updateSaveDevelopmentTraining(session.saveId, {
         min_energy_to_train: minEnergy,
         training_intensity: intensity,
+        style_focus: styleFocus,
       });
       mergeSession({
         min_energy_to_train: updated.min_energy_to_train,
@@ -51,7 +61,7 @@ export function DevelopmentTrainingConfig() {
     } finally {
       setSaving(false);
     }
-  }, [session, minEnergy, intensity, mergeSession, refresh]);
+  }, [session, minEnergy, intensity, styleFocus, mergeSession, refresh]);
 
   return (
     <div className="card-arcade rounded-md p-4 border border-border/50">
@@ -112,6 +122,30 @@ export function DevelopmentTrainingConfig() {
             })}
           </div>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
+          {t("familiarity.focusLabel")}
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          <Chip selected={styleFocus === null} disabled={saving || !session} onClick={() => setStyleFocus(null)}>
+            {t("familiarity.focusAuto", { style: familiarityKeyLabel(tacticsStyle, t) })}
+          </Chip>
+          {FAMILIARITY_KEYS.map((key) => (
+            <Chip
+              key={key}
+              selected={styleFocus === key}
+              disabled={saving || !session}
+              onClick={() => setStyleFocus(key)}
+            >
+              {familiarityKeyLabel(key, t)}
+            </Chip>
+          ))}
+        </div>
+        <p className="text-sm text-muted-foreground mt-1 m-0">
+          {t("familiarity.focusHint")}
+        </p>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4">
