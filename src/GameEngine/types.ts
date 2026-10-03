@@ -623,16 +623,6 @@ export interface GameState {
   lastIntentEvalTime?: number;
 
   /**
-   * Cached through-ball candidate cells for the current ball holder. Refreshed
-   * every TB_CACHE_REFRESH_TICKS ticks while the same player holds the ball
-   * (race-margin and path-clearness signals shift slowly), invalidated on
-   * holder change. The decision tree reuses these cells without re-running the
-   * full grid enumeration each tick.
-   *
-   * `ticksSinceRefresh` counts how many ticks have elapsed since the cells were
-   * computed. When it reaches the refresh threshold, the next tick recomputes.
-   */
-  /**
    * Manager-chosen set-piece takers per team (roster ids). Absent / unavailable = automatic.
    * The AI never sets this.
    */
@@ -644,6 +634,16 @@ export interface GameState {
    */
   setPiecePhase?: { team: TeamId; kind: SetPieceGoalKind; until: number } | null;
 
+  /**
+   * Cached through-ball candidate cells for the current ball holder. Refreshed
+   * every TB_CACHE_REFRESH_TICKS ticks while the same player holds the ball
+   * (race-margin and path-clearness signals shift slowly), invalidated on
+   * holder change. The decision tree reuses these cells without re-running the
+   * full grid enumeration each tick.
+   *
+   * `ticksSinceRefresh` counts how many ticks have elapsed since the cells were
+   * computed. When it reaches the refresh threshold, the next tick recomputes.
+   */
   throughBallCellsCache: {
     holderId: number;
     ticksSinceRefresh: number;
