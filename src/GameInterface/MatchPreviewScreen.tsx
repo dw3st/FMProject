@@ -16,7 +16,7 @@ import {
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { ratingTextClassDisplay100, ratingTextClass10 } from "@/GameInterface/scoreColors";
+import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
@@ -40,6 +40,14 @@ const User = iconOf("user");
 
 function toDisplayRating(avg: number): string {
   return avg.toFixed(1);
+}
+
+/**
+ * Colour of a 0–10 rating next to a name in the preview (#52): the shared tiers from 6 up, and the
+ * plain foreground colour below (the muted tiers were unreadable on the dark panels).
+ */
+function previewRatingClass(avg: number): string {
+  return avg >= 6 ? ratingTextClass10(avg) : "text-foreground";
 }
 
 function tacticalStyleLabel(style: TacticalStyle): string {
@@ -137,11 +145,11 @@ function HomePlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
-    <div className="flex items-center gap-2 py-[3px]">
+    <div className="flex items-center gap-2 py-1">
       <RoleBadge role={role} align="left" />
       <span className="flex-1 text-sm text-foreground font-medium truncate">{lastName}</span>
       <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
-      <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
+      <span className={`w-8 text-right text-sm font-display font-bold tabular-nums shrink-0 ${previewRatingClass(avg)}`}>
         {rating}
       </span>
     </div>
@@ -154,8 +162,8 @@ function AwayPlayerRow({ player, slotRole }: { player: RosterPlayer; slotRole?: 
   const rating = toDisplayRating(avg);
   const lastName = player.name.split(" ").pop() ?? player.name;
   return (
-    <div className="flex items-center gap-2 py-[3px]">
-      <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingTextClassDisplay100(Number(rating))}`}>
+    <div className="flex items-center gap-2 py-1">
+      <span className={`w-8 text-left text-sm font-display font-bold tabular-nums shrink-0 ${previewRatingClass(avg)}`}>
         {rating}
       </span>
       <LoadIndicator load={player.seasonLog?.load ?? 0} size={11} />
@@ -430,7 +438,7 @@ function LastMinuteSubsModal({
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span className={ratingTextClass10(slotValue(selectedOut.player, selectedOut.role))}>
+                    <span className={previewRatingClass(slotValue(selectedOut.player, selectedOut.role))}>
                       {slotValue(selectedOut.player, selectedOut.role).toFixed(1)} {t("matchPreview.rating")}
                     </span>
                     <span className="inline-flex items-center gap-1">
@@ -477,7 +485,7 @@ function LastMinuteSubsModal({
                       <span className={`flex-1 min-w-0 text-sm font-semibold truncate ${getPositionColor(role)}`}>
                         {lastName}
                       </span>
-                      <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
+                      <span className={`text-sm font-display font-bold tabular-nums shrink-0 w-8 text-right ${previewRatingClass(avg)}`}>
                         {avg.toFixed(1)}
                       </span>
                       <div className="flex items-center gap-1 shrink-0 w-[5.5rem]">
@@ -539,7 +547,7 @@ function LastMinuteSubsModal({
                         <span className={`flex-1 min-w-0 text-sm font-semibold truncate ${getPositionColor(role)}`}>
                           {lastName}
                         </span>
-                        <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(avg)}`}>
+                        <span className={`text-sm font-display font-bold tabular-nums shrink-0 w-8 text-right ${previewRatingClass(avg)}`}>
                           {avg.toFixed(1)}
                         </span>
                         <div className="flex items-center gap-1 shrink-0 w-[5.5rem]">
