@@ -13,7 +13,7 @@ export const SET_PIECE_CONFIG = {
   /** Minimum open angle to the goal mouth (radians) for a direct shot (~"central"). */
   DIRECT_FK_MIN_ANGLE: 0.3,
   /** Direct free-kick xG before the wall at FK_XG_NEAR yards with a full angle. */
-  FK_XG_BASE: 0.7,
+  FK_XG_BASE: 0.9,
   /** Distance (yards) up to which the distance factor is 1. */
   FK_XG_NEAR: 18,
   /** Distance factor at DIRECT_FK_RANGE (linear in between). */
@@ -69,13 +69,19 @@ export const SET_PIECE_CONFIG = {
 
   /** Crossed free kick: attackers start at the line, so a wider zone counts them (they run onto it). */
   FK_TARGET_ZONE_RADIUS: 8,
-  /** Added to the defender's aerial-duel score on a set-piece cross (he is set, goal-side of his man). */
-  SET_PIECE_DEFENDER_DUEL_BONUS: 3.2,
+  /**
+   * The defender's aerial-duel score × this on a set-piece cross: he is set, goal-side of his man,
+   * and the box is crowded — an attacker wins about 1 in 1 + MULT duels against an equal marker.
+   */
+  SET_PIECE_DEFENDER_DUEL_MULT: 7,
+  /** Chasers per team on a set-piece delivery (role gates ignored: the centre-backs who went up attack it). */
+  SET_PIECE_CHASERS: 4,
+  SET_PIECE_CHASE_ETA_HORIZON: 2,
   /** Share of aerial fouls at a set-piece cross committed by the attacker (open play: 0.5). */
   SET_PIECE_ATTACKER_FOUL_SHARE: 0.8,
   /**
    * Header from a set-piece cross: the crowd's pressure on the header × this. The few attackers who
-   * beat their set marker (SET_PIECE_DEFENDER_DUEL_BONUS) have won the ball cleanly; the full
+   * beat their set marker (SET_PIECE_DEFENDER_DUEL_MULT) have won the ball cleanly; the full
    * box-crowd pressure would otherwise floor nearly every set-piece header at xG ≈ 0.1.
    */
   SET_PIECE_HEADER_PRESSURE_MULT: 0,
@@ -108,7 +114,7 @@ export const SET_PIECE_CONFIG = {
 
   // ── Set-piece goal attribution ─────────────────────────────────────────────
   /** A goal within this many game-seconds of a corner / free kick in the attacking third / penalty, with the ball kept, is a set-piece goal. */
-  SET_PIECE_PHASE_SECONDS: 60,
+  SET_PIECE_PHASE_SECONDS: 45,
   /** Free kicks closer than this to the goal they attack open a set-piece phase (yards). */
   SET_PIECE_FK_ZONE: 40,
 } as const;

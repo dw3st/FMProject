@@ -166,7 +166,9 @@ describe("slot roles", () => {
     const stGoals = goals.get("h-p9") ?? 0;
     const others = [...goals.entries()].filter(([id]) => id !== "h-p9").map(([, g]) => g);
     expect(stGoals).toBeGreaterThan(0);
-    for (const g of others) expect(stGoals).toBeGreaterThan(g * 3);
+    // Centre-backs head in set pieces (Etapa 14: HEADER_LINE_WEIGHT DEF ≈ FWD), so the margin over a
+    // defender slot is smaller than before; the ST slot still outscores every other slot clearly.
+    for (const g of others) expect(stGoals).toBeGreaterThan(g * 1.5);
   });
 
   test("vagas puladas não desalinham os papéis", () => {
