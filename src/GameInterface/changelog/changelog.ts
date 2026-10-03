@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.1.3",
+    date: "2026-10-03",
+    items: [
+      {
+        pt: "Novo painel inicial: próximo jogo e últimos resultados, tabela da liga, alertas (lesões, suspensões, cansaço, contratos, base), destaques da temporada, mensagens recentes e finanças da semana.",
+        en: "New home dashboard: next match and recent results, league table, alerts (injuries, bans, fatigue, contracts, academy), season highlights, recent messages and the week's finances.",
+      },
+      {
+        pt: "Painel e Elenco agora são abas separadas no menu: a tabela completa do elenco fica no Elenco.",
+        en: "Dashboard and Squad are now separate menu tabs: the full squad table lives in Squad.",
+      },
+    ],
+  },
+  {
     version: "3.1.2",
     date: "2026-10-03",
     items: [
