@@ -1,6 +1,6 @@
 # Bolas paradas (motor) — escanteios, faltas diretas e barreira, faltas cruzadas, lateral, cobradores
 
-Spec: `docs/superpowers/specs/2026-10-02-set-pieces-design.md`. Etapa 14, versão **2.10**. Depende das
+Spec: `docs/superpowers/specs/2026-10-02-set-pieces-design.md`. Etapa 14, versão **3.0**. Depende das
 Etapas 12 (`fouls.md`: tiro livre, pênalti) e 13 (`aerial.md`: bola alta, disputa aérea, cabeçada).
 O posicionamento estático por formação (layouts de `SetPieceLayouts.ts`) continua em `set-pices.md`.
 

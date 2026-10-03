@@ -886,7 +886,7 @@ Mundo atual, `collect <liga> 200 2 --fitness 88` (400 jogos de motor cada), cons
 
 Ambas dentro de ±10% (ruído do motor ±3,6% / ±3,3%; rms 5,5%). O desvio antigo (Bundesliga −17,5%, Serie A −9,7%) não se reproduz no mundo atual, então nenhuma constante foi alterada.
 
-### Bolas paradas no quickSim (Etapa 14, 2.10)
+### Bolas paradas no quickSim (Etapa 14, 3.0)
 
 `rollSetPieces` (`quickSim.ts`, último sorteio da partida): escanteios por Poisson
 (`CORNERS_PER_SIDE` 3,24), tiros livres = faltas do adversário − pênaltis a favor, chutes de falta

@@ -195,7 +195,7 @@ If you want, next we can define:
 
 ---
 
-## Estado atual (Etapa 14, 2.10)
+## Estado atual (Etapa 14, 3.0)
 
 Este documento descreve os **layouts fixos por formação** (`SetPieceLayouts.ts`), que continuam
 valendo para saída de bola, tiro de meta, lateral, impedimento e o resto do campo na falta direta.
