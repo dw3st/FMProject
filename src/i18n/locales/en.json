@@ -377,7 +377,8 @@
     "training": "Training",
     "restDay": "Rest Day",
     "vsOpponent": "vs {{opponent}}",
-    "changelog": "What's new"
+    "changelog": "What's new",
+    "dashboard": "Dashboard"
   },
   "settings": {
     "title": "Settings",
@@ -1521,6 +1522,57 @@
       "contract": "Contract",
       "suspendedMatches_one": "Suspended for the next match",
       "suspendedMatches_other": "Suspended for the next {{count}} matches"
+    },
+    "home": {
+      "title": "Dashboard",
+      "nextMatch": "Next match",
+      "lastResults": "Last 5",
+      "noResults": "No matches played yet",
+      "form": {
+        "W": "W",
+        "D": "D",
+        "L": "L"
+      },
+      "formLong": {
+        "W": "Win",
+        "D": "Draw",
+        "L": "Loss"
+      },
+      "viewPreview": "View preview",
+      "prepareLineup": "Lineup",
+      "inDays_one": "In {{count}} day",
+      "inDays_other": "In {{count}} days",
+      "fullTable": "Full table",
+      "noTable": "No table yet",
+      "attentionTitle": "Attention",
+      "allGood": "All good",
+      "attention": {
+        "injured": "{{name}} injured ({{severity}}), back on {{date}}",
+        "suspended_one": "{{name}} suspended for the next match",
+        "suspended_other": "{{name}} suspended for {{count}} matches",
+        "lowFitness": "{{name}} tired: fitness {{fitness}}",
+        "lowFitnessGroup": "{{count}} tired players: {{names}}…",
+        "contract": "{{name}}'s contract ends on {{date}}",
+        "contractGroup": "{{count}} contracts end this season: {{names}}…",
+        "youthIntake_one": "New academy intake: {{count}} youngster",
+        "youthIntake_other": "New academy intake: {{count}} youngsters"
+      },
+      "highlights": "Highlights",
+      "seeStats": "Stats",
+      "highlightsPreseason": "No matches yet: the best players in the squad.",
+      "highlightLine": "{{apps}} apps · {{goals}} G · {{assists}} A",
+      "ageLine": "{{age}} years old",
+      "rating": "Rating",
+      "overall": "OVR",
+      "inbox": "Inbox",
+      "openInbox": "Open",
+      "noMessages": "No messages",
+      "weekFinances": "Week's finances",
+      "weekOf": "Week of {{date}}",
+      "income": "Income",
+      "expenses": "Expenses",
+      "weekNet": "Week balance",
+      "balance": "Cash"
     }
   },
   "squadScreen": {

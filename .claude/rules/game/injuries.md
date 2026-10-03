@@ -226,7 +226,7 @@ já recalibrado do motor).
 
 ## 6. Telas
 
-- **Elenco** (`Dashboard/SquadTable.tsx`, `SquadRosterTable.tsx`, `Dashboard/PlayerCard.tsx`):
+- **Elenco** (`SquadRosterTable.tsx`, `Dashboard/PlayerCard.tsx`):
   status "lesionado" (`playerHelpers.ts` → `PlayerRow.status === "injured"`, já existia o
   indicador de fôlego/suspensão; ver `.claude/rules/game/fitness.md`), com gravidade (`sev{Light,
   Medium,Severe}`) e dias para voltar (`injury.daysLeft`, calculado por `daysBetween(currentDate,

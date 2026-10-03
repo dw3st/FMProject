@@ -377,7 +377,8 @@
     "training": "Treino",
     "restDay": "Dia de Folga",
     "vsOpponent": "vs {{opponent}}",
-    "changelog": "Novidades"
+    "changelog": "Novidades",
+    "dashboard": "Painel"
   },
   "settings": {
     "title": "Configurações",
@@ -1521,6 +1522,57 @@
       "contract": "Contrato",
       "suspendedMatches_one": "Suspenso para o próximo jogo",
       "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos"
+    },
+    "home": {
+      "title": "Painel",
+      "nextMatch": "Próximo jogo",
+      "lastResults": "Últimos 5",
+      "noResults": "Nenhum jogo disputado ainda",
+      "form": {
+        "W": "V",
+        "D": "E",
+        "L": "D"
+      },
+      "formLong": {
+        "W": "Vitória",
+        "D": "Empate",
+        "L": "Derrota"
+      },
+      "viewPreview": "Ver prévia",
+      "prepareLineup": "Escalação",
+      "inDays_one": "Em {{count}} dia",
+      "inDays_other": "Em {{count}} dias",
+      "fullTable": "Tabela completa",
+      "noTable": "Tabela ainda indisponível",
+      "attentionTitle": "Atenção",
+      "allGood": "Tudo em ordem",
+      "attention": {
+        "injured": "{{name}} lesionado ({{severity}}), volta em {{date}}",
+        "suspended_one": "{{name}} suspenso para o próximo jogo",
+        "suspended_other": "{{name}} suspenso por {{count}} jogos",
+        "lowFitness": "{{name}} cansado: fôlego {{fitness}}",
+        "lowFitnessGroup": "{{count}} jogadores cansados: {{names}}…",
+        "contract": "Contrato de {{name}} termina em {{date}}",
+        "contractGroup": "{{count}} contratos terminam nesta temporada: {{names}}…",
+        "youthIntake_one": "Nova safra da base: {{count}} jovem",
+        "youthIntake_other": "Nova safra da base: {{count}} jovens"
+      },
+      "highlights": "Destaques",
+      "seeStats": "Estatísticas",
+      "highlightsPreseason": "Nenhum jogo ainda: os melhores do elenco.",
+      "highlightLine": "{{apps}} jogos · {{goals}} G · {{assists}} A",
+      "ageLine": "{{age}} anos",
+      "rating": "Nota",
+      "overall": "OVR",
+      "inbox": "Caixa de entrada",
+      "openInbox": "Abrir",
+      "noMessages": "Nenhuma mensagem",
+      "weekFinances": "Finanças da semana",
+      "weekOf": "Semana de {{date}}",
+      "income": "Receitas",
+      "expenses": "Despesas",
+      "weekNet": "Saldo da semana",
+      "balance": "Caixa"
     }
   },
   "squadScreen": {

@@ -5,7 +5,7 @@ import { isHighLoad } from "@/GameInterface/playerHelpers";
 /**
  * High-load warning icon — shown only when `load ≥ 70%` of `FITNESS.LOAD_HIGH`
  * (`src/Domain/fitness/fitnessConfig.ts`). Native `title` tooltip, same pattern as
- * `Dashboard/SquadTable.tsx`'s `FitStatusIcon`. Renders nothing below the threshold.
+ * `SquadRosterTable.tsx`'s `FitStatusIcon`. Renders nothing below the threshold.
  */
 export function LoadIndicator({
   load,
