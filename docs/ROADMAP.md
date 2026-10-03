@@ -86,7 +86,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 12 ✅ | 4.1 Faltas e cartões (2.7) | #17 impedimento visível, faltas, cartões e pênaltis + #19 resumo ao vivo do adversário | Faltas e cartões entram no mesmo painel ao vivo que substitui a escalação do adversário |
 | 13 ✅ | 4.2 Jogo aéreo (2.8) | — | Cruzamentos, disputas aéreas, saída do goleiro, cabeçadas e lançamentos longos (peso por `build_up`); quickSim com gols de cabeça; `/test` (cenário `cross-to-box`, overlay Aerial), `/lab` e `scripts/aerial-calibrate.ts` |
 | 14 | 4.3 Bolas paradas | — | |
-| 15 | 4.4 Treino de estilos de jogo | #43 | Treinar estilos (bola longa, linha de impedimento, linha alta, posse curta, pressão alta com mais desgaste) que dão bônus na partida, combinados com a mentalidade |
+| 15 ✅ | 4.4 Treino de estilos de jogo (2.9) | #43 (fechado na 2.9) | Treinar estilos (bola longa, linha de impedimento, linha alta, posse curta, pressão alta com mais desgaste) que dão bônus na partida, combinados com a mentalidade |
 | 16 | Polimento | #44 | Mapa-múndi clicável para escolher o país no novo jogo; rostos gerados dos jogadores (`facesjs`, MIT, estilo Football GM: determinísticos pelo id, com a camisa do clube; fotos reais da ESPN descartadas por direitos de imagem); aba "Em breve" nas novidades |
 
 **Com data:** #11 (ligas de ano civil com a composição de 2026) entra assim que a ESPN virar essas
