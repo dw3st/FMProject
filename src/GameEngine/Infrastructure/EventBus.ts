@@ -63,7 +63,7 @@ export interface GameEvents {
     outcome:   'header' | 'knockdown' | 'control' | 'clearance' | 'claim' | 'punch' | 'blocked' | 'loose' | 'offside' | 'foul';
   };
   /** Two players contested a high ball in the air (best contestant of each team). */
-  aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number };
+  aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
   /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
   gkClaim: { keeperId: number; claimed: boolean; chance: number };
   /** A header at goal (also emitted as a `shot`). */

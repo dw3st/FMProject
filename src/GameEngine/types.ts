@@ -396,12 +396,14 @@ export interface GamePlayer {
  *                 the air at the landing point (aerial duel / keeper claim / header).
  *   'long_ball' — high ball over the line to a forward or the space behind; landing resolved
  *                 like a cross (aerial duel if contested, else first touch / loose ball).
+ *   'clearance' — headed clearance / keeper punch / block: a short high ball away from goal, the
+ *                 "second ball" contested where it lands (never counted as a pass or long ball).
  */
-export type PassKind = 'regular' | 'through' | 'cross' | 'long_ball';
+export type PassKind = 'regular' | 'through' | 'cross' | 'long_ball' | 'clearance';
 
 /** True for the high-ball kinds resolved in the air at the landing point. */
-export function isAerialKind(kind: PassKind): kind is 'cross' | 'long_ball' {
-  return kind === 'cross' || kind === 'long_ball';
+export function isAerialKind(kind: PassKind): kind is 'cross' | 'long_ball' | 'clearance' {
+  return kind === 'cross' || kind === 'long_ball' || kind === 'clearance';
 }
 
 export interface PassState {

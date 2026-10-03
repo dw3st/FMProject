@@ -53,8 +53,10 @@ describe("isCrossPosition", () => {
   test("wide in the own half is not", () => {
     expect(isCrossPosition({ ...lw, x: 40, y: 8 })).toBe(false);
   });
-  test("near the byline, just wide of the posts, counts", () => {
-    expect(isCrossPosition({ ...lw, x: PITCH_LENGTH - 5, y: GOAL_Y_MIN - 4 })).toBe(true);
+  test("inside the penalty area only a byline cut-back wide of the six-yard box counts", () => {
+    expect(isCrossPosition({ ...lw, x: PITCH_LENGTH - 12, y: 20 })).toBe(false);
+    expect(isCrossPosition({ ...lw, x: PITCH_LENGTH - 2, y: 20 })).toBe(true);
+    expect(isCrossPosition({ ...lw, x: PITCH_LENGTH - 2, y: GOAL_Y_MIN - 4 })).toBe(false);
   });
   test("a goalkeeper never crosses", () => {
     const gk = find(s, "A", "GK");
@@ -124,16 +126,30 @@ describe("cross targets", () => {
     const lw = find(s, "A", "LW");
     const st = find(s, "A", "ST");
     s = clearTeam(clearTeam(s, "A", [lw.id, st.id]), "B");
-    s = place(place(s, lw.id, PITCH_LENGTH - 15, 6), st.id, PITCH_LENGTH - A.NEAR_POST_DEPTH, GOAL_Y_MIN);
+    s = place(place(s, lw.id, PITCH_LENGTH - 25, 6), st.id, PITCH_LENGTH - A.NEAR_POST_DEPTH, GOAL_Y_MIN);
     const gk = find(s, "B", "GK");
     const holder = () => s.players.find(p => p.id === lw.id)!;
-    s = place(s, gk.id, PITCH_LENGTH - 1, 37);
+    s = place(s, gk.id, PITCH_LENGTH - 1, 55);
     const away = evaluateCrossTargets(holder(), s.players).find(t => t.kind === "near_post")!;
     s = place(s, gk.id, PITCH_LENGTH - 5, GOAL_Y_MIN + 1);
     const near = evaluateCrossTargets(holder(), s.players).find(t => t.kind === "near_post")!;
     expect(away.gkClaim).toBe(false);
     expect(near.gkClaim).toBe(true);
     expect(near.raw).toBeCloseTo(Math.max(0, away.raw - A.CROSS_GK_PENALTY), 6);
+  });
+});
+
+describe("cross depth", () => {
+  test("a cross from close to the line is scaled down (the carrier has better options there)", () => {
+    let s = baseState();
+    const lw = find(s, "A", "LW");
+    const st = find(s, "A", "ST");
+    s = clearTeam(clearTeam(s, "A", [lw.id, st.id]), "B");
+    s = place(s, st.id, PITCH_LENGTH - 12, 37);
+    const deep = evaluateCrossTargets({ ...s.players.find(p => p.id === lw.id)!, x: PITCH_LENGTH - 25, y: 6 }, s.players)[0]!;
+    const near = evaluateCrossTargets({ ...s.players.find(p => p.id === lw.id)!, x: PITCH_LENGTH - 10, y: 6 }, s.players)[0]!;
+    expect(deep.raw).toBeGreaterThan(0);
+    expect(near.raw).toBeCloseTo(deep.raw * A.CROSS_NEAR_LINE_MULT, 6);
   });
 });
 

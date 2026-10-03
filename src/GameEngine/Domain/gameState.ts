@@ -2126,42 +2126,46 @@ function offsideIdsAt(holder: GamePlayer, players: GamePlayer[]): number[] {
 }
 
 /**
- * Ball knocked away by `player` (defensive header, keeper punch, block): loose ball from `origin`,
- * travelling away from his own goal with a random lateral spread. The clearing player is the last
- * toucher; chasers of both teams are committed to it.
+ * Ball knocked away by `player` (defensive header, keeper punch, block): a short high ball
+ * (kind `clearance`) from `origin`, `dist` yards away from his own goal with a random lateral
+ * spread — the second ball, contested where it lands. The clearing player is the last toucher;
+ * chasers of both teams are committed to the landing point.
  */
-function clearanceLooseBall(
+function clearanceBall(
   s: GameState,
   player: GamePlayer,
   origin: { x: number; y: number },
-  speed: number,
+  dist: number,
   rng: () => number,
 ): GameState {
   const a = (rng() * 2 - 1) * AERIAL_CONFIG.CLEARANCE_SPREAD;
-  const vx = player.attackDir * Math.cos(a) * speed;
-  const vy = Math.sin(a) * speed;
-  const x = Math.max(0.5, Math.min(PITCH_LENGTH - 0.5, origin.x));
-  const y = Math.max(0.5, Math.min(PITCH_WIDTH - 0.5, origin.y));
+  const toX = Math.max(1, Math.min(PITCH_LENGTH - 1, origin.x + player.attackDir * Math.cos(a) * dist));
+  const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, origin.y + Math.sin(a) * dist));
   const prevHolderId = s.ballHolderId;
+  // The clearing player is at the ball: the flight starts from him.
+  const players = s.players.map(p => (p.id === player.id ? { ...p, x: origin.x, y: origin.y, targetPosition: { ...origin } } : p));
   const st = onPossessionTransfer({
     ...s,
-    pass: null,
+    players,
+    pass: {
+      fromId: player.id, toId: null, toX, toY, kind: 'clearance', t: 0,
+      distance: Math.hypot(toX - origin.x, toY - origin.y),
+      receiverOffside: false, intendedRunnerId: null, aerialOffsideIds: [],
+    },
+    looseBall: null,
     setPiece: null,
     ballHolderId: player.id,
     possessionTime: 0,
     lastPasserId: null,
-    looseBall: {
-      x, y, vx, vy,
-      startTime: s.matchTime,
-      fromPasserId: player.id,
-      fromTeamLastTouch: player.team,
-      intendedRunnerId: null,
-      receiverOffside: false,
-      source: 'clearance',
-    },
   }, prevHolderId);
-  return commitLooseBallChasers(st, player.id, x, y, player.team);
+  return commitLooseBallChasers(st, player.id, toX, toY, player.team, {
+    maxPerTeam: AERIAL_CONFIG.MAX_CHASERS_PER_TEAM,
+    etaHorizon: AERIAL_CONFIG.CHASE_ETA_HORIZON,
+    keeperSmallBoxOnly: true,
+  });
 }
+
+const uniform = (rng: () => number, lo: number, hi: number) => lo + rng() * (hi - lo);
 
 /** Offside free kick for the team defending against `offender` at `at` (aerial path). */
 function aerialOffsideFreeKick(s: GameState, offender: GamePlayer, at: { x: number; y: number }): GameState {
@@ -2231,7 +2235,7 @@ export function startAerialBall(
       const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
       return resolveOOBSetPiece(s0, 'corner', holder.team, exitX, holder.y, blocker.id, 'clearance').state;
     }
-    return clearanceLooseBall(s0, blocker, { x: holder.x, y: holder.y }, C.CLEARANCE_SPEED * 0.6, rng);
+    return clearanceBall(s0, blocker, { x: holder.x, y: holder.y }, uniform(rng, C.BLOCK_DIST_MIN, C.BLOCK_DIST_MAX), rng);
   }
 
   const pass: PassState = {
@@ -2250,6 +2254,12 @@ export function startAerialBall(
     etaHorizon: C.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
   });
+}
+
+/** Chance of controlling a high ball at first touch (else it drops loose): base + first touch. */
+function highBallControlChance(p: GamePlayer): number {
+  const C = AERIAL_CONFIG;
+  return Math.max(0, Math.min(1, C.CONTROL_BASE + C.CONTROL_TOUCH * p.runtimeStats.withBall.firstTouch));
 }
 
 /** A header at goal by `headerId` (`aerial.md`): own xG (× HEADER_XG_MULT), aim from heading. */
@@ -2289,14 +2299,16 @@ function startHeader(state: GameState, headerId: number): GameState {
 export function resolveAerialLanding(state: GameState, rng: () => number = Math.random): TickResult {
   const C = AERIAL_CONFIG;
   const pass = state.pass!;
-  const kind = pass.kind as 'cross' | 'long_ball';
+  const kind = pass.kind as 'cross' | 'long_ball' | 'clearance';
   const point = { x: pass.toX, y: pass.toY };
   const passer = state.players.find(p => p.id === pass.fromId);
   const passerTeam: TeamId = passer?.team ?? state.players.find(p => p.id === state.ballHolderId)?.team ?? 'A';
   const defTeam: TeamId = passerTeam === 'A' ? 'B' : 'A';
   const done = (st: GameState, passCompleted = false): TickResult => ({ state: st, passCompleted, tackled: false, goalScored: null });
-  const resolved = (winnerId: number | null, completed: boolean, outcome: import('@/GameEngine/Infrastructure/EventBus').GameEvents['aerialResolved']['outcome']) =>
-    gameBus.emit('aerialResolved', { kind, fromId: pass.fromId, winnerId, completed, outcome });
+  const resolved = (winnerId: number | null, completed: boolean, outcome: import('@/GameEngine/Infrastructure/EventBus').GameEvents['aerialResolved']['outcome']) => {
+    // A clearance is not a pass: only crosses / long balls report their outcome.
+    if (kind !== 'clearance') gameBus.emit('aerialResolved', { kind, fromId: pass.fromId, winnerId, completed, outcome });
+  };
   const dist = (p: GamePlayer) => Math.hypot(p.x - point.x, p.y - point.y);
 
   let s: GameState = { ...state, pass: null };
@@ -2334,7 +2346,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         }, prevHolderId));
       }
       resolved(gk.id, false, 'punch');
-      return done(clearanceLooseBall(s, gk, point, C.PUNCH_SPEED, rng));
+      return done(clearanceBall(s, gk, point, uniform(rng, C.PUNCH_DIST_MIN, C.PUNCH_DIST_MAX), rng));
     }
   }
 
@@ -2352,6 +2364,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     gameBus.emit('aerialDuel', {
       winnerId: winner.id, loserId: loser.id, x: point.x, y: point.y,
       probWinner: winner.id === a.id ? probA : 1 - probA,
+      kind,
     });
     debugLog('aerial', `Aerial duel: ${a.name} vs ${d.name} → ${winner.name} (P(att)=${probA.toFixed(2)})`, {
       playerId: winner.id, data: { probA },
@@ -2395,6 +2408,38 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     });
   }
 
+  /** Bad first touch: the ball bounces off `p` and drops loose next to him (reported on pickup). */
+  const dropLoose = (st: GameState, p: GamePlayer): GameState => {
+    const a = rng() * 2 * Math.PI;
+    const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED;
+    debugLog('aerial', `${p.name} fails to control it — loose ball`, { playerId: p.id });
+    return {
+      ...st,
+      looseBall: {
+        x: point.x, y: point.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        startTime: st.matchTime,
+        fromPasserId: pass.fromId,
+        fromTeamLastTouch: passerTeam,
+        intendedRunnerId: null,
+        receiverOffside: false,
+        source: kind,
+      },
+    };
+  };
+
+  // ── Second ball off a clearance: whoever wins it plays on ─────────────────
+  if (kind === 'clearance') {
+    debugLog('aerial', `Second ball won by ${winner.name}`, { playerId: winner.id });
+    const prevHolderId = s.ballHolderId;
+    return done(onPossessionTransfer({
+      ...s,
+      ballHolderId: winner.id,
+      possessionTime: winner.team === passerTeam ? s.possessionTime : 0,
+      lastPasserId: null,
+      players: s.players.map(p => (p.id === winner!.id ? { ...p, justReceivedTicks: 4 } : p)),
+    }, prevHolderId));
+  }
+
   // ── Attacking team wins the first contact ─────────────────────────────────
   if (winner.team === passerTeam) {
     if ((pass.aerialOffsideIds ?? []).includes(winner.id)) {
@@ -2433,6 +2478,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         },
       });
     }
+    if (rng() >= highBallControlChance(w)) return done(dropLoose(s, w));
     resolved(w.id, true, 'control');
     return done({
       ...s,
@@ -2451,8 +2497,9 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
       const exitX = ownGoalX === 0 ? -1 : PITCH_LENGTH + 1;
       return resolveOOBSetPiece(s, 'corner', passerTeam, exitX, point.y, winner.id, 'clearance');
     }
-    return done(clearanceLooseBall(s, winner, point, C.CLEARANCE_SPEED, rng));
+    return done(clearanceBall(s, winner, point, uniform(rng, C.CLEARANCE_DIST_MIN, C.CLEARANCE_DIST_MAX), rng));
   }
+  if (rng() >= highBallControlChance(winner)) return done(dropLoose(s, winner));
   resolved(winner.id, false, 'control');
   const prevHolderId = s.ballHolderId;
   return done(onPossessionTransfer({
