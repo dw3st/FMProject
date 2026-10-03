@@ -4,7 +4,7 @@ import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
 import { SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
-  attackingBoxPositions, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick,
+  attackingBoxPositions, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
   pickSetPieceTaker, wallBlockChance, wallSize, wallSpots, type SetPieceDuty,
 } from '@/GameEngine/Domain/SetPieces';
 import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
@@ -927,6 +927,12 @@ function applyDirectFreeKick(
   if (aLay) out = applySetPieceToTeam(out, taker.team, aLay.freeKick_Attack);
   if (oLay) out = applySetPieceToTeam(out, oppTeam, oLay.freeKick_Defend);
   const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
+  // The 10-yard rule for the defending layout.
+  out = out.map(p => {
+    if (p.team !== oppTeam) return p;
+    const q = keepDistanceFromBall(p, pos, goalX);
+    return q === p || (q.x === p.x && q.y === p.y) ? p : { ...p, x: q.x, y: q.y, targetPosition: { ...q } };
+  });
   const spots = wallSpots(pos, goalX, wallSize(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX)));
   const defOut = out.filter(p => p.team === oppTeam && p.role !== 'GK');
   const aerialBest = new Set([...defOut].sort((a, b) => aerialAbility(b) - aerialAbility(a)).slice(0, 3).map(p => p.id));
