@@ -79,6 +79,17 @@ export interface PlayerStats {
   longBalls:                number;
   /** Long balls whose first contact was won by the passing team. */
   longBallsCompleted:       number;
+  // ── Set pieces (`.claude/rules/game-engine/set-pieces-play.md`) ──────────────
+  /** Corners won by the team, credited to the taker. */
+  corners:                  number;
+  /** Free kicks won from fouls (not offside), credited to the taker. */
+  freeKicks:                number;
+  /** Direct free kicks at goal (also counted in `shots`). */
+  directFreeKickShots:      number;
+  /** Goals scored straight from a direct free kick (also in `goals` and `setPieceGoals`). */
+  directFreeKickGoals:      number;
+  /** Goals from a set piece: corner, free kick in the attacking third, penalty (also in `goals`). */
+  setPieceGoals:            number;
 }
 
 export interface TeamStats extends PlayerStats {
@@ -140,6 +151,11 @@ function emptyStats(): PlayerStats {
     headerGoals:              0,
     longBalls:                0,
     longBallsCompleted:       0,
+    corners:                  0,
+    freeKicks:                0,
+    directFreeKickShots:      0,
+    directFreeKickGoals:      0,
+    setPieceGoals:            0,
   };
 }
 
@@ -196,6 +212,8 @@ gameBus.on('shot',          e => { const s = get(e.player); s.shots++; s.xg += e
 gameBus.on('goalScored',    e => {
   get(e.scorerId).goals++;
   if (e.header) get(e.scorerId).headerGoals++;
+  if (e.setPiece) get(e.scorerId).setPieceGoals++;
+  if (e.setPiece === 'direct_free_kick') get(e.scorerId).directFreeKickGoals++;
   if (e.assistId != null) get(e.assistId).assists++;
   notify();
 });
@@ -298,6 +316,11 @@ gameBus.on('aerialDuel', e => {
 });
 gameBus.on('header', e => { get(e.player).headers++; notify(); });
 
+// ── Set-piece stats ───────────────────────────────────────────────────────────
+gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
+gameBus.on('freeKickAwarded', e => { get(e.takerId).freeKicks++; notify(); });
+gameBus.on('directFreeKick',  e => { get(e.player).directFreeKickShots++; notify(); });
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -369,6 +392,11 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.headerGoals              += stats.headerGoals;
     result.longBalls                += stats.longBalls;
     result.longBallsCompleted       += stats.longBallsCompleted;
+    result.corners                  += stats.corners;
+    result.freeKicks                += stats.freeKicks;
+    result.directFreeKickShots      += stats.directFreeKickShots;
+    result.directFreeKickGoals      += stats.directFreeKickGoals;
+    result.setPieceGoals            += stats.setPieceGoals;
   }
   return result;
 }

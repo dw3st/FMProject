@@ -141,8 +141,12 @@ export const QUICK_SIM_CONFIG = {
    * and long balls (`bun scripts/aerial-calibrate.ts`, PL + Championship, 1200 matches each): GK ×0.53
    * (balanced keepers go long on ~40% of restarts), DEF ×0.86, MID ×0.87, FWD ×0.80 — was GK 2.159,
    * DEF 2.101, MID 2.338, FWD 1.128.
+   * Etapa 14 (set pieces): scaled again by the engine's passes per slot after / before
+   * (`bun scripts/aerial-calibrate.ts`, PL 800 + Championship 600): GK ×0.62 (saves parried for a
+   * corner replace goal kicks), DEF ×0.93, MID ×0.89, FWD ×0.955 — was GK 1.145, DEF 1.811,
+   * MID 2.038, FWD 0.906.
    */
-  PASSES_PER_MATCH:        { GK: 1.145, DEF: 1.811, MID: 2.038, FWD: 0.906 } as Record<LineGroup, number>,
+  PASSES_PER_MATCH:        { GK: 0.71, DEF: 1.684, MID: 1.814, FWD: 0.865 } as Record<LineGroup, number>,
   /** Weak teams pass less in the engine, mostly in midfield (Kenya MID 1.32 vs Premier 2.36 per slot). */
   PASS_LEVEL_EXPONENT:     { GK: 0.15, DEF: 0.4, MID: 0.96, FWD: 0.67 } as Record<LineGroup, number>,
   /** Engine completion is ~97.5% (only interceptions/offside fail a regular pass); passing barely moves it. */
@@ -216,15 +220,36 @@ export const QUICK_SIM_CONFIG = {
    * HEADER_GOAL_SHARE of the (non-penalty) goals already sampled become header goals, re-attributed
    * by HEADER_LINE_WEIGHT × (0.5 + heading/10) — the score never changes.
    */
-  HEADER_GOAL_SHARE: 0.105,
-  /** Engine header goals per starter slot: MID ≈ 0.13 × FWD, DEF and GK ≈ 0 (no set pieces yet). */
-  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.01, MID: 0.11, FWD: 1.0 } as Record<LineGroup, number>,
-  CROSSES_PER_SIDE: 5.5,
-  CROSS_COMPLETION: 0.21,
-  LONG_BALLS_PER_SIDE: 3.1,
+  /** Etapa 14 (set pieces): 0.105 → 0.19 (corners and crossed free kicks are headed in). */
+  HEADER_GOAL_SHARE: 0.195,
+  /**
+   * Engine header goals per starter slot with set pieces: DEF ≈ FWD (centre-backs go up for corners),
+   * MID ≈ 0.22 × FWD. Was DEF 0.01, MID 0.11 before set pieces.
+   */
+  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.9, MID: 0.22, FWD: 1.0 } as Record<LineGroup, number>,
+  /** Set-piece deliveries (corners, crossed free kicks) count as crosses: 5.5 → 8.1 per side. */
+  CROSSES_PER_SIDE: 8.1,
+  CROSS_COMPLETION: 0.15,
+  LONG_BALLS_PER_SIDE: 2.85,
   LONG_BALL_COMPLETION: 0.52,
-  /** Distinct aerial duels per match (both teams contest each one). */
-  AERIAL_DUELS_PER_MATCH: 9.8,
+  /** Distinct aerial duels per match (both teams contest each one). 9.8 → 14.5 with set pieces. */
+  AERIAL_DUELS_PER_MATCH: 14.5,
   /** Who wins a team's duels (engine duels won per starter slot): weight × (0.5 + heading/10). */
-  AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.43, MID: 0.4, FWD: 0.65 } as Record<LineGroup, number>,
+  AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.95, MID: 0.44, FWD: 0.72 } as Record<LineGroup, number>,
+
+  /**
+   * Set pieces (Etapa 14, `.claude/rules/game-engine/set-pieces-play.md`), from the full engine's
+   * per-match means (`bun scripts/setpiece-calibrate.ts`). Corners and direct free-kick shots by
+   * Poisson; free kicks = the opponent's fouls minus its penalties. SET_PIECE_GOAL_SHARE of all goals
+   * are non-penalty set-piece goals (corners, free kicks — DIRECT_FK_GOAL_SHARE of all goals are
+   * direct free kicks, moved to the best finisher with no assist); a set-piece goal that is not
+   * already a header is re-attributed by SET_PIECE_LINE_WEIGHT × (0.5 + heading/10). Penalty goals
+   * count as set-piece goals too. The score never changes.
+   */
+  CORNERS_PER_SIDE: 3.12,
+  DIRECT_FK_SHOTS_PER_SIDE: 0.13,
+  SET_PIECE_GOAL_SHARE: 0.125,
+  DIRECT_FK_GOAL_SHARE: 0.038,
+  /** Non-header set-piece goals: second balls and edge-of-the-box shots, mostly forwards and midfielders. */
+  SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.5, MID: 0.5, FWD: 1.0 } as Record<LineGroup, number>,
 } as const;

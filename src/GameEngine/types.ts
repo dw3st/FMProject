@@ -129,7 +129,21 @@ export interface SetPiece {
   countdown: number;
   /** Optional ball location for restarts that happen away from centre (offside). */
   position?: { x: number; y: number };
+  /**
+   * Set-piece play (`set-pieces-play.md`): `box` = corner / crossed free kick with both teams in the
+   * box layout (the taker crosses or plays short); `direct` = direct free kick at goal over a wall.
+   * Absent = a plain restart.
+   */
+  variant?: 'box' | 'direct';
+  /** Direct free kick: engine ids of the defenders in the wall. */
+  wallIds?: number[];
 }
+
+/** What a set-piece goal came from (`GameState.setPiecePhase`, `goalScored.setPiece`). */
+export type SetPieceGoalKind = 'corner' | 'free_kick' | 'direct_free_kick' | 'penalty';
+
+/** Manager's set-piece takers (roster ids); absent = automatic (`Domain/SetPieces.pickSetPieceTaker`). */
+export interface SetPieceTakers { corners?: string; freeKicks?: string; penalties?: string }
 
 // ── Player stats ────────────────────────────────────────────────────────────
 
@@ -445,6 +459,11 @@ export interface PassState {
   aerialOffsideIds?: number[];
   /** High ball played by a set-piece taker (free kick / goal kick): the whistle waits for it to land. */
   fromSetPiece?: boolean;
+  /**
+   * The set piece's `variant` when it was played from one (`set-pieces-play.md`): only a `box`
+   * delivery (corner / crossed free kick with both teams set) gets the set-piece rules in the air.
+   */
+  setPieceVariant?: 'box' | 'direct';
 }
 
 /**
@@ -504,6 +523,8 @@ export interface ShotState {
   xg: number;
   /** A header (`aerial.md`): heading replaces finishing in the resolution. */
   header?: boolean;
+  /** A direct free kick (`set-pieces-play.md`): `xg` is the shot's xG before the wall. */
+  freeKick?: boolean;
 }
 
 export interface GameState {
@@ -600,6 +621,18 @@ export interface GameState {
    * re-evaluate after a turnover.
    */
   lastIntentEvalTime?: number;
+
+  /**
+   * Manager-chosen set-piece takers per team (roster ids). Absent / unavailable = automatic.
+   * The AI never sets this.
+   */
+  setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
+  /**
+   * Open set-piece phase: a goal by `team` before `until` (match-time, game-seconds) counts as a
+   * set-piece goal of `kind`. Opened by a corner, a free kick in the attacking third or a penalty;
+   * closed when the other team wins the ball, at a kickoff and at half-time.
+   */
+  setPiecePhase?: { team: TeamId; kind: SetPieceGoalKind; until: number } | null;
 
   /**
    * Cached through-ball candidate cells for the current ball holder. Refreshed

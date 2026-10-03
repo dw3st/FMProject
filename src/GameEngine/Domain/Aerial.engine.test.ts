@@ -133,6 +133,26 @@ describe("landing resolution", () => {
     expect(s.shot?.header).toBe(true);
   });
 
+  test("set-piece rules in the air apply only to a box delivery (corner / crossed free kick)", () => {
+    const { s: s0 } = landing({ x: 106, y: 37 });
+    const st = find(s0, "A", "ST");
+    const cb = find(s0, "B", "CB");
+    const gk = find(s0, "B", "GK");
+    const s = place(place(place(s0, st.id, 106.5, 37), cb.id, 105.5, 37), gk.id, 114, 50);
+    const probAtt = (pass: PassState) => {
+      const duels = collect("aerialDuel");
+      resolveAerialLanding({ ...s, pass }, seq(0.99, 0.5, 0.99, 0.99, 0.5, 0.5));
+      duels.off();
+      const d = duels.events[0]!;
+      return d.winnerId === st.id ? d.probWinner : 1 - d.probWinner;
+    };
+    const open = probAtt(s.pass!);
+    // A cross played from a quick / long-range free kick (no set layout): open-play rules.
+    expect(probAtt({ ...s.pass!, fromSetPiece: true })).toBeCloseTo(open, 6);
+    // A corner / crossed free kick: the set marker wins most duels.
+    expect(probAtt({ ...s.pass!, fromSetPiece: true, setPieceVariant: "box" })).toBeLessThan(open / 2);
+  });
+
   test("a defender winning in his box heads it clear — a second ball, no through-ball stats", () => {
     const { s: s0 } = landing({ x: 104, y: 37 });
     const st = find(s0, "A", "ST");

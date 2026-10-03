@@ -16,7 +16,7 @@ import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes } from '@/type
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
-import type { GameState, GamePlayer, Formation, KnockoutDecider } from '@/GameEngine/types';
+import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
 import { tickState, createMatchState, knockoutDecider } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
@@ -80,6 +80,8 @@ export interface SimulateMatchOptions {
 export interface TeamTactics {
   style: TacticalStyle;
   axesOverride?: Partial<TacticalAxes>;
+  /** Manager's set-piece takers (roster ids); absent = automatic (`set-pieces-play.md`). */
+  setPieceTakers?: SetPieceTakers;
   /** Style familiarity (`src/Domain/familiarity`); absent = neutral (no effect). */
   familiarity?: FamiliarityLevels;
 }
@@ -170,6 +172,9 @@ export function simulateMatch(
     presentationCountdown: 0,
     knockout:              options.knockout === true,
     ...(options.aggregate ? { aggregate: options.aggregate } : {}),
+    ...(options.tactics?.A.setPieceTakers || options.tactics?.B.setPieceTakers
+      ? { setPieceTakers: { A: options.tactics.A.setPieceTakers, B: options.tactics.B.setPieceTakers } }
+      : {}),
   };
 
   // Reset shared accumulators so live-game stats don't bleed in

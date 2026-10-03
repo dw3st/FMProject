@@ -279,6 +279,7 @@ export function MatchScreen() {
             },
           ),
           knockout: data.fixture.knockout === true,
+          ...(tactics.setPieceTakers ? { setPieceTakers: { A: tactics.setPieceTakers } } : {}),
           ...(data.fixture.aggregate
             ? { aggregate: data.fixture.home === data.mySquadId
                   ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }

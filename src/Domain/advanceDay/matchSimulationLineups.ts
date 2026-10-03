@@ -187,6 +187,7 @@ export function computeMatchSimulationLineups(
     style: t.tactical_style,
     axesOverride: t.axesOverride,
     familiarity: squadFamiliarityLevels(userSquad, t.tactical_style),
+    ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
   };
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 

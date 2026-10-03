@@ -166,7 +166,9 @@ describe("slot roles", () => {
     const stGoals = goals.get("h-p9") ?? 0;
     const others = [...goals.entries()].filter(([id]) => id !== "h-p9").map(([, g]) => g);
     expect(stGoals).toBeGreaterThan(0);
-    for (const g of others) expect(stGoals).toBeGreaterThan(g * 3);
+    // Centre-backs head in set pieces (Etapa 14: HEADER_LINE_WEIGHT DEF ≈ FWD), so the margin over a
+    // defender slot is smaller than before; the ST slot still outscores every other slot clearly.
+    for (const g of others) expect(stGoals).toBeGreaterThan(g * 1.5);
   });
 
   test("vagas puladas não desalinham os papéis", () => {
@@ -782,6 +784,40 @@ describe("quickSimMatch — aerial play", () => {
       others += r.score.home;
     }
     expect(stGoals / others).toBeGreaterThan(0.2);
+  });
+});
+
+describe("quickSimMatch — set pieces", () => {
+  test("set-piece and direct free-kick goals follow the engine shares; corners and free kicks are counted", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const n = 3000;
+    let goals = 0, setPiece = 0, penalties = 0, direct = 0, corners = 0;
+    for (let i = 0; i < n; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      for (const [side, other] of [["home", "away"], ["away", "home"]] as const) {
+        const t = r.teamStats[side];
+        const o = r.teamStats[other];
+        expect(t.setPieceGoals!).toBeGreaterThanOrEqual(t.penaltyGoals ?? 0);
+        expect(t.setPieceGoals!).toBeLessThanOrEqual(r.score[side]);
+        expect(t.directFreeKickGoals!).toBeLessThanOrEqual(t.directFreeKickShots!);
+        expect(t.freeKicks).toBe(Math.max(0, (o.fouls ?? 0) - (t.penaltiesAwarded ?? 0)));
+        setPiece += t.setPieceGoals!;
+        penalties += t.penaltyGoals ?? 0;
+        direct += t.directFreeKickGoals!;
+        corners += t.corners!;
+      }
+      goals += r.score.home + r.score.away;
+      // Set-piece goals move goals between players, never add any.
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+    }
+    expect((setPiece - penalties) / goals).toBeGreaterThan(C.SET_PIECE_GOAL_SHARE * 0.8);
+    expect((setPiece - penalties) / goals).toBeLessThan(C.SET_PIECE_GOAL_SHARE * 1.2);
+    expect(direct / goals).toBeGreaterThan(C.DIRECT_FK_GOAL_SHARE * 0.85);
+    expect(direct / goals).toBeLessThan(C.DIRECT_FK_GOAL_SHARE * 1.15);
+    expect(corners / n).toBeCloseTo(2 * C.CORNERS_PER_SIDE, 0);
   });
 });
 

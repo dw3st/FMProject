@@ -22,5 +22,10 @@ export function toMatchTeamStats(t: EngineTeamStats): MatchTeamStats {
     headerGoals: t.headerGoals,
     longBalls: t.longBalls,
     longBallsCompleted: t.longBallsCompleted,
+    corners: t.corners,
+    freeKicks: t.freeKicks,
+    directFreeKickShots: t.directFreeKickShots,
+    directFreeKickGoals: t.directFreeKickGoals,
+    setPieceGoals: t.setPieceGoals,
   };
 }
