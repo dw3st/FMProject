@@ -11,6 +11,7 @@ import {
   resolveUserLineup,
 } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
+import { aiRecordFor } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 
@@ -86,6 +87,15 @@ describe("fitness/load model under fixture congestion", () => {
     const [clubX, oppClub] = free;
     if (!clubX || !oppClub) {
       throw new Error("not enough free of_championship clubs for the test setup");
+    }
+
+    // The snapshots read the default-formation XI, so clubX plays the default formation too: pin its
+    // season AI formation (no defensive alternative) — since 3.4 the AI may pick any shape.
+    for (const id of [clubX, oppClub]) {
+      const squad = await saveService.getSquadById(saveId, id);
+      if (!squad) throw new Error(`squad ${id} not found`);
+      const { defensive: _defensive, ...rec } = aiRecordFor(squad, d0);
+      await saveService.saveSquadById(saveId, { ...squad, aiFormation: { ...rec, id: DEFAULT_SIM_FORMATION_ID } });
     }
 
     const competitions: [string, string][] = [
