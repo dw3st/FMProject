@@ -68,7 +68,10 @@ de `tactics.json`. Dias de jogo e de descanso não mexem. De 50, um foco constan
 3. **Pressão alta cansa mais:** custo de fôlego da ação `press` × 1,10 sempre que o `pressing_style` efetivo é
    `high_press` (`DefenseConfigValues.PRESS_STAMINA_MULT`, `tacticDrainMult`), com ou sem familiaridade.
 
-`/lab`/calibrações que chamam `simulateMatch` sem `tactics` ficam neutras (execução 1).
+`simulateMatch` sem `options.tactics` **zera** a execução dos dois times (neutra) antes de montar o estado, a
+menos que receba `options.executionFamiliarity` ({ A, B }, 0..100). O `/lab` (que aplica as próprias táticas)
+passa a familiaridade das variantes por aí; `debugApi` e os scripts nunca herdam a familiaridade de uma
+partida anterior. Os pesos de tática continuam os que o chamador aplicou.
 
 ## quickSim
 

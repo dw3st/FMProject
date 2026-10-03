@@ -192,8 +192,8 @@ interface LineupFit {
   poorB: number;
 }
 
-/** Familiarity of each side with its own style, for the quickSim path (set per worker message). */
-let quickFamiliarity: { A?: number; B?: number } = {};
+/** Familiarity of each side with its own style (set per worker message): quickSim strength + engine execution. */
+let sideFamiliarity: { A?: number; B?: number } = {};
 
 function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
   return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
@@ -228,8 +228,8 @@ function runOneMatch(
       homeRoles: quickRolesA,
       awayRoles: quickRolesB,
       knockout,
-      homeFamiliarity: quickFamiliarity.A,
-      awayFamiliarity: quickFamiliarity.B,
+      homeFamiliarity: sideFamiliarity.A,
+      awayFamiliarity: sideFamiliarity.B,
     });
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
@@ -274,7 +274,10 @@ function runOneMatch(
     return { teamA, teamB, draw: !homeWon && !awayWon, appearancesA, appearancesB };
   }
 
-  const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, { knockout });
+  const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, {
+    knockout,
+    executionFamiliarity: sideFamiliarity,
+  });
   const sA = r.teamStats.A;
   const sB = r.teamStats.B;
 
@@ -349,7 +352,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
     applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
     applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
-    quickFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
+    sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on
