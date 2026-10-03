@@ -443,6 +443,22 @@ describe("style familiarity on a training day", () => {
     expect(updatedSquad.styleFamiliarity?.high_press).toBeCloseTo(60 - 0.15, 2);
   });
 
+  test("intensity scales the gain: light ×0.7, heavy ×1.3", () => {
+    const s = squad({ styleFamiliarity: { possession: 50 } });
+    const dev = staffEffectsOf(s).devMult;
+    const gain = (intensity: "light" | "heavy") =>
+      buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity, styleFocus: "possession" }, "2027-02-05", () => 0.99)
+        .updatedSquad.styleFamiliarity!.possession! - 50;
+    expect(gain("light")).toBeCloseTo(2 * dev * 0.5 * 0.7, 2);
+    expect(gain("heavy")).toBeCloseTo(2 * dev * 0.5 * 1.3, 2);
+  });
+
+  test("nobody trained (everyone below the energy floor): no gain, the focus decays too", () => {
+    const s = squad({ styleFamiliarity: { possession: 60 } });
+    const { updatedSquad } = buildTrainingEvent("s", s, { minEnergyToTrain: 101, intensity: "normal", styleFocus: "possession" }, "2027-02-05");
+    expect(updatedSquad.styleFamiliarity?.possession).toBeCloseTo(60 - 0.15, 2);
+  });
+
   test("AI club (nothing stored): nothing is written", () => {
     const { updatedSquad } = buildTrainingEvent("s", squad(), { minEnergyToTrain: 0, intensity: "normal", styleFocus: "possession" }, "2027-02-05");
     expect(updatedSquad.styleFamiliarity).toBeUndefined();
