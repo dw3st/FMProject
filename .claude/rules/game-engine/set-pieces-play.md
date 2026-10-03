@@ -50,7 +50,9 @@ O posicionamento estático por formação (layouts de `SetPieceLayouts.ts`) cont
   `CORNER_BASE + (atacantes − 0,8 × defensores) × 0,45 + entrega × 0,25 − 0,25 se o goleiro chega antes`,
   atacantes/defensores = soma de `aerialAbility` ponderada pela proximidade num raio de 6 jardas.
   Curto: `0,35 + 0,1 se livre + 0,3 com build_up posse − 0,15 com jogo direto`. Vence a maior nota.
-- **Na bola:** o cruzamento sai por `startAerialBall` (bola alta `cross`, `fromSetPiece`). Até
+- **Na bola:** o cruzamento sai por `startAerialBall` (bola alta `cross`, `fromSetPiece`,
+  `setPieceVariant: 'box'` — as regras abaixo valem só com essa marca; uma falta rápida/longa que vira
+  cruzamento segue as regras do jogo corrido). Até
   `SET_PIECE_CHASERS` (4) jogadores de cada time correm para o ponto **sem o filtro de papel** (os
   zagueiros que subiram atacam a bola). Na disputa aérea o defensor tem a pontuação × 
   `SET_PIECE_DEFENDER_DUEL_MULT` (7 — ele está posicionado, do lado do gol): o atacante ganha cerca de 1
@@ -66,8 +68,8 @@ O posicionamento estático por formação (layouts de `SetPieceLayouts.ts`) cont
 | `cross_clearance` | Cruzamento cortado de cabeça dentro da área (ou a ≤ 9 jardas da linha): `CROSS_CLEAR_CORNER_CHANCE` 0,55 | 4,8 (inclui os que saem de outro escanteio) |
 | `deflection` | Chute para fora com um defensor a ≤ 6 jardas do chutador: 0,6 | 1,2 |
 | `save` | Defesa do goleiro espalmada: 0,5 | 0,5 |
-| `cross_block` | Cruzamento bloqueado na saída: 0,5 | 0,17 |
-| `loose` | Bola solta que passa da linha de fundo com um defensor a ≤ 3 jardas: 0,6 | 0,02 |
+| `cross_block` | Cruzamento bloqueado na saída a ≤ `CLEARANCE_CORNER_DEPTH` (9) jardas da linha: 0,5 | 0,17 |
+| `loose` | Bola solta que passa da linha de fundo com um defensor de linha a ≤ 3 jardas (o goleiro deixando sair é tiro de meta): 0,6 | 0,02 |
 | `tackle` | Desarme ganho a ≤ 18 jardas da linha, fora da largura do gol: 0,3 | 0,06 |
 
 Antes da etapa havia ~0,1 escanteio por partida (só bloqueios e cortes perto da linha). Por partida
@@ -103,6 +105,15 @@ chute); com o valor "real" (~0,07) a falta direta quase nunca entraria.
 Durante a contagem do lateral o cobrador só passa para companheiros a ≤ `THROW_IN_RANGE` (20)
 jardas (`startPass`; sem ninguém nesse raio, o mais perto). Sem lateral longo.
 
+## Regra das 10 jardas e substituições
+
+- Na falta direta, na cruzada e no escanteio todo defensor fica a ≥ `MIN_DEFENDER_DISTANCE` (10)
+  jardas da bola (`keepDistanceFromBall`, empurrado na direção bola → jogador); a barreira fica
+  exatamente a 10.
+- Durante o congelamento, a substituição do cobrador fica pendente até a bola ser jogada (senão a
+  bola iria para o mais perto, fora do ponto); um jogador da barreira substituído é trocado pelo que
+  entra no mesmo lugar (`wallIds`).
+
 ## Fim de período
 
 `restartHoldsPeriod` segura o apito para um escanteio ainda com o cobrador e para uma falta direta ou
@@ -135,9 +146,9 @@ bola solta ou um corte de cabeça no ar), no pontapé inicial e no intervalo. Go
 `rollSetPieces` (depois de `rollAerial`, por último no sorteio): escanteios por Poisson
 (`CORNERS_PER_SIDE`), tiros livres = faltas do adversário − pênaltis a favor, chutes de falta direta por
 Poisson (`DIRECT_FK_SHOTS_PER_SIDE`, nunca menos que os gols). Dos gols sem pênalti já sorteados, uma
-parte vira gol de bola parada (`SET_PIECE_GOAL_SHARE` 0,117 dos gols): desses, uma fração
+parte vira gol de bola parada (`SET_PIECE_GOAL_SHARE` 0,125 dos gols): desses, uma fração
 `DIRECT_FK_GOAL_SHARE / SET_PIECE_GOAL_SHARE` é falta direta (vai para o melhor finalizador, sem
-assistência); os outros mantêm o autor se já eram de cabeça, senão vão para um defensor/atacante
+assistência; uma cabeçada escolhida deixa de ser cabeçada); os outros mantêm o autor se já eram de cabeça, senão vão para um defensor/atacante
 ponderado por `SET_PIECE_LINE_WEIGHT × (0,5 + cabeceio/10)`. Gols de pênalti contam como bola parada.
 O placar nunca muda. Os números de jogo aéreo e passes do quickSim foram reajustados à mesma
 medição (`non-player-games.md` → "Bolas paradas no quickSim").
@@ -153,19 +164,23 @@ tamanho):
 
 | | Premier antes | depois | Championship antes | depois |
 |---|---|---|---|---|
-| Gols | 2,346 | 2,373 (+1,1%) | 1,688 | 1,620 (−4,0%) |
-| Chutes | 5,647 | 5,711 (+1,1%) | 4,709 | 4,632 (−1,6%) |
-| xG | 3,609 | 3,685 (+2,1%) | 3,022 | 2,970 (−1,7%) |
-| Escanteios (alvo 6–10) | ~0,1 | 6,77 | ~0,03 | 6,18 |
-| Tiros livres | — | 10,2 | — | 11,0 |
-| Faltas diretas (chutes) | — | 0,24 | — | 0,21 |
-| Gols de falta direta (alvo 2–5% dos gols) | — | 0,083 (3,5%) | — | 0,060 (3,7%) |
-| Gols de bola parada (alvo 20–30%) | — | 0,481 (20,3%) | — | 0,418 (25,8%) |
-| Gols de pênalti | 0,220 | 0,220 | 0,253 | 0,217 |
-| Cruzamentos (inclui escanteios e faltas cruzadas) | 11,4 | 16,7 | 10,5 | 15,7 |
-| Disputas aéreas (soma dos dois times) | ~21 | 30,2 | ~18 | 27,8 |
-| Gols de cabeça | 0,23 (9,8%) | 0,41 (17,4%) | 0,23 (13%) | 0,34 (21,2%) |
-| Passes | 53,8 | 48,9 (−9,1%) | 47,9 | 43,9 (−8,5%) |
+| Gols | 2,346 | 2,394 (+2,1%) | 1,688 | 1,728 (+2,3%) |
+| Chutes | 5,647 | 5,607 (−0,7%) | 4,709 | 4,753 (+0,9%) |
+| xG | 3,609 | 3,599 (−0,3%) | 3,022 | 3,062 (+1,3%) |
+| Escanteios (alvo 6–10) | ~0,1 | 6,45 | ~0,03 | 6,03 |
+| Tiros livres | — | 10,3 | — | 11,1 |
+| Faltas diretas (chutes) | — | 0,27 | — | 0,24 |
+| Gols de falta direta (alvo 2–5% dos gols) | — | 0,086 (3,6%) | — | 0,071 (4,1%) |
+| Gols de bola parada (alvo 20–30%) | — | 0,489 (20,4%) | — | 0,478 (27,7%) |
+| Gols de pênalti | 0,220 | 0,217 | 0,253 | 0,243 |
+| Cruzamentos (inclui escanteios e faltas cruzadas) | 11,4 | 16,7 | 10,5 | 15,4 |
+| Disputas aéreas (soma dos dois times) | ~21 | 29,8 | ~18 | 27,7 |
+| Gols de cabeça | 0,23 (9,8%) | 0,43 (17,9%) | 0,23 (13%) | 0,37 (21,4%) |
+| Passes | 53,8 | 48,9 (−9,0%) | 47,9 | 43,6 (−9,1%) |
+
+Medição depois da revisão (regra das 10 jardas, bloqueio vira escanteio só perto da linha, regras de
+bola parada só para a cobrança de área); antes da revisão: Premier +1,1% gols / +1,1% chutes,
+Championship −4,0% / −1,6%.
 
 Gols de cabeça por vaga de titular (Premier): DEF 0,027 ≈ FWD 0,026 (antes da etapa DEF ≈ 0) — os
 zagueiros que sobem marcam.
@@ -184,9 +199,10 @@ zagueiros que sobem marcam.
 
 ## Limitações
 
-- O motor não tem semente: a Championship oscila ±3% entre rodadas de 600 jogos; a medição final
-  ficou com −4,0% em gols (outra rodada, −1,1%).
-- Disputas aéreas acima do alvo do jogo aéreo (30 na Premier, alvo 15–30): cada escanteio é uma disputa.
+- O motor não tem semente: a Championship oscila ±3% entre rodadas de 600 jogos (rodadas da mesma
+  configuração antes da revisão deram −1,1% e −4,0% em gols; a final, +2,3%).
+- Disputas aéreas no limite do alvo do jogo aéreo (29,8 na Premier, alvo 15–30): cada escanteio é uma disputa.
+- Escanteios da Championship no piso do alvo (6,0).
 - Sem lateral longo, sem jogada ensaiada, sem barreira que pula ou se mexe; o layout da falta direta
   continua o fixo da formação (só a barreira é dinâmica).
 - Escanteio curto é raro com `balanced` (a nota do curto só ganha com `possession`).
