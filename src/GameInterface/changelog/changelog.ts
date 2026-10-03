@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.1",
+    date: "2026-10-03",
+    items: [
+      { pt: "Partida ao vivo: os jogadores aparecem com o rosto nas bolinhas, um pouco maiores.", en: "Live match: players show their faces inside slightly bigger dots." },
+    ],
+    fixes: [
+      { pt: "Placar da partida sempre centralizado.", en: "Match scoreboard always centred." },
+      { pt: "Menu superior e barra inferior alinhados com o conteúdo.", en: "Top menu and bottom bar aligned with the content." },
+    ],
+  },
+  {
     version: "3.3",
     date: "2026-10-03",
     items: [
