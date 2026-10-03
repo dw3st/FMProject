@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "2.9",
+    date: "2026-10-03",
+    items: [
+      { pt: "Treino de estilos de jogo: o time ganha familiaridade com cada estilo e joga melhor o que treina.", en: "Playing-style training: your team builds familiarity with each style and plays the one it trains better." },
+      { pt: "Foco de estilo no treino: escolha o estilo a treinar (ou deixe no automático, que treina o estilo da tática); bola longa e linha alta também podem ser treinadas.", en: "Style focus in training: pick the style to drill (or leave it on auto, which drills your tactics style); long balls and the high line can be trained too." },
+      { pt: "Barras de familiaridade na tela de táticas; um bom auxiliar técnico acelera o treino.", en: "Familiarity bars on the tactics screen; a good assistant speeds up training." },
+      { pt: "A pressão alta cansa um pouco mais o time.", en: "A high press tires your team a little more." },
+    ],
+  },
+  {
     version: "2.8",
     date: "2026-10-02",
     items: [

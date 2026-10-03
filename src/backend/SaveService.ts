@@ -14,6 +14,7 @@ import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
+import type { FamiliarityKey } from "@/types/familiarityTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
@@ -21,6 +22,7 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
+import { initialFamiliarity } from "@/Domain/familiarity/familiarity";
 import { buildInitialManagers } from "@/Domain/managers/managers";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
@@ -66,6 +68,8 @@ export interface SaveMeta {
   min_energy_to_train?: number;
   /** Training load for your club's sessions (advance-day simulation). */
   training_intensity?: TrainingIntensity;
+  /** Style the human club drills on training days (`src/Domain/familiarity`); absent = the tactics style. */
+  style_focus?: FamiliarityKey;
   /** State for all active leagues in this save. */
   activeLeagues?: LeagueSeasonState[];
   /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
@@ -779,6 +783,9 @@ export class SaveService {
         // Only the human club simulates staff (`.claude/rules/game/staff.md`): three professionals
         // near its implicit tier rating, generated from the save id.
         if (isPlayerClub) squad.staff = initialStaff(id, squad);
+        // Style familiarity (`.claude/rules/game/style-training.md`): human club only; the saved style
+        // starts ahead of the rest.
+        if (isPlayerClub) squad.styleFamiliarity = initialFamiliarity(meta.tactical_style ?? DEFAULT_TACTICAL_STYLE);
         // Every player starts with a fixed-wage contract ending on his league's season end
         // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
         const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end

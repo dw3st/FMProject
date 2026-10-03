@@ -13,6 +13,9 @@
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
 import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes } from '@/types/tacticsTypes';
+import type { FamiliarityLevels } from '@/types/familiarityTypes';
+import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
+import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider } from '@/GameEngine/types';
 import { tickState, createMatchState, knockoutDecider } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
@@ -66,11 +69,19 @@ export interface SimulateMatchOptions {
    * (`staffEffectsOf`: the human club's hired coach, the financial tier for AI clubs).
    */
   injuryMult?: { A?: number; B?: number };
+  /**
+   * Style familiarity (0..100) per side, read ONLY when `tactics` is omitted (the caller applied its
+   * own tactics, e.g. the lab): sets each team's execution multiplier (`FamiliarityConfig.ts`).
+   * Absent = neutral, so a caller that never deals with familiarity never inherits a previous one.
+   */
+  executionFamiliarity?: { A?: number; B?: number };
 }
 
 export interface TeamTactics {
   style: TacticalStyle;
   axesOverride?: Partial<TacticalAxes>;
+  /** Style familiarity (`src/Domain/familiarity`); absent = neutral (no effect). */
+  familiarity?: FamiliarityLevels;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -140,8 +151,12 @@ export function simulateMatch(
   if (options.tactics) {
     for (const team of ['A', 'B'] as const) {
       const t = options.tactics[team];
-      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride);
-      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride);
+      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity);
+      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity);
+    }
+  } else {
+    for (const team of ['A', 'B'] as const) {
+      setTeamExecution(team, familiarityFactor(options.executionFamiliarity?.[team]));
     }
   }
 

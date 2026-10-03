@@ -197,3 +197,15 @@ always records the *style* in `TEAM_TACTICAL_STYLE[team]` (read by `getTeamTacti
   scenario config, not a game save, so no migration is needed for older saved scenarios). Set in
   `VariantEditor`, applied in `balanceWorker.ts` alongside the style, shown in the auto-generated
   variant label (`generateVariantLabel`) only when it isn't `balanced`.
+
+---
+
+## Familiaridade com o estilo (Etapa 15)
+
+`applyTeamTacticsConfig`/`applyTeamAttackConfig` aceitam um 5º parâmetro opcional `familiarity`
+(`FamiliarityLevels`). Depois de montar os pesos do estilo (e da mentalidade), aplicam os ajustes da
+tabela `STYLE_FAMILIARITY_EFFECTS` (`src/GameEngine/Configs/FamiliarityConfig.ts`) escalados por
+`familiarityFactor` — só sobre pesos que o estilo já dirige, nenhum campo novo de viés. Familiaridade 50 /
+ausente = pesos idênticos. `DefenseConfigValues.PRESS_STAMINA_MULT` (1,10 em `high_press`) é o custo de
+fôlego do press. O mesmo `applyTeamAttackConfig` define o multiplicador de execução do time (atributos), lido
+na montagem do estado. Ver `.claude/rules/game/style-training.md`.
