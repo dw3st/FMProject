@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, iconOf } from "@/GameInterface/Icons";
@@ -127,7 +127,10 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   const { t } = useTranslation();
   const { session, inboxMessages, setInboxMessages, refreshInbox } = useGameSave();
   const [filter, setFilter] = useState<FilterTab>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // `/inbox?id=<message>` (dashboard inbox card) opens that message.
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("id") : null,
+  );
   const [busy, setBusy] = useState(false);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
 
@@ -190,6 +193,15 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
       setBusy(false);
     }
   }
+
+  // A message opened from the URL is marked read once the inbox has loaded.
+  const openedFromUrl = useRef(false);
+  useEffect(() => {
+    if (openedFromUrl.current || !inboxMessages || !selectedId) return;
+    openedFromUrl.current = true;
+    const message = inboxMessages.find((m) => m.id === selectedId);
+    if (message) void handleSelect(message);
+  }, [inboxMessages, selectedId]);
 
   const loading = inboxMessages === null;
 
@@ -297,6 +309,14 @@ function EmptyState() {
       </p>
     </div>
   );
+}
+
+/** Subject shown for a message (translated for league prize news), shared with the dashboard card. */
+export function inboxSubject(
+  message: InboxMessage,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  return leaguePrizeTexts(message, t)?.subject ?? message.subject;
 }
 
 /** Translated subject/preview for league prize messages; every other message keeps its stored text. */
