@@ -12,7 +12,7 @@
  */
 import type { GamePlayer } from '@/GameEngine/types';
 import { AERIAL_CONFIG as A } from '@/GameEngine/Configs/AerialConfig';
-import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
+import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 
 const CENTRE_Y = PITCH_WIDTH / 2;
 
@@ -59,17 +59,20 @@ export function isInSmallBox(x: number, y: number, goalX: number): boolean {
 }
 
 /**
- * Crossing position: in the final third AND either outside the central corridor or wide of the
- * posts close to the byline. Goalkeepers never cross.
+ * Crossing position: in the final third, outside the central corridor and outside the penalty
+ * area (inside the box the carrier shoots, cuts back or gets fouled — measured: allowing crosses
+ * there cost ~a third of the ground goals and half the penalties). Exception: right on the byline,
+ * wide of the six-yard box (a cut-back cross). Goalkeepers never cross.
  */
 export function isCrossPosition(p: GamePlayer): boolean {
   if (p.role === 'GK') return false;
-  const distToLine = (attackGoalX(p) - p.x) * p.attackDir;
+  const goalX = attackGoalX(p);
+  const distToLine = (goalX - p.x) * p.attackDir;
   if (distToLine < 0 || distToLine > A.CROSS_MAX_DIST_TO_LINE) return false;
   const width = Math.abs(p.y - CENTRE_Y);
-  if (width >= A.CROSS_MIN_WIDTH) return true;
-  const wideOfPosts = p.y < GOAL_Y_MIN || p.y > GOAL_Y_MAX;
-  return wideOfPosts && distToLine <= A.CROSS_BYLINE_DIST;
+  if (width < A.CROSS_MIN_WIDTH) return false;
+  if (!isInGoalScoreArea(p.x, p.y, goalX)) return true;
+  return distToLine <= A.CROSS_BYLINE_DIST && width > (GOAL_Y_MAX - GOAL_Y_MIN) / 2 + A.SMALL_BOX_WIDE;
 }
 
 /** The three cross targets for a holder: near post (his side), penalty spot, far post. */
@@ -124,6 +127,10 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
   const gk = allPlayers.find(p => p.team !== holder.team && p.role === 'GK') ?? null;
   const goalX = attackGoalX(holder);
   const passing = holder.runtimeStats.withBall.passingSkill;
+  // Close to the line the carrier has better options (cut inside, shoot, cut back, win a penalty):
+  // a cross from there only wins when those options are poor.
+  const distToLine = (goalX - holder.x) * holder.attackDir;
+  const depthMult = distToLine < A.CROSS_DEEP_DIST ? A.CROSS_NEAR_LINE_MULT : 1;
   const R = A.TARGET_ZONE_RADIUS;
   const RA = A.ATTACKER_REACH_RADIUS;
 
@@ -148,7 +155,7 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
     const gkClaim = gk !== null && (
       isInSmallBox(t.x, t.y, goalX)
       || Math.hypot(gk.x - t.x, gk.y - t.y) <= A.AERIAL_RADIUS + A.GK_EXTRA_REACH);
-    const raw = att <= 0 ? 0 : Math.max(0,
+    const raw = att <= 0 ? 0 : depthMult * Math.max(0,
       A.CROSS_BASE
       + (att - def * A.CROSS_DEFENDER_WEIGHT) * A.CROSS_NUMBERS_WEIGHT
       + passing * A.CROSS_PASS_WEIGHT
