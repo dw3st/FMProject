@@ -11,7 +11,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chooseAiFormation, matchdayAiFormation } from "@/Domain/formation/aiFormation";
 import { FORMATION_IDS } from "@/Domain/matchFormations";
-import { AI_FORMATION } from "@/Domain/formation/aiFormationConfig";
 import type { AiFormationRecord, Squad } from "@/types/playerTypes";
 
 const args = process.argv.slice(2);
@@ -54,16 +53,5 @@ for (const id of [...FORMATION_IDS].sort((a, b) => (count.get(b) ?? 0) - (count.
   const n = count.get(id) ?? 0;
   console.log(`| ${id} | ${n} | ${((100 * n) / all.length).toFixed(1)} |`);
 }
-// Expected engine goal change vs an all-4-3-3 world, approximating a match by its two mirrors.
-let vol = 0;
-let mixed = 0;
-for (const list of leagues.values()) for (const a of list) for (const b of list) {
-  if (a === b) continue;
-  const fa = matchdayAiFormation(a.rec, b.rec.level);
-  const fb = matchdayAiFormation(b.rec, a.rec.level);
-  vol += ((AI_FORMATION.GOAL_VOLUME[fa] ?? 1) + (AI_FORMATION.GOAL_VOLUME[fb] ?? 1)) / 2 - 1;
-  mixed++;
-}
-console.log(`expected engine goal volume vs all-4-3-3: +${((100 * vol) / Math.max(1, mixed)).toFixed(1)}%`);
 console.log(`defensive alternative: ${all.filter((x) => x.rec.defensive).length} clubs`);
 console.log(`underdog switch: ${switches}/${pairs} side-matches (${((100 * switches) / Math.max(1, pairs)).toFixed(1)}%)`, Object.fromEntries(switchTo));
