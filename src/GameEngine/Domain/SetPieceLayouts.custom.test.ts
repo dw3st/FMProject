@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createMatchState } from "@/GameEngine/Domain/gameState";
 import { resolveFormationSetPieces, getFormationSetPieces } from "@/GameEngine/Domain/SetPieceLayouts";
 import { applySetPieceToTeam } from "@/GameEngine/Domain/SetPiecePositioning";
-import { formationForSimId } from "@/Domain/matchFormations";
+import { FORMATION_IDS, formationForSimId } from "@/Domain/matchFormations";
 import type { Squad } from "@/types/playerTypes";
 
 function loadSquad(file: string): Squad {
@@ -34,6 +34,27 @@ describe("custom formation set pieces", () => {
       const want = layout.slots.map((s) => `${s.x},${s.y}`).sort();
       const got = out.filter((p) => p.team === "A").map((p) => `${p.x},${p.y}`).sort();
       expect(got).toEqual(want);
+    });
+  }
+});
+
+describe("ready-made formation set pieces", () => {
+  const home = loadSquad("33.json").players;
+  const away = loadSquad("34.json").players;
+  for (const id of FORMATION_IDS) {
+    test(`${id}: every layout places the whole team`, () => {
+      const f = formationForSimId(id);
+      expect(f.id).toBe(id);
+      const state = createMatchState(home, f, away, f);
+      const sp = resolveFormationSetPieces(f);
+      for (const kind of KINDS) {
+        const layout = sp[kind];
+        expect(layout.slots).toHaveLength(11);
+        const out = applySetPieceToTeam(state.players, "A", layout);
+        const want = layout.slots.map((s) => `${s.x},${s.y}`).sort();
+        const got = out.filter((p) => p.team === "A").map((p) => `${p.x},${p.y}`).sort();
+        expect(got).toEqual(want);
+      }
     });
   }
 });

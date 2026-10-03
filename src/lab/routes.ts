@@ -10,7 +10,7 @@ import {
   rebuildIndex,
 } from "@/lab/scenarioStorage";
 import { getRun, listRuns, startRun, subscribe } from "@/lab/runRegistry";
-import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
+import { FORMATION_IDS } from "@/Domain/matchFormations";
 import type { BalanceScenario } from "@/lab/types";
 import { fileURLToPath } from "node:url";
 
@@ -48,8 +48,8 @@ export const labApiRoutes = {
       .filter((f) => f.endsWith(".json"))
       .map((f) => f.replace(/\.json$/, ""))
       .sort();
-    const supported = all.filter((id) => SUPPORTED_FORMATIONS.has(id));
-    const unsupported = all.filter((id) => !SUPPORTED_FORMATIONS.has(id));
+    const supported = all.filter((id) => FORMATION_IDS.includes(id));
+    const unsupported = all.filter((id) => !FORMATION_IDS.includes(id));
     return jsonResponse({ supported, unsupported });
   },
 

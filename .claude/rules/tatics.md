@@ -112,3 +112,21 @@ Spec: `docs/superpowers/specs/2026-10-01-formation-tactics-design.md`.
 - UI: `FormationScreen` (arrastar via `useDragDrop`/`lineupDrop.ts`, botão "Editar formação", painel "Instruções da equipe"). `/lab`: `Variant.customFormation`/`axesOverride`; `/test`: formações `free:<preset>` e seletores de eixos.
 - quickSim e jogos simulados do jogador só usam a formação (papéis dos slots); os eixos só valem no motor completo, como antes.
 
+
+---
+
+## Formações prontas e escolha da IA (Etapa 18, #59)
+
+Detalhes e números: `.claude/rules/game/formations.md`.
+
+- 17 formações prontas (`FORMATION_IDS`, `src/Domain/matchFormations.ts`): 3-4-1-2, 3-4-2-1, 3-4-3,
+  3-5-2, 4-1-2-1-2, 4-1-4-1, 4-2-2-2, 4-2-3-1, 4-3-1-2, 4-3-2-1, 4-3-3, 4-4-1-1, 4-4-2, 4-5-1, 5-2-3,
+  5-3-2, 5-4-1. Todas escolhíveis na tela de Formação, na troca ao vivo (`SubstitutionPanel`), no
+  `/test` e no `/lab`; bolas paradas feitas à mão só para 4-3-3, 4-4-2 e 3-5-2, as demais geradas
+  das vagas (`generateSetPieces`).
+- Equilíbrio contra o 4-3-3 com o mesmo clube dos dois lados (Premier, 400–800 jogos): as antigas
+  vão de −8,3 (3-4-3) a +18,1 p.p. (4-2-2-2) de vantagem V−D; as novas de +1,0 (5-2-3) a +22,5
+  (4-3-2-1). Tabela completa em `formations.md`.
+- **A IA não joga mais sempre 4-3-3:** cada clube escolhe por temporada (`chooseAiFormation`) pelo
+  encaixe do elenco, popularidade, estilo e volume de gols, guardado em `Squad.aiFormation`; contra um
+  adversário bem mais forte usa a forma defensiva. O clube do jogador usa `TacticsSave.formation`.

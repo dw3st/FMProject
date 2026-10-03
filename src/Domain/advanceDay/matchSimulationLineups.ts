@@ -1,12 +1,13 @@
 import type { Fixture } from "@/types/calendarTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
-import type { Squad } from "@/types/playerTypes";
+import type { AiFormationRecord, Squad } from "@/types/playerTypes";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
 import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
 import type { Formation } from "@/GameEngine/types";
 import { getFormationSlots, type FormationShape } from "@/types/formationSlots";
 import { DEFAULT_SIM_FORMATION_ID, formationForSimId, formationForTactics } from "@/Domain/matchFormations";
+import { aiFormationRecord, aiSeasonKey, matchdayAiFormation } from "@/Domain/formation/aiFormation";
 import {
   autoFillLineup,
   autoFillLineupWithFitness,
@@ -133,10 +134,30 @@ export function autoLineupDefaultFormationWithFitness(squad: Squad, date?: strin
   return autoLineupForFormationWithFitness(squad, formationForSimId(DEFAULT_SIM_FORMATION_ID), date);
 }
 
+/** An AI club's season formation record (stored one when still valid, else chosen now). */
+export function aiRecordFor(squad: Squad, date: string): AiFormationRecord {
+  return aiFormationRecord(squad, aiSeasonKey(squad.leagueSlug, date), DEFAULT_TACTICAL_STYLE);
+}
+
+/**
+ * The formation an AI club plays against `opponent` on `date`: its season pick, or its defensive
+ * shape when the opponent is much stronger (`matchdayAiFormation`). Used by the headless path and by
+ * `/api/match-setup` for the live opponent, so both agree.
+ */
+export function aiMatchFormation(
+  squad: Squad,
+  opponent: Squad | null | undefined,
+  date: string,
+): { formation: Formation; record: AiFormationRecord } {
+  const record = aiRecordFor(squad, date);
+  const oppLevel = opponent ? aiRecordFor(opponent, date).level : undefined;
+  return { formation: formationForSimId(matchdayAiFormation(record, oppLevel)), record };
+}
+
 /**
  * Resolves engine formations and per-slot lineups for a fixture.
- * Human club uses saved tactics + lineup; the opponent uses default 4-3-3 with autoFillLineup.
- * Non-player fixtures use default + auto for both sides.
+ * Human club uses saved tactics + lineup; an AI club plays its own formation
+ * (`src/Domain/formation/aiFormation.ts`) with the fitness-aware auto-fill.
  */
 export function computeMatchSimulationLineups(
   fixture: Fixture,
@@ -155,23 +176,27 @@ export function computeMatchSimulationLineups(
   userRotationApplied: { out: string; in: string }[];
   /** Tactics per engine side (A = home): the user's saved style/axes, the AI's default style. */
   tactics: { A: TeamTactics; B: TeamTactics };
+  /** Season formation records of the AI sides, for the caller to store on the squads. */
+  aiFormations: { home?: AiFormationRecord; away?: AiFormationRecord };
 } {
   const date = fixture.date;
-  const defaultAi = formationForSimId(DEFAULT_SIM_FORMATION_ID);
   // AI clubs follow the implicit familiarity rule (`src/Domain/familiarity`), nothing stored.
   const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE, familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE) };
   const userPlays =
     Boolean(playerSquadId) && (fixture.home === playerSquadId || fixture.away === playerSquadId);
 
   if (!userPlays) {
+    const home = aiMatchFormation(homeSquad, awaySquad, date);
+    const away = aiMatchFormation(awaySquad, homeSquad, date);
     return {
-      homeFormation: defaultAi,
-      homeLineup: autoLineupDefaultFormationWithFitness(homeSquad, date),
-      awayFormation: defaultAi,
-      awayLineup: autoLineupDefaultFormationWithFitness(awaySquad, date),
+      homeFormation: home.formation,
+      homeLineup: autoLineupForFormationWithFitness(homeSquad, home.formation, date),
+      awayFormation: away.formation,
+      awayLineup: autoLineupForFormationWithFitness(awaySquad, away.formation, date),
       userInjuredReplaced: [],
       userRotationApplied: [],
       tactics: { A: aiTactics, B: aiTactics },
+      aiFormations: { home: home.record, away: away.record },
     };
   }
 
@@ -193,25 +218,29 @@ export function computeMatchSimulationLineups(
 
   if (fixture.home === playerSquadId) {
     const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot);
+    const ai = aiMatchFormation(awaySquad, homeSquad, date);
     return {
       homeFormation: userFormation,
       homeLineup: user.lineup,
-      awayFormation: defaultAi,
-      awayLineup: autoLineupDefaultFormationWithFitness(awaySquad, date),
+      awayFormation: ai.formation,
+      awayLineup: autoLineupForFormationWithFitness(awaySquad, ai.formation, date),
       userInjuredReplaced: user.injuredReplaced,
       userRotationApplied: user.rotationApplied,
       tactics: { A: userTactics, B: aiTactics },
+      aiFormations: { away: ai.record },
     };
   }
 
   const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date, rot);
+  const ai = aiMatchFormation(homeSquad, awaySquad, date);
   return {
-    homeFormation: defaultAi,
-    homeLineup: autoLineupDefaultFormationWithFitness(homeSquad, date),
+    homeFormation: ai.formation,
+    homeLineup: autoLineupForFormationWithFitness(homeSquad, ai.formation, date),
     awayFormation: userFormation,
     awayLineup: user.lineup,
     userInjuredReplaced: user.injuredReplaced,
     userRotationApplied: user.rotationApplied,
     tactics: { A: aiTactics, B: userTactics },
+    aiFormations: { home: ai.record },
   };
 }

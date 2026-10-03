@@ -329,8 +329,11 @@ try {
           if (squadId === playerSquadId) continue;
           const squad = squadsToday.find((s) => s.id === squadId);
           if (!squad) continue;
-          const fitnessXI = autoLineupDefaultFormationWithFitness(squad);
-          const plainXI = autoLineupDefaultFormation(squad);
+          // The AI's own season formation (Etapa 18), as `computeMatchSimulationLineups` fields it.
+          const aiF = (await import("@/Domain/matchFormations")).formationForSimId(squad.aiFormation?.id);
+          const mm = await import("@/Domain/advanceDay/matchSimulationLineups");
+          const fitnessXI = mm.autoLineupForFormationWithFitness(squad, aiF);
+          const plainXI = mm.autoLineupForFormation(squad, aiF);
           if (JSON.stringify([...fitnessXI].sort()) !== JSON.stringify([...plainXI].sort())) {
             fitnessDifferedFromPlain = true;
           }
@@ -1188,22 +1191,45 @@ try {
   // ── Posições ─────────────────────────────────────────────────────────────
   console.log("\n── Posições ──");
   {
-    const { autoLineupDefaultFormation } = await import("@/Domain/advanceDay/matchSimulationLineups");
-    const { slotRoles: slotRolesOf } = await import("@/Domain/advanceDay/matchSimulationLineups");
-    const { formationForSimId, DEFAULT_SIM_FORMATION_ID } = await import("@/Domain/matchFormations");
+    const { autoLineupForFormation, slotRoles: slotRolesOf } = await import("@/Domain/advanceDay/matchSimulationLineups");
+    const { formationForSimId } = await import("@/Domain/matchFormations");
     const { unsuitableWithAlternative } = await import("@/Domain/positions/positionLineup");
-    const roles = slotRolesOf(formationForSimId(DEFAULT_SIM_FORMATION_ID));
     let squadsChecked = 0;
     const offenders: string[] = [];
     for (const { squad } of allFiles) {
       if (squad.id === playerSquadId || squad.players.length < 15) continue;
       squadsChecked++;
-      const n = unsuitableWithAlternative(squad.players, autoLineupDefaultFormation(squad), roles);
+      // Each AI club's own season formation (4-3-3 until its first match of the season).
+      const f = formationForSimId(squad.aiFormation?.id);
+      const n = unsuitableWithAlternative(squad.players, autoLineupForFormation(squad, f), slotRolesOf(f));
       if (n > 0) offenders.push(`${squad.id} (${n})`);
     }
     check(squadsChecked > 0, `posições: ${squadsChecked} AI squad(s) checked`);
     check(offenders.length === 0,
       `posições: no AI XI fields an unsuitable player when a same-line alternative existed (${offenders.length} squad(s): ${offenders.slice(0, 5).join(", ")})`);
+  }
+
+  // ── Formações ────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/formations.md`: every AI club that played keeps its season formation on
+  // the squad; the human club never stores one.
+  console.log("\n── Formações ──");
+  {
+    const { FORMATION_IDS } = await import("@/Domain/matchFormations");
+    const counts = new Map<string, number>();
+    let withRecord = 0;
+    let badId = 0;
+    for (const { squad } of allFiles) {
+      if (squad.id === playerSquadId || !squad.aiFormation) continue;
+      withRecord++;
+      if (!FORMATION_IDS.includes(squad.aiFormation.id)) badId++;
+      counts.set(squad.aiFormation.id, (counts.get(squad.aiFormation.id) ?? 0) + 1);
+    }
+    const human = allFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
+    check(withRecord > 0, `formações: ${withRecord} AI squad(s) store a season formation`);
+    check(badId === 0, `formações: every stored AI formation is a ready-made one (${badId} unknown)`);
+    check(counts.size >= 3, `formações: AI clubs use ${counts.size} different formations`);
+    check(!human?.aiFormation, "formações: the human club stores no AI formation");
+    console.log(`  ${[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id, n]) => `${id} ${n}`).join(" · ")}`);
   }
 
   // ── Base ─────────────────────────────────────────────────────────────────

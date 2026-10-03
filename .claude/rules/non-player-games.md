@@ -504,6 +504,10 @@ não mudar nenhum sorteio anterior (`rollAerial`):
       fator `0,5 + tackling/10` supõe (potência livre 0,39, não 1). Dá ±0,05 por vaga entre ligas.
     - **Chutes do MID:** 10% dos chutes sem gol no motor e 8% no quickSim (sem peso de chute
       separado).
+- **Formação da IA (Etapa 18):** nos jogos de verdade cada clube da IA joga a própria formação
+  (`.claude/rules/game/formations.md`), e o quickSim usa os papéis das vagas dela. As calibrações
+  acima continuam com 4-3-3 dos dois lados; a checagem `scripts/ai-formation-goals.ts` mostra o mundo
+  com a escolha da IA a +1–4% de gols do mundo todo-4-3-3 (motor a ±1%).
 - **Posições nos elencos reais:** `positions[0]` guarda o papel principal ("Defender",
   "Midfielder", "Forward"), e não o papel detalhado. Por isso, o quickSim usa o **papel do slot da
   formação** (`homeRoles`/`awayRoles`, derivados com `slotRoles(formation)`) e só usa

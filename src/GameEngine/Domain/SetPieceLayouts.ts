@@ -488,7 +488,11 @@ const f352: FormationSetPieces = {
 
 const REGISTRY: FormationSetPieces[] = [f433, f442, f352];
 
-/** Formation IDs that have full set piece layouts defined and are ready to use. */
+/**
+ * Formation IDs with HAND-MADE layouts. Every other formation (the other ready-made ones and the
+ * custom one) gets layouts generated from its own slots (`generateSetPieces`); which formations are
+ * selectable is `FORMATION_IDS` (`src/Domain/matchFormations.ts`), not this set.
+ */
 export const SUPPORTED_FORMATIONS = new Set<string>(['4-3-3', '4-4-2', '3-5-2']);
 
 /**

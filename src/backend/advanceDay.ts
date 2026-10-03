@@ -545,8 +545,11 @@ export async function advanceOneDay(
               ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
             dayEvents.push(r.event);
-            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: r.updatedHome });
-            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: r.updatedAway });
+            // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
+            const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
+            const awayOut = sim.aiFormations.away ? { ...r.updatedAway, aiFormation: sim.aiFormations.away } : r.updatedAway;
+            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: homeOut });
+            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: awayOut });
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
             for (const inj of r.injuriesApplied) {
