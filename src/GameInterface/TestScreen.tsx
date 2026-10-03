@@ -1173,6 +1173,7 @@ export function TestScreen() {
               { key: 'throughBallCells'      as const, label: 'TB Cells',      color: 'text-purple-400'  },
               { key: 'switchPlay'            as const, label: 'Switch',        color: 'text-violet-400'  },
               { key: 'aerial'                as const, label: 'Aerial',        color: 'text-teal-300'    },
+              { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
             ] as const
           ).map(({ key, label, color }) => (
             <button
