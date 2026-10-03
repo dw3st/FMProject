@@ -73,8 +73,10 @@ describe("zones", () => {
     }
   });
 
-  it("seeds a valid custom formation from every ready-made one", () => {
-    for (const id of ["4-3-3", "4-4-2", "3-5-2", "5-3-2", "4-2-3-1", "3-4-3", "4-1-4-1", "4-2-2-2", "4-3-1-2", "4-5-1"]) {
+  it("seeds a valid custom formation from every ready-made one", async () => {
+    const { FORMATION_IDS } = await import("@/Domain/matchFormations");
+    expect(FORMATION_IDS).toHaveLength(17);
+    for (const id of FORMATION_IDS) {
       const c = customFromFormation(formationForSimId(id));
       expect(c.slots).toHaveLength(11);
       expect(validateCustomFormation(c.slots)).toEqual({ ok: true });
