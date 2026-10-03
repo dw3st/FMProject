@@ -204,4 +204,21 @@ export const QUICK_SIM_CONFIG = {
   PENALTIES_PER_SIDE: 0.115,
   OFFSIDES_PER_SIDE: 0.45,
   OFFSIDE_LEVEL_EXPONENT: 1.5,
+
+  /**
+   * Aerial play (Etapa 13, `.claude/rules/game-engine/aerial.md`), Poisson / binomial around the
+   * full engine's per-match means (`bun scripts/aerial-calibrate.ts`). No level trend modelled.
+   * HEADER_GOAL_SHARE of the (non-penalty) goals already sampled become header goals, re-attributed
+   * by HEADER_LINE_WEIGHT × (0.5 + heading/10) — the score never changes.
+   */
+  HEADER_GOAL_SHARE: 0.12,
+  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.03, MID: 0.12, FWD: 1.0 } as Record<LineGroup, number>,
+  CROSSES_PER_SIDE: 5.4,
+  CROSS_COMPLETION: 0.23,
+  LONG_BALLS_PER_SIDE: 3.0,
+  LONG_BALL_COMPLETION: 0.46,
+  /** Distinct aerial duels per match (both teams contest each one). */
+  AERIAL_DUELS_PER_MATCH: 10.2,
+  /** Who wins a team's duels (engine duels won per starter slot): weight × (0.5 + heading/10). */
+  AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.5, MID: 0.32, FWD: 0.72 } as Record<LineGroup, number>,
 } as const;
