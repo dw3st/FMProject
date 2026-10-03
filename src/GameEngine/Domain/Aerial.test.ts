@@ -198,6 +198,33 @@ describe("evaluateLongBall", () => {
     expect(evaluateLongBall(cb, s.players, 1, st.x - 1)).toBeNull();
     expect(evaluateLongBall(cb, s.players, 1, st.x + 1)!.targetId).toBe(st.id);
   });
+  test("progress keeps counting up to LONG_BALL_MAX_DIST (no saturation at 50 yards)", () => {
+    const { s, cb, st } = setup();
+    const at = (x: number) => evaluateLongBall(cb, place(s, st.id, x, 37).players, 1)!.raw;
+    expect(at(76)).toBeGreaterThan(at(66));
+  });
+  test("pressure on the holder and marked short options make the long ball more attractive", () => {
+    const { s, cb } = setup();
+    const lb = find(s, "A", "LB");
+    const opp = find(s, "B", "ST");
+    const opp2 = find(s, "B", "CM");
+    const openShort = place(s, lb.id, 22, 15);
+    const calm = evaluateLongBall(cb, openShort.players, 1)!.raw;
+    const marked = evaluateLongBall(cb, place(openShort, opp.id, 23, 16).players, 1)!.raw;
+    const pressed = evaluateLongBall(cb, place(place(openShort, opp.id, 23, 16), opp2.id, 21.5, 30).players, 1)!.raw;
+    expect(marked).toBeGreaterThan(calm);
+    expect(pressed).toBeGreaterThanOrEqual(marked);
+  });
+  test("teammates around the landing point (second ball) raise it, defenders there lower it", () => {
+    const { s, cb, st } = setup();
+    const cam = find(s, "A", "CAM");
+    const def = find(s, "B", "CB");
+    const base = evaluateLongBall(cb, s.players, 1)!.raw;
+    const support = evaluateLongBall(cb, place(s, cam.id, st.x - 3, st.y + 2).players, 1)!.raw;
+    const contested = evaluateLongBall(cb, place(s, def.id, st.x + 1, st.y).players, 1)!.raw;
+    expect(support).toBeGreaterThan(base);
+    expect(contested).toBeLessThan(base);
+  });
   test("a holder deep in the opponent half does not play long balls", () => {
     const { s, cb } = setup();
     expect(evaluateLongBall({ ...cb, x: 90 }, s.players, 1)).toBeNull();
