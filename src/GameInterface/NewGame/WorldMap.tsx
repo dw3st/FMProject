@@ -11,8 +11,8 @@ import { mappableCountries } from "@/GameInterface/NewGame/worldMapCountries";
 
 /**
  * Dot radius for the countries too small to click, in viewBox units (1000 wide). The map is only
- * shown from `xl`, where it renders ~800–1100 px wide (1600 px frame − both side columns), so
- * r = 5 is a ~9–11 px dot on screen.
+ * shown from `xl`, where it renders ~700–1060 px wide (1600 px frame − both side columns), so
+ * r = 5 is a ~7–11 px dot on screen.
  */
 const MARKER_RADIUS = 5;
 

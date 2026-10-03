@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData, LeagueTeam } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
@@ -211,24 +211,25 @@ export function NewGameWizard() {
 
   if (step === "manager") {
     return (
-      <div className="flex min-h-screen flex-col items-center bg-background px-6 pt-8 text-foreground">
-        <Wordmark size="lg" className="mb-6 block text-center" />
-        <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden pb-8">
-          <PitchBackdrop players={false} />
-          <div className="relative w-full max-w-[1000px] rounded-md border border-border bg-background/90 p-6 md:p-8">
-            <ManagerForm
-              initial={manager}
-              onCancel={() => {
-                window.location.href = "/start";
-              }}
-              onSubmit={(m) => {
-                setManager(m);
-                setStep("club");
-              }}
-            />
+      <WizardFrame backdrop>
+        {/* Same card as the club step; the form keeps its reading width and scrolls inside. */}
+        <div className="flex-1 min-h-0 md:overflow-y-auto">
+          <div className="flex min-h-full flex-col">
+            <div className="m-auto w-full max-w-[1000px] p-6 md:p-8">
+              <ManagerForm
+                initial={manager}
+                onCancel={() => {
+                  window.location.href = "/start";
+                }}
+                onSubmit={(m) => {
+                  setManager(m);
+                  setStep("club");
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </WizardFrame>
     );
   }
 
@@ -287,14 +288,7 @@ export function NewGameWizard() {
   );
 
   return (
-    // From `md` the page is exactly one viewport tall: the card takes what the wordmark leaves,
-    // its three columns share that height and each scrolls on its own, so the action row at the
-    // bottom of the right column is always visible (issue #66).
-    <div className="min-h-screen md:h-dvh md:min-h-0 md:overflow-hidden flex flex-col items-center bg-background px-4 py-6 text-foreground">
-      <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
-      {/* Wider frame and a narrower profile column while picking the country, so the world map
-          gets most of the width; back to 1200 px once a country (and its club list) is shown. */}
-      <div className={`flex w-full ${selectedCountry ? "max-w-[1200px]" : "max-w-[1600px]"} flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90`}>
+    <WizardFrame>
       <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
         <button
           type="button"
@@ -382,7 +376,7 @@ export function NewGameWizard() {
           )}
         </section>
 
-        <aside className={`${selectedCountry ? "md:w-80" : "md:w-64"} shrink-0 md:border-l border-t md:border-t-0 border-border flex flex-col min-h-0`}>
+        <aside className="md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-border flex flex-col min-h-0">
           <div className="flex-1 min-h-0 md:overflow-y-auto px-6 pt-5 pb-4">
             {selectedTeam ? (
               <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
@@ -423,6 +417,25 @@ export function NewGameWizard() {
           </div>
         </aside>
       </main>
+    </WizardFrame>
+  );
+}
+
+/**
+ * Page and card shared by both wizard steps. From `md` the page is exactly one viewport tall and
+ * the card always has the same frame (1600 px max, the height the wordmark leaves), so moving
+ * between the manager form, the world map and a country's club list never resizes it; each column
+ * scrolls on its own, so the action row stays visible (issue #66).
+ */
+function WizardFrame({ backdrop = false, children }: { backdrop?: boolean; children: ReactNode }) {
+  return (
+    <div className="min-h-screen md:h-dvh md:min-h-0 md:overflow-hidden flex flex-col items-center bg-background px-4 py-6 text-foreground">
+      <Wordmark size="lg" className="mb-6 block text-center shrink-0" />
+      <div className="relative flex w-full max-w-[1600px] flex-1 min-h-0">
+        {backdrop && <PitchBackdrop players={false} />}
+        <div className="relative flex w-full flex-1 flex-col md:flex-row min-h-0 md:overflow-hidden rounded-md border border-border bg-background/90">
+          {children}
+        </div>
       </div>
     </div>
   );
