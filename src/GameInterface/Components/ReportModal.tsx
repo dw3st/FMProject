@@ -293,7 +293,7 @@ export function ReportModal({ open, onClose }: Props) {
                     type="button"
                     disabled={submitting}
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-sm font-black tracking-wide px-2.5 py-1.5 rounded-lg border border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded border border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
                   >
                     <Icon name="image" size={14} />
                     {t("reports.attachImage")}

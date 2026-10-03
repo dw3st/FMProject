@@ -172,26 +172,26 @@ export function SeasonEndScreen() {
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-black font-display text-primary m-0">
+                <p className="text-2xl font-black font-display tabular-nums text-primary m-0">
                   {data.yourStats.finalPosition}{ordinal(data.yourStats.finalPosition)}
                 </p>
-                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.finalPosition")}</p>
+                <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("seasonEnd.finalPosition")}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-black font-display m-0">{data.yourStats.matchesManaged}</p>
-                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.matches")}</p>
+                <p className="text-2xl font-black font-display tabular-nums m-0">{data.yourStats.matchesManaged}</p>
+                <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("seasonEnd.matches")}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-black font-display text-primary m-0">{data.yourStats.wins}</p>
-                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.wins")}</p>
+                <p className="text-2xl font-black font-display tabular-nums text-primary m-0">{data.yourStats.wins}</p>
+                <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("seasonEnd.wins")}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-black font-display text-chart-4 m-0">{data.yourStats.draws}</p>
-                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.draws")}</p>
+                <p className="text-2xl font-black font-display tabular-nums text-chart-4 m-0">{data.yourStats.draws}</p>
+                <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("seasonEnd.draws")}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-black font-display text-destructive m-0">{data.yourStats.losses}</p>
-                <p className="text-[13px] text-muted-foreground uppercase m-0">{t("seasonEnd.losses")}</p>
+                <p className="text-2xl font-black font-display tabular-nums text-destructive m-0">{data.yourStats.losses}</p>
+                <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("seasonEnd.losses")}</p>
               </div>
             </div>
           </div>
@@ -240,7 +240,7 @@ function PodiumCard({
         <div className={`w-10 h-10 rounded-full ${styles.bg} flex items-center justify-center mx-auto mb-2 border ${styles.border}`}>
           <PosIcon className={`w-5 h-5 ${styles.text}`} />
         </div>
-        <p className={`text-[13px] uppercase tracking-[0.08em] ${styles.text} font-bold m-0`}>
+        <p className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${styles.text} m-0`}>
           {posLabel}
         </p>
       </div>
@@ -294,8 +294,8 @@ function AwardCard({
         <Icon className={`w-7 h-7 ${iconColor}`} />
       </div>
       <div>
-        <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{label}</p>
-        <p className="text-lg font-bold font-display m-0">{name}</p>
+        <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground tracking-[0.08em] mb-1 m-0 font-display font-bold">{label}</p>
+        <p className="text-lg font-bold font-display tabular-nums m-0">{name}</p>
         <p className="text-sm text-muted-foreground m-0">{club}</p>
       </div>
       <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${statBg} ${statColor} text-sm font-bold`}>

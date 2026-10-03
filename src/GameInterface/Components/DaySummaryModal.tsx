@@ -165,7 +165,7 @@ function SquadTrainingRestCard({
     <div className="rounded-md overflow-hidden border border-border/80">
       <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(4.75rem,1fr)_minmax(4.75rem,1fr)] gap-x-2 items-center px-3 sm:px-4 py-3 border-b border-border/60 bg-black/20">
         <div aria-hidden />
-        <span className="text-sm font-black tracking-[0.2em] text-foreground min-w-0 truncate">{squadTitle}</span>
+        <span className="font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground min-w-0 truncate">{squadTitle}</span>
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 text-right font-display">{t("daySummary.fitness")}</span>
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70 text-right font-display">{t("daySummary.training")}</span>
       </div>
@@ -365,7 +365,7 @@ function OtherLeaguesSection({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-2 rounded border-0/60 px-4 h-10 text-[13px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer bg-transparent hover:text-foreground"
+        className="w-full flex items-center justify-between gap-2 rounded border-0 px-4 h-10 text-sm font-semibold text-muted-foreground hover:text-foreground cursor-pointer bg-transparent hover:text-foreground"
       >
         <span>{t("daySummary.otherLeagues", { count: matches.length })}</span>
         <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
@@ -509,7 +509,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
             <Icon name="close" className="w-5 h-5 text-muted-foreground" />
           </button>
           <div className="text-center pr-10">
-            <p className="text-[13px] font-black tracking-[0.22em] text-chart-2/90 uppercase mb-2 m-0">
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-chart-2 mb-2 m-0">
               {weekdayUpper(dayLog.date)} // {seasonEyebrow}
             </p>
             <h2 className="font-display font-black uppercase text-xl leading-none m-0">
