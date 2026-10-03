@@ -160,7 +160,7 @@ export function DashboardScreen() {
   }
 
   const round = currentRound(fixtures, mySquadId, session.leagueSlug, currentDate);
-  const dateLabel = currentDate ? formatDay(currentDate, i18n.language, true) : "";
+  const dateLabel = currentDate ? formatDay(currentDate, i18n.language, "long") : "";
   const subtitle = [dateLabel, round != null ? `${t("common.round")} ${round}` : null].filter(Boolean).join(" · ");
 
   const players = squad?.players ?? [];

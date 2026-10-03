@@ -64,11 +64,14 @@ export function formatMoney(value: number): string {
   return `${sign}€${Math.round(abs)}`;
 }
 
-export function formatDay(date: string, lang: string, withWeekday = false): string {
-  const d = new Date(`${date}T12:00:00`);
-  return d.toLocaleDateString(lang, withWeekday
-    ? { weekday: "long", day: "numeric", month: "long", year: "numeric" }
-    : { day: "numeric", month: "short" });
+const DAY_FORMAT: Record<"short" | "year" | "long", Intl.DateTimeFormatOptions> = {
+  short: { day: "numeric", month: "short" },
+  year: { day: "numeric", month: "short", year: "numeric" },
+  long: { weekday: "long", day: "numeric", month: "long", year: "numeric" },
+};
+
+export function formatDay(date: string, lang: string, style: "short" | "year" | "long" = "short"): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString(lang, DAY_FORMAT[style]);
 }
 
 const FORM_CLASS: Record<FormResult, string> = {
@@ -325,7 +328,7 @@ export function AttentionCard({
         return {
           icon: "file-signature",
           tone: "text-chart-4",
-          text: t("dashboard.home.attention.contract", { name: item.name, date: formatDay(item.until, i18n.language) }),
+          text: t("dashboard.home.attention.contract", { name: item.name, date: formatDay(item.until, i18n.language, "year") }),
           href: playerHref(item.playerId),
         };
       case "contractGroup":
@@ -357,7 +360,7 @@ export function AttentionCard({
           {items.map((item, i) => {
             const d = describe(item);
             return (
-              <li key={`${item.kind}-${i}`} className="border-t border-border/50">
+              <li key={`${item.kind}-${i}`} className="border-t border-border/50 first:border-t-0 sm:[&:nth-child(2)]:border-t-0">
                 <a
                   href={d.href}
                   className="flex items-center gap-3 min-h-10 py-2 text-sm text-foreground no-underline hover:text-primary"
