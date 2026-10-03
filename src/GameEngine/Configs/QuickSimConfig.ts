@@ -40,8 +40,14 @@ export const QUICK_SIM_CONFIG = {
    * `analyze` section 8 ("ratio+level+pace", current ATTACK_KEYS). rms across leagues 25.1% (with
    * the OLD, fitness-75-fit constants, measured against fitness-88 data) → 5.9% (worst-case
    * la_liga −9.5%; every league within ±10%).
+   *
+   * 0.84 → 0.78 in 3.4 (Etapa 19, #63): the formation-balance changes (the defensive block slides
+   * to the ball side) cost the engine ~7% of its goals with 4-3-3 on both sides (PL 2.46 → 2.32,
+   * Championship 1.81 → 1.66, `scripts/ai-formation-goals.ts`, 800 matches per mode), so the
+   * quickSim volume was scaled by the same factor. The world as played (each AI club on its own
+   * formation, open shapes now allowed) moved only −3 to −6% in the engine.
    */
-  BASE_GOALS: 0.84,
+  BASE_GOALS: 0.78,
   HOME_ADVANTAGE: 1.03,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
