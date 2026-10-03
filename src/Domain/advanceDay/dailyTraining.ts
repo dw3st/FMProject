@@ -21,6 +21,8 @@ import {
 } from "@/GameEngine/PlayerDevelopment";
 import rolesData from "@/Data/roles.json";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { trainFamiliarity } from "@/Domain/familiarity/familiarity";
+import type { FamiliarityKey } from "@/types/familiarityTypes";
 import {
   clearHealed,
   isInjured,
@@ -41,6 +43,8 @@ export type TrainingMetaSlice = {
   clubId: string;
   min_energy_to_train?: number;
   training_intensity?: TrainingIntensity;
+  /** Style the human club drills (`src/Domain/familiarity`). */
+  style_focus?: FamiliarityKey;
 };
 
 /**
@@ -52,10 +56,7 @@ export function resolveTrainingPolicy(
   meta: TrainingMetaSlice,
   resolvedClubSlug: string,
   standingsSquadId?: string,
-): {
-  minEnergyToTrain: number;
-  intensity: TrainingIntensity;
-} {
+): TrainingPolicy {
   const userClub =
     (standingsSquadId != null && isPlayerSquadId(standingsSquadId, meta)) ||
     resolvedClubSlug === meta.clubId;
@@ -68,7 +69,15 @@ export function resolveTrainingPolicy(
   return {
     minEnergyToTrain: meta.min_energy_to_train ?? DEFAULT_MIN_ENERGY_TO_TRAIN,
     intensity: meta.training_intensity ?? DEFAULT_TRAINING_INTENSITY,
+    ...(meta.style_focus ? { styleFocus: meta.style_focus } : {}),
   };
+}
+
+export interface TrainingPolicy {
+  minEnergyToTrain: number;
+  intensity: TrainingIntensity;
+  /** Human club only: the familiarity key this session drills (absent = every key decays). */
+  styleFocus?: FamiliarityKey;
 }
 
 /** One training-caused injury (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Treino"). */
@@ -132,7 +141,7 @@ export function rollTrainingOutcome(
 export function buildTrainingEvent(
   squadId: string,
   squad: Squad,
-  policy: { minEnergyToTrain: number; intensity: TrainingIntensity },
+  policy: TrainingPolicy,
   date: string,
   rng: () => number = Math.random,
 ): TrainingResult {
@@ -196,6 +205,11 @@ export function buildTrainingEvent(
 
   const updatedSquad: Squad = {
     ...squad,
+    // Style familiarity: only a club that stores it (the human club) trains it — AI clubs follow
+    // the implicit rule (`src/Domain/familiarity`).
+    ...(squad.styleFamiliarity
+      ? { styleFamiliarity: trainFamiliarity(squad.styleFamiliarity, policy.styleFocus, devMult) }
+      : {}),
     players: players.map((p) => {
       const didTrain = eligibleIds.has(String(p.id));
       const eff = effectMap.get(String(p.id));

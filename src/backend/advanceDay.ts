@@ -644,7 +644,10 @@ export async function advanceOneDay(
             injuryInboxEvents.push({ kind: "returned", squadId: row.squadId, playerId, playerName });
           }
         } else {
-          const policy = resolveTrainingPolicy(meta, club, row.squadId);
+          // No explicit focus: the human club drills the style it plays (tactics.json).
+          const policy = resolveTrainingPolicy(
+            { ...meta, style_focus: meta.style_focus ?? tactics?.tactical_style }, club, row.squadId,
+          );
           const { event, updatedSquad, healedPlayerIds, newInjuries } =
             buildTrainingEvent(row.squadId, squad, policy, currentDate);
           dayEvents.push(event);
