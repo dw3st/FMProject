@@ -39,3 +39,17 @@ describe('summarizeMatrix', () => {
     expect(m[0]!.goals).toBeCloseTo(2);
   });
 });
+
+describe('buildMatrixTasks', () => {
+  test('reference pairs are played once, mirrors only on request, matches split in chunks', async () => {
+    const { buildMatrixTasks } = await import('@/lab/formationMatrixPool');
+    const tasks = buildMatrixTasks({ league: 'l', rows: ['A', 'B', 'C'], refs: ['A', 'B'], matches: 60, mirror: false });
+    const keys = [...new Set(tasks.map((t) => [t.x, t.y].sort().join('|')))].sort();
+    expect(keys).toEqual(['A|B', 'A|C', 'B|C']);
+    expect(tasks.filter((t) => t.x === 'A' && t.y === 'B').map((t) => t.matches)).toEqual([25, 25, 10]);
+    const withMirror = buildMatrixTasks({ league: 'l', rows: ['A'], refs: ['B'], matches: 10, mirror: true });
+    expect(withMirror.map((t) => `${t.x}|${t.y}`)).toEqual(['A|B', 'A|A']);
+    const onlyMirror = buildMatrixTasks({ league: 'l', rows: ['A', 'B'], refs: ['B'], matches: 10, mirror: false, mirrorOnly: true });
+    expect(onlyMirror.map((t) => `${t.x}|${t.y}`)).toEqual(['A|A', 'B|B']);
+  });
+});

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FlaskConical, Beaker, PlayCircle, Clapperboard, ChevronRight } from "lucide-react";
+import { FlaskConical, Beaker, PlayCircle, Clapperboard, ChevronRight, Grid3x3 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 /**
@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { href: "/lab",      label: "Lab",      icon: FlaskConical,  hint: "Scenario runner" },
   { href: "/test",     label: "Test",     icon: Beaker,        hint: "Debug pitch" },
   { href: "/simulate", label: "Simulate", icon: PlayCircle,    hint: "Headless sims" },
+  { href: "/matrix",   label: "Matrix",   icon: Grid3x3,       hint: "Formation matrix" },
   { href: "/promo",    label: "Promo",    icon: Clapperboard,  hint: "Real Madrid vs Barcelona" },
 ];
 

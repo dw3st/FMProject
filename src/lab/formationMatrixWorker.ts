@@ -1,21 +1,21 @@
 /**
- * Worker for `formation-matrix.ts`: receives tasks `{ x, y, matches, offset }` one at a time and
- * answers each with the collected `PairRaw` (same club on both sides, the next club of the league
- * per match, sides alternating). Stays alive until the parent terminates it.
+ * Worker for the formation matrix (`formationMatrixPool.ts`): receives tasks one at a time and
+ * answers each with the collected `PairRaw` — same club on both sides, the next club of the league
+ * per match, sides alternating. Stays alive until the pool terminates it.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { autoLineupForFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { emptyPair, playMatrixMatch } from "@/lab/formationMatrix";
+import type { MatrixTask } from "@/lab/formationMatrixPool";
 import type { Squad } from "@/types/playerTypes";
-
-export interface MatrixTask { league: string; x: string; y: string; matches: number; offset: number }
 
 const cache = new Map<string, Squad[]>();
 function loadLeague(league: string): Squad[] {
-  if (cache.has(league)) return cache.get(league)!;
-  const dir = fileURLToPath(new URL(`../src/Data/squads/${league}/`, import.meta.url));
+  const hit = cache.get(league);
+  if (hit) return hit;
+  const dir = fileURLToPath(new URL(`../Data/squads/${league}/`, import.meta.url));
   const squads = readdirSync(dir).filter((f) => f.endsWith(".json")).sort()
     .map((f) => JSON.parse(readFileSync(dir + f, "utf8")) as Squad);
   cache.set(league, squads);

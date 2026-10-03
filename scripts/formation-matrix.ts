@@ -12,8 +12,8 @@
  * (`summarizeMatrix`, every pair counts for both of its formations).
  */
 import { FORMATION_IDS } from "@/Domain/matchFormations";
-import { addPair, mirrorGoals, summarizeMatrix, type PairRaw, type SideRaw } from "@/lab/formationMatrix";
-import type { MatrixTask } from "./formation-matrix-worker";
+import { mirrorGoals, summarizeMatrix, type PairRaw, type SideRaw } from "@/lab/formationMatrixSummary";
+import { buildMatrixTasks, runMatrixPool } from "@/lab/formationMatrixPool";
 
 const args = process.argv.slice(2);
 const arg = (f: string, d: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? d : d; };
@@ -27,7 +27,6 @@ const mirrorOnly = args.includes("--mirror-only");
 const jsonOut = arg("--json", "");
 const sumArg = arg("--sum", "");
 const detail = args.includes("--detail");
-const CHUNK = 25;
 
 const f1 = (n: number) => n.toFixed(1);
 const f2 = (n: number) => n.toFixed(2);
@@ -93,45 +92,12 @@ if (sumArg) {
 }
 
 const rows = rowsArg === "all" ? [...FORMATION_IDS] : rowsArg.split(",");
-const pairKeys = new Set<string>();
-const pairList: [string, string][] = [];
-const addKey = (x: string, y: string) => {
-  const k = [x, y].sort().join("|");
-  if (pairKeys.has(k)) return;
-  pairKeys.add(k); pairList.push([x, y]);
-};
-if (!mirrorOnly) for (const x of rows) for (const y of refs) if (x !== y) addKey(x, y);
-if (mirror || mirrorOnly) for (const x of rows) addKey(x, x);
-
-const base = Math.floor(Math.random() * 1000) * 2;
-const tasks: MatrixTask[] = pairList.flatMap(([x, y]) =>
-  Array.from({ length: Math.ceil(matches / CHUNK) }, (_, c) => ({
-    league, x, y, matches: Math.min(CHUNK, matches - c * CHUNK), offset: base + c * CHUNK,
-  })));
-console.error(`${pairList.length} pairs × ${matches} matches (${league}) = ${pairList.length * matches} matches, ${tasks.length} tasks on ${workers} workers`);
+const tasks = buildMatrixTasks({ league, rows, refs, matches, mirror, mirrorOnly }, Math.floor(Math.random() * 1000) * 2);
+console.error(`${tasks.length} tasks of up to 25 matches (${league}) on ${workers} workers`);
 const start = performance.now();
-const WORKER = new URL("./formation-matrix-worker.ts", import.meta.url).href;
-const results = new Map<string, PairRaw>();
-let next = 0;
-let done = 0;
-await Promise.all(Array.from({ length: Math.min(workers, tasks.length) }, () => new Promise<void>((resolve, reject) => {
-  const w = new Worker(WORKER, { type: "module" });
-  const feed = () => {
-    if (next >= tasks.length) { w.terminate(); resolve(); return; }
-    w.postMessage(tasks[next++]);
-  };
-  w.onmessage = (e: MessageEvent<PairRaw>) => {
-    const p = e.data;
-    const k = `${p.x}|${p.y}`;
-    results.set(k, results.has(k) ? addPair(results.get(k)!, p) : p);
-    done++;
-    if (done % 10 === 0) console.error(`  ${done}/${tasks.length} tasks, ${((performance.now() - start) / 1000).toFixed(0)} s`);
-    feed();
-  };
-  w.onerror = (e) => { w.terminate(); reject(new Error(e.message)); };
-  feed();
-})));
+const pairs = await runMatrixPool(tasks, workers, (done, total) => {
+  if (done % 10 === 0) console.error(`  ${done}/${total} tasks, ${((performance.now() - start) / 1000).toFixed(0)} s`);
+});
 console.error(`done in ${((performance.now() - start) / 1000).toFixed(0)} s`);
-const pairs = [...results.values()];
 if (jsonOut) await Bun.write(jsonOut, JSON.stringify(pairs));
 report(pairs);

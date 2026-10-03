@@ -11,6 +11,7 @@ import {
 } from "@/lab/scenarioStorage";
 import { getRun, listRuns, startRun, subscribe } from "@/lab/runRegistry";
 import { FORMATION_IDS } from "@/Domain/matchFormations";
+import { getMatrixRun, listMatrixRuns, startMatrixRun } from "@/lab/formationMatrixRun";
 import type { BalanceScenario } from "@/lab/types";
 import { fileURLToPath } from "node:url";
 
@@ -96,6 +97,28 @@ export const labApiRoutes = {
     }
     const runId = startRun(scenario);
     return jsonResponse({ runId });
+  },
+
+  "/api/lab/matrix": async (req: Request) => {
+    if (req.method === "GET") return jsonResponse(await listMatrixRuns());
+    if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+    const b = (await req.json()) as { league?: string; rows?: string[]; refs?: string[]; matches?: number; mirror?: boolean; workers?: number };
+    const known = (ids: unknown) => Array.isArray(ids) && ids.length > 0 && ids.every((f) => FORMATION_IDS.includes(f as string));
+    if (!known(b.rows) || !known(b.refs) || typeof b.league !== "string" || !/^[\w-]+$/.test(b.league)) {
+      return jsonResponse({ error: "invalid_plan" }, 400);
+    }
+    const matches = Math.max(1, Math.min(1000, Math.floor(b.matches ?? 50)));
+    const run = startMatrixRun(
+      { league: b.league, rows: b.rows!, refs: b.refs!, matches, mirror: b.mirror === true },
+      b.workers ?? 4,
+    );
+    return jsonResponse({ id: run.id });
+  },
+
+  "/api/lab/matrix/:id": async (req: Request) => {
+    const { id } = (req as Request & { params: { id: string } }).params;
+    const run = await getMatrixRun(id);
+    return run ? jsonResponse(run) : jsonResponse({ error: "not_found" }, 404);
   },
 
   "/api/lab/runs": async () => {
