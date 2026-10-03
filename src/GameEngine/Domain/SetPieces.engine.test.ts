@@ -105,6 +105,22 @@ describe("free kicks", () => {
     expect(shots).toHaveLength(2);
   });
 
+  test("the 10-yard rule: every defender stands at least 10 yards from the ball", () => {
+    for (const [x, y] of [[PITCH_LENGTH - 22, 37], [PITCH_LENGTH - (SP.FK_CROSS_RANGE - 4), 8], [PITCH_LENGTH - 24, 22]] as const) {
+      const { s, attacker, defender } = foulSituation(x, y);
+      const out = foul(s, defender, attacker);
+      expect(out.setPiece?.variant).toBeDefined();
+      const ball = out.setPiece!.position!;
+      for (const p of out.players.filter(p => p.team === "B")) {
+        expect(Math.hypot(p.x - ball.x, p.y - ball.y)).toBeGreaterThanOrEqual(SP.MIN_DEFENDER_DISTANCE - 0.01);
+      }
+    }
+    const corner = awardCorner(buildState(), "A", { x: PITCH_LENGTH, y: 0 }, -1, "clearance", "save").state;
+    for (const p of corner.players.filter(p => p.team === "B")) {
+      expect(Math.hypot(p.x - PITCH_LENGTH, p.y)).toBeGreaterThanOrEqual(SP.MIN_DEFENDER_DISTANCE - 0.01);
+    }
+  });
+
   test("the whistle waits for a box or direct free kick still with its taker", () => {
     const { s, attacker, defender } = foulSituation(PITCH_LENGTH - (SP.FK_CROSS_RANGE - 4), 8);
     const out = foul(s, defender, attacker);

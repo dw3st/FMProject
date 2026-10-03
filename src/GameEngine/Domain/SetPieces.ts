@@ -115,6 +115,24 @@ export function wallSpots(ball: Pos, goalX: number, n: number): Pos[] {
   });
 }
 
+/**
+ * The 10-yard rule: `pos` pushed out along the ball→pos direction to at least `min` yards from
+ * `ball` (straight back toward `goalX` when it sits on the ball). Kept on the pitch.
+ */
+export function keepDistanceFromBall(pos: Pos, ball: Pos, goalX: number, min = C.MIN_DEFENDER_DISTANCE): Pos {
+  const dx = pos.x - ball.x;
+  const dy = pos.y - ball.y;
+  const d = Math.hypot(dx, dy);
+  if (d >= min) return pos;
+  let ux = dx / (d || 1);
+  let uy = dy / (d || 1);
+  if (d < 0.01) {
+    ux = goalX > ball.x ? 1 : -1;
+    uy = 0;
+  }
+  return clampPos({ x: ball.x + ux * min, y: ball.y + uy * min });
+}
+
 // ── Box set pieces: layout ────────────────────────────────────────────────────
 
 export type BoxSetPieceKind = 'corner' | 'free_kick';
@@ -315,6 +333,8 @@ export function defendingBoxPositions(
   pool().forEach((p, i) => {
     positions.set(p.id, clampPos({ x: fromLine(kind === 'corner' ? lineDepth - (i % 2) * 2 : lineDepth), y: CENTRE_Y + zones[i % zones.length]! }));
   });
+  // The 10-yard rule (the short-option marker is the one that can end up too close).
+  for (const [id, pos] of positions) positions.set(id, keepDistanceFromBall(pos, ball, goalX));
   return { positions, markers, outletId };
 }
 

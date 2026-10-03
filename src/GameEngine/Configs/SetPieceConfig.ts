@@ -21,6 +21,9 @@ export const SET_PIECE_CONFIG = {
   /** Open angle (radians) at which the angle factor reaches 1. */
   FK_XG_REF_ANGLE: 0.42,
 
+  /** Defenders stand at least this far from the ball at a free kick or corner (the 10-yard rule). */
+  MIN_DEFENDER_DISTANCE: 10,
+
   // ── Wall ───────────────────────────────────────────────────────────────────
   /** Wall distance from the ball, on the ball→goal line (yards). */
   WALL_DISTANCE: 10,
