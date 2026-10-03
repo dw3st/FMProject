@@ -6,6 +6,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { DataTable, type DataTableColumn } from "@/GameInterface/ui/DataTable";
 import { Label } from "@/GameInterface/ui/Label";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { StatBar } from "@/GameInterface/ui/StatBar";
 import { Tabs } from "@/GameInterface/ui/Tabs";
@@ -94,10 +95,10 @@ export function StaffScreen() {
   }
 
   if (error) {
-    return <main className="flex-1 px-6 py-5"><p className="text-sm text-muted-foreground">{t("staff.loadFailed")}</p></main>;
+    return <ScreenContainer><p className="text-sm text-muted-foreground m-0">{t("staff.loadFailed")}</p></ScreenContainer>;
   }
   if (!data || !market) {
-    return <main className="flex-1 px-6 py-5"><p className="text-sm text-muted-foreground">{t("staff.loading")}</p></main>;
+    return <ScreenContainer><p className="text-sm text-muted-foreground m-0">{t("staff.loading")}</p></ScreenContainer>;
   }
 
   const effectLine = (role: StaffRole): string => {
@@ -125,7 +126,7 @@ export function StaffScreen() {
   ];
 
   return (
-    <main className="flex-1 px-6 py-5 overflow-auto">
+    <ScreenContainer>
       <ScreenTitle
         subtitle={t("staff.subtitle")}
         trailing={
@@ -138,7 +139,7 @@ export function StaffScreen() {
         {t("staff.title")}
       </ScreenTitle>
 
-      <section className="mt-6 grid gap-6 md:grid-cols-3">
+      <section className="grid gap-6 md:grid-cols-3">
         {STAFF_ROLES.map((role) => {
           const m = data.staff[role];
           return (
@@ -172,7 +173,7 @@ export function StaffScreen() {
         })}
       </section>
 
-      <section className="mt-6">
+      <section>
         <SectionTitle>{t("staff.market")}</SectionTitle>
         <p className="text-sm text-muted-foreground mt-2 mb-3">{t("staff.marketSubtitle")}</p>
         <Tabs
@@ -198,6 +199,6 @@ export function StaffScreen() {
         onClose={() => setFiring(null)}
         busy={busy}
       />
-    </main>
+    </ScreenContainer>
   );
 }
