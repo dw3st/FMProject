@@ -23,6 +23,8 @@ import { RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
 import { contactInjuryChance, injuryRatePerMinute, rollSeverity, type InjuryFactors } from "@/Domain/injury/injury";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { familiarityFactor } from "@/Domain/familiarity/familiarity";
+import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -66,6 +68,12 @@ export interface QuickSimInput {
   aggregate?: { home: number; away: number };
   /** Neutral venue: no home advantage for either side. */
   neutral?: boolean;
+  /**
+   * Familiarity (0..100) of each side with the style it plays (`src/Domain/familiarity`): line
+   * strengths × (1 + QUICKSIM_STRENGTH × familiarityFactor). Absent = neutral (no change).
+   */
+  homeFamiliarity?: number;
+  awayFamiliarity?: number;
 }
 
 export interface QuickSimResult {
@@ -164,6 +172,14 @@ function strengthOf(xi: XIPlayer[]): TeamStrength {
     forwardPace: linePace(xi.filter((x) => groupOf(x) === "FWD"), attackers.length ? attackers : outfield),
     defensePace: linePace(xi.filter((x) => groupOf(x) === "DEF"), defenders.length ? defenders : outfield),
   };
+}
+
+/** Style familiarity scales the four line strengths (not pace); 50 / absent = unchanged. */
+function withFamiliarity(s: TeamStrength, familiarity: number | undefined): TeamStrength {
+  const f = familiarityFactor(familiarity);
+  if (f === 0) return s;
+  const k = 1 + FAMILIARITY.QUICKSIM_STRENGTH * f;
+  return { ...s, attack: s.attack * k, midfield: s.midfield * k, defense: s.defense * k, goalkeeper: s.goalkeeper * k };
 }
 
 /** A team's overall level: the mean of its 4 line strengths. */
@@ -702,8 +718,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const homeXI = resolveXI(input.home, input.homeLineup, input.homeRoles);
   const awayXI = resolveXI(input.away, input.awayLineup, input.awayRoles);
 
-  const home = strengthOf(homeXI);
-  const away = strengthOf(awayXI);
+  const home = withFamiliarity(strengthOf(homeXI), input.homeFamiliarity);
+  const away = withFamiliarity(strengthOf(awayXI), input.awayFamiliarity);
   const xgHome = expectedGoals(home, away, !input.neutral);
   const xgAway = expectedGoals(away, home, false);
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,

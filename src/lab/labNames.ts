@@ -33,7 +33,8 @@ export function generateVariantLabel(
 /** Auto-label for a whole variant (free formations show as "Free 3-2-4-1"). */
 export function variantAutoLabel(v: Variant): string {
   const formation = v.customFormation ? `Free ${customShape(v.customFormation.slots)}` : v.formation;
-  return generateVariantLabel(formation, v.tacticalStyle, v.mentality, v.axesOverride);
+  const label = generateVariantLabel(formation, v.tacticalStyle, v.mentality, v.axesOverride);
+  return v.familiarity === undefined ? label : `${label} · fam ${v.familiarity}`;
 }
 
 /** Auto-name for the whole scenario based on its variant pool. */

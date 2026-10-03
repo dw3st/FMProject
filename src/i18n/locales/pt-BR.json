@@ -1405,6 +1405,18 @@
     "savingButton": "Salvando…",
     "saveButton": "Salvar"
   },
+  "familiarity": {
+    "title": "Familiaridade com o estilo",
+    "hint": "Treine um estilo para o time jogá-lo melhor. O que não é treinado cai devagar.",
+    "focusLabel": "Foco de estilo",
+    "focusHint": "Cada dia de treino soma familiaridade ao foco, mais com um bom auxiliar técnico; os demais caem devagar.",
+    "focusAuto": "Auto (estilo da tática: {{style}})",
+    "current": "Em uso",
+    "keys": {
+      "high_line_trap": "Linha alta e impedimento",
+      "long_ball": "Bola longa"
+    }
+  },
   "dashboard": {
     "playerCard": {
       "value": "Valor",

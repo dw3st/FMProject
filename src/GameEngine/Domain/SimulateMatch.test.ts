@@ -101,3 +101,18 @@ describe("simulateMatch tactics option", () => {
     expect(getDefenseTacticKeys("A").defensiveLine).not.toBe("deep");
   });
 });
+
+describe("simulateMatch: style familiarity execution", () => {
+  test("without `tactics` a previous familiarity never leaks; executionFamiliarity sets it", async () => {
+    const { applyTeamAttackConfig } = await import("@/GameEngine/Configs/AttackConfig");
+    const { getTeamExecutionMult, FAMILIARITY_ENGINE } = await import("@/GameEngine/Configs/FamiliarityConfig");
+    const squad = loadSquad("33.json");
+    applyTeamAttackConfig("A", "possession", "balanced", undefined, { possession: 100 });
+    expect(getTeamExecutionMult("A")).toBeGreaterThan(1);
+    simulateMatch(squad, squad);
+    expect(getTeamExecutionMult("A")).toBe(1);
+    simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { executionFamiliarity: { B: 100 } });
+    expect(getTeamExecutionMult("A")).toBe(1);
+    expect(getTeamExecutionMult("B")).toBeCloseTo(1 + FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE);
+  }, 60_000);
+});
