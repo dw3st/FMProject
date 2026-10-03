@@ -19,6 +19,7 @@
     "lab": "bun --hot src/lab/server.ts",
     "mcp": "bun src/mcp/server.ts",
     "i18n:lint": "bun scripts/find-untranslated.ts",
+    "ui:audit": "bun scripts/ui-audit.ts",
     "kits:generate": "bun scripts/generateStartKits.ts"
   },
   "dependencies": {
