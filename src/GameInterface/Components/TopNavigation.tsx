@@ -7,6 +7,7 @@ import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import type { LeagueData } from "@/types/playerTypes";
+import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 
 interface NavItem {
@@ -89,13 +90,15 @@ export function TopNavigation({
     "flex items-center gap-1.5 px-2 py-1 font-display font-bold uppercase tracking-wide text-sm no-underline text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background">
-      <nav className="h-full flex items-center justify-between gap-3 px-3 xl:px-5">
-        <a href="/dashboard" className="no-underline shrink-0">
+    // Full-width bar, content in the same frame as `ScreenContainer` (#62): the logo lines up with
+    // the cards' left edge, the actions with their right edge, the tabs centred in between.
+    <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
+      <nav className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3`}>
+        <a href="/dashboard" className="no-underline shrink-0 justify-self-start">
           <Wordmark size="sm" />
         </a>
 
-        <div className="flex items-center gap-0.5 xl:gap-1 min-w-0">
+        <div className="flex items-center justify-center gap-0.5 xl:gap-1 min-w-0">
           {navItems.map((item) => {
             const label = t(item.labelKey);
             const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
@@ -132,7 +135,7 @@ export function TopNavigation({
           )}
         </div>
 
-        <div className="flex items-center gap-2 xl:gap-3 shrink-0">
+        <div className="flex items-center justify-end gap-2 xl:gap-3 shrink-0 justify-self-end">
           {changelogNotice && (
             <ChangelogNoticePill
               version={changelogNotice.version}

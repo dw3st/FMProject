@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
+import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 
 function formatBudgetShort(value: number) {
   // The balance can go negative now (see .claude/rules/game/finances.md): abbreviate |value|, keep the sign.
@@ -40,8 +41,9 @@ export function StatusBar({
   const unreadLabel = String(unreadInboxCount);
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-50 h-9 border-t border-border bg-background px-4">
-      <div className="h-full flex items-center justify-between">
+    // Full-width bar, content in the same frame as `ScreenContainer` (#62).
+    <footer className="fixed bottom-0 left-0 right-0 z-50 h-9 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto flex items-center justify-between`}>
         <div className="flex items-center gap-5">
           <span className={ITEM} title={t("status.budget")}>
             <Icon name="finances" size={14} />
