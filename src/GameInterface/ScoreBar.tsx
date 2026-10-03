@@ -71,10 +71,12 @@ export function ScoreBar({
   const nameA = teamA?.name ?? "Team A";
   const nameB = teamB?.name ?? "Team B";
 
+  // 1fr | auto | 1fr: the score + clock block sits exactly in the middle of the bar whatever the
+  // length of the team names (#60). Names hug the score, crests sit on the outer side.
   return (
-    <div className="flex items-center gap-0">
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center">
       {/* Team A */}
-      <div className="flex items-center gap-3 pr-5">
+      <div className="flex items-center justify-end gap-3 pr-5 min-w-0">
         <ClubLogo
           logoUrl={teamA?.logoUrl}
           primaryColor={teamA?.primaryColor}
@@ -82,7 +84,7 @@ export function ScoreBar({
           className="w-8 h-8 rounded-full shrink-0"
           imgClassName="w-full h-full object-contain p-0.5"
         />
-        <span className="font-bold text-foreground uppercase tracking-[0.08em] text-sm hidden sm:block font-display">
+        <span className="font-bold text-foreground uppercase tracking-[0.08em] text-sm hidden sm:block font-display truncate text-right">
           {nameA}
         </span>
       </div>
@@ -129,8 +131,8 @@ export function ScoreBar({
       </div>
 
       {/* Team B */}
-      <div className="flex items-center gap-3 pl-5">
-        <span className="font-bold text-foreground uppercase tracking-[0.08em] text-sm hidden sm:block font-display">
+      <div className="flex items-center justify-start gap-3 pl-5 min-w-0">
+        <span className="font-bold text-foreground uppercase tracking-[0.08em] text-sm hidden sm:block font-display truncate">
           {nameB}
         </span>
         <ClubLogo
