@@ -125,7 +125,8 @@
     "deleteConfirmBody": "This will permanently delete \"{{clubName}}\" ({{leagueName}}). This cannot be undone.",
     "deleteConfirmAction": "Delete save",
     "continue": "Continue",
-    "whatsNew": "What's new"
+    "whatsNew": "What's new",
+    "ended": "Career ended"
   },
   "newGame": {
     "selectTerritory": "Select Territory",
