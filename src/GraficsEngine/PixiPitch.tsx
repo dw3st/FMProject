@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import { faceRasterSize, loadFaceCanvas, playerMarkerRadius } from "@/GraficsEngine/playerFaces";
+import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { tickState, getBallPos, endCurrentPeriod } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
@@ -193,12 +193,14 @@ function drawPitch(g: Graphics, m: PitchMetrics) {
   g.rect(rx - m.penaltyAreaDepth, centerY - hpw, m.penaltyAreaDepth, m.penaltyAreaWidth).stroke(LINE);
   g.circle(rx - m.penaltySpotDistance, centerY, 2).fill(0xffffff);
 
-  // Corner arcs
+  // Corner arcs. Each starts with an explicit moveTo to its own start point: a bare `arc()` on
+  // a fresh path joined the arc to the previous pen position, which drew a stray diagonal line
+  // in the top-left corner.
   const r = m.cornerArcRadius;
-  g.arc(x,  y,          r, 0,            Math.PI / 2)      .stroke(LINE);
-  g.arc(rx, y,          r, Math.PI / 2,  Math.PI)          .stroke(LINE);
-  g.arc(rx, y + height, r, Math.PI,      3 * Math.PI / 2)  .stroke(LINE);
-  g.arc(x,  y + height, r, 3 * Math.PI / 2, 2 * Math.PI)  .stroke(LINE);
+  g.moveTo(x + r, y).arc(x, y, r, 0, Math.PI / 2).stroke(LINE);
+  g.moveTo(rx, y + r).arc(rx, y, r, Math.PI / 2, Math.PI).stroke(LINE);
+  g.moveTo(rx - r, y + height).arc(rx, y + height, r, Math.PI, 3 * Math.PI / 2).stroke(LINE);
+  g.moveTo(x, y + height - r).arc(x, y + height, r, 3 * Math.PI / 2, 2 * Math.PI).stroke(LINE);
 
   // Goal nets
   const goalYTop    = y + GOAL_Y_MIN * m.scale;
@@ -359,7 +361,7 @@ export function PixiPitch({
       await app.init({
         width: canvasWidth,
         height: canvasHeight,
-        background: "#0b6b2f",
+        background: PITCH_COLOR,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         // autoDensity is critical: without it, Pixi sets the canvas's HTML width/height attributes
@@ -573,7 +575,7 @@ export function PixiPitch({
       let facesDisposed = false;
 
       const labelStyle = new TextStyle({
-        fontSize:   11,
+        fontSize:   markerLabelFontSize(markerR),
         fontFamily: 'sans-serif',
         fontWeight: '600',
         fill:       0xffffff,
@@ -582,6 +584,13 @@ export function PixiPitch({
 
       const fillA = teamAColor ? cssColorToPixiHex(teamAColor) : DEFAULT_TEAM_A;
       const fillB = teamBColor ? cssColorToPixiHex(teamBColor) : DEFAULT_TEAM_B;
+      // A kit that blends into the grass (dark green) gets a thin light outline instead of the
+      // usual dark one, per team, so its dots stay visible.
+      const outlineOf = (color: number) => needsLightOutline(color)
+        ? { width: 2, color: 0xffffff, alpha: 0.9 }
+        : { width: 1.5, color: 0x000000, alpha: 0.45 };
+      const outlineA = outlineOf(fillA);
+      const outlineB = outlineOf(fillB);
 
       type PitchPlayer = (typeof stateRef.current.players)[0];
       const faceUrlOf = (p: PitchPlayer): string | undefined => faceUrlsRef.current?.[p.team]?.[p.rosterId];
@@ -625,7 +634,7 @@ export function PixiPitch({
         const disc = new Graphics().circle(0, 0, markerR).fill(color);
         const ring = new Graphics()
           .circle(0, 0, markerR - MARKER_RING_W / 2 + 0.5).stroke({ width: MARKER_RING_W, color })
-          .circle(0, 0, markerR + 0.5).stroke({ width: 1.5, color: 0x000000, alpha: 0.45 });
+          .circle(0, 0, markerR + 0.5).stroke(player.team === "A" ? outlineA : outlineB);
         marker.addChild(disc, ring);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;

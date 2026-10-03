@@ -835,6 +835,7 @@
       "defensive": "Defesa"
     },
     "injuryNotice": "{{player}} se lesionou ({{severity}}) e foi substituído.",
+    "resumed": "Partida retomada de onde parou. Clique em Jogar para continuar.",
     "injurySeverity": {
       "light": "leve",
       "medium": "média",

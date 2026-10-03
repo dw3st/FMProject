@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.2",
+    date: "2026-10-03",
+    items: [
+      { pt: "Partida ao vivo: bolinhas maiores em telas grandes e contorno claro para uniformes da cor do gramado.", en: "Live match: bigger dots on large screens and a light outline for kits the colour of the grass." },
+    ],
+    fixes: [
+      { pt: "Atualizar a página durante a partida não reinicia mais o jogo.", en: "Refreshing the page during a match no longer restarts it." },
+      { pt: "Removida a linha branca solta no canto do campo.", en: "Removed the stray white line in the corner of the pitch." },
+    ],
+  },
+  {
     version: "3.3.1",
     date: "2026-10-03",
     items: [

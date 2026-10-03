@@ -7,8 +7,17 @@ import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATI
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Suport/DebugLog";
-import { initRatings, getAllRatings } from "@/GameEngine/Domain/PlayerRating";
-import { getTeamStats, initStats } from "@/GameEngine/Domain/Statistics";
+import { initRatings, getAllRatings, exportRatings, importRatings } from "@/GameEngine/Domain/PlayerRating";
+import { getTeamStats, initStats, exportStatsState, importStatsState } from "@/GameEngine/Domain/Statistics";
+import {
+  MATCH_SNAPSHOT_VERSION,
+  SNAPSHOT_INTERVAL_MS,
+  clearMatchSnapshot,
+  loadMatchSnapshot,
+  matchKey,
+  saveMatchSnapshot,
+  type TeamTacticsSnapshot,
+} from "@/GameInterface/matchResume";
 import "@/GameEngine/Suport/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
@@ -208,6 +217,20 @@ export function MatchScreen() {
     homeSquad: Squad;
     awaySquad: Squad;
   } | null>(null);
+  /**
+   * Resume after a reload (#64): `matchResume.ts`. `matchKeyRef` is set once the match is built;
+   * `recordedRef` stops snapshots once the result has been saved. The other refs mirror state the
+   * snapshot needs but that lives in React state.
+   */
+  const matchKeyRef = useRef<string | null>(null);
+  const recordedRef = useRef(false);
+  const mentalityRef = useRef<Mentality>(DEFAULT_MENTALITY);
+  useEffect(() => { mentalityRef.current = mentality; }, [mentality]);
+  const eventFeedRef = useRef<MatchFeedItem[]>([]);
+  useEffect(() => { eventFeedRef.current = eventFeed; }, [eventFeed]);
+  const aiTacticsRef = useRef<TeamTacticsSnapshot>({ style: DEFAULT_TACTICAL_STYLE, mentality: DEFAULT_MENTALITY });
+  /** Starts the full-time sequence (overlay + recording); set by the `matchEnd` handler below. */
+  const startMatchEndRef = useRef<(() => void) | null>(null);
 
   // Load match setup — team A requires saved tactics + 11-man lineup (see /api/match-setup?saveId=…)
   useEffect(() => {
@@ -253,15 +276,35 @@ export function MatchScreen() {
         }
 
         const tactics = data.myTactics;
-        myTacticalStyleRef.current = tactics.tactical_style;
-        myAxesOverrideRef.current = tactics.axesOverride;
-        // Style familiarity (`src/Domain/familiarity`): the club's trained record; the AI its rule.
-        myFamiliarityRef.current = squadFamiliarityLevels(data.mySquad, tactics.tactical_style);
-        const aiFam = aiFamiliarity(DEFAULT_TACTICAL_STYLE);
-        applyTeamTacticsConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride, myFamiliarityRef.current);
-        applyTeamAttackConfig("A", tactics.tactical_style, DEFAULT_MENTALITY, tactics.axesOverride, myFamiliarityRef.current);
-        applyTeamTacticsConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, undefined, aiFam);
-        applyTeamAttackConfig("B", DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, undefined, aiFam);
+        // A snapshot of this very match (same save, day and fixture) means the page was reloaded
+        // mid-match (#64): rebuild from it instead of kicking off again. Any other snapshot is
+        // stale and gets dropped by `loadMatchSnapshot`.
+        const key = matchKey(session.saveId, data.fixture);
+        const snap = loadMatchSnapshot(key);
+        matchKeyRef.current = key;
+
+        const teamA: TeamTacticsSnapshot = snap?.tactics.A ?? {
+          style: tactics.tactical_style,
+          mentality: DEFAULT_MENTALITY,
+          axesOverride: tactics.axesOverride,
+          // Style familiarity (`src/Domain/familiarity`): the club's trained record; the AI its rule.
+          familiarity: squadFamiliarityLevels(data.mySquad, tactics.tactical_style),
+        };
+        const teamB: TeamTacticsSnapshot = snap?.tactics.B ?? {
+          style: DEFAULT_TACTICAL_STYLE,
+          mentality: DEFAULT_MENTALITY,
+          familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE),
+        };
+        myTacticalStyleRef.current = teamA.style;
+        myAxesOverrideRef.current = teamA.axesOverride;
+        myFamiliarityRef.current = teamA.familiarity;
+        aiTacticsRef.current = teamB;
+        mentalityRef.current = teamA.mentality;
+        setMentality(teamA.mentality);
+        applyTeamTacticsConfig("A", teamA.style, teamA.mentality, teamA.axesOverride, teamA.familiarity);
+        applyTeamAttackConfig("A", teamA.style, teamA.mentality, teamA.axesOverride, teamA.familiarity);
+        applyTeamTacticsConfig("B", teamB.style, teamB.mentality, teamB.axesOverride, teamB.familiarity);
+        applyTeamAttackConfig("B", teamB.style, teamB.mentality, teamB.axesOverride, teamB.familiarity);
 
         // Exclude injured players from the whole candidate pool — starters AND bench (an injured
         // player must never be available as a substitute either). `data.myLineup` is already
@@ -274,7 +317,7 @@ export function MatchScreen() {
         );
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
         const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers, matchDate);
-        const state = {
+        const state: GameState = snap ? snap.state : {
           ...createMatchState(
             myEligiblePlayers,
             data.myFormation,
@@ -295,11 +338,31 @@ export function MatchScreen() {
                   : { A: data.fixture.aggregate.away, B: data.fixture.aggregate.home } }
             : {}),
         };
-        initRatings(state.players.map(p => p.id));
-        initStats(state.players.map(p => ({ id: p.id, team: p.team })));
+        if (snap) {
+          importStatsState(snap.stats);
+          importRatings(snap.ratings);
+          setGameSpeed(snap.ui.gameSpeed);
+          setEventFeed(snap.ui.eventFeed);
+          eventFeedRef.current = snap.ui.eventFeed;
+          possessionRef.current = {
+            A: snap.ui.possession.A, B: snap.ui.possession.B,
+            lastTime: state.matchTime, lastPhase: state.matchPhase,
+          };
+          // Resume paused at the same minute; the overlay of a break in progress comes back too
+          // (its gameBus event already fired before the reload).
+          setPaused(true);
+          if (state.matchPhase === "halfTime") setMatchOverlay("halfTime");
+          else if (state.matchPhase === "extraTimeBreak") setMatchOverlay("extraTime");
+          showNotice(t("match.resumed"), "info");
+        } else {
+          initRatings(state.players.map(p => p.id));
+          initStats(state.players.map(p => ({ id: p.id, team: p.team })));
+        }
         setRatings(getAllRatings());
         setGameState(state);
         gameStateRef.current = state;
+        // Reloaded after full time but before the result was saved: record it now.
+        if (snap && state.matchPhase === "matchEnd") startMatchEndRef.current?.();
 
         const opp = data.opponentSquad!;
         const homeSquad = data.fixture.home === data.mySquadId ? data.mySquad : opp;
@@ -457,7 +520,7 @@ export function MatchScreen() {
   }, [gameState?.matchPhase, matchOverlay]);
 
   useEffect(() => {
-    const unsub = gameBus.on("matchEnd", () => {
+    const startMatchEnd = () => {
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setMatchOverlay("matchEnd");
 
@@ -515,6 +578,9 @@ export function MatchScreen() {
                 window.location.href = `/match-result?error=${encodeURIComponent(body.error ?? "advance-day failed")}`;
                 return;
               }
+              // Recorded: nothing left to resume (#64).
+              recordedRef.current = true;
+              clearMatchSnapshot();
             } catch (err) {
               console.error("[MatchScreen] advance-day network error:", err);
               // still navigate so user isn't stuck on the match screen
@@ -527,11 +593,58 @@ export function MatchScreen() {
           }
         })();
       }, delayMs);
-    });
+    };
+    startMatchEndRef.current = startMatchEnd;
+    const unsub = gameBus.on("matchEnd", startMatchEnd);
     return () => {
+      startMatchEndRef.current = null;
       unsub();
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       if (matchEndAnimRef.current != null) cancelAnimationFrame(matchEndAnimRef.current);
+    };
+  }, []);
+
+  // Resume after a reload (#64): snapshot the live match every few seconds and whenever the page
+  // is hidden or unloaded. State and counters are read in the same synchronous call, so they
+  // always describe the same tick.
+  useEffect(() => {
+    const writeSnapshot = () => {
+      const key = matchKeyRef.current;
+      const gs = gameStateRef.current;
+      if (!key || !gs || recordedRef.current) return;
+      saveMatchSnapshot({
+        version: MATCH_SNAPSHOT_VERSION,
+        key,
+        savedAt: Date.now(),
+        state: gs,
+        stats: exportStatsState(),
+        ratings: exportRatings(),
+        tactics: {
+          A: {
+            style: myTacticalStyleRef.current,
+            mentality: mentalityRef.current,
+            axesOverride: myAxesOverrideRef.current,
+            familiarity: myFamiliarityRef.current,
+          },
+          B: aiTacticsRef.current,
+        },
+        ui: {
+          gameSpeed: gameSpeedRef.current,
+          eventFeed: eventFeedRef.current,
+          possession: { A: possessionRef.current.A, B: possessionRef.current.B },
+        },
+      });
+    };
+    const onVisibility = () => { if (document.visibilityState === "hidden") writeSnapshot(); };
+    const id = setInterval(writeSnapshot, SNAPSHOT_INTERVAL_MS);
+    window.addEventListener("pagehide", writeSnapshot);
+    window.addEventListener("beforeunload", writeSnapshot);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("pagehide", writeSnapshot);
+      window.removeEventListener("beforeunload", writeSnapshot);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

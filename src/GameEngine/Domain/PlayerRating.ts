@@ -61,3 +61,15 @@ export function getPlayerRating(id: number): number {
 export function getAllRatings(): Record<number, number> {
   return Object.fromEntries(ratings);
 }
+
+/** Plain-JSON copy of every rating (resume a live match after a page reload, #64). */
+export function exportRatings(): Array<[number, number]> {
+  return [...ratings];
+}
+
+/** Replaces every rating with a snapshot from `exportRatings` (instead of `initRatings`). */
+export function importRatings(entries: Array<[number, number]>): void {
+  ratings.clear();
+  for (const [id, r] of entries) ratings.set(id, clamp(r));
+  gameBus.emit('ratingsUpdated', Object.fromEntries(ratings));
+}
