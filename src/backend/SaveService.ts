@@ -21,6 +21,7 @@ import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
+import { initialFamiliarity } from "@/Domain/familiarity/familiarity";
 import { buildInitialManagers } from "@/Domain/managers/managers";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
@@ -779,6 +780,9 @@ export class SaveService {
         // Only the human club simulates staff (`.claude/rules/game/staff.md`): three professionals
         // near its implicit tier rating, generated from the save id.
         if (isPlayerClub) squad.staff = initialStaff(id, squad);
+        // Style familiarity (`.claude/rules/game/style-training.md`): human club only; the saved style
+        // starts ahead of the rest.
+        if (isPlayerClub) squad.styleFamiliarity = initialFamiliarity(meta.tactical_style ?? DEFAULT_TACTICAL_STYLE);
         // Every player starts with a fixed-wage contract ending on his league's season end
         // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
         const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end

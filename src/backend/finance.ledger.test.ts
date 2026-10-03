@@ -199,6 +199,9 @@ describe("finance ledger — start kit reconciliation", () => {
     const postKitSquad = await saveService.getSquad(saveIdKit, entry!.leagueSlug, entry!.stem);
 
     expect(postKitSquad?.finances?.budget).toBe(preKitBudget);
+    // Style familiarity (human club only) is set by createSave and survives the kit, like the staff.
+    expect(preKitSquad!.styleFamiliarity?.balanced).toBe(70);
+    expect(postKitSquad?.styleFamiliarity).toEqual(preKitSquad!.styleFamiliarity);
 
     const leagueMeta = await saveService.getLeagueMeta(saveIdKit, meta.leagueSlug);
     const ledger = await saveService.getLedger(saveIdKit, leagueMeta!.year);
