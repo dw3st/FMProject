@@ -158,7 +158,7 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
     ROLE_BIAS_WEIGHT:        0.10,
     THROUGH_BALL_BONUS:      0,
     // Direct play goes over the line the most.
-    LONG_BALL_WEIGHT:        1.5,
+    LONG_BALL_WEIGHT:        1.3,
   },
 };
 

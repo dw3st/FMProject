@@ -4,7 +4,9 @@
  * `.claude/rules/game-engine/aerial.md`).
  *
  * Every tunable number of the aerial system lives here. Calibrated with
- * `bun scripts/aerial-calibrate.ts` (see aerial.md for the measured table).
+ * `bun scripts/aerial-calibrate.ts` (see aerial.md for the measured table): per match (both teams)
+ * ~11–12 crosses, ~10–11 aerial duels (~20–22 summed over both teams), header goals ~10–11% of the
+ * goals, ~6 long balls (balanced), with goals and shots within ±5% of the pre-aerial engine.
  */
 export const AERIAL_CONFIG = {
   // ── Flight ────────────────────────────────────────────────────────────────
@@ -27,7 +29,7 @@ export const AERIAL_CONFIG = {
    * measured, letting crosses win there cost a fifth of the ground goals.
    */
   CROSS_DEEP_DIST: 20,
-  CROSS_NEAR_LINE_MULT: 0.6,
+  CROSS_NEAR_LINE_MULT: 0.7,
   /** Outside the central corridor: |y − centre| ≥ this (yards). */
   CROSS_MIN_WIDTH: 7,
   /** Inside the penalty area only a cut-back from the byline counts: within this distance of the line, wide of the six-yard box. */
@@ -68,11 +70,15 @@ export const AERIAL_CONFIG = {
   LONG_BALL_MAX_DIST: 65,
   /** The holder must be at most this far from his own goal line (yards). */
   LONG_BALL_MAX_HOLDER_DEPTH: 60,
-  /** Lead in front of the receiver (attack direction, yards). */
+  /** Lead in front of the receiver (attack direction, yards). 0: aimed at his head, not into space. */
   LONG_BALL_LEAD: 0,
   /** Defenders within this radius of the landing point contest the ball. */
   LONG_BALL_CONTEST_RADIUS: 7,
   LONG_BALL_PROGRESS_WEIGHT: 0.30,
+  /**
+   * 0 on purpose: long balls chosen for a FREE receiver created ~+12% shots (fast breaks); aimed at
+   * the striker's head they are contested and roughly neutral (`aerial.md`).
+   */
   LONG_BALL_SPACE_WEIGHT: 0,
   LONG_BALL_AERIAL_WEIGHT: 0.20,
   LONG_BALL_PASS_WEIGHT: 0.10,
