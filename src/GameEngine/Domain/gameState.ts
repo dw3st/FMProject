@@ -2080,7 +2080,11 @@ export function awardCorner(
   const taker = setPieceTakerOf(s0, awardedTeam, 'corners')
     ?? pickOOBTaker('corner', awardedTeam, position, s0.players);
   const players = applyBoxSetPiece(s0.players, taker, position, 'corner', Math.random);
-  if (source === 'through') gameBus.emit('throughBallLostInRace', { player: fromPasserId, defenderWinnerId: taker.id });
+  // A through ball out for a corner to the other team was lost; one out for the passer's own team was not.
+  const passer = s0.players.find(p => p.id === fromPasserId);
+  if (source === 'through' && passer && passer.team !== awardedTeam) {
+    gameBus.emit('throughBallLostInRace', { player: fromPasserId, defenderWinnerId: taker.id });
+  }
   gameBus.emit('cornerAwarded', { team: awardedTeam, takerId: taker.id, source: cornerSource });
   debugLog('setPiece', `Corner to team ${awardedTeam} (${cornerSource}) — ${taker.name} to take it`, {
     playerId: taker.id, data: { fromId: fromPasserId, source: cornerSource, restart: position },
@@ -2167,7 +2171,8 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     // Over the defending team's line with one of them on it: his touch put it out — corner.
     if (kind === 'goal_kick') {
       const exit = { x: Math.max(0, Math.min(PITCH_LENGTH, x)), y: Math.max(0, Math.min(PITCH_WIDTH, y)) };
-      const touched = s.players.some(p => p.team === awardedTeam
+      // The keeper letting it run out is a goal kick, not a corner.
+      const touched = s.players.some(p => p.team === awardedTeam && p.role !== 'GK'
         && Math.hypot(p.x - exit.x, p.y - exit.y) <= SET_PIECE_CONFIG.LOOSE_CORNER_RADIUS);
       if (touched && Math.random() < SET_PIECE_CONFIG.LOOSE_CORNER_CHANCE) {
         return resolveOOBSetPiece(s, 'corner', lb.fromTeamLastTouch, x, y, lb.fromPasserId, source, 'loose');
