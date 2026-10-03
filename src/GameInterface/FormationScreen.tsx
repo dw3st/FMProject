@@ -56,6 +56,7 @@ import {
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 
@@ -505,12 +506,12 @@ export function FormationScreen() {
                         <button
                           onClick={() => supported ? handleSelectFormation(f.id) : undefined}
                           disabled={updating || !supported}
-                          className={`w-full px-3 py-3 rounded-lg text-sm font-bold uppercase tracking-[0.08em] transition-all duration-200 border-0 ${
+                          className={`w-full px-3 py-3 rounded border bg-transparent text-sm font-bold font-display tabular-nums tracking-[0.08em] transition-colors ${
                             isActive
-                              ? "bg-primary text-primary-foreground cursor-pointer"
+                              ? "border-primary text-primary bg-primary/10 cursor-pointer"
                               : supported
-                              ? "bg-secondary/50 text-foreground border border-border/50 hover:border-primary/50 hover:bg-primary/10 cursor-pointer"
-                              : "bg-muted/20 text-muted-foreground/40 border border-border/20 cursor-not-allowed"
+                              ? "border-border text-foreground hover:border-primary/50 cursor-pointer"
+                              : "border-border/40 text-muted-foreground/40 cursor-not-allowed"
                           }`}
                         >
                           {f.id}
@@ -634,30 +635,17 @@ export function FormationScreen() {
             {/* Squad Panel — absolute inside cell so pitch dictates row height */}
             <div className="lg:col-span-3 lg:relative">
               <div className="card-arcade rounded-md p-4 flex flex-col lg:absolute lg:inset-0 overflow-hidden">
-                <div className="flex gap-1 p-1 bg-muted/30 rounded-lg mb-4 shrink-0">
-                  <button
-                    onClick={() => setBenchTab("starting")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 cursor-pointer border-0 ${
-                      benchTab === "starting"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                    }`}
-                  >
-                    <Icon name="staff" className="w-3.5 h-3.5" />
-                    {t("formations.starting11")}
-                  </button>
-                  <button
-                    onClick={() => setBenchTab("bench")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 cursor-pointer border-0 ${
-                      benchTab === "bench"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                    }`}
-                  >
-                    <Icon name="user-plus" className="w-3.5 h-3.5" />
-                    {t("formations.bench")}
-                  </button>
-                </div>
+                <SegmentedTabs
+                  fill
+                  compact
+                  className="mb-4 shrink-0"
+                  tabs={[
+                    { key: "starting", label: <><Icon name="staff" className="w-4 h-4" />{t("formations.starting11")}</> },
+                    { key: "bench", label: <><Icon name="user-plus" className="w-4 h-4" />{t("formations.bench")}</> },
+                  ]}
+                  active={benchTab}
+                  onChange={setBenchTab}
+                />
 
                 {selectedSlotIdx !== null ? (
                   <p className="text-sm text-primary mb-3 px-2 py-1.5 bg-primary/10 rounded-lg border border-primary/30 m-0 shrink-0">
@@ -788,7 +776,7 @@ export function FormationScreen() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`font-bold text-sm uppercase tracking-[0.08em] ${isActive ? "text-primary" : "text-foreground"}`}>
+                      <span className={`font-bold text-sm uppercase font-display tracking-[0.08em] ${isActive ? "text-primary" : "text-foreground"}`}>
                         {meta.label}
                       </span>
                       {isActive && (
@@ -936,13 +924,13 @@ function SquadPlayerRow({
     >
       {(showSlot && slotLabel) ? (
         <div className="flex items-center justify-center shrink-0 touch-none" data-drag-handle>
-          <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
+          <span className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`}>
             {badgeLabel}
           </span>
         </div>
       ) : (
         <div className="shrink-0 touch-none" data-drag-handle>
-          <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
+          <span className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`}>
             {badgeLabel}
           </span>
         </div>
@@ -989,7 +977,7 @@ function SquadPlayerRow({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-sm mt-0.5">
+          <div className="flex items-center gap-3 text-sm tabular-nums mt-0.5">
             <div className="flex items-center gap-1">
               <Icon name="star" className="w-3 h-3 text-muted-foreground" />
               <span className={`font-bold ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
@@ -1081,7 +1069,7 @@ function FormationPitch({
                 <div
                   key={key}
                   data-drop={key}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-dashed flex items-center justify-center text-[13px] font-semibold ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-dashed flex items-center justify-center text-sm font-semibold ${
                     dropHover === key ? "border-primary bg-primary/30 text-primary" : "border-white/40 text-white/60"
                   }`}
                   style={{ left: `${(c.y / PITCH_WIDTH) * 100}%`, top: `${100 - (c.x / PITCH_LENGTH) * 100}%` }}
@@ -1149,13 +1137,13 @@ function FormationPitch({
                       ringClassName={`border-2 border-current ${getDetailedPositionColor(slot.role)}`}
                     />
                     <span
-                      className={`absolute -top-2 -left-3 min-w-7 rounded border border-current bg-background/95 px-1 text-center text-[13px] font-bold uppercase leading-tight pointer-events-none ${getDetailedPositionColor(slot.role)}`}
+                      className={`absolute -top-2 -left-3 min-w-7 rounded border border-current bg-background/95 px-1 text-center text-[13px] font-bold uppercase font-display leading-tight pointer-events-none ${getDetailedPositionColor(slot.role)}`}
                     >
                       {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
                     </span>
                   </>
                 ) : (
-                  <span className="text-[13px] font-bold text-primary-foreground uppercase">
+                  <span className="text-[13px] font-bold text-primary-foreground uppercase font-display">
                     {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
                   </span>
                 )}
@@ -1206,7 +1194,7 @@ function FormationPitch({
                             <Icon name="star" className="w-3 h-3" />
                             <span>{t("formations.rating")}</span>
                           </div>
-                          <span className={`font-bold text-sm ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+                          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
