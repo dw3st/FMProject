@@ -835,6 +835,7 @@
       "defensive": "Defensive"
     },
     "injuryNotice": "{{player}} is injured ({{severity}}) and has been substituted.",
+    "resumed": "Match resumed where you left off. Press Play to continue.",
     "injurySeverity": {
       "light": "light",
       "medium": "medium",

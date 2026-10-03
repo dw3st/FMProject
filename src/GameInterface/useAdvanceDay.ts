@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
+import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import { useKeybinds } from "@/GameInterface/useKeybinds";
 import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 import type { ClubMove } from "@/types/pyramidTypes";
@@ -97,6 +98,8 @@ export function useAdvanceDay() {
     try {
       const res = await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to advance day");
+      // The day moved on: a half-played match snapshot of the old day is stale (#64).
+      clearMatchSnapshot();
       const log = (await res.json()) as AdvanceDayResponse & { sacked?: boolean };
       if (log.sacked) {
         window.location.href = "/fired";
@@ -141,7 +144,10 @@ export function useAdvanceDay() {
         });
         const body = (await res.json().catch(() => null)) as AdvanceUntilResponse | null;
         if (!body) throw new Error(`HTTP ${res.status}`);
-        if (body.newDate) lastDate = body.newDate;
+        if (body.newDate) {
+          lastDate = body.newDate;
+          clearMatchSnapshot();
+        }
         matchDate = body.matchDate ?? null;
         const advanced = progress.daysAdvanced + (body.daysAdvanced ?? 0);
         const remaining = body.target && body.newDate ? Math.max(0, daysBetween(body.newDate, body.target)) : 0;

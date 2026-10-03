@@ -21,6 +21,7 @@ import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName } from "@/Domain/world/labels";
+import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -784,6 +785,8 @@ export function MatchPreviewScreen() {
     setCommencing(true);
     void capture("match_played", { mode: "sim" });
     const matchDate = session.currentDate ?? "";
+    // Simulating instead of watching abandons any half-played live match of today (#64).
+    clearMatchSnapshot();
     try {
       await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
     } catch {
