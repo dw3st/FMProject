@@ -6,6 +6,7 @@ import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
 import { Button } from "@/GameInterface/ui/Button";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -200,46 +201,28 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
           <span className="text-primary">{t("inbox.title")}</span>
         </h2>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-md overflow-hidden border border-border bg-card/50">
-            <button
-              type="button"
-              onClick={() => setFilter("all")}
-              className={`px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
-                filter === "all"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-              }`}
-            >
-              {t("common.all")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter("unread")}
-              className={`px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
-                filter === "unread"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-              }`}
-            >
-              {t("inbox.unread")}
-              {unreadCount > 0 && (
-                <span
-                  className={`ml-1.5 text-sm px-1.5 py-0.5 rounded-full ${
-                    filter === "unread"
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "bg-primary/20 text-primary"
-                  }`}
-                >
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <SegmentedTabs
+            compact
+            tabs={[
+              { key: "all", label: t("common.all") },
+              {
+                key: "unread",
+                label: (
+                  <>
+                    {t("inbox.unread")}
+                    {unreadCount > 0 && <span className="tabular-nums text-primary">{unreadCount}</span>}
+                  </>
+                ),
+              },
+            ]}
+            active={filter}
+            onChange={setFilter}
+          />
           <button
             type="button"
             onClick={handleMarkAllRead}
             disabled={busy || unreadCount === 0}
-            className="px-3 h-10 text-[13px] font-semibold rounded border-0 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 bg-transparent hover:text-foreground"
+            className="px-3 h-10 text-sm font-semibold rounded border-0 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 bg-transparent hover:text-foreground"
           >
             <Icon name="check-check" className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t("inbox.markAllRead")}</span>
@@ -392,7 +375,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </div>
           <div className="flex-1 min-w-0">
             <span
-              className={`text-[13px] font-black uppercase tracking-[0.08em] ${meta.color}`}
+              className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${meta.color}`}
             >
               {t(meta.labelKey)}
             </span>
@@ -566,7 +549,7 @@ function PrizeLine({ prize }: { prize?: number }) {
   const { t } = useTranslation();
   if (!prize || prize <= 0) return null;
   return (
-    <p className="text-sm font-semibold text-chart-2 m-0 mt-1">
+    <p className="text-sm font-semibold text-chart-2 m-0 mt-1 tabular-nums">
       {t("inbox.prizeAmount", { amount: formatFee(prize) })}
     </p>
   );
