@@ -213,7 +213,7 @@ export async function updateSaveCurrentDate(saveId: string, currentDate: string)
 /** Persist training policy (rest-day sessions for your club). */
 export async function updateSaveDevelopmentTraining(
   saveId: string,
-  patch: { min_energy_to_train?: number; training_intensity?: TrainingIntensity; style_focus?: FamiliarityKey },
+  patch: { min_energy_to_train?: number; training_intensity?: TrainingIntensity; style_focus?: FamiliarityKey | null },
 ): Promise<Pick<SaveMeta, "min_energy_to_train" | "training_intensity" | "style_focus">> {
   const res = await fetch(`/api/saves/${saveId}`, {
     method: "PUT",

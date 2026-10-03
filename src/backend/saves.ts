@@ -149,9 +149,11 @@ export const saveRoutes = {
         patch.training_intensity = ti as TrainingIntensity;
       }
       if (body.style_focus !== undefined) {
-        if (!isFamiliarityKey(body.style_focus))
+        // null = auto: drill the tactics style (the key is cleared from the meta).
+        if (body.style_focus === null) patch.style_focus = undefined;
+        else if (!isFamiliarityKey(body.style_focus))
           return Response.json({ error: "invalid style_focus" }, { status: 400 });
-        patch.style_focus = body.style_focus;
+        else patch.style_focus = body.style_focus;
       }
       if (body.followedLeagues !== undefined) {
         const leagues = await getLeagueData();

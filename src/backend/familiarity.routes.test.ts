@@ -40,5 +40,8 @@ describe("style familiarity: career start + training focus", () => {
     const ok = await put({ style_focus: "long_ball" });
     expect(ok.status).toBe(200);
     expect((await saveService.getMeta(saveId))?.style_focus).toBe("long_ball");
+    // null = auto (back to the tactics style).
+    expect((await put({ style_focus: null })).status).toBe(200);
+    expect((await saveService.getMeta(saveId))?.style_focus).toBeUndefined();
   }, 120_000);
 });

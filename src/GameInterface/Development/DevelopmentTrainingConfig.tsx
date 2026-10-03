@@ -16,10 +16,10 @@ export function DevelopmentTrainingConfig() {
   const [minEnergy, setMinEnergy] = useState(DEFAULT_MIN_ENERGY_TO_TRAIN);
   const [intensity, setIntensity] = useState<TrainingIntensity>(DEFAULT_TRAINING_INTENSITY);
   const [saving, setSaving] = useState(false);
-  // Style focus (`src/Domain/familiarity`): absent on the save = the tactics style is drilled.
+  // Style focus (`src/Domain/familiarity`): null = auto, the tactics style is drilled.
   const tacticsStyle = session?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
-  const canonicalFocus = save?.style_focus;
-  const [styleFocus, setStyleFocus] = useState<FamiliarityKey | undefined>(canonicalFocus);
+  const canonicalFocus: FamiliarityKey | null = save?.style_focus ?? null;
+  const [styleFocus, setStyleFocus] = useState<FamiliarityKey | null>(canonicalFocus);
   useEffect(() => setStyleFocus(canonicalFocus), [canonicalFocus]);
 
   const INTENSITY_OPTIONS: { value: TrainingIntensity; label: string; hint: string }[] = useMemo(() => [
@@ -51,7 +51,7 @@ export function DevelopmentTrainingConfig() {
       const updated = await updateSaveDevelopmentTraining(session.saveId, {
         min_energy_to_train: minEnergy,
         training_intensity: intensity,
-        ...(styleFocus ? { style_focus: styleFocus } : {}),
+        style_focus: styleFocus,
       });
       mergeSession({
         min_energy_to_train: updated.min_energy_to_train,
@@ -129,10 +129,13 @@ export function DevelopmentTrainingConfig() {
           {t("familiarity.focusLabel")}
         </span>
         <div className="flex flex-wrap gap-1.5">
+          <Chip selected={styleFocus === null} disabled={saving || !session} onClick={() => setStyleFocus(null)}>
+            {t("familiarity.focusAuto", { style: familiarityKeyLabel(tacticsStyle, t) })}
+          </Chip>
           {FAMILIARITY_KEYS.map((key) => (
             <Chip
               key={key}
-              selected={(styleFocus ?? tacticsStyle) === key}
+              selected={styleFocus === key}
               disabled={saving || !session}
               onClick={() => setStyleFocus(key)}
             >
@@ -142,7 +145,6 @@ export function DevelopmentTrainingConfig() {
         </div>
         <p className="text-sm text-muted-foreground mt-1 m-0">
           {t("familiarity.focusHint")}
-          {!styleFocus && ` ${t("familiarity.focusDefault", { style: familiarityKeyLabel(tacticsStyle, t) })}`}
         </p>
       </div>
 
