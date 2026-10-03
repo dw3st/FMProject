@@ -6,7 +6,7 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { withSaveLock } from "@/backend/saveLock";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
-import type { FreeAgent, LeagueData, LeagueTeam, Squad, StandingRow } from "@/types/playerTypes";
+import type { FreeAgent, LeagueData, LeagueTeam, LeagueZone, Squad, StandingRow } from "@/types/playerTypes";
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
@@ -14,7 +14,7 @@ import { processYouthRollover } from "@/Domain/youth/youth";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
 import type { ClubMove, Pyramids } from "@/types/pyramidTypes";
-import type { StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
+import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ContinentalSlug, Fixture, LeagueSeasonMeta, LeagueSeasonState } from "@/types/calendarTypes";
 import { findPlayerSquad, isPlayerSquadId } from "@/Domain/clubLookup";
@@ -30,7 +30,23 @@ import {
   buildTransferInMessage,
   buildTransferOutMessage,
   buildSeasonMessage,
+  buildBoardMessage,
 } from "@/Domain/inbox/inboxEvents";
+import {
+  applyCompetitionEvent,
+  applyTransferSale,
+  applyWeekly,
+  boardBonus,
+  carryIntoNewSeason,
+  evaluateSeason,
+  followersAfterMood,
+  isIdol,
+  reviewBoardStatus,
+  snapshotBoard,
+  stadiumFillRate,
+} from "@/Domain/boardFans/boardFans";
+import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
+import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
 import {
   addOneDay,
   buildMatchEvent,
@@ -71,7 +87,7 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
-import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill } from "@/Domain/finance/wages";
+import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
@@ -127,6 +143,7 @@ export type LeagueDataEntry = {
   name?: string;
   country?: string;
   standings: LeagueTeam[];
+  zones?: LeagueZone[];
 };
 
 let _leagueDataCache: LeagueDataEntry[] | null = null;
@@ -324,6 +341,7 @@ export async function advanceOneDay(
     const meta = await saveService.getMeta(saveId);
     if (!meta) return { ok: false, status: 404, error: "save not found" };
     if (!meta.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
+    if (meta.ended) return { ok: false, status: 409, error: "career ended: the manager was sacked" };
 
     const currentDate = meta.currentDate;
     const nextDate = addOneDay(currentDate);
@@ -350,6 +368,12 @@ export async function advanceOneDay(
     const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean }> = [];
 
     const tactics = await saveService.getTactics(saveId);
+
+    // Board and fans of the human club (`.claude/rules/game/board-fans.md`): updated in memory
+    // through the day, written with the meta patch at the end. Messages are deferred like the rest.
+    let board: BoardState | undefined = meta.board;
+    const boardMessages: Parameters<typeof buildBoardMessage>[0][] = [];
+    let sackedReason: SackReason | null = null;
 
     // Membership comes from the save's squad folders. Built once for the day's matches and
     // training; only the season rollover changes it, and it re-reads the index right after.
@@ -742,6 +766,19 @@ export async function advanceOneDay(
     for (const [slug, rounds] of roundUpdates) if (isContinentalSlug(slug)) continentalPlayed.set(slug, [...rounds.keys()]);
     const continentalChanges = await advanceContinentalStages(saveService, saveId, continentalPlayed);
 
+    // ── Board and fans: today's official matches of the human club (standings already written) ──
+    if (board && playerSquadId) {
+      board = await boardAfterMatches({
+        board, service: saveService, saveId, playerSquadId,
+        playerLeagueSlug: meta.leagueSlug,
+        playerLeagueState: activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug),
+        events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
+        fixtureOf: (competition, round, fixtureId) =>
+          roundUpdates.get(competition)?.get(round)?.find((f) => f.id === fixtureId),
+        squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+      });
+    }
+
     // ── Prize money: cup + continental (league prize is at rollover, further down) ───────────
     // Player's club → ledger `prize` entry; AI club → `aiTransferBudget`, capped
     // (`aiBudgetWithPrize` — see `.claude/rules/AI-clubs/finance.md`, design spec §3 "Premiação").
@@ -830,6 +867,14 @@ export async function advanceOneDay(
         const label = competitionName(cSlug, catalogForCupPrizes as unknown as LeagueData[], "en");
         const base = await cupBaseFor(cupMeta.cup.country);
 
+        if (board && playerSquadId && (winnerId === playerSquadId || loserId === playerSquadId)) {
+          if (winnerId === playerSquadId) {
+            board = applyCompetitionEvent(board, stage === "final" ? { kind: "title", title: `cup:${cSlug}` } : { kind: "stage" });
+          } else if (!["qf", "sf", "final"].includes(stage)) {
+            board = applyCompetitionEvent(board, { kind: "early_exit" });
+          }
+        }
+
         const winnerPrize = cupStagePrize(base, stage);
         const paidToWinner = await awardClubPrize(winnerId, winnerPrize, `${label} · ${stage}`, { competition: cSlug, stage });
         if (paidToWinner > 0) cupPrizeAwardedTo.set(winnerId, (cupPrizeAwardedTo.get(winnerId) ?? 0) + paidToWinner);
@@ -912,6 +957,11 @@ export async function advanceOneDay(
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
         for (const ev of events) {
+          if (board && "clubId" in ev && ev.clubId === playerSquadId) {
+            if (ev.kind === "champion") board = applyCompetitionEvent(board, { kind: "title", title: `continental:${cSlug}` });
+            else if (ev.kind === "advanced") board = applyCompetitionEvent(board, { kind: "stage" });
+            else if (ev.kind === "eliminated" && ev.stage === "group") board = applyCompetitionEvent(board, { kind: "early_exit" });
+          }
           if (ev.kind !== "champion") continue;
           recordTitle(ev.clubId, `continental:${cSlug}`);
           const contMeta = await saveService.getLeagueMeta(saveId, cSlug);
@@ -1190,6 +1240,13 @@ export async function advanceOneDay(
             saveService,
           );
         } else if (isSellerPlayer) {
+          if (board) {
+            board = applyTransferSale(board, {
+              fee: tx.fee,
+              annualRevenue: wageRevenueBasisOf(tx.sellerSquad),
+              idol: isIdol(tx.player, tx.sellerSquad),
+            });
+          }
           await emitInboxMessage(
             saveId,
             buildTransferOutMessage({
@@ -1253,7 +1310,10 @@ export async function advanceOneDay(
           ...f,
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),
         }));
-        const moneyEntries = computeAdvanceDayMoney({ currentDate, playerSquad, homeFixturesToday });
+        const moneyEntries = computeAdvanceDayMoney({
+          currentDate, playerSquad, homeFixturesToday,
+          ...(board ? { fillRate: stadiumFillRate(board.fans) } : {}),
+        });
         if (moneyEntries.length > 0) {
           const playerLeagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
           const season = playerLeagueMeta?.year ?? new Date(currentDate).getFullYear();
@@ -1268,6 +1328,10 @@ export async function advanceOneDay(
               entry,
             );
             balanceAfter = updated.finances?.budget ?? balanceAfter;
+          }
+          // Monday: the balance moves the board, then both meters drift towards 60.
+          if (board && isWeeklyTick) {
+            board = applyWeekly(board, { balance: balanceAfter, weeklyRevenue: wageRevenueBasisOf(playerSquad) / 52 });
           }
           if (balanceBefore >= 0 && balanceAfter < 0) {
             negativeBalanceMessage = {
@@ -1299,6 +1363,8 @@ export async function advanceOneDay(
     // League prize paid to the player's club at this rollover (design spec §3 "Liga"), for the
     // champion/promoted/relegated season message below. 0 when no rollover happens this day.
     let playerLeaguePrizeThisRollover = 0;
+    // Board end-of-season bonus credited at this rollover (ledger `prize`, ref.stage "board_bonus").
+    let playerBoardBonusEntry: LedgerEntry | null = null;
     let freeAgentsRetiredYear: number | undefined;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
@@ -1472,8 +1538,37 @@ export async function advanceOneDay(
           } else {
             const human = applyHumanSeasonReaction(next, outcome);
             next = human.squad;
-            if (human.followersAfter !== human.followersBefore) {
-              playerFollowersChange = { before: human.followersBefore, after: human.followersAfter, leagueSlug: slug };
+            // The fans' mood scales the followers gain (× 0.8..1.2, `.claude/rules/game/board-fans.md`).
+            const followersAfter = board
+              ? followersAfterMood(human.followersBefore, human.followersAfter, board.fans)
+              : human.followersAfter;
+            if (next.finances && followersAfter !== human.followersAfter) {
+              next = { ...next, finances: { ...next.finances, followers: followersAfter } };
+            }
+            if (followersAfter !== human.followersBefore) {
+              playerFollowersChange = { before: human.followersBefore, after: followersAfter, leagueSlug: slug };
+            }
+            // The board judges the season: objective, league title, promotion/relegation; a happy
+            // board pays a bonus, an angry one may sack the manager (sacking enabled only).
+            if (board) {
+              const row = tablePos >= 0 ? table[tablePos]! : null;
+              const position = row && row.mp > 0 ? tablePos + 1 : null;
+              board = evaluateSeason(board, { position });
+              if (position === 1) board = applyCompetitionEvent(board, { kind: "title", title: `league:${slug}` });
+              if (plan.playerMove?.kind === "promoted") board = applyCompetitionEvent(board, { kind: "promoted" });
+              if (plan.playerMove?.kind === "relegated") board = applyCompetitionEvent(board, { kind: "relegated" });
+              const bonus = boardBonus(board.board, wageRevenueBasisOf(next));
+              if (bonus > 0) {
+                playerBoardBonusEntry = {
+                  date: currentDate, kind: "prize", amount: bonus, label: "Board bonus", ref: { stage: "board_bonus" },
+                };
+                next = applyMoney(next, playerBoardBonusEntry);
+                boardMessages.push({ date: currentDate, kind: "bonus", bonus, board: Math.round(board.board) });
+              }
+              // Only the sacking is decided here; warnings/praise come from the daily review below,
+              // on the carried-over meters of the new season.
+              const review = reviewBoardStatus(board, { sackingEnabled: meta.sackingEnabled !== false, date: currentDate });
+              if (review.sacked) sackedReason = review.sacked;
             }
             if (leaguePrizeAmount > 0) {
               next = applyMoney(next, {
@@ -1522,6 +1617,7 @@ export async function advanceOneDay(
                 ref: { competition: slug, position: tablePos + 1 },
               });
             }
+            if (playerBoardBonusEntry) newSeasonEntries.push(playerBoardBonusEntry);
             if (newSeasonEntries.length > 0) await saveService.appendLedger(saveId, closedYear.get(slug)! + 1, newSeasonEntries);
           }
         }
@@ -1695,6 +1791,26 @@ export async function advanceOneDay(
 
       if (unit.leagues.includes(meta.leagueSlug)) {
         seasonEnded = true;
+        // New season objective (new membership, after the moves), meters carried half-way to 60.
+        if (board && !sackedReason && playerSquadId) {
+          const newLeague = index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug;
+          const state = updatedActiveLeagues[stateIdx(newLeague)];
+          const catalogForBoard = await getLeagueData();
+          const objective = objectiveFromSquads({
+            squads: await saveService.getSquadsInLeague(saveId, newLeague),
+            playerSquadId,
+            leagueSlug: newLeague,
+            zones: catalogForBoard.find((l) => l.slug === newLeague)?.zones ?? [],
+            season: state ? seasonLabel(state.year, state.start, state.end) : "",
+          });
+          board = carryIntoNewSeason(board, objective);
+          if (objective) {
+            boardMessages.push({
+              date: currentDate, kind: "objective", objective,
+              leagueName: competitionName(newLeague, catalogForBoard as unknown as LeagueData[], "en"),
+            });
+          }
+        }
         archiveYear = closedYear.get(meta.leagueSlug);
         playerCountryMoves = plan.moves;
         playerMove = plan.playerMove;
@@ -1854,6 +1970,38 @@ export async function advanceOneDay(
       }
     }
 
+    // ── Board and fans: daily review (warning, ultimatum, praise, sacking) + today's snapshot ──
+    let ended: CareerEnded | undefined;
+    if (board) {
+      if (!sackedReason) {
+        const review = reviewBoardStatus(board, { sackingEnabled: meta.sackingEnabled !== false, date: currentDate });
+        board = review.state;
+        sackedReason = review.sacked;
+        for (const kind of review.messages) {
+          if (kind === "sacked") continue;
+          boardMessages.push({
+            date: currentDate, kind, board: Math.round(board.board),
+            ...(kind === "ultimatum" && board.ultimatum
+              ? { ultimatum: { matches: board.ultimatum.matchesLeft, points: board.ultimatum.pointsNeeded } }
+              : {}),
+          });
+        }
+      }
+      board = snapshotBoard(board, currentDate);
+      if (sackedReason) {
+        const leagueNow = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+        const table = (await saveService.getLeagueStandings(saveId, leagueNow)) ?? [];
+        const pos = table.findIndex((r) => r.squadId === meta.clubId);
+        ended = {
+          date: currentDate, reason: sackedReason, clubName: meta.clubName,
+          leagueName: (await leagueNameResolver(updatedActiveLeagues))(leagueNow),
+          position: pos >= 0 && table[pos]!.mp > 0 ? pos + 1 : null,
+          board: Math.round(board.board), fans: Math.round(board.fans), record: board.record,
+        };
+        boardMessages.push({ date: currentDate, kind: "sacked", reason: sackedReason, board: Math.round(board.board) });
+      }
+    }
+
     // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
     if (seasonEnded) {
       await saveService.writeTransfers(saveId, []);
@@ -1870,6 +2018,7 @@ export async function advanceOneDay(
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
+    for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
 
     await managerTracker.flush();
 
@@ -1878,6 +2027,8 @@ export async function advanceOneDay(
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
+    if (board) metaPatch.board = board;
+    if (ended) metaPatch.ended = ended;
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
     if (playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();
@@ -1906,6 +2057,7 @@ export async function advanceOneDay(
         ...(seasonEnded
           ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove, playerChampionOf }
           : {}),
+        ...(ended ? { sacked: true as const } : {}),
       },
     };
 }
@@ -1931,6 +2083,14 @@ export const advanceDayRoutes = {
         await emitContinentalSeasonStartNews(saveId, meta.clubId, meta.currentDate);
       } catch (e) {
         logError("continental", `save ${saveId}: failed to emit continental season-start news`, e);
+      }
+      // The board's first season objective (set by createSave), once the career begins.
+      if (meta.board?.objective) {
+        const catalog = await getLeagueData();
+        await emitInboxMessage(saveId, buildBoardMessage({
+          date: meta.currentDate, kind: "objective", objective: meta.board.objective,
+          leagueName: competitionName(meta.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
+        }), saveService);
       }
     }
 

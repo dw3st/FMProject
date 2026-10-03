@@ -66,6 +66,8 @@ const { leaguePrize } = await import("@/Domain/finance/prizes");
 const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
 const { isSuspended } = await import("@/Domain/discipline/discipline");
+const { followersAfterMood, stadiumFillRate } = await import("@/Domain/boardFans/boardFans");
+const { gateRevenue } = await import("@/Domain/finance/gate");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
 type CountryPyramid = import("@/types/pyramidTypes").CountryPyramid;
 type LeagueSeasonState = import("@/types/calendarTypes").LeagueSeasonState;
@@ -103,6 +105,8 @@ async function createSmokeSave(): Promise<string> {
     clubColors: club.colors ?? ["#888888", "#ffffff"],
     database: { id: db.id, name: db.name, version: db.version, startDate: db.startDate },
     manager: { name: "Smoke Manager", nationalityIso: "gb", backgroundId: "former-player" },
+    // Sacking off: a full season must run to the end; the section "Diretoria" checks it never sacks.
+    sackingEnabled: false,
   });
   await applyBroadcasting(meta.id, meta, meta.leagueSlug, meta.clubId);
   const kit = await applyRandomStartKit(meta.id);
@@ -162,6 +166,12 @@ try {
   const { formationForSimId, DEFAULT_SIM_FORMATION_ID } = await import("@/Domain/matchFormations");
   const rotFormation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
   let rotationDiffered = false;
+  // Diretoria (`.claude/rules/game/board-fans.md`): meters every day, objectives seen, never sacked.
+  const boardTrack = {
+    days: 0, outOfRange: 0, ended: false,
+    boardMin: Infinity, boardMax: -Infinity, fansMin: Infinity, fansMax: -Infinity,
+    objectiveSeasons: new Set<string>(),
+  };
   {
     const sq = (await plain().getSquadById(saveId, playerSquadId))!;
     await plain().saveTactics(saveId, {
@@ -356,6 +366,20 @@ try {
     }
     days++;
     dayMsTotal += ms;
+    {
+      const mb = await plain().getMeta(saveId);
+      if (mb?.ended) boardTrack.ended = true;
+      const b = mb?.board;
+      if (b) {
+        boardTrack.days++;
+        if (b.board < 0 || b.board > 100 || b.fans < 0 || b.fans > 100) boardTrack.outOfRange++;
+        boardTrack.boardMin = Math.min(boardTrack.boardMin, b.board);
+        boardTrack.boardMax = Math.max(boardTrack.boardMax, b.board);
+        boardTrack.fansMin = Math.min(boardTrack.fansMin, b.fans);
+        boardTrack.fansMax = Math.max(boardTrack.fansMax, b.fans);
+        if (b.objective) boardTrack.objectiveSeasons.add(`${b.objective.leagueSlug}:${b.objective.season}:${b.objective.kind}`);
+      }
+    }
     const payload = outcome.payload as Record<string, unknown>;
     const playedMine = prePlayerFixtures.length > 0 || ms > 4000;
     if (playedMine) { matchDays++; matchDayMs += ms; }
@@ -473,13 +497,18 @@ try {
         const b0 = prePlayerSquad.finances?.budget ?? 0;
         const b1 = postSquad.finances?.budget ?? 0;
         const tv = prePlayerSquad.finances?.broadcasting ?? 0;
-        const homeFixturesToday = prePlayerFixtures
-          .filter((f) => f.home === playerSquadId)
-          .map((f) => ({ competition: f.competition, kind: "league" as const, label: f.competition, neutral: f.neutral }));
+        // Weekly lines from the pure function; the gate (stadium fill from the fans after today's
+        // match) and the board bonus are read from the ledger lines of the day.
         const entries = computeAdvanceDayMoney({
-          currentDate: date, playerSquad: prePlayerSquad, homeFixturesToday,
+          currentDate: date, playerSquad: prePlayerSquad, homeFixturesToday: [],
         });
-        const delta = entries.reduce((s, e) => s + e.amount, 0);
+        const dayLedger: LedgerEntry[] = [];
+        for (const season of await plain().listLedgerSeasons(saveId)) {
+          dayLedger.push(...(await plain().getLedger(saveId, season)).filter((e) => e.date === date));
+        }
+        const gateToday = dayLedger.filter((e) => e.kind === "gate").reduce((s, e) => s + e.amount, 0);
+        const boardBonusToday = dayLedger.filter((e) => e.ref?.stage === "board_bonus").reduce((s, e) => s + e.amount, 0);
+        const delta = entries.reduce((s, e) => s + e.amount, 0) + gateToday + boardBonusToday;
         const closedTable = archive?.standings ?? [];
         const playerTablePos = closedTable.findIndex((r) => r.squadId === playerSquadId);
         leaguePrizeAmount = playerTablePos >= 0 ? leaguePrize(tv, playerTablePos + 1, closedTable.length) : 0;
@@ -513,7 +542,11 @@ try {
           base,
           clubSeasonOutcome(archive.standings, playerSquadId, obsPlayer ? [obsPlayer] : [], preContinental),
         ).followersAfter;
-        check(followersAfter === expected, `human followers ${followersBefore} → ${followersAfter} (expected ${expected})`);
+        // The fans' mood scales the change × 0.8..1.2 (`.claude/rules/game/board-fans.md`).
+        const lo = Math.min(followersAfterMood(followersBefore, expected, 0), followersAfterMood(followersBefore, expected, 100));
+        const hi = Math.max(followersAfterMood(followersBefore, expected, 0), followersAfterMood(followersBefore, expected, 100));
+        check(followersAfter >= lo && followersAfter <= hi,
+          `human followers ${followersBefore} → ${followersAfter} (reaction ${expected}, fans' mood range ${lo}..${hi})`);
       }
       const followersNews = followersAfter !== followersBefore ? 1 : 0;
       // "league_prize" always fires once per rollover when a merit prize was paid (design spec
@@ -1075,6 +1108,34 @@ try {
   check(staffTotal < 0, `staff: total staff cost is an expense (${Math.round(staffTotal).toLocaleString("en-US")})`);
 
   // ── Fôlego ───────────────────────────────────────────────────────────────
+  // ── Diretoria ──
+  // See `.claude/rules/game/board-fans.md`. The smoke save has sacking disabled.
+  console.log("\n── Diretoria ──");
+  console.log(`  board ${boardTrack.boardMin.toFixed(1)}..${boardTrack.boardMax.toFixed(1)}, `
+    + `fans ${boardTrack.fansMin.toFixed(1)}..${boardTrack.fansMax.toFixed(1)}, objectives: ${[...boardTrack.objectiveSeasons].join(" | ")}`);
+  check(boardTrack.days === days, `board: meta.board present after every day (${boardTrack.days}/${days})`);
+  check(boardTrack.outOfRange === 0, `board: meters always within 0..100 (${boardTrack.outOfRange} day(s) out)`);
+  check(boardTrack.objectiveSeasons.size >= 2, `board: a new objective was set at the rollover (${boardTrack.objectiveSeasons.size} seen)`);
+  check(!boardTrack.ended, "board: sacking disabled never sacks (meta.ended never set)");
+  {
+    const finalMeta = (await plain().getMeta(saveId))!;
+    check(finalMeta.sackingEnabled === false, "board: the smoke save has sacking disabled");
+    const inboxNow = await plain().getInbox(saveId);
+    check(inboxNow.some((m) => m.category === "board" && m.kind === "objective"),
+      "board: the inbox has the objective message of the new season");
+    // Gate: every league home gate sits in the fans' fill range and the amounts vary with the fans.
+    const capacity = humanFinal?.venue?.capacity ?? 0;
+    const leagueGates = allLedgerEntries.filter(
+      (e) => e.kind === "gate" && !!e.ref?.competition && !isCupSlug(e.ref.competition) && !isContinentalSlug(e.ref.competition),
+    );
+    const lo = gateRevenue(capacity, "league", false, stadiumFillRate(0));
+    const hi = gateRevenue(capacity, "league", false, stadiumFillRate(100));
+    check(leagueGates.length > 0 && leagueGates.every((e) => e.amount >= lo - 1 && e.amount <= hi + 1),
+      `board: ${leagueGates.length} league gate(s) within the fans' fill range ${lo}..${hi}`);
+    check(new Set(leagueGates.map((e) => e.amount)).size > 1,
+      `board: the gate varies with the fans (${new Set(leagueGates.map((e) => e.amount)).size} distinct amounts)`);
+  }
+
   console.log("\n── Fôlego ──");
 
   function monthlyMeans(samples: Array<{ month: string; value: number }>): Map<string, number> {

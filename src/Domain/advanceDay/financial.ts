@@ -37,8 +37,10 @@ export function computeAdvanceDayMoney(args: {
   currentDate: string;
   playerSquad: Squad | null;
   homeFixturesToday: PlayerHomeFixtureToday[];
+  /** Stadium fill from the club's fans (`stadiumFillRate`); absent = the default `GATE.FILL_RATE`. */
+  fillRate?: number;
 }): LedgerEntry[] {
-  const { currentDate, playerSquad, homeFixturesToday } = args;
+  const { currentDate, playerSquad, homeFixturesToday, fillRate } = args;
   if (!playerSquad) return [];
 
   const entries: LedgerEntry[] = [];
@@ -59,7 +61,7 @@ export function computeAdvanceDayMoney(args: {
 
   const capacity = playerSquad.venue?.capacity ?? 0;
   for (const f of homeFixturesToday) {
-    const amount = gateRevenue(capacity, f.kind, f.neutral);
+    const amount = gateRevenue(capacity, f.kind, f.neutral, fillRate);
     if (amount <= 0) continue;
     entries.push({
       date: currentDate,

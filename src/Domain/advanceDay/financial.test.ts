@@ -66,6 +66,17 @@ describe("computeAdvanceDayMoney", () => {
     expect(entries[0]!.amount).toBe(gateRevenue(40_000, "league"));
   });
 
+  test("the fans' stadium fill rate scales the gate", () => {
+    const entries = computeAdvanceDayMoney({
+      currentDate: "2027-03-09",
+      playerSquad: squad(),
+      homeFixturesToday: [{ competition: "premier_league", kind: "league", label: "Premier League" }],
+      fillRate: 0.9,
+    });
+    expect(entries[0]!.amount).toBe(gateRevenue(40_000, "league", false, 0.9));
+    expect(entries[0]!.amount).toBeGreaterThan(gateRevenue(40_000, "league"));
+  });
+
   test("a home continental fixture pays double the league gate", () => {
     const entries = computeAdvanceDayMoney({
       currentDate: "2027-03-09",

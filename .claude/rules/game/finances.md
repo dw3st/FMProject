@@ -167,7 +167,8 @@ teto do fator) se afasta desse número.
 
 ### Bilheteria (`gate.ts`)
 
-Mesmo modelo em todo lugar: `capacidade × 0,65 (FILL_RATE) × preço`. Preço da liga e da copa
+Mesmo modelo em todo lugar: `capacidade × 0,65 (FILL_RATE) × preço`. O clube do jogador usa a ocupação da
+torcida (`stadiumFillRate`, 0,45..0,9, 0,65 com a torcida em 60 — `.claude/rules/game/board-fans.md`). Preço da liga e da copa
 nacional é `TICKET_PRICE = 25`; continental é `2× (CONTINENTAL_MULT)`. Jogo em campo neutro
 (final de copa/continental) rende 0. `FinancialService.calcMatchdayRevenue` e a projeção da tela
 chamam a mesma função — nenhum modelo paralelo.

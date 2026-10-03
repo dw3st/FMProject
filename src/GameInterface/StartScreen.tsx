@@ -22,6 +22,8 @@ interface SaveEntry {
   leagueName: string;
   clubColors: [string, string];
   updatedAt: string;
+  /** Sacked: the career is over (`.claude/rules/game/board-fans.md`). */
+  ended?: { date: string };
 }
 
 export function StartScreen() {
@@ -54,7 +56,7 @@ export function StartScreen() {
     setLoadingId(id);
     try {
       await loadGameSave(id);
-      window.location.href = "/dashboard";
+      window.location.href = saves.find((s) => s.id === id)?.ended ? "/fired" : "/dashboard";
     } catch {
       setLoadingId(null);
     }
@@ -121,6 +123,7 @@ export function StartScreen() {
                   {/* The league may truncate; the date always shows in full. */}
                   <div className="flex min-w-0 text-sm text-muted-foreground">
                     <span className="truncate">{save.leagueName}</span>
+                    {save.ended && <span className="shrink-0 whitespace-nowrap text-destructive">&nbsp;· {t("startScreen.ended")}</span>}
                     <span className="shrink-0 whitespace-nowrap tabular-nums">&nbsp;· {formatDate(save.updatedAt)}</span>
                   </div>
                 </div>

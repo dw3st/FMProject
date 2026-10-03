@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.2",
+    date: "2026-10-03",
+    items: [
+      {
+        pt: "Diretoria e torcida de verdade: a confiança sobe e desce com resultados, posição na tabela, títulos, finanças e vendas de ídolos, com seta de tendência no painel.",
+        en: "A real board and fans: confidence rises and falls with results, league position, titles, finances and idol sales, with a trend arrow on the dashboard.",
+      },
+      {
+        pt: "Meta da temporada definida pela diretoria (título, vaga continental, metade de cima, meio da tabela ou fugir do rebaixamento); diretoria satisfeita paga bônus no fim da temporada.",
+        en: "A season objective set by the board (title, continental place, top half, mid-table or avoiding relegation); a happy board pays a bonus at the end of the season.",
+      },
+      {
+        pt: "Torcida animada enche o estádio: a bilheteria e o ganho de seguidores acompanham o humor da torcida.",
+        en: "Happy fans fill the stadium: gate revenue and follower growth follow the fans' mood.",
+      },
+      {
+        pt: "Novo jogo com a opção \"Pode ser demitido\": com ela ligada, a diretoria avisa, dá ultimato e pode demitir você.",
+        en: "New game option \"Can be sacked\": when on, the board warns you, gives an ultimatum and can sack you.",
+      },
+    ],
+  },
+  {
     version: "3.1.4",
     date: "2026-10-03",
     items: [
@@ -498,6 +520,5 @@ export const CURRENT_VERSION = latest.version;
 export const upcoming: ChangelogText[] = [
   { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
   { pt: "Convites de clubes maiores para técnicos bem colocados no ranking", en: "Offers from bigger clubs for managers high in the ranking" },
-  { pt: "Diretoria e torcida que reagem aos resultados, às finanças e às contratações", en: "Board and fans that react to results, finances and signings" },
   { pt: "Mais formações táticas, como 4-4-1-1, 3-4-2-1, 5-4-1 e o losango", en: "More tactical formations, such as 4-4-1-1, 3-4-2-1, 5-4-1 and the diamond" },
 ];

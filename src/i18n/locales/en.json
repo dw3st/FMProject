@@ -125,7 +125,8 @@
     "deleteConfirmBody": "This will permanently delete \"{{clubName}}\" ({{leagueName}}). This cannot be undone.",
     "deleteConfirmAction": "Delete save",
     "continue": "Continue",
-    "whatsNew": "What's new"
+    "whatsNew": "What's new",
+    "ended": "Career ended"
   },
   "newGame": {
     "selectTerritory": "Select Territory",
@@ -266,7 +267,11 @@
     "finances": "Finances",
     "annualRevenue": "Annual revenue",
     "weeklyWages": "Weekly wages",
-    "perWeek": "/wk"
+    "perWeek": "/wk",
+    "sackingLabel": "Can be sacked",
+    "sackingYes": "Yes",
+    "sackingNo": "No",
+    "sackingHint": "If the board loses confidence, the career ends."
   },
   "seasonEnd": {
     "seasonComplete": "Season Complete",
@@ -293,7 +298,6 @@
   "fired": {
     "youveFired": "You've Been Fired!",
     "boardTerminated": "The board of {{club}} has decided to terminate your contract.",
-    "boardTerminated2": "The board of {{club}} has decided to terminate your contract.",
     "chairmanQuote": "- Club Chairman",
     "tenure": "Tenure",
     "matches": "Matches",
@@ -304,7 +308,15 @@
     "losses": "Losses",
     "achievementsDuringTenure": "Achievements During Tenure",
     "returnToMenu": "Return to Menu",
-    "findNewClub": "Find New Club"
+    "findNewClub": "Find New Club",
+    "reason": {
+      "board": "Board confidence hit rock bottom.",
+      "ultimatum": "The board's ultimatum was not met."
+    },
+    "days": "{{count}} days",
+    "positionValue": "#{{n}}",
+    "noCareer": "No ended career.",
+    "noAchievements": "No titles"
   },
   "staff": {
     "title": "Technical staff",
@@ -1131,7 +1143,8 @@
       "injury": "Injury",
       "contract": "Contracts",
       "youth": "Academy",
-      "retirement": "Retirement"
+      "retirement": "Retirement",
+      "board": "Board"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1189,6 +1202,27 @@
       "closed": "This offer is no longer available.",
       "youthFull": "The academy is full.",
       "actionFailed": "Could not answer the offer."
+    },
+    "board": {
+      "subject": {
+        "objective": "The board sets the season objective",
+        "warning": "The board is unhappy",
+        "ultimatum": "Board ultimatum",
+        "ultimatum_met": "The board approves the reaction",
+        "praise": "The board praises your work",
+        "bonus": "Board bonus for the season",
+        "sacked": "You have been sacked"
+      },
+      "objective": "Objective for {{season}} in {{league}}: {{objective}}.",
+      "warning": "Board confidence fell to {{board}}%. Results must improve.",
+      "ultimatum": "The board demands {{points}} points from the next {{matches}} league games. Otherwise you will be sacked.",
+      "ultimatum_met": "You met the ultimatum. The board still trusts your work.",
+      "praise": "Board confidence reached {{board}}%. Keep it up.",
+      "bonus": "The board released a {{amount}} bonus for the budget.",
+      "sacked": {
+        "board": "The board lost confidence in your work and terminated your contract.",
+        "ultimatum": "The ultimatum was not met. The board terminated your contract."
+      }
     }
   },
   "finances": {
@@ -1826,7 +1860,8 @@
       "contStage": "{{competition}} prize: {{stage}}",
       "contTitle": "{{competition}} prize: title",
       "transferIn": "Transfer fee from {{club}}",
-      "transferOut": "Transfer fee paid to {{club}}"
+      "transferOut": "Transfer fee paid to {{club}}",
+      "boardBonus": "Board bonus"
     },
     "seasonBasis": "Season to date"
   },
@@ -2021,5 +2056,18 @@
     "rating": "Rating",
     "titles": "Titles",
     "total": "Total"
+  },
+  "board": {
+    "objectiveLabel": "Season objective",
+    "objective": {
+      "title": "win the title",
+      "continental": "continental place (top {{target}})",
+      "top_half": "top half (top {{target}})",
+      "mid_table": "mid-table (top {{target}})",
+      "avoid_relegation": "avoid relegation (top {{target}})"
+    },
+    "trendUp": "Up {{value}} in 7 days",
+    "trendDown": "Down {{value}} in 7 days",
+    "ultimatumActive": "Ultimatum: {{points}} pts in {{matches}} games"
   }
 }
