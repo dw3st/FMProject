@@ -14,8 +14,40 @@
 
 import type { GamePlayer, Formation } from '@/GameEngine/types';
 import { resolveBasePosition } from '@/GameEngine/FormationSlots';
-import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS } from '@/GameEngine/Configs/AttackConfig';
-import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
+import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS, getTeamAttackWidth } from '@/GameEngine/Configs/AttackConfig';
+import type { TeamId } from '@/GameEngine/types';
+import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
+
+/**
+ * The attacking slot of a player adjusted to the moment:
+ *  1. Team width (`getTeamAttackWidth`, the `width` axis): the lateral spread of the slots around
+ *     the pitch centre line is scaled by width / normal width — `normal` is the formation as drawn,
+ *     `narrow` pulls every slot toward y 37, `wide` pushes them toward the touchlines.
+ *  2. Box convergence: forward slots (x ≥ 70 in the attacking frame) close in on the goal as the
+ *     ball advances into the final third (`BOX_CONVERGENCE` at the ball 100 yds up the pitch).
+ * Used by every attacking anchor (positioning, off-ball runs, hold_space) so the shape stays one.
+ */
+/** Slots (and ball positions) from this attacking-frame x take part in the box convergence. */
+const BOX_CONVERGENCE_FROM_X = 70;
+/** Yards of ball advance over which the convergence ramps to its full value. */
+const BOX_CONVERGENCE_SPAN   = 30;
+
+export function attackingAnchor(
+  base: { x: number; y: number },
+  player: { team: TeamId; attackDir: 1 | -1 },
+  ballPos: { x: number; y: number },
+): { x: number; y: number } {
+  const centre = PITCH_WIDTH / 2;
+  const spread = getTeamAttackWidth(player.team) / ATTACK_CONFIG.ATTACK_WIDTH;
+  let y = centre + (base.y - centre) * spread;
+  const relBase = player.attackDir === 1 ? base.x : PITCH_LENGTH - base.x;
+  if (relBase >= BOX_CONVERGENCE_FROM_X) {
+    const relBall = player.attackDir === 1 ? ballPos.x : PITCH_LENGTH - ballPos.x;
+    const t = Math.max(0, Math.min(1, (relBall - BOX_CONVERGENCE_FROM_X) / BOX_CONVERGENCE_SPAN));
+    y += (centre - y) * ATTACK_CONFIG.BOX_CONVERGENCE * t;
+  }
+  return { x: base.x, y: Math.max(1, Math.min(PITCH_WIDTH - 1, y)) };
+}
 
 export function computeAttackingPosition(
   player: GamePlayer,
@@ -27,7 +59,7 @@ export function computeAttackingPosition(
 ): { x: number; y: number } {
   const { ballSupportScale, bounds } = player;
 
-  const base    = resolveBasePosition(player.slotIndex, player.attackDir, formation, 'attacking');
+  const base    = attackingAnchor(resolveBasePosition(player.slotIndex, player.attackDir, formation, 'attacking'), player, ballPos);
   const anchorX = base.x;
   const anchorY = base.y;
 
