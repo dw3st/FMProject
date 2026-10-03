@@ -19,7 +19,7 @@ export function ChoiceCard({
       type="button"
       aria-pressed={selected}
       onClick={onSelect}
-      className={`text-left rounded-md border border-border bg-card p-3 cursor-pointer ${
+      className={`flex flex-col justify-start text-left rounded-md border border-border bg-card p-3 cursor-pointer ${
         selected ? "border-primary ring-1 ring-primary" : "hover:border-primary/50"
       } ${className}`}
     >

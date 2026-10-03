@@ -111,8 +111,26 @@ brasão gerado.
 ## Layout
 
 Fundo `bg-background`. Telas de entrada (landing, login, start, novo jogo, carregamento) centralizadas
-sobre o `PitchBackdrop`. Telas do jogo dentro da moldura (`Layout`), conteúdo com `px-6 py-5`,
-título de tela no topo à esquerda. Espaço entre blocos `gap-6`/`mt-6`.
+sobre o `PitchBackdrop`. Telas do jogo dentro da moldura (`Layout`), título de tela no topo à
+esquerda. Espaço entre blocos `gap-6`/`mt-6`.
+
+**Largura das telas do jogo (#54): uma regra só.** Toda tela renderizada dentro do `Layout` (Painel,
+Elenco/Base, Jogador, Formação, Desenvolvimento, Finanças, Transferências, Olheiro, Equipe técnica,
+Ligas, Estatísticas, Caixa de entrada, Fim de temporada, "em breve") envolve o conteúdo em
+`<ScreenContainer>` (`src/GameInterface/ui/ScreenContainer.tsx`): `px-6 py-5`, largura total do
+espaço disponível até `max-w-[1440px]` (`SCREEN_MAX_WIDTH`), centralizada, blocos em coluna com
+`gap-6`. `fill` faz a coluna ocupar a altura restante (tabela com rolagem interna, ex. Elenco).
+Estados de carregando/erro da tela também usam o `ScreenContainer`.
+
+- Nenhuma tela cria o próprio invólucro `max-w-* mx-auto` (o visual de "cartão central"); painéis
+  lado a lado continuam com a própria grade dentro do container, e uma tabela ou bloco pode limitar a
+  própria largura (alinhado à esquerda), nunca a tela inteira.
+- Telas com coluna lateral (Painel) usam o `ScreenContainer` só na coluna central.
+- Telas de entrada e as de tela cheia fora do `Layout` (prévia, partida, resultado, demitido) não
+  entram na regra.
+- O `ui:audit` confere: `screen-container` (dura) acusa uma tela que um `src/pages/<x>/entry.tsx`
+  renderiza dentro do `<Layout>` sem `<ScreenContainer>` (no arquivo da tela ou em volta dela no
+  entry); `screen-width` (leve) acusa um `max-w-(3xl…7xl|[Npx]) mx-auto` num arquivo de tela do jogo.
 
 ## Auditoria (`bun run ui:audit`)
 
@@ -122,16 +140,19 @@ arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai
 
 - **Duras** (falham o comando e `src/GameInterface/ui/uiAudit.test.ts`, que roda com
   `bun test src/GameInterface`): texto abaixo de 13px (`small-text`), `font-mono` fora do debug, chip feito à mão (`chip`),
+  tela do jogo sem `ScreenContainer` (`screen-container`, ver Layout),
   estilo de fonte inline (`style={{ fontSize | fontFamily | fontWeight | letterSpacing | lineHeight }}`
   ou atributo `fontSize` em SVG — `inline-font`).
 - **Leves** (só relatório): 13px em texto que não é rótulo (`size-13`), `uppercase` sem
   `font-display` (`label-font`), texto grande sem `font-display` (`display-font`), número formatado
   sem `tabular-nums` (`tabular`), `<table>` sem `TABLE_STYLE`/`StatsTable`/`DataTable` (`table`),
-  barra de abas feita à mão (`tabs`), botão primário cru fora do padrão (`button`), título fora das
+  barra de abas feita à mão (`tabs`), invólucro `max-w-* mx-auto` numa tela do jogo (`screen-width`), botão de ação desenhado como link colorido (`text-button`: `text-primary` + `bg-transparent`, use `<Button>`), botão só de ícone com ícone menor que 16px (`icon-size`), botão primário cru fora do padrão (`button`), título fora das
   classes de título (`heading`), glow/gradiente/scale (`decorative`), tamanho arbitrário fora de 13px.
+- As telas de entrada (landing, login, start, novo jogo — passos do técnico e do clube —, carregamento)
+  são auditadas como qualquer tela; só as de debug ficam de fora.
 - Exceções justificadas ficam em `ALLOWLIST` no próprio script, com o motivo (hoje: os textos SVG do
   hexágono de nota e do mini-campo, em unidades do `viewBox`; o botão Continuar da barra superior de
-  48px, com 36px de altura).
+  48px, com 36px de altura; a pílula "Novo: vX" e o selo de remover anexo do relatório).
 
 Toda tela nova ou alterada deve sair com o relatório limpo (0 duras, 0 leves); quem precisar de uma
 exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.

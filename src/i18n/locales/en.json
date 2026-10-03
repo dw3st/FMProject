@@ -224,6 +224,7 @@
     "enterName": "Enter your name...",
     "nationality": "Nationality",
     "careerBackground": "Background",
+    "countryLabel": "Country",
     "searchTerritory": "Search territory...",
     "continents": {
       "europe": "Europe",
@@ -236,7 +237,6 @@
     },
     "selectTerritoryDetail": "Select a territory to view details",
     "mapHint": "Click a highlighted country, or pick one from the list",
-    "mapAttribution": "Map: Natural Earth (public domain)",
     "showMap": "World map",
     "squadRating": "Squad Rating",
     "reputationLevel": {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { MyTransfers } from "@/GameInterface/Transfers/MyTransfers";
 import { MySellList } from "@/GameInterface/Transfers/MySellList";
@@ -38,8 +39,7 @@ export function TransfersScreen() {
   }, []);
 
   return (
-    <main className="flex-1 px-6 py-5 overflow-auto">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <ScreenContainer>
         <PageHeadline
           backHref="/dashboard"
           trailing={
@@ -77,7 +77,6 @@ export function TransfersScreen() {
         ) : (
           <MySellList />
         )}
-      </div>
-    </main>
+    </ScreenContainer>
   );
 }
