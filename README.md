@@ -55,6 +55,9 @@ The world map on the new-game screen uses [Natural Earth](https://www.naturalear
 1:50m country geometry (public domain), via the `world-atlas` package; it is generated into
 `src/GameInterface/NewGame/worldMapPaths.ts` by `bun scripts/generate-world-map.ts`.
 
+Player faces: [facesjs](https://github.com/zengm-games/facesjs) (Apache-2.0), rendered on the
+server by `GET /api/faces/:playerId.svg`.
+
 The auth database (`fmproject.db`) and the dev email log are **not** part of the
 snapshot — they are created automatically on first run.
 
@@ -138,5 +141,10 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 FMProject is a fork of [TouchLines](https://github.com/brenosss/touchlines) (AGPL-3.0); the
 original copyright and license notices are preserved.
+
+Third-party components keep their own licenses: player faces are drawn with
+[facesjs](https://github.com/zengm-games/facesjs) (Apache-2.0); the world map uses
+[Natural Earth](https://www.naturalearthdata.com/) data (public domain); league data comes from
+open-football (see [`data_process/openfootball/NOTICE.md`](data_process/openfootball/NOTICE.md)).
 
 See the [LICENSE](LICENSE) file for details.
