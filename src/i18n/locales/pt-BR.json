@@ -224,6 +224,7 @@
     "enterName": "Digite seu nome...",
     "nationality": "Nacionalidade",
     "careerBackground": "Trajetória",
+    "countryLabel": "País",
     "searchTerritory": "Buscar território...",
     "continents": {
       "europe": "Europa",

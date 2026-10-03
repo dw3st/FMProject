@@ -224,6 +224,7 @@
     "enterName": "Enter your name...",
     "nationality": "Nationality",
     "careerBackground": "Background",
+    "countryLabel": "Country",
     "searchTerritory": "Search territory...",
     "continents": {
       "europe": "Europe",

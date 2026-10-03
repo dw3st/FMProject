@@ -11,6 +11,8 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
+import { Button } from "@/GameInterface/ui/Button";
+import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 
 interface SaveEntry {
   id: string;
@@ -76,13 +78,13 @@ export function StartScreen() {
   }
 
   const newGameClass =
-    "flex h-10 w-full items-center justify-center rounded bg-primary font-semibold text-primary-foreground no-underline transition-colors";
+    "flex h-10 w-full items-center justify-center rounded bg-primary text-sm font-semibold text-primary-foreground no-underline transition-colors";
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background pb-14">
       <PitchBackdrop />
 
-      <div className="relative w-full max-w-[400px] px-4">
+      <div className="relative w-full max-w-[440px] px-4">
         <Wordmark size="lg" className="mb-8 block text-center" />
 
         {atLimit ? (
@@ -101,7 +103,7 @@ export function StartScreen() {
           <p className="mt-2 text-center text-sm text-muted-foreground">{t("common.saveLimitReached")}</p>
         )}
 
-        <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-2 mt-8">{t("startScreen.savedGames")}</h2>
+        <SectionTitle className="mt-8 mb-3">{t("startScreen.savedGames")}</SectionTitle>
         {saves.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("startScreen.noSavedGames")}</p>
         ) : (
@@ -115,28 +117,25 @@ export function StartScreen() {
                   secondaryColor={save.clubColors[1]}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-base text-foreground">{save.clubName}</div>
-                  <div className="truncate text-sm text-muted-foreground">
-                    {save.leagueName} · {formatDate(save.updatedAt)}
+                  <div className="truncate text-base font-semibold text-foreground">{save.clubName}</div>
+                  {/* The league may truncate; the date always shows in full. */}
+                  <div className="flex min-w-0 text-sm text-muted-foreground">
+                    <span className="truncate">{save.leagueName}</span>
+                    <span className="shrink-0 whitespace-nowrap tabular-nums">&nbsp;· {formatDate(save.updatedAt)}</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleLoad(save.id)}
-                  disabled={loadingId !== null}
-                  className="h-10 cursor-pointer border-0 bg-transparent px-1 text-sm text-primary transition-colors hover:text-foreground disabled:opacity-50"
-                >
+                <Button className="px-4 shrink-0" onClick={() => handleLoad(save.id)} disabled={loadingId !== null}>
                   {t("startScreen.continue")}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => setPendingDeleteId(save.id)}
                   disabled={loadingId !== null}
                   aria-label={t("common.delete")}
                   title={t("common.delete")}
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center border-0 bg-transparent text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-destructive disabled:opacity-50"
                 >
-                  <Icon name="close" size={14} />
+                  <Icon name="close" size={16} />
                 </button>
               </li>
             ))}
