@@ -260,7 +260,7 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
       }
     }
     // Numbers (money, ratings, decimals) shown without tabular-nums on the element or an ancestor.
-    if (ts.isJsxElement(node) && !debug && !isUiKit) {
+    if (ts.isJsxElement(node) && !debug && !isUiKit && node.openingElement.tagName.getText(sf) !== "option") {
       const own = node.children.some(
         (c) =>
           ts.isJsxExpression(c) &&
