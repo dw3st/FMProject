@@ -647,7 +647,8 @@ function moveGoal(goal: GoalRecord, toId: string, stats: Record<string, MatchPla
  * direct free-kick shots by Poisson, free kicks = the opponent's fouls that were not penalties. Of the
  * side's non-penalty goals already sampled, a share become set-piece goals so that
  * E[non-penalty set-piece goals] = SET_PIECE_GOAL_SHARE × goals: a DIRECT_FK_GOAL_SHARE / SET_PIECE_GOAL_SHARE
- * part are direct free kicks (moved to the best finisher, no assist), the rest keep a header's scorer
+ * part are direct free kicks (moved to the best finisher, no assist; a header picked here stops being one, so
+ * E[direct] = DIRECT_FK_GOAL_SHARE × goals), the rest keep a header's scorer
  * or move to a heading-weighted defender / forward. Penalty goals count as set-piece goals. The score
  * never changes.
  */
@@ -658,6 +659,8 @@ function rollSetPieces(
   penaltiesAwarded: number,
   stats: Record<string, MatchPlayerStats>,
   rng: Rng,
+  /** Incremented for each header goal turned into a direct free kick (the caller fixes headerGoals). */
+  headersToDirect: { value: number } = { value: 0 },
 ): SideSetPieces {
   const out: SideSetPieces = { corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0 };
   if (xi.length === 0) return out;
@@ -667,6 +670,8 @@ function rollSetPieces(
   const eligible = goals.filter((g) => !g.penalty);
   if (eligible.length > 0) {
     const q = Math.min(0.9, (C.SET_PIECE_GOAL_SHARE * goals.length) / eligible.length);
+    // Any set-piece goal may be the direct free kick (a header picked here stops being a header),
+    // so E[direct free-kick goals] = DIRECT_FK_GOAL_SHARE × goals exactly.
     const directShare = C.DIRECT_FK_GOAL_SHARE / C.SET_PIECE_GOAL_SHARE;
     const outfield = xi.filter((x) => groupOf(x) !== "GK");
     const taker = [...outfield].sort((a, b) => stat(b.p, "finishing") - stat(a.p, "finishing"))[0];
@@ -674,8 +679,12 @@ function rollSetPieces(
     for (const goal of eligible) {
       if (rng() >= q) continue;
       out.setPieceGoals++;
-      if (!goal.header && taker && rng() < directShare) {
+      if (taker && rng() < directShare) {
         out.directFreeKickGoals++;
+        if (goal.header) {
+          goal.header = false;
+          headersToDirect.value++;
+        }
         moveGoal(goal, taker.p.id, stats, true);
         continue;
       }
@@ -785,8 +794,12 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const homeAir = rollAerial(homeXI, [...homeGoals, ...homeEtGoals], duels, homeDuelsWon, playerStats, ratingDelta, rng);
   const awayAir = rollAerial(awayXI, [...awayGoals, ...awayEtGoals], duels, duels - homeDuelsWon, playerStats, ratingDelta, rng);
   // Set pieces last (`set-pieces-play.md`), so every earlier rng draw is unchanged by them.
-  const homeSet = rollSetPieces(homeXI, [...homeGoals, ...homeEtGoals], awayDisc.committed, awayDisc.oppPenalties, playerStats, rng);
-  const awaySet = rollSetPieces(awayXI, [...awayGoals, ...awayEtGoals], homeDisc.committed, homeDisc.oppPenalties, playerStats, rng);
+  const homeHeadersToDirect = { value: 0 };
+  const awayHeadersToDirect = { value: 0 };
+  const homeSet = rollSetPieces(homeXI, [...homeGoals, ...homeEtGoals], awayDisc.committed, awayDisc.oppPenalties, playerStats, rng, homeHeadersToDirect);
+  const awaySet = rollSetPieces(awayXI, [...awayGoals, ...awayEtGoals], homeDisc.committed, homeDisc.oppPenalties, playerStats, rng, awayHeadersToDirect);
+  homeAir.headerGoals -= homeHeadersToDirect.value;
+  awayAir.headerGoals -= awayHeadersToDirect.value;
   const sideDisc = (own: typeof homeDisc, other: typeof homeDisc): SideDiscipline => ({
     fouls: own.committed, yellowCards: own.yellow, redCards: own.red,
     offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties, penaltyGoals: other.oppPenaltyGoals,
