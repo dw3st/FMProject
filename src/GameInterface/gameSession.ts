@@ -1,6 +1,7 @@
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, CustomFormation } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
+import type { FamiliarityKey } from "@/types/familiarityTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { SaveMeta, SaveDatabase, SaveManager } from "@/backend/SaveService";
 
@@ -212,8 +213,8 @@ export async function updateSaveCurrentDate(saveId: string, currentDate: string)
 /** Persist training policy (rest-day sessions for your club). */
 export async function updateSaveDevelopmentTraining(
   saveId: string,
-  patch: { min_energy_to_train?: number; training_intensity?: TrainingIntensity },
-): Promise<Pick<SaveMeta, "min_energy_to_train" | "training_intensity">> {
+  patch: { min_energy_to_train?: number; training_intensity?: TrainingIntensity; style_focus?: FamiliarityKey },
+): Promise<Pick<SaveMeta, "min_energy_to_train" | "training_intensity" | "style_focus">> {
   const res = await fetch(`/api/saves/${saveId}`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
@@ -224,6 +225,7 @@ export async function updateSaveDevelopmentTraining(
   return {
     min_energy_to_train: meta.min_energy_to_train ?? DEFAULT_MIN_ENERGY_TO_TRAIN,
     training_intensity: meta.training_intensity ?? DEFAULT_TRAINING_INTENSITY,
+    style_focus: meta.style_focus,
   };
 }
 
