@@ -198,7 +198,7 @@ mora numa aba da tela de liga (ver abaixo), desvio consciente da spec original.
 `GET /api/saves/:id` (`src/backend/saves.ts`) monta `season.calendar` juntando as fixtures da liga
 do jogador com as fixtures de `playerCupSlug(meta.leagueSlug)` (`src/backend/cupWorld.ts` —
 `país → cup_<país>` pelo `leagueData`) **filtradas pelo clube do jogador**, ordenado por data. Isso
-é suficiente para que `useAdvanceDay`, `TopNavigation`, `ClubSidebar` e `WeekCalendar` mostrem o
+é suficiente para que `useAdvanceDay`, `TopNavigation` e o Painel (`DashboardScreen`, cartões de próximo jogo e da semana) mostrem o
 jogo de copa sem nenhuma mudança própria — todos já leem `season.calendar`.
 
 ### Avanço rápido para no jogo de copa

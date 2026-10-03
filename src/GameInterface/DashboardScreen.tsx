@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ClubSidebar } from "@/GameInterface/Dashboard/ClubSidebar";
-import { WeekCalendar } from "@/GameInterface/Dashboard/WeekCalendar";
+import { WeekCard } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -24,6 +23,7 @@ import {
 } from "@/GameInterface/Dashboard/dashboardData";
 import {
   AttentionCard,
+  ClubCard,
   HighlightsCard,
   InboxCard,
   LeagueMiniTable,
@@ -59,15 +59,7 @@ export function DashboardScreen() {
   const [standings, setStandings] = useState<StandingRow[] | null>(null);
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [stageMeta, setStageMeta] = useState<LeagueSeasonMeta | null>(null);
-  const [calendarCollapsed, setCalendarCollapsed] = useState<boolean>(
-    () => typeof window !== "undefined" && window.localStorage.getItem("dashboard.calendarCollapsed") === "1",
-  );
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("dashboard.calendarCollapsed", calendarCollapsed ? "1" : "0");
-    }
-  }, [calendarCollapsed]);
+  const [managerRank, setManagerRank] = useState<number | null>(null);
 
   useEffect(() => {
     if (!saveLoading && !session) {
@@ -102,6 +94,17 @@ export function DashboardScreen() {
       .then((r) => (r.ok ? (r.json() as Promise<LedgerApiResponse>) : null))
       .catch(() => null)
       .then((d) => { if (!cancelled) setLedger(d); });
+    return () => { cancelled = true; };
+  }, [saveId, currentDate]);
+
+  // Manager ranking line (`.claude/rules/game/managers.md`): the player's world rank.
+  useEffect(() => {
+    if (!saveId) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/managers?scope=world&limit=1`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ playerRank: number | null }>) : null))
+      .catch(() => null)
+      .then((d) => { if (!cancelled) setManagerRank(d?.playerRank ?? null); });
     return () => { cancelled = true; };
   }, [saveId, currentDate]);
 
@@ -174,73 +177,69 @@ export function DashboardScreen() {
   const squadHref = `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`;
   const playerHref = (playerId: string) => `${squadHref.replace("/squad/", "/player/")}/${encodeURIComponent(playerId)}`;
 
+  const balance = ledger?.balance ?? session.budget ?? null;
+
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <ClubSidebar
-        session={session}
-        squad={squad}
-        selectedPlayer={null}
-        fixtures={fixtures}
-        currentDate={currentDate}
-        mySquadId={mySquadId}
-        leagues={leagues}
+    <ScreenContainer>
+      <ScreenTitle subtitle={subtitle || undefined}>{t("dashboard.home.title")}</ScreenTitle>
+
+      <ClubCard
+        club={me}
+        leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
+        managerName={session.manager?.name ?? null}
+        managerRank={managerRank}
+        board={75}
+        fans={75}
+        budget={balance}
+        squadSize={players.length}
+        squadHref={squadHref}
       />
 
-      <ScreenContainer>
-        <ScreenTitle subtitle={subtitle || undefined}>{t("dashboard.home.title")}</ScreenTitle>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <NextMatchCard
+          fixture={next}
+          me={me}
+          opponent={opponent}
+          competitionLabel={competitionLabel}
+          today={currentDate}
+          form={lastResults(fixtures, mySquadId)}
+        />
+        <LeagueMiniTable
+          title={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
+          rows={standingsWindow(standingRows, mySquadId)}
+          myId={mySquadId}
+          loading={standings === null}
+        />
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <NextMatchCard
-            fixture={next}
-            me={me}
-            opponent={opponent}
-            competitionLabel={competitionLabel}
-            today={currentDate}
-            form={lastResults(fixtures, mySquadId)}
-          />
-          <LeagueMiniTable
-            title={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
-            rows={standingsWindow(standingRows, mySquadId)}
-            myId={mySquadId}
-            loading={standings === null}
-          />
-        </div>
+      <WeekCard
+        fixtures={fixtures}
+        restDays={restDays}
+        mySquadId={mySquadId}
+        currentDate={currentDate}
+        leagues={leagues}
+        onToggleDayType={toggleDayType}
+      />
 
-        <AttentionCard
-          items={attention}
+      <AttentionCard
+        items={attention}
+        playerHref={playerHref}
+        squadHref={squadHref}
+        youthHref={`${squadHref}?tab=youth`}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <HighlightsCard
+          mode={highlights.mode}
+          items={highlights.items}
+          clubColors={clubColors}
           playerHref={playerHref}
-          squadHref={squadHref}
-          youthHref={`${squadHref}?tab=youth`}
+          statsHref="/stats?tab=team"
         />
+        <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} />
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <HighlightsCard
-            mode={highlights.mode}
-            items={highlights.items}
-            clubColors={clubColors}
-            playerHref={playerHref}
-            statsHref="/stats?tab=team"
-          />
-          <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} />
-        </div>
-
-        <WeekFinancesCard week={week} balance={ledger?.balance ?? session.budget ?? null} />
-      </ScreenContainer>
-
-      <aside
-        className={`${calendarCollapsed ? "w-16 p-2" : "w-64 p-4"} border-l border-border bg-sidebar shrink-0 overflow-y-auto transition-[width] duration-200`}
-      >
-        <WeekCalendar
-          fixtures={fixtures}
-          restDays={restDays}
-          mySquadId={mySquadId}
-          currentDate={currentDate}
-          leagues={leagues}
-          onToggleDayType={toggleDayType}
-          collapsed={calendarCollapsed}
-          onToggleCollapse={() => setCalendarCollapsed((c) => !c)}
-        />
-      </aside>
-    </div>
+      <WeekFinancesCard week={week} balance={balance} />
+    </ScreenContainer>
   );
 }

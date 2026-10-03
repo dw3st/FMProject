@@ -397,7 +397,7 @@ pelo clube do jogador**, tudo ordenado por data. `playerContinentalSlug` percorr
 (`CONTINENTAL_SLUGS`) e devolve a primeira cujo `meta.continental.groups` contém o clube — os
 grupos são fixos para a temporada inteira, então um clube em fase de mata-mata ainda é encontrado
 por essa checagem (é sempre um subconjunto dos clubes de algum grupo). `null` se o clube não se
-classificou para nenhuma das 4. Isso basta para `useAdvanceDay`, `TopNavigation`, `ClubSidebar` e o
+classificou para nenhuma das 4. Isso basta para `useAdvanceDay`, `TopNavigation`, o Painel (`DashboardScreen`) e o
 calendário semanal mostrarem o jogo continental sem nenhuma mudança própria — todos já leem
 `season.calendar`.
 

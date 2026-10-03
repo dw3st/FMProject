@@ -13,7 +13,7 @@ Player roles operate at two levels. The UI always uses the right level for conte
 | Midfielder | MID  | `text-primary`  |
 | Forward    | FWD  | `text-destructive` |
 
-Used in: squad table, dashboard player card, scout table, squad screen, development screen, ClubSidebar.
+Used in: squad table, dashboard player card, scout table, squad screen, development screen, dashboard club card.
 
 ### Detailed roles (formation selection only)
 

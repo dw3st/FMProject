@@ -114,6 +114,20 @@ Fundo `bg-background`. Telas de entrada (landing, login, start, novo jogo, carre
 sobre o `PitchBackdrop`. Telas do jogo dentro da moldura (`Layout`), título de tela no topo à
 esquerda. Espaço entre blocos `gap-6`/`mt-6`.
 
+**Peça única (#57): nenhuma coluna lateral fixa.** O `Layout` é só a barra superior
+(`TopNavigation`), o conteúdo da tela num `ScreenContainer` e a barra inferior (`StatusBar`) — a
+mesma moldura, na mesma largura e posição, em toda tela do jogo. O que antes ficava nas colunas do
+Painel virou cartão do próprio Painel (`DashboardScreen`):
+
+- **Clube** (`ClubCard`, `Dashboard/HomeCards.tsx`), primeira linha: escudo 64px, clube, liga,
+  técnico com o ranking mundial (link para `/stats?tab=managers`), barras de diretoria e torcida com
+  %, orçamento (link para Finanças) e tamanho do elenco (link para o Elenco).
+- **Semana** (`WeekCard`, `Dashboard/WeekCalendar.tsx`), largura total: os 7 dias na horizontal
+  (`lg:grid-cols-7`, 4/2 colunas abaixo), semana anterior/próxima/"esta semana", hoje destacado,
+  jogos com resultado; um dia futuro sem jogo troca treino ⇄ descanso no clique (`toggleDayType`).
+- Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
+  Finanças da semana. Abaixo de `lg` os pares empilham.
+
 **Largura das telas do jogo (#54): uma regra só.** Toda tela renderizada dentro do `Layout` (Painel,
 Elenco/Base, Jogador, Formação, Desenvolvimento, Finanças, Transferências, Olheiro, Equipe técnica,
 Ligas, Estatísticas, Caixa de entrada, Fim de temporada, "em breve") envolve o conteúdo em
@@ -125,7 +139,6 @@ Estados de carregando/erro da tela também usam o `ScreenContainer`.
 - Nenhuma tela cria o próprio invólucro `max-w-* mx-auto` (o visual de "cartão central"); painéis
   lado a lado continuam com a própria grade dentro do container, e uma tabela ou bloco pode limitar a
   própria largura (alinhado à esquerda), nunca a tela inteira.
-- Telas com coluna lateral (Painel) usam o `ScreenContainer` só na coluna central.
 - Telas de entrada e as de tela cheia fora do `Layout` (prévia, partida, resultado, demitido) não
   entram na regra.
 - O `ui:audit` confere: `screen-container` (dura) acusa uma tela que um `src/pages/<x>/entry.tsx`
