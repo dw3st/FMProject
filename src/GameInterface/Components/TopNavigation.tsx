@@ -130,9 +130,10 @@ export function TopNavigation({
     const opponentName = leagues.length
       ? teamDisplayNameFromLeagues(opponentId, leagues)
       : fallbackTeamNameFromSquadId(opponentId);
-    dayLabel = t("nav.vsOpponent", { opponent: opponentName });
-    dayIcon = "match";
-    dayTitle = dayLabel;
+    // Short label so the tabs keep theirs on match days too; the opponent goes in the tooltip.
+    dayLabel = t("nav.matchDay");
+    dayIcon = "trophy";
+    dayTitle = t("nav.vsOpponent", { opponent: opponentName });
   } else if (isRest) {
     dayLabel = t("nav.rest");
     dayIcon = "rest";
@@ -210,7 +211,7 @@ export function TopNavigation({
                 onClick={() => void toggleDayType(currentDate, isRest ? "training" : "rest")}
                 disabled={isMatch || advancing}
                 title={dayTitle}
-                aria-label={isMatch ? dayLabel : `${dayLabel} · ${dayTitle}`}
+                aria-label={`${dayLabel} · ${dayTitle}`}
                 className={`${dayButton} px-3 ${isMatch ? "text-destructive disabled:opacity-100" : ""}`}
               >
                 <Icon name={dayIcon} size={16} className={`shrink-0 ${isRest ? "text-chart-3" : ""}`} />

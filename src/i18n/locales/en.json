@@ -389,6 +389,7 @@
     "training": "Training",
     "restDay": "Rest Day",
     "rest": "Rest",
+    "matchDay": "Match",
     "main": "Main navigation",
     "vsOpponent": "vs {{opponent}}",
     "changelog": "What's new",

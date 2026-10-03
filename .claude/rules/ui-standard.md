@@ -141,7 +141,7 @@ e o Continuar com a borda direita.
   (`Icon calendar` + "Dom, 07/02/2027" via `Intl`, `text-sm font-semibold text-muted-foreground
   whitespace-nowrap`); botão com borda (`h-9 rounded-md border border-border bg-card`) com ícone +
   tipo do dia (treino/folga) que troca o dia no clique (`toggleDayType`), desabilitado no dia de jogo
-  (mostra "vs adversário"); botão só ícone (`w-9`, mesmo estilo) "Avançar até o próximo jogo", com
+  (mostra troféu + "Jogo", com o adversário no `title`/`aria-label`); botão só ícone (`w-9`, mesmo estilo) "Avançar até o próximo jogo", com
   `title`/`aria-label`, só quando o próximo jogo está a mais de 2 dias; Continuar (`h-9`, primário),
   sempre o último.
 - `StatusBar` (36px): orçamento, mensagens, jogadores à esquerda; à direita a versão (`v3.x`, abre as
