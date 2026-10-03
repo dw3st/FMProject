@@ -239,11 +239,11 @@ interface Props {
   /** Show 10-yard grid lines and axis labels on the pitch for position reference. */
   showYardRefs?: boolean;
   /** Override the initial GameState (e.g. for test scenarios). Uses full match state if omitted. */
-  initialState?: import('../GameEngine/types').GameState;
+  initialState?: import('@/GameEngine/types').GameState;
   /** Simulation speed multiplier — 0.25 / 0.5 / 1 / 2. Default: 1. */
   gameSpeed?: number;
   /** Called with the nearest GamePlayer when the user clicks on the pitch. */
-  onPlayerClick?: (player: import('../GameEngine/types').GamePlayer) => void;
+  onPlayerClick?: (player: import('@/GameEngine/types').GamePlayer) => void;
   /** Called with pitch coordinates (yards) on every click inside the pitch. Fires alongside onPlayerClick. */
   onPitchClick?: (x: number, y: number) => void;
   /** Render the crowd density heatmap overlay on top of the pitch. */
@@ -519,7 +519,7 @@ export function PixiPitch({
       // Engine emits `throughBallScores` from decideBallHolder when debug is on.
       // We cache the latest payload so the ticker can render the heatmap without
       // re-computing the candidate cells.
-      type TbCells = import('../GameEngine/Infrastructure/EventBus').GameEvents['throughBallScores']['cells'];
+      type TbCells = import('@/GameEngine/Infrastructure/EventBus').GameEvents['throughBallScores']['cells'];
       let lastTbCells: TbCells = [];
       let lastTbHolder: number | null = null;
       const unsubTbScores = gameBus.on('throughBallScores', (e) => {
@@ -528,7 +528,7 @@ export function PixiPitch({
       });
 
       // ── Cross targets cache (`crossScores`, emitted by decideBallHolder in debug mode) ──
-      type CrossTargets = import('../GameEngine/Infrastructure/EventBus').GameEvents['crossScores']['targets'];
+      type CrossTargets = import('@/GameEngine/Infrastructure/EventBus').GameEvents['crossScores']['targets'];
       let lastCrossTargets: CrossTargets = [];
       let lastCrossHolder: number | null = null;
       const unsubCross = gameBus.on('crossScores', (e) => {
@@ -537,7 +537,7 @@ export function PixiPitch({
       });
 
       // ── Through-ball chase commits cache ──
-      type ChaseCommit = import('../GameEngine/Infrastructure/EventBus').GameEvents['chaseCommit'];
+      type ChaseCommit = import('@/GameEngine/Infrastructure/EventBus').GameEvents['chaseCommit'];
       let lastChase: ChaseCommit | null = null;
       const unsubChase = gameBus.on('chaseCommit', (e) => {
         lastChase = e;
