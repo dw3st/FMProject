@@ -661,16 +661,6 @@ export function MatchScreen() {
         nameA={teamAWithCrest?.name}
         nameB={teamBWithCrest?.name}
       />
-      {notice && (
-        <div
-          role="status"
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-card border rounded-lg px-4 py-2 text-sm font-semibold text-foreground ${
-            notice.tone === "danger" ? "border-destructive/60" : notice.tone === "warn" ? "border-chart-4/60" : "border-border"
-          }`}
-        >
-          {notice.text}
-        </div>
-      )}
       <MatchOverlay
         kind={matchOverlay}
         score={score}
@@ -783,7 +773,6 @@ export function MatchScreen() {
           teamName={panelTeam === "A" ? teamAWithCrest?.name : teamBWithCrest?.name}
           accentColor={panelTeam === "A" ? matchKitColors.teamA : matchKitColors.teamB}
           players={gameState.players.filter((p) => p.team === panelTeam)}
-          score={score[panelTeam]}
           ballHolderId={gameState.ballHolderId}
           passFromId={passFromId}
           passToId={passToId}
@@ -808,17 +797,31 @@ export function MatchScreen() {
             className="flex-1 flex items-center justify-center min-h-0 overflow-hidden"
           >
             {pitchSize ? (
-              <PixiPitch
-                key={`${pitchSize.w}x${pitchSize.h}`}
-                canvasWidth={pitchSize.w}
-                canvasHeight={pitchSize.h}
-                paused={paused}
-                debugMode={debug}
-                initialState={gameState}
-                gameSpeed={gameSpeed}
-                teamAColor={matchKitColors.teamA}
-                teamBColor={matchKitColors.teamB}
-              />
+              // Sized to the canvas so the short notices sit on the pitch's top edge, never over
+              // the scoreboard or the control bar.
+              <div className="relative shrink-0" style={{ width: pitchSize.w, height: pitchSize.h }}>
+                <PixiPitch
+                  key={`${pitchSize.w}x${pitchSize.h}`}
+                  canvasWidth={pitchSize.w}
+                  canvasHeight={pitchSize.h}
+                  paused={paused}
+                  debugMode={debug}
+                  initialState={gameState}
+                  gameSpeed={gameSpeed}
+                  teamAColor={matchKitColors.teamA}
+                  teamBColor={matchKitColors.teamB}
+                />
+                {notice && (
+                  <div
+                    role="status"
+                    className={`absolute top-3 left-1/2 -translate-x-1/2 z-10 max-w-[90%] truncate pointer-events-none bg-card/95 border rounded-md px-4 py-2 text-sm font-semibold text-foreground ${
+                      notice.tone === "danger" ? "border-destructive/60" : notice.tone === "warn" ? "border-chart-4/60" : "border-border"
+                    }`}
+                  >
+                    {notice.text}
+                  </div>
+                )}
+              </div>
             ) : (
               <span className="text-muted-foreground text-sm">{t("common.sizingPitch")}</span>
             )}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import {
   ClubCell, CrestCell, LoadMoreButton, NameCell, NumberCell, RankCell, StatsCell, StatsDetailRow, StatsHead, StatsRow, StatsTable,
@@ -317,8 +318,7 @@ export function StatsScreen() {
   }, [session?.saveId, active, tab, currentDate]);
 
   return (
-    <div className="p-4 overflow-auto">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <ScreenContainer>
         <PageHeadline backHref="/dashboard">{t("statsScreen.title")}</PageHeadline>
 
         <SegmentedTabs
@@ -378,7 +378,6 @@ export function StatsScreen() {
             </span>
           ))}
         </p>
-      </div>
-    </div>
+    </ScreenContainer>
   );
 }

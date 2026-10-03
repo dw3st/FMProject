@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Icon, iconOf } from "@/GameInterface/Icons";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 
 const Award = iconOf("award");
 const Crown = iconOf("crown");
@@ -84,7 +85,7 @@ export function SeasonEndScreen() {
   const data = mockData;
 
   return (
-    <main className="flex-1 px-6 py-5 overflow-auto">
+    <ScreenContainer>
         {data.yourStats.isChampion && (
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-chart-4/10 blur-3xl animate-pulse" />
@@ -93,7 +94,7 @@ export function SeasonEndScreen() {
           </div>
         )}
 
-        <div className="relative z-10 max-w-5xl mx-auto space-y-8">
+        <div className="relative z-10 space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground uppercase tracking-[0.08em] m-0 font-display font-bold">{t("seasonEnd.seasonComplete")}</p>
@@ -213,7 +214,7 @@ export function SeasonEndScreen() {
             </a>
           </div>
         </div>
-    </main>
+    </ScreenContainer>
   );
 }
 

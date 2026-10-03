@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import type { LeagueData, LeagueTeam, LeagueZone, LeagueZoneColor, StandingRow } from "@/types/playerTypes";
 import type { ContinentalSlug, Fixture } from "@/types/calendarTypes";
@@ -765,8 +766,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
 
   return (
     <>
-    <div className="p-4 overflow-auto">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <ScreenContainer>
         <PageHeadline
           backHref="/dashboard"
           trailing={
@@ -911,8 +911,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
             )}
           </>
         )}
-      </div>
-    </div>
+    </ScreenContainer>
 
       {matchEvent && (
         <MatchStatsModal

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { updateSaveFormation, updateSaveTacticalStyle, saveFormationAndTactics } from "@/GameInterface/gameSession";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { getFormationSlots } from "@/types/formationSlots";
@@ -461,8 +462,7 @@ export function FormationScreen() {
   }
 
   return (
-    <main className="flex-1 px-6 py-5 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-4">
+    <ScreenContainer>
           <PageHeadline
             backHref="/dashboard"
             subtitle={t("formations.subtitleHelp")}
@@ -845,9 +845,8 @@ export function FormationScreen() {
               })}
             </div>
           </div>
-        </div>
         <DragGhost drag={drag} />
-    </main>
+    </ScreenContainer>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { PlayerProfile, getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
 import { AttributesPanel } from "@/GameInterface/Development/AttributesPanel";
@@ -202,8 +203,7 @@ export function DevelopmentScreen() {
   const recentForm = buildRecentForm(player);
 
   return (
-    <main className="flex-1 px-6 py-5 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
+    <ScreenContainer>
           <PageHeadline backHref="/dashboard">
             {t("developmentScreen.playerDevelopment")}
           </PageHeadline>
@@ -246,7 +246,6 @@ export function DevelopmentScreen() {
               />
             </aside>
           </div>
-        </div>
-    </main>
+    </ScreenContainer>
   );
 }

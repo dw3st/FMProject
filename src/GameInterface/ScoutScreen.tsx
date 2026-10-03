@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScoutFilters } from "@/GameInterface/Scout/ScoutFilters";
 import { createDefaultScoutFilters, type ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
 import type { LeagueData, Squad } from "@/types/playerTypes";
@@ -175,7 +176,7 @@ export function ScoutScreen() {
 
   return (
     <>
-      <div className="flex-1 px-6 py-5 flex flex-col gap-6 overflow-auto">
+      <ScreenContainer>
         <PageHeadline backHref="/dashboard">
           {t("scout.title")} <span className="text-primary">{t("scout.database")}</span>
         </PageHeadline>
@@ -203,7 +204,7 @@ export function ScoutScreen() {
           error={fetchError}
           onRetry={() => setRefreshTick((n) => n + 1)}
         />
-      </div>
+      </ScreenContainer>
 
       <PlayerOfferModal
         player={offerTarget}

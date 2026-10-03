@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { Icon } from "@/GameInterface/Icons";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 
 const getPageMeta = (t: any): Record<string, { title: string; description: string }> => ({
   tactics:   { title: t("comingSoon.tactics"), description: t("comingSoon.tacticsDesc") },
@@ -16,8 +17,7 @@ export function ComingSoonScreen() {
   const meta = PAGE_META[slug] ?? { title: slug.charAt(0).toUpperCase() + slug.slice(1), description: t("comingSoon.underDevelopment") };
 
   return (
-    <main className="flex-1 flex flex-col items-center px-6 py-5">
-      <div className="max-w-lg w-full space-y-8">
+    <ScreenContainer>
         <PageHeadline backHref="/dashboard" backLabel="Back to Dashboard">
           {meta.title}
         </PageHeadline>
@@ -56,7 +56,6 @@ export function ComingSoonScreen() {
             ))}
           </div>
         </div>
-      </div>
-    </main>
+    </ScreenContainer>
   );
 }

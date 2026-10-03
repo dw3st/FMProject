@@ -11,8 +11,8 @@ import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { Button } from "@/GameInterface/ui/Button";
 import { ChoiceCard } from "@/GameInterface/ui/ChoiceCard";
-import { Chip } from "@/GameInterface/ui/Chip";
 import { Label } from "@/GameInterface/ui/Label";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
@@ -197,7 +197,7 @@ export function NewGameWizard() {
         <Wordmark size="lg" className="mb-6 block text-center" />
         <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden pb-8">
           <PitchBackdrop players={false} />
-          <div className="relative w-full max-w-[1000px] rounded-lg border border-border bg-background/90 p-6 md:p-8">
+          <div className="relative w-full max-w-[1000px] rounded-md border border-border bg-background/90 p-6 md:p-8">
             <ManagerForm
               initial={manager}
               onCancel={() => {
@@ -216,9 +216,11 @@ export function NewGameWizard() {
 
   const countryList = (
     <>
-      <div className="relative mb-3">
+      <Label htmlFor="new-game-country-search" className="mb-2">{t("newGame.countryLabel")}</Label>
+      <div className="relative mb-4">
         <Icon name="search" size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
+          id="new-game-country-search"
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -230,7 +232,7 @@ export function NewGameWizard() {
       <div className="flex-1 overflow-y-auto min-h-0">
         {groups.map((group) => (
           <div key={group.continent} className="mb-4">
-            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mb-1 mt-0">
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mb-1 mt-0 px-2">
               {t(`newGame.continents.${continentI18nKey(group.continent)}`, { defaultValue: group.continent })}
             </p>
             <ul className="list-none p-0 m-0">
@@ -246,11 +248,12 @@ export function NewGameWizard() {
                         setSelectedCountry(country);
                         setCountriesOpen(false);
                       }}
-                      className={`w-full h-8 flex items-center gap-2 text-left text-sm bg-transparent border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                        selected ? "text-primary" : "text-foreground hover:text-primary"
+                      aria-pressed={selected}
+                      className={`w-full h-8 flex items-center gap-2 px-2 rounded text-left text-sm border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                        selected ? "bg-primary/10 text-primary" : "bg-transparent text-foreground hover:bg-foreground/5"
                       }`}
                     >
-                      <span className={`fi fi-${country.flag} w-5 h-5 rounded-sm bg-cover bg-center shrink-0`} />
+                      <span className={`fi fi-${country.flag} w-5 h-[15px] rounded-sm bg-cover bg-center shrink-0`} />
                       <span className="truncate">{displayName(country)}</span>
                     </button>
                   </li>
@@ -266,7 +269,9 @@ export function NewGameWizard() {
   return (
     <div className="min-h-screen flex flex-col items-center bg-background px-4 py-6 text-foreground">
       <Wordmark size="lg" className="mb-6 block text-center" />
-      <div className="flex w-full max-w-[1200px] flex-1 flex-col md:flex-row min-h-0 md:h-[calc(100vh-9rem)] overflow-hidden rounded-lg border border-border bg-background/90">
+      {/* Wider frame and a narrower profile column while picking the country, so the world map
+          gets most of the width; back to 1200 px once a country (and its club list) is shown. */}
+      <div className={`flex w-full ${selectedCountry ? "max-w-[1200px]" : "max-w-[1600px]"} flex-1 flex-col md:flex-row min-h-0 md:h-[calc(100vh-9rem)] overflow-hidden rounded-md border border-border bg-background/90`}>
       <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
         <button
           type="button"
@@ -284,7 +289,7 @@ export function NewGameWizard() {
 
       <main className="flex-1 flex flex-col md:flex-row min-h-0 min-w-0">
         <section className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
-          <p className="text-sm text-muted-foreground m-0 mb-1">{t("newGame.stepOf", { n: 2 })}</p>
+          <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 2 })}</p>
           <ScreenTitle>{t("newGame.chooseClubTitle")}</ScreenTitle>
           {!selectedCountry ? (
             <>
@@ -354,7 +359,7 @@ export function NewGameWizard() {
           )}
         </section>
 
-        <aside className="md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-border px-6 py-5 flex flex-col md:overflow-y-auto">
+        <aside className={`${selectedCountry ? "md:w-80" : "md:w-64"} shrink-0 md:border-l border-t md:border-t-0 border-border px-6 py-5 flex flex-col md:overflow-y-auto`}>
           {selectedTeam ? (
             <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
           ) : (
@@ -432,7 +437,7 @@ function ClubProfilePanel({ club, profile }: { club: LeagueTeam; profile: ClubPr
           className="w-16 h-16 rounded-full shrink-0"
         />
         <div className="min-w-0">
-          <h2 className="font-display font-black uppercase text-2xl leading-none m-0">{club.name}</h2>
+          <SectionTitle>{club.name}</SectionTitle>
           {place && <p className="text-sm text-muted-foreground mt-1 mb-0">{place}</p>}
         </div>
       </div>
@@ -453,8 +458,8 @@ function ClubProfilePanel({ club, profile }: { club: LeagueTeam; profile: ClubPr
             {profile.keyPlayers.slice(0, 3).map((p) => (
               <li key={p.id} className="flex items-baseline gap-2 text-sm">
                 <span className="flex-1 truncate">{p.name}</span>
-                <span className={`${getDetailedPositionColor(p.position)} w-10 text-right`}>{p.position}</span>
-                <span className="w-9 text-right tabular-nums text-muted-foreground">{score(p.ovr)}</span>
+                <span className={`${getDetailedPositionColor(p.position)} shrink-0 text-right`}>{p.position}</span>
+                <span className="w-9 shrink-0 text-right tabular-nums text-muted-foreground">{score(p.ovr)}</span>
               </li>
             ))}
           </ul>
@@ -501,7 +506,7 @@ function ManagerForm({
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground m-0 mb-1">{t("newGame.stepOf", { n: 1 })}</p>
+      <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">{t("newGame.stepOf", { n: 1 })}</p>
       <ScreenTitle subtitle={t("newGame.managerSubtitle")}>{t("newGame.createManagerTitle")}</ScreenTitle>
 
       <div className="grid gap-8 mt-8 md:grid-cols-[1fr_1.4fr]">
@@ -516,18 +521,24 @@ function ManagerForm({
           />
 
           <Label className="mt-6 mb-2">{t("newGame.nationality")}</Label>
-          <div className="flex flex-wrap gap-2">
-            {MANAGER_NATIONALITIES.map((nat) => (
-              <Chip
-                key={nat.id}
-                selected={draft.nationality?.id === nat.id}
-                onClick={() => setDraft({ ...draft, nationality: nat })}
-              >
-                <span className={`fi fi-${nat.flag} w-5 h-3.5 rounded-sm bg-cover bg-center`} />
-                {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
-              </Chip>
-            ))}
-          </div>
+          <OptionChips
+            aria-label={t("newGame.nationality")}
+            className="gap-2"
+            value={draft.nationality?.id ?? null}
+            onChange={(id) => {
+              const nat = MANAGER_NATIONALITIES.find((n) => n.id === id);
+              if (nat) setDraft({ ...draft, nationality: nat });
+            }}
+            options={MANAGER_NATIONALITIES.map((nat) => ({
+              key: nat.id,
+              label: (
+                <>
+                  <span className={`fi fi-${nat.flag} w-5 h-[15px] rounded-sm bg-cover bg-center`} />
+                  {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
+                </>
+              ),
+            }))}
+          />
         </div>
 
         <div>
@@ -539,11 +550,7 @@ function ManagerForm({
                 selected={draft.background?.id === bg.id}
                 onSelect={() => setDraft({ ...draft, background: bg })}
                 title={t(`newGame.backgrounds.${bg.id}.name`, { defaultValue: bg.name })}
-                description={
-                  <span className="line-clamp-2">
-                    {t(`newGame.backgrounds.${bg.id}.description`, { defaultValue: bg.description })}
-                  </span>
-                }
+                description={t(`newGame.backgrounds.${bg.id}.description`, { defaultValue: bg.description })}
               />
             ))}
           </div>

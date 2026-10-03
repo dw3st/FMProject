@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.1.2",
+    date: "2026-10-03",
+    items: [
+      { pt: "Mapa-múndi maior no novo jogo.", en: "Bigger world map in the new game." },
+      { pt: "Tela inicial e criação do técnico no mesmo padrão visual do jogo.", en: "Start screen and manager creation now match the game's visual style." },
+    ],
+    fixes: [
+      { pt: "Largura das telas padronizada: todas usam o mesmo espaço.", en: "Screen widths standardised: every screen uses the same space." },
+      { pt: "Botão de virar o card na partida voltou a funcionar, e o placar saiu de cima do nome do time.", en: "The flip button on the live match card works again, and the score no longer sits on the team name." },
+      { pt: "Avisos da partida não cobrem mais o placar.", en: "Match notices no longer cover the scoreboard." },
+    ],
+  },
+  {
     version: "3.1.1",
     date: "2026-10-03",
     items: [
