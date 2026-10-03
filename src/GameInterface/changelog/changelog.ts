@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.6",
+    date: "2026-10-03",
+    items: [
+      { pt: "Passar o mouse num país da lista destaca o país no mapa, e passar o mouse no mapa destaca o país na lista.", en: "Hovering a country in the list highlights it on the map, and hovering the map highlights the country in the list." },
+    ],
+    fixes: [
+      { pt: "O card do novo jogo mantém o mesmo tamanho ao escolher o país.", en: "The new game card keeps the same size when you pick a country." },
+    ],
+  },
+  {
     version: "3.3.5",
     date: "2026-10-03",
     items: [
