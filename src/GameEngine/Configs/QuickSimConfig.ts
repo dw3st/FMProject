@@ -138,11 +138,11 @@ export const QUICK_SIM_CONFIG = {
    * (ownTeamLevel / LEVEL_REF)^PASS_LEVEL_EXPONENT[group]. Fitted against the engine with the
    * midfield passing-hub levers (26 leagues, `bun scripts/quicksim-spread.ts events`).
    * Etapa 13 (aerial play): scaled per line by the engine's passes per slot after / before crosses
-   * and long balls (`bun scripts/aerial-calibrate.ts`, PL + Championship): GK ×0.19 (the keeper
-   * now mostly goes long), DEF ×0.98, MID ×0.875, FWD ×0.79 — was GK 2.159, DEF 2.101, MID 2.338,
-   * FWD 1.128.
+   * and long balls (`bun scripts/aerial-calibrate.ts`, PL + Championship, 1200 matches each): GK ×0.53
+   * (balanced keepers go long on ~40% of restarts), DEF ×0.86, MID ×0.87, FWD ×0.80 — was GK 2.159,
+   * DEF 2.101, MID 2.338, FWD 1.128.
    */
-  PASSES_PER_MATCH:        { GK: 0.406, DEF: 2.055, MID: 2.046, FWD: 0.893 } as Record<LineGroup, number>,
+  PASSES_PER_MATCH:        { GK: 1.145, DEF: 1.811, MID: 2.038, FWD: 0.906 } as Record<LineGroup, number>,
   /** Weak teams pass less in the engine, mostly in midfield (Kenya MID 1.32 vs Premier 2.36 per slot). */
   PASS_LEVEL_EXPONENT:     { GK: 0.15, DEF: 0.4, MID: 0.96, FWD: 0.67 } as Record<LineGroup, number>,
   /** Engine completion is ~97.5% (only interceptions/offside fail a regular pass); passing barely moves it. */
@@ -218,13 +218,13 @@ export const QUICK_SIM_CONFIG = {
    */
   HEADER_GOAL_SHARE: 0.105,
   /** Engine header goals per starter slot: MID ≈ 0.13 × FWD, DEF and GK ≈ 0 (no set pieces yet). */
-  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.01, MID: 0.13, FWD: 1.0 } as Record<LineGroup, number>,
-  CROSSES_PER_SIDE: 5.7,
+  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.01, MID: 0.11, FWD: 1.0 } as Record<LineGroup, number>,
+  CROSSES_PER_SIDE: 5.5,
   CROSS_COMPLETION: 0.21,
-  LONG_BALLS_PER_SIDE: 3.0,
-  LONG_BALL_COMPLETION: 0.45,
+  LONG_BALLS_PER_SIDE: 3.1,
+  LONG_BALL_COMPLETION: 0.52,
   /** Distinct aerial duels per match (both teams contest each one). */
-  AERIAL_DUELS_PER_MATCH: 10.2,
+  AERIAL_DUELS_PER_MATCH: 9.8,
   /** Who wins a team's duels (engine duels won per starter slot): weight × (0.5 + heading/10). */
-  AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.51, MID: 0.34, FWD: 0.7 } as Record<LineGroup, number>,
+  AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.43, MID: 0.4, FWD: 0.65 } as Record<LineGroup, number>,
 } as const;
