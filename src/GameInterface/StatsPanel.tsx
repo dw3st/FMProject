@@ -84,7 +84,7 @@ function TeamTable({
         <span className="font-bold text-sm text-foreground uppercase tracking-[0.08em] font-display">{teamName ?? t("stats.team", { team, defaultValue: `Team ${team}` })}</span>
       </div>
 
-      <div className="grid grid-cols-[40px_1fr_repeat(7,36px)] gap-1 px-3 py-1.5 text-[13px] font-bold uppercase text-muted-foreground border-b border-border/50">
+      <div className="grid grid-cols-[40px_1fr_repeat(7,36px)] gap-1 px-3 py-1.5 text-[13px] font-bold uppercase font-display text-muted-foreground border-b border-border/50">
         <div />
         <div className={side === "right" ? "text-right" : ""}>{t("stats.headers.NAME")}</div>
         {COLS.map((col) => (
@@ -94,7 +94,7 @@ function TeamTable({
         ))}
       </div>
 
-      <div className="text-[13px]">
+      <div className="text-sm">
         {players.map((p) => {
           const s = stats[p.id] ?? EMPTY_STATS;
           return (
@@ -104,7 +104,7 @@ function TeamTable({
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
-                <span className="text-[13px] font-bold text-muted-foreground">{p.role}</span>
+                <span className="text-sm font-bold text-muted-foreground">{p.role}</span>
               </div>
               <div className={`font-medium text-foreground ${side === "right" ? "text-right" : ""}`}>
                 {p.name}
@@ -129,7 +129,7 @@ function TeamTable({
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
-                <span className="text-[13px] font-bold text-muted-foreground">↓</span>
+                <span className="text-sm font-bold text-muted-foreground">↓</span>
               </div>
               <div className={`font-medium text-foreground/60  ${side === "right" ? "text-right" : ""}`}>
                 {sub.playerOutName}
@@ -161,7 +161,7 @@ function TeamTable({
 function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-4 px-4 py-1.5 border-b border-border/50 text-[13px] text-muted-foreground">
+    <div className="flex items-center gap-4 px-4 py-1.5 border-b border-border/50 text-sm text-muted-foreground">
       <span>
         {t("stats.avgEndEnergy")}:{" "}
         <span className="text-foreground font-bold tabular-nums">{Math.round(teamA.avgEndEnergy)}</span>
@@ -194,7 +194,7 @@ function KnockoutSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats 
   const hadShootout = teamA.penaltiesTaken > 0 || teamB.penaltiesTaken > 0;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50 text-[13px]">
+    <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50 text-sm">
       <span className="px-2 py-0.5 rounded bg-chart-4/10 text-chart-4 font-semibold">
         {t("stats.extraTime", { defaultValue: "Extra time" })}
       </span>

@@ -835,6 +835,9 @@
       "fouls": "Fouls",
       "cards": "Cards (Y/R)",
       "offsides": "Offsides",
+      "corners": "Corners",
+      "freeKicks": "Free kicks",
+      "showTeam": "Show {{team}}",
       "events": "Events",
       "noEvents": "Nothing yet.",
       "kind": {

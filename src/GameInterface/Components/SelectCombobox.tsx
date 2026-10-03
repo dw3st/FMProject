@@ -100,12 +100,12 @@ export function SelectCombobox<T extends string>({
               return (
               <Fragment key={opt.value}>
               {newGroup && (
-                <div className="px-3 pt-3 pb-1 font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground">
+                <div className="px-3 pt-3 pb-1 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
                   {opt.group}
                 </div>
               )}
               {newSubgroup && (
-                <div className="px-3 pt-1.5 pb-0.5 text-[13px] font-semibold text-muted-foreground">{opt.subgroup}</div>
+                <div className="px-3 pt-1.5 pb-0.5 text-sm font-semibold text-muted-foreground">{opt.subgroup}</div>
               )}
               <ComboboxOption
                 value={opt.value}

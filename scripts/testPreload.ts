@@ -25,11 +25,25 @@
  * in each module that needs them (`SaveService.ts`, `advanceDay.ts`, `routes.ts`,
  * `scoutSearch.ts`, `startKits.ts`), never from `RUNTIME_DATA_DIR`.
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const dir = mkdtempSync(join(tmpdir(), "fmproject-test-runtime-"));
+const PREFIX = "fmproject-test-runtime-";
+// On Windows the exit-time removal below often fails (open sqlite handle), so leftovers from
+// earlier runs pile up in the OS temp dir. Sweep the ones older than a day before starting.
+const STALE_MS = 24 * 60 * 60 * 1000;
+for (const name of readdirSync(tmpdir())) {
+  if (!name.startsWith(PREFIX)) continue;
+  const path = join(tmpdir(), name);
+  try {
+    if (Date.now() - statSync(path).mtimeMs > STALE_MS) rmSync(path, { recursive: true, force: true });
+  } catch {
+    // Still in use by another run, or already gone.
+  }
+}
+
+const dir = mkdtempSync(join(tmpdir(), PREFIX));
 process.env.RUNTIME_DATA_DIR = dir;
 
 process.on("exit", () => {

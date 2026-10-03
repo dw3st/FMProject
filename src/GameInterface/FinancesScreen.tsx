@@ -263,7 +263,7 @@ export function FinancesScreen() {
                         style={{ height: `${h}%` }}
                       />
                       <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        <div className="bg-card border border-border rounded-lg px-2 py-1 text-sm whitespace-nowrap">
+                        <div className="bg-card border border-border rounded-lg px-2 py-1 text-sm tabular-nums whitespace-nowrap">
                           <span className={w.net >= 0 ? "text-chart-2" : "text-destructive"}>
                             {w.net >= 0 ? "+" : ""}{formatCurrency(w.net)}
                           </span>
@@ -320,7 +320,7 @@ export function FinancesScreen() {
                   {(() => {
                     const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.operational;
                     return (
-                      <span className={`text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
+                      <span className={`tabular-nums text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
                         {net >= 0 ? "+" : ""}{formatCurrency(net)}
                       </span>
                     );
@@ -358,7 +358,7 @@ export function FinancesScreen() {
                         </p>
                         <p className="text-sm text-muted-foreground m-0">{g.fixture.date}</p>
                       </div>
-                      <span className="text-chart-2 font-semibold shrink-0 ml-2">{formatCurrency(g.projected)}</span>
+                      <span className="text-chart-2 font-semibold shrink-0 ml-2 tabular-nums">{formatCurrency(g.projected)}</span>
                     </div>
                   ))}
                 </div>
@@ -366,7 +366,7 @@ export function FinancesScreen() {
                   <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">
                     {t("financesScreen.homeGames", { count: gateProjections.length })}
                   </span>
-                  <span className="text-sm font-bold text-chart-2">{formatCurrency(projectedRemainingGate)}</span>
+                  <span className="text-sm font-bold text-chart-2 tabular-nums">{formatCurrency(projectedRemainingGate)}</span>
                 </div>
               </>
             )}
@@ -411,7 +411,7 @@ export function FinancesScreen() {
                         {entry.date} · {t(meta.labelKey)}
                       </p>
                     </div>
-                    <span className={`text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-chart-2" : "text-destructive"}`}>
+                    <span className={`tabular-nums text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-chart-2" : "text-destructive"}`}>
                       {entry.amount >= 0 ? "+" : ""}{formatCurrency(entry.amount)}
                     </span>
                   </div>
@@ -441,7 +441,7 @@ function OverviewCard({
         </div>
         <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-bold font-display">{label}</span>
       </div>
-      <p className={`text-2xl font-black font-display ${valueColor} m-0`}>{value}</p>
+      <p className={`text-2xl font-black font-display tabular-nums ${valueColor} m-0`}>{value}</p>
     </div>
   );
 }
@@ -463,7 +463,7 @@ function KindBreakdown({
   return (
     <div className="card-arcade rounded-md p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className={`text-sm font-bold font-display uppercase tracking-[0.08em] ${titleColor}`}>{t(titleKey)}</h3>
+        <h3 className={`text-[13px] font-bold font-display uppercase tracking-[0.08em] ${titleColor}`}>{t(titleKey)}</h3>
         <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] bg-muted/40 px-2 py-1 rounded font-display font-bold">
           {t("financesScreen.seasonBasis")}
         </span>
@@ -483,7 +483,7 @@ function KindBreakdown({
                   </div>
                   <span className="text-sm text-muted-foreground">{t(meta.labelKey)}</span>
                 </div>
-                <span className="text-sm font-semibold text-foreground">{formatCurrency(value)}</span>
+                <span className="text-sm font-semibold text-foreground tabular-nums">{formatCurrency(value)}</span>
               </div>
               <div className="h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
                 <div className={`h-full ${barColor} rounded-full`} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -494,7 +494,7 @@ function KindBreakdown({
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
         <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.seasonTotal")}</span>
-        <span className={`text-lg font-black font-display ${totalColor}`}>{formatCurrency(total)}</span>
+        <span className={`tabular-nums text-lg font-black font-display ${totalColor}`}>{formatCurrency(total)}</span>
       </div>
     </div>
   );
@@ -509,7 +509,7 @@ function ProjectionRow({ icon, label, value, positive }: { icon: IconName; label
         <Icon name={icon} size={12} />
         {label}
       </div>
-      <span className={`font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatCurrency(value)}{t("financesScreen.weekly")}</span>
+      <span className={`tabular-nums font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatCurrency(value)}{t("financesScreen.weekly")}</span>
     </div>
   );
 }

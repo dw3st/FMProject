@@ -111,7 +111,7 @@ export function ScoreBar({
             </span>
           </div>
           {aggregate && (
-            <span className="text-[13px] text-muted-foreground font-bold tabular-nums mt-0.5">
+            <span className="text-sm text-muted-foreground font-bold tabular-nums mt-0.5">
               {t("continental.aggregate", { home: aggregate.A + scoreA, away: aggregate.B + scoreB })}
             </span>
           )}

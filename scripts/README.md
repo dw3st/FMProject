@@ -11,8 +11,6 @@ Long-running or one-off scripts. Run with `bun scripts/<name>.ts`.
 | `formation-balance.ts` | Runs N matches for each formation pair (currently 4-3-3 / 4-4-2 / 3-5-2). Spawns one Bun Worker per pair, runs **in parallel**. | Working |
 | `formation-balance-worker.ts` | Spawned by the parent via `new Worker()`. Runs N matches for a single pair, posts progress + result via `postMessage`. | Working |
 | `_bench.ts` | Quick per-match timing benchmark. `bun scripts/_bench.ts [matches]` | Working (~42 ms/match) |
-| `testSim.ts` | Sanity check: loads a real save's squads, runs one match, prints result. | Working |
-| `migrateSquadFinances.ts` | One-off save migration. | Working |
 
 ---
 

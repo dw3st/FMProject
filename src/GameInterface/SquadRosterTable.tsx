@@ -127,7 +127,7 @@ export function SquadRosterTable({
             onClick={() => {
               window.location.href = playerDetailHref(player);
             }}
-            className={`flex items-center text-sm border-b border-border/30 cursor-pointer transition-all ${
+            className={`flex items-center text-sm tabular-nums border-b border-border/30 cursor-pointer transition-all ${
               index % 2 === 0
                 ? "bg-transparent hover:bg-muted/20"
                 : "bg-muted/5 hover:bg-muted/20"
@@ -174,7 +174,7 @@ export function SquadRosterTable({
                   onOffer(player);
                 }}
                 title={!!mySquadId && player.squadId === mySquadId ? t("dashboard.squadRosterTable.yourPlayer") : t("dashboard.squadRosterTable.makeOffer")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] border rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase font-display tracking-[0.08em] border rounded-lg transition-all ${
                   !!mySquadId && player.squadId === mySquadId
                     ? "bg-muted/30 text-muted-foreground border-border cursor-not-allowed opacity-60"
                     : "bg-primary/20 text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground cursor-pointer"
@@ -196,7 +196,7 @@ function RatingBadge({ value }: { value: number }) {
     return <span className="text-sm text-muted-foreground/40 font-medium">—</span>;
   }
   return (
-    <span className={`inline-flex items-center gap-1 text-sm font-black ${ratingTextClass10(value)}`}>
+    <span className={`inline-flex items-center gap-1 text-sm font-black tabular-nums ${ratingTextClass10(value)}`}>
       <Icon name="star" className="w-3 h-3 fill-current" />
       {value.toFixed(1)}
     </span>

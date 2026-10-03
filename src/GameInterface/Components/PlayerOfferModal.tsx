@@ -162,7 +162,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 </label>
                 <p className="text-sm text-muted-foreground mb-2 m-0">
                   {t("transfers.availableBudget")}:{" "}
-                  <span className="text-primary font-semibold">{formatTransferFee(budget)}</span>
+                  <span className="text-primary font-semibold tabular-nums">{formatTransferFee(budget)}</span>
                 </p>
                 {!slider.canOffer ? (
                   <p className="text-sm text-destructive m-0">
@@ -179,7 +179,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       onChange={(e) => setOfferFee(Number(e.target.value))}
                       className="flex-1 accent-primary"
                     />
-                    <span className="text-xl font-black font-display text-primary w-24 text-right">
+                    <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">
                       {formatTransferFee(offerFee)}
                     </span>
                   </div>
@@ -221,7 +221,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 <>
                   <Icon name="check-circle" className="w-12 h-12 text-chart-2 mx-auto mb-3" />
                   <p className="text-base font-black text-chart-2 m-0">{translateTransferReason(t, result.reason, true)}</p>
-                  <p className="text-sm text-muted-foreground mt-1 m-0">
+                  <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
                     {t("transfers.acceptedSummary", { name: player.name, fee: formatTransferFee(result.fee) })}
                   </p>
                 </>

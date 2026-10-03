@@ -69,22 +69,22 @@ export function FiredScreen() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="card-arcade rounded-lg p-3">
               <Icon name="calendar" className="w-5 h-5 text-primary mx-auto mb-1" />
-              <p className="text-lg font-bold font-display m-0">{data.tenure}</p>
-              <p className="text-[13px] text-muted-foreground uppercase m-0">{t("fired.tenure")}</p>
+              <p className="text-lg font-bold font-display tabular-nums m-0">{data.tenure}</p>
+              <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("fired.tenure")}</p>
             </div>
             <div className="card-arcade rounded-lg p-3">
               <Icon name="trophy" className="w-5 h-5 text-primary mx-auto mb-1" />
-              <p className="text-lg font-bold font-display m-0">{data.matchesManaged}</p>
-              <p className="text-[13px] text-muted-foreground uppercase m-0">{t("fired.matches")}</p>
+              <p className="text-lg font-bold font-display tabular-nums m-0">{data.matchesManaged}</p>
+              <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("fired.matches")}</p>
             </div>
             <div className="card-arcade rounded-lg p-3">
               <Icon name="trend-down" className="w-5 h-5 text-destructive mx-auto mb-1" />
-              <p className="text-lg font-bold font-display m-0">{data.winRate}%</p>
-              <p className="text-[13px] text-muted-foreground uppercase m-0">{t("fired.winRate")}</p>
+              <p className="text-lg font-bold font-display tabular-nums m-0">{data.winRate}%</p>
+              <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("fired.winRate")}</p>
             </div>
             <div className="card-arcade rounded-lg p-3">
-              <p className="text-lg font-bold font-display text-destructive m-0">{data.lastPosition}th</p>
-              <p className="text-[13px] text-muted-foreground uppercase mt-1 m-0">{t("fired.finalPosition")}</p>
+              <p className="text-lg font-bold font-display tabular-nums text-destructive m-0">{data.lastPosition}th</p>
+              <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mt-1 m-0">{t("fired.finalPosition")}</p>
             </div>
           </div>
 
@@ -107,7 +107,7 @@ export function FiredScreen() {
           {/* Achievements */}
           {data.achievements.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] m-0 font-display font-bold">{t("fired.achievementsDuringTenure")}</p>
+              <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground tracking-[0.08em] m-0 font-display font-bold">{t("fired.achievementsDuringTenure")}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {data.achievements.map((achievement, i) => (
                   <span

@@ -93,12 +93,12 @@ export function SquadTable({
   return (
     <div className="flex-1 overflow-auto max-h-[calc(100vh-240px)]">
       <div className="min-w-[1120px]">
-        <div className="sticky top-0 z-10 flex items-center bg-background border-b border-border text-xs text-muted-foreground">
+        <div className="sticky top-0 z-10 flex items-center bg-background border-b border-border text-muted-foreground">
           {columns.map((col) => (
             <button
               key={col.key}
               onClick={() => handleSort(col.key)}
-              className={`px-3 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-xs hover:text-foreground flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
+              className={`px-3 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-[13px] hover:text-foreground flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
             >
               {col.label}
               {sortKey === col.key &&
@@ -116,7 +116,7 @@ export function SquadTable({
           <div
             key={player.id}
             onClick={() => onSelectPlayer(selectedId === player.id ? null : player)}
-            className={`flex items-center text-sm min-h-10 border-t border-border cursor-pointer ${
+            className={`flex items-center text-sm tabular-nums min-h-10 border-t border-border cursor-pointer ${
               selectedId === player.id ? "bg-primary/10 text-primary" : "hover:bg-foreground/5"
             }`}
           >
@@ -173,7 +173,7 @@ function RatingBadge({ value }: { value: number }) {
     return <span className="text-sm text-muted-foreground/40 font-medium">—</span>;
   }
   return (
-    <span className={`inline-flex items-center gap-1 text-sm font-black ${ratingTextClass10(value)}`}>
+    <span className={`inline-flex items-center gap-1 text-sm font-black tabular-nums ${ratingTextClass10(value)}`}>
       <Icon name="star" className="w-3 h-3 fill-current" />
       {value.toFixed(1)}
     </span>

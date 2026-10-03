@@ -183,7 +183,7 @@ export function WeekCalendar({ fixtures, restDays, mySquadId, currentDate, leagu
                     : "border-border bg-card/30"
                 }`}
               >
-                <span className={`text-[13px] font-bold uppercase ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
+                <span className={`text-[13px] font-bold uppercase font-display tracking-[0.08em] ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
                   {day.day}
                 </span>
                 <span className={`text-sm font-black font-display leading-none ${day.isToday ? "text-primary" : "text-foreground"}`}>
@@ -264,10 +264,10 @@ export function WeekCalendar({ fixtures, restDays, mySquadId, currentDate, leagu
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className={`text-[13px] font-bold uppercase tracking-[0.08em] ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
+                  <span className={`text-[13px] font-bold uppercase font-display tracking-[0.08em] ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
                     {day.day}
                   </span>
-                  <span className={`text-xl font-black font-display ${day.isToday ? "text-primary" : "text-foreground"}`}>
+                  <span className={`text-xl font-black font-display tabular-nums ${day.isToday ? "text-primary" : "text-foreground"}`}>
                     {day.date}
                   </span>
                 </div>

@@ -140,7 +140,7 @@ export function ClubSidebar({
           {managerRank !== null && (
             <a
               href="/stats?tab=managers"
-              className="text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline"
+              className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline"
             >
               {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
             </a>
@@ -166,7 +166,7 @@ export function ClubSidebar({
             type="button"
             onClick={() => void toggleSellList()}
             disabled={sellToggling}
-            className={`w-full py-2.5 rounded-md font-black uppercase tracking-[0.08em] text-[13px] flex items-center justify-center gap-2 transition-all border cursor-pointer ${
+            className={`w-full py-2.5 rounded-md font-black uppercase font-display tracking-[0.08em] text-[13px] flex items-center justify-center gap-2 transition-all border cursor-pointer ${
               isListed
                 ? "bg-destructive/20 text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground"
                 : "bg-muted/30 text-muted-foreground border-border hover:bg-primary/20 hover:text-primary hover:border-primary/40"
@@ -222,7 +222,7 @@ export function ClubSidebar({
                     ? competitionName(nextFixture.competition, leagues, i18n.language)
                     : `${competitionName(nextFixture.competition, leagues, i18n.language)} · ${t("common.round")} ${nextFixture.round}`}
                 </p>
-                <p className="text-[13px] text-primary font-bold uppercase m-0">{venueLabel}</p>
+                <p className="text-[13px] text-primary font-bold uppercase font-display m-0">{venueLabel}</p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-sm font-black text-primary font-display m-0">
@@ -249,10 +249,10 @@ function ConfidenceBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="border border-border rounded-md p-3">
       <div className="flex justify-between text-sm mb-2">
-        <span className="text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
+        <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
           {label}
         </span>
-        <span className="text-primary font-black font-display">{value}%</span>
+        <span className="text-primary font-black font-display tabular-nums">{value}%</span>
       </div>
       <div className="h-1.5 bg-border rounded overflow-hidden">
         <div

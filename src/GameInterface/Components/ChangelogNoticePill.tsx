@@ -16,7 +16,7 @@ export function ChangelogNoticePill({ version, onOpen, onDismiss, className = ""
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 pl-2.5 pr-1.5 py-1 text-[13px] font-bold uppercase tracking-[0.08em] text-primary ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 pl-2.5 pr-1.5 py-1 font-display text-[13px] font-bold uppercase tracking-[0.08em] text-primary ${className}`}
     >
       <button
         type="button"

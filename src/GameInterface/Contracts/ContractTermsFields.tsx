@@ -47,7 +47,7 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand }: Pr
       <p className="text-sm text-muted-foreground m-0">
         {demand === null
           ? t("contracts.loadingDemand")
-          : <>{t("contracts.asking")}: <span className="text-primary font-semibold">{formatWage(demand)}</span> {t("contracts.perWeek")}</>}
+          : <>{t("contracts.asking")}: <span className="text-primary font-semibold tabular-nums">{formatWage(demand)}</span> {t("contracts.perWeek")}</>}
       </p>
       <div className="flex items-center gap-3">
         <label className="flex-1 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">

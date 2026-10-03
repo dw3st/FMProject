@@ -32,7 +32,8 @@ import {
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import { getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
@@ -55,6 +56,9 @@ import {
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 
@@ -501,19 +505,14 @@ export function FormationScreen() {
                     const isActive = f.id === formationId;
                     return (
                       <div key={f.id} className="relative group">
-                        <button
+                        <Chip
+                          selected={isActive}
                           onClick={() => supported ? handleSelectFormation(f.id) : undefined}
                           disabled={updating || !supported}
-                          className={`w-full px-3 py-3 rounded-lg text-sm font-bold uppercase tracking-[0.08em] transition-all duration-200 border-0 ${
-                            isActive
-                              ? "bg-primary text-primary-foreground cursor-pointer"
-                              : supported
-                              ? "bg-secondary/50 text-foreground border border-border/50 hover:border-primary/50 hover:bg-primary/10 cursor-pointer"
-                              : "bg-muted/20 text-muted-foreground/40 border border-border/20 cursor-not-allowed"
-                          }`}
+                          className="w-full py-2.5 tabular-nums"
                         >
                           {f.id}
-                        </button>
+                        </Chip>
                         {!supported && (
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded-md bg-card border border-border text-sm text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                             {t("common.comingSoon")}
@@ -528,30 +527,24 @@ export function FormationScreen() {
                   <p className="text-muted-foreground text-sm py-4 text-center m-0">{t("formations.noFormations")}</p>
                 )}
                 {customFormation && (
-                  <button
-                    type="button"
+                  <Chip
+                    selected={formationId === CUSTOM_FORMATION_ID}
                     onClick={() => handleSelectFormation(CUSTOM_FORMATION_ID)}
                     disabled={updating || editing}
-                    className={`mt-2 w-full rounded border px-3 py-1.5 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed ${
-                      formationId === CUSTOM_FORMATION_ID
-                        ? "border-primary text-primary"
-                        : "border-border text-foreground hover:border-primary/50"
-                    }`}
+                    className="mt-2 w-full tabular-nums"
                   >
                     {t("formations.custom")} {customShape(customFormation.slots)}
-                  </button>
+                  </Chip>
                 )}
-                <button
-                  type="button"
+                <Chip
+                  selected={editing}
                   onClick={editing ? cancelEditing : startEditing}
                   disabled={!squad || attacking.length === 0}
-                  className="mt-3 w-full rounded border border-border px-3 py-1.5 text-sm font-semibold text-foreground hover:border-primary/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-3 w-full"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <Icon name="formation" className="w-4 h-4" />
-                    {editing ? t("formations.editor.cancel") : t("formations.editor.edit")}
-                  </span>
-                </button>
+                  <Icon name="formation" className="w-4 h-4" />
+                  {editing ? t("formations.editor.cancel") : t("formations.editor.edit")}
+                </Chip>
 
                 <div className="mt-6 pt-4 border-t border-border/30">
                   <h4 className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-2 font-display font-bold">{t("formations.formationInfo")}</h4>
@@ -626,36 +619,24 @@ export function FormationScreen() {
                 selectedSlotIdx={selectedSlotIdx}
                 onSlotClick={handleSlotClick}
                 getOutOfPosition={(player, slotRole) => isPoorFit(aptitudeFor(player, slotRole))}
+                clubColors={squad?.colors}
               />
             </div>
 
             {/* Squad Panel — absolute inside cell so pitch dictates row height */}
             <div className="lg:col-span-3 lg:relative">
               <div className="card-arcade rounded-md p-4 flex flex-col lg:absolute lg:inset-0 overflow-hidden">
-                <div className="flex gap-1 p-1 bg-muted/30 rounded-lg mb-4 shrink-0">
-                  <button
-                    onClick={() => setBenchTab("starting")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 cursor-pointer border-0 ${
-                      benchTab === "starting"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                    }`}
-                  >
-                    <Icon name="staff" className="w-3.5 h-3.5" />
-                    {t("formations.starting11")}
-                  </button>
-                  <button
-                    onClick={() => setBenchTab("bench")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 cursor-pointer border-0 ${
-                      benchTab === "bench"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                    }`}
-                  >
-                    <Icon name="user-plus" className="w-3.5 h-3.5" />
-                    {t("formations.bench")}
-                  </button>
-                </div>
+                <SegmentedTabs
+                  fill
+                  compact
+                  className="mb-4 shrink-0"
+                  tabs={[
+                    { key: "starting", label: <><Icon name="staff" className="w-4 h-4" />{t("formations.starting11")}</> },
+                    { key: "bench", label: <><Icon name="user-plus" className="w-4 h-4" />{t("formations.bench")}</> },
+                  ]}
+                  active={benchTab}
+                  onChange={setBenchTab}
+                />
 
                 {selectedSlotIdx !== null ? (
                   <p className="text-sm text-primary mb-3 px-2 py-1.5 bg-primary/10 rounded-lg border border-primary/30 m-0 shrink-0">
@@ -786,7 +767,7 @@ export function FormationScreen() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`font-bold text-sm uppercase tracking-[0.08em] ${isActive ? "text-primary" : "text-foreground"}`}>
+                      <span className={`font-bold text-sm uppercase font-display tracking-[0.08em] ${isActive ? "text-primary" : "text-foreground"}`}>
                         {meta.label}
                       </span>
                       {isActive && (
@@ -850,25 +831,15 @@ export function FormationScreen() {
                 const current = effectiveAxes(activeStyle, axesOverride)[axis.key];
                 return (
                   <div key={axis.key}>
-                    <p className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground m-0 mb-2">
+                    <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">
                       {t(`tactics.axes.${axis.key}` as never)}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {axis.values.map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => handleAxis(axis.key, v as never)}
-                          className={`rounded border px-3 py-1.5 text-sm cursor-pointer bg-transparent ${
-                            current === v
-                              ? "border-primary text-primary"
-                              : "border-border text-foreground hover:border-primary/50"
-                          }`}
-                        >
-                          {t(`tactics.axes.values.${v}` as never)}
-                        </button>
-                      ))}
-                    </div>
+                    <OptionChips
+                      aria-label={t(`tactics.axes.${axis.key}` as never)}
+                      options={axis.values.map((v) => ({ key: v as string, label: t(`tactics.axes.values.${v}` as never) }))}
+                      value={current as string}
+                      onChange={(v) => handleAxis(axis.key, v as never)}
+                    />
                   </div>
                 );
               })}
@@ -934,13 +905,13 @@ function SquadPlayerRow({
     >
       {(showSlot && slotLabel) ? (
         <div className="flex items-center justify-center shrink-0 touch-none" data-drag-handle>
-          <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
+          <span className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`}>
             {badgeLabel}
           </span>
         </div>
       ) : (
         <div className="shrink-0 touch-none" data-drag-handle>
-          <span className={`text-[13px] font-black uppercase tracking-[0.08em] ${textColor}`}>
+          <span className={`text-[13px] font-black uppercase font-display tracking-[0.08em] ${textColor}`}>
             {badgeLabel}
           </span>
         </div>
@@ -987,7 +958,7 @@ function SquadPlayerRow({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-sm mt-0.5">
+          <div className="flex items-center gap-3 text-sm tabular-nums mt-0.5">
             <div className="flex items-center gap-1">
               <Icon name="star" className="w-3 h-3 text-muted-foreground" />
               <span className={`font-bold ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
@@ -1023,7 +994,10 @@ function FormationPitch({
   occupiedZones,
   dragProps,
   dropHover,
+  clubColors,
 }: {
+  /** Kit colours of the club, used for the generated faces on the markers. */
+  clubColors?: readonly string[];
   editing?: boolean;
   /** "row:col" of the zones already used by a position (edit mode). */
   occupiedZones?: Set<string>;
@@ -1076,7 +1050,7 @@ function FormationPitch({
                 <div
                   key={key}
                   data-drop={key}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-dashed flex items-center justify-center text-[13px] font-semibold ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-dashed flex items-center justify-center text-sm font-semibold ${
                     dropHover === key ? "border-primary bg-primary/30 text-primary" : "border-white/40 text-white/60"
                   }`}
                   style={{ left: `${(c.y / PITCH_WIDTH) * 100}%`, top: `${100 - (c.x / PITCH_LENGTH) * 100}%` }}
@@ -1125,17 +1099,35 @@ function FormationPitch({
                 data-drop={`slot:${i}`}
                 data-pitch-marker
                 {...dragProps({ kind: "slot", key: String(i) }, player ? player.name : slot.role)}
-                className={`w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer select-none touch-none border-0 ${
-                  dropHover === `slot:${i}`
-                    ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
-                    : isSelected
-                    ? "bg-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                className={`relative w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer select-none touch-none border-0 p-0 ${
+                  dropHover === `slot:${i}` || isSelected
+                    ? `${player ? "bg-transparent" : "bg-primary"} ring-2 ring-primary ring-offset-2 ring-offset-background`
+                    : player
+                    ? "bg-transparent hover:brightness-110"
                     : "bg-primary/80 hover:bg-primary border-2 border-primary/50"
                 }`}
               >
-                <span className="text-[13px] font-bold text-primary-foreground uppercase">
-                  {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
-                </span>
+                {player ? (
+                  <>
+                    <PlayerFace
+                      playerId={player.id}
+                      nationality={player.nationality}
+                      clubColors={clubColors}
+                      size={48}
+                      fallback={playerInitials(player.name)}
+                      ringClassName={`border-2 border-current ${getDetailedPositionColor(slot.role)}`}
+                    />
+                    <span
+                      className={`absolute -top-2 -left-3 min-w-7 rounded border border-current bg-background/95 px-1 text-center text-[13px] font-bold uppercase font-display leading-tight pointer-events-none ${getDetailedPositionColor(slot.role)}`}
+                    >
+                      {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[13px] font-bold text-primary-foreground uppercase font-display">
+                    {slot.role.length <= 3 ? slot.role : slot.role.slice(0, 2)}
+                  </span>
+                )}
               </button>
 
               {oop && !isSelected && (
@@ -1183,7 +1175,7 @@ function FormationPitch({
                             <Icon name="star" className="w-3 h-3" />
                             <span>{t("formations.rating")}</span>
                           </div>
-                          <span className={`font-bold text-sm ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
+                          <span className={`font-bold text-sm tabular-nums ${ratingTextClass10(avg)}`}>{avg.toFixed(1)}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

@@ -7,6 +7,7 @@ import {
   type ScoutFilterState,
 } from "@/GameInterface/Scout/scoutFilterState";
 import { Icon } from "@/GameInterface/Icons";
+import { Chip } from "@/GameInterface/ui/Chip";
 
 export type { ScoutFilterState };
 export { createDefaultScoutFilters, defaultAttributeRanges } from "@/GameInterface/Scout/scoutFilterState";
@@ -183,30 +184,14 @@ export function ScoutFilters({
 
       {/* For Sale Only toggle */}
       <div className="mt-4 pt-4 border-t border-border/40 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-bold uppercase tracking-[0.08em] border transition-all cursor-pointer ${
-            filters.onlyForSale
-              ? "bg-primary/20 text-primary border-primary/40"
-              : "bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/30"
-          }`}
-        >
-          <Icon name="tag" className="w-3.5 h-3.5" />
+        <Chip selected={!!filters.onlyForSale} onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}>
+          <Icon name="tag" className="w-4 h-4" />
           {t("scout.filters.forSaleOnly")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-bold uppercase tracking-[0.08em] border transition-all cursor-pointer ${
-            filters.onlyFree
-              ? "bg-primary/20 text-primary border-primary/40"
-              : "bg-muted/20 text-muted-foreground border-border hover:text-primary hover:border-primary/30"
-          }`}
-        >
-          <Icon name="tag" className="w-3.5 h-3.5" />
+        </Chip>
+        <Chip selected={!!filters.onlyFree} onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}>
+          <Icon name="tag" className="w-4 h-4" />
           {t("scout.filters.freeAgentsOnly")}
-        </button>
+        </Chip>
       </div>
 
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />

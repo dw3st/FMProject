@@ -10,6 +10,9 @@ export interface SummaryTeamStats {
   yellowCards: number;
   redCards: number;
   offsides: number;
+  corners: number;
+  /** Free kicks won from fouls. */
+  freeKicks: number;
 }
 
 /** One line of the live match feed. */
@@ -37,7 +40,7 @@ function StatRow({ label, a, b }: { label: string; a: string | number; b: string
   return (
     <div className="flex items-center justify-between border-t border-border py-1.5 text-sm">
       <span className="w-12 font-display font-bold tabular-nums text-foreground">{a}</span>
-      <span className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground">{label}</span>
+      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{label}</span>
       <span className="w-12 text-right font-display font-bold tabular-nums text-foreground">{b}</span>
     </div>
   );
@@ -85,10 +88,12 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.passes")} a={statsA.passesCompleted} b={statsB.passesCompleted} />
         <StatRow label={t("match.summary.fouls")} a={statsA.fouls} b={statsB.fouls} />
         <StatRow label={t("match.summary.cards")} a={cards(statsA)} b={cards(statsB)} />
+        <StatRow label={t("match.summary.corners")} a={statsA.corners} b={statsB.corners} />
+        <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
       <div className="px-3 pt-4 pb-1">
-        <span className="font-display font-bold uppercase tracking-[0.08em] text-xs text-muted-foreground">
+        <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
           {t("match.summary.events")}
         </span>
       </div>
