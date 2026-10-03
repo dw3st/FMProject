@@ -25,6 +25,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.1.4",
+    date: "2026-10-03",
+    items: [
+      {
+        pt: "Tela em peça única: as colunas laterais saíram e toda tela usa a largura inteira.",
+        en: "One-piece screens: the side columns are gone and every screen uses the full width.",
+      },
+      {
+        pt: "Clube e agenda da semana agora são cartões do painel; clique num dia de treino ou descanso para trocar.",
+        en: "Club and week schedule are now dashboard cards; click a training or rest day to switch it.",
+      },
+    ],
+  },
+  {
     version: "3.1.3",
     date: "2026-10-03",
     items: [
