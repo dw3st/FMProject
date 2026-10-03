@@ -1,8 +1,9 @@
 # Jogo aéreo (motor) — cruzamentos, lançamentos, disputas aéreas, cabeçadas
 
 Spec: `docs/superpowers/specs/2026-10-02-aerial-play-design.md`. Etapa 13, versão **2.8**.
-Escanteios e faltas cruzadas pelo cobrador são da Etapa 14 (bolas paradas); aqui só o jogo corrido
-(o cobrador de tiro livre pode cruzar e o de tiro de meta pode lançar quando é a melhor ação).
+Escanteios e faltas cruzadas pelo cobrador são da Etapa 14 (`set-pieces-play.md`): a cobrança é uma
+bola alta `cross` com `fromSetPiece`, com regras próprias na disputa (vantagem do defensor posicionado,
+mais perseguidores sem filtro de papel). Aqui, o jogo corrido.
 
 ## Arquivos
 
@@ -91,6 +92,8 @@ balanced ~43% (Premier) / ~39% (Championship), possession ~10%, direct ~86%.
    `clearance`, o lançamento não conta como certo).
 5. **`clearance`** é uma bola alta curta: a "segunda bola" é disputada onde cai (mesma regra de
    duelo); quem ganha fica com a bola. Não conta como passe, lançamento nem cruzamento.
+   Desde a Etapa 14 o escanteio que sai de um corte (cruzamento cortado na área, cruzamento bloqueado)
+   usa as chances de `SET_PIECE_CONFIG` (`set-pieces-play.md` → "Fontes de escanteio").
 6. **Perseguidores:** cada nova bola alta / solta re-seleciona os perseguidores; quem ainda corria
    atrás de uma bola anterior e não foi escolhido volta a decidir (`commitLooseBallChasers`). A saída
    de bola e a troca de lado limpam todos.
@@ -174,7 +177,9 @@ Championship).
 
 ## Limitações
 
-- Sem escanteio cruzado nem bola parada aérea (Etapa 14): zagueiros quase não fazem gol de cabeça.
+- ~~Sem escanteio cruzado nem bola parada aérea~~ — feito na Etapa 14 (`set-pieces-play.md`); desde
+  então os cruzamentos e disputas da tabela acima incluem escanteios e faltas cruzadas (16,7
+  cruzamentos e 30 disputas somadas na Premier) e os zagueiros marcam de cabeça.
 - `jump` é baixo nos jogadores de linha dos elencos reais (~0,9/10), então pesa pouco fora do gol.
 - Os passes do jogo caíram ~18% (cruzamentos e lançamentos são uma família à parte, como a bola em
   profundidade; não há alvo para isso no spec).
