@@ -405,3 +405,36 @@ export function getTeamStats(team: TeamId): TeamStats {
 export function getAllPlayerStats(): Map<number, PlayerStats> {
   return new Map([...store].map(([id, s]) => [id, { ...s }]));
 }
+
+// ── Snapshot (resume a live match after a page reload, #64) ───────────────────
+
+/** Plain-JSON copy of every counter this module holds (Maps flattened to entry arrays). */
+export interface StatsSnapshot {
+  players:   Array<[number, PlayerStats]>;
+  teams:     Array<[number, TeamId]>;
+  endEnergy: Array<[number, { team: TeamId; energy: number }]>;
+  teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number }>;
+}
+
+/** Everything accumulated so far, as plain data (no Maps). */
+export function exportStatsState(): StatsSnapshot {
+  return {
+    players:   [...store].map(([id, s]) => [id, { ...s }]),
+    teams:     [...playerTeam],
+    endEnergy: [...endEnergy].map(([id, e]) => [id, { ...e }]),
+    teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
+  };
+}
+
+/** Replaces every counter with a snapshot from `exportStatsState` (instead of `initStats`). */
+export function importStatsState(snap: StatsSnapshot): void {
+  store.clear();
+  playerTeam.clear();
+  endEnergy.clear();
+  for (const [id, s] of snap.players) store.set(id, { ...emptyStats(), ...s });
+  for (const [id, team] of snap.teams) playerTeam.set(id, team);
+  for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
+  teamFlags.A = { ...teamFlags.A, ...snap.teamFlags.A };
+  teamFlags.B = { ...teamFlags.B, ...snap.teamFlags.B };
+  notify();
+}
