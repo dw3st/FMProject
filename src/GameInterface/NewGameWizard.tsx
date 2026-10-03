@@ -66,6 +66,8 @@ type ManagerData = {
   name:        string;
   background:  ManagerBackground | null;
   nationality: Nationality | null;
+  /** The board may sack the manager (`.claude/rules/game/board-fans.md`); pre-selected yes. */
+  sackingEnabled: boolean;
 };
 
 const database = (databasesRaw as DatabaseEntry[]).find((d) => d.playable) ?? null;
@@ -76,7 +78,7 @@ const isManagerValid = (m: ManagerData) =>
 
 export function NewGameWizard() {
   const { t, i18n } = useTranslation();
-  const [manager, setManager] = useState<ManagerData>({ name: "", background: null, nationality: null });
+  const [manager, setManager] = useState<ManagerData>({ name: "", background: null, nationality: null, sackingEnabled: true });
   const [step, setStep] = useState<"manager" | "club">("manager");
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
@@ -163,6 +165,7 @@ export function NewGameWizard() {
           nationalityIso: manager.nationality.id,
           backgroundId:   manager.background.id,
         },
+        sackingEnabled: manager.sackingEnabled,
       });
 
       capture("career_started", {
@@ -539,6 +542,18 @@ function ManagerForm({
               ),
             }))}
           />
+
+          <Label className="mt-6 mb-2">{t("newGame.sackingLabel")}</Label>
+          <OptionChips
+            aria-label={t("newGame.sackingLabel")}
+            value={draft.sackingEnabled ? "yes" : "no"}
+            onChange={(k) => setDraft({ ...draft, sackingEnabled: k === "yes" })}
+            options={[
+              { key: "yes", label: t("newGame.sackingYes") },
+              { key: "no", label: t("newGame.sackingNo") },
+            ]}
+          />
+          <p className="text-sm text-muted-foreground mt-2 mb-0">{t("newGame.sackingHint")}</p>
         </div>
 
         <div>

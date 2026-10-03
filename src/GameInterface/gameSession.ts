@@ -109,6 +109,7 @@ export async function createGameSave(data: {
   clubColors: [string, string];
   database?: SaveDatabase;
   manager?:  SaveManager;
+  sackingEnabled?: boolean;
 }): Promise<GameSession> {
   const res = await fetch("/api/saves", {
     method: "POST",

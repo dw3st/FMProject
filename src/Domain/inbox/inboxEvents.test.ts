@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildContinentalMessage, buildCupMessage, buildInjuryMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
+import { buildBoardMessage, buildContinentalMessage, buildCupMessage, buildInjuryMessage, buildSeasonMessage } from "@/Domain/inbox/inboxEvents";
 
 describe("buildSeasonMessage", () => {
   test("promoted names the new league and keeps the one left", () => {
@@ -168,5 +168,19 @@ describe("buildInjuryMessage — suspended", () => {
     expect(m.kind).toBe("suspended");
     expect(m.matches).toBe(1);
     expect(m.subject).toContain("Silva");
+  });
+});
+
+describe("buildBoardMessage", () => {
+  test("objective message carries the objective and an English fallback subject", () => {
+    const objective = { kind: "top_half" as const, target: 10, leagueSlug: "premier_league", leagueSize: 20, season: "2026-27" };
+    const m = buildBoardMessage({ date: "2026-08-15", kind: "objective", objective, leagueName: "Premier League" });
+    expect(m).toMatchObject({ category: "board", kind: "objective", objective, read: false, date: "2026-08-15" });
+    expect(m.subject.length).toBeGreaterThan(0);
+  });
+  test("ultimatum, bonus and sacked keep their numbers", () => {
+    expect(buildBoardMessage({ date: "d", kind: "ultimatum", ultimatum: { matches: 5, points: 7 }, board: 24 }).ultimatum).toEqual({ matches: 5, points: 7 });
+    expect(buildBoardMessage({ date: "d", kind: "bonus", bonus: 2_000_000 }).bonus).toBe(2_000_000);
+    expect(buildBoardMessage({ date: "d", kind: "sacked", reason: "ultimatum" }).reason).toBe("ultimatum");
   });
 });

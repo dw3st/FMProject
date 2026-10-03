@@ -29,6 +29,9 @@ describe("describeLedgerEntry", () => {
     expect(describeLedgerEntry({ kind: "prize", ref: { competition: "lib", stage: "sf" } }))
       .toEqual({ key: "contStage", competition: "lib", stage: "sf", stageScope: "continental" });
   });
+  test("board bonus", () => {
+    expect(describeLedgerEntry({ kind: "prize", ref: { stage: "board_bonus" } })).toEqual({ key: "boardBonus" });
+  });
   test("prize without data falls back", () => {
     expect(describeLedgerEntry({ kind: "prize" })).toBeNull();
   });

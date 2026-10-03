@@ -12,6 +12,7 @@ import {
   squadsAfterAcceptedTransfer,
 } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
+import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -209,6 +210,14 @@ export const transferRoutes = {
             { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
             fee,
           );
+
+          // Board (`.claude/rules/game/board-fans.md`): spending past the balance costs confidence.
+          const budgetAfter = (buyerSquad.finances?.budget ?? 0) - fee;
+          if (updatedMeta.board && budgetAfter < 0) {
+            updatedMeta = await saveService.updateMeta(saveId, {
+              board: applyPurchase(updatedMeta.board, { balanceAfter: budgetAfter }),
+            });
+          }
 
           // Remove the sold player from the seller's sell list in the market profile
           if (market && sellerProfile) {

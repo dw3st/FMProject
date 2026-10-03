@@ -97,7 +97,11 @@ export function useAdvanceDay() {
     try {
       const res = await fetch(`/api/advance-day/${session.saveId}`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to advance day");
-      const log = (await res.json()) as AdvanceDayResponse;
+      const log = (await res.json()) as AdvanceDayResponse & { sacked?: boolean };
+      if (log.sacked) {
+        window.location.href = "/fired";
+        return;
+      }
       setDayLog(log);
       if (log.seasonEnded) {
         setSeasonNotice({
@@ -144,6 +148,10 @@ export function useAdvanceDay() {
         progress = { ...progress, daysAdvanced: advanced, totalDays: advanced + remaining, currentDate: lastDate };
         setFastForward(progress);
         if (body.seasonEvents?.length) notice = body.seasonEvents[body.seasonEvents.length - 1]!;
+        if ((body as { sacked?: boolean }).sacked) {
+          window.location.href = "/fired";
+          return;
+        }
         if (!res.ok || body.error) throw new Error(body.error ?? `HTTP ${res.status}`);
         if (body.done) {
           reachedMatchDay = matchDate !== null && lastDate === matchDate;
