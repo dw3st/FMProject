@@ -72,5 +72,8 @@ export const COUNTRY_PATHS: Record<string, string> = {
   "AL": "M553.7 117L555.7 115.1L557.1 117L558.2 119.9L555.6 123L553.7 120.4L553.7 117Z"
 };
 
+/** A country whose drawn box is smaller than this (viewBox units) gets a dot marker. */
+export const MARKER_MAX_SIZE = 8;
+
 /** Centre of countries too small to click on the map (dot marker drawn on top). */
-export const COUNTRY_MARKERS: Record<string, [number, number]> = {"MT":[540,133.5],"CY":[592.7,136.5],"AL":[556,119.1]};
+export const COUNTRY_MARKERS: Record<string, [number, number]> = {"MT":[540,133.5],"FJ":[996.3,280.9],"CY":[592.7,136.5],"AL":[556,119.1]};
