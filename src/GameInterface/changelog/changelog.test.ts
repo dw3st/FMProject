@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { changelog, CURRENT_VERSION, type ChangelogEntry } from "@/GameInterface/changelog/changelog";
+import { changelog, CURRENT_VERSION, upcoming, type ChangelogEntry } from "@/GameInterface/changelog/changelog";
 
 function versionTuple(version: string): number[] {
   const parts = version.split(".").map((p) => Number(p));
@@ -69,5 +69,13 @@ describe("changelog data", () => {
 
   test("every item and fix has non-empty pt and en text", () => {
     expectNonEmptyText(changelog);
+  });
+
+  test("upcoming items are present and have non-empty pt and en text", () => {
+    expect(upcoming.length).toBeGreaterThan(0);
+    for (const item of upcoming) {
+      expect(item.pt.trim().length).toBeGreaterThan(0);
+      expect(item.en.trim().length).toBeGreaterThan(0);
+    }
   });
 });
