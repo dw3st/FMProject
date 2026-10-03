@@ -14,6 +14,12 @@ export const BOARD_FANS = {
   DAMP_SPAN_FANS: 45,
   DAMP_SPAN_BOARD: 70,
   DAMP_MIN: 0.1,
+  /**
+   * Losses below START soften a little (× max(LOSS_DAMP_MIN, 1 − (START − v) / LOSS_DAMP_SPAN)), so
+   * one disappointing season does not sink the fans to the floor.
+   */
+  LOSS_DAMP_SPAN: 80,
+  LOSS_DAMP_MIN: 0.4,
   /** Daily snapshots kept in `BoardState.history` (the dashboard trend compares with 7 days ago). */
   HISTORY_DAYS: 14,
   TREND_DAYS: 7,

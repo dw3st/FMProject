@@ -293,9 +293,12 @@ describe("expectation-adjusted results and diminishing gains", () => {
     const at90 = applyCompetitionEvent(base({ fans: 90 }), { kind: "title", title: "x" }).fans - 90;
     expect(at90).toBeLessThan(at60 * 0.5);
     expect(at90).toBeGreaterThan(0);
-    // Losses are not damped.
+    // Losses above 60 are not damped; below 60 they soften a little.
     const loss90 = applyCompetitionEvent(base({ fans: 90 }), { kind: "early_exit" }).fans - 90;
     expect(loss90).toBe(BOARD_FANS.events.EARLY_EXIT_FANS);
+    const loss30 = applyCompetitionEvent(base({ fans: 30 }), { kind: "early_exit" }).fans - 30;
+    expect(loss30).toBeLessThan(0);
+    expect(loss30).toBeGreaterThan(BOARD_FANS.events.EARLY_EXIT_FANS);
   });
   test("a season of easy wins does not push a favourite's fans to 100", () => {
     let s = base();

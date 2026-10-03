@@ -71,7 +71,12 @@ casa) / 0,8, com `clubLevel`. Grande que vence pequeno ganha pouco e perde muito
 empate do favorito custa, o do azarão agrada. A forma compara os pontos com os esperados para o favoritismo.
 
 **Ganhos decrescentes no topo:** todo ganho acima de 60 vale × max(0,1; 1 − (v − 60)/45) na torcida e
-× max(0,1; 1 − (v − 60)/70) na diretoria (perdas sem amortecimento): 90+ exige uma temporada de fato excelente.
+× max(0,1; 1 − (v − 60)/70) na diretoria: 90+ exige uma temporada de fato excelente. Perdas abaixo de 60 amaciam
+um pouco (× max(0,4; 1 − (60 − v)/80)); acima de 60, perdas e, abaixo, ganhos passam inteiros.
+
+Faixas da torcida numa temporada de 38 jogos (simulação pura, 300 temporadas, com a deriva semanal): favorito que cumpre
+pico ~73 (p90 80); favorito com temporada excelente pico ~83 (máx ~90); favorito que decepciona (meio da tabela) cai a
+~28; clube médio fica em ~37..78.
 
 Clássico: mesma cidade (`venue.city`, sem acento/caixa); sem rival da cidade, o líder da liga.
 
