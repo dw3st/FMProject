@@ -28,6 +28,7 @@ import {
   queryGKQuality,
   queryInterceptionCorridors,
   queryThroughBallCells,
+  queryCross,
   querySummary,
 } from '@/mcp/queries';
 
@@ -202,6 +203,20 @@ server.registerTool(
     },
   },
   ({ snapshotPath, limit }) => withSnapshot(snapshotPath, snap => queryThroughBallCells(snap.state, limit)),
+);
+
+// ── cross / long ball ──────────────────────────────────────────────────────────
+
+server.registerTool(
+  'evaluate_cross',
+  {
+    description:
+      'Score the high-ball options of the current ball holder (aerial.md): whether he is in a crossing position, the three cross targets (near post / penalty spot / far post) with attackers/defenders in the zone, best heading, keeper-claim flag, raw and compressed score and the attacker most likely to attack it, plus the best long ball (target, landing point, raw, score). Use it to see why a holder crossed (or did not).',
+    inputSchema: {
+      snapshotPath: z.string(),
+    },
+  },
+  ({ snapshotPath }) => withSnapshot(snapshotPath, snap => queryCross(snap.state)),
 );
 
 // ── interception corridors ────────────────────────────────────────────────────
