@@ -164,7 +164,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span
-              className={`text-[13px] font-black px-1.5 py-0.5 rounded border uppercase tracking-[0.08em] shrink-0 ${posBadgeClass}`}
+              className={`text-[13px] font-black px-1.5 py-0.5 rounded border uppercase font-display tracking-[0.08em] shrink-0 ${posBadgeClass}`}
               title={hasPos ? rawPos : undefined}
             >
               {mainRole != null ? MAIN_ROLE_ABBR[mainRole] : "—"}
@@ -188,7 +188,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="font-black font-display text-primary m-0">{formatTransferFee(record.fee)}</p>
+          <p className="font-black font-display text-primary m-0 tabular-nums">{formatTransferFee(record.fee)}</p>
           <div className="flex items-center gap-1.5 mt-1 justify-end flex-wrap">
             {statusBadge}
             <span className="text-sm text-muted-foreground">{formatTransferDate(record.date)}</span>

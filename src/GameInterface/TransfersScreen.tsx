@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { MyTransfers } from "@/GameInterface/Transfers/MyTransfers";
 import { MySellList } from "@/GameInterface/Transfers/MySellList";
 import { WorldTransfers } from "@/GameInterface/Transfers/WorldTransfers";
@@ -42,42 +43,24 @@ export function TransfersScreen() {
         <PageHeadline
           backHref="/dashboard"
           trailing={
-            <div className="flex flex-wrap rounded-md overflow-hidden border border-border bg-card/50">
-              <button
-                type="button"
-                onClick={() => setActiveTab("my")}
-                className={`px-3 sm:px-5 py-2.5 text-[13px] sm:text-sm font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
-                  activeTab === "my"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                }`}
-              >
-                {t("transfers.myTransfers")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("world")}
-                className={`px-3 sm:px-5 py-2.5 text-[13px] sm:text-sm font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
-                  activeTab === "world"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                }`}
-              >
-                <span className="hidden sm:inline">{t("transfers.worldTransfers")}</span>
-                <span className="sm:hidden">{t("transfers.worldTransfersCard")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("sell")}
-                className={`px-3 sm:px-5 py-2.5 text-[13px] sm:text-sm font-bold uppercase tracking-[0.08em] transition-all cursor-pointer border-0 ${
-                  activeTab === "sell"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-transparent"
-                }`}
-              >
-                {t("transfers.forSale")}
-              </button>
-            </div>
+            <SegmentedTabs
+              wrap
+              tabs={[
+                { key: "my", label: t("transfers.myTransfers") },
+                {
+                  key: "world",
+                  label: (
+                    <>
+                      <span className="hidden sm:inline">{t("transfers.worldTransfers")}</span>
+                      <span className="sm:hidden">{t("transfers.worldTransfersCard")}</span>
+                    </>
+                  ),
+                },
+                { key: "sell", label: t("transfers.forSale") },
+              ]}
+              active={activeTab}
+              onChange={setActiveTab}
+            />
           }
         >
           {t("transfers.title")} <span className="text-primary">{t("common.market")}</span>
