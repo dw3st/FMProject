@@ -22,7 +22,7 @@ import {
   zoneCenter,
   zoneRole,
 } from "@/Domain/formation/zones";
-import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
+import { FORMATION_IDS } from "@/Domain/matchFormations";
 import {
   TACTICAL_STYLE_OPTIONS,
   DEFAULT_TACTICAL_STYLE,
@@ -501,7 +501,7 @@ export function FormationScreen() {
                 </h3>
                 <div className="grid grid-cols-3 gap-2">
                   {formations.map((f) => {
-                    const supported = SUPPORTED_FORMATIONS.has(f.id);
+                    const supported = FORMATION_IDS.includes(f.id);
                     const isActive = f.id === formationId;
                     return (
                       <div key={f.id} className="relative group">

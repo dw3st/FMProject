@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GamePlayer, GameState, PendingSub } from "@/GameEngine/types";
-import { SUPPORTED_FORMATIONS } from "@/GameEngine/Domain/SetPieceLayouts";
+import { FORMATION_IDS } from "@/Domain/matchFormations";
 import { getMainRole, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
@@ -61,7 +61,7 @@ export interface SubstitutionPanelProps {
   onClose: () => void;
 }
 
-const FORMATION_LIST = Array.from(SUPPORTED_FORMATIONS).sort();
+const FORMATION_LIST = [...FORMATION_IDS];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 

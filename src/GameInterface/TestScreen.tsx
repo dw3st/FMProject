@@ -44,6 +44,7 @@ import playersJson from "@/Data/players.json";
 import rolesJson from "@/Data/roles.json";
 import formation433Fallback from "@/Data/formations/4-3-3.json";
 import { CUSTOM_PRESETS, customToFormation } from "@/Domain/formation/zones";
+import { FORMATION_IDS } from "@/Domain/matchFormations";
 import type { TacticalAxes } from "@/types/tacticsTypes";
 import { axesFor } from "@/types/tacticsTypes";
 
@@ -65,9 +66,7 @@ import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
 // ── Constants ────────────────────────────────────────────────────────────────
 
 /** If `/api/formations` is unreachable (wrong dev server, no Bun, etc.), still populate dropdowns. */
-const FORMATION_IDS_FALLBACK = [
-  "3-4-3", "3-5-2", "4-1-4-1", "4-2-2-2", "4-2-3-1", "4-3-1-2", "4-3-3", "4-4-2", "4-5-1", "5-3-2",
-] as const;
+const FORMATION_IDS_FALLBACK = FORMATION_IDS;
 
 const ALL_PLAYERS = playersJson as RosterPlayer[];
 const TEAM_RED    = ALL_PLAYERS.filter(p => p.squadId === 'team_red');
