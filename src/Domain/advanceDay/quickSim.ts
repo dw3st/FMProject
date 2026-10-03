@@ -653,13 +653,16 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const awayGoals = fillSide(awayXI, goalsAway, xgAwayDay, playerStats, tacklesFailed, teamLevel(away), matchLevel, rng);
 
   let decider: PlayedMatchRecording["decider"];
+  // Extra-time goals: not offered to the penalty conversion, but can be headers (`rollAerial`).
+  const homeEtGoals: GoalRecord[] = [];
+  const awayEtGoals: GoalRecord[] = [];
   const agg = input.aggregate ?? { home: 0, away: 0 };
   const levelNow = () => goalsHome + agg.home === goalsAway + agg.away;
   if (input.knockout && levelNow()) {
     const etHome = homeXI.length > 0 ? sampleGoals(xgHomeDay * (30 / 90), rng) : 0;
     const etAway = awayXI.length > 0 ? sampleGoals(xgAwayDay * (30 / 90), rng) : 0;
-    assignGoals(homeXI, etHome, playerStats, rng);
-    assignGoals(awayXI, etAway, playerStats, rng);
+    homeEtGoals.push(...assignGoals(homeXI, etHome, playerStats, rng));
+    awayEtGoals.push(...assignGoals(awayXI, etAway, playerStats, rng));
     goalsHome += etHome;
     goalsAway += etAway;
     decider = { extraTime: { home: etHome, away: etAway } };
@@ -690,8 +693,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const aH = aerialStrength(homeXI);
   const aA = aerialStrength(awayXI);
   const homeDuelsWon = binomial(duels, aH / (aH + aA), rng);
-  const homeAir = rollAerial(homeXI, homeGoals, duels, homeDuelsWon, playerStats, ratingDelta, rng);
-  const awayAir = rollAerial(awayXI, awayGoals, duels, duels - homeDuelsWon, playerStats, ratingDelta, rng);
+  const homeAir = rollAerial(homeXI, [...homeGoals, ...homeEtGoals], duels, homeDuelsWon, playerStats, ratingDelta, rng);
+  const awayAir = rollAerial(awayXI, [...awayGoals, ...awayEtGoals], duels, duels - homeDuelsWon, playerStats, ratingDelta, rng);
   const sideDisc = (own: typeof homeDisc, other: typeof homeDisc): SideDiscipline => ({
     fouls: own.committed, yellowCards: own.yellow, redCards: own.red,
     offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties, penaltyGoals: other.oppPenaltyGoals,

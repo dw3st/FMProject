@@ -784,3 +784,26 @@ describe("quickSimMatch — aerial play", () => {
     expect(stGoals / others).toBeGreaterThan(0.2);
   });
 });
+
+describe("quickSimMatch — extra-time header goals", () => {
+  test("an extra-time goal can be a header; goals still add up", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    let etOnlyHeaders = 0;
+    for (let i = 0; i < 6000; i++) {
+      const r = quickSimMatch(
+        { fixtureId: "f", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away), knockout: true },
+        mulberry32(500 + i),
+      ).recording;
+      const et = r.decider?.extraTime;
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+      // Only extra-time goals and no regular-time goals: any header goal is an extra-time one.
+      if (et && r.score.home === et.home && r.score.away === et.away) {
+        etOnlyHeaders += r.teamStats.home.headerGoals! + r.teamStats.away.headerGoals!;
+      }
+    }
+    expect(etOnlyHeaders).toBeGreaterThan(0);
+  });
+});
