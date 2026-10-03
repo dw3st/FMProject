@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -991,7 +992,7 @@ export function MatchPreviewScreen() {
             : <>{t("leagues.matchday", { round: matchday })} &bull; {competition}</>}
         </p>
         <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
-          {t("matchPreview.title")}
+          <TitleParts accent={t("screenTitles.matchPreview.accent")}>{t("screenTitles.matchPreview.main")}</TitleParts>
         </h1>
         <div
           className="w-16 h-0.5 mx-auto rounded-full opacity-80"

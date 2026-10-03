@@ -97,6 +97,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
     <ScreenContainer fill>
         <PageHeadline
           backHref={`/leagues/${league}`}
+          accent={squad.name}
           trailing={
             <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
           }
@@ -109,7 +110,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
               className="w-8 h-8 rounded-full shrink-0"
               imgClassName="w-full h-full object-contain p-0.5"
             />
-            {squad.name}
+            {t("screenTitles.squad.main")}
           </span>
         </PageHeadline>
 

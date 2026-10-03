@@ -129,6 +129,7 @@ export function StaffScreen() {
     <ScreenContainer>
       <ScreenTitle
         subtitle={t("staff.subtitle")}
+        accent={t("screenTitles.staff.accent")}
         trailing={
           <div className="text-right">
             <Label>{t("staff.weeklyTotal")}</Label>
@@ -136,7 +137,7 @@ export function StaffScreen() {
           </div>
         }
       >
-        {t("staff.title")}
+        {t("screenTitles.staff.main")}
       </ScreenTitle>
 
       <section className="grid gap-6 md:grid-cols-3">

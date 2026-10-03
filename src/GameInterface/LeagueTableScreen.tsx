@@ -769,13 +769,14 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     <ScreenContainer>
         <PageHeadline
           backHref="/dashboard"
+          accent={t("screenTitles.leagues.accent")}
           trailing={
             active ? (
               <div className="text-sm text-muted-foreground font-semibold">{t("common.season")} {active.season}</div>
             ) : undefined
           }
         >
-          {t("leagues.title")}
+          {t("screenTitles.leagues.main")}
         </PageHeadline>
 
         {leagues.length > 0 && (

@@ -183,7 +183,9 @@ export function DashboardScreen() {
 
   return (
     <ScreenContainer>
-      <ScreenTitle subtitle={subtitle || undefined}>{t("dashboard.home.title")}</ScreenTitle>
+      <ScreenTitle subtitle={subtitle || undefined} accent={t("screenTitles.dashboard.accent")}>
+        {t("screenTitles.dashboard.main")}
+      </ScreenTitle>
 
       <ClubCard
         club={me}

@@ -121,8 +121,8 @@ export function PlayerScreen({
     <>
     <ScreenContainer>
         <PageHeadline
-          hideTitle
           backHref={backTo}
+          accent={t("screenTitles.player.accent")}
           trailing={
             !isOwnPlayer ? (
               <button
@@ -144,7 +144,9 @@ export function PlayerScreen({
               </button>
             )
           }
-        />
+        >
+          {t("screenTitles.player.main")}
+        </PageHeadline>
 
         <a
           href={backTo}

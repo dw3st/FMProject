@@ -319,7 +319,9 @@ export function StatsScreen() {
 
   return (
     <ScreenContainer>
-        <PageHeadline backHref="/dashboard">{t("statsScreen.title")}</PageHeadline>
+        <PageHeadline backHref="/dashboard" accent={t("screenTitles.stats.accent")}>
+          {t("screenTitles.stats.main")}
+        </PageHeadline>
 
         <SegmentedTabs
           tabs={[

@@ -180,6 +180,7 @@ export function FinancesScreen() {
     <ScreenContainer>
         <PageHeadline
           backHref="/dashboard"
+          accent={t("screenTitles.finances.accent")}
           trailing={
             ledger && ledger.seasons.length > 1 ? (
               <select
@@ -194,7 +195,7 @@ export function FinancesScreen() {
             ) : undefined
           }
         >
-          {t("common.club")} <span className="text-primary">{t("common.finances")}</span>
+          {t("screenTitles.finances.main")}
         </PageHeadline>
 
         {/* KPI cards */}

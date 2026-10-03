@@ -466,6 +466,7 @@ export function FormationScreen() {
           <PageHeadline
             backHref="/dashboard"
             subtitle={t("formations.subtitleHelp")}
+            accent={t("screenTitles.formation.accent")}
             trailing={
               <div className="flex items-center gap-2">
                 <button
@@ -489,7 +490,7 @@ export function FormationScreen() {
               </div>
             }
           >
-            {t("formations.title")} <span className="text-primary">{t("formations.subtitleTactics")}</span>
+            {t("screenTitles.formation.main")}
           </PageHeadline>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

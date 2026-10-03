@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, iconOf } from "@/GameInterface/Icons";
@@ -219,7 +220,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
       {/* Modal header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
         <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex-1">
-          <span className="text-primary">{t("inbox.title")}</span>
+          <TitleParts accent={t("screenTitles.inbox.accent")}>{t("screenTitles.inbox.main")}</TitleParts>
         </h2>
         <div className="flex items-center gap-2">
           <SegmentedTabs

@@ -204,8 +204,8 @@ export function DevelopmentScreen() {
 
   return (
     <ScreenContainer>
-          <PageHeadline backHref="/dashboard">
-            {t("developmentScreen.playerDevelopment")}
+          <PageHeadline backHref="/dashboard" accent={t("screenTitles.development.accent")}>
+            {t("screenTitles.development.main")}
           </PageHeadline>
 
           <DevelopmentTrainingConfig />

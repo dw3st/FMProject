@@ -2073,5 +2073,65 @@
     "trendUp": "Subiu {{value}} em 7 dias",
     "trendDown": "Caiu {{value}} em 7 dias",
     "ultimatumActive": "Ultimato: {{points}} pts em {{matches}} jogos"
+  },
+  "screenTitles": {
+    "dashboard": {
+      "main": "Seu",
+      "accent": "Painel"
+    },
+    "development": {
+      "main": "Evolução dos",
+      "accent": "Jogadores"
+    },
+    "finances": {
+      "main": "Suas",
+      "accent": "Finanças"
+    },
+    "formation": {
+      "main": "Formação e",
+      "accent": "Táticas"
+    },
+    "leagues": {
+      "main": "Ligas e",
+      "accent": "Copas"
+    },
+    "scout": {
+      "main": "Busca de",
+      "accent": "Jogadores"
+    },
+    "squad": {
+      "main": "Elenco"
+    },
+    "player": {
+      "main": "Ficha do",
+      "accent": "Jogador"
+    },
+    "staff": {
+      "main": "Equipe",
+      "accent": "Técnica"
+    },
+    "stats": {
+      "main": "Estatísticas da",
+      "accent": "Temporada"
+    },
+    "transfers": {
+      "main": "Mercado de",
+      "accent": "Transferências"
+    },
+    "inbox": {
+      "main": "Caixa de",
+      "accent": "Mensagens"
+    },
+    "matchPreview": {
+      "main": "Prévia da",
+      "accent": "Partida"
+    },
+    "matchResult": {
+      "main": "Resultado da",
+      "accent": "Partida"
+    },
+    "comingSoon": {
+      "accent": "Em breve"
+    }
   }
 }
