@@ -266,7 +266,11 @@
     "finances": "Finanças",
     "annualRevenue": "Receita anual",
     "weeklyWages": "Folha semanal",
-    "perWeek": "/sem"
+    "perWeek": "/sem",
+    "sackingLabel": "Pode ser demitido",
+    "sackingYes": "Sim",
+    "sackingNo": "Não",
+    "sackingHint": "Se a diretoria perder a confiança, a carreira termina."
   },
   "seasonEnd": {
     "seasonComplete": "Temporada Concluída",
@@ -292,8 +296,7 @@
   },
   "fired": {
     "youveFired": "Você Foi Demitido!",
-    "boardTerminated": "A diretoria de {{club}} decidiu rescindir seu contrato.",
-    "boardTerminated2": "A diretoria de {{club}} decidiu rescindir seu contrato.",
+    "boardTerminated": "A diretoria do {{club}} decidiu encerrar seu contrato.",
     "chairmanQuote": "- Presidente do Clube",
     "tenure": "Tempo de Serviço",
     "matches": "Partidas",
@@ -304,7 +307,15 @@
     "losses": "Derrotas",
     "achievementsDuringTenure": "Conquistas Durante Seu Período",
     "returnToMenu": "Voltar ao Menu",
-    "findNewClub": "Encontrar Novo Clube"
+    "findNewClub": "Encontrar Novo Clube",
+    "reason": {
+      "board": "A confiança da diretoria chegou ao limite.",
+      "ultimatum": "O ultimato da diretoria não foi cumprido."
+    },
+    "days": "{{count}} dias",
+    "positionValue": "{{n}}º",
+    "noCareer": "Nenhuma carreira encerrada.",
+    "noAchievements": "Nenhum título"
   },
   "staff": {
     "title": "Equipe técnica",
@@ -1131,7 +1142,8 @@
       "injury": "Lesão",
       "contract": "Contratos",
       "youth": "Base",
-      "retirement": "Aposentadoria"
+      "retirement": "Aposentadoria",
+      "board": "Diretoria"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1189,6 +1201,27 @@
       "closed": "Esta oferta não está mais disponível.",
       "youthFull": "A base está cheia.",
       "actionFailed": "Não foi possível responder à oferta."
+    },
+    "board": {
+      "subject": {
+        "objective": "A diretoria definiu a meta da temporada",
+        "warning": "A diretoria está insatisfeita",
+        "ultimatum": "Ultimato da diretoria",
+        "ultimatum_met": "A diretoria aprovou a reação",
+        "praise": "A diretoria elogia seu trabalho",
+        "bonus": "Bônus da diretoria pela temporada",
+        "sacked": "Você foi demitido"
+      },
+      "objective": "Meta para {{season}} em {{league}}: {{objective}}.",
+      "warning": "A confiança da diretoria caiu para {{board}}%. Os resultados precisam melhorar.",
+      "ultimatum": "A diretoria exige {{points}} pontos nas próximas {{matches}} partidas da liga. Sem isso, você será demitido.",
+      "ultimatum_met": "Você cumpriu o ultimato. A diretoria segue confiando no seu trabalho.",
+      "praise": "A confiança da diretoria chegou a {{board}}%. Continue assim.",
+      "bonus": "A diretoria liberou {{amount}} de bônus para o orçamento.",
+      "sacked": {
+        "board": "A diretoria perdeu a confiança no seu trabalho e encerrou o contrato.",
+        "ultimatum": "O ultimato não foi cumprido. A diretoria encerrou o contrato."
+      }
     }
   },
   "finances": {
@@ -1826,7 +1859,8 @@
       "contStage": "Prêmio {{competition}}: {{stage}}",
       "contTitle": "Prêmio {{competition}}: título",
       "transferIn": "Taxa de transferência recebida de {{club}}",
-      "transferOut": "Taxa de transferência paga a {{club}}"
+      "transferOut": "Taxa de transferência paga a {{club}}",
+      "boardBonus": "Bônus da diretoria"
     },
     "seasonBasis": "Temporada até agora"
   },
@@ -2021,5 +2055,18 @@
     "rating": "Nota",
     "titles": "Títulos",
     "total": "Total"
+  },
+  "board": {
+    "objectiveLabel": "Meta da temporada",
+    "objective": {
+      "title": "ser campeão",
+      "continental": "vaga continental (até {{target}}º)",
+      "top_half": "metade de cima (até {{target}}º)",
+      "mid_table": "meio da tabela (até {{target}}º)",
+      "avoid_relegation": "evitar o rebaixamento (até {{target}}º)"
+    },
+    "trendUp": "Subiu {{value}} em 7 dias",
+    "trendDown": "Caiu {{value}} em 7 dias",
+    "ultimatumActive": "Ultimato: {{points}} pts em {{matches}} jogos"
   }
 }
