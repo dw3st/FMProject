@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { toDisplayPlayer } from "@/GameInterface/playerHelpers";
@@ -100,21 +101,25 @@ export function PlayerScreen({
   }
 
   if (saveLoading || loading) {
-    return <p className="text-muted-foreground text-sm p-6">{t("playerScreen.loadingPlayer")}</p>;
+    return (
+      <ScreenContainer>
+        <p className="text-muted-foreground text-sm m-0">{t("playerScreen.loadingPlayer")}</p>
+      </ScreenContainer>
+    );
   }
 
   if (!player || !displayPlayer) {
     return (
-      <div className="space-y-4 max-w-2xl px-6 py-5">
+      <ScreenContainer>
         <PageHeadline hideTitle backHref={backTo} backLabel={t("playerScreen.backToSquad")} />
-        <p className="text-muted-foreground text-sm">{t("playerScreen.playerNotFound")}</p>
-      </div>
+        <p className="text-muted-foreground text-sm m-0">{t("playerScreen.playerNotFound")}</p>
+      </ScreenContainer>
     );
   }
 
   return (
-    <div className="px-6 py-5 pb-12 overflow-auto">
-      <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
+    <>
+    <ScreenContainer>
         <PageHeadline
           hideTitle
           backHref={backTo}
@@ -173,7 +178,7 @@ export function PlayerScreen({
             leagues={leagues}
           />
         </section>
-      </div>
+    </ScreenContainer>
 
       <ContractOfferModal
         mode="renew"
@@ -190,6 +195,6 @@ export function PlayerScreen({
         onClose={handleOfferClose}
         onTransferComplete={handleTransferComplete}
       />
-    </div>
+    </>
   );
 }

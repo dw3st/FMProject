@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { LeagueData } from "@/types/playerTypes";
@@ -172,8 +173,7 @@ export function FinancesScreen() {
   const maxExpenseBar = totals ? Math.max(...EXPENSE_KINDS.map((k) => Math.abs(totals[k])), 1) : 1;
 
   return (
-    <main className="flex-1 px-6 py-5 overflow-auto">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <ScreenContainer>
         <PageHeadline
           backHref="/dashboard"
           trailing={
@@ -420,8 +420,7 @@ export function FinancesScreen() {
             </div>
           )}
         </div>
-      </div>
-    </main>
+    </ScreenContainer>
   );
 }
 

@@ -4,6 +4,7 @@ import { ClubSidebar } from "@/GameInterface/Dashboard/ClubSidebar";
 import { SquadTable } from "@/GameInterface/Dashboard/SquadTable";
 import { WeekCalendar } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { LeagueData } from "@/types/playerTypes";
@@ -55,14 +56,14 @@ export function DashboardScreen() {
         leagues={leagues}
       />
 
-      <main className="flex-1 flex flex-col px-6 py-5 gap-6 overflow-auto">
+      <ScreenContainer>
         <ScreenTitle subtitle={squad ? `${squad.players.length} ${t("squadScreen.players")}` : undefined}>{t("nav.squad")}</ScreenTitle>
         <SquadTable
           squad={squad}
           selectedId={selectedPlayer?.id ?? ""}
           onSelectPlayer={setSelectedPlayer}
         />
-      </main>
+      </ScreenContainer>
 
       <aside
         className={`${calendarCollapsed ? "w-16 p-2" : "w-64 p-4"} border-l border-border bg-sidebar shrink-0 overflow-y-auto transition-[width] duration-200`}

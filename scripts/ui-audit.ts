@@ -12,11 +12,15 @@
  *   - `font-mono`    `font-mono` outside the debug screens;
  *   - `chip`         a hand-rolled option chip (use Chip / OptionChips from ui/);
  *   - `inline-font`  font styles inline (`style={{ fontSize | fontFamily | fontWeight |
- *                    letterSpacing | lineHeight }}`, or an SVG `fontSize`/`fontFamily` attribute).
+ *                    letterSpacing | lineHeight }}`, or an SVG `fontSize`/`fontFamily` attribute);
+ *   - `screen-container` an in-game screen (rendered inside `<Layout>` by a `src/pages/<x>/entry.tsx`)
+ *                    that doesn't use `<ScreenContainer>` (ui/ScreenContainer.tsx), the one content
+ *                    frame (padding + max width) shared by every in-game screen.
  *
  * Soft rules (reported, never fail): arbitrary sizes other than the 13px label/table-head size,
  * headings that don't use the title classes, `<table>`s that don't use the Leagues table style,
- * hand-made tab bars, and decorative button styles (glow, gradient, scale).
+ * hand-made tab bars, decorative button styles (glow, gradient, scale), and an ad-hoc
+ * `max-w-* mx-auto` page wrapper inside an in-game screen (`screen-width`).
  *
  * Justified exceptions (hard or soft) go in `ALLOWLIST` with a reason.
  */
@@ -313,6 +317,69 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
   return findings;
 }
 
+/** A whole-screen width wrapper: `mx-auto` with a large `max-w-*` (the "central card" look). */
+const SCREEN_WIDTH_WRAPPER = /(^|\s)max-w-(3xl|4xl|5xl|6xl|7xl|screen-\w+|\[\d+px\])(\s|$)/;
+
+/**
+ * In-game screens: the components a `src/pages/<x>/entry.tsx` renders inside `<Layout>`.
+ * Each must use `<ScreenContainer>` (in the screen file or around it in the entry) and must not
+ * re-create its own `max-w-* mx-auto` page wrapper.
+ */
+export function auditScreens(root = process.cwd()): Finding[] {
+  const out: Finding[] = [];
+  let pages: string[] = [];
+  try {
+    pages = readdirSync(join(root, "src/pages"));
+  } catch {
+    return out;
+  }
+  for (const page of pages) {
+    const entryRel = `src/pages/${page}/entry.tsx`;
+    let entry: string;
+    try {
+      entry = readFileSync(join(root, entryRel), "utf8");
+    } catch {
+      continue;
+    }
+    if (!/<Layout[\s>]/.test(entry)) continue;
+    const entryUses = /<ScreenContainer[\s>]/.test(entry);
+    const imports = [...entry.matchAll(/import\s*\{([^}]*)\}\s*from\s*"@\/GameInterface\/([\w/]+)"/g)];
+    for (const [, names, mod] of imports) {
+      if (mod!.startsWith("Components/")) continue;
+      const used = names!.split(",").map((n) => n.trim()).filter((n) => n && new RegExp(`<${n}[\\s/>]`).test(entry));
+      if (used.length === 0) continue;
+      const rel = `src/GameInterface/${mod}.tsx`;
+      let src: string;
+      try {
+        src = readFileSync(join(root, rel), "utf8");
+      } catch {
+        continue;
+      }
+      const lines = src.split("\n");
+      if (!entryUses && !/<ScreenContainer[\s>]/.test(src)) {
+        out.push({
+          file: rel, line: 1, rule: "screen-container", severity: "hard",
+          message: `in-game screen (${entryRel}) without <ScreenContainer>; wrap the screen in ui/ScreenContainer`,
+          snippet: (lines[0] ?? "").trim(), source: "",
+        });
+      }
+      lines.forEach((l, i) => {
+        for (const m of l.matchAll(/className="([^"]*)"/g)) {
+          const cls = m[1]!;
+          if (/(^|\s)mx-auto(\s|$)/.test(cls) && SCREEN_WIDTH_WRAPPER.test(cls)) {
+            out.push({
+              file: rel, line: i + 1, rule: "screen-width", severity: "soft",
+              message: "ad-hoc max-w-* mx-auto page wrapper; the width comes from <ScreenContainer>",
+              snippet: l.trim().slice(0, 160), source: l,
+            });
+          }
+        }
+      });
+    }
+  }
+  return out;
+}
+
 function allowed(f: Finding): boolean {
   return ALLOWLIST.some((a) => a.file === f.file && a.rule === f.rule && (f.snippet.includes(a.match) || f.source.includes(a.match)));
 }
@@ -326,6 +393,7 @@ export function auditUi(root = process.cwd()): Finding[] {
       out.push(...auditFile(rel, readFileSync(full, "utf8"), debug).filter((f) => !allowed(f)));
     }
   }
+  out.push(...auditScreens(root).filter((f) => !allowed(f)));
   return out;
 }
 

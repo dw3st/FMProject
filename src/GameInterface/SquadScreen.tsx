@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import type { Squad } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -73,22 +74,25 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   }
 
   if (saveLoading || loading) {
-    return <p className="text-muted-foreground text-sm p-6">{t("squadScreen.loadingSquad")}</p>;
+    return (
+      <ScreenContainer>
+        <p className="text-muted-foreground text-sm m-0">{t("squadScreen.loadingSquad")}</p>
+      </ScreenContainer>
+    );
   }
 
   if (error || !squad) {
     return (
-      <div className="px-6 py-5 space-y-4">
+      <ScreenContainer>
         <PageHeadline hideTitle backHref={`/leagues/${league}`} />
-        <p className="text-muted-foreground text-sm">{t("squadScreen.squadNotFound")}</p>
-      </div>
+        <p className="text-muted-foreground text-sm m-0">{t("squadScreen.squadNotFound")}</p>
+      </ScreenContainer>
     );
   }
 
   return (
-    <div className="px-6 py-5 overflow-auto flex flex-col flex-1 min-h-0">
-      <div className="max-w-6xl mx-auto w-full space-y-6 flex flex-col flex-1 min-h-0">
-
+    <>
+    <ScreenContainer fill>
         <PageHeadline
           backHref={`/leagues/${league}`}
           trailing={
@@ -129,13 +133,13 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
             onOffer={setOfferTarget}
           />
         )}
-      </div>
+    </ScreenContainer>
 
       <PlayerOfferModal
         player={offerTarget}
         onClose={handleOfferClose}
         onTransferComplete={handleTransferComplete}
       />
-    </div>
+    </>
   );
 }

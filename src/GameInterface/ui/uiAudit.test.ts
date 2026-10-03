@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { auditFile, auditUi, textSizePx } from "@/../scripts/ui-audit";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { auditFile, auditScreens, auditUi, textSizePx } from "@/../scripts/ui-audit";
 
 const rules = (src: string, debug = false) => auditFile("src/GameInterface/X.tsx", src, debug).map((f) => `${f.severity}:${f.rule}`);
 
@@ -34,6 +37,42 @@ describe("ui audit rules", () => {
     expect(rules(`<p className="text-[13px]">x</p>`)).toContain("soft:size-13");
     expect(rules(`<h2 className="text-lg">x</h2>`)).toContain("soft:heading");
     expect(rules(`<button className="bg-primary px-2">x</button>`)).toContain("soft:button");
+  });
+});
+
+describe("in-game screens use ScreenContainer", () => {
+  function fixture(entry: string, screen: string) {
+    const root = mkdtempSync(join(tmpdir(), "ui-audit-"));
+    mkdirSync(join(root, "src/pages/foo"), { recursive: true });
+    mkdirSync(join(root, "src/GameInterface"), { recursive: true });
+    writeFileSync(join(root, "src/pages/foo/entry.tsx"), entry);
+    writeFileSync(join(root, "src/GameInterface/FooScreen.tsx"), screen);
+    try {
+      return auditScreens(root).map((f) => `${f.severity}:${f.rule}`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+  const entry = `import { Layout } from "@/GameInterface/Components/Layout";
+import { FooScreen } from "@/GameInterface/FooScreen";
+const P = () => <Layout><FooScreen /></Layout>;`;
+  test("a Layout screen without ScreenContainer is a hard violation", () => {
+    expect(fixture(entry, `export function FooScreen() { return <main className="px-6 py-5">x</main>; }`)).toContain(
+      "hard:screen-container",
+    );
+  });
+  test("a screen using ScreenContainer passes; an ad-hoc max-w mx-auto wrapper is flagged", () => {
+    expect(fixture(entry, `export function FooScreen() { return <ScreenContainer>x</ScreenContainer>; }`)).toEqual([]);
+    expect(
+      fixture(entry, `export function FooScreen() { return <ScreenContainer><div className="max-w-6xl mx-auto">x</div></ScreenContainer>; }`),
+    ).toEqual(["soft:screen-width"]);
+  });
+  test("an entry that wraps the screen in ScreenContainer passes; screens outside Layout are ignored", () => {
+    const wrapped = entry.replace("<FooScreen />", "<ScreenContainer><FooScreen /></ScreenContainer>");
+    expect(fixture(wrapped, `export function FooScreen() { return <div>x</div>; }`)).toEqual([]);
+    const noLayout = `import { FooScreen } from "@/GameInterface/FooScreen";
+createPage(FooScreen);`;
+    expect(fixture(noLayout, `export function FooScreen() { return <div>x</div>; }`)).toEqual([]);
   });
 });
 
