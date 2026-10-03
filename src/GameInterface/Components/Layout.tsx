@@ -49,7 +49,7 @@ export function Layout({ children }: { children: ReactNode }) {
         leagues={leagues}
       />
 
-      <main className="h-full pt-14 pb-9 overflow-y-auto flex flex-col">
+      <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
         {children}
       </main>
 

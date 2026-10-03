@@ -14,9 +14,9 @@ function formatBudgetShort(value: number) {
   return `${sign}${abs}`;
 }
 
-const ITEM = "flex items-center gap-1.5 text-sm text-muted-foreground";
+const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
 const ICON_BTN =
-  "flex items-center justify-center w-8 h-8 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent";
+  "flex items-center justify-center w-10 h-10 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent";
 
 export function StatusBar({
   onOpenInbox,
@@ -39,11 +39,11 @@ export function StatusBar({
 
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62).
-    <footer className="fixed bottom-0 left-0 right-0 z-50 h-9 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
-      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto flex items-center justify-between`}>
-        <div className="flex items-center gap-5">
+    <footer className="fixed bottom-0 left-0 right-0 z-50 h-12 border-t border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-6`}>
+        <div className="flex items-center gap-7">
           <span className={ITEM} title={t("status.budget")}>
-            <Icon name="finances" size={14} />
+            <Icon name="finances" size={18} />
             {budgetLabel}
           </span>
           <button
@@ -52,15 +52,27 @@ export function StatusBar({
             title={t("status.unread")}
             className={`${ITEM} border-0 bg-transparent cursor-pointer hover:text-foreground`}
           >
-            <Icon name="news" size={14} />
+            <Icon name="news" size={18} />
             {unreadLabel}
           </button>
           <span className={ITEM} title={t("status.players")}>
-            <Icon name="staff" size={14} />
+            <Icon name="staff" size={18} />
             {playersLabel}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        {/* Owner's credit, required in the footer of every public project (global rule). */}
+        <span className="hidden md:inline text-sm text-muted-foreground whitespace-nowrap">
+          {t("landing.developedBy")}{" "}
+          <a
+            href="https://westlab.dev"
+            target="_blank"
+            rel="noopener"
+            className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            westlab.dev
+          </a>
+        </span>
+        <div className="flex items-center justify-end gap-4">
           {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).
               Today's date lives in the top bar's day block. */}
           <button
@@ -68,9 +80,9 @@ export function StatusBar({
             onClick={onOpenChangelog}
             title={t("nav.changelog")}
             aria-label={`${t("nav.changelog")} · v${CURRENT_VERSION}`}
-            className={`${ITEM} h-8 px-1 border-0 bg-transparent cursor-pointer hover:text-foreground whitespace-nowrap tabular-nums`}
+            className={`${ITEM} h-10 px-1 border-0 bg-transparent cursor-pointer hover:text-foreground whitespace-nowrap tabular-nums`}
           >
-            <Icon name="sparkles" size={16} />
+            <Icon name="sparkles" size={18} />
             v{CURRENT_VERSION}
           </button>
           {changelogNotice && (
@@ -81,7 +93,7 @@ export function StatusBar({
             />
           )}
           <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
-            <Icon name="settings" size={16} />
+            <Icon name="settings" size={18} />
           </button>
         </div>
       </div>
