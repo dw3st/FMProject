@@ -18,7 +18,7 @@ export function ComingSoonScreen() {
 
   return (
     <ScreenContainer>
-        <PageHeadline backHref="/dashboard" backLabel="Back to Dashboard">
+        <PageHeadline backHref="/dashboard" backLabel="Back to Dashboard" accent={t("screenTitles.comingSoon.accent")}>
           {meta.title}
         </PageHeadline>
 

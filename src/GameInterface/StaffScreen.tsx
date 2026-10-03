@@ -10,6 +10,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { StatBar } from "@/GameInterface/ui/StatBar";
 import { Tabs } from "@/GameInterface/ui/Tabs";
+import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { StaffEffects } from "@/Domain/staff/staff";
 import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
 
@@ -109,7 +110,7 @@ export function StaffScreen() {
   };
 
   const columns: DataTableColumn<StaffMember>[] = [
-    { key: "name", header: t("staff.roles." + tab), cell: (m) => <span className="text-foreground">{m.name}</span> },
+    { key: "name", header: t("staff.roles." + tab), cell: (m) => <span className={`${TABLE_STYLE.name} text-base`}>{m.name}</span> },
     { key: "nat", header: "", cell: (m) => <span className="text-muted-foreground">{m.nationality}</span> },
     { key: "age", header: "", cell: (m) => <span className="text-muted-foreground">{t("staff.age", { age: m.age })}</span> },
     { key: "rating", header: t("staff.rating"), className: "w-48", cell: (m) => <StatBar value={m.rating} max={10} display={m.rating} /> },
@@ -129,6 +130,7 @@ export function StaffScreen() {
     <ScreenContainer>
       <ScreenTitle
         subtitle={t("staff.subtitle")}
+        accent={t("screenTitles.staff.accent")}
         trailing={
           <div className="text-right">
             <Label>{t("staff.weeklyTotal")}</Label>
@@ -136,7 +138,7 @@ export function StaffScreen() {
           </div>
         }
       >
-        {t("staff.title")}
+        {t("screenTitles.staff.main")}
       </ScreenTitle>
 
       <section className="grid gap-6 md:grid-cols-3">
@@ -163,7 +165,7 @@ export function StaffScreen() {
               <div className="text-sm text-muted-foreground">{effectLine(role)}</div>
               {m && (
                 <div>
-                  <Button variant="danger" className="px-0" disabled={busy} onClick={() => setFiring(m)}>
+                  <Button variant="danger" flush disabled={busy} onClick={() => setFiring(m)}>
                     {t("staff.fire")}
                   </Button>
                 </div>

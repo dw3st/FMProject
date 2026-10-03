@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -472,7 +473,7 @@ export function MatchResultScreen() {
           {t("matchResult.matchdayRound", { round: matchEvent.round, competition })}
         </p>
         <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
-          {t("matchResult.title")}
+          <TitleParts accent={t("screenTitles.matchResult.accent")}>{t("screenTitles.matchResult.main")}</TitleParts>
         </h1>
         <div className="flex items-center justify-center gap-6 pt-2">
           <span

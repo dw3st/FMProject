@@ -177,8 +177,8 @@ export function ScoutScreen() {
   return (
     <>
       <ScreenContainer>
-        <PageHeadline backHref="/dashboard">
-          {t("scout.title")} <span className="text-primary">{t("scout.database")}</span>
+        <PageHeadline backHref="/dashboard" accent={t("screenTitles.scout.accent")}>
+          {t("screenTitles.scout.main")}
         </PageHeadline>
 
         <ScoutFilters

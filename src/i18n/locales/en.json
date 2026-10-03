@@ -1606,7 +1606,19 @@
       "income": "Income",
       "expenses": "Expenses",
       "weekNet": "Week balance",
-      "balance": "Cash"
+      "balance": "Cash",
+      "capacity": "{{seats}} seats",
+      "kickoff": "Kick-off",
+      "weather": {
+        "sunny": "Sunny",
+        "partlyCloudy": "Partly cloudy",
+        "cloudy": "Cloudy",
+        "rain": "Rain",
+        "wind": "Windy",
+        "cold": "Cold",
+        "snow": "Snow",
+        "hot": "Hot"
+      }
     }
   },
   "squadScreen": {
@@ -2073,5 +2085,65 @@
     "trendUp": "Up {{value}} in 7 days",
     "trendDown": "Down {{value}} in 7 days",
     "ultimatumActive": "Ultimatum: {{points}} pts in {{matches}} games"
+  },
+  "screenTitles": {
+    "dashboard": {
+      "main": "Club",
+      "accent": "Dashboard"
+    },
+    "development": {
+      "main": "Player",
+      "accent": "Development"
+    },
+    "finances": {
+      "main": "Club",
+      "accent": "Finances"
+    },
+    "formation": {
+      "main": "Formation &",
+      "accent": "Tactics"
+    },
+    "leagues": {
+      "main": "Leagues &",
+      "accent": "Cups"
+    },
+    "scout": {
+      "main": "Player",
+      "accent": "Search"
+    },
+    "squad": {
+      "main": "Squad"
+    },
+    "player": {
+      "main": "Player",
+      "accent": "Profile"
+    },
+    "staff": {
+      "main": "Coaching",
+      "accent": "Staff"
+    },
+    "stats": {
+      "main": "Season",
+      "accent": "Stats"
+    },
+    "transfers": {
+      "main": "Transfer",
+      "accent": "Market"
+    },
+    "inbox": {
+      "main": "Club",
+      "accent": "Inbox"
+    },
+    "matchPreview": {
+      "main": "Match",
+      "accent": "Preview"
+    },
+    "matchResult": {
+      "main": "Match",
+      "accent": "Result"
+    },
+    "comingSoon": {
+      "accent": "Coming soon"
+    }
   }
 }

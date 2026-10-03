@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { TitleParts } from "@/GameInterface/ui/TitleParts";
 
 const titleLg =
   "font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none text-foreground m-0";
@@ -10,6 +11,7 @@ export function PageHeadline({
   backHref: _backHref,
   backLabel: _backLabel,
   children,
+  accent,
   subtitle,
   trailing,
   hideTitle,
@@ -20,6 +22,8 @@ export function PageHeadline({
   backHref?: string;
   backLabel?: string;
   children?: ReactNode;
+  /** Second part of the title, shown in primary (ui-standard → título de tela). */
+  accent?: ReactNode;
   subtitle?: ReactNode;
   trailing?: ReactNode;
   hideTitle?: boolean;
@@ -42,7 +46,11 @@ export function PageHeadline({
 
   const titleCol = (
     <div className="min-w-0 flex-1">
-      {children != null && children !== false && <h1 className={hClass}>{children}</h1>}
+      {((children != null && children !== false) || accent != null) && (
+        <h1 className={hClass}>
+          <TitleParts accent={accent}>{children}</TitleParts>
+        </h1>
+      )}
       {subtitle != null && subtitle !== false && (
         <div className="text-sm text-muted-foreground mt-2 m-0">{subtitle}</div>
       )}

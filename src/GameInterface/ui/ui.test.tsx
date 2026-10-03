@@ -119,4 +119,10 @@ describe("screen titles", () => {
       expect(html).toContain(c);
     }
   });
+  test("the accent part is the second word, in primary (PageHeadline and ScreenTitle)", () => {
+    const a = renderToStaticMarkup(<PageHeadline accent="Copas">Ligas e</PageHeadline>);
+    expect(a).toContain('Ligas e <span class="text-primary">Copas</span>');
+    const b = renderToStaticMarkup(<ScreenTitle accent="Painel">Seu</ScreenTitle>);
+    expect(b).toContain('Seu <span class="text-primary">Painel</span>');
+  });
 });

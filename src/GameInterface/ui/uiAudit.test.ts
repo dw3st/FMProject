@@ -50,6 +50,26 @@ describe("ui audit rules", () => {
   });
 });
 
+describe("screen titles have the accent part", () => {
+  const H1 = `className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0"`;
+  test("PageHeadline and ScreenTitle need accent=", () => {
+    expect(rules(`<PageHeadline backHref="/x">Ligas</PageHeadline>`)).toContain("hard:title-accent");
+    expect(rules(`<PageHeadline backHref="/x" accent="Copas">Ligas e</PageHeadline>`)).not.toContain("hard:title-accent");
+    expect(rules(`<PageHeadline hideTitle backHref="/x" />`)).not.toContain("hard:title-accent");
+    expect(rules(`<ScreenTitle>Painel</ScreenTitle>`)).toContain("hard:title-accent");
+    expect(rules(`<ScreenTitle accent="Painel">Seu</ScreenTitle>`)).not.toContain("hard:title-accent");
+  });
+  test("a raw screen-title h1 needs TitleParts or a text-primary span", () => {
+    expect(rules(`<h1 ${H1}>{t("x")}</h1>`)).toContain("hard:title-accent");
+    expect(rules(`<h1 ${H1}><TitleParts accent="B">A</TitleParts></h1>`)).not.toContain("hard:title-accent");
+    expect(rules(`<h1 ${H1}>A <span className="text-primary">B</span></h1>`)).not.toContain("hard:title-accent");
+  });
+  test("entry screens keep one-part titles", () => {
+    const f = auditFile("src/GameInterface/NewGameWizard.tsx", `<ScreenTitle>Crie seu técnico</ScreenTitle>`, false);
+    expect(f.map((x) => x.rule)).not.toContain("title-accent");
+  });
+});
+
 describe("in-game screens use ScreenContainer", () => {
   function fixture(entry: string, screen: string) {
     const root = mkdtempSync(join(tmpdir(), "ui-audit-"));

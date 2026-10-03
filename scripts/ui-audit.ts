@@ -13,6 +13,10 @@
  *   - `chip`         a hand-rolled option chip (use Chip / OptionChips from ui/);
  *   - `inline-font`  font styles inline (`style={{ fontSize | fontFamily | fontWeight |
  *                    letterSpacing | lineHeight }}`, or an SVG `fontSize`/`fontFamily` attribute);
+ *   - `title-accent` an in-game screen title (`<PageHeadline>`, `<ScreenTitle>` or a screen-title
+ *                    `<h1>`) without its second part in primary: titles are two parts, "CLUB
+ *                    <FINANCES>", the second via `accent=` (or `<TitleParts>` / a `text-primary`
+ *                    span inside a raw `<h1>`). Entry screens (`ENTRY_TITLE_FILES`) keep one-part titles;
  *   - `screen-container` an in-game screen (rendered inside `<Layout>` by a `src/pages/<x>/entry.tsx`)
  *                    that doesn't use `<ScreenContainer>` (ui/ScreenContainer.tsx), the one content
  *                    frame (padding + max width) shared by every in-game screen.
@@ -53,6 +57,18 @@ export const DEBUG_FILES = [
   "src/GameInterface/EnergyPanel.tsx",
   "src/GameInterface/QuickSimPanel.tsx",
   "src/GameInterface/SimulationScreen.tsx",
+];
+
+/**
+ * Entry screens and full-screen notices: their titles stay one part (ui-standard → título de tela).
+ * Every other screen title has the two-part form with the accent in primary.
+ */
+export const ENTRY_TITLE_FILES = [
+  "src/GameInterface/NewGameWizard.tsx",
+  "src/GameInterface/PreSeasonLoadingScreen.tsx",
+  "src/GameInterface/ScreenSizeGate.tsx",
+  "src/GameInterface/SettingsScreen.tsx",
+  "src/GameInterface/FiredScreen.tsx",
 ];
 
 /** Justified exceptions: file + rule + a substring of the offending source line. */
@@ -205,6 +221,7 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
   };
   const usesTableStyle = /TABLE_STYLE|TABLE_CELL|StatsTable|DataTable/.test(source);
   const isUiKit = path.includes("/ui/");
+  const entryTitles = ENTRY_TITLE_FILES.includes(path);
 
   const visit = (node: ts.Node) => {
     const text = literalText(node);
@@ -263,6 +280,24 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
         }
       }
       if (name === "fontSize" || name === "fontFamily") add(node, "inline-font", "hard", `SVG ${name} attribute`);
+    }
+
+    // Screen titles: two parts, the second (`accent`) in primary.
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && !debug && !isUiKit && !entryTitles) {
+      const tag = node.tagName.getText(sf);
+      const attr = (n: string) =>
+        node.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText(sf) === n);
+      if ((tag === "PageHeadline" && !attr("hideTitle")) || tag === "ScreenTitle") {
+        if (!attr("accent")) {
+          add(node, "title-accent", "hard", `<${tag}> without accent=; screen titles are two parts, the second in primary`);
+        }
+      }
+      if (tag === "h1" && ts.isJsxOpeningElement(node) && hasAll(classOf(node, sf), TITLE_SCREEN)) {
+        const body = node.parent.getText(sf);
+        if (!/<TitleParts[\s>]|text-primary/.test(body)) {
+          add(node, "title-accent", "hard", "screen-title <h1> without its accent part (<TitleParts accent=…> or a text-primary span)");
+        }
+      }
     }
 
     // Headings.

@@ -9,7 +9,7 @@ Tipografia.
 
 | Papel | Classe | Uso |
 |---|---|---|
-| Título de tela | `font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none` | Um por tela, no topo ("ELENCO", "CRIE SEU TÉCNICO") |
+| Título de tela | `font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none` | Um por tela, no topo, em **duas partes**: a primeira em `foreground`, a segunda (a palavra-chave) em `text-primary` ("SUAS **FINANÇAS**"). Telas de entrada mantêm o título de uma parte ("CRIE SEU TÉCNICO") |
 | Título de seção/painel | `font-display font-black uppercase text-xl leading-none` | Blocos dentro da tela |
 | Rótulo | `font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground` | Acima de campos, cabeçalhos de grupo, cabeçalho de tabela, legenda de um número |
 | Texto | `font-sans text-sm` (padrão) | Conteúdo, linhas de tabela |
@@ -88,8 +88,16 @@ texto (`bg-clip-text`).
   o rótulo da aba pode ter ícone. Nunca uma barra de abas feita à mão com a aba ativa em `bg-primary`.
 - **Seletor de competição/liga:** sempre com rótulo acima no estilo rótulo (`SelectCombobox`
   com `label`, ex. "LIGA", "COMPETIÇÃO").
-- **Título de tela:** um só, o nome da tela ("LIGAS", "ESTATÍSTICAS"); nunca acrescentar o nome da
-  aba ativa ao título.
+- **Título de tela:** um só, o nome da tela, sempre em duas partes curtas (2–3 palavras) com a
+  segunda em `text-primary`: `<PageHeadline accent={t("screenTitles.x.accent")}>{t("screenTitles.x.main")}</PageHeadline>`
+  (ou `<ScreenTitle accent=…>`; num `<h1>` cru, `<TitleParts accent=…>` de `ui/TitleParts.tsx`). Os
+  textos ficam em `screenTitles.<tela>.{main,accent}` (en e pt-BR), escolhidos para soar natural em
+  cada língua: "SEU **PAINEL**" / "CLUB **DASHBOARD**", "EVOLUÇÃO DOS **JOGADORES**" / "PLAYER
+  **DEVELOPMENT**", "MERCADO DE **TRANSFERÊNCIAS**" / "TRANSFER **MARKET**", "ELENCO **<clube>**".
+  Nunca acrescentar o nome da aba ativa ao título. Telas de entrada (landing, login, start, novo
+  jogo, carregamento) e avisos de tela cheia (demitido, idioma, tela pequena) ficam fora
+  (`ENTRY_TITLE_FILES` no `ui-audit`). A regra `title-accent` do `bun run ui:audit` (dura) falha um
+  `PageHeadline`/`ScreenTitle` sem `accent` ou um `<h1>` de título de tela sem a parte em `primary`.
 
 ## Logo (FMPROJECT)
 

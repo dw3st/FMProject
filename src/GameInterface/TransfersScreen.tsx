@@ -42,6 +42,7 @@ export function TransfersScreen() {
     <ScreenContainer>
         <PageHeadline
           backHref="/dashboard"
+          accent={t("screenTitles.transfers.accent")}
           trailing={
             <SegmentedTabs
               wrap
@@ -63,7 +64,7 @@ export function TransfersScreen() {
             />
           }
         >
-          {t("transfers.title")} <span className="text-primary">{t("common.market")}</span>
+          {t("screenTitles.transfers.main")}
         </PageHeadline>
 
         {loading && activeTab !== "sell" ? (

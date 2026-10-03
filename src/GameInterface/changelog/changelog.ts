@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.7",
+    date: "2026-10-03",
+    items: [
+      { pt: "O card do próximo jogo mostra o estádio e a capacidade, o horário e o tempo previsto para a partida.", en: "The next match card shows the stadium and its capacity, the kick-off time and the weather forecast." },
+    ],
+    fixes: [
+      { pt: "Os títulos das telas seguem o mesmo padrão, com a palavra principal em destaque azul.", en: "Screen titles follow the same style, with the key word highlighted in blue." },
+      { pt: "Equipe técnica: nomes do mercado em negrito como no resto do jogo e o botão Demitir alinhado ao card.", en: "Staff: market names in bold like the rest of the game, and the Dismiss button lined up with the card." },
+      { pt: "O card do próximo jogo fica centralizado, sem o espaço vazio acima dos últimos resultados.", en: "The next match card is centred, without the empty gap above the last results." },
+    ],
+  },
+  {
     version: "3.3.6",
     date: "2026-10-03",
     items: [

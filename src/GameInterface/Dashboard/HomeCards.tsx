@@ -16,6 +16,8 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
+import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
+import type { ClubVenue } from "@/types/playerTypes";
 import type {
   AttentionItem,
   FormResult,
@@ -249,6 +251,8 @@ export function NextMatchCard({
   competitionLabel,
   today,
   form,
+  stadium = null,
+  homeCountry = null,
 }: {
   fixture: Fixture | null;
   me: MatchSide;
@@ -257,6 +261,10 @@ export function NextMatchCard({
   competitionLabel: string;
   today: string;
   form: FormResult[];
+  /** The home ground (absent on a neutral ground, or while the opponent's squad loads). */
+  stadium?: ClubVenue | null;
+  /** Home club's country: drives the cosmetic weather (season / hemisphere). */
+  homeCountry?: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const isHome = fixture ? fixture.home === me.id : true;
@@ -273,13 +281,14 @@ export function NextMatchCard({
     ? Math.round((Date.parse(`${fixture.date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000)
     : 0;
   const isToday = !!fixture && daysAway <= 0;
+  const conditions = fixture ? matchConditions(fixture, homeCountry) : null;
 
   return (
     <HomeCard title={t("dashboard.home.nextMatch")}>
       {!fixture || !home || !away ? (
         <p className="text-sm text-muted-foreground m-0">{t("dashboard.clubSidebar.noMatchScheduled")}</p>
       ) : (
-        <>
+        <div className="flex-1 flex flex-col justify-center gap-4">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <TeamBlock side={home} mine={home.id === me.id} />
             <span className="font-display font-black uppercase text-xl text-muted-foreground">{t("common.vs")}</span>
@@ -294,7 +303,8 @@ export function NextMatchCard({
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">{competitionLabel}</span>
           </div>
-        </>
+          {conditions && <MatchDetails stadium={stadium} kickoff={conditions.kickoff} weather={conditions.weather} />}
+        </div>
       )}
       <div className="flex flex-wrap items-end justify-between gap-3 mt-auto">
         <div className="flex flex-col gap-1.5">
@@ -333,6 +343,45 @@ export function NextMatchCard({
         )}
       </div>
     </HomeCard>
+  );
+}
+
+const WEATHER_ICON: Record<MatchWeather, IconName> = {
+  sunny: "sun",
+  partlyCloudy: "cloud-sun",
+  cloudy: "cloud",
+  rain: "cloud-rain",
+  wind: "wind",
+  cold: "thermometer-snowflake",
+  snow: "snowflake",
+  hot: "thermometer-sun",
+};
+
+/** Stadium + capacity, kickoff time and weather (cosmetic, see `matchConditions`). */
+function MatchDetails({ stadium, kickoff, weather }: { stadium: ClubVenue | null; kickoff: string; weather: MatchWeather }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+      {stadium?.name && (
+        <span className="inline-flex items-center gap-1.5 min-w-0">
+          <Icon name="stadium" size={16} className="shrink-0" />
+          <span className="text-foreground truncate">{stadium.name}</span>
+          {stadium.capacity > 0 && (
+            <span className="tabular-nums">
+              · {t("dashboard.home.capacity", { seats: stadium.capacity.toLocaleString(i18n.language) })}
+            </span>
+          )}
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1.5" title={t("dashboard.home.kickoff")}>
+        <Icon name="clock" size={16} />
+        <span className="tabular-nums">{kickoff}</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Icon name={WEATHER_ICON[weather]} size={16} />
+        {t(`dashboard.home.weather.${weather}`)}
+      </span>
+    </div>
   );
 }
 
