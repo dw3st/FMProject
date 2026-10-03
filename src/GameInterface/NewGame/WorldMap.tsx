@@ -11,10 +11,19 @@ import { mappableCountries } from "@/GameInterface/NewGame/worldMapCountries";
 
 /**
  * Dot radius for the countries too small to click, in viewBox units (1000 wide). The map is only
- * shown from `xl`, where it renders ~600 px wide (1200 px frame − both side columns), so r = 7 is
- * a ~8.5 px dot on screen.
+ * shown from `xl`, where it renders ~800–1100 px wide (1600 px frame − both side columns), so
+ * r = 5 is a ~9–11 px dot on screen.
  */
-const MARKER_RADIUS = 7;
+const MARKER_RADIUS = 5;
+
+/**
+ * The drawing is cropped to the populated latitudes: the generated map spans 84°N to 57°S
+ * (`WORLD_MAP_VIEWBOX`); the top 33 units (84°N to ~72°N: the Arctic islands and northern
+ * Greenland, no league there) are cut so the countries render larger in the same width.
+ */
+const CROP_TOP = 33;
+const [, , VIEW_W, VIEW_H] = WORLD_MAP_VIEWBOX.split(" ").map(Number) as [number, number, number, number];
+const VIEWBOX = `0 ${CROP_TOP} ${VIEW_W} ${VIEW_H - CROP_TOP}`;
 
 interface WorldMapProps {
   countries: CountryEntry[];
@@ -55,7 +64,7 @@ export function WorldMap({ countries, selectedSlug, displayName, onSelect }: Wor
         )}
       </p>
       <svg
-        viewBox={WORLD_MAP_VIEWBOX}
+        viewBox={VIEWBOX}
         className="w-full h-auto block"
         aria-hidden="true"
         onMouseLeave={() => setHovered(null)}
@@ -87,7 +96,6 @@ export function WorldMap({ countries, selectedSlug, displayName, onSelect }: Wor
           );
         })}
       </svg>
-      <p className="text-sm text-muted-foreground m-0 mt-2">{t("newGame.mapAttribution")}</p>
     </div>
   );
 }

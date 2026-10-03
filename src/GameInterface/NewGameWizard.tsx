@@ -266,7 +266,9 @@ export function NewGameWizard() {
   return (
     <div className="min-h-screen flex flex-col items-center bg-background px-4 py-6 text-foreground">
       <Wordmark size="lg" className="mb-6 block text-center" />
-      <div className="flex w-full max-w-[1200px] flex-1 flex-col md:flex-row min-h-0 md:h-[calc(100vh-9rem)] overflow-hidden rounded-lg border border-border bg-background/90">
+      {/* Wider frame and a narrower profile column while picking the country, so the world map
+          gets most of the width; back to 1200 px once a country (and its club list) is shown. */}
+      <div className={`flex w-full ${selectedCountry ? "max-w-[1200px]" : "max-w-[1600px]"} flex-1 flex-col md:flex-row min-h-0 md:h-[calc(100vh-9rem)] overflow-hidden rounded-lg border border-border bg-background/90`}>
       <aside className="md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-border p-4 flex flex-col min-h-0 md:h-full">
         <button
           type="button"
@@ -354,7 +356,7 @@ export function NewGameWizard() {
           )}
         </section>
 
-        <aside className="md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-border px-6 py-5 flex flex-col md:overflow-y-auto">
+        <aside className={`${selectedCountry ? "md:w-80" : "md:w-64"} shrink-0 md:border-l border-t md:border-t-0 border-border px-6 py-5 flex flex-col md:overflow-y-auto`}>
           {selectedTeam ? (
             <ClubProfilePanel club={selectedTeam} profile={selectedProfile} />
           ) : (
