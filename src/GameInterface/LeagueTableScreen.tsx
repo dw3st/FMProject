@@ -290,7 +290,7 @@ function StatBar({ homeVal, awayVal, label }: { homeVal: number; awayVal: number
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
       <div className="flex items-center justify-end gap-2">
-        <span className="text-sm font-black text-foreground">{homeVal}</span>
+        <span className="text-sm font-black tabular-nums text-foreground">{homeVal}</span>
         <div className="flex-1 h-2 bg-border rounded-full overflow-hidden max-w-[120px]">
           <div className="h-full bg-primary rounded-full ml-auto" style={{ width: `${homePct}%` }} />
         </div>
@@ -300,7 +300,7 @@ function StatBar({ homeVal, awayVal, label }: { homeVal: number; awayVal: number
         <div className="flex-1 h-2 bg-border rounded-full overflow-hidden max-w-[120px]">
           <div className="h-full bg-chart-2 rounded-full" style={{ width: `${100 - homePct}%` }} />
         </div>
-        <span className="text-sm font-black text-foreground">{awayVal}</span>
+        <span className="text-sm font-black tabular-nums text-foreground">{awayVal}</span>
       </div>
     </div>
   );

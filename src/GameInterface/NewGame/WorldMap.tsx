@@ -87,7 +87,7 @@ export function WorldMap({ countries, selectedSlug, displayName, onSelect }: Wor
           );
         })}
       </svg>
-      <p className="text-[13px] text-muted-foreground m-0 mt-2">{t("newGame.mapAttribution")}</p>
+      <p className="text-sm text-muted-foreground m-0 mt-2">{t("newGame.mapAttribution")}</p>
     </div>
   );
 }

@@ -58,7 +58,7 @@ function StatBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`font-black w-4 text-right ${wide ? "text-sm" : "text-sm"} ${ratingTextClass10(value)}`}>{value}</span>
+      <span className={`font-black w-4 text-right text-sm tabular-nums ${ratingTextClass10(value)}`}>{value}</span>
 
       <StatHoverPopover label={attr.label} description={attr.description} />
     </div>
