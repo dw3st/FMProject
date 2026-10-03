@@ -2,6 +2,7 @@ import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
 import type { PlayerDecision } from '@/GameEngine/Domain/DecisionTree';
 import { scorePassQuality } from '@/GameEngine/Domain/PassLanes';
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
 import {
   OFF_BALL_CONFIG,
@@ -196,9 +197,10 @@ function getAnchor(intent: OffBallIntent, ctx: OffBallContext): Anchor {
     case 'hold_space': {
       // Formation slot — ball-independent. This is what stops everyone collapsing
       // toward the ball and lets wide players hold width when central play happens.
+      const slot = attackingAnchor(player.basePosition, player, ballHolder);
       return {
-        x: player.basePosition.x,
-        y: player.basePosition.y,
+        x: slot.x,
+        y: slot.y,
         searchRadius: OFF_BALL_CONFIG.HOLD_SEARCH_RADIUS,
       };
     }
@@ -329,8 +331,9 @@ function scoreCell(
 
     case 'hold_space': {
       // Ball-independent: stay in role zone, away from teammates.
-      const slotDx       = target.x - ctx.player.basePosition.x;
-      const slotDy       = target.y - ctx.player.basePosition.y;
+      const slot         = attackingAnchor(ctx.player.basePosition, ctx.player, ctx.ballHolder);
+      const slotDx       = target.x - slot.x;
+      const slotDy       = target.y - slot.y;
       const slotDist     = Math.sqrt(slotDx * slotDx + slotDy * slotDy);
       const slotProx     = Math.max(0, 1 - slotDist / OFF_BALL_CONFIG.HOLD_SLOT_SOFT_RADIUS);
       return separation  * OFF_BALL_CONFIG.HOLD_SEP_W

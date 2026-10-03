@@ -100,6 +100,16 @@ const _intentCache: Record<number, DefensiveIntent> = {};
 const DEPTH_OFFSET_BASE  = 10;
 const DEPTH_OFFSET_RANGE = 40;
 const X_TRACK_WEIGHT     = 0.6;
+/**
+ * Share of (ball y − slot y) × BLOCK_SHIFT_WEIGHT by which the whole block slides toward the ball
+ * side. 0.45 since Etapa 19 (#63, was 0.15): the block slid only ~12% of the ball's lateral
+ * offset, so a formation defended where its slots were drawn — wide shapes (wingers, back three)
+ * left the central corridor open and narrow ones (diamond, 4-3-2-1) were unbeatable. See
+ * `.claude/rules/game/formations.md` → "Equilíbrio entre formações".
+ */
+const BLOCK_SHIFT_SCALE  = 0.45;
+/** Share of HORIZONTAL_COMPACTNESS by which the block narrows toward the pitch centre line. */
+const COMPACTNESS_SCALE  = 0.12;
 
 // Minimum distance to mark before "too far" urgency kicks in
 const MARK_FAR_DISTANCE = 15; // yards
@@ -448,11 +458,11 @@ export function computeDefensiveShapeAnchor(
   // ── Y: block shifts laterally with ball ─────────────────────────────────
   const blockShiftY = (ballPos.y - base.y)
     * cfg.BLOCK_SHIFT_WEIGHT
-    * 0.15;
+    * BLOCK_SHIFT_SCALE;
   let rawY = base.y + blockShiftY;
 
   // ── Y: horizontal compactness — squeeze toward pitch center ─────────────
-  rawY += (PITCH_CENTER_Y - rawY) * cfg.HORIZONTAL_COMPACTNESS * 0.12;
+  rawY += (PITCH_CENTER_Y - rawY) * cfg.HORIZONTAL_COMPACTNESS * COMPACTNESS_SCALE;
 
   // ── X: lane blocking — nudge toward space between ball and own goal ─────
   const ballSide = ballPos.x - ownGoalX;

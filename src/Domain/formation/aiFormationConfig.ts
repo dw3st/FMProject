@@ -27,22 +27,6 @@ export const AI_FORMATION = {
     "3-4-2-1": 0.015, "4-4-1-1": 0.01, "4-3-1-2": 0.005, "4-1-2-1-2": 0.005, "3-4-3": 0.005,
     "5-3-2": 0.005, "4-5-1": 0.005,
   } as Record<string, number>,
-  /**
-   * Goal volume of each formation's mirror match relative to the 4-3-3 mirror (full engine,
-   * premier_league, identical squads, 400 matches each, `scripts/formation-vs-433.ts --mirror`).
-   * 4-3-3 is the lowest-scoring shape; back-three and two-striker shapes produce far more shots.
-   */
-  GOAL_VOLUME: {
-    "4-3-3": 1, "4-5-1": 1.01, "4-2-3-1": 1.03, "4-1-4-1": 1.04, "4-3-2-1": 1.08, "4-4-1-1": 1.09,
-    "4-1-2-1-2": 1.12, "5-2-3": 1.14, "4-2-2-2": 1.15, "5-4-1": 1.15, "4-4-2": 1.2, "4-3-1-2": 1.21,
-    "3-4-1-2": 1.24, "3-4-3": 1.27, "3-4-2-1": 1.27, "3-5-2": 1.34, "5-3-2": 1.34,
-  } as Record<string, number>,
-  /**
-   * Penalty per unit of extra goal volume (score −= OPENNESS × (GOAL_VOLUME − 1)). Keeps the
-   * world's goals per match within ±5% of an all-4-3-3 world: an open shape needs a squad that
-   * clearly suits it.
-   */
-  OPENNESS: 0.3,
   /** Bonus for formations that suit the club's tactical style. */
   STYLE_BONUS: 0.02,
   STYLE_FORMATIONS: {

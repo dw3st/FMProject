@@ -149,7 +149,7 @@ Lateral and drop-back lanes are unaffected — the player can still drop to rece
 
 Where `touchlineDir` is derived from the player's Y position (−1 for left side, +1 for right side), so both LW and RW correctly reward lanes toward their respective touchline.
 
-`widthBias` is further **scaled by `getTeamAttackWidth(team)`** (0.3 narrow / 0.6 normal / 0.9 wide), so narrow tactics suppress wide runs and wide tactics amplify them.
+> Historical (pre-intent model). Since 3.4 the team width acts through `attackingAnchor` (`AttackingPositioning.ts`): `getTeamAttackWidth(team)` (narrow 0.45 / normal 0.6 / wide 0.72) scales the lateral spread of the attacking slots that `hold_space` and the off-ball run's formation pull aim at — see `tactical-config.md` → "`width` → attacking width".
 
 | Role | widthBias (unscaled) |
 |------|---------------------|

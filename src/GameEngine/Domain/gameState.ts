@@ -14,6 +14,7 @@ import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionT
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 import { resolveBasePosition } from '@/GameEngine/FormationSlots';
+import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets } from '@/GameEngine/Domain/DefensivePositioning';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
@@ -3234,7 +3235,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const lookahead  = baseLookahead * roleBias;
         const rawX = player.x + decision.dx * lookahead;
         const rawY = player.y + decision.dy * lookahead;
-        const base = resolveBasePosition(player.slotIndex, player.attackDir, formation, 'attacking');
+        const base = attackingAnchor(resolveBasePosition(player.slotIndex, player.attackDir, formation, 'attacking'), player, ballPos);
         const pushUpT    = Math.min(1, s.possessionTime / POSSESSION_PUSH_UP.BASE_SECONDS);
         const pushUpBias = PUSH_UP_ROLE_BIAS[player.role] ?? 0;
         const pushedBaseX = base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;

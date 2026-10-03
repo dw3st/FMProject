@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4",
+    date: "2026-10-03",
+    items: [
+      {
+        pt: "Formações mais equilibradas: nenhuma vence as outras só pelo desenho, e o 4-3-3 deixou de ser a mais fraca.",
+        en: "More evenly balanced formations: none beats the others on shape alone, and the 4-3-3 is no longer the weakest.",
+      },
+      {
+        pt: "Os times se deslocam juntos para o lado da bola ao defender, e os atacantes de lado fecham na área quando o ataque chega.",
+        en: "Teams shift together toward the ball when defending, and wide forwards close in on the box when the attack arrives.",
+      },
+      {
+        pt: "A largura da equipe volta a valer no ataque: fechada aproxima os jogadores do meio, aberta espalha até as pontas.",
+        en: "Team width counts in attack again: narrow brings players into the middle, wide spreads them to the flanks.",
+      },
+      {
+        pt: "Os adversários usam mais formações (três zagueiros, dois atacantes) conforme o elenco que têm.",
+        en: "Opponents use more formations (back three, two strikers) to suit the squad they have.",
+      },
+    ],
+  },
+  {
     version: "3.3.7",
     date: "2026-10-03",
     items: [
@@ -609,5 +631,4 @@ export const CURRENT_VERSION = latest.version;
 export const upcoming: ChangelogText[] = [
   { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
   { pt: "Convites de clubes maiores para técnicos bem colocados no ranking", en: "Offers from bigger clubs for managers high in the ranking" },
-  { pt: "Formações mais equilibradas entre si", en: "Formations more evenly balanced against each other" },
 ];

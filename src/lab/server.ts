@@ -13,6 +13,7 @@ import labPage from "./index.html";
 import testPage from "./pages/test/index.html";
 import simulatePage from "./pages/simulate/index.html";
 import promoPage from "./pages/promo/index.html";
+import matrixPage from "./pages/matrix/index.html";
 
 const port = parseInt(process.env.LAB_PORT ?? "4000", 10);
 
@@ -24,6 +25,7 @@ const server = serve({
     "/test": testPage,
     "/simulate": simulatePage,
     "/promo": promoPage,
+    "/matrix": matrixPage,
     ...apiRoutes,
     ...debugApiRoutes,
     ...labApiRoutes,

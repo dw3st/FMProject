@@ -21,6 +21,8 @@ const leagues = arg("--leagues", "premier_league,of_championship").split(",");
 const engineN = Number(arg("--engine", "400"));
 const chunks = Number(arg("--chunks", "8"));
 const quickN = Number(arg("--quick", "20000"));
+/** Engine modes to run (`main,ai`); the table shows "—" for a mode left out. */
+const modes = arg("--modes", "main,ai").split(",") as Mode[];
 
 function quick(league: string, mode: Mode): GoalTotals {
   const squads = loadLeagueAt88(league);
@@ -53,19 +55,20 @@ function engine(league: string, mode: Mode): Promise<GoalTotals>[] {
 }
 const sum = (xs: GoalTotals[]) => xs.reduce((a, b) => ({ n: a.n + b.n, goals: a.goals + b.goals, shots: a.shots + b.shots }), { n: 0, goals: 0, shots: 0 });
 
-const engineJobs = leagues.flatMap((l) => (["main", "ai"] as Mode[]).map((m) => ({ l, m, p: engineN > 0 ? Promise.all(engine(l, m)) : Promise.resolve([]) })));
+const engineJobs = leagues.flatMap((l) => modes.map((m) => ({ l, m, p: engineN > 0 ? Promise.all(engine(l, m)) : Promise.resolve([]) })));
 const pct = (a: number, b: number) => `${a >= b ? "+" : ""}${((100 * (a - b)) / b).toFixed(1)}%`;
 console.log(`| Liga | modo | jogos | gols/jogo main | gols/jogo IA | Δ gols | chutes/jogo main | chutes/jogo IA | Δ chutes |`);
 console.log(`|---|---|---|---|---|---|---|---|---|`);
-for (const l of leagues) {
+for (const l of quickN > 0 ? leagues : []) {
   const qm = quick(l, "main"); const qa = quick(l, "ai");
   console.log(`| ${l} | quickSim | ${qm.n} | ${(qm.goals / qm.n).toFixed(3)} | ${(qa.goals / qa.n).toFixed(3)} | ${pct(qa.goals / qa.n, qm.goals / qm.n)} | ${(qm.shots / qm.n).toFixed(2)} | ${(qa.shots / qa.n).toFixed(2)} | ${pct(qa.shots / qa.n, qm.shots / qm.n)} |`);
 }
 if (engineN > 0) {
   const done = await Promise.all(engineJobs.map(async (j) => ({ ...j, t: sum(await j.p) })));
   for (const l of leagues) {
-    const em = done.find((d) => d.l === l && d.m === "main")!.t;
-    const ea = done.find((d) => d.l === l && d.m === "ai")!.t;
-    console.log(`| ${l} | motor | ${em.n} | ${(em.goals / em.n).toFixed(3)} | ${(ea.goals / ea.n).toFixed(3)} | ${pct(ea.goals / ea.n, em.goals / em.n)} | ${(em.shots / em.n).toFixed(2)} | ${(ea.shots / ea.n).toFixed(2)} | ${pct(ea.shots / ea.n, em.shots / em.n)} |`);
+    const none: GoalTotals = { n: 0, goals: NaN, shots: NaN };
+    const em = done.find((d) => d.l === l && d.m === "main")?.t ?? none;
+    const ea = done.find((d) => d.l === l && d.m === "ai")?.t ?? none;
+    console.log(`| ${l} | motor | ${Math.max(em.n, ea.n)} | ${(em.goals / em.n).toFixed(3)} | ${(ea.goals / ea.n).toFixed(3)} | ${pct(ea.goals / ea.n, em.goals / em.n)} | ${(em.shots / em.n).toFixed(2)} | ${(ea.shots / ea.n).toFixed(2)} | ${pct(ea.shots / ea.n, em.shots / em.n)} |`);
   }
 }

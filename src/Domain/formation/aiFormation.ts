@@ -68,8 +68,7 @@ export function aiFormationScores(
     });
     const fit = sum / 11;
     const score =
-      fit - (AI_FORMATION.BASELINE[id] ?? fit) + (AI_FORMATION.PRIOR[id] ?? 0) -
-      AI_FORMATION.OPENNESS * ((AI_FORMATION.GOAL_VOLUME[id] ?? 1) - 1) +
+      fit - (AI_FORMATION.BASELINE[id] ?? fit) + (AI_FORMATION.PRIOR[id] ?? 0) +
       (styled.has(id) ? AI_FORMATION.STYLE_BONUS : 0) + jitter(squad.id, season, id);
     return { id, fit, eligible, score };
   });

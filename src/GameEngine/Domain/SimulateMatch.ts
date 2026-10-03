@@ -75,6 +75,11 @@ export interface SimulateMatchOptions {
    * Absent = neutral, so a caller that never deals with familiarity never inherits a previous one.
    */
   executionFamiliarity?: { A?: number; B?: number };
+  /**
+   * Called with the state after every tick (diagnostics only — `scripts/formation-matrix.ts`, the
+   * lab's formation matrix). Must not mutate the state.
+   */
+  onTick?: (state: GameState) => void;
 }
 
 export interface TeamTactics {
@@ -194,6 +199,7 @@ export function simulateMatch(
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
     s = tickState(s, SIM_DT).state;
+    options.onTick?.(s);
     ticks++;
   }
 

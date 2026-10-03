@@ -39,7 +39,7 @@ When Team A uses `high_press` and Team B uses `low_block`, the engine reads the 
 getDefenseConfig(team)     // DefenseConfig.ts  → DefenseConfigValues  (positioning, pressing, tackle)
 getTeamPassConfig(team)    // AttackConfig.ts   → typeof PASS_CONFIG   (pass scoring weights)
 getTeamCarryConfig(team)   // AttackConfig.ts   → typeof CARRY_CONFIG  (carry lane weights)
-getTeamAttackWidth(team)   // AttackConfig.ts   → number 0..1          (width multiplier for off-ball runs)
+getTeamAttackWidth(team)   // AttackConfig.ts   → number 0..1          (lateral spread of the attacking slots, attackingAnchor)
 ```
 
 **Key rule**: consumers that run when a player has the ball (PassLanes, carry, off-ball) import from `AttackConfig`. Consumers that run when a player is defending import from `DefenseConfig`.
@@ -60,9 +60,9 @@ getTeamAttackWidth(team)   // AttackConfig.ts   → number 0..1          (width 
 
 | Line   | DEFENSIVE_LINE_HEIGHT |
 |--------|-----------------------|
-| deep   | 0.20                  |
-| normal | 0.50                  |
-| high   | 0.72                  |
+| deep   | 0.40                  |
+| normal | 0.60                  |
+| high   | 0.75                  |
 
 ### `width` → defense config
 
@@ -72,15 +72,36 @@ getTeamAttackWidth(team)   // AttackConfig.ts   → number 0..1          (width 
 | normal | 0.60                   | 0.80               |
 | wide   | 0.30                   | 0.90               |
 
-### `width` → attacking width multiplier
+### `width` → attacking width (lateral spread)
 
-| Width  | `getTeamAttackWidth()` |
-|--------|------------------------|
-| narrow | 0.3 |
-| normal | 0.6 |
-| wide   | 0.9 |
+| Width  | `getTeamAttackWidth()` | spread of the attacking slots |
+|--------|------------------------|-------------------------------|
+| narrow | 0.45 | ×0.75 (pulled toward y 37) |
+| normal | 0.60 | ×1 — the formation as drawn |
+| wide   | 0.72 | ×1.2 (toward the touchlines, clamped 1 yd inside) |
 
-Used by `OffBallMovement.ts` to scale `widthBias` on off-ball runs — narrow tactics suppress wide runs; wide tactics amplify them.
+Read by `attackingAnchor` (`AttackingPositioning.ts`, Etapa 19 / 3.4), the single attacking anchor
+used by `computeAttackingPosition`, the off-ball run execution in `gameState.ts` (formation pull)
+and the `hold_space` intent (`OffBallMovement.ts`): `y = 37 + (slot y − 37) × width / 0.6`. The same
+helper then closes forward slots in on the box as the ball reaches the final third
+(`ATTACK_CONFIG.BOX_CONVERGENCE`, see `.claude/rules/game/formations.md` → "Equilíbrio entre
+formações"). Between the off-ball refactor to intents and 3.4 the attacking side of `width` had no
+effect at all (`getTeamAttackWidth` was never read); only the defensive side (compactness, block
+shift) and the `INTENT_WIDTH` hold_space multiplier worked.
+
+Measured with `bun scripts/width-measure.ts` (PL, 4-3-3, both teams on the same width — so the
+defensive side of the axis moves too):
+
+| Width | matches | goals/match | shots/match | crosses/match | mean lateral distance of the team in possession from y 37 |
+|---|---|---|---|---|---|
+| narrow | 400 | 2.30 | 5.34 | 17.2 | 11.7 yd |
+| normal | 400 | 2.41 | 5.63 | 16.9 | 13.5 yd |
+| wide | 400 | 2.55 | 5.74 | 17.3 | 15.1 yd |
+
+(two runs of 200 summed; the spread column is from the second run only.) The shape follows the
+setting clearly; goals and shots move a few percent (narrow fewer, wide more), within the engine's
+noise per run (±3–4%). Crosses don't change: they come from the wingers, whose touchline slot is
+already near the edge.
 
 ### `build_up` → pass scoring weights
 
@@ -137,7 +158,7 @@ landing point), so the share moves with the game rather than flipping at a thres
 - Defensive behaviour → `DefenseConfigValues` in `DefenseConfig.ts`
 - Pass selection → `TeamPassWeights` in `AttackConfig.ts`
 - Carry decisions → `TeamCarryWeights` in `AttackConfig.ts`
-- Off-ball width runs → `TEAM_ATTACK_WIDTH` in `AttackConfig.ts`
+- Attacking lateral spread → `WIDTH_ATTACK_WIDTH` in `AttackConfig.ts` (read through `getTeamAttackWidth` by `attackingAnchor`)
 
 ### 2. Add the mapping
 

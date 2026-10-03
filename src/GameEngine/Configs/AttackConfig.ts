@@ -59,8 +59,14 @@ export const PUSH_UP_ROLE_BIAS: Record<string, number> = {
 // ── Global positioning constants (not per-team yet) ───────────────────────────
 
 export const ATTACK_CONFIG = {
-  /** 0..1 — how wide the team stretches when attacking. */
+  /** 0..1 — how wide the team stretches when attacking (the `normal` width; see `getTeamAttackWidth`). */
   ATTACK_WIDTH: 0.6,
+  /**
+   * 0..1 — how far forward slots (attacking x ≥ 70) close in on the goal's y as the ball reaches
+   * the final third (`attackingAnchor`). Etapa 19 (#63): without it wingers stayed on the
+   * touchline while the shot came from the middle, so every wide slot was a lost attacker.
+   */
+  BOX_CONVERGENCE: 0.6,
   /** Yards — optimal spacing between support players. */
   SUPPORT_DISTANCE: 12,
   /** 0..1 — frequency of forward attacking runs (future use). */
@@ -242,9 +248,9 @@ export function getTeamCarryConfig(team: TeamId): { [K in keyof typeof CARRY_CON
 // ── Per-team attacking width (driven by width tactic) ────────────────────────
 
 const WIDTH_ATTACK_WIDTH: Record<TeamWidth, number> = {
-  narrow: 0.3,
+  narrow: 0.45,
   normal: 0.6,
-  wide:   0.9,
+  wide:   0.72,
 };
 
 const TEAM_ATTACK_WIDTH: Record<TeamId, number> = {
@@ -252,7 +258,12 @@ const TEAM_ATTACK_WIDTH: Record<TeamId, number> = {
   B: ATTACK_CONFIG.ATTACK_WIDTH,
 };
 
-/** Returns the attacking width multiplier for the given team (0..1). */
+/**
+ * Returns how wide the team stretches when attacking (0..1). `attackingAnchor`
+ * (AttackingPositioning.ts) scales the lateral spread of the attacking slots by
+ * this / `ATTACK_CONFIG.ATTACK_WIDTH`: narrow ×0.75, normal ×1 (the formation
+ * as drawn), wide ×1.2.
+ */
 export function getTeamAttackWidth(team: TeamId): number {
   return TEAM_ATTACK_WIDTH[team];
 }

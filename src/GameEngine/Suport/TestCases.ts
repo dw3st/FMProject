@@ -18,6 +18,7 @@ import rolesJson from '@/Data/roles.json';
 import { awardCorner, createMatchState, forceInjurySubstitution, maybeFoul } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
+import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
 import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { FITNESS } from '@/Domain/fitness/fitnessConfig';
@@ -406,6 +407,17 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Okeke',    'B', 'CM',  72, 14, MIDFIELDER),
         makePlayer('Kowalski', 'B', 'GK', 112, 37, GOALKEEPER),
       ], 1);
+    },
+  },
+
+  {
+    id:          'wide-vs-narrow',
+    name:        '11v11 — Wide vs narrow shape (formation balance)',
+    description: 'Team A 4-3-3 (wingers on the touchline) vs Team B 4-1-2-1-2 diamond. Watch the defending block slide toward the ball side (the far-side winger tucks in) and the wide forwards close in on the box when the ball reaches the final third (Etapa 19, `.claude/rules/game/formations.md`).',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const diamond = formationDiamondJson as Formation;
+      return createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), diamond);
     },
   },
 
