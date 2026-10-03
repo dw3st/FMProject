@@ -1,6 +1,6 @@
 # Etapa 16 — Polimento (#44) — Design
 
-Data: 2026-10-02. Status: aprovado. Versão **3.0** (fecha a Fase 4). Visual: `.claude/rules/ui-standard.md`.
+Data: 2026-10-02. Status: aprovado. Versão **3.1** (fecha a Fase 4). Visual: `.claude/rules/ui-standard.md`.
 
 ## 1. Mapa-múndi no novo jogo
 
@@ -12,7 +12,7 @@ Data: 2026-10-02. Status: aprovado. Versão **3.0** (fecha a Fase 4). Visual: `.
 - A lista atual continua ao lado (busca). Em telas estreitas (< md) só a lista.
 - Teclado: a lista cobre a acessibilidade; o mapa é complementar (`aria-hidden` nos paths, botão por país não).
 
-## 2. Rostos (`facesjs`, MIT)
+## 2. Rostos (`facesjs`, Apache-2.0)
 
 - `generate()` com seed determinística pelo id do jogador (PRNG próprio injetado ou `faceFromId`), camisa com
   as cores do clube (`teamColors`), tom de pele/cabelo amostrados de faixas por região da nacionalidade
@@ -30,4 +30,4 @@ Novidades / Em breve. Teste de dados: todo item com `pt` e `en`. Atualizado a ca
 ## Verificação
 
 Teste do mapeamento ISO2 ↔ países do jogo (todo país com liga tem path no mapa), determinismo do rosto,
-dados do changelog. Changelog 3.0, ROADMAP etapa 16 ✅.
+dados do changelog. Changelog 3.1, ROADMAP etapa 16 ✅.

@@ -59,7 +59,7 @@ com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` d
 
 ## Rostos dos jogadores
 
-`PlayerFace` (`src/GameInterface/Components/PlayerFace.tsx`) mostra um rosto `facesjs` (MIT),
+`PlayerFace` (`src/GameInterface/Components/PlayerFace.tsx`) mostra um rosto `facesjs` (Apache-2.0),
 determinístico pelo id (`playerFaceSvg`, `src/Domain/faces/playerFaceSvg.ts`: RNG semeado trocado no
 `Math.random` durante o `generate`), camisa com as cores do clube, aparência sorteada de faixas amplas
 por região da nacionalidade (`src/Domain/faces/faceProfile.ts`). Só na ficha do jogador (96px) e no

@@ -1,5 +1,5 @@
 /**
- * Builds a player's face SVG with `facesjs` (MIT, github.com/zengm-games/facesjs). Deterministic
+ * Builds a player's face SVG with `facesjs` (Apache-2.0, github.com/zengm-games/facesjs). Deterministic
  * per player id: `facesjs.generate` draws from `Math.random`, so it runs with a seeded RNG swapped
  * in for the duration of the (synchronous) call. The jersey uses the club colours.
  *
