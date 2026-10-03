@@ -259,3 +259,97 @@ describe("/test scenario cross-to-box", () => {
     expect(d.type).toBe("cross");
   });
 });
+
+describe("review fixes", () => {
+  test("committing chasers for a new ball releases the ones still chasing an old one", () => {
+    let s = baseState();
+    const lw = find(s, "A", "LW");
+    const st = find(s, "A", "ST");
+    const far = find(s, "B", "LB");
+    s = place(place(place(s, lw.id, 100, 8), st.id, 104, 37), far.id, 30, 60);
+    s = {
+      ...s,
+      ballHolderId: lw.id,
+      players: s.players.map(p => (p.id === far.id
+        ? { ...p, decisionMemory: { path: "TEAM_WITHOUT_BALL", decision: { type: "chase_loose_ball", toX: 30, toY: 60 }, commitTicks: 6 } }
+        : p)),
+    };
+    s = startAerialBall(s, "cross", { x: 104, y: 37 }, st.id, seq(1, 0, 0.99));
+    expect(s.players.find(p => p.id === far.id)!.decisionMemory.decision).toBeNull();
+  });
+
+  test("half-time clears every chase memory", () => {
+    let s = baseState();
+    const st = find(s, "A", "ST");
+    s = {
+      ...s,
+      matchPhase: "halfTime",
+      presentationCountdown: 0.01,
+      players: s.players.map(p => (p.id === st.id
+        ? { ...p, decisionMemory: { path: "TEAM_WITH_BALL", decision: { type: "chase_loose_ball", toX: 1, toY: 1 }, commitTicks: 6 } }
+        : p)),
+    };
+    s = tickState(s, 0.2).state;
+    expect(s.matchPhase).toBe("secondHalf");
+    expect(s.players.find(p => p.id === st.id)!.decisionMemory.decision).toBeNull();
+  });
+
+  test("a keeper far out of position does not claim a ball dropping in his small box", () => {
+    const { s: s0 } = landing({ x: 112, y: 37 });
+    const gk = find(s0, "B", "GK");
+    const s = place(s0, gk.id, 95, 37);
+    const claims = collect("gkClaim");
+    resolveAerialLanding(s, seq(0.5));
+    claims.off();
+    expect(claims.events).toHaveLength(0);
+  });
+
+  test("an attacker offside at the kick who picks up the dropped ball is flagged", () => {
+    const { s: s0 } = landing({ x: 95, y: 37 });
+    const cam = find(s0, "A", "CAM");
+    let s: GameState = { ...s0, pass: { ...s0.pass!, aerialOffsideIds: [cam.id] } };
+    s = resolveAerialLanding(s, seq(0.5)).state;
+    expect(s.looseBall?.offsideIds).toEqual([cam.id]);
+    s = place(s, cam.id, s.looseBall!.x, s.looseBall!.y);
+    for (let i = 0; i < 5 && s.looseBall; i++) s = tickState(s, 0.2).state;
+    expect(s.setPiece?.type).toBe("offside_fk");
+  });
+
+  test("an offside attacker in an aerial duel is flagged before any duel or foul", () => {
+    const { s: s0 } = landing({ x: 106, y: 37 });
+    const st = find(s0, "A", "ST");
+    const cb = find(s0, "B", "CB");
+    const gk = find(s0, "B", "GK");
+    let s = place(place(place(s0, st.id, 106.5, 37), cb.id, 105.5, 37), gk.id, 114, 50);
+    s = { ...s, pass: { ...s.pass!, aerialOffsideIds: [st.id] } };
+    const duels = collect("aerialDuel");
+    const fouls = collect("foul");
+    s = resolveAerialLanding(s, seq(0)).state;
+    duels.off();
+    fouls.off();
+    expect(duels.events).toHaveLength(0);
+    expect(fouls.events).toHaveLength(0);
+    expect(s.setPiece?.type).toBe("offside_fk");
+  });
+
+  test("a defender's bad first touch is his team's loose ball, not a completed long ball", () => {
+    const { s: s0 } = landing({ x: 70, y: 37 }, "long_ball");
+    initStats(s0.players.map(p => ({ id: p.id, team: p.team })));
+    const cb = find(s0, "B", "CB");
+    const resolved = collect("aerialResolved");
+    const s = resolveAerialLanding(place(s0, cb.id, 70.5, 37), seq(0.999, 0.25)).state;
+    resolved.off();
+    expect(s.looseBall?.fromTeamLastTouch).toBe("B");
+    expect(s.looseBall?.source).toBe("clearance");
+    expect(resolved.events[0]).toMatchObject({ completed: false, outcome: "loose" });
+    expect(getPlayerStats(s0.ballHolderId).longBallsCompleted).toBe(0);
+  });
+
+  test("the whistle waits for a high ball played from a set piece", async () => {
+    const { restartHoldsPeriod } = await import("@/GameEngine/Domain/gameState");
+    const { s } = landing({ x: 100, y: 37 });
+    expect(restartHoldsPeriod(s, 2701, 2700)).toBe(false);
+    expect(restartHoldsPeriod({ ...s, pass: { ...s.pass!, fromSetPiece: true } }, 2701, 2700)).toBe(true);
+    expect(restartHoldsPeriod({ ...s, pass: { ...s.pass!, fromSetPiece: true } }, 2800, 2700)).toBe(false);
+  });
+});

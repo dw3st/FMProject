@@ -59,6 +59,16 @@ export function isInSmallBox(x: number, y: number, goalX: number): boolean {
 }
 
 /**
+ * The keeper comes for a high ball dropping at distance `dGk` from him: in his small box when he
+ * can get there (≤ SMALL_BOX_DEPTH + AERIAL_RADIUS + GK_EXTRA_REACH), or anywhere within
+ * AERIAL_RADIUS + GK_EXTRA_REACH when he is the closest player (`firstThere`).
+ */
+export function keeperComesFor(dGk: number, inSmallBox: boolean, firstThere: boolean): boolean {
+  if (inSmallBox && dGk <= A.SMALL_BOX_DEPTH + A.AERIAL_RADIUS + A.GK_EXTRA_REACH) return true;
+  return firstThere && dGk <= A.AERIAL_RADIUS + A.GK_EXTRA_REACH;
+}
+
+/**
  * Crossing position: in the final third, outside the central corridor and outside the penalty
  * area (inside the box the carrier shoots, cuts back or gets fouled — measured: allowing crosses
  * there cost ~a third of the ground goals and half the penalties). Exception: right on the byline,
@@ -152,9 +162,8 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
       const d = Math.hypot(p.x - t.x, p.y - t.y);
       if (d < R) def += 1 - d / R;
     }
-    const gkClaim = gk !== null && (
-      isInSmallBox(t.x, t.y, goalX)
-      || Math.hypot(gk.x - t.x, gk.y - t.y) <= A.AERIAL_RADIUS + A.GK_EXTRA_REACH);
+    const gkClaim = gk !== null
+      && keeperComesFor(Math.hypot(gk.x - t.x, gk.y - t.y), isInSmallBox(t.x, t.y, goalX), true);
     const raw = att <= 0 ? 0 : depthMult * Math.max(0,
       A.CROSS_BASE
       + (att - def * A.CROSS_DEFENDER_WEIGHT) * A.CROSS_NUMBERS_WEIGHT

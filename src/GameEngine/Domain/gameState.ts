@@ -1,7 +1,7 @@
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource } from '@/GameEngine/types';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
-import { aerialDuelScore, headingOf, isInSmallBox } from '@/GameEngine/Domain/Aerial';
+import { aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
 import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
@@ -829,6 +829,8 @@ const RESTART_HOLD_MAX = 60;
 export function restartHoldsPeriod(state: GameState, newMatchTime: number, periodEnd: number): boolean {
   const sp = state.setPiece;
   if (state.shot && newMatchTime < periodEnd + RESTART_HOLD_MAX) return true;
+  // A high ball from a set piece (free kick / goal kick) is played out before the whistle.
+  if (state.pass?.fromSetPiece && isAerialKind(state.pass.kind) && newMatchTime < periodEnd + RESTART_HOLD_MAX) return true;
   if (!sp || newMatchTime >= periodEnd + RESTART_HOLD_MAX) return false;
   if (sp.type === 'penalty') return true;
   if (sp.type !== 'free_kick' || !sp.position || state.ballHolderId !== sp.takerId) return false;
@@ -1204,7 +1206,8 @@ function getTeammates(state: GameState, playerId: number): GamePlayer[] {
   return state.players.filter(p => p.team === player.team && p.id !== playerId);
 }
 
-function resetToKickoff(state: GameState, kickoffTeam: import('../types').TeamId): GameState {
+function resetToKickoff(state0: GameState, kickoffTeam: import('../types').TeamId): GameState {
+  const state = clearAllChasers(state0);
   const resetPlayers = state.players.map(p => ({
     ...p,
     x: p.basePosition.x,
@@ -1258,6 +1261,7 @@ function switchSides(
   kickoffTeam: TeamId = 'B',
   recoveryScale = 1,
 ): GameState {
+  state = clearAllChasers(state);
   const switched: GamePlayer[] = state.players.map(p => {
     const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
     const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
@@ -1526,6 +1530,23 @@ function chaseSprintSpeed(p: GamePlayer): number {
  *
  * GK chase is permitted only when the landing point is inside that GK's own box.
  */
+/** Resets the decision memory of the given (stale) chasers so they re-decide next tick. */
+function clearChasers(state: GameState, ids: Set<number>): GameState {
+  const decisions = { ...state.decisions };
+  for (const id of ids) delete decisions[id];
+  return {
+    ...state,
+    decisions,
+    players: state.players.map(p => (ids.has(p.id) ? { ...p, decisionMemory: EMPTY_DECISION_MEMORY } : p)),
+  };
+}
+
+/** Clears every chase_loose_ball memory (restarts: kickoff, half-time). */
+function clearAllChasers(state: GameState): GameState {
+  const ids = new Set(state.players.filter(p => p.decisionMemory?.decision?.type === 'chase_loose_ball').map(p => p.id));
+  return ids.size > 0 ? clearChasers(state, ids) : state;
+}
+
 function commitLooseBallChasers(
   state:    GameState,
   passerId: number,
@@ -1587,6 +1608,11 @@ function commitLooseBallChasers(
   };
 
   const chasers = [...pickTop(teamA), ...pickTop(teamB)];
+  // Anyone still chasing an earlier ball (chained clearances / punches) who is not re-selected
+  // drops the chase — otherwise the pinned decision drags him across the pitch.
+  const stale = state.players.filter(p =>
+    p.decisionMemory?.decision?.type === 'chase_loose_ball' && !chasers.some(c => c.id === p.id));
+  if (stale.length > 0) state = clearChasers(state, new Set(stale.map(p => p.id)));
   if (chasers.length === 0) return state;
 
   if (isDebugEnabled()) {
@@ -2010,9 +2036,8 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
 
   // ── Offside enforcement — only if the intended runner is the one who collects
   const flaggedOffside =
-    lb.receiverOffside &&
-    lb.intendedRunnerId !== null &&
-    winner.id === lb.intendedRunnerId;
+    (lb.receiverOffside && lb.intendedRunnerId !== null && winner.id === lb.intendedRunnerId) ||
+    (winner.team === lb.fromTeamLastTouch && (lb.offsideIds ?? []).includes(winner.id));
 
   if (flaggedOffside) {
     gameBus.emit('offsideCalled', { team: winner.team, receiverId: winner.id });
@@ -2248,6 +2273,7 @@ export function startAerialBall(
     receiverOffside: false,
     intendedRunnerId: intendedId,
     aerialOffsideIds: offsideIdsAt(holder, state.players),
+    ...(state.setPiece ? { fromSetPiece: true } : {}),
   };
   return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, toX, toY, holder.team, {
     maxPerTeam: C.MAX_CHASERS_PER_TEAM,
@@ -2323,8 +2349,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const gkGoalX = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
     const dGk = dist(gk);
     const nearestOther = active.filter(p => p.id !== gk.id).reduce((m, p) => Math.min(m, dist(p)), Infinity);
-    const comes = isInSmallBox(point.x, point.y, gkGoalX)
-      || (dGk <= C.AERIAL_RADIUS + C.GK_EXTRA_REACH && dGk < nearestOther);
+    const comes = keeperComesFor(dGk, isInSmallBox(point.x, point.y, gkGoalX), dGk < nearestOther);
     if (comes) {
       const chance = gkClaimChance(gk, attackers.length);
       const claimed = rng() < chance;
@@ -2357,6 +2382,11 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     const best = (pool: GamePlayer[]) => pool.reduce((a, b) => (aerialDuelScore(b, point) > aerialDuelScore(a, point) ? b : a));
     const a = best(attackers);
     const d = best(defenders);
+    // An offside attacker challenging for it is flagged before any duel or foul (no penalty for him).
+    if ((pass.aerialOffsideIds ?? []).includes(a.id)) {
+      resolved(a.id, false, 'offside');
+      return done(aerialOffsideFreeKick(s, a, { x: a.x, y: a.y }));
+    }
     const { winnerId, probA } = resolveAerialDuel(a, d, point, rng);
     winner = winnerId === a.id ? a : d;
     const loser = winner.id === a.id ? d : a;
@@ -2404,27 +2434,37 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         intendedRunnerId: pass.intendedRunnerId,
         receiverOffside: pass.intendedRunnerId !== null && (pass.aerialOffsideIds ?? []).includes(pass.intendedRunnerId),
         source: kind,
+        offsideIds: pass.aerialOffsideIds ?? [],
       },
     });
   }
 
-  /** Bad first touch: the ball bounces off `p` and drops loose next to him (reported on pickup). */
+  /**
+   * Bad first touch: the ball bounces off `p` and drops loose next to him. Off an attacker it stays
+   * the cross / long ball (reported on pickup, offside still checked); off a defender it is his
+   * team's ball loose (a `clearance` — the high ball was not completed).
+   */
   const dropLoose = (st: GameState, p: GamePlayer): GameState => {
     const a = rng() * 2 * Math.PI;
     const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED;
+    const attacking = p.team === passerTeam;
     debugLog('aerial', `${p.name} fails to control it — loose ball`, { playerId: p.id });
-    return {
+    if (!attacking) resolved(p.id, false, 'loose');
+    const prevHolderId = st.ballHolderId;
+    return onPossessionTransfer({
       ...st,
+      ballHolderId: attacking ? st.ballHolderId : p.id,
       looseBall: {
         x: point.x, y: point.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
         startTime: st.matchTime,
-        fromPasserId: pass.fromId,
-        fromTeamLastTouch: passerTeam,
+        fromPasserId: attacking ? pass.fromId : p.id,
+        fromTeamLastTouch: p.team,
         intendedRunnerId: null,
         receiverOffside: false,
-        source: kind,
+        source: attacking ? kind : 'clearance',
+        ...(attacking ? { offsideIds: pass.aerialOffsideIds ?? [] } : {}),
       },
-    };
+    }, prevHolderId);
   };
 
   // ── Second ball off a clearance: whoever wins it plays on ─────────────────
