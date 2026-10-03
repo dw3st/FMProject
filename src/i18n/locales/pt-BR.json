@@ -125,7 +125,8 @@
     "deleteConfirmBody": "Isso vai excluir permanentemente \"{{clubName}}\" ({{leagueName}}). Essa ação não pode ser desfeita.",
     "deleteConfirmAction": "Excluir save",
     "continue": "Continuar",
-    "whatsNew": "Novidades"
+    "whatsNew": "Novidades",
+    "ended": "Carreira encerrada"
   },
   "newGame": {
     "countries": {
