@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.5",
+    date: "2026-10-03",
+    items: [
+      { pt: "Novo jogo cabe na tela: a lista de países, a de clubes e o perfil rolam por dentro, e o botão de começar fica sempre à vista.", en: "New game fits the screen: the country list, the club list and the profile scroll inside, and the start button is always in view." },
+    ],
+    fixes: [
+      { pt: "O campo do nome do técnico não mostra mais as sugestões de preenchimento do navegador.", en: "The manager name field no longer shows the browser's autofill suggestions." },
+    ],
+  },
+  {
     version: "3.3.4",
     date: "2026-10-03",
     items: [
