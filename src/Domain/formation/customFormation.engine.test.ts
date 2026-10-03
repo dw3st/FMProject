@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
-import { computeMatchSimulationLineups, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { aiMatchFormation, computeMatchSimulationLineups, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { CUSTOM_PRESETS, customToFormation, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { applyTeamAttackConfig, getTeamBuildUp, getTeamTacticalStyle, getTeamWidth } from "@/GameEngine/Configs/AttackConfig";
 import { applyTeamTacticsConfig, getDefenseTacticKeys } from "@/GameEngine/Configs/DefenseConfig";
@@ -77,7 +77,10 @@ describe("custom formation in the match pipeline", () => {
     };
     const r = computeMatchSimulationLineups(fixture, home, away, home.id, tactics);
     expect(r.homeFormation.id).toBe("custom");
-    expect(r.awayFormation.id).toBe("4-3-3");
+    // The AI side plays its own season formation.
+    expect(r.awayFormation.id).toBe(aiMatchFormation(away, home, fixture.date).formation.id);
+    expect(r.aiFormations.home).toBeUndefined();
+    expect(r.aiFormations.away?.id).toBeDefined();
     expect(r.homeLineup).toHaveLength(11);
     expect(new Set(r.homeLineup).size).toBe(11);
     expect(slotRoles(r.homeFormation)).toEqual(CUSTOM_PRESETS["3-2-4-1"]!.slots.map((s) => s.role));

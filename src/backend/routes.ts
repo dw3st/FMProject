@@ -20,7 +20,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Formation } from "@/GameEngine/types";
-import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { aiMatchFormation, resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
@@ -428,11 +428,9 @@ export const apiRoutes = {
     }
 
     const myFormationId = myTactics.formation;
-    const oppFormationId = "4-3-3";
 
     const isCustomForm = myFormationId === CUSTOM_FORMATION_ID && !!myTactics.customFormation;
     const myFormFile  = Bun.file(`${FORMATIONS_DIR}/${myFormationId}.json`);
-    const oppFormFile = Bun.file(`${FORMATIONS_DIR}/${oppFormationId}.json`);
 
     if (saveIdParam && !isCustomForm && !(await myFormFile.exists())) {
       return Response.json({ error: `formation "${myFormationId}" not found` }, { status: 404 });
@@ -441,7 +439,6 @@ export const apiRoutes = {
     const myFormation  = isCustomForm
       ? formationForTactics(myTactics)
       : (await myFormFile.exists()) ? await myFormFile.json() : null;
-    const oppFormation = (await oppFormFile.exists()) ? await oppFormFile.json() : null;
 
     const defaultFormation = {
       id: "4-3-3",
@@ -475,6 +472,10 @@ export const apiRoutes = {
 
     const resolvedMyFormation = (myFormation ?? defaultFormation) as Formation;
     const matchDate = matchFixture?.date ?? save.currentDate ?? undefined;
+    // The AI opponent plays its own formation — the same choice the headless path makes.
+    const oppFormation = opponentSquad && matchDate
+      ? aiMatchFormation(opponentSquad, mySquad, matchDate).formation
+      : null;
 
     // An empty (or otherwise invalid) saved lineup — e.g. a career that never touched the
     // formation screen — is filled the same way the headless path resolves it

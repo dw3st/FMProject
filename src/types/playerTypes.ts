@@ -229,6 +229,25 @@ export interface Squad {
    * `players`. They train and age at the rollover but do not play until promoted.
    */
   youth?: RosterPlayer[];
+  /**
+   * AI clubs only: the formation chosen for the season (`src/Domain/formation/aiFormation.ts`).
+   * Recomputed when the season or the roster changes; the human club uses its tactics instead.
+   */
+  aiFormation?: AiFormationRecord;
+}
+
+/** AI club's formation for a season (`chooseAiFormation`). */
+export interface AiFormationRecord {
+  /** Formation id (one of the ready-made ones). */
+  id: string;
+  /** Season key the choice was made for (`aiSeasonKey`). */
+  season: string;
+  /** Hash of the roster ids at the time of the choice — a different roster re-chooses. */
+  roster: number;
+  /** Mean slot value of the chosen XI (compared with the opponent's for the underdog shape). */
+  level: number;
+  /** Defensive shape played against a much stronger opponent; absent = keep `id`. */
+  defensive?: string;
 }
 
 export interface LeagueTeam {
