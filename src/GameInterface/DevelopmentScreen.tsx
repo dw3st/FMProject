@@ -171,6 +171,7 @@ export function DevelopmentScreen() {
     return squad.players.map((p) => ({
       id:       p.id,
       name:     p.name,
+      nationality: p.nationality,
       position: p.stats ? preferredRole(p) : (p.positions[0] ?? "—"),
       agePhase: getAgePhase(p.age),
     }));
@@ -214,7 +215,10 @@ export function DevelopmentScreen() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">
                   <PlayerProfile
+                    clubColors={squad.colors}
                     player={{
+                      id: player.id,
+                      nationality: player.nationality,
                       name: player.name,
                       age: player.age,
                       role: player.stats ? positionLabel(t, preferredRole(player), player.positions[0] ?? "CM") : (player.positions[0] || "Player"),
@@ -238,6 +242,7 @@ export function DevelopmentScreen() {
                 players={playerOptions}
                 selectedId={selectedPlayerId}
                 onSelect={setSelectedPlayerId}
+                clubColors={squad.colors}
               />
             </aside>
           </div>

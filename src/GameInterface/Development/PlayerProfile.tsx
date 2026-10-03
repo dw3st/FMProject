@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Icon, iconOf } from "@/GameInterface/Icons";
+import { iconOf } from "@/GameInterface/Icons";
+import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 
 const Minus = iconOf("minus");
 const TrendingDown = iconOf("trend-down");
@@ -9,7 +10,11 @@ export type AgePhase = "developing" | "approachingPeak" | "atPeak" | "declining"
 export type DevStatus = "improving" | "stable" | "declining";
 
 interface PlayerProfileProps {
+  /** Kit colours of the player's club, used for the generated face. */
+  clubColors?: readonly string[];
   player: {
+    id: string;
+    nationality?: string | null;
     name: string;
     age: number;
     role: string;
@@ -32,7 +37,7 @@ const getStatusConfig = (t: (key: string) => string): Record<DevStatus, { label:
   declining: { label: t("development.statusLabels.declining"), icon: TrendingDown, color: "text-destructive" },
 });
 
-export function PlayerProfile({ player }: PlayerProfileProps) {
+export function PlayerProfile({ player, clubColors }: PlayerProfileProps) {
   const { t } = useTranslation();
   const agePhaseDisplay = getAgePhaseDisplay(t);
   const phase = agePhaseDisplay[player.agePhase];
@@ -43,9 +48,13 @@ export function PlayerProfile({ player }: PlayerProfileProps) {
   return (
     <div className="card-arcade rounded-md p-5">
       <div className="flex items-center gap-4 mb-5">
-        <div className="w-16 h-16 rounded-md border border-primary/30 flex items-center justify-center">
-          <Icon name="user" className="w-8 h-8 text-primary" />
-        </div>
+        <PlayerFace
+          playerId={player.id}
+          nationality={player.nationality}
+          clubColors={clubColors}
+          size={64}
+          fallback={playerInitials(player.name)}
+        />
         <div>
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{player.name}</h2>
           <p className="text-muted-foreground m-0">{player.role}</p>
