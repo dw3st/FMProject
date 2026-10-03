@@ -553,7 +553,20 @@ export function TestScreen() {
     setPlayerList(state.players);
     setSelectedPlayerId(null);
     setLivePlayer(null);
-  }, [scenario, resetKey, famA, famB]);
+  }, [scenario, resetKey]);
+
+  // A familiarity change rebuilds the scenario state (familiarity scales attributes at build time),
+  // but only in scenario mode: in 11v11 mode the squad effect above already rebuilds, and the
+  // scenario players must not overwrite its player list.
+  const famInitRef = useRef(true);
+  useEffect(() => {
+    if (famInitRef.current) { famInitRef.current = false; return; }
+    if (mode !== 'scenario') return;
+    const base = scenario.createState();
+    const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    setScenarioState(state);
+    setPlayerList(state.players);
+  }, [famA, famB]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1274,7 +1287,7 @@ export function TestScreen() {
           Energy
         </button>
       </div>
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel
