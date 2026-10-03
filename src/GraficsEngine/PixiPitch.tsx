@@ -11,6 +11,9 @@ import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeighte
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
+import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
+import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
+import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
@@ -216,6 +219,8 @@ export interface DebugOverlays {
   switchPlay:            boolean;
   /** Cross targets while the holder is in a crossing position; landing point + AERIAL_RADIUS during a high ball. */
   aerial:                boolean;
+  /** Set pieces (`set-pieces-play.md`): the wall of a direct free kick, the delivery options of a corner / crossed free kick. */
+  setPieces:             boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -227,6 +232,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   throughBallCells:      false,
   switchPlay:            false,
   aerial:                false,
+  setPieces:             true,
 };
 
 interface Props {
@@ -777,6 +783,45 @@ export function PixiPitch({
               throughBallGfx.circle(tx, ty, 5).fill({ color: t.gkClaim ? 0xf87171 : 0x2dd4bf, alpha: 0.25 + sc * 0.7 });
               if (t === best && t.score > 0) {
                 throughBallGfx.circle(tx, ty, 9).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
+              }
+            }
+          }
+
+          // ── Set pieces: wall of a direct free kick; delivery options of a corner / crossed free kick ──
+          const sp = stateRef.current.setPiece;
+          if (ovl.setPieces && sp && ballHolder && ballHolder.id === sp.takerId) {
+            const goalX = ballHolder.attackDir === 1 ? PITCH_LENGTH : 0;
+            const { px: bx, py: by } = toPixel(ballHolder.x, ballHolder.y);
+            if (sp.variant === 'direct') {
+              const { px: gx, py: gy } = toPixel(goalX, (GOAL_Y_MIN + GOAL_Y_MAX) / 2);
+              throughBallGfx.moveTo(bx, by).lineTo(gx, gy).stroke({ width: 1, color: 0xbef264, alpha: 0.5 });
+              const wall = (sp.wallIds ?? [])
+                .map(id => stateRef.current.players.find(p => p.id === id))
+                .filter((p): p is NonNullable<typeof p> => !!p);
+              for (let i = 0; i < wall.length; i++) {
+                const { px: wx, py: wy } = toPixel(wall[i]!.x, wall[i]!.y);
+                throughBallGfx.circle(wx, wy, 9).stroke({ width: 2.5, color: 0xbef264, alpha: 0.95 });
+                if (i > 0) {
+                  const { px: qx, py: qy } = toPixel(wall[i - 1]!.x, wall[i - 1]!.y);
+                  throughBallGfx.moveTo(qx, qy).lineTo(wx, wy).stroke({ width: 4, color: 0xbef264, alpha: 0.6 });
+                }
+              }
+            } else if (sp.variant === 'box') {
+              const kind = sp.type === 'corner' ? 'corner' : 'free_kick';
+              const options = evaluateBoxSetPiece(ballHolder, stateRef.current.players, getTeamBuildUp(ballHolder.team), kind);
+              const best = options[0];
+              const maxRaw = Math.max(0.01, ...options.map(o => o.raw));
+              const R = kind === 'corner' ? SET_PIECE_CONFIG.TARGET_ZONE_RADIUS : SET_PIECE_CONFIG.FK_TARGET_ZONE_RADIUS;
+              for (const o of options) {
+                const { px: ox, py: oy } = toPixel(o.x, o.y);
+                const sc = Math.max(0, Math.min(1, o.raw / maxRaw));
+                if (o.kind === 'short') {
+                  throughBallGfx.moveTo(bx, by).lineTo(ox, oy).stroke({ width: 1.5, color: 0xbef264, alpha: 0.3 + sc * 0.6 });
+                } else {
+                  throughBallGfx.circle(ox, oy, R * m.scale).stroke({ width: 1, color: 0xbef264, alpha: 0.35 });
+                  throughBallGfx.circle(ox, oy, 5).fill({ color: 0xbef264, alpha: 0.25 + sc * 0.7 });
+                }
+                if (o === best) throughBallGfx.circle(ox, oy, 10).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
               }
             }
           }
