@@ -28,12 +28,15 @@ export function HomeCard({
   title,
   href,
   linkLabel,
+  actions,
   children,
   className = "",
 }: {
   title: ReactNode;
   href?: string;
   linkLabel?: string;
+  /** Extra controls on the right of the title (e.g. the week card's prev/next buttons). */
+  actions?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -41,6 +44,7 @@ export function HomeCard({
     <section className={`card-arcade rounded-md p-4 flex flex-col gap-4 min-w-0 ${className}`}>
       <div className="flex items-center justify-between gap-3">
         <SectionTitle>{title}</SectionTitle>
+        {actions}
         {href && linkLabel && (
           <a
             href={href}
@@ -94,6 +98,103 @@ function FormPills({ results }: { results: FormResult[] }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// ── Club ─────────────────────────────────────────────────────────────────────
+
+/** A 0..100 confidence bar with the percentage beside the label. */
+function ConfidenceBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{label}</span>
+        <span className="font-display font-bold text-sm text-primary tabular-nums">{value}%</span>
+      </div>
+      <div className="h-1.5 min-w-16 rounded bg-border overflow-hidden" role="presentation">
+        <div className="h-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The club header of the dashboard (#57): crest, club, league, manager (with the world ranking),
+ * board / fans confidence, budget and squad size. Replaces the old left club column.
+ */
+export function ClubCard({
+  club,
+  leagueName,
+  managerName,
+  managerRank,
+  board,
+  fans,
+  budget,
+  squadSize,
+  squadHref,
+}: {
+  club: MatchSide;
+  leagueName: string;
+  managerName: string | null;
+  managerRank: number | null;
+  board: number;
+  fans: number;
+  budget: number | null;
+  squadSize: number;
+  squadHref: string;
+}) {
+  const { t } = useTranslation();
+  const label = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
+  return (
+    <section className="card-arcade rounded-md p-4 grid gap-6 items-center min-w-0 md:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="flex items-center gap-4 min-w-0">
+        <ClubLogo
+          logoUrl={squadLogoUrl(club.id)}
+          primaryColor={club.colors[0]}
+          secondaryColor={club.colors[1]}
+          className="w-16 h-16 rounded-full shrink-0"
+          imgClassName="w-full h-full object-contain"
+        />
+        <div className="min-w-0 flex flex-col gap-1.5">
+          <SectionTitle className="truncate">{club.name}</SectionTitle>
+          <span className="text-sm text-muted-foreground truncate">{leagueName}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
+        <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
+        {managerRank !== null && (
+          <a
+            href="/stats?tab=managers"
+            className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline"
+          >
+            {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
+          </a>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3 min-w-0">
+        <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} />
+        <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 min-w-0">
+        <a href="/finances" className="flex flex-col gap-1 min-w-0 no-underline">
+          <span className={label}>{t("dashboard.clubSidebar.budget")}</span>
+          <span className={`font-display font-bold text-2xl tabular-nums leading-none ${(budget ?? 0) < 0 ? "text-destructive" : "text-foreground"}`}>
+            {budget == null ? "—" : formatMoney(budget)}
+          </span>
+        </a>
+        <a href={squadHref} className="flex flex-col gap-1 min-w-0 no-underline">
+          <span className={label}>{t("dashboard.clubSidebar.squad")}</span>
+          <span className="font-display font-bold text-2xl tabular-nums leading-none text-foreground">
+            {squadSize}
+            <span className="font-sans font-normal text-sm text-muted-foreground ml-1.5">{t("dashboard.clubSidebar.players")}</span>
+          </span>
+        </a>
+      </div>
+    </section>
   );
 }
 

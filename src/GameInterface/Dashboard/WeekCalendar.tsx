@@ -1,18 +1,15 @@
+/**
+ * The week card of the dashboard (#57): the club's 7 days (match / training / rest) laid out
+ * horizontally, with prev/next week navigation. A future non-match day switches between training
+ * and rest on click (`toggleDayType` → `POST .../rest-days`). Replaces the old right-hand column.
+ */
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
-import { Icon, iconOf } from "@/GameInterface/Icons";
-
-const Dumbbell = iconOf("training");
-const Moon = iconOf("rest");
-const Trophy = iconOf("trophy");
-
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] as const;
-
-// Note: day names and month names are date/time localization, not translatable strings
+import { Icon, type IconName } from "@/GameInterface/Icons";
+import { HomeCard } from "@/GameInterface/Dashboard/HomeCards";
 
 type MatchOutcome = "W" | "D" | "L";
 type DayEventType = "match" | "training" | "rest";
@@ -61,24 +58,34 @@ function getMondayOf(dateStr: string): Date {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 interface Props {
-  fixtures:         Fixture[];
-  restDays:         string[];
-  mySquadId:        string;
-  currentDate:      string;
-  leagues:          LeagueData[];
-  onToggleDayType:  (date: string, type: "training" | "rest") => void;
-  collapsed?:        boolean;
-  onToggleCollapse?: () => void;
+  fixtures:        Fixture[];
+  restDays:        string[];
+  mySquadId:       string;
+  currentDate:     string;
+  leagues:         LeagueData[];
+  onToggleDayType: (date: string, type: "training" | "rest") => void;
 }
 
-export function WeekCalendar({ fixtures, restDays, mySquadId, currentDate, leagues, onToggleDayType, collapsed = false, onToggleCollapse }: Props) {
-  const { t } = useTranslation();
+const EVENT_ICON: Record<DayEventType, IconName> = { match: "trophy", training: "training", rest: "rest" };
+
+function eventClass(type: DayEventType, outcome: MatchOutcome | null): string {
+  if (type === "rest") return "bg-chart-3/15 text-chart-3 border-chart-3/35";
+  if (type === "training") return "bg-muted/50 text-muted-foreground border-border";
+  if (outcome === "W") return "bg-chart-2/15 text-chart-2 border-chart-2/35";
+  if (outcome === "D") return "bg-chart-4/15 text-chart-4 border-chart-4/35";
+  if (outcome === "L") return "bg-destructive/15 text-destructive border-destructive/35";
+  return "bg-primary/20 text-primary border-primary/40";
+}
+
+export function WeekCard({ fixtures, restDays, mySquadId, currentDate, leagues, onToggleDayType }: Props) {
+  const { t, i18n } = useTranslation();
   const [weekOffset, setWeekOffset] = useState(0);
   const restSet = useMemo(() => new Set(restDays), [restDays]);
+  const lang = i18n.language;
 
   const weekDays = useMemo(() => {
     if (!currentDate) return [];
@@ -94,10 +101,9 @@ export function WeekCalendar({ fixtures, restDays, mySquadId, currentDate, leagu
         (f) => f.date === dateStr && (f.home === mySquadId || f.away === mySquadId),
       );
 
-      const isPast   = dateStr < currentDate;
-      const isGame   = Boolean(myFixture);
-      const isRest   = !isGame && restSet.has(dateStr);
-      const isToggleable = !isPast && !isGame;
+      const isPast = dateStr < currentDate;
+      const isGame = Boolean(myFixture);
+      const isRest = !isGame && restSet.has(dateStr);
 
       let eventType: DayEventType;
       let label: string;
@@ -107,8 +113,7 @@ export function WeekCalendar({ fixtures, restDays, mySquadId, currentDate, leagu
         eventType = "match";
         const isHome = myFixture.home === mySquadId;
         const opponentId = isHome ? myFixture.away : myFixture.home;
-        const opponentName = teamDisplayNameFromLeagues(opponentId, leagues);
-        ({ label, outcome } = matchEventLabel(myFixture, opponentName, isHome));
+        ({ label, outcome } = matchEventLabel(myFixture, teamDisplayNameFromLeagues(opponentId, leagues), isHome));
       } else if (isRest) {
         eventType = "rest";
         label = t("weekCalendar.restDay");
@@ -118,206 +123,130 @@ export function WeekCalendar({ fixtures, restDays, mySquadId, currentDate, leagu
       }
 
       return {
-        day:          DAY_NAMES[i]!,
+        weekday:      d.toLocaleDateString(lang, { weekday: "short" }),
         date:         d.getDate(),
-        month:        MONTH_NAMES[d.getMonth()]!,
         dateStr,
         isToday:      dateStr === currentDate,
         isPast,
-        isToggleable,
+        isToggleable: !isPast && !isGame,
         eventType,
         label,
         outcome,
       };
     });
-  }, [fixtures, mySquadId, currentDate, leagues, weekOffset, restSet]);
+  }, [fixtures, mySquadId, currentDate, leagues, weekOffset, restSet, lang, t]);
 
   if (!currentDate || weekDays.length === 0) return null;
 
-  const first = weekDays[0]!;
-  const last  = weekDays[6]!;
-  const weekLabel = `${first.date} ${first.month} – ${last.date} ${last.month}`;
-
-  if (collapsed) {
-    return (
-      <div className="h-full flex flex-col items-center gap-2">
-        <button
-          onClick={onToggleCollapse}
-          title={t("weekCalendar.expand")}
-          aria-label={t("weekCalendar.expand")}
-          className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
-        >
-          <Icon name="chevrons-left" className="w-4 h-4 text-muted-foreground" />
-        </button>
-
-        <div className="flex-1 w-full flex flex-col gap-1.5 overflow-y-auto items-stretch">
-          {weekDays.map((day) => {
-            const Icon =
-              day.eventType === "match" ? Trophy :
-              day.eventType === "rest"  ? Moon   :
-              Dumbbell;
-
-            const iconColor =
-              day.eventType === "match"
-                ? day.outcome === "W" ? "text-chart-2 dark:text-chart-2"
-                  : day.outcome === "D" ? "text-chart-4 dark:text-chart-4"
-                    : day.outcome === "L" ? "text-destructive dark:text-destructive"
-                      : "text-primary"
-                : day.eventType === "rest" ? "text-chart-3"
-                  : "text-muted-foreground";
-
-            return (
-              <button
-                key={day.dateStr}
-                onClick={
-                  day.isToggleable
-                    ? () => onToggleDayType(day.dateStr, day.eventType === "rest" ? "training" : "rest")
-                    : undefined
-                }
-                title={day.label}
-                className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 transition-all ${
-                  day.isToggleable ? "cursor-pointer hover:bg-card/50" : "cursor-default"
-                } ${
-                  day.isToday
-                    ? "border-primary/50 bg-primary/10"
-                    : "border-border bg-card/30"
-                }`}
-              >
-                <span className={`text-[13px] font-bold uppercase font-display tracking-[0.08em] ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
-                  {day.day}
-                </span>
-                <span className={`text-sm font-black font-display leading-none ${day.isToday ? "text-primary" : "text-foreground"}`}>
-                  {day.date}
-                </span>
-                <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  const fmt = (date: string) =>
+    new Date(`${date}T12:00:00`).toLocaleDateString(lang, { day: "numeric", month: "short" });
+  const weekLabel = `${fmt(weekDays[0]!.dateStr)} – ${fmt(weekDays[6]!.dateStr)}`;
+  const navButton =
+    "inline-flex items-center justify-center w-8 h-8 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer bg-transparent border-0";
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="font-display font-black uppercase text-xl leading-none m-0">
-          {t("weekCalendar.weekSchedule")}
-        </h3>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setWeekOffset((w) => w - 1)}
-            className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
-          >
-            <Icon name="chevron-left" className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button
-            onClick={() => setWeekOffset((w) => w + 1)}
-            className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
-          >
-            <Icon name="chevron-right" className="w-4 h-4 text-muted-foreground" />
-          </button>
-          {onToggleCollapse && (
+    <HomeCard
+      title={t("weekCalendar.weekSchedule")}
+      actions={
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-sm text-muted-foreground tabular-nums">{weekLabel}</span>
+          {weekOffset !== 0 && (
             <button
-              onClick={onToggleCollapse}
-              title={t("weekCalendar.collapse")}
-              aria-label={t("weekCalendar.collapse")}
-              className="ml-1 p-1.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer bg-transparent"
+              type="button"
+              onClick={() => setWeekOffset(0)}
+              className="inline-flex items-center h-8 px-2 rounded text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer bg-transparent border-0"
             >
-              <Icon name="chevrons-right" className="w-4 h-4 text-muted-foreground" />
+              {t("weekCalendar.thisWeek")}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setWeekOffset((w) => w - 1)}
+            aria-label={t("weekCalendar.previousWeek")}
+            title={t("weekCalendar.previousWeek")}
+            className={navButton}
+          >
+            <Icon name="chevron-left" size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setWeekOffset((w) => w + 1)}
+            aria-label={t("weekCalendar.nextWeek")}
+            title={t("weekCalendar.nextWeek")}
+            className={navButton}
+          >
+            <Icon name="chevron-right" size={16} />
+          </button>
         </div>
-      </div>
-
-      <p className="text-sm text-muted-foreground mb-3">{weekLabel}</p>
-
-      <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
+      }
+    >
+      <ol className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 list-none m-0 p-0">
         {weekDays.map((day) => {
-          const Icon =
-            day.eventType === "match"    ? Trophy :
-            day.eventType === "rest"     ? Moon   :
-            Dumbbell;
-
-          const matchColors =
-            day.outcome === "W"
-              ? "bg-chart-2/15 text-chart-2 dark:text-chart-2 border-chart-2/35"
-              : day.outcome === "D"
-                ? "bg-chart-4/15 text-chart-4 dark:text-chart-4 border-chart-4/35"
-                : day.outcome === "L"
-                  ? "bg-destructive/15 text-destructive dark:text-destructive border-destructive/35"
-                  : "bg-primary/20 text-primary border-primary/40";
-
-          const eventColors =
-            day.eventType === "match"    ? matchColors :
-            day.eventType === "rest"     ? "bg-chart-3/15 text-chart-3 border-chart-3/35" :
-            "bg-muted/50 text-muted-foreground border-border";
-
+          const chip = `flex items-center gap-2 w-full min-h-10 px-2.5 rounded border text-sm font-semibold text-left ${eventClass(day.eventType, day.outcome)}`;
+          const content = (
+            <>
+              <Icon name={EVENT_ICON[day.eventType]} size={16} className="shrink-0" />
+              <span className="truncate min-w-0">{day.label}</span>
+            </>
+          );
           return (
-            <div
+            <li
               key={day.dateStr}
-              className={`rounded-md border p-3 transition-all ${
-                day.isToday
-                  ? "border-primary/50 bg-primary/10"
-                  : "border-border bg-card/30 hover:bg-card/50"
-              }`}
+              aria-current={day.isToday ? "date" : undefined}
+              className={`rounded-md border p-2.5 flex flex-col gap-2 min-w-0 ${
+                day.isToday ? "border-primary bg-primary/10" : "border-border"
+              } ${day.isPast ? "opacity-60" : ""}`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className={`text-[13px] font-bold uppercase font-display tracking-[0.08em] ${day.isToday ? "text-primary" : "text-muted-foreground"}`}>
-                    {day.day}
-                  </span>
-                  <span className={`text-xl font-black font-display tabular-nums ${day.isToday ? "text-primary" : "text-foreground"}`}>
-                    {day.date}
-                  </span>
+              <div className="flex items-baseline justify-between gap-2">
+                <span
+                  className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${
+                    day.isToday ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {day.isToday ? t("weekCalendar.today") : day.weekday}
+                </span>
+                <span
+                  className={`font-display font-bold text-xl tabular-nums leading-none ${
+                    day.isToday ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {day.date}
+                </span>
+              </div>
+              {day.isToggleable ? (
+                <button
+                  type="button"
+                  onClick={() => onToggleDayType(day.dateStr, day.eventType === "rest" ? "training" : "rest")}
+                  title={day.eventType === "rest" ? t("weekCalendar.switchToTraining") : t("weekCalendar.switchToRest")}
+                  className={`${chip} cursor-pointer hover:opacity-80`}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div className={chip} title={day.label}>
+                  {content}
                 </div>
-                {day.isToday && (
-                  <span className="text-[13px] font-bold text-primary-foreground bg-primary px-2 py-0.5 rounded-md uppercase tracking-[0.08em] font-display">
-                    {t("weekCalendar.today")}
-                  </span>
-                )}
-              </div>
-
-              <div
-                className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-sm font-semibold ${eventColors} ${
-                  day.isToggleable
-                    ? "cursor-pointer hover:opacity-80 transition-all select-none"
-                    : ""
-                }`}
-                onClick={
-                  day.isToggleable
-                    ? () => onToggleDayType(day.dateStr, day.eventType === "rest" ? "training" : "rest")
-                    : undefined
-                }
-                title={day.isToggleable ? (day.eventType === "rest" ? t("weekCalendar.switchToTraining") : t("weekCalendar.switchToRest")) : undefined}
-              >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate min-w-0 flex-1">{day.label}</span>
-                {day.isToggleable && (
-                  <span className="text-sm opacity-50 shrink-0">{t("weekCalendar.tapToSwitch")}</span>
-                )}
-              </div>
-            </div>
+              )}
+            </li>
           );
         })}
-      </div>
+      </ol>
 
-      <div className="mt-4 pt-4 border-t border-border">
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <div className="flex items-center gap-1.5">
-            <Icon name="trophy" className="w-3 h-3 text-primary" />
-            <span className="text-muted-foreground font-medium">{t("weekCalendar.match")}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Icon name="training" className="w-3 h-3 text-muted-foreground" />
-            <span className="text-muted-foreground font-medium">{t("weekCalendar.training")}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Icon name="rest" className="w-3 h-3 text-chart-3" />
-            <span className="text-muted-foreground font-medium">{t("weekCalendar.restDay")}</span>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="trophy" size={16} className="text-primary" />
+          {t("weekCalendar.match")}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="training" size={16} />
+          {t("weekCalendar.training")}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="rest" size={16} className="text-chart-3" />
+          {t("weekCalendar.restDay")}
+        </span>
+        <span className="sm:ml-auto">{t("weekCalendar.switchHint")}</span>
       </div>
-    </div>
+    </HomeCard>
   );
 }

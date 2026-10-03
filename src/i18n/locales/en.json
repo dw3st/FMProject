@@ -1485,13 +1485,9 @@
       "manager": "Manager",
       "board": "Board",
       "fans": "Fans",
-      "removeFromSale": "Remove from Sale",
-      "listForSale": "List for Sale",
       "budget": "Budget",
       "squad": "Squad",
-      "nextMatch": "Next Match",
       "noMatchScheduled": "No match scheduled yet",
-      "viewFullSquad": "View Full Squad",
       "players": "players",
       "home": "Home",
       "away": "Away"
@@ -1754,9 +1750,10 @@
     "today": "Today",
     "switchToTraining": "Switch to Training",
     "switchToRest": "Switch to Rest",
-    "tapToSwitch": "tap to switch",
-    "collapse": "Collapse",
-    "expand": "Expand"
+    "thisWeek": "This week",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "switchHint": "Click a training or rest day to switch it"
   },
   "financesScreen": {
     "budget": "Budget",
