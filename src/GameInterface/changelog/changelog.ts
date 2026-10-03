@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.3",
+    date: "2026-10-03",
+    items: [
+      { pt: "Prévia e resultado da partida com texto maior.", en: "Match preview and result with larger text." },
+    ],
+    fixes: [
+      { pt: "Barra superior reorganizada: abas no centro e os controles do dia (data, treino ou folga, avançar até o jogo, Continuar) separados à direita.", en: "Top bar reorganised: tabs in the centre and the day controls (date, training or rest, skip to the match, Continue) set apart on the right." },
+      { pt: "O aviso de versão nova agora fica na barra de baixo, ao lado da versão.", en: "The new version notice now sits in the bottom bar, next to the version." },
+    ],
+  },
+  {
     version: "3.3.2",
     date: "2026-10-03",
     items: [

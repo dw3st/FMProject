@@ -128,6 +128,26 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
 - Ordem do Painel: Clube; Próximo jogo | Liga; Semana; Atenção; Destaques | Caixa de entrada;
   Finanças da semana. Abaixo de `lg` os pares empilham.
 
+**Barra superior e barra inferior (#65).** Mesma moldura do `ScreenContainer` (`px-6`, até
+`SCREEN_MAX_WIDTH`, gutter da rolagem reservado), então o logo alinha com a borda esquerda dos cartões
+e o Continuar com a borda direita.
+
+- `TopNavigation` (56px, `h-14`; o `main` do `Layout` usa `pt-14`): `Wordmark sm` e ~28px até a
+  primeira aba; abas no centro (ícone 16px + rótulo `font-display font-bold uppercase text-sm`,
+  `gap-3.5`, ativa sublinhada com `border-b-2 border-primary`, `whitespace-nowrap`). Quando o
+  conjunto rotulado não cabe entre o logo e o bloco do dia, as abas viram só ícone (rótulo em
+  `sr-only` e no `title`) — medido em tempo real (`useCompactTabs`), nunca transbordam a moldura.
+- **Bloco do dia** (à direita, separado por divisor `border-l border-border pl-4`): data numa linha
+  (`Icon calendar` + "Dom, 07/02/2027" via `Intl`, `text-sm font-semibold text-muted-foreground
+  whitespace-nowrap`); botão com borda (`h-9 rounded-md border border-border bg-card`) com ícone +
+  tipo do dia (treino/folga) que troca o dia no clique (`toggleDayType`), desabilitado no dia de jogo
+  (mostra troféu + "Jogo", com o adversário no `title`/`aria-label`); botão só ícone (`w-9`, mesmo estilo) "Avançar até o próximo jogo", com
+  `title`/`aria-label`, só quando o próximo jogo está a mais de 2 dias; Continuar (`h-9`, primário),
+  sempre o último.
+- `StatusBar` (36px): orçamento, mensagens, jogadores à esquerda; à direita a versão (`v3.x`, abre as
+  Novidades), a pílula "Novo: vX" ao lado dela (sempre numa linha, `whitespace-nowrap`) e
+  Configurações. A data fica só no bloco do dia.
+
 **Largura das telas do jogo (#54): uma regra só.** Toda tela renderizada dentro do `Layout` (Painel,
 Elenco/Base, Jogador, Formação, Desenvolvimento, Finanças, Transferências, Olheiro, Equipe técnica,
 Ligas, Estatísticas, Caixa de entrada, Fim de temporada, "em breve") envolve o conteúdo em
@@ -164,8 +184,8 @@ arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai
 - As telas de entrada (landing, login, start, novo jogo — passos do técnico e do clube —, carregamento)
   são auditadas como qualquer tela; só as de debug ficam de fora.
 - Exceções justificadas ficam em `ALLOWLIST` no próprio script, com o motivo (hoje: os textos SVG do
-  hexágono de nota e do mini-campo, em unidades do `viewBox`; o botão Continuar da barra superior de
-  48px, com 36px de altura; a pílula "Novo: vX" e o selo de remover anexo do relatório).
+  hexágono de nota e do mini-campo, em unidades do `viewBox`; o botão Continuar do bloco do dia
+  da barra superior, com 36px de altura; a pílula "Novo: vX" e o selo de remover anexo do relatório).
 
 Toda tela nova ou alterada deve sair com o relatório limpo (0 duras, 0 leves); quem precisar de uma
 exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.

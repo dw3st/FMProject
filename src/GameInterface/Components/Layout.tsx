@@ -47,14 +47,9 @@ export function Layout({ children }: { children: ReactNode }) {
         onFastForward={canFastForward ? handleFastForward : undefined}
         advancing={advancing}
         leagues={leagues}
-        changelogNotice={
-          showChangelogNotice
-            ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
-            : null
-        }
       />
 
-      <main className="h-full pt-12 pb-9 overflow-y-auto flex flex-col">
+      <main className="h-full pt-14 pb-9 overflow-y-auto flex flex-col">
         {children}
       </main>
 
@@ -62,6 +57,11 @@ export function Layout({ children }: { children: ReactNode }) {
         onOpenInbox={() => setIsInboxOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenChangelog={openChangelog}
+        changelogNotice={
+          showChangelogNotice
+            ? { version: CURRENT_VERSION, onOpen: openChangelog, onDismiss: markChangelogSeen }
+            : null
+        }
       />
 
       <Modal
