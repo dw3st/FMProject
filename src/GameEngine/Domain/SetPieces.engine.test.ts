@@ -2,7 +2,7 @@ import { describe, expect, test, spyOn, afterEach } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import {
-  createMatchState, tickState, maybeFoul, awardCorner, startDirectFreeKick, restartHoldsPeriod,
+  createMatchState, tickState, maybeFoul, awardCorner, startDirectFreeKick, restartHoldsPeriod, startAerialBall,
 } from "@/GameEngine/Domain/gameState";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
@@ -182,6 +182,29 @@ describe("corners", () => {
     expect(goals).toHaveLength(1);
     expect(goals[0]).toMatchObject({ team: "A", setPiece: "corner" });
     expect(getTeamStats("A").setPieceGoals).toBe(1);
+  });
+});
+
+describe("blocked crosses", () => {
+  /** Team A LW crossing from `x` yards out on the left, a Team B RB right on him (always blocks). */
+  function blocked(distToLine: number): GameState {
+    let s = buildState();
+    const lw = s.players.find(p => p.team === "A" && p.role === "LW")!;
+    const rb = s.players.find(p => p.team === "B" && p.role === "RB")!;
+    const x = PITCH_LENGTH - distToLine;
+    s = {
+      ...s,
+      ballHolderId: lw.id,
+      players: s.players.map(p => (p.id === lw.id ? { ...p, x, y: 8 } : p.id === rb.id ? { ...p, x: x + 0.5, y: 8 } : p)),
+    };
+    return startAerialBall(s, "cross", { x: PITCH_LENGTH - 10, y: 37 }, null, () => 0);
+  }
+
+  test("a block near the byline can go behind for a corner; further out it is a clearance", () => {
+    expect(blocked(4).setPiece?.type).toBe("corner");
+    const far = blocked(30);
+    expect(far.setPiece).toBeNull();
+    expect(far.pass?.kind).toBe("clearance");
   });
 });
 
