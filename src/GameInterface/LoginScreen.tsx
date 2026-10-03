@@ -80,7 +80,7 @@ export function LoginScreen() {
 
         {stage === "email" ? (
           <form onSubmit={handleEmailSubmit}>
-            <label htmlFor="login-email" className="mb-2 block font-display text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            <label htmlFor="login-email" className="mb-2 block font-display text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {t("login.email")}
             </label>
             <input
@@ -105,7 +105,7 @@ export function LoginScreen() {
             <p className="mb-3 text-center text-sm text-muted-foreground">
               {t("common.sentTo")} <span className="text-foreground">{email}</span>
             </p>
-            <label htmlFor="login-code" className="mb-2 block font-display text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            <label htmlFor="login-code" className="mb-2 block font-display text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {t("login.code")}
             </label>
             <input

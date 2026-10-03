@@ -156,7 +156,7 @@ export function DevelopmentTrainingConfig() {
           type="button"
           disabled={saving || !session || !dirty}
           onClick={() => void saveToFile()}
-          className="inline-flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground font-semibold text-[13px] border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Icon name="save" className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
           {saving ? t("development.savingButton") : t("development.saveButton")}

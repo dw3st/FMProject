@@ -98,7 +98,7 @@ export function SquadTable({
             <button
               key={col.key}
               onClick={() => handleSort(col.key)}
-              className={`px-3 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-xs hover:text-foreground flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
+              className={`px-3 py-2 text-left font-display font-bold uppercase tracking-[0.08em] text-[13px] hover:text-foreground flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
             >
               {col.label}
               {sortKey === col.key &&
@@ -116,7 +116,7 @@ export function SquadTable({
           <div
             key={player.id}
             onClick={() => onSelectPlayer(selectedId === player.id ? null : player)}
-            className={`flex items-center text-sm min-h-10 border-t border-border cursor-pointer ${
+            className={`flex items-center text-sm tabular-nums min-h-10 border-t border-border cursor-pointer ${
               selectedId === player.id ? "bg-primary/10 text-primary" : "hover:bg-foreground/5"
             }`}
           >

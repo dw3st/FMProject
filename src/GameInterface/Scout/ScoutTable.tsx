@@ -121,7 +121,7 @@ export function ScoutTable({
           rows.map((player, index) => (
             <div
               key={player.id}
-              className={`flex items-center text-sm border-b border-border/30 transition-all ${
+              className={`flex items-center text-sm tabular-nums border-b border-border/30 transition-all ${
                 index % 2 === 0
                   ? "bg-transparent hover:bg-muted/20"
                   : "bg-muted/5 hover:bg-muted/20"
