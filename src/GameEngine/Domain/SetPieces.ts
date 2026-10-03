@@ -208,7 +208,7 @@ export function attackingBoxPositions(
     const L = freeKickLineDepth(ball, goalX);
     const offsets = [0, 5, -5, 10, -10, 14];
     box.forEach((p, i) => {
-      positions.set(p.id, clampPos({ x: fromLine(L + 0.4), y: CENTRE_Y + offsets[i % offsets.length]! + jit() }));
+      positions.set(p.id, clampPos({ x: fromLine(L + 1.5), y: CENTRE_Y + offsets[i % offsets.length]! + jit() }));
     });
   }
 
@@ -339,30 +339,41 @@ export interface SetPieceOption {
  * and the taker's delivery, minus a keeper-claim penalty; plus the short pass to the nearest
  * teammate (favoured by `possession`, disfavoured by `direct`). Sorted best first.
  */
-export function evaluateBoxSetPiece(taker: GamePlayer, allPlayers: GamePlayer[], buildUp: BuildUpStyle): SetPieceOption[] {
+export function evaluateBoxSetPiece(
+  taker: GamePlayer,
+  allPlayers: GamePlayer[],
+  buildUp: BuildUpStyle,
+  kind: BoxSetPieceKind = 'corner',
+): SetPieceOption[] {
   const goalX = goalXFor(taker.attackDir);
   const mates = allPlayers.filter(p => p.team === taker.team && p.id !== taker.id && p.role !== 'GK');
   const opps = allPlayers.filter(p => p.team !== taker.team && p.role !== 'GK' && p.recoveryTime <= 0);
   const gk = allPlayers.find(p => p.team !== taker.team && p.role === 'GK') ?? null;
   const delivery = (taker.runtimeStats.withBall.passingSkill + taker.runtimeStats.withBall.vision) / 2;
-  const R = C.TARGET_ZONE_RADIUS;
+  const R = kind === 'corner' ? C.TARGET_ZONE_RADIUS : C.FK_TARGET_ZONE_RADIUS;
 
+  // A crossed free kick: both lines start level and run onto the ball, so the head count is taken
+  // where the lines stand, across from the target.
+  const lineX = goalX - taker.attackDir * freeKickLineDepth({ x: taker.x, y: taker.y }, goalX);
   const out: SetPieceOption[] = crossTargetPoints(taker).map(t => {
+    const zone = kind === 'corner' ? t : { x: lineX, y: t.y };
     let att = 0;
     let def = 0;
     let targetId: number | null = null;
     let best = Infinity;
+    let nearestMate = Infinity;
     for (const p of mates) {
-      const d = Math.hypot(p.x - t.x, p.y - t.y);
+      const d = Math.hypot(p.x - zone.x, p.y - zone.y);
       if (d < R) att += aerialAbility(p) * (1 - d / R);
       if (d < best) { best = d; targetId = p.id; }
+      nearestMate = Math.min(nearestMate, Math.hypot(p.x - t.x, p.y - t.y));
     }
     for (const p of opps) {
-      const d = Math.hypot(p.x - t.x, p.y - t.y);
+      const d = Math.hypot(p.x - zone.x, p.y - zone.y);
       if (d < R) def += aerialAbility(p) * (1 - d / R);
     }
-    const gkClaim = gk !== null
-      && keeperComesFor(Math.hypot(gk.x - t.x, gk.y - t.y), isInSmallBox(t.x, t.y, goalX), true);
+    const dGk = gk ? Math.hypot(gk.x - t.x, gk.y - t.y) : Infinity;
+    const gkClaim = gk !== null && keeperComesFor(dGk, isInSmallBox(t.x, t.y, goalX), dGk < nearestMate);
     const raw = att <= 0 ? 0 : Math.max(0,
       C.CORNER_BASE
       + (att - def * C.CORNER_DEFENDER_WEIGHT) * C.CORNER_NUMBERS_WEIGHT

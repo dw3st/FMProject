@@ -11,9 +11,9 @@ export const SET_PIECE_CONFIG = {
   /** A free kick within this distance of the goal centre (yards) and a central angle is shot directly. */
   DIRECT_FK_RANGE: 30,
   /** Minimum open angle to the goal mouth (radians) for a direct shot (~"central"). */
-  DIRECT_FK_MIN_ANGLE: 0.24,
+  DIRECT_FK_MIN_ANGLE: 0.3,
   /** Direct free-kick xG before the wall at FK_XG_NEAR yards with a full angle. */
-  FK_XG_BASE: 0.2,
+  FK_XG_BASE: 0.7,
   /** Distance (yards) up to which the distance factor is 1. */
   FK_XG_NEAR: 18,
   /** Distance factor at DIRECT_FK_RANGE (linear in between). */
@@ -36,7 +36,7 @@ export const SET_PIECE_CONFIG = {
 
   // ── Box set pieces (corner, crossed free kick) ─────────────────────────────
   /** A free kick within this distance of the goal line (yards) that is not direct is crossed into the box (or played short). */
-  FK_CROSS_RANGE: 40,
+  FK_CROSS_RANGE: 26,
   /** Attackers sent into the box (2 best aerial defenders + centre-forward + the next best headers). */
   BOX_ATTACKERS: 5,
   /** Defenders of the box set piece who go up from the back line (the two best in the air). */
@@ -67,9 +67,22 @@ export const SET_PIECE_CONFIG = {
   SHORT_POSSESSION_BONUS: 0.3,
   SHORT_DIRECT_PENALTY: 0.15,
 
+  /** Crossed free kick: attackers start at the line, so a wider zone counts them (they run onto it). */
+  FK_TARGET_ZONE_RADIUS: 8,
+  /** Added to the defender's aerial-duel score on a set-piece cross (he is set, goal-side of his man). */
+  SET_PIECE_DEFENDER_DUEL_BONUS: 3.2,
+  /** Share of aerial fouls at a set-piece cross committed by the attacker (open play: 0.5). */
+  SET_PIECE_ATTACKER_FOUL_SHARE: 0.8,
+  /**
+   * Header from a set-piece cross: the crowd's pressure on the header × this. The few attackers who
+   * beat their set marker (SET_PIECE_DEFENDER_DUEL_BONUS) have won the ball cleanly; the full
+   * box-crowd pressure would otherwise floor nearly every set-piece header at xG ≈ 0.1.
+   */
+  SET_PIECE_HEADER_PRESSURE_MULT: 0,
+
   // ── Countdowns (real seconds) ──────────────────────────────────────────────
-  CORNER_COUNTDOWN: 2,
-  BOX_FREE_KICK_COUNTDOWN: 1.5,
+  CORNER_COUNTDOWN: 1.2,
+  BOX_FREE_KICK_COUNTDOWN: 1.0,
   DIRECT_FREE_KICK_COUNTDOWN: 1.5,
 
   // ── Throw-in ───────────────────────────────────────────────────────────────
@@ -78,21 +91,24 @@ export const SET_PIECE_CONFIG = {
 
   // ── Corner sources ─────────────────────────────────────────────────────────
   /** A keeper's save is parried behind for a corner. */
-  SAVE_CORNER_CHANCE: 0.3,
+  SAVE_CORNER_CHANCE: 0.5,
   /** An off-target shot was deflected behind by a defender (needs one within SHOT_DEFLECT_RADIUS of the shooter). */
-  OFF_TARGET_CORNER_CHANCE: 0.35,
+  OFF_TARGET_CORNER_CHANCE: 0.6,
   SHOT_DEFLECT_RADIUS: 6,
   /** A blocked cross goes behind for a corner. */
   CROSS_BLOCK_CORNER_CHANCE: 0.5,
   /** A cross headed clear inside the box goes behind for a corner. */
-  CROSS_CLEAR_CORNER_CHANCE: 0.3,
+  CROSS_CLEAR_CORNER_CHANCE: 0.55,
+  /** A loose ball over the defending team's goal line with a defender within this distance: his touch, corner. */
+  LOOSE_CORNER_RADIUS: 3,
+  LOOSE_CORNER_CHANCE: 0.6,
   /** A tackle won near the byline (within TACKLE_CORNER_DEPTH yds, wide of the posts) puts the ball behind. */
   TACKLE_CORNER_CHANCE: 0.3,
   TACKLE_CORNER_DEPTH: 18,
 
   // ── Set-piece goal attribution ─────────────────────────────────────────────
   /** A goal within this many game-seconds of a corner / free kick in the attacking third / penalty, with the ball kept, is a set-piece goal. */
-  SET_PIECE_PHASE_SECONDS: 45,
+  SET_PIECE_PHASE_SECONDS: 60,
   /** Free kicks closer than this to the goal they attack open a set-piece phase (yards). */
   SET_PIECE_FK_ZONE: 40,
 } as const;
