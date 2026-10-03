@@ -163,7 +163,7 @@ export function PlayerScreen({
           </div>
         </a>
 
-        <PlayerCard player={displayPlayer} layout="wide" />
+        <PlayerCard player={displayPlayer} layout="wide" clubColors={squadColors} />
 
         <section className="space-y-2">
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("career.title")}</h2>

@@ -14,10 +14,13 @@ primeiro. `CURRENT_VERSION` é sempre `changelog[0].version`. Cada entrada:
 }
 ```
 
-Consumido por `ChangelogModal.tsx` (lista completa) e `ChangelogNoticePill.tsx` +
+`upcoming: { pt, en }[]` (exportado no fim do mesmo arquivo) é a aba **"Em breve"** do modal: o que
+as próximas etapas trazem, em texto curto para o jogador.
+
+Consumido por `ChangelogModal.tsx` (abas "Novidades" e "Em breve") e `ChangelogNoticePill.tsx` +
 `useChangelogNotice.ts` (aviso de versão nova, guardado em `localStorage`). Testes de
 consistência dos dados em `changelog.test.ts` (versões decrescentes e únicas, `CURRENT_VERSION`
-igual à primeira entrada, todo item com `pt`/`en` não vazios).
+igual à primeira entrada, todo item com `pt`/`en` não vazios, `upcoming` não vazio e com `pt`/`en`).
 
 ## Onde aparece no jogo
 
@@ -45,6 +48,9 @@ igual à primeira entrada, todo item com `pt`/`en` não vazios).
   jogador — não é obrigatório em toda entrada.
 
 ## Quando atualizar
+
+**`upcoming` é atualizado a cada etapa**, na mesma branch: o que acabou de sair sai de `upcoming` (vira
+item da entrada nova) e entram as próximas etapas do `docs/ROADMAP.md`, sempre em texto de jogador.
 
 Atualize `changelog.ts` **na mesma branch da etapa, antes do merge** — nunca depois, como tarefa
 separada. Se a branch mexeu em algo visível ao jogador (mecânica nova, tela nova, correção

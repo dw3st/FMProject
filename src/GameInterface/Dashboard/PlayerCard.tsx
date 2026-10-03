@@ -11,6 +11,7 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
+import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
@@ -94,12 +95,16 @@ function AvgRing({ value, size = "sm" }: { value: number; size?: "sm" | "lg" }) 
 export function PlayerCard({
   player,
   layout = "narrow",
+  clubColors,
 }: {
   player: DisplayPlayer;
   layout?: "narrow" | "wide";
+  /** Jersey colours of the player's club; defaults to the user's club (dashboard card). */
+  clubColors?: readonly string[];
 }) {
   const { t } = useTranslation();
-  const { session, currentDate } = useGameSave();
+  const { session, currentDate, squad } = useGameSave();
+  const jerseyColors = clubColors ?? squad?.colors;
   const starIds = useStarPlayers(session?.saveId, currentDate);
   const starKind = starIds.get(player.id);
   const mainRole = getMainRole(player.pos);
@@ -126,11 +131,13 @@ export function PlayerCard({
         <div
           className="relative px-6 py-8 md:px-10 md:py-10 flex flex-col sm:flex-row items-center gap-6 md:gap-10 rounded-t-md overflow-hidden"
         >
-          <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-2 border-primary/40 bg-muted/30 flex items-center justify-center shrink-0">
-            <span className="text-4xl font-black text-primary font-display">
-              {player.name.charAt(0)}
-            </span>
-          </div>
+          <PlayerFace
+            playerId={player.id}
+            nationality={player.nationality}
+            clubColors={jerseyColors}
+            size={96}
+            fallback={player.name.charAt(0)}
+          />
 
           <div className="flex-1 min-w-0 text-center sm:text-left">
             <h2 className="font-display font-black uppercase text-xl leading-none m-0 inline-flex items-center gap-2">
@@ -213,11 +220,13 @@ export function PlayerCard({
         className="relative p-4 flex items-center gap-3 rounded-t-md overflow-hidden"
       >
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-full border-2 border-primary/40 bg-muted/30 flex items-center justify-center shrink-0">
-          <span className="text-lg font-black text-primary font-display">
-            {player.name.charAt(0)}
-          </span>
-        </div>
+        <PlayerFace
+          playerId={player.id}
+          nationality={player.nationality}
+          clubColors={jerseyColors}
+          size={64}
+          fallback={player.name.charAt(0)}
+        />
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-foreground truncate leading-tight flex items-center gap-1.5">
