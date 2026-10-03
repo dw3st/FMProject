@@ -4,6 +4,7 @@ import { advanceOneDay, runBufferedDay } from "@/backend/advanceDay";
 import { applyBroadcasting, executeTransferFee } from "@/backend/FinancialService";
 import { applyRandomStartKit } from "@/backend/startKits";
 import { gateRevenue } from "@/Domain/finance/gate";
+import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 
@@ -144,10 +145,14 @@ describe("finance ledger — continental home gate", () => {
 
     const squad = await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId);
     const capacity = squad!.venue!.capacity;
-    expect(gateEntry!.amount).toBe(gateRevenue(capacity, "continental"));
+    // The human club's stadium fill comes from its fans after today's match
+    // (`.claude/rules/game/board-fans.md`); continental days are never Mondays (no weekly drift).
+    const fans = (await saveService.getMeta(saveId))!.board!.fans;
+    const fill = stadiumFillRate(fans);
+    expect(gateEntry!.amount).toBe(gateRevenue(capacity, "continental", false, fill));
     // Rounding happens once, on the doubled price — not "round league gate, then double" (that
     // can differ by a euro from rounding twice). Same shape, off by at most a rounding unit.
-    expect(Math.abs(gateEntry!.amount - gateRevenue(capacity, "league") * 2)).toBeLessThanOrEqual(1);
+    expect(Math.abs(gateEntry!.amount - gateRevenue(capacity, "league", false, fill) * 2)).toBeLessThanOrEqual(1);
   }, 300_000);
 });
 
