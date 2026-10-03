@@ -62,7 +62,8 @@ const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
 /** Team-stat keys summed over both teams (missing keys read as 0, so the script also runs on older engines). */
 const KEYS = [
   "goals", "shots", "xg", "passesAttempted", "throughBallsAttempted", "fouls",
-  "penaltiesAwarded", "penaltyGoals", "crosses", "headers", "headerGoals", "longBalls",
+  "penaltiesAwarded", "penaltyGoals", "crosses", "crossesCompleted", "aerialDuels", "aerialDuelsWon",
+  "headers", "headerGoals", "longBalls",
   "corners", "freeKicks", "directFreeKickShots", "directFreeKickGoals", "setPieceGoals",
 ] as const;
 type Totals = Record<(typeof KEYS)[number] | "matches", number>;

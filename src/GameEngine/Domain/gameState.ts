@@ -1720,6 +1720,8 @@ function commitLooseBallChasers(
     etaHorizon?: number;
     /** Keeper chases only when the point is in his small box (high balls) instead of the whole box. */
     keeperSmallBoxOnly?: boolean;
+    /** Every outfielder may chase (set-piece delivery: the centre-backs who went up attack it too). */
+    ignoreRoleWeights?: boolean;
   } = {},
 ): GameState {
   const maxPerTeam = opts.maxPerTeam ?? THROUGH_BALL_CONFIG.MAX_CHASERS_PER_TEAM;
@@ -1739,7 +1741,7 @@ function commitLooseBallChasers(
       if (isPlayerInRecovery(p)) continue;
       // Role weight gate
       const weights = isAttacking ? CHASE_LOOSE_BALL_WEIGHT_ATTACK : CHASE_LOOSE_BALL_WEIGHT_DEFEND;
-      let weight = weights[p.role];
+      let weight = opts.ignoreRoleWeights && p.role !== 'GK' ? 1 : weights[p.role];
       // Sweeper-keeper: only chase if the cell is in our own box
       if (p.role === 'GK') {
         const ownGoalX = p.attackDir === 1 ? 0 : PITCH_LENGTH;
@@ -2486,10 +2488,13 @@ export function startAerialBall(
     aerialOffsideIds: offsideIdsAt(holder, state.players),
     ...(state.setPiece ? { fromSetPiece: true } : {}),
   };
+  // A set-piece delivery into the box: everyone who went up attacks it (`set-pieces-play.md`).
+  const boxDelivery = kind === 'cross' && state.setPiece?.variant === 'box';
   return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, toX, toY, holder.team, {
-    maxPerTeam: C.MAX_CHASERS_PER_TEAM,
-    etaHorizon: C.CHASE_ETA_HORIZON,
+    maxPerTeam: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASERS : C.MAX_CHASERS_PER_TEAM,
+    etaHorizon: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASE_ETA_HORIZON : C.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
+    ignoreRoleWeights: boxDelivery,
   });
 }
 
@@ -2600,7 +2605,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     }
     // A set-piece delivery: the defenders are set, goal-side of their man (`set-pieces-play.md`).
     const setPieceCross = pass.fromSetPiece === true && kind === 'cross';
-    const { winnerId, probA } = resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_BONUS : 0);
+    const { winnerId, probA } = resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_MULT : 1);
     winner = winnerId === a.id ? a : d;
     const loser = winner.id === a.id ? d : a;
     contested = true;
