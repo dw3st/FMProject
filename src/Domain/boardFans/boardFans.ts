@@ -20,8 +20,25 @@ import type { FinancialTier, LeagueZone, RosterPlayer, Squad } from "@/types/pla
 const round2 = (v: number) => Math.round(v * 100) / 100;
 const clampMeter = (v: number) => round2(Math.min(BOARD_FANS.MAX, Math.max(BOARD_FANS.MIN, v)));
 
+/** A gain above START shrinks as the meter climbs (`DAMP_SPAN_*`); losses pass unchanged. */
+function damped(value: number, delta: number, span: number): number {
+  if (delta <= 0 || value <= BOARD_FANS.START) return delta;
+  return delta * Math.max(BOARD_FANS.DAMP_MIN, 1 - (value - BOARD_FANS.START) / span);
+}
+
 function moveMeters(state: BoardState, board: number, fans: number): BoardState {
-  return { ...state, board: clampMeter(state.board + board), fans: clampMeter(state.fans + fans) };
+  return {
+    ...state,
+    board: clampMeter(state.board + damped(state.board, board, BOARD_FANS.DAMP_SPAN_BOARD)),
+    fans: clampMeter(state.fans + damped(state.fans, fans, BOARD_FANS.DAMP_SPAN_FANS)),
+  };
+}
+
+/** Match expectation in −1..1 from the two clubs' levels (`clubLevel`); +1 = clear favourite. */
+export function matchExpectation(ownLevel: number, opponentLevel: number, home: boolean): number {
+  const cfg = BOARD_FANS.match;
+  const v = (ownLevel - opponentLevel + (home ? cfg.EXPECTATION_HOME_BONUS : 0)) / cfg.EXPECTATION_SCALE;
+  return Math.max(-1, Math.min(1, v));
 }
 
 export function initialBoardState(date: string, objective: SeasonObjective | null): BoardState {
@@ -105,6 +122,8 @@ export interface MatchForBoard {
   goalsAgainst: number;
   home: boolean;
   derby: boolean;
+  /** −1..1, +1 = clear favourite (`matchExpectation`); absent = an even game. */
+  expectation?: number;
   /** League matches only: the club's table position after the game and the season progress. */
   league?: { position: number; size: number; played: number; total: number };
 }
@@ -115,13 +134,23 @@ export function applyMatchResult(state: BoardState, m: MatchForBoard): BoardStat
   const result: ResultLetter = m.goalsFor > m.goalsAgainst ? "W" : m.goalsFor === m.goalsAgainst ? "D" : "L";
   const recent = [...state.recent, result].slice(-BOARD_FANS.RECENT_RESULTS);
 
-  let fans = result === "W" ? cfg.FANS_WIN : result === "D" ? cfg.FANS_DRAW : cfg.FANS_LOSS;
+  // Expectation: a favourite gains little from a win and loses more; an underdog the opposite.
+  const e = Math.max(-1, Math.min(1, m.expectation ?? 0));
+  const winMult = 1 - cfg.WIN_EXPECT * e;
+  const lossMult = 1 + cfg.LOSS_EXPECT * e;
+
+  let fans = result === "W"
+    ? cfg.FANS_WIN * winMult
+    : result === "D" ? cfg.FANS_DRAW - cfg.DRAW_EXPECT_FANS * e : cfg.FANS_LOSS * lossMult;
   if (result === "L" && m.home) fans *= cfg.HOME_LOSS_MULT;
   if (m.derby) fans *= cfg.DERBY_MULT;
   const formPoints = recent.reduce((s, r) => s + POINTS[r], 0);
-  fans += (formPoints - (cfg.FORM_PIVOT * recent.length) / BOARD_FANS.RECENT_RESULTS) * cfg.FORM_WEIGHT;
+  const expectedPerGame = cfg.FORM_EXPECTED_BASE + cfg.FORM_EXPECTED_SPAN * e;
+  fans += (formPoints - expectedPerGame * recent.length) * cfg.FORM_WEIGHT;
 
-  let board = result === "W" ? cfg.BOARD_WIN : result === "D" ? cfg.BOARD_DRAW : cfg.BOARD_LOSS;
+  let board = result === "W"
+    ? cfg.BOARD_WIN * winMult
+    : result === "D" ? cfg.BOARD_DRAW - cfg.DRAW_EXPECT_BOARD * e : cfg.BOARD_LOSS * lossMult;
   if (m.derby) board *= cfg.DERBY_MULT;
   if (m.league && state.objective && m.league.size > 0) {
     const progress = m.league.total > 0 ? Math.min(1, m.league.played / m.league.total) : 1;

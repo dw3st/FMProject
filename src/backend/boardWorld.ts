@@ -1,7 +1,7 @@
 import type { SaveService } from "@/backend/SaveService";
 import { clubLevel } from "@/backend/continentalWorld";
 import { financialTierOf, naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
-import { applyMatchResult, isDerby, objectiveFor, type ObjectiveClub } from "@/Domain/boardFans/boardFans";
+import { applyMatchResult, isDerby, matchExpectation, objectiveFor, type ObjectiveClub } from "@/Domain/boardFans/boardFans";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import type { BoardState, SeasonObjective } from "@/types/boardTypes";
 import type { Fixture, LeagueSeasonState } from "@/types/calendarTypes";
@@ -15,6 +15,17 @@ import { logError } from "@/Logger";
  */
 
 /** League strength of every club of the league (`clubLevel`) plus its financial tier. */
+/** `clubLevel`, or null when the XI cannot be built (logged). */
+function safeLevel(squad: Squad | null): number | null {
+  if (!squad) return null;
+  try {
+    return clubLevel(squad);
+  } catch (e) {
+    logError("board", `clubLevel failed for ${squad.id}`, e);
+    return null;
+  }
+}
+
 export function objectiveClubs(squads: Squad[], playerSquadId: string): ObjectiveClub[] {
   return squads.map((s) => {
     let level = 0;
@@ -67,6 +78,7 @@ export async function boardAfterMatches(args: {
 
   let standings: StandingRow[] | null = null;
   const me = await args.squadOf(args.playerSquadId);
+  const myLevel = safeLevel(me);
   for (const e of mine) {
     const home = e.home === args.playerSquadId;
     const opponentId = home ? e.away : e.home;
@@ -102,7 +114,10 @@ export async function boardAfterMatches(args: {
           total: Math.max(table[myRow]!.mp, args.playerLeagueState?.totalRounds ?? (table.length - 1) * 2),
         }
       : undefined;
-    board = applyMatchResult(board, { goalsFor, goalsAgainst, home, derby, ...(league ? { league } : {}) });
+    // Expectation from both clubs' strength: beating weaker sides is worth little, losing to them costs more.
+    const oppLevel = safeLevel(opponent);
+    const expectation = myLevel !== null && oppLevel !== null ? matchExpectation(myLevel, oppLevel, home) : 0;
+    board = applyMatchResult(board, { goalsFor, goalsAgainst, home, derby, expectation, ...(league ? { league } : {}) });
   }
   return board;
 }
