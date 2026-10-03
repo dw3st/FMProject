@@ -19,6 +19,9 @@ import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality, TacticalAxes } 
 import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
+import type { FamiliarityLevels } from '@/types/familiarityTypes';
+import { familiarityFactor } from '@/Domain/familiarity/familiarity';
+import { STYLE_FAMILIARITY_EFFECTS, LONG_BALL_EFFECT, applyMult } from '@/GameEngine/Configs/FamiliarityConfig';
 
 // ── Possession push-up — drives the defensive line forward during sustained possession ──
 
@@ -297,16 +300,25 @@ export function getTeamTacticalStyle(team: TeamId): TacticalStyle {
  * top of the style's axes. `TEAM_TACTICAL_STYLE` always records the style
  * itself (never shifted by mentality) — `getTeamTacticalStyle` is what
  * IntentDetection reads to gate team intents.
+ *
+ * `familiarity` (style training, `FamiliarityConfig.ts`) nudges the weights the style already
+ * drives; absent or 50 = no change.
  */
 export function applyTeamAttackConfig(
   team: TeamId,
   style: TacticalStyle,
   mentality: Mentality = DEFAULT_MENTALITY,
   axesOverride?: Partial<TacticalAxes>,
+  familiarity?: FamiliarityLevels,
 ): void {
   const axes = axesWithMentality(style, mentality, axesOverride);
   Object.assign(TEAM_PASS_WEIGHTS[team], BUILD_UP_PASS[axes.build_up]);
   Object.assign(TEAM_CARRY_WEIGHTS[team], BUILD_UP_CARRY[axes.build_up]);
+  const styleFactor = familiarityFactor(familiarity?.[style]);
+  const styleEffect = STYLE_FAMILIARITY_EFFECTS[style];
+  applyMult(TEAM_PASS_WEIGHTS[team], styleEffect.passMult, styleFactor);
+  applyMult(TEAM_CARRY_WEIGHTS[team], styleEffect.carryMult, styleFactor);
+  applyMult(TEAM_PASS_WEIGHTS[team], LONG_BALL_EFFECT.passMult, familiarityFactor(familiarity?.long_ball));
   TEAM_ATTACK_WIDTH[team]    = WIDTH_ATTACK_WIDTH[axes.width];
   TEAM_BUILD_UP[team]        = axes.build_up;
   TEAM_WIDTH[team]           = axes.width;

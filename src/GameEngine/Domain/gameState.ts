@@ -1185,6 +1185,11 @@ function shouldDrainStamina(state: GameState): boolean {
   return true;
 }
 
+/** Tactic-driven stamina multiplier: a `press` under a high press costs `PRESS_STAMINA_MULT`. */
+export function tacticDrainMult(team: TeamId, action: StaminaAction): number {
+  return action === 'press' ? getDefenseConfig(team).PRESS_STAMINA_MULT : 1;
+}
+
 function resolveStaminaAction(
   p: GamePlayer,
   ballHolderId: number,
@@ -2861,7 +2866,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         if (pl.baseStats == null) return p;
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
-        const energy = consumeEnergy(pl.energy, pl.stamina, action, dt * TIME_SCALE, pl.drainMultiplier ?? 1);
+        const energy = consumeEnergy(
+          pl.energy, pl.stamina, action, dt * TIME_SCALE, (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action),
+        );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
         // moved at least FATIGUE_RECOMPUTE_THRESHOLD since the last recompute, instead of only
