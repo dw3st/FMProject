@@ -23,6 +23,9 @@ const MIXES = {
   eastAsia:     { white: 0.02, black: 0.01, brown: 0.12, asian: 0.85 },
   centralAsia:  { white: 0.35, black: 0.01, brown: 0.2, asian: 0.44 },
   anglo:        { white: 0.55, black: 0.25, brown: 0.12, asian: 0.08 },
+  caribbean:    { white: 0.05, black: 0.75, brown: 0.18, asian: 0.02 },
+  southAsia:    { white: 0.02, black: 0.03, brown: 0.9, asian: 0.05 },
+  pacific:      { white: 0.05, black: 0.55, brown: 0.35, asian: 0.05 },
   mixed:        { white: 0.4, black: 0.25, brown: 0.25, asian: 0.1 },
 } satisfies Record<string, Mix>;
 
@@ -38,30 +41,43 @@ assign("europe", [
   "Iceland", "Poland", "Czechia", "Czech Republic", "Slovakia", "Slovenia", "Hungary", "Austria", "Greece",
   "Bulgaria", "Romania", "Albania", "Armenia", "Georgia", "Bosnia and Herzegovina", "Bosnia-Herzegovina",
   "Montenegro", "North Macedonia", "Kosovo", "Moldova", "Lithuania", "Latvia", "Estonia", "Luxembourg",
-  "Malta", "Cyprus", "Azerbaijan", "Turkey", "Türkiye", "Israel",
+  "Malta", "Cyprus", "Azerbaijan", "Turkey", "Türkiye", "Israel", "Bosnia & Herzegovina",
+  "Faroe Islands", "Liechtenstein", "San Marino", "Andorra",
 ]);
 assign("brazil", ["Brazil"]);
 assign("latinAmerica", [
   "Argentina", "Uruguay", "Colombia", "Chile", "Peru", "Paraguay", "Venezuela", "Ecuador", "Bolivia",
-  "Mexico", "Costa Rica", "Honduras", "Panama", "Guatemala", "El Salvador", "Jamaica", "Haiti",
-  "Dominican Republic", "Cuba", "Trinidad and Tobago",
+  "Mexico", "Costa Rica", "Honduras", "Panama", "Guatemala", "El Salvador", "Nicaragua",
+  "Dominican Republic", "Cuba", "Puerto Rico", "Trinidad and Tobago", "Trinidad & Tobago", "Guyana",
+  "Suriname",
+]);
+assign("caribbean", [
+  "Jamaica", "Haiti", "Guadeloupe", "Martinique", "French Guiana", "Barbados", "Cayman Islands",
+  "St. Lucia", "St. Kitts & Nevis", "St. Vincent & Grenadines", "Grenada", "Curaçao", "Bermuda",
+  "Antigua & Barbuda",
 ]);
 assign("africa", [
   "Nigeria", "Cameroon", "Kenya", "Ghana", "South Africa", "Senegal", "Ivory Coast", "Côte d'Ivoire",
-  "Mali", "Guinea", "Burkina Faso", "DR Congo", "Congo", "Gabon", "Zambia", "Zimbabwe", "Angola",
-  "Uganda", "Tanzania", "Gambia", "Togo", "Benin", "Sierra Leone", "Liberia", "Cape Verde",
-  "Equatorial Guinea", "Mozambique", "Ethiopia", "Rwanda", "Burundi", "Namibia",
+  "Côte d’Ivoire", "Mali", "Guinea", "Guinea-Bissau", "Burkina Faso", "DR Congo", "Congo",
+  "Congo - Brazzaville", "Congo - Kinshasa", "Gabon", "Zambia", "Zimbabwe", "Angola", "Uganda",
+  "Tanzania", "Gambia", "Togo", "Benin", "Sierra Leone", "Liberia", "Cape Verde", "Equatorial Guinea",
+  "Mozambique", "Ethiopia", "Eritrea", "Rwanda", "Burundi", "Namibia", "Botswana", "Eswatini",
+  "Niger", "Chad", "Sudan", "South Sudan", "Somalia", "Central African Republic", "Madagascar",
+  "Comoros", "Seychelles", "Mauritius", "Malawi", "Lesotho",
 ]);
 assign("northAfricaMiddleEast", [
   "Algeria", "Egypt", "Morocco", "Tunisia", "Libya", "Saudi Arabia", "United Arab Emirates", "Iran",
   "Iraq", "Syria", "Lebanon", "Jordan", "Qatar", "Kuwait", "Oman", "Bahrain", "Palestine",
+  "Palestinian Territories", "Yemen", "Mauritania", "Afghanistan",
 ]);
+assign("southAsia", ["India", "Pakistan", "Bangladesh", "Sri Lanka", "Nepal"]);
+assign("pacific", ["Fiji", "Solomon Islands", "Vanuatu", "Papua New Guinea", "New Caledonia", "Tahiti"]);
 assign("eastAsia", [
   "Japan", "South Korea", "Korea Republic", "China", "China PR", "Indonesia", "Thailand", "Vietnam",
   "Malaysia", "Philippines", "Singapore", "North Korea",
 ]);
 assign("centralAsia", ["Uzbekistan", "Kazakhstan", "Kyrgyzstan", "Tajikistan", "Turkmenistan"]);
-assign("anglo", ["USA", "United States", "Australia", "Canada", "New Zealand", "Fiji"]);
+assign("anglo", ["USA", "United States", "Australia", "Canada", "New Zealand"]);
 
 export function faceRegionOf(nationality: string | undefined | null): Region {
   return (nationality && REGION_OF[nationality]) || "mixed";

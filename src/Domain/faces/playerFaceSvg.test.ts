@@ -30,6 +30,16 @@ describe("player faces", () => {
     expect(faceRegionOf("Nigeria")).toBe("africa");
     expect(faceRegionOf("Japan")).toBe("eastAsia");
     expect(faceRegionOf(undefined)).toBe("mixed");
+    // World data spellings (ESPN/CLDR) that used to fall into "mixed".
+    for (const [nat, region] of [
+      ["Côte d’Ivoire", "africa"], ["Bosnia & Herzegovina", "europe"], ["Congo - Brazzaville", "africa"],
+      ["Congo - Kinshasa", "africa"], ["Trinidad & Tobago", "latinAmerica"],
+      ["Palestinian Territories", "northAfricaMiddleEast"], ["Guinea-Bissau", "africa"],
+      ["Niger", "africa"], ["Chad", "africa"], ["Sudan", "africa"], ["Martinique", "caribbean"],
+      ["Solomon Islands", "pacific"], ["Sri Lanka", "southAsia"],
+    ] as const) {
+      expect(faceRegionOf(nat), nat).toBe(region);
+    }
     const rng = faceRng("x");
     const races = new Set(Array.from({ length: 400 }, () => pickFaceRace("England", rng)));
     expect(races.size).toBeGreaterThan(2); // broad, never a single fixed look
