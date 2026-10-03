@@ -84,6 +84,9 @@ const SPEEDS = [
   { label: '2×',    value: 2    },
 ];
 
+/** Familiarity values offered per team in /test (50 = neutral; `src/Domain/familiarity`). */
+const FAMILIARITY_TEST_OPTIONS = [0, 25, 50, 75, 100] as const;
+
 const MENTALITY_LABEL: Record<Mentality, string> = {
   attacking: 'Attack',
   balanced:  'Balanced',
@@ -356,6 +359,9 @@ export function TestScreen() {
   const [mentalityB, setMentalityB] = useState<Mentality>(() => {
     const v = urlStr('Bmen'); return (MENTALITY_OPTIONS as string[]).includes(v ?? '') ? (v as Mentality) : DEFAULT_MENTALITY;
   });
+  // Style familiarity per team (`src/Domain/familiarity`): 50 = neutral, applied to the team's own style.
+  const [famA, setFamA] = useState<number>(50);
+  const [famB, setFamB] = useState<number>(50);
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
   const [intentOverrideA, setIntentOverrideA] = useState<IntentOverride>('auto');
@@ -543,8 +549,8 @@ export function TestScreen() {
     setLivePlayer(null);
   }, [scenario, resetKey]);
 
-  useEffect(() => { applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA]);
-  useEffect(() => { applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB]);
+  useEffect(() => { const f = { [tacticsA]: famA }; applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA, f); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA, f); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA, famA]);
+  useEffect(() => { const f = { [tacticsB]: famB }; applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB, f); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB, f); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB, famB]);
 
   // When attr sliders change, patch live player stats immediately
   useEffect(() => {
@@ -921,10 +927,10 @@ export function TestScreen() {
           <div className="grid grid-cols-2 gap-4">
             {(
               [
-                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, axes: axesA, setAxes: setAxesA, mentality: mentalityA, setMentality: setMentalityA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
-                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, axes: axesB, setAxes: setAxesB, mentality: mentalityB, setMentality: setMentalityB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
+                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, axes: axesA, setAxes: setAxesA, mentality: mentalityA, setMentality: setMentalityA, fam: famA, setFam: setFamA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
+                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, axes: axesB, setAxes: setAxesB, mentality: mentalityB, setMentality: setMentalityB, fam: famB, setFam: setFamB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
               ] as const
-            ).map(({ team, label, cls, tactics, setTactics: setT, axes, setAxes: setAX, mentality, setMentality: setM, intentOverride, setIntentOverride: setIO }) => {
+            ).map(({ team, label, cls, tactics, setTactics: setT, axes, setAxes: setAX, mentality, setMentality: setM, fam, setFam: setF, intentOverride, setIntentOverride: setIO }) => {
               const liveIntent = liveTeamIntent[team];
               const badge = INTENT_BADGE[liveIntent];
               return (
@@ -992,6 +998,25 @@ export function TestScreen() {
                           }`}
                         >
                           {MENTALITY_LABEL[m]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Style familiarity — nudges the style's own tactic weights (50 = neutral) */}
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-bold text-muted-foreground tracking-widest uppercase">Familiarity ({fam})</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {FAMILIARITY_TEST_OPTIONS.map(v => (
+                        <button
+                          key={v}
+                          onClick={() => setF(v)}
+                          className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                            fam === v
+                              ? 'bg-primary/20 border-primary/40 text-primary'
+                              : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {v}
                         </button>
                       ))}
                     </div>
