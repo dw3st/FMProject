@@ -17,6 +17,9 @@ import type { InboxMessage } from "@/types/inboxTypes";
 
 export type GameSaveApiResponse = SaveMeta & { season?: SeasonData };
 
+/** Pages outside the career: a sacked save never redirects away from these. */
+const NON_CAREER_PATHS = new Set(["/", "/login", "/start", "/new-game", "/fired", "/test", "/lab", "/coming-soon"]);
+
 export interface GameSaveContextValue {
   session: GameSession | null;
   squad: Squad | null;
@@ -169,6 +172,11 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       }
       if (saveJson || squadJson) {
         saveSession(nextSession);
+      }
+      // Sacked (`.claude/rules/game/board-fans.md`): the career is over, every career page leads to /fired.
+      if (saveJson?.ended && typeof window !== "undefined" && !NON_CAREER_PATHS.has(window.location.pathname)) {
+        window.location.href = "/fired";
+        return;
       }
       setSession(nextSession);
       setSave(saveJson);

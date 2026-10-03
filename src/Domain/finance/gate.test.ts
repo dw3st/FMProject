@@ -24,4 +24,10 @@ describe("gateRevenue", () => {
     expect(gateRevenue(0, "league")).toBe(0);
     expect(gateRevenue(-5, "league")).toBe(0);
   });
+
+  test("fill rate (fans): 0.45..0.9 replaces the default", () => {
+    expect(gateRevenue(40_000, "league", false, 0.9)).toBe(Math.round(40_000 * 0.9 * GATE.TICKET_PRICE));
+    expect(gateRevenue(40_000, "league", false, 0.45)).toBe(Math.round(40_000 * 0.45 * GATE.TICKET_PRICE));
+    expect(gateRevenue(40_000, "league", true, 0.9)).toBe(0);
+  });
 });

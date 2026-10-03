@@ -3,6 +3,7 @@ import { saveService, type SaveService } from "@/backend/SaveService";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
 import type {
+  BoardInboxMessage,
   ContinentalInboxMessage,
   CupInboxMessage,
   DevelopmentInboxChange,
@@ -362,6 +363,49 @@ export function buildRetirementMessage(args: {
     age:         retired.age,
     appearances: retired.appearances,
     goals:       retired.goals,
+  };
+}
+
+const BOARD_SUBJECT: Record<BoardInboxMessage["kind"], string> = {
+  objective:     "The board sets the season objective",
+  warning:       "The board is unhappy",
+  ultimatum:     "Board ultimatum",
+  ultimatum_met: "The board is satisfied with the response",
+  praise:        "The board praises your work",
+  bonus:         "Board bonus for the season",
+  sacked:        "You have been sacked",
+};
+
+/** Board news for the human club (`.claude/rules/game/board-fans.md`); the screen translates it. */
+export function buildBoardMessage(args: {
+  date: string;
+  kind: BoardInboxMessage["kind"];
+  objective?: BoardInboxMessage["objective"];
+  leagueName?: string;
+  board?: number;
+  ultimatum?: BoardInboxMessage["ultimatum"];
+  bonus?: number;
+  reason?: BoardInboxMessage["reason"];
+}): BoardInboxMessage {
+  const { date, kind, ...rest } = args;
+  const preview =
+    kind === "ultimatum" && rest.ultimatum
+      ? `${rest.ultimatum.points} points in the next ${rest.ultimatum.matches} league games`
+      : kind === "bonus" && rest.bonus !== undefined
+        ? formatFee(rest.bonus)
+        : kind === "objective" && rest.objective
+          ? `${rest.leagueName ?? rest.objective.leagueSlug}: finish ${rest.objective.target} or better`
+          : "";
+  return {
+    id:        `board-${date}-${kind}-${randomUUID()}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "board",
+    subject:   BOARD_SUBJECT[kind],
+    preview,
+    kind,
+    ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)),
   };
 }
 

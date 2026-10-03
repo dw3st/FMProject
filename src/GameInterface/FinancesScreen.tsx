@@ -15,6 +15,7 @@ import { squadStaffWages } from "@/Domain/staff/staff";
 import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
 import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
+import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -68,7 +69,10 @@ function fixtureGateKind(competitionSlug: string): GateKind {
 
 export function FinancesScreen() {
   const { t, i18n } = useTranslation();
-  const { session, squad, loading: saveLoading, fixtures } = useGameSave();
+  const { session, squad, save, loading: saveLoading, fixtures } = useGameSave();
+  // Stadium fill from the fans (`.claude/rules/game/board-fans.md`), the same rate the server uses.
+  const fans = save?.board?.fans;
+  const fillRate = fans === undefined ? undefined : stadiumFillRate(fans);
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
@@ -133,9 +137,9 @@ export function FinancesScreen() {
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((f: Fixture) => {
         const kind = fixtureGateKind(f.competition);
-        return { fixture: f, kind, projected: gateRevenue(capacity, kind, f.neutral) };
+        return { fixture: f, kind, projected: gateRevenue(capacity, kind, f.neutral, fillRate) };
       });
-  }, [fixtures, squad, session]);
+  }, [fixtures, squad, session, fillRate]);
 
   const projectedRemainingGate = useMemo(
     () => gateProjections.reduce((sum, g) => sum + g.projected, 0),
