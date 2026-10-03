@@ -208,6 +208,45 @@ describe("blocked crosses", () => {
   });
 });
 
+describe("loose ball over the goal line", () => {
+  /** A Team A through ball drifting out over Team B's goal line, with `who` of Team B on it. */
+  function outOver(who: "GK" | "CB"): { s: GameState; passerId: number } {
+    let s = buildState();
+    const passer = s.players.find(p => p.team === "A" && p.role === "CM")!;
+    const d = s.players.find(p => p.team === "B" && p.role === who)!;
+    s = {
+      ...s,
+      ballHolderId: passer.id,
+      // Everyone else far away.
+      players: s.players.map(p => (p.id === d.id ? { ...p, x: PITCH_LENGTH - 0.5, y: 20 } : p.id === passer.id ? p : { ...p, x: 50, y: p.y })),
+      looseBall: {
+        x: PITCH_LENGTH - 0.1, y: 20, vx: 5, vy: 0, startTime: 0,
+        fromPasserId: passer.id, fromTeamLastTouch: "A", intendedRunnerId: null, receiverOffside: false,
+      },
+    };
+    return { s, passerId: passer.id };
+  }
+
+  test("an outfield defender on it: corner, and the through ball is not 'lost in race' to the passer's own team", () => {
+    const { s } = outOver("CB");
+    randomSpy = spyOn(Math, "random").mockReturnValue(0);
+    const lost: unknown[] = [];
+    const unsub = gameBus.on("throughBallLostInRace", e => lost.push(e));
+    const out = tickState(s, 0.2).state;
+    unsub();
+    expect(out.setPiece?.type).toBe("corner");
+    expect(holder(out).team).toBe("A");
+    expect(lost).toHaveLength(0);
+  });
+
+  test("only the keeper on it: goal kick", () => {
+    const { s } = outOver("GK");
+    randomSpy = spyOn(Math, "random").mockReturnValue(0);
+    const out = tickState(s, 0.2).state;
+    expect(out.setPiece?.type).toBe("goal_kick");
+  });
+});
+
 describe("throw-ins", () => {
   test("a throw-in only reaches teammates within THROW_IN_RANGE", () => {
     let s = buildState();
