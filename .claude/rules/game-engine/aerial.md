@@ -9,7 +9,7 @@ Escanteios e faltas cruzadas pelo cobrador são da Etapa 14 (bolas paradas); aqu
 | Arquivo | Papel |
 |---|---|
 | `src/GameEngine/Configs/AerialConfig.ts` | Todas as constantes (`AERIAL_CONFIG`) |
-| `src/GameEngine/Domain/Aerial.ts` (+ teste) | Puro, lado da decisão: `isCrossPosition`, `crossTargetPoints`, `evaluateCrossTargets`, `evaluateLongBall`, `aerialDuelScore`, `isInSmallBox` |
+| `src/GameEngine/Domain/Aerial.ts` (+ teste) | Puro, lado da decisão: `isCrossPosition`, `crossTargetPoints`, `evaluateCrossTargets`, `evaluateLongBall`, `longBallPressure`, `aerialDuelScore`, `keeperComesFor`, `isInSmallBox` |
 | `src/GameEngine/Infrastructure/ActionOutcomes.ts` (+ `AerialOutcomes.test.ts`) | Sorteios: `resolveAerialDuel`, `gkClaimChance`, `computeHeaderEffect`; `resolveShot` usa o efeito de cabeceio quando `shot.header` |
 | `src/GameEngine/Domain/DecisionTree.ts` | `evalCross` / `evalLongBall` competem em `decideBallHolder` (decisões `cross` e `long_ball`) |
 | `src/GameEngine/Domain/gameState.ts` (+ `Aerial.engine.test.ts`) | `startAerialBall`, `resolveAerialLanding` (exportados), `clearanceBall`, `startHeader`, controle de primeiro toque |
@@ -46,32 +46,56 @@ pequena área dele. Atacantes em impedimento no momento do chute ficam em `aeria
 ## Lançamento longo
 
 Companheiro (não goleiro) ≥ 22 jardas à frente, a 28–65 jardas, que não esteja em impedimento; o
-passador precisa estar a ≤ 60 jardas do próprio gol. `raw = LONG_BALL_WEIGHT × (progresso × 0,3 +
-habilidade aérea do receptor × 0,2 + passe × 0,1)`, `compress(raw, 0,4)`. O peso de espaço
-(`LONG_BALL_SPACE_WEIGHT`) é 0: lançar só para quem está livre criava contra-ataques demais (+12% de
-chutes); o lançamento vai para a cabeça do centroavante e é disputado. Na prática quase todo
-lançamento é do goleiro (~2,2 por goleiro por jogo; os zagueiros ~0,2).
+passador precisa estar a ≤ 60 jardas do próprio gol. A nota depende da situação:
+
+```
+raw = LONG_BALL_WEIGHT × ( progresso / 65 × 0,30            // não satura mais em 50 jardas
+                         + números na queda × 0,15            // 0,5 + 0,25 × (companheiros − defensores) a ≤ 7 jardas
+                         + pressão × 0,30                     // longBallPressure
+                         + habilidade aérea do receptor × 0,2
+                         + passe × 0,1 )
+compress(raw, LONG_BALL_STRONG_RAW = 0,63)
+pressão = max(adversário a ≤ 12 jardas do passador, fração das opções curtas (≤ 25 jardas) marcadas)
+```
+
+Antes a nota do goleiro era praticamente constante (progresso saturado em 50 jardas, sem termo de
+espaço): um ajuste mínimo jogava as reposições de ~80% longas para ~3%. Com a pressão e os números a
+nota varia com o lance: num tiro de meta calmo (opções curtas livres) o passe curto ganha; pressionado,
+o goleiro lança. Lançar para um receptor **livre** continua sem peso (criava contra-ataques demais,
++12% de chutes); o termo de números premia apoio para a segunda bola.
+
+Parcela das reposições do goleiro que são longas (`aerial-calibrate` imprime `GK long-kick share`):
+balanced ~43% (Premier) / ~39% (Championship), possession ~10%, direct ~86%.
 
 ## Disputa na queda (`resolveAerialLanding`)
 
-1. **Goleiro** (do time que defende): sai se o ponto cai na pequena área ou se ele está a ≤
-   `AERIAL_RADIUS + 3` e mais perto que todos. Agarra com `0,45 + 0,25 × posicionamento + 0,15 × reflexo
+1. **Goleiro** (do time que defende): sai se o ponto cai na pequena área e ele está a ≤
+   `SMALL_BOX_DEPTH + AERIAL_RADIUS + GK_EXTRA_REACH` (14 jardas), ou se está a ≤ `AERIAL_RADIUS + 3` e
+   mais perto que todos (`keeperComesFor`, o mesmo teste da nota do cruzamento). Agarra com `0,45 + 0,25 × posicionamento + 0,15 × reflexo
    − 0,08 × atacantes perto` (vira tiro de meta, como uma defesa), senão soca (`clearance` de 14–24
    jardas).
 2. **Disputa:** jogadores de linha a ≤ `AERIAL_RADIUS` (5) do ponto. Com os dois times presentes, o
    melhor de cada lado por `aerialDuelScore` (heading 0,45 + jump 0,25 + força 0,15 + posição 0,15) duela:
-   `P = (sA + 0,1) / (sA + sB + 0,2)`; os dois entram em recuperação curta. Pode ser falta (`FoulKind`
-   `aerial`, base 0,06, infrator 50/50 — na área do defensor é pênalti). Só um time presente: o mais
-   perto ganha sem disputa. Ninguém: bola solta (`LooseBallState.source = kind`).
+   `P = (sA + 0,1) / (sA + sB + 0,2)`; os dois entram em recuperação curta. Antes do duelo, um atacante
+   que estava impedido no chute é marcado (tiro livre; nunca pênalti a favor dele). Pode ser falta
+   (`FoulKind` `aerial`, base 0,06, infrator 50/50 — na área do defensor é pênalti). Só um time
+   presente: o mais perto ganha sem disputa. Ninguém: bola solta (`LooseBallState.source = kind`,
+   com `offsideIds`: um impedido que pegar a sobra é marcado).
 3. **Atacante ganhou:** impedido no chute → tiro livre de impedimento. A ≤ `HEADER_RANGE` (12) da
    linha com ângulo ≥ 0,18 rad → **cabeçada** ao gol. Senão, ajeita de cabeça para um companheiro mais
    perto do gol a ≤ 12 jardas (passe normal); senão domina, com chance `0,35 + 0,45 × firstTouch` (se
-   errar, a bola cai solta).
+   errar, a bola cai solta, ainda do cruzamento/lançamento e com o impedimento valendo).
 4. **Defensor ganhou:** disputado ou dentro da própria área → corta de cabeça (`clearance` de 16–28
    jardas para longe do gol; de cruzamento perto da linha de fundo, 30% vai para escanteio). Sozinho
-   fora da área → domina (mesma chance de primeiro toque).
+   fora da área → domina (mesma chance de primeiro toque; se errar, a bola solta é do time dele —
+   `clearance`, o lançamento não conta como certo).
 5. **`clearance`** é uma bola alta curta: a "segunda bola" é disputada onde cai (mesma regra de
    duelo); quem ganha fica com a bola. Não conta como passe, lançamento nem cruzamento.
+6. **Perseguidores:** cada nova bola alta / solta re-seleciona os perseguidores; quem ainda corria
+   atrás de uma bola anterior e não foi escolhido volta a decidir (`commitLooseBallChasers`). A saída
+   de bola e a troca de lado limpam todos.
+7. **Fim de período:** uma bola alta cobrada de bola parada (tiro livre, tiro de meta) é jogada antes do
+   apito (`restartHoldsPeriod`, até 60 s de jogo).
 
 ## Cabeçada
 
@@ -111,30 +135,32 @@ processos em paralelo (`--out`) e somo (`--sum`). `AERIAL_OVERRIDES` / `FOUL_OVE
 constantes em memória. Também imprime, por linha (posição do titular; o reserva herda), passes,
 disputas ganhas, gols de cabeça, cruzamentos e lançamentos por vaga.
 
-Antes = motor sem jogo aéreo (Premier 800 jogos, Championship 600); depois = configuração final
-(Premier 800, Championship 1200):
+Antes = motor sem jogo aéreo (Premier 800 jogos, Championship 600); depois = configuração final, com o
+lançamento situacional e as correções da revisão (Premier 1200, Championship 1200):
 
 | | Premier antes | depois | Championship antes | depois |
 |---|---|---|---|---|
-| Gols | 2,330 | 2,408 (+3,3%) | 1,720 | 1,703 (−1,0%) |
-| Chutes | 5,558 | 5,643 (+1,5%) | 4,932 | 4,826 (−2,1%) |
-| xG | 3,415 | 3,641 (+6,6%) | 3,040 | 3,102 (+2,0%) |
-| Passes (sem cruzamentos/lançamentos) | 65,2 | 54,1 (−17%) | 58,7 | 49,4 (−16%) |
-| Bolas em profundidade | 24,7 | 19,4 | 24,2 | 18,7 |
-| Faltas | 11,1 | 10,7 | 11,9 | 11,5 |
-| Pênaltis marcados | ~0,25 (`fouls.md`) | 0,27 | — | 0,29 |
-| Cruzamentos (alvo 10–20) | — | 12,0 (22% certos) | — | 10,8 (20%) |
-| Disputas aéreas (soma dos dois times, alvo 15–30) | — | 22,0 (11,0 disputas) | — | 19,0 (9,5) |
-| Cabeçadas | — | 0,75 | — | 0,66 |
-| Gols de cabeça (alvo 10–15%) | — | 0,233 (9,7%) | — | 0,193 (11,3%) |
-| Lançamentos (alvo 5–15) | — | 6,4 (45% certos) | — | 5,4 |
+| Gols | 2,330 | 2,422 (+4,0%) | 1,720 | 1,650 (−4,1%) |
+| Chutes | 5,558 | 5,678 (+2,2%) | 4,932 | 4,899 (−0,7%) |
+| xG | 3,415 | 3,631 (+6,3%) | 3,040 | 3,130 (+3,0%) |
+| Passes (sem cruzamentos/lançamentos) | 65,2 | 53,4 (−18%) | 58,7 | 48,1 (−18%) |
+| Bolas em profundidade | 24,7 | 19,8 | 24,2 | 19,5 |
+| Faltas | 11,1 | 10,6 | 11,9 | 11,5 |
+| Pênaltis marcados (gols) | ~0,25 (`fouls.md`) | 0,29 (0,23) | — | 0,28 (0,22) |
+| Cruzamentos (alvo 10–20) | — | 11,5 (22% certos) | — | 10,4 (20%) |
+| Disputas aéreas (soma dos dois times, alvo 15–30) | — | 20,6 (10,3 disputas) | — | 18,4 (9,2) |
+| Cabeçadas | — | 0,70 | — | 0,68 |
+| Gols de cabeça (alvo 10–15%) | — | 0,233 (9,6%) | — | 0,191 (11,6%) |
+| Lançamentos (alvo 5–15) | — | 6,4 (52% certos) | — | 5,9 |
+| Reposições longas do goleiro | — | 43% | — | 39% |
 
-Por estilo (Premier, 200 jogos, o mesmo estilo nos dois times): `direct_play` 11,9 lançamentos, 14,6
-cruzamentos, 16,8 disputas; `possession` 0,4 lançamentos, 3,4 cruzamentos.
+Por estilo (Premier, 200 jogos, o mesmo estilo nos dois times): `direct_play` 15,2 lançamentos (goleiro
+longo em 86%), 14,3 cruzamentos, 19,1 disputas; `possession` 0,7 lançamentos (goleiro longo em 10%),
+3,3 cruzamentos.
 
-Passes por vaga (Premier, antes → depois): GK 2,78 → 0,51 (o goleiro lança longo quase sempre),
-DEF 2,68 → 2,57, MID 3,71 → 3,35, FWD 2,61 → 2,08. O quickSim teve os `PASSES_PER_MATCH` escalados
-na mesma proporção.
+Passes por vaga (Premier, antes → depois): GK 2,78 → 1,37, DEF 2,68 → 2,28, MID 3,71 → 3,30,
+FWD 2,61 → 2,09. O quickSim teve os `PASSES_PER_MATCH` escalados na mesma proporção (média Premier +
+Championship).
 
 **O que move gols e chutes:**
 - Cruzar perto da linha de fundo / dentro da área tira gols (o portador ali vale muito: corta, chuta,
@@ -150,9 +176,9 @@ na mesma proporção.
 
 - Sem escanteio cruzado nem bola parada aérea (Etapa 14): zagueiros quase não fazem gol de cabeça.
 - `jump` é baixo nos jogadores de linha dos elencos reais (~0,9/10), então pesa pouco fora do gol.
-- O goleiro lança longo em ~80% das reposições mesmo no estilo equilibrado; os passes do jogo caíram
-  ~17% (não há alvo para isso no spec).
+- Os passes do jogo caíram ~18% (cruzamentos e lançamentos são uma família à parte, como a bola em
+  profundidade; não há alvo para isso no spec).
 - Disputa aérea não rola lesão de contato (manteve a calibração de lesões).
-- O estilo `possession` cruza pouco (3,4 por jogo; 3,0 gols em 200 jogos) e o `direct_play` ficou bem
-  mais aéreo (2,52 gols em 200 jogos). A tabela de estilos de `pass.md` (2.1.1: 2,75 e 3,03) é de antes
+- O estilo `possession` cruza pouco (3,3 por jogo; 3,0 gols em 200 jogos) e o `direct_play` ficou bem
+  mais aéreo (15 lançamentos, 2,7 gols em 200 jogos). A tabela de estilos de `pass.md` (2.1.1: 2,75 e 3,03) é de antes
   das faltas e do jogo aéreo, então a comparação é só indicativa. Não rebalanceado nesta etapa.

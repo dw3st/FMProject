@@ -401,8 +401,8 @@ Fatigue: `heading` is semi-technical (×semi factor), `jump` physical (×physica
 Outfield `jump` is low in the real squads (~0.9/10), so in practice `heading` and `strength` decide
 outfield duels; `jump` mostly matters for keepers (who also use it as `gkDiving`).
 
-**Influence level: MEDIUM** — decides ~10–11 aerial duels per match (both teams) and the quality of
-every header (~0.75 headers per match, ~11–12% of the goals).
+**Influence level: MEDIUM** — decides ~9–10 aerial duels per match (both teams) and the quality of
+every header (~0.7 headers per match, ~10–12% of the goals).
 
 ---
 
