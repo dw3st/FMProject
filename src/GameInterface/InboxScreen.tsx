@@ -7,6 +7,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
 import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { objectiveText } from "@/GameInterface/boardText";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -16,6 +17,7 @@ const HeartPulse = iconOf("heart-pulse");
 const TrendingUp = iconOf("trend-up");
 const Trophy = iconOf("trophy");
 const Prospect = iconOf("user");
+const BoardIcon = iconOf("building");
 
 type FilterTab = "all" | "unread";
 
@@ -99,6 +101,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-5/15",
     border: "border-chart-5/30",
     Icon: Prospect,
+  },
+  board: {
+    labelKey: "inbox.categories.board",
+    color: "text-primary",
+    bg: "bg-primary/15",
+    border: "border-primary/30",
+    Icon: BoardIcon,
   },
 };
 
@@ -319,11 +328,14 @@ export function inboxSubject(
   return leaguePrizeTexts(message, t)?.subject ?? message.subject;
 }
 
-/** Translated subject/preview for league prize messages; every other message keeps its stored text. */
+/** Translated subject/preview for league prize and board messages; every other message keeps its stored text. */
 function leaguePrizeTexts(
   message: InboxMessage,
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): { subject: string; preview: string } | null {
+  if (message.category === "board") {
+    return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
+  }
   if (message.category !== "season" || message.kind !== "league_prize") return null;
   return {
     subject: t("inbox.season.leaguePrizeSubject", { league: message.leagueName }),
@@ -379,7 +391,7 @@ function MessageRow({
 }
 
 function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: LeagueData[] }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const meta = CATEGORY_META[message.category];
   const MetaIcon = meta.Icon;
   const prizeTexts = leaguePrizeTexts(message, t);
@@ -443,6 +455,14 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
         {message.category === "retirement" && <RetirementBody message={message} />}
+        {message.category === "board" && (
+          <p className="text-sm text-foreground m-0">
+            {boardText(
+              message, t,
+              message.objective ? competitionName(message.objective.leagueSlug, leagues, i18n.language) || (message.leagueName ?? "") : "",
+            )}
+          </p>
+        )}
         {message.category === "contract" && (
           <p className="text-sm text-foreground m-0">
             {t(`inbox.contract.${message.kind}`, {
@@ -573,6 +593,28 @@ function PrizeLine({ prize }: { prize?: number }) {
       {t("inbox.prizeAmount", { amount: formatFee(prize) })}
     </p>
   );
+}
+
+/** Body text of a board message (`.claude/rules/game/board-fans.md`). */
+function boardText(
+  message: Extract<InboxMessage, { category: "board" }>,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  league: string,
+): string {
+  switch (message.kind) {
+    case "objective":
+      return message.objective
+        ? t("inbox.board.objective", { season: message.objective.season, league, objective: objectiveText(message.objective, t) })
+        : "";
+    case "ultimatum":
+      return t("inbox.board.ultimatum", { points: message.ultimatum?.points ?? 0, matches: message.ultimatum?.matches ?? 0 });
+    case "bonus":
+      return t("inbox.board.bonus", { amount: formatFee(message.bonus ?? 0) });
+    case "sacked":
+      return t(`inbox.board.sacked.${message.reason ?? "board"}`);
+    default:
+      return t(`inbox.board.${message.kind}`, { board: message.board ?? 0 });
+  }
 }
 
 function SeasonBody({

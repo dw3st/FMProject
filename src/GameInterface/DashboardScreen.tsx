@@ -9,6 +9,7 @@ import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { inboxSubject } from "@/GameInterface/InboxScreen";
+import { trendOf } from "@/Domain/boardFans/boardFans";
 import type { LeagueData, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
@@ -178,6 +179,7 @@ export function DashboardScreen() {
   const playerHref = (playerId: string) => `${squadHref.replace("/squad/", "/player/")}/${encodeURIComponent(playerId)}`;
 
   const balance = ledger?.balance ?? session.budget ?? null;
+  const boardState = save?.board ?? null;
 
   return (
     <ScreenContainer>
@@ -188,8 +190,12 @@ export function DashboardScreen() {
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
-        board={75}
-        fans={75}
+        board={boardState?.board ?? 60}
+        fans={boardState?.fans ?? 60}
+        boardTrend={boardState ? trendOf(boardState.history, currentDate, "board") : null}
+        fansTrend={boardState ? trendOf(boardState.history, currentDate, "fans") : null}
+        objective={boardState?.objective ?? null}
+        ultimatum={boardState?.ultimatum ?? null}
         budget={balance}
         squadSize={players.length}
         squadHref={squadHref}

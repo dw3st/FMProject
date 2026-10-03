@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { StandingRow } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { BoardUltimatum, SeasonObjective } from "@/types/boardTypes";
+import { objectiveText } from "@/GameInterface/boardText";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
@@ -103,13 +105,28 @@ function FormPills({ results }: { results: FormResult[] }) {
 
 // ── Club ─────────────────────────────────────────────────────────────────────
 
-/** A 0..100 confidence bar with the percentage beside the label. */
-function ConfidenceBar({ label, value }: { label: string; value: number }) {
+/** A 0..100 confidence bar with the percentage beside the label and the 7-day trend arrow. */
+function ConfidenceBar({ label, value, trend }: { label: string; value: number; trend: number | null }) {
+  const { t } = useTranslation();
+  const up = trend !== null && trend >= 1;
+  const down = trend !== null && trend <= -1;
+  const trendLabel = up
+    ? t("board.trendUp", { value: Math.round(trend!) })
+    : down
+      ? t("board.trendDown", { value: Math.round(-trend!) })
+      : undefined;
   return (
     <div className="flex flex-col gap-1.5 min-w-0">
       <div className="flex items-center justify-between gap-2">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{label}</span>
-        <span className="font-display font-bold text-sm text-primary tabular-nums">{value}%</span>
+        <span className="flex items-center gap-1 font-display font-bold text-sm text-primary tabular-nums">
+          {(up || down) && (
+            <span title={trendLabel} aria-label={trendLabel} className={`inline-flex ${up ? "text-primary" : "text-destructive"}`}>
+              <Icon name={up ? "trend-up" : "trend-down"} size={16} />
+            </span>
+          )}
+          {Math.round(value)}%
+        </span>
       </div>
       <div className="h-1.5 min-w-16 rounded bg-border overflow-hidden" role="presentation">
         <div className="h-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
@@ -129,6 +146,10 @@ export function ClubCard({
   managerRank,
   board,
   fans,
+  boardTrend,
+  fansTrend,
+  objective,
+  ultimatum,
   budget,
   squadSize,
   squadHref,
@@ -139,6 +160,11 @@ export function ClubCard({
   managerRank: number | null;
   board: number;
   fans: number;
+  /** Change vs. 7 days ago (null without enough history). */
+  boardTrend: number | null;
+  fansTrend: number | null;
+  objective: SeasonObjective | null;
+  ultimatum: BoardUltimatum | null;
   budget: number | null;
   squadSize: number;
   squadHref: string;
@@ -175,8 +201,18 @@ export function ClubCard({
       </div>
 
       <div className="flex flex-col gap-3 min-w-0">
-        <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} />
-        <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} />
+        <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} trend={boardTrend} />
+        <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} trend={fansTrend} />
+        {objective && (
+          <p className="text-sm text-muted-foreground m-0 truncate" title={objectiveText(objective, t)}>
+            {t("board.objectiveLabel")}: <span className="text-foreground">{objectiveText(objective, t)}</span>
+          </p>
+        )}
+        {ultimatum && (
+          <p className="text-sm text-destructive m-0">
+            {t("board.ultimatumActive", { points: Math.max(0, ultimatum.pointsNeeded - ultimatum.points), matches: ultimatum.matchesLeft })}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 min-w-0">
