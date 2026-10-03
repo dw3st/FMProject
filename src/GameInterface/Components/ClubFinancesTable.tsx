@@ -3,6 +3,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
 import type { HiringState } from "@/Domain/aiFinance/aiClubFinance";
 import type { FinancialTier } from "@/types/playerTypes";
+import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 
 const TIER_BADGE: Record<FinancialTier, string> = {
   LOW: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
@@ -30,7 +31,7 @@ export function formatEuros(n: number): string {
   return `€${Math.round(n)}`;
 }
 
-const GRID = "grid grid-cols-[minmax(0,1fr)_80px_90px_100px_170px_80px_150px] gap-3 items-center";
+const GRID = "grid grid-cols-[minmax(0,1fr)_80px_104px_100px_170px_80px_150px] gap-3 items-center";
 
 /**
  * League-wide view of the simplified AI club finances (tier, popularity, weekly budget, wage bill
@@ -46,9 +47,9 @@ export function ClubFinancesTable({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="card-arcade rounded-md overflow-x-auto">
+    <div className={`${TABLE_STYLE.shell} overflow-x-auto`}>
       <div className="min-w-[900px]">
-        <div className={`${GRID} px-4 py-3 bg-secondary/30 border-b border-border text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground`}>
+        <div className={`${GRID} px-4 py-3 ${TABLE_STYLE.head}`}>
           <div>{t("leagues.club")}</div>
           <div className="text-center">{t("leagues.finances.tier")}</div>
           <div className="text-center">{t("leagues.finances.popularity")}</div>
@@ -58,24 +59,24 @@ export function ClubFinancesTable({
           <div className="text-right">{t("leagues.finances.transferBudget")}</div>
         </div>
 
-        <div className="divide-y divide-border/50">
+        <div className={TABLE_STYLE.body}>
           {rows.map((row) => {
             const wagePct = row.maxWageBudget ? Math.min(100, (row.wageBill / row.maxWageBudget) * 100) : 0;
             return (
               <div
                 key={row.squadId}
                 onClick={() => onClickSquad(row)}
-                className={`${GRID} px-4 py-2.5 hover:bg-secondary/30 transition-colors cursor-pointer ${row.isPlayerClub ? "bg-primary/5" : ""}`}
+                className={`${GRID} px-4 py-2.5 ${TABLE_STYLE.row} ${TABLE_STYLE.rowClickable} ${row.isPlayerClub ? TABLE_STYLE.rowHighlight : ""}`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <ClubLogo
                     logoUrl={squadLogoUrl(row.squadId)}
                     primaryColor={row.colors[0]}
                     secondaryColor={row.colors[1]}
-                    className="w-8 h-8 rounded-full shrink-0"
+                    className={TABLE_STYLE.crest}
                     imgClassName="w-full h-full object-contain"
                   />
-                  <span className="font-semibold text-foreground truncate">{row.name}</span>
+                  <span className={`${row.isPlayerClub ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name} truncate`}>{row.name}</span>
                 </div>
 
                 <div className="flex justify-center">
@@ -89,7 +90,7 @@ export function ClubFinancesTable({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
+                  <div className="flex-1 min-w-16 h-1.5 rounded-full bg-border overflow-hidden">
                     <div className="h-full bg-primary" style={{ width: `${row.popularity}%` }} />
                   </div>
                   <span className="text-sm tabular-nums text-muted-foreground w-6 text-right">{Math.round(row.popularity)}</span>

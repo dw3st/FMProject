@@ -372,7 +372,7 @@ function MatchStatsModal({
                 <td className={`py-1.5 font-semibold text-foreground ${side === "away" ? "text-right pr-3" : "pl-3"}`}>{p.name}</td>
                 <td className="px-2 text-center">
                   {p.rating > 0 ? (
-                    <span className={`inline-flex items-center gap-0.5 font-black ${ratingTextClass10(p.rating)}`}>
+                    <span className={`tabular-nums inline-flex items-center gap-0.5 font-black ${ratingTextClass10(p.rating)}`}>
                       <Icon name="star" className="w-2.5 h-2.5 fill-current" />{p.rating.toFixed(1)}
                     </span>
                   ) : <span className="text-muted-foreground/40">—</span>}
