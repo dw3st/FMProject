@@ -101,6 +101,9 @@ function draw(geometry: { type: string; coordinates: unknown }, keepTiny: boolea
     if (outer.every(([, y]) => y > HEIGHT)) continue; // Antarctica & far south
     const area = ringArea(outer);
     if (!keepTiny && area < MIN_BG_AREA) continue;
+    // A ring that rounds away to nothing draws nothing: it must not grow the box either, or a
+    // tiny country (Fiji) gets a world-wide box from invisible slivers and never gets a marker.
+    if (!ringPath(outer)) continue;
     for (const [x, y] of outer) {
       minX = Math.min(minX, x); maxX = Math.max(maxX, x);
       minY = Math.min(minY, y); maxY = Math.max(maxY, y);
@@ -156,6 +159,9 @@ export const WORLD_BACKGROUND_PATH =
 
 /** One path per game country with a league, keyed by the game's ISO2 ("GB" = England). */
 export const COUNTRY_PATHS: Record<string, string> = ${JSON.stringify(countryPaths, null, 2)};
+
+/** A country whose drawn box is smaller than this (viewBox units) gets a dot marker. */
+export const MARKER_MAX_SIZE = ${MARKER_MAX_SIZE};
 
 /** Centre of countries too small to click on the map (dot marker drawn on top). */
 export const COUNTRY_MARKERS: Record<string, [number, number]> = ${JSON.stringify(markers)};
