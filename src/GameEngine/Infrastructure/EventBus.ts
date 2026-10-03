@@ -5,7 +5,7 @@ export interface GameEvents {
   /** Emitted whenever possession or pass state changes significantly. */
   stateChanged: GameState;
   /** Emitted the moment a goal is scored. */
-  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number };
+  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
   shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean };
 
@@ -45,6 +45,29 @@ export interface GameEvents {
     toY: number;
     chasers: Array<{ id: number; team: TeamId; eta: number }>;
   };
+
+  // ── Aerial events (`.claude/rules/game-engine/aerial.md`) ─────────────────
+  /** A cross was played toward (`toX`, `toY`) — the landing point after the error model. */
+  crossStarted:    { player: number; toX: number; toY: number; intendedRunnerId: number | null };
+  /** A long ball was played over the line toward `targetId`. */
+  longBallStarted: { player: number; toX: number; toY: number; targetId: number | null };
+  /**
+   * A high ball (cross / long ball) was resolved. `completed` = the passer's team won the first
+   * contact (header, knock-down, control, or the loose ball it later picked up).
+   */
+  aerialResolved: {
+    kind:      'cross' | 'long_ball';
+    fromId:    number;
+    winnerId:  number | null;
+    completed: boolean;
+    outcome:   'header' | 'knockdown' | 'control' | 'clearance' | 'claim' | 'punch' | 'blocked' | 'loose' | 'offside' | 'foul';
+  };
+  /** Two players contested a high ball in the air (best contestant of each team). */
+  aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
+  /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
+  gkClaim: { keeperId: number; claimed: boolean; chance: number };
+  /** A header at goal (also emitted as a `shot`). */
+  header: { player: number; xg: number };
 
   // ── Shot event ───────────────────────────────────────────────────────────
   /** Emitted the moment a player takes a shot. */
@@ -102,7 +125,9 @@ export interface GameEvents {
     carry: number;
     dribble: number;
     throughBall: number;
-    best: 'shoot' | 'pass' | 'carry' | 'dribble' | 'through_ball';
+    cross: number;
+    longBall: number;
+    best: 'shoot' | 'pass' | 'carry' | 'dribble' | 'through_ball' | 'cross' | 'long_ball';
     /** Component breakdown for each action's chosen target (best lane / best receiver). */
     breakdowns: {
       shoot: {
@@ -218,6 +243,26 @@ export interface GameEvents {
       pathClearScore:     number;
       laneRiskPenalty:    number;
       offsideRiskPenalty: number;
+    }>;
+  };
+
+  /**
+   * Emitted every tick for the ball holder when debug mode is on and he is in a crossing
+   * position — the three cross targets with their score breakdown (/test aerial overlay).
+   */
+  crossScores: {
+    playerId:   number;
+    playerName: string;
+    targets: Array<{
+      kind:      'near_post' | 'penalty_spot' | 'far_post';
+      x:         number;
+      y:         number;
+      attackers: number;
+      defenders: number;
+      heading:   number;
+      gkClaim:   boolean;
+      raw:       number;
+      score:     number;
     }>;
   };
 

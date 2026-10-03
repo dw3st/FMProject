@@ -9,6 +9,8 @@ import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
+import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
+import { isAerialKind } from "@/GameEngine/types";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
@@ -212,6 +214,8 @@ export interface DebugOverlays {
   marking:               boolean;
   throughBallCells:      boolean;
   switchPlay:            boolean;
+  /** Cross targets while the holder is in a crossing position; landing point + AERIAL_RADIUS during a high ball. */
+  aerial:                boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -222,6 +226,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   marking:               false,
   throughBallCells:      false,
   switchPlay:            false,
+  aerial:                false,
 };
 
 interface Props {
@@ -234,11 +239,11 @@ interface Props {
   /** Show 10-yard grid lines and axis labels on the pitch for position reference. */
   showYardRefs?: boolean;
   /** Override the initial GameState (e.g. for test scenarios). Uses full match state if omitted. */
-  initialState?: import('../GameEngine/types').GameState;
+  initialState?: import('@/GameEngine/types').GameState;
   /** Simulation speed multiplier — 0.25 / 0.5 / 1 / 2. Default: 1. */
   gameSpeed?: number;
   /** Called with the nearest GamePlayer when the user clicks on the pitch. */
-  onPlayerClick?: (player: import('../GameEngine/types').GamePlayer) => void;
+  onPlayerClick?: (player: import('@/GameEngine/types').GamePlayer) => void;
   /** Called with pitch coordinates (yards) on every click inside the pitch. Fires alongside onPlayerClick. */
   onPitchClick?: (x: number, y: number) => void;
   /** Render the crowd density heatmap overlay on top of the pitch. */
@@ -514,7 +519,7 @@ export function PixiPitch({
       // Engine emits `throughBallScores` from decideBallHolder when debug is on.
       // We cache the latest payload so the ticker can render the heatmap without
       // re-computing the candidate cells.
-      type TbCells = import('../GameEngine/Infrastructure/EventBus').GameEvents['throughBallScores']['cells'];
+      type TbCells = import('@/GameEngine/Infrastructure/EventBus').GameEvents['throughBallScores']['cells'];
       let lastTbCells: TbCells = [];
       let lastTbHolder: number | null = null;
       const unsubTbScores = gameBus.on('throughBallScores', (e) => {
@@ -522,8 +527,17 @@ export function PixiPitch({
         lastTbHolder = e.playerId;
       });
 
+      // ── Cross targets cache (`crossScores`, emitted by decideBallHolder in debug mode) ──
+      type CrossTargets = import('@/GameEngine/Infrastructure/EventBus').GameEvents['crossScores']['targets'];
+      let lastCrossTargets: CrossTargets = [];
+      let lastCrossHolder: number | null = null;
+      const unsubCross = gameBus.on('crossScores', (e) => {
+        lastCrossTargets = e.targets;
+        lastCrossHolder  = e.playerId;
+      });
+
       // ── Through-ball chase commits cache ──
-      type ChaseCommit = import('../GameEngine/Infrastructure/EventBus').GameEvents['chaseCommit'];
+      type ChaseCommit = import('@/GameEngine/Infrastructure/EventBus').GameEvents['chaseCommit'];
       let lastChase: ChaseCommit | null = null;
       const unsubChase = gameBus.on('chaseCommit', (e) => {
         lastChase = e;
@@ -740,6 +754,46 @@ export function PixiPitch({
               throughBallGfx.moveTo(cx, cy).lineTo(lx, ly).stroke({ width: 1.8, color, alpha: 0.65 });
               // Small triangle near the chaser as predicted-winner marker
               throughBallGfx.circle(cx, cy, 4).stroke({ width: 1.5, color, alpha: 0.9 });
+            }
+          }
+
+          // ── Aerial: cross targets (holder in a crossing position) ──
+          // Each target: zone ring (TARGET_ZONE_RADIUS) + dot coloured by score; the best gets a gold ring.
+          if (
+            ovl.aerial &&
+            !stateRef.current.pass &&
+            !stateRef.current.shot &&
+            ballHolder &&
+            lastCrossHolder === ballHolder.id &&
+            lastCrossTargets.length > 0
+          ) {
+            const best = lastCrossTargets.reduce((a, b) => (b.score > a.score ? b : a));
+            for (const t of lastCrossTargets) {
+              const { px: tx, py: ty } = toPixel(t.x, t.y);
+              const sc = Math.max(0, Math.min(1, t.score));
+              throughBallGfx
+                .circle(tx, ty, AERIAL_CONFIG.TARGET_ZONE_RADIUS * m.scale)
+                .stroke({ width: 1, color: 0x2dd4bf, alpha: 0.35 });
+              throughBallGfx.circle(tx, ty, 5).fill({ color: t.gkClaim ? 0xf87171 : 0x2dd4bf, alpha: 0.25 + sc * 0.7 });
+              if (t === best && t.score > 0) {
+                throughBallGfx.circle(tx, ty, 9).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
+              }
+            }
+          }
+
+          // ── Aerial: landing point + duel radius during a cross / long ball / clearance ──
+          if (ovl.aerial && stateRef.current.pass && isAerialKind(stateRef.current.pass.kind)) {
+            const pass = stateRef.current.pass;
+            const { px: lx, py: ly } = toPixel(pass.toX, pass.toY);
+            throughBallGfx.circle(lx, ly, 4).fill({ color: 0x2dd4bf, alpha: 0.9 });
+            throughBallGfx
+              .circle(lx, ly, AERIAL_CONFIG.AERIAL_RADIUS * m.scale)
+              .stroke({ width: 2, color: 0x2dd4bf, alpha: 0.8 });
+            for (const player of stateRef.current.players) {
+              if (stateRef.current.decisions[player.id]?.type !== 'chase_loose_ball') continue;
+              const { px: cx, py: cy } = toPixel(player.x, player.y);
+              const color = player.team === 'A' ? 0x66aaff : 0xff7777;
+              throughBallGfx.moveTo(cx, cy).lineTo(lx, ly).stroke({ width: 1.5, color, alpha: 0.55 });
             }
           }
 
@@ -1153,6 +1207,7 @@ export function PixiPitch({
         unsubTactics();
         unsubTbScores();
         unsubChase();
+        unsubCross();
       };
     };
 

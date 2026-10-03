@@ -25,6 +25,7 @@ import {
   quickSimAppearances,
 } from "@/lab/fitnessCarry";
 import { addDayLogDiscipline } from "@/lab/disciplineStats";
+import { addDayLogAerial } from "@/lab/aerialStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
@@ -100,6 +101,7 @@ function emptyTeamRaw(): TeamRawStats {
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
+    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
   };
 }
 
@@ -138,6 +140,13 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.penaltiesAwarded            += src.penaltiesAwarded;
   dst.penaltyGoals                += src.penaltyGoals;
   dst.offsides                    += src.offsides;
+  dst.crosses                     += src.crosses;
+  dst.crossesCompleted            += src.crossesCompleted;
+  dst.aerialDuels                 += src.aerialDuels;
+  dst.aerialDuelsWon              += src.aerialDuelsWon;
+  dst.headerGoals                 += src.headerGoals;
+  dst.longBalls                   += src.longBalls;
+  dst.longBallsCompleted          += src.longBallsCompleted;
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -236,6 +245,8 @@ function runOneMatch(
     // Discipline: optional on the day-log team stats (quickSim fills them, see rollDiscipline).
     addDayLogDiscipline(teamA, hA);
     addDayLogDiscipline(teamB, hB);
+    addDayLogAerial(teamA, hA);
+    addDayLogAerial(teamB, hB);
     const qd = q.recording.decider;
     if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
     const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
@@ -288,6 +299,13 @@ function runOneMatch(
   teamA.penaltiesAwarded += sA.penaltiesAwarded; teamB.penaltiesAwarded += sB.penaltiesAwarded;
   teamA.penaltyGoals     += sA.penaltyGoals;     teamB.penaltyGoals     += sB.penaltyGoals;
   teamA.offsides         += sA.offsides;         teamB.offsides         += sB.offsides;
+  teamA.crosses            += sA.crosses;            teamB.crosses            += sB.crosses;
+  teamA.crossesCompleted   += sA.crossesCompleted;   teamB.crossesCompleted   += sB.crossesCompleted;
+  teamA.aerialDuels        += sA.aerialDuels;        teamB.aerialDuels        += sB.aerialDuels;
+  teamA.aerialDuelsWon     += sA.aerialDuelsWon;     teamB.aerialDuelsWon     += sB.aerialDuelsWon;
+  teamA.headerGoals        += sA.headerGoals;        teamB.headerGoals        += sB.headerGoals;
+  teamA.longBalls          += sA.longBalls;          teamB.longBalls          += sB.longBalls;
+  teamA.longBallsCompleted += sA.longBallsCompleted; teamB.longBallsCompleted += sB.longBallsCompleted;
 
   const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
   if (winner === "A") teamA.wins++;

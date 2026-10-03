@@ -30,6 +30,8 @@ import {
   PITCH_LENGTH,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { getPlayer, getBallHolder, teammates, opponents, type StoredScores } from '@/mcp/loadState';
+import { evaluateCrossTargets, evaluateLongBall, isCrossPosition } from '@/GameEngine/Domain/Aerial';
+import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 
 // ── Pass scoring ──────────────────────────────────────────────────────────────
 
@@ -231,6 +233,46 @@ export function queryThroughBallCells(state: GameState, limit = 15): {
         bestDefenderName: nameOf(c.components.bestDefenderId),
         bestDefenderEta:  +c.components.bestDefenderEta.toFixed(4),
       })),
+  };
+}
+
+// ── Cross / long-ball scoring (`.claude/rules/game-engine/aerial.md`) ─────────────
+
+export function queryCross(state: GameState): {
+  holder: { id: number; name: string; team: TeamId; role: string; x: number; y: number } | null;
+  crossPosition: boolean;
+  weights: Record<string, number>;
+  targets: Array<{
+    kind: string; x: number; y: number; attackers: number; defenders: number; heading: number;
+    gkClaim: boolean; raw: number; score: number; bestAttackerId: number | null; bestAttackerName: string | null;
+  }>;
+  longBall: { targetId: number; targetName: string | null; x: number; y: number; raw: number; score: number } | null;
+} {
+  const holder = state.players.find(p => p.id === state.ballHolderId) ?? null;
+  const nameOf = (id: number | null) => (id != null ? state.players.find(p => p.id === id)?.name ?? null : null);
+  const compress = (raw: number, strong: number) => 1 - Math.exp(-raw / strong);
+  const A = AERIAL_CONFIG;
+  const weights = {
+    CROSS_BASE: A.CROSS_BASE, CROSS_NUMBERS_WEIGHT: A.CROSS_NUMBERS_WEIGHT, CROSS_DEFENDER_WEIGHT: A.CROSS_DEFENDER_WEIGHT,
+    CROSS_PASS_WEIGHT: A.CROSS_PASS_WEIGHT, CROSS_HEADING_WEIGHT: A.CROSS_HEADING_WEIGHT, CROSS_GK_PENALTY: A.CROSS_GK_PENALTY,
+    CROSS_NEAR_LINE_MULT: A.CROSS_NEAR_LINE_MULT, CROSS_STRONG_RAW: A.CROSS_STRONG_RAW, LONG_BALL_STRONG_RAW: A.LONG_BALL_STRONG_RAW,
+  };
+  if (!holder) return { holder: null, crossPosition: false, weights, targets: [], longBall: null };
+  const offsideLine = computeOffsideLine(holder.attackDir, state.players, holder.team, holder.x);
+  const lb = evaluateLongBall(holder, state.players, getTeamPassConfig(holder.team).LONG_BALL_WEIGHT, offsideLine);
+  return {
+    holder: { id: holder.id, name: holder.name, team: holder.team, role: holder.role, x: +holder.x.toFixed(2), y: +holder.y.toFixed(2) },
+    crossPosition: isCrossPosition(holder),
+    weights,
+    targets: evaluateCrossTargets(holder, state.players).map(t => ({
+      kind: t.kind, x: +t.x.toFixed(2), y: +t.y.toFixed(2),
+      attackers: +t.attackers.toFixed(3), defenders: +t.defenders.toFixed(3), heading: +t.heading.toFixed(3),
+      gkClaim: t.gkClaim, raw: +t.raw.toFixed(4), score: +compress(t.raw, A.CROSS_STRONG_RAW).toFixed(4),
+      bestAttackerId: t.bestAttackerId, bestAttackerName: nameOf(t.bestAttackerId),
+    })),
+    longBall: lb
+      ? { targetId: lb.targetId, targetName: nameOf(lb.targetId), x: +lb.x.toFixed(2), y: +lb.y.toFixed(2), raw: +lb.raw.toFixed(4), score: +compress(lb.raw, A.LONG_BALL_STRONG_RAW).toFixed(4) }
+      : null,
   };
 }
 

@@ -62,6 +62,10 @@ export function teamLineup(raw: PlayerStatsRecord, role: PlayerRole): PlayerStat
       gkReflex:      role === 'GK' ? raw.reflex   / 10 : 0,
       gkDiving:      role === 'GK' ? raw.jump     / 10 : 0,
       strength:      (raw.strength ?? 5) / 10, // 0..1 — physical presence when pressing
+
+      // ── Aerial (`.claude/rules/game-engine/aerial.md`) ────────────────
+      heading:       (raw.heading ?? 5) / 10,  // 0..1 — aerial duels and headers
+      jump:          (raw.jump ?? 5) / 10,     // 0..1 — aerial duels
     },
   };
 }

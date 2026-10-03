@@ -170,6 +170,9 @@ export function getRuntimeLineup(base: PlayerStats, player: Pick<GamePlayer, 'en
       tackleChance: base.withoutBall.tackleChance * semiRed,
       tackling: base.withoutBall.tackling * semiRed,
       interceptionChance: base.withoutBall.interceptionChance * semiRed,
+      // Aerial: jumping is physical, heading technique semi (absent in pre-aerial snapshots).
+      heading: (base.withoutBall.heading ?? 0.5) * semiRed,
+      jump: (base.withoutBall.jump ?? 0.5) * physicalRed,
     },
   };
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
-import { getAllPlayerStats, getTeamStats } from "@/GameEngine/Domain/Statistics";
+import { emptyPlayerStats, getAllPlayerStats, getTeamStats } from "@/GameEngine/Domain/Statistics";
 import type { PlayerStats, TeamStats } from "@/GameEngine/Domain/Statistics";
 import type { GamePlayer, SubstitutionRecord } from "@/GameEngine/types";
 
@@ -41,37 +41,13 @@ const COLS: Col[] = [
   { label: "RC",   titleKey: "stats.headers.RC",    value: (s) => s.redCards },
   { label: "OFF",  titleKey: "stats.headers.OFF",   value: (s) => s.offsides },
   { label: "PEN",  titleKey: "stats.headers.PEN",   value: (s) => s.penaltyGoals },
+  { label: "CR",   titleKey: "stats.headers.CR",    value: (s) => s.crosses },
+  { label: "AD",   titleKey: "stats.headers.AD",    value: (s) => s.aerialDuelsWon },
+  { label: "HG",   titleKey: "stats.headers.HG",    value: (s) => s.headerGoals },
+  { label: "LB",   titleKey: "stats.headers.LB",    value: (s) => s.longBalls },
 ];
 
-const EMPTY_STATS: PlayerStats = {
-  passesAttempted: 0,
-  passesCompleted: 0,
-  passesFailed: 0,
-  shots: 0,
-  goals: 0,
-  assists: 0,
-  interceptions: 0,
-  tackles: 0,
-  xg: 0,
-  dribblesWon: 0,
-  dribblesLost: 0,
-  throughBallsAttempted: 0,
-  throughBallsCompleted: 0,
-  throughBallsLostInFlight: 0,
-  throughBallsLostInRace: 0,
-  throughBallsLostInDuel: 0,
-  looseBallsWon: 0,
-  switchPlays: 0,
-  penaltiesTaken: 0,
-  penaltiesScored: 0,
-  fouls: 0,
-  yellowCards: 0,
-  redCards: 0,
-  penaltiesAwarded: 0,
-  penaltiesConceded: 0,
-  penaltyGoals: 0,
-  offsides: 0,
-};
+const EMPTY_STATS: PlayerStats = emptyPlayerStats();
 
 function TeamTable({
   team,

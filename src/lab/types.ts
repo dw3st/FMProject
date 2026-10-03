@@ -186,6 +186,15 @@ export interface TeamRawStats {
   penaltyGoals: number;
   /** Times this team was caught offside. */
   offsides: number;
+  // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
+  crosses: number;
+  crossesCompleted: number;
+  /** Aerial duels contested (each duel counts once per team). */
+  aerialDuels: number;
+  aerialDuelsWon: number;
+  headerGoals: number;
+  longBalls: number;
+  longBallsCompleted: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -268,6 +277,12 @@ export interface PerMatchView {
   /** In-match penalty goals per match. */
   avgPenaltyGoals: number;
   avgOffsides: number;
+  /** Aerial play per match (`aerial.md`). */
+  avgCrosses: number;
+  crossCompletionPct: number;
+  avgAerialDuelsWon: number;
+  avgHeaderGoals: number;
+  avgLongBalls: number;
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -343,6 +358,12 @@ export interface VariantSummary {
   /** In-match penalty goals per match. */
   avgPenaltyGoals: number;
   avgOffsides: number;
+  /** Aerial play per match (`aerial.md`). */
+  avgCrosses: number;
+  crossCompletionPct: number;
+  avgAerialDuelsWon: number;
+  avgHeaderGoals: number;
+  avgLongBalls: number;
 }
 
 export interface ScenarioResult {
