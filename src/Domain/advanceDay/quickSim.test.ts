@@ -785,6 +785,40 @@ describe("quickSimMatch — aerial play", () => {
   });
 });
 
+describe("quickSimMatch — set pieces", () => {
+  test("set-piece and direct free-kick goals follow the engine shares; corners and free kicks are counted", () => {
+    const home = makeSquad("h", 6);
+    const away = makeSquad("a", 6);
+    const n = 3000;
+    let goals = 0, setPiece = 0, penalties = 0, direct = 0, corners = 0;
+    for (let i = 0; i < n; i++) {
+      const r = run(home, away, 1000 + i).recording;
+      for (const [side, other] of [["home", "away"], ["away", "home"]] as const) {
+        const t = r.teamStats[side];
+        const o = r.teamStats[other];
+        expect(t.setPieceGoals!).toBeGreaterThanOrEqual(t.penaltyGoals ?? 0);
+        expect(t.setPieceGoals!).toBeLessThanOrEqual(r.score[side]);
+        expect(t.directFreeKickGoals!).toBeLessThanOrEqual(t.directFreeKickShots!);
+        expect(t.freeKicks).toBe(Math.max(0, (o.fouls ?? 0) - (t.penaltiesAwarded ?? 0)));
+        setPiece += t.setPieceGoals!;
+        penalties += t.penaltyGoals ?? 0;
+        direct += t.directFreeKickGoals!;
+        corners += t.corners!;
+      }
+      goals += r.score.home + r.score.away;
+      // Set-piece goals move goals between players, never add any.
+      const g = (side: Squad) => lineupOf(side).reduce((s, id) => s + (r.playerStats[id]?.goals ?? 0), 0);
+      expect(g(home)).toBe(r.score.home);
+      expect(g(away)).toBe(r.score.away);
+    }
+    expect((setPiece - penalties) / goals).toBeGreaterThan(C.SET_PIECE_GOAL_SHARE * 0.8);
+    expect((setPiece - penalties) / goals).toBeLessThan(C.SET_PIECE_GOAL_SHARE * 1.2);
+    expect(direct / goals).toBeGreaterThan(C.DIRECT_FK_GOAL_SHARE * 0.7);
+    expect(direct / goals).toBeLessThan(C.DIRECT_FK_GOAL_SHARE * 1.3);
+    expect(corners / n).toBeCloseTo(2 * C.CORNERS_PER_SIDE, 0);
+  });
+});
+
 describe("quickSimMatch — extra-time header goals", () => {
   test("an extra-time goal can be a header; goals still add up", () => {
     const home = makeSquad("h", 6);

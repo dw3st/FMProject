@@ -227,4 +227,19 @@ export const QUICK_SIM_CONFIG = {
   AERIAL_DUELS_PER_MATCH: 9.8,
   /** Who wins a team's duels (engine duels won per starter slot): weight × (0.5 + heading/10). */
   AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.43, MID: 0.4, FWD: 0.65 } as Record<LineGroup, number>,
+
+  /**
+   * Set pieces (Etapa 14, `.claude/rules/game-engine/set-pieces-play.md`), from the full engine's
+   * per-match means (`bun scripts/setpiece-calibrate.ts`). Corners and direct free-kick shots by
+   * Poisson; free kicks = the opponent's fouls minus its penalties. SET_PIECE_GOAL_SHARE of all goals
+   * are non-penalty set-piece goals (corners, free kicks — DIRECT_FK_GOAL_SHARE of all goals are
+   * direct free kicks, moved to the best finisher with no assist); a set-piece goal that is not
+   * already a header is re-attributed by SET_PIECE_LINE_WEIGHT × (0.5 + heading/10). Penalty goals
+   * count as set-piece goals too. The score never changes.
+   */
+  CORNERS_PER_SIDE: 3.4,
+  DIRECT_FK_SHOTS_PER_SIDE: 0.13,
+  SET_PIECE_GOAL_SHARE: 0.1,
+  DIRECT_FK_GOAL_SHARE: 0.03,
+  SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.6, MID: 0.25, FWD: 1.0 } as Record<LineGroup, number>,
 } as const;
