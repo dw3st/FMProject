@@ -99,15 +99,10 @@ export function PlayerSelector({ players, selectedId, onSelect, clubColors }: Pl
               </span>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold text-sm text-foreground truncate min-w-0 flex-1">{player.name}</span>
-                  <span
-                    className={`text-sm font-semibold shrink-0 whitespace-nowrap ${phase.color}`}
-                    title={phase.label}
-                  >
-                    {phase.label}
-                  </span>
-                </div>
+                <span className="block font-semibold text-sm text-foreground truncate">{player.name}</span>
+                <span className={`block text-sm font-semibold truncate ${phase.color}`} title={phase.label}>
+                  {phase.label}
+                </span>
               </div>
 
               <Icon name="check"
