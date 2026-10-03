@@ -7,7 +7,8 @@ const route = faceRoutes["/api/faces/:file"];
 
 function get(path: string): Response | Promise<Response> {
   const url = new URL(path, "http://localhost");
-  const file = url.pathname.replace("/api/faces/", "");
+  // Bun's router hands the handler percent-decoded params; mirror that.
+  const file = decodeURIComponent(url.pathname.replace("/api/faces/", ""));
   const req = Object.assign(new Request(url), { params: { file } });
   return route(req);
 }
@@ -18,6 +19,7 @@ describe("GET /api/faces/:playerId.svg", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/svg+xml");
     expect(res.headers.get("cache-control")).toContain("immutable");
+    expect(res.headers.get("content-security-policy")).toBe("default-src 'none'; style-src 'unsafe-inline'");
     expect(await res.text()).toBe(croppedPlayerFaceSvg("player_42", "Brazil", ["#DA291C", "#FFE500"]));
   });
 
@@ -33,6 +35,8 @@ describe("GET /api/faces/:playerId.svg", () => {
     expect((await get("/api/faces/player_1")).status).toBe(404);
     expect((await get("/api/faces/%3Cscript%3E.svg")).status).toBe(404);
     expect((await get("/api/faces/..%2Fsecret.svg")).status).toBe(404);
+    // Decoded once by the router to `%zz.svg`; a second decode used to throw (500).
+    expect((await get("/api/faces/%25zz.svg")).status).toBe(404);
   });
 
   test("invalid colours never reach the SVG, they fall back to the defaults", () => {
@@ -40,6 +44,13 @@ describe("GET /api/faces/:playerId.svg", () => {
     expect(parsed.colors).toEqual([undefined, "#00ff00"]);
     const svg = croppedPlayerFaceSvg(parsed.playerId, parsed.nationality, parsed.colors);
     expect(svg).not.toContain("<script>");
+  });
+
+  test("same region shares a cache entry and the bytes match the domain SVG", async () => {
+    const a = await (await get(faceUrl("player_9", "Germany", ["#000000"]))).text();
+    const b = await (await get(faceUrl("player_9", "England", ["#000000"]))).text();
+    expect(a).toBe(b);
+    expect(b).toBe(croppedPlayerFaceSvg("player_9", "England", ["#000000"]));
   });
 
   test("at most 3 colours, nationality is trimmed and capped", () => {
