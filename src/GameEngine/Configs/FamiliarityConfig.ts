@@ -49,7 +49,7 @@ export const HIGH_PRESS_STAMINA_MULT = 1.10;
  * style its identity but measured ≈ 0 on results (`.claude/rules/game/style-training.md`); this is
  * the term that makes a drilled side win more. Mutable only so calibration scripts can override it.
  */
-export const FAMILIARITY_ENGINE = { EXECUTION_STAT_SCALE: 0.03 };
+export const FAMILIARITY_ENGINE = { EXECUTION_STAT_SCALE: 0.02 };
 
 const TEAM_EXECUTION_MULT: Record<TeamId, number> = { A: 1, B: 1 };
 
