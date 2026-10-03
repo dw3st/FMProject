@@ -119,6 +119,8 @@ export function MatchScreen() {
   const [crestIds, setCrestIds] = useState<{ a: string; b?: string } | null>(null);
   const [debug, setDebug] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  /** Which side the left team card shows (#51): own team by default, flip to see the opponent. */
+  const [panelTeam, setPanelTeam] = useState<TeamId>("A");
   // Testers can file a report without leaving the match (#46), same gate as TopNavigation.
   const isTester = !!useCurrentUser()?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
@@ -604,7 +606,6 @@ export function MatchScreen() {
     );
   }
 
-  const teamA = gameState.players.filter((p) => p.team === "A");
   const passFromId = gameState.pass?.fromId;
   // toId is null during a through ball — the receiver is undetermined until landing.
   const passToId = gameState.pass?.toId ?? undefined;
@@ -617,6 +618,7 @@ export function MatchScreen() {
     return {
       shots: st.shots, passesCompleted: st.passesCompleted, passesAttempted: st.passesAttempted,
       fouls: st.fouls, yellowCards: st.yellowCards, redCards: st.redCards, offsides: st.offsides,
+      corners: st.corners, freeKicks: st.freeKicks,
     };
   };
   const possTotal = possessionRef.current.A + possessionRef.current.B;
@@ -636,10 +638,6 @@ export function MatchScreen() {
     .map((item, i) => ({ item, i }))
     .sort((a, b) => a.item.minute - b.item.minute || a.i - b.i)
     .map(({ item }) => ({ ...item, minute: item.minute + 1 }));
-
-  const subbedInA = new Set(
-    gameState.substitutions.filter((s) => s.team === "A").map((s) => s.playerInId),
-  );
 
   // Half-time/extra-time: read straight off the engine's own countdown, so the bar tracks
   // exactly what actually gates the pause (including e.g. staying put while `paused`).
@@ -797,11 +795,12 @@ export function MatchScreen() {
       {/* Main Match View */}
       <main className="flex-1 flex overflow-hidden min-h-0">
         <TeamPanel
-          team="A"
-          teamName={teamAWithCrest?.name}
-          accentColor={matchKitColors.teamA}
-          players={teamA}
-          score={score.A}
+          team={panelTeam}
+          side="left"
+          teamName={panelTeam === "A" ? teamAWithCrest?.name : teamBWithCrest?.name}
+          accentColor={panelTeam === "A" ? matchKitColors.teamA : matchKitColors.teamB}
+          players={gameState.players.filter((p) => p.team === panelTeam)}
+          score={score[panelTeam]}
           ballHolderId={gameState.ballHolderId}
           passFromId={passFromId}
           passToId={passToId}
@@ -809,9 +808,15 @@ export function MatchScreen() {
           ratings={ratings}
           selectedPlayerId={selectedPlayerId}
           onSelectPlayer={setSelectedPlayerId}
-          subsRemaining={gameState.subsRemainingA}
-          pendingSubsCount={gameState.pendingSubsA.length}
-          subbedInPlayerIds={subbedInA}
+          subsRemaining={panelTeam === "A" ? gameState.subsRemainingA : gameState.subsRemainingB}
+          pendingSubsCount={panelTeam === "A" ? gameState.pendingSubsA.length : gameState.pendingSubsB.length}
+          subbedInPlayerIds={new Set(
+            gameState.substitutions.filter((s) => s.team === panelTeam).map((s) => s.playerInId),
+          )}
+          onFlip={() => setPanelTeam((tm) => (tm === "A" ? "B" : "A"))}
+          flipLabel={t("match.summary.showTeam", {
+            team: (panelTeam === "A" ? teamBWithCrest?.name : teamAWithCrest?.name) ?? (panelTeam === "A" ? "B" : "A"),
+          })}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

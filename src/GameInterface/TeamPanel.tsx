@@ -110,8 +110,17 @@ export function TeamPanel({
   subsRemaining,
   pendingSubsCount,
   subbedInPlayerIds,
+  side: sideProp,
+  onFlip,
+  flipLabel,
 }: {
   team:             "A" | "B";
+  /** Layout side; defaults to left for A and right for B. */
+  side?:            "left" | "right";
+  /** When set, the header shows an arrow button that switches the card to the other team. */
+  onFlip?:          () => void;
+  /** Accessible label/tooltip of the flip button. */
+  flipLabel?:       string;
   /** Club name; falls back to "Team A/B" when unknown. */
   teamName?:        string;
   accentColor:      string;
@@ -133,7 +142,7 @@ export function TeamPanel({
   const { t } = useTranslation();
   const { session, currentDate } = useGameSave();
   const starIds = useStarPlayers(session?.saveId, currentDate);
-  const side = team === "A" ? "left" : "right";
+  const side = sideProp ?? (team === "A" ? "left" : "right");
   const isLeft = side === "left";
 
   return (
@@ -144,6 +153,17 @@ export function TeamPanel({
           <span className="font-bold text-foreground truncate">{teamName ?? `${t("common.team")} ${team}`}</span>
         </div>
         <div className={`flex items-center gap-2 ${isLeft ? "flex-row-reverse" : ""}`}>
+          {onFlip && (
+            <button
+              type="button"
+              onClick={onFlip}
+              aria-label={flipLabel}
+              title={flipLabel}
+              className="w-8 h-8 shrink-0 rounded border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors cursor-pointer"
+            >
+              <Icon name="arrow-right-left" className="w-4 h-4" />
+            </button>
+          )}
           {subsRemaining !== undefined && (
             <span className={`text-sm font-semibold px-2 py-0.5 rounded border ${
               pendingSubsCount && pendingSubsCount > 0
