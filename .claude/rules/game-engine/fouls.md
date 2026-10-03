@@ -24,6 +24,7 @@ Três lances resolvidos, sempre com a bola dominada (nunca com passe/chute no ar
 | `tackle` | desarme (`resolveTackle`) | desarmador → portador | real (`tackleAngleModifier`: frente/lado/trás) |
 | `dribble` | 1v1 (`resolveDribble`) | defensor → driblador | `front` se o defensor ganhou; `behind` se foi batido (falta para parar a jogada) |
 | `duel` | bola solta disputada (`resolveLooseBallDuel`) | sorteio 50/50 entre os dois | `side` |
+| `aerial` | disputa aérea (`resolveAerialLanding`, `aerial.md`) | sorteio 50/50 entre os dois | `side` |
 
 A falta **anula o lance**: o time que sofreu recomeça, mesmo que o desarme/drible/duelo tenha sido
 ganho pelo infrator. O evento `tackle` sai com `success: false` quando houve falta; `dribble` sai com
@@ -34,14 +35,15 @@ ganho pelo infrator. O evento `tackle` sai com `success: false` quando houve fal
 ```
 chance = BASE[tipo] × ÂNGULO × agressividade × técnica × cansaço × amarelo × ganhou × área   (limite 0,9)
 
-BASE        tackle 0,75 · dribble 0,55 · duel 0,40
+BASE        tackle 0,75 · dribble 0,55 · duel 0,40 · aerial 0,06
 ÂNGULO      frente 0,7 · lado 1,0 · trás 1,8
 agress.     1 + 1,0 × (TACKLE_AGGRESSION − 0,4)      low_block 0,85 · mid_block 1,0 · high_press 1,25
 técnica     1 + 0,6 × (0,5 − tackling)               tackling = runtimeStats.withoutBall.tackling (0..1)
 cansaço     1 + 0,6 × max(0, (70 − energia) / 70)
 amarelo     0,15 se o infrator já tem amarelo
 ganhou      0,15 se o lance foi ganho pelo infrator (desarme/drible vencido)
-área        0,13 dentro da própria área (defensor se segura; falta ali é pênalti)
+área        0,30 dentro da própria área (defensor se segura; falta ali é pênalti) — era 0,13 antes do jogo
+            aéreo: os cruzamentos substituem muitas conduções para dentro da área e os pênaltis caíram à metade
 ```
 
 `TACKLE_AGGRESSION` (estilo de marcação, `DefenseConfig`) só é usado aqui.
@@ -131,6 +133,10 @@ gols 2,34, chutes 5,60, xG 3,42, faltas 11,2, amarelos 2,75, vermelhos 0,18 (0,1
 amarelo), pênaltis 0,28 (0,22 gol), impedimentos 1,03, tiros livres 10,9 (2,2 perigosos); origem
 desarme 4,6 · drible 4,7 · bola solta 1,9. Tudo dentro do ruído das rodadas anteriores (as duas
 rodadas de 200 deram vermelhos 0,205 e 0,150, pênaltis 0,31 e 0,25).
+
+**Depois do jogo aéreo** (Etapa 13, `aerial.md`, PL 800 / Championship 1200 jogos, `IN_BOX_MULT`
+0,13 → 0,30 e faltas em disputa aérea): faltas 10,7 / 11,5, pênaltis 0,27 / 0,29 (0,22 gol), gols e
+chutes dentro de ±5% do motor anterior.
 
 **O que move gols/chutes:** os pênaltis somam ~0,18 gol por partida; os gols sem pênalti caem
 ~4,6% (as interrupções quebram jogadas), o que compensa quase tudo. Os layouts de tiro livre perigoso

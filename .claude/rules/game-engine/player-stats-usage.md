@@ -27,10 +27,12 @@ How every roster attribute flows through the engine: what it becomes, where it i
 | `pressing` | `withoutBall.gkPositioning` | `pressing / 10` | GK only; 0 for others |
 | `reflex` | `withoutBall.gkReflex` | `reflex / 10` | GK only; 0 for others |
 | `jump` | `withoutBall.gkDiving` | `jump / 10` | GK only; 0 for others |
+| `heading` | `withoutBall.heading` | `heading / 10` | All players; aerial duels, headers, cross targets (`aerial.md`) |
+| `jump` | `withoutBall.jump` | `jump / 10` | All players; aerial duels (`aerial.md`) |
 | `strength` | `withBall.strength` | `strength / 10` | 0..1; defaults to 0.5 if missing |
 | `strength` | `withoutBall.strength` | `strength / 10` | 0..1; defaults to 0.5 if missing |
 
-**Not yet wired to any engine stat:** `heading`. `stamina` is not converted to an engine stat by
+Every roster attribute now feeds the engine (`heading` and `jump` since Etapa 13). `stamina` is not converted to an engine stat by
 `TeamLineup.ts`, but it is read directly by the fitness model and the in-match energy/recovery
 code — see Part 2 below.
 
@@ -370,11 +372,37 @@ decision or outcome roll.
 
 ## Part 3 — Dead Roster Attributes (not wired to any engine behaviour)
 
-| Roster attribute | Status |
-|---|---|
-| `heading` | Not used |
+None since Etapa 13: `heading` (the last unused one) and the outfield `jump` drive aerial play.
 
-These attributes exist on the roster but `TeamLineup.ts` never reads them.
+---
+
+## Part 2b — Aerial stats (`.claude/rules/game-engine/aerial.md`)
+
+### `withoutBall.heading` and `withoutBall.jump`
+
+Fatigue: `heading` is semi-technical (×semi factor), `jump` physical (×physical factor) in
+`getRuntimeLineup`. Snapshots that predate them read 0.5 (`headingOf` / `jumpOf` in `Aerial.ts`).
+
+**Where:**
+
+1. `ActionOutcomes.ts → resolveAerialDuel()` via `Aerial.ts → aerialDuelScore()`:
+   ```ts
+   score = heading × 0.45 + jump × 0.25 + strength × 0.15 + position × 0.15 (+ DUEL_BASE 0.10)
+   position = 1 − dist(landing point) / AERIAL_RADIUS
+   P(A wins) = sA / (sA + sB)
+   ```
+2. `ActionOutcomes.ts → computeHeaderEffect()` — `heading` replaces `shootAccuracy` for a header:
+   `0.8 + heading × 0.5` (HEADER_EFFECT_MIN..MAX). The header aim spread also uses `heading`.
+3. `Aerial.ts → evaluateCrossTargets()` — best proximity-weighted `heading` of the attackers that can
+   reach a target adds `heading × CROSS_HEADING_WEIGHT` to the cross score.
+4. `Aerial.ts → evaluateLongBall()` — the receiver's `aerialAbility` (heading/jump/strength) adds to
+   the long-ball score.
+
+Outfield `jump` is low in the real squads (~0.9/10), so in practice `heading` and `strength` decide
+outfield duels; `jump` mostly matters for keepers (who also use it as `gkDiving`).
+
+**Influence level: MEDIUM** — decides ~10–11 aerial duels per match (both teams) and the quality of
+every header (~0.75 headers per match, ~11–12% of the goals).
 
 ---
 
@@ -415,3 +443,4 @@ Similarly, `speed` and `acceleration` feed into both `carrySpeed` and `pressSpee
 | `withBall.acceleration` | **LOW** — only pressure escape burst |
 | `withoutBall.pressRange` | **LOW** — flat value, tactic-driven not stat-driven |
 | `stamina` (raw, not an engine stat) | **MEDIUM-HIGH** — halves in-match energy cost at max value; scales half-time and daily recovery |
+| `withoutBall.heading` / `jump` | **MEDIUM** — aerial duels, header finishing, cross / long-ball targets |

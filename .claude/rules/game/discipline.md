@@ -49,7 +49,7 @@ passar; a indisponibilidade vale de qualquer jeito).
   × `BOOKED_FOUL_MULT` 0,35 se já tem amarelo; expulso não comete mais. Minutos sorteados e ordenados.
 - **Cartão por falta:** vermelho direto `DIRECT_RED_PER_FOUL` 0,0026; amarelo `YELLOW_PER_FOUL` 0,245
   (× `BOOKED_CARD_MULT` 1,15 em quem já tem amarelo → segundo amarelo = amarelo + vermelho).
-- **Pênaltis** a favor do adversário: λ = `PENALTIES_PER_SIDE` 0,115, chance `c = penaltyChance(...)`
+- **Pênaltis** a favor do adversário: λ = `PENALTIES_PER_SIDE` 0,14 (era 0,115; subiu com o `IN_BOX_MULT` do motor na Etapa 13, `aerial.md`), chance `c = penaltyChance(...)`
   (maior `finishing` do adversário × goleiro de quem cede). **O placar não muda:** cada gol normal
   já sorteado do adversário vira gol de pênalti com probabilidade `q = λ·c / xG do dia`; os perdidos
   são Poisson(`λ·(1 − c)`). Assim `E[gols de pênalti] = λ·c`, `E[pênaltis] = λ`, e o volume de gols

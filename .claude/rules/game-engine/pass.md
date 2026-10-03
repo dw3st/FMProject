@@ -303,6 +303,8 @@ so `STRONG_RAW` sets how much raw quality an action needs to look "strong" (0.63
 | **pass** | **0.8** |
 | dribble | 0.8 |
 | through ball | 0.9 |
+| cross (`aerial.md`) | 0.5 (`AERIAL_CONFIG.CROSS_STRONG_RAW`) |
+| long ball (`aerial.md`) | 0.4 (`AERIAL_CONFIG.LONG_BALL_STRONG_RAW`) |
 
 **Why pass is 0.8 (changed 2026-09-24, was 1.0).** A to-feet pass has a low structural
 ceiling: the short lateral pass a midfielder plays scores progress ≈ 0.57, almost no goal
