@@ -146,7 +146,7 @@ export function ClubCard({
   const { t } = useTranslation();
   const label = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
   return (
-    <section className="card-arcade rounded-md p-4 grid gap-6 items-center min-w-0 md:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+    <section className="card-arcade rounded-md p-4 grid gap-6 items-center min-w-0 md:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
       <div className="flex items-center gap-4 min-w-0">
         <ClubLogo
           logoUrl={squadLogoUrl(club.id)}
