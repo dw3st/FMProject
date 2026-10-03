@@ -88,6 +88,8 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 14 ✅ | 4.3 Bolas paradas (3.0) | — | Escanteios (cruzamento em três zonas ou curto, zagueiros na área, marcação individual), falta direta com barreira, falta cruzada, lateral com alcance, cobradores na tela de táticas; quickSim com gols de bola parada; `/test` (cenários `corner-attack` e `direct-free-kick`, overlay Set pieces), `/lab` e `scripts/setpiece-calibrate.ts` |
 | 15 ✅ | 4.4 Treino de estilos de jogo (2.9) | #43 (fechado na 2.9) | Treinar estilos (bola longa, linha de impedimento, linha alta, posse curta, pressão alta com mais desgaste) que dão bônus na partida, combinados com a mentalidade |
 | 16 ✅ | Polimento (3.1) | #44 (fechado na 3.1) | Mapa-múndi clicável para escolher o país no novo jogo; rostos gerados dos jogadores (`facesjs`, Apache-2.0, estilo Football GM: determinísticos pelo id, com a camisa do clube; fotos reais da ESPN descartadas por direitos de imagem); aba "Em breve" nas novidades |
+| 17 | Diretoria e torcida | #58 | Satisfação da diretoria e da torcida reagindo a resultados, posição, títulos, finanças e transferências (hoje fixas em 75% no cartão do clube), com efeitos: cobrança da diretoria, público e receita |
+| 18 | Mais formações | #59 | Formações que faltam (4-4-1-1, 4-3-2-1, 3-4-2-1, 3-4-1-2, 5-4-1, 5-2-3, 4-1-2-1-2 losango) com posicionamentos de bola parada e comparação no `/lab` |
 
 **Com data:** #11 (ligas de ano civil com a composição de 2026) entra assim que a ESPN virar essas
 ligas para 2027 (previsão: janeiro/fevereiro de 2027): `fetchEspn` + regenerar a cadeia.

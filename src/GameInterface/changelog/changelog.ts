@@ -498,4 +498,6 @@ export const CURRENT_VERSION = latest.version;
 export const upcoming: ChangelogText[] = [
   { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
   { pt: "Convites de clubes maiores para técnicos bem colocados no ranking", en: "Offers from bigger clubs for managers high in the ranking" },
+  { pt: "Diretoria e torcida que reagem aos resultados, às finanças e às contratações", en: "Board and fans that react to results, finances and signings" },
+  { pt: "Mais formações táticas, como 4-4-1-1, 3-4-2-1, 5-4-1 e o losango", en: "More tactical formations, such as 4-4-1-1, 3-4-2-1, 5-4-1 and the diamond" },
 ];
