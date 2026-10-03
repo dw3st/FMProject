@@ -6,6 +6,7 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { validateAttachmentFile } from "@/GameInterface/Components/reportAttachmentValidation";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 
 // "tweak" was dropped from the form (#22) — too close to "improvement". The server still accepts
 // it so older reports stay valid.
@@ -210,27 +211,13 @@ export function ReportModal({ open, onClose }: Props) {
                 <span className="block text-[13px] font-bold uppercase tracking-[0.08em] font-display text-muted-foreground mb-2">
                   {t("reports.type")}
                 </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {TYPE_OPTIONS.map((opt) => {
-                    const active = type === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        aria-pressed={active}
-                        disabled={submitting}
-                        onClick={() => setType(opt.value)}
-                        className={`text-[13px] font-black uppercase tracking-[0.08em] font-display px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
-                          active
-                            ? "border-primary bg-primary/15 text-primary"
-                            : "border-border/60 bg-card/40 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <OptionChips
+                  aria-label={t("reports.type")}
+                  options={TYPE_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
+                  value={type}
+                  onChange={setType}
+                  disabled={submitting}
+                />
               </div>
 
               <div>

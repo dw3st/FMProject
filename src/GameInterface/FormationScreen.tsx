@@ -57,6 +57,8 @@ import {
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 
@@ -503,19 +505,14 @@ export function FormationScreen() {
                     const isActive = f.id === formationId;
                     return (
                       <div key={f.id} className="relative group">
-                        <button
+                        <Chip
+                          selected={isActive}
                           onClick={() => supported ? handleSelectFormation(f.id) : undefined}
                           disabled={updating || !supported}
-                          className={`w-full px-3 py-3 rounded border bg-transparent text-sm font-bold font-display tabular-nums tracking-[0.08em] transition-colors ${
-                            isActive
-                              ? "border-primary text-primary bg-primary/10 cursor-pointer"
-                              : supported
-                              ? "border-border text-foreground hover:border-primary/50 cursor-pointer"
-                              : "border-border/40 text-muted-foreground/40 cursor-not-allowed"
-                          }`}
+                          className="w-full py-2.5 tabular-nums"
                         >
                           {f.id}
-                        </button>
+                        </Chip>
                         {!supported && (
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded-md bg-card border border-border text-sm text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                             {t("common.comingSoon")}
@@ -530,30 +527,24 @@ export function FormationScreen() {
                   <p className="text-muted-foreground text-sm py-4 text-center m-0">{t("formations.noFormations")}</p>
                 )}
                 {customFormation && (
-                  <button
-                    type="button"
+                  <Chip
+                    selected={formationId === CUSTOM_FORMATION_ID}
                     onClick={() => handleSelectFormation(CUSTOM_FORMATION_ID)}
                     disabled={updating || editing}
-                    className={`mt-2 w-full rounded border px-3 py-1.5 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed ${
-                      formationId === CUSTOM_FORMATION_ID
-                        ? "border-primary text-primary"
-                        : "border-border text-foreground hover:border-primary/50"
-                    }`}
+                    className="mt-2 w-full tabular-nums"
                   >
                     {t("formations.custom")} {customShape(customFormation.slots)}
-                  </button>
+                  </Chip>
                 )}
-                <button
-                  type="button"
+                <Chip
+                  selected={editing}
                   onClick={editing ? cancelEditing : startEditing}
                   disabled={!squad || attacking.length === 0}
-                  className="mt-3 w-full rounded border border-border px-3 py-1.5 text-sm font-semibold text-foreground hover:border-primary/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-3 w-full"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <Icon name="formation" className="w-4 h-4" />
-                    {editing ? t("formations.editor.cancel") : t("formations.editor.edit")}
-                  </span>
-                </button>
+                  <Icon name="formation" className="w-4 h-4" />
+                  {editing ? t("formations.editor.cancel") : t("formations.editor.edit")}
+                </Chip>
 
                 <div className="mt-6 pt-4 border-t border-border/30">
                   <h4 className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-2 font-display font-bold">{t("formations.formationInfo")}</h4>
@@ -843,22 +834,12 @@ export function FormationScreen() {
                     <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">
                       {t(`tactics.axes.${axis.key}` as never)}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {axis.values.map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => handleAxis(axis.key, v as never)}
-                          className={`rounded border px-3 py-1.5 text-sm cursor-pointer bg-transparent ${
-                            current === v
-                              ? "border-primary text-primary"
-                              : "border-border text-foreground hover:border-primary/50"
-                          }`}
-                        >
-                          {t(`tactics.axes.values.${v}` as never)}
-                        </button>
-                      ))}
-                    </div>
+                    <OptionChips
+                      aria-label={t(`tactics.axes.${axis.key}` as never)}
+                      options={axis.values.map((v) => ({ key: v as string, label: t(`tactics.axes.values.${v}` as never) }))}
+                      value={current as string}
+                      onChange={(v) => handleAxis(axis.key, v as never)}
+                    />
                   </div>
                 );
               })}

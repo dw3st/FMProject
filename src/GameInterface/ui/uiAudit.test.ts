@@ -24,6 +24,12 @@ describe("ui audit rules", () => {
     expect(rules(`<p style={{ fontSize: 12 }}>x</p>`)).toContain("hard:inline-font");
     expect(rules(`<p style={{ width: 12 }}>x</p>`)).toEqual([]);
   });
+  test("a hand-rolled option chip is a hard violation", () => {
+    const chip = `<button className={\`rounded-lg border px-2.5 py-1.5 \${on ? "border-primary bg-primary/15 text-primary" : "border-border"}\`}>x</button>`;
+    expect(rules(chip)).toContain("hard:chip");
+    const row = `<button className={\`text-left p-4 border \${on ? "border-primary" : "border-border"}\`}>x</button>`;
+    expect(rules(row)).not.toContain("hard:chip");
+  });
   test("soft rules: 13px body text, headings, raw primary buttons", () => {
     expect(rules(`<p className="text-[13px]">x</p>`)).toContain("soft:size-13");
     expect(rules(`<h2 className="text-lg">x</h2>`)).toContain("soft:heading");

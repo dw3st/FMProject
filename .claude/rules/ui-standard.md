@@ -42,9 +42,21 @@ texto (`bg-clip-text`).
 - **Cartão de escolha:** `rounded-md border border-border bg-card p-3`; selecionado
   `border-primary ring-1 ring-primary`. Título do cartão no estilo de título de seção (menor:
   `text-base`), uma linha de descrição.
-- **Botão-opção (chip):** `ui/Chip.tsx` — `rounded border border-border px-3 py-1.5 text-sm`; selecionado
-  `border-primary text-primary`. Também é o padrão de um filtro liga/desliga ("Só à venda") e de uma
-  grade de opções (formações): a opção escolhida nunca vira um botão primário preenchido.
+- **Chip (botão-opção) — o padrão único:** o visual dos chips de "Intensidade" do Treino (LEVE / NORMAL /
+  PESADO). `ui/Chip.tsx` guarda as classes (`CHIP_STYLE`, `chipClass`): `font-display` bold uppercase
+  `tracking-[0.08em]` `text-sm`, pílula `rounded-lg` `px-3 py-1.5` com borda sutil; desligado
+  `border-border/60 bg-card/40 text-muted-foreground` (hover borda primária e texto claro); ligado
+  `border-primary bg-primary/15 text-primary`.
+  - Um grupo de opções exclusivas (intensidade, foco de estilo, eixos táticos, Mundo/Meu país,
+    Meus/Todos, tipo de relato) é `<OptionChips options value onChange>` (`ui/OptionChips.tsx`);
+    uma opção solta ou um filtro liga/desliga ("Só à venda", "Só livres", formação personalizada,
+    "Editar formação", nacionalidade) é `<Chip selected>`; uma grade de formações também usa `Chip`.
+  - Nunca recriar o chip à mão (botão com borda e estado selecionado em primário): a auditoria acusa
+    (`chip`, regra dura). Rótulos em caixa normal ("Balanced") também não: o texto do chip é sempre
+    caixa-alta condensada. A opção escolhida nunca vira um botão primário preenchido.
+  - Barras de abas e interruptores de duas/três posições de uma barra (velocidade e mentalidade da
+    partida, Titulares/Reservas) são `SegmentedTabs`, não chips; cartões de escolha com descrição
+    (estilo tático, idioma) são cartões.
 - **Campo de texto:** sublinhado (`border-b border-border focus:border-primary bg-transparent`) ou caixa
   `rounded border border-border h-10 px-3`; sempre com rótulo visível acima.
 - **Tabela (ranking, classificação, listas de jogadores/clubes):** o visual da tabela de Ligas
@@ -109,7 +121,7 @@ título de tela no topo à esquerda. Espaço entre blocos `gap-6`/`mt-6`.
 arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai em JSON.
 
 - **Duras** (falham o comando e `src/GameInterface/ui/uiAudit.test.ts`, que roda com
-  `bun test src/GameInterface`): texto abaixo de 13px (`small-text`), `font-mono` fora do debug,
+  `bun test src/GameInterface`): texto abaixo de 13px (`small-text`), `font-mono` fora do debug, chip feito à mão (`chip`),
   estilo de fonte inline (`style={{ fontSize | fontFamily | fontWeight | letterSpacing | lineHeight }}`
   ou atributo `fontSize` em SVG — `inline-font`).
 - **Leves** (só relatório): 13px em texto que não é rótulo (`size-13`), `uppercase` sem

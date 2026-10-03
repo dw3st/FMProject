@@ -6,10 +6,11 @@
  *   bun run ui:audit --hard     # hard violations only
  *   bun run ui:audit --json     # machine-readable findings
  *
- * Hard rules (fail the audit and `scripts/ui-audit.test.ts`):
+ * Hard rules (fail the audit and `src/GameInterface/ui/uiAudit.test.ts`):
  *   - `small-text`   any text below 13px (`text-xs`, `text-[Npx]` with N < 13, rem equivalents);
  *                    labels and table heads are `text-[13px]`, readable text `text-sm` or larger;
  *   - `font-mono`    `font-mono` outside the debug screens;
+ *   - `chip`         a hand-rolled option chip (use Chip / OptionChips from ui/);
  *   - `inline-font`  font styles inline (`style={{ fontSize | fontFamily | fontWeight |
  *                    letterSpacing | lineHeight }}`, or an SVG `fontSize`/`fontFamily` attribute).
  *
@@ -250,6 +251,21 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
       }
       if ((tag === "h2" || tag === "h3") && !hasAll(cls, TITLE_SECTION) && !hasAll(cls, LABEL)) {
         add(node, "heading", "soft", `<${tag}> without the section-title (or label) classes; use <SectionTitle>`);
+      }
+      // Hand-rolled option chip: a small bordered button with a selected state in primary. The
+      // chip look lives in ui/Chip.tsx (Chip, OptionChips) and is never re-created by hand.
+      const clsTokens = new Set(cls.split(/[\s"'`{}()]+/));
+      if (
+        tag === "button" &&
+        cls.includes("?") &&
+        clsTokens.has("border") &&
+        clsTokens.has("border-primary") &&
+        !clsTokens.has("bg-primary") &&
+        ["px-2", "px-2.5", "px-3", "px-4"].some((c) => clsTokens.has(c)) &&
+        ["py-1", "py-1.5", "py-2"].some((c) => clsTokens.has(c)) &&
+        !clsTokens.has("text-left")
+      ) {
+        add(node, "chip", "hard", "hand-rolled option chip; use <Chip> / <OptionChips> from ui/");
       }
       // A filled primary button (a plain class string, not the selected state of a chip/toggle).
       if (tag === "button" && !cls.includes("?") && /(^|[\s"`])bg-primary([\s"`]|$)/.test(cls)) {

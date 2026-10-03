@@ -16,6 +16,7 @@ import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
@@ -196,23 +197,16 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
       .finally(() => { if (gen === generation.current) setLoadingMore(false); });
   };
 
-  const chip = (value: boolean, label: string) => (
-    <button
-      type="button"
-      aria-pressed={mine === value}
-      onClick={() => setMine(value)}
-      className={`rounded border px-3 py-1.5 text-sm bg-transparent cursor-pointer min-h-8 ${
-        mine === value ? "border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {label}
-    </button>
-  );
   const filters = (
-    <div className="flex gap-2 mb-3">
-      {chip(true, t("statsScreen.retired.mine"))}
-      {chip(false, t("statsScreen.retired.all"))}
-    </div>
+    <OptionChips
+      className="mb-3"
+      options={[
+        { key: "mine", label: t("statsScreen.retired.mine") },
+        { key: "all", label: t("statsScreen.retired.all") },
+      ]}
+      value={mine ? "mine" : "all"}
+      onChange={(k) => setMine(k === "mine")}
+    />
   );
 
   if (error) return <>{filters}<p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p></>;

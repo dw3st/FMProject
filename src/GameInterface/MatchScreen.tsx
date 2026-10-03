@@ -66,6 +66,7 @@ import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecor
 import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 
 // Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
 // No max cap — the pitch fills the available host space (which is itself constrained by the column
@@ -712,36 +713,18 @@ export function MatchScreen() {
               {paused ? <Icon name="play" className="w-4 h-4" /> : <Icon name="pause" className="w-4 h-4" />}
               {paused ? t("match.play") : t("match.pause")}
             </button>
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1">
-              {GAME_SPEEDS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setGameSpeed(s)}
-                  className={`px-3 py-1.5 rounded-md font-semibold text-sm cursor-pointer transition-all ${
-                    gameSpeed === s
-                      ? "bg-primary/20 text-primary"
-                      : "text-foreground hover:text-primary"
-                  }`}
-                >
-                  {s}×
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1">
-              {MENTALITY_OPTIONS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => handleMentalityChange(m)}
-                  className={`px-3 py-1.5 rounded-md font-semibold text-sm cursor-pointer transition-all ${
-                    mentality === m
-                      ? "bg-primary/20 text-primary"
-                      : "text-foreground hover:text-primary"
-                  }`}
-                >
-                  {t(`match.mentality.${m}`)}
-                </button>
-              ))}
-            </div>
+            <SegmentedTabs
+              compact
+              tabs={GAME_SPEEDS.map((s) => ({ key: String(s), label: <span className="tabular-nums">{s}×</span> }))}
+              active={String(gameSpeed)}
+              onChange={(k) => setGameSpeed(Number(k) as typeof gameSpeed)}
+            />
+            <SegmentedTabs
+              compact
+              tabs={MENTALITY_OPTIONS.map((m) => ({ key: m, label: t(`match.mentality.${m}`) }))}
+              active={mentality}
+              onChange={handleMentalityChange}
+            />
             <button
               onClick={handleOpenSubPanel}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
