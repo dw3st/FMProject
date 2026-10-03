@@ -114,7 +114,7 @@ export function TopNavigation({
                 aria-current={active ? "page" : undefined}
               >
                 <Icon name={item.icon} size={16} />
-                <span className="hidden xl:block">{label}</span>
+                <span className="hidden min-[1360px]:block">{label}</span>
               </a>
             );
           })}
@@ -127,7 +127,7 @@ export function TopNavigation({
               aria-label={t("nav.report")}
             >
               <Icon name="report" size={16} />
-              <span className="hidden xl:block">{t("nav.report")}</span>
+              <span className="hidden min-[1360px]:block">{t("nav.report")}</span>
             </button>
           )}
         </div>
@@ -162,7 +162,7 @@ export function TopNavigation({
               className="flex items-center gap-1.5 px-2 py-1 bg-transparent border-0 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
             >
               <Icon name="fast-forward" size={16} />
-              <span className="hidden xl:inline">{t("fastForward.button")}</span>
+              <span className="hidden 2xl:inline">{t("fastForward.button")}</span>
             </button>
           )}
 
