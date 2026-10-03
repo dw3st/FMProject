@@ -25,7 +25,7 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    version: "2.10",
+    version: "3.0",
     date: "2026-10-03",
     items: [
       { pt: "Escanteios de verdade: os zagueiros sobem para a área, a defesa marca homem a homem e o cobrador escolhe primeiro pau, marca do pênalti, segundo pau ou a cobrança curta.", en: "Proper corners: centre-backs go up, the defence marks man to man and the taker picks the near post, the penalty spot, the far post or a short one." },
