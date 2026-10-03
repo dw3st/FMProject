@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
+import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
+import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 
 function formatBudgetShort(value: number) {
   // The balance can go negative now (see .claude/rules/game/finances.md): abbreviate |value|, keep the sign.
@@ -12,13 +14,6 @@ function formatBudgetShort(value: number) {
   return `${sign}${abs}`;
 }
 
-function formatSimDate(dateStr: string): string {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
 const ITEM = "flex items-center gap-1.5 text-sm text-muted-foreground";
 const ICON_BTN =
   "flex items-center justify-center w-8 h-8 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-0 bg-transparent";
@@ -27,17 +22,19 @@ export function StatusBar({
   onOpenInbox,
   onOpenSettings,
   onOpenChangelog,
+  changelogNotice,
 }: {
   onOpenInbox: () => void;
   onOpenSettings: () => void;
   onOpenChangelog: () => void;
+  /** Present only when there's an unseen changelog version — see .claude/rules/changelog.md. */
+  changelogNotice?: { version: string; onOpen: () => void; onDismiss: () => void } | null;
 }) {
   const { t } = useTranslation();
-  const { session, squad, currentDate, unreadInboxCount } = useGameSave();
+  const { session, squad, unreadInboxCount } = useGameSave();
 
   const budgetLabel = session != null ? `€${formatBudgetShort(session.budget)}` : "—";
   const playersLabel = squad != null ? String(squad.players.length) : "—";
-  const dateLabel = formatSimDate(currentDate);
   const unreadLabel = String(unreadInboxCount);
 
   return (
@@ -64,13 +61,25 @@ export function StatusBar({
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className={ITEM}>
-            <Icon name="calendar" size={14} />
-            {dateLabel}
-          </span>
-          <button type="button" onClick={onOpenChangelog} title={t("nav.changelog")} aria-label={t("nav.changelog")} className={ICON_BTN}>
+          {/* Version (opens the changelog) and, when unseen, the "New: vX" pill next to it (#65).
+              Today's date lives in the top bar's day block. */}
+          <button
+            type="button"
+            onClick={onOpenChangelog}
+            title={t("nav.changelog")}
+            aria-label={`${t("nav.changelog")} · v${CURRENT_VERSION}`}
+            className={`${ITEM} h-8 px-1 border-0 bg-transparent cursor-pointer hover:text-foreground whitespace-nowrap tabular-nums`}
+          >
             <Icon name="sparkles" size={16} />
+            v{CURRENT_VERSION}
           </button>
+          {changelogNotice && (
+            <ChangelogNoticePill
+              version={changelogNotice.version}
+              onOpen={changelogNotice.onOpen}
+              onDismiss={changelogNotice.onDismiss}
+            />
+          )}
           <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
             <Icon name="settings" size={16} />
           </button>

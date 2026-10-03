@@ -388,6 +388,8 @@
     "settings": "Settings",
     "training": "Training",
     "restDay": "Rest Day",
+    "rest": "Rest",
+    "main": "Main navigation",
     "vsOpponent": "vs {{opponent}}",
     "changelog": "What's new",
     "dashboard": "Dashboard"

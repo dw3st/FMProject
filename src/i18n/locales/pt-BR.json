@@ -388,6 +388,8 @@
     "settings": "Configurações",
     "training": "Treino",
     "restDay": "Dia de Folga",
+    "rest": "Folga",
+    "main": "Navegação principal",
     "vsOpponent": "vs {{opponent}}",
     "changelog": "Novidades",
     "dashboard": "Painel"

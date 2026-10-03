@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
-import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import type { LeagueData } from "@/types/playerTypes";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
@@ -36,12 +35,60 @@ interface Props {
   onFastForward?: () => void;
   advancing?: boolean;
   leagues?: LeagueData[];
-  /** Present only when there's an unseen changelog version — see .claude/rules/changelog.md. */
-  changelogNotice?: {
-    version: string;
-    onOpen: () => void;
-    onDismiss: () => void;
-  } | null;
+}
+
+/** "Dom, 07/02/2027" / "Sun, 02/07/2027": short weekday + numeric date, in the UI language. */
+export function formatTopBarDate(date: string, lang: string): string {
+  const d = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  const weekday = new Intl.DateTimeFormat(lang, { weekday: "short" }).format(d).replace(/\.$/, "");
+  const numeric = new Intl.DateTimeFormat(lang, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+  return `${weekday.charAt(0).toLocaleUpperCase(lang)}${weekday.slice(1)}, ${numeric}`;
+}
+
+/**
+ * Tabs show their labels while the whole row fits the space between the logo and the day block;
+ * below that they collapse to icons (label kept for screen readers and as a tooltip), so the bar
+ * never overflows the frame at any width (#65). `fullWidth` remembers how wide the labelled row
+ * was, so the labels come back as soon as there is room for them again.
+ */
+function useCompactTabs(lang: string, itemCount: number) {
+  const outerRef = useRef<HTMLElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const fullWidth = useRef(0);
+  const measuredFor = useRef("");
+  const [compact, setCompact] = useState(false);
+
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+    // Labels change with the language (or a tab appears): show them again and re-measure.
+    const key = `${lang}:${itemCount}`;
+    if (measuredFor.current !== key) {
+      measuredFor.current = key;
+      fullWidth.current = 0;
+      if (compact) {
+        setCompact(false);
+        return;
+      }
+    }
+    const check = () => {
+      if (!compact) {
+        fullWidth.current = inner.offsetWidth;
+        if (inner.offsetWidth > outer.clientWidth) setCompact(true);
+      } else if (fullWidth.current > 0 && outer.clientWidth >= fullWidth.current) {
+        setCompact(false);
+      }
+    };
+    check();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(check);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, [compact, lang, itemCount]);
+
+  return { outerRef, innerRef, compact };
 }
 
 export function TopNavigation({
@@ -49,10 +96,10 @@ export function TopNavigation({
   onFastForward,
   advancing,
   leagues = [],
-  changelogNotice,
 }: Props = {}) {
-  const { t } = useTranslation();
-  const { currentDate, session, squad, fixtures, restDays } = useGameSave();
+  const { t, i18n } = useTranslation();
+  const { currentDate, session, squad, fixtures, restDays, toggleDayType } = useGameSave();
+  const lang = i18n.language;
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
 
@@ -61,6 +108,7 @@ export function TopNavigation({
   const currentUser = useCurrentUser();
   const isTester = !!currentUser?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
+  const { outerRef, innerRef, compact } = useCompactTabs(lang, navItems.length + (isTester ? 1 : 0));
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -71,89 +119,104 @@ export function TopNavigation({
       )
     : undefined;
 
-  let nextEventLabel = t("nav.training");
-  let isMatch = false;
-  let isRest = false;
+  // Today's type: a match day is fixed; otherwise training ⇄ rest toggles like the week calendar.
+  let dayLabel = t("nav.training");
+  let dayIcon: IconName = "training";
+  let dayTitle = t("weekCalendar.switchToRest");
+  const isMatch = !!todayFixture;
+  const isRest = !isMatch && !!currentDate && restDaySet.has(currentDate);
   if (todayFixture) {
-    isMatch = true;
     const opponentId = todayFixture.home === mySquadId ? todayFixture.away : todayFixture.home;
     const opponentName = leagues.length
       ? teamDisplayNameFromLeagues(opponentId, leagues)
       : fallbackTeamNameFromSquadId(opponentId);
-    nextEventLabel = t("nav.vsOpponent", { opponent: opponentName });
-  } else if (currentDate && restDaySet.has(currentDate)) {
-    isRest = true;
-    nextEventLabel = t("nav.restDay");
+    dayLabel = t("nav.vsOpponent", { opponent: opponentName });
+    dayIcon = "match";
+    dayTitle = dayLabel;
+  } else if (isRest) {
+    dayLabel = t("nav.rest");
+    dayIcon = "rest";
+    dayTitle = t("weekCalendar.switchToTraining");
   }
 
-  const linkClass =
-    "flex items-center gap-1.5 px-2 py-1 font-display font-bold uppercase tracking-wide text-sm no-underline text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap";
+  const tabClass = (active: boolean) =>
+    `flex items-center gap-1 border-b-2 bg-transparent px-0 font-display font-bold uppercase text-sm no-underline whitespace-nowrap transition-colors ${
+      active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+    }`;
+  const dayButton =
+    "flex items-center justify-center gap-1.5 h-9 rounded-md border border-border bg-card text-sm font-semibold text-foreground whitespace-nowrap shrink-0 cursor-pointer hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     // Full-width bar, content in the same frame as `ScreenContainer` (#62): the logo lines up with
-    // the cards' left edge, the actions with their right edge, the tabs centred in between.
-    <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
-      <nav className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3`}>
-        <a href="/dashboard" className="no-underline shrink-0 justify-self-start">
+    // the cards' left edge, Continue with their right edge, the tabs centred in between (#65).
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-background px-6 overflow-hidden [scrollbar-gutter:stable]">
+      <div className={`h-full w-full ${SCREEN_MAX_WIDTH} mx-auto flex items-center gap-4`}>
+        <a href="/dashboard" className="no-underline shrink-0 mr-3">
           <Wordmark size="sm" />
         </a>
 
-        <div className="flex items-center justify-center gap-0.5 xl:gap-1 min-w-0">
-          {navItems.map((item) => {
-            const label = t(item.labelKey);
-            const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
-            const href =
-              item.href === "/squad"
-                ? session
-                  ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
-                  : "/dashboard"
-                : item.href;
-            return (
-              <a
-                key={item.labelKey}
-                href={href}
-                className={active ? linkClass.replace("text-muted-foreground", "text-foreground") : linkClass}
-                title={label}
-                aria-current={active ? "page" : undefined}
+        <nav
+          ref={outerRef}
+          aria-label={t("nav.main")}
+          className="flex-1 min-w-0 self-stretch flex justify-center overflow-hidden"
+        >
+          <div ref={innerRef} className="flex w-max items-stretch gap-3.5">
+            {navItems.map((item) => {
+              const label = t(item.labelKey);
+              const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
+              const href =
+                item.href === "/squad"
+                  ? session
+                    ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
+                    : "/dashboard"
+                  : item.href;
+              return (
+                <a
+                  key={item.labelKey}
+                  href={href}
+                  className={tabClass(active)}
+                  title={label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon name={item.icon} size={16} className="shrink-0" />
+                  <span className={compact ? "sr-only" : undefined}>{label}</span>
+                </a>
+              );
+            })}
+            {isTester && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className={`${tabClass(false)} cursor-pointer`}
+                title={t("nav.report")}
               >
-                <Icon name={item.icon} size={16} />
-                <span className="hidden min-[1360px]:block">{label}</span>
-              </a>
-            );
-          })}
-          {isTester && (
-            <button
-              type="button"
-              onClick={() => setReportOpen(true)}
-              className={`${linkClass} cursor-pointer bg-transparent border-0`}
-              title={t("nav.report")}
-              aria-label={t("nav.report")}
-            >
-              <Icon name="report" size={16} />
-              <span className="hidden min-[1360px]:block">{t("nav.report")}</span>
-            </button>
-          )}
-        </div>
+                <Icon name="report" size={16} className="shrink-0" />
+                <span className={compact ? "sr-only" : undefined}>{t("nav.report")}</span>
+              </button>
+            )}
+          </div>
+        </nav>
 
-        <div className="flex items-center justify-end gap-2 xl:gap-3 shrink-0 justify-self-end">
-          {changelogNotice && (
-            <ChangelogNoticePill
-              version={changelogNotice.version}
-              onOpen={changelogNotice.onOpen}
-              onDismiss={changelogNotice.onDismiss}
-              className="hidden md:inline-flex"
-            />
-          )}
-
+        {/* Day block: today's date and type, then the day controls (#65). */}
+        <div className="flex items-center gap-2 shrink-0 h-8 pl-4 border-l border-border">
           {currentDate && (
-            <div
-              className={`flex items-center gap-1.5 text-sm whitespace-nowrap ${
-                isMatch ? "text-destructive" : "text-muted-foreground"
-              }`}
-            >
-              <Icon name={isMatch ? "match" : isRest ? "rest" : "training"} size={16} className="shrink-0" />
-              {nextEventLabel}
-            </div>
+            <>
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
+                <Icon name="calendar" size={16} className="shrink-0" />
+                {formatTopBarDate(currentDate, lang)}
+              </span>
+              <button
+                type="button"
+                onClick={() => void toggleDayType(currentDate, isRest ? "training" : "rest")}
+                disabled={isMatch || advancing}
+                title={dayTitle}
+                aria-label={isMatch ? dayLabel : `${dayLabel} · ${dayTitle}`}
+                className={`${dayButton} px-3 ${isMatch ? "text-destructive disabled:opacity-100" : ""}`}
+              >
+                <Icon name={dayIcon} size={16} className={`shrink-0 ${isRest ? "text-chart-3" : ""}`} />
+                <span className="max-w-[160px] truncate">{dayLabel}</span>
+              </button>
+            </>
           )}
 
           {onFastForward && (
@@ -162,10 +225,10 @@ export function TopNavigation({
               onClick={onFastForward}
               disabled={advancing}
               title={t("fastForward.button")}
-              className="flex items-center gap-1.5 px-2 py-1 bg-transparent border-0 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
+              aria-label={t("fastForward.button")}
+              className={`${dayButton} w-9`}
             >
               <Icon name="fast-forward" size={16} />
-              <span className="hidden 2xl:inline">{t("fastForward.button")}</span>
             </button>
           )}
 
@@ -181,7 +244,7 @@ export function TopNavigation({
             </button>
           )}
         </div>
-      </nav>
+      </div>
 
       {isTester && (
         <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} />

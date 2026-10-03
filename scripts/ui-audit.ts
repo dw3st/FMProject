@@ -73,7 +73,7 @@ export const ALLOWLIST: { file: string; rule: string; match: string; reason: str
     file: "src/GameInterface/Components/TopNavigation.tsx",
     rule: "button",
     match: "h-9 px-4 rounded bg-primary",
-    reason: "Continue in the 48px top bar: 36px tall so it fits the bar with its padding",
+    reason: "Continue in the top bar's day block: 36px tall, the same height as the day-type and fast-forward buttons next to it",
   },
   {
     file: "src/GameInterface/Components/ChangelogNoticePill.tsx",
