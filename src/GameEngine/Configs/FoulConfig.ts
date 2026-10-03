@@ -33,9 +33,10 @@ export const FOUL_CONFIG = {
   ON_YELLOW_MULT: 0.15,
   /**
    * Inside the defending team's own penalty area defenders hold back (a foul there is a penalty).
-   * Tuned so penalties land at ~0.2–0.3 per match.
+   * Tuned so penalties land at ~0.2–0.3 per match. 0.13 → 0.3 with aerial play (Etapa 13): crosses
+   * replace many carries into the box, which had halved the penalties (`aerial.md`).
    */
-  IN_BOX_MULT: 0.13,
+  IN_BOX_MULT: 0.3,
   /** A challenge is never a certain foul (a desperate lunge from behind by a tired poor tackler caps here). */
   MAX_CHANCE: 0.9,
 
