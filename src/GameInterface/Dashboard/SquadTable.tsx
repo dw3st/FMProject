@@ -93,7 +93,7 @@ export function SquadTable({
   return (
     <div className="flex-1 overflow-auto max-h-[calc(100vh-240px)]">
       <div className="min-w-[1120px]">
-        <div className="sticky top-0 z-10 flex items-center bg-background border-b border-border text-xs text-muted-foreground">
+        <div className="sticky top-0 z-10 flex items-center bg-background border-b border-border text-muted-foreground">
           {columns.map((col) => (
             <button
               key={col.key}
@@ -173,7 +173,7 @@ function RatingBadge({ value }: { value: number }) {
     return <span className="text-sm text-muted-foreground/40 font-medium">—</span>;
   }
   return (
-    <span className={`inline-flex items-center gap-1 text-sm font-black ${ratingTextClass10(value)}`}>
+    <span className={`inline-flex items-center gap-1 text-sm font-black tabular-nums ${ratingTextClass10(value)}`}>
       <Icon name="star" className="w-3 h-3 fill-current" />
       {value.toFixed(1)}
     </span>
