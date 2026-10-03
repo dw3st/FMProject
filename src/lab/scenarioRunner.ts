@@ -192,6 +192,12 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgAerialDuelsWon: r2(t.aerialDuelsWon / matches),
     avgHeaderGoals: r2(t.headerGoals / matches),
     avgLongBalls: r2(t.longBalls / matches),
+    avgCorners: r2(t.corners / matches),
+    avgFreeKicks: r2(t.freeKicks / matches),
+    avgDirectFreeKickShots: r2(t.directFreeKickShots / matches),
+    avgDirectFreeKickGoals: r2(t.directFreeKickGoals / matches),
+    avgSetPieceGoals: r2(t.setPieceGoals / matches),
+    setPieceGoalPct: pct(t.setPieceGoals, t.goals),
   };
 }
 
@@ -219,6 +225,7 @@ function emptyTotals(): VariantTotals {
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
+    corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -267,6 +274,11 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.headerGoals           += src.headerGoals;
   dst.longBalls             += src.longBalls;
   dst.longBallsCompleted    += src.longBallsCompleted;
+  dst.corners               += src.corners;
+  dst.freeKicks             += src.freeKicks;
+  dst.directFreeKickShots   += src.directFreeKickShots;
+  dst.directFreeKickGoals   += src.directFreeKickGoals;
+  dst.setPieceGoals         += src.setPieceGoals;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -324,6 +336,12 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgAerialDuelsWon: r2(totals.aerialDuelsWon / games),
     avgHeaderGoals: r2(totals.headerGoals / games),
     avgLongBalls: r2(totals.longBalls / games),
+    avgCorners: r2(totals.corners / games),
+    avgFreeKicks: r2(totals.freeKicks / games),
+    avgDirectFreeKickShots: r2(totals.directFreeKickShots / games),
+    avgDirectFreeKickGoals: r2(totals.directFreeKickGoals / games),
+    avgSetPieceGoals: r2(totals.setPieceGoals / games),
+    setPieceGoalPct: pct(totals.setPieceGoals, totals.goals),
   };
 }
 

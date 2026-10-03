@@ -26,6 +26,7 @@ import {
 } from "@/lab/fitnessCarry";
 import { addDayLogDiscipline } from "@/lab/disciplineStats";
 import { addDayLogAerial } from "@/lab/aerialStats";
+import { addDayLogSetPieces } from "@/lab/setPieceStats";
 import type { Formation } from "@/GameEngine/types";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
@@ -102,6 +103,7 @@ function emptyTeamRaw(): TeamRawStats {
     avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
+    corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
   };
 }
 
@@ -147,6 +149,11 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.headerGoals                 += src.headerGoals;
   dst.longBalls                   += src.longBalls;
   dst.longBallsCompleted          += src.longBallsCompleted;
+  dst.corners                     += src.corners;
+  dst.freeKicks                   += src.freeKicks;
+  dst.directFreeKickShots         += src.directFreeKickShots;
+  dst.directFreeKickGoals         += src.directFreeKickGoals;
+  dst.setPieceGoals               += src.setPieceGoals;
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -247,6 +254,8 @@ function runOneMatch(
     addDayLogDiscipline(teamB, hB);
     addDayLogAerial(teamA, hA);
     addDayLogAerial(teamB, hB);
+    addDayLogSetPieces(teamA, hA);
+    addDayLogSetPieces(teamB, hB);
     const qd = q.recording.decider;
     if (qd) { teamA.extraTimeMatches++; teamB.extraTimeMatches++; }
     const qpA = qd?.penalties?.home ?? 0, qpB = qd?.penalties?.away ?? 0;
@@ -306,6 +315,11 @@ function runOneMatch(
   teamA.headerGoals        += sA.headerGoals;        teamB.headerGoals        += sB.headerGoals;
   teamA.longBalls          += sA.longBalls;          teamB.longBalls          += sB.longBalls;
   teamA.longBallsCompleted += sA.longBallsCompleted; teamB.longBallsCompleted += sB.longBallsCompleted;
+  teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
+  teamA.freeKicks           += sA.freeKicks;           teamB.freeKicks           += sB.freeKicks;
+  teamA.directFreeKickShots += sA.directFreeKickShots; teamB.directFreeKickShots += sB.directFreeKickShots;
+  teamA.directFreeKickGoals += sA.directFreeKickGoals; teamB.directFreeKickGoals += sB.directFreeKickGoals;
+  teamA.setPieceGoals       += sA.setPieceGoals;       teamB.setPieceGoals       += sB.setPieceGoals;
 
   const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
   if (winner === "A") teamA.wins++;
