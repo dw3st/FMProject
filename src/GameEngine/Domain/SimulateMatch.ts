@@ -13,6 +13,7 @@
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
 import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes } from '@/types/tacticsTypes';
+import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import type { GameState, GamePlayer, Formation, KnockoutDecider } from '@/GameEngine/types';
 import { tickState, createMatchState, knockoutDecider } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
@@ -71,6 +72,8 @@ export interface SimulateMatchOptions {
 export interface TeamTactics {
   style: TacticalStyle;
   axesOverride?: Partial<TacticalAxes>;
+  /** Style familiarity (`src/Domain/familiarity`); absent = neutral (no effect). */
+  familiarity?: FamiliarityLevels;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -140,8 +143,8 @@ export function simulateMatch(
   if (options.tactics) {
     for (const team of ['A', 'B'] as const) {
       const t = options.tactics[team];
-      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride);
-      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride);
+      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity);
+      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity);
     }
   }
 
