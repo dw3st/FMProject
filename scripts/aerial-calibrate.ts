@@ -149,6 +149,9 @@ function print(title: string, results: Results): void {
       console.log(`  ${k.padEnd(22)} ${v.toFixed(3)}`);
     }
     if (t.lines) {
+      const gkLong = t.lines["GK.longBalls"] ?? 0;
+      const gkPass = t.lines["GK.passesAttempted"] ?? 0;
+      console.log(`  GK long-kick share      ${(gkLong + gkPass > 0 ? gkLong / (gkLong + gkPass) : 0).toFixed(3)}  (GK long balls / (long balls + passes))`);
       console.log(`  per starter slot (line totals / 2 teams / slots):`);
       for (const k of LINE_KEYS) {
         const cells = LINES.map((l) => `${l} ${((t.lines![`${l}.${k}`] ?? 0) / t.matches / 2 / SLOTS[l]).toFixed(3)}`);

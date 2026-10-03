@@ -39,10 +39,33 @@ export interface LongBallTarget {
   targetId: number;
   x: number;
   y: number;
+  /** Yards gained in the attack direction. */
   progress: number;
-  space: number;
+  /** 0..1 — teammates vs defenders around the landing point (0.5 = even). */
+  numbers: number;
+  /** 0..1 — pressure on the holder / marked short options (same for every target). */
+  pressure: number;
   aerial: number;
   raw: number;
+}
+
+/**
+ * How badly the holder needs to go long, 0..1: the larger of the pressure on him (nearest opponent
+ * within LONG_BALL_PRESSURE_RADIUS) and the share of his short options that are marked (no short
+ * option at all = 1).
+ */
+export function longBallPressure(holder: GamePlayer, allPlayers: GamePlayer[]): number {
+  const opponents = allPlayers.filter(p => p.team !== holder.team && p.recoveryTime <= 0);
+  let nearest = Infinity;
+  for (const o of opponents) nearest = Math.min(nearest, Math.hypot(o.x - holder.x, o.y - holder.y));
+  const onHolder = clamp(1 - nearest / A.LONG_BALL_PRESSURE_RADIUS, 0, 1);
+  const short = allPlayers.filter(p =>
+    p.team === holder.team && p.id !== holder.id && p.role !== 'GK'
+    && Math.hypot(p.x - holder.x, p.y - holder.y) <= A.LONG_BALL_SHORT_RANGE);
+  if (short.length === 0) return 1;
+  const marked = short.filter(m =>
+    opponents.some(o => Math.hypot(o.x - m.x, o.y - m.y) <= A.LONG_BALL_SHORT_OPEN_RADIUS)).length;
+  return Math.max(onHolder, marked / short.length);
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -193,6 +216,8 @@ export function evaluateLongBall(
   if (Math.abs(holder.x - ownGoalX) > A.LONG_BALL_MAX_HOLDER_DEPTH) return null;
   const defenders = allPlayers.filter(p => p.team !== holder.team && p.role !== 'GK');
   const passing = holder.runtimeStats.withBall.passingSkill;
+  const pressure = longBallPressure(holder, allPlayers);
+  const R = A.LONG_BALL_CONTEST_RADIUS;
   let best: LongBallTarget | null = null;
   for (const mate of allPlayers) {
     if (mate.team !== holder.team || mate.id === holder.id || mate.role === 'GK') continue;
@@ -204,20 +229,26 @@ export function evaluateLongBall(
     const y = clamp(mate.y, 1, PITCH_WIDTH - 1);
     const dist = Math.hypot(x - holder.x, y - holder.y);
     if (dist < A.LONG_BALL_MIN_DIST || dist > A.LONG_BALL_MAX_DIST) continue;
-    let contest = 0;
+    let diff = 0;
     for (const d of defenders) {
       const dd = Math.hypot(d.x - x, d.y - y);
-      if (dd < A.LONG_BALL_CONTEST_RADIUS) contest += 1 - dd / A.LONG_BALL_CONTEST_RADIUS;
+      if (dd < R) diff -= 1 - dd / R;
     }
-    const space = 1 - Math.min(1, contest / 1.5);
-    const progressNorm = clamp(progress / 50, 0, 1);
+    for (const t of allPlayers) {
+      if (t.team !== holder.team || t.id === holder.id || t.id === mate.id || t.role === 'GK') continue;
+      const dd = Math.hypot(t.x - x, t.y - y);
+      if (dd < R) diff += 1 - dd / R;
+    }
+    const numbers = clamp(0.5 + 0.25 * diff, 0, 1);
+    const progressNorm = clamp(progress / A.LONG_BALL_MAX_DIST, 0, 1);
     const aerial = aerialAbility(mate);
     const raw = weight * (
       progressNorm * A.LONG_BALL_PROGRESS_WEIGHT
-      + space * A.LONG_BALL_SPACE_WEIGHT
+      + numbers * A.LONG_BALL_NUMBERS_WEIGHT
+      + pressure * A.LONG_BALL_PRESSURE_WEIGHT
       + aerial * A.LONG_BALL_AERIAL_WEIGHT
       + passing * A.LONG_BALL_PASS_WEIGHT);
-    if (!best || raw > best.raw) best = { targetId: mate.id, x, y, progress, space, aerial, raw };
+    if (!best || raw > best.raw) best = { targetId: mate.id, x, y, progress, numbers, pressure, aerial, raw };
   }
   return best;
 }

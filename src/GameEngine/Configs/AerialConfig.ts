@@ -74,16 +74,29 @@ export const AERIAL_CONFIG = {
   LONG_BALL_LEAD: 0,
   /** Defenders within this radius of the landing point contest the ball. */
   LONG_BALL_CONTEST_RADIUS: 7,
+  /** Progress is normalised by LONG_BALL_MAX_DIST (it used to saturate at 50 yds: every keeper kick scored the same). */
   LONG_BALL_PROGRESS_WEIGHT: 0.30,
   /**
-   * 0 on purpose: long balls chosen for a FREE receiver created ~+12% shots (fast breaks); aimed at
-   * the striker's head they are contested and roughly neutral (`aerial.md`).
+   * Numbers at the landing point: 0.5 + 0.25 × (teammates − defenders) within LONG_BALL_CONTEST_RADIUS,
+   * proximity-weighted — support for the second ball, not a free receiver (long balls aimed at a
+   * FREE receiver created ~+12% shots).
    */
-  LONG_BALL_SPACE_WEIGHT: 0,
+  LONG_BALL_NUMBERS_WEIGHT: 0.15,
+  /**
+   * Pressure: max(opponent close to the holder, share of short options that are marked). With the
+   * short game open (a calm goal kick) the long ball loses to the pass; pressed, it wins.
+   */
+  LONG_BALL_PRESSURE_WEIGHT: 0.30,
+  /** An opponent this close to the holder is full pressure (yards). */
+  LONG_BALL_PRESSURE_RADIUS: 12,
+  /** Short options: outfield teammates within this distance of the holder (yards). */
+  LONG_BALL_SHORT_RANGE: 25,
+  /** A short option is marked when an opponent is within this distance of him (yards). */
+  LONG_BALL_SHORT_OPEN_RADIUS: 6,
   LONG_BALL_AERIAL_WEIGHT: 0.20,
   LONG_BALL_PASS_WEIGHT: 0.10,
   /** compress() calibration for the long ball action. */
-  LONG_BALL_STRONG_RAW: 0.4,
+  LONG_BALL_STRONG_RAW: 0.63,
 
   // ── Aerial duel ────────────────────────────────────────────────────────────
   /** Players within this distance of the landing point contest the ball in the air (yards). */
