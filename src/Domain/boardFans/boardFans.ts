@@ -20,10 +20,18 @@ import type { FinancialTier, LeagueZone, RosterPlayer, Squad } from "@/types/pla
 const round2 = (v: number) => Math.round(v * 100) / 100;
 const clampMeter = (v: number) => round2(Math.min(BOARD_FANS.MAX, Math.max(BOARD_FANS.MIN, v)));
 
-/** A gain above START shrinks as the meter climbs (`DAMP_SPAN_*`); losses pass unchanged. */
+/**
+ * A gain above START shrinks as the meter climbs (`DAMP_SPAN_*`); a loss below START softens a
+ * little (`LOSS_DAMP_*`). Losses above START and gains below it pass unchanged.
+ */
 function damped(value: number, delta: number, span: number): number {
-  if (delta <= 0 || value <= BOARD_FANS.START) return delta;
-  return delta * Math.max(BOARD_FANS.DAMP_MIN, 1 - (value - BOARD_FANS.START) / span);
+  if (delta > 0 && value > BOARD_FANS.START) {
+    return delta * Math.max(BOARD_FANS.DAMP_MIN, 1 - (value - BOARD_FANS.START) / span);
+  }
+  if (delta < 0 && value < BOARD_FANS.START) {
+    return delta * Math.max(BOARD_FANS.LOSS_DAMP_MIN, 1 - (BOARD_FANS.START - value) / BOARD_FANS.LOSS_DAMP_SPAN);
+  }
+  return delta;
 }
 
 function moveMeters(state: BoardState, board: number, fans: number): BoardState {
