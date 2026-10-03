@@ -443,6 +443,8 @@ export interface PassState {
    * in this list who wins the ball at the landing point is flagged offside.
    */
   aerialOffsideIds?: number[];
+  /** High ball played by a set-piece taker (free kick / goal kick): the whistle waits for it to land. */
+  fromSetPiece?: boolean;
 }
 
 /**
@@ -481,6 +483,11 @@ export interface LooseBallState {
   receiverOffside: boolean;
   /** Origin of the loose ball — absent = 'through'. Only through balls feed the through-ball stats. */
   source?: LooseBallSource;
+  /**
+   * High balls that dropped loose: attackers of `fromTeamLastTouch` offside at the kick
+   * (`PassState.aerialOffsideIds`). One of them collecting the loose ball is flagged offside.
+   */
+  offsideIds?: number[];
 }
 
 export interface ShotState {
