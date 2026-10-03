@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.1",
+    date: "2026-10-03",
+    items: [
+      { pt: "Novo jogo: escolha o país clicando no mapa-múndi.", en: "New game: pick your country by clicking on the world map." },
+      { pt: "Os jogadores ganharam rosto, com a camisa do clube, na ficha e no painel.", en: "Players now have faces, wearing their club's shirt, on their profile and the dashboard." },
+      { pt: "Nova aba \"Em breve\" nas novidades, com o que vem por aí.", en: "New \"Coming soon\" tab in What's new, showing what's on the way." },
+    ],
+  },
+  {
     version: "3.0",
     date: "2026-10-03",
     items: [
@@ -433,7 +442,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Jogo aéreo e cruzamentos", en: "Aerial play and crosses" },
-  { pt: "Bolas paradas com barreira e cobradores", en: "Set pieces with walls and designated takers" },
-  { pt: "Treino de estilos de jogo", en: "Training for playing styles" },
+  { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
+  { pt: "Convites de clubes maiores para técnicos bem colocados no ranking", en: "Offers from bigger clubs for managers high in the ranking" },
 ];
