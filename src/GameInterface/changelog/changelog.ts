@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.3.4",
+    date: "2026-10-03",
+    items: [
+      { pt: "Crédito do desenvolvedor (westlab.dev) na barra inferior.", en: "Developer credit (westlab.dev) in the bottom bar." },
+    ],
+    fixes: [
+      { pt: "Barra inferior maior e mais legível: texto e ícones maiores, com mais espaço entre os itens.", en: "Bigger, more legible bottom bar: larger text and icons, with more space between items." },
+    ],
+  },
+  {
     version: "3.3.3",
     date: "2026-10-03",
     items: [
