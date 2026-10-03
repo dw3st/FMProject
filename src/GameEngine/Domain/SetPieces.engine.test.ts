@@ -72,7 +72,7 @@ describe("free kicks", () => {
   });
 
   test("wide within FK_CROSS_RANGE: a box free kick; far away: a quick free kick", () => {
-    const wide = foulSituation(PITCH_LENGTH - 28, 8);
+    const wide = foulSituation(PITCH_LENGTH - (SP.FK_CROSS_RANGE - 4), 8);
     expect(foul(wide.s, wide.defender, wide.attacker).setPiece?.variant).toBe("box");
     const far = foulSituation(60, 37);
     const out = foul(far.s, far.defender, far.attacker);
@@ -106,7 +106,7 @@ describe("free kicks", () => {
   });
 
   test("the whistle waits for a box or direct free kick still with its taker", () => {
-    const { s, attacker, defender } = foulSituation(PITCH_LENGTH - 28, 8);
+    const { s, attacker, defender } = foulSituation(PITCH_LENGTH - (SP.FK_CROSS_RANGE - 4), 8);
     const out = foul(s, defender, attacker);
     expect(restartHoldsPeriod(out, 2710, 2700)).toBe(true);
     expect(restartHoldsPeriod(out, 2770, 2700)).toBe(false);
