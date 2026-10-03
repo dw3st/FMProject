@@ -32,7 +32,8 @@ import { teamLineup } from "@/GameEngine/Domain/TeamLineup";
 import { getRuntimeLineup, normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
-import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
+import { applyTeamTacticsConfig, getDefenseConfig } from "@/GameEngine/Configs/DefenseConfig";
+import { getTeamExecutionMult } from "@/GameEngine/Configs/FamiliarityConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { DEFAULT_TACTICAL_STYLE, TACTICAL_STYLE_OPTIONS, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
@@ -526,6 +527,11 @@ export function TestScreen() {
       .catch(() => setFormObjB(formation433Fallback as Formation));
   }, [formIdB]);
 
+  // Tactics (incl. style familiarity) are applied BEFORE the match state is built: familiarity
+  // also scales the team's attributes at build time (`FamiliarityConfig.ts` → execution).
+  useEffect(() => { const f = { [tacticsA]: famA }; applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA, f); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA, f); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA, famA]);
+  useEffect(() => { const f = { [tacticsB]: famB }; applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB, f); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB, f); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB, famB]);
+
   useEffect(() => {
     if (!formObjA || !formObjB) return;
     const base = createMatchState(SQUADS[squadA]!.players, formObjA, SQUADS[squadB]!.players, formObjB, undefined, undefined, {
@@ -538,7 +544,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB]);
 
   useEffect(() => {
     const base = scenario.createState();
@@ -547,10 +553,8 @@ export function TestScreen() {
     setPlayerList(state.players);
     setSelectedPlayerId(null);
     setLivePlayer(null);
-  }, [scenario, resetKey]);
+  }, [scenario, resetKey, famA, famB]);
 
-  useEffect(() => { const f = { [tacticsA]: famA }; applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA, f); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA, f); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA, famA]);
-  useEffect(() => { const f = { [tacticsB]: famB }; applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB, f); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB, f); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB, famB]);
 
   // When attr sliders change, patch live player stats immediately
   useEffect(() => {
@@ -1289,6 +1293,8 @@ export function TestScreen() {
             teamColorB="#df3b2d"
             staffA={staffOfTestSquad(SQUADS[squadA]!)}
             staffB={staffOfTestSquad(SQUADS[squadB]!)}
+            styleA={{ familiarity: famA, execution: getTeamExecutionMult('A'), pressStamina: getDefenseConfig('A').PRESS_STAMINA_MULT }}
+            styleB={{ familiarity: famB, execution: getTeamExecutionMult('B'), pressStamina: getDefenseConfig('B').PRESS_STAMINA_MULT }}
           />
         </div>
       )}

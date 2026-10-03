@@ -10,6 +10,7 @@
  * The STYLE (not the familiarity) keeps driving team intents; mentality is applied before this.
  */
 import type { TacticalStyle } from '@/types/tacticsTypes';
+import type { TeamId } from '@/GameEngine/types';
 import type { TeamPassWeights, TeamCarryWeights } from '@/GameEngine/Configs/AttackConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
 
@@ -40,6 +41,36 @@ export const LONG_BALL_EFFECT: FamiliarityEffect = { passMult: { LONG_BALL_WEIGH
 
 /** Stamina cost of a `press` action under a high press (always, familiarity or not). */
 export const HIGH_PRESS_STAMINA_MULT = 1.10;
+
+/**
+ * Execution: a side that knows its style plays it a little sharper — its players' attributes are
+ * multiplied by `1 + EXECUTION_STAT_SCALE × familiarityFactor` for the match (capped at 10), the
+ * engine counterpart of quickSim's strength × (1 + 0.02 × factor). The weight nudges above give the
+ * style its identity but measured ≈ 0 on results (`.claude/rules/game/style-training.md`); this is
+ * the term that makes a drilled side win more. Mutable only so calibration scripts can override it.
+ */
+export const FAMILIARITY_ENGINE = { EXECUTION_STAT_SCALE: 0.03 };
+
+const TEAM_EXECUTION_MULT: Record<TeamId, number> = { A: 1, B: 1 };
+
+/** Set from `applyTeamAttackConfig` (style familiarity factor of the team). */
+export function setTeamExecution(team: TeamId, familiarityFactor: number): void {
+  TEAM_EXECUTION_MULT[team] = 1 + FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE * familiarityFactor;
+}
+
+/** Attribute multiplier for the team's players this match (1 = neutral). */
+export function getTeamExecutionMult(team: TeamId): number {
+  return TEAM_EXECUTION_MULT[team];
+}
+
+/** `stats` × the team's execution multiplier, each attribute capped at 10. */
+export function withTeamExecution<S extends object>(stats: S, team: TeamId): S {
+  const k = TEAM_EXECUTION_MULT[team];
+  if (k === 1) return stats;
+  const out: Record<string, number> = { ...(stats as unknown as Record<string, number>) };
+  for (const key of Object.keys(out)) out[key] = Math.min(10, out[key]! * k);
+  return out as unknown as S;
+}
 
 /** Applies `mult` entries of `effect` (× (1 + m × factor)) to `target` in place. */
 export function applyMult<T extends { [K in keyof T]: number }>(
