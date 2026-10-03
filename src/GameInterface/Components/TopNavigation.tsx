@@ -16,7 +16,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: "squad", labelKey: "nav.squad",       href: "/dashboard" },
+  { icon: "home", labelKey: "nav.dashboard",   href: "/dashboard" },
+  // `/squad` is a prefix: the real link is the player's own club (see `hrefOf`).
+  { icon: "squad", labelKey: "nav.squad",       href: "/squad" },
   { icon: "formation", labelKey: "nav.formation",   href: "/formation" },
   { icon: "trend-up", labelKey: "nav.development", href: "/development" },
   { icon: "finances", labelKey: "nav.finances",    href: "/finances" },
@@ -97,10 +99,16 @@ export function TopNavigation({
           {navItems.map((item) => {
             const label = t(item.labelKey);
             const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
+            const href =
+              item.href === "/squad"
+                ? session
+                  ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
+                  : "/dashboard"
+                : item.href;
             return (
               <a
                 key={item.labelKey}
-                href={item.href}
+                href={href}
                 className={active ? linkClass.replace("text-muted-foreground", "text-foreground") : linkClass}
                 title={label}
                 aria-current={active ? "page" : undefined}
