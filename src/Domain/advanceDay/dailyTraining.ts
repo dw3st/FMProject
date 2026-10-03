@@ -22,6 +22,7 @@ import {
 import rolesData from "@/Data/roles.json";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import { trainFamiliarity } from "@/Domain/familiarity/familiarity";
+import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import type { FamiliarityKey } from "@/types/familiarityTypes";
 import {
   clearHealed,
@@ -208,7 +209,14 @@ export function buildTrainingEvent(
     // Style familiarity: only a club that stores it (the human club) trains it — AI clubs follow
     // the implicit rule (`src/Domain/familiarity`).
     ...(squad.styleFamiliarity
-      ? { styleFamiliarity: trainFamiliarity(squad.styleFamiliarity, policy.styleFocus, devMult) }
+      ? {
+          // Gain only when somebody actually trained today; scaled by the assistant and the intensity.
+          styleFamiliarity: trainFamiliarity(
+            squad.styleFamiliarity,
+            eligibleIds.size > 0 ? policy.styleFocus : undefined,
+            devMult * FAMILIARITY.INTENSITY_GAIN[policy.intensity],
+          ),
+        }
       : {}),
     players: players.map((p) => {
       const didTrain = eligibleIds.has(String(p.id));
