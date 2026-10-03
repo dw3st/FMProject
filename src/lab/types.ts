@@ -91,6 +91,11 @@ export interface Variant {
    * staff, same as in the game for an AI club.
    */
   staffRating?: number;
+  /**
+   * Familiarity 0..100 of this side with its own `tacticalStyle` (`src/Domain/familiarity`): nudges
+   * the style's tactic weights (engine) or the line strengths (quickSim). Absent = neutral (50).
+   */
+  familiarity?: number;
   squad: SquadSpec;
 }
 

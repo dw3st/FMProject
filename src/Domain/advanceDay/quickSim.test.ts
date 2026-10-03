@@ -843,3 +843,30 @@ describe("quickSimMatch — extra-time header goals", () => {
     expect(etOnlyHeaders).toBeGreaterThan(0);
   });
 });
+
+describe("quickSim: style familiarity", () => {
+  const input = (hf?: number, af?: number) => ({
+    fixtureId: "f",
+    home: makeSquad("h", 5),
+    away: makeSquad("a", 5),
+    homeLineup: ROLES.map((_, i) => `h-p${i}`),
+    awayLineup: ROLES.map((_, i) => `a-p${i}`),
+    homeRoles: ROLES,
+    awayRoles: ROLES,
+    ...(hf !== undefined ? { homeFamiliarity: hf } : {}),
+    ...(af !== undefined ? { awayFamiliarity: af } : {}),
+  });
+
+  test("50 (or absent) changes nothing; 100 lifts every line ×(1 + 0.02)", () => {
+    const base = quickSimMatch(input(), mulberry32(7)).breakdown;
+    const neutral = quickSimMatch(input(50, 50), mulberry32(7)).breakdown;
+    expect(neutral).toEqual(base);
+    const hi = quickSimMatch(input(100, 50), mulberry32(7)).breakdown;
+    for (const k of ["attack", "midfield", "defense", "goalkeeper"] as const) {
+      expect(hi.home[k]).toBeCloseTo(base.home[k] * 1.02);
+      expect(hi.away[k]).toBe(base.away[k]);
+    }
+    expect(hi.xgHome).toBeGreaterThan(base.xgHome);
+    expect(hi.xgAway).toBeLessThan(base.xgAway);
+  });
+});

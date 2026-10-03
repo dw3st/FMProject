@@ -56,6 +56,7 @@ import {
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
+import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 
 interface FormationOption {
   id: string;
@@ -816,6 +817,8 @@ export function FormationScreen() {
               })}
             </div>
           </div>
+
+          <FamiliarityBars familiarity={squad?.styleFamiliarity} current={activeStyle} />
 
           {/* Team instructions (the four axes) */}
           <div className="rounded-md border border-border p-5">

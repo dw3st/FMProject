@@ -10,6 +10,11 @@
 import type { TeamId } from '@/GameEngine/types';
 import type { PressingStyle, DefensiveLine, TeamWidth, TacticalStyle, TacticalAxes, Mentality } from '@/types/tacticsTypes';
 import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
+import type { FamiliarityLevels } from '@/types/familiarityTypes';
+import { familiarityFactor } from '@/Domain/familiarity/familiarity';
+import {
+  STYLE_FAMILIARITY_EFFECTS, HIGH_LINE_TRAP_EFFECT, HIGH_PRESS_STAMINA_MULT, applyAdd,
+} from '@/GameEngine/Configs/FamiliarityConfig';
 
 // ── Default values ────────────────────────────────────────────────────────────
 
@@ -30,6 +35,8 @@ const DEFAULTS = {
   PRESS_ACCEL_SPEED_BOOST: 0.8,  // reduced 20% — matches CARRY_ACCEL_SPEED_BOOST
   /** 0..1 — aggression level for tackle attempts (applied in DecisionTree). */
   TACKLE_AGGRESSION:       0.4,
+  /** Multiplier on the stamina cost of a `press` action (a high press tires the team more). */
+  PRESS_STAMINA_MULT:      1,
 
   /** 0..1 — how strongly the block follows the ball's lateral (Y) position. */
   BLOCK_SHIFT_WEIGHT: 0.8,
@@ -84,11 +91,11 @@ function mapAxesToDefense(t: TacticalAxes): Partial<DefenseConfigValues> {
     // MARK_PULL:   how strongly they commit to that position vs shape anchor
     // low_block  → block passing lane, stay back from mark (small laneT)
     // high_press → tight man-marking, very close to mark (large laneT)
-    low_block:  { PRESSING_LINE_HEIGHT: 0.28, PRESS_INTENSITY: 0.20, TACKLE_AGGRESSION: 0.25,
+    low_block:  { PRESSING_LINE_HEIGHT: 0.28, PRESS_INTENSITY: 0.20, TACKLE_AGGRESSION: 0.25, PRESS_STAMINA_MULT: 1,
                   MARK_LANE_T_FAR: 0.15, MARK_LANE_T_CLOSE: 0.40, MARK_PULL_MIN: 0.50, MARK_PULL_MAX: 0.80 },
-    mid_block:  { PRESSING_LINE_HEIGHT: 0.55, PRESS_INTENSITY: 0.50, TACKLE_AGGRESSION: 0.40,
+    mid_block:  { PRESSING_LINE_HEIGHT: 0.55, PRESS_INTENSITY: 0.50, TACKLE_AGGRESSION: 0.40, PRESS_STAMINA_MULT: 1,
                   MARK_LANE_T_FAR: 0.30, MARK_LANE_T_CLOSE: 0.65, MARK_PULL_MIN: 0.40, MARK_PULL_MAX: 0.88 },
-    high_press: { PRESSING_LINE_HEIGHT: 0.80, PRESS_INTENSITY: 0.85, TACKLE_AGGRESSION: 0.65,
+    high_press: { PRESSING_LINE_HEIGHT: 0.80, PRESS_INTENSITY: 0.85, TACKLE_AGGRESSION: 0.65, PRESS_STAMINA_MULT: HIGH_PRESS_STAMINA_MULT,
                   MARK_LANE_T_FAR: 0.60, MARK_LANE_T_CLOSE: 0.95, MARK_PULL_MIN: 0.65, MARK_PULL_MAX: 0.95 },
   };
   const lineMap: Record<DefensiveLine, Partial<DefenseConfigValues>> = {
@@ -115,15 +122,23 @@ function mapAxesToDefense(t: TacticalAxes): Partial<DefenseConfigValues> {
  * defensive_line for intent-multiplier lookups other than the shifted values
  * themselves — IntentDetection's own style gate reads `getTeamTacticalStyle`
  * (AttackConfig.ts), which mentality does not touch.
+ *
+ * `familiarity` (style training, `FamiliarityConfig.ts`) nudges the weights the style already
+ * drives; absent or 50 = no change. `high_line_trap` only counts with a high line.
  */
 export function applyTeamTacticsConfig(
   team: TeamId,
   style: TacticalStyle,
   mentality: Mentality = DEFAULT_MENTALITY,
   axesOverride?: Partial<TacticalAxes>,
+  familiarity?: FamiliarityLevels,
 ): void {
   const axes = axesWithMentality(style, mentality, axesOverride);
   Object.assign(TEAM_CONFIGS[team], mapAxesToDefense(axes));
+  applyAdd(TEAM_CONFIGS[team], STYLE_FAMILIARITY_EFFECTS[style].defenseAdd, familiarityFactor(familiarity?.[style]));
+  if (axes.defensive_line === 'high') {
+    applyAdd(TEAM_CONFIGS[team], HIGH_LINE_TRAP_EFFECT.defenseAdd, familiarityFactor(familiarity?.high_line_trap));
+  }
   TEAM_TACTIC_KEYS[team].pressingStyle = axes.pressing_style;
   TEAM_TACTIC_KEYS[team].defensiveLine = axes.defensive_line;
 }
