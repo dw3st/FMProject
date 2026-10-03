@@ -815,8 +815,8 @@ describe("quickSimMatch — set pieces", () => {
     }
     expect((setPiece - penalties) / goals).toBeGreaterThan(C.SET_PIECE_GOAL_SHARE * 0.8);
     expect((setPiece - penalties) / goals).toBeLessThan(C.SET_PIECE_GOAL_SHARE * 1.2);
-    expect(direct / goals).toBeGreaterThan(C.DIRECT_FK_GOAL_SHARE * 0.7);
-    expect(direct / goals).toBeLessThan(C.DIRECT_FK_GOAL_SHARE * 1.3);
+    expect(direct / goals).toBeGreaterThan(C.DIRECT_FK_GOAL_SHARE * 0.85);
+    expect(direct / goals).toBeLessThan(C.DIRECT_FK_GOAL_SHARE * 1.15);
     expect(corners / n).toBeCloseTo(2 * C.CORNERS_PER_SIDE, 0);
   });
 });
