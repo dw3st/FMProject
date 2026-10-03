@@ -73,7 +73,7 @@ export function totalsByKind(entries: LedgerEntry[]): Record<LedgerKind, number>
 }
 
 /** The Monday ("YYYY-MM-DD") of the ISO week containing `date` ("YYYY-MM-DD"). */
-function isoWeekStart(date: string): string {
+export function isoWeekStart(date: string): string {
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   const utc = new Date(Date.UTC(y, m - 1, d));
   const dayOfWeek = utc.getUTCDay(); // 0 = Sunday .. 6 = Saturday
