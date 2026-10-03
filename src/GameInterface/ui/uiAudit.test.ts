@@ -38,6 +38,16 @@ describe("ui audit rules", () => {
     expect(rules(`<h2 className="text-lg">x</h2>`)).toContain("soft:heading");
     expect(rules(`<button className="bg-primary px-2">x</button>`)).toContain("soft:button");
   });
+  test("soft rules: coloured text-link buttons and tiny icons in icon-only buttons", () => {
+    expect(rules(`<button className="h-10 border-0 bg-transparent px-1 text-sm text-primary">Continue</button>`)).toContain(
+      "soft:text-button",
+    );
+    expect(rules(`<button className="bg-transparent text-muted-foreground hover:text-primary">x</button>`)).not.toContain(
+      "soft:text-button",
+    );
+    expect(rules(`<button aria-label="x"><Icon name="close" size={14} /></button>`)).toContain("soft:icon-size");
+    expect(rules(`<button aria-label="x"><Icon name="close" size={16} /></button>`)).not.toContain("soft:icon-size");
+  });
 });
 
 describe("in-game screens use ScreenContainer", () => {

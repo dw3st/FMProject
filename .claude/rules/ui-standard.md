@@ -146,11 +146,13 @@ arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai
 - **Leves** (só relatório): 13px em texto que não é rótulo (`size-13`), `uppercase` sem
   `font-display` (`label-font`), texto grande sem `font-display` (`display-font`), número formatado
   sem `tabular-nums` (`tabular`), `<table>` sem `TABLE_STYLE`/`StatsTable`/`DataTable` (`table`),
-  barra de abas feita à mão (`tabs`), invólucro `max-w-* mx-auto` numa tela do jogo (`screen-width`), botão primário cru fora do padrão (`button`), título fora das
+  barra de abas feita à mão (`tabs`), invólucro `max-w-* mx-auto` numa tela do jogo (`screen-width`), botão de ação desenhado como link colorido (`text-button`: `text-primary` + `bg-transparent`, use `<Button>`), botão só de ícone com ícone menor que 16px (`icon-size`), botão primário cru fora do padrão (`button`), título fora das
   classes de título (`heading`), glow/gradiente/scale (`decorative`), tamanho arbitrário fora de 13px.
+- As telas de entrada (landing, login, start, novo jogo — passos do técnico e do clube —, carregamento)
+  são auditadas como qualquer tela; só as de debug ficam de fora.
 - Exceções justificadas ficam em `ALLOWLIST` no próprio script, com o motivo (hoje: os textos SVG do
   hexágono de nota e do mini-campo, em unidades do `viewBox`; o botão Continuar da barra superior de
-  48px, com 36px de altura).
+  48px, com 36px de altura; a pílula "Novo: vX" e o selo de remover anexo do relatório).
 
 Toda tela nova ou alterada deve sair com o relatório limpo (0 duras, 0 leves); quem precisar de uma
 exceção a acrescenta à `ALLOWLIST` com o motivo, nunca desliga a regra.
