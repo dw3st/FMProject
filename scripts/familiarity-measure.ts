@@ -13,6 +13,7 @@
  * Usage:
  *   bun scripts/familiarity-measure.ts [league=premier_league] [matches=400] [--style possession]
  *       [--high 100] [--low 50] [--seed 1] [--quick] [--out file.json] [--sum a.json,b.json]
+ *   FAMILIARITY_OVERRIDES='{"EXECUTION_STAT_SCALE":0.05}' patches FAMILIARITY_ENGINE in memory.
  */
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -68,6 +69,12 @@ async function loadLeague(league: string): Promise<Squad[]> {
     const s = (await Bun.file(`${dir}${f}`).json()) as Squad;
     return { ...s, players: s.players.map((p) => ({ ...p, seasonLog: { ...emptySeasonLog(), fitness: 88, load: 0 } })) };
   }));
+}
+
+if (process.env.FAMILIARITY_OVERRIDES) {
+  const { FAMILIARITY_ENGINE } = await import("@/GameEngine/Configs/FamiliarityConfig");
+  Object.assign(FAMILIARITY_ENGINE, JSON.parse(process.env.FAMILIARITY_OVERRIDES));
+  console.log("FAMILIARITY_ENGINE overrides:", FAMILIARITY_ENGINE);
 }
 
 const squads = await loadLeague(LEAGUE);

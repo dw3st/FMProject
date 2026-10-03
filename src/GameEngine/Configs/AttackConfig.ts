@@ -21,7 +21,7 @@ import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
-import { STYLE_FAMILIARITY_EFFECTS, LONG_BALL_EFFECT, applyMult } from '@/GameEngine/Configs/FamiliarityConfig';
+import { STYLE_FAMILIARITY_EFFECTS, LONG_BALL_EFFECT, applyMult, setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 
 // ── Possession push-up — drives the defensive line forward during sustained possession ──
 
@@ -319,6 +319,7 @@ export function applyTeamAttackConfig(
   applyMult(TEAM_PASS_WEIGHTS[team], styleEffect.passMult, styleFactor);
   applyMult(TEAM_CARRY_WEIGHTS[team], styleEffect.carryMult, styleFactor);
   applyMult(TEAM_PASS_WEIGHTS[team], LONG_BALL_EFFECT.passMult, familiarityFactor(familiarity?.long_ball));
+  setTeamExecution(team, styleFactor);
   TEAM_ATTACK_WIDTH[team]    = WIDTH_ATTACK_WIDTH[axes.width];
   TEAM_BUILD_UP[team]        = axes.build_up;
   TEAM_WIDTH[team]           = axes.width;

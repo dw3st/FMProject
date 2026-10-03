@@ -82,3 +82,21 @@ describe("press stamina under a high press", () => {
     expect(tacticDrainMult("B", "press")).toBe(1);
   });
 });
+
+describe("execution: a drilled side plays its style sharper", () => {
+  test("style familiarity sets the team's attribute multiplier (50 = 1), capped at 10", async () => {
+    const { getTeamExecutionMult, withTeamExecution, FAMILIARITY_ENGINE } = await import("@/GameEngine/Configs/FamiliarityConfig");
+    applyTeamAttackConfig("A", "possession", "balanced", undefined, { possession: 50 });
+    expect(getTeamExecutionMult("A")).toBe(1);
+    applyTeamAttackConfig("A", "possession", "balanced", undefined, { possession: 100, high_press: 0 });
+    expect(getTeamExecutionMult("A")).toBeCloseTo(1 + FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE);
+    applyTeamAttackConfig("A", "possession", "balanced", undefined, { possession: 0 });
+    expect(getTeamExecutionMult("A")).toBeCloseTo(1 - FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE);
+    applyTeamAttackConfig("A", "possession", "balanced", undefined, { possession: 100 });
+    const out = withTeamExecution({ passing: 5, finishing: 10 }, "A");
+    expect(out.passing).toBeCloseTo(5 * (1 + FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE));
+    expect(out.finishing).toBe(10);
+    applyTeamAttackConfig("A", "possession");
+    expect(getTeamExecutionMult("A")).toBe(1);
+  });
+});
