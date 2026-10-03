@@ -51,6 +51,7 @@ import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine
 import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
+import { withTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { getOffBallBias } from '@/GameEngine/Domain/OffBallMovement';
@@ -200,12 +201,13 @@ function buildGamePlayerForSlot(
   engineId: number,
 ): GamePlayer {
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-  const buffed = computeBuffedStats(
+  // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes.
+  const buffed = withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
-  );
+  ), team);
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -288,12 +290,12 @@ function buildTeam(
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-    const buffed = computeBuffedStats(
+    const buffed = withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
-    );
+    ), team);
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -1183,6 +1185,11 @@ function shouldDrainStamina(state: GameState): boolean {
   if (!isLivePhase(state.matchPhase)) return false;
   if (state.setPiece && state.setPiece.countdown > 0) return false;
   return true;
+}
+
+/** Tactic-driven stamina multiplier: a `press` under a high press costs `PRESS_STAMINA_MULT`. */
+export function tacticDrainMult(team: TeamId, action: StaminaAction): number {
+  return action === 'press' ? getDefenseConfig(team).PRESS_STAMINA_MULT : 1;
 }
 
 function resolveStaminaAction(
@@ -2861,7 +2868,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         if (pl.baseStats == null) return p;
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
-        const energy = consumeEnergy(pl.energy, pl.stamina, action, dt * TIME_SCALE, pl.drainMultiplier ?? 1);
+        const energy = consumeEnergy(
+          pl.energy, pl.stamina, action, dt * TIME_SCALE, (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action),
+        );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
         // moved at least FATIGUE_RECOMPUTE_THRESHOLD since the last recompute, instead of only

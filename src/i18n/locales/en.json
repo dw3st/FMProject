@@ -1394,6 +1394,18 @@
     "savingButton": "Saving…",
     "saveButton": "Save"
   },
+  "familiarity": {
+    "title": "Style familiarity",
+    "hint": "Train a style so the team plays it better. What is not trained slowly fades.",
+    "focusLabel": "Style focus",
+    "focusHint": "Each training day adds familiarity to the focus, more with a good assistant; the rest slowly fade.",
+    "focusAuto": "Auto (tactics style: {{style}})",
+    "current": "In use",
+    "keys": {
+      "high_line_trap": "High line & offside trap",
+      "long_ball": "Long ball"
+    }
+  },
   "dashboard": {
     "playerCard": {
       "value": "Value",

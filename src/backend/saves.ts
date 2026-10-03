@@ -4,6 +4,7 @@ import { applyBroadcasting } from "@/backend/FinancialService";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
+import { isFamiliarityKey } from "@/types/familiarityTypes";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
@@ -146,6 +147,13 @@ export const saveRoutes = {
         if (ti !== "light" && ti !== "normal" && ti !== "heavy")
           return Response.json({ error: "invalid training_intensity" }, { status: 400 });
         patch.training_intensity = ti as TrainingIntensity;
+      }
+      if (body.style_focus !== undefined) {
+        // null = auto: drill the tactics style (the key is cleared from the meta).
+        if (body.style_focus === null) patch.style_focus = undefined;
+        else if (!isFamiliarityKey(body.style_focus))
+          return Response.json({ error: "invalid style_focus" }, { status: 400 });
+        else patch.style_focus = body.style_focus;
       }
       if (body.followedLeagues !== undefined) {
         const leagues = await getLeagueData();
