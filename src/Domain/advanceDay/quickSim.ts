@@ -306,6 +306,8 @@ interface GoalRecord {
   assisterId: string | null;
   /** Turned into a penalty goal by `rollDiscipline` (never a header). */
   penalty?: boolean;
+  /** Turned into a header goal by `rollAerial`. */
+  header?: boolean;
 }
 
 function assignGoals(xi: XIPlayer[], goals: number, stats: Record<string, MatchPlayerStats>, rng: Rng): GoalRecord[] {
@@ -600,6 +602,7 @@ function rollAerial(
     const header = weightedPick(xi, headerWeight, rng);
     if (!header) continue;
     out.headerGoals++;
+    goal.header = true;
     const id = header.p.id;
     if (id === goal.scorerId) continue;
     stats[goal.scorerId]!.goals--;
@@ -612,6 +615,85 @@ function rollAerial(
     }
     goal.scorerId = id;
   }
+  return out;
+}
+
+/** Per-side set-piece totals (team stats). */
+interface SideSetPieces {
+  corners: number;
+  freeKicks: number;
+  directFreeKickShots: number;
+  directFreeKickGoals: number;
+  setPieceGoals: number;
+}
+
+/** Moves `goal` to `toId` (keeps the assist unless it was his own or `dropAssist`). */
+function moveGoal(goal: GoalRecord, toId: string, stats: Record<string, MatchPlayerStats>, dropAssist: boolean): void {
+  if (goal.scorerId !== toId) {
+    stats[goal.scorerId]!.goals--;
+    stats[goal.scorerId]!.shots--;
+    stats[toId]!.goals++;
+    stats[toId]!.shots++;
+  }
+  if (goal.assisterId && (dropAssist || goal.assisterId === toId)) {
+    stats[goal.assisterId]!.assists--;
+    goal.assisterId = null;
+  }
+  goal.scorerId = toId;
+}
+
+/**
+ * Set pieces for one side (Etapa 14, `.claude/rules/game-engine/set-pieces-play.md`): corners and
+ * direct free-kick shots by Poisson, free kicks = the opponent's fouls that were not penalties. Of the
+ * side's non-penalty goals already sampled, a share become set-piece goals so that
+ * E[non-penalty set-piece goals] = SET_PIECE_GOAL_SHARE × goals: a DIRECT_FK_GOAL_SHARE / SET_PIECE_GOAL_SHARE
+ * part are direct free kicks (moved to the best finisher, no assist; a header picked here stops being one, so
+ * E[direct] = DIRECT_FK_GOAL_SHARE × goals), the rest keep a header's scorer
+ * or move to a heading-weighted defender / forward. Penalty goals count as set-piece goals. The score
+ * never changes.
+ */
+function rollSetPieces(
+  xi: XIPlayer[],
+  goals: GoalRecord[],
+  oppFouls: number,
+  penaltiesAwarded: number,
+  stats: Record<string, MatchPlayerStats>,
+  rng: Rng,
+  /** Incremented for each header goal turned into a direct free kick (the caller fixes headerGoals). */
+  headersToDirect: { value: number } = { value: 0 },
+): SideSetPieces {
+  const out: SideSetPieces = { corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0 };
+  if (xi.length === 0) return out;
+  out.corners = samplePoisson(C.CORNERS_PER_SIDE, rng);
+  out.freeKicks = Math.max(0, oppFouls - penaltiesAwarded);
+  out.setPieceGoals = goals.filter((g) => g.penalty).length;
+  const eligible = goals.filter((g) => !g.penalty);
+  if (eligible.length > 0) {
+    const q = Math.min(0.9, (C.SET_PIECE_GOAL_SHARE * goals.length) / eligible.length);
+    // Any set-piece goal may be the direct free kick (a header picked here stops being a header),
+    // so E[direct free-kick goals] = DIRECT_FK_GOAL_SHARE × goals exactly.
+    const directShare = C.DIRECT_FK_GOAL_SHARE / C.SET_PIECE_GOAL_SHARE;
+    const outfield = xi.filter((x) => groupOf(x) !== "GK");
+    const taker = [...outfield].sort((a, b) => stat(b.p, "finishing") - stat(a.p, "finishing"))[0];
+    const spWeight = (x: XIPlayer) => C.SET_PIECE_LINE_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "heading") / 10);
+    for (const goal of eligible) {
+      if (rng() >= q) continue;
+      out.setPieceGoals++;
+      if (taker && rng() < directShare) {
+        out.directFreeKickGoals++;
+        if (goal.header) {
+          goal.header = false;
+          headersToDirect.value++;
+        }
+        moveGoal(goal, taker.p.id, stats, true);
+        continue;
+      }
+      if (goal.header) continue;
+      const scorer = weightedPick(xi, spWeight, rng);
+      if (scorer) moveGoal(goal, scorer.p.id, stats, false);
+    }
+  }
+  out.directFreeKickShots = Math.max(samplePoisson(C.DIRECT_FK_SHOTS_PER_SIDE, rng), out.directFreeKickGoals);
   return out;
 }
 
@@ -711,6 +793,13 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const homeDuelsWon = binomial(duels, aH / (aH + aA), rng);
   const homeAir = rollAerial(homeXI, [...homeGoals, ...homeEtGoals], duels, homeDuelsWon, playerStats, ratingDelta, rng);
   const awayAir = rollAerial(awayXI, [...awayGoals, ...awayEtGoals], duels, duels - homeDuelsWon, playerStats, ratingDelta, rng);
+  // Set pieces last (`set-pieces-play.md`), so every earlier rng draw is unchanged by them.
+  const homeHeadersToDirect = { value: 0 };
+  const awayHeadersToDirect = { value: 0 };
+  const homeSet = rollSetPieces(homeXI, [...homeGoals, ...homeEtGoals], awayDisc.committed, awayDisc.oppPenalties, playerStats, rng, homeHeadersToDirect);
+  const awaySet = rollSetPieces(awayXI, [...awayGoals, ...awayEtGoals], homeDisc.committed, homeDisc.oppPenalties, playerStats, rng, awayHeadersToDirect);
+  homeAir.headerGoals -= homeHeadersToDirect.value;
+  awayAir.headerGoals -= awayHeadersToDirect.value;
   const sideDisc = (own: typeof homeDisc, other: typeof homeDisc): SideDiscipline => ({
     fouls: own.committed, yellowCards: own.yellow, redCards: own.red,
     offsides: other.oppOffsides, penaltiesAwarded: other.oppPenalties, penaltyGoals: other.oppPenaltyGoals,
@@ -740,8 +829,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
     fixtureId: input.fixtureId,
     score: { home: goalsHome, away: goalsAway },
     teamStats: {
-      home: { ...sumTeamStats(homeXI, playerStats), ...sideDisc(homeDisc, awayDisc), ...homeAir },
-      away: { ...sumTeamStats(awayXI, playerStats), ...sideDisc(awayDisc, homeDisc), ...awayAir },
+      home: { ...sumTeamStats(homeXI, playerStats), ...sideDisc(homeDisc, awayDisc), ...homeAir, ...homeSet },
+      away: { ...sumTeamStats(awayXI, playerStats), ...sideDisc(awayDisc, homeDisc), ...awayAir, ...awaySet },
     },
     playerStats,
     playerRatings,

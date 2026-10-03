@@ -1,11 +1,14 @@
-import type { GameState, TeamId } from '@/GameEngine/types';
+import type { GameState, TeamId, SetPieceGoalKind } from '@/GameEngine/types';
+
+/** What put the ball behind for a corner (`cornerAwarded`). */
+export type CornerSource = 'save' | 'deflection' | 'cross_block' | 'cross_clearance' | 'tackle' | 'loose' | 'other';
 
 /** All game events the engine can emit. Add new ones here as the engine grows. */
 export interface GameEvents {
   /** Emitted whenever possession or pass state changes significantly. */
   stateChanged: GameState;
   /** Emitted the moment a goal is scored. */
-  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean };
+  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
   shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean };
 
@@ -106,6 +109,21 @@ export interface GameEvents {
   card: { playerId: number; playerName: string; team: TeamId; card: 'yellow' | 'red'; secondYellow: boolean; minute: number };
   /** A free kick was awarded to `team` (the fouled side). `dangerous` = taken with the freeKick_* layouts. */
   freeKickAwarded: { team: TeamId; takerId: number; x: number; y: number; dangerous: boolean; minute: number };
+  /**
+   * A corner was awarded to `team` (`set-pieces-play.md`). `source` is what put the ball behind:
+   * a keeper's save, a deflected shot, a blocked / headed-clear cross, a tackle, a loose ball.
+   */
+  cornerAwarded: { team: TeamId; takerId: number; source: CornerSource };
+  /** A direct free kick at goal: `xg` after the wall, `wallSize` men, `blocked` = it struck the wall. */
+  directFreeKick: { player: number; xg: number; wallSize: number; blocked: boolean };
+  /** Delivery chosen by a corner / crossed free-kick taker (/test set-piece overlay; debug only). */
+  setPieceScores: {
+    playerId: number;
+    playerName: string;
+    kind: 'corner' | 'free_kick';
+    chosen: 'near_post' | 'penalty_spot' | 'far_post' | 'short';
+    options: Array<{ kind: 'near_post' | 'penalty_spot' | 'far_post' | 'short'; x: number; y: number; raw: number; attackers: number; defenders: number }>;
+  };
   /** A penalty was awarded to `team` (the fouled side). */
   penaltyAwarded: { team: TeamId; takerId: number; offenderId: number; minute: number };
   /** An in-match penalty was taken (shootout kicks use `penaltyKick` instead). */

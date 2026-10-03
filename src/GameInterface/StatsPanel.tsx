@@ -45,6 +45,13 @@ const COLS: Col[] = [
   { label: "AD",   titleKey: "stats.headers.AD",    value: (s) => s.aerialDuelsWon },
   { label: "HG",   titleKey: "stats.headers.HG",    value: (s) => s.headerGoals },
   { label: "LB",   titleKey: "stats.headers.LB",    value: (s) => s.longBalls },
+  { label: "CK",   titleKey: "stats.headers.CK",    value: (s) => s.corners },
+  {
+    label: "DFK",
+    titleKey: "stats.headers.DFK",
+    value: (s) => (s.directFreeKickShots > 0 ? `${s.directFreeKickShots} (${s.directFreeKickGoals})` : 0),
+  },
+  { label: "SPG",  titleKey: "stats.headers.SPG",   value: (s) => s.setPieceGoals },
 ];
 
 const EMPTY_STATS: PlayerStats = emptyPlayerStats();

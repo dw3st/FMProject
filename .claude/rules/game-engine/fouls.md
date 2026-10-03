@@ -67,11 +67,13 @@ vira goleiro com o piso de atributos).
 
 ## Retomada
 
-- **Tiro livre (`free_kick`)**, fora da área: no ponto da falta, cobrador = jogador de linha mais perto
-  do time que sofreu, congelamento de 0,4 s. Só a até 25 jardas do gol que ataca (`DANGEROUS_FREE_KICK_DIST`)
-  os times vão para os layouts `freeKick_Attack`/`freeKick_Defend`; no resto do campo ninguém se mexe
-  (cobrança rápida). Durante o congelamento ninguém decide; depois, o cobrador não conduz e passa,
-  chuta ou dá bola em profundidade (decisão normal).
+- **Tiro livre (`free_kick`)**, fora da área: no ponto da falta. Desde a Etapa 14
+  (`set-pieces-play.md`): **falta direta** (a ≤ 30 jardas do gol e central) com barreira, chutada pelo
+  cobrador de faltas; **falta cruzada** (a ≤ 26 jardas da linha de fundo) com os times no layout de
+  área, cruzada ou tocada curta pelo cobrador de faltas; no resto do campo, cobrança rápida pelo
+  jogador mais perto (congelamento de 0,4 s, ninguém se mexe; o cobrador não conduz e passa, chuta ou
+  dá bola em profundidade). O cobrador de pênalti é o escolhido na tela de táticas ou o melhor
+  finalizador em campo.
 - **Pênalti (`penalty`)**, dentro da área: cobrador = maior `shootAccuracy` em campo do time que
   sofreu, na marca (12 jardas), goleiro na linha, os demais fora da área. Ao fim do congelamento de 2 s,
   `resolveInMatchPenalty` usa `penaltyChance` (o mesmo de `PenaltyShootout.ts`): gol → saída do

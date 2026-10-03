@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.0",
+    date: "2026-10-03",
+    items: [
+      { pt: "Escanteios de verdade: os zagueiros sobem para a área, a defesa marca homem a homem e o cobrador escolhe primeiro pau, marca do pênalti, segundo pau ou a cobrança curta.", en: "Proper corners: centre-backs go up, the defence marks man to man and the taker picks the near post, the penalty spot, the far post or a short one." },
+      { pt: "Faltas perto da área viram chute direto por cima da barreira; mais longe ou de lado, cruzamento na área.", en: "Free kicks near the box are shot directly over the wall; further out or from wide, they are crossed into the box." },
+      { pt: "Escolha os cobradores de escanteio, falta e pênalti na tela de táticas (ou deixe no automático).", en: "Pick your corner, free-kick and penalty takers on the tactics screen (or leave them on automatic)." },
+      { pt: "Laterais agora vão só para quem está perto.", en: "Throw-ins now only reach nearby team-mates." },
+      { pt: "Novas estatísticas de partida: escanteios, faltas diretas e gols de bola parada.", en: "New match stats: corners, direct free kicks and set-piece goals." },
+    ],
+  },
+  {
     version: "2.9",
     date: "2026-10-03",
     items: [

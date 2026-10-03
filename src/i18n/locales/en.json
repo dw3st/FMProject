@@ -544,7 +544,15 @@
       "wide": "Wide"
     },
     "assistantRotation": "Assistant picks by fitness",
-    "assistantRotationHint": "Automatically rests tired starters before each match."
+    "assistantRotationHint": "Automatically rests tired starters before each match.",
+    "setPieceTakers": {
+      "title": "Set-piece takers",
+      "hint": "Automatic picks the best on the pitch. If your choice isn't playing, it goes back to automatic.",
+      "auto": "Automatic",
+      "corners": "Corners",
+      "freeKicks": "Free kicks",
+      "penalties": "Penalties"
+    }
   },
   "formations": {
     "custom": "Custom",
@@ -760,6 +768,9 @@
       "AD": "Aerial Duels Won",
       "HG": "Header Goals",
       "LB": "Long Balls",
+      "CK": "Corners",
+      "DFK": "Direct Free Kicks (goals)",
+      "SPG": "Set-Piece Goals",
       "POS": "Pos",
       "NAME": "Name",
       "AGE": "Age",

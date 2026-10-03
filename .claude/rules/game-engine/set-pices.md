@@ -192,3 +192,14 @@ After this is stable, the next logical layer is:
 If you want, next we can define:
 
 **how to auto-generate these layouts from a formation**, so you don’t manually place every role.
+
+---
+
+## Estado atual (Etapa 14, 3.0)
+
+Este documento descreve os **layouts fixos por formação** (`SetPieceLayouts.ts`), que continuam
+valendo para saída de bola, tiro de meta, lateral, impedimento e o resto do campo na falta direta.
+O escanteio e a falta cruzada não usam mais `corner_Attack`/`corner_Defend`: as posições são
+calculadas por jogador (melhores no alto na área, marcação individual, barreira dinâmica na falta
+direta) e o cobrador decide a cobrança (cruzar em uma de três zonas ou tocar curto). Ver
+`.claude/rules/game-engine/set-pieces-play.md`.
