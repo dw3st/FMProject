@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Application, Container, Graphics, Text, TextStyle } from "pixi.js";
+import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { faceRasterSize, loadFaceCanvas, playerMarkerRadius } from "@/GraficsEngine/playerFaces";
 import { tickState, getBallPos, endCurrentPeriod } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
@@ -86,8 +87,8 @@ function buildMetrics(canvasW: number, canvasH: number): PitchMetrics {
   };
 }
 
-/** Player marker radius in px (was 10; ~1.4x for readability). */
-const PLAYER_MARKER_R = 14;
+/** Width of the team-colour ring around a player's face. */
+const MARKER_RING_W = 3;
 
 function drawYardReferences(g: Graphics, labels: Container, m: PitchMetrics) {
   const { marginX: ox, marginY: oy, scale, width, height } = m;
@@ -279,6 +280,12 @@ interface Props {
    * screenshot to save alongside a debug snapshot.
    */
   captureRef?: import("react").MutableRefObject<(() => Promise<string | null>) | null>;
+  /**
+   * Face image URL per team and roster id (`faceUrl(...)`), drawn inside each player's marker
+   * with a team-colour ring. A player without an entry (or whose face fails to load) keeps the
+   * plain team-colour circle; `/test` and the lab don't pass this at all.
+   */
+  faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
 }
 
 export function PixiPitch({
@@ -300,6 +307,7 @@ export function PixiPitch({
   teamBColor,
   keepTickerAlive = false,
   captureRef,
+  faceUrls,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -313,6 +321,9 @@ export function PixiPitch({
   const crowdOverlayModeRef      = useRef(crowdOverlayMode);
   const crowdEvalConfigRef       = useRef(crowdEvalConfig);
   const crowdClickPosRef         = useRef(crowdClickPos);
+  const faceUrlsRef              = useRef(faceUrls);
+  /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
+  const refreshFacesRef          = useRef<(() => void) | null>(null);
 
   useEffect(() => { onPlayerClickRef.current = onPlayerClick; }, [onPlayerClick]);
   useEffect(() => { onPitchClickRef.current  = onPitchClick;  }, [onPitchClick]);
@@ -326,6 +337,7 @@ export function PixiPitch({
   useEffect(() => { crowdOverlayModeRef.current      = crowdOverlayMode;      }, [crowdOverlayMode]);
   useEffect(() => { crowdEvalConfigRef.current       = crowdEvalConfig;       }, [crowdEvalConfig]);
   useEffect(() => { crowdClickPosRef.current         = crowdClickPos;         }, [crowdClickPos]);
+  useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
   useEffect(() => {
@@ -550,47 +562,99 @@ export function PixiPitch({
       });
 
       // ── Player graphics ──
-      const playerGraphics = new Map<number, Graphics>();
+      // Each marker is a container: team-colour disc, the player's face (once loaded) and a
+      // team-colour ring on top. Without a face it reads as the old plain circle.
+      const markerR = playerMarkerRadius(m.scale);
+      const faceSize = faceRasterSize(markerR - 1, app.renderer.resolution);
+      const playerGraphics = new Map<number, Container>();
       const playerLabels   = new Map<number, Text>();
+      /** Pixi textures of the faces, per URL: owned by this app, destroyed on unmount. */
+      const faceTextures = new Map<string, Texture>();
+      let facesDisposed = false;
 
       const labelStyle = new TextStyle({
-        fontSize:   10,
+        fontSize:   11,
         fontFamily: 'sans-serif',
         fontWeight: '600',
         fill:       0xffffff,
-        dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.8 },
+        dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.9 },
       });
 
       const fillA = teamAColor ? cssColorToPixiHex(teamAColor) : DEFAULT_TEAM_A;
       const fillB = teamBColor ? cssColorToPixiHex(teamBColor) : DEFAULT_TEAM_B;
 
-      /** Create a sprite + label for a player and register them in the maps. */
-      function addPlayerSprite(player: (typeof stateRef.current.players)[0]): void {
+      type PitchPlayer = (typeof stateRef.current.players)[0];
+      const faceUrlOf = (p: PitchPlayer): string | undefined => faceUrlsRef.current?.[p.team]?.[p.rosterId];
+
+      /** Puts the face texture in the marker (replacing any previous one), under the ring. */
+      function setMarkerFace(marker: Container, url: string, texture: Texture): void {
+        const old = marker.getChildByLabel('face');
+        if (old) { marker.removeChild(old); old.destroy(); }
+        const face = new Sprite(texture);
+        face.label = 'face';
+        face.anchor.set(0.5);
+        face.width = face.height = (markerR - 1) * 2;
+        marker.addChildAt(face, 1); // above the disc, below the ring
+        marker.label = url;
+      }
+
+      /** Loads (or reuses) the face of `player` and shows it in its marker when ready. */
+      function applyFace(player: PitchPlayer): void {
+        const marker = playerGraphics.get(player.id);
+        const url = faceUrlOf(player);
+        if (!marker || !url || marker.label === url) return;
+        const ready = faceTextures.get(url);
+        if (ready) { setMarkerFace(marker, url, ready); return; }
+        void loadFaceCanvas(url, faceSize).then((canvas) => {
+          if (!canvas || facesDisposed) return;
+          let texture = faceTextures.get(url);
+          if (!texture) {
+            texture = new Texture({ source: new CanvasSource({ resource: canvas, transparent: true }) });
+            faceTextures.set(url, texture);
+          }
+          // The marker may have been replaced (substitution) or re-pointed meanwhile.
+          const current = playerGraphics.get(player.id);
+          if (current && !current.destroyed && faceUrlOf(player) === url) setMarkerFace(current, url, texture);
+        });
+      }
+
+      /** Create a marker + label for a player and register them in the maps. */
+      function addPlayerSprite(player: PitchPlayer): void {
         const color = player.team === "A" ? fillA : fillB;
-        const g = new Graphics();
-        g.circle(0, 0, PLAYER_MARKER_R).fill(color);
-        g.circle(0, 0, PLAYER_MARKER_R).stroke({ width: 2, color: 0x000000, alpha: 0.35 });
+        const marker = new Container();
+        const disc = new Graphics().circle(0, 0, markerR).fill(color);
+        const ring = new Graphics()
+          .circle(0, 0, markerR - MARKER_RING_W / 2 + 0.5).stroke({ width: MARKER_RING_W, color })
+          .circle(0, 0, markerR + 0.5).stroke({ width: 1.5, color: 0x000000, alpha: 0.45 });
+        marker.addChild(disc, ring);
         const { px, py } = toPixel(player.x, player.y);
-        g.x = px;
-        g.y = py;
-        world.addChild(g);
-        playerGraphics.set(player.id, g);
+        marker.x = px;
+        marker.y = py;
+        world.addChild(marker);
+        playerGraphics.set(player.id, marker);
 
         const label = new Text({ text: player.name, style: labelStyle });
         label.anchor.set(0.5, 1);
         label.x = px;
-        label.y = py - (PLAYER_MARKER_R + 3);
+        label.y = py - (markerR + 3);
+        label.zIndex = 5; // names above every marker, below the ball
         world.addChild(label);
         playerLabels.set(player.id, label);
+
+        applyFace(player);
       }
 
-      /** Remove and destroy the sprite + label for a player that left the pitch. */
+      /** Remove and destroy the marker + label for a player that left the pitch. */
       function removePlayerSprite(id: number): void {
         const g = playerGraphics.get(id);
-        if (g) { world.removeChild(g); g.destroy(); playerGraphics.delete(id); }
+        if (g) { world.removeChild(g); g.destroy({ children: true }); playerGraphics.delete(id); }
         const lbl = playerLabels.get(id);
         if (lbl) { world.removeChild(lbl); lbl.destroy(); playerLabels.delete(id); }
       }
+
+      refreshFacesRef.current = () => {
+        for (const player of stateRef.current.players) applyFace(player);
+      };
 
       // Track which ids currently have sprites so we can reconcile after substitutions
       let trackedPlayerIds = new Set(stateRef.current.players.map(p => p.id));
@@ -691,7 +755,7 @@ export function PixiPitch({
           if (label) {
             if (label.text !== player.name) label.text = player.name;
             label.x = px;
-            label.y = py - (PLAYER_MARKER_R + 3);
+            label.y = py - (markerR + 3);
           }
         }
 
@@ -1246,6 +1310,10 @@ export function PixiPitch({
       });
 
       return () => {
+        facesDisposed = true;
+        refreshFacesRef.current = null;
+        for (const tex of faceTextures.values()) tex.destroy(true);
+        faceTextures.clear();
         simClock.destroy();
         unsubMatchStateSync();
         unsubTestCmd();

@@ -23,6 +23,7 @@ import { staffEffectsOf } from "@/Domain/staff/staff";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
+import { faceUrl } from "@/Domain/faces/faceUrl";
 
 /**
  * Base (1x) real-time delay before navigating to the result screen after full time. Scaled down
@@ -118,6 +119,11 @@ export function MatchScreen() {
   const [teamBMeta, setTeamBMeta] = useState<TeamMeta | undefined>();
   /** Squad ids behind the scoreboard crests — URLs are derived once the league catalog loads. */
   const [crestIds, setCrestIds] = useState<{ a: string; b?: string } | null>(null);
+  /** Both match squads (starters + bench) for the faces on the pitch (#61). */
+  const [faceRoster, setFaceRoster] = useState<Record<TeamId, {
+    players: { id: string; nationality?: string | null }[];
+    clubColors: readonly string[];
+  }> | null>(null);
   const [debug, setDebug] = useState(false);
   const [showStats, setShowStats] = useState(false);
   /** Which side the left team card shows (#51): own team by default, flip to see the opponent. */
@@ -318,6 +324,10 @@ export function MatchScreen() {
           });
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
+        setFaceRoster({
+          A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
+          B: { players: opponentPlayers, clubColors: data.opponentSquad?.colors ?? data.save.clubColors },
+        });
       })
       .catch((e: unknown) => {
         setLoadError(e instanceof Error ? e.message : String(e));
@@ -580,6 +590,18 @@ export function MatchScreen() {
     [teamAMeta, teamBMeta],
   );
 
+  // Face per team and roster id. The jersey wears the kit actually used on the pitch (an away
+  // side in its change colours gets a matching shirt), then the club's other colours.
+  const faceUrls = useMemo(() => {
+    if (!faceRoster) return undefined;
+    const side = (tm: TeamId, kit: string) => {
+      const { players, clubColors } = faceRoster[tm];
+      const colors = [kit, ...clubColors.filter((c) => c.toLowerCase() !== kit.toLowerCase())];
+      return Object.fromEntries(players.map((p) => [p.id, faceUrl(p.id, p.nationality, colors)]));
+    };
+    return { A: side("A", matchKitColors.teamA), B: side("B", matchKitColors.teamB) };
+  }, [faceRoster, matchKitColors]);
+
   const [teamAWithCrest, teamBWithCrest] = useMemo(() => {
     if (!crestIds) return [teamAMeta, teamBMeta];
     return [
@@ -813,6 +835,7 @@ export function MatchScreen() {
                   gameSpeed={gameSpeed}
                   teamAColor={matchKitColors.teamA}
                   teamBColor={matchKitColors.teamB}
+                  faceUrls={faceUrls}
                 />
                 {notice && (
                   <div
