@@ -7,6 +7,7 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
+import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
@@ -214,6 +215,12 @@ export const saveRoutes = {
         if (!parsed) return Response.json({ error: "invalid axes override" }, { status: 400 });
         axesOverride = Object.keys(parsed).length ? parsed : undefined;
       }
+      let setPieceTakers = existing.setPieceTakers;
+      if (body.setPieceTakers !== undefined) {
+        const parsed = parseSetPieceTakers(body.setPieceTakers);
+        if (!parsed) return Response.json({ error: "invalid set-piece takers" }, { status: 400 });
+        setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
+      }
       const formationId = body.formation ?? existing.formation;
       if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
         return Response.json({ error: "custom formation missing" }, { status: 400 });
@@ -226,6 +233,7 @@ export const saveRoutes = {
         assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
         ...(customFormation ? { customFormation } : {}),
         ...(axesOverride ? { axesOverride } : {}),
+        ...(setPieceTakers ? { setPieceTakers } : {}),
       };
 
       await saveService.saveTactics(id, updated);
