@@ -459,6 +459,11 @@ export interface PassState {
   aerialOffsideIds?: number[];
   /** High ball played by a set-piece taker (free kick / goal kick): the whistle waits for it to land. */
   fromSetPiece?: boolean;
+  /**
+   * The set piece's `variant` when it was played from one (`set-pieces-play.md`): only a `box`
+   * delivery (corner / crossed free kick with both teams set) gets the set-piece rules in the air.
+   */
+  setPieceVariant?: 'box' | 'direct';
 }
 
 /**
