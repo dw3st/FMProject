@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "@/index.css";
+import { installFontFaces } from "@/fontFaces";
 import { GameSaveProvider } from "@/GameInterface/GameSaveProvider";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthGate } from "@/GameInterface/AuthGate";
@@ -16,6 +17,7 @@ export interface CreatePageOptions {
 }
 
 export function createPage(Component: React.ComponentType, options: CreatePageOptions = {}) {
+  installFontFaces();
   void initAnalytics();
 
   function start() {

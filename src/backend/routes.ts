@@ -30,6 +30,7 @@ import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { authRoutes } from "@/backend/auth/routes";
 import { reportRoutes } from "@/backend/reports";
 import { faceRoutes } from "@/backend/faces";
+import { staticAssetRoutes } from "@/backend/staticAssets";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { listUserSaveIds } from "@/backend/auth/saveOwnership";
 import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
@@ -69,6 +70,7 @@ export const apiRoutes = {
   ...authRoutes,
   ...reportRoutes,
   ...faceRoutes,
+  ...staticAssetRoutes,
   ...saveRoutes,
   ...advanceDayRoutes,
   ...advanceUntilRoutes,
