@@ -651,7 +651,9 @@
       "assists": "Assistências: {{count}}",
       "yellow": "Cartão amarelo",
       "red": "Cartão vermelho",
-      "sentOff": "Expulso"
+      "sentOff": "Expulso",
+      "injured": "Lesionado",
+      "subbedOff": "Substituído"
     },
     "lastMinuteSubs": "Substituições de Última Hora",
     "shots": "Finalizações",

@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.3",
+    date: "2026-10-04",
+    items: [
+      { pt: "Na partida ao vivo, quem foi substituído ou se lesionou continua no fim da lista, com seus gols, assistências e cartões.", en: "In the live match, substituted and injured players stay at the end of the list, with their goals, assists and cards." },
+    ],
+  },
+  {
     version: "3.4.2",
     date: "2026-10-04",
     items: [

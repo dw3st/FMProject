@@ -81,7 +81,7 @@ function PlayerRow({
   isSubbedIn,
   starKind,
   events,
-  sentOff,
+  departed,
 }: {
   player:      GamePlayer;
   accentColor: string;
@@ -96,8 +96,8 @@ function PlayerRow({
   isSubbedIn?: boolean;
   starKind?:   StarKind;
   events?:     PlayerMatchEvents;
-  /** Sent off: no longer on the pitch, shown dimmed at the end of the list. */
-  sentOff?:    boolean;
+  /** Left the pitch (sent off, injured, substituted): shown dimmed at the end of the list. */
+  departed?:   DepartedReason;
 }) {
   const { t } = useTranslation();
   const color = accentColor;
@@ -107,7 +107,7 @@ function PlayerRow({
   return (
     <div
       onClick={() => onSelect?.(player.id)}
-      className={`flex flex-col gap-1 px-3 py-2 border-b border-border/30 transition-colors ${sentOff ? "opacity-60" : ""} ${
+      className={`flex flex-col gap-1 px-3 py-2 border-b border-border/30 transition-colors ${departed ? "opacity-60" : ""} ${
         onSelect ? "cursor-pointer" : ""
       } ${isSelected ? "bg-primary/10 border-l-2 border-primary" : highlighted ? "bg-secondary/40" : "hover:bg-secondary/30"} ${
         isLeft ? "" : "items-end"
@@ -134,14 +134,24 @@ function PlayerRow({
 
       <div className={`flex items-center w-full gap-2 justify-between ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
         <EventMarkers events={events} />
-        {sentOff ? (
-          <span className="text-sm font-semibold text-destructive shrink-0">{t("match.playerEvents.sentOff")}</span>
+        {departed ? (
+          <span className={`text-sm font-semibold shrink-0 ${departed === "sentOff" ? "text-destructive" : "text-muted-foreground"}`}>
+            {t(`match.playerEvents.${departed}`)}
+          </span>
         ) : (
           <EnergyReadout energy={player.energy} />
         )}
       </div>
     </div>
   );
+}
+
+export type DepartedReason = "sentOff" | "injured" | "subbedOff";
+
+/** A player who left the pitch during the match, and why. */
+export interface DepartedPlayer {
+  player: GamePlayer;
+  reason: DepartedReason;
 }
 
 export function TeamPanel({
@@ -160,7 +170,7 @@ export function TeamPanel({
   pendingSubsCount,
   subbedInPlayerIds,
   playerEvents,
-  sentOffPlayers,
+  departedPlayers,
   side: sideProp,
   onFlip,
   flipLabel,
@@ -188,8 +198,8 @@ export function TeamPanel({
   subbedInPlayerIds?: Set<number>;
   /** Goals, assists and cards per engine player id (#69). */
   playerEvents?:    Map<number, PlayerMatchEvents>;
-  /** Players of this team sent off (already gone from the pitch), listed dimmed at the end. */
-  sentOffPlayers?:  GamePlayer[];
+  /** Players of this team who left the pitch, listed dimmed at the end with the reason. */
+  departedPlayers?: DepartedPlayer[];
 }) {
   const color = accentColor;
   const { t } = useTranslation();
@@ -252,7 +262,7 @@ export function TeamPanel({
             events={playerEvents?.get(p.id)}
           />
         ))}
-        {sentOffPlayers?.map((p) => (
+        {departedPlayers?.map(({ player: p, reason }) => (
           <PlayerRow
             key={`off-${p.id}`}
             player={p}
@@ -264,7 +274,7 @@ export function TeamPanel({
             side={side}
             starKind={starIds.get(p.rosterId)}
             events={playerEvents?.get(p.id)}
-            sentOff
+            departed={reason}
           />
         ))}
       </div>

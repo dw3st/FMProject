@@ -651,7 +651,9 @@
       "assists": "Assists: {{count}}",
       "yellow": "Yellow card",
       "red": "Red card",
-      "sentOff": "Sent off"
+      "sentOff": "Sent off",
+      "injured": "Injured",
+      "subbedOff": "Subbed off"
     },
     "lastMinuteSubs": "Last-Minute Subs",
     "shots": "Shots",

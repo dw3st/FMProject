@@ -53,7 +53,7 @@ import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
-import { TeamPanel } from "@/GameInterface/TeamPanel";
+import { TeamPanel, type DepartedPlayer } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
@@ -752,10 +752,17 @@ export function MatchScreen() {
   const decisions = gameState.decisions;
   for (const p of gameState.players) knownPlayersRef.current.set(p.id, p);
   const playerEvents = playerMatchEvents(gameState.cards, getAllPlayerStats());
-  const sentOffPlayers = gameState.cards
-    .filter((c) => c.card === "red" && c.team === panelTeam)
-    .map((c) => knownPlayersRef.current.get(c.playerId))
-    .filter((p): p is GamePlayer => p !== undefined && !gameState.players.some((q) => q.id === p.id));
+  // Players of the shown team who left the pitch (sent off, injured or substituted), in the order
+  // they first appeared, so their goals, assists and cards stay visible (#69).
+  const onPitch = new Set(gameState.players.map((p) => p.id));
+  const sentOffIds = new Set(gameState.cards.filter((c) => c.card === "red").map((c) => c.playerId));
+  const injuredIds = new Set(gameState.injuries.map((i) => i.playerId));
+  const departedPlayers: DepartedPlayer[] = [...knownPlayersRef.current.values()]
+    .filter((p) => p.team === panelTeam && !onPitch.has(p.id))
+    .map((p) => ({
+      player: p,
+      reason: sentOffIds.has(p.id) ? "sentOff" : injuredIds.has(p.id) ? "injured" : "subbedOff",
+    }));
 
   teamNamesRef.current = { A: teamAWithCrest?.name ?? "A", B: teamBWithCrest?.name ?? "B" };
   const summaryStats = (tm: TeamId): SummaryTeamStats => {
@@ -933,7 +940,7 @@ export function MatchScreen() {
             gameState.substitutions.filter((s) => s.team === panelTeam).map((s) => s.playerInId),
           )}
           playerEvents={playerEvents}
-          sentOffPlayers={sentOffPlayers}
+          departedPlayers={departedPlayers}
           onFlip={() => setPanelTeam((tm) => (tm === "A" ? "B" : "A"))}
           flipLabel={t("match.summary.showTeam", {
             team: (panelTeam === "A" ? teamBWithCrest?.name : teamAWithCrest?.name) ?? (panelTeam === "A" ? "B" : "A"),
