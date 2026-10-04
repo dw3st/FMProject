@@ -10,15 +10,6 @@ export interface RoleEngineTuning {
   carryBias: number;
   /** 0..1 — off-ball attacking movement / create-space threshold (OffBallMovement). */
   offBallBias: number;
-  /** Added to team carry weights for off-ball lane scoring (clamped per weight). */
-  offBallCarryDeltas: {
-    clearance: number;
-    progress: number;
-    angle: number;
-    crowd: number;
-    dropLaneBias: number;
-    widthBias: number;
-  };
   /**
    * −1..1 — tendency to pass when on the ball (DecisionTree.evalPass), the pass
    * mirror of carryBias. × PASS_CONFIG.ROLE_BIAS_WEIGHT is added to the pass

@@ -13,7 +13,7 @@
  *   1. Add a new variant to PlayerDecision
  *   2. Add the evaluation condition inside decide()
  *   3. Handle the new decision type in gameState.ts tickState()
- *   4. Document it in project-structure.md
+ *   4. Document it in game-engine.md
  */
 
 import type { GamePlayer, SetPiece, TeamIntent } from '@/GameEngine/types';

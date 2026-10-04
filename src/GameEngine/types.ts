@@ -155,7 +155,6 @@ interface WithBallStats {
   carrySpeed: number;
   /** Yards ahead scanned when evaluating forward carry lanes. */
   carryVision: number;
-  /** 0..1 — per-reconsider probability of continuing a carry vs switching to pass. */
   /** 0..1 normalised speed — improves value of open forward carry lanes. */
   speed: number;
   /** 0..1 normalised acceleration — helps beat close defenders in short bursts. */
