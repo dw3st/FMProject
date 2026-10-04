@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.5",
+    date: "2026-10-04",
+    items: [
+      { pt: "Resumo da partida ao vivo com números e textos maiores, no mesmo tamanho da lista de jogadores.", en: "Live match Summary with bigger numbers and labels, the same size as the player list." },
+    ],
+  },
+  {
     version: "3.4.4",
     date: "2026-10-04",
     items: [

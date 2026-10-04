@@ -39,9 +39,9 @@ const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
 
 function StatRow({ label, a, b }: { label: string; a: string | number; b: string | number }) {
   return (
-    <div className="flex items-center justify-between border-t border-border py-1.5 text-sm">
+    <div className="flex items-center justify-between border-t border-border py-2 text-base">
       <span className="w-12 font-display font-bold tabular-nums text-foreground">{a}</span>
-      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{label}</span>
+      <span className="font-display font-bold uppercase tracking-[0.08em] text-sm text-muted-foreground">{label}</span>
       <span className="w-12 text-right font-display font-bold tabular-nums text-foreground">{b}</span>
     </div>
   );
@@ -78,7 +78,7 @@ export function MatchSummaryPanel({
     <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0">
       <div className="px-4 pt-4 pb-3 border-b border-border">
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("match.summary.title")}</h3>
-        <div className="mt-2 flex items-center justify-between text-sm font-semibold">
+        <div className="mt-2 flex items-center justify-between text-base font-semibold">
           <span className="truncate" style={{ color: readableOnDark(colorA) }}>{nameA ?? "A"}</span>
           <span className="truncate text-right" style={{ color: readableOnDark(colorB) }}>{nameB ?? "B"}</span>
         </div>
