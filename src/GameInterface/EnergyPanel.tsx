@@ -26,7 +26,7 @@ interface Props {
   styleB?: StyleEffects;
 }
 
-export interface StyleEffects {
+interface StyleEffects {
   familiarity: number;
   execution: number;
   pressStamina: number;

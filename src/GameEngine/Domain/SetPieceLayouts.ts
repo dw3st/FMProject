@@ -13,7 +13,7 @@
 import type { Formation, PlayerRole } from '@/GameEngine/types';
 import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 
-export interface SetPieceSlot {
+interface SetPieceSlot {
   role: PlayerRole;
   /** Absolute yards from own goal line (Team A reference: 0 = own goal, PITCH_LENGTH = opponent goal). */
   x: number;
@@ -489,13 +489,6 @@ const f352: FormationSetPieces = {
 const REGISTRY: FormationSetPieces[] = [f433, f442, f352];
 
 /**
- * Formation IDs with HAND-MADE layouts. Every other formation (the other ready-made ones and the
- * custom one) gets layouts generated from its own slots (`generateSetPieces`); which formations are
- * selectable is `FORMATION_IDS` (`src/Domain/matchFormations.ts`), not this set.
- */
-export const SUPPORTED_FORMATIONS = new Set<string>(['4-3-3', '4-4-2', '3-5-2']);
-
-/**
  * Look up the set piece layouts for a formation by ID.
  * Returns null if no layout is defined for that formation.
  */
@@ -530,7 +523,7 @@ const clampX = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, 
  * layouts (the custom formation). Roles come from the slots, so `applySetPieceToTeam` matches
  * every player.
  */
-export function generateSetPieces(formation: Formation): FormationSetPieces {
+function generateSetPieces(formation: Formation): FormationSetPieces {
   const def = (f: (s: Formation['defending'][number]) => { x: number; y: number }): SetPieceLayout => ({
     slots: formation.defending.map(s => ({ role: s.role as PlayerRole, ...f(s) })),
   });

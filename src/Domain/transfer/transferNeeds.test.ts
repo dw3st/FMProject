@@ -116,7 +116,6 @@ describe("generateTransferNeeds", () => {
 
 describe("findCandidates", () => {
   test("low tier rejects player above price cap", () => {
-    const rating = 8;
     const expensive = basePlayer({
       id: "exp",
       name: "Star",

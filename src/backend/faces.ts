@@ -39,7 +39,7 @@ export function parseFaceRequest(file: string, search: URLSearchParams): FaceReq
   return { playerId, nationality, colors };
 }
 
-export function renderFace(req: FaceRequest): string {
+function renderFace(req: FaceRequest): string {
   // The face depends on the nationality only through its region, so key on the region: arbitrary
   // `nat` strings can't each take a cache slot for the same SVG.
   const key = `${req.playerId}|${faceRegionOf(req.nationality)}|${req.colors.map((c) => c ?? "").join(",")}`;

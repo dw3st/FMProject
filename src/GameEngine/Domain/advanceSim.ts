@@ -50,7 +50,7 @@ import { tickState, type TickResult } from "@/GameEngine/Domain/gameState";
 /** Fixed step size, in game-seconds. */
 export const SIM_STEP = 1 / 60;
 
-export type AdvanceSimStopReason = "goal" | "phase";
+type AdvanceSimStopReason = "goal" | "phase";
 
 export interface AdvanceSimResult {
   state: GameState;

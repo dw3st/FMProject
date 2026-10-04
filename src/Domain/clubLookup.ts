@@ -11,11 +11,6 @@ import type { Squad } from "@/types/playerTypes";
 /** Minimal save metadata needed for club identity checks. */
 export type MetaRef = { clubId: string; leagueSlug: string };
 
-/** True when the given squad is the human player's club. */
-export function isPlayerSquad(squad: Squad, meta: MetaRef): boolean {
-  return squad.id === meta.clubId;
-}
-
 /** True when the given squad id is the human player's club. */
 export function isPlayerSquadId(squadId: string, meta: Pick<MetaRef, "clubId">): boolean {
   return squadId === meta.clubId;

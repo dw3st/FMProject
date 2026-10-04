@@ -11,7 +11,7 @@ import { PITCH_LENGTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch'
 
 /** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
 export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
-export type CardColour = 'yellow' | 'red';
+type CardColour = 'yellow' | 'red';
 
 export interface FoulContext {
   kind: FoulKind;

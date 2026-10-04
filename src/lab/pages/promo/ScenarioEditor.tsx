@@ -1,19 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Clapperboard,
-  ChevronDown,
-  ChevronUp,
-  Clipboard,
-  Copy,
-  Download,
-  FileJson,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Trash2,
-  Check,
-  X,
-} from "lucide-react";
+import { Icon } from "@/GameInterface/Icons";
 import type { GameState } from "@/GameEngine/types";
 import {
   type Scenario,
@@ -217,7 +203,7 @@ export const ScenarioEditor: React.FC<{
         title="Open scenario editor"
         aria-label="Open scenario editor"
       >
-        <Clapperboard className="w-4 h-4 text-primary" />
+        <Icon name="clapperboard" strokeWidth={2} className="w-4 h-4 text-primary" />
       </button>
     );
   }
@@ -227,7 +213,7 @@ export const ScenarioEditor: React.FC<{
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2">
-          <Clapperboard className="w-4 h-4 text-primary glow-text" />
+          <Icon name="clapperboard" strokeWidth={2} className="w-4 h-4 text-primary glow-text" />
           <span className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-foreground">
             Scenarios
           </span>
@@ -239,7 +225,7 @@ export const ScenarioEditor: React.FC<{
             className="px-2 py-1 rounded text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
             title={tab === "pick" ? "Edit JSON" : "Back to picker"}
           >
-            {tab === "pick" ? <Pencil className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+            {tab === "pick" ? <Icon name="pencil" strokeWidth={2} className="w-3.5 h-3.5" /> : <Icon name="chevron-up" strokeWidth={2} className="w-3.5 h-3.5" />}
           </button>
           <button
             type="button"
@@ -247,7 +233,7 @@ export const ScenarioEditor: React.FC<{
             className="px-2 py-1 rounded text-muted-foreground hover:text-foreground"
             title="Collapse"
           >
-            <ChevronDown className="w-3.5 h-3.5" />
+            <Icon name="chevron-down" strokeWidth={2} className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -304,7 +290,7 @@ export const ScenarioEditor: React.FC<{
                       className="text-muted-foreground hover:text-destructive p-1"
                       title="Delete"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Icon name="trash2" strokeWidth={2} className="w-3 h-3" />
                     </button>
                   )}
                 </div>
@@ -324,7 +310,7 @@ export const ScenarioEditor: React.FC<{
                 className="bg-primary text-primary-foreground rounded-md px-2 py-2 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest font-display font-black glow-primary cursor-pointer"
                 title="Rewind the active scenario to its saved start (or press R anywhere)"
               >
-                <RotateCcw className="w-3 h-3" />
+                <Icon name="rotate-ccw" strokeWidth={2} className="w-3 h-3" />
                 Restart Scenario
                 <kbd className="ml-1 bg-primary-foreground/15 border border-primary-foreground/25 rounded px-1.5 py-0.5 text-[10px] font-mono font-bold">
                   R
@@ -340,7 +326,7 @@ export const ScenarioEditor: React.FC<{
                 className="card-arcade rounded-md px-2 py-2 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-widest text-foreground hover:text-primary cursor-pointer"
                 title="Capture the current engine state and open the JSON editor"
               >
-                <Download className="w-3 h-3" />
+                <Icon name="download" strokeWidth={2} className="w-3 h-3" />
                 Capture Live
               </button>
               <button
@@ -354,7 +340,7 @@ export const ScenarioEditor: React.FC<{
                 className="card-arcade rounded-md px-2 py-2 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-widest text-foreground hover:text-primary cursor-pointer"
                 title="Open the JSON editor with a blank textarea"
               >
-                <Plus className="w-3 h-3" />
+                <Icon name="plus" strokeWidth={2} className="w-3 h-3" />
                 Paste JSON
               </button>
             </div>
@@ -364,7 +350,7 @@ export const ScenarioEditor: React.FC<{
             {/* Header row: char count + clipboard / copy / clear actions */}
             <div className="flex items-center justify-between gap-2">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                <FileJson className="w-3 h-3" /> GameState JSON
+                <Icon name="file-json" strokeWidth={2} className="w-3 h-3" /> GameState JSON
                 <span className="text-muted-foreground/70">·</span>
                 <span className="tabular-nums text-foreground">
                   {charCount.toLocaleString()} chars
@@ -377,7 +363,7 @@ export const ScenarioEditor: React.FC<{
                   className="text-[10px] uppercase tracking-widest text-primary glow-text hover:underline flex items-center gap-1 cursor-pointer"
                   title="Read the entire clipboard into the textarea (bypasses paste handler)"
                 >
-                  <Clipboard className="w-3 h-3" /> Paste
+                  <Icon name="clipboard" strokeWidth={2} className="w-3 h-3" /> Paste
                 </button>
                 <button
                   type="button"
@@ -385,7 +371,7 @@ export const ScenarioEditor: React.FC<{
                   className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
                   title="Copy textarea contents to clipboard"
                 >
-                  <Copy className="w-3 h-3" /> Copy
+                  <Icon name="copy" strokeWidth={2} className="w-3 h-3" /> Copy
                 </button>
                 <button
                   type="button"
@@ -393,7 +379,7 @@ export const ScenarioEditor: React.FC<{
                   className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-destructive flex items-center gap-1 cursor-pointer"
                   title="Clear textarea"
                 >
-                  <X className="w-3 h-3" />
+                  <Icon name="close" strokeWidth={2} className="w-3 h-3" />
                 </button>
               </div>
             </div>
@@ -410,7 +396,7 @@ export const ScenarioEditor: React.FC<{
 
             {error && (
               <div className="text-[10px] text-destructive flex items-center gap-1 leading-snug">
-                <X className="w-3 h-3 shrink-0" /> {error}
+                <Icon name="close" strokeWidth={2} className="w-3 h-3 shrink-0" /> {error}
               </div>
             )}
 
@@ -435,7 +421,7 @@ export const ScenarioEditor: React.FC<{
                 className="bg-secondary text-foreground rounded-md px-3 py-2 text-[10px] uppercase tracking-widest font-display font-black cursor-pointer hover:bg-primary hover:text-primary-foreground"
                 title="Save current JSON under this name"
               >
-                <Plus className="w-3 h-3" />
+                <Icon name="plus" strokeWidth={2} className="w-3 h-3" />
               </button>
             </div>
           </>
@@ -445,7 +431,7 @@ export const ScenarioEditor: React.FC<{
       {/* Flash bar */}
       {flash && (
         <div className="px-3 py-1.5 border-t border-border bg-primary/10 flex items-center gap-1.5">
-          <Check className="w-3 h-3 text-primary glow-text" />
+          <Icon name="check" strokeWidth={2} className="w-3 h-3 text-primary glow-text" />
           <span className="text-[10px] uppercase tracking-widest text-primary glow-text">
             {flash}
           </span>

@@ -10,13 +10,12 @@ import type {
   SquadMarketProfile,
   TransferNeed,
   TransferBudgetTier,
-  TransferIntentType,
   SellCandidate,
 } from "@/types/transferMarketTypes";
 
 const MAIN_BANDS: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
-export const PRICE_CAP_MID = 40_000_000;
+const PRICE_CAP_MID = 40_000_000;
 export const PRICE_CAP_LOW = 15_000_000;
 
 // Caps on total needs per club per refresh
@@ -353,7 +352,7 @@ export function scoreCandidate(
 
 // ─── Transfer attempt orchestration ─────────────────────────────────────────
 
-export function findSquadContainingPlayer(
+function findSquadContainingPlayer(
   playerId: string,
   allSquads: Squad[],
 ): Squad | null {

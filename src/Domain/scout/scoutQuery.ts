@@ -33,8 +33,8 @@ export interface ScoutSearchResponse extends ScoutPage {
   sellListedIds: string[];
 }
 
-export const SCOUT_PAGE_SIZE_MIN = 10;
-export const SCOUT_PAGE_SIZE_MAX = 200;
+const SCOUT_PAGE_SIZE_MIN = 10;
+const SCOUT_PAGE_SIZE_MAX = 200;
 
 /** Flatten every squad into scout rows, resolving league/club slugs for profile links. */
 export function mapSquadsToScoutPlayers(squads: Squad[], leagueSlugs: string[]): DisplayPlayer[] {

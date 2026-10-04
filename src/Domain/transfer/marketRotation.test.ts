@@ -47,25 +47,6 @@ function makeSquad(id: string, players: RosterPlayer[], finances?: Squad["financ
   };
 }
 
-/** Flat stats so overall rating ~10 across the board. */
-function flatStats(v: number): RosterPlayer["stats"] {
-  return {
-    passing: v,
-    vision: v,
-    finishing: v,
-    dribbling: v,
-    speed: v,
-    acceleration: v,
-    tackling: v,
-    pressing: v,
-    stamina: v,
-    heading: v,
-    strength: v,
-    reflex: v,
-    jump: v,
-  };
-}
-
 describe("initMarketState", () => {
   test("contains all squad ids and rotationIndex 0", () => {
     const squads = [

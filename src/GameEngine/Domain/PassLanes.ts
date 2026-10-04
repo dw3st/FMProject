@@ -401,15 +401,3 @@ export function getPassLanes(state: GameState): PassLaneInfo[] {
   return evaluatePassLanes(holder, teammates, opponents, intent);
 }
 
-/**
- * isLaneOpen — kept for external callers that only need a boolean check.
- * Uses the existing BLOCK_RADIUS threshold (perpendicular distance).
- */
-export function isLaneOpen(
-  from:      { x: number; y: number },
-  to:        { x: number; y: number },
-  opponents: GamePlayer[],
-): boolean {
-  return getLaneScore(from, to, opponents) > 0;
-}
-

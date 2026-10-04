@@ -25,12 +25,10 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
   return player.recoveryTime > 0;
 }
 import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
-import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
-import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { getTeamBuildUp, getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
-import { evaluateCarryLane, evaluateCarryLaneBreakdown, rot } from '@/GameEngine/Domain/CarryLaneEval';
+import { evaluateCarryLaneBreakdown, rot } from '@/GameEngine/Domain/CarryLaneEval';
 import type { CarryLaneBreakdown } from '@/GameEngine/Domain/CarryLaneEval';
 import { evaluateOffBall } from '@/GameEngine/Domain/OffBallMovement';
 import {
@@ -38,14 +36,14 @@ import {
 } from '@/GameEngine/Infrastructure/CrowdGrid';
 import {
   TACKLE_RANGE, DRIBBLE_ATTEMPT_RANGE, DRIBBLE_MIN_BIAS,
-  computeXG, MAX_XG, computeOpenAngle, computeWeightedPressure,
+  computeXG, computeOpenAngle, computeWeightedPressure,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import { evaluatePassLanes, scorePassToReceiverBreakdown } from '@/GameEngine/Domain/PassLanes';
 import type { PassBreakdown } from '@/GameEngine/Domain/PassLanes';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
-import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
@@ -150,10 +148,6 @@ const DRIBBLE_STRONG_RAW      = 0.8;
 /** Through-ball raw scoring: a strong cell (race margin ≈1s, open, central, skilled passer) ≈ 0.9 → 0.632. */
 const THROUGH_BALL_STRONG_RAW = 0.9;
 
-// ── Carry lane scoring (from CarryLaneEval) ───────────────────────────────────
-// evaluateCarryLane and rot are imported from CarryLaneEval.ts and re-exported
-// so that any existing callers of DecisionTree can still use them.
-export { evaluateCarryLane, rot };
 
 /**
  * Evaluate three carry lanes (straight to goal, ±30°) and return the best

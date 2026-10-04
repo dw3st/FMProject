@@ -94,20 +94,6 @@ export function getDetailedPositionColor(role: string): string {
   return DETAILED_COLOR[role] ?? getPositionColor(role);
 }
 
-/** Group label used to bucket players in squad / scout views. */
-export function getPositionGroup(pos: string): string {
-  const main = getMainRole(pos);
-  switch (main) {
-    case "GK":         return "Goalkeepers";
-    case "Defender":   return "Defenders";
-    case "Midfielder": return "Midfielders";
-    case "Forward":    return "Forwards";
-  }
-}
-
-/** Ordered section keys for squad / scout group rendering. */
-export const POSITION_GROUP_ORDER = ["Goalkeepers", "Defenders", "Midfielders", "Forwards"] as const;
-
 /**
  * Display label of a player's position: the natural detailed role (`roles.detailedAbbr.*`) when
  * known, otherwise the main-role abbreviation of `pos`. Single entry point for roster lists (#40).

@@ -1,4 +1,3 @@
-import { Player } from "@/Domain/Player";
 import type { MainRole } from "@/GameInterface/positionHelpers";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";

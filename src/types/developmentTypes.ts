@@ -39,14 +39,3 @@ export function trainingAgeCostFactor(age: number): number {
   return 1.5;
 }
 
-const TRAINING_AGE_COST_MIN = 0.8;
-const TRAINING_AGE_COST_MAX = 1.5;
-
-/**
- * Rest recovery uses the same base roll as heavy training cost, but inverted age:
- * younger bodies recover faster; veterans recover less per rest day.
- */
-export function restAgeRecoveryFactor(age: number): number {
-  const c = trainingAgeCostFactor(age);
-  return TRAINING_AGE_COST_MIN + TRAINING_AGE_COST_MAX - c;
-}

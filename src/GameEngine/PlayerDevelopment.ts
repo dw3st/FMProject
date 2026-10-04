@@ -21,7 +21,7 @@ const BASE_COST  = 10;   // base DP required for a stat level-up
 const SCALE      = 0.10; // how steeply cost grows with value
 
 /** Training-only: per-intensity fraction of BASE_DP earned per session. */
-export const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
+const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
   heavy:  0.25, // spec: 25% of a rating-6 match
   normal: 0.12,
   light:  0.05,

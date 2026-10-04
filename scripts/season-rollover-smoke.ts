@@ -63,7 +63,7 @@ const { totalsByKind } = await import("@/Domain/finance/ledger");
 const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await import("@/Domain/aiFinance/aiClubFinance");
 const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
 const { leaguePrize } = await import("@/Domain/finance/prizes");
-const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
+const { autoLineupDefaultFormation, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
 const { isSuspended } = await import("@/Domain/discipline/discipline");
 const { followersAfterMood, stadiumFillRate } = await import("@/Domain/boardFans/boardFans");
@@ -914,7 +914,6 @@ try {
   const libInitialYear = continentalYearsStart.get(libSlug);
   const sudInitialYear = continentalYearsStart.get(sudSlug);
   const libMetaEnd = await plain().getLeagueMeta(smokeSaveId, libSlug);
-  const sudMetaEnd = await plain().getLeagueMeta(smokeSaveId, sudSlug);
   const saRegenerated = libInitialYear !== undefined && (libMetaEnd?.year ?? libInitialYear) > libInitialYear;
   if (saRegenerated) {
     const libArchive = await fsDal.readLeagueSeasonArchive(saveId, libSlug, libInitialYear!);

@@ -26,7 +26,7 @@ function safeLevel(squad: Squad | null): number | null {
   }
 }
 
-export function objectiveClubs(squads: Squad[], playerSquadId: string): ObjectiveClub[] {
+function objectiveClubs(squads: Squad[], playerSquadId: string): ObjectiveClub[] {
   return squads.map((s) => {
     let level = 0;
     try {

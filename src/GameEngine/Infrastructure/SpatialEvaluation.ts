@@ -38,8 +38,8 @@ export interface EvaluationResult {
   nearestTeamBDist: number;
 }
 
-export const DEFAULT_RADIUS = 10;
-export const DEFAULT_FALLOFF: Falloff = 'exp';
+const DEFAULT_RADIUS = 10;
+const DEFAULT_FALLOFF: Falloff = 'exp';
 
 export const DEFAULT_EVAL_CONFIG: EvaluationConfig = {
   radius: DEFAULT_RADIUS,
@@ -55,7 +55,7 @@ export const DEFAULT_EVAL_CONFIG: EvaluationConfig = {
  * - `linear`: `max(0, 1 - dist / radius)` — straight ramp from 1 (at point) to 0 (at edge).
  * - `exp`:    `exp(-dist / (radius / 3))` — soft falloff; ≈ 0.05 at the radius edge.
  */
-export function falloffWeight(dist: number, radius: number, falloff: Falloff): number {
+function falloffWeight(dist: number, radius: number, falloff: Falloff): number {
   if (dist > radius) return 0;
   if (falloff === 'linear') return Math.max(0, 1 - dist / radius);
   const k = radius / 3;

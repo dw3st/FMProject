@@ -20,12 +20,9 @@ import {
   listUserSaveIds,
 } from "@/backend/auth/saveOwnership";
 
-// Re-export SaveMeta as SaveFile so existing imports keep working
-export type SaveFile = SaveMeta;
 export type { SaveMeta };
-export type { SeasonData } from "@/types/calendarTypes";
 
-export const MAX_SAVES_PER_USER = 5;
+const MAX_SAVES_PER_USER = 5;
 
 export const saveRoutes = {
   "/api/saves": async (req: Request) => {

@@ -6,8 +6,6 @@
  * which read from i18next. The constants below remain as English fallback.
  */
 
-import i18n from "@/i18n/i18n";
-
 export type AttributeId =
   | "passing"
   | "vision"
@@ -105,44 +103,3 @@ export const ATTRIBUTE_LIST: AttributeLabel[] = Object.values(ATTRIBUTE_LABELS).
   (a) => !HIDDEN_ATTRIBUTES.has(a.id),
 );
 
-/** Grouped by category for player profile layout. */
-export const ATTRIBUTE_GROUPS: { title: string; ids: AttributeId[] }[] = [
-  {
-    title: "Technical",
-    ids: ["passing", "dribbling", "finishing"],
-  },
-  {
-    title: "Mental",
-    ids: ["vision", "pressing"],
-  },
-  {
-    title: "Physical",
-    ids: ["speed", "acceleration", "stamina", "strength", "tackling"],
-  },
-  {
-    title: "GK",
-    ids: ["reflex", "jump"],
-  },
-];
-
-/** Get translated label text for an attribute id. */
-export function getAttributeLabel(id: AttributeId): string {
-  return i18n.t(`attributes.${id}.label`, { defaultValue: ATTRIBUTE_LABELS[id].label });
-}
-
-/** Get translated description for an attribute id. */
-export function getAttributeDescription(id: AttributeId): string {
-  return i18n.t(`attributes.${id}.description`, { defaultValue: ATTRIBUTE_LABELS[id].description });
-}
-
-/** Translated label for an attribute group title (Technical / Mental / Physical / GK). */
-export function getAttributeGroupTitle(title: string): string {
-  const map: Record<string, string> = {
-    Technical: "attributes.groups.technical",
-    Mental: "attributes.groups.mental",
-    Physical: "attributes.groups.physical",
-    GK: "attributes.groups.gk",
-  };
-  const key = map[title];
-  return key ? i18n.t(key, { defaultValue: title }) : title;
-}

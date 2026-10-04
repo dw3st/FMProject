@@ -1,13 +1,10 @@
 import { weeklyWage } from "@/Domain/finance/wages";
 import {
-  MAIN_ROLE_TO_SPECIFICS,
   bestSpecificRole,
   computeOverallAvg,
   overallAvg,
   weightedScore,
 } from "@/Domain/playerRating";
-
-export { MAIN_ROLE_TO_SPECIFICS };
 
 export type StatusLevel = 1 | 2 | 3 | 4 | 5;
 

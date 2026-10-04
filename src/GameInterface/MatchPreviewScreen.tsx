@@ -6,7 +6,6 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
 import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
-import { Player } from "@/Domain/Player";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";

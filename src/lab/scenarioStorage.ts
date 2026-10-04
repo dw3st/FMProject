@@ -26,7 +26,7 @@ function emptyIndex(): ScenarioIndex {
   return { version: 1, entries: [] };
 }
 
-export async function readIndex(): Promise<ScenarioIndex> {
+async function readIndex(): Promise<ScenarioIndex> {
   await ensureDir();
   const file = Bun.file(INDEX_PATH);
   if (!(await file.exists())) return emptyIndex();

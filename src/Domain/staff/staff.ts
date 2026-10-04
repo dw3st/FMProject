@@ -11,7 +11,7 @@ import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-export function clampRating(r: number): number {
+function clampRating(r: number): number {
   return clamp(Math.round(r), STAFF.MIN_RATING, STAFF.MAX_RATING);
 }
 
@@ -41,8 +41,6 @@ export interface StaffEffects {
   injuryMult: number;
   scoutNoise: number;
 }
-
-export const NEUTRAL_EFFECTS: StaffEffects = { devMult: 1, recoveryMult: 1, injuryMult: 1, scoutNoise: 0.6 };
 
 /**
  * The rating that counts for a role: the hired professional's, the vacant rating when the club

@@ -9,7 +9,7 @@ import type { PairRaw } from "@/lab/formationMatrix";
 
 const ROOT = "debug/balance/lab/matrix";
 /** Worker cap: the engine is memory-hungry, the lab machine shares the CPU with the game server. */
-export const MATRIX_MAX_WORKERS = 4;
+const MATRIX_MAX_WORKERS = 4;
 
 export interface MatrixRun {
   id: string;

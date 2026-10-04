@@ -32,7 +32,7 @@ const ORDER: string[] = [
 const INDEX_BY_POS = new Map<string, number>(ORDER.map((pos, i) => [pos, i]));
 
 /** Sort index for a position code (lower = earlier). Unknown positions return a large number so they sort last. */
-export function getPositionSortIndex(pos: string): number {
+function getPositionSortIndex(pos: string): number {
   const idx = INDEX_BY_POS.get(pos);
   return idx !== undefined ? idx : 999;
 }

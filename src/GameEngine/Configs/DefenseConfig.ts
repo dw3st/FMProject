@@ -143,5 +143,3 @@ export function applyTeamTacticsConfig(
   TEAM_TACTIC_KEYS[team].defensiveLine = axes.defensive_line;
 }
 
-// Keep DEFENSE_CONFIG exported for any legacy import that hasn't migrated yet.
-export const DEFENSE_CONFIG: DefenseConfigValues = TEAM_CONFIGS.A;

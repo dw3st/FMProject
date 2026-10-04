@@ -22,7 +22,7 @@ export function countryByLeague(catalog: LeagueDataEntry[]): Map<string, string>
 }
 
 /** Clubs of a country (membership from the save's squad index) with their tier (1 when unknown). */
-export function countryClubs(
+function countryClubs(
   country: string,
   index: SquadIndex,
   countryOf: Map<string, string>,
@@ -89,7 +89,7 @@ export async function leagueBusyDates(service: SaveService, saveId: string, leag
 }
 
 /** Write a generated cup (meta, every round file, date index). */
-export async function writeCup(service: SaveService, saveId: string, cup: LeagueCalendarResult): Promise<void> {
+async function writeCup(service: SaveService, saveId: string, cup: LeagueCalendarResult): Promise<void> {
   await service.writeLeagueMeta(saveId, cup.meta);
   for (const r of cup.rounds) await service.writeRound(saveId, cup.meta.leagueSlug, r.round, r);
   await service.writeDateIndex(saveId, cup.meta.leagueSlug, cup.dateIndex);
@@ -169,5 +169,3 @@ export async function playerCupSlug(leagueSlug: string): Promise<string | null> 
   const country = (await getLeagueData()).find((l) => l.slug === leagueSlug)?.country;
   return country ? cupSlugOf(country) : null;
 }
-
-export { cupSlugOf };

@@ -866,7 +866,6 @@ export function TestScreen() {
 
   const roleData   = livePlayer ? ROLES[livePlayer.role] : null;
   const engineData = roleData?.engine;
-  const dpData     = roleData?.dpWeights;
 
   return (
     <div className="flex flex-col gap-3 w-full p-4 h-screen overflow-y-auto">

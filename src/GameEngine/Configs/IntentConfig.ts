@@ -44,7 +44,7 @@ type OffBallIntentName =
  *   far_flank — lateral lane across the pitch toward the opposite touchline at
  *               roughly the holder's x (minimal forward component).
  */
-export type ExtraCarryLaneDir = 'far_flank';
+type ExtraCarryLaneDir = 'far_flank';
 
 /**
  * An extra carry lane to inject, with a flat score bonus so a soft-biased
@@ -62,7 +62,7 @@ export interface ExtraCarryLane {
  *
  *   far_flank — receivers on the opposite side of the pitch from the holder.
  */
-export type PassTargetKind = 'far_flank';
+type PassTargetKind = 'far_flank';
 
 /** A directional pass-target bias rewarding receivers in a named region. */
 export interface PassTargetBias {
@@ -81,7 +81,7 @@ export interface PassTargetBias {
  * press range computation. This is how a `counter_attack` team can dynamically
  * switch from low_block to high_press when the situation warrants it.
  */
-export interface IntentEffects {
+interface IntentEffects {
   /** Multipliers applied to TeamPassWeights fields. */
   pass?: Partial<Record<keyof TeamPassWeights, number>>;
   /** Multipliers applied to TeamCarryWeights fields. */
@@ -177,7 +177,7 @@ const INTENT_EFFECTS: Record<TeamIntent, IntentEffects> = {
 };
 
 /** Returns the registered effects for the given intent (or a frozen empty object). */
-export function getIntentEffects(intent: TeamIntent): IntentEffects {
+function getIntentEffects(intent: TeamIntent): IntentEffects {
   return INTENT_EFFECTS[intent] ?? NO_EFFECT;
 }
 

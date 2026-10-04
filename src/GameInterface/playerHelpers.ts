@@ -20,7 +20,7 @@ function daysBetween(from: string, to: string): number {
 export type { StatusLevel };
 
 /** Threshold for the "high load" UI indicator — 70% of `FITNESS.LOAD_HIGH` (see `game/fitness.md`). */
-export const HIGH_LOAD_THRESHOLD = FITNESS.LOAD_HIGH * 0.7;
+const HIGH_LOAD_THRESHOLD = FITNESS.LOAD_HIGH * 0.7;
 
 /** Whether a player's accumulated `load` warrants the high-load icon (slower recovery, faster in-match drain). */
 export function isHighLoad(load: number): boolean {
@@ -96,7 +96,7 @@ export function resolveSquadIdFromLeagues(
 }
 
 /** Weekly wage label (same format as `Player.salaryLabel`). */
-export function formatWeeklyWage(weekly: number): string {
+function formatWeeklyWage(weekly: number): string {
   const w = Math.round(weekly);
   return w >= 1000 ? `${(w / 1000).toFixed(0)}k` : `${w}`;
 }

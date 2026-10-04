@@ -19,8 +19,8 @@ import { addSide, emptySide, type Delivery, type PairRaw, type SideRaw } from '@
 export * from '@/lab/formationMatrixSummary';
 
 /** Central corridor (y) used for shots, entries and the defending screen. */
-export const CENTRAL_Y_MIN = 22;
-export const CENTRAL_Y_MAX = 52;
+const CENTRAL_Y_MIN = 22;
+const CENTRAL_Y_MAX = 52;
 const FINAL_THIRD = PITCH_LENGTH * (2 / 3);
 /** A shot within this many ticks of a delivery is credited to that delivery. */
 const DELIVERY_TICKS = 5;

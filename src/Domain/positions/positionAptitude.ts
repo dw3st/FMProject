@@ -20,7 +20,7 @@ const LINE_ROLES: Record<MainRole, readonly DetailedRole[]> = {
 const LEFT: ReadonlySet<string> = new Set(["LB", "LWB", "LM", "LW"]);
 const RIGHT: ReadonlySet<string> = new Set(["RB", "RWB", "RM", "RW"]);
 
-export function isDetailedRole(role: string): role is DetailedRole {
+function isDetailedRole(role: string): role is DetailedRole {
   return (DETAILED_ROLES as readonly string[]).includes(role);
 }
 

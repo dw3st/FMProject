@@ -24,7 +24,7 @@ import type {
 
 const WORKER_URL = new URL("./balanceWorker.ts", import.meta.url);
 
-export type ProgressEvent =
+type ProgressEvent =
   | { type: "pair-start"; variantAId: string; variantBId: string }
   | { type: "pair-progress"; variantAId: string; variantBId: string; done: number; total: number }
   | { type: "pair-done"; variantAId: string; variantBId: string; durationMs: number }

@@ -9,7 +9,7 @@ import {
   MAIN_ROLE_BADGE_CLASSES,
   getMainRole,
 } from "@/GameInterface/positionHelpers";
-import { Icon, iconOf } from "@/GameInterface/Icons";
+import { iconOf } from "@/GameInterface/Icons";
 
 const CheckCircle2 = iconOf("check-circle");
 const XCircle = iconOf("xcircle");
@@ -43,7 +43,7 @@ export function formatTransferFee(fee: number): string {
   return `£${(fee / 1000).toFixed(0)}K`;
 }
 
-export function formatTransferDate(dateStr: string): string {
+function formatTransferDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }

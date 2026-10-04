@@ -9,7 +9,7 @@ const SIZE_CLASSES = {
   96: { box: "w-24 h-24", text: "font-display text-4xl" },
 } as const;
 
-export type PlayerFaceSize = keyof typeof SIZE_CLASSES;
+type PlayerFaceSize = keyof typeof SIZE_CLASSES;
 
 interface PlayerFaceProps {
   playerId: string;

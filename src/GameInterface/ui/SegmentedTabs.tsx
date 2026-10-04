@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export interface SegmentedTabItem<K extends string> {
+interface SegmentedTabItem<K extends string> {
   key: K;
   label: ReactNode;
   disabled?: boolean;

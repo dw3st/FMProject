@@ -140,7 +140,7 @@ const isMatchDay = (d: string, matchDays: number[]) => matchDays.includes(new Da
  * or after the floor (the floor itself if that would overrun the next round). Dates already inside
  * the window and in order are untouched.
  */
-export function fitRoundsToWindow(dates: string[], start: string, end: string, matchDays: number[]): string[] {
+function fitRoundsToWindow(dates: string[], start: string, end: string, matchDays: number[]): string[] {
   const out = [...dates];
   const latestMatchDayOnOrBefore = (limit: string) => {
     for (let k = 0; k < 7; k++) if (isMatchDay(shiftIso(limit, -k), matchDays)) return shiftIso(limit, -k);

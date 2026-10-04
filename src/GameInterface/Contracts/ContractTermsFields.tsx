@@ -18,7 +18,7 @@ export function useContractDemand(saveId: string | undefined, playerId: string |
   return demand;
 }
 
-export function formatWage(n: number): string {
+function formatWage(n: number): string {
   return `€${Math.round(n).toLocaleString("en-US")}`;
 }
 

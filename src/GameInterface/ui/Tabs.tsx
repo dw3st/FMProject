@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export interface TabItem<K extends string> {
+interface TabItem<K extends string> {
   key: K;
   label: ReactNode;
   disabled?: boolean;

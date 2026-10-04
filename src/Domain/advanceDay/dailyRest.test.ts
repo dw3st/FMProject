@@ -5,7 +5,7 @@ import {
   rollRestOutcome,
 } from "@/Domain/advanceDay/dailyRest";
 import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
-import { generateRestDays } from "@/Domain/season";
+import { generateRestDays } from "@/Domain/season/generateRestDays";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Fixture } from "@/types/calendarTypes";
 

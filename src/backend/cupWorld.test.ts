@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
 import { continentalSlugsOf, countryByLeague, createCountryCup } from "@/backend/cupWorld";
-import type { PlayedMatchRecording } from "@/Domain/advanceDay";
+import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { CupInboxMessage } from "@/types/inboxTypes";
 
 describe("createSave generates national cups", () => {

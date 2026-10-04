@@ -10,13 +10,13 @@ import type { TransferRecord } from "@/types/transferTypes";
 import { ContractTermsFields, useContractDemand, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 import { Icon } from "@/GameInterface/Icons";
 
-export function rawTransferOfferValue(avg: number, age: number): number {
+function rawTransferOfferValue(avg: number, age: number): number {
   const base = avg * avg * 0.8;
   const ageFactor = age <= 24 ? 1.3 : age <= 28 ? 1.0 : age <= 32 ? 0.7 : 0.4;
   return Math.round(base * ageFactor) * 1_000_000;
 }
 
-export function formatTransferFee(fee: number): string {
+function formatTransferFee(fee: number): string {
   const m = fee / 1_000_000;
   if (m >= 100) return `£${Math.round(m)}M`;
   if (m >= 1) return `£${m.toFixed(1)}M`;

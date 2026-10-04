@@ -122,7 +122,6 @@ export function PlayerCard({
   ];
 
   const statGroups = mainRole === "GK" ? GK_STAT_GROUPS : STAT_GROUPS;
-  const paceStat = mainRole === "GK" ? player.stats.reflex : player.stats.speed;
 
   if (layout === "wide") {
     return (

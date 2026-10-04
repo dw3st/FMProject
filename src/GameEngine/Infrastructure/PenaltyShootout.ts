@@ -5,9 +5,9 @@
  */
 import { PENALTY_CONFIG as C } from "@/GameEngine/Configs/PenaltyConfig";
 
-export type ShootoutTeam = "A" | "B";
+type ShootoutTeam = "A" | "B";
 
-export interface PenaltyTaker<Id> {
+interface PenaltyTaker<Id> {
   id: Id;
   /** Normalised finishing, 0..0.95 (same scale as runtimeStats.withBall.shootAccuracy). */
   accuracy: number;
@@ -27,7 +27,7 @@ export interface PenaltySide<Id> {
   keeper: PenaltyKeeper<Id> | null;
 }
 
-export interface PenaltyKick<Id> {
+interface PenaltyKick<Id> {
   team: ShootoutTeam;
   takerId: Id;
   keeperId: Id | null;

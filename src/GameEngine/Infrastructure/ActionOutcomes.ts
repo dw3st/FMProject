@@ -17,12 +17,9 @@ import { aerialDuelScore, headingOf } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import {
   PITCH_LENGTH,
-  PITCH_WIDTH,
   GOAL_Y_MIN,
   GOAL_Y_MAX,
 } from '@/GameEngine/Domain/pitch';
-
-export { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX };
 
 export const SHOT_SPEED      = 2.0;
 export const TACKLE_COOLDOWN = 1.2;
@@ -34,11 +31,11 @@ export const TACKLE_RANGE    = 2.0;
 // ── Interception corridor ────────────────────────────────────────────────────
 
 /** Minimum interception corridor (yards) — even the slowest player can reach. */
-export const BASE_INTERCEPTION_CORRIDOR  = 3.0;
+const BASE_INTERCEPTION_CORRIDOR  = 3.0;
 /** Each point of normalised speed adds this many yards to the corridor. */
-export const SPEED_CORRIDOR_FACTOR       = 2.0;
+const SPEED_CORRIDOR_FACTOR       = 2.0;
 /** Each point of normalised acceleration adds this many yards to the corridor. */
-export const ACCEL_CORRIDOR_FACTOR       = 2.0;
+const ACCEL_CORRIDOR_FACTOR       = 2.0;
 /** Maximum possible corridor — used as pre-filter in gameState.ts (all stats = 1.0). */
 export const MAX_INTERCEPTION_CORRIDOR   = BASE_INTERCEPTION_CORRIDOR + SPEED_CORRIDOR_FACTOR + ACCEL_CORRIDOR_FACTOR;
 
@@ -63,16 +60,6 @@ export const DUEL_TACKLE_FAILED_RECOVERY = 1.0;   // missed lunge — off balanc
 // Dribble outcomes
 export const DUEL_DRIBBLE_WIN_RECOVERY   = 0.4; // winner moves away before re-evaluating
 export const DUEL_DRIBBLE_LOSS_RECOVERY  = 1;   // loser of 1v1 dribble duel is briefly frozen
-
-// Backwards-compat aliases used in gameState.ts (remove once references are updated)
-/** @deprecated Use DUEL_TACKLE_WIN_RECOVERY */
-export const TACKLE_RECOVERY_WINNER_DURATION = DUEL_TACKLE_WIN_RECOVERY;
-/** @deprecated Use DUEL_TACKLE_LOSS_RECOVERY */
-export const TACKLE_RECOVERY_LOSER_DURATION  = DUEL_TACKLE_LOSS_RECOVERY;
-/** @deprecated Use DUEL_TACKLE_FAILED_RECOVERY */
-export const TACKLE_RECOVERY_FAILED_DURATION = DUEL_TACKLE_FAILED_RECOVERY;
-/** @deprecated Use DUEL_RECOVERY_SPEED_FACTOR */
-export const TACKLE_RECOVERY_SPEED_FACTOR    = DUEL_RECOVERY_SPEED_FACTOR;
 
 // ── Shot aim ─────────────────────────────────────────────────────────────────
 
@@ -115,9 +102,9 @@ export function computeOpenAngle(sx: number, sy: number, goalX: number): number 
 export const MAX_XG             = 1.0;
 export const MAX_OPEN_ANGLE     = Math.PI / 4;   // ~45° — penalty-spot central shot as reference max
 /** Scale (yards) for power-law distance falloff. Controls the "elbow" of the curve. */
-export const XG_DIST_SCALE      = 40;
+const XG_DIST_SCALE      = 40;
 /** Exponent for power-law decay: exp(-(dist/scale)^power). Higher = steeper drop at distance. */
-export const XG_DIST_POWER      = 10;
+const XG_DIST_POWER      = 10;
 // Reference points: 7 yds → 0.98 | 12 yds → 0.92 | 18 yds → 0.74 | 25 yds → 0.45 | 35 yds → 0.11
 /**
  * Radius (yards) within which defenders contribute pressure to xG.
@@ -130,18 +117,18 @@ export const XG_PRESS_RADIUS    = 5.0;
  * High-strength mismatch (10 vs 1) at 0 yards → ~60% reduction.
  * Low-strength mismatch (1 vs 10) at 0 yards → ~2% reduction.
  */
-export const XG_PRESSURE_SCALE  = 0.6;           // per unit of weighted pressure (see computeWeightedPressure)
+const XG_PRESSURE_SCALE  = 0.6;           // per unit of weighted pressure (see computeWeightedPressure)
 /** Minimum pressureFactor — prevents xG dropping to absolute zero even under heavy press. */
-export const XG_PRESSURE_FLOOR  = 0.10;
-export const GK_DISTANCE_SCALE  = 20;            // yards — far vs close GK threshold
+const XG_PRESSURE_FLOOR  = 0.10;
+const GK_DISTANCE_SCALE  = 20;            // yards — far vs close GK threshold
 // Compressed range: finishing skill matters at the margins, not 2x. The squad
 // data clusters finishing low (even elite forwards ~6-9, most players 0-3), so a
 // wide [0.7,1.3] swing crushed low-rated teams' conversion. A poor finisher still
 // buries a clear chance; an elite one gains ~30% over them, not 80%.
-export const SHOOTER_EFFECT_MIN = 0.96;
-export const SHOOTER_EFFECT_MAX = 1.36;
-export const GK_EFFECT_MIN      = 0.55;
-export const GK_EFFECT_MAX      = 0.9;
+const SHOOTER_EFFECT_MIN = 0.96;
+const SHOOTER_EFFECT_MAX = 1.36;
+const GK_EFFECT_MIN      = 0.55;
+const GK_EFFECT_MAX      = 0.9;
 
 // ── GK semicircle positioning ─────────────────────────────────────────────────
 /** Minimum yards off the goal line (always slightly advanced). */
@@ -151,7 +138,7 @@ export const GK_MAX_COME_OUT           = 6.0;
 /** Attacker distance at which the GK is fully extended; retreats linearly beyond. */
 export const GK_COME_OUT_DIST          = 20;
 /** Positional deviation (yards) at which position quality reaches 0. */
-export const GK_MAX_POSITION_DEVIATION = 8.0;
+const GK_MAX_POSITION_DEVIATION = 8.0;
 
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;

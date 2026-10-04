@@ -82,23 +82,8 @@ export function updateSessionCurrentDate(currentDate: string) {
   saveSession({ ...session, currentDate });
 }
 
-export function updateSessionBudget(budget: number) {
-  const session = loadSession();
-  if (!session) return;
-  saveSession({ ...session, budget });
-}
-
-export function clearSession() {
+function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
-}
-
-export function requireSession(): GameSession {
-  const session = loadSession();
-  if (!session) {
-    window.location.href = "/start";
-    throw new Error("No active game session");
-  }
-  return session;
 }
 
 export async function createGameSave(data: {
@@ -200,15 +185,6 @@ export async function saveFormationAndTactics(
   };
   saveSession(updated);
   return updated;
-}
-
-/** Persist current simulation date ("YYYY-MM-DD") to the save file. */
-export async function updateSaveCurrentDate(saveId: string, currentDate: string): Promise<void> {
-  await fetch(`/api/saves/${saveId}`, {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ currentDate }),
-  });
 }
 
 /** Persist training policy (rest-day sessions for your club). */

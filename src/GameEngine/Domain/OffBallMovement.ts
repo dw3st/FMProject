@@ -34,7 +34,7 @@ import {
  *  • `hold_space`    — occupy a quiet zone in the team shape (ball-independent).
  *  • `make_run`      — break behind the defensive line into low-density space ahead.
  */
-export type OffBallIntent = 'offer_support' | 'hold_space' | 'make_run';
+type OffBallIntent = 'offer_support' | 'hold_space' | 'make_run';
 
 const ALL_INTENTS: OffBallIntent[] = ['offer_support', 'hold_space', 'make_run'];
 

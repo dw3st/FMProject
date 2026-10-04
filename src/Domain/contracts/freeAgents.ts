@@ -31,7 +31,7 @@ function countByRole(players: RosterPlayer[]): Record<MainRole, number> {
  * squad's weakest player of that role (any player if none), name built from the squad's own name
  * tokens. Same idea as the importer's filler youth (`scripts/openfootball/roster.ts`).
  */
-export function makeYouthPlayer(squad: Squad, role: MainRole, tag: string): RosterPlayer {
+function makeYouthPlayer(squad: Squad, role: MainRole, tag: string): RosterPlayer {
   const key = `${squad.id}:${tag}`;
   const inRole = squad.players.filter((p) => roleOf(p) === role);
   const pool = inRole.length > 0 ? inRole : squad.players;

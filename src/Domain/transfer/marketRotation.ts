@@ -14,8 +14,8 @@ import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
-export const TEAMS_PER_DAY_ATTEMPTS = 10;
-export const PLAYER_SELL_LIST_MATCH_CHANCE = 1;
+const TEAMS_PER_DAY_ATTEMPTS = 10;
+const PLAYER_SELL_LIST_MATCH_CHANCE = 1;
 
 function shuffleInPlace<T>(arr: T[], rng: () => number): void {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -53,7 +53,7 @@ function sampleIndices(poolLen: number, count: number, rng: () => number): numbe
   return idx.slice(0, Math.min(count, poolLen));
 }
 
-export interface CompletedAITransfer {
+interface CompletedAITransfer {
   player: RosterPlayer;
   sellerSquad: Squad;
   buyerSquad: Squad;

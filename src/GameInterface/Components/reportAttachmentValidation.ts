@@ -3,10 +3,9 @@
 // re-validates everything (content type, size, magic bytes) — this is only a fast, friendly
 // pre-check so a tester doesn't wait for a round-trip to learn a 10 MB screenshot is too big.
 export const ATTACHMENT_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
-export const ATTACHMENT_ACCEPTED_TYPES = ["image/png", "image/jpeg"] as const;
-export type AttachmentAcceptedType = (typeof ATTACHMENT_ACCEPTED_TYPES)[number];
+const ATTACHMENT_ACCEPTED_TYPES = ["image/png", "image/jpeg"] as const;
 
-export type AttachmentValidationErrorCode = "type" | "size";
+type AttachmentValidationErrorCode = "type" | "size";
 
 export interface AttachmentFileLike {
   type: string;

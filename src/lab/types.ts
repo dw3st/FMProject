@@ -11,7 +11,7 @@ import type { TacticalStyle, Mentality, TacticalAxes, CustomFormation } from "@/
 // ── Squad spec — how to build the 20-player roster for a side ────────────────
 
 /** Uniform attributes — every player gets the same stat level. */
-export interface UniformSquadSpec {
+interface UniformSquadSpec {
   kind: "uniform";
   /** 1..10 — applied to every attribute. */
   statLevel: number;
@@ -22,7 +22,7 @@ export interface UniformSquadSpec {
  * Default attribute level is `statLevel`; any field in `attributes` overrides
  * it globally; any role in `roleOverrides` further overrides per role.
  */
-export interface CustomSquadSpec {
+interface CustomSquadSpec {
   kind: "custom";
   statLevel: number;
   attributes?: Partial<RawAttributes>;
@@ -35,7 +35,7 @@ export type SquadSpec = UniformSquadSpec | CustomSquadSpec;
 // ── Simulation engine ────────────────────────────────────────────────────────
 
 /** Which engine resolves each match. Absent ⇒ "full". */
-export type SimEngine = "full" | "quick";
+type SimEngine = "full" | "quick";
 
 /** All raw attributes a player can carry. Mirrors `RosterPlayer.stats`. */
 export interface RawAttributes {

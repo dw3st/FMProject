@@ -32,8 +32,6 @@ const MIDFIELD_ROLES = new Set<PlayerRole>(['CDM', 'CM', 'CAM', 'LM', 'RM']);
 
 /** The three set-piece duties a manager can assign (`TacticsSave.setPieceTakers`). */
 export type SetPieceDuty = 'corners' | 'freeKicks' | 'penalties';
-/** Roster ids per duty; absent = automatic. */
-export interface SetPieceTakers { corners?: string; freeKicks?: string; penalties?: string }
 
 /** Automatic-pick score: delivery (passing + vision) for corners, finishing for free kicks / penalties. */
 export function setPieceTakerScore(duty: SetPieceDuty, p: GamePlayer): number {

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { FlaskConical, Beaker, PlayCircle, Clapperboard, ChevronRight, Grid3x3 } from "lucide-react";
-import type { ComponentType, SVGProps } from "react";
+import { Icon, iconOf } from "@/GameInterface/Icons";
+import type { ComponentType } from "react";
 
 /**
  * Compact navigation widget shown on every lab page. Lets you jump between
@@ -10,7 +10,7 @@ import type { ComponentType, SVGProps } from "react";
  * the /promo page for screen capture.
  */
 
-type IconCmp = ComponentType<SVGProps<SVGSVGElement>>;
+type IconCmp = ComponentType<{ className?: string }>;
 
 interface NavItem {
   href: string;
@@ -20,11 +20,11 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/lab",      label: "Lab",      icon: FlaskConical,  hint: "Scenario runner" },
-  { href: "/test",     label: "Test",     icon: Beaker,        hint: "Debug pitch" },
-  { href: "/simulate", label: "Simulate", icon: PlayCircle,    hint: "Headless sims" },
-  { href: "/matrix",   label: "Matrix",   icon: Grid3x3,       hint: "Formation matrix" },
-  { href: "/promo",    label: "Promo",    icon: Clapperboard,  hint: "Real Madrid vs Barcelona" },
+  { href: "/lab",      label: "Lab",      icon: iconOf("flask", 16, 2),           hint: "Scenario runner" },
+  { href: "/test",     label: "Test",     icon: iconOf("beaker", 16, 2),          hint: "Debug pitch" },
+  { href: "/simulate", label: "Simulate", icon: iconOf("play-circle", 16, 2),     hint: "Headless sims" },
+  { href: "/matrix",   label: "Matrix",   icon: iconOf("grid", 16, 2),            hint: "Formation matrix" },
+  { href: "/promo",    label: "Promo",    icon: iconOf("clapperboard", 16, 2),    hint: "Real Madrid vs Barcelona" },
 ];
 
 function isHidden(): boolean {
@@ -52,7 +52,7 @@ export function LabNav({ defaultCollapsed = false }: { defaultCollapsed?: boolea
         title="Show lab navigation"
         aria-label="Show lab navigation"
       >
-        <FlaskConical className="w-4 h-4 text-primary" />
+        <Icon name="flask" strokeWidth={2} className="w-4 h-4 text-primary" />
       </button>
     );
   }
@@ -66,7 +66,7 @@ export function LabNav({ defaultCollapsed = false }: { defaultCollapsed?: boolea
         title="Collapse"
         aria-label="Collapse navigation"
       >
-        <ChevronRight className="w-3.5 h-3.5" />
+        <Icon name="chevron-right" strokeWidth={2} className="w-3.5 h-3.5" />
       </button>
       <span className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-muted-foreground px-2 select-none">
         Lab

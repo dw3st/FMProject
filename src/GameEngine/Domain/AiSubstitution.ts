@@ -7,9 +7,7 @@
  */
 
 import type { GamePlayer, GameState, PendingSub, TeamId } from '@/GameEngine/types';
-import { Player } from '@/Domain/Player';
 import { factorFromAptitudes } from '@/Domain/positions/positionAptitude';
-import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 
 /** Game-seconds between AI sub evaluations (~5 game-minutes). */
 const AI_SUB_CHECK_INTERVAL = 300;

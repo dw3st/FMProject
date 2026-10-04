@@ -69,7 +69,7 @@ export function levelPercentile(sortedAsc: number[], value: number): number {
   return lo / sortedAsc.length;
 }
 
-export function toRetiredRecord(
+function toRetiredRecord(
   p: RosterPlayer, date: string, squadId: string, wasWorldClass: boolean,
   log?: { appearances: number; goals: number },
 ): RetiredPlayer {

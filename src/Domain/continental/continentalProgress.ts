@@ -14,7 +14,7 @@ import { drawFree, drawRoundOf16, finalWinner, tieWinner, twoLegFixtures, withAg
 import { mulberry32 } from "@/Domain/rng";
 
 /** One tie of a freshly drawn stage — the first leg (or the single neutral match for the final). */
-export interface ContinentalDrawnTie {
+interface ContinentalDrawnTie {
   home: string;
   away: string;
   /** Absent only for the final, which has no `tieId` (single neutral match, no aggregate). */

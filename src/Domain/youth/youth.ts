@@ -35,7 +35,7 @@ export function lineAverage(squad: Squad, role: MainRole): number {
 }
 
 /** Assistant coach rating (1..10) -> level bonus, linear, 0 at 5.5. */
-export function assistantLevelBonus(rating: number): number {
+function assistantLevelBonus(rating: number): number {
   return clamp((rating - 5.5) / 4.5, -1, 1) * Y.ASSISTANT_BONUS;
 }
 

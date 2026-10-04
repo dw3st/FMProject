@@ -28,7 +28,7 @@ import { clearHealed, mergeInjury, returnDate as injuryReturnDate } from "@/Doma
 import { applyMatchCards, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
 
 /** A new match ban from this match's cards (`.claude/rules/game/discipline.md`) — for the inbox. */
-export interface AppliedSuspension {
+interface AppliedSuspension {
   squadId: string;
   playerId: string;
   playerName: string;
@@ -41,7 +41,7 @@ export interface AppliedSuspension {
  * (`docs/superpowers/plans/2026-09-28-injuries.md`). Callers (e.g. `advanceDay.ts`) use this to
  * build the "injured" inbox message for the human club without recomputing the return date.
  */
-export interface AppliedInjury extends MatchInjury {
+interface AppliedInjury extends MatchInjury {
   returnDate: string;
 }
 
@@ -678,7 +678,7 @@ export function buildMatchEvent(
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
-export function compactMatchEvent(event: MatchEvent): MatchEvent {
+function compactMatchEvent(event: MatchEvent): MatchEvent {
   return {
     ...event,
     playerStats: {},

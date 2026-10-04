@@ -38,7 +38,7 @@ interface Props {
 }
 
 /** "Dom, 07/02/2027" / "Sun, 02/07/2027": short weekday + numeric date, in the UI language. */
-export function formatTopBarDate(date: string, lang: string): string {
+function formatTopBarDate(date: string, lang: string): string {
   const d = new Date(`${date}T12:00:00`);
   if (Number.isNaN(d.getTime())) return "";
   const weekday = new Intl.DateTimeFormat(lang, { weekday: "short" }).format(d).replace(/\.$/, "");

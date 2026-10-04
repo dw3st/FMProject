@@ -556,13 +556,6 @@ export function PixiPitch({
         lastCrossHolder  = e.playerId;
       });
 
-      // ── Through-ball chase commits cache ──
-      type ChaseCommit = import('@/GameEngine/Infrastructure/EventBus').GameEvents['chaseCommit'];
-      let lastChase: ChaseCommit | null = null;
-      const unsubChase = gameBus.on('chaseCommit', (e) => {
-        lastChase = e;
-      });
-
       // ── Player graphics ──
       // Each marker is a container: team-colour disc, the player's face (once loaded) and a
       // team-colour ring on top. Without a face it reads as the old plain circle.
@@ -1328,7 +1321,6 @@ export function PixiPitch({
         unsubTestCmd();
         unsubTactics();
         unsubTbScores();
-        unsubChase();
         unsubCross();
       };
     };

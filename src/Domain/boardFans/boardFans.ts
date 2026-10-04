@@ -72,7 +72,7 @@ export interface ObjectiveClub {
 }
 
 /** Expected final position: clubs ranked by strength plus a small financial-tier bonus. */
-export function expectedRank(squadId: string, clubs: ObjectiveClub[]): number {
+function expectedRank(squadId: string, clubs: ObjectiveClub[]): number {
   const bonus = BOARD_FANS.objective.TIER_LEVEL_BONUS;
   const ranked = [...clubs]
     .map((c) => ({ id: c.squadId, v: c.level + bonus[c.tier] }))

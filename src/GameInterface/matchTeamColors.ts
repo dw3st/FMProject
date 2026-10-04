@@ -11,9 +11,7 @@ export const DEFAULT_TEAM_KIT_HEX = {
   B: "#df3b2d",
 } as const;
 
-export type TeamKitSide = keyof typeof DEFAULT_TEAM_KIT_HEX;
-
-export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
   let h = hex.replace("#", "");
   if (h.length === 3) {
     h = h
@@ -29,7 +27,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   };
 }
 
-export function colorDistance(hex1: string, hex2: string): number {
+function colorDistance(hex1: string, hex2: string): number {
   const c1 = hexToRgb(hex1);
   const c2 = hexToRgb(hex2);
   const dr = c1.r - c2.r;
@@ -40,7 +38,7 @@ export function colorDistance(hex1: string, hex2: string): number {
 
 const MAX_RGB_DISTANCE = Math.sqrt(255 * 255 * 3);
 
-export function colorSimilarity(hex1: string, hex2: string): number {
+function colorSimilarity(hex1: string, hex2: string): number {
   const distance = colorDistance(hex1, hex2);
   return 1 - distance / MAX_RGB_DISTANCE;
 }
@@ -98,7 +96,6 @@ export function resolveMatchTeamKitColors(
   teamB: TeamKitInput | undefined,
 ): { teamA: string; teamB: string } {
   const primaryA = pickColor(teamA?.primary, DEFAULT_TEAM_KIT_HEX.A);
-  const secondaryA = pickColor(teamA?.secondary, primaryA);
   const primaryB = pickColor(teamB?.primary, DEFAULT_TEAM_KIT_HEX.B);
   const secondaryB = pickColor(teamB?.secondary, primaryB);
 

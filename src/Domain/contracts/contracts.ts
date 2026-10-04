@@ -4,7 +4,7 @@ import { playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
 import { seedFrom } from "@/Domain/cups/cupIds";
 import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
 
-export type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears";
+type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears";
 
 export interface ContractOfferResult {
   accepted: boolean;
@@ -32,7 +32,7 @@ export function addDaysIso(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function teamAverage(squad: Squad): number {
+function teamAverage(squad: Squad): number {
   if (squad.players.length === 0) return 0;
   return squad.players.reduce((s, p) => s + overallAvg(p), 0) / squad.players.length;
 }

@@ -6,7 +6,7 @@ import {
   ContractTermsFields, useContractDemand, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
 
-export interface ContractTarget {
+interface ContractTarget {
   id: string;
   name: string;
   age: number;

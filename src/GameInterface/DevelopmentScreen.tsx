@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { PlayerProfile, getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
+import { PlayerProfile } from "@/GameInterface/Development/PlayerProfile";
 import { AttributesPanel } from "@/GameInterface/Development/AttributesPanel";
 import { PlayerSelector } from "@/GameInterface/Development/PlayerSelector";
 import { RecentTrend } from "@/GameInterface/Development/RecentTrend";
@@ -12,7 +12,7 @@ import { DevelopmentWarnings } from "@/GameInterface/Development/DevelopmentWarn
 import { DevelopmentTrainingConfig } from "@/GameInterface/Development/DevelopmentTrainingConfig";
 import { ATTRIBUTE_LABELS } from "@/GameInterface/AttributeLabels";
 import type { AttributeId } from "@/GameInterface/AttributeLabels";
-import type { Squad, RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
+import type { RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
 import type { AgePhase, DevStatus } from "@/GameInterface/Development/PlayerProfile";
 import type { DevAttribute, AttrFocus } from "@/GameInterface/Development/AttributesPanel";

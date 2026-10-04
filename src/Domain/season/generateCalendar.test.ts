@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateCalendar, generateLeagueCalendar } from "@/Domain/season";
+import { generateCalendar, generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 
 function pairKey(home: string, away: string): string {

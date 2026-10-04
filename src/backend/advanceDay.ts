@@ -8,7 +8,7 @@ import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
 import type { FreeAgent, LeagueData, LeagueTeam, LeagueZone, Squad, StandingRow } from "@/types/playerTypes";
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
-import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
+import { addDaysIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover } from "@/Domain/youth/youth";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
@@ -47,25 +47,23 @@ import {
 } from "@/Domain/boardFans/boardFans";
 import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
 import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
+import { addOneDay } from "@/Domain/advanceDay/date";
 import {
-  addOneDay,
   buildMatchEvent,
   buildMatchEventFromRecording,
   buildQuickMatchEvent,
-  buildRestEvent,
-  buildTrainingEvent,
-  computeAdvanceDayMoney,
-  resolveSimMode,
-  resolveTrainingPolicy,
   type PlayedMatchRecording,
-  type PlayerHomeFixtureToday,
-} from "@/Domain/advanceDay";
+} from "@/Domain/advanceDay/matches";
+import { resolveSimMode } from "@/Domain/advanceDay/simMode";
+import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
+import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
+import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
-import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
+import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";

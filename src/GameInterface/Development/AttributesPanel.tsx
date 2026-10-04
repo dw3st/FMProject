@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-export type AttrDirection = "up" | "stable" | "down";
+type AttrDirection = "up" | "stable" | "down";
 export type AttrFocus = "primary" | "secondary" | "limited";
 
 export interface DevAttribute {

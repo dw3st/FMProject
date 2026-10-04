@@ -3,8 +3,6 @@ import {
   Pause,
   Bug,
   RefreshCw,
-  Gamepad2,
-  FolderOpen,
   Settings,
   BarChart3,
   LayoutGrid,
@@ -17,12 +15,10 @@ import {
   ShoppingBag,
   Shield,
   Zap,
-  ArrowLeft,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Palette,
   Save,
   Upload,
   X,
@@ -53,8 +49,6 @@ import {
   XCircle,
   Check,
   Tag,
-  ChevronsLeft,
-  ChevronsRight,
   MessageSquare,
   Target,
   User,
@@ -85,6 +79,18 @@ import {
   ThermometerSun,
   ThermometerSnowflake,
   Landmark,
+  FlaskConical,
+  Beaker,
+  PlayCircle,
+  Grid3x3,
+  Clapperboard,
+  Send,
+  Clipboard,
+  Copy,
+  Download,
+  FileJson,
+  Pencil,
+  Plus,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -99,8 +105,6 @@ export type IconName =
   | "debug"
   | "debug-active"
   | "refresh"
-  | "gamepad"
-  | "folder"
   | "settings"
   | "stats"
   | "formation"
@@ -113,12 +117,10 @@ export type IconName =
   | "transfers"
   | "shield"
   | "zap"
-  | "arrow-left"
   | "chevron-up"
   | "chevron-down"
   | "chevron-left"
   | "chevron-right"
-  | "palette"
   | "save"
   | "upload"
   | "close"
@@ -150,8 +152,6 @@ export type IconName =
   | "xcircle"
   | "check"
   | "tag"
-  | "chevrons-left"
-  | "chevrons-right"
   | "message-square"
   | "target"
   | "user"
@@ -182,6 +182,18 @@ export type IconName =
   | "thermometer-sun"
   | "thermometer-snowflake"
   | "stadium"
+  | "flask"
+  | "beaker"
+  | "play-circle"
+  | "grid"
+  | "clapperboard"
+  | "send"
+  | "clipboard"
+  | "copy"
+  | "download"
+  | "file-json"
+  | "pencil"
+  | "plus"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -192,8 +204,6 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "debug":        Bug,
   "debug-active": Bug,
   "refresh":      RefreshCw,
-  "gamepad":      Gamepad2,
-  "folder":       FolderOpen,
   "settings":     Settings,
   "stats":        BarChart3,
   "formation":    LayoutGrid,
@@ -206,12 +216,10 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "transfers":    ShoppingBag,
   "shield":       Shield,
   "zap":          Zap,
-  "arrow-left":   ArrowLeft,
   "chevron-up":   ChevronUp,
   "chevron-down": ChevronDown,
   "chevron-left":  ChevronLeft,
   "chevron-right": ChevronRight,
-  "palette":      Palette,
   "save":         Save,
   "upload":       Upload,
   "close":        X,
@@ -243,8 +251,6 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "xcircle": XCircle,
   "check": Check,
   "tag": Tag,
-  "chevrons-left": ChevronsLeft,
-  "chevrons-right": ChevronsRight,
   "message-square": MessageSquare,
   "target": Target,
   "user": User,
@@ -275,6 +281,18 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "thermometer-sun": ThermometerSun,
   "thermometer-snowflake": ThermometerSnowflake,
   "stadium": Landmark,
+  "flask": FlaskConical,
+  "beaker": Beaker,
+  "play-circle": PlayCircle,
+  "grid": Grid3x3,
+  "clapperboard": Clapperboard,
+  "send": Send,
+  "clipboard": Clipboard,
+  "copy": Copy,
+  "download": Download,
+  "file-json": FileJson,
+  "pencil": Pencil,
+  "plus": Plus,
 };
 
 export interface IconProps {
@@ -290,8 +308,8 @@ export function Icon({ name, size = 16, className, strokeWidth = 1.5 }: IconProp
 }
 
 /** An icon as a component, for icon tables (`{ icon: iconOf("trophy") }`) rendered as `<Cmp className=... />`. */
-export function iconOf(name: IconName, size = 16): React.ComponentType<{ className?: string }> {
+export function iconOf(name: IconName, size = 16, strokeWidth?: number): React.ComponentType<{ className?: string }> {
   return function IconOf({ className }) {
-    return <Icon name={name} size={size} className={className} />;
+    return <Icon name={name} size={size} className={className} strokeWidth={strokeWidth} />;
   };
 }

@@ -8,7 +8,7 @@ import type { PlayerSeasonLog } from "@/types/playerTypes";
  */
 
 /** Age → recovery multiplier, from `FITNESS.AGE_FACTOR` (ascending thresholds, last is the catch-all). */
-export function ageRecoveryFactor(age: number): number {
+function ageRecoveryFactor(age: number): number {
   for (const [threshold, factor] of FITNESS.AGE_FACTOR) {
     if (age <= threshold) return factor;
   }
@@ -17,12 +17,12 @@ export function ageRecoveryFactor(age: number): number {
 }
 
 /** Load → recovery multiplier: 1 at load 0, down to `1 − LOAD_RECOVERY_PENALTY` at `LOAD_HIGH`, linear between (clamped beyond). */
-export function loadRecoveryFactor(load: number): number {
+function loadRecoveryFactor(load: number): number {
   return 1 - FITNESS.LOAD_RECOVERY_PENALTY * Math.min(1, Math.max(0, load) / FITNESS.LOAD_HIGH);
 }
 
 /** Stamina attribute (0..10) → recovery multiplier: `base + span × stamina/10`. */
-export function staminaRecoveryFactor(stamina: number): number {
+function staminaRecoveryFactor(stamina: number): number {
   const { base, span } = FITNESS.STAMINA_RECOVERY;
   return base + span * (stamina / 10);
 }

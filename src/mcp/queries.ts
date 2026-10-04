@@ -25,10 +25,8 @@ import {
   computeOpenAngle,
   XG_PRESS_RADIUS,
   playerInterceptionCorridor,
-  GOAL_Y_MIN,
-  GOAL_Y_MAX,
-  PITCH_LENGTH,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
+import { GOAL_Y_MIN, GOAL_Y_MAX, PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { getPlayer, getBallHolder, teammates, opponents, type StoredScores } from '@/mcp/loadState';
 import { evaluateCrossTargets, evaluateLongBall, isCrossPosition } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';

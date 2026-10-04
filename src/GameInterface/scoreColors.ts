@@ -62,10 +62,3 @@ export function ratingRingStrokeHex10(value: number): string {
   return "#9ca3af";
 }
 
-/**
- * Match preview / UI that uses 10–100 style display rating (e.g. `Math.round(avg * 10)`).
- * Maps back to the same tiers as 0–10.
- */
-export function ratingTextClassDisplay100(r: number): string {
-  return ratingTextClass10(r / 10);
-}

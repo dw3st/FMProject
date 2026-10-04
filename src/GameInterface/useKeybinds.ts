@@ -10,7 +10,7 @@ import { useEffect } from "react";
  *   'Enter'  → Enter
  *   'ArrowRight' etc.
  */
-export const KEYBINDS = {
+const KEYBINDS = {
   dashboard: {
     " ": "advanceDay",
   },
