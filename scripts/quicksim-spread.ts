@@ -514,6 +514,8 @@ async function analyze(cacheDir: string, holdout: Set<string>, fitnessOverride?:
       { name: "pace + pace MID adv.", feats: [...base, pe, (s) => s.opp.f["MID.pace"]!] },
       { name: "pace + reflexo GK adv.", feats: [...base, pe, (s) => s.opp.f["GK.reflex"]!] },
       { name: "pace + nível²", feats: [...base, pe, (s) => ll(s) ** 2] },
+      { name: "pace + finalização FWD", feats: [...base, pe, (s) => s.own.f["FWD.finishing"]!] },
+      { name: "pace + finalização FWD − reflexo GK adv.", feats: [...base, pe, (s) => s.own.f["FWD.finishing"]! - s.opp.f["GK.reflex"]!] },
     ];
     const lgs = [...LF.keys()];
     for (const c of cands) {
@@ -534,7 +536,7 @@ async function analyze(cacheDir: string, holdout: Set<string>, fitnessOverride?:
   }
 }
 
-type LineStrength = Omit<TeamStrength, "forwardPace" | "defensePace">;
+type LineStrength = Omit<TeamStrength, "forwardPace" | "defensePace" | "forwardFinishing">;
 type KeySet = { atk: readonly string[]; mid: readonly string[]; def: readonly string[]; gk: readonly string[] };
 const CURRENT_KEYS: KeySet = { atk: C.ATTACK_KEYS, mid: C.MIDFIELD_KEYS, def: C.DEFENSE_KEYS, gk: C.GOALKEEPER_KEYS };
 const lvl = (s: LineStrength) => (s.attack + s.midfield + s.defense + s.goalkeeper) / 4;

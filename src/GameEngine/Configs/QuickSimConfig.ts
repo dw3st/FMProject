@@ -46,15 +46,23 @@ export const QUICK_SIM_CONFIG = {
    * Championship 1.81 → 1.66, `scripts/ai-formation-goals.ts`, 800 matches per mode), so the
    * quickSim volume was scaled by the same factor. The world as played (each AI club on its own
    * formation, open shapes now allowed) moved only −3 to −6% in the engine.
+   *
+   * General recalibration 2026-10-04 (3.4.1): `collect <league> 200 2 --fitness 88 --ai` on 26
+   * leagues — each AI club on its own formation, as the real game plays — then `analyze` section 9
+   * ("pace + finalização FWD"): the forward line's finishing (FINISHING_WEIGHT) joined the formula
+   * and took over almost all of the league-level term (LEVEL_EXPONENT 1.06 → 0.07): since 2.4.2 the
+   * engine's shooter effect is wide enough that conversion follows finishing. rms per league
+   * 12.4% (old constants) → 5.0%, worst bundesliga −10.7%; leave-one-league-out rms 6.0%.
+   * `.claude/rules/non-player-games.md` → "Recalibração geral 2026-10-04".
    */
-  BASE_GOALS: 0.78,
+  BASE_GOALS: 0.795,
   HOME_ADVANTAGE: 1.03,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
    * have defence/GK strong vs attack, and the engine scores far less there than level alone predicts.
    * Refitted jointly with PACE_EDGE_WEIGHT (the pace edge took over part of what this carried).
    */
-  STRENGTH_EXPONENT: 0.48,
+  STRENGTH_EXPONENT: 0.29,
   /**
    * xG × e^(PACE_EDGE_WEIGHT × (attacker forward-line pace − defender back-line pace)), pace =
    * (3·speed + acceleration)/4 on raw 0–10 attributes. The engine's goal spread between leagues of
@@ -62,7 +70,15 @@ export const QUICK_SIM_CONFIG = {
    * drives chance volume via through-ball races, not conversion. Fitted with
    * `bun scripts/quicksim-spread.ts analyze`. 0 disables.
    */
-  PACE_EDGE_WEIGHT: 0.29,
+  PACE_EDGE_WEIGHT: 0.25,
+  /**
+   * xG × e^(FINISHING_WEIGHT × (attacker forward-line mean finishing − FINISHING_REF)), raw 0–10
+   * finishing of the FWD-line starters (fallback: attacking mids, then outfield). The engine's
+   * conversion follows the shooter's finishing (shooter effect 0.96–1.36). Fitted with
+   * `analyze` section 9 (2026-10-04). 0 disables.
+   */
+  FINISHING_WEIGHT: 0.089,
+  FINISHING_REF: 5,
   /**
    * Goals per side ~ Binomial(GOAL_CHANCES, xG / GOAL_CHANCES). Fewer chances → less variance
    * than Poisson → fewer 0-0s (the full engine is under-dispersed). Also caps goals/side.
@@ -87,7 +103,7 @@ export const QUICK_SIM_CONFIG = {
    * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
    * teams than between weak ones at the same strength ratio. 0 disables.
    */
-  LEVEL_EXPONENT: 1.06,
+  LEVEL_EXPONENT: 0.07,
   /** Added to every line strength (0–10 attribute averages) to avoid division by ~0. */
   STRENGTH_FLOOR: 0.5,
   /**
