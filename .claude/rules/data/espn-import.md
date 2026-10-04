@@ -31,6 +31,11 @@ bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo 
 rm -f src/example_data/startKits/* && cp src/Data/startKits/* src/example_data/startKits/
 ```
 
+Os `kit-*.json.gz` ficam no **Git LFS** (`.gitattributes`): cada regeração custa ~29 MB de LFS em vez de
+crescer o histórico (até 2026-10-04 eles eram blobs comuns, regravados 22 vezes, e o histórico chegou a 592 MB;
+foi reescrito sem eles). Clone novo e o servidor precisam do `git lfs` instalado (`git lfs pull`), senão
+os kits viram ponteiros de texto e a carreira nova cai no caminho sem kit.
+
 ### Sincronizar sem lixo
 
 `cp -R src/example_data/. src/Data/` **nunca apaga** o que já existe em `src/Data` — só sobrescreve
