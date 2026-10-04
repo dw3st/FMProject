@@ -34,10 +34,10 @@ const SCORE_OUTER = 0.5;
 export const CELL_W = PITCH_LENGTH / GRID_COLS; // ~1.80 yd at 64 cols
 export const CELL_H = PITCH_WIDTH / GRID_ROWS;  // ~1.85 yd at 40 rows
 
-/** 2D matrix indexed as `grid[row][col]`. */
 /** Which crowd layer the `/test` heatmap shows. */
 export type CrowdMode = 'attack' | 'defense' | 'crowd';
 
+/** 2D matrix indexed as `grid[row][col]`. */
 export type GridMatrix = number[][];
 
 export interface CrowdGrid {
