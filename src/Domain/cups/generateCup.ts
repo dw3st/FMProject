@@ -1,9 +1,9 @@
 import type { CupMetaData, CupStage, Fixture, LeagueCalendarResult, RoundFixtures } from "@/types/calendarTypes";
-import { cupSlugOf, seedFrom } from "@/Domain/cups/cupIds";
+import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { planStages } from "@/Domain/cups/cupStructure";
 import { scheduleStageDates } from "@/Domain/cups/cupDates";
 import { drawTies, type CupEntrant } from "@/Domain/cups/cupDraw";
-import { mulberry32 } from "@/Domain/rng";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 export interface GenerateCupArgs {
   country: string;

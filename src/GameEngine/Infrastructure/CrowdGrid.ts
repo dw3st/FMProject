@@ -25,19 +25,17 @@ export const GRID_COLS = 64;
 export const GRID_ROWS = 40;
 
 /** Score added to each cell of the 2×2 core (centred on the player). */
-export const SCORE_CORE  = 2;
+const SCORE_CORE  = 2;
 /** Score added to each cell of the 4×4 ring around the core. */
-export const SCORE_MID   = 1;
+const SCORE_MID   = 1;
 /** Score added to each cell of the 6×6 ring around the mid ring. */
-export const SCORE_OUTER = 0.5;
-
-/** @deprecated kept for any external reader — equals SCORE_CORE. */
-export const SCORE_SELF = SCORE_CORE;
-/** @deprecated kept for any external reader — equals SCORE_OUTER. */
-export const SCORE_NEAR = SCORE_OUTER;
+const SCORE_OUTER = 0.5;
 
 export const CELL_W = PITCH_LENGTH / GRID_COLS; // ~1.80 yd at 64 cols
 export const CELL_H = PITCH_WIDTH / GRID_ROWS;  // ~1.85 yd at 40 rows
+
+/** Which crowd layer the `/test` heatmap shows. */
+export type CrowdMode = 'attack' | 'defense' | 'crowd';
 
 /** 2D matrix indexed as `grid[row][col]`. */
 export type GridMatrix = number[][];
@@ -55,7 +53,7 @@ export interface CrowdGrid {
   teamBOutfield: GridMatrix;
 }
 
-export function createMatrix(): GridMatrix {
+function createMatrix(): GridMatrix {
   const m: GridMatrix = new Array(GRID_ROWS);
   for (let r = 0; r < GRID_ROWS; r++) m[r] = new Array<number>(GRID_COLS).fill(0);
   return m;
@@ -77,7 +75,7 @@ export function getCellIndex(x: number, y: number): { col: number; row: number }
  * cells per-step, so partial footprints near the touchline still draw the
  * portion of the blob that falls inside the pitch.
  */
-export function getInfluenceAnchor(x: number, y: number): { col: number; row: number } {
+function getInfluenceAnchor(x: number, y: number): { col: number; row: number } {
   return {
     col: Math.round(x / CELL_W) - 1,
     row: Math.round(y / CELL_H) - 1,
@@ -93,7 +91,7 @@ export function getInfluenceAnchor(x: number, y: number): { col: number; row: nu
  *   dr / dc ∈ [-1,  2] → mid    (+SCORE_MID)   — minus the core square
  *   dr / dc ∈ [-2,  3] → outer  (+SCORE_OUTER) — minus the mid square
  */
-export function applyInfluence(grid: GridMatrix, anchorCol: number, anchorRow: number): void {
+function applyInfluence(grid: GridMatrix, anchorCol: number, anchorRow: number): void {
   for (let dr = -2; dr <= 3; dr++) {
     for (let dc = -2; dc <= 3; dc++) {
       const r = anchorRow + dr;
@@ -165,7 +163,7 @@ export const SAMPLE_PER_PLAYER_3x3 = 17;
  * teammate density, own pressing load) — subtracting this value gives the
  * "everyone else" density. O(radius²) per call.
  */
-export function selfFootprintContribution(
+function selfFootprintContribution(
   sampleX: number, sampleY: number,
   selfX:   number, selfY:   number,
   radius = 1,

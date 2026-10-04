@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { SetPieceTakersSave } from "@/types/tacticsTypes";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 
 const DUTIES = ["corners", "freeKicks", "penalties"] as const;
 type Duty = (typeof DUTIES)[number];

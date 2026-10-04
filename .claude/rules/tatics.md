@@ -26,14 +26,17 @@ Sub-genres of the main roles. Used only when a user is selecting a formation or 
 | CDM, DM, CM, CAM, AM, LM, RM | Midfielder |
 | LW, RW, ST, CF | Forward  |
 
-The engine (`Formation.ts`, `TeamLineup.ts`) always works with detailed roles internally.
+The engine (`FormationSlots.ts`, `TeamLineup.ts`) always works with detailed roles internally.
 
 ### Source of truth
 
-- `src/Data/roles.json` — each entry has `mainRole`, `dpWeights`, and formation `position` data.
-- `src/GameInterface/positionHelpers.ts` — `getMainRole()`, `getPositionColor()`, `getPositionGroup()`, `MAIN_ROLE_ABBR`, `POSITION_GROUP_ORDER`.
+- `src/Data/roles.json` — each entry has `mainRole`, `dpWeights`, `attrWeights`, formation `position`
+  and the engine tuning (`engine`: bounds, biases, intent weights).
+- `src/Domain/roles.ts` — `MainRole`, `getMainRole()` (pure; used by Domain, backend and UI).
+- `src/GameInterface/positionHelpers.ts` — display only: `getPositionColor()`,
+  `getDetailedPositionColor()`, `MAIN_ROLE_ABBR`, `MAIN_ROLE_BADGE_CLASSES`, `positionLabel()`.
 
-**Never duplicate** `getPositionColor` or group logic in individual components. Import from `positionHelpers`.
+**Never duplicate** role mapping or colour logic in components. Import from `@/Domain/roles` / `positionHelpers`.
 
 ---
 
@@ -43,14 +46,13 @@ Stored at `Data/saves/{saveId}/tactics.json`. Separate from the light `SaveMeta`
 
 ```ts
 interface TacticsSave {
-  formation:      string;    // "4-3-3"
-  pressing_style: PressingStyle;
-  defensive_line: DefensiveLine;
-  width:          TeamWidth;
-  build_up:       BuildUpStyle;
-  offside_trap:   boolean;
-  lineup:         string[];  // ordered playerIds — index = formation slot index
-  setPieceTakers?: { corners?: string; freeKicks?: string; penalties?: string }; // player ids; absent = automatic
+  tactical_style:   TacticalStyle;           // drives the axes and the team intents
+  formation:        string;                  // ready-made id ("4-3-3") or "custom"
+  customFormation?: CustomFormation;         // zone grid, when formation === "custom"
+  axesOverride?:    Partial<TacticalAxes>;   // axes edited on top of the style
+  lineup:           string[];                // ordered playerIds — index = formation slot index
+  assistantRotation?: boolean;               // rest tired starters automatically
+  setPieceTakers?:  { corners?: string; freeKicks?: string; penalties?: string }; // absent = automatic
 }
 ```
 
@@ -59,35 +61,39 @@ by default; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; 
 `GameState.setPieceTakers` (simulated matches and the live match). The AI never sets it. See
 `.claude/rules/game-engine/set-pieces-play.md` → "Cobradores".
 
-API: `GET /api/saves/:id/tactics` · `PUT /api/saves/:id/tactics`
-
-Migration: if `tactics.json` is missing, `SaveService.getTactics()` builds it from `SaveMeta` fields automatically.
+API: `GET /api/saves/:id/tactics` · `PUT /api/saves/:id/tactics`. The file is written on the
+first `PUT`; until then the save's `formation`/`tactical_style` (`SaveMeta`) and an empty lineup
+stand in.
 
 ---
 
-## Tactical settings (TacticsConfig)
+## Tactical axes (`TacticalAxes`)
 
-| Field            | Options                              | Effect in engine |
+The style (`axesFor(style)`), the live mentality and `axesOverride` resolve into four axes
+(`game-engine/tactical-config.md` has the weight tables):
+
+| Axis             | Options                              | Effect in engine |
 |------------------|--------------------------------------|-----------------|
-| `pressing_style` | `low_block` / `mid_block` / `high_press` | pressing range, press intensity |
+| `pressing_style` | `low_block` / `mid_block` / `high_press` | pressing range, press intensity, tackle aggression |
 | `defensive_line` | `deep` / `normal` / `high`           | block height     |
-| `width`          | `narrow` / `normal` / `wide`         | horizontal spread |
-| `build_up`       | `direct` / `balanced` / `possession` | pass risk, progression bias |
-| `offside_trap`   | `true` / `false`                     | defensive line advance |
+| `width`          | `narrow` / `normal` / `wide`         | horizontal spread, off-ball width |
+| `build_up`       | `direct` / `balanced` / `possession` | pass and carry weights, long-ball weight |
 
 ---
 
 ## dpWeights (development points distribution)
 
-Each detailed role in `roles.json` defines how development points earned from a match are split across the five base attributes:
+Each detailed role in `roles.json` defines how development points (match, training, youth) are
+split across five categories, each feeding attributes (`PlayerDevelopment.ts` → `CATEGORY_STATS`):
 
 ```
-shooting, passing, defending, positioning, physical
+shooting → finishing, heading     passing → passing, vision     defending → tackling, pressing
+technical → dribbling             physical → speed, acceleration
 ```
 
-Weights must sum to 1.0. They reflect role identity — a CB grows defending; a ST grows shooting.
-
-`advanceDay.ts` reads `roleEntry.dpWeights` from `roles.json` keyed by `player.positions[0]`.
+Weights sum to 1.0 and reflect role identity: a CB grows defending, a ST grows shooting.
+`Domain/advanceDay/matches.ts`, `dailyTraining.ts` and `youth.ts` read `dpWeights` keyed by
+`player.positions[0]` (fallback `DEFAULT_DP_WEIGHTS`).
 
 ---
 
@@ -111,7 +117,6 @@ Spec: `docs/superpowers/specs/2026-10-01-formation-tactics-design.md`.
 - Eixos efetivos: `effectiveAxes(style, override)`; `axesWithMentality(style, mentality, override?)`, `applyTeamTacticsConfig/applyTeamAttackConfig(team, style, mentality, override?)`. O **estilo** continua dirigindo as intenções.
 - UI: `FormationScreen` (arrastar via `useDragDrop`/`lineupDrop.ts`, botão "Editar formação", painel "Instruções da equipe"). `/lab`: `Variant.customFormation`/`axesOverride`; `/test`: formações `free:<preset>` e seletores de eixos.
 - quickSim e jogos simulados do jogador só usam a formação (papéis dos slots); os eixos só valem no motor completo, como antes.
-
 
 ---
 

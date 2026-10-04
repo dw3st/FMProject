@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { TEST_SCENARIOS } from "@/GameEngine/Suport/TestCases";
+import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 
 function holderDecision(id: string) {

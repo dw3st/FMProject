@@ -4,8 +4,8 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react
 import {
   defaultAttributeRanges,
   type ScoutFilterState,
-} from "@/GameInterface/Scout/scoutFilterState";
-import { ATTRIBUTE_LIST, ATTRIBUTE_LABELS, type AttributeId } from "@/GameInterface/AttributeLabels";
+} from "@/Domain/scout/scoutFilterState";
+import { ATTRIBUTE_LIST, ATTRIBUTE_LABELS, type AttributeId } from "@/Domain/attributes";
 import { Icon } from "@/GameInterface/Icons";
 
 // ── Range slider (adapted from TacticSlider in FormationScreen) ───────────────

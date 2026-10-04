@@ -17,7 +17,7 @@ export const LEVEL_EFFECT: Record<StatusLevel, EffectTable> = {
   5: { neg2: 0, neg1: 0, zero: 40, pos1: 40, pos2: 20 },
 };
 
-export const FORM_BIAS: Record<StatusLevel, { neg: number; pos: number }> = {
+const FORM_BIAS: Record<StatusLevel, { neg: number; pos: number }> = {
   1: { neg: 10, pos: -10 },
   2: { neg: 5, pos: -5 },
   3: { neg: 0, pos: 0 },
@@ -25,7 +25,7 @@ export const FORM_BIAS: Record<StatusLevel, { neg: number; pos: number }> = {
   5: { neg: -10, pos: 10 },
 };
 
-export const TRAINING_ATTRS = [
+const TRAINING_ATTRS = [
   "speed",
   "acceleration",
   "stamina",
@@ -35,7 +35,7 @@ export const TRAINING_ATTRS = [
   "pressing",
 ] as const satisfies readonly (keyof PlayerStatsRecord)[];
 
-export const MORALE_ATTRS = [
+const MORALE_ATTRS = [
   "passing",
   "vision",
   "finishing",
@@ -43,10 +43,10 @@ export const MORALE_ATTRS = [
   "heading",
 ] as const satisfies readonly (keyof PlayerStatsRecord)[];
 
-export const TRAINING_TARGET_COUNT = 2;
-export const MORALE_TARGET_COUNT = 2;
-export const TRAINING_APPLY_CHANCE = 0.6;
-export const MORALE_APPLY_CHANCE = 0.7;
+const TRAINING_TARGET_COUNT = 2;
+const MORALE_TARGET_COUNT = 2;
+const TRAINING_APPLY_CHANCE = 0.6;
+const MORALE_APPLY_CHANCE = 0.7;
 
 function clampStat(n: number): number {
   return n < 0 ? 0 : n > 10 ? 10 : n;

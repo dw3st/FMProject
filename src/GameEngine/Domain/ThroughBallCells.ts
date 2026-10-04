@@ -30,7 +30,7 @@ import { computeOpenAngle, MAX_OPEN_ANGLE } from '@/GameEngine/Infrastructure/Ac
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 /** Per-cell score breakdown. Populated by `enumerateCandidateCells`. */
-export interface ThroughBallCellComponents {
+interface ThroughBallCellComponents {
   raceMarginScore:    number;
   spaceQualityScore:  number;
   goalThreatScore:    number;

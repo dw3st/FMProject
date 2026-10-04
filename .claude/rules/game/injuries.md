@@ -24,7 +24,7 @@ Spec: `docs/superpowers/specs/2026-09-28-injuries-design.md`. Plano:
 | `src/GameEngine/types.ts` | `InjuryRecord`, `GamePlayer.age`/`strengthAttr`/`injuryLoad`, `GameState.injuries`, `MatchSubstitution.reason` |
 | `src/GameEngine/Infrastructure/EventBus.ts` | Evento `injury` |
 | `src/GameEngine/Domain/Statistics.ts` | Lesões por time (`TeamStats.injuries`) |
-| `src/GameEngine/Suport/TestCases.ts` | Cenário `injury-demo` (`/test`) |
+| `src/GameEngine/Support/TestCases.ts` | Cenário `injury-demo` (`/test`) |
 | `src/Domain/advanceDay/quickSim.ts` | `rollSideInjuries` — lesões do quickSim (Poisson) |
 | `src/Domain/advanceDay/matches.ts` | `finalizeSquadsAfterMatch` — grava `injury` com `returnDate` no pós-jogo, cura (`clearHealed`) antes de tudo |
 | `src/Domain/advanceDay/dailyTraining.ts` | Lesão de treino pesado (`trainingInjuryChance`), cura do dia |
@@ -227,10 +227,10 @@ já recalibrado do motor).
 ## 6. Telas
 
 - **Elenco** (`SquadRosterTable.tsx`, `Dashboard/PlayerCard.tsx`):
-  status "lesionado" (`playerHelpers.ts` → `PlayerRow.status === "injured"`, já existia o
+  status "lesionado" (`Domain/scout/displayPlayer.ts` → `DisplayPlayer.status === "injured"`, já existia o
   indicador de fôlego/suspensão; ver `.claude/rules/game/fitness.md`), com gravidade (`sev{Light,
   Medium,Severe}`) e dias para voltar (`injury.daysLeft`, calculado por `daysBetween(currentDate,
-  returnDate)` em `playerHelpers.ts`).
+  returnDate)` em `displayPlayer.ts`).
 - **Formação** (`FormationScreen.tsx`): jogador lesionado não pode ser clicado/assinalado a um slot
   (`isInjured(player, currentDate)` bloqueia), com opacidade reduzida e um aviso da data de volta
   (`formations.injuredUntil`).

@@ -14,13 +14,3 @@ export function cupSlugOf(country: string): string {
 export function isCupSlug(slug: string): boolean {
   return slug.startsWith("cup_");
 }
-
-/** 32-bit FNV-1a hash of a key — seed for mulberry32 (deterministic draws). */
-export function seedFrom(key: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < key.length; i++) {
-    h ^= key.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}

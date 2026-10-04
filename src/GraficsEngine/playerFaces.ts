@@ -8,8 +8,10 @@
  * decoded once per match. Pixi textures are per application and are owned by the caller.
  */
 
-export const MARKER_RADIUS_MIN = 16;
-export const MARKER_RADIUS_MAX = 30;
+import { rgbLuminance } from "@/Domain/color";
+
+const MARKER_RADIUS_MIN = 16;
+const MARKER_RADIUS_MAX = 30;
 
 /**
  * Player marker radius in px. Was a flat 14; follows the pitch scale (~2.3 yds) so the face
@@ -33,12 +35,8 @@ function channels(hex: number): [number, number, number] {
 }
 
 /** WCAG relative luminance of a 0xRRGGBB colour. */
-export function relativeLuminance(hex: number): number {
-  const [r, g, b] = channels(hex).map((c) => {
-    const v = c / 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  }) as [number, number, number];
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+function relativeLuminance(hex: number): number {
+  return rgbLuminance(...channels(hex));
 }
 
 /** WCAG contrast ratio between two colours (1 = identical, 21 = black on white). */

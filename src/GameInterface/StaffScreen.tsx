@@ -13,6 +13,7 @@ import { Tabs } from "@/GameInterface/ui/Tabs";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { StaffEffects } from "@/Domain/staff/staff";
 import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
+import { formatEuros } from "@/Domain/money";
 
 interface StaffResponse {
   staff: StaffRecord;
@@ -23,12 +24,6 @@ interface StaffResponse {
 interface MarketResponse {
   week: string;
   candidates: Record<StaffRole, StaffMember[]>;
-}
-
-function money(value: number): string {
-  if (value >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `€${Math.round(value / 1_000)}K`;
-  return `€${value}`;
 }
 
 const fmt = (n: number, digits = 2) => n.toFixed(digits);
@@ -114,7 +109,7 @@ export function StaffScreen() {
     { key: "nat", header: "", cell: (m) => <span className="text-muted-foreground">{m.nationality}</span> },
     { key: "age", header: "", cell: (m) => <span className="text-muted-foreground">{t("staff.age", { age: m.age })}</span> },
     { key: "rating", header: t("staff.rating"), className: "w-48", cell: (m) => <StatBar value={m.rating} max={10} display={m.rating} /> },
-    { key: "wage", header: "", className: "text-right", cell: (m) => <span className="tabular-nums">{t("staff.weeklyWage", { wage: money(m.wage) })}</span> },
+    { key: "wage", header: "", className: "text-right", cell: (m) => <span className="tabular-nums">{t("staff.weeklyWage", { wage: formatEuros(m.wage) })}</span> },
     {
       key: "hire", header: "", className: "text-right",
       cell: (m) => {
@@ -129,12 +124,13 @@ export function StaffScreen() {
   return (
     <ScreenContainer>
       <ScreenTitle
+        trailingAlign="end"
         subtitle={t("staff.subtitle")}
         accent={t("screenTitles.staff.accent")}
         trailing={
           <div className="text-right">
             <Label>{t("staff.weeklyTotal")}</Label>
-            <span className="font-display font-bold tabular-nums text-xl">{money(data.weeklyTotal)}</span>
+            <span className="font-display font-bold tabular-nums text-xl">{formatEuros(data.weeklyTotal)}</span>
           </div>
         }
       >
@@ -154,7 +150,7 @@ export function StaffScreen() {
                     <div className="text-sm text-muted-foreground mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</div>
                   </div>
                   <StatBar value={m.rating} max={10} display={m.rating} label={t("staff.rating")} />
-                  <div className="text-sm tabular-nums">{t("staff.weeklyWage", { wage: money(m.wage) })}</div>
+                  <div className="text-sm tabular-nums">{t("staff.weeklyWage", { wage: formatEuros(m.wage) })}</div>
                 </>
               ) : (
                 <div>

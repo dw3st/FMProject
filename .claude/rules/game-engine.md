@@ -6,112 +6,82 @@ alwaysApply: false
 
 ## Coordinate system
 - All positions are in **yards** (`x`, `y` on `GamePlayer`)
-- `x` = yards from the **left goal line** (0 → 115)
-- `y` = yards from the **top touchline** (0 → 74)
-- Pitch is 115 × 74 yards (FIFA 11-a-side)
-- Goal opening: `GOAL_Y_MIN=33` to `GOAL_Y_MAX=41` (center 37), both goal lines
-- **Never use pixels here** — conversion lives in GraficsEngine
+- `x` = yards from the **left goal line** (0 → 115); `y` = yards from the **top touchline** (0 → 74)
+- Pitch 115 × 74; goal opening `GOAL_Y_MIN = 33` → `GOAL_Y_MAX = 41` (`Domain/pitch.ts`)
+- **Never use pixels here.** Conversion lives in `GraficsEngine`
 
 ## State
-- `GameState` is plain data — no Pixi, no DOM, no React
-- State updates are **pure functions** (`tickState`, `startPass`, etc.)
-- Pass targeting always filters by `team` — never pass to opponents
+- `GameState` (`types.ts`) is plain data: no Pixi, no DOM, no React
+- State updates are pure functions (`tickState`, `startPass`, …) in `Domain/gameState.ts`
+- Pass targeting always filters by `team`; never pass to opponents
 
 ## Files
-- `types.ts` — shared types (`GamePlayer`, `GameState`, `PassState`, `ShotState`, `TeamId`, `PlayerRole`)
-- `gameState.ts` — state factory + tick logic (executes decisions & outcomes)
-- `DecisionTree.ts` — per-player decision evaluation (carry/shoot/pass/tackle/press/idle)
-- `ActionOutcomes.ts` — pure outcome functions (shot aim, GK save, tackle roll, interception roll)
-- `Formation.ts` — `ROLE_FORMATION` map: slot position, advance offsets, movement bounds per role
-- `TeamLineup.ts` — maps raw player attributes → `PlayerStats` per role
-- `Positioning.ts` — computes `targetPosition` per player per phase (attacking/defending)
-- `PassLanes.ts` — open/closed lane detection; used by `startPass()` and the debug overlay
-- `Aerial.ts` + `Configs/AerialConfig.ts` — crosses, long balls, aerial duels, keeper claims, headers (see `game-engine/aerial.md`)
-- `TestCases.ts` — predefined `GameState` factories for the `/test` screen
-- `DebugLog.ts` — engine-side structured log (`debugLog()`, `setDebugMode()`, `clearDebugLog()`)
-- `EventBus.ts` — typed pub/sub; only cross-layer communication channel
-- `Player.ts` — reserved for future per-player behaviour
+| Folder | Files |
+|---|---|
+| root | `types.ts` (GameState, GamePlayer, PlayerStats, SetPiece…), `FormationSlots.ts`, `PlayerDevelopment.ts` (DP model) |
+| `Domain/` | `gameState.ts` (state factory + tick, executes decisions), `DecisionTree.ts` (every player choice), `CarryLaneEval.ts`, `PassLanes.ts`, `ThroughBallCells.ts`, `Aerial.ts`, `OffBallMovement.ts`, `DefensivePositioning.ts`, `AttackingPositioning.ts`, `Positioning.ts`, `PositionalAwareness.ts`, `Offside.ts`, `Fouls.ts`, `SetPieces.ts` / `SetPieceLayouts.ts` / `SetPiecePositioning.ts`, `IntentDetection.ts`, `AiSubstitution.ts`, `TeamLineup.ts` (roster attributes → engine stats), `RuntimeLineup.ts` (fatigue, energy), `roleEngineData.ts` (per-role tuning from `roles.json`), `SimulateMatch.ts` (headless match), `Statistics.ts`, `PlayerRating.ts`, `advanceSim.ts`, `pitch.ts` |
+| `Configs/` | One tunable constant set per system: Attack (team pass/carry weights per tactic), Carry, Pass, Defense, DefensiveIntent, OffBall, Intent, ThroughBall, Aerial, Foul, SetPiece, Penalty, Familiarity, PlayerRating, QuickSim |
+| `Infrastructure/` | `ActionOutcomes.ts` (every dice roll: shot, save, tackle, interception, dribble, duels), `EventBus.ts`, `CrowdGrid.ts`, `SpatialEvaluation.ts`, `PenaltyShootout.ts` |
+| `Support/` | `DebugLog.ts`, `DebugSubscriber.ts`, `TestCases.ts` (`/test` scenarios) |
 
 ## Decision ownership
-- **All player-level choices** (carry/shoot/pass, tackle/press, probability rolls) belong in `DecisionTree.ts`
-- `gameState.ts` **only executes** what the tree returns — never overrides or adds extra probability gates
-- This keeps UI decision badges (which also call `decide()`) in sync with actual game actions
-
-## Action outcomes
-- **All outcome math** (GK save chance, shot aim/spread, tackle success, interception chance) belongs in `ActionOutcomes.ts`
-- `gameState.ts` calls these functions and reads results — never contains inline formulas
-
-## Tick order (`tickState`, each frame)
-1. **Kickoff freeze** — if `kickoffCountdown > 0`, drain it and return early
-2. **Compute decisions** — call `decide()` for every player; store in `state.decisions`
-3. **Movement** — move all non-holders toward their target:
-   - Defending GK overrides to sprint toward `shot.toX/toY` while a shot is in flight
-   - Opponents within `pressRange` of the pass trajectory sprint to intercept point during a pass
-   - Pressing opponents move toward the holder; others use `computeTargetPosition()`
-4. **Shot in flight** — advance `shot.t` by `dt * SHOT_SPEED`; on arrival resolve GK save → goal or save/miss → give GK possession
-5. **Tackle check** (ball held only) — closest opponent with `decide=tackle` and `tackleCooldown=0` gets a `resolveTackle()` roll; 1.2 s cooldown
-6. **Holder decision** (ball held, no active pass):
-   - `shoot` → `startShot()`
-   - `carry` → move holder by `carrySpeed * dt` along `(dx,dy)`; stochastic stop via `carryChance`
-      - See the carry.md
-   - `pass` (or carry bounds hit) → `startPass()`
-7. **Pass in flight** — interception check near ball position, then advance `pass.t`; on arrival give possession to receiver
+- **All player-level choices** belong in `DecisionTree.ts` (`decide()`); `gameState.ts` only
+  executes what the tree returns, never overrides it or adds its own probability gates. This keeps
+  the `/test` decision badges in sync with what actually happens.
+- **All outcome math** (xG, save, tackle, interception, dribble, aerial duel) belongs in
+  `ActionOutcomes.ts`; `gameState.ts` calls it and reads results, never inline formulas.
+- Decisions are held for `COMMIT_TICKS[type]` ticks (decision memory) to avoid flicker.
 
 ## Player decisions (`DecisionTree.ts`)
-| Condition | Decision |
+| Situation | Decision |
 |---|---|
-| Ball in flight | `idle` |
-| Has ball, in shoot range (probabilistic ramp) | `shoot` |
-| Has ball, forward lane clear | `carry { dx, dy }` — goal-directed, avoids opponents |
-| Has ball, no clear lane | `pass` |
-| Opponent, dist ≤ `tackleRange` | `tackle` |
-| Opponent, dist ≤ `pressRange` | `press` |
-| Teammate or out of range | `idle` |
+| Ball holder (set-piece taker) | `decideBoxSetPiece` for corners / crossed free kicks, `shoot` on a direct free kick, otherwise pass (or the normal best action where allowed) |
+| Ball holder | `decideBallHolder`: compressed scores of `shoot`, `carry`, `pass`, `dribble`, `through_ball`, `cross`, `long_ball`; the best wins (`pass.md`, `carry.md`, `aerial.md`, `through-ball.md`) |
+| Attacking teammate | `evaluateOffBall` → `support_run` / `create_space` / `idle` (`offball.md`); GK `idle` |
+| Defender in duel recovery | `idle` |
+| Defender ≤ `TACKLE_RANGE` (2 yds) | `tackle` |
+| Defending GK | `idle` (positioned by `DefensivePositioning`) |
+| Other defenders | `evaluateDefensiveDecision` → `press` / `hold_shape` / `track_mark` / `step_into_carry_lane` (`defensive-position.md`) |
+| Loose ball / through ball in flight | committed chasers get `chase_loose_ball` (`through-ball.md`) |
 
-### Carry lane selection
-- Scans 3 lanes: straight toward nearest goal post (clamped to `[GOAL_Y_MIN, GOAL_Y_MAX]`), ±30°
-- Opponents behind the carrier (`forwardDot ≤ -0.5`) are ignored — already beaten
-- Picks lane with most clearance; must exceed `MIN_CARRY_CLEARANCE=5 yds` to qualify
+## Tick order (`tickState`)
+1. **Phase gating:** pre-match, half-time, extra-time break and penalties count down presentation
+   time; set-piece countdowns freeze play (`match-flow.md`)
+2. **Clock** for the four live periods; period end via `endCurrentPeriod`
+3. **Housekeeping:** set-piece phase expiry, per-minute injury risk, AI substitutions, possession
+   timer, periodic team-intent re-evaluation, crowd grid and through-ball cell cache
+4. **Decisions** for every player (with commitment memory)
+5. **Movement** of every non-holder toward its target (formation/positioning, press, chase)
+6. **Shot in flight** → `resolveShot` → goal / save / miss and restarts
+7. **Loose ball** drift, pickup, duels, out-of-bounds restarts
+8. **Ball held:** tackle check (closest tackler, shared cooldown with interceptions), then the
+   holder's decision (carry, shoot, pass, through ball, cross, long ball, dribble)
+9. **Pass / high ball in flight:** interceptions, arrival, offside, aerial landing
 
 ## Player stats
-Each `GamePlayer` carries `stats: PlayerStats`:
-- `withBall`: `shootRange`, `shootAccuracy`, `carrySpeed`, `carryVision`, `carryChance`
-- `withoutBall`: `pressRange`, `pressSpeed`, `tackleRange`, `tackleChance`, `interceptionChance`
+`GamePlayer.stats` (`PlayerStats` in `types.ts`), built per role by `TeamLineup.ts` from the raw
+roster attributes; `runtimeStats` is the fatigue-adjusted copy the engine reads:
+- `withBall`: `shootAccuracy`, `carrySpeed`, `carryVision`, `speed`, `acceleration`,
+  `passingSkill`, `vision`, `firstTouch`, `dribbling`, `strength`
+- `withoutBall`: `pressRange`, `pressSpeed`, `speed`, `acceleration`, `tackleChance`, `tackling`,
+  `interceptionChance`, `gkPositioning`, `gkReflex`, `gkDiving`, `strength`, `heading`, `jump`
 
-Stats are assigned per role in `TeamLineup.ts` from raw player attributes.
+Full map of attribute → stat → effect: `game-engine/player-stats-usage.md`.
 
-## Formation (11v11, 4-3-3)
-| Role | Slot X | Slot Y |
-|------|--------|--------|
-| GK   | 5      | 37     |
-| LB   | 18     | 11     |
-| CB   | 22     | 28/46  |
-| RB   | 18     | 63     |
-| CDM  | 38     | 37     |
-| CM   | 50     | 24/50  |
-| LW   | 70     | 8      |
-| RW   | 70     | 66     |
-| ST   | 80     | 37     |
+## Formations
+17 ready formations in `src/Data/formations/*.json` plus the custom formation
+(`game/formations.md`, `tatics.md`). Team B is x-mirrored; every role has movement `bounds`
+(`game-engine/movement-bounds.md`).
 
-Team B is x-mirrored. Each role has `bounds` clamping movement.
+## Debug
+- `debugLog(category, message, meta?)` (`Support/DebugLog.ts`), a no-op unless
+  `setDebugMode(true)`; categories in `DebugCategory`, colours in `GameInterface/DebugPanel.tsx`
+- Score breakdowns (`offBallScores`, `defensiveScores`, `throughBallScores`, `crossScores`,
+  `setPieceScores`) are emitted on `gameBus` only while debug is on
+- Debug snapshots (`debug/*.json`) are inspected with the `fmproject-engine` MCP (`mcp-debug.md`)
 
-## Pass lane selection (`PassLanes.ts`)
-- `isLaneOpen(from, to, opponents, blockRadius=3.5)` — perpendicular distance check along the pass line
-- `evaluatePassLanes(holder, teammates, opponents)` → `PassLaneInfo[]` (each with `open: boolean`)
-- `startPass()` prefers open lanes; falls back to all targets if every lane is blocked
-
-## Debug system
-- `debugLog(category, message, meta?)` — no-op when debug mode off
-- Categories: `pass` (blue), `possession` (green), `tackle` (orange), `interception` (yellow), `shot` (red), `decision` (gray)
-- `setDebugMode(bool)` / `clearDebugLog()` for UI control
-
-## Active game events (EventBus)
-| Event | Payload | Emitted when |
-|---|---|---|
-| `stateChanged` | `GameState` | Every tick |
-| `goalScored` | `{ team, score }` | Shot resolves as goal |
-| `foul` | `{ offenderId, fouledId, team, kind, x, y, inBox, minute }` | A tackle / dribble duel / loose-ball duel was a foul (`fouls.md`) |
-| `card` | `{ playerId, playerName, team, card, secondYellow, minute }` | Yellow or red shown (a second yellow emits the yellow, then a red) |
-| `freeKickAwarded` | `{ team, takerId, x, y, dangerous, minute }` | Foul outside the box — free-kick restart |
-| `penaltyAwarded` | `{ team, takerId, offenderId, minute }` | Foul inside the offender's box |
-| `penaltyResolved` | `{ team, takerId, keeperId, scored, chance }` | In-match penalty taken (shootout kicks use `penaltyKick`) |
+## Events
+`GameEvents` in `Infrastructure/EventBus.ts` is the list of match events and their payloads.
+`Statistics.ts` turns them into player/team stats for the live match, `/test` and `simulateMatch`
+(which `/lab` aggregates). A new observable mechanic needs its event, its `Statistics.ts` field,
+a `/test` surface and a `/lab` metric (`CLAUDE.md`).

@@ -83,12 +83,6 @@ function getFatigueFactor(energy: number, maxReduction: number): number {
   return Math.max(0, 1 - maxReduction * Math.pow(lost, FATIGUE_CURVE_POWER));
 }
 
-/** @deprecated Use getFatigueFactor — kept only in case external code imports this. */
-export function getReductionFactor(energyLost: number, step: number): number {
-  const reduction = Math.floor(energyLost / step);
-  return Math.max(0.1, 1 - reduction * 0.1);
-}
-
 /**
  * @param loadDrainMultiplier `drainMultiplier(seasonLog.load)` from `src/Domain/fitness/fitness.ts`
  *   — 1 with no accumulated load, up to 1.25 at `FITNESS.LOAD_HIGH`. Defaults to 1 (no penalty) for
@@ -183,7 +177,7 @@ export function getRuntimeLineup(base: PlayerStats, player: Pick<GamePlayer, 'en
  * the old "every 10/20/40 energy points" step — `getRuntimeLineup` itself is already continuous,
  * this only controls how often the (comparatively expensive) recompute runs.
  */
-export const FATIGUE_RECOMPUTE_THRESHOLD = 1;
+const FATIGUE_RECOMPUTE_THRESHOLD = 1;
 
 /**
  * Decide whether a player's `runtimeStats` need recomputing for a fresh `energy` value, given the

@@ -14,7 +14,7 @@ export type InboxCategory =
   | "retirement"
   | "board";
 
-export interface InboxMessageBase {
+interface InboxMessageBase {
   id:        string;
   date:      string;
   createdAt: string;

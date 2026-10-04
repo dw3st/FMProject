@@ -89,15 +89,15 @@ texto (`bg-clip-text`).
 - **Seletor de competição/liga:** sempre com rótulo acima no estilo rótulo (`SelectCombobox`
   com `label`, ex. "LIGA", "COMPETIÇÃO").
 - **Título de tela:** um só, o nome da tela, sempre em duas partes curtas (2–3 palavras) com a
-  segunda em `text-primary`: `<PageHeadline accent={t("screenTitles.x.accent")}>{t("screenTitles.x.main")}</PageHeadline>`
-  (ou `<ScreenTitle accent=…>`; num `<h1>` cru, `<TitleParts accent=…>` de `ui/TitleParts.tsx`). Os
+  segunda em `text-primary`: `<ScreenTitle accent={t("screenTitles.x.accent")}>{t("screenTitles.x.main")}</ScreenTitle>`
+  (`ui/ScreenTitle.tsx`; num `<h1>` cru, `<TitleParts accent=…>` de `ui/TitleParts.tsx`). Os
   textos ficam em `screenTitles.<tela>.{main,accent}` (en e pt-BR), escolhidos para soar natural em
   cada língua: "SEU **PAINEL**" / "CLUB **DASHBOARD**", "EVOLUÇÃO DOS **JOGADORES**" / "PLAYER
   **DEVELOPMENT**", "MERCADO DE **TRANSFERÊNCIAS**" / "TRANSFER **MARKET**", "ELENCO **<clube>**".
   Nunca acrescentar o nome da aba ativa ao título. Telas de entrada (landing, login, start, novo
   jogo, carregamento) e avisos de tela cheia (demitido, idioma, tela pequena) ficam fora
   (`ENTRY_TITLE_FILES` no `ui-audit`). A regra `title-accent` do `bun run ui:audit` (dura) falha um
-  `PageHeadline`/`ScreenTitle` sem `accent` ou um `<h1>` de título de tela sem a parte em `primary`.
+  `ScreenTitle` sem `accent` ou um `<h1>` de título de tela sem a parte em `primary`.
 
 ## Logo (FMPROJECT)
 

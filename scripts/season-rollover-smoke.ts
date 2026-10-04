@@ -53,7 +53,7 @@ const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
 const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial");
-const { addOneDay } = await import("@/Domain/advanceDay/date");
+const { addOneDay } = await import("@/Domain/dates");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 const { continentalGoodClubsThisSeason } = await import("@/backend/continentalWorld");
@@ -63,7 +63,7 @@ const { totalsByKind } = await import("@/Domain/finance/ledger");
 const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await import("@/Domain/aiFinance/aiClubFinance");
 const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
 const { leaguePrize } = await import("@/Domain/finance/prizes");
-const { autoLineupDefaultFormation, autoLineupDefaultFormationWithFitness, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
+const { autoLineupDefaultFormation, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
 const { isSuspended } = await import("@/Domain/discipline/discipline");
 const { followersAfterMood, stadiumFillRate } = await import("@/Domain/boardFans/boardFans");
@@ -241,7 +241,7 @@ try {
     for (const p of squad.players) if (p.contract) startContractUntil.set(p.id, p.contract.until);
   }
   const ROLE_MINIMUMS: Record<string, number> = { GK: 3, Defender: 7, Midfielder: 7, Forward: 4 };
-  const { getMainRole: mainRoleOf } = await import("@/GameInterface/positionHelpers");
+  const { getMainRole: mainRoleOf } = await import("@/Domain/roles");
   let rollSquadsChecked = 0;
   const rollUnderMinimum: string[] = [];
   let wageLineChecks = 0;
@@ -914,7 +914,6 @@ try {
   const libInitialYear = continentalYearsStart.get(libSlug);
   const sudInitialYear = continentalYearsStart.get(sudSlug);
   const libMetaEnd = await plain().getLeagueMeta(smokeSaveId, libSlug);
-  const sudMetaEnd = await plain().getLeagueMeta(smokeSaveId, sudSlug);
   const saRegenerated = libInitialYear !== undefined && (libMetaEnd?.year ?? libInitialYear) > libInitialYear;
   if (saRegenerated) {
     const libArchive = await fsDal.readLeagueSeasonArchive(saveId, libSlug, libInitialYear!);

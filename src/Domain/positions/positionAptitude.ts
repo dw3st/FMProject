@@ -1,6 +1,6 @@
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import { weightedScore } from "@/Domain/playerRating";
-import { getMainRole, type MainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole, type MainRole } from "@/Domain/roles";
 import { APT_RATIO, NEIGHBOUR_APT_RATIO, POSITION_PENALTY, TRAINING_RATIO, type Aptitude } from "@/Domain/positions/positionConfig";
 
 export type { Aptitude } from "@/Domain/positions/positionConfig";
@@ -20,7 +20,7 @@ const LINE_ROLES: Record<MainRole, readonly DetailedRole[]> = {
 const LEFT: ReadonlySet<string> = new Set(["LB", "LWB", "LM", "LW"]);
 const RIGHT: ReadonlySet<string> = new Set(["RB", "RWB", "RM", "RW"]);
 
-export function isDetailedRole(role: string): role is DetailedRole {
+function isDetailedRole(role: string): role is DetailedRole {
   return (DETAILED_ROLES as readonly string[]).includes(role);
 }
 

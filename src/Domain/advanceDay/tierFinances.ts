@@ -5,7 +5,7 @@ import type { Squad } from "@/types/playerTypes";
  * division has both income lines scaled by `MULT[newTier] / MULT[oldTier]`. Tiers deeper than the
  * table use the deepest entry.
  */
-export const TIER_BROADCAST_MULT: Record<number, number> = { 1: 1, 2: 0.35, 3: 0.12, 4: 0.05 };
+const TIER_BROADCAST_MULT: Record<number, number> = { 1: 1, 2: 0.35, 3: 0.12, 4: 0.05 };
 
 function multFor(tier: number): number {
   if (TIER_BROADCAST_MULT[tier] !== undefined) return TIER_BROADCAST_MULT[tier]!;

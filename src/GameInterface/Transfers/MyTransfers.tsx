@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { TransferRecord } from "@/types/transferTypes";
-import { formatTransferFee, TransferRow } from "@/GameInterface/Transfers/transferShared";
+import { TransferRow } from "@/GameInterface/Transfers/transferShared";
+import { formatFee } from "@/Domain/money";
 import { Icon } from "@/GameInterface/Icons";
 
 function byDateDesc(a: TransferRecord, b: TransferRecord): number {
@@ -68,17 +69,17 @@ export function MyTransfers({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card-arcade rounded-md p-4">
           <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.totalSpent")}</p>
-          <p className="text-2xl font-black font-display text-destructive m-0 tabular-nums">{formatTransferFee(totalSpent)}</p>
+          <p className="text-2xl font-black font-display text-destructive m-0 tabular-nums">{formatFee(totalSpent, "£")}</p>
         </div>
         <div className="card-arcade rounded-md p-4">
           <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.totalEarned")}</p>
-          <p className="text-2xl font-black font-display text-chart-2 m-0 tabular-nums">{formatTransferFee(totalEarned)}</p>
+          <p className="text-2xl font-black font-display text-chart-2 m-0 tabular-nums">{formatFee(totalEarned, "£")}</p>
         </div>
         <div className="card-arcade rounded-md p-4">
           <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.netBalance")}</p>
           <p className={`tabular-nums text-2xl font-black font-display m-0 ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
             {net >= 0 ? "+" : ""}
-            {formatTransferFee(Math.abs(net))}
+            {formatFee(Math.abs(net), "£")}
           </p>
         </div>
       </div>

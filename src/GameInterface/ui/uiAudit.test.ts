@@ -52,10 +52,7 @@ describe("ui audit rules", () => {
 
 describe("screen titles have the accent part", () => {
   const H1 = `className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0"`;
-  test("PageHeadline and ScreenTitle need accent=", () => {
-    expect(rules(`<PageHeadline backHref="/x">Ligas</PageHeadline>`)).toContain("hard:title-accent");
-    expect(rules(`<PageHeadline backHref="/x" accent="Copas">Ligas e</PageHeadline>`)).not.toContain("hard:title-accent");
-    expect(rules(`<PageHeadline hideTitle backHref="/x" />`)).not.toContain("hard:title-accent");
+  test("ScreenTitle needs accent=", () => {
     expect(rules(`<ScreenTitle>Painel</ScreenTitle>`)).toContain("hard:title-accent");
     expect(rules(`<ScreenTitle accent="Painel">Seu</ScreenTitle>`)).not.toContain("hard:title-accent");
   });

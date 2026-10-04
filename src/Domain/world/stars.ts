@@ -3,11 +3,11 @@ import type { Squad } from "@/types/playerTypes";
 
 export type StarKind = "gold" | "blue" | "green";
 
-export const GOLD_STARS = 25;
-export const GREEN_STARS = 30;
-export const PRODIGY_MAX_AGE = 19;
-export const FORM_MIN_RATING = 7.2;
-export const FORM_MIN_GAMES = 8;
+const GOLD_STARS = 25;
+const GREEN_STARS = 30;
+const PRODIGY_MAX_AGE = 19;
+const FORM_MIN_RATING = 7.2;
+const FORM_MIN_GAMES = 8;
 
 /**
  * One star per player (gold > blue > green), across every squad. Pure, deterministic (ties by id).

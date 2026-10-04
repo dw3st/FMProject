@@ -89,7 +89,7 @@ export function nextFinancialTier(current: FinancialTier, natural: FinancialTier
 }
 
 /** Followers after the season's reaction (soft-balanced by `tier`), floored. */
-export function reactFollowers(followers: number, outcome: ClubSeasonOutcome, tier: FinancialTier): number {
+function reactFollowers(followers: number, outcome: ClubSeasonOutcome, tier: FinancialTier): number {
   return Math.max(
     AI_FINANCE_CONFIG.season.FOLLOWERS_FLOOR,
     Math.round(followers * (1 + followersChange(outcome, tier))),

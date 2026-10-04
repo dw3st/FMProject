@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScoutFilters } from "@/GameInterface/Scout/ScoutFilters";
-import { createDefaultScoutFilters, type ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
+import { createDefaultScoutFilters, type ScoutFilterState } from "@/Domain/scout/scoutFilterState";
 import type { LeagueData, Squad } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
 import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
 import { loadSession } from "@/GameInterface/gameSession";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { ScoutQuery, ScoutSearchResponse, ScoutSortDir } from "@/Domain/scout/scoutQuery";
 import { countryDisplayName, leagueLabel } from "@/Domain/world/labels";
@@ -177,9 +177,9 @@ export function ScoutScreen() {
   return (
     <>
       <ScreenContainer>
-        <PageHeadline backHref="/dashboard" accent={t("screenTitles.scout.accent")}>
+        <ScreenTitle accent={t("screenTitles.scout.accent")}>
           {t("screenTitles.scout.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         <ScoutFilters
           filters={filters}

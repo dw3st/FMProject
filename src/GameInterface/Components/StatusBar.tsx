@@ -4,15 +4,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
-
-function formatBudgetShort(value: number) {
-  // The balance can go negative now (see .claude/rules/game/finances.md): abbreviate |value|, keep the sign.
-  const sign = value < 0 ? "-" : "";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(0)}K`;
-  return `${sign}${abs}`;
-}
+import { formatEuros } from "@/Domain/money";
 
 const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
 const ICON_BTN =
@@ -33,7 +25,7 @@ export function StatusBar({
   const { t } = useTranslation();
   const { session, squad, unreadInboxCount } = useGameSave();
 
-  const budgetLabel = session != null ? `€${formatBudgetShort(session.budget)}` : "—";
+  const budgetLabel = session != null ? `€${formatEuros(session.budget, "")}` : "—";
   const playersLabel = squad != null ? String(squad.players.length) : "—";
   const unreadLabel = String(unreadInboxCount);
 

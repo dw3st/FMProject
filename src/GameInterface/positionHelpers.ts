@@ -6,8 +6,8 @@
  */
 
 import ROLES from "@/Data/roles.json";
+import { getMainRole, type MainRole } from "@/Domain/roles";
 
-export type MainRole = "GK" | "Defender" | "Midfielder" | "Forward";
 
 type RolesWithAttrWeights = Record<string, { attrWeights?: Record<string, number> }>;
 
@@ -33,22 +33,6 @@ export function roleForDevelopmentWeights(positions: string[]): string {
     if (mapped && R[mapped]?.attrWeights) return mapped;
   }
   return "CM";
-}
-
-/** Map every detailed position code to its main role. */
-const MAIN_ROLE_MAP: Record<string, MainRole> = {
-  // Main roles pass through unchanged
-  GK: "GK", Defender: "Defender", Midfielder: "Midfielder", Forward: "Forward",
-  // Detailed roles
-  CB:  "Defender", LB: "Defender", RB: "Defender", LWB: "Defender", RWB: "Defender",
-  CDM: "Midfielder", DM: "Midfielder", CM: "Midfielder", CAM: "Midfielder",
-  AM:  "Midfielder", LM: "Midfielder", RM: "Midfielder",
-  LW:  "Forward", RW: "Forward", ST: "Forward", CF: "Forward",
-};
-
-/** Returns the main role for a position code (main or detailed). Falls back to "Forward". */
-export function getMainRole(pos: string): MainRole {
-  return MAIN_ROLE_MAP[pos] ?? "Forward";
 }
 
 /** Short label for compact display (e.g. badge in squad list). */
@@ -93,20 +77,6 @@ const DETAILED_COLOR: Record<string, string> = {
 export function getDetailedPositionColor(role: string): string {
   return DETAILED_COLOR[role] ?? getPositionColor(role);
 }
-
-/** Group label used to bucket players in squad / scout views. */
-export function getPositionGroup(pos: string): string {
-  const main = getMainRole(pos);
-  switch (main) {
-    case "GK":         return "Goalkeepers";
-    case "Defender":   return "Defenders";
-    case "Midfielder": return "Midfielders";
-    case "Forward":    return "Forwards";
-  }
-}
-
-/** Ordered section keys for squad / scout group rendering. */
-export const POSITION_GROUP_ORDER = ["Goalkeepers", "Defenders", "Midfielders", "Forwards"] as const;
 
 /**
  * Display label of a player's position: the natural detailed role (`roles.detailedAbbr.*`) when

@@ -21,7 +21,7 @@ const BASE_COST  = 10;   // base DP required for a stat level-up
 const SCALE      = 0.10; // how steeply cost grows with value
 
 /** Training-only: per-intensity fraction of BASE_DP earned per session. */
-export const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
+const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
   heavy:  0.25, // spec: 25% of a rating-6 match
   normal: 0.12,
   light:  0.05,
@@ -163,7 +163,7 @@ function distributeAndResolve(
   // Seed progress at the midpoint of each stat's current level cost so that players
   // without any tracked history aren't immediately at the cliff edge: any tiny decay
   // would otherwise drop progress below 0 and trigger an instant level-down.
-  // Also treat an all-zero progress record as uninitialized (legacy saves).
+  // An all-zero record (reset at every season rollover) is seeded the same way.
   const isUninitialized =
     !player.progress ||
     Object.values(player.progress).every((v) => v === 0);

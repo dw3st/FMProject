@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-export type UiButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type UiButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANT: Record<UiButtonVariant, string> = {
   primary: "bg-primary text-primary-foreground hover:opacity-90",

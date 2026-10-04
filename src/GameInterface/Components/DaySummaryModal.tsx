@@ -16,7 +16,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";

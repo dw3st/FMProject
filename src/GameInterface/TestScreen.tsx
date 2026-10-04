@@ -6,21 +6,21 @@ import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { EnergyPanel } from "@/GameInterface/EnergyPanel";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
-import type { CrowdMode } from "@/GameInterface/CrowdHeatmapPanel";
+import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { Icon } from "@/GameInterface/Icons";
 import { evaluatePoint, DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig, EvaluationResult } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import { attackingTeam } from "@/GameEngine/Infrastructure/CrowdGrid";
-import { setDebugMode, clearDebugLog } from "@/GameEngine/Suport/DebugLog";
+import { setDebugMode, clearDebugLog } from "@/GameEngine/Support/DebugLog";
 import {
   clearBroadcastLine,
   getBroadcastLine,
   onBroadcastLine,
 } from "@/GameInterface/Broadcast/BroadcastLog";
-import "@/GameEngine/Suport/DebugSubscriber";
+import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
-import { TEST_SCENARIOS } from "@/GameEngine/Suport/TestCases";
-import type { TestScenario } from "@/GameEngine/Suport/TestCases";
+import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
+import type { TestScenario } from "@/GameEngine/Support/TestCases";
 import { createMatchState, getBallPos } from "@/GameEngine/Domain/gameState";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import type { Squad } from "@/types/playerTypes";
@@ -866,7 +866,6 @@ export function TestScreen() {
 
   const roleData   = livePlayer ? ROLES[livePlayer.role] : null;
   const engineData = roleData?.engine;
-  const dpData     = roleData?.dpWeights;
 
   return (
     <div className="flex flex-col gap-3 w-full p-4 h-screen overflow-y-auto">

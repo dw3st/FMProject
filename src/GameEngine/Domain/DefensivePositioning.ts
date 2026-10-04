@@ -21,7 +21,7 @@ import { resolveBasePosition } from '@/GameEngine/FormationSlots';
 import { getDefenseConfig, getDefenseTacticKeys } from '@/GameEngine/Configs/DefenseConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
 import { mainRoleOf, roleEngine } from '@/GameEngine/Domain/roleEngineData';
-import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import {
   INTENT_PRESSING_STYLE,
@@ -52,7 +52,7 @@ const PRESS_RANGE_TACTIC_DELTA_YARDS: Record<PressingStyle, number> = {
  * intent → high_press). Single source of truth for both intent-multiplier
  * lookup and effective press range.
  */
-export function effectivePressingStyle(team: TeamId, intent: TeamIntent): PressingStyle {
+function effectivePressingStyle(team: TeamId, intent: TeamIntent): PressingStyle {
   const baseStyle = getDefenseTacticKeys(team).pressingStyle;
   return getPressingStyleOverride(intent) ?? baseStyle;
 }
@@ -79,7 +79,7 @@ function outOfZoneDistance(
  * `intent` defaults to 'balanced' so legacy callers (e.g. tests) keep their
  * previous static behaviour without having to thread the intent through.
  */
-export function effectivePressRange(player: GamePlayer, intent: TeamIntent = 'balanced'): number {
+function effectivePressRange(player: GamePlayer, intent: TeamIntent = 'balanced'): number {
   const base = player.runtimeStats.withoutBall.pressRange;
   const pressingStyle = effectivePressingStyle(player.team, intent);
   return base + PRESS_RANGE_TACTIC_DELTA_YARDS[pressingStyle];
@@ -484,7 +484,7 @@ export function computeDefensiveShapeAnchor(
  * - Non-linear threat curve so medium threat engages defenders earlier.
  * - Extra pull when defender is too far from mark (urgency to close).
  */
-export function computeTrackMarkTarget(
+function computeTrackMarkTarget(
   shapeAnchor: { x: number; y: number },
   player: GamePlayer,
   ballHolder: GamePlayer,

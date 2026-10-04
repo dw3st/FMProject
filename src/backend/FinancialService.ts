@@ -14,28 +14,12 @@ import type { SaveMeta } from "@/backend/SaveService";
 import type { Squad } from "@/types/playerTypes";
 import { applyAITransferSale, applyAITransferSpend } from "@/Domain/aiFinance/aiClubFinance";
 import { applyMoney, type LedgerEntry } from "@/Domain/finance/ledger";
-import { gateRevenue } from "@/Domain/finance/gate";
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-export const TICKET_PRICE = 25;
-export const HOME_FILL_RATE = 0.65;
-
-// ── Internal helpers ──────────────────────────────────────────────────────────
 
 // ── Balance getters ───────────────────────────────────────────────────────────
 
 /** Club budget from squad.finances (the human club's balance; AI clubs use aiTransferBudget). */
 export function getClubBudget(squad: Squad): number {
   return squad.finances?.budget ?? 0;
-}
-
-// ── Pure financial calculations (no side effects) ─────────────────────────────
-
-/** Home matchday ticket revenue based on stadium capacity (league price — see `gateRevenue`). */
-export function calcMatchdayRevenue(squad: Squad): number {
-  const capacity = squad.venue?.capacity ?? 0;
-  return gateRevenue(capacity, "league");
 }
 
 // ── Season start ──────────────────────────────────────────────────────────────

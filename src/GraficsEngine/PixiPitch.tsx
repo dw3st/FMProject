@@ -32,7 +32,7 @@ import {
 import type { GridMatrix } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig } from "@/GameEngine/Infrastructure/SpatialEvaluation";
-import type { CrowdMode } from "@/GameInterface/CrowdHeatmapPanel";
+import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 
 const PITCH_SPEC = {
   lengthYds: PITCH_LENGTH,
@@ -554,13 +554,6 @@ export function PixiPitch({
       const unsubCross = gameBus.on('crossScores', (e) => {
         lastCrossTargets = e.targets;
         lastCrossHolder  = e.playerId;
-      });
-
-      // ── Through-ball chase commits cache ──
-      type ChaseCommit = import('@/GameEngine/Infrastructure/EventBus').GameEvents['chaseCommit'];
-      let lastChase: ChaseCommit | null = null;
-      const unsubChase = gameBus.on('chaseCommit', (e) => {
-        lastChase = e;
       });
 
       // ── Player graphics ──
@@ -1328,7 +1321,6 @@ export function PixiPitch({
         unsubTestCmd();
         unsubTactics();
         unsubTbScores();
-        unsubChase();
         unsubCross();
       };
     };

@@ -2,6 +2,7 @@ import { AI_FINANCE_CONFIG, FINANCIAL_TIERS } from "@/Domain/aiFinance/aiFinance
 import { FALLBACK_HOME_GAMES, playerWeeklyWage, squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import type { ClubFinances, FinancialTier, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { TransferBudgetTier } from "@/types/transferMarketTypes";
+import { clamp } from "@/Domain/math";
 
 /**
  * Simplified AI club finances (`.claude/rules/AI-clubs/finance.md`): tier + popularity → seasonal
@@ -27,8 +28,6 @@ export interface AIClubFinance {
   /** This season's full grant (€) for the current tier + popularity. */
   seasonalTransferBudget: number;
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 export function tierIndex(tier: FinancialTier): number {
   return FINANCIAL_TIERS.indexOf(tier);

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { cupSlugOf, isCupSlug, seedFrom } from "@/Domain/cups/cupIds";
+import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
+import { seedFrom } from "@/Domain/rng";
 
 describe("cupIds", () => {
   test("slug from country name", () => {

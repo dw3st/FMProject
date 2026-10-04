@@ -176,8 +176,8 @@ export interface RestEvent {
 
 // ── Stored variants (disk only — no per-player deltas) ──────────────────────
 
-export type StoredTrainingEvent = Omit<TrainingEvent, "effects">;
-export type StoredRestEvent     = Omit<RestEvent, "effects">;
+type StoredTrainingEvent = Omit<TrainingEvent, "effects">;
+type StoredRestEvent     = Omit<RestEvent, "effects">;
 
 // ── Transfer event (resolved / API-facing) ──────────────────────────────────
 

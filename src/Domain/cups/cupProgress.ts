@@ -1,8 +1,7 @@
 import type { Fixture, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { drawTies } from "@/Domain/cups/cupDraw";
 import { stageFixtures } from "@/Domain/cups/generateCup";
-import { mulberry32 } from "@/Domain/rng";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 /** Winner of a played knockout fixture (score, then penalties); null when unplayed/undecided. */
 export function fixtureWinner(f: Fixture): string | null {

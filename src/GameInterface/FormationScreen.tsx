@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { updateSaveFormation, updateSaveTacticalStyle, saveFormationAndTactics } from "@/GameInterface/gameSession";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -32,8 +32,9 @@ import {
   hasAxesOverride,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
-import type { Squad, RosterPlayer } from "@/types/playerTypes";
-import { getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import type { RosterPlayer } from "@/types/playerTypes";
+import { getMainRole } from "@/Domain/roles";
+import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
@@ -463,8 +464,7 @@ export function FormationScreen() {
 
   return (
     <ScreenContainer>
-          <PageHeadline
-            backHref="/dashboard"
+          <ScreenTitle
             subtitle={t("formations.subtitleHelp")}
             accent={t("screenTitles.formation.accent")}
             trailing={
@@ -491,7 +491,7 @@ export function FormationScreen() {
             }
           >
             {t("screenTitles.formation.main")}
-          </PageHeadline>
+          </ScreenTitle>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Formation Selector — absolute inside cell so pitch dictates row height */}

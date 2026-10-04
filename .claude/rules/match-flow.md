@@ -255,8 +255,8 @@ preMatch → firstHalf → halfTime → secondHalf
 `extraTimeSecond`, `penalties`. `isLivePhase(phase)` (`gameState.ts`) is `true` for the four
 periods where the ball can be in play — `firstHalf`, `secondHalf`, `extraTimeFirst`,
 `extraTimeSecond` — and gates things like stamina drain (`shouldDrainStamina`) exactly the same
-way for extra time as for the first 90 minutes. `isDeadBall` treats `extraTimeBreak` and
-`penalties` as dead-ball phases (no ball, no movement), the same way `halfTime` already was.
+way for extra time as for the first 90 minutes. The phase gating at the top of `tickState` treats
+`extraTimeBreak` and `penalties` as dead-ball phases (no ball, no movement), like `halfTime`.
 
 ## `endCurrentPeriod` — the one function that ends a period
 

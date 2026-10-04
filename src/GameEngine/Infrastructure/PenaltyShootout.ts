@@ -4,10 +4,11 @@
  * then *presents* the kicks one by one.
  */
 import { PENALTY_CONFIG as C } from "@/GameEngine/Configs/PenaltyConfig";
+import { clamp } from "@/Domain/math";
 
-export type ShootoutTeam = "A" | "B";
+type ShootoutTeam = "A" | "B";
 
-export interface PenaltyTaker<Id> {
+interface PenaltyTaker<Id> {
   id: Id;
   /** Normalised finishing, 0..0.95 (same scale as runtimeStats.withBall.shootAccuracy). */
   accuracy: number;
@@ -27,7 +28,7 @@ export interface PenaltySide<Id> {
   keeper: PenaltyKeeper<Id> | null;
 }
 
-export interface PenaltyKick<Id> {
+interface PenaltyKick<Id> {
   team: ShootoutTeam;
   takerId: Id;
   keeperId: Id | null;
@@ -40,8 +41,6 @@ export interface ShootoutResult<Id> {
   score: { A: number; B: number };
   winner: ShootoutTeam;
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Probability that a taker of `accuracy` scores against `keeper` (null = empty goal). */
 export function penaltyChance<Id>(accuracy: number, keeper: PenaltyKeeper<Id> | null): number {

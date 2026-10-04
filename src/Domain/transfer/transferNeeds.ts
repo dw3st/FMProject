@@ -3,20 +3,19 @@ import {
   aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
-import type { MainRole } from "@/GameInterface/positionHelpers";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
+import { getMainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
   SquadMarketProfile,
   TransferNeed,
   TransferBudgetTier,
-  TransferIntentType,
   SellCandidate,
 } from "@/types/transferMarketTypes";
 
 const MAIN_BANDS: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
-export const PRICE_CAP_MID = 40_000_000;
+const PRICE_CAP_MID = 40_000_000;
 export const PRICE_CAP_LOW = 15_000_000;
 
 // Caps on total needs per club per refresh
@@ -353,7 +352,7 @@ export function scoreCandidate(
 
 // ─── Transfer attempt orchestration ─────────────────────────────────────────
 
-export function findSquadContainingPlayer(
+function findSquadContainingPlayer(
   playerId: string,
   allSquads: Squad[],
 ): Squad | null {

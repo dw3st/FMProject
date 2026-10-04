@@ -3,12 +3,11 @@ import { randomUUID } from "crypto";
 import { readdir } from "fs/promises";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
-import { generateRestDays, parseSeasonDates } from "@/Domain/season";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
-import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
+import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import type { BoardState, CareerEnded } from "@/types/boardTypes";
@@ -152,28 +151,6 @@ export class SaveService {
   }
 
   // ── Season ─────────────────────────────────────────────────────────────────
-
-  async getSeason(saveId: string): Promise<SeasonData | null> {
-    // Try the dedicated season.json first
-    const season = await this.dal.readSeason(saveId);
-    if (season) return season;
-
-    // Migration: old saves have season embedded in meta.json — extract and promote
-    const raw = await this.dal.readMeta(saveId) as unknown as Record<string, unknown>;
-    const embedded = raw?.season as SeasonData | undefined;
-    if (embedded) {
-      await this.dal.writeSeason(saveId, embedded);
-      // Strip season from meta so the main file stays light going forward
-      const { season: _removed, ...cleanMeta } = raw;
-      await this.dal.writeMeta(cleanMeta as unknown as SaveMeta);
-      return embedded;
-    }
-    return null;
-  }
-
-  writeSeason(saveId: string, season: SeasonData): Promise<void> {
-    return this.dal.writeSeason(saveId, season);
-  }
 
   readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null> {
     return this.dal.readSeasonArchive(saveId, year);
@@ -693,20 +670,6 @@ export class SaveService {
 
         if (config.slug === body.leagueSlug) {
           playerLeagueStart = meta.start;
-        }
-      }
-
-      // Fallback: if player's league wasn't in LEAGUE_SCHEDULE_CONFIGS, generate it
-      if (!playerLeagueStart) {
-        const leagueEntry = allLeagueData.find((l) => l.slug === body.leagueSlug);
-        if (leagueEntry) {
-          const teamIds = leagueEntry.standings.map((s) => s.squadId);
-          const { year, start, end } = parseSeasonDates(leagueEntry.season);
-          const { generateCalendar } = await import("@/Domain/season/generateCalendar");
-          const calendar = generateCalendar(leagueEntry.slug, teamIds, start, end);
-          const season = { year, start, end, calendar, restDays: generateRestDays(calendar) };
-          await this.dal.writeSeason(id, season);
-          playerLeagueStart = start;
         }
       }
     } catch (e) {

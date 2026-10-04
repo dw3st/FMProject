@@ -1,7 +1,7 @@
 import { unitHash } from "@/../scripts/openfootball/ids";
 import { STAT_KEYS, playerProfile } from "@/../scripts/openfootball/derive";
 import { MAX_SQUAD, MIN_BY_ROLE, MIN_SQUAD, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 export const LINES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];

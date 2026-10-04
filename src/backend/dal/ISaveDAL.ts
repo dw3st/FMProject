@@ -1,7 +1,7 @@
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
-import type { SeasonArchive, SeasonData, LeagueCalendarResult, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
+import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
@@ -23,8 +23,6 @@ export interface ISaveDAL {
   deleteSave(saveId: string): Promise<void>;
 
   // ── Season ────────────────────────────────────────────────────────────────
-  readSeason(saveId: string): Promise<SeasonData | null>;
-  writeSeason(saveId: string, season: SeasonData): Promise<void>;
   readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null>;
   writeSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
 

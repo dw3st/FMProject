@@ -1,5 +1,5 @@
 import { createPage } from "@/createPage";
-import { PromoMatchScreen } from "./PromoMatchScreen";
+import { PromoMatchScreen } from "@/lab/pages/promo/PromoMatchScreen";
 import { LabNav } from "@/lab/components/LabNav";
 
 function PromoPage() {

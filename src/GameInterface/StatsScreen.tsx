@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import {
@@ -319,9 +319,9 @@ export function StatsScreen() {
 
   return (
     <ScreenContainer>
-        <PageHeadline backHref="/dashboard" accent={t("screenTitles.stats.accent")}>
+        <ScreenTitle accent={t("screenTitles.stats.accent")}>
           {t("screenTitles.stats.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         <SegmentedTabs
           tabs={[

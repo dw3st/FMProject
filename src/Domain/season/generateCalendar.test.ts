@@ -1,22 +1,29 @@
 import { describe, expect, test } from "bun:test";
-import { generateCalendar, generateLeagueCalendar } from "@/Domain/season";
+import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 
 function pairKey(home: string, away: string): string {
   return [home, away].sort().join("|");
 }
 
-describe("generateCalendar", () => {
+/** Round-robin of `teams` with the first configured league's schedule, renamed to `slug`. */
+function calendarOf(slug: string, teams: string[]) {
+  const config = { ...LEAGUE_SCHEDULE_CONFIGS[0]!, slug };
+  const result = generateLeagueCalendar(config, teams, 2025);
+  return { fixtures: result.rounds.flatMap((r) => r.fixtures), meta: result.meta };
+}
+
+describe("generateLeagueCalendar round-robin", () => {
   test("double round-robin for 4 teams yields 12 fixtures", () => {
     const teams = ["a", "b", "c", "d"];
-    const fixtures = generateCalendar("prem", teams, "2025-08-15", "2026-05-20");
+    const { fixtures } = calendarOf("prem", teams);
 
     expect(fixtures.length).toBe(12);
   });
 
   test("each league pair meets twice (home and away once each)", () => {
     const teams = ["a", "b", "c", "d"];
-    const fixtures = generateCalendar("prem", teams, "2025-08-15", "2026-05-20");
+    const { fixtures } = calendarOf("prem", teams);
 
     const counts = new Map<string, number>();
     for (const f of fixtures) {
@@ -33,7 +40,7 @@ describe("generateCalendar", () => {
 
   test("second leg reverses home and away for the same structural pairing", () => {
     const teams = ["a", "b", "c", "d"];
-    const fixtures = generateCalendar("prem", teams, "2025-08-15", "2026-05-20");
+    const { fixtures } = calendarOf("prem", teams);
 
     const roundsPerLeg = teams.length - 1;
     const firstLeg = fixtures.filter((f) => f.round <= roundsPerLeg);
@@ -57,7 +64,7 @@ describe("generateCalendar", () => {
 
   test("assigns sequential ids and competition slug on every fixture", () => {
     const teams = ["x", "y"];
-    const fixtures = generateCalendar("liga", teams, "2025-08-15", "2026-05-20");
+    const { fixtures } = calendarOf("liga", teams);
 
     expect(fixtures.length).toBe(2);
     for (let i = 0; i < fixtures.length; i++) {
@@ -70,9 +77,7 @@ describe("generateCalendar", () => {
 
   test("round numbers run 1 .. 2*(n-1) and dates are ordered by round", () => {
     const teams = ["a", "b", "c", "d"];
-    const start = "2025-08-15";
-    const end = "2026-05-20";
-    const fixtures = generateCalendar("prem", teams, start, end);
+    const { fixtures, meta } = calendarOf("prem", teams);
 
     const roundsPerLeg = teams.length - 1;
     const totalRounds = roundsPerLeg * 2;
@@ -96,13 +101,13 @@ describe("generateCalendar", () => {
       prev = d;
     }
 
-    expect(fixtures[0]!.date).toBe(start);
-    expect(fixtures[fixtures.length - 1]!.date).toBe(end);
+    expect(fixtures[0]!.date >= meta.start).toBe(true);
+    expect(fixtures[fixtures.length - 1]!.date <= meta.end).toBe(true);
   });
 
   test("odd team count uses bye without emitting bye in fixtures", () => {
     const teams = ["a", "b", "c"];
-    const fixtures = generateCalendar("div", teams, "2025-08-15", "2026-05-20");
+    const { fixtures } = calendarOf("div", teams);
 
     for (const f of fixtures) {
       expect(f.home).not.toBe("__bye__");

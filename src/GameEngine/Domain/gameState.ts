@@ -34,7 +34,7 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
@@ -75,11 +75,9 @@ import {
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
 import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
 
-export { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
-
 // ── Offside config ────────────────────────────────────────────────────────────
 
-export const OFFSIDE_CONFIG = {
+const OFFSIDE_CONFIG = {
   /** Set to false to disable offside enforcement (useful for testing). */
   ENABLED: true,
 } as const;
@@ -90,8 +88,6 @@ export const OFFSIDE_CONFIG = {
  * Prevents extreme projections when the holder is very fast or the presser very slow.
  */
 const PRESS_INTERCEPT_MAX_LOOKAHEAD = 14;
-
-// ── Match clock constants ─────────────────────────────────────────────────────
 
 // ── Tune match duration here ──────────────────────────────────────────────────
 /** Real-world seconds per half. 150 = 2.5 min/half → 5 min total match. */
@@ -419,24 +415,6 @@ export function createMatchState(
     teamIntent:            { A: 'balanced', B: 'balanced' },
     throughBallCellsCache: null,
   };
-}
-
-// ── Dead-ball detection ───────────────────────────────────────────────────────
-
-/**
- * Returns true when play is suspended and substitutions can be executed.
- * Add new dead-ball conditions here as the game gains fouls, corners, etc.
- */
-export function isDeadBall(state: GameState): boolean {
-  // Active set-piece freeze (kickoff / goal kick / offside free kick)
-  if (state.setPiece && state.setPiece.countdown > 0) return true;
-  // Half-time presentation window
-  if (state.matchPhase === 'halfTime') return true;
-  if (state.matchPhase === 'extraTimeBreak' || state.matchPhase === 'penalties') return true;
-  // GK in possession — treat as a valid sub window
-  const holder = state.players.find(p => p.id === state.ballHolderId);
-  if (holder?.role === 'GK') return true;
-  return false;
 }
 
 // ── Substitution execution ────────────────────────────────────────────────────
@@ -3107,7 +3085,6 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     updatedMemory[p.id] = { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
   }
 
-
   // Apply new memory to player objects
   const playersWithMemory = s.players.map(p => ({
     ...p,
@@ -3166,7 +3143,6 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           };
         }
       }
-
 
       const decision = s.decisions[player.id];
       const phase = teamHasBall(s, player.team) ? 'attacking' : 'defending';
@@ -3320,7 +3296,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const newT = s.shot.t + dt * SHOT_SPEED;
 
     if (newT >= 1) {
-      const { toY, shooterId } = s.shot;
+      const { shooterId } = s.shot;
       const shooter     = s.players.find(p => p.id === shooterId)!;
       const defendingGK = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
 

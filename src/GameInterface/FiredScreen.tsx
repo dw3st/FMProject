@@ -3,11 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { competitionName } from "@/Domain/world/labels";
+import { daysBetween } from "@/Domain/dates";
 import type { LeagueData } from "@/types/playerTypes";
-
-function daysBetween(from: string, to: string): number {
-  return Math.max(0, Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000));
-}
 
 /**
  * The end of a career (`.claude/rules/game/board-fans.md`): the board sacked the manager. Reads
@@ -71,7 +68,7 @@ export function FiredScreen() {
             <div className="card-arcade rounded-lg p-3">
               <Icon name="calendar" className="w-5 h-5 text-primary mx-auto mb-1" />
               <p className="text-lg font-bold font-display tabular-nums m-0">
-                {t("fired.days", { count: daysBetween(record.startDate, ended.date) })}
+                {t("fired.days", { count: Math.max(0, daysBetween(record.startDate, ended.date)) })}
               </p>
               <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">{t("fired.tenure")}</p>
             </div>

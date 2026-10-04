@@ -5,8 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { capture } from "@/analytics";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
-import { squadIdToClubSlugMap } from "@/backend/squadIdResolve";
-import { Player } from "@/Domain/Player";
+import { squadIdToClubSlugMap } from "@/Domain/world/squadIdResolve";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
@@ -15,7 +14,8 @@ import {
   TACTICAL_STYLE_OPTIONS,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
-import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
+import { MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";

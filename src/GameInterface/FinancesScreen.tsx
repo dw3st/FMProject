@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -16,6 +16,7 @@ import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
 import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
+import { formatEuros } from "@/Domain/money";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -29,14 +30,6 @@ interface LedgerApiResponse {
 }
 
 // ── Formatting ───────────────────────────────────────────────────────────────
-
-function formatCurrency(value: number) {
-  const sign = value < 0 ? "-" : "";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}€${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${sign}€${(abs / 1_000).toFixed(0)}K`;
-  return `${sign}€${abs}`;
-}
 
 function formatWeekLabel(weekStart: string) {
   const [, m, d] = weekStart.split("-");
@@ -178,8 +171,7 @@ export function FinancesScreen() {
 
   return (
     <ScreenContainer>
-        <PageHeadline
-          backHref="/dashboard"
+        <ScreenTitle
           accent={t("screenTitles.finances.accent")}
           trailing={
             ledger && ledger.seasons.length > 1 ? (
@@ -196,7 +188,7 @@ export function FinancesScreen() {
           }
         >
           {t("screenTitles.finances.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -205,7 +197,7 @@ export function FinancesScreen() {
             iconBg="bg-primary/20"
             iconColor="text-primary"
             label={t("financesScreen.budget")}
-            value={formatCurrency(balance)}
+            value={formatEuros(balance)}
             valueColor={balance >= 0 ? "text-primary" : "text-destructive"}
           />
           <OverviewCard
@@ -213,7 +205,7 @@ export function FinancesScreen() {
             iconBg="bg-chart-2/20"
             iconColor="text-chart-2"
             label={t("financesScreen.seasonIncome")}
-            value={formatCurrency(seasonIncome)}
+            value={formatEuros(seasonIncome)}
             valueColor="text-chart-2"
           />
           <OverviewCard
@@ -221,7 +213,7 @@ export function FinancesScreen() {
             iconBg="bg-destructive/20"
             iconColor="text-destructive"
             label={t("financesScreen.seasonExpenses")}
-            value={formatCurrency(seasonExpenses)}
+            value={formatEuros(seasonExpenses)}
             valueColor="text-destructive"
           />
           <OverviewCard
@@ -229,7 +221,7 @@ export function FinancesScreen() {
             iconBg="bg-chart-4/20"
             iconColor="text-chart-4"
             label={t("financesScreen.seasonPrizes")}
-            value={formatCurrency(seasonPrizes)}
+            value={formatEuros(seasonPrizes)}
             valueColor="text-chart-4"
           />
         </div>
@@ -270,7 +262,7 @@ export function FinancesScreen() {
                       <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                         <div className="bg-card border border-border rounded-lg px-2 py-1 text-sm tabular-nums whitespace-nowrap">
                           <span className={w.net >= 0 ? "text-chart-2" : "text-destructive"}>
-                            {w.net >= 0 ? "+" : ""}{formatCurrency(w.net)}
+                            {w.net >= 0 ? "+" : ""}{formatEuros(w.net)}
                           </span>
                         </div>
                       </div>
@@ -326,7 +318,7 @@ export function FinancesScreen() {
                     const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.operational;
                     return (
                       <span className={`tabular-nums text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
-                        {net >= 0 ? "+" : ""}{formatCurrency(net)}
+                        {net >= 0 ? "+" : ""}{formatEuros(net)}
                       </span>
                     );
                   })()}
@@ -363,7 +355,7 @@ export function FinancesScreen() {
                         </p>
                         <p className="text-sm text-muted-foreground m-0">{g.fixture.date}</p>
                       </div>
-                      <span className="text-chart-2 font-semibold shrink-0 ml-2 tabular-nums">{formatCurrency(g.projected)}</span>
+                      <span className="text-chart-2 font-semibold shrink-0 ml-2 tabular-nums">{formatEuros(g.projected)}</span>
                     </div>
                   ))}
                 </div>
@@ -371,7 +363,7 @@ export function FinancesScreen() {
                   <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">
                     {t("financesScreen.homeGames", { count: gateProjections.length })}
                   </span>
-                  <span className="text-sm font-bold text-chart-2 tabular-nums">{formatCurrency(projectedRemainingGate)}</span>
+                  <span className="text-sm font-bold text-chart-2 tabular-nums">{formatEuros(projectedRemainingGate)}</span>
                 </div>
               </>
             )}
@@ -417,7 +409,7 @@ export function FinancesScreen() {
                       </p>
                     </div>
                     <span className={`tabular-nums text-sm font-semibold shrink-0 ${entry.amount >= 0 ? "text-chart-2" : "text-destructive"}`}>
-                      {entry.amount >= 0 ? "+" : ""}{formatCurrency(entry.amount)}
+                      {entry.amount >= 0 ? "+" : ""}{formatEuros(entry.amount)}
                     </span>
                   </div>
                 );
@@ -487,7 +479,7 @@ function KindBreakdown({
                   </div>
                   <span className="text-sm text-muted-foreground">{t(meta.labelKey)}</span>
                 </div>
-                <span className="text-sm font-semibold text-foreground tabular-nums">{formatCurrency(value)}</span>
+                <span className="text-sm font-semibold text-foreground tabular-nums">{formatEuros(value)}</span>
               </div>
               <div className="h-1.5 bg-border rounded overflow-hidden w-full min-w-16">
                 <div className={`h-full ${barColor} rounded-full`} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -498,7 +490,7 @@ function KindBreakdown({
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
         <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.seasonTotal")}</span>
-        <span className={`tabular-nums text-lg font-black font-display ${totalColor}`}>{formatCurrency(total)}</span>
+        <span className={`tabular-nums text-lg font-black font-display ${totalColor}`}>{formatEuros(total)}</span>
       </div>
     </div>
   );
@@ -513,7 +505,7 @@ function ProjectionRow({ icon, label, value, positive }: { icon: IconName; label
         <Icon name={icon} size={12} />
         {label}
       </div>
-      <span className={`tabular-nums font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatCurrency(value)}{t("financesScreen.weekly")}</span>
+      <span className={`tabular-nums font-semibold ${color}`}>{value >= 0 ? "+" : ""}{formatEuros(value)}{t("financesScreen.weekly")}</span>
     </div>
   );
 }

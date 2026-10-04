@@ -3,8 +3,7 @@
  * Neither exists in the simulation — they are derived deterministically from the fixture (same
  * fixture, same answer) and have no effect on any match. Pure, no I/O.
  */
-import { seedFrom } from "@/Domain/cups/cupIds";
-import { mulberry32 } from "@/Domain/rng";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 export type MatchWeather = "sunny" | "partlyCloudy" | "cloudy" | "rain" | "wind" | "cold" | "snow" | "hot";
 

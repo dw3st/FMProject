@@ -10,7 +10,6 @@
 
 import type { PlayerRole, PlayerStats } from '@/GameEngine/types';
 import type { PlayerStatsRecord } from '@/types/playerTypes';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 
 /** Base press engagement distance (yards). Team `pressing_style` adjusts this in DefensivePositioning. */
 const PRESS_RANGE_BASE_YARDS = 8;

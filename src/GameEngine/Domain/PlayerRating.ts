@@ -10,16 +10,14 @@
 
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { RATING_WEIGHTS } from '@/GameEngine/Configs/PlayerRatingConfig';
+import { clamp } from '@/Domain/math';
 
 const ratings = new Map<number, number>();
 
-function clamp(v: number): number {
-  return Math.max(0, Math.min(10, v));
-}
 
 function adjust(playerId: number, delta: number): void {
   const current = ratings.get(playerId) ?? RATING_WEIGHTS.BASELINE;
-  ratings.set(playerId, clamp(current + delta));
+  ratings.set(playerId, clamp(current + delta, 0, 10));
   gameBus.emit('ratingsUpdated', Object.fromEntries(ratings));
 }
 
@@ -70,6 +68,6 @@ export function exportRatings(): Array<[number, number]> {
 /** Replaces every rating with a snapshot from `exportRatings` (instead of `initRatings`). */
 export function importRatings(entries: Array<[number, number]>): void {
   ratings.clear();
-  for (const [id, r] of entries) ratings.set(id, clamp(r));
+  for (const [id, r] of entries) ratings.set(id, clamp(r, 0, 10));
   gameBus.emit('ratingsUpdated', Object.fromEntries(ratings));
 }

@@ -4,13 +4,14 @@ import { YOUTH as Y } from "@/Domain/youth/youthConfig";
 import { aiClubFinance, financialTierOf, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/playerRating";
 import { effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
 import { applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import ROLES from "@/Data/roles.json";
-import type { MainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
+import { clamp } from "@/Domain/math";
+import { seedFrom } from "@/Domain/rng";
 
 /** Pure youth-academy model (`.claude/rules/game/youth.md`). No I/O. */
 
@@ -19,7 +20,6 @@ const STAT_KEYS: (keyof PlayerStatsRecord)[] = [
   "pressing", "stamina", "heading", "strength", "reflex", "jump",
 ];
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const unit = (key: string) => seedFrom(key) / 4294967296;
 const gauss = (key: string) =>
   Math.sqrt(-2 * Math.log(Math.max(1e-9, unit(`${key}:u`)))) * Math.cos(2 * Math.PI * unit(`${key}:v`));
@@ -35,7 +35,7 @@ export function lineAverage(squad: Squad, role: MainRole): number {
 }
 
 /** Assistant coach rating (1..10) -> level bonus, linear, 0 at 5.5. */
-export function assistantLevelBonus(rating: number): number {
+function assistantLevelBonus(rating: number): number {
   return clamp((rating - 5.5) / 4.5, -1, 1) * Y.ASSISTANT_BONUS;
 }
 

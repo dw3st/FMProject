@@ -73,12 +73,6 @@ Run for production:
 bun start
 ```
 
-Build:
-
-```bash
-bun run build
-```
-
 ## Configuration
 
 Bun auto-loads a `.env` file. Copy the template and fill in what you need:
@@ -94,7 +88,6 @@ With no `SMTP2GO_API_KEY` set, login-code emails fall back to a dev log (console
 | Command | What it does |
 |---|---|
 | `bun dev` | Dev server with hot reload |
-| `bun run build` | Production build |
 | `bun run balance:formations` | Headless formation balance run |
 | `bun run balance:tactics` | Headless tactics balance run |
 | `bun run lab` | Balance lab — compare formations/tactics across hundreds of matches |

@@ -11,7 +11,7 @@
  * Win edge = win% − loss% of the tested formation (0 = even with 4-3-3).
  */
 import { FORMATION_IDS } from "@/Domain/matchFormations";
-import type { Totals } from "./formation-vs-433-worker";
+import type { Totals } from "@/../scripts/formation-vs-433-worker";
 
 const args = process.argv.slice(2);
 const arg = (f: string, d: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? d : d; };

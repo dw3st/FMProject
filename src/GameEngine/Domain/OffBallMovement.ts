@@ -14,7 +14,7 @@ import {
   getTeamWidth,
   ATTACK_CONFIG,
 } from '@/GameEngine/Configs/AttackConfig';
-import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import {
@@ -34,7 +34,7 @@ import {
  *  • `hold_space`    — occupy a quiet zone in the team shape (ball-independent).
  *  • `make_run`      — break behind the defensive line into low-density space ahead.
  */
-export type OffBallIntent = 'offer_support' | 'hold_space' | 'make_run';
+type OffBallIntent = 'offer_support' | 'hold_space' | 'make_run';
 
 const ALL_INTENTS: OffBallIntent[] = ['offer_support', 'hold_space', 'make_run'];
 

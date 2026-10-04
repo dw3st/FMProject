@@ -4,12 +4,10 @@ import type { ComponentType, SVGProps } from "react";
 import type { TransferRecord } from "@/types/transferTypes";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Popover } from "@/GameInterface/Components/Popover";
-import {
-  MAIN_ROLE_ABBR,
-  MAIN_ROLE_BADGE_CLASSES,
-  getMainRole,
-} from "@/GameInterface/positionHelpers";
-import { Icon, iconOf } from "@/GameInterface/Icons";
+import { getMainRole } from "@/Domain/roles";
+import { MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
+import { iconOf } from "@/GameInterface/Icons";
+import { formatFee } from "@/Domain/money";
 
 const CheckCircle2 = iconOf("check-circle");
 const XCircle = iconOf("xcircle");
@@ -36,14 +34,7 @@ export function translateTransferReason(t: (key: string, opts?: Record<string, u
   return reason;
 }
 
-export function formatTransferFee(fee: number): string {
-  const m = fee / 1_000_000;
-  if (m >= 100) return `£${Math.round(m)}M`;
-  if (m >= 1) return `£${m.toFixed(1)}M`;
-  return `£${(fee / 1000).toFixed(0)}K`;
-}
-
-export function formatTransferDate(dateStr: string): string {
+function formatTransferDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
@@ -188,7 +179,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="font-black font-display text-primary m-0 tabular-nums">{formatTransferFee(record.fee)}</p>
+          <p className="font-black font-display text-primary m-0 tabular-nums">{formatFee(record.fee, "£")}</p>
           <div className="flex items-center gap-1.5 mt-1 justify-end flex-wrap">
             {statusBadge}
             <span className="text-sm text-muted-foreground">{formatTransferDate(record.date)}</span>

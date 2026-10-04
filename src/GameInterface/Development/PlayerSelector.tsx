@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { AgePhase } from "@/GameInterface/Development/PlayerProfile";
 import { getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
-import { getMainRole, MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
+import { MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { Icon } from "@/GameInterface/Icons";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 

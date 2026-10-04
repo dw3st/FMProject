@@ -74,7 +74,7 @@ export function historyRowFromLog(
 }
 
 /** Appends `row` (if any) to the player's history. Returns the same player when nothing changes. */
-export function appendHistoryRow(player: RosterPlayer, row: PlayerHistoryRow | null): RosterPlayer {
+function appendHistoryRow(player: RosterPlayer, row: PlayerHistoryRow | null): RosterPlayer {
   if (!row) return player;
   return { ...player, history: [...(player.history ?? []), row] };
 }

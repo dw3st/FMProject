@@ -3,7 +3,7 @@ import type { TacticalStyle, Mentality, TacticalAxes } from "@/types/tacticsType
 import { customShape } from "@/Domain/formation/zones";
 import type { Variant } from "@/lab/types";
 
-export function tacticLabel(style: TacticalStyle): string {
+function tacticLabel(style: TacticalStyle): string {
   return TACTICAL_STYLE_OPTIONS.find((o) => o.value === style)?.label ?? style;
 }
 

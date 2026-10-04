@@ -13,7 +13,7 @@ import { AI_FORMATION } from "@/Domain/formation/aiFormationConfig";
 import { FORMATION_IDS, formationForSimId } from "@/Domain/matchFormations";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { aptitudeFor } from "@/Domain/positions/positionAptitude";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import { emptySeasonLog, type RosterPlayer, type Squad } from "@/types/playerTypes";
 
 const KEYS = ["passing", "vision", "finishing", "dribbling", "speed", "acceleration", "tackling", "pressing",

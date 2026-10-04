@@ -9,7 +9,7 @@ const Medal = iconOf("medal");
 const Star = iconOf("star");
 const Target = iconOf("target");
 
-export interface SeasonStanding {
+interface SeasonStanding {
   position: number;
   club: string;
   played: number;
@@ -23,13 +23,13 @@ export interface SeasonStanding {
   isYourTeam: boolean;
 }
 
-export interface SeasonAwards {
+interface SeasonAwards {
   bestPlayer: { name: string; club: string; rating: number };
   topScorer: { name: string; club: string; goals: number };
   topAssists: { name: string; club: string; assists: number };
 }
 
-export interface SeasonSummary {
+interface SeasonSummary {
   season: string;
   league: string;
   standings: SeasonStanding[];

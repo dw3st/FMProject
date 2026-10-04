@@ -233,12 +233,12 @@ recoveryTime: number  // seconds remaining on post-tackle speed debuff
 
 Drained each tick: `recoveryTime = Math.max(0, recoveryTime - dt)`
 
-Speed during recovery: `speed * TACKLE_RECOVERY_SPEED_FACTOR`
+Speed during recovery: `speed * DUEL_RECOVERY_SPEED_FACTOR`
 
 ## Decision (`DecisionTree.ts`)
 
 ```ts
-import { TACKLE_RANGE } from '@/GameEngine/ActionOutcomes';
+import { TACKLE_RANGE } from '@/GameEngine/Infrastructure/ActionOutcomes';
 
 if (dist <= TACKLE_RANGE) {
   return { type: 'tackle', targetId: ballHolder.id };

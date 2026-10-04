@@ -24,6 +24,7 @@ import type {
   Highlight,
   WeekMoney,
 } from "@/GameInterface/Dashboard/dashboardData";
+import { formatEuros } from "@/Domain/money";
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
@@ -62,14 +63,6 @@ export function HomeCard({
       {children}
     </section>
   );
-}
-
-export function formatMoney(value: number): string {
-  const sign = value < 0 ? "-" : "";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}€${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${sign}€${(abs / 1_000).toFixed(0)}K`;
-  return `${sign}€${Math.round(abs)}`;
 }
 
 const DAY_FORMAT: Record<"short" | "year" | "long", Intl.DateTimeFormatOptions> = {
@@ -221,7 +214,7 @@ export function ClubCard({
         <a href="/finances" className="flex flex-col gap-1 min-w-0 no-underline">
           <span className={label}>{t("dashboard.clubSidebar.budget")}</span>
           <span className={`font-display font-bold text-2xl tabular-nums leading-none ${(budget ?? 0) < 0 ? "text-destructive" : "text-foreground"}`}>
-            {budget == null ? "—" : formatMoney(budget)}
+            {budget == null ? "—" : formatEuros(budget)}
           </span>
         </a>
         <a href={squadHref} className="flex flex-col gap-1 min-w-0 no-underline">
@@ -704,7 +697,7 @@ export function WeekFinancesCard({ week, balance }: { week: WeekMoney | null; ba
           <div key={c.label} className="flex flex-col gap-1 min-w-0">
             <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{c.label}</span>
             <span className={`font-display font-bold text-2xl tabular-nums leading-none ${c.value == null ? "text-muted-foreground" : c.tone}`}>
-              {c.value == null ? "—" : formatMoney(c.value)}
+              {c.value == null ? "—" : formatEuros(c.value)}
             </span>
           </div>
         ))}

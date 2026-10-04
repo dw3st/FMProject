@@ -1,10 +1,5 @@
 import type { Fixture } from "@/types/calendarTypes";
-
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
+import { addDays } from "@/Domain/dates";
 
 /**
  * Returns ISO dates to seed as rest days: the day before and after

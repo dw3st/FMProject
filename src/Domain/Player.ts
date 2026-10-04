@@ -1,13 +1,11 @@
 import { weeklyWage } from "@/Domain/finance/wages";
 import {
-  MAIN_ROLE_TO_SPECIFICS,
   bestSpecificRole,
   computeOverallAvg,
   overallAvg,
   weightedScore,
 } from "@/Domain/playerRating";
-
-export { MAIN_ROLE_TO_SPECIFICS };
+import { formatWageShort } from "@/Domain/money";
 
 export type StatusLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -103,8 +101,6 @@ export class Player {
    * `wageFactorOf(squad)` for the real figure at a specific club.
    */
   salaryLabel(factor: number = 1): string {
-    const weekly = Math.round(weeklyWage(this.overallRating) * factor);
-    if (weekly >= 1000) return `${(weekly / 1000).toFixed(0)}k`;
-    return `${weekly}`;
+    return formatWageShort(weeklyWage(this.overallRating) * factor);
   }
 }

@@ -1,5 +1,3 @@
-import type { PlayerRole } from '@/GameEngine/types';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
 
 // ── Intent multiplier types ───────────────────────────────────────────────────
 
@@ -103,25 +101,3 @@ export const OFF_BALL_CONFIG = {
   MAX_ADVANCE_FLOOR:     0.1,
 } as const;
 
-/**
- * Returns a carry config for off-ball spatial scoring that layers role-specific
- * weight adjustments on top of the team's tactical carry config.
- *
- * Kept for any external caller that still wants a role-tuned carry config —
- * the new grid-driven OffBallMovement no longer uses it directly.
- */
-export function getOffBallCarryConfig<T extends {
-  CLEARANCE_WEIGHT: number;
-  PROGRESS_WEIGHT: number;
-  ANGLE_WEIGHT: number;
-  CROWD_PENALTY_WEIGHT: number;
-}>(role: PlayerRole, teamCfg: T): T {
-  const d = roleEngine(role).offBallCarryDeltas;
-  return {
-    ...teamCfg,
-    CLEARANCE_WEIGHT:     Math.max(0, Math.min(1, teamCfg.CLEARANCE_WEIGHT     + d.clearance)),
-    PROGRESS_WEIGHT:      Math.max(0, Math.min(1, teamCfg.PROGRESS_WEIGHT      + d.progress)),
-    ANGLE_WEIGHT:         Math.max(0, Math.min(1, teamCfg.ANGLE_WEIGHT         + d.angle)),
-    CROWD_PENALTY_WEIGHT: Math.max(0, Math.min(1, teamCfg.CROWD_PENALTY_WEIGHT + d.crowd)),
-  };
-}

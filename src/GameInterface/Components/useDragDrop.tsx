@@ -13,7 +13,7 @@ export type DropTarget =
   | { kind: "bench"; playerId: string }
   | { kind: "zone"; row: number; col: number };
 
-export function parseDropTarget(value: string | null | undefined): DropTarget | null {
+function parseDropTarget(value: string | null | undefined): DropTarget | null {
   if (!value) return null;
   const [kind, a, b] = value.split(":");
   if (kind === "slot" && a !== undefined) return { kind: "slot", index: Number(a) };

@@ -1,3 +1,5 @@
+import { shuffle } from "@/Domain/rng";
+
 export interface CupEntrant { id: string; tier: number }
 export interface CupTie { home: string; away: string; neutral?: true }
 
@@ -7,11 +9,7 @@ export interface CupTie { home: string; away: string; neutral?: true }
  */
 export function drawTies(entrants: CupEntrant[], rng: () => number, neutral: boolean): CupTie[] {
   if (entrants.length % 2 !== 0) throw new Error(`drawTies: odd number of entrants (${entrants.length})`);
-  const pool = [...entrants].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
-  }
+  const pool = shuffle([...entrants].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })), rng);
   const ties: CupTie[] = [];
   for (let i = 0; i < pool.length; i += 2) {
     const a = pool[i]!, b = pool[i + 1]!;

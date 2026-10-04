@@ -1,9 +1,6 @@
-Below is the **final structured document for Attacking Positioning**, following the format you defined:
-
-1. **Imperative Rules (business rules / source of truth)**
-2. **Implementation Guide (config + formulas + minimal guidance)**
-
-This focuses on **movement and spatial organization**, not decision logic (passing/carrying already handle decisions).
+Two parts: imperative rules (business rules, source of truth) and an implementation guide (config,
+formulas, minimal guidance). This covers **movement and spatial organization**, not decision logic
+(passing/carrying handle decisions).
 
 ---
 
@@ -329,13 +326,7 @@ All important weights and parameters must remain configurable to allow tuning wi
 
 ---
 
-At this point your engine now has **four major behavioral foundations defined**:
+# Transitions
 
-Carry logic
-Passing logic
-Defensive positioning
-Attacking positioning
-
-The next system that would significantly improve realism is likely **Transitions (attack → defense and defense → attack)**, because transitions strongly affect how quickly the team reorganizes after losing or gaining possession.
-
-BUT FOR NOW WE DONT HAVE A TRANSITION we should do it instant.
+There is no transition phase: when possession changes, both teams switch to the new phase's
+positioning instantly.

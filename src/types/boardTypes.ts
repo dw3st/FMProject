@@ -26,7 +26,7 @@ export interface BoardUltimatum {
 }
 
 /** The manager's record at the club (official matches), for the sacking screen. */
-export interface BoardRecord {
+interface BoardRecord {
   startDate: string;
   played: number;
   wins: number;

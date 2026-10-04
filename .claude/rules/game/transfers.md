@@ -1,9 +1,3 @@
-Good. That’s the right simplification.
-
-Drop categories and use **relative strength vs team average**. It’s cleaner and already enough to drive behavior.
-
----
-
 # Feature: Transfer System (Simplified AI)
 
 ## 1. Core Principle

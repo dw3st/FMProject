@@ -5,7 +5,7 @@ import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { contractDemand } from "@/Domain/contracts/contracts";
 import { searchScout } from "@/backend/scoutSearch";
-import { createDefaultScoutFilters } from "@/GameInterface/Scout/scoutFilterState";
+import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 
 describe("free agents: demand + sign routes and scout view", () => {
   let saveId = "";

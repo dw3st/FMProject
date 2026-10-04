@@ -4,6 +4,7 @@ import { updateSessionCurrentDate } from "@/GameInterface/gameSession";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import { useKeybinds } from "@/GameInterface/useKeybinds";
 import type { AdvanceDayResponse } from "@/types/dayLogTypes";
+import { addDays, daysBetween } from "@/Domain/dates";
 import type { ClubMove } from "@/types/pyramidTypes";
 
 /**
@@ -40,13 +41,6 @@ interface AdvanceUntilResponse {
   error?: string;
 }
 
-const DAY_MS = 86_400_000;
-function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / DAY_MS);
-}
-function previousDay(d: string): string {
-  return new Date(Date.parse(d + "T00:00:00Z") - DAY_MS).toISOString().slice(0, 10);
-}
 
 /** What Continuar does when today is the player's match day. */
 function openMatchPreview(): void {
@@ -189,7 +183,7 @@ export function useAdvanceDay() {
     // Stopped early (Stop / error): day summary of the last simulated day, then the session.
     if (progress.daysAdvanced > 0) {
       try {
-        const res = await fetch(`/api/saves/${session.saveId}/days/${previousDay(lastDate)}`);
+        const res = await fetch(`/api/saves/${session.saveId}/days/${addDays(lastDate, -1)}`);
         if (res.ok) setDayLog({ ...(await res.json()), newDate: lastDate } as AdvanceDayResponse);
       } catch {
         // the summary is optional

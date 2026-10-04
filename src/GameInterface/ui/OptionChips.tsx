@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Chip } from "@/GameInterface/ui/Chip";
 
-export interface OptionChip<K extends string> {
+interface OptionChip<K extends string> {
   key: K;
   label: ReactNode;
   /** Tooltip (e.g. what a training intensity does). */

@@ -1,5 +1,5 @@
 {
-  "name": "bun-react-template",
+  "name": "fmproject",
   "version": "3.4.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
@@ -12,7 +12,6 @@
     "test": "bun test",
     "dev": "NODE_ENV=development bun --hot src/index.ts",
     "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run build.ts",
     "typecheck": "tsc --noEmit",
     "balance:formations": "bun scripts/formation-balance.ts --matches 200 --pretty",
     "balance:tactics": "bun scripts/tactics-balance.ts --matches 100 --pretty",
@@ -32,7 +31,6 @@
     "facesjs": "^5.0.3",
     "flag-icons": "^7.5.0",
     "i18next": "^26.0.10",
-    "iconoir-react": "^7.11.0",
     "lucide-react": "^0.577.0",
     "pixi.js": "^8.16.0",
     "posthog-js": "^1.391.2",

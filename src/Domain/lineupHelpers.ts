@@ -2,7 +2,7 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { FormationSlot } from "@/types/formationSlots";
 import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 import { isInjured } from "@/Domain/injury/injury";
@@ -275,16 +275,6 @@ export function suggestRotation(
     }
   }
   return swaps;
-}
-
-/**
- * Returns true when the player's primary role does not match the slot's role at the main-role level
- * (GK / Defender / Midfielder / Forward). Detailed codes (CB vs LB) no longer matter — only whether
- * the slot and the player's main position are in the same band.
- */
-export function isOutOfPosition(player: RosterPlayer, slotRole: string): boolean {
-  const primary = player.positions[0] ?? "CM";
-  return getMainRole(primary) !== getMainRole(slotRole);
 }
 
 /**

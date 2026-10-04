@@ -3,7 +3,7 @@ import { applyEspn, PROMOTED_INCOME_FLOOR, type World } from "@/../scripts/espn/
 import { buildAthlete, buildPlayer, buildSquad, buildTeam, fixtureSnapshot, fixtureWorld } from "@/../scripts/espn/fixtures";
 import type { EspnSnapshot } from "@/../scripts/espn/types";
 import { MIN_BY_ROLE, MIN_SQUAD } from "@/../scripts/openfootball/roster";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { SquadFile } from "@/../scripts/world/types";
 

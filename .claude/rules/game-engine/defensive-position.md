@@ -265,4 +265,4 @@ Press commit: `press: 8` ticks — prevents the presser abandoning pursuit each 
 
 - `TACKLE_AGGRESSION` is not used by positioning or the tackle decision — only by the foul chance (`fouls.md`)
 - `cover_pass_lane` intent is scored but has no distinct target — falls back to shape anchor
-- Full press migration from rank/range gate to pure score-based (Phase 8b of migration plan) is pending
+- Full press migration from rank/range gate to pure score-based (Phase 8b of `docs/superpowers/archive/defensive-decision-migration-plan.md`) is pending

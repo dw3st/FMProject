@@ -1,18 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { PlayerProfile, getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
+import { PlayerProfile } from "@/GameInterface/Development/PlayerProfile";
 import { AttributesPanel } from "@/GameInterface/Development/AttributesPanel";
 import { PlayerSelector } from "@/GameInterface/Development/PlayerSelector";
 import { RecentTrend } from "@/GameInterface/Development/RecentTrend";
 import { DevelopmentExplanation } from "@/GameInterface/Development/DevelopmentExplanation";
 import { DevelopmentWarnings } from "@/GameInterface/Development/DevelopmentWarnings";
 import { DevelopmentTrainingConfig } from "@/GameInterface/Development/DevelopmentTrainingConfig";
-import { ATTRIBUTE_LABELS } from "@/GameInterface/AttributeLabels";
-import type { AttributeId } from "@/GameInterface/AttributeLabels";
-import type { Squad, RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
+import { ATTRIBUTE_LABELS } from "@/Domain/attributes";
+import type { AttributeId } from "@/Domain/attributes";
+import type { RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
 import type { AgePhase, DevStatus } from "@/GameInterface/Development/PlayerProfile";
 import type { DevAttribute, AttrFocus } from "@/GameInterface/Development/AttributesPanel";
@@ -204,9 +204,9 @@ export function DevelopmentScreen() {
 
   return (
     <ScreenContainer>
-          <PageHeadline backHref="/dashboard" accent={t("screenTitles.development.accent")}>
+          <ScreenTitle accent={t("screenTitles.development.accent")}>
             {t("screenTitles.development.main")}
-          </PageHeadline>
+          </ScreenTitle>
 
           <DevelopmentTrainingConfig />
 

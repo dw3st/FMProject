@@ -6,7 +6,7 @@ import { PixiPitch } from "@/GraficsEngine/PixiPitch";
 import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
-import { setDebugMode } from "@/GameEngine/Suport/DebugLog";
+import { setDebugMode } from "@/GameEngine/Support/DebugLog";
 import { initRatings, getAllRatings, exportRatings, importRatings } from "@/GameEngine/Domain/PlayerRating";
 import { getTeamStats, initStats, exportStatsState, importStatsState } from "@/GameEngine/Domain/Statistics";
 import {
@@ -18,7 +18,7 @@ import {
   saveMatchSnapshot,
   type TeamTacticsSnapshot,
 } from "@/GameInterface/matchResume";
-import "@/GameEngine/Suport/DebugSubscriber";
+import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
 import type { GameState, TeamId, Formation, PendingSub } from "@/GameEngine/types";

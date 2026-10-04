@@ -2,7 +2,7 @@
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { loadLeagueAt88, pairAt, type Mode, type GoalTotals } from "./ai-formation-goals-shared";
+import { loadLeagueAt88, pairAt, type Mode, type GoalTotals } from "@/../scripts/ai-formation-goals-shared";
 
 interface Input { league: string; mode: Mode; matches: number; offset: number }
 

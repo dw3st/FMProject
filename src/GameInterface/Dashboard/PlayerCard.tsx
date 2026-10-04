@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
-import { ATTRIBUTE_LABELS } from "@/GameInterface/AttributeLabels";
-import type { AttributeId } from "@/GameInterface/AttributeLabels";
-import { getMainRole, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
+import { ATTRIBUTE_LABELS } from "@/Domain/attributes";
+import type { AttributeId } from "@/Domain/attributes";
+import { getMainRole } from "@/Domain/roles";
+import { MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
 import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
@@ -122,7 +123,6 @@ export function PlayerCard({
   ];
 
   const statGroups = mainRole === "GK" ? GK_STAT_GROUPS : STAT_GROUPS;
-  const paceStat = mainRole === "GK" ? player.stats.reflex : player.stats.speed;
 
   if (layout === "wide") {
     return (

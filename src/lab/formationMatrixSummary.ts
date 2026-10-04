@@ -87,7 +87,7 @@ export function addPair(a: PairRaw, b: PairRaw): PairRaw {
 }
 
 /** The same pair seen from the other side (y vs x). */
-export function flipPair(p: PairRaw): PairRaw {
+function flipPair(p: PairRaw): PairRaw {
   return { ...p, x: p.y, y: p.x, wins: p.losses, losses: p.wins, sideX: p.sideY, sideY: p.sideX };
 }
 

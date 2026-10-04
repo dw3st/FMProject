@@ -1,7 +1,3 @@
-Got it. I’ll keep it **clean, structured, and readable**, like the earlier FootballSim docs you asked for: clear sections, headings, and JSON/code only where needed.
-
----
-
 # Season Calendar Generation
 
 ## Purpose

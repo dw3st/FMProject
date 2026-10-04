@@ -1,3 +1,5 @@
+import { shuffle } from "@/Domain/rng";
+
 export interface DrawClub {
   id: string;
   country: string;
@@ -22,15 +24,6 @@ const GROUP_COUNT = 8;
  * keeps that proof under ~20ms while leaving a wide margin over what real draws need.
  */
 const STRICT_NODE_BUDGET = 20_000;
-
-function shuffle<T>(xs: readonly T[], rng: () => number): T[] {
-  const a = [...xs];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
-  }
-  return a;
-}
 
 /**
  * One DFS over all 32 clubs (pots in order, one club per pot per group, no two clubs of the same

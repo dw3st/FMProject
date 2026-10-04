@@ -9,6 +9,7 @@ import { competitionName } from "@/Domain/world/labels";
 import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { objectiveText } from "@/GameInterface/boardText";
+import { formatFee } from "@/Domain/money";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -124,13 +125,6 @@ function formatFullDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   if (Number.isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-}
-
-function formatFee(fee: number): string {
-  const m = fee / 1_000_000;
-  if (m >= 100) return `€${Math.round(m)}M`;
-  if (m >= 1) return `€${m.toFixed(1)}M`;
-  return `€${(fee / 1000).toFixed(0)}K`;
 }
 
 export function InboxScreen({ onClose }: { onClose?: () => void }) {

@@ -1,14 +1,15 @@
 import { RETIREMENT as R } from "@/Domain/retirement/retirementConfig";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { roleOf } from "@/Domain/contracts/freeAgents";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { overallAvg, weightedScore } from "@/Domain/playerRating";
 import { lineAverage } from "@/Domain/youth/youth";
 import { YOUTH } from "@/Domain/youth/youthConfig";
-import type { MainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
 import type {
   FreeAgent, PlayerStatsRecord, RetiredPlayer, RosterPlayer, Squad,
 } from "@/types/playerTypes";
+import { clamp } from "@/Domain/math";
+import { seedFrom } from "@/Domain/rng";
 
 /** Pure retirement + reborn model (`.claude/rules/game/retirement.md`). No I/O. */
 
@@ -16,7 +17,6 @@ const STAT_KEYS: (keyof PlayerStatsRecord)[] = [
   "passing", "vision", "finishing", "dribbling", "speed", "acceleration", "tackling",
   "pressing", "stamina", "heading", "strength", "reflex", "jump",
 ];
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const unit = (key: string) => seedFrom(key) / 4294967296;
 
 /** Retirement chance at `age` for a player at level percentile `pctl` (0 worst .. 1 best of his line). */
@@ -69,7 +69,7 @@ export function levelPercentile(sortedAsc: number[], value: number): number {
   return lo / sortedAsc.length;
 }
 
-export function toRetiredRecord(
+function toRetiredRecord(
   p: RosterPlayer, date: string, squadId: string, wasWorldClass: boolean,
   log?: { appearances: number; goals: number },
 ): RetiredPlayer {

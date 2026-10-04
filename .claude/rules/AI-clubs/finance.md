@@ -1,4 +1,4 @@
-Correct approach. Do **not** simulate full finances for AI clubs — it adds complexity without gameplay value.
+Do **not** simulate full finances for AI clubs — it adds complexity without gameplay value.
 
 You want **controlled, believable behavior**, not realism.
 
@@ -234,10 +234,8 @@ This gives:
 
 ---
 
-Next step (important):
-
-→ Define **promotion/relegation financial impact**
-This is where your system will really start to feel alive.
+Promotion/relegation financial impact: `applyTierFinanceChange` (`.claude/rules/game/membership.md`
+→ "Pirâmide e virada por país").
 
 ---
 

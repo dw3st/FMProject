@@ -1,6 +1,5 @@
-import { Player } from "@/Domain/Player";
-import type { MainRole } from "@/GameInterface/positionHelpers";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
+import { getMainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type { SellCandidate, TransferBudgetTier } from "@/types/transferMarketTypes";
 import { playerOverallRating, teamAvgRating } from "@/Domain/transfer/transferNeeds";

@@ -1,7 +1,6 @@
 {
   "common": {
     "continue": "Continue",
-    "back": "Back",
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
@@ -9,40 +8,19 @@
     "simulating": "Simulating...",
     "active": "Active",
     "comingSoon": "Coming soon",
-    "yes": "Yes",
-    "no": "No",
-    "confirm": "Confirm",
     "delete": "Delete",
-    "edit": "Edit",
-    "select": "Select",
     "search": "Search",
-    "filter": "Filter",
     "all": "All",
-    "none": "None",
     "total": "TOTAL",
     "today": "Today",
-    "yesterday": "Yesterday",
-    "tomorrow": "Tomorrow",
-    "minute_short": "min",
-    "minute_apostrophe": "'",
     "vs": "vs",
-    "and": "and",
-    "or": "or",
     "average": "Avg",
-    "market": "Market",
     "min": "Min",
     "max": "Max",
-    "load": "Load",
     "remove": "Remove",
     "broadcast": "Broadcast",
     "team": "Team",
-    "database": "Database",
-    "manager": "Manager",
-    "territory": "Territory",
-    "top": "Top",
     "season": "Season",
-    "club": "Club",
-    "finances": "Finances",
     "shots": "Shots",
     "passes": "Passes",
     "tackles": "Tackles",
@@ -67,7 +45,6 @@
     "teamStats": "TEAM STATS",
     "topRatings": "TOP RATINGS",
     "scorers": "SCORERS",
-    "appName": "FM PROJECT",
     "sentTo": "Sent to",
     "avgSkill": "Avg Skill",
     "heatmapMode": "Heatmap Mode",
@@ -113,14 +90,9 @@
   },
   "startScreen": {
     "newGame": "New Game",
-    "loadGame": "Load Game",
     "settings": "Settings",
     "savedGames": "Saved games",
-    "backButton": "Back",
     "noSavedGames": "No saved games found.",
-    "load": "Load",
-    "delete": "Delete",
-    "back": "Back",
     "deleteConfirmTitle": "Delete save?",
     "deleteConfirmBody": "This will permanently delete \"{{clubName}}\" ({{leagueName}}). This cannot be undone.",
     "deleteConfirmAction": "Delete save",
@@ -219,7 +191,6 @@
       "nl": "Dutch",
       "us": "American"
     },
-    "continue": "Continue",
     "createManagerTitle": "Create your manager",
     "managerName": "Manager Name",
     "enterName": "Enter your name...",
@@ -239,7 +210,6 @@
     "selectTerritoryDetail": "Select a territory to view details",
     "mapHint": "Click a highlighted country, or pick one from the list",
     "showMap": "World map",
-    "squadRating": "Squad Rating",
     "reputationLevel": {
       "1": "Local Outfit",
       "2": "Regional Side",
@@ -249,8 +219,6 @@
     },
     "managerLine": "Manager: {{name}} ({{country}})",
     "managerEmpty": "Manager not set",
-    "edit": "Edit",
-    "define": "Set up",
     "startWith": "Start with {{club}}",
     "stepOf": "Step {{n}} of 2",
     "managerSubtitle": "Who will take charge of the club.",
@@ -292,8 +260,7 @@
     "continueNextSeason": "Continue to Next Season",
     "2ndPlace": "2nd Place",
     "3rdPlace": "3rd Place",
-    "champion": "Champion",
-    "pts": "PTS"
+    "champion": "Champion"
   },
   "fired": {
     "youveFired": "You've Been Fired!",
@@ -319,7 +286,6 @@
     "noAchievements": "No titles"
   },
   "staff": {
-    "title": "Technical staff",
     "subtitle": "Three professionals shape development, recovery and scouting.",
     "loading": "Loading staff...",
     "loadFailed": "Could not load the staff.",
@@ -349,7 +315,6 @@
     }
   },
   "comingSoon": {
-    "comingSoonTitle": "Coming Soon",
     "comingSoon": "Coming Soon",
     "underDevelopment": "This feature is still being built. Check back later!",
     "stillBeingBuilt": "This feature is still being built. Check back later!",
@@ -359,8 +324,6 @@
     "formationDesc": "Drag players into position and create custom formations.",
     "finances": "Finances",
     "financesDesc": "Manage your club budget, sponsorships, and revenue streams.",
-    "staff": "Staff",
-    "staffDesc": "Hire coaches, physios, and scouts to improve your club.",
     "stats": "Stats",
     "statsDesc": "Deep-dive into player and team performance analytics."
   },
@@ -374,7 +337,6 @@
   },
   "nav": {
     "squad": "Squad",
-    "tactics": "Tactics",
     "formation": "Formation",
     "development": "Development",
     "finances": "Finances",
@@ -384,10 +346,8 @@
     "scout": "Scout",
     "stats": "Stats",
     "report": "Report",
-    "inbox": "Inbox",
     "settings": "Settings",
     "training": "Training",
-    "restDay": "Rest Day",
     "rest": "Rest",
     "matchDay": "Match",
     "main": "Main navigation",
@@ -396,12 +356,8 @@
     "dashboard": "Dashboard"
   },
   "settings": {
-    "title": "Settings",
-    "subtitle": "Configure your game preferences",
     "language": "Language",
     "languageDescription": "Choose the language used across the game.",
-    "english": "English",
-    "portugueseBrazil": "Português (Brasil)",
     "mainMenu": "Main Menu",
     "mainMenuDescription": "Return to the menu to load a different save."
   },
@@ -469,14 +425,6 @@
       }
     },
     "tacticalStyle": "Tactical Style",
-    "selectStyle": "Select tactical style",
-    "buildUp": "Build-up",
-    "pressing": "Pressing",
-    "defensiveLine": "Defensive Line",
-    "width": "Width",
-    "offsideTrap": "Offside Trap",
-    "strengths": "Strengths",
-    "weaknesses": "Weaknesses",
     "styles": {
       "counter_attack": {
         "label": "Counter Attack",
@@ -545,26 +493,6 @@
         ]
       }
     },
-    "buildUpStyles": {
-      "possession": "Possession",
-      "balanced": "Balanced",
-      "direct": "Direct"
-    },
-    "pressingStyles": {
-      "low_block": "Low Block",
-      "mid_block": "Mid Block",
-      "high_press": "High Press"
-    },
-    "defensiveLines": {
-      "deep": "Deep",
-      "normal": "Normal",
-      "high": "High"
-    },
-    "widths": {
-      "narrow": "Narrow",
-      "normal": "Normal",
-      "wide": "Wide"
-    },
     "assistantRotation": "Assistant picks by fitness",
     "assistantRotationHint": "Automatically rests tired starters before each match.",
     "setPieceTakers": {
@@ -595,16 +523,10 @@
       }
     },
     "title": "Formation",
-    "subtitle": "Formation & Tactics",
-    "subtitleTactics": "& Tactics",
     "subtitleHelp": "Formation defines where players operate; tactics define how they behave. Click Save to write to your game file.",
     "selectFormation": "Select Formation",
     "formationInfo": "Formation Info",
-    "formationPicker": "Formation Picker",
-    "autoFill": "Auto-fill",
     "autoPosition": "Auto Position",
-    "playerSwap": "Player swap",
-    "backToSquad": "Back to squad",
     "noFormations": "No formations loaded.",
     "saving": "Saving…",
     "saved": "Saved!",
@@ -638,82 +560,8 @@
     "suspendedMatches_one": "Suspended for the next match",
     "suspendedMatches_other": "Suspended for the next {{count}} matches"
   },
-  "attributes": {
-    "title": "Player attributes",
-    "groups": {
-      "technical": "Technical",
-      "mental": "Mental",
-      "physical": "Physical",
-      "gk": "GK"
-    },
-    "passing": {
-      "label": "Passing",
-      "description": "How accurately the player delivers short and medium passes."
-    },
-    "dribbling": {
-      "label": "Dribbling",
-      "description": "Skill at carrying the ball past opponents and beating them in 1v1s."
-    },
-    "finishing": {
-      "label": "Finishing",
-      "description": "Ability to convert chances into goals."
-    },
-    "vision": {
-      "label": "Vision",
-      "description": "Spotting attacking opportunities and choosing the right pass."
-    },
-    "pressing": {
-      "label": "Pressing",
-      "description": "Anticipation and aggression when chasing the ball."
-    },
-    "speed": {
-      "label": "Speed",
-      "description": "Top running speed across the pitch."
-    },
-    "acceleration": {
-      "label": "Acceleration",
-      "description": "How quickly the player reaches top speed."
-    },
-    "stamina": {
-      "label": "Stamina",
-      "description": "Energy reserves across a full match."
-    },
-    "strength": {
-      "label": "Strength",
-      "description": "Physical power in duels and challenges."
-    },
-    "tackling": {
-      "label": "Tackling",
-      "description": "Effectiveness of tackles and ball recoveries."
-    },
-    "reflex": {
-      "label": "Reflex",
-      "description": "Goalkeeper reactions to close-range shots."
-    },
-    "jump": {
-      "label": "Jump",
-      "description": "Goalkeeper reach when diving and leaping for crosses."
-    },
-    "heading": {
-      "label": "Heading",
-      "description": "Aerial duels and headed finishes."
-    }
-  },
   "roles": {
-    "main": {
-      "GK": "Goalkeeper",
-      "Defender": "Defender",
-      "Midfielder": "Midfielder",
-      "Forward": "Forward"
-    },
-    "abbr": {
-      "GK": "GK",
-      "Defender": "DEF",
-      "Midfielder": "MID",
-      "Forward": "FWD"
-    },
     "groups": {
-      "GK": "Goalkeepers",
       "Defender": "Defenders",
       "Midfielder": "Midfielders",
       "Forward": "Forwards"
@@ -793,28 +641,7 @@
       "CK": "Corners",
       "DFK": "Direct Free Kicks (goals)",
       "SPG": "Set-Piece Goals",
-      "POS": "Pos",
-      "NAME": "Name",
-      "AGE": "Age",
-      "AVG": "Avg",
-      "SALARY": "Salary",
-      "VALUE": "Value",
-      "RATING": "Rating"
-    },
-    "lab": {
-      "avgGoals": "Avg goals",
-      "avgXG": "Avg xG",
-      "avgShots": "Avg shots",
-      "avgAssists": "Avg assists",
-      "avgTackles": "Avg tackles",
-      "avgIntercept": "Avg intercept",
-      "dribblesWon": "Dribbles won",
-      "dribblesLost": "Dribbles lost",
-      "looseBallsWon": "Loose balls won",
-      "throughBalls": "Through balls",
-      "throughBallCompletion": "TB completion%",
-      "avgEndEnergy": "Avg end energy",
-      "avgFatigueSubs": "Fatigue subs"
+      "NAME": "Name"
     },
     "subbedOff": "Substituted off at {{minute}}'"
   },
@@ -823,7 +650,6 @@
     "shots": "Shots",
     "tackles": "Tackles",
     "interceptions": "Interceptions",
-    "venue": "Venue",
     "noActiveSave": "No active save loaded.",
     "play": "Play",
     "pause": "Pause",
@@ -1069,18 +895,13 @@
     ]
   },
   "transfers": {
-    "title": "Transfers",
     "incoming": "Incoming Transfers",
     "outgoing": "Outgoing Transfers",
     "makeOffer": "Make an offer",
-    "yourPlayer": "Your player",
     "complete": "Complete",
     "rejected": "Rejected",
-    "offerAccepted": "Offer accepted",
     "offerRejected": "Offer rejected",
     "fee": "Fee",
-    "wage": "Wage",
-    "contract": "Contract",
     "rejectReasons": {
       "squadDepth": "Squad depth is insufficient",
       "playerImportant": "Player is important to the team",
@@ -1107,8 +928,6 @@
     "totalEarned": "Total Earned",
     "netBalance": "Net Balance",
     "mySellList": {
-      "title": "My Sell List",
-      "listForSale": "List for sale",
       "listedForSale": "Listed for sale",
       "sellingPriority": "Selling priority",
       "loadingError": "Something went wrong loading your list.",
@@ -1125,8 +944,6 @@
     "worldTransfersCard": "AI and other clubs"
   },
   "inbox": {
-    "title": "Inbox",
-    "noMessages": "No messages yet.",
     "noMessagesInView": "No messages in this view.",
     "selectMessage": "Select a message to read it.",
     "loadingMessages": "Loading messages…",
@@ -1230,24 +1047,12 @@
     }
   },
   "finances": {
-    "alerts": "Financial Alerts",
     "warnings": {
       "negativeBudgetTitle": "Negative Budget",
-      "negativeBudget": "Your club is in debt. Consider selling players or reducing expenses.",
-      "heavyLossesTitle": "Heavy Estimated Losses",
-      "heavyLosses": "Projected weekly losses are significant. Review your squad's wage bill.",
-      "weeklyLossTitle": "Estimated Weekly Loss",
-      "weeklyLoss": "Expenses exceed revenue projections. Monitor closely.",
-      "highWagesTitle": "High Wage Bill",
-      "highWages": "Player salaries are {{ratio}}% of annual revenue. Consider offloading expensive players."
+      "negativeBudget": "Your club is in debt. Consider selling players or reducing expenses."
     }
   },
   "warnings": {
-    "finances": {
-      "inDebt": "Your club is in debt. Consider selling players or reducing expenses.",
-      "weeklyLosses": "Projected weekly losses are significant. Review your squad's wage bill.",
-      "expensesExceed": "Expenses exceed revenue projections. Monitor closely."
-    },
     "development": {
       "ageDecline": "Physical attributes declining due to age",
       "reduceLoad": "Consider reducing match load",
@@ -1256,18 +1061,8 @@
       "noMatchTime": "No match time — development stalled"
     },
     "errors": {
-      "loadFailed": "Failed to load",
-      "saveFailed": "Failed to save"
+      "loadFailed": "Failed to load"
     }
-  },
-  "squad": {
-    "title": "Squad",
-    "fit": "Fit",
-    "injured": "Injured",
-    "suspended": "Suspended",
-    "averageRating": "Avg rating",
-    "totalSalary": "Total salary",
-    "totalValue": "Total value"
   },
   "leagues": {
     "finances": {
@@ -1299,13 +1094,9 @@
       },
       "note": "AI clubs run on a budget model: tier and popularity set a weekly budget, a wage cap and a seasonal transfer budget. Your club uses the full financial system (see Finances)."
     },
-    "title": "Leagues",
     "table": "League Table",
     "fixtures": "Fixtures",
-    "results": "Results",
-    "position": "Pos",
     "club": "Club",
-    "played": "P",
     "won": "W",
     "drawn": "D",
     "lost": "L",
@@ -1396,19 +1187,10 @@
     }
   },
   "development": {
-    "title": "Development",
-    "subtitle": "Track your players' progress",
-    "trainingIntensity": "Training intensity",
-    "minEnergyToTrain": "Minimum energy to train",
     "statusTitle": "Status",
     "noConcerns": "No concerns at this time",
     "progressingExpected": "Development is progressing as expected",
     "warningsTitle": "Warnings",
-    "intensities": {
-      "low": "Low",
-      "normal": "Normal",
-      "high": "High"
-    },
     "attributesTitle": "Attributes",
     "attributesPrimary": "Primary",
     "attributesSecondary": "Secondary",
@@ -1416,12 +1198,6 @@
     "profileAge": "Age",
     "profilePhase": "Phase",
     "profileStatus": "Development Status",
-    "phaseLabels": {
-      "developing": "Developing",
-      "approachingPeak": "Approaching Peak",
-      "atPeak": "At Peak",
-      "declining": "Declining"
-    },
     "statusLabels": {
       "improving": "Improving",
       "stable": "Stable",
@@ -1486,38 +1262,10 @@
       "sevSevere": "Severe injury"
     },
     "squadTable": {
-      "noSquadData": "No squad data available.",
-      "pos": "Pos",
-      "name": "Name",
-      "age": "Age",
-      "avg": "OVR",
-      "energy": "Energy",
-      "phase": "Phase",
-      "train": "Train",
-      "moral": "Moral",
-      "salary": "Salary",
-      "value": "Value",
-      "goals": "G",
-      "assists": "A",
-      "rating": "Rating",
-      "bad": "Bad",
-      "poor": "Poor",
-      "ok": "OK",
-      "good": "Good",
-      "top": "Top",
-      "fit": "Fit",
-      "injured": "Injured",
-      "suspended": "Suspended",
-      "injuredDays": "Injured ({{severity}}) — {{days}}d left",
-      "injuredToday": "Injured ({{severity}}) — returns today",
       "sevLight": "light",
       "sevMedium": "medium",
-      "sevSevere": "severe",
-      "contract": "Contract",
-      "suspendedMatches_one": "Suspended for the next match",
-      "suspendedMatches_other": "Suspended for the next {{count}} matches"
+      "sevSevere": "severe"
     },
-    "assistsLabel": "assists",
     "clubSidebar": {
       "managerRank": "Manager ranking: #{{rank}}",
       "manager": "Manager",
@@ -1547,7 +1295,6 @@
       "players": "players",
       "fit": "Fit",
       "injured": "Injured",
-      "suspended": "Suspended",
       "injuredDays": "Injured ({{severity}}) — {{days}}d left",
       "injuredToday": "Injured ({{severity}}) — returns today",
       "sevLight": "light",
@@ -1558,7 +1305,6 @@
       "suspendedMatches_other": "Suspended for the next {{count}} matches"
     },
     "home": {
-      "title": "Dashboard",
       "nextMatch": "Next match",
       "lastResults": "Last 5",
       "noResults": "No matches played yet",
@@ -1646,13 +1392,10 @@
     "cancel": "Cancel"
   },
   "matchPreview": {
-    "title": "Match Preview",
     "venue": "Venue",
     "weather": "Weather",
     "kickoff": "Kickoff",
-    "kickoffTime": "20:00 GMT",
     "officials": "Officials",
-    "referee": "Referee",
     "startingXI": "Starting XI",
     "bench": "Bench",
     "substitutes": "Substitute",
@@ -1693,7 +1436,6 @@
     "suspendedReplaced": "{{out}} suspended, replaced by {{in}}"
   },
   "matchResult": {
-    "title": "Match result",
     "matchdayRound": "Matchday {{round}} • {{competition}}",
     "matchRatings": "Match ratings",
     "squadPerformance": "Squad performance",
@@ -1708,7 +1450,6 @@
     "weather": "Weather",
     "date": "Date",
     "officials": "Officials",
-    "back": "Back to dashboard",
     "yellowCards": "Yellow cards",
     "redCards": "Red cards",
     "cards": "Cards",
@@ -1808,18 +1549,11 @@
   "financesScreen": {
     "budget": "Budget",
     "weeklyProfitLoss": "Est. Weekly P/L",
-    "seasonRevenue": "Season Revenue",
-    "followers": "Followers",
     "revenueBreakdown": "Season Revenue",
-    "annualBasis": "Annual basis",
     "broadcasting": "Broadcasting",
-    "seasonPayment": "season payment",
     "commercial": "Commercial",
-    "stadium": "Stadium",
     "homeGames": "~{{count}} home games",
     "transfersIn": "Transfers In",
-    "playerSales": "player sales",
-    "noSales": "no sales",
     "seasonTotal": "Season Total",
     "expenses": "Expenses",
     "playerSalaries": "Player Salaries",
@@ -1827,25 +1561,6 @@
     "staffSalaries": "Technical Staff",
     "operational": "Operational",
     "transfersOut": "Transfers Out",
-    "playerPurchases": "player purchases",
-    "noPurchases": "no purchases",
-    "weeklyOutgoing": "Weekly outgoing",
-    "estWeeklyRevenue": "Est. Weekly Revenue",
-    "revenue": "Revenue",
-    "profit": "Profit",
-    "stadiumHeader": "Stadium",
-    "capacity": "Capacity",
-    "ticket": "Ticket",
-    "estAttendanceNextGame": "Est. Attendance next game",
-    "homeAway": "Home ~{{home}} Away ~{{away}}",
-    "formLastFive": "Form (last 5)",
-    "leaguePosition": "League position",
-    "fanBase": "Fan base",
-    "matchRevenueEst": "Match revenue est.",
-    "noStadiumData": "No stadium data",
-    "playMatchesToSeeAttendance": "Play matches to see attendance estimate.",
-    "expand": "Expand",
-    "comingSoon": "Coming soon",
     "loading": "Loading...",
     "gate": "Gate",
     "prize": "Prizes",
@@ -1882,7 +1597,6 @@
     "seasonBasis": "Season to date"
   },
   "developmentScreen": {
-    "playerDevelopment": "Player Development",
     "squad": "Squad",
     "searchPlayers": "Search players…",
     "noPlayersMatch": "No players match \"{{query}}\"",
@@ -1893,16 +1607,9 @@
       "approachingPeak": "Approaching Peak",
       "atPeak": "At Peak",
       "declining": "Declining"
-    },
-    "devStatuses": {
-      "improving": "improving",
-      "stable": "stable",
-      "declining": "declining"
     }
   },
   "scout": {
-    "title": "Scout",
-    "database": "Database",
     "allLeagues": "All leagues",
     "allNationalities": "All nationalities",
     "filters": {
@@ -1912,12 +1619,8 @@
       "searchByName": "Search by name...",
       "position": "Position",
       "ageRange": "Age Range",
-      "minMaxPlaceholder": "Min",
-      "maxPlaceholder": "Max",
       "league": "League",
       "nationality": "Nationality",
-      "allLeagues": "All leagues",
-      "allNationalities": "All nationalities",
       "forSaleOnly": "For Sale Only",
       "freeAgentsOnly": "Free agents only"
     },
@@ -1944,16 +1647,6 @@
       "offer": "Offer",
       "sign": "Sign",
       "signFree": "Sign as a free agent"
-    },
-    "statusBadges": {
-      "bad": "Bad",
-      "poor": "Poor",
-      "ok": "OK",
-      "good": "Good",
-      "top": "Top"
-    },
-    "screen": {
-      "database": "Database"
     }
   },
   "fastForward": {

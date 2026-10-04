@@ -1,4 +1,3 @@
-import type { AttributeId } from "@/GameInterface/AttributeLabels";
 import type { StaffRecord } from "@/Domain/staff/staffTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 
@@ -18,7 +17,7 @@ export interface PlayerStatsRecord {
   jump: number;
 }
 
-export interface PlayerProfile {
+interface PlayerProfile {
   summary: string;
   archetype: string;
 }
@@ -152,7 +151,7 @@ export interface ClubVenue {
   surface?: string;
 }
 
-export interface ClubCoach {
+interface ClubCoach {
   id: number;
   name: string;
   firstname?: string | null;
@@ -298,15 +297,6 @@ export interface LeagueData {
   source?: string;
 }
 
-export function isAttributeId(key: string): key is AttributeId {
-  return [
-    "passing", "vision", "finishing", "dribbling",
-    "speed", "acceleration", "tackling", "pressing",
-    "stamina", "heading", "strength",
-    "reflex", "jump",
-  ].includes(key);
-}
-
 /** A player released at the end of his contract, waiting for a club (`saves/{id}/freeAgents.json`). */
 export interface FreeAgent {
   player: RosterPlayer;
@@ -315,7 +305,7 @@ export interface FreeAgent {
 }
 
 /** Marks the academy player reborn from a retired world-class star (`.claude/rules/game/retirement.md`). */
-export interface RebornMark {
+interface RebornMark {
   fromId: string;
 }
 

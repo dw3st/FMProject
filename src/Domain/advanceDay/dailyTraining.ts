@@ -82,7 +82,7 @@ export interface TrainingPolicy {
 }
 
 /** One training-caused injury (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Treino"). */
-export interface NewTrainingInjury {
+interface NewTrainingInjury {
   playerId:   string;
   playerName: string;
   severity:   InjurySeverity;

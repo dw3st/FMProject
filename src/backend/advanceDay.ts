@@ -8,7 +8,6 @@ import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
 import type { FreeAgent, LeagueData, LeagueTeam, LeagueZone, Squad, StandingRow } from "@/types/playerTypes";
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
-import { addDaysIso, addYearsIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover } from "@/Domain/youth/youth";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
@@ -47,25 +46,23 @@ import {
 } from "@/Domain/boardFans/boardFans";
 import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
 import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
+import { addDays, addOneDay } from "@/Domain/dates";
 import {
-  addOneDay,
   buildMatchEvent,
   buildMatchEventFromRecording,
   buildQuickMatchEvent,
-  buildRestEvent,
-  buildTrainingEvent,
-  computeAdvanceDayMoney,
-  resolveSimMode,
-  resolveTrainingPolicy,
   type PlayedMatchRecording,
-  type PlayerHomeFixtureToday,
-} from "@/Domain/advanceDay";
+} from "@/Domain/advanceDay/matches";
+import { resolveSimMode } from "@/Domain/advanceDay/simMode";
+import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
+import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
+import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
-import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season";
+import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
 import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
@@ -80,7 +77,7 @@ import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
-import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
+import { logDebug, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
@@ -706,7 +703,7 @@ export async function advanceOneDay(
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
     if (playerSquadId) {
       const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
-      if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
+      if (leagueEnd && currentDate === addDays(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
         const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
         const ending = (humanSquad?.players ?? []).filter((p) => p.contract && p.contract.until <= leagueEnd);
         if (ending.length > 0) {
@@ -1846,7 +1843,7 @@ export async function advanceOneDay(
             prize: playerLeaguePrizeThisRollover,
           });
         }
-        debugLog(LOG_NS_SEASON, "Season rollover complete", {
+        logDebug(LOG_NS_SEASON, "Season rollover complete", {
           archivedSeasonYear: archiveYear,
           moves: plan.moves.length,
           playerMove: plan.playerMove,
@@ -2191,29 +2188,17 @@ export const advanceDayRoutes = {
     const activeLeagues = meta.activeLeagues ?? [];
     const playerLeagueState = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
 
-    // New path: update restDays in meta.activeLeagues
-    if (playerLeagueState) {
-      const current = new Set(playerLeagueState.restDays ?? []);
-      if (body.type === "rest") current.add(date!);
-      else current.delete(date!);
-      const restDays = Array.from(current).sort();
+    if (!playerLeagueState) return Response.json({ error: "season not found" }, { status: 404 });
 
-      const updatedLeagues = activeLeagues.map((l) =>
-        l.leagueSlug === meta.leagueSlug ? { ...l, restDays } : l,
-      );
-      await saveService.updateMeta(saveId!, { activeLeagues: updatedLeagues });
-      return Response.json({ restDays });
-    }
-
-    // Legacy fallback: update restDays in season.json
-    const season = await saveService.getSeason(saveId!);
-    if (!season) return Response.json({ error: "season not found" }, { status: 404 });
-
-    const current = new Set(season.restDays ?? []);
+    const current = new Set(playerLeagueState.restDays ?? []);
     if (body.type === "rest") current.add(date!);
     else current.delete(date!);
     const restDays = Array.from(current).sort();
-    await saveService.writeSeason(saveId!, { ...season, restDays });
+
+    const updatedLeagues = activeLeagues.map((l) =>
+      l.leagueSlug === meta.leagueSlug ? { ...l, restDays } : l,
+    );
+    await saveService.updateMeta(saveId!, { activeLeagues: updatedLeagues });
     return Response.json({ restDays });
   },
 };

@@ -76,7 +76,7 @@ export function zoneAt(x: number, y: number): Zone | null {
   return nearestZone(x, y);
 }
 
-export type CustomFormationIssue =
+type CustomFormationIssue =
   | "count"
   | "goalkeeper"
   | "outfield"

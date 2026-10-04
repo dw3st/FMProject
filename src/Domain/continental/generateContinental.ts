@@ -8,8 +8,7 @@ import type {
 } from "@/types/calendarTypes";
 import { CONTINENTAL } from "@/Domain/continental/competitions";
 import { drawGroups, type DrawClub, type DrawnGroup } from "@/Domain/continental/groupDraw";
-import { seedFrom } from "@/Domain/cups/cupIds";
-import { mulberry32 } from "@/Domain/rng";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 export interface GenerateContinentalArgs {
   slug: ContinentalSlug;

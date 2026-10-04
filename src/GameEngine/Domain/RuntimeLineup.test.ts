@@ -3,7 +3,6 @@ import {
   applyContinuousFatigue,
   applyStaminaCost,
   consumeEnergy,
-  getReductionFactor,
   getRuntimeLineup,
   normalizeGamePlayer,
   overallEnergyFactor,
@@ -40,18 +39,6 @@ const sampleBase: PlayerStats = {
     jump: 0.3,
   },
 };
-
-describe("getReductionFactor", () => {
-  test("no energy lost yields full multiplier", () => {
-    expect(getReductionFactor(0, 10)).toBe(1);
-  });
-
-  test("floors steps and applies 0.1 floor", () => {
-    expect(getReductionFactor(9, 10)).toBe(1);
-    expect(getReductionFactor(10, 10)).toBe(0.9);
-    expect(getReductionFactor(100, 10)).toBe(0.1);
-  });
-});
 
 describe("consumeEnergy", () => {
   test("higher stamina reduces move cost", () => {

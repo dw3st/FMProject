@@ -7,9 +7,6 @@
  * These helpers are the foundation for:
  *   • Tackle success modifiers (front / side / behind)
  *   • Interception eligibility (defender between ball and receiver)
- *   • Carry vs pass pressure detection
- *   • Marking behaviour (future)
- *   • Defensive positioning (future)
  *
  * Used by: ActionOutcomes.ts, gameState.ts
  */
@@ -23,54 +20,6 @@ export type RelativePosition = 'front' | 'side' | 'behind';
 // Minimal positional interfaces — avoids coupling to full GamePlayer type.
 interface Pos   { x: number; y: number }
 interface Actor { x: number; y: number; attackDir: 1 | -1 }
-
-// ── Interception corridor ─────────────────────────────────────────────────────
-
-/**
- * Maximum perpendicular distance (yards) from the pass line within which a
- * defender is considered close enough to intercept.
- *
- * Intentionally kept wide (4 yds) because the interceptionChance stat already
- * gates the probability. The spatial check is about validity, not difficulty.
- */
-/** @deprecated Pass a per-player corridor computed by playerInterceptionCorridor() instead. */
-// Kept only as a sentinel — do not use directly for game logic.
-// The effective corridor is now dynamic per player (see ActionOutcomes.ts).
-
-// ── Core helpers ──────────────────────────────────────────────────────────────
-
-/**
- * Dot product of the direction A→B with A's attack axis (±x direction).
- *
- * Returns a value in −1..1:
- *   > 0   — B is in front of A (in the direction A is attacking)
- *   < 0   — B is behind A
- *
- * Used as the basis for all positional classifications.
- */
-export function forwardDot(from: Actor, to: Pos): number {
-  const dx   = to.x - from.x;
-  const dy   = to.y - from.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist < 0.01) return 0;
-  // attackDir is the ±x unit component of the attack direction vector (0, ±1 on y ignored)
-  return (dx / dist) * from.attackDir;
-}
-
-/**
- * Classify B's position relative to A's movement direction.
- *
- * Thresholds per positional-awareness.md:
- *   dot > 0.5       → front   (< 60° from attack direction)
- *   −0.5 ≤ dot ≤ 0.5 → side
- *   dot < −0.5      → behind  (> 120° from attack direction)
- */
-export function classifyPosition(from: Actor, to: Pos): RelativePosition {
-  const dot = forwardDot(from, to);
-  if (dot >  0.5) return 'front';
-  if (dot < -0.5) return 'behind';
-  return 'side';
-}
 
 // ── Tackle angle modifier ─────────────────────────────────────────────────────
 
@@ -169,34 +118,4 @@ export function getInterceptionPerpDist(
   const perpDist = Math.sqrt((defender.x - nearX) ** 2 + (defender.y - nearY) ** 2);
 
   return perpDist <= corridor ? perpDist : null;
-}
-
-// ── Pressure detection ────────────────────────────────────────────────────────
-
-/**
- * Compute the intensity of forward pressure on a player (0 = none, 1 = very high).
- *
- * Only counts opponents that are ahead of the player (forwardDot > 0) and within
- * the given radius. Used by the decision tree to choose carry vs pass.
- *
- * @param player    The player under evaluation.
- * @param opponents All opponents.
- * @param radius    Awareness radius in yards.
- */
-export function getFrontPressure(
-  player:    Actor,
-  opponents: Pos[],
-  radius:    number,
-): number {
-  let pressure = 0;
-  for (const opp of opponents) {
-    const dx   = opp.x - player.x;
-    const dy   = opp.y - player.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist >= radius || dist < 0.01) continue;
-    const dot = (dx / dist) * player.attackDir;
-    if (dot <= 0) continue; // behind player — ignore
-    pressure = Math.max(pressure, dot * (1 - dist / radius));
-  }
-  return Math.min(1, pressure);
 }

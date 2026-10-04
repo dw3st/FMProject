@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
-import type { DisplayPlayer, StatusLevel } from "@/GameInterface/playerHelpers";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
+import type { StatusLevel } from "@/Domain/Player";
 import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";

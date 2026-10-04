@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Squad } from "@/types/playerTypes";
+import { rgbLuminance } from "@/Domain/color";
 
 /** Default kit hex when squad JSON has no colors (legacy / missing). */
 export const FALLBACK_HOME_ACCENT = "#22c55e";
@@ -11,9 +12,7 @@ export const DEFAULT_TEAM_KIT_HEX = {
   B: "#df3b2d",
 } as const;
 
-export type TeamKitSide = keyof typeof DEFAULT_TEAM_KIT_HEX;
-
-export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
   let h = hex.replace("#", "");
   if (h.length === 3) {
     h = h
@@ -29,7 +28,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   };
 }
 
-export function colorDistance(hex1: string, hex2: string): number {
+function colorDistance(hex1: string, hex2: string): number {
   const c1 = hexToRgb(hex1);
   const c2 = hexToRgb(hex2);
   const dr = c1.r - c2.r;
@@ -40,7 +39,7 @@ export function colorDistance(hex1: string, hex2: string): number {
 
 const MAX_RGB_DISTANCE = Math.sqrt(255 * 255 * 3);
 
-export function colorSimilarity(hex1: string, hex2: string): number {
+function colorSimilarity(hex1: string, hex2: string): number {
   const distance = colorDistance(hex1, hex2);
   return 1 - distance / MAX_RGB_DISTANCE;
 }
@@ -48,11 +47,7 @@ export function colorSimilarity(hex1: string, hex2: string): number {
 /** WCAG relative luminance (0 = black, 1 = white). */
 export function relativeLuminance(hex: string): number {
   const { r, g, b } = hexToRgb(hex);
-  const lin = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return rgbLuminance(r, g, b);
 }
 
 /** Minimum luminance for team-coloured text on the dark app background (~4.5:1 contrast). */
@@ -98,7 +93,6 @@ export function resolveMatchTeamKitColors(
   teamB: TeamKitInput | undefined,
 ): { teamA: string; teamB: string } {
   const primaryA = pickColor(teamA?.primary, DEFAULT_TEAM_KIT_HEX.A);
-  const secondaryA = pickColor(teamA?.secondary, primaryA);
   const primaryB = pickColor(teamB?.primary, DEFAULT_TEAM_KIT_HEX.B);
   const secondaryB = pickColor(teamB?.secondary, primaryB);
 

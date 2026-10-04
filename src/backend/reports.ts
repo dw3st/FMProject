@@ -17,8 +17,8 @@ import { isTesterEmail } from "@/backend/auth/testers";
 import { isSaveOwner } from "@/backend/auth/saveOwnership";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 
-export const REPORT_TYPES = ["bug", "improvement", "tweak"] as const;
-export type ReportType = (typeof REPORT_TYPES)[number];
+const REPORT_TYPES = ["bug", "improvement", "tweak"] as const;
+type ReportType = (typeof REPORT_TYPES)[number];
 
 const DESCRIPTION_MIN = 5;
 const DESCRIPTION_MAX = 2000;

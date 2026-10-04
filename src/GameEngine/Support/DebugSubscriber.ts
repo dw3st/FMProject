@@ -13,7 +13,7 @@
  */
 
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
-import { debugLog } from '@/GameEngine/Suport/DebugLog';
+import { debugLog } from '@/GameEngine/Support/DebugLog';
 import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import type { GameState } from '@/GameEngine/types';
 

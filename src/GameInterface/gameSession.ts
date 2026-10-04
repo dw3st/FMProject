@@ -67,8 +67,7 @@ export function loadSession(): GameSession | null {
     if (parsed.tactical_style == null) parsed.tactical_style = DEFAULT_TACTICAL_STYLE;
     if (parsed.min_energy_to_train == null) parsed.min_energy_to_train = DEFAULT_MIN_ENERGY_TO_TRAIN;
     if (parsed.training_intensity == null) parsed.training_intensity = DEFAULT_TRAINING_INTENSITY;
-    // Migrate old sessions that stored clubMoney instead of budget
-    if (parsed.budget == null) parsed.budget = (parsed as Record<string, unknown>).clubMoney ?? 0;
+    if (parsed.budget == null) parsed.budget = 0;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     return parsed as unknown as GameSession;
   } catch {
@@ -82,23 +81,8 @@ export function updateSessionCurrentDate(currentDate: string) {
   saveSession({ ...session, currentDate });
 }
 
-export function updateSessionBudget(budget: number) {
-  const session = loadSession();
-  if (!session) return;
-  saveSession({ ...session, budget });
-}
-
-export function clearSession() {
+function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
-}
-
-export function requireSession(): GameSession {
-  const session = loadSession();
-  if (!session) {
-    window.location.href = "/start";
-    throw new Error("No active game session");
-  }
-  return session;
 }
 
 export async function createGameSave(data: {
@@ -200,15 +184,6 @@ export async function saveFormationAndTactics(
   };
   saveSession(updated);
   return updated;
-}
-
-/** Persist current simulation date ("YYYY-MM-DD") to the save file. */
-export async function updateSaveCurrentDate(saveId: string, currentDate: string): Promise<void> {
-  await fetch(`/api/saves/${saveId}`, {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ currentDate }),
-  });
 }
 
 /** Persist training policy (rest-day sessions for your club). */

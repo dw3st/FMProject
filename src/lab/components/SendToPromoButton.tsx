@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Send, Check, X } from "lucide-react";
+import { Icon } from "@/GameInterface/Icons";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { saveCustomScenario } from "@/lab/pages/promo/scenarios";
 import type { GameState } from "@/GameEngine/types";
@@ -81,7 +81,7 @@ export function SendToPromoButton() {
         className="card-arcade border-glow glow-primary-sm rounded-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:scale-[1.03] active:scale-[0.98] transition-transform"
         title="Capture current engine state and open /promo with it"
       >
-        <Send className="w-3.5 h-3.5 text-primary" />
+        <Icon name="send" strokeWidth={2} className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-display font-black uppercase tracking-[0.2em] text-primary glow-text">
           Send to /promo
         </span>
@@ -97,9 +97,9 @@ export function SendToPromoButton() {
           }
         >
           {flash.kind === "ok" ? (
-            <Check className="w-3 h-3" />
+            <Icon name="check" strokeWidth={2} className="w-3 h-3" />
           ) : (
-            <X className="w-3 h-3" />
+            <Icon name="close" strokeWidth={2} className="w-3 h-3" />
           )}
           <span className="text-[10px] uppercase tracking-widest font-display font-bold">
             {flash.msg}

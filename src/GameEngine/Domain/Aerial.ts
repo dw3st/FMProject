@@ -13,6 +13,7 @@
 import type { GamePlayer } from '@/GameEngine/types';
 import { AERIAL_CONFIG as A } from '@/GameEngine/Configs/AerialConfig';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
+import { clamp } from '@/Domain/math';
 
 const CENTRE_Y = PITCH_WIDTH / 2;
 
@@ -54,7 +55,7 @@ export interface LongBallTarget {
  * within LONG_BALL_PRESSURE_RADIUS) and the share of his short options that are marked (no short
  * option at all = 1).
  */
-export function longBallPressure(holder: GamePlayer, allPlayers: GamePlayer[]): number {
+function longBallPressure(holder: GamePlayer, allPlayers: GamePlayer[]): number {
   const opponents = allPlayers.filter(p => p.team !== holder.team && p.recoveryTime <= 0);
   let nearest = Infinity;
   for (const o of opponents) nearest = Math.min(nearest, Math.hypot(o.x - holder.x, o.y - holder.y));
@@ -67,8 +68,6 @@ export function longBallPressure(holder: GamePlayer, allPlayers: GamePlayer[]): 
     opponents.some(o => Math.hypot(o.x - m.x, o.y - m.y) <= A.LONG_BALL_SHORT_OPEN_RADIUS)).length;
   return Math.max(onHolder, marked / short.length);
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Goal line the player attacks. */
 function attackGoalX(p: Pick<GamePlayer, 'attackDir'>): number {
@@ -128,7 +127,7 @@ export function headingOf(p: GamePlayer): number {
 }
 
 /** Jump ability (0..1); 0.5 when a snapshot predates the field. */
-export function jumpOf(p: GamePlayer): number {
+function jumpOf(p: GamePlayer): number {
   return p.runtimeStats.withoutBall.jump ?? 0.5;
 }
 

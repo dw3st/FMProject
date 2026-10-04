@@ -23,7 +23,7 @@
  */
 
 /** Target real-ms between pulses. */
-export const SIM_CLOCK_PULSE_MS = 100;
+const SIM_CLOCK_PULSE_MS = 100;
 
 export interface SimClockHandle {
   /** Stops the clock and releases the Worker/interval. Safe to call more than once. */

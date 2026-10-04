@@ -14,7 +14,7 @@ import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { Player } from "@/Domain/Player";
 
 /** Fitness under this is flagged on the dashboard (same threshold as the match preview warning). */
-export const LOW_FITNESS_THRESHOLD = 70;
+const LOW_FITNESS_THRESHOLD = 70;
 
 export type FormResult = "W" | "D" | "L";
 
@@ -30,7 +30,7 @@ export function nextFixture(fixtures: Fixture[], clubId: string, today: string):
 }
 
 /** Result of one played fixture from the club's side (score after extra time; a shootout is a draw). */
-export function resultFor(f: Fixture, clubId: string): FormResult | null {
+function resultFor(f: Fixture, clubId: string): FormResult | null {
   if (!f.played || !f.result) return null;
   const mine = f.home === clubId ? f.result.home : f.result.away;
   const theirs = f.home === clubId ? f.result.away : f.result.home;
@@ -84,7 +84,7 @@ export type AttentionItem =
   | { kind: "youthIntake"; count: number };
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
-export const ATTENTION_GROUP_AFTER = 3;
+const ATTENTION_GROUP_AFTER = 3;
 
 /**
  * What needs the manager's attention today, most urgent first: injuries, bans, tired players,

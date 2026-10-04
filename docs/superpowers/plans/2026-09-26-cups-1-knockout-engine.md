@@ -44,7 +44,7 @@ não criou.
 | `src/GameInterface/buildPlayedMatchRecording.ts` | copia o `decider` |
 | `src/GameInterface/ScoreBar.tsx`, `MatchOverlay.tsx`, `MatchScreen.tsx`, `StatsPanel.tsx` | relógio da prorrogação, overlay, faixa de pênaltis |
 | `src/GameInterface/Components/PenaltyShootoutStrip.tsx` | **novo** — bolinhas por cobrança |
-| `src/GameEngine/Suport/TestCases.ts`, `src/GameInterface/TestScreen.tsx`, `src/GraficsEngine/PixiPitch.tsx`, `src/GameInterface/QuickSimPanel.tsx` | superfícies do `/test` |
+| `src/GameEngine/Support/TestCases.ts`, `src/GameInterface/TestScreen.tsx`, `src/GraficsEngine/PixiPitch.tsx`, `src/GameInterface/QuickSimPanel.tsx` | superfícies do `/test` |
 | `src/lab/types.ts`, `balanceWorker.ts`, `scenarioRunner.ts`, `components/PairDetail.tsx`, `components/ScenarioBuilder.tsx` | superfícies do `/lab` |
 | `src/i18n/locales/en.json`, `pt-BR.json` | textos |
 | `.claude/rules/match-flow.md`, `.claude/rules/game-engine/shot-and-save.md` | documentação |
@@ -1525,7 +1525,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 11: `/test` — cenário, fim de período e quickSim mata-mata
 
 **Files:**
-- Modify: `src/GameEngine/Suport/TestCases.ts` (logo depois do cenário `'11v11-classic'`)
+- Modify: `src/GameEngine/Support/TestCases.ts` (logo depois do cenário `'11v11-classic'`)
 - Modify: `src/GraficsEngine/PixiPitch.tsx` (~linha 1097, bloco `triggerPhase`)
 - Modify: `src/GameInterface/TestScreen.tsx` (~linha 1024, "Phase triggers")
 - Modify: `src/GameInterface/QuickSimPanel.tsx`
@@ -1637,7 +1637,7 @@ Expected: sem erros.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/GameEngine/Suport/TestCases.ts src/GraficsEngine/PixiPitch.tsx src/GameInterface/TestScreen.tsx src/GameInterface/QuickSimPanel.tsx
+git add src/GameEngine/Support/TestCases.ts src/GraficsEngine/PixiPitch.tsx src/GameInterface/TestScreen.tsx src/GameInterface/QuickSimPanel.tsx
 git commit -m "feat(test): knockout scenario, end-period trigger, shootout debug, quickSim knockout
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"

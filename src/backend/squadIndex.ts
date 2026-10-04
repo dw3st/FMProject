@@ -1,7 +1,7 @@
 import type { SquadFile } from "@/backend/dal/ISaveDAL";
 import type { LeagueTeam } from "@/types/playerTypes";
 
-export interface SquadIndexEntry {
+interface SquadIndexEntry {
   squadId: string;
   leagueSlug: string;
   /** File stem the squad is stored under (what readSquad/writeSquad address). */
@@ -12,7 +12,7 @@ export interface SquadIndexEntry {
 }
 
 /** A squadId found in more than one file: the entry the index kept and the ones it dropped. */
-export interface SquadIndexDuplicate {
+interface SquadIndexDuplicate {
   squadId: string;
   kept: { leagueSlug: string; stem: string };
   dropped: { leagueSlug: string; stem: string }[];

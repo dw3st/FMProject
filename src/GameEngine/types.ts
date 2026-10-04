@@ -72,7 +72,7 @@ export type MatchPhase =
   | 'matchEnd';
 
 /** One kick of a penalty shootout, in engine ids. */
-export interface ShootoutKick {
+interface ShootoutKick {
   team: TeamId;
   takerId: number;
   keeperId: number | null;
@@ -103,7 +103,7 @@ export interface KnockoutDecider {
 // ── Set pieces ────────────────────────────────────────────────────────────────
 
 /** Restart types currently modelled as a set-piece freeze. */
-export type SetPieceType =
+type SetPieceType =
   | 'kickoff'
   | 'offside_fk'
   | 'goal_kick'
@@ -148,14 +148,13 @@ export interface SetPieceTakers { corners?: string; freeKicks?: string; penaltie
 // ── Player stats ────────────────────────────────────────────────────────────
 
 /** Stats that govern decisions when this player has the ball. */
-export interface WithBallStats {
+interface WithBallStats {
   /** 0..1 — shot accuracy spread factor (1 = tight, 0 = wild). */
   shootAccuracy: number;
   /** Yards/second when carrying the ball forward. */
   carrySpeed: number;
   /** Yards ahead scanned when evaluating forward carry lanes. */
   carryVision: number;
-  /** 0..1 — per-reconsider probability of continuing a carry vs switching to pass. */
   /** 0..1 normalised speed — improves value of open forward carry lanes. */
   speed: number;
   /** 0..1 normalised acceleration — helps beat close defenders in short bursts. */
@@ -172,25 +171,8 @@ export interface WithBallStats {
   strength: number;
 }
 
-/** Carry lane score breakdown — returned by evaluateCarryLane for debugging / tuning. */
-export interface CarryLaneScore {
-  dirX: number; dirY: number;
-  targetX: number; targetY: number;
-  clearanceScore: number;
-  progressScore: number;
-  angleScore: number;
-  crowdPenalty: number;
-  roleBias: number;
-  speedBonus: number;
-  accelerationBonus: number;
-  visionBonus: number;
-  pressurePenalty: number;
-  baseScore: number;
-  totalScore: number;
-}
-
 /** Stats that govern decisions when this player does NOT have the ball. */
-export interface WithoutBallStats {
+interface WithoutBallStats {
   /** Base yards for press intent; team pressing_style adds ±4 in defensive positioning. */
   pressRange: number;
   /** Base sprint speed in yards/second while pressing (before acceleration burst). */
@@ -483,7 +465,7 @@ export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
  * `state.pass` is null during this phase. `ballHolderId` continues to reference
  * the last toucher (the passer) for stat attribution and team-with-ball checks.
  */
-export interface LooseBallState {
+interface LooseBallState {
   /** Where the ball is right now (yards). Updated each tick when velocity > 0. */
   x: number;
   y: number;

@@ -24,7 +24,7 @@ import { initStats, getTeamStats } from "@/GameEngine/Domain/Statistics";
 import { initRatings } from "@/GameEngine/Domain/PlayerRating";
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from "@/GameEngine/Domain/AiSubstitution";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
-import { setDebugMode } from "@/GameEngine/Suport/DebugLog";
+import { setDebugMode } from "@/GameEngine/Support/DebugLog";
 import { autoLineupForFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
 import { scorePassToReceiverBreakdown } from "@/GameEngine/Domain/PassLanes";

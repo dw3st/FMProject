@@ -13,7 +13,7 @@ import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { aiMatchFormation, autoLineupForFormationWithFitness, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { mulberry32 } from "@/Domain/rng";
-import { loadLeagueAt88, pairAt, type GoalTotals, type Mode } from "./ai-formation-goals-shared";
+import { loadLeagueAt88, pairAt, type GoalTotals, type Mode } from "@/../scripts/ai-formation-goals-shared";
 
 const args = process.argv.slice(2);
 const arg = (f: string, d: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? d : d; };

@@ -38,8 +38,8 @@ import {
   type Scenario,
   DEFAULT_SCENARIO_ID,
   getScenario,
-} from "./scenarios";
-import { ScenarioEditor } from "./ScenarioEditor";
+} from "@/lab/pages/promo/scenarios";
+import { ScenarioEditor } from "@/lab/pages/promo/ScenarioEditor";
 
 // Real Madrid + Barcelona kit colors come from the scenario's _meta.
 const FALLBACK_HOME = { primary: "#FFFFFF", secondary: "#FEBE10", name: "Real Madrid" };

@@ -22,8 +22,8 @@ export interface CompetitionRankings {
 /** Competition slug of the world-wide ranking: every league of the world combined (league games only). */
 export const ALL_COMPETITIONS = "all";
 
-export const RANKING_SIZE = 20;
-export const MIN_RATED_GAMES = 5;
+const RANKING_SIZE = 20;
+const MIN_RATED_GAMES = 5;
 
 interface Counts { appearances: number; goals: number; assists: number }
 

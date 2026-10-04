@@ -6,7 +6,7 @@ import { createGameSave } from "@/GameInterface/gameSession";
 import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { formatEuros } from "@/GameInterface/Components/ClubFinancesTable";
+import { formatEurosDetailed } from "@/Domain/money";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { Button } from "@/GameInterface/ui/Button";
@@ -544,12 +544,12 @@ function ClubProfilePanel({ club, profile }: { club: LeagueTeam; profile: ClubPr
           <dl className="m-0 flex flex-col gap-1 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">{t("newGame.annualRevenue")}</dt>
-              <dd className="m-0 tabular-nums">{formatEuros(profile.annualRevenue)}</dd>
+              <dd className="m-0 tabular-nums">{formatEurosDetailed(profile.annualRevenue)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">{t("newGame.weeklyWages")}</dt>
               <dd className="m-0 tabular-nums">
-                {formatEuros(profile.weeklyWages)}
+                {formatEurosDetailed(profile.weeklyWages)}
                 {t("newGame.perWeek")}
               </dd>
             </div>

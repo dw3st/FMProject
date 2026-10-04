@@ -3,10 +3,10 @@ import {
   collectNationalities, collectSellListedIds, filterScoutPlayers, mapSquadsToScoutPlayers, paginate,
   runScoutQuery, sortScoutPlayers,
 } from "@/Domain/scout/scoutQuery";
-import { createDefaultScoutFilters, type ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { createDefaultScoutFilters, type ScoutFilterState } from "@/Domain/scout/scoutFilterState";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
+import { ATTRIBUTE_LIST } from "@/Domain/attributes";
+import { getMainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, Squad } from "@/types/playerTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 
@@ -155,15 +155,15 @@ describe("helpers", () => {
       .toEqual(["Brazil", "Spain"]);
   });
 
-  test("mapSquadsToScoutPlayers resolves league/club slugs from the squad id", () => {
+  test("mapSquadsToScoutPlayers takes the league and club slugs from the squad", () => {
     const squad = {
-      id: "premier_league_arsenal", name: "Arsenal", country: "England",
+      id: "42", leagueSlug: "premier_league", slug: "arsenal", name: "Arsenal", country: "England",
       players: [{
         id: "x1", name: "Saka", age: 22, positions: ["RW"], stats: STATS(7),
         profile: { summary: "", archetype: "" },
       }],
     } as unknown as Squad;
-    const [row] = mapSquadsToScoutPlayers([squad], ["premier_league", "premier"]);
+    const [row] = mapSquadsToScoutPlayers([squad]);
     expect(row).toMatchObject({ id: "x1", club: "Arsenal", leagueSlug: "premier_league", clubSlug: "arsenal" });
   });
 
