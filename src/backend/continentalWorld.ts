@@ -33,7 +33,7 @@ const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 let _countriesCache: Record<string, CountryEntry> | null = null;
 
 /** World countries catalog (continent, iso2, ...), keyed by leagueData `country` name. */
-async function getCountries(): Promise<Record<string, CountryEntry>> {
+export async function getCountries(): Promise<Record<string, CountryEntry>> {
   if (_countriesCache) return _countriesCache;
   const file = Bun.file(`${DATA_DIR}/countries.json`);
   _countriesCache = (await file.exists()) ? ((await file.json()) as Record<string, CountryEntry>) : {};

@@ -40,7 +40,8 @@ function formatWeekLabel(weekStart: string) {
 
 const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in"];
 const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "operational", "transfer_out"];
-const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS];
+// `club_change` (the manager changed club) is a balance transfer, not income or expense.
+const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change"];
 
 const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   broadcasting: { icon: "broadcast", labelKey: "financesScreen.broadcasting" },
@@ -52,6 +53,7 @@ const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   staff: { icon: "staff", labelKey: "financesScreen.staffSalaries" },
   operational: { icon: "building", labelKey: "financesScreen.operational" },
   transfer_out: { icon: "arrow-up-right", labelKey: "financesScreen.transfersOut" },
+  club_change: { icon: "building", labelKey: "financesScreen.clubChange" },
 };
 
 function fixtureGateKind(competitionSlug: string): GateKind {

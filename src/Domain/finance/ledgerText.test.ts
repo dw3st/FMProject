@@ -12,6 +12,11 @@ describe("describeLedgerEntry", () => {
     expect(describeLedgerEntry({ kind: "transfer_out", ref: { clubName: "Roma" } })).toEqual({ key: "transferOut", club: "Roma" });
     expect(describeLedgerEntry({ kind: "transfer_in", ref: { opponentId: "x" } })).toBeNull();
   });
+  test("club change: leaving and arriving", () => {
+    expect(describeLedgerEntry({ kind: "club_change", ref: { stage: "leave", clubName: "Leeds" } })).toEqual({ key: "clubLeave", club: "Leeds" });
+    expect(describeLedgerEntry({ kind: "club_change", ref: { stage: "arrive", clubName: "Roma" } })).toEqual({ key: "clubArrive", club: "Roma" });
+    expect(describeLedgerEntry({ kind: "club_change" })).toBeNull();
+  });
   test("league prize by position", () => {
     expect(describeLedgerEntry({ kind: "prize", ref: { competition: "premier_league", position: 3 } }))
       .toEqual({ key: "leaguePrize", competition: "premier_league", position: 3 });

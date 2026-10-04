@@ -217,3 +217,25 @@ export function processYouthRollover(args: {
   }
   return { squad: current, intake, autoReleased: [], promoted };
 }
+
+/**
+ * The human club becomes an AI club (`.claude/rules/game/jobs.md`): its academy follows the AI rule —
+ * the best 1-2 are promoted into the squad (<= 30, wage cap permitting), the rest leave (free agents).
+ */
+export function academyToAi(squad: Squad): { squad: Squad; promoted: RosterPlayer[]; released: RosterPlayer[] } {
+  const youth = squad.youth ?? [];
+  const { youth: _, ...base } = squad;
+  const room = MAX_SQUAD - base.players.length;
+  const want = base.players.length >= Y.AI_PROMOTE_FULL_SQUAD_ONE ? 1 : Y.AI_PROMOTE_MAX;
+  const ranked = [...youth].sort((a, b) => overallAvg(b) - overallAvg(a));
+  const promoted: RosterPlayer[] = [];
+  let current: Squad = base;
+  for (const p of ranked) {
+    if (promoted.length >= Math.min(want, room)) break;
+    if (!passesWageGate(aiClubFinance(current), p.contract?.wage ?? 0, 0)) continue;
+    promoted.push(p);
+    current = { ...current, players: [...current.players, p] };
+  }
+  const kept = new Set(promoted.map((p) => p.id));
+  return { squad: current, promoted, released: youth.filter((p) => !kept.has(p.id)) };
+}
