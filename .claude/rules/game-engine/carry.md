@@ -1,4 +1,4 @@
-Below is a **condensed business-rules document** describing how carry decisions work in the engine. It explains the system behavior and design logic rather than implementation steps.
+How carry decisions work in the engine: system behavior and design logic, not implementation steps.
 
 ---
 

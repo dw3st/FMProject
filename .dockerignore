@@ -3,7 +3,6 @@ dist
 .env*
 debug
 data_process
-promo-video
 results.json
 .claude
 .idea

@@ -1,9 +1,6 @@
-Below is the **final structured result** for the **Passing system** using the format you defined:
-
-1. **Imperative rules (business logic / source of truth)**
-2. **Implementation guide (config + formulas + minimal guidance)**
-
-This document intentionally focuses on **decision logic**, not on full positioning or run-generation, which will be discussed separately.
+Two parts: imperative rules (business logic, source of truth) and an implementation guide (config,
+formulas, minimal guidance). This covers **decision logic**; positioning and runs live in
+`attack-position.md` and `offball.md`.
 
 ---
 
@@ -447,17 +444,6 @@ The passing system must remain:
 * predictable for tuning
 
 All scoring weights must remain configurable parameters to allow gameplay balancing without rewriting the decision logic.
-
----
-
-The **next design session should focus on Positioning**, because that system will strongly influence:
-
-* attacking runs
-* through balls
-* passing opportunities
-* defensive shape
-
-Improving positioning will amplify the effectiveness of both **carry and passing systems**.
 
 ---
 

@@ -1,9 +1,3 @@
-Understood. Below is a **complete, structured resume** of the Player Development system, ready for implementation.
-
-No unnecessary complexity, all parts connected.
-
----
-
 # Feature: Player Development System
 
 ## 1. Core Principles

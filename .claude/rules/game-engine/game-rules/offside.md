@@ -1,9 +1,5 @@
-Below is the **Offside Rule document** following the same structure used in your engine design documents.
-
-1. **Imperative Rules (business rules / source of truth)**
-2. **Implementation Guide (config + formulas + minimal guidance)**
-
-This document defines **how offside is enforced**, not how attackers behave relative to it. Attacker awareness will be implemented later.
+Two parts: imperative rules (business rules, source of truth) and an implementation guide. This
+document defines **how offside is enforced**, not how attackers behave relative to it. Attacker awareness will be implemented later.
 
 ---
 

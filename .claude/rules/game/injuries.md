@@ -227,10 +227,10 @@ já recalibrado do motor).
 ## 6. Telas
 
 - **Elenco** (`SquadRosterTable.tsx`, `Dashboard/PlayerCard.tsx`):
-  status "lesionado" (`playerHelpers.ts` → `PlayerRow.status === "injured"`, já existia o
+  status "lesionado" (`Domain/scout/displayPlayer.ts` → `DisplayPlayer.status === "injured"`, já existia o
   indicador de fôlego/suspensão; ver `.claude/rules/game/fitness.md`), com gravidade (`sev{Light,
   Medium,Severe}`) e dias para voltar (`injury.daysLeft`, calculado por `daysBetween(currentDate,
-  returnDate)` em `playerHelpers.ts`).
+  returnDate)` em `displayPlayer.ts`).
 - **Formação** (`FormationScreen.tsx`): jogador lesionado não pode ser clicado/assinalado a um slot
   (`isInjured(player, currentDate)` bloqueia), com opacidade reduzida e um aviso da data de volta
   (`formations.injuredUntil`).

@@ -98,7 +98,7 @@ onde os efeitos de carga saturam:
   abaixo). quickSim: multiplica o desgaste por linha (ver "quickSim" abaixo).
 
 O ícone de carga alta na UI (`LoadIndicator`) acende a partir de 70% de `LOAD_HIGH`
-(`HIGH_LOAD_THRESHOLD`, `src/GameInterface/playerHelpers.ts`).
+(`isHighLoad`, `src/GameInterface/playerHelpers.ts`).
 
 ### Energia de início comprimida (`matchStartEnergy`)
 

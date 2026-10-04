@@ -1,7 +1,3 @@
-Good. That is the right call. Keep set pieces purely **positional** for now and let your existing decision system take over after the first touch.
-
----
-
 # Set Pieces — Simplified (Position Only)
 
 ## 1. Core Rule
@@ -177,21 +173,6 @@ This gives you:
 * Easy tuning per formation
 * No premature complexity
 * Compatible with your future decision system (pass/carry/commitment)
-
----
-
-## 10. Next Step (When Ready)
-
-After this is stable, the next logical layer is:
-
-* **Taker decision (short vs long vs cross)**
-* Based on your unified decision + commitment system
-
----
-
-If you want, next we can define:
-
-**how to auto-generate these layouts from a formation**, so you don’t manually place every role.
 
 ---
 

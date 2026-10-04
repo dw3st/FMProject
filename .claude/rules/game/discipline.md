@@ -30,7 +30,7 @@ está em `.claude/rules/game-engine/fouls.md`.
 | `src/Domain/advanceDay/matches.ts` | `finalizeSquadsAfterMatch`: cumpre, contabiliza cartões, devolve `suspensionsApplied`/`suspensionsServed` |
 | `src/Domain/lineupHelpers.ts` | `eligiblePool` e `replaceUnavailableStarters` (antes `replaceInjuredStarters`) usam `isUnavailable`; `InjuredReplacement.reason` = `injured`/`suspended` |
 | `src/GameInterface/MatchScreen.tsx`, `FormationScreen.tsx` | Suspenso fora do elenco da partida e bloqueado na escalação (selo "Suspenso") |
-| `src/GameInterface/playerHelpers.ts`, `Components/SuspendedBadge.tsx` | `PlayerRow.status = "suspended"` + `suspendedMatches`; selo no elenco, na ficha e no cartão |
+| `src/Domain/scout/displayPlayer.ts`, `Components/SuspendedBadge.tsx` | `DisplayPlayer.status = "suspended"` + `suspendedMatches`; selo no elenco, na ficha e no cartão |
 | `src/types/inboxTypes.ts`, `src/Domain/inbox/inboxEvents.ts` | Inbox: categoria `injury`, `kind: "suspended"` (`matches`) |
 | `src/backend/advanceDay.ts` | Junta `suspensionsApplied` em `injuryInboxEvents`, emitido depois do `clearInbox` como as lesões |
 | `src/Domain/advanceDay/quickSim.ts` + `QuickSimConfig.ts` | `rollDiscipline` (ver abaixo) |

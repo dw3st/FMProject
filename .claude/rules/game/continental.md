@@ -523,9 +523,8 @@ Categoria nova em `InboxCategory` (`src/types/inboxTypes.ts`): `ContinentalInbox
 (`src/Domain/inbox/inboxEvents.ts`) monta a mensagem no molde de `buildCupMessage`; sujeito/corpo em
 inglês (fallback), a tela traduz de verdade com `inbox.continental.*` (en/pt-BR) + `competitionName`
 assim que o catálogo de ligas carrega. `InboxScreen.tsx` usa o ícone `globe` (via a abstração
-`Icon`, não `lucide-react` direto — corrigido no commit `d4e0a67`: o import inicial usava `Globe`
-de `lucide-react` diretamente, quebrando a regra de `.claude/rules/frontend.md` de que só
-`Icons.tsx` importa de `iconoir-react`) e `ContinentalBody` para o corpo detalhado de cada `kind`.
+`Icon`; só `Icons.tsx` importa de `lucide-react`, ver `.claude/rules/frontend.md`) e
+`ContinentalBody` para o corpo detalhado de cada `kind`.
 
 Duas fontes emitem mensagens, com timing diferente:
 

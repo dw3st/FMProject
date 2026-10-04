@@ -44,9 +44,9 @@ narrow because we are only balancing the counter_attack tactic.
 |---|---|
 | `TacticalStyle` enum | static — picked once via `applyTeamTacticsConfig()` |
 | `TacticalAxes` (pressing_style etc.) | static — derived from style at apply time |
-| `TeamIntent` enum | dynamic — `balanced` / `counter_attack` / `hold_shape` / `press_now` |
+| `TeamIntent` enum | dynamic — `balanced` / `counter_attack` / `switch_play` / `hold_shape` / `press_now` |
 | Intent detection | dynamic — runs on possession transfer + every 3 game-seconds |
-| Intent gating | tactic-scoped (only counter_attack tactic uses dynamic intents today) |
+| Intent gating | `switch_play` is general (every tactic, with a per-tactic probability); the counter/press/hold family is scoped to the counter_attack tactic |
 | Intent effects | layered on top of static axes — multipliers + tactic-key overrides |
 
 The intent system covers offensive bias (pass / carry / off-ball / shoot) and
@@ -85,6 +85,7 @@ Right moves:
 | Intent | Phase | Tactic gate (today) | Fires when | Effects |
 |---|---|---|---|---|
 | `counter_attack` | offensive | `counter_attack` | Team has ball AND opponent has > 5 players in their attacking 40 yds | Offensive: PROGRESS-biased pass/carry, make_run-biased off-ball, +0.05 shoot bonus |
+| `switch_play` | offensive | every tactic (fires with probability possession 0.45, balanced / high_press 0.35, counter_attack / direct_play 0.12) | Team has ball, holder wide (> 18 yds from the centre line), far channel (19 yds from the opposite touchline, ±22 yds of the holder's x) has at most 1 opponent; one roll per possession (seeded by its start time) | Carry PROGRESS / ANGLE × 0.5, an extra `far_flank` carry lane (+0.4), pass `far_flank` target bias (0.6) |
 | `hold_shape` | defensive | `counter_attack` | Team is defending AND no press_now opportunity | None today — named slot for future stricter shape behaviour (tighter compactness, deeper line) |
 | `press_now` | defensive | `counter_attack` | Team is defending AND ball holder enters our goal-score area (penalty box) | Defensive: pressing_style → `high_press` |
 
@@ -97,6 +98,8 @@ Right moves:
 | `shoot.scoreBonus` | `getShootIntentBonus` in DecisionTree | Flat add to shoot ActionScore |
 | `offBall.<intent>` (multipliers on off-ball intent map) | `applyOffBallIntent` in OffBallMovement | Reweights make_run / hold_space / offer_support |
 | `defense.pressingStyleOverride` | `effectivePressingStyle` in DefensivePositioning | Replaces team's static pressing_style for INTENT_PRESSING_STYLE lookup + `effectivePressRange` |
+| `carryLanes` (extra lanes, e.g. `far_flank`) | `getExtraCarryLanes` in DecisionTree carry scan | Adds an intent-specific carry lane with a score bonus |
+| `passTarget` (e.g. `far_flank` + weight) | `getPassTargetBias` in PassLanes scoring | Rewards passes into the targeted zone |
 
 ---
 

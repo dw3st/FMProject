@@ -1,53 +1,67 @@
 ---
-description: Rules for the React frontend — App, components, and UI conventions.
+description: Rules for the React frontend — pages, components, and UI conventions.
 globs: "src/**/*.tsx, src/**/*.ts, src/index.html, src/index.css"
 alwaysApply: false
 ---
 
 ## Stack
-- React 19 + TypeScript
+- React 19 + TypeScript, served by `Bun.serve()` (`src/index.ts`): every page is its own HTML
+  bundle (`src/pages/<page>/index.html` → `entry.tsx`)
 - Tailwind CSS v4 via `bun-plugin-tailwind`
-- Pixi.js for canvas rendering (in GraficsEngine only)
-- Iconoir icons via `iconoir-react` — always through the `Icon` abstraction (see below)
+- Pixi.js for the pitch canvas (`src/GraficsEngine` only)
+- Icons from `lucide-react`, always through the `Icon` abstraction (see below)
+
+## Pages
+- `src/pages/<page>/entry.tsx` calls `createPage(Component, options)` (`src/createPage.tsx`), which
+  wraps the screen in `LanguageProvider` → `ScreenSizeGate` → `AuthGate` → `GameSaveProvider`
+  (`public`, `noAuth` and `responsive` drop layers for landing, login, start and the lab).
+- In-game screens render inside `<Layout>` (`GameInterface/Components/Layout.tsx`) and wrap their
+  content in `<ScreenContainer>`; see `ui-standard.md`.
+- Session and save state come from `GameSaveProvider` (`useGameSave()`). There is no `App.tsx`.
+- Lab tools (`/lab`, `/test`, `/simulate`, `/matrix`, `/promo`) are separate pages served by
+  `src/lab/server.ts`.
 
 ## Styling
 **Use Tailwind utility classes for all styling.** Do not use inline `style={{}}` except for:
 - Dynamic values derived from game state (e.g. team colors, glow shadows tied to a hex color)
 - Pixi canvas sizing passed as props
 
-Everything else — layout, spacing, typography, borders, colors, transitions — must use Tailwind classes.
-
-Dark theme reference:
-- Background: `bg-[#242424]` (set globally in `index.css`)
-- Panels: `bg-white/[0.03]`, `border-white/10`
-- Muted text: `text-white/40`, `text-white/70`
-- Hover states: `hover:bg-white/10`, `hover:text-white`
+Everything else (layout, spacing, typography, borders, colors, transitions) uses Tailwind classes
+and the theme tokens (`bg-background`, `bg-card`, `border-border`, `text-muted-foreground`,
+`text-primary`…) defined in `src/index.css`. Visual rules: `ui-standard.md`.
 
 ## Icons
-**All icons go through `GameInterface/Icons.tsx`.** This is the only file that imports from `iconoir-react`.
+**All icons go through `GameInterface/Icons.tsx`.** It is the only file that imports from
+`lucide-react`, lab pages included.
 
-Usage:
 ```tsx
-import { Icon } from "./GameInterface/Icons";
+import { Icon, iconOf } from "@/GameInterface/Icons";
 <Icon name="pause" size={16} />
+const Trophy = iconOf("trophy");   // component form, for icon tables
 ```
 
 Adding a new icon:
-1. Find the component name in `iconoir-react` (browse iconoir.com)
+1. Find the component name in `lucide-react` (lucide.dev)
 2. Add the semantic name to `IconName` in `Icons.tsx`
 3. Import the component and add it to `ICON_MAP`
 4. Use `<Icon name="your-name" />` everywhere
 
-To swap icon libraries: change only `Icons.tsx` — no other file needs to change.
+To swap icon libraries, change only `Icons.tsx`.
 
 ## Component conventions
-- Functional components only, props-in / render-out (dumb components)
-- Game state lives in `App.tsx`; child components never subscribe to `gameBus` directly
-- `PixiPitch` always stays mounted; control visibility/pause via props, never unmount it
+- Functional components only; shared pieces are dumb (props in, render out). `ui/` holds the
+  standard kit (`Button`, `Chip`, `OptionChips`, `SegmentedTabs`, `ScreenTitle`, `ScreenContainer`…).
+- Pure logic (formatting, display models, roles, dates, money) lives in `src/Domain`, not in
+  `GameInterface`. Domain, types, backend and the engines never import `GameInterface`.
+- Only the match screens subscribe to `gameBus`: `MatchScreen`, `TestScreen`, `StatsPanel`,
+  `DebugPanel`, `Broadcast/BroadcastSubscriber` and `matchResume` (plus the lab's promo page).
+  `PixiPitch` drives the simulation clock and emits; it always stays mounted, so control
+  visibility/pause via props, never unmount it.
 
 ## Imports
-- Use relative imports within `src/` (the `@` alias is configured but not enforced)
-- CSS imported once in `App.tsx` via `import "./index.css"`
+- Always `@/…` (alias for `src/`), never relative paths. The only exception is the HTML bundle
+  imports in the server entries (`import page from "./pages/x/index.html"`).
+- CSS is imported once, by `createPage.tsx` (`import "@/index.css"`).
 
 ## Tipografia
 - Duas fontes, embutidas via `@fontsource` (nunca Google Fonts), definidas em `src/index.css`:
