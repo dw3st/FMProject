@@ -230,57 +230,65 @@ export const QUICK_SIM_CONFIG = {
    * per side, Poisson around the full engine's per-match means (`.claude/rules/game-engine/fouls.md`:
    * PL 11.3 fouls / 2.89 yellows / 0.15 reds / 0.24 penalties / 1.05 offsides per match, two teams).
    * No level trend in the engine except offsides. Fitted by `bun scripts/quicksim-discipline.ts`.
+   * 2026-10-04 (3.4.1): every rate below refitted on the 26-league AI-formation caches
+   * (`bun scripts/quicksim-spread.ts extras`, 10 400 engine matches): 10.2 fouls, 2.29 yellows,
+   * 0.063 reds, 0.34 penalties, 1.22 offsides per match; offsides now barely follow the level
+   * (exponent 1.5 → 0.3).
    */
-  FOULS_PER_SIDE: 5.75,
+  FOULS_PER_SIDE: 5.11,
   /** Who commits a foul: weight per line × (1 + 0.6 × (0.5 − tackling/10)). */
   FOUL_LINE_WEIGHT: { GK: 0.05, DEF: 1.2, MID: 1.0, FWD: 0.7 } as Record<LineGroup, number>,
   /** A booked player fouls less (same idea as the engine's `YELLOW_MULT`). */
   BOOKED_FOUL_MULT: 0.35,
-  YELLOW_PER_FOUL: 0.245,
+  YELLOW_PER_FOUL: 0.223,
   /** Card chance on a booked player's foul (engine: 1.15). */
   BOOKED_CARD_MULT: 1.15,
-  DIRECT_RED_PER_FOUL: 0.0026,
+  DIRECT_RED_PER_FOUL: 0.0008,
   /** 0.115 → 0.14 with aerial play: the engine's IN_BOX_MULT went up (PL 0.27 / Championship 0.29 penalties per match). */
-  PENALTIES_PER_SIDE: 0.14,
-  OFFSIDES_PER_SIDE: 0.45,
-  OFFSIDE_LEVEL_EXPONENT: 1.5,
+  PENALTIES_PER_SIDE: 0.17,
+  OFFSIDES_PER_SIDE: 0.64,
+  OFFSIDE_LEVEL_EXPONENT: 0.3,
 
   /**
    * Aerial play (Etapa 13, `.claude/rules/game-engine/aerial.md`), Poisson / binomial around the
    * full engine's per-match means (`bun scripts/aerial-calibrate.ts`). No level trend modelled.
    * HEADER_GOAL_SHARE of the (non-penalty) goals already sampled become header goals, re-attributed
    * by HEADER_LINE_WEIGHT × (0.5 + heading/10) — the score never changes.
+   * 2026-10-04 (3.4.1): refitted with `quicksim-spread.ts extras` (26 leagues): 14.3 crosses,
+   * 12.7 aerial duels, 4.1 long balls per match, header goals 18.9% of the goals.
    */
   /** Etapa 14 (set pieces): 0.105 → 0.19 (corners and crossed free kicks are headed in). */
-  HEADER_GOAL_SHARE: 0.195,
+  HEADER_GOAL_SHARE: 0.212,
   /**
    * Engine header goals per starter slot with set pieces: DEF ≈ FWD (centre-backs go up for corners),
    * MID ≈ 0.22 × FWD. Was DEF 0.01, MID 0.11 before set pieces.
    */
   HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.9, MID: 0.22, FWD: 1.0 } as Record<LineGroup, number>,
   /** Set-piece deliveries (corners, crossed free kicks) count as crosses: 5.5 → 8.1 per side. */
-  CROSSES_PER_SIDE: 8.1,
-  CROSS_COMPLETION: 0.15,
-  LONG_BALLS_PER_SIDE: 2.85,
-  LONG_BALL_COMPLETION: 0.52,
+  CROSSES_PER_SIDE: 7.15,
+  CROSS_COMPLETION: 0.154,
+  LONG_BALLS_PER_SIDE: 2.05,
+  LONG_BALL_COMPLETION: 0.49,
   /** Distinct aerial duels per match (both teams contest each one). 9.8 → 14.5 with set pieces. */
-  AERIAL_DUELS_PER_MATCH: 14.5,
+  AERIAL_DUELS_PER_MATCH: 12.7,
   /** Who wins a team's duels (engine duels won per starter slot): weight × (0.5 + heading/10). */
   AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.95, MID: 0.44, FWD: 0.72 } as Record<LineGroup, number>,
 
   /**
    * Set pieces (Etapa 14, `.claude/rules/game-engine/set-pieces-play.md`), from the full engine's
-   * per-match means (`bun scripts/setpiece-calibrate.ts`). Corners and direct free-kick shots by
+   * per-match means (`bun scripts/setpiece-calibrate.ts`; 2026-10-04: `quicksim-spread.ts extras`,
+   * 6.0 corners, 0.21 direct free-kick shots per match, 3.2% direct free-kick goals). Corners and
+   * direct free-kick shots by
    * Poisson; free kicks = the opponent's fouls minus its penalties. SET_PIECE_GOAL_SHARE of all goals
    * are non-penalty set-piece goals (corners, free kicks — DIRECT_FK_GOAL_SHARE of all goals are
    * direct free kicks, moved to the best finisher with no assist); a set-piece goal that is not
    * already a header is re-attributed by SET_PIECE_LINE_WEIGHT × (0.5 + heading/10). Penalty goals
    * count as set-piece goals too. The score never changes.
    */
-  CORNERS_PER_SIDE: 3.12,
-  DIRECT_FK_SHOTS_PER_SIDE: 0.13,
+  CORNERS_PER_SIDE: 3.02,
+  DIRECT_FK_SHOTS_PER_SIDE: 0.08,
   SET_PIECE_GOAL_SHARE: 0.125,
-  DIRECT_FK_GOAL_SHARE: 0.038,
+  DIRECT_FK_GOAL_SHARE: 0.035,
   /** Non-header set-piece goals: second balls and edge-of-the-box shots, mostly forwards and midfielders. */
   SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.5, MID: 0.5, FWD: 1.0 } as Record<LineGroup, number>,
 } as const;
