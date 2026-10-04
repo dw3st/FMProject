@@ -75,15 +75,15 @@ export function MatchSummaryPanel({
   const pA = Math.round(possessionA * 100);
   const cards = (s: SummaryTeamStats) => `${s.yellowCards} / ${s.redCards}`;
   return (
-    <aside className="w-72 border-l border-border bg-card/40 flex flex-col shrink-0 min-h-0">
-      <div className="px-3 pt-3 pb-2">
+    <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0">
+      <div className="px-4 pt-4 pb-3 border-b border-border">
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("match.summary.title")}</h3>
         <div className="mt-2 flex items-center justify-between text-sm font-semibold">
           <span className="truncate" style={{ color: readableOnDark(colorA) }}>{nameA ?? "A"}</span>
           <span className="truncate text-right" style={{ color: readableOnDark(colorB) }}>{nameB ?? "B"}</span>
         </div>
       </div>
-      <div className="px-3">
+      <div className="px-4">
         <StatRow label={t("match.summary.possession")} a={`${pA}%`} b={`${100 - pA}%`} />
         <StatRow label={t("match.summary.shots")} a={statsA.shots} b={statsB.shots} />
         <StatRow label={t("match.summary.passes")} a={statsA.passesCompleted} b={statsB.passesCompleted} />
@@ -93,12 +93,12 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
-      <div className="px-3 pt-4 pb-1">
+      <div className="px-4 pt-4 pb-1">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
           {t("match.summary.events")}
         </span>
       </div>
-      <ol className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 m-0 list-none">
+      <ol className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 m-0 list-none">
         {feed.length === 0 && <li className="text-sm text-muted-foreground py-2">{t("match.summary.noEvents")}</li>}
         {[...feed].reverse().map((e, i) => (
           <li

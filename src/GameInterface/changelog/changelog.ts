@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.4",
+    date: "2026-10-04",
+    items: [
+      { pt: "Na partida ao vivo, o Resumo tem a mesma largura e o mesmo visual do cartão do time do outro lado.", en: "In the live match, the Summary has the same width and look as the team card on the other side." },
+    ],
+  },
+  {
     version: "3.4.3",
     date: "2026-10-04",
     items: [
