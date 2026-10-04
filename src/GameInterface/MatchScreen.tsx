@@ -194,7 +194,15 @@ export function MatchScreen() {
     const host = pitchHostElRef.current;
     if (!host) return;
     const rect = host.getBoundingClientRect();
-    const next = fitPitch(rect.width, rect.height);
+    // The pitch column is sized to the pitch so the side cards hug it; the width available to the
+    // pitch is the whole row minus the two side cards, not the (already shrunk) column itself.
+    const column = host.parentElement;
+    const row = column?.parentElement;
+    const sides =
+      (column?.previousElementSibling?.getBoundingClientRect().width ?? 0) +
+      (column?.nextElementSibling?.getBoundingClientRect().width ?? 0);
+    const availableWidth = row ? row.getBoundingClientRect().width - sides : rect.width;
+    const next = fitPitch(availableWidth, rect.height);
     if (!next) return;
     setPitchSize((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
   }, []);
@@ -920,7 +928,7 @@ export function MatchScreen() {
       </header>
 
       {/* Main Match View */}
-      <main className="flex-1 flex overflow-hidden min-h-0">
+      <main className="flex-1 flex justify-center overflow-hidden min-h-0">
         <TeamPanel
           team={panelTeam}
           side="left"
@@ -947,7 +955,10 @@ export function MatchScreen() {
           })}
         />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div
+          className={`flex flex-col min-w-0 ${pitchSize ? "shrink-0" : "flex-1"}`}
+          style={pitchSize ? { width: pitchSize.w } : undefined}
+        >
           <div
             ref={pitchHostRef}
             className="flex-1 flex items-center justify-center min-h-0 overflow-hidden"

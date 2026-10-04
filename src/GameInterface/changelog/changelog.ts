@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.6",
+    date: "2026-10-04",
+    items: [
+      { pt: "Na partida ao vivo, os cartões dos dois lados ficam colados no campo, sem espaço vazio entre eles.", en: "In the live match, the side cards sit right next to the pitch, with no empty gap." },
+    ],
+  },
+  {
     version: "3.4.5",
     date: "2026-10-04",
     items: [
