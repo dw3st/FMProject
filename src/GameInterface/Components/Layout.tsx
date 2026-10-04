@@ -15,7 +15,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import { NoClubScreen } from "@/GameInterface/NoClubScreen";
 
 /** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
-const NO_CLUB_PATHS = ["/leagues", "/stats", "/scout", "/player"];
+const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player"];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { session, squad, save } = useGameSave();
