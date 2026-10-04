@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * Smoke test — exercises every query function against the current debug snapshot.
- * Run: bun src/mcp/smoke-test.ts <path-to-snapshot>
+ * Run: bun scripts/mcp-smoke.ts <path-to-snapshot>
  */
 
 import { loadSnapshot } from '@/mcp/loadState';

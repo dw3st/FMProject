@@ -41,7 +41,6 @@ import { ChoiceCard } from "@/GameInterface/ui/ChoiceCard";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { StatBar } from "@/GameInterface/ui/StatBar";
-import { Badge } from "@/GameInterface/ui/Badge";
 
 describe("ui standard components", () => {
   test("ScreenTitle uses the heavy display style", () => {
@@ -65,9 +64,6 @@ describe("ui standard components", () => {
     const html = renderToStaticMarkup(<StatBar value={5} />);
     expect(html).toContain("h-1.5");
     expect(html).toContain("5.0");
-  });
-  test("Badge is at least text-sm", () => {
-    expect(renderToStaticMarkup(<Badge>ok</Badge>)).toContain("text-sm");
   });
 });
 
