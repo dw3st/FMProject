@@ -1,10 +1,10 @@
-import "flag-icons/css/flag-icons.min.css";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n/i18n";
 import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/AuthGate";
 import { Icon } from "@/GameInterface/Icons";
+import { Flag } from "@/GameInterface/Components/Flag";
 
 interface SettingsOverlayProps {
   open: boolean;
@@ -131,7 +131,7 @@ function LanguageOption({ label, flag, selected, onSelect }: LanguageOptionProps
       }`}
     >
       <div className="flex items-center gap-3">
-        <span className={`fi fi-${flag} text-2xl rounded-sm overflow-hidden`} aria-hidden />
+        <Flag code={flag} className="w-8 h-6" />
         <span className={`text-base font-semibold ${selected ? "text-foreground" : "text-muted-foreground"}`}>
           {label}
         </span>

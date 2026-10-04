@@ -9,7 +9,7 @@ export interface TransferRecord {
   fromSquadName: string;
   toSquadId: string;
   toSquadName: string;
-  fee: number;              // raw £ (e.g. 12_500_000 = £12.5M)
+  fee: number;              // raw € (e.g. 12_500_000 = €12.5M)
   direction: "in" | "out"; // from the user-managed club's perspective
   status: "accepted" | "rejected";
   reason: string;

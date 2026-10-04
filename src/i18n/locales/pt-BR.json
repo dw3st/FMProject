@@ -646,6 +646,13 @@
     "subbedOff": "Substituído aos {{minute}}'"
   },
   "match": {
+    "playerEvents": {
+      "goals": "Gols: {{count}}",
+      "assists": "Assistências: {{count}}",
+      "yellow": "Cartão amarelo",
+      "red": "Cartão vermelho",
+      "sentOff": "Expulso"
+    },
     "lastMinuteSubs": "Substituições de Última Hora",
     "shots": "Finalizações",
     "tackles": "Desarmes",
@@ -1619,6 +1626,7 @@
       "searchByName": "Buscar por nome...",
       "position": "Posição",
       "ageRange": "Faixa Etária",
+      "valueRange": "Valor (milhões de €)",
       "league": "Liga",
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",

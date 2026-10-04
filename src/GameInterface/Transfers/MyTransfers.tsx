@@ -69,17 +69,17 @@ export function MyTransfers({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card-arcade rounded-md p-4">
           <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.totalSpent")}</p>
-          <p className="text-2xl font-black font-display text-destructive m-0 tabular-nums">{formatFee(totalSpent, "£")}</p>
+          <p className="text-2xl font-black font-display text-destructive m-0 tabular-nums">{formatFee(totalSpent)}</p>
         </div>
         <div className="card-arcade rounded-md p-4">
           <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.totalEarned")}</p>
-          <p className="text-2xl font-black font-display text-chart-2 m-0 tabular-nums">{formatFee(totalEarned, "£")}</p>
+          <p className="text-2xl font-black font-display text-chart-2 m-0 tabular-nums">{formatFee(totalEarned)}</p>
         </div>
         <div className="card-arcade rounded-md p-4">
           <p className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground mb-1 m-0 font-display font-bold">{t("transfers.netBalance")}</p>
           <p className={`tabular-nums text-2xl font-black font-display m-0 ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
             {net >= 0 ? "+" : ""}
-            {formatFee(Math.abs(net), "£")}
+            {formatFee(net)}
           </p>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { createGameSave } from "@/GameInterface/gameSession";
 import { capture } from "@/analytics";
 import { PreSeasonLoadingScreen } from "@/GameInterface/PreSeasonLoadingScreen";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { Flag } from "@/GameInterface/Components/Flag";
 import { formatEurosDetailed } from "@/Domain/money";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
@@ -309,7 +310,7 @@ export function NewGameWizard() {
                             : "bg-transparent text-foreground hover:bg-foreground/5"
                       }`}
                     >
-                      <span className={`fi fi-${country.flag} w-5 h-[15px] rounded-sm bg-cover bg-center shrink-0`} />
+                      <Flag code={country.flag} />
                       <span className="truncate">{displayName(country)}</span>
                     </button>
                   </li>
@@ -611,7 +612,7 @@ function ManagerForm({
               key: nat.id,
               label: (
                 <>
-                  <span className={`fi fi-${nat.flag} w-5 h-[15px] rounded-sm bg-cover bg-center`} />
+                  <Flag code={nat.flag} />
                   {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
                 </>
               ),

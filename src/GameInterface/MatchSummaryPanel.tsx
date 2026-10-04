@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
+import { readableOnDark } from "@/GameInterface/matchTeamColors";
 
 /** Live team numbers shown in the "Resumo" panel (both sides). */
 export interface SummaryTeamStats {
@@ -78,8 +79,8 @@ export function MatchSummaryPanel({
       <div className="px-3 pt-3 pb-2">
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("match.summary.title")}</h3>
         <div className="mt-2 flex items-center justify-between text-sm font-semibold">
-          <span className="truncate" style={{ color: colorA }}>{nameA ?? "A"}</span>
-          <span className="truncate text-right" style={{ color: colorB }}>{nameB ?? "B"}</span>
+          <span className="truncate" style={{ color: readableOnDark(colorA) }}>{nameA ?? "A"}</span>
+          <span className="truncate text-right" style={{ color: readableOnDark(colorB) }}>{nameB ?? "B"}</span>
         </div>
       </div>
       <div className="px-3">

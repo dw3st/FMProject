@@ -4,6 +4,7 @@ import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { emptyPlayerStats, getAllPlayerStats, getTeamStats } from "@/GameEngine/Domain/Statistics";
 import type { PlayerStats, TeamStats } from "@/GameEngine/Domain/Statistics";
 import type { GamePlayer, SubstitutionRecord } from "@/GameEngine/types";
+import { kitDotStyle } from "@/GameInterface/matchTeamColors";
 
 interface Col {
   label: string;
@@ -80,7 +81,7 @@ function TeamTable({
   return (
     <div className="flex-1 min-w-0">
       <div className={`flex items-center gap-2 px-3 py-2 border-b border-border ${side === "right" ? "flex-row-reverse" : ""}`}>
-        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: accentColor }} />
+        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={kitDotStyle(accentColor)} />
         <span className="font-bold text-sm text-foreground uppercase tracking-[0.08em] font-display">{teamName ?? t("stats.team", { team, defaultValue: `Team ${team}` })}</span>
       </div>
 
@@ -103,7 +104,7 @@ function TeamTable({
               className="grid grid-cols-[40px_1fr_repeat(7,36px)] gap-1 px-3 py-1 border-b border-border/20 hover:bg-secondary/20"
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
-                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={kitDotStyle(accentColor)} />
                 <span className="text-sm font-bold text-muted-foreground">{p.role}</span>
               </div>
               <div className={`font-medium text-foreground ${side === "right" ? "text-right" : ""}`}>
@@ -128,7 +129,7 @@ function TeamTable({
               title={t("stats.subbedOff", { minute: sub.matchMinute })}
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
-                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={kitDotStyle(accentColor)} />
                 <span className="text-sm font-bold text-muted-foreground">↓</span>
               </div>
               <div className={`font-medium text-foreground/60  ${side === "right" ? "text-right" : ""}`}>

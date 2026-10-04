@@ -7,7 +7,7 @@ export interface ScoutFilterState {
   maxAge: number;
   minAvg: number;
   maxAvg: number;
-  /** Market value range, millions of £ (same scale as engine `Player.valueMillions`). */
+  /** Market value range, millions of € (same scale as engine `Player.valueMillions`). */
   minPriceM: number;
   maxPriceM: number;
   league: string;

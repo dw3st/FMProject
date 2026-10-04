@@ -25,6 +25,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.2",
+    date: "2026-10-04",
+    items: [
+      {
+        pt: "O jogo carrega mais rápido: cada tela baixa bem menos coisa ao abrir.",
+        en: "The game loads faster: every screen downloads far less when it opens.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Todos os valores aparecem em euros, inclusive nas transferências e nas propostas por jogadores.",
+        en: "Every amount is shown in euros, including transfers and player offers.",
+      },
+      {
+        pt: "Saldo negativo escrito do jeito certo (−€1.2M) na barra inferior e nas finanças.",
+        en: "Negative balances are written the right way (−€1.2M) in the bottom bar and in finances.",
+      },
+      {
+        pt: "Na partida ao vivo, a escalação mostra gols, assistências e cartões de cada jogador, e as cores de times de uniforme escuro (como o preto do Botafogo) aparecem direito.",
+        en: "In the live match, the lineup shows each player's goals, assists and cards, and teams with dark kits (like Botafogo's black) show their colour properly.",
+      },
+    ],
+  },
+  {
     version: "3.4.1",
     date: "2026-10-04",
     items: [

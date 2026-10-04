@@ -179,7 +179,7 @@ export function TransferRow({ record }: { record: TransferRecord }) {
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="font-black font-display text-primary m-0 tabular-nums">{formatFee(record.fee, "£")}</p>
+          <p className="font-black font-display text-primary m-0 tabular-nums">{formatFee(record.fee)}</p>
           <div className="flex items-center gap-1.5 mt-1 justify-end flex-wrap">
             {statusBadge}
             <span className="text-sm text-muted-foreground">{formatTransferDate(record.date)}</span>

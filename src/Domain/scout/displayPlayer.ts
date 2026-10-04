@@ -45,7 +45,7 @@ export interface DisplayPlayer {
   /** When set (e.g. scout), used for `/player/:leagueSlug/:clubSlug/:id`. */
   leagueSlug?: string;
   clubSlug?: string;
-  /** Market value in millions of £ (same basis as `value` label). */
+  /** Market value in millions of € (same basis as `value` label). */
   valueMillions: number;
   /** Nationality label for lists / filters; may be inferred from club country. */
   nationality: string;

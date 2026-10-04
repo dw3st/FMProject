@@ -620,7 +620,7 @@ function SeasonBody({
   const { t } = useTranslation();
   if (message.kind === "negative_balance") {
     const bal = message.balance ?? 0;
-    const balanceText = bal < 0 ? `-${formatFee(Math.abs(bal))}` : formatFee(bal);
+    const balanceText = formatFee(bal);
     return (
       <p className="text-sm text-foreground m-0">
         {t("inbox.season.negativeBalance", { balance: balanceText })}

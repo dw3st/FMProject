@@ -64,9 +64,15 @@ To swap icon libraries, change only `Icons.tsx`.
 - CSS is imported once, by `createPage.tsx` (`import "@/index.css"`).
 
 ## Tipografia
-- Duas fontes, embutidas via `@fontsource` (nunca Google Fonts), definidas em `src/index.css`:
+- Duas fontes, arquivos woff2 do `@fontsource` (nunca Google Fonts), só subsets latin + latin-ext:
   **Barlow** (400/500/600/700, `font-sans`, padrão do `body`) para texto e UI; **Barlow Condensed**
   (600/700, `font-display`) para títulos, painéis e números de destaque. `h1`/`h2`/`h3` já saem em
-  `font-display` uppercase (`@layer base`).
+  `font-display` uppercase (`@layer base`). `font-black` (900) não tem arquivo: renderiza no 700.
+- **Nunca importe o CSS do `@fontsource` (nem outro CSS com `url()` de arquivo) em `index.css`:** o bundler
+  do Bun transforma todo arquivo pequeno em data URI base64 dentro do CSS da página (as fontes e as
+  bandeiras do `flag-icons` deixavam o CSS em 5,3 MB). Os `@font-face` ficam em `src/fontFaces.ts`
+  (injetados por `createPage`), os arquivos são servidos por `src/backend/staticAssets.ts`
+  (`/assets/fonts/v1/`, `/assets/flags/v1/`, cache `immutable` — suba o `v1` se os arquivos mudarem).
+  Bandeira: sempre `<Flag code>` (`Components/Flag.tsx`), nunca as classes `fi fi-xx`.
 - Não usar `font-family` inline nem `font-mono` decorativo. `font-mono` só em telas de debug
   (`/test`, `DebugPanel`, heatmap) onde o dado é tabular de verdade; números alinhados: `tabular-nums`.
