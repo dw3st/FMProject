@@ -10,9 +10,10 @@ Spec: `docs/superpowers/specs/2026-10-03-board-fans-design.md`. Etapa 17 do `doc
   (`.claude/rules/AI-clubs/finance.md`: regras, não simulação).
 - `SaveMeta.sackingEnabled`: opção do novo jogo ("Pode ser demitido", chip Sim/Não no passo do técnico, Sim
   pré-marcado). Sem ela, não há ultimato nem demissão; aviso e elogio continuam.
-- `SaveMeta.ended` (`CareerEnded`): gravado na demissão. A carreira acabou: `advanceOneDay` devolve **409**, e
-  toda tela de carreira redireciona para `/fired` (`GameSaveProvider`, exceto `/`, `/login`, `/start`,
-  `/new-game`, `/fired`, `/test`, `/lab`, `/coming-soon`). O jogador pode começar outra carreira.
+- Demissão = **desemprego** (Etapa 20, `.claude/rules/game/jobs.md`): o clube vira IA, `meta.clubId` fica ""
+  e `meta.unemployed` guarda o registro da demissão (`sacking`, `CareerEnded`). O jogo continua avançando e
+  propostas chegam a cada 2 semanas; a resposta do dia traz `sacked: true` e o front mostra `/fired` (a notícia,
+  com "Ver propostas"). `meta.ended` não existe mais.
 - Sem migração (protótipo): save sem `board` simplesmente não tem medidores.
 
 ## Arquivos
@@ -28,7 +29,7 @@ Spec: `docs/superpowers/specs/2026-10-03-board-fans-design.md`. Etapa 17 do `doc
 | `src/backend/advanceUntil.ts` | Para o avanço rápido no dia da demissão (`sacked`) |
 | `src/Domain/finance/gate.ts` | `gateRevenue(..., fillRate)` |
 | `src/GameInterface/Dashboard/HomeCards.tsx` (`ClubCard`) | Medidores reais com seta de tendência (7 dias), meta e ultimato |
-| `src/GameInterface/FiredScreen.tsx` | Tela de demitido com `meta.ended` (motivo, tempo no clube, jogos, aproveitamento, posição, títulos) |
+| `src/GameInterface/FiredScreen.tsx` | Notícia da demissão com `meta.unemployed.sacking` (motivo, tempo no clube, jogos, aproveitamento, posição, títulos) e "Ver propostas" |
 | `src/GameInterface/NewGameWizard.tsx` | Opção "Pode ser demitido" |
 | `src/GameInterface/InboxScreen.tsx`, `boardText.ts` | Categoria `board` |
 
@@ -86,8 +87,9 @@ Clássico: mesma cidade (`venue.city`, sem acento/caixa); sem rival da cidade, o
 - `< 25` (só com `sackingEnabled`): ultimato — 7 pontos nas próximas 5 partidas da liga. Cumprido: +5, mensagem
   `ultimatum_met`. Não cumprido: demissão.
 - `< 15` (só com `sackingEnabled`): demissão.
-- A demissão grava `meta.ended` (data, motivo `board`/`ultimatum`, clube, liga, posição, medidores, campanha), manda a
-  mensagem `sacked` e a resposta do dia traz `sacked: true` (o front vai para `/fired`).
+- A demissão grava `meta.unemployed.sacking` (data, motivo `board`/`ultimatum`, clube, liga, posição, medidores,
+  campanha), manda a mensagem `sacked`, entrega o clube à IA e a resposta do dia traz `sacked: true` (o front vai
+  para `/fired`). Daí em diante: `.claude/rules/game/jobs.md`.
 
 ## Fim de temporada (virada do país do jogador)
 
@@ -115,7 +117,7 @@ enfileirada em `boardMessages` e gravada depois do `clearInbox` da virada. Assun
 
 - Painel, cartão do clube: diretoria e torcida com a seta (`trendOf`, contra 7 dias atrás em `board.history`,
   14 fotos diárias), a meta (`board.objective.*`) e o ultimato em andamento.
-- `/fired`: dados reais de `meta.ended`; "Encontrar novo clube" abre o novo jogo.
+- `/fired`: dados reais de `meta.unemployed.sacking`; "Ver propostas" volta ao jogo (tela "Sem clube").
 
 ## `/test`, `/lab`
 
@@ -127,8 +129,8 @@ Sem efeito de partida: nada a exibir.
 bun test src/Domain/boardFans src/backend/board.advanceDay.test.ts src/Domain/finance src/Domain/inbox
 ```
 
-`board.advanceDay.test.ts`: demissão ligada por padrão e diretoria no chão → `sacked`, `meta.ended`, mensagem e 409 no
-dia seguinte; demissão desligada com tudo em 0 → nunca demite nem dá ultimato; a virada define a meta nova.
+`board.advanceDay.test.ts`: demissão ligada por padrão e diretoria no chão → `sacked`, `meta.unemployed`, mensagem e o
+dia seguinte avança sem clube; demissão desligada com tudo em 0 → nunca demite nem dá ultimato; a virada define a meta nova.
 
 `scripts/season-rollover-smoke.ts` (save com demissão desligada), seção "Diretoria": medidores presentes e em 0..100
 todo dia, meta nova na virada (e mensagem `objective`), nunca demitido, toda bilheteria da liga dentro da faixa de

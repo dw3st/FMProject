@@ -122,8 +122,8 @@ teto do fator) se afasta desse número.
 ## 2. Extrato (`ledger`)
 
 - `saves/{id}/ledger/{temporada}.json`: lista de `LedgerEntry { date, kind, amount, label, ref? }`
-  (`amount` com sinal). `kind`: `broadcasting`, `commercial`, `wages`, `operational`, `gate`,
-  `prize`, `transfer_in`, `transfer_out`. A temporada do extrato é o `year` da meta da liga do
+  (`amount` com sinal). `kind`: `broadcasting`, `commercial`, `wages`, `operational`, `staff`, `gate`,
+  `prize`, `transfer_in`, `transfer_out`, `club_change`. A temporada do extrato é o `year` da meta da liga do
   jogador; a virada começa um arquivo novo.
 - `applyMoney(squad, entry)` (`ledger.ts`) é pura: devolve o squad com `finances.budget` movido por
   `entry.amount`, **sem clamp** — o saldo pode ficar negativo. `recordMoney(service, saveId,
@@ -141,6 +141,9 @@ teto do fator) se afasta desse número.
   concorrente na mesma chave. `writeLedger`/`appendLedger` ficam na fase 1 do flush (toda escrita
   exceto meta), com `listLedgerSeasons`/`readLedger` fora do buffer — ver
   `.claude/rules/game/membership.md` → "Ordem do flush do `BufferingSaveDAL`".
+- **Troca de clube (`club_change`, Etapa 20, `.claude/rules/game/jobs.md`):** ao sair de um clube o saldo
+  sai do extrato ("leave", `−saldo`); ao chegar, o saldo inicial (a verba sazonal da IA) entra ("arrive"). Assim
+  a invariante abaixo vale para o clube atual (desempregado, a soma é 0). Não conta como receita/despesa na tela.
 - **Invariante:** a soma de todos os lançamentos do jogador, em todas as temporadas, é igual ao
   orçamento atual — o orçamento do clube do jogador começa em 0 (`SaveService.createSave`) e nunca
   é escrito fora de `applyMoney`/`recordMoney`. É a checagem 1 da seção "Finanças" do
