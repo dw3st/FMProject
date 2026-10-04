@@ -163,7 +163,7 @@ function distributeAndResolve(
   // Seed progress at the midpoint of each stat's current level cost so that players
   // without any tracked history aren't immediately at the cliff edge: any tiny decay
   // would otherwise drop progress below 0 and trigger an instant level-down.
-  // Also treat an all-zero progress record as uninitialized (legacy saves).
+  // An all-zero record (reset at every season rollover) is seeded the same way.
   const isUninitialized =
     !player.progress ||
     Object.values(player.progress).every((v) => v === 0);

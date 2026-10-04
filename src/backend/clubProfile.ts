@@ -1,5 +1,5 @@
-import { squadFileStemFromClubParam } from "@/backend/squadIdResolve";
-import type { StandingLike } from "@/backend/squadIdResolve";
+import { squadFileStemFromClubParam } from "@/Domain/world/squadIdResolve";
+import type { StandingLike } from "@/Domain/world/squadIdResolve";
 import { Player } from "@/Domain/Player";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { RosterPlayer } from "@/types/playerTypes";

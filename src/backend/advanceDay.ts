@@ -2188,29 +2188,17 @@ export const advanceDayRoutes = {
     const activeLeagues = meta.activeLeagues ?? [];
     const playerLeagueState = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
 
-    // New path: update restDays in meta.activeLeagues
-    if (playerLeagueState) {
-      const current = new Set(playerLeagueState.restDays ?? []);
-      if (body.type === "rest") current.add(date!);
-      else current.delete(date!);
-      const restDays = Array.from(current).sort();
+    if (!playerLeagueState) return Response.json({ error: "season not found" }, { status: 404 });
 
-      const updatedLeagues = activeLeagues.map((l) =>
-        l.leagueSlug === meta.leagueSlug ? { ...l, restDays } : l,
-      );
-      await saveService.updateMeta(saveId!, { activeLeagues: updatedLeagues });
-      return Response.json({ restDays });
-    }
-
-    // Legacy fallback: update restDays in season.json
-    const season = await saveService.getSeason(saveId!);
-    if (!season) return Response.json({ error: "season not found" }, { status: 404 });
-
-    const current = new Set(season.restDays ?? []);
+    const current = new Set(playerLeagueState.restDays ?? []);
     if (body.type === "rest") current.add(date!);
     else current.delete(date!);
     const restDays = Array.from(current).sort();
-    await saveService.writeSeason(saveId!, { ...season, restDays });
+
+    const updatedLeagues = activeLeagues.map((l) =>
+      l.leagueSlug === meta.leagueSlug ? { ...l, restDays } : l,
+    );
+    await saveService.updateMeta(saveId!, { activeLeagues: updatedLeagues });
     return Response.json({ restDays });
   },
 };

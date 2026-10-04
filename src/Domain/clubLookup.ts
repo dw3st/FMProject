@@ -16,15 +16,7 @@ export function isPlayerSquadId(squadId: string, meta: Pick<MetaRef, "clubId">):
   return squadId === meta.clubId;
 }
 
-/**
- * Find the player's squad from a collection.
- * Primary:  squad.id match.
- * Fallback: league + slug (legacy saves where clubId may store a file slug).
- */
+/** Find the player's squad (by `meta.clubId`, the squad id) in a collection. */
 export function findPlayerSquad(squads: Squad[], meta: MetaRef): Squad | null {
-  return (
-    squads.find((s) => s.id === meta.clubId) ??
-    squads.find((s) => s.leagueSlug === meta.leagueSlug && s.slug === meta.clubId) ??
-    null
-  );
+  return squads.find((s) => s.id === meta.clubId) ?? null;
 }

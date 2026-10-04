@@ -89,18 +89,8 @@ export const apiRoutes = {
   },
 
   "/api/logos/:league/:club": async (req: Request & { params: { league: string; club: string } }) => {
-    const { league } = req.params;
-    let club = req.params.club;
-    // Resolve numeric team IDs (e.g. "157") to slug (e.g. "bayern_munchen") via leagueData.json
-    if (/^\d+$/.test(club)) {
-      const leagueFile = Bun.file(`${DATA_DIR}/leagueData.json`);
-      if (await leagueFile.exists()) {
-        const leagues = (await leagueFile.json()) as Array<{ slug: string; standings?: Array<{ squadId: string; slug?: string }> }>;
-        const leagueEntry = leagues.find(l => l.slug === league);
-        const row = leagueEntry?.standings?.find(s => s.squadId === club);
-        if (row?.slug) club = row.slug;
-      }
-    }
+    // `{league}/{club}` is a `logoIndex.json` entry: the crest file's folder and stem.
+    const { league, club } = req.params;
 
     const svg = Bun.file(`${DATA_DIR}/logos/${league}/${club}.svg`);
     if (await svg.exists())

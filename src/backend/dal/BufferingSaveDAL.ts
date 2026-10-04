@@ -5,7 +5,6 @@ import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playe
 import type { ManagerRecord } from "@/types/managerTypes";
 import type {
   SeasonArchive,
-  SeasonData,
   LeagueDateIndex,
   LeagueSeasonMeta,
   RoundFixtures,
@@ -140,12 +139,6 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
 
   // ── Season ──────────────────────────────────────────────────────────────────
-  readSeason(saveId: string): Promise<SeasonData | null> {
-    return this.readThrough(`season:${saveId}`, () => this.inner.readSeason(saveId));
-  }
-  async writeSeason(saveId: string, season: SeasonData): Promise<void> {
-    this.buffer(`season:${saveId}`, season, () => this.inner.writeSeason(saveId, season));
-  }
   readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null> {
     return this.readThrough(`seasonArchive:${saveId}:${year}`, () => this.inner.readSeasonArchive(saveId, year));
   }

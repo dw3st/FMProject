@@ -1,5 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
+import type { SeasonData } from "@/types/calendarTypes";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
@@ -82,11 +83,9 @@ export const saveRoutes = {
       const meta = await saveService.getMeta(id);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-      // Try legacy season.json first (old saves)
-      let season = await saveService.getSeason(id);
-
-      // New multi-league format: build season from per-round files
-      if (!season && meta.activeLeagues?.length) {
+      // The player's season view: league + cup + continental fixtures of the club.
+      let season: SeasonData | undefined;
+      if (meta.activeLeagues?.length) {
         const playerLeagueState = meta.activeLeagues.find(
           (l) => l.leagueSlug === meta.leagueSlug,
         );
@@ -116,7 +115,7 @@ export const saveRoutes = {
         }
       }
 
-      return Response.json({ ...meta, season: season ?? undefined });
+      return Response.json({ ...meta, season });
     }
 
     if (req.method === "PUT") {

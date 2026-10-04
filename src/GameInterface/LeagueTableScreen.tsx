@@ -11,7 +11,6 @@ import type { CountryEntry } from "@/types/worldTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
-import { clubSlugFromSquadId } from "@/backend/squadIdResolve";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world/labels";
 import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
@@ -758,9 +757,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   };
 
   const handleClickSquad = (row: Pick<StandingRow, "squadId" | "slug">) => {
-    const clubPart =
-      row.slug ??
-      clubSlugFromSquadId(row.squadId, activeSlug);
+    const clubPart = row.slug ?? row.squadId;
     window.location.href = `/squad/${activeSlug}/${clubPart}`;
   };
 

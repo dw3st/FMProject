@@ -6,12 +6,12 @@ import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { MatchResult } from "@/GameEngine/Domain/SimulateMatch";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { DEFAULT_SIM_FORMATION_ID, formationForSimId } from "@/Domain/matchFormations";
-import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/backend/squadIdResolve";
+import { clubSlugFromSquadId, squadIdToClubSlugMap } from "@/Domain/world/squadIdResolve";
 
 function standingClubFileSlug(squadId: string, leagueSlug: string, leagues: LeagueData[]): string {
   const L = leagues.find((l) => l.slug === leagueSlug);
   const m = L ? squadIdToClubSlugMap(L.standings) : undefined;
-  return clubSlugFromSquadId(squadId, leagueSlug, m);
+  return clubSlugFromSquadId(squadId, m);
 }
 
 async function fetchSquad(league: string, club: string): Promise<Squad> {

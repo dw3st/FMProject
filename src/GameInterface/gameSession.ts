@@ -67,8 +67,7 @@ export function loadSession(): GameSession | null {
     if (parsed.tactical_style == null) parsed.tactical_style = DEFAULT_TACTICAL_STYLE;
     if (parsed.min_energy_to_train == null) parsed.min_energy_to_train = DEFAULT_MIN_ENERGY_TO_TRAIN;
     if (parsed.training_intensity == null) parsed.training_intensity = DEFAULT_TRAINING_INTENSITY;
-    // Migrate old sessions that stored clubMoney instead of budget
-    if (parsed.budget == null) parsed.budget = (parsed as Record<string, unknown>).clubMoney ?? 0;
+    if (parsed.budget == null) parsed.budget = 0;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     return parsed as unknown as GameSession;
   } catch {

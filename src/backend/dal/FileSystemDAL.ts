@@ -2,7 +2,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
-import type { SeasonArchive, SeasonData, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
+import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
@@ -20,7 +20,6 @@ const SAVES_DIR = `${RUNTIME_DATA_DIR}/saves`;
 const SQUAD_READ_CONCURRENCY = 32;
 
 function metaPath(saveId: string)      { return `${SAVES_DIR}/${saveId}.json`; }
-function seasonPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/season.json`; }
 function seasonArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/season.json`;
 }
@@ -101,17 +100,6 @@ export class FileSystemDAL implements ISaveDAL {
   }
 
   // ── Season ────────────────────────────────────────────────────────────────
-
-  async readSeason(saveId: string): Promise<SeasonData | null> {
-    const file = Bun.file(seasonPath(saveId));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<SeasonData>;
-  }
-
-  async writeSeason(saveId: string, season: SeasonData): Promise<void> {
-    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(seasonPath(saveId), JSON.stringify(season, null, 2));
-  }
 
   async readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null> {
     const file = Bun.file(seasonArchivePath(saveId, year));

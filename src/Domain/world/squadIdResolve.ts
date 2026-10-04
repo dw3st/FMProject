@@ -1,6 +1,6 @@
 /**
- * Map internal squad ids (e.g. squad__001) to filesystem / URL club slugs (e.g. atletico_mineiro)
- * using league standings from leagueData.json. Legacy ids stay leagueSlug_clubSlug.
+ * Map squad ids (e.g. "33") to URL club slugs (e.g. "manchester_united") using league standings
+ * from leagueData.json, and back.
  */
 
 export type StandingLike = { squadId: string; slug?: string };
@@ -14,17 +14,9 @@ export function squadIdToClubSlugMap(standings: StandingLike[]): Map<string, str
   return m;
 }
 
-export function clubSlugFromSquadId(
-  squadId: string,
-  leagueSlug: string,
-  idToClubSlug?: Map<string, string>,
-): string {
-  const mapped = idToClubSlug?.get(squadId);
-  if (mapped) return mapped;
-  if (squadId.startsWith(`${leagueSlug}_`)) {
-    return squadId.slice(leagueSlug.length + 1);
-  }
-  return squadId;
+/** Club slug of a squad id (the id itself when the standings carry no slug). */
+export function clubSlugFromSquadId(squadId: string, idToClubSlug?: Map<string, string>): string {
+  return idToClubSlug?.get(squadId) ?? squadId;
 }
 
 /**
