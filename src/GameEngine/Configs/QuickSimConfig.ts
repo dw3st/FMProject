@@ -149,7 +149,7 @@ export const QUICK_SIM_CONFIG = {
    * strips those later (`rollDiscipline` / `rollSetPieces`), so this is set for the realized rate to
    * match (0.71 assists per goal in both, 2026-10-04).
    */
-  NO_ASSIST_RATE: 0.131,
+  NO_ASSIST_RATE: 0.111,
   /**
    * Non-goal shots per unit of (match-day) xG, at match level LEVEL_REF, scaled by
    * (matchLevel / LEVEL_REF)^SHOTS_LEVEL_EXPONENT: the engine's weak leagues shoot more per goal
@@ -262,8 +262,10 @@ export const QUICK_SIM_CONFIG = {
   /**
    * Engine header goals per starter slot with set pieces: DEF ≈ FWD (centre-backs go up for corners),
    * MID ≈ 0.22 × FWD. Was DEF 0.01, MID 0.11 before set pieces.
+   * 3.4.1: DEF 0.9 → 0.7 (and SET_PIECE_LINE_WEIGHT DEF 0.5 → 0.38): the defenders' share of the
+   * goals was 15% against the engine's 12% (14% after).
    */
-  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.9, MID: 0.22, FWD: 1.0 } as Record<LineGroup, number>,
+  HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.7, MID: 0.22, FWD: 1.0 } as Record<LineGroup, number>,
   /** Set-piece deliveries (corners, crossed free kicks) count as crosses: 5.5 → 8.1 per side. */
   CROSSES_PER_SIDE: 7.15,
   CROSS_COMPLETION: 0.154,
@@ -290,5 +292,5 @@ export const QUICK_SIM_CONFIG = {
   SET_PIECE_GOAL_SHARE: 0.125,
   DIRECT_FK_GOAL_SHARE: 0.035,
   /** Non-header set-piece goals: second balls and edge-of-the-box shots, mostly forwards and midfielders. */
-  SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.5, MID: 0.5, FWD: 1.0 } as Record<LineGroup, number>,
+  SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.38, MID: 0.5, FWD: 1.0 } as Record<LineGroup, number>,
 } as const;
