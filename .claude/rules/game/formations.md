@@ -317,12 +317,18 @@ espelho à parte) e divisão em tarefas.
   das outras). No futebol a fraqueza delas são as pontas, mas neste motor o jogo pelas pontas ainda
   rende pouco (cruzamentos ~0,06 gol por time; quase todo gol sai de condução pelo meio). Tornar o
   cruzamento/jogo de ponta mais produtivo é o próximo passo natural (mexe na calibração aérea).
+  Tentativa na 3.4.1 (descartada): cabeçada mais perigosa (`HEADER_XG_MULT` 0,9 → 1,2), só as duas
+  linhas contra as referências, 1200 jogos cada: 4-3-2-1 +8,3 (antes +11,2) mas 4-1-2-1-2 +13,2 (antes
+  +9,8) — dentro do ruído, sem trazer as duas para ±8, e somaria gols de cabeça no mundo todo. Revertido.
 - **O 4-3-3 continua a formação de menor volume** (espelho 0,86× a média, no limite dos ±15%) e um
   pouco abaixo da média em vantagem (−3,9 com média +0,7): um atacante só no meio.
 - **O mundo todo no 4-3-3 perde ~7% de gols** (o bloco defende melhor); o mundo como jogado (formações
-  variadas) perde ~4%. O quickSim foi reajustado pelo modo main (`BASE_GOALS` 0,78).
-- **quickSim × motor por formação:** o quickSim foi calibrado só com 4-3-3 dos dois lados e não
-  reproduz o volume do motor por formação; no agregado do mundo a diferença IA × main fica em +4–7%.
+  variadas) perde ~4%. O quickSim foi reajustado pelo modo main (`BASE_GOALS` 0,78; refeito na
+  recalibração geral 3.4.1 com as formações da IA).
+- **quickSim × motor por formação:** desde a 3.4.1 o quickSim é calibrado com cada clube da IA na
+  própria formação (`quicksim-spread.ts collect --ai`, 26 ligas; `non-player-games.md` →
+  "Recalibração geral 2026-10-04"), mas não tem termo por formação: acerta o volume do mundo como
+  jogado, não o de uma formação isolada (um mundo todo no 4-3-3 sai ~10–15% acima do motor).
 - **`/test` não mostra a escolha da IA** (as 17 estão nos seletores); o `/lab` tem a matriz
   (`/matrix`) com clubes reais, mas os cenários com elencos sintéticos não dizem nada sobre a escolha.
 - O estilo da IA é sempre `balanced` hoje; `STYLE_FORMATIONS` só pesa quando um clube da IA tiver

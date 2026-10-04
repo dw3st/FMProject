@@ -44,12 +44,12 @@ passar; a indisponibilidade vale de qualquer jeito).
 
 `rollDiscipline` roda **depois** de gols, eventos e lesões (nenhum sorteio anterior muda). Por lado:
 
-- **Faltas** ~ Poisson(`FOULS_PER_SIDE` 5,75), no mínimo o número de pênaltis cedidos; quem comete:
+- **Faltas** ~ Poisson(`FOULS_PER_SIDE` 5,11), no mínimo o número de pênaltis cedidos; quem comete:
   peso `FOUL_LINE_WEIGHT[linha]` (GK 0,05 · DEF 1,2 · MID 1,0 · FWD 0,7) × `(1 + 0,6 × (0,5 − tackling/10))`,
   × `BOOKED_FOUL_MULT` 0,35 se já tem amarelo; expulso não comete mais. Minutos sorteados e ordenados.
-- **Cartão por falta:** vermelho direto `DIRECT_RED_PER_FOUL` 0,0026; amarelo `YELLOW_PER_FOUL` 0,245
+- **Cartão por falta:** vermelho direto `DIRECT_RED_PER_FOUL` 0,0008; amarelo `YELLOW_PER_FOUL` 0,223
   (× `BOOKED_CARD_MULT` 1,15 em quem já tem amarelo → segundo amarelo = amarelo + vermelho).
-- **Pênaltis** a favor do adversário: λ = `PENALTIES_PER_SIDE` 0,14 (era 0,115; subiu com o `IN_BOX_MULT` do motor na Etapa 13, `aerial.md`), chance `c = penaltyChance(...)`
+- **Pênaltis** a favor do adversário: λ = `PENALTIES_PER_SIDE` 0,17 (0,115 → 0,14 com o `IN_BOX_MULT` do motor na Etapa 13, `aerial.md`; 0,17 na recalibração geral 3.4.1), chance `c = penaltyChance(...)`
   (maior `finishing` do adversário × goleiro de quem cede). **O placar não muda:** cada gol normal
   já sorteado do adversário vira gol de pênalti com probabilidade `q = λ·c / xG do dia`; os perdidos
   são Poisson(`λ·(1 − c)`). Assim `E[gols de pênalti] = λ·c`, `E[pênaltis] = λ`, e o volume de gols
@@ -57,13 +57,26 @@ passar; a indisponibilidade vale de qualquer jeito).
   (gol de pênalti não tem assistência, como no motor): `assignGoals` guarda autor e assistente de cada
   gol, e o sorteio de conversão é feito gol a gol (só os do tempo normal). `teamStats.penaltyGoals` conta
   os convertidos.
-- **Impedimentos** do adversário: Poisson(`OFFSIDES_PER_SIDE` 0,45 × (nível/5)^1,5) — única
-  tendência por nível do motor (PL 1,05 × Championship 0,76).
+- **Impedimentos** do adversário: Poisson(`OFFSIDES_PER_SIDE` 0,64 × (nível/5)^0,3) — o motor de
+  hoje quase não tem tendência por nível (1,0–1,5 por partida em todas as 26 ligas; era PL 1,05 ×
+  Championship 0,76 com expoente 1,5).
 - Nota: amarelo −0,3, vermelho −1,0, pênalti cometido −0,5 (`RATING_WEIGHTS`), somados depois do encolhimento.
 - `recording.cards` alimenta as suspensões igual ao motor; minutos: o quickSim não tira o expulso
   (mesma regra do lesionado, `fullMinutesForInjured`).
 
-Medido (`bun scripts/quicksim-discipline.ts 4000`, por partida, dois times):
+**Recalibração geral 2026-10-04 (3.4.1):** refeito contra o motor de hoje nas 26 ligas, cada clube da
+IA na própria formação, fôlego 88 (`bun scripts/quicksim-spread.ts extras`, 10 400 jogos do motor,
+quickSim 20× por jogo, mesmos XIs), por partida, dois times:
+
+| | motor | quick antes | quick depois |
+|---|---|---|---|
+| Faltas | 10,23 | 11,50 | 10,22 |
+| Amarelos | 2,29 | 2,83 | 2,29 |
+| Vermelhos | 0,063 | 0,119 | 0,067 |
+| Pênaltis (gols) | 0,34 (0,26) | 0,28 (0,21) | 0,34 (0,26) |
+| Impedimentos | 1,22 | 0,74 | 1,23 |
+
+Histórico (2026-10-02, `bun scripts/quicksim-discipline.ts 4000`, 4-3-3, por partida, dois times):
 
 | | PL quick | PL motor | Championship quick | Championship motor |
 |---|---|---|---|---|
