@@ -1,8 +1,10 @@
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { overallAvg } from "@/Domain/playerRating";
 import { playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
-import { seedFrom } from "@/Domain/cups/cupIds";
+import { addDays } from "@/Domain/dates";
 import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
+import { clamp } from "@/Domain/math";
+import { seedFrom } from "@/Domain/rng";
 
 type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears";
 
@@ -13,8 +15,6 @@ export interface ContractOfferResult {
   demand: number;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
 /** Adds whole years to an ISO date (Feb 29 clamps to Feb 28). */
 export function addYearsIso(iso: string, years: number): string {
   const y = Number(iso.slice(0, 4)) + years;
@@ -24,12 +24,6 @@ export function addYearsIso(iso: string, years: number): string {
 
 function isLeap(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
-}
-
-export function addDaysIso(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 function teamAverage(squad: Squad): number {
@@ -109,7 +103,7 @@ export function aiShouldRenew(
 /** True when the contract ends on or before `date` (+ optional grace days). */
 export function isExpired(contract: PlayerContract | undefined, date: string, graceDays = 0): boolean {
   if (!contract) return false;
-  return contract.until <= (graceDays > 0 ? addDaysIso(date, graceDays) : date);
+  return contract.until <= (graceDays > 0 ? addDays(date, graceDays) : date);
 }
 
 /** The next May 31 on or after `date` — only a fallback when a squad's league end is unknown. */

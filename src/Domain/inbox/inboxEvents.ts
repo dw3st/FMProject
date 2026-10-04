@@ -17,6 +17,7 @@ import type {
   YouthInboxMessage,
   RetirementInboxMessage,
 } from "@/types/inboxTypes";
+import { formatEurosText } from "@/Domain/money";
 
 /**
  * Append a message to the save's inbox. Pass the unit of work's service (e.g. the
@@ -78,7 +79,7 @@ export function buildTransferInMessage(args: {
   feeEuros:   number;
 }): TransferInInboxMessage {
   const { date, transferId, playerId, playerName, fromClub, feeEuros } = args;
-  const feeText = formatFee(feeEuros);
+  const feeText = formatEurosText(feeEuros);
   return {
     id:         `transfer_in-${date}-${playerId}-${randomUUID()}`,
     date,
@@ -104,7 +105,7 @@ export function buildTransferOutMessage(args: {
   feeEuros:   number;
 }): TransferOutInboxMessage {
   const { date, transferId, playerId, playerName, toClub, feeEuros } = args;
-  const feeText = formatFee(feeEuros);
+  const feeText = formatEurosText(feeEuros);
   return {
     id:         `transfer_out-${date}-${playerId}-${randomUUID()}`,
     date,
@@ -157,8 +158,8 @@ export function buildSeasonMessage(args: {
     kind === "promoted" ? `Next season the club plays in ${leagueName}.` :
     kind === "relegated" ? `Next season the club drops to ${leagueName}.` :
     kind === "followers" ? `After the ${seasonYear} season the club has ${formatCount(fa)} followers (${pct >= 0 ? "+" : ""}${pct}%).` :
-    kind === "negative_balance" ? `The club balance has gone negative: ${formatFee(bal)}.` :
-    `The club earned ${formatFee(prizeAmount)} in prize money for its ${seasonYear} finish in ${leagueName}.`;
+    kind === "negative_balance" ? `The club balance has gone negative: ${formatEurosText(bal)}.` :
+    `The club earned ${formatEurosText(prizeAmount)} in prize money for its ${seasonYear} finish in ${leagueName}.`;
   return {
     id:        `season-${date}-${kind}-${leagueSlug}-${randomUUID()}`,
     date,
@@ -392,7 +393,7 @@ export function buildBoardMessage(args: {
     kind === "ultimatum" && rest.ultimatum
       ? `${rest.ultimatum.points} points in the next ${rest.ultimatum.matches} league games`
       : kind === "bonus" && rest.bonus !== undefined
-        ? formatFee(rest.bonus)
+        ? formatEurosText(rest.bonus)
         : kind === "objective" && rest.objective
           ? `${rest.leagueName ?? rest.objective.leagueSlug}: finish ${rest.objective.target} or better`
           : "";
@@ -413,11 +414,4 @@ function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${Math.round(n / 1_000)}k`;
   return `${n}`;
-}
-
-function formatFee(euros: number): string {
-  if (euros < 0) return `-${formatFee(-euros)}`;
-  if (euros >= 1_000_000) return `€${(euros / 1_000_000).toFixed(1)}M`;
-  if (euros >= 1_000)     return `€${Math.round(euros / 1_000)}k`;
-  return `€${euros}`;
 }

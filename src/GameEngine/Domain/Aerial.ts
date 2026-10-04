@@ -13,6 +13,7 @@
 import type { GamePlayer } from '@/GameEngine/types';
 import { AERIAL_CONFIG as A } from '@/GameEngine/Configs/AerialConfig';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
+import { clamp } from '@/Domain/math';
 
 const CENTRE_Y = PITCH_WIDTH / 2;
 
@@ -67,8 +68,6 @@ function longBallPressure(holder: GamePlayer, allPlayers: GamePlayer[]): number 
     opponents.some(o => Math.hypot(o.x - m.x, o.y - m.y) <= A.LONG_BALL_SHORT_OPEN_RADIUS)).length;
   return Math.max(onHolder, marked / short.length);
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Goal line the player attacks. */
 function attackGoalX(p: Pick<GamePlayer, 'attackDir'>): number {

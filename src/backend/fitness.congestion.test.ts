@@ -4,7 +4,7 @@ import { advanceOneDay } from "@/backend/advanceDay";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import { QUICK_SIM_CONFIG } from "@/GameEngine/Configs/QuickSimConfig";
 import { FOUL_CONFIG } from "@/GameEngine/Configs/FoulConfig";
-import { addOneDay } from "@/Domain/advanceDay/date";
+import { addOneDay } from "@/Domain/dates";
 import {
   autoLineupDefaultFormation,
   autoLineupDefaultFormationWithFitness,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { onDebugLog, getDebugLog } from "@/GameEngine/Suport/DebugLog";
-import type { DebugEntry } from "@/GameEngine/Suport/DebugLog";
+import { onDebugLog, getDebugLog } from "@/GameEngine/Support/DebugLog";
+import type { DebugEntry } from "@/GameEngine/Support/DebugLog";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import type { GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import type { GameState } from "@/GameEngine/types";

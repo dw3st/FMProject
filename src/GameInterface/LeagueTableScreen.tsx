@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import type { LeagueData, LeagueZone, LeagueZoneColor, StandingRow } from "@/types/playerTypes";
@@ -767,8 +767,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   return (
     <>
     <ScreenContainer>
-        <PageHeadline
-          backHref="/dashboard"
+        <ScreenTitle
           accent={t("screenTitles.leagues.accent")}
           trailing={
             active ? (
@@ -777,7 +776,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
           }
         >
           {t("screenTitles.leagues.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         {leagues.length > 0 && (
           <div className="flex items-end gap-2">

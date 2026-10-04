@@ -21,7 +21,7 @@ import { resolveBasePosition } from '@/GameEngine/FormationSlots';
 import { getDefenseConfig, getDefenseTacticKeys } from '@/GameEngine/Configs/DefenseConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
 import { mainRoleOf, roleEngine } from '@/GameEngine/Domain/roleEngineData';
-import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import {
   INTENT_PRESSING_STYLE,

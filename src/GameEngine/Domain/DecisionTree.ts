@@ -43,7 +43,7 @@ import { evaluatePassLanes, scorePassToReceiverBreakdown } from '@/GameEngine/Do
 import type { PassBreakdown } from '@/GameEngine/Domain/PassLanes';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
-import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';

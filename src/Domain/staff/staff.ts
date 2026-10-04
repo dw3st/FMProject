@@ -3,13 +3,11 @@ import { STAFF_NAME_POOLS, STAFF_NATIONALITIES } from "@/Domain/staff/staffNames
 import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
 import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { weeklyWage, wageFactorOf } from "@/Domain/finance/wages";
-import { mulberry32 } from "@/Domain/rng";
-import { seedFrom } from "@/Domain/cups/cupIds";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
+import { clamp } from "@/Domain/math";
 
 /** Pure staff model (`.claude/rules/game/staff.md`). No I/O. */
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 function clampRating(r: number): number {
   return clamp(Math.round(r), STAFF.MIN_RATING, STAFF.MAX_RATING);
@@ -142,7 +140,7 @@ export function staffMarket(saveId: string, date: string, role: StaffRole, clubF
 
 // -- Scouting uncertainty ---------------------------------------------------
 
-function unitHash(key: string): number {
+function signedNoise(key: string): number {
   return mulberry32(seedFrom(key))() * 2 - 1;
 }
 
@@ -155,7 +153,7 @@ export function obscurePlayer(player: RosterPlayer, noise: number, saveId: strin
   if (noise <= 0) return player;
   const stats = { ...player.stats };
   for (const k of Object.keys(stats) as (keyof PlayerStatsRecord)[]) {
-    const shifted = stats[k] + noise * unitHash(`${saveId}:${player.id}:${k}`);
+    const shifted = stats[k] + noise * signedNoise(`${saveId}:${player.id}:${k}`);
     stats[k] = Math.round(clamp(shifted, 0, 10) * 10) / 10;
   }
   const { overallAvg: _cached, ...rest } = player;

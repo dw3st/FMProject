@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -111,7 +111,6 @@ export function PlayerScreen({
   if (!player || !displayPlayer) {
     return (
       <ScreenContainer>
-        <PageHeadline hideTitle backHref={backTo} backLabel={t("playerScreen.backToSquad")} />
         <p className="text-muted-foreground text-sm m-0">{t("playerScreen.playerNotFound")}</p>
       </ScreenContainer>
     );
@@ -120,8 +119,7 @@ export function PlayerScreen({
   return (
     <>
     <ScreenContainer>
-        <PageHeadline
-          backHref={backTo}
+        <ScreenTitle
           accent={t("screenTitles.player.accent")}
           trailing={
             !isOwnPlayer ? (
@@ -146,7 +144,7 @@ export function PlayerScreen({
           }
         >
           {t("screenTitles.player.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         <a
           href={backTo}

@@ -7,11 +7,10 @@ import type {
   RoundFixtures,
   SeasonArchive,
 } from "@/types/calendarTypes";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { buildKnockoutSeasonArchive } from "@/Domain/cups/cupRollover";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { drawFree, drawRoundOf16, finalWinner, tieWinner, twoLegFixtures, withAggregate } from "@/Domain/continental/knockout";
-import { mulberry32 } from "@/Domain/rng";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 /** One tie of a freshly drawn stage — the first leg (or the single neutral match for the final). */
 interface ContinentalDrawnTie {

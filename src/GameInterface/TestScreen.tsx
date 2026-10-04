@@ -11,16 +11,16 @@ import { Icon } from "@/GameInterface/Icons";
 import { evaluatePoint, DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig, EvaluationResult } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import { attackingTeam } from "@/GameEngine/Infrastructure/CrowdGrid";
-import { setDebugMode, clearDebugLog } from "@/GameEngine/Suport/DebugLog";
+import { setDebugMode, clearDebugLog } from "@/GameEngine/Support/DebugLog";
 import {
   clearBroadcastLine,
   getBroadcastLine,
   onBroadcastLine,
 } from "@/GameInterface/Broadcast/BroadcastLog";
-import "@/GameEngine/Suport/DebugSubscriber";
+import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
-import { TEST_SCENARIOS } from "@/GameEngine/Suport/TestCases";
-import type { TestScenario } from "@/GameEngine/Suport/TestCases";
+import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
+import type { TestScenario } from "@/GameEngine/Support/TestCases";
 import { createMatchState, getBallPos } from "@/GameEngine/Domain/gameState";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import type { Squad } from "@/types/playerTypes";

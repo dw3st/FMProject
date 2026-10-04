@@ -11,9 +11,9 @@ import { FORMATION_IDS, formationForSimId } from "@/Domain/matchFormations";
 import { autoFillLineup } from "@/Domain/lineupHelpers";
 import { getFormationSlots, type FormationShape } from "@/types/formationSlots";
 import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { AI_FORMATION } from "@/Domain/formation/aiFormationConfig";
+import { seedFrom } from "@/Domain/rng";
 
 export interface AiFormationScore {
   id: string;

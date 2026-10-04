@@ -3,11 +3,11 @@ import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { addYearsIso, aiRenewalYears, contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
 import { overallAvg } from "@/Domain/playerRating";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { getMainRole } from "@/GameInterface/positionHelpers";
 import type { MainRole } from "@/GameInterface/positionHelpers";
 import type { FreeAgent, RosterPlayer, Squad } from "@/types/playerTypes";
+import { seedFrom } from "@/Domain/rng";
 
 const ROLES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 

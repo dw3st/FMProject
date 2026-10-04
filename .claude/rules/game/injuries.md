@@ -24,7 +24,7 @@ Spec: `docs/superpowers/specs/2026-09-28-injuries-design.md`. Plano:
 | `src/GameEngine/types.ts` | `InjuryRecord`, `GamePlayer.age`/`strengthAttr`/`injuryLoad`, `GameState.injuries`, `MatchSubstitution.reason` |
 | `src/GameEngine/Infrastructure/EventBus.ts` | Evento `injury` |
 | `src/GameEngine/Domain/Statistics.ts` | Lesões por time (`TeamStats.injuries`) |
-| `src/GameEngine/Suport/TestCases.ts` | Cenário `injury-demo` (`/test`) |
+| `src/GameEngine/Support/TestCases.ts` | Cenário `injury-demo` (`/test`) |
 | `src/Domain/advanceDay/quickSim.ts` | `rollSideInjuries` — lesões do quickSim (Poisson) |
 | `src/Domain/advanceDay/matches.ts` | `finalizeSquadsAfterMatch` — grava `injury` com `returnDate` no pós-jogo, cura (`clearHealed`) antes de tudo |
 | `src/Domain/advanceDay/dailyTraining.ts` | Lesão de treino pesado (`trainingInjuryChance`), cura do dia |

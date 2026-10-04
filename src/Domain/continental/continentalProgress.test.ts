@@ -6,9 +6,9 @@ import {
   continentsToRegenerate,
   type ContinentalEvent,
 } from "@/Domain/continental/continentalProgress";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import type { DrawClub } from "@/Domain/continental/groupDraw";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
+import { seedFrom } from "@/Domain/rng";
 
 /** Narrows an event list to its "drawn" entries — used to inspect the `ties` payload. */
 function drawnEvents(events: ContinentalEvent[]): Extract<ContinentalEvent, { kind: "drawn" }>[] {

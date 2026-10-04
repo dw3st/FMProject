@@ -1,4 +1,5 @@
 import { INJURY } from "@/Domain/injury/injuryConfig";
+import { addDays } from "@/Domain/dates";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 /**
@@ -89,12 +90,6 @@ export function rollSeverity(rng: () => number = Math.random): InjurySeverity {
   if (roll < light) return "light";
   if (roll < light + medium) return "medium";
   return "severe";
-}
-
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
 }
 
 /** Days out for a severity: uniform integer in `INJURY.DURATION_DAYS[severity]` (inclusive). */

@@ -13,7 +13,7 @@
  *   - `chip`         a hand-rolled option chip (use Chip / OptionChips from ui/);
  *   - `inline-font`  font styles inline (`style={{ fontSize | fontFamily | fontWeight |
  *                    letterSpacing | lineHeight }}`, or an SVG `fontSize`/`fontFamily` attribute);
- *   - `title-accent` an in-game screen title (`<PageHeadline>`, `<ScreenTitle>` or a screen-title
+ *   - `title-accent` an in-game screen title (`<ScreenTitle>` or a screen-title
  *                    `<h1>`) without its second part in primary: titles are two parts, "CLUB
  *                    <FINANCES>", the second via `accent=` (or `<TitleParts>` / a `text-primary`
  *                    span inside a raw `<h1>`). Entry screens (`ENTRY_TITLE_FILES`) keep one-part titles;
@@ -287,7 +287,7 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
       const tag = node.tagName.getText(sf);
       const attr = (n: string) =>
         node.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText(sf) === n);
-      if ((tag === "PageHeadline" && !attr("hideTitle")) || tag === "ScreenTitle") {
+      if (tag === "ScreenTitle") {
         if (!attr("accent")) {
           add(node, "title-accent", "hard", `<${tag}> without accent=; screen titles are two parts, the second in primary`);
         }

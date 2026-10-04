@@ -4,6 +4,7 @@
  * then *presents* the kicks one by one.
  */
 import { PENALTY_CONFIG as C } from "@/GameEngine/Configs/PenaltyConfig";
+import { clamp } from "@/Domain/math";
 
 type ShootoutTeam = "A" | "B";
 
@@ -40,8 +41,6 @@ export interface ShootoutResult<Id> {
   score: { A: number; B: number };
   winner: ShootoutTeam;
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Probability that a taker of `accuracy` scores against `keeper` (null = empty goal). */
 export function penaltyChance<Id>(accuracy: number, keeper: PenaltyKeeper<Id> | null): number {

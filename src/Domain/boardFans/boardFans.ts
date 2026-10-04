@@ -1,4 +1,5 @@
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
+import { addDays } from "@/Domain/dates";
 import { GATE } from "@/Domain/finance/gate";
 import { overallAvg } from "@/Domain/playerRating";
 import type {
@@ -342,12 +343,6 @@ export function snapshotBoard(state: BoardState, date: string): BoardState {
   const snap: BoardSnapshot = { date, board: Math.round(state.board * 10) / 10, fans: Math.round(state.fans * 10) / 10 };
   const prev = state.history.at(-1)?.date === date ? state.history.slice(0, -1) : state.history;
   return { ...state, history: [...prev, snap].slice(-BOARD_FANS.HISTORY_DAYS) };
-}
-
-function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 /** Latest value minus the value TREND_DAYS ago (null without a snapshot that old). */

@@ -8,6 +8,7 @@
 import { FOUL_CONFIG as C } from '@/GameEngine/Configs/FoulConfig';
 import type { RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
 import { PITCH_LENGTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
+import { clamp } from '@/Domain/math';
 
 /** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
 export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
@@ -30,8 +31,6 @@ export interface FoulContext {
   /** The challenge happens inside the offender's own penalty area. */
   inOwnBox: boolean;
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Probability that a resolved tackle / loose-ball duel is a foul. */
 export function foulChance(ctx: FoulContext): number {

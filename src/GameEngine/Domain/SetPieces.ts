@@ -17,11 +17,11 @@ import { SET_PIECE_CONFIG as C } from '@/GameEngine/Configs/SetPieceConfig';
 import { aerialAbility, crossTargetPoints, isInSmallBox, keeperComesFor, type CrossTargetKind } from '@/GameEngine/Domain/Aerial';
 import { computeOpenAngle } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
+import { clamp } from '@/Domain/math';
 
 type Pos = { x: number; y: number };
 
 const CENTRE_Y = PITCH_WIDTH / 2;
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const clampPos = (p: Pos): Pos => ({ x: clamp(p.x, 0.5, PITCH_LENGTH - 0.5), y: clamp(p.y, 0.5, PITCH_WIDTH - 0.5) });
 
 const DEFENDER_ROLES = new Set<PlayerRole>(['CB', 'LB', 'RB', 'LWB', 'RWB']);

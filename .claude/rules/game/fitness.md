@@ -25,7 +25,7 @@
 | `src/Domain/advanceDay/matches.ts` | Pós-jogo (fôlego = energia final, carga += minutos) |
 | `src/backend/advanceDay.ts`, `src/Domain/advanceDay/dailyRest.ts`, `dailyTraining.ts` | Recuperação/treino diários para quem não jogou hoje |
 | `src/Domain/lineupHelpers.ts` (+ teste) | `autoFillLineupWithFitness` — seletor de XI ciente de fôlego |
-| `src/GameInterface/EnergyPanel.tsx`, `TestScreen.tsx`, `src/GameEngine/Suport/TestCases.ts` | Debug (`/test`) |
+| `src/GameInterface/EnergyPanel.tsx`, `TestScreen.tsx`, `src/GameEngine/Support/TestCases.ts` | Debug (`/test`) |
 | `src/lab/balanceWorker.ts`, `scenarioRunner.ts`, `types.ts`, `components/ScenarioBuilder.tsx`, `PairDetail.tsx` | Calendário apertado (`/lab`) |
 | `src/GameEngine/Domain/Statistics.ts` | `avgEndEnergy`, `fatigueSubstitutions` |
 | `scripts/fatigue-calibrate.ts` | Motor × quickSim, cenários de saldo de gols, `START_COMPRESSION` |
@@ -283,7 +283,7 @@ no 3º jogo) passando.
 ## 6. `/test`
 
 - **`EnergyPanel`** (botão "Energy" no `TestScreen`): energia por jogador ao vivo, ambos os times.
-- **Cenário `tired-team`** (`src/GameEngine/Suport/TestCases.ts`): Time A começa em 60 de energia
+- **Cenário `tired-team`** (`src/GameEngine/Support/TestCases.ts`): Time A começa em 60 de energia
   com o multiplicador de drenagem derivado de `FITNESS.LOAD_HIGH` (Time B fresco) — titulares E
   banco, porque um reserva que entra no meio de um calendário apertado chega tão cansado quanto o
   XI. Serve para observar o Time A cair de rendimento e a IA fazer substituições por fadiga.

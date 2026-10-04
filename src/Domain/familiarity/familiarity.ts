@@ -9,8 +9,8 @@ import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import { FAMILIARITY_KEYS, type FamiliarityKey, type FamiliarityLevels } from "@/types/familiarityTypes";
 import type { TacticalStyle } from "@/types/tacticsTypes";
 import type { Squad } from "@/types/playerTypes";
+import { clamp } from "@/Domain/math";
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Linear: 0 at 50, +1 at 100, −1 at 0 (clamped). Undefined = neutral. */

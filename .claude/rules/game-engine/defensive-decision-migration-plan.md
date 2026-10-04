@@ -341,7 +341,7 @@ return clampToBounds({ x: rawX, y: rawY }, player.bounds);
 
 Add imports to `DefensivePositioning.ts`:
 ```ts
-import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 ```
 

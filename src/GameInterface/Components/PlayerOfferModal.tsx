@@ -9,18 +9,12 @@ import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
 import type { TransferRecord } from "@/types/transferTypes";
 import { ContractTermsFields, useContractDemand, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 import { Icon } from "@/GameInterface/Icons";
+import { formatFee } from "@/Domain/money";
 
 function rawTransferOfferValue(avg: number, age: number): number {
   const base = avg * avg * 0.8;
   const ageFactor = age <= 24 ? 1.3 : age <= 28 ? 1.0 : age <= 32 ? 0.7 : 0.4;
   return Math.round(base * ageFactor) * 1_000_000;
-}
-
-function formatTransferFee(fee: number): string {
-  const m = fee / 1_000_000;
-  if (m >= 100) return `£${Math.round(m)}M`;
-  if (m >= 1) return `£${m.toFixed(1)}M`;
-  return `£${(fee / 1000).toFixed(0)}K`;
 }
 
 function offerSliderConfig(budget: number, avg: number, age: number) {
@@ -162,7 +156,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 </label>
                 <p className="text-sm text-muted-foreground mb-2 m-0">
                   {t("transfers.availableBudget")}:{" "}
-                  <span className="text-primary font-semibold tabular-nums">{formatTransferFee(budget)}</span>
+                  <span className="text-primary font-semibold tabular-nums">{formatFee(budget, "£")}</span>
                 </p>
                 {!slider.canOffer ? (
                   <p className="text-sm text-destructive m-0">
@@ -180,7 +174,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       className="flex-1 accent-primary"
                     />
                     <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">
-                      {formatTransferFee(offerFee)}
+                      {formatFee(offerFee, "£")}
                     </span>
                   </div>
                 )}
@@ -222,7 +216,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                   <Icon name="check-circle" className="w-12 h-12 text-chart-2 mx-auto mb-3" />
                   <p className="text-base font-black text-chart-2 m-0">{translateTransferReason(t, result.reason, true)}</p>
                   <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
-                    {t("transfers.acceptedSummary", { name: player.name, fee: formatTransferFee(result.fee) })}
+                    {t("transfers.acceptedSummary", { name: player.name, fee: formatFee(result.fee, "£") })}
                   </p>
                 </>
               ) : (

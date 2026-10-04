@@ -6,6 +6,7 @@ import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRoll
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
+import { addDays } from "@/Domain/dates";
 
 /**
  * Fast-forward ("Avançar até o próximo jogo"): advance the save day by day until the player's next
@@ -19,10 +20,6 @@ const ADVANCE_UNTIL_MAX_DAYS = 14;
 /** No player match inside this horizon → error (a broken calendar, not an off-season). */
 const ADVANCE_TARGET_HORIZON_DAYS = 400;
 
-const DAY_MS = 86_400_000;
-const toUtc = (d: string) => Date.parse(d + "T00:00:00Z");
-const fromUtc = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-export const shiftDate = (d: string, days: number) => fromUtc(toUtc(d) + days * DAY_MS);
 
 export interface AdvanceTarget {
   /**
@@ -46,13 +43,13 @@ export function computeAdvanceTarget(
   playerFixtureDates: string[],
   rolloverDay: string | null = null,
 ): AdvanceTarget {
-  const horizon = shiftDate(currentDate, ADVANCE_TARGET_HORIZON_DAYS);
+  const horizon = addDays(currentDate, ADVANCE_TARGET_HORIZON_DAYS);
   const next = playerFixtureDates
     .filter((d) => d >= currentDate && d <= horizon)
     .sort()[0];
   if (next) return { target: next, matchDate: next };
   if (rolloverDay && rolloverDay >= currentDate && rolloverDay <= horizon) {
-    return { target: shiftDate(rolloverDay, 1), matchDate: null };
+    return { target: addDays(rolloverDay, 1), matchDate: null };
   }
   throw new Error(`no player match within ${ADVANCE_TARGET_HORIZON_DAYS} days of ${currentDate}`);
 }

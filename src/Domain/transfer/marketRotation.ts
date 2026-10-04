@@ -7,24 +7,16 @@ import type { MarketState, SellCandidate, SquadMarketProfile, TransferNeed } fro
 import { defaultRng, generateTransferNeeds, playerMatchesBand, playerOverallRating, processTeamTransferAttempt } from "@/Domain/transfer/transferNeeds";
 import { generateSellList, getSellPriority } from "@/Domain/transfer/sellList";
 import { Player } from "@/Domain/Player";
-import { debugLog } from "@/Logger";
+import { logDebug } from "@/Logger";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
+import { shuffle } from "@/Domain/rng";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
 const TEAMS_PER_DAY_ATTEMPTS = 10;
 const PLAYER_SELL_LIST_MATCH_CHANCE = 1;
-
-function shuffleInPlace<T>(arr: T[], rng: () => number): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    const t = arr[i]!;
-    arr[i] = arr[j]!;
-    arr[j] = t;
-  }
-}
 
 function cloneSquad(s: Squad): Squad {
   return { ...s, players: [...s.players] };
@@ -40,16 +32,14 @@ function squadRef(s: Squad): { leagueSlug: string; clubSlug: string } {
  * Fisher–Yates shuffle of squad IDs; empty profiles.
  */
 export function initMarketState(allSquads: Squad[], rng: () => number = defaultRng): MarketState {
-  const shuffledTeamIds = allSquads.map((s) => s.id);
-  shuffleInPlace(shuffledTeamIds, rng);
+  const shuffledTeamIds = shuffle(allSquads.map((s) => s.id), rng);
   return { shuffledTeamIds, rotationIndex: 0, profiles: {}, playerSellList: [] };
 }
 
 /** Pick up to `count` distinct indices from 0..pool.length-1 using rng. */
 function sampleIndices(poolLen: number, count: number, rng: () => number): number[] {
   if (poolLen === 0) return [];
-  const idx = Array.from({ length: poolLen }, (_, i) => i);
-  shuffleInPlace(idx, rng);
+  const idx = shuffle(Array.from({ length: poolLen }, (_, i) => i), rng);
   return idx.slice(0, Math.min(count, poolLen));
 }
 
@@ -227,7 +217,7 @@ export function dailyMarketTick(
     let guard = 0;
     while (guard < shuffledTeamIds.length) {
       if (rotationIndex >= shuffledTeamIds.length) {
-        shuffleInPlace(shuffledTeamIds, rng);
+        shuffledTeamIds = shuffle(shuffledTeamIds, rng);
         rotationIndex = 0;
       }
       const candidate = shuffledTeamIds[rotationIndex]!;
@@ -333,7 +323,7 @@ export function dailyMarketTick(
   // 10% daily chance: an AI club attempts to match the human's sell list
   const playerSellList = options?.playerSellList ?? market.playerSellList ?? [];
   const playerSquad = options?.playerSquad ?? null;
-  debugLog("transfers", "sell-list guard", {
+  logDebug("transfers", "sell-list guard", {
     hasPlayerSquad: !!playerSquad,
     playerSquadName: playerSquad?.name ?? null,
     sellListLength: playerSellList.length,
@@ -345,7 +335,7 @@ export function dailyMarketTick(
     excludePlayerSquadId &&
     rng() < PLAYER_SELL_LIST_MATCH_CHANCE
   ) {
-    debugLog(
+    logDebug(
       "transfers",
       "sell-list match triggered — checking",
       playerSellList.length,
@@ -363,13 +353,13 @@ export function dailyMarketTick(
       options?.historyFrom,
     );
     if (matchResult) {
-      debugLog(
+      logDebug(
         "transfers",
         `sell-list match SUCCESS: ${matchResult.player.name} → ${matchResult.buyerSquad.name} for €${matchResult.fee.toLocaleString()}`,
       );
       completedTransfers.push(matchResult);
     } else {
-      debugLog("transfers", "sell-list match attempted but no deal completed (no buyer or offer rejected)");
+      logDebug("transfers", "sell-list match attempted but no deal completed (no buyer or offer rejected)");
     }
   }
 

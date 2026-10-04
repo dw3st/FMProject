@@ -8,7 +8,6 @@ import { applyRandomStartKit } from "@/backend/startKits";
 import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
 import type { FreeAgent, LeagueData, LeagueTeam, LeagueZone, Squad, StandingRow } from "@/types/playerTypes";
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
-import { addDaysIso } from "@/Domain/contracts/contracts";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover } from "@/Domain/youth/youth";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
@@ -47,7 +46,7 @@ import {
 } from "@/Domain/boardFans/boardFans";
 import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
 import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
-import { addOneDay } from "@/Domain/advanceDay/date";
+import { addDays, addOneDay } from "@/Domain/dates";
 import {
   buildMatchEvent,
   buildMatchEventFromRecording,
@@ -78,7 +77,7 @@ import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
-import { debugLog, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
+import { logDebug, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
@@ -704,7 +703,7 @@ export async function advanceOneDay(
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
     if (playerSquadId) {
       const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
-      if (leagueEnd && currentDate === addDaysIso(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
+      if (leagueEnd && currentDate === addDays(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
         const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
         const ending = (humanSquad?.players ?? []).filter((p) => p.contract && p.contract.until <= leagueEnd);
         if (ending.length > 0) {
@@ -1844,7 +1843,7 @@ export async function advanceOneDay(
             prize: playerLeaguePrizeThisRollover,
           });
         }
-        debugLog(LOG_NS_SEASON, "Season rollover complete", {
+        logDebug(LOG_NS_SEASON, "Season rollover complete", {
           archivedSeasonYear: archiveYear,
           moves: plan.moves.length,
           playerMove: plan.playerMove,

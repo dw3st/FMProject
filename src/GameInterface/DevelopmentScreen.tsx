@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { PlayerProfile } from "@/GameInterface/Development/PlayerProfile";
@@ -204,9 +204,9 @@ export function DevelopmentScreen() {
 
   return (
     <ScreenContainer>
-          <PageHeadline backHref="/dashboard" accent={t("screenTitles.development.accent")}>
+          <ScreenTitle accent={t("screenTitles.development.accent")}>
             {t("screenTitles.development.main")}
-          </PageHeadline>
+          </ScreenTitle>
 
           <DevelopmentTrainingConfig />
 

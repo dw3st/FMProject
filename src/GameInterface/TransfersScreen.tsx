@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { MyTransfers } from "@/GameInterface/Transfers/MyTransfers";
@@ -40,8 +40,7 @@ export function TransfersScreen() {
 
   return (
     <ScreenContainer>
-        <PageHeadline
-          backHref="/dashboard"
+        <ScreenTitle
           accent={t("screenTitles.transfers.accent")}
           trailing={
             <SegmentedTabs
@@ -65,7 +64,7 @@ export function TransfersScreen() {
           }
         >
           {t("screenTitles.transfers.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         {loading && activeTab !== "sell" ? (
           <div className="card-arcade rounded-md p-12 text-center">

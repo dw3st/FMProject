@@ -4,6 +4,7 @@ import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
 import type { HiringState } from "@/Domain/aiFinance/aiClubFinance";
 import type { FinancialTier } from "@/types/playerTypes";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
+import { formatEurosDetailed } from "@/Domain/money";
 
 const TIER_BADGE: Record<FinancialTier, string> = {
   LOW: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
@@ -23,13 +24,6 @@ const WAGE_BAR: Record<HiringState, string> = {
   tight: "bg-chart-4",
   frozen: "bg-destructive",
 };
-
-/** €12.3M / €450k / €900 */
-export function formatEuros(n: number): string {
-  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(n >= 100_000_000 ? 0 : 1)}M`;
-  if (n >= 1_000) return `€${(n / 1_000).toFixed(n >= 100_000 ? 0 : 1)}k`;
-  return `€${Math.round(n)}`;
-}
 
 const GRID = "grid grid-cols-[minmax(0,1fr)_80px_104px_100px_170px_80px_150px] gap-3 items-center";
 
@@ -97,14 +91,14 @@ export function ClubFinancesTable({
                 </div>
 
                 <div className="text-right text-sm tabular-nums text-muted-foreground">
-                  {row.weeklyBudget != null ? `${formatEuros(row.weeklyBudget)}${t("leagues.finances.perWeek")}` : "—"}
+                  {row.weeklyBudget != null ? `${formatEurosDetailed(row.weeklyBudget)}${t("leagues.finances.perWeek")}` : "—"}
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm tabular-nums">
-                    <span className="text-foreground">{formatEuros(row.wageBill)}</span>
+                    <span className="text-foreground">{formatEurosDetailed(row.wageBill)}</span>
                     <span className="text-muted-foreground">
-                      {row.maxWageBudget != null ? `/ ${formatEuros(row.maxWageBudget)}` : ""}
+                      {row.maxWageBudget != null ? `/ ${formatEurosDetailed(row.maxWageBudget)}` : ""}
                     </span>
                   </div>
                   {row.maxWageBudget != null && row.hiring && (
@@ -130,8 +124,8 @@ export function ClubFinancesTable({
                 <div className="text-right text-sm tabular-nums">
                   {row.transferBudget != null && row.seasonalTransferBudget != null ? (
                     <>
-                      <span className="text-foreground font-semibold">{formatEuros(row.transferBudget)}</span>
-                      <span className="text-muted-foreground text-sm"> / {formatEuros(row.seasonalTransferBudget)}</span>
+                      <span className="text-foreground font-semibold">{formatEurosDetailed(row.transferBudget)}</span>
+                      <span className="text-muted-foreground text-sm"> / {formatEurosDetailed(row.seasonalTransferBudget)}</span>
                     </>
                   ) : (
                     <span className="text-muted-foreground">—</span>

@@ -106,17 +106,16 @@ describe("Leagues look shared with Stats", () => {
   });
 });
 
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
 
 describe("screen titles", () => {
-  test("PageHeadline uses the standard screen-title classes (same as ScreenTitle)", () => {
-    const html = renderToStaticMarkup(<PageHeadline>Ligas</PageHeadline>);
+  test("ScreenTitle uses the standard screen-title classes", () => {
+    const html = renderToStaticMarkup(<ScreenTitle>Ligas</ScreenTitle>);
     for (const c of ["font-display", "font-black", "uppercase", "tracking-tight", "text-3xl", "md:text-4xl"]) {
       expect(html).toContain(c);
     }
   });
-  test("the accent part is the second word, in primary (PageHeadline and ScreenTitle)", () => {
-    const a = renderToStaticMarkup(<PageHeadline accent="Copas">Ligas e</PageHeadline>);
+  test("the accent part is the second word, in primary", () => {
+    const a = renderToStaticMarkup(<ScreenTitle accent="Copas">Ligas e</ScreenTitle>);
     expect(a).toContain('Ligas e <span class="text-primary">Copas</span>');
     const b = renderToStaticMarkup(<ScreenTitle accent="Painel">Seu</ScreenTitle>);
     expect(b).toContain('Seu <span class="text-primary">Painel</span>');

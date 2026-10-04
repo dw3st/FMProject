@@ -6,8 +6,7 @@
  * The regional mixes are deliberately wide (every region can produce every appearance), only
  * shifting the odds, so national squads stay varied.
  */
-import { mulberry32 } from "@/Domain/rng";
-import { seedFrom } from "@/Domain/cups/cupIds";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 export type FaceRace = "white" | "black" | "brown" | "asian";
 

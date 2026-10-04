@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { addDays } from "@/Domain/dates";
 import {
   computeAdvanceTarget,
   nextPlayerFixtureDate,
   runAdvanceBatch,
-  shiftDate,
   type AdvanceBatchDeps,
   type AdvancePosition,
 } from "@/backend/advanceUntil";
@@ -134,7 +134,7 @@ function fakeDeps(opts: {
       if (currentDate === opts.failOn) return { ok: false, status: 500, error: "failed to persist day" };
       days.push(currentDate);
       const ended = currentDate === opts.seasonEndOn;
-      currentDate = shiftDate(currentDate, 1);
+      currentDate = addDays(currentDate, 1);
       return {
         ok: true,
         payload: {

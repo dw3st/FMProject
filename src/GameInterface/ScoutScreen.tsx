@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScoutFilters } from "@/GameInterface/Scout/ScoutFilters";
 import { createDefaultScoutFilters, type ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
@@ -177,9 +177,9 @@ export function ScoutScreen() {
   return (
     <>
       <ScreenContainer>
-        <PageHeadline backHref="/dashboard" accent={t("screenTitles.scout.accent")}>
+        <ScreenTitle accent={t("screenTitles.scout.accent")}>
           {t("screenTitles.scout.main")}
-        </PageHeadline>
+        </ScreenTitle>
 
         <ScoutFilters
           filters={filters}

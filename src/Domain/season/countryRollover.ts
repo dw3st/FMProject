@@ -1,4 +1,4 @@
-import { addOneDay } from "@/Domain/advanceDay/date";
+import { addOneDay } from "@/Domain/dates";
 import { countryReadyForTransition, planPromotionRelegation } from "@/Domain/season/promotionRelegation";
 import type { ClubMove, CountryPyramid, Pyramids } from "@/types/pyramidTypes";
 import type { StandingRow } from "@/types/playerTypes";

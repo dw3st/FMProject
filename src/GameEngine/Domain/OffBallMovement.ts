@@ -14,7 +14,7 @@ import {
   getTeamWidth,
   ATTACK_CONFIG,
 } from '@/GameEngine/Configs/AttackConfig';
-import { isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import {

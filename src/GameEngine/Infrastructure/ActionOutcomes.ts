@@ -20,6 +20,7 @@ import {
   GOAL_Y_MIN,
   GOAL_Y_MAX,
 } from '@/GameEngine/Domain/pitch';
+import { clamp } from '@/Domain/math';
 
 export const SHOT_SPEED      = 2.0;
 export const TACKLE_COOLDOWN = 1.2;
@@ -139,10 +140,6 @@ export const GK_MAX_COME_OUT           = 6.0;
 export const GK_COME_OUT_DIST          = 20;
 /** Positional deviation (yards) at which position quality reaches 0. */
 const GK_MAX_POSITION_DEVIATION = 8.0;
-
-function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
-}
 
 /**
  * Compute pure spatial xG from position and weighted pressure.

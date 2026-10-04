@@ -34,7 +34,7 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { debugLog, isDebugEnabled } from '@/GameEngine/Suport/DebugLog';
+import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';

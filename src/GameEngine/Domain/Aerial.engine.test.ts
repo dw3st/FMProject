@@ -270,7 +270,7 @@ describe("header goals", () => {
 
 describe("/test scenario cross-to-box", () => {
   test("the winger with the ball chooses to cross", async () => {
-    const { TEST_SCENARIOS } = await import("@/GameEngine/Suport/TestCases");
+    const { TEST_SCENARIOS } = await import("@/GameEngine/Support/TestCases");
     const { decide } = await import("@/GameEngine/Domain/DecisionTree");
     const sc = TEST_SCENARIOS.find(t => t.id === "cross-to-box")!;
     const s = sc.createState();

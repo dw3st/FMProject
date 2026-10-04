@@ -1,19 +1,11 @@
 import type { Fixture } from "@/types/calendarTypes";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
+import { shuffle } from "@/Domain/rng";
 
 /** One knockout pairing. `second` hosts the second leg (or is the neutral-final away side). */
 export interface KnockoutTie {
   first: string;
   second: string;
-}
-
-function shuffle<T>(xs: T[], rng: () => number): T[] {
-  const a = [...xs];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
-  }
-  return a;
 }
 
 /**

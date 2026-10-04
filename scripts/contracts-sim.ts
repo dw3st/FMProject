@@ -16,7 +16,8 @@ import { join } from "path";
 import { fileURLToPath } from "node:url";
 import { aiClubFinance, financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { FINANCIAL_TIERS } from "@/Domain/aiFinance/aiFinanceConfig";
-import { withContracts, addDaysIso } from "@/Domain/contracts/contracts";
+import { withContracts } from "@/Domain/contracts/contracts";
+import { addDays } from "@/Domain/dates";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { freeAgentTick, refillSquad } from "@/Domain/contracts/freeAgents";
 import {
@@ -113,7 +114,7 @@ for (let season = 0; season < seasons; season++) {
       freeSigned += fa.signedIds.size;
     }
     if (day % 30 === 0) { sample(seasonCounts); sample(total); }
-    date = addDaysIso(date, 1);
+    date = addDays(date, 1);
     day++;
   }
 

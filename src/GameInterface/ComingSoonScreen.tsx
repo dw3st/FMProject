@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { Icon } from "@/GameInterface/Icons";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 
@@ -18,9 +18,9 @@ export function ComingSoonScreen() {
 
   return (
     <ScreenContainer>
-        <PageHeadline backHref="/dashboard" backLabel="Back to Dashboard" accent={t("screenTitles.comingSoon.accent")}>
+        <ScreenTitle accent={t("screenTitles.comingSoon.accent")}>
           {meta.title}
-        </PageHeadline>
+        </ScreenTitle>
 
         <div className="relative flex justify-center w-full">
           <div className="relative inline-flex items-center justify-center">

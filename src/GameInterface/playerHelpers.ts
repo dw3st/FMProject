@@ -4,6 +4,8 @@ import { Player, type StatusLevel } from "@/Domain/Player";
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 import { isInjured } from "@/Domain/injury/injury";
 import { isSuspended } from "@/Domain/discipline/discipline";
+import { daysBetween } from "@/Domain/dates";
+import { formatWageShort } from "@/Domain/money";
 
 /** Capitalizes an injury severity string ("light" → "Light") for i18n key lookup. */
 export function capitalizeSeverity(severity: "light" | "medium" | "severe"): string {
@@ -11,12 +13,6 @@ export function capitalizeSeverity(severity: "light" | "medium" | "severe"): str
 }
 
 /** Whole days between two `YYYY-MM-DD` dates (`to − from`, may be negative). */
-function daysBetween(from: string, to: string): number {
-  const a = new Date(`${from}T00:00:00Z`).getTime();
-  const b = new Date(`${to}T00:00:00Z`).getTime();
-  return Math.round((b - a) / 86_400_000);
-}
-
 export type { StatusLevel };
 
 /** Threshold for the "high load" UI indicator — 70% of `FITNESS.LOAD_HIGH` (see `game/fitness.md`). */
@@ -95,12 +91,6 @@ export function resolveSquadIdFromLeagues(
   return null;
 }
 
-/** Weekly wage label (same format as `Player.salaryLabel`). */
-function formatWeeklyWage(weekly: number): string {
-  const w = Math.round(weekly);
-  return w >= 1000 ? `${(w / 1000).toFixed(0)}k` : `${w}`;
-}
-
 export function toDisplayPlayer(
   player: RosterPlayer,
   clubName: string,
@@ -133,7 +123,7 @@ export function toDisplayPlayer(
     avg: Math.round(avg * 10) / 10,
     energy: log ? Math.round(log.fitness) : 100,
     load: log?.load ?? 0,
-    salary: player.contract ? formatWeeklyWage(player.contract.wage) : domain.salaryLabel(options?.wageFactor),
+    salary: player.contract ? formatWageShort(player.contract.wage) : domain.salaryLabel(options?.wageFactor),
     contractUntil: player.contract ? player.contract.until.slice(0, 4) : "—",
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,

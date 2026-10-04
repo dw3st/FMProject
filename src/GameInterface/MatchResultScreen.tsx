@@ -20,7 +20,7 @@ import {
   squadPrimaryColor,
   squadSecondaryColor,
 } from "@/GameInterface/matchTeamColors";
-import { addOneDay } from "@/Domain/advanceDay/date";
+import { addOneDay } from "@/Domain/dates";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 
 const Clock = iconOf("clock");

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import type { Squad } from "@/types/playerTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -86,7 +86,6 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   if (error || !squad) {
     return (
       <ScreenContainer>
-        <PageHeadline hideTitle backHref={`/leagues/${league}`} />
         <p className="text-muted-foreground text-sm m-0">{t("squadScreen.squadNotFound")}</p>
       </ScreenContainer>
     );
@@ -95,8 +94,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   return (
     <>
     <ScreenContainer fill>
-        <PageHeadline
-          backHref={`/leagues/${league}`}
+        <ScreenTitle
           accent={squad.name}
           trailing={
             <div className="text-sm text-muted-foreground font-semibold">{squad.players.length} {t("squadScreen.players")}</div>
@@ -112,7 +110,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
             />
             {t("screenTitles.squad.main")}
           </span>
-        </PageHeadline>
+        </ScreenTitle>
 
         {squad.id === mySquadId && (
           <Tabs

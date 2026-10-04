@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { emptySeasonLog, type Squad } from "@/types/playerTypes";
-import { seedFrom } from "@/Domain/cups/cupIds";
 import { aiRecordFor } from "@/Domain/advanceDay/matchSimulationLineups";
+import { seedFrom } from "@/Domain/rng";
 
 export type Mode = "main" | "ai";
 export interface GoalTotals { n: number; goals: number; shots: number }

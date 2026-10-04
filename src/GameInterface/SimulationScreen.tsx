@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeadline } from "@/GameInterface/Components/PageHeadline";
+import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import type { LeagueData, LeagueTeam, Squad } from "@/types/playerTypes";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { MatchResult } from "@/GameEngine/Domain/SimulateMatch";
@@ -312,15 +312,14 @@ export function SimulationScreen() {
 
   return (
     <div className="w-full max-w-3xl space-y-6 p-6">
-      <PageHeadline
-        backHref="/"
+      <ScreenTitle
         size="md"
         subtitle={
           <span className="text-xs text-muted-foreground block m-0">{t("common.headlessEngine")}</span>
         }
       >
         {t("common.simulation")} <span className="text-primary glow-text">{t("common.simulation")}</span>
-      </PageHeadline>
+      </ScreenTitle>
 
       <div className="card-arcade rounded-xl border-glow p-5">
         <div className="flex gap-6 items-start">
