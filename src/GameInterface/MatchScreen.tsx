@@ -8,7 +8,7 @@ import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
 import { initRatings, getAllRatings, exportRatings, importRatings } from "@/GameEngine/Domain/PlayerRating";
-import { getTeamStats, initStats, exportStatsState, importStatsState } from "@/GameEngine/Domain/Statistics";
+import { getTeamStats, getAllPlayerStats, initStats, exportStatsState, importStatsState } from "@/GameEngine/Domain/Statistics";
 import {
   MATCH_SNAPSHOT_VERSION,
   SNAPSHOT_INTERVAL_MS,
@@ -21,7 +21,7 @@ import {
 import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
-import type { GameState, TeamId, Formation, PendingSub } from "@/GameEngine/types";
+import type { GameState, GamePlayer, TeamId, Formation, PendingSub } from "@/GameEngine/types";
 import type { TacticsSave, TacticalStyle, Mentality } from "@/types/tacticsTypes";
 import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
@@ -74,6 +74,7 @@ import { GoalOverlay } from "@/GameInterface/GoalOverlay";
 import { MatchOverlay } from "@/GameInterface/MatchOverlay";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
 import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
+import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -179,6 +180,8 @@ export function MatchScreen() {
   const gameSpeedRef = useRef(gameSpeed);
   useEffect(() => { gameSpeedRef.current = gameSpeed; }, [gameSpeed]);
   const [ratings, setRatings] = useState<Record<number, number>>(() => getAllRatings());
+  /** Every player seen on the pitch, so a sent-off player can still be listed (#69). */
+  const knownPlayersRef = useRef(new Map<number, GamePlayer>());
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
   const [pitchSize, setPitchSize] = useState<{ w: number; h: number } | null>(null);
@@ -747,6 +750,12 @@ export function MatchScreen() {
   const passToId = gameState.pass?.toId ?? undefined;
   const score = gameState.score ?? { A: 0, B: 0 };
   const decisions = gameState.decisions;
+  for (const p of gameState.players) knownPlayersRef.current.set(p.id, p);
+  const playerEvents = playerMatchEvents(gameState.cards, getAllPlayerStats());
+  const sentOffPlayers = gameState.cards
+    .filter((c) => c.card === "red" && c.team === panelTeam)
+    .map((c) => knownPlayersRef.current.get(c.playerId))
+    .filter((p): p is GamePlayer => p !== undefined && !gameState.players.some((q) => q.id === p.id));
 
   teamNamesRef.current = { A: teamAWithCrest?.name ?? "A", B: teamBWithCrest?.name ?? "B" };
   const summaryStats = (tm: TeamId): SummaryTeamStats => {
@@ -923,6 +932,8 @@ export function MatchScreen() {
           subbedInPlayerIds={new Set(
             gameState.substitutions.filter((s) => s.team === panelTeam).map((s) => s.playerInId),
           )}
+          playerEvents={playerEvents}
+          sentOffPlayers={sentOffPlayers}
           onFlip={() => setPanelTeam((tm) => (tm === "A" ? "B" : "A"))}
           flipLabel={t("match.summary.showTeam", {
             team: (panelTeam === "A" ? teamBWithCrest?.name : teamAWithCrest?.name) ?? (panelTeam === "A" ? "B" : "A"),

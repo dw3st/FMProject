@@ -646,6 +646,13 @@
     "subbedOff": "Substituído aos {{minute}}'"
   },
   "match": {
+    "playerEvents": {
+      "goals": "Gols: {{count}}",
+      "assists": "Assistências: {{count}}",
+      "yellow": "Cartão amarelo",
+      "red": "Cartão vermelho",
+      "sentOff": "Expulso"
+    },
     "lastMinuteSubs": "Substituições de Última Hora",
     "shots": "Finalizações",
     "tackles": "Desarmes",

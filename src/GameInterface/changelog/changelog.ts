@@ -42,6 +42,10 @@ export const changelog: ChangelogEntry[] = [
         pt: "Saldo negativo escrito do jeito certo (−€1.2M) na barra inferior e nas finanças.",
         en: "Negative balances are written the right way (−€1.2M) in the bottom bar and in finances.",
       },
+      {
+        pt: "Na partida ao vivo, a escalação mostra gols, assistências e cartões de cada jogador, e as cores de times de uniforme escuro (como o preto do Botafogo) aparecem direito.",
+        en: "In the live match, the lineup shows each player's goals, assists and cards, and teams with dark kits (like Botafogo's black) show their colour properly.",
+      },
     ],
   },
   {

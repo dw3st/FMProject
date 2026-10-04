@@ -91,6 +91,7 @@ import {
   FileJson,
   Pencil,
   Plus,
+  Volleyball,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -194,6 +195,7 @@ export type IconName =
   | "file-json"
   | "pencil"
   | "plus"
+  | "ball"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -293,6 +295,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "file-json": FileJson,
   "pencil": Pencil,
   "plus": Plus,
+  "ball": Volleyball,
 };
 
 export interface IconProps {

@@ -72,6 +72,19 @@ export function readableOnDark(hex: string): string {
   return "#ffffff";
 }
 
+/** Below this luminance a solid kit-coloured dot/marker disappears on the dark background. */
+const MAX_DARK_MARKER_LUMINANCE = 0.08;
+
+/**
+ * Style for a small team-colour dot (team header, player rows). The dot keeps the real kit colour;
+ * dark kits (black, navy, maroon) get a light ring so the dot stays visible on the dark background.
+ */
+export function kitDotStyle(hex: string): CSSProperties {
+  return relativeLuminance(hex) < MAX_DARK_MARKER_LUMINANCE
+    ? { background: hex, boxShadow: "0 0 0 1.5px rgba(255, 255, 255, 0.6)" }
+    : { background: hex };
+}
+
 /** If home primary and away primary are this similar or more, away kit uses secondary instead. */
 const KIT_COLOR_SIMILARITY_TOO_CLOSE = 0.88;
 

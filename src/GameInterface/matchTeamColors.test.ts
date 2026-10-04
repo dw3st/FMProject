@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readableOnDark, relativeLuminance } from "@/GameInterface/matchTeamColors";
+import { kitDotStyle, readableOnDark, relativeLuminance } from "@/GameInterface/matchTeamColors";
 
 describe("readableOnDark", () => {
   test("lifts black and other dark kits to a readable luminance", () => {
@@ -13,6 +13,21 @@ describe("readableOnDark", () => {
   test("keeps light and saturated kits unchanged", () => {
     for (const hex of ["#ffffff", "#ffd700", "#22c55e", "#ef4444"]) {
       expect(readableOnDark(hex)).toBe(hex);
+    }
+  });
+});
+
+describe("kitDotStyle", () => {
+  test("rings dark kits so the dot shows on the dark background", () => {
+    for (const hex of ["#000000", "#111111", "#001f5b"]) {
+      expect(kitDotStyle(hex).boxShadow).toBeDefined();
+      expect(kitDotStyle(hex).background).toBe(hex);
+    }
+  });
+
+  test("leaves visible kits as a plain dot", () => {
+    for (const hex of ["#ffffff", "#ffd700", "#22c55e", "#ef4444"]) {
+      expect(kitDotStyle(hex)).toEqual({ background: hex });
     }
   });
 });
