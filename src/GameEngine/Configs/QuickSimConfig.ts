@@ -192,13 +192,14 @@ export const QUICK_SIM_CONFIG = {
    * Energy spent over 90' for an average-stamina player, per line — calibrated against the full
    * engine's average end-of-match energy loss for players who play the whole 90' (fitness 100,
    * load 0), pooled across premier_league / of_allsvenskan / of_kenyan_premier_division (60 pairs
-   * per league, ~360–940 full-90 player-observations per line). See
+   * per league, ~360–940 full-90 player-observations per line; re-measured 2026-10-03 after Etapa 19,
+   * 80 pairs × 2 per league: the current engine drains DEF/MID ~10–15% less than before). See
    * `bun scripts/fatigue-calibrate.ts`. Applied in `quickSim.ts` as
    * `ENERGY_DRAIN_BY_LINE[line] × staminaFactor × drainMultiplier(load) × extraTimeMult`. GK
    * drains the least (mostly holds position / occasional gkSave); DEF and FWD the most (constant
    * pressing/tackling and carrying/pressing respectively); MID sits in between.
    */
-  ENERGY_DRAIN_BY_LINE: { GK: 38.1, DEF: 53.5, MID: 48.3, FWD: 52.1 } as Record<LineGroup, number>,
+  ENERGY_DRAIN_BY_LINE: { GK: 35.7, DEF: 45.8, MID: 43.8, FWD: 47.7 } as Record<LineGroup, number>,
 
   /**
    * Discipline (Etapa 12, `.claude/rules/game/discipline.md`): fouls, cards, penalties and offsides
