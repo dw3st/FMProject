@@ -139,6 +139,8 @@ export function ClubCard({
   leagueName,
   managerName,
   managerRank,
+  reputation,
+  pendingOffers,
   board,
   fans,
   boardTrend,
@@ -153,6 +155,10 @@ export function ClubCard({
   leagueName: string;
   managerName: string | null;
   managerRank: number | null;
+  /** Manager reputation 0..100 (`.claude/rules/game/jobs.md`); null while loading. */
+  reputation: number | null;
+  /** Pending job offers. */
+  pendingOffers: number;
   board: number;
   fans: number;
   /** Change vs. 7 days ago (null without enough history). */
@@ -191,6 +197,16 @@ export function ClubCard({
             className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline"
           >
             {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
+          </a>
+        )}
+        {reputation !== null && (
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {t("dashboard.clubSidebar.reputation", { value: Math.round(reputation) })}
+          </span>
+        )}
+        {pendingOffers > 0 && (
+          <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
+            {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
           </a>
         )}
       </div>

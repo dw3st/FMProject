@@ -12,9 +12,15 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useChangelogNotice } from "@/GameInterface/changelog/useChangelogNotice";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
 import type { LeagueData } from "@/types/playerTypes";
+import { NoClubScreen } from "@/GameInterface/NoClubScreen";
+
+/** Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". */
+const NO_CLUB_PATHS = ["/leagues", "/stats", "/scout", "/player"];
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { session, squad } = useGameSave();
+  const { session, squad, save } = useGameSave();
+  const noClub = !!save?.unemployed
+    && !(typeof window !== "undefined" && NO_CLUB_PATHS.some((p) => window.location.pathname.startsWith(p)));
   const {
     handleAdvanceDay, advancing, dayLog, dismissDayLog,
     canFastForward, handleFastForward, fastForward, stopFastForward, dismissFastForward,
@@ -50,7 +56,7 @@ export function Layout({ children }: { children: ReactNode }) {
       />
 
       <main className="h-full pt-14 pb-12 overflow-y-auto flex flex-col">
-        {children}
+        {noClub ? <NoClubScreen /> : children}
       </main>
 
       <StatusBar

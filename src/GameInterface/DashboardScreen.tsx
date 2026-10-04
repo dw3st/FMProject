@@ -99,6 +99,18 @@ export function DashboardScreen() {
     return () => { cancelled = true; };
   }, [saveId, currentDate]);
 
+  // Reputation and pending job offers (`.claude/rules/game/jobs.md`).
+  const [jobs, setJobs] = useState<{ reputation: number; offers: unknown[] } | null>(null);
+  useEffect(() => {
+    if (!saveId) return;
+    let cancelled = false;
+    fetch(`/api/saves/${saveId}/jobs`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ reputation: number; offers: unknown[] }>) : null))
+      .catch(() => null)
+      .then((d) => { if (!cancelled) setJobs(d); });
+    return () => { cancelled = true; };
+  }, [saveId, currentDate]);
+
   // Manager ranking line (`.claude/rules/game/managers.md`): the player's world rank.
   useEffect(() => {
     if (!saveId) return;
@@ -216,6 +228,8 @@ export function DashboardScreen() {
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
+        reputation={jobs?.reputation ?? null}
+        pendingOffers={jobs?.offers.length ?? 0}
         board={boardState?.board ?? 60}
         fans={boardState?.fans ?? 60}
         boardTrend={boardState ? trendOf(boardState.history, currentDate, "board") : null}

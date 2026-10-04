@@ -110,6 +110,8 @@ export const transferRoutes = {
       return withSaveLock(saveId, async () => {
         const meta = await saveService.getMeta(saveId);
         if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+        // Without a club (`.claude/rules/game/jobs.md`) there is nobody to buy for.
+        if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
 
         // ── Resolve squads ────────────────────────────────────────────────────
         const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
