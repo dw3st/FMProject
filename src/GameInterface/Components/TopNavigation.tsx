@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
@@ -58,13 +58,24 @@ function useCompactTabs(lang: string, itemCount: number) {
   const fullWidth = useRef(0);
   const measuredFor = useRef("");
   const [compact, setCompact] = useState(false);
+  // The web fonts load after the first paint (separate files since 3.4.2): a row measured with the
+  // fallback font is wider, so measure again once they are in.
+  const [fontsEpoch, setFontsEpoch] = useState(0);
+  useEffect(() => {
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    if (!fonts) return;
+    const bump = () => setFontsEpoch((n) => n + 1);
+    fonts.ready.then(bump);
+    fonts.addEventListener("loadingdone", bump);
+    return () => fonts.removeEventListener("loadingdone", bump);
+  }, []);
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (!outer || !inner) return;
-    // Labels change with the language (or a tab appears): show them again and re-measure.
-    const key = `${lang}:${itemCount}`;
+    // Labels change with the language (or a tab appears, or the fonts arrive): show them again and re-measure.
+    const key = `${lang}:${itemCount}:${fontsEpoch}`;
     if (measuredFor.current !== key) {
       measuredFor.current = key;
       fullWidth.current = 0;
@@ -86,7 +97,7 @@ function useCompactTabs(lang: string, itemCount: number) {
     const ro = new ResizeObserver(check);
     ro.observe(outer);
     return () => ro.disconnect();
-  }, [compact, lang, itemCount]);
+  }, [compact, lang, itemCount, fontsEpoch]);
 
   return { outerRef, innerRef, compact };
 }

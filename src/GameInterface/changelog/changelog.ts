@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.7",
+    date: "2026-10-04",
+    items: [
+      { pt: "A barra superior mostra os nomes das abas de novo logo que o jogo abre (às vezes ficava só com os ícones).", en: "The top bar shows the tab names again as soon as the game opens (it sometimes stayed icons only)." },
+    ],
+    fixes: [
+      { pt: "Nome do Vasco da Gama corrigido (novos jogos).", en: "Vasco da Gama's name fixed (new games)." },
+    ],
+  },
+  {
     version: "3.4.6",
     date: "2026-10-04",
     items: [
