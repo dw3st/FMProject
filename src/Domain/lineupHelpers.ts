@@ -2,7 +2,7 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { FormationSlot } from "@/types/formationSlots";
 import { aptitudeFor, slotValue } from "@/Domain/positions/positionAptitude";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import { overallEnergyFactor } from "@/GameEngine/Domain/RuntimeLineup";
 import { drainMultiplier, matchStartEnergy } from "@/Domain/fitness/fitness";
 import { isInjured } from "@/Domain/injury/injury";

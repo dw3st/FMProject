@@ -8,7 +8,7 @@ import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/play
 import { effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
 import { applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import ROLES from "@/Data/roles.json";
-import type { MainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
 import { seedFrom } from "@/Domain/rng";

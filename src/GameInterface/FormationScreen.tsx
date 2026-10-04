@@ -33,7 +33,8 @@ import {
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
 import type { RosterPlayer } from "@/types/playerTypes";
-import { getDetailedPositionColor, getMainRole, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
+import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";

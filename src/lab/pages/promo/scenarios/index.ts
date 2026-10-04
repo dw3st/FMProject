@@ -3,7 +3,7 @@
  * augmented at runtime by user-saved scenarios in localStorage.
  */
 import type { GameState } from "@/GameEngine/types";
-import elClasicoRaw from "./el-clasico.json";
+import elClasicoRaw from "@/lab/pages/promo/scenarios/el-clasico.json";
 
 /**
  * Stripped-of-meta scenario record. The `_meta` block is the only addition

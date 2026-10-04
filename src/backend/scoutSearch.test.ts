@@ -1,7 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { getScoutIndex, parseScoutQuery } from "@/backend/scoutSearch";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
-import { createDefaultScoutFilters } from "@/GameInterface/Scout/scoutFilterState";
+import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import type { Squad } from "@/types/playerTypes";
 
 describe("parseScoutQuery", () => {

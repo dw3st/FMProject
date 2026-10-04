@@ -1,4 +1,4 @@
-import type { MainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
 
 export type TransferBudgetTier = "low" | "mid" | "high";
 

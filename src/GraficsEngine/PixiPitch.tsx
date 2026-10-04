@@ -32,7 +32,7 @@ import {
 import type { GridMatrix } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig } from "@/GameEngine/Infrastructure/SpatialEvaluation";
-import type { CrowdMode } from "@/GameInterface/CrowdHeatmapPanel";
+import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 
 const PITCH_SPEC = {
   lengthYds: PITCH_LENGTH,

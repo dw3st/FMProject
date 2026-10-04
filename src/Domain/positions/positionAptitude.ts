@@ -1,6 +1,6 @@
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import { weightedScore } from "@/Domain/playerRating";
-import { getMainRole, type MainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole, type MainRole } from "@/Domain/roles";
 import { APT_RATIO, NEIGHBOUR_APT_RATIO, POSITION_PENALTY, TRAINING_RATIO, type Aptitude } from "@/Domain/positions/positionConfig";
 
 export type { Aptitude } from "@/Domain/positions/positionConfig";

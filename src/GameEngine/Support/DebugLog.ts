@@ -2,7 +2,7 @@
  * DebugLog — central debug logging for the game engine.
  *
  * Usage anywhere in GameEngine or GraficsEngine:
- *   import { debugLog } from './DebugLog';
+ *   import { debugLog } from '@/GameEngine/Support/DebugLog';
  *   debugLog('tackle', 'Silva attempts tackle on Ronaldo', { chance: 0.55 });
  *
  * Adding a new category:

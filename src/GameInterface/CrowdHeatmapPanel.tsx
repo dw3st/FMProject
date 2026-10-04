@@ -6,7 +6,7 @@ import type {
   Falloff,
 } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 
-export type CrowdMode = 'attack' | 'defense' | 'crowd';
+import type { CrowdMode } from '@/GameEngine/Infrastructure/CrowdGrid';
 
 interface Props {
   mode:           CrowdMode;

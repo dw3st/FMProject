@@ -1,5 +1,4 @@
 import { randomUUID } from "crypto";
-import { saveService, type SaveService } from "@/backend/SaveService";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
 import type {
@@ -19,6 +18,11 @@ import type {
 } from "@/types/inboxTypes";
 import { formatEurosText } from "@/Domain/money";
 
+/** Where inbox messages are written (the backend's `SaveService`). */
+export interface InboxSink {
+  appendInbox(saveId: string, message: InboxMessage): Promise<void>;
+}
+
 /**
  * Append a message to the save's inbox. Pass the unit of work's service (e.g. the
  * buffered day service in advanceOneDay) so the message is persisted — or not —
@@ -27,7 +31,7 @@ import { formatEurosText } from "@/Domain/money";
 export async function emitInboxMessage(
   saveId: string,
   message: InboxMessage,
-  service: SaveService = saveService,
+  service: InboxSink,
 ): Promise<void> {
   await service.appendInbox(saveId, message);
 }

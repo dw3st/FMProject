@@ -1,8 +1,8 @@
-import type { ScoutFilterState } from "@/GameInterface/Scout/scoutFilterState";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-import { toDisplayPlayer, resolveSquadIdFromLeagues } from "@/GameInterface/playerHelpers";
-import { getMainRole } from "@/GameInterface/positionHelpers";
-import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
+import type { ScoutFilterState } from "@/Domain/scout/scoutFilterState";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
+import { toDisplayPlayer } from "@/Domain/scout/displayPlayer";
+import { getMainRole } from "@/Domain/roles";
+import { ATTRIBUTE_LIST } from "@/Domain/attributes";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import type { FreeAgent, Squad } from "@/types/playerTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
@@ -37,12 +37,11 @@ const SCOUT_PAGE_SIZE_MIN = 10;
 const SCOUT_PAGE_SIZE_MAX = 200;
 
 /** Flatten every squad into scout rows, resolving league/club slugs for profile links. */
-export function mapSquadsToScoutPlayers(squads: Squad[], leagueSlugs: string[]): DisplayPlayer[] {
+export function mapSquadsToScoutPlayers(squads: Squad[]): DisplayPlayer[] {
   const players: DisplayPlayer[] = [];
   for (const squad of squads) {
-    const resolved = resolveSquadIdFromLeagues(squad.id, leagueSlugs);
-    const leagueSlug = resolved?.leagueSlug ?? squad.leagueSlug;
-    const clubSlug = resolved?.clubSlug ?? squad.slug;
+    const leagueSlug = squad.leagueSlug;
+    const clubSlug = squad.slug;
     const squadCountry = squad.country ?? null;
     const wageFactor = wageFactorOf(squad);
     for (const p of squad.players) {

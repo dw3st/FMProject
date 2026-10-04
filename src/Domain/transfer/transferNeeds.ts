@@ -3,8 +3,8 @@ import {
   aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
-import type { MainRole } from "@/GameInterface/positionHelpers";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
+import { getMainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
 import type {
   SquadMarketProfile,

@@ -1,4 +1,3 @@
-import { fileURLToPath } from "node:url";
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { obscurePlayer, obscureSquad, overallRange, staffEffectsOf } from "@/Domain/staff/staff";
@@ -7,11 +6,9 @@ import {
   collectNationalities, collectSellListedIds, mapFreeAgentsToScoutPlayers, mapSquadsToScoutPlayers, runScoutQuery,
   type ScoutQuery, type ScoutSearchResponse,
 } from "@/Domain/scout/scoutQuery";
-import { ATTRIBUTE_LIST } from "@/GameInterface/AttributeLabels";
-import { createDefaultScoutFilters } from "@/GameInterface/Scout/scoutFilterState";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
-
-const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
+import { ATTRIBUTE_LIST } from "@/Domain/attributes";
+import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 
 interface ScoutIndex {
   key: string;
@@ -31,23 +28,15 @@ const cache = new Map<string, ScoutIndex>();
  */
 const inFlight = new Map<string, Promise<ScoutIndex | null>>();
 
-async function leagueSlugs(): Promise<string[]> {
-  const file = Bun.file(`${DATA_DIR}/leagueData.json`);
-  if (!(await file.exists())) return [];
-  const leagues = (await file.json()) as Array<{ slug: string }>;
-  return Array.isArray(leagues) ? leagues.map((l) => l.slug) : [];
-}
-
 /**
  * Built scout rows for a save. Keyed by `currentDate` (advance-day rewrites squads) plus the
  * save's write version (bumped by FileSystemDAL on every squad/market write, so a mid-day
  * transfer or sell-list edit invalidates the entry).
  */
 async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex> {
-  const [squads, market, slugs, freeAgents] = await Promise.all([
+  const [squads, market, freeAgents] = await Promise.all([
     saveService.getAllSquads(saveId),
     saveService.getMarket(saveId),
-    leagueSlugs(),
     saveService.getFreeAgents(saveId),
   ]);
   // What the user sees of players outside his own squad is blurred by the chief scout's
@@ -69,7 +58,7 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
         })
       : rows;
   const players = withRange(
-    [...mapSquadsToScoutPlayers(seen, slugs), ...mapFreeAgentsToScoutPlayers(seenAgents)],
+    [...mapSquadsToScoutPlayers(seen), ...mapFreeAgentsToScoutPlayers(seenAgents)],
     meta?.clubId,
   );
   const entry: ScoutIndex = {

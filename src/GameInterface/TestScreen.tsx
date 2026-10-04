@@ -6,7 +6,7 @@ import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { EnergyPanel } from "@/GameInterface/EnergyPanel";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
-import type { CrowdMode } from "@/GameInterface/CrowdHeatmapPanel";
+import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { Icon } from "@/GameInterface/Icons";
 import { evaluatePoint, DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig, EvaluationResult } from "@/GameEngine/Infrastructure/SpatialEvaluation";

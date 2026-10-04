@@ -35,7 +35,7 @@ import {
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import ROLES_JSON from "@/Data/roles.json";
 import { checkWorldIntegrity } from "@/../scripts/world/integrity";
 

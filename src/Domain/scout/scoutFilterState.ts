@@ -1,4 +1,4 @@
-import { ATTRIBUTE_LIST, type AttributeId } from "@/GameInterface/AttributeLabels";
+import { ATTRIBUTE_LIST, type AttributeId } from "@/Domain/attributes";
 
 export interface ScoutFilterState {
   name: string;

@@ -25,7 +25,7 @@ import type { LeagueEntry, SquadFile } from "@/../scripts/world/types";
 import ROLES from "@/example_data/roles.json";
 import { Player } from "@/Domain/Player";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import type { Pyramids } from "@/types/pyramidTypes";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));

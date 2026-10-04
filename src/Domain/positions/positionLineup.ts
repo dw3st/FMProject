@@ -1,6 +1,6 @@
 import type { RosterPlayer } from "@/types/playerTypes";
 import { overallAvg } from "@/Domain/playerRating";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import { aptitudeFor, DETAILED_ROLES, preferredRole, slotValue } from "@/Domain/positions/positionAptitude";
 
 /**

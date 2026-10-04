@@ -5,7 +5,7 @@ import { capture } from "@/analytics";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { translateTransferReason } from "@/GameInterface/Transfers/transferShared";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import { ContractTermsFields, useContractDemand, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 import { Icon } from "@/GameInterface/Icons";

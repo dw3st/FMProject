@@ -241,7 +241,7 @@ try {
     for (const p of squad.players) if (p.contract) startContractUntil.set(p.id, p.contract.until);
   }
   const ROLE_MINIMUMS: Record<string, number> = { GK: 3, Defender: 7, Midfielder: 7, Forward: 4 };
-  const { getMainRole: mainRoleOf } = await import("@/GameInterface/positionHelpers");
+  const { getMainRole: mainRoleOf } = await import("@/Domain/roles");
   let rollSquadsChecked = 0;
   const rollUnderMinimum: string[] = [];
   let wageLineChecks = 0;

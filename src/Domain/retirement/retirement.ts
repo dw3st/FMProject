@@ -4,7 +4,7 @@ import { roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg, weightedScore } from "@/Domain/playerRating";
 import { lineAverage } from "@/Domain/youth/youth";
 import { YOUTH } from "@/Domain/youth/youthConfig";
-import type { MainRole } from "@/GameInterface/positionHelpers";
+import type { MainRole } from "@/Domain/roles";
 import type {
   FreeAgent, PlayerStatsRecord, RetiredPlayer, RosterPlayer, Squad,
 } from "@/types/playerTypes";

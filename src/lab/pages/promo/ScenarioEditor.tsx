@@ -10,7 +10,7 @@ import {
   parseScenario,
   saveCustomScenario,
   serializeScenario,
-} from "./scenarios";
+} from "@/lab/pages/promo/scenarios";
 
 /**
  * Floating editor panel pinned to top-left. Lets the user:

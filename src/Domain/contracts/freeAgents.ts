@@ -4,8 +4,8 @@ import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { addYearsIso, aiRenewalYears, contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
 import { overallAvg } from "@/Domain/playerRating";
 import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/transfer/transferNeeds";
-import { getMainRole } from "@/GameInterface/positionHelpers";
-import type { MainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
+import type { MainRole } from "@/Domain/roles";
 import type { FreeAgent, RosterPlayer, Squad } from "@/types/playerTypes";
 import { seedFrom } from "@/Domain/rng";
 

@@ -1,7 +1,7 @@
 import { squadFileStemFromClubParam } from "@/Domain/world/squadIdResolve";
 import type { StandingLike } from "@/Domain/world/squadIdResolve";
 import { Player } from "@/Domain/Player";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 /** File stem for /api/club-profile: accepts squadId or slug; null when unknown. */

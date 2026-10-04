@@ -14,7 +14,8 @@ import {
   TACTICAL_STYLE_OPTIONS,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
-import { getMainRole, MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
+import { MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";

@@ -4,11 +4,8 @@ import type { ComponentType, SVGProps } from "react";
 import type { TransferRecord } from "@/types/transferTypes";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Popover } from "@/GameInterface/Components/Popover";
-import {
-  MAIN_ROLE_ABBR,
-  MAIN_ROLE_BADGE_CLASSES,
-  getMainRole,
-} from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
+import { MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { iconOf } from "@/GameInterface/Icons";
 import { formatFee } from "@/Domain/money";
 

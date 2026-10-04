@@ -5,7 +5,7 @@ import { ScoutAttributeFiltersDisclosure } from "@/GameInterface/Scout/ScoutAttr
 import {
   createDefaultScoutFilters,
   type ScoutFilterState,
-} from "@/GameInterface/Scout/scoutFilterState";
+} from "@/Domain/scout/scoutFilterState";
 import { Icon } from "@/GameInterface/Icons";
 import { Chip } from "@/GameInterface/ui/Chip";
 

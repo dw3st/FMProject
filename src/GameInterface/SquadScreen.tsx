@@ -10,7 +10,7 @@ import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
 import { Tabs } from "@/GameInterface/ui/Tabs";
 import { YouthTable } from "@/GameInterface/Components/YouthTable";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
-import type { DisplayPlayer } from "@/GameInterface/playerHelpers";
+import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 
 export function SquadScreen({ league, club }: { league: string; club: string }) {

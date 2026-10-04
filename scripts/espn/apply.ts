@@ -12,7 +12,7 @@ import { fixNameCasing, normalizeNationality } from "@/../scripts/espn/normalize
 import type { LeagueEntry, SquadFile, StandingRow } from "@/../scripts/world/types";
 import { tierIncomeRatio } from "@/Domain/advanceDay/tierFinances";
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
-import { getMainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole } from "@/Domain/roles";
 import type { Pyramids } from "@/types/pyramidTypes";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 

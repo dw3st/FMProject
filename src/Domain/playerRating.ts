@@ -1,6 +1,6 @@
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
-import { getMainRole, type MainRole } from "@/GameInterface/positionHelpers";
+import { getMainRole, type MainRole } from "@/Domain/roles";
 
 /**
  * Leaf module: a player's weighted overall rating from their attributes/role, with no dependency
