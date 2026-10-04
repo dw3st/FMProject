@@ -25,7 +25,7 @@ export function StatusBar({
   const { t } = useTranslation();
   const { session, squad, unreadInboxCount } = useGameSave();
 
-  const budgetLabel = session != null ? `€${formatEuros(session.budget, "")}` : "—";
+  const budgetLabel = session != null ? formatEuros(session.budget) : "—";
   const playersLabel = squad != null ? String(squad.players.length) : "—";
   const unreadLabel = String(unreadInboxCount);
 

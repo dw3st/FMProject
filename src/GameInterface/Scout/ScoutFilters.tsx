@@ -137,10 +137,10 @@ export function ScoutFilters({
           </div>
         </div>
 
-        {/* Value (transfer price), millions £ */}
+        {/* Value (transfer price), millions of euros */}
         <div>
           <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
-            Value (M £)
+            {t("scout.filters.valueRange")}
           </label>
           <div className="flex items-center gap-2">
             <input

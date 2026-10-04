@@ -1619,6 +1619,7 @@
       "searchByName": "Search by name...",
       "position": "Position",
       "ageRange": "Age Range",
+      "valueRange": "Value (€M)",
       "league": "League",
       "nationality": "Nationality",
       "forSaleOnly": "For Sale Only",

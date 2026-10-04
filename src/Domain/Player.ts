@@ -60,7 +60,7 @@ export class Player {
   }
 
   /**
-   * Estimated value in millions of £ (float), before rounding to whole pounds.
+   * Estimated value in millions of € (float), before rounding to whole euros.
    *
    * Age curve is biased toward youth: a 19-year-old with decent ability commands
    * a steep premium over the same rating at peak, reflecting years of expected
@@ -82,7 +82,7 @@ export class Player {
     return base * ageFactor;
   }
 
-  /** Estimated transfer value in whole pounds. */
+  /** Estimated transfer value in whole euros. */
   get price(): number {
     return Math.round(this.valueMillions) * 1_000_000;
   }

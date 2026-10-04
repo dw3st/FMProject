@@ -1619,6 +1619,7 @@
       "searchByName": "Buscar por nome...",
       "position": "Posição",
       "ageRange": "Faixa Etária",
+      "valueRange": "Valor (milhões de €)",
       "league": "Liga",
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",

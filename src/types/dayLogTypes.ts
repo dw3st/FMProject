@@ -188,7 +188,7 @@ export interface TransferEvent {
   playerName:  string;
   fromSquadId: string;
   toSquadId:   string;
-  fee:         number;  // raw £
+  fee:         number;  // raw €
   status:      "accepted" | "rejected";
   reason:      string;
 }
