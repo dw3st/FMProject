@@ -157,8 +157,17 @@ dentro de ±15% do motor.
 ```
 INJURY.BASE                  = 0.0000874
 INJURY.CONTACT_BASE          = 0.002307
-INJURY.QUICKSIM_CONTACT_SCALE = 2.3248935431401576  (≈ 2,32)
+INJURY.QUICKSIM_CONTACT_SCALE = 1.6   (era 2,32 até a 3.4.1)
 ```
+
+**Remedição 2026-10-04 (3.4.1).** Nas 26 ligas da recalibração geral do quickSim (cada clube da IA na
+própria formação, fôlego 88, carga 0; `bun scripts/quicksim-spread.ts extras`, 10 400 jogos do motor)
+o motor faz **0,242** lesões por partida — o volume de desarmes do motor caiu desde a Etapa 19 (desarmes
+ganhos do zagueiro por vaga ~0,5 → ~0,2). O quickSim fazia 0,279 (+15%); com
+`QUICKSIM_CONTACT_SCALE` 2,32 → 1,6 faz 0,250 (+3%). `BASE`/`CONTACT_BASE` do motor **não** foram
+mexidos (fora do escopo da recalibração do quickSim): o motor ficou ~20% abaixo do alvo de projeto
+(0,3), ainda dentro da faixa do smoke (0,15–0,5). `injury-calibrate.ts` com 150 jogos por liga é ruidoso
+demais para decidir isso (três rodadas com constantes quase iguais deram 0,15–0,34).
 
 `BASE`/`CONTACT_BASE` foram escalados juntos, na mesma proporção (`scripts/injury-calibrate.ts`,
 sem `--quicksim`/`--realistic`) até o motor com elenco fresco bater ~0,3/partida — um par de

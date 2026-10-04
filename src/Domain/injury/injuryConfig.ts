@@ -57,9 +57,11 @@ export const INJURY = {
    * (the tackler) generates a contact event per player, so its raw contact-event volume is lower
    * than the full engine's (tackles + tackle attempts + duels on both participants). This scales
    * `contactInjuryChance` back up so quickSim's overall injuries/match lands within ±15% of the
-   * engine's — calibrated by `scripts/injury-calibrate.ts --quicksim`.
+   * engine's — calibrated by `scripts/injury-calibrate.ts --quicksim`. 2.32 → 1.6 on 2026-10-04
+   * (3.4.1) against the 26-league caches of `bun scripts/quicksim-spread.ts extras` (fitness 88,
+   * AI formations, 10 400 engine matches): engine 0.242, quickSim 0.250 injuries per match.
    */
-  QUICKSIM_CONTACT_SCALE: 2.3248935431401576,
+  QUICKSIM_CONTACT_SCALE: 1.6,
 
   /** Heavy training session → small flat chance of a light injury. Light/normal training: 0. */
   HEAVY_TRAINING_CHANCE: 0.01,

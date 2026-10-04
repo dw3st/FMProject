@@ -40,6 +40,8 @@ export interface TeamStrength {
   forwardPace: number;
   /** Mean pace of the defensive line (CB/LB/RB/WB). Not part of `teamLevel`. */
   defensePace: number;
+  /** Mean raw finishing (0–10) of the forward line. Not part of `teamLevel`. */
+  forwardFinishing: number;
 }
 
 export interface QuickSimBreakdown {
@@ -148,6 +150,12 @@ function linePace(players: XIPlayer[], fallback: XIPlayer[]): number {
   return avg(pool.map(({ p, k }) => paceOf(p) * k));
 }
 
+/** Raw finishing, no fitness or position factor (how FINISHING_WEIGHT was fitted). */
+function lineFinishing(players: XIPlayer[], fallback: XIPlayer[]): number {
+  const pool = players.length ? players : fallback;
+  return avg(pool.map(({ p }) => stat(p, "finishing")));
+}
+
 function lineValue(players: XIPlayer[], keys: readonly string[], fallback: XIPlayer[]): number {
   const pool = players.length ? players : fallback;
   return avg(pool.map(({ p, k }) => avg(keys.map((key) => stat(p, key))) * fitnessFactor(p) * k)) + C.STRENGTH_FLOOR;
@@ -171,6 +179,7 @@ function strengthOf(xi: XIPlayer[]): TeamStrength {
     goalkeeper: keepers.length ? lineValue(keepers, C.GOALKEEPER_KEYS, keepers) : C.STRENGTH_FLOOR,
     forwardPace: linePace(xi.filter((x) => groupOf(x) === "FWD"), attackers.length ? attackers : outfield),
     defensePace: linePace(xi.filter((x) => groupOf(x) === "DEF"), defenders.length ? defenders : outfield),
+    forwardFinishing: lineFinishing(xi.filter((x) => groupOf(x) === "FWD"), attackers.length ? attackers : outfield),
   };
 }
 
@@ -192,7 +201,8 @@ export function teamLevel(s: TeamStrength): number {
  * level (mean of both teams' `teamLevel`) scales the goal rate, since in the full engine
  * strong-vs-strong matches produce more goals than weak-vs-weak ones at the same ratio.
  * The pace edge (attacker's forward line vs defender's back line) scales the chance volume:
- * the engine's through-ball races are decided by sprint speed.
+ * the engine's through-ball races are decided by sprint speed. The forward line's finishing
+ * scales conversion (the engine's shooter effect spans 0.96–1.36 of xG).
  */
 export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, isHome: boolean): number {
   const ratio = (attacker.attack * attacker.midfield) / (defender.defense * defender.goalkeeper);
@@ -203,6 +213,7 @@ export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, is
     Math.pow(ratio, C.STRENGTH_EXPONENT) *
     Math.pow(matchLevel / C.LEVEL_REF, C.LEVEL_EXPONENT) *
     Math.exp(C.PACE_EDGE_WEIGHT * paceEdge) *
+    Math.exp(C.FINISHING_WEIGHT * (attacker.forwardFinishing - C.FINISHING_REF)) *
     (isHome ? C.HOME_ADVANTAGE : 1)
   );
 }

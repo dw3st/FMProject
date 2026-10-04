@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.4.1",
+    date: "2026-10-04",
+    items: [
+      {
+        pt: "Resultados das outras ligas mais fiéis ao jogo de verdade: gols, cartões, escanteios e lesões em volume parecido com o das partidas que você assiste.",
+        en: "Results in the other leagues are closer to the real matches: goals, cards, corners and injuries in volumes similar to the matches you watch.",
+      },
+    ],
+  },
+  {
     version: "3.4",
     date: "2026-10-03",
     items: [

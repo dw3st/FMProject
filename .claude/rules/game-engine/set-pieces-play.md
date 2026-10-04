@@ -151,7 +151,12 @@ parte vira gol de bola parada (`SET_PIECE_GOAL_SHARE` 0,125 dos gols): desses, u
 assistência; uma cabeçada escolhida deixa de ser cabeçada); os outros mantêm o autor se já eram de cabeça, senão vão para um defensor/atacante
 ponderado por `SET_PIECE_LINE_WEIGHT × (0,5 + cabeceio/10)`. Gols de pênalti contam como bola parada.
 O placar nunca muda. Os números de jogo aéreo e passes do quickSim foram reajustados à mesma
-medição (`non-player-games.md` → "Bolas paradas no quickSim").
+medição (`non-player-games.md` → "Bolas paradas no quickSim"). Na recalibração geral 3.4.1
+(`non-player-games.md` → "Recalibração geral 2026-10-04") as taxas foram refeitas contra o motor de
+hoje nas 26 ligas: `CORNERS_PER_SIDE` 3,12 → 3,02, `DIRECT_FK_SHOTS_PER_SIDE` 0,13 → 0,08,
+`DIRECT_FK_GOAL_SHARE` 0,038 → 0,035, `SET_PIECE_LINE_WEIGHT.DEF` 0,5 → 0,38 (`SET_PIECE_GOAL_SHARE`
+igual); motor × quick: 6,05 × 6,04 escanteios, 0,21 × 0,21 chutes de falta direta, gols de bola parada
+26,7% × 26,6% dos gols.
 
 ## Calibração (`bun scripts/setpiece-calibrate.ts [PL=200] [champ=150] [--seed n] [--out f] [--sum a,b] [--compare base]`)
 

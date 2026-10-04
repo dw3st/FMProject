@@ -694,13 +694,14 @@ describe("quickSimMatch — discipline", () => {
       expect(goals(home)).toBe(r.score.home);
       expect(goals(away)).toBe(r.score.away);
     }
-    expect(fouls / n).toBeGreaterThan(10);
-    expect(fouls / n).toBeLessThan(13);
-    expect(yellows / n).toBeGreaterThan(2.4);
-    expect(yellows / n).toBeLessThan(3.3);
-    expect(reds / n).toBeLessThan(0.25);
-    expect(pens / n).toBeGreaterThan(0.17);
-    expect(pens / n).toBeLessThan(0.3);
+    // Engine (3.4.1, 26 leagues, AI formations): 10.2 fouls, 2.29 yellows, 0.063 reds, 0.34 penalties per match.
+    expect(fouls / n).toBeGreaterThan(9);
+    expect(fouls / n).toBeLessThan(11.5);
+    expect(yellows / n).toBeGreaterThan(2);
+    expect(yellows / n).toBeLessThan(2.7);
+    expect(reds / n).toBeLessThan(0.15);
+    expect(pens / n).toBeGreaterThan(0.25);
+    expect(pens / n).toBeLessThan(0.45);
   });
 
   test("a goal turned into a penalty goal has no assist (penalty goals never carry one)", () => {

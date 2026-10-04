@@ -196,9 +196,11 @@ drain = ENERGY_DRAIN_BY_LINE[linha]
 fôlego pós-jogo = clamp(startEnergy − drain, 0, 100)
 ```
 
-`ENERGY_DRAIN_BY_LINE` (`QuickSimConfig.ts`): `GK 38,1 · DEF 53,5 · MID 48,3 · FWD 52,1` — calibrado
+`ENERGY_DRAIN_BY_LINE` (`QuickSimConfig.ts`): `GK 35,7 · DEF 45,8 · MID 43,8 · FWD 47,7` — calibrado
 por `scripts/fatigue-calibrate.ts` para ficar a ±10% do desgaste médio por linha do motor completo
-sobre centenas de partidas.
+sobre centenas de partidas. Remedido em 2026-10-04 (3.4.1, 80 pares × 2 em três ligas, ~960–2460
+jogadores-90' por linha): o motor de hoje gasta menos na defesa e no meio (antes GK 38,1 · DEF 53,5 ·
+MID 48,3 · FWD 52,1; DEF e MID estavam 17% e 10% acima).
 
 O mesmo `startFitness` (energia comprimida) também entra no desconto de força de um XI cansado:
 
