@@ -3,7 +3,7 @@
  * Explains the full engine's goals/match spread across leagues, match by match, so quickSim can
  * follow it. Two subcommands:
  *
- *   bun scripts/quicksim-spread.ts collect <league> [pairs=200] [repeats=2] [out=<dir>/<league>.json] [--fitness N] [--load N]
+ *   bun scripts/quicksim-spread.ts collect <league> [pairs=200] [repeats=2] [out=<dir>/<league>.json] [--fitness N] [--load N] [--ai]
  *     Runs the full engine (default 4-3-3 + autoFillLineup, same as AI league matches) on
  *     `pairs` random fixtures × `repeats` and stores every match (ids, score, shots, xG) in a
  *     per-match cache. Slow (~0.7 s/match) — run several leagues as parallel processes.
@@ -11,6 +11,10 @@
  *     assumption every squad has no season log yet); pass `--fitness 88` to collect at a more
  *     representative matchday fitness (`docs/superpowers/specs/2026-09-27-stamina-design.md`,
  *     balance task "soften + recalibrate").
+ *     `--ai` plays the real game's AI-vs-AI match instead: each club on its own season formation
+ *     (`aiMatchFormation`, defensive shape as the clear underdog), fitness-aware auto XI, balanced
+ *     style at the implicit AI familiarity; the cache stores each side's formation and XI so
+ *     `analyze`/`events` rebuild the same XIs. Used by the 2026-10 general recalibration.
  *
  *   bun scripts/quicksim-spread.ts analyze <cacheDir> [--holdout a,b,c] [--fitness N]
  *     Loads every cache in <cacheDir>, recomputes each XI's per-line attribute means from the
@@ -34,6 +38,10 @@
  *       rating gap; 6. the suggested QuickSimConfig constants. `--apply` writes them into
  *       QuickSimConfig.ts — re-run until sections 4–5 settle (2–3 rounds).
  *
+ *   bun scripts/quicksim-spread.ts extras <cacheDir> [--quick k=20]
+ *     Discipline, aerial, set-piece and injury volumes per match, engine (the `ts` totals `collect`
+ *     stores) vs quickSim on the same fixtures and XIs, per league and pooled.
+ *
  * Re-run `collect` after any engine change (the caches describe one engine version), then
  * `analyze` to see whether quickSim still follows.
  */
@@ -43,8 +51,10 @@ import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { expectedGoals, lineGroupOfRole, quickSimMatch, teamStrength, type TeamStrength } from "@/Domain/advanceDay/quickSim";
 import { RATING_WEIGHTS as W } from "@/GameEngine/Configs/PlayerRatingConfig";
 import type { MatchPlayerStats } from "@/types/dayLogTypes";
-import { autoLineupDefaultFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
+import { aiMatchFormation, aiRecordFor, autoLineupDefaultFormation, autoLineupForFormationWithFitness, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
+import { aiFamiliarity } from "@/Domain/familiarity/familiarity";
+import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import { emptySeasonLog, type Squad, type RosterPlayer } from "@/types/playerTypes";
 import { mulberry32 } from "@/Domain/rng";
 import { ATTACKING_MID_ROLES, DEFENSIVE_MID_ROLES, QUICK_SIM_CONFIG as C, type LineGroup } from "@/GameEngine/Configs/QuickSimConfig";
@@ -68,10 +78,22 @@ export interface LineRecord {
   rSum: number; rN: number; rHigh: number;
   raSum: number; raN: number; raHigh: number;
 }
-interface SideRecord { goals: number; shots: number; xg: number; lines?: Record<LineGroup, LineRecord> }
-interface MatchRecord { home: string; away: string; h: SideRecord; a: SideRecord }
+/** Team-stat totals of one side kept for the discipline / aerial / set-piece / injury / energy checks (`extras`). */
+const EXTRA_KEYS = ["fouls", "yellowCards", "redCards", "penaltiesAwarded", "penaltyGoals", "offsides",
+  "crosses", "crossesCompleted", "aerialDuels", "aerialDuelsWon", "headers", "headerGoals", "longBalls",
+  "longBallsCompleted", "corners", "freeKicks", "directFreeKickShots", "directFreeKickGoals", "setPieceGoals",
+  "injuries", "avgEndEnergy", "passesAttempted"] as const;
+type ExtraKey = typeof EXTRA_KEYS[number];
+interface SideRecord { goals: number; shots: number; xg: number; lines?: Record<LineGroup, LineRecord>; ts?: Record<ExtraKey, number> }
+/**
+ * `hf`/`af` + `hl`/`al`: formation id and starting XI of each side, stored by `collect --ai` (each
+ * AI club on its own formation, as the real game plays). Absent = default 4-3-3 + auto XI.
+ */
+interface MatchRecord { home: string; away: string; h: SideRecord; a: SideRecord; hf?: string; af?: string; hl?: string[]; al?: string[] }
+/** Matchday used for the AI season formation record (`collect --ai`); only the season jitter depends on it. */
+const AI_MATCH_DATE = "2026-10-17";
 /** `fitness`/`load` absent = an older cache collected before these fields existed (implicitly 75/0). */
-interface Cache { league: string; pairs: number; repeats: number; createdAt: string; matches: MatchRecord[]; fitness?: number; load?: number }
+interface Cache { league: string; pairs: number; repeats: number; createdAt: string; matches: MatchRecord[]; fitness?: number; load?: number; ai?: boolean }
 
 /**
  * `fitness`/`load` default to `emptySeasonLog()`'s 75/0 — the historical assumption for every
@@ -92,8 +114,15 @@ async function loadSquads(league: string, fitness = 75, load = 0): Promise<Squad
 
 // ── collect ──────────────────────────────────────────────────────────────────
 
-async function collect(league: string, pairs: number, repeats: number, out: string, fitness = 75, load = 0) {
-  const squads = await loadSquads(league, fitness, load);
+async function collect(league: string, pairs: number, repeats: number, out: string, fitness = 75, load = 0, ai = false) {
+  const raw = await loadSquads(league, fitness, load);
+  // `--ai`: the real game's AI-vs-AI match — own season formation (defensive shape as the clear
+  // underdog), fitness-aware auto XI, balanced style at the implicit AI familiarity
+  // (`computeMatchSimulationLineups`).
+  const squads = ai
+    ? raw.map((s) => { const sq = { ...s, leagueSlug: league }; return { ...sq, aiFormation: aiRecordFor(sq, AI_MATCH_DATE) }; })
+    : raw;
+  const aiTactics = { style: DEFAULT_TACTICAL_STYLE, familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE) };
   const pick = mulberry32(2026);
   const matches: MatchRecord[] = [];
   const t0 = performance.now();
@@ -104,22 +133,26 @@ async function collect(league: string, pairs: number, repeats: number, out: stri
     const home = squads[Math.floor(pick() * squads.length)]!;
     let away = squads[Math.floor(pick() * squads.length)]!;
     if (away.id === home.id) away = squads[(squads.indexOf(home) + 1) % squads.length]!;
-    const hl = autoLineupDefaultFormation(home);
-    const al = autoLineupDefaultFormation(away);
+    const hF = ai ? aiMatchFormation(home, away, AI_MATCH_DATE).formation : formation;
+    const aF = ai ? aiMatchFormation(away, home, AI_MATCH_DATE).formation : formation;
+    const hl = ai ? autoLineupForFormationWithFitness(home, hF, AI_MATCH_DATE) : autoLineupDefaultFormation(home);
+    const al = ai ? autoLineupForFormationWithFitness(away, aF, AI_MATCH_DATE) : autoLineupDefaultFormation(away);
     for (let r = 0; r < repeats; r++) {
       failedTackles.clear();
-      const f = simulateMatch(home, away, formation, formation, hl, al);
-      const lines = engineLines(f, { A: hl, B: al }, failedTackles);
+      const f = simulateMatch(home, away, hF, aF, hl, al, ai ? { tactics: { A: aiTactics, B: aiTactics } } : undefined);
+      const lines = engineLines(f, { A: hl, B: al }, failedTackles, { A: slotRoles(hF), B: slotRoles(aF) });
       const side = (t: "A" | "B"): SideRecord => ({
         goals: f.score[t], shots: f.teamStats[t].shots, xg: +f.teamStats[t].xg.toFixed(3), lines: lines[t],
+        ts: Object.fromEntries(EXTRA_KEYS.map((k) => [k, +(f.teamStats[t][k] as number).toFixed(2)])) as Record<ExtraKey, number>,
       });
-      matches.push({ home: home.id, away: away.id, h: side("A"), a: side("B") });
+      matches.push({ home: home.id, away: away.id, h: side("A"), a: side("B"),
+        ...(ai ? { hf: hF.id, af: aF.id, hl, al } : {}) });
     }
     if ((i + 1) % 20 === 0) {
       console.log(`${league}: ${i + 1}/${pairs} pares — ${((performance.now() - t0) / 1000).toFixed(0)} s`);
     }
   }
-  const cache: Cache = { league, pairs, repeats, createdAt: new Date().toISOString(), matches, fitness, load };
+  const cache: Cache = { league, pairs, repeats, createdAt: new Date().toISOString(), matches, fitness, load, ...(ai ? { ai: true } : {}) };
   await Bun.write(out, JSON.stringify(cache));
   console.log(`${league}: ${matches.length} jogos → ${out}`);
 }
@@ -133,7 +166,7 @@ const emptyLine = (): LineRecord => ({ slots: 0, apps: 0, pa: 0, pc: 0, shots: 0
  * takes the role he plays at full time, or (if he was later subbed off himself) the role of the
  * slot he filled, by following the substitution chain from the starter he replaced.
  */
-function engineLines(f: MatchResult, lineups: Record<"A" | "B", string[]>, failed: Map<number, number>) {
+function engineLines(f: MatchResult, lineups: Record<"A" | "B", string[]>, failed: Map<number, number>, roles: Record<"A" | "B", string[]>) {
   const out = { A: {} as Record<LineGroup, LineRecord>, B: {} as Record<LineGroup, LineRecord> };
   for (const t of ["A", "B"] as const) for (const g of GROUPS) out[t][g] = emptyLine();
   const rosterOf = new Map<number, string>();
@@ -145,7 +178,7 @@ function engineLines(f: MatchResult, lineups: Record<"A" | "B", string[]>, faile
     teamOf.set(s.playerInId, s.team);
   }
   const slotRole = new Map<string, string>(); // `${team}:${rosterId}` → slot role for starters
-  for (const t of ["A", "B"] as const) lineups[t].forEach((id, i) => slotRole.set(`${t}:${id}`, ROLES[i]!));
+  for (const t of ["A", "B"] as const) lineups[t].forEach((id, i) => slotRole.set(`${t}:${id}`, roles[t][i]!));
   const roleById = new Map<number, string>();
   const starters = new Set<number>();
   for (const [id, rid] of rosterOf) {
@@ -190,19 +223,39 @@ interface XIProfile {
   f: Record<string, number>;
 }
 
-function xiOf(squad: Squad): { players: RosterPlayer[]; roles: string[] } {
+/** Stored XI (`collect --ai`) or, absent, the default 4-3-3 auto XI. */
+interface XiSpec { lineup: string[]; formationId: string }
+
+function xiOf(squad: Squad, spec?: XiSpec): { players: RosterPlayer[]; roles: string[] } {
   const byId = new Map(squad.players.map((p) => [p.id, p]));
   const players: RosterPlayer[] = [];
   const roles: string[] = [];
-  autoLineupDefaultFormation(squad).forEach((id, i) => {
+  const slotR = spec ? slotRoles(formationForSimId(spec.formationId)) : ROLES;
+  (spec ? spec.lineup : autoLineupDefaultFormation(squad)).forEach((id, i) => {
     const p = byId.get(id);
-    if (p && !players.includes(p)) { players.push(p); roles.push(ROLES[i]!); }
+    if (p && !players.includes(p)) { players.push(p); roles.push(slotR[i]!); }
   });
   return { players, roles };
 }
 
-function profileOf(squad: Squad): XIProfile {
-  const { players, roles } = xiOf(squad);
+/** Per-match XI spec of the home (`h`) or away side, when the cache stored one. */
+function specOf(m: MatchRecord, side: "h" | "a"): XiSpec | undefined {
+  const lineup = side === "h" ? m.hl : m.al;
+  const formationId = side === "h" ? m.hf : m.af;
+  return lineup && formationId ? { lineup, formationId } : undefined;
+}
+
+/** Memoized profile per (club, formation) — an AI club's XI only changes with its formation. */
+function profileCache(squads: Map<string, Squad>) {
+  const prof = new Map<string, XIProfile>();
+  return (id: string, spec?: XiSpec) => {
+    const key = `${id}|${spec?.formationId ?? ""}`;
+    return prof.get(key) ?? prof.set(key, profileOf(squads.get(id)!, spec)).get(key)!;
+  };
+}
+
+function profileOf(squad: Squad, spec?: XiSpec): XIProfile {
+  const { players, roles } = xiOf(squad, spec);
   const f: Record<string, number> = {};
   for (const line of LINES) {
     const pool = players.filter((_, i) => lineGroupOfRole(roles[i]!) === line);
@@ -269,14 +322,10 @@ async function analyze(cacheDir: string, holdout: Set<string>, fitnessOverride?:
     const fitness = cache.fitness ?? fitnessOverride ?? 75;
     const load = cache.load ?? 0;
     const squads = new Map((await loadSquads(cache.league, fitness, load)).map((s) => [s.id, s]));
-    const prof = new Map<string, XIProfile>();
-    const get = (id: string) => {
-      if (!prof.has(id)) prof.set(id, profileOf(squads.get(id)!));
-      return prof.get(id)!;
-    };
+    const get = profileCache(squads);
     leagues.push(cache.league);
     for (const m of cache.matches) {
-      const H = get(m.home), A = get(m.away);
+      const H = get(m.home, specOf(m, "h")), A = get(m.away, specOf(m, "a"));
       sides.push({ league: cache.league, goals: m.h.goals, shots: m.h.shots, engXg: m.h.xg,
         qsXg: expectedGoals(H.strength, A.strength, true), home: true, own: H, opp: A });
       sides.push({ league: cache.league, goals: m.a.goals, shots: m.a.shots, engXg: m.a.xg,
@@ -680,12 +729,12 @@ async function loadEvSides(cacheDir: string) {
   for (const file of files) {
     const cache = (await Bun.file(`${cacheDir}/${file}`).json()) as Cache;
     if (!cache.matches[0]?.h.lines) { console.log(`(sem eventos por linha: ${file} — rode collect de novo)`); continue; }
-    const squads = new Map((await loadSquads(cache.league)).map((s) => [s.id, s]));
+    // quickSim must run at the fitness the engine cache was collected at (it scales line strength).
+    const squads = new Map((await loadSquads(cache.league, cache.fitness ?? 75, cache.load ?? 0)).map((s) => [s.id, s]));
     squadsOf.set(cache.league, squads);
-    const prof = new Map<string, XIProfile>();
-    const get = (id: string) => prof.get(id) ?? prof.set(id, profileOf(squads.get(id)!)).get(id)!;
+    const get = profileCache(squads);
     for (const m of cache.matches) {
-      const H = get(m.home), A = get(m.away);
+      const H = get(m.home, specOf(m, "h")), A = get(m.away, specOf(m, "a"));
       const lh = H.f["S.level"]!, la = A.f["S.level"]!;
       const base = { league: cache.league, homeId: m.home, awayId: m.away };
       sides.push({ ...base, isHome: true, own: H, opp: A, ownLevel: lh, oppLevel: la, lines: m.h.lines!,
@@ -974,6 +1023,74 @@ async function events(cacheDir: string, quickRepeats: number, holdout: Set<strin
   }
 }
 
+// ── extras ───────────────────────────────────────────────────────────────────
+
+/**
+ * Discipline, aerial, set-piece and injury volumes, engine vs quickSim, on the same cached
+ * fixtures and XIs (caches collected after the `ts` field existed). Per match, both teams summed.
+ * The quickSim side runs `k` times per fixture at the cache's fitness. `ratio` = quick / engine;
+ * a per-match rate constant (CORNERS_PER_SIDE, …) moves by the inverse of the pooled ratio.
+ */
+async function extras(cacheDir: string, k: number) {
+  const files = (await readdir(cacheDir)).filter((f) => f.endsWith(".json")).sort();
+  const KEYS = ["goals", "fouls", "yellowCards", "redCards", "penaltiesAwarded", "penaltyGoals", "offsides",
+    "crosses", "crossesCompleted", "aerialDuels", "longBalls", "longBallsCompleted", "headerGoals", "corners",
+    "freeKicks", "directFreeKickShots", "directFreeKickGoals", "setPieceGoals", "injuries"] as const;
+  type K = typeof KEYS[number];
+  const zero = () => Object.fromEntries(KEYS.map((x) => [x, 0])) as Record<K, number>;
+  const pooled = { eng: zero(), qs: zero(), nE: 0, nQ: 0 };
+  const rows: Record<string, Record<string, number>> = {};
+  const rng = mulberry32(11);
+  for (const file of files) {
+    const cache = (await Bun.file(`${cacheDir}/${file}`).json()) as Cache;
+    if (!cache.matches[0]?.h.ts) { console.log(`(sem ts: ${file})`); continue; }
+    const squads = new Map((await loadSquads(cache.league, cache.fitness ?? 75, cache.load ?? 0)).map((s) => [s.id, s]));
+    const get = profileCache(squads);
+    const eng = zero(), qs = zero();
+    let nQ = 0;
+    for (const m of cache.matches) {
+      for (const s of [m.h, m.a]) {
+        eng.goals += s.goals;
+        for (const key of KEYS) if (key !== "goals") eng[key] += s.ts![key as ExtraKey] ?? 0;
+      }
+      const H = get(m.home, specOf(m, "h")), A = get(m.away, specOf(m, "a"));
+      const input = {
+        fixtureId: "x", home: squads.get(m.home)!, away: squads.get(m.away)!,
+        homeLineup: H.players.map((p) => p.id), awayLineup: A.players.map((p) => p.id),
+        homeRoles: H.roles, awayRoles: A.roles,
+      };
+      for (let r = 0; r < k; r++) {
+        const rec = quickSimMatch(input, rng).recording;
+        nQ++;
+        qs.goals += rec.score.home + rec.score.away;
+        qs.injuries += rec.injuries?.length ?? 0;
+        for (const t of [rec.teamStats.home, rec.teamStats.away]) {
+          for (const key of KEYS) {
+            if (key === "goals" || key === "injuries") continue;
+            qs[key] += (t as unknown as Record<string, number | undefined>)[key] ?? 0;
+          }
+        }
+      }
+    }
+    const nE = cache.matches.length;
+    rows[cache.league] = Object.fromEntries(KEYS.flatMap((key) => [[`${key} m`, +(eng[key] / nE).toFixed(2)], [`${key} q`, +(qs[key] / nQ).toFixed(2)]]));
+    for (const key of KEYS) { pooled.eng[key] += eng[key]; pooled.qs[key] += qs[key]; }
+    pooled.nE += nE; pooled.nQ += nQ;
+  }
+  console.log("\nPor liga (por jogo, os dois times; m = motor, q = quickSim)");
+  for (const group of [["goals", "fouls", "yellowCards", "redCards", "penaltiesAwarded", "penaltyGoals", "offsides", "injuries"],
+    ["crosses", "crossesCompleted", "aerialDuels", "longBalls", "longBallsCompleted", "headerGoals"],
+    ["corners", "freeKicks", "directFreeKickShots", "directFreeKickGoals", "setPieceGoals"]]) {
+    console.table(Object.fromEntries(Object.entries(rows).map(([lg, r]) => [lg, Object.fromEntries(group.flatMap((g) => [[`${g} m`, r[`${g} m`]], [`${g} q`, r[`${g} q`]]]))])));
+  }
+  console.log("\nTodas as ligas");
+  console.table(Object.fromEntries(KEYS.map((key) => {
+    const e = pooled.eng[key] / pooled.nE, q = pooled.qs[key] / pooled.nQ;
+    return [key, { motor: +e.toFixed(3), quick: +q.toFixed(3), "q/m": +(q / e).toFixed(3),
+      "% dos gols (m)": +((100 * e) / (pooled.eng.goals / pooled.nE)).toFixed(1), "% dos gols (q)": +((100 * q) / (pooled.qs.goals / pooled.nQ)).toFixed(1) }];
+  })));
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -987,7 +1104,7 @@ if (cmd === "collect") {
   const fitness = fIdx >= 0 ? Number(args[fIdx + 1]) : 75;
   const load = lIdx >= 0 ? Number(args[lIdx + 1]) : 0;
   await mkdir(out.replace(/[\\/][^\\/]*$/, "") || ".", { recursive: true });
-  await collect(league, pairs, repeats, out, fitness, load);
+  await collect(league, pairs, repeats, out, fitness, load, args.includes("--ai"));
 } else if (cmd === "analyze") {
   const dir = args[0]!;
   const hIdx = args.indexOf("--holdout");
@@ -999,6 +1116,9 @@ if (cmd === "collect") {
   const hIdx = args.indexOf("--holdout");
   const kIdx = args.indexOf("--quick");
   await events(dir, kIdx >= 0 ? Number(args[kIdx + 1]) : 5, new Set(hIdx >= 0 ? args[hIdx + 1]!.split(",") : []), args.includes("--apply"));
+} else if (cmd === "extras") {
+  const kIdx = args.indexOf("--quick");
+  await extras(args[0]!, kIdx >= 0 ? Number(args[kIdx + 1]) : 20);
 } else {
-  console.log("uso: bun scripts/quicksim-spread.ts collect <liga> [pares] [repetições] [saída] [--fitness N] [--load N] | analyze <dir> [--holdout a,b] | events <dir> [--quick k] [--holdout a,b]");
+  console.log("uso: bun scripts/quicksim-spread.ts collect <liga> [pares] [repetições] [saída] [--fitness N] [--load N] [--ai] | analyze <dir> [--holdout a,b] | events <dir> [--quick k] [--holdout a,b] [--apply] | extras <dir> [--quick k]");
 }
