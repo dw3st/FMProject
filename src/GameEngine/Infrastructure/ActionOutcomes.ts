@@ -99,8 +99,6 @@ export function computeOpenAngle(sx: number, sy: number, goalX: number): number 
   return Math.atan2(cross, dot);
 }
 
-/** Theoretical maximum spatial xG (used to normalise for shoot decision scoring). */
-export const MAX_XG             = 1.0;
 export const MAX_OPEN_ANGLE     = Math.PI / 4;   // ~45° — penalty-spot central shot as reference max
 /** Scale (yards) for power-law distance falloff. Controls the "elbow" of the curve. */
 const XG_DIST_SCALE      = 40;
