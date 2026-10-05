@@ -5,7 +5,10 @@ import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, 
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
 import { playerMatchesBand, playerOverallRating, priceCapForTier, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { buildAiLoanBid } from "@/Domain/negotiation/loans";
-import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+import { feeForSaleScore, saleContext, squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
+
+/** Score at which a seller accepts (`evaluateTransferOffer`). */
+const ACCEPT_SCORE = 0.8;
 import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
@@ -23,6 +26,8 @@ export function buildAiTransferBid(args: {
   buyer: Squad;
   date: string;
   rng: () => number;
+  /** The selling (human) squad: prices a player with a transfer request as a LOW-tier sale. */
+  seller?: Squad;
 }): MarketBid | null {
   const { player, buyer, rng } = args;
   if (buyer.players.length >= MAX_SQUAD) return null;
@@ -33,7 +38,15 @@ export function buildAiTransferBid(args: {
   if (!passesWageGate(aiClubFinance(buyer), estimateWeeklyWage(player, wageFactorOf(buyer)), Math.min(maxFee, value))) return null;
   const sellOnPct = rng() < B.SELL_ON_CHANCE ? (rng() < 0.5 ? 10 : 20) : 0;
   const mult = 1 + sellOnValueFraction(sellOnPct, player.age);
-  const opening = roundFeeDown(Math.min(value * (B.FEE_MIN + rng() * B.FEE_SPREAD), maxFee) / mult);
+  let opening = roundFeeDown(Math.min(value * (B.FEE_MIN + rng() * B.FEE_SPREAD), maxFee) / mult);
+  let ceiling = maxFee;
+  // Transfer request (`.claude/rules/game/morale.md`): the buyer knows he wants out and prices the
+  // human club as an AI LOW-tier seller (pressure 1.0) — the fee such a seller accepts caps the bid.
+  if (args.seller && player.moraleLog?.transferRequest) {
+    const lowTierFee = roundFeeDown(Math.max(value * B.MIN_MAX_RATIO, feeForSaleScore(saleContext(player, args.seller, 1, { humanSeller: true }), ACCEPT_SCORE)));
+    opening = Math.min(opening, roundFeeDown(lowTierFee / mult));
+    ceiling = Math.min(maxFee, Math.max(opening, lowTierFee));
+  }
   if (opening <= 0) return null;
   return {
     id: args.id,
@@ -45,7 +58,7 @@ export function buildAiTransferBid(args: {
     date: args.date,
     expires: addDays(args.date, B.VALID_DAYS),
     fee: opening,
-    maxFee,
+    maxFee: ceiling,
     sellOnPct,
   };
 }
@@ -97,7 +110,7 @@ export function generateBidsForHuman(args: {
     });
     if (buyers.length > 0) {
       const buyer = buyers[Math.floor(rng() * buyers.length)]!;
-      const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng });
+      const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad });
       if (bid) out.push(bid);
     }
   }
@@ -116,7 +129,7 @@ export function generateBidsForHuman(args: {
     });
     if (buyers.length === 0) continue;
     const buyer = buyers[Math.floor(rng() * buyers.length)]!;
-    const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng });
+    const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad });
     if (bid) out.push(bid);
   }
 
@@ -129,7 +142,7 @@ export function generateBidsForHuman(args: {
       const buyers = buyersFor(best).filter((b) => transferBudgetTierOf(b) === "high" && teamAvgRating(b) > humanAvg);
       if (buyers.length > 0) {
         const buyer = buyers[Math.floor(rng() * buyers.length)]!;
-        const bid = buildAiTransferBid({ id: args.newId(), player: best, buyer, date, rng });
+        const bid = buildAiTransferBid({ id: args.newId(), player: best, buyer, date, rng, seller: humanSquad });
         if (bid) out.push(bid);
       }
     }
