@@ -7,6 +7,8 @@ import {
 } from "@/Domain/facilities/facilities";
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
+import { academyEffectsOf, committedSpend } from "@/Domain/facilities/facilities";
+import { clubAnnualRevenue } from "@/Domain/finance/wages";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import type { Squad } from "@/types/playerTypes";
 import type { ClubFacilities } from "@/types/facilityTypes";
@@ -65,6 +67,30 @@ describe("stadium", () => {
     expect(comfortPriceMult(1)).toBe(1);
     expect(comfortPriceMult(3)).toBeCloseTo(1.12, 10);
     expect(comfortPriceMult(5)).toBeCloseTo(1.24, 10);
+  });
+
+  test("expanding without demand does not raise the estimated revenue", () => {
+    const sq = squad();
+    const f = initialFacilities(sq, 1);
+    const before = clubAnnualRevenue(withFacilities(sq, f), 19);
+    expect(before).toBe(clubAnnualRevenue(sq, 19));
+    const bigger = { ...f, stands: f.stands.map((s) => (s.id === "east" ? { ...s, seats: s.seats + 10000 } : s)) };
+    const expanded = withFacilities(sq, bigger);
+    expect(expanded.venue!.capacity).toBe(50000);
+    expect(clubAnnualRevenue(expanded, 19)).toBe(before);
+    // More followers (demand) do fill some of the new seats.
+    const grown = { ...expanded, finances: { ...expanded.finances!, followers: 3_000_000 } };
+    expect(clubAnnualRevenue(grown, 19)).toBeGreaterThan(before);
+  });
+
+  test("forecast capacity: the stand counts half until its works end, then with the new seats", () => {
+    let f = initialFacilities(squad(), 1);
+    const q = quoteProject(f, { kind: "stand", stand: "east", seats: 4000 }, { revenue: 1e8, seatCost: 4000 })!;
+    f = startProject(f, q, { id: "p1", date: "2027-01-01", boardShare: 0 });
+    const end = f.projects[0]!.end;
+    const east = f.stands.find((s) => s.id === "east")!.seats;
+    expect(effectiveCapacity(f, "2027-01-02")).toBe(40000 - east + Math.floor(east / 2));
+    expect(effectiveCapacity(f, end)).toBe(44000);
   });
 
   test("a stand under works counts half", () => {
@@ -131,13 +157,24 @@ describe("effects", () => {
     expect(academyEffectsAt(5).promiseChance).toBe(0.09);
   });
 
+  test("academy relative to the tier's implied level: AI neutral, the human club by what it built", () => {
+    const elite = squad({ finances: { broadcasting: 2e8, commercial: 2e8, total: 4e8, budget: 0, followers: 1e8 } });
+    expect(academyEffectsOf(elite)).toEqual(academyEffectsAt(3));
+    const f = initialFacilities(elite, 1);
+    expect(f.academy).toBe(4);
+    expect(academyEffectsOf(withFacilities(elite, f))).toEqual(academyEffectsAt(3));
+    expect(academyEffectsOf(withFacilities(elite, { ...f, academy: 5 }))).toEqual(academyEffectsAt(4));
+  });
+
   test("AI clubs use the implied level by tier; the human club its stored levels", () => {
     const low = squad({ finances: { broadcasting: 1e6, commercial: 1e6, total: 2e6, budget: 0, followers: 1e5 } });
-    expect(facilityLevels(low)).toEqual({ training: 1, academy: 1 });
+    expect(facilityLevels(low)).toEqual({ training: 2, academy: 2 });
     const elite = squad({ finances: { broadcasting: 2e8, commercial: 2e8, total: 4e8, budget: 0, followers: 1e8 } });
     expect(facilityLevels(elite)).toEqual({ training: 4, academy: 4 });
     const f = initialFacilities(low, 1);
-    expect(facilityLevels(withFacilities(low, { ...f, training: 5 }))).toEqual({ training: 5, academy: 1 });
+    expect(facilityLevels(withFacilities(low, { ...f, training: 5 }))).toEqual({ training: 5, academy: 2 });
+    const mid = squad({ finances: { broadcasting: 3e7, commercial: 1e7, total: 4e7, budget: 0, followers: 1e6 } });
+    expect(facilityLevels(mid)).toEqual({ training: 3, academy: 3 });
   });
 });
 
@@ -154,6 +191,9 @@ describe("board decision", () => {
     expect(boardDecision({ board: 75, balance: 6e6, cost: 6e6, revenue: rev })).toEqual({ approved: true, boardShare: 0 });
     expect(boardDecision({ board: 85, balance: 1e9, cost: 6e6, revenue: rev })).toEqual({ approved: true, boardShare: 0.25 });
     expect(boardDecision({ board: 100, balance: 1e9, cost: 6e6, revenue: rev })).toEqual({ approved: true, boardShare: 0.5 });
+    // Running works: the club's remaining share is taken off the balance.
+    expect(boardDecision({ board: 75, balance: 10e6, cost: 6e6, revenue: rev, committed: 5e6 })).toEqual({ approved: false, reason: "no_money" });
+    expect(boardDecision({ board: 75, balance: 11e6, cost: 6e6, revenue: rev, committed: 5e6 }).approved).toBe(true);
     // The board's part lowers what the balance must cover.
     expect(boardDecision({ board: 100, balance: 3e6, cost: 6e6, revenue: rev }).approved).toBe(true);
   });
@@ -166,6 +206,7 @@ describe("projects", () => {
     const q = quoteProject(f, { kind: "stand", stand: "west", seats: 4000 }, { revenue: 1e8, seatCost: 3333 })!;
     f = startProject(f, q, { id: "p", date: "2027-01-01", boardShare: 0.3 });
     const p = f.projects[0]!;
+    expect(committedSpend(f)).toBe(p.cost - Math.round(p.cost * 0.3));
     let date = "2027-01-01";
     let paid = 0;
     let funded = 0;
@@ -183,6 +224,7 @@ describe("projects", () => {
     expect(done).toBe(true);
     expect(paid).toBe(p.cost);
     expect(funded).toBe(Math.round(p.cost * 0.3));
+    expect(committedSpend(f)).toBe(0);
     expect(totalSeats(f)).toBe(44000);
     expect(f.projects).toHaveLength(0);
     expect(f.completed.at(-1)!.kind).toBe("stand");

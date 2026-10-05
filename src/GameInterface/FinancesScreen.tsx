@@ -151,6 +151,7 @@ export function FinancesScreen() {
           ? facilitiesGate(fd.facilities, {
               ...fd.demandInput,
               ...(fd.season ? { fraction: seasonFraction(f.date, fd.season.start, fd.season.end) } : {}),
+              date: f.date,
             }, kind)
           : gateRevenue(capacity, kind, f.neutral, fillRate);
         return { fixture: f, kind, projected };

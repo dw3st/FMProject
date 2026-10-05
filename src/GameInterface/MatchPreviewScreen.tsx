@@ -602,9 +602,10 @@ export function MatchPreviewScreen() {
   const { session, loading: saveLoading, fixtures, currentDate: simDate } = useGameSave();
   const [matchSetup, setMatchSetup] = useState<MatchSetupData | null>(null);
   const [fixture, setFixture] = useState<Fixture | null>(null);
-  // Expected attendance at home (`.claude/rules/game/facilities.md`).
-  const { data: facilitiesData } = useFacilities(session?.saveId, session?.currentDate ?? null);
   const [mySquadId, setMySquadId] = useState<string>("");
+  // Expected attendance (`.claude/rules/game/facilities.md`): only asked for a home game.
+  const homeGame = !!fixture && !!mySquadId && fixture.home === mySquadId && !fixture.neutral;
+  const { data: facilitiesData } = useFacilities(homeGame ? session?.saveId : undefined, session?.currentDate ?? null);
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
   // Static catalog lookups: club slug/name for any squadId.
@@ -927,6 +928,7 @@ export function MatchPreviewScreen() {
     ? attendanceOf(facilitiesData.facilities, {
         ...facilitiesData.demandInput,
         ...(facilitiesData.season ? { fraction: seasonFraction(fixture.date, facilitiesData.season.start, facilitiesData.season.end) } : {}),
+        date: fixture.date,
       })
     : null;
   const competition = fixture

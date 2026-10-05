@@ -4,7 +4,7 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import {
-  academyEffectsAt, boardDecision, comfortPriceMult, effectiveCapacity, projectRunning, quoteProject,
+  academyEffectsAt, boardDecision, comfortPriceMult, committedSpend, effectiveCapacity, projectRunning, quoteProject,
   startProject, totalSeats, trainingEffectsAt, validSeats, weeklyUpkeep, withFacilities,
 } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
@@ -72,6 +72,8 @@ async function facilitiesView(h: Human) {
     balance: h.squad.finances?.budget ?? 0,
     board: h.meta.board?.board ?? BOARD_FANS.START,
     weeklyUpkeep: weeklyUpkeep(h.squad, revenue),
+    /** The club's share still to pay on running works (the board counts it against the balance). */
+    committed: committedSpend(f),
     /** What the client needs to estimate the demand of the coming home games (`attendanceOf`). */
     demandInput: {
       followers: h.squad.finances?.followers ?? 0,
@@ -126,14 +128,15 @@ export const facilityRoutes = {
       if (!quote) return Response.json({ error: "maxLevel" }, { status: 400 });
       const decision = boardDecision({
         board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, cost: quote.cost, revenue,
+        committed: committedSpend(f),
       });
       const what = {
         facility: quote.kind, cost: quote.cost,
         ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
         ...(quote.level !== undefined ? { level: quote.level } : {}),
       };
+      // A refusal is answered on screen only (no inbox line: the request was just made).
       if (!decision.approved) {
-        await emitInboxMessage(saveId, buildFacilityMessage({ date: h.date, kind: "refused", ...what, reason: decision.reason }), saveService);
         return Response.json({ approved: false, reason: decision.reason, view: await facilitiesView(h) });
       }
       const next = startProject(f, quote, { id: `fac_${randomUUID()}`, date: h.date, boardShare: decision.boardShare });

@@ -6,10 +6,14 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
 ## Regra
 
 - Só o **clube do jogador** grava instalações (`Squad.facilities`, `ClubFacilities` em `src/types/facilityTypes.ts`).
-  A IA usa o **nível implícito do tier** (LOW 1, MEDIUM 2, HIGH 3, ELITE 4) para o CT e a base, como o staff, e
-  continua com a bilheteria antiga (capacidade × 0,65). Sem migração (protótipo).
+  A IA usa o **nível implícito do tier** (LOW 2, MEDIUM 3, HIGH 3, ELITE 4, centrado no neutro 3) para o CT, como o
+  staff, e continua com a bilheteria antiga (capacidade × 0,65). Sem migração (protótipo).
+- **Efeito no mundo (estimado pelas parcelas de tier do mundo inicial, LOW 24% / MEDIUM 53% / HIGH 19% / ELITE 3%):**
+  nível médio do CT ~2,8; recuperação diária média × 0,998, lesão de treino × 1,003, DP de treino × 0,996 (LOW
+  × 0,985 / 1,025 / 0,975; ELITE × 1,04 / 0,925 / 1,05). A base da IA é sempre neutra (o tier já está no
+  `YOUTH.TIER_BONUS`): as safras da IA não mudam.
 - As instalações são **do clube**: criadas no `createSave` e no `takeOverClub` (`initialFacilities`: setores pela
-  capacidade, conforto 1, CT e base no nível implícito do tier), apagadas no `releaseHumanClub` (o estádio construído
+  capacidade, conforto 1, CT e base no nível implícito do tier, ou seja, neutros para um clube MEDIUM), apagadas no `releaseHumanClub` (o estádio construído
   fica em `venue.capacity`, obras em andamento são abandonadas). O start kit não as carrega (`stripHumanOnly`) e
   `applyRandomStartKit` as restaura.
 - Nada novo na barra superior: aba **Instalações** dentro de **Finanças**; cartão **Obras** no Painel.
@@ -38,8 +42,9 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
   `clamp(1.500 + 4.500 × peso do país × fator do tier, 1.500, 6.000)` (peso do país = `countryWeight` do ranking de
   técnicos, cache `meta.managerWeights` ou calculado e guardado em memória; fator do tier 1 / 0,75 / 0,55 / 0,4).
   Prazo 8 + 22 × (lugares − 1.000)/9.000 semanas (8..30). Durante a obra o setor conta metade. Na conclusão,
-  `venue.capacity` = soma dos setores (a receita estimada da virada, `clubAnnualRevenue`, passa a usar o estádio
-  maior: o custo operacional sobe um pouco).
+  `venue.capacity` = soma dos setores. A receita estimada (`clubAnnualRevenue`, base do custo operacional e do fator
+  de salário) conta no máximo os lugares que a demanda enche: min(capacidade, capacidade âncora × (seguidores /
+  seguidores âncora)^0,7); lugares novos vazios não sobem a receita (teste).
 - **Conforto 1–5:** ingresso × (1 + 0,06 × (nível − 1)). Obra: €100/160/240/350 por lugar para os níveis 2..5, 8..20 semanas.
 
 ## Demanda e público
@@ -76,8 +81,9 @@ demanda; últimas 80) e o recorde (`facilities.record`). Recorde batido (havendo
 - O CT multiplica os efeitos do staff (`staffEffectsOf`) na recuperação (descanso, dia de treino e quem não jogou no
   dia de jogo), na lesão de treino pesado e na DP do treino. **Nunca dentro da partida:** o motor, o quickSim, a DP
   de partida, o fôlego de quem jogou e a familiaridade de estilo não mudam.
-- A base entra em `generateIntake` para todo clube (IA pelo nível implícito). Consequência aceita: a IA LOW tem safras
-  um pouco piores e menos promessas; a ELITE melhores.
+- A base entra em `generateIntake` **relativa ao nível implícito do tier** (`academyEffectsOf`: efeito do nível
+  3 + nível − implícito): a IA fica sempre no neutro (o tier já conta no `TIER_BONUS`) e o clube do jogador ganha
+  ou perde só pelos níveis que construiu acima ou abaixo do implícito do seu tier.
 - Obras: custo = receita anual × 3/6/12/20% (CT, níveis 2..5) ou × 2/4,5/9/15% (base); 12..40 semanas.
 - **Manutenção semanal** (`facilities_upkeep`, segunda): receita anual × (0,4% por nível do CT + 0,3% por nível da
   base **acima do nível implícito do tier**) / 52. Com os níveis iniciais é 0: o custo operacional (25% da receita)
@@ -89,13 +95,15 @@ demanda; últimas 80) e o recorde (`facilities.record`). Recorde batido (havendo
   `{ kind: "comfort" | "training" | "academy" }`, sempre o próximo nível). Uma obra por tipo ao mesmo tempo
   (409 `busy`); nível 5 → 400 `maxLevel`; corpo inválido → 400; desempregado → 409 `noClub`; dono do save; trava do save.
 - `boardDecision`: saldo negativo → `negative_balance`; diretoria < 50 → `board_low`; 50–69 e custo > 10% da receita
-  anual → `too_big`; ≥ 85 a diretoria paga 25% (85) a 50% (100); a parte do clube tem de caber no saldo → `no_money`.
+  anual → `too_big`; ≥ 85 a diretoria paga 25% (85) a 50% (100); a parte do clube tem de caber no saldo **menos o
+  que falta pagar das obras em andamento** (`committedSpend`) → `no_money`.
   A tela mostra a previsão com a mesma função.
 - **Parcelas mensais:** n = ⌈dias da obra / 30⌉; a parcela k vence em início + 30k dias (a primeira no próprio dia da
   aprovação, cobrada pelo avanço desse dia), todas pagas até o fim. Cada parcela: `facilities` (−custo/n) e
   `board_funding` (+parte da diretoria/n). As partes somam exatamente o custo e a parte da diretoria. A invariante do
   extrato (soma = saldo) continua, pois tudo passa por `recordMoney`.
-- Inbox: `approved`/`refused` na hora (rota), `completed` e `attendance_record` adiados para depois do `clearInbox`.
+- Inbox: `approved` na hora (rota); a recusa só aparece na tela (sem mensagem, o pedido acabou de ser feito);
+  `completed` e `attendance_record` adiados para depois do `clearInbox`.
 
 ## Telas
 
@@ -108,7 +116,9 @@ demanda; últimas 80) e o recorde (`facilities.record`). Recorde batido (havendo
   próximo nível, custo, prazo); obras com barra de progresso e entrega; manutenção semanal.
 - **Visão geral:** a projeção de bilheteria usa o mesmo público; filtros e linhas do extrato com os tipos novos.
 - **Painel:** cartão Obras só com obra em andamento ou concluída nos últimos 7 dias.
-- **Prévia da partida:** público esperado / capacidade nos jogos em casa (fora de campo neutro).
+- **Prévia da partida:** público esperado / capacidade nos jogos em casa (fora de campo neutro; a rota só é
+  chamada para jogo em casa). As previsões (prévia, gráfico, projeção de bilheteria) usam a capacidade no dia do
+  jogo (`DemandInput.date`): o setor conta pela metade só até o fim da obra e, depois, com os lugares novos.
 
 ## `/test`, `/lab`
 
@@ -137,7 +147,5 @@ a considerar o público e as parcelas do dia.
 - A ocupação por setor no desenho é ilustrativa (o público não é simulado por setor).
 - A demanda não distingue adversário nem competição (só a fase da temporada); um clássico lota como um jogo comum.
 - O custo por lugar usa o peso do país do ranking de técnicos; sem cache na meta ele é calculado na primeira consulta
-  (lê os elencos de nível 1 do país e das 5 grandes) e guardado em memória por processo.
-- Ampliar o estádio aumenta a receita estimada da virada (`clubAnnualRevenue` usa a capacidade × 0,65), e com ela o
-  custo operacional e o fator de salário, mesmo que a demanda não encha os lugares novos.
+  (lê os elencos de nível 1 do país e das 5 grandes) e guardado em memória por processo, por país e temporada.
 - A familiaridade de estilo e a evolução da base fora de jogo (`developYouthSeason`) usam só o auxiliar, não o CT.

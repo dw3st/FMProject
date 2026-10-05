@@ -74,7 +74,8 @@ describe("facilities routes", () => {
     // One project per facility.
     expect((await call("/request", "POST", session.token, { kind: "stand", stand: "west", seats: 1000 })).status).toBe(409);
     const inbox = await saveService.getInbox(saveId);
-    expect(inbox.some((m) => m.category === "facilities" && m.kind === "refused")).toBe(true);
+    // A refusal is answered on screen only.
+    expect(inbox.some((m) => m.category === "facilities" && m.kind === "refused")).toBe(false);
     expect(inbox.some((m) => m.category === "facilities" && m.kind === "approved")).toBe(true);
 
     // The day pays the first instalment and the board's half of it.

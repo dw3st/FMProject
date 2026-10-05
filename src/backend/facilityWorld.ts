@@ -25,14 +25,16 @@ export async function withInitialFacilities(squad: Squad, leagueSlug: string): P
 }
 
 // Country weights are expensive the first time (tier-1 levels of the country and the big 5): kept
-// per process, keyed by save + country. The manager ranking's cache in the meta is used first.
+// per process, keyed by save + country + season (the levels change with the squads). The manager ranking's cache in the meta is used first.
 const weightCache = new Map<string, number>();
 
-async function countryWeightOf(service: SaveService, saveId: string, meta: SaveMeta, country: string | null): Promise<number> {
+async function countryWeightOf(
+  service: SaveService, saveId: string, meta: SaveMeta, country: string | null, season: string,
+): Promise<number> {
   if (!country) return MANAGERS.WEIGHT_MIN;
   const cached = meta.managerWeights?.[country];
   if (cached) return cached.weight;
-  const key = `${saveId}:${country}`;
+  const key = `${saveId}:${country}:${season}`;
   const memo = weightCache.get(key);
   if (memo !== undefined) return memo;
   const index = await service.getSquadIndex(saveId);
@@ -48,5 +50,7 @@ async function countryWeightOf(service: SaveService, saveId: string, meta: SaveM
 export async function seatCostFor(service: SaveService, saveId: string, meta: SaveMeta, leagueSlug: string): Promise<number> {
   const catalog = await getLeagueData();
   const country = catalog.find((l) => l.slug === leagueSlug)?.country ?? null;
-  return seatCost(await countryWeightOf(service, saveId, meta, country), await leagueTierOf(leagueSlug));
+  const year = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === leagueSlug)?.year;
+  const season = String(year ?? (meta.currentDate ?? "").slice(0, 4));
+  return seatCost(await countryWeightOf(service, saveId, meta, country, season), await leagueTierOf(leagueSlug));
 }

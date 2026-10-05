@@ -160,6 +160,7 @@ function buildSeasonGames(data: FacilitiesViewData | null, fixtures: Fixture[], 
       const a = attendanceOf(data.facilities, {
         ...data.demandInput,
         ...(data.season ? { fraction: seasonFraction(fx.date, data.season.start, data.season.end) } : {}),
+        date: fx.date,
       });
       return { date: fx.date, competition: fx.competition, attendance: a.attendance, capacity: a.capacity, demand: a.demand, played: false };
     });
@@ -342,7 +343,7 @@ function AskRow({ data, cost, busy, pending, onAsk, disabled }: {
   data: FacilitiesViewData; cost: number; busy: boolean; pending: boolean; onAsk: () => void; disabled?: boolean;
 }) {
   const { t } = useTranslation();
-  const preview = boardDecision({ board: data.board, balance: data.balance, cost, revenue: data.revenue });
+  const preview = boardDecision({ board: data.board, balance: data.balance, cost, revenue: data.revenue, committed: data.committed });
   const hint = busy
     ? t("facilities.busy")
     : preview.approved

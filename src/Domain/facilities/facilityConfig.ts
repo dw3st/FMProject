@@ -6,8 +6,11 @@ export const FACILITIES = {
   MIN_LEVEL: 1,
   MAX_LEVEL: 5,
   NEUTRAL_LEVEL: 3,
-  /** AI clubs (and a newly taken-over human club) use this level by financial tier. */
-  IMPLIED_LEVEL: { LOW: 1, MEDIUM: 2, HIGH: 3, ELITE: 4 },
+  /**
+   * AI clubs (and a newly taken-over human club) use this level by financial tier. Centred on the
+   * neutral 3 (world mean ~2,8). The academy is always relative to it (see `academyEffectsOf`).
+   */
+  IMPLIED_LEVEL: { LOW: 2, MEDIUM: 3, HIGH: 3, ELITE: 4 },
 
   // ── Stadium ───────────────────────────────────────────────────────────────
   /** Share of the capacity in each stand (sides bigger). */

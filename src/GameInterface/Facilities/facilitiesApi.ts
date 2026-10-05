@@ -14,6 +14,7 @@ export interface FacilitiesViewData {
   balance: number;
   board: number;
   weeklyUpkeep: number;
+  committed: number;
   demandInput: { followers: number; tier: number; fans: number };
   season: { start: string; end: string } | null;
   quotes: { comfort: ProjectQuote | null; training: ProjectQuote | null; academy: ProjectQuote | null };

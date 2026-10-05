@@ -66,8 +66,14 @@ export function academyEffectsAt(level: number): AcademyEffects {
   };
 }
 
+/**
+ * Academy effects of a club, relative to the implied level of its tier: the intake already has the
+ * tier bonus (`YOUTH.TIER_BONUS`), so an AI club (implied level) is always neutral, and the human
+ * club gains or loses only for the levels it built above or below its tier's implied level.
+ */
 export function academyEffectsOf(squad: Squad): AcademyEffects {
-  return academyEffectsAt(facilityLevels(squad).academy);
+  if (!squad.facilities) return academyEffectsAt(F.NEUTRAL_LEVEL);
+  return academyEffectsAt(F.NEUTRAL_LEVEL + squad.facilities.academy - impliedLevel(squad));
 }
 
 // ── Stadium ───────────────────────────────────────────────────────────────────
@@ -96,10 +102,17 @@ export function standUnderWorks(f: ClubFacilities): StandId | null {
   return f.projects.find((p) => p.kind === "stand")?.stand ?? null;
 }
 
-/** Seats available today: a stand under works counts half. */
-export function effectiveCapacity(f: ClubFacilities): number {
-  const works = standUnderWorks(f);
-  return f.stands.reduce((s, x) => s + (x.id === works ? Math.floor(x.seats / 2) : x.seats), 0);
+/**
+ * Seats available today, or on a future `date`: a stand counts half while its works run (until the
+ * project's end) and with the added seats from the end on.
+ */
+export function effectiveCapacity(f: ClubFacilities, date?: string): number {
+  const p = f.projects.find((x) => x.kind === "stand");
+  const done = !!p && date !== undefined && p.end <= date;
+  return f.stands.reduce((s, x) => {
+    if (!p || x.id !== p.stand) return s + x.seats;
+    return s + (done ? x.seats + (p.seats ?? 0) : Math.floor(x.seats / 2));
+  }, 0);
 }
 
 /** Ticket price multiplier of the comfort level (level 1 = × 1). */
@@ -131,6 +144,8 @@ export interface DemandInput {
   fans?: number;
   /** Fraction of the league window elapsed (absent: middle of the season → phase 1 kept exact). */
   fraction?: number;
+  /** Game day (forecasts): the stand under works counts half only until its works end. */
+  date?: string;
 }
 
 /**
@@ -149,7 +164,7 @@ export function demandOf(f: ClubFacilities, input: DemandInput): number {
 
 /** Attendance = min(seats available, demand) (unrounded; round only for display). */
 export function attendanceOf(f: ClubFacilities, input: DemandInput): { attendance: number; capacity: number; demand: number } {
-  const capacity = effectiveCapacity(f);
+  const capacity = effectiveCapacity(f, input.date);
   const demand = demandOf(f, input);
   return { attendance: Math.min(capacity, demand), capacity, demand };
 }
@@ -273,7 +288,11 @@ export type BoardDecision =
  * < 50 or negative balance → refused; 50..69 → only projects ≤ 10% of annual revenue;
  * ≥ 70 → approved; ≥ 85 → the board pays 25..50%. The club's share must fit the balance.
  */
-export function boardDecision(args: { board: number; balance: number; cost: number; revenue: number }): BoardDecision {
+export function boardDecision(args: {
+  board: number; balance: number; cost: number; revenue: number;
+  /** The club's share still to pay on the projects already running (`committedSpend`). */
+  committed?: number;
+}): BoardDecision {
   const B = F.BOARD;
   if (args.balance < 0) return { approved: false, reason: "negative_balance" };
   if (args.board < B.REFUSE_BELOW) return { approved: false, reason: "board_low" };
@@ -283,7 +302,7 @@ export function boardDecision(args: { board: number; balance: number; cost: numb
   const boardShare = args.board >= B.FUND_FROM
     ? B.FUND_MIN + (B.FUND_MAX - B.FUND_MIN) * clamp((args.board - B.FUND_FROM) / (100 - B.FUND_FROM), 0, 1)
     : 0;
-  if (args.balance < args.cost * (1 - boardShare)) return { approved: false, reason: "no_money" };
+  if (args.balance - (args.committed ?? 0) < args.cost * (1 - boardShare)) return { approved: false, reason: "no_money" };
   return { approved: true, boardShare: Math.round(boardShare * 100) / 100 };
 }
 
@@ -315,6 +334,18 @@ export function startProject(
     paid: 0,
   };
   return { ...f, projects: [...f.projects, project] };
+}
+
+/** The club's share of the instalments still to pay on the running projects. */
+export function committedSpend(f: ClubFacilities): number {
+  let sum = 0;
+  for (const p of f.projects) {
+    const boardTotal = Math.round(p.cost * p.boardShare);
+    for (let k = p.paid; k < p.instalments; k++) {
+      sum += instalmentAmount(p.cost, p.instalments, k) - instalmentAmount(boardTotal, p.instalments, k);
+    }
+  }
+  return sum;
 }
 
 /** Amount of instalment `k` (0-based) of `total` split in `n` (the parts sum exactly to `total`). */
@@ -414,7 +445,7 @@ export function facilitiesMatchday(
   let recordBroken: { previous: number; attendance: number; competition: string; opponentId: string } | null = null;
   const attendance = games.map((g) => {
     if (g.neutral) return 0;
-    const a = attendanceOf(cur, input);
+    const a = attendanceOf(cur, { ...input, date });
     const r = recordAttendance(cur, {
       date, competition: g.competition, opponentId: g.opponentId,
       attendance: Math.round(a.attendance), capacity: a.capacity, demand: Math.round(a.demand),
