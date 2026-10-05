@@ -676,7 +676,8 @@ function ensureCompetentGK(state: GameState, team: TeamId): GameState {
 
   const roleEng    = roleEngine('GK');
   const xBoundsBase = roleEng.bounds;
-  const xBounds    = team === 'A' ? xBoundsBase : mirrorBounds({ ...xBoundsBase, minY: 0, maxY: PITCH_WIDTH });
+  // Mirroring follows the attack direction (correct after half-time too), not the team.
+  const xBounds    = deepest.attackDir === 1 ? xBoundsBase : mirrorBounds({ ...xBoundsBase, minY: 0, maxY: PITCH_WIDTH });
   const goalY      = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
   const bounds: MovementBounds = {
     minX: xBounds.minX, maxX: xBounds.maxX,
@@ -696,8 +697,12 @@ function ensureCompetentGK(state: GameState, team: TeamId): GameState {
     bounds,
     ballSupportScale:  roleEng.ballSupportScale,
   });
+  // The emergency keeper plays the GK role: no outfield slot instruction, no man-marking.
+  delete promoted.engine;
+  delete promoted.instruction;
+  delete promoted.manMarkTargetId;
 
-  return { ...state, players: state.players.map(p => (p.id === deepest.id ? promoted : p)) };
+  return refreshManMarks({ ...state, players: state.players.map(p => (p.id === deepest.id ? promoted : p)) });
 }
 
 /**
@@ -1359,7 +1364,7 @@ function refreshManMarks(state: GameState): GameState {
     const next: ManMarkPair[] = [];
     for (const pair of pairs) {
       const marker = s.players.find(p => p.team === team && p.slotIndex === pair.markerSlot && p.role !== 'GK');
-      const target = s.players.find(p => p.id === pair.targetId && p.team !== team);
+      const target = s.players.find(p => p.id === pair.targetId && p.team !== team && p.role !== 'GK');
       if (!marker || !target) {
         debugLog('instruction', `Man-marking pair dropped (slot ${pair.markerSlot}, target ${pair.targetId})`, { data: { ...pair } });
         continue;

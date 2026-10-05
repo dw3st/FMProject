@@ -244,7 +244,7 @@ try {
   }
 
   // Instruções (`.claude/rules/game/player-instructions.md`): the human club plays the season with
-  // inverted full-backs, a false 9 and a midfielder pressing more, set through the tactics route;
+  // inverted full-backs, a target man (pivô) and a midfielder pressing more, set through the tactics route;
   // the instructions survive a formation change (sanitized), and every match day it man-marks the
   // opponent's best outfield player (cleared by the next advance).
   const instrTrack = {

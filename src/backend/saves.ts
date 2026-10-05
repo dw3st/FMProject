@@ -252,10 +252,23 @@ export const saveRoutes = {
         ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
       };
 
+      // Today's man-marking follows the formation: a pair whose marker slot changed role (or became
+      // the goalkeeper) is dropped (player instructions).
+      let matchMarking = meta.matchMarking;
+      if (matchMarking) {
+        const before = formationForTactics(existing);
+        const marks = matchMarking.marks.filter((m) => {
+          const role = playFormation.attacking[m.slot]?.role;
+          return role !== undefined && role !== "GK" && role === before.attacking[m.slot]?.role;
+        });
+        if (marks.length !== matchMarking.marks.length) matchMarking = marks.length > 0 ? { ...matchMarking, marks } : undefined;
+      }
+
       await saveService.saveTactics(id, updated);
       await saveService.updateMeta(id, {
         formation:      updated.formation,
         tactical_style: updated.tactical_style,
+        ...(matchMarking !== meta.matchMarking ? { matchMarking } : {}),
       });
       return Response.json(updated);
     }

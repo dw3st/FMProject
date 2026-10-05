@@ -78,8 +78,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Direct FK goals",   key: "avgDirectFreeKickGoals" },
     { stat: "Set-piece goals",   key: "avgSetPieceGoals" },
     { stat: "Set-piece goal%",   key: "setPieceGoalPct" },
-    { stat: "Marked tgt shots",  key: "avgMarkedTargetShots" },
-    { stat: "Marked tgt goals",  key: "avgMarkedTargetGoals" },
+    { stat: "Shots while marked", key: "avgMarkedTargetShots" },
+    { stat: "Goals while marked", key: "avgMarkedTargetGoals" },
   ];
 
   const data = {

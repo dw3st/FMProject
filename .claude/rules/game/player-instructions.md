@@ -1,7 +1,7 @@
 # Instruções individuais (variantes de função, pressão individual, marcação individual)
 
 Spec: `docs/superpowers/specs/2026-10-05-player-instructions-design.md`. Etapa 27 do `docs/ROADMAP.md`, versão
-**4.2**. Visual: `.claude/rules/ui-standard.md`. Pesos de papel: `roles.json` (`engine`), `game-engine/*`.
+**4.1**. Visual: `.claude/rules/ui-standard.md`. Pesos de papel: `roles.json` (`engine`), `game-engine/*`.
 
 ## Regra
 
@@ -133,7 +133,7 @@ volume −18% (o meia aberto), e o ponta aberto cruzava *menos* (−18%), o cont
 - `/lab`: `Variant.slotInstructions` e `Variant.manMarks` (`{ slot, targetSlot }`) no `VariantEditor` (bloco
   "Instructions"); rótulo `· instr N` / `· mark`; `TeamRawStats.markedTargetShots/Goals`, `manMarkedMinutes` e
   `slotStats` (por vaga: passes, chutes, gols, cruzamentos, desarmes, ticks de pressão, x e \|y−37\| médios com a
-  bola, fôlego final) → `PerMatchView`/`VariantSummary` → `PairDetail` ("Marked tgt shots/goals" e a tabela "Per
+  bola, fôlego final) → `PerMatchView`/`VariantSummary` → `PairDetail` ("Shots while marked" / "Goals while marked" e a tabela "Per
   slot"). `/matrix` ganhou o modo "Instructions" (`/api/lab/instr-matrix`).
 - MCP: `summary` mostra `variant`/`press`/marcação; `score_off_ball`/`score_defensive_intent` usam `engineOf`.
 

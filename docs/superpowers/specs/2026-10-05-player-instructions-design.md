@@ -1,6 +1,6 @@
 # Etapa 27 — Instruções individuais — Design
 
-Data: 2026-10-05. Status: em aprovação. Versão **4.2**. Regra do projeto: `/test`, `/lab`, `Statistics.ts`.
+Data: 2026-10-05. Status: em aprovação. Versão **4.1**. Regra do projeto: `/test`, `/lab`, `Statistics.ts`.
 Base: `tatics.md`, `game-engine/tactical-config.md` ("What NOT to do"), `offball.md`, `defensive-position.md`,
 `attack-position.md`, `movement-bounds.md`, `pass.md`, `carry.md`, `game/formations.md` (matriz).
 
@@ -234,4 +234,4 @@ bun test src/GameEngine/Configs/RoleVariantConfig.test.ts src/Domain/tactics \
 ## Entregas
 
 `.claude/rules/game/player-instructions.md` (novo), `tatics.md` (seção `slotInstructions`),
-`defensive-position.md` (tabela de pesos corrigida), changelog 4.2 + `upcoming`, ROADMAP etapa 27.
+`defensive-position.md` (tabela de pesos corrigida), changelog 4.1 + `upcoming`, ROADMAP etapa 27.

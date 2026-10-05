@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import {
   createMatchState, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot,
-  performSubstitution, changeFormation,
+  performSubstitution, changeFormation, forceInjurySubstitution,
 } from "@/GameEngine/Domain/gameState";
 import { assignMarkTargets } from "@/GameEngine/Domain/DefensivePositioning";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
@@ -163,6 +163,26 @@ describe("man-marking", () => {
     expect(sum / n).toBeLessThanOrEqual(6);
     expect(result.teamStats.B.manMarked).toBeGreaterThan(30);
     expect(shotsMarked).toBe(result.teamStats.B.markedTargetShots);
+  });
+});
+
+describe("emergency goalkeeper", () => {
+  test("the promoted keeper drops his slot instruction and man-marking; bounds follow the attack direction", () => {
+    let s = applyTeamInstructions(freshState(), "A", Array(11).fill(null).map((_, i) => (i === 0 ? null : { press: "more" as const })));
+    const outfield = s.players.filter(p => p.team === "A" && p.role !== "GK");
+    const deepest = outfield.reduce((b, p) => (p.x < b.x ? p : b));
+    const target = s.players.find(p => p.team === "B" && p.role === "ST")!;
+    s = setManMarks(s, "A", [{ markerSlot: deepest.slotIndex, targetId: target.id }]);
+    s = { ...s, subsRemainingA: 0 };
+    const gk = s.players.find(p => p.team === "A" && p.role === "GK")!;
+    const after = forceInjurySubstitution(s, gk, 10, "severe");
+    const promoted = after.players.find(p => p.id === deepest.id)!;
+    expect(promoted.role).toBe("GK");
+    expect(promoted.engine).toBeUndefined();
+    expect(promoted.instruction).toBeUndefined();
+    expect(promoted.manMarkTargetId).toBeUndefined();
+    expect(after.manMarks?.A ?? []).toHaveLength(0);
+    expect(promoted.bounds.maxX).toBeLessThan(40); // attackDir 1: own goal at x 0
   });
 });
 

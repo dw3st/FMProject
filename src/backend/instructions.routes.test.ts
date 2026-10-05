@@ -97,6 +97,12 @@ describe("player instructions routes", () => {
     expect(good.status).toBe(200);
     expect((await saveService.getMeta(saveId))?.matchMarking).toEqual({ date: first.date, marks: [{ slot: cm, targetId: oppOutfield[0]!.id }] });
 
+    // A formation change drops the pairs whose marker slot changed role (LB -> CB in the 3-5-2).
+    expect((await mark({ date: first.date, marks: [{ slot: cm, targetId: oppOutfield[0]!.id }, { slot: lb, targetId: oppOutfield[1]!.id }] })).status).toBe(200);
+    expect((await putTactics({ formation: "3-5-2" })).status).toBe(200);
+    expect((await saveService.getMeta(saveId))?.matchMarking?.marks).toEqual([{ slot: cm, targetId: oppOutfield[0]!.id }]);
+    expect((await putTactics({ formation: "4-3-3", slotInstructions: list })).status).toBe(200);
+
     // The next advance plays the match with the instructions and clears the marking.
     const out = await advanceOneDay(saveService, saveId);
     expect(out.ok).toBe(true);

@@ -403,7 +403,7 @@ export function SubstitutionPanel({
               <p className="text-sm text-muted-foreground m-0">{t("instructions.liveOnly")}</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {onPitch.map((p) => {
-                  const instr = gameState.slotInstructions?.[playerTeam]?.[p.slotIndex];
+                  const instr = p.instruction;
                   const tag = instructionShort(instr);
                   return (
                     <Chip
@@ -423,7 +423,7 @@ export function SubstitutionPanel({
                 return (
                   <SlotInstructionChips
                     role={p.role}
-                    instruction={gameState.slotInstructions?.[playerTeam]?.[instrSlot]}
+                    instruction={p.instruction}
                     onChange={(next) => onInstruction(instrSlot, next)}
                   />
                 );
