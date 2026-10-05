@@ -3418,13 +3418,18 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime);
       }
 
+      // Man-marker tracking his target (player instructions): no separation from teammates, and he
+      // gets the press acceleration burst to stay on his man.
+      const tightMarking = phase === 'defending' && player.manMarkTargetId !== undefined && decision?.type === 'track_mark';
+
       // Keep off-ball targets off the touchline itself (#37): wide bounds (LB yRange 50) and
       // off-ball runs past the line clamp to y = 0 / 74, stacking teammates on the line.
       if (player.role !== 'GK' && !isPressing) {
         let ty = Math.max(OFF_BALL_TOUCHLINE_MARGIN, Math.min(PITCH_WIDTH - OFF_BALL_TOUCHLINE_MARGIN, target.y));
         let tx = target.x;
-        // Light separation: don't settle on top of a teammate (they stacked on the line).
-        for (const mate of s.players) {
+        // Light separation: don't settle on top of a teammate (they stacked on the line). A man-marker
+        // tracking his target is exempt: he must stay on his man even when a zonal defender is close.
+        for (const mate of tightMarking ? [] : s.players) {
           if (mate.id === player.id || mate.team !== player.team || mate.id === s.ballHolderId) continue;
           const sx = tx - mate.x;
           const sy = ty - mate.y;
@@ -3451,7 +3456,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const holderJustReceived = holder.justReceivedTicks > 0
         && isOffBallRun
         && (holder.x - player.x) ** 2 + (holder.y - player.y) ** 2 < 225; // 15*15
-      const accelBurst   = isPressing
+      const accelBurst   = isPressing || tightMarking
         ? player.runtimeStats.withoutBall.acceleration * getDefenseConfig(player.team).PRESS_ACCEL_SPEED_BOOST
         : holderJustReceived
           ? player.runtimeStats.withoutBall.acceleration * CARRY_ACCEL_SPEED_BOOST
