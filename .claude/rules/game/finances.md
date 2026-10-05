@@ -175,7 +175,12 @@ teto do fator) se afasta desse número.
 ### Bilheteria (`gate.ts`)
 
 Mesmo modelo em todo lugar: `capacidade × 0,65 (FILL_RATE) × preço`. O clube do jogador usa a ocupação da
-torcida (`stadiumFillRate`, 0,45..0,9, 0,65 com a torcida em 60 — `.claude/rules/game/board-fans.md`). Preço da liga e da copa
+torcida (`stadiumFillRate`, 0,45..0,9, 0,65 com a torcida em 60 — `.claude/rules/game/board-fans.md`).
+**Desde a 3.9** o clube do jogador cobra pelo **público** (`gateFromAttendance`: público × preço × conforto),
+com público = min(capacidade, demanda) e a demanda ancorada no estádio de início — com as instalações
+padrão é exatamente o valor antigo; ver `.claude/rules/game/facilities.md`. Lançamentos novos no extrato:
+`facilities` (parcelas das obras), `board_funding` (parte da diretoria) e `facilities_upkeep` (manutenção
+semanal do CT e da base acima do nível implícito do tier). A IA continua no modelo de capacidade × 0,65. Preço da liga e da copa
 nacional é `TICKET_PRICE = 25`; continental é `2× (CONTINENTAL_MULT)`. Jogo em campo neutro
 (final de copa/continental) rende 0. O avanço do dia e a projeção da tela chamam a mesma função
 (`gateRevenue`) — nenhum modelo paralelo.

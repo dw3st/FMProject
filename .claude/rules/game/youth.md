@@ -17,6 +17,12 @@ Visual: `.claude/rules/ui-standard.md`.
   resto (não vira livre, para não inflar o pool).
 - Sem migração de save (protótipo): `Squad.youth` ausente = base vazia.
 
+## Base do clube (instalações, 3.9)
+
+O nível da **base** (1–5, `.claude/rules/game/facilities.md`) entra na safra de todo clube: nível + 0,15 por
+nível acima de 3 (− abaixo), tamanho 3–5 (3–6 no nível 5) e chance de promessa 3/4/5/7/9%. O clube do
+jogador usa o nível gravado; a IA o nível implícito do tier (LOW 1, MEDIUM 2, HIGH 3, ELITE 4).
+
 ## Geração (`src/Domain/youth/`)
 
 | Arquivo | Papel |

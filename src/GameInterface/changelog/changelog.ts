@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.9",
+    date: "2026-10-05",
+    items: [
+      { pt: "Instalações: nova aba em Finanças com o seu estádio visto de cima. Clique num setor para ampliá-lo (de 1 a 10 mil lugares), veja o custo, o prazo e a nova capacidade e peça a obra à diretoria.", en: "Facilities: a new tab in Finances with your stadium seen from above. Click a stand to expand it (1,000 to 10,000 seats), see the cost, the duration and the new capacity, and ask the board for the works." },
+      { pt: "O público agora depende da procura: seguidores, divisão, humor da torcida e a fase da temporada. Um gráfico mostra o público de cada jogo em casa contra a capacidade e a demanda, e o conforto do estádio deixa o ingresso mais caro.", en: "The crowd now depends on demand: followers, division, the fans' mood and the stage of the season. A chart shows the crowd of every home game against the capacity and the demand, and stadium comfort raises the ticket price." },
+      { pt: "Centro de treinamento e base em cinco níveis: o CT melhora a recuperação, reduz lesões no treino e acelera a evolução; a base traz safras melhores, maiores e com mais chance de promessa.", en: "Training ground and academy in five levels: the training ground improves recovery, cuts training injuries and speeds up development; the academy brings better, bigger intakes with more wonderkids." },
+      { pt: "A diretoria decide cada obra pela confiança e pelo saldo, e quando está muito satisfeita paga parte do custo. As obras são pagas em parcelas mensais; o Painel mostra as obras em andamento e a prévia da partida mostra o público esperado.", en: "The board decides every project from its confidence and the balance, and pays part of the cost when it is very happy. Works are paid in monthly instalments; the Dashboard shows the works in progress and the match preview the expected crowd." },
+    ],
+  },
+  {
     version: "3.8",
     date: "2026-10-05",
     items: [
