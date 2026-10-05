@@ -1738,6 +1738,7 @@
   "fastForward": {
     "button": "To next match",
     "title": "Fast-forwarding to the next match",
+    "titleOffers": "Fast-forwarding to the next offers",
     "progress": "Day {{done}} of {{total}}",
     "currentDate": "Current date: {{date}}",
     "stop": "Stop",

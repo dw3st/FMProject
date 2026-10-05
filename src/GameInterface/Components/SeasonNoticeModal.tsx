@@ -80,10 +80,13 @@ export function FastForwardModal({
   progress,
   onStop,
   onDismiss,
+  unemployed = false,
 }: {
   progress: FastForwardProgress;
   onStop: () => void;
   onDismiss: () => void;
+  /** Without a club the fast-forward runs until the next job offers, not a match. */
+  unemployed?: boolean;
 }) {
   const { t } = useTranslation();
   const total = Math.max(1, progress.totalDays);
@@ -95,7 +98,7 @@ export function FastForwardModal({
       <div className="p-6 flex flex-col gap-4">
         <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex items-center gap-2">
           <Icon name="fast-forward" size={18} className="text-primary" />
-          {t("fastForward.title")}
+          {t(unemployed ? "fastForward.titleOffers" : "fastForward.title")}
         </h2>
 
         <div className="h-2 w-full rounded-full bg-border overflow-hidden">

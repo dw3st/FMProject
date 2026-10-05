@@ -23,9 +23,11 @@ export function StatusBar({
   changelogNotice?: { version: string; onOpen: () => void; onDismiss: () => void } | null;
 }) {
   const { t } = useTranslation();
-  const { session, squad, unreadInboxCount } = useGameSave();
+  const { session, squad, unreadInboxCount, save } = useGameSave();
+  // Unemployed (Etapa 20): no club, so no club money to show.
+  const noClub = !!save?.unemployed;
 
-  const budgetLabel = session != null ? formatEuros(session.budget) : "—";
+  const budgetLabel = session != null && !noClub ? formatEuros(session.budget) : "—";
   const playersLabel = squad != null ? String(squad.players.length) : "—";
   const unreadLabel = String(unreadInboxCount);
 

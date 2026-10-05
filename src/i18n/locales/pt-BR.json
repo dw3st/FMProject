@@ -1738,6 +1738,7 @@
   "fastForward": {
     "button": "Avançar até o próximo jogo",
     "title": "Avançando até o próximo jogo",
+    "titleOffers": "Avançando até as próximas propostas",
     "progress": "Dia {{done}} de {{total}}",
     "currentDate": "Data atual: {{date}}",
     "stop": "Parar",
