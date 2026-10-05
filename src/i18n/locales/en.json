@@ -98,7 +98,7 @@
     "deleteConfirmAction": "Delete save",
     "continue": "Continue",
     "whatsNew": "What's new",
-    "ended": "Career ended"
+    "unemployed": "No club"
   },
   "newGame": {
     "selectTerritory": "Select Territory",
@@ -264,7 +264,7 @@
   },
   "fired": {
     "youveFired": "You've Been Fired!",
-    "boardTerminated": "The board of {{club}} has decided to terminate your contract.",
+    "boardTerminated": "The {{club}} board ended your contract. Other clubs will make you offers.",
     "chairmanQuote": "- Club Chairman",
     "tenure": "Tenure",
     "matches": "Matches",
@@ -275,7 +275,6 @@
     "losses": "Losses",
     "achievementsDuringTenure": "Achievements During Tenure",
     "returnToMenu": "Return to Menu",
-    "findNewClub": "Find New Club",
     "reason": {
       "board": "Board confidence hit rock bottom.",
       "ultimatum": "The board's ultimatum was not met."
@@ -283,7 +282,8 @@
     "days": "{{count}} days",
     "positionValue": "#{{n}}",
     "noCareer": "No ended career.",
-    "noAchievements": "No titles"
+    "noAchievements": "No titles",
+    "seeOffers": "See offers"
   },
   "staff": {
     "subtitle": "Three professionals shape development, recovery and scouting.",
@@ -974,7 +974,8 @@
       "contract": "Contracts",
       "youth": "Academy",
       "retirement": "Retirement",
-      "board": "Board"
+      "board": "Board",
+      "job": "Job offers"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1053,6 +1054,14 @@
         "board": "The board lost confidence in your work and terminated your contract.",
         "ultimatum": "The ultimatum was not met. The board terminated your contract."
       }
+    },
+    "job": {
+      "subject": {
+        "offer": "Job offer: {{club}}",
+        "hired": "New job: {{club}}"
+      },
+      "offer": "{{club}} ({{league}}) wants you as their manager.",
+      "hired": "You are the new manager of {{club}} ({{league}}). The board has set this season's objective."
     }
   },
   "finances": {
@@ -1285,7 +1294,10 @@
       "noMatchScheduled": "No match scheduled yet",
       "players": "players",
       "home": "Home",
-      "away": "Away"
+      "away": "Away",
+      "reputation": "Reputation: {{value}}",
+      "pendingOffers_one": "{{count}} job offer",
+      "pendingOffers_other": "{{count}} job offers"
     },
     "squadRosterTable": {
       "noPlayers": "No players in this squad.",
@@ -1662,9 +1674,12 @@
       "contTitle": "{{competition}} prize: title",
       "transferIn": "Transfer fee from {{club}}",
       "transferOut": "Transfer fee paid to {{club}}",
-      "boardBonus": "Board bonus"
+      "boardBonus": "Board bonus",
+      "clubLeave": "Balance left at {{club}}",
+      "clubArrive": "Arrival at {{club}}"
     },
-    "seasonBasis": "Season to date"
+    "seasonBasis": "Season to date",
+    "clubChange": "Club change"
   },
   "developmentScreen": {
     "squad": "Squad",
@@ -1779,7 +1794,9 @@
       "promotion": "Promotion · {{league}}",
       "yourRank": "You are #{{rank}} of {{total}}",
       "empty": "No managers yet.",
-      "hint": "Click a manager to see his titles. Points: league titles and national cups weighted by the country's strength, continental titles and promotions."
+      "hint": "Click a manager to see his titles. Points: league titles and national cups weighted by the country's strength, continental titles and promotions.",
+      "career": "Career",
+      "current": "now"
     }
   },
   "players": {
@@ -1908,6 +1925,37 @@
     },
     "comingSoon": {
       "accent": "Coming soon"
+    },
+    "noClub": {
+      "main": "No",
+      "accent": "Club"
+    }
+  },
+  "jobs": {
+    "objective": "Board objective",
+    "budget": "Budget",
+    "squadStrength": "Squad strength",
+    "expectedPosition": "#{{position}} of {{size}}",
+    "accept": "Accept",
+    "decline": "Decline",
+    "validUntil": "Valid until {{date}}",
+    "declined": "You turned the offer down.",
+    "closed": "This offer is no longer available.",
+    "actionFailed": "Could not answer the offer. Try again.",
+    "confirmTitle": "Accept the offer?",
+    "confirmLeave": "You will leave {{from}} and take over {{to}}. The squad, the budget and the board start over at the new club.",
+    "confirmTake": "You will take over {{to}}.",
+    "confirm": "Accept",
+    "switching": "Changing club...",
+    "reputation": "Reputation",
+    "loading": "Loading offers...",
+    "waitForOffers": "Wait for offers",
+    "noClub": {
+      "subtitle": "You left {{club}} on {{date}}. Clubs will make you offers.",
+      "nextOffers": "Next offers",
+      "offers": "Offers",
+      "none": "No offers right now.",
+      "hint": "Wait for offers advances the days. Leagues, Stats and Scout stay open."
     }
   }
 }

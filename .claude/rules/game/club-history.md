@@ -1,6 +1,6 @@
 # Histórico e recordes do clube
 
-Spec: `docs/superpowers/specs/2026-10-04-club-history-design.md`. Etapa 22 do `docs/ROADMAP.md`, versão **3.7**.
+Spec: `docs/superpowers/specs/2026-10-04-club-history-design.md`. Etapa 22 do `docs/ROADMAP.md`, versão **3.6**.
 Visual: `.claude/rules/ui-standard.md`. Linhas de carreira dos jogadores: `.claude/rules/game/history.md`.
 
 ## Regra

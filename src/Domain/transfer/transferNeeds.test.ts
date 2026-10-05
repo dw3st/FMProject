@@ -115,6 +115,17 @@ describe("generateTransferNeeds", () => {
 });
 
 describe("findCandidates", () => {
+  test("never a player about to retire (AI_SIGN_MAX_AGE)", () => {
+    const young = basePlayer({ id: "y", name: "Y", positions: ["CM"], age: 30 });
+    const old = basePlayer({ id: "o", name: "O", positions: ["CM"], age: 35 });
+    const need = {
+      position: "Midfielder" as const, targetMin: 0, targetMax: 10, urgency: 1,
+      budgetTier: "high" as const, intentType: "cover_need" as const,
+    };
+    const ids = findCandidates(need, [makeSquad("sell", [young, old]), makeSquad("buy", [])], "buy").map((p) => p.id);
+    expect(ids).toEqual(["y"]);
+  });
+
   test("low tier rejects player above price cap", () => {
     const expensive = basePlayer({
       id: "exp",

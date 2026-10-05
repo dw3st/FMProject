@@ -98,6 +98,9 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
 
 ## Review follow-ups
 
+- **AI never signs 35+** (`AI_SIGN_MAX_AGE` = `AI_RENEW_MAX_AGE + 2`): market buys (`findCandidates`), the
+  daily free-agent hire and the rollover refill all skip older players.
+
 - **Off-season signing dates:** `contractEndFor(date, seasonEnd, years)` (`contracts.ts`) is the one helper for every signing (human free agent, human transfer buy, AI market signing, daily free-agent hire): a `date` past the league's `end` counts from the next season's end.
 - **Renewal limits:** `renewalWithinLimits` — remaining seasons + `years` <= `MAX_YEARS` and age cap, else 400 `tooManyYears`.
 - **Squad cap:** the human transfer buy refuses at `MAX_SQUAD` (`squadFull`); AI buyers (market and sell-list matching) skip at `MAX_SQUAD`.

@@ -25,11 +25,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    version: "3.7",
+    version: "3.6",
     date: "2026-10-04",
     items: [
       { pt: "História do clube: aba \"História\" no elenco de qualquer clube, com títulos, temporadas, artilheiros, jogadores com mais jogos e recordes desde o começo da carreira.", en: "Club history: a \"History\" tab in any club's squad screen, with titles, seasons, top scorers, most appearances and records since the career began." },
       { pt: "Recordes do clube: maior vitória e derrota, mais gols numa temporada, melhor posição, maior invencibilidade, contratação e venda recordes. A caixa de entrada avisa quando um recorde do seu clube cai.", en: "Club records: biggest win and defeat, most goals in a season, highest finish, longest unbeaten run, record signing and sale. Your inbox tells you when one of your club's records falls." },
+    ],
+  },
+  {
+    version: "3.5",
+    date: "2026-10-04",
+    items: [
+      { pt: "Convites de clubes: com boa reputação (ranking, diretoria, títulos), outros clubes fazem propostas no fim da temporada e, para quem vai muito bem, no meio dela.", en: "Job offers: with a good reputation (ranking, board, titles), other clubs make you offers at the end of the season and, if you are doing very well, halfway through it." },
+      { pt: "Aceite uma proposta e assuma o novo clube sem começar outro jogo: elenco, orçamento, equipe técnica e diretoria do clube novo.", en: "Accept an offer and take over the new club without starting a new game: its squad, budget, staff and board." },
+      { pt: "Demitido não é mais o fim: você fica sem clube, continua avançando os dias e recebe propostas de clubes menores a cada duas semanas.", en: "Being sacked is no longer the end: you stay without a club, keep advancing the days and get offers from smaller clubs every two weeks." },
+      { pt: "Sua reputação aparece no Painel, e o ranking de técnicos mostra os clubes por onde você passou.", en: "Your reputation shows on the dashboard, and the manager ranking lists the clubs you have managed." },
     ],
   },
   {
@@ -710,5 +720,4 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
-  { pt: "Convites de clubes maiores para técnicos bem colocados no ranking", en: "Offers from bigger clubs for managers high in the ranking" },
 ];

@@ -13,7 +13,13 @@ export type LedgerKind =
   | "gate"
   | "prize"
   | "transfer_in"
-  | "transfer_out";
+  | "transfer_out"
+  /**
+   * The manager changed club (`.claude/rules/game/jobs.md`): `ref.stage` "leave" takes the old
+   * club's balance out of the ledger, "arrive" brings the new club's starting balance in, so the
+   * ledger keeps summing to the current club's budget.
+   */
+  | "club_change";
 
 /** One line of the club's cash extract. `amount` is signed (income positive, expense negative). */
 export interface LedgerEntry {
@@ -46,6 +52,7 @@ const LEDGER_KINDS: LedgerKind[] = [
   "prize",
   "transfer_in",
   "transfer_out",
+  "club_change",
 ];
 
 /**

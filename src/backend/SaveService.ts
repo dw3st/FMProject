@@ -11,7 +11,8 @@ import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, L
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
-import type { BoardState, CareerEnded } from "@/types/boardTypes";
+import type { BoardState } from "@/types/boardTypes";
+import type { JobOffer, Unemployment } from "@/types/jobTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -87,8 +88,15 @@ export interface SaveMeta {
   board?: BoardState;
   /** New-game option: the board may sack the manager (default on). */
   sackingEnabled?: boolean;
-  /** Set when the manager is sacked: the career is over and the day can no longer advance. */
-  ended?: CareerEnded;
+  /**
+   * Set while the manager has no club (sacked, `.claude/rules/game/jobs.md`): `clubId` is "" and
+   * the game keeps advancing; offers arrive every two weeks.
+   */
+  unemployed?: Unemployment;
+  /** Pending job offers (`.claude/rules/game/jobs.md`). */
+  jobOffers?: JobOffer[];
+  /** Season label of the player's league whose mid-season offer window already ran. */
+  jobsMidSeason?: string;
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────
@@ -266,6 +274,10 @@ export class SaveService {
     const updated = current.map((m) => (m.read ? m : { ...m, read: true }));
     await this.dal.writeInbox(saveId, updated);
     return updated;
+  }
+
+  writeInbox(saveId: string, messages: InboxMessage[]): Promise<void> {
+    return this.dal.writeInbox(saveId, messages);
   }
 
   clearInbox(saveId: string): Promise<void> {
@@ -813,7 +825,7 @@ export class SaveService {
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
     // replacing the imported coach of his club. Start kits never touch this file.
     await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
-      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName }
+      ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
       : null));
 
     // National cups: one per country, over the country's league window (membership = squad folders).

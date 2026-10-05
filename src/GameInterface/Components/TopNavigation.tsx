@@ -109,7 +109,9 @@ export function TopNavigation({
   leagues = [],
 }: Props = {}) {
   const { t, i18n } = useTranslation();
-  const { currentDate, session, squad, fixtures, restDays, toggleDayType } = useGameSave();
+  const { currentDate, session, squad, save, fixtures, restDays, toggleDayType } = useGameSave();
+  // Without a club (`.claude/rules/game/jobs.md`): no day type, Continue waits for offers.
+  const unemployed = !!save?.unemployed;
   const lang = i18n.language;
 
   const mySquadId = squad?.id ?? session?.clubId ?? "";
@@ -178,7 +180,7 @@ export function TopNavigation({
               const active = typeof window !== "undefined" && window.location.pathname.startsWith(item.href);
               const href =
                 item.href === "/squad"
-                  ? session
+                  ? session && !unemployed
                     ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
                     : "/dashboard"
                   : item.href;
@@ -217,7 +219,7 @@ export function TopNavigation({
                 <Icon name="calendar" size={16} className="shrink-0" />
                 {formatTopBarDate(currentDate, lang)}
               </span>
-              <button
+              {!unemployed && <button
                 type="button"
                 onClick={() => void toggleDayType(currentDate, isRest ? "training" : "rest")}
                 disabled={isMatch || advancing}
@@ -227,7 +229,7 @@ export function TopNavigation({
               >
                 <Icon name={dayIcon} size={16} className={`shrink-0 ${isRest ? "text-chart-3" : ""}`} />
                 <span className="max-w-[160px] truncate">{dayLabel}</span>
-              </button>
+              </button>}
             </>
           )}
 
@@ -251,7 +253,7 @@ export function TopNavigation({
               disabled={advancing}
               className="flex items-center gap-1 h-9 px-4 rounded bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0 whitespace-nowrap shrink-0"
             >
-              {advancing ? t("common.simulating") : t("common.continue")}
+              {advancing ? t("common.simulating") : unemployed ? t("jobs.waitForOffers") : t("common.continue")}
               {!advancing && <Icon name="chevron-right" size={16} />}
             </button>
           )}

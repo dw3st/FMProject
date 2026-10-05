@@ -18,6 +18,7 @@ interface ManagerRecord {
   seasons: number;          // viradas do país do clube
   lastSeason?: string;      // rótulo da última temporada contada (não conta duas vezes num dia refeito)
   titles: { season; kind: "league" | "cup" | "continental" | "promotion"; competition; squadId; points }[];
+  clubs?: { squadId; from; to? }[];  // só o jogador: passagens por clubes (Etapa 20)
 }
 ```
 
@@ -85,6 +86,16 @@ bun test src/Domain/managers src/backend/managers.rollover.test.ts src/backend/m
 clube, nenhum com pontos negativos, pontos = soma dos títulos, o campeão da liga do jogador pontuou o título,
 todo clube das ligas viradas tem temporada contada, pelo menos um título de copa e um continental creditados;
 imprime o top 5 e a posição do jogador.
+
+## Troca de clube do jogador (Etapa 20, `.claude/rules/game/jobs.md`)
+
+- O registro do jogador nasce com `clubs: [{ squadId, from: início }]`.
+- Aceitar uma proposta (`moveHumanManager`): o técnico do clube novo vai para o clube antigo; a passagem antiga
+  fecha (`to`) e abre a nova. Vindo do desemprego, o técnico deslocado fica sem clube (`squadId ""`).
+- Demissão (`sackHumanManager`): o jogador fica com `squadId ""` e um interino (`coach_<clube>_<data>`, "Técnico
+  do <clube>") assume o clube.
+- A rota devolve `clubs` com o nome de cada clube; a aba Técnicos mostra a carreira ao abrir o técnico do jogador.
+- Invariante: cada clube tem exatamente um técnico; um técnico pode estar sem clube.
 
 ## Limitações
 

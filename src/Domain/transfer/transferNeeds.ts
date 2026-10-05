@@ -3,6 +3,7 @@ import {
   aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
+import { AI_SIGN_MAX_AGE } from "@/Domain/contracts/contractConfig";
 import type { MainRole } from "@/Domain/roles";
 import { getMainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
@@ -205,6 +206,8 @@ export function findCandidates(
     if (excludeSellerSquadId && squad.id === excludeSellerSquadId) continue;
     for (const player of squad.players) {
       if (!playerMatchesBand(player, need.position)) continue;
+      // Nobody about to retire (`AI_SIGN_MAX_AGE`, the same cap as the rollover refill).
+      if (player.age >= AI_SIGN_MAX_AGE) continue;
       const rating = playerOverallRating(player);
       if (rating < need.targetMin || rating > need.targetMax) continue;
       // Hard age filter: future_investment only targets players ≤ 23

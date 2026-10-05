@@ -10,6 +10,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
+import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
@@ -21,6 +22,7 @@ const TrendingUp = iconOf("trend-up");
 const Trophy = iconOf("trophy");
 const Prospect = iconOf("user");
 const BoardIcon = iconOf("building");
+const JobIcon = iconOf("file-signature");
 
 type FilterTab = "all" | "unread";
 
@@ -118,6 +120,13 @@ const CATEGORY_META: Record<
     bg: "bg-primary/15",
     border: "border-primary/30",
     Icon: BoardIcon,
+  },
+  job: {
+    labelKey: "inbox.categories.job",
+    color: "text-chart-3",
+    bg: "bg-chart-3/15",
+    border: "border-chart-3/30",
+    Icon: JobIcon,
   },
 };
 
@@ -343,6 +352,9 @@ function leaguePrizeTexts(
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
+  if (message.category === "job") {
+    return { subject: t(`inbox.job.subject.${message.kind}`, { club: message.clubName }), preview: message.leagueName };
+  }
   if (message.category !== "season" || message.kind !== "league_prize") return null;
   return {
     subject: t("inbox.season.leaguePrizeSubject", { league: message.leagueName }),
@@ -466,6 +478,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
         {message.category === "retirement" && <RetirementBody message={message} />}
+        {message.category === "job" && <JobBody message={message} leagues={leagues} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(
@@ -560,6 +573,40 @@ function RetirementBody({
           {error && <p className="text-sm text-destructive m-0">{error}</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Job news (`.claude/rules/game/jobs.md`): an offer card while it is pending, or the takeover. */
+function JobBody({
+  message,
+  leagues,
+}: {
+  message: Extract<InboxMessage, { category: "job" }>;
+  leagues: LeagueData[];
+}) {
+  const { t, i18n } = useTranslation();
+  const { session, save, currentDate, refresh } = useGameSave();
+  const league = competitionName(message.leagueSlug, leagues, i18n.language) || message.leagueName;
+  if (message.kind === "hired") {
+    return <p className="text-sm text-foreground m-0">{t("inbox.job.hired", { club: message.clubName, league })}</p>;
+  }
+  const offer = message.offer;
+  if (!offer || !session) {
+    return <p className="text-sm text-foreground m-0">{t("inbox.job.offer", { club: message.clubName, league })}</p>;
+  }
+  const pending = (save?.jobOffers ?? []).some((o) => o.id === offer.id) && offer.expires >= currentDate;
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-foreground m-0">{t("inbox.job.offer", { club: message.clubName, league })}</p>
+      <JobOfferCard
+        saveId={session.saveId}
+        offer={offer}
+        leagues={leagues}
+        pending={pending}
+        currentClubName={save?.unemployed ? null : (save?.clubName ?? null)}
+        onAnswered={() => void refresh()}
+      />
     </div>
   );
 }

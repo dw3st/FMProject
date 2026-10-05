@@ -7,8 +7,9 @@ import { daysBetween } from "@/Domain/dates";
 import type { LeagueData } from "@/types/playerTypes";
 
 /**
- * The end of a career (`.claude/rules/game/board-fans.md`): the board sacked the manager. Reads
- * `meta.ended` (club, reason, record at the club) of the active save.
+ * The news of the sacking (`.claude/rules/game/board-fans.md`, `.claude/rules/game/jobs.md`): the
+ * board sacked the manager, who goes on without a club. Reads `meta.unemployed.sacking` (club,
+ * reason, record at the club); "Ver propostas" leads back into the career.
  */
 export function FiredScreen() {
   const { t, i18n } = useTranslation();
@@ -22,7 +23,7 @@ export function FiredScreen() {
       .catch(() => setLeagues([]));
   }, []);
 
-  const ended = save?.ended ?? null;
+  const ended = save?.unemployed?.sacking ?? null;
   if (loading) return null;
 
   if (!ended) {
@@ -128,10 +129,10 @@ export function FiredScreen() {
               {t("fired.returnToMenu")}
             </a>
             <a
-              href="/new-game"
+              href="/dashboard"
               className="flex-1 h-10 rounded bg-primary text-primary-foreground font-semibold text-sm no-underline inline-flex items-center justify-center gap-2"
             >
-              {t("fired.findNewClub")}
+              {t("fired.seeOffers")}
               <Icon name="arrow-right" size={16} />
             </a>
           </div>

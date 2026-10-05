@@ -1,5 +1,6 @@
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
+import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
 
 export type InboxCategory =
@@ -14,6 +15,7 @@ export type InboxCategory =
   | "youth"
   | "retirement"
   | "board"
+  | "job"
   | "club_record";
 
 interface InboxMessageBase {
@@ -213,6 +215,23 @@ export interface BoardInboxMessage extends InboxMessageBase {
   reason?: SackReason;
 }
 
+/**
+ * Job news for the human manager (`.claude/rules/game/jobs.md`): a club's offer (answered through
+ * `POST /api/saves/:id/jobs/:offerId` while it is still in `SaveMeta.jobOffers`), or the
+ * confirmation that he took over a club.
+ */
+export interface JobInboxMessage extends InboxMessageBase {
+  category: "job";
+  kind: "offer" | "hired";
+  squadId: string;
+  clubName: string;
+  leagueSlug: string;
+  /** English fallback; the screen uses `competitionName`. */
+  leagueName: string;
+  /** offer: the offer as it arrived. */
+  offer?: JobOffer;
+}
+
 /** A record of the human club fell (`.claude/rules/game/club-history.md`). */
 export interface ClubRecordInboxMessage extends InboxMessageBase {
   category: "club_record";
@@ -231,4 +250,5 @@ export type InboxMessage =
   | YouthInboxMessage
   | RetirementInboxMessage
   | BoardInboxMessage
+  | JobInboxMessage
   | ClubRecordInboxMessage;

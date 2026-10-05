@@ -7,8 +7,15 @@ import { competitionName } from "@/Domain/world/labels";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 
-type Row = ManagerRecord & { rank: number; clubName: string | null };
+type Row = Omit<ManagerRecord, "clubs"> & {
+  rank: number;
+  clubName: string | null;
+  /** Human manager only: his passages through clubs (`.claude/rules/game/jobs.md`). */
+  clubs?: { squadId: string; from: string; to?: string; clubName: string | null }[];
+};
 type Page = { total: number; playerRank: number | null; items: Row[] };
 type Scope = "world" | "country";
 
@@ -102,7 +109,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             <StatsRow
               key={m.id}
               highlight={m.isPlayer}
-              onActivate={m.titles.length > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 1 ? () => setOpen(isOpen ? null : m.id) : undefined}
               expanded={isOpen}
             >
               <RankCell rank={m.rank} />
@@ -114,6 +121,24 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             </StatsRow>,
             isOpen && (
               <StatsDetailRow key={`${m.id}-titles`} colSpan={6}>
+                {m.clubs && m.clubs.length > 0 && (
+                  <div className="mb-3">
+                    <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-1">
+                      {t("statsScreen.managers.career")}
+                    </p>
+                    <ul className="m-0 p-0 list-none space-y-1">
+                      {[...m.clubs].reverse().map((c, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <ClubLogo logoUrl={squadLogoUrl(c.squadId)} className="w-8 h-8" imgClassName="w-full h-full object-contain" />
+                          <span className="font-semibold">{c.clubName ?? "-"}</span>
+                          <span className="text-muted-foreground tabular-nums ml-auto">
+                            {formatDay(c.from, i18n.language, "year")} – {c.to ? formatDay(c.to, i18n.language, "year") : t("statsScreen.managers.current")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <ul className="m-0 p-0 list-none space-y-1">
                   {[...m.titles].reverse().map((ti, i) => (
                     <li key={i} className="flex justify-between gap-4 text-sm">

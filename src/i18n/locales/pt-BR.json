@@ -98,7 +98,7 @@
     "deleteConfirmAction": "Excluir save",
     "continue": "Continuar",
     "whatsNew": "Novidades",
-    "ended": "Carreira encerrada"
+    "unemployed": "Sem clube"
   },
   "newGame": {
     "countries": {
@@ -264,7 +264,7 @@
   },
   "fired": {
     "youveFired": "Você Foi Demitido!",
-    "boardTerminated": "A diretoria do {{club}} decidiu encerrar seu contrato.",
+    "boardTerminated": "A diretoria do {{club}} decidiu encerrar seu contrato. Outros clubes vão fazer propostas.",
     "chairmanQuote": "- Presidente do Clube",
     "tenure": "Tempo de Serviço",
     "matches": "Partidas",
@@ -275,7 +275,6 @@
     "losses": "Derrotas",
     "achievementsDuringTenure": "Conquistas Durante Seu Período",
     "returnToMenu": "Voltar ao Menu",
-    "findNewClub": "Encontrar Novo Clube",
     "reason": {
       "board": "A confiança da diretoria chegou ao limite.",
       "ultimatum": "O ultimato da diretoria não foi cumprido."
@@ -283,7 +282,8 @@
     "days": "{{count}} dias",
     "positionValue": "{{n}}º",
     "noCareer": "Nenhuma carreira encerrada.",
-    "noAchievements": "Nenhum título"
+    "noAchievements": "Nenhum título",
+    "seeOffers": "Ver propostas"
   },
   "staff": {
     "subtitle": "Três profissionais definem desenvolvimento, recuperação e observação.",
@@ -974,7 +974,8 @@
       "contract": "Contratos",
       "youth": "Base",
       "retirement": "Aposentadoria",
-      "board": "Diretoria"
+      "board": "Diretoria",
+      "job": "Propostas"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1053,6 +1054,14 @@
         "board": "A diretoria perdeu a confiança no seu trabalho e encerrou o contrato.",
         "ultimatum": "O ultimato não foi cumprido. A diretoria encerrou o contrato."
       }
+    },
+    "job": {
+      "subject": {
+        "offer": "Proposta: {{club}}",
+        "hired": "Novo clube: {{club}}"
+      },
+      "offer": "O {{club}} ({{league}}) quer você como técnico.",
+      "hired": "Você é o novo técnico do {{club}} ({{league}}). A diretoria definiu a meta da temporada."
     }
   },
   "finances": {
@@ -1285,7 +1294,10 @@
       "noMatchScheduled": "Nenhuma partida agendada",
       "players": "jogadores",
       "home": "Casa",
-      "away": "Visitante"
+      "away": "Visitante",
+      "reputation": "Reputação: {{value}}",
+      "pendingOffers_one": "{{count}} proposta",
+      "pendingOffers_other": "{{count}} propostas"
     },
     "squadRosterTable": {
       "noPlayers": "Nenhum jogador neste elenco.",
@@ -1662,9 +1674,12 @@
       "contTitle": "Prêmio {{competition}}: título",
       "transferIn": "Taxa de transferência recebida de {{club}}",
       "transferOut": "Taxa de transferência paga a {{club}}",
-      "boardBonus": "Bônus da diretoria"
+      "boardBonus": "Bônus da diretoria",
+      "clubLeave": "Saldo deixado no {{club}}",
+      "clubArrive": "Chegada ao {{club}}"
     },
-    "seasonBasis": "Temporada até agora"
+    "seasonBasis": "Temporada até agora",
+    "clubChange": "Troca de clube"
   },
   "developmentScreen": {
     "squad": "Elenco",
@@ -1779,7 +1794,9 @@
       "promotion": "Acesso · {{league}}",
       "yourRank": "Você é o Nº {{rank}} de {{total}}",
       "empty": "Nenhum técnico ainda.",
-      "hint": "Clique num técnico para ver os títulos. Pontos: ligas e copas nacionais pesadas pela força do país, títulos continentais e acessos."
+      "hint": "Clique num técnico para ver os títulos. Pontos: ligas e copas nacionais pesadas pela força do país, títulos continentais e acessos.",
+      "career": "Carreira",
+      "current": "atual"
     }
   },
   "players": {
@@ -1908,6 +1925,37 @@
     },
     "comingSoon": {
       "accent": "Em breve"
+    },
+    "noClub": {
+      "main": "Sem",
+      "accent": "Clube"
+    }
+  },
+  "jobs": {
+    "objective": "Meta da diretoria",
+    "budget": "Orçamento",
+    "squadStrength": "Força do elenco",
+    "expectedPosition": "{{position}}º de {{size}}",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "validUntil": "Válida até {{date}}",
+    "declined": "Você recusou a proposta.",
+    "closed": "Esta proposta não está mais disponível.",
+    "actionFailed": "Não foi possível responder à proposta. Tente de novo.",
+    "confirmTitle": "Aceitar a proposta?",
+    "confirmLeave": "Você vai deixar o {{from}} e assumir o {{to}}. Elenco, orçamento e diretoria recomeçam no clube novo.",
+    "confirmTake": "Você vai assumir o {{to}}.",
+    "confirm": "Aceitar",
+    "switching": "Trocando de clube...",
+    "reputation": "Reputação",
+    "loading": "Carregando propostas...",
+    "waitForOffers": "Aguardar propostas",
+    "noClub": {
+      "subtitle": "Você deixou o {{club}} em {{date}}. Os clubes vão fazer propostas.",
+      "nextOffers": "Próximas propostas",
+      "offers": "Propostas",
+      "none": "Nenhuma proposta no momento.",
+      "hint": "Aguardar propostas avança os dias. Ligas, Estatísticas e Olheiro continuam abertos."
     }
   }
 }

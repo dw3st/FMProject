@@ -73,7 +73,7 @@ export interface ObjectiveClub {
 }
 
 /** Expected final position: clubs ranked by strength plus a small financial-tier bonus. */
-function expectedRank(squadId: string, clubs: ObjectiveClub[]): number {
+export function expectedRank(squadId: string, clubs: ObjectiveClub[]): number {
   const bonus = BOARD_FANS.objective.TIER_LEVEL_BONUS;
   const ranked = [...clubs]
     .map((c) => ({ id: c.squadId, v: c.level + bonus[c.tier] }))
@@ -93,9 +93,14 @@ export function objectiveFor(args: {
   zones: LeagueZone[];
   leagueSlug: string;
   season: string;
+  /**
+   * Mid-season takeover (`.claude/rules/game/jobs.md`): the club's current table position replaces
+   * the strength ranking.
+   */
+  rank?: number;
 }): SeasonObjective {
   const n = Math.max(1, args.clubs.length);
-  const rank = expectedRank(args.squadId, args.clubs);
+  const rank = args.rank ?? expectedRank(args.squadId, args.clubs);
   const continental = Math.max(
     0,
     ...args.zones.filter((z) => CONTINENTAL_ZONE_IDS.has(z.id) && typeof z.to === "number").map((z) => z.to!),

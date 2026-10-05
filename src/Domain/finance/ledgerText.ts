@@ -32,6 +32,8 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
       return ref?.clubName
         ? { key: entry.kind === "transfer_in" ? "transferIn" : "transferOut", club: ref.clubName }
         : null;
+    case "club_change":
+      return ref?.clubName ? { key: ref.stage === "leave" ? "clubLeave" : "clubArrive", club: ref.clubName } : null;
     case "prize": {
       // End-of-season board bonus (`.claude/rules/game/board-fans.md`): no competition.
       if (ref?.stage === "board_bonus") return { key: "boardBonus" };

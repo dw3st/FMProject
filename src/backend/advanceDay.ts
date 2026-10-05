@@ -30,6 +30,7 @@ import {
   buildTransferOutMessage,
   buildSeasonMessage,
   buildBoardMessage,
+  buildJobMessage,
 } from "@/Domain/inbox/inboxEvents";
 import {
   applyCompetitionEvent,
@@ -46,6 +47,10 @@ import {
 } from "@/Domain/boardFans/boardFans";
 import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
 import type { BoardState, CareerEnded, SackReason } from "@/types/boardTypes";
+import type { JobOffer, Unemployment } from "@/types/jobTypes";
+import { JOBS } from "@/Domain/jobs/jobsConfig";
+import { mergeOffers, pruneOffers, sackHumanManager } from "@/Domain/jobs/jobs";
+import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
 import { addDays, addOneDay } from "@/Domain/dates";
 import {
   buildMatchEvent,
@@ -341,7 +346,6 @@ export async function advanceOneDay(
     const meta = await saveService.getMeta(saveId);
     if (!meta) return { ok: false, status: 404, error: "save not found" };
     if (!meta.currentDate) return { ok: false, status: 400, error: "save has no currentDate" };
-    if (meta.ended) return { ok: false, status: 409, error: "career ended: the manager was sacked" };
 
     const currentDate = meta.currentDate;
     const nextDate = addOneDay(currentDate);
@@ -1380,6 +1384,9 @@ export async function advanceOneDay(
     // Board end-of-season bonus credited at this rollover (ledger `prize`, ref.stage "board_bonus").
     let playerBoardBonusEntry: LedgerEntry | null = null;
     let freeAgentsRetiredYear: number | undefined;
+    // Board confidence at the end of the player's season, before the carry-over (job offers'
+    // reputation, `.claude/rules/game/jobs.md`).
+    let boardAtSeasonEnd: number | undefined;
 
     const updatedActiveLeagues: LeagueSeasonState[] = [...activeLeagues];
     const stateIdx = (slug: string) => updatedActiveLeagues.findIndex((l) => l.leagueSlug === slug);
@@ -1828,6 +1835,7 @@ export async function advanceOneDay(
             zones: catalogForBoard.find((l) => l.slug === newLeague)?.zones ?? [],
             season: state ? seasonLabel(state.year, state.start, state.end) : "",
           });
+          boardAtSeasonEnd = board.board;
           board = carryIntoNewSeason(board, objective);
           if (objective) {
             boardMessages.push({
@@ -1996,6 +2004,8 @@ export async function advanceOneDay(
     }
 
     // ── Board and fans: daily review (warning, ultimatum, praise, sacking) + today's snapshot ──
+    // A sacking leaves the manager without a club (`.claude/rules/game/jobs.md`): the club becomes
+    // an AI club today and the career goes on, with offers arriving every two weeks.
     let ended: CareerEnded | undefined;
     if (board) {
       if (!sackedReason) {
@@ -2026,6 +2036,74 @@ export async function advanceOneDay(
         boardMessages.push({ date: currentDate, kind: "sacked", reason: sackedReason, board: Math.round(board.board) });
       }
     }
+    let unemployed: Unemployment | undefined = meta.unemployed;
+    if (ended && board && playerSquadId) {
+      await releaseHumanClub(saveService, saveId, { squadId: playerSquadId, date: currentDate });
+      await managerTracker.apply((ms) => sackHumanManager(ms, {
+        date: currentDate,
+        interim: { id: `coach_${playerSquadId}_${currentDate}`, name: `Técnico do ${meta.clubName}` },
+      }));
+      unemployed = {
+        since: currentDate,
+        lastClubId: playerSquadId,
+        lastClubName: meta.clubName,
+        lastLeagueSlug: index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug,
+        board: Math.round(board.board),
+        nextOfferDate: addDays(currentDate, JOBS.unemployed.FIRST_OFFER_DAYS),
+        sacking: ended,
+      };
+    }
+
+    // ── Job offers (`.claude/rules/game/jobs.md`): the player's season end, one mid-season window,
+    // every two weeks while unemployed. Messages are deferred like the rest (after `clearInbox`).
+    const offersBefore = meta.jobOffers ?? [];
+    let jobOffers: JobOffer[] = pruneOffers(offersBefore, nextDate);
+    let jobsMidSeason = meta.jobsMidSeason;
+    const newOffers: JobOffer[] = [];
+    if (!ended && playerSquadId && board) {
+      const playerState = updatedActiveLeagues.find((l) => l.leagueSlug === (index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug));
+      if (seasonEnded && playerState) {
+        // Valid until the eve of the club's first match of the new season.
+        const firstMatch = (rolledLeagueFixtures.get(playerState.leagueSlug) ?? [])
+          .filter((f) => f.home === playerSquadId || f.away === playerSquadId)
+          .map((f) => f.date).sort()[0] ?? null;
+        newOffers.push(...await generateJobOffers(saveService, saveId, {
+          window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
+          managers: await managerTracker.list(), board: boardAtSeasonEnd ?? board.board,
+          humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index,
+        }));
+      } else if (playerState) {
+        const label = seasonLabel(playerState.year, playerState.start, playerState.end);
+        if (jobsMidSeason !== label) {
+          const table = (await saveService.getLeagueStandings(saveId, playerState.leagueSlug)) ?? [];
+          const mp = table.find((r) => r.squadId === playerSquadId)?.mp ?? 0;
+          if (playerState.totalRounds > 0 && mp >= playerState.totalRounds * JOBS.midSeason.PROGRESS) {
+            jobsMidSeason = label;
+            newOffers.push(...await generateJobOffers(saveService, saveId, {
+              window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
+              managers: await managerTracker.list(), board: board.board,
+              humanSquadId: playerSquadId, activeLeagues: updatedActiveLeagues, index,
+            }));
+          }
+        }
+      }
+    } else if (!ended && unemployed && currentDate >= unemployed.nextOfferDate) {
+      const offers = await generateJobOffers(saveService, saveId, {
+        window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
+        managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
+        unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
+        activeLeagues: updatedActiveLeagues, index,
+      });
+      newOffers.push(...offers);
+      unemployed = {
+        ...unemployed,
+        nextOfferDate: addDays(currentDate, JOBS.unemployed.EVERY_DAYS),
+        ...(offers.length > 0 ? { lastOfferDate: currentDate } : {}),
+      };
+    }
+    const keptOffers = jobOffers;
+    if (newOffers.length > 0) jobOffers = mergeOffers(jobOffers, newOffers);
+    const jobMessages: Parameters<typeof buildJobMessage>[0][] = newOffers.map((offer) => ({ date: currentDate, kind: "offer" as const, offer }));
 
     // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
     if (seasonEnded) {
@@ -2044,6 +2122,14 @@ export async function advanceOneDay(
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
+    // Offers still pending when the inbox was cleared keep their message.
+    if (seasonEnded) {
+      const fresh = new Set(newOffers.map((o) => o.squadId));
+      for (const offer of keptOffers) {
+        if (!fresh.has(offer.squadId)) await emitInboxMessage(saveId, buildJobMessage({ date: offer.date, kind: "offer", offer }), saveService);
+      }
+    }
+    for (const msg of jobMessages) await emitInboxMessage(saveId, buildJobMessage(msg), saveService);
     for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
 
     await managerTracker.flush();
@@ -2054,9 +2140,17 @@ export async function advanceOneDay(
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
     if (board) metaPatch.board = board;
-    if (ended) metaPatch.ended = ended;
+    if (jobOffers.length !== offersBefore.length || newOffers.length > 0) metaPatch.jobOffers = jobOffers;
+    if (jobsMidSeason !== meta.jobsMidSeason) metaPatch.jobsMidSeason = jobsMidSeason;
+    if (unemployed !== meta.unemployed) metaPatch.unemployed = unemployed;
+    if (ended) {
+      // Without a club: the career follows nobody until an offer is accepted.
+      metaPatch.clubId = "";
+      metaPatch.board = undefined;
+      metaPatch.rotationOverride = undefined;
+    }
     const playerHome = index.byId(meta.clubId)?.leagueSlug;
-    if (playerHome && playerHome !== meta.leagueSlug) {
+    if (!ended && playerHome && playerHome !== meta.leagueSlug) {
       const catalog = await getLeagueData();
       metaPatch.leagueSlug = playerHome;
       metaPatch.leagueName = (await leagueNameResolver(updatedActiveLeagues))(playerHome);
@@ -2084,6 +2178,7 @@ export async function advanceOneDay(
           ? { seasonEnded: true as const, archiveYear, moves: playerCountryMoves ?? [], playerMove, playerChampionOf }
           : {}),
         ...(ended ? { sacked: true as const } : {}),
+        ...(newOffers.length > 0 ? { jobOffers: newOffers.length } : {}),
       },
     };
 }
