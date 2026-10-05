@@ -196,8 +196,8 @@ function standOccupancy(data: FacilitiesViewData, avg: number): Record<StandId, 
 }
 
 const STAND_GEOM: Record<StandId, { x: number; y: number; w: number; h: number; label: string }> = {
-  north: { x: 96, y: 14, w: 128, h: 54, label: "left-1/2 top-[11%] -translate-x-1/2" },
-  south: { x: 96, y: 332, w: 128, h: 54, label: "left-1/2 top-[89%] -translate-x-1/2 -translate-y-full" },
+  north: { x: 96, y: 14, w: 128, h: 54, label: "left-1/2 top-[10.25%] -translate-x-1/2 -translate-y-1/2" },
+  south: { x: 96, y: 332, w: 128, h: 54, label: "left-1/2 top-[89.75%] -translate-x-1/2 -translate-y-1/2" },
   west: { x: 14, y: 80, w: 70, h: 240, label: "left-[15.5%] top-1/2 -translate-x-1/2 -translate-y-1/2" },
   east: { x: 236, y: 80, w: 70, h: 240, label: "left-[84.5%] top-1/2 -translate-x-1/2 -translate-y-1/2" },
 };
@@ -222,11 +222,11 @@ function StadiumMap({
         {/* Bowl */}
         <rect x="6" y="6" width="308" height="388" rx="38" className="fill-secondary/40 stroke-border" strokeWidth="2" />
         {/* Pitch */}
-        <rect x="92" y="76" width="136" height="248" rx="4" className="fill-chart-2/20 stroke-chart-2/60" strokeWidth="2" />
-        <line x1="92" y1="200" x2="228" y2="200" className="stroke-chart-2/60" strokeWidth="2" />
-        <circle cx="160" cy="200" r="20" className="fill-none stroke-chart-2/60" strokeWidth="2" />
-        <rect x="128" y="76" width="64" height="30" className="fill-none stroke-chart-2/60" strokeWidth="2" />
-        <rect x="128" y="294" width="64" height="30" className="fill-none stroke-chart-2/60" strokeWidth="2" />
+        <rect x="92" y="76" width="136" height="248" rx="4" className="fill-foreground/[0.04] stroke-foreground/25" strokeWidth="2" />
+        <line x1="92" y1="200" x2="228" y2="200" className="stroke-foreground/25" strokeWidth="2" />
+        <circle cx="160" cy="200" r="20" className="fill-none stroke-foreground/25" strokeWidth="2" />
+        <rect x="128" y="76" width="64" height="30" className="fill-none stroke-foreground/25" strokeWidth="2" />
+        <rect x="128" y="294" width="64" height="30" className="fill-none stroke-foreground/25" strokeWidth="2" />
         {/* Stands */}
         {data.facilities.stands.map((s) => {
           const g = STAND_GEOM[s.id];
@@ -234,6 +234,10 @@ function StadiumMap({
           return (
             <g key={s.id} onClick={() => onSelect(s.id)} className="cursor-pointer">
               <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" className="fill-primary" fillOpacity={occOpacity(occ[s.id])} />
+              {/* Seat rows, parallel to the pitch. */}
+              {[0.25, 0.5, 0.75].map((k) => (g.w > g.h
+                ? <line key={k} x1={g.x + 6} x2={g.x + g.w - 6} y1={g.y + g.h * k} y2={g.y + g.h * k} className="stroke-background/30" strokeWidth="1" />
+                : <line key={k} y1={g.y + 6} y2={g.y + g.h - 6} x1={g.x + g.w * k} x2={g.x + g.w * k} className="stroke-background/30" strokeWidth="1" />))}
               {works === s.id && <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8" fill="url(#fac-works)" />}
               <rect x={g.x} y={g.y} width={g.w} height={g.h} rx="8"
                 className={`fill-transparent ${on ? "stroke-foreground" : "stroke-border hover:stroke-muted-foreground"}`}
@@ -469,7 +473,7 @@ function AttendanceChart({ games, leagues, nf }: { games: SeasonGame[]; leagues:
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.chart.title")}</h3>
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <Legend swatch={<span className="h-3 w-3 rounded-sm bg-primary" />} label={t("facilities.chart.played")} />
-          <Legend swatch={<span className="h-3 w-3 rounded-sm bg-primary/25 border border-primary/60" />} label={t("facilities.chart.estimated")} />
+          <Legend swatch={<span className="h-3 w-3 rounded-sm bg-primary/15 border border-dashed border-primary/70" />} label={t("facilities.chart.estimated")} />
           <Legend swatch={<span className="h-0.5 w-4 bg-foreground" />} label={t("facilities.chart.capacity")} />
           <Legend swatch={<span className="h-0 w-4 border-t-2 border-dashed border-chart-4" />} label={t("facilities.chart.demand")} />
         </div>
@@ -491,11 +495,11 @@ function AttendanceChart({ games, leagues, nf }: { games: SeasonGame[]; leagues:
             {ticks.map((v) => (
               <div key={v} className="absolute inset-x-0 border-t border-border/50" style={{ top: `${y(v)}%` }} aria-hidden />
             ))}
-            <div className="absolute inset-0 flex items-end gap-0.5">
+            <div className="absolute inset-0 flex items-end gap-1">
               {games.map((g) => (
                 <div key={`${g.date}:${g.competition}`} className="relative flex-1 h-full flex items-end group min-w-0">
                   <div
-                    className={`w-full rounded-t ${g.played ? "bg-primary" : "bg-primary/25 border border-b-0 border-primary/60"}`}
+                    className={`w-full rounded-t ${g.played ? "bg-primary" : "bg-primary/15 border border-dashed border-b-0 border-primary/70"}`}
                     style={{ height: `${100 - y(g.attendance)}%` }}
                   />
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
