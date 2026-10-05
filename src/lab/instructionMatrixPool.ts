@@ -53,8 +53,10 @@ export function buildInstrTasks(plan: InstrPlan, offsetBase = 0): InstrTask[] {
     out.push(...chunks(league, "random", "random", "base", { type: "none" }, Math.max(plan.mirrorMatches, plan.baseMatches), offsetBase));
   }
   if (plan.parts.includes("marking")) {
-    for (const markers of [1, 2] as const) {
-      out.push(...chunks(league, `mark_${markers}`, "4-3-3", "edge", { type: "mark", markers }, plan.matches, offsetBase));
+    for (const by of ["mid", "cb"] as const) {
+      for (const markers of [1, 2] as const) {
+        out.push(...chunks(league, `mark_${by}_${markers}`, "4-3-3", "edge", { type: "mark", markers, by }, plan.matches, offsetBase));
+      }
     }
   }
   if (plan.parts.includes("base")) {

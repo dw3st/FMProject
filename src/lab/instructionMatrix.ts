@@ -27,7 +27,7 @@ export type InstrSetSpec =
   | { type: 'variant'; variant: RoleVariantId }
   | { type: 'press'; level: PressLevel }
   | { type: 'random' }
-  | { type: 'mark'; markers: 1 | 2 };
+  | { type: 'mark'; markers: 1 | 2; by?: 'mid' | 'cb' };
 
 export interface InstrTask {
   league: string;
@@ -90,9 +90,10 @@ export function bestForwardSlots(squad: Squad, formation: Formation, lineup: str
     .map(e => e.i);
 }
 
-/** Marker slots: the central midfielders (CDM / CM), in slot order. */
-export function markerSlots(formation: Formation, n: number): number[] {
-  return formation.attacking.flatMap((s, i) => (s.role === 'CDM' || s.role === 'CM' ? [i] : [])).slice(0, n);
+/** Marker slots: the central midfielders (CDM / CM) or the centre-backs, in slot order. */
+export function markerSlots(formation: Formation, n: number, by: 'mid' | 'cb' = 'mid'): number[] {
+  const roles = by === 'cb' ? ['CB'] : ['CDM', 'CM'];
+  return formation.attacking.flatMap((s, i) => (roles.includes(s.role) ? [i] : [])).slice(0, n);
 }
 
 const withFitness = (squad: Squad, tag: string): Squad => ({
@@ -138,7 +139,7 @@ export function playInstructionMatch(
   if (spec.type === 'mark' && kind !== 'base') {
     const lineupYSquad = teamY === 'A' ? a : b;
     const targets = bestForwardSlots(lineupYSquad, formation, teamY === 'A' ? lineupA : lineupB, spec.markers);
-    const markers = markerSlots(formation, spec.markers);
+    const markers = markerSlots(formation, spec.markers, spec.by);
     sideInstr[teamX] = { manMarks: markers.map((slot, i) => ({ slot, targetSlot: targets[i]! })).filter(m => m.targetSlot !== undefined) };
     // Y's marked targets vs X's same (unmarked) slots in the same matches.
     slotsX = targets;

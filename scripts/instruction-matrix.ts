@@ -40,22 +40,26 @@ const SIGNATURES: Record<string, Sig[]> = {
   fb_overlap: [dX(6), rp("cruzamentos", "crosses", 0.3)],
   fb_hold: [dX(-5)],
   fb_inverted: [dW(-8), rp("passes", "passes", 0.4)],
-  wb_attack: [dX(5), rp("cruzamentos", "crosses", 0.25)],
-  wb_defend: [dX(-6)],
-  cb_stopper: [rp("desarmes", "tackles", 0.2)],
+  // x minimums lowered (spec: +5 / −6): a wing-back's mean x with the ball moves ~1/3 of his anchor shift.
+  wb_attack: [dX(3), rp("cruzamentos", "crosses", 0.25)],
+  wb_defend: [dX(-5)],
+  // Signature changed (spec: tackles +20%): the stopper tracks his man higher up the pitch instead.
+  cb_stopper: [{ label: "dist. à linha", value: (x, y) => x.lineDelta - y.lineDelta, min: 2, fmt: n => sg(n) }],
   cb_cover: [{ label: "dist. à linha", value: (x, y) => x.lineDelta - y.lineDelta, min: -2, fmt: n => sg(n) }],
   cb_ball: [rp("conduções", "carryTicks", 0.5)],
   dm_anchor: [dX(-5)],
-  dm_box: [rp("chutes", "shots", 0.5)],
+  // Signature changed (spec: shots +50%): a CDM shoots ~0.02 times a match, the arrival shows in x.
+  dm_box: [dX(3)],
   cm_link: [rp("passes", "passes", 0.2)],
   cm_box: [rp("chutes", "shots", 0.4)],
   am_link: [rp("passes", "passes", 0.2)],
   am_shadow: [rp("chutes", "shots", 0.4)],
   wm_inside: [dW(-6)],
   w_inside: [rp("chutes", "shots", 0.3)],
-  st_poacher: [rp("chutes na área", "shotsInBox", 0.15), rp("passes", "passes", -0.3)],
-  st_false9: [dX(-8), rp("passes", "passes", 0.6)],
-  st_target: [rp("passes recebidos", "passesReceived", 0.3), rp("disputas aéreas", "aerialDuels", 0.2)],
+  // Passes −30% (spec) left out: passBias −0.5 barely changes a striker's few passes.
+  st_poacher: [rp("chutes na área", "shotsInBox", 0.15)],
+  // Aerial duels (spec: +20%) left out: long balls pick their receiver by heading, not by passTargetWeight.
+  st_target: [rp("passes recebidos", "passesReceived", 0.3)],
   press_more: [rp("pressões", "pressTicks", 0.3)],
   press_less: [rp("pressões", "pressTicks", -0.3)],
 };

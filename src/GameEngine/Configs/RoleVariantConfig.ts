@@ -75,7 +75,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   wb_defend: {
     roles: ['LWB', 'RWB'],
     engine: { bounds: { maxX: 70 }, offBallIntentWeights: { make_run: 0.1, hold_space: 0.8 } },
-    anchor: { attack: { dx: -8, dyIn: 0 } },
+    anchor: { attack: { dx: -11, dyIn: 0 } },
   },
   // ── Centre-backs ──────────────────────────────────────────────────────────
   cb_stopper: {
@@ -86,7 +86,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   },
   cb_cover: {
     roles: ['CB'],
-    engine: { defensiveIntentWeights: { hold_shape: 0.9, press_holder: 0.25 } },
+    engine: { defensiveIntentWeights: { hold_shape: 0.8, press_holder: 0.4 } },
     anchor: { defend: { dx: -3, dyIn: 0 } },
   },
   cb_ball: {
@@ -117,8 +117,8 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   cm_link: {
     roles: ['CM'],
     engine: {
-      offBallIntentWeights: { offer_support: 1.4, make_run: 0.15 },
-      passBias: 1.2,
+      offBallIntentWeights: { offer_support: 1.5, make_run: 0.15 },
+      passBias: 1.4,
       carryBias: 0.35,
     },
     anchor: { attack: { dx: -6, dyIn: 0 } },
@@ -126,11 +126,11 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   cm_box: {
     roles: ['CM'],
     engine: {
-      offBallIntentWeights: { make_run: 0.55, offer_support: 0.9 },
+      offBallIntentWeights: { make_run: 0.5, offer_support: 1.0 },
       bounds: { maxX: 95 },
-      defensiveIntentWeights: { press_holder: 0.8 },
+      defensiveIntentWeights: { press_holder: 0.75 },
     },
-    anchor: { attack: { dx: 6, dyIn: 0 } },
+    anchor: { attack: { dx: 3, dyIn: 0 } },
   },
   // ── Attacking midfielder ──────────────────────────────────────────────────
   am_link: {
@@ -147,13 +147,13 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   wm_inside: {
     roles: ['LM', 'RM'],
     engine: { offBallIntentWeights: { offer_support: 0.75 }, passBias: 0.6 },
-    anchor: { attack: { dx: 0, dyIn: 13 } },
+    anchor: { attack: { dx: 0, dyIn: 14 } },
   },
   // ── Winger ────────────────────────────────────────────────────────────────
   w_inside: {
     roles: ['LW', 'RW'],
-    engine: { offBallIntentWeights: { make_run: 0.85 }, passTargetWeight: 0.6 },
-    anchor: { attack: { dx: 0, dyIn: 12 } },
+    engine: { offBallIntentWeights: { make_run: 0.8 }, passTargetWeight: 0.6 },
+    anchor: { attack: { dx: 0, dyIn: 11 } },
   },
   // ── Striker ───────────────────────────────────────────────────────────────
   st_poacher: {
@@ -170,7 +170,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
     roles: ['ST'],
     engine: {
       offBallIntentWeights: { offer_support: 0.55, make_run: 0.4, hold_space: 0.8 },
-      passTargetWeight: 0.9,
+      passTargetWeight: 1.0,
       passBias: 0.3,
       carryBias: 0.35,
     },
