@@ -153,6 +153,6 @@ sem barreira; o tiro livre perigoso usa o layout fixo da formação; o expulso �
 
 ## Personalidade (Etapa 26)
 
-`FoulContext.temperament` / `CardContext.temperament` (t do infrator, `GamePlayer.temperament`): falta × (1 + 0,35 t),
-amarelo × (1 + 0,2 t), vermelho direto × (1 + 0,4 t) ÷ `TEMPERAMENT_CARD_NORM` (1). t = 0 / ausente devolve
+`FoulContext.temperament` / `CardContext.temperament` (t do infrator, `GamePlayer.temperament`): falta × (1 + 0,45 t),
+amarelo × (1 + 0,2 t), vermelho direto × (1 + 0,4 t) ÷ `TEMPERAMENT_CARD_NORM` (1,04). t = 0 / ausente devolve
 exatamente o de antes. Override por time em `PersonalityMatchConfig.ts`. Ver `.claude/rules/game/personality.md`.

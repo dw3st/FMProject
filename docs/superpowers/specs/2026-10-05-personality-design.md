@@ -1,6 +1,6 @@
 # Etapa 26 — Personalidade dos jogadores — Design
 
-Data: 2026-10-05. Status: **proposta** (decisões abertas no fim). Versão **4.2**.
+Data: 2026-10-05. Status: **aprovada** (D1–D7 com a recomendação; implementada na 4.2). Versão **4.2**.
 Depende de: moral (Etapa 23, `morale.md`), contratos (Etapa 7), negociação (Etapa 21), disciplina (Etapa 12),
 base e renascido (Etapas 11/11b), staff/olheiro (Etapa 10). Medição no molde de `style-training.md` e `morale.md`.
 

@@ -1123,5 +1123,5 @@ gols de cabeça no mundo todo. Revertido antes da coleta; ver `formations.md` �
 ## Personalidade no quickSim (Etapa 26)
 
 `rollDiscipline` escala as faltas do lado pela média do fator de temperamento do XI, quem comete e os cartões
-(`TEMPERAMENT_FOUL_NORM` / `TEMPERAMENT_CARD_NORM` = 1); `homeTemperament`/`awayTemperament` sobrepõem o lado
+(`TEMPERAMENT_FOUL_NORM` = 1, `TEMPERAMENT_CARD_NORM` = 1,04); `homeTemperament`/`awayTemperament` sobrepõem o lado
 (lab, `/test`). Medição em `.claude/rules/game/personality.md`.
