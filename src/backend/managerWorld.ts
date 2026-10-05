@@ -287,6 +287,11 @@ export function createAiManagerDesk(args: {
 
     /** Vacancies due today hire (a free manager, sometimes a poached one, or the interim). */
     async hireDue(activeLeagues: LeagueSeasonState[]): Promise<void> {
+      // Self-heal: an AI club with an interim and no vacancy (a vacancy lost to a retried day, an
+      // old save) opens one, so no interim stays in charge for good.
+      for (const m of await tracker.list()) {
+        if (m.interim && m.squadId && !m.isPlayer && m.squadId !== args.humanClubId && !vacancies[m.squadId]) openVacancy(m.squadId);
+      }
       const due = Object.entries(vacancies).filter(([, v]) => v.hireOn <= date).map(([id]) => id).sort();
       if (due.length === 0) return;
       const index = args.getIndex();

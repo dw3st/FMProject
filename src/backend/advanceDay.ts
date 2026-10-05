@@ -114,7 +114,7 @@ import { buildManagerNewsMessage } from "@/Domain/inbox/inboxEvents";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
 import { liveRivals } from "@/Domain/negotiation/rivals";
-import { contractDay, managerWeeklyWage, severancePay } from "@/Domain/managers/managerContract";
+import { contractDay, managerWeeklyWage, reanchorContract, severancePay } from "@/Domain/managers/managerContract";
 import { managerReputation } from "@/Domain/jobs/jobs";
 import type { DayTransfer } from "@/types/dayLogTypes";
 import { cupAndContinentalFixtures, recordLeagueSeasonHistory, recordTransferHistory } from "@/backend/clubHistoryWorld";
@@ -1196,7 +1196,14 @@ export async function advanceOneDay(
       return e as StoredDayLog["events"][number];
     });
     const dayLog = { saveId, date: currentDate, events: dayEvents };
-    await saveService.writeDayLog(saveId, currentDate, { saveId, date: currentDate, events: storedEvents });
+    // Keep what the routes already logged today (transfers bought / sold / loaned before advancing):
+    // their `transfer_ref` events and `transfers` moves.
+    const routeLog = await saveService.getDayLog(saveId, currentDate);
+    await saveService.writeDayLog(saveId, currentDate, {
+      saveId, date: currentDate,
+      events: [...(routeLog?.events ?? []).filter((e) => e.kind === "transfer_ref"), ...storedEvents],
+      ...(routeLog?.transfers?.length ? { transfers: routeLog.transfers } : {}),
+    });
 
     // ── Transfer market tick ─────────────────────────────────────────────────
     // When the whole market is frozen (start-kit pre-simulation), dailyMarketTick would be a
@@ -2265,7 +2272,7 @@ export async function advanceOneDay(
     }
     // The manager's contract ends at his country's rollover without a renewal (D5): unemployed, not
     // sacked (`.claude/rules/game/jobs.md` → "Contrato do técnico").
-    const contract = meta.managerContract?.squadId === playerSquadId ? meta.managerContract : undefined;
+    let contract = meta.managerContract?.squadId === playerSquadId ? meta.managerContract : undefined;
     if (!ended && board && playerSquadId && seasonEnded && contract && contract.until <= currentDate) {
       const leagueNow = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
       ended = {
@@ -2364,6 +2371,9 @@ export async function advanceOneDay(
     if (!ended && board && playerSquadId && contract) {
       const league = index.byId(playerSquadId)?.leagueSlug ?? meta.leagueSlug;
       const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
+      // The country rolled: the contract follows the NEW league's season end (seasons left kept).
+      const oldEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
+      if (seasonEnded && st && oldEnd) contract = reanchorContract(contract, oldEnd, st.end);
       if (st) {
         const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === playerSquadId)?.mp ?? 0;
         const squad = await saveService.getSquadById(saveId, playerSquadId);
@@ -2371,6 +2381,7 @@ export async function advanceOneDay(
         const day = contractDay({
           date: currentDate, contract, ...(managerRenewal ? { renewal: managerRenewal } : {}),
           notices: managerContractNotices ?? [], board: board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,
+          sackingEnabled: meta.sackingEnabled !== false,
           reputationWage: managerWeeklyWage(squad ? wageRevenueBasisOf(squad) : 0, rep),
         });
         managerRenewal = day.renewal;
@@ -2477,6 +2488,7 @@ export async function advanceOneDay(
     if (jobsMidSeason !== meta.jobsMidSeason) metaPatch.jobsMidSeason = jobsMidSeason;
     if (unemployed !== meta.unemployed) metaPatch.unemployed = unemployed;
     if (managerRenewal !== meta.managerRenewal) metaPatch.managerRenewal = managerRenewal;
+    if (contract && contract !== meta.managerContract) metaPatch.managerContract = contract;
     if (managerContractNotices !== meta.managerContractNotices) metaPatch.managerContractNotices = managerContractNotices;
     if (managerEarned > 0) metaPatch.managerEarnings = (meta.managerEarnings ?? 0) + managerEarned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();

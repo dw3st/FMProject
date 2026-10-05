@@ -61,7 +61,7 @@ Versão **4.0**. Técnicos da IA e contrato do técnico do jogador: `managers.md
   `{ accepted: false, reason: "prefersCurrent" }`.
 - Gravado em `market.preContracts` (`{ playerId, fromClubId, toClubId, wage, years, date }`). Na virada do país do
   clube de origem (passo **8a**, antes das expirações) o jogador sai sem taxa e entra no clube do jogador com o
-  contrato combinado (`pre_contract_joined`); some do clube de origem, elenco cheio ou o técnico trocou de clube →
+  contrato combinado (`pre_contract_joined`); some do clube de origem, elenco cheio (`HUMAN_MAX_SQUAD`, 36; na rota contam só os pré-contratos com `toClubId` do clube atual) ou o técnico trocou de clube →
   cai (`pre_contract_failed`). A IA nunca o renova (ele já saiu antes).
 
 ## Disputa pelo mesmo alvo

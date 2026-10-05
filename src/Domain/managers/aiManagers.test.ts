@@ -5,7 +5,7 @@ import {
   retireStale, rolloverSackChance, sackManager, vacancyHireOn, weeklySackChance, type SackInput,
 } from "@/Domain/managers/aiManagers";
 import {
-  compensationFee, contractDay, contractUntil, managerWeeklyWage, offerSeasons, renewalDecision, renewalDue, renewedContract,
+  compensationFee, contractDay, contractUntil, reanchorContract, managerWeeklyWage, offerSeasons, renewalDecision, renewalDue, renewedContract,
   severancePay, weeksLeft,
 } from "@/Domain/managers/managerContract";
 
@@ -165,5 +165,27 @@ describe("the human manager's contract", () => {
     const refused = contractDay({ ...base, date: "2027-04-20", board: 30, played: 33 });
     expect(refused).toMatchObject({ message: { kind: "contract_ending" } });
     expect(renewedContract(contract, { wage: 150, seasons: 2 }, "2027-04-21")).toMatchObject({ until: "2029-05-17", wage: 150 });
+  });
+
+  test("relegated to a league that ends earlier: the contract follows the new season end, renewal and end still work", () => {
+    // Signed in the Premier League (ends 17/05) for 2 seasons; relegated to a league ending 03/05.
+    const c = { squadId: "c", wage: 100, until: "2028-05-17", signed: "2026-08-01" };
+    const moved = reanchorContract(c, "2027-05-17", "2028-05-03");
+    expect(moved.until).toBe("2028-05-03");
+    // The board's decision now comes in the new league's last season.
+    const day = contractDay({ date: "2028-04-10", contract: moved, notices: [], board: 70, seasonEnd: "2028-05-03", played: 40, totalRounds: 46, reputationWage: 100 });
+    expect(day.message?.kind).toBe("contract_offer");
+    // Without the re-anchor the old `until` sits past the season end: no decision ever.
+    expect(contractDay({ date: "2028-04-10", contract: c, notices: [], board: 70, seasonEnd: "2028-05-03", played: 40, totalRounds: 46, reputationWage: 100 }).message).toBeUndefined();
+    // Last season: nothing to move (ends at this rollover).
+    expect(reanchorContract({ ...c, until: "2027-05-17" }, "2027-05-17", "2028-05-03").until).toBe("2027-05-17");
+  });
+
+  test("sacking off: the board always offers a renewal (1 season, current wage) even with low confidence", () => {
+    expect(renewalDecision({ board: 10, currentWage: 100, reputationWage: 200, sackingEnabled: false })).toEqual({ seasons: 1, wage: 100 });
+    expect(renewalDecision({ board: 10, currentWage: 100, reputationWage: 200, sackingEnabled: true })).toBeNull();
+    const contract = { squadId: "c", wage: 100, until: "2027-05-17", signed: "2025-08-01" };
+    const day = contractDay({ date: "2027-04-20", contract, notices: [], board: 10, seasonEnd: "2027-05-17", played: 33, totalRounds: 38, reputationWage: 150, sackingEnabled: false });
+    expect(day.message).toEqual({ kind: "contract_offer", contract: { seasons: 1, wage: 100 } });
   });
 });

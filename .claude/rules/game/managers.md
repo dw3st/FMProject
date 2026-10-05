@@ -137,6 +137,8 @@ salário, multa nem contrato.
 - **Ao demitir:** o técnico vai para o pool (`squadId ""`, `freeSince`, passagem fechada `left: "sacked"`), o clube
   recebe um interino (`coach_<clube>_<data>`, "Técnico interino do <clube>", `interim`) e uma vaga em
   `meta.managerVacancies[clube] = { since, hireOn }` (7..21 dias).
+- **Autocura:** todo dia (`hireDue`), um clube da IA com interino e sem vaga (vaga perdida num dia refeito, save
+  antigo) abre uma vaga; nenhum interino fica no cargo para sempre.
 - **Contratação** no `hireOn` (`hireDue`, todo dia): alvo = prestígio do clube × 100 (`worldPrestige`, cache por mês);
   candidatos livres (`−|reputação − alvo| + 8 × peso de lugar + ruído`; acima de alvo + 15 só livre há > 1 ano),
   com 20% de chance o melhor empregado de um clube ≥ 0,10 menos prestigioso (1 cadeia por dia; o clube dele ganha

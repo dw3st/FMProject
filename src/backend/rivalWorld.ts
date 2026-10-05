@@ -17,7 +17,7 @@ import { liveRivals, rivalCandidates, rollRival } from "@/Domain/negotiation/riv
 import { talkKey } from "@/Domain/negotiation/negotiation";
 import { seasonLabel } from "@/Domain/history/history";
 import { mulberry32, seedFrom } from "@/Domain/rng";
-import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD, MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { playerMatchesBand, playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketState, RivalBid } from "@/types/transferMarketTypes";
@@ -168,7 +168,7 @@ export async function applyDuePreContracts(
     const from = await service.getSquadById(saveId, pc.fromClubId);
     const player = from?.players.find((p) => p.id === pc.playerId && !p.loan);
     const human = args.humanClubId === pc.toClubId ? await service.getSquadById(saveId, pc.toClubId) : null;
-    const full = human ? (await humanRosterSize(service, saveId, human)) >= MAX_SQUAD : true;
+    const full = human ? (await humanRosterSize(service, saveId, human)) >= HUMAN_MAX_SQUAD : true;
     if (!from || !player || !human || full) {
       news.push({ date: args.date, kind: "pre_contract_failed", playerId: pc.playerId, playerName: pc.playerName, clubName: pc.fromClubName });
       continue;

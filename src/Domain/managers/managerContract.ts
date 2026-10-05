@@ -90,11 +90,28 @@ export function compensationFee(contract: Pick<ManagerContract, "wage" | "until"
  * The board's decision on a contract ending this season: ≥ 60 two seasons with the wage of today's
  * reputation, 40..59 one season at the current wage, below 40 no renewal (null).
  */
-export function renewalDecision(args: { board: number; currentWage: number; reputationWage: number }): { seasons: number; wage: number } | null {
+export function renewalDecision(args: {
+  board: number; currentWage: number; reputationWage: number;
+  /** "Pode ser demitido" off (spec §3.3): the board always offers (at worst 1 season, current wage). */
+  sackingEnabled?: boolean;
+}): { seasons: number; wage: number } | null {
   const c = MANAGER_CONTRACT;
   if (args.board >= c.RENEWAL_GOOD) return { seasons: 2, wage: Math.max(args.currentWage, args.reputationWage) };
-  if (args.board >= c.RENEWAL_OK) return { seasons: 1, wage: args.currentWage };
+  if (args.board >= c.RENEWAL_OK || args.sackingEnabled === false) return { seasons: 1, wage: args.currentWage };
   return null;
+}
+
+/**
+ * At the country rollover the contract is re-anchored on the NEW league's season end, keeping the
+ * number of seasons left (a club relegated to a league that ends earlier would otherwise carry an
+ * `until` past every new season end — no renewal, no end). Seasons left = whole years from the old
+ * season end to `until`; 0 = the contract ends now (unchanged).
+ */
+export function reanchorContract(contract: ManagerContract, oldSeasonEnd: string, newSeasonEnd: string): ManagerContract {
+  const left = Math.round(daysBetween(oldSeasonEnd, contract.until) / 365.25);
+  if (left <= 0) return contract;
+  const until = contractUntil(newSeasonEnd, left);
+  return until === contract.until ? contract : { ...contract, until };
 }
 
 /** Is the renewal decision due: the contract ends with this season and the club played 85% of it. */
@@ -121,6 +138,8 @@ export function contractDay(args: {
   totalRounds: number;
   /** Weekly wage of today's reputation at this club (`managerWeeklyWage`). */
   reputationWage: number;
+  /** "Pode ser demitido": off → the board always offers a renewal. */
+  sackingEnabled?: boolean;
 }): { renewal?: ManagerRenewalOffer; notices: string[]; message?: { kind: ContractNoticeKind; contract?: { wage: number; seasons: number } } } {
   const { contract, date } = args;
   const decided = `decided:${contract.until}`;
@@ -128,7 +147,10 @@ export function contractDay(args: {
   let notices = args.notices;
   if (!notices.includes(decided) && renewalDue({ until: contract.until, seasonEnd: args.seasonEnd, played: args.played, totalRounds: args.totalRounds })) {
     notices = [...notices.filter((n) => n.endsWith(contract.until)), decided];
-    const offer = renewalDecision({ board: args.board, currentWage: contract.wage, reputationWage: args.reputationWage });
+    const offer = renewalDecision({
+      board: args.board, currentWage: contract.wage, reputationWage: args.reputationWage,
+      ...(args.sackingEnabled !== undefined ? { sackingEnabled: args.sackingEnabled } : {}),
+    });
     if (offer) {
       return {
         notices,

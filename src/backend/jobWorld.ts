@@ -42,7 +42,7 @@ import { logError } from "@/Logger";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { aiBudgetWithPrize } from "@/Domain/finance/prizes";
 import {
-  compensationFee, contractUntil, managerWeeklyWage, offerSeasons, type ManagerContract,
+  compensationFee, contractUntil, MANAGER_CONTRACT, managerWeeklyWage, offerSeasons, type ManagerContract,
 } from "@/Domain/managers/managerContract";
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 
@@ -282,8 +282,9 @@ export async function releaseHumanClub(
   const market = await service.getMarket(saveId);
   // The human's lists, bids, talks and clauses belong to the club he leaves (`.claude/rules/game/negotiation.md`);
   // active loans stay in `loans` so they still end (and return) on their date.
-  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length)) {
-    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [] });
+  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length
+    || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
+    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] });
   }
   // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
   const retired = await service.getRetired(saveId);
@@ -352,8 +353,9 @@ export async function takeOverClub(
   const market = await service.getMarket(saveId);
   // The human's lists, bids, talks and clauses belong to the club he leaves (`.claude/rules/game/negotiation.md`);
   // active loans stay in `loans` so they still end (and return) on their date.
-  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length)) {
-    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [] });
+  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length
+    || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
+    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] });
   }
 
   // Board and fans at 60 with this club's objective (mid-season: from the current position).
@@ -394,7 +396,8 @@ export async function acceptJobOffer(
   const index = await service.getSquadIndex(saveId);
   const employedAt = !meta.unemployed && index.byId(meta.clubId) ? meta.clubId : null;
   // D3: leaving mid-contract, the new club compensates the old one (out of the arriving balance).
-  const compensation = employedAt ? compensationFee(meta.managerContract, date) : 0;
+  // The compensation shown on the offer (what the player saw), never more than the arriving budget.
+  const compensation = employedAt ? Math.min(Math.max(0, offer.compensation ?? 0), Math.max(0, offer.budget)) : 0;
   if (employedAt) await releaseHumanClub(service, saveId, { squadId: employedAt, date, compensation });
 
   const managers = await service.getManagers(saveId);
@@ -408,7 +411,7 @@ export async function acceptJobOffer(
   delete vacancies[offer.squadId];
   if (employedAt) vacancies[employedAt] = { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${employedAt}:${date}:vacancy`))) };
 
-  const taken = await takeOverClub(service, saveId, { squadId: offer.squadId, date, activeLeagues, startBalance: offer.budget - compensation });
+  const taken = await takeOverClub(service, saveId, { squadId: offer.squadId, date, activeLeagues, startBalance: Math.max(0, offer.budget - compensation) });
 
   // Inbox: the old club's news stays; every pending offer drops with its message.
   const catalog = await getLeagueData();
@@ -429,13 +432,17 @@ export async function acceptJobOffer(
   // The manager's contract at the new club (`.claude/rules/game/jobs.md` → "Contrato do técnico").
   const newSquad = await service.getSquadById(saveId, offer.squadId);
   const wage = offer.wage ?? managerWeeklyWage(newSquad ? wageRevenueBasisOf(newSquad) : 0, await reputationOf(service, saveId, meta));
-  const until = contractUntil(newState?.end ?? date, offer.seasons ?? 1);
+  // Past the renewal point of the new league's season (85%), the contract counts from the next season.
+  const lateInSeason = !!newState && newState.totalRounds > 0 && newState.currentRound >= newState.totalRounds * MANAGER_CONTRACT.RENEWAL_PROGRESS;
+  const until = contractUntil(newState?.end ?? date, (offer.seasons ?? 1) + (lateInSeason ? 1 : 0));
 
   return service.updateMeta(saveId, {
     managerContract: { squadId: offer.squadId, wage, until: until > date ? until : contractUntil(newState?.end ?? date, (offer.seasons ?? 1) + 1), signed: date },
     managerRenewal: undefined,
     managerContractNotices: undefined,
     managerVacancies: vacancies,
+    // The new-career transfer grace never applies to a change of club.
+    careerStart: undefined,
     clubId: offer.squadId,
     clubName: taken.clubName,
     clubColors: taken.colors,

@@ -1928,7 +1928,7 @@ try {
       const offer: import("@/types/jobTypes").JobOffer = {
         id: "job_smoke", squadId: newClub.squadId, clubName: newClub.name, leagueSlug: target.leagueSlug,
         leagueName: target.leagueName, window: "season_end", date: dateC, expires: dateC, objective: null,
-        budget: 0, expectedPosition: 1, leagueSize: indexC.inLeague(target.leagueSlug).length, prestige: 0.5,
+        budget: 5_000_000, compensation: 1_000_000, expectedPosition: 1, leagueSize: indexC.inLeague(target.leagueSlug).length, prestige: 0.5,
       };
       await plain().updateMeta(saveId, { jobOffers: [...(metaC.jobOffers ?? []), offer] });
       const { apiRoutes } = await import("@/backend/routes");
@@ -1967,8 +1967,8 @@ try {
       {
         const arrive = (await plain().getLedger(saveId, (await plain().getLeagueMeta(saveId, target.leagueSlug))!.year))
           .filter((e) => e.kind === "club_change" && e.ref?.stage === "arrive").at(-1);
-        console.log(`  arrival balance ${arrive?.amount} (offer budget 0, compensation ${-(arrive?.amount ?? 0)})`);
-        check((arrive?.amount ?? 0) < 0, "convites: the compensation to the old club came out of the arrival balance");
+        console.log(`  arrival balance ${arrive?.amount} (offer budget 5M, compensation 1M)`);
+        check(arrive?.amount === 4_000_000, "convites: the compensation to the old club came out of the arrival balance");
         const msA = await plain().getManagers(saveId);
         check(msA.find((m) => !m.isPlayer && m.squadId === playerSquadId)?.interim === true && !!metaA.managerVacancies?.[playerSquadId],
           "convites: the old club has an interim and a vacancy (no manager swap)");

@@ -54,6 +54,12 @@ describe("AI managers: vacancies and hirings on a save", () => {
     expect(hired.hiredOn).toBe(date);
     expect(desk.vacancies()[club]).toBeUndefined();
     expect(desk.news().some((n) => n.kind === "hired" && n.squadId === club)).toBe(true);
+    // Self-heal: an interim without a vacancy gets one on the next hiring pass.
+    const other = index.inLeague("premier_league").find((t) => t.squadId !== meta.clubId && t.squadId !== club)!.squadId;
+    await tracker.apply((ms) => sackManager(ms, { squadId: other, clubName: "Other", date }));
+    expect(desk.vacancies()[other]).toBeUndefined();
+    await desk.hireDue(meta.activeLeagues ?? []);
+    expect(desk.vacancies()[other]).toBeDefined();
     const breaks = managerInvariantBreaks(after, (await saveService.getAllSquads(saveId)).map((s) => s.id));
     expect(breaks).toEqual({ missing: [], doubled: [] });
   }, 120_000);
@@ -67,10 +73,13 @@ describe("AI managers: vacancies and hirings on a save", () => {
       date = (await saveService.getMeta(saveId))!.currentDate!;
     }
     await saveService.updateMeta(saveId, { managerVacancies: { x_missing_club: { since: date, hireOn: date } } });
+    // A move the routes logged before the advance survives the day's log write.
+    await saveService.appendDayTransfers(saveId, date, [{ playerId: "p_route", from: "a", to: "b", fee: 1, kind: "transfer", date }]);
     const out = await advanceOneDay(saveService, saveId);
     expect(out.ok).toBe(true);
     const m = (await saveService.getMeta(saveId))!;
     expect(m.managerVacancies?.x_missing_club).toBeUndefined();
+    expect((await saveService.getDayLog(saveId, date))?.transfers?.some((t) => t.playerId === "p_route")).toBe(true);
     expect(m.managerEarnings).toBe(m.managerContract!.wage);
     const year = (await saveService.getLeagueMeta(saveId, m.leagueSlug))!.year;
     const ledger = await saveService.getLedger(saveId, year);

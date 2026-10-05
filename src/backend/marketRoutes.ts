@@ -8,7 +8,7 @@ import { prestigeOf } from "@/backend/rivalWorld";
 import { reputationOf } from "@/backend/jobWorld";
 import { emitInboxMessage, buildBoardMessage, buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { answerPreContract } from "@/Domain/negotiation/preContract";
-import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { addYearsIso } from "@/Domain/contracts/contracts";
 import { renewedContract } from "@/Domain/managers/managerContract";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -88,7 +88,9 @@ export const marketRoutes = {
       const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
       const signed = market.preContracts ?? [];
       if (signed.some((p) => p.playerId === playerId)) return json({ error: "notEligible" }, 400);
-      if ((await humanRosterSize(saveService, saveId, human)) + signed.length >= MAX_SQUAD) return json({ error: "squadFull" }, 409);
+      // The human club's limit; only this club's pending pre-contracts count.
+      const mine = signed.filter((p) => p.toClubId === human.id).length;
+      if ((await humanRosterSize(saveService, saveId, human)) + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 409);
       const prestige = await prestigeOf(saveService, saveId, date, [human.id, current.id]);
       const answer = answerPreContract({
         offer: { wage, years }, player, human, current, date,

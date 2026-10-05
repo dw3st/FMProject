@@ -78,7 +78,9 @@ describe("jobs: sacking, offers, changing club", () => {
     const target = index.inLeague("la_liga")[0]!.squadId;
     const declined = await offerFor(meta, index.inLeague("serie_a")[0]!.squadId, date);
     const expired = { ...(await offerFor(meta, index.inLeague("bundesliga")[0]!.squadId, addDays(date, -1))), id: "job_old" };
-    const accepted = { ...(await offerFor(meta, target, addDays(date, 3))), budget: 7_777_777 };
+    // D3: the offer carries the compensation the new club pays (what the card shows).
+    const offerCompensation = compensationFee((await saveService.getMeta(meta.id))!.managerContract, date);
+    const accepted = { ...(await offerFor(meta, target, addDays(date, 3))), budget: 7_777_777, compensation: offerCompensation };
     await saveService.updateMeta(meta.id, { jobOffers: [declined, expired, accepted] });
     // A reborn offer pending at the old club, and the new club's best player out of contract this season.
     const legend = (id: string): RetiredPlayer => ({
@@ -112,7 +114,7 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(jobs.offers.map((o) => o.id)).toEqual([accepted.id]);
 
     // D3 (Etapa 25): leaving mid-contract, the new club compensates the old one out of the arrival.
-    const compensation = compensationFee((await saveService.getMeta(meta.id))!.managerContract, date);
+    const compensation = offerCompensation;
     expect(compensation).toBeGreaterThan(0);
     const res = await post(accepted.id, { accept: true });
     expect(res.status).toBe(200);
@@ -179,6 +181,7 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(managers.find((m) => !m.isPlayer && m.squadId === "33")?.interim).toBe(true);
     expect(after.managerVacancies?.["33"]).toBeDefined();
     expect(after.managerContract).toMatchObject({ squadId: target });
+    expect(after.careerStart).toBeUndefined();
     expect(after.managerContract!.wage).toBeGreaterThan(0);
 
     const inbox = await saveService.getInbox(meta.id);

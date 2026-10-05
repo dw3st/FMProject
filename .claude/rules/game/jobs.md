@@ -163,8 +163,15 @@ Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pu
   o clube recebe interino + vaga.
 - **Demitido:** `severancePay` = 0,5 × salário × semanas restantes (máx. 52) → `managerEarnings`; o clube antigo lança
   `manager` (`ref.stage = "severance"`) antes do `club_change` "leave" (soma = saldo continua).
+- **Virada do país:** o `until` é reancorado no fim da temporada da liga nova (`reanchorContract`, mantém as
+  temporadas restantes) — um rebaixamento para uma liga que acaba antes não trava a renovação nem o fim.
+- **Sem "Pode ser demitido":** a diretoria sempre oferece (no mínimo 1 temporada com o salário atual).
+- **Proposta aceita depois de 85% da temporada da liga nova:** o contrato conta a partir da próxima temporada.
+  `careerStart` é apagado na troca (a carência de mercado vale só na carreira nova).
 - **Troca no meio do contrato (D3):** o clube novo paga ao antigo `compensationFee` = 0,5 × salário × semanas
-  restantes (máx. 52; zero no último mês) — sai do saldo de chegada (`arrive` = orçamento − compensação); o clube
+  restantes (máx. 52; zero no último mês), gravada na oferta (`offer.compensation`) — sai do saldo de chegada
+  (`arrive` = max(0, orçamento − compensação)); a troca e a demissão limpam também `preContracts`, `rivalBids` e
+  `lostTargets` do mercado; o clube
   antigo (IA) recebe metade na verba (`aiBudgetWithPrize`).
 - **Vagas nas propostas de desemprego:** clubes com vaga pesam × 3 (`JOBS.VACANCY_WEIGHT`) no sorteio
   (`pickOfferingClubs({ vacant })`). Se a IA contratar antes de o jogador aceitar, a oferta segue e o recém-contratado
