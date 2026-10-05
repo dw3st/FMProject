@@ -3,9 +3,9 @@
  * this is all the client needs, so facesjs stays on the server.
  *
  * `v` is part of the URL because the response is cached as immutable — bump `FACE_VERSION`
- * whenever the face output changes (facesjs upgrade, new crop, different appearance mix).
+ * whenever the face output changes (facesjs upgrade, new crop, different appearance mix, new `faceTraits.json`).
  */
-export const FACE_VERSION = 2;
+export const FACE_VERSION = 5;
 
 /** Accepted player id shape (ids are `player_123`, `of_*`, `es_*`, `reborn_*`, numeric...). */
 export const FACE_ID_RE = /^[A-Za-z0-9_-]{1,80}$/;

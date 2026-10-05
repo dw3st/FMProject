@@ -77,3 +77,48 @@ max-age=31536000, immutable` e `Content-Security-Policy: default-src 'none'; sty
 import do `facesjs`). Mudou a saída do rosto (versão do `facesjs`, recorte, mistura por região)? Suba
 `FACE_VERSION`, senão o navegador continua com o SVG antigo. O `import()` dinâmico anterior não era
 separado pelo bundler do `Bun.serve` em produção (+346 KB min / +110 KB gzip na ficha e no painel).
+
+### Traços reais (piloto, ESPN)
+
+Piloto em 4 ligas (`brazil_serie_a`, `premier_league`, `la_liga`, `ligue_1`): cor da pele (7 tons) e
+cor do cabelo tirados das fotos da ESPN. **A foto nunca é guardada no repositório nem publicada**; só os
+parâmetros derivados.
+
+- `bun scripts/fetchHeadshots.ts [--leagues a,b] [--probe]`: mapeia nossos jogadores para atletas da ESPN
+  (`scripts/faces/athleteMap.ts`: `es_<id>`, `playerOverrides.json` ou nome único dentro do time da ESPN
+  do clube) → `data_process/espn/faceAthletes.json`; lê nos elencos da API quem tem foto e baixa em
+  `data_process/espn/headshots/` (no `.gitignore`).
+- `bun scripts/extractFaceTraits.ts [--debug]`: heurística sobre a imagem (`scripts/faces/traits.ts`,
+  decodificador PNG próprio em `png.ts`) → `data_process/espn/faceTraits.json`, chaveado pelo NOSSO id.
+  Copiar para `src/example_data/faceTraits.json` (e `src/Data`). Comprimento do cabelo e barba são medidos
+  mas descartados (`DROP`): acerto perto do acaso.
+- `bun scripts/faces/evalTraits.ts`: acerto contra os rótulos manuais (`data_process/espn/faceTraitLabels.txt`).
+- Uso: `faces.ts` lê `src/Data/faceTraits.json` uma vez (`faceTraitsOf`); `playerFaceSvg(..., traits)` chama
+  `applyFaceTraits` (`src/Domain/faces/faceTraits.ts`) depois do `generate`, com RNG próprio, então o
+  resto do rosto não muda. Jogador sem traços = rosto de antes. Mudou o arquivo? Suba `FACE_VERSION`.
+- Cobertura: a ESPN só tem foto de ~4% dos jogadores dessas ligas (91 de 2255 mapeados, 2026-10-05).
+
+### Traços reais (piloto, Wikidata/Commons)
+
+Ligas principais (`LEAGUES` em `scripts/faces/wikidata.ts`: Premier, La Liga, Bundesliga, Serie A, Ligue 1, Brasileirão A, Portugal, Eredivisie, Argentina, MLS), foto do **Wikimedia Commons** pelo Wikidata (P18), só com licença livre. O resto do mundo mantém o rosto sorteado. Fotos de jogo
+(ângulos e fundos variados), então os traços vêm de **rótulo visual** (pele, cor e comprimento do cabelo,
+barba), não de heurística.
+
+- `bun scripts/faces/wdClubs.ts`: clube → item do Wikidata (`data_process/wikidata/clubs.json`, revisado à mão).
+- `bun scripts/fetchWikidataPhotos.ts [--no-download]`: por clube, SPARQL de quem jogou lá (P54) nascido
+  ≥ 1983; casa por nome + ano de nascimento (idade da temporada 2026/27), único dos dois lados; quem não
+  casa vai para a busca do Wikidata entre futebolistas (`haswbstatement:P106=Q937857`) com o mesmo teste.
+  Licença e autor pelo `imageinfo` do Commons; só CC BY / CC BY-SA / CC0 / domínio público →
+  `data_process/wikidata/photoMeta.json` (sem imagem). Miniaturas de 400 px em `data_process/wikidata/photos/`
+  (no `.gitignore`); respostas da API em `data_process/wikidata/cache/` (no `.gitignore`).
+- Rótulos: `data_process/wikidata/faceTraitLabels.txt` → `faceTraits.json`. `bun scripts/faces/mergeTraits.ts`
+  junta ESPN + Wikidata (Wikidata vence) em `src/example_data/faceTraits.json` (e `src/Data`).
+- `applyFaceTraits` aplica também comprimento (`HAIR_IDS`; cabelo longo liso ganha o `hairBg` `longHair`) e
+  barba (`FACIAL_HAIR_IDS`); tons 5–7 usam a lista `TEXTURED_HAIR_IDS` (cachos, fades, locs). As listas foram
+  escolhidas olhando cada id renderizado (`bun scripts/faces/renderSheet.ts <out.html> hair|allhair|beard|combos`).
+  `FACE_VERSION` 5.
+- Fila de anotação: `bun scripts/faces/labelQueue.ts` (top 300 do mundo, XI automático dos clubes das ligas, demais dos
+  40 clubes mais fortes; pula rotulados e `faceTraitSkips.txt`). Cada rótulo guarda o qid do Wikidata da foto vista;
+  `mergeTraits` descarta o rótulo se o casamento mudar. Uma pessoa do Wikidata casada com dois jogadores cai dos dois.
+- A foto do item do Wikidata às vezes é de outra pessoa (vimos dois goleiros): esses entram em `faceTraitSkips.txt`.
+- Página local de comparação: `bun scripts/faces/pilotPage.ts <arquivo.html> [n]` (nunca publicar).
