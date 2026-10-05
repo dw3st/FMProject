@@ -1,6 +1,8 @@
 import { useMemo, useRef } from "react";
 import type { GameState, GamePlayer } from "@/GameEngine/types";
 import type { StaffEffects } from "@/Domain/staff/staff";
+import { moraleExecutionMult } from "@/Domain/morale/morale";
+import { MORALE } from "@/Domain/morale/moraleConfig";
 
 /**
  * `/test` debug panel — live per-player energy and drain-per-game-minute, computed from the
@@ -120,6 +122,15 @@ function EnergyTeamTable({
           Familiarity {style.familiarity}: attributes x{style.execution.toFixed(3)} / press stamina x{style.pressStamina.toFixed(2)}
         </div>
       )}
+      {players.length > 0 && (() => {
+        // Morale (`.claude/rules/game/morale.md`): each player's attributes × (1 + 0.02 × factor).
+        const avg = players.reduce((a, p) => a + (p.morale ?? MORALE.NEUTRAL), 0) / players.length;
+        return (
+          <div className="px-3 py-1 text-[10px] text-muted-foreground tabular-nums">
+            Morale {Math.round(avg)}: attributes x{moraleExecutionMult(avg).toFixed(3)}
+          </div>
+        );
+      })()}
       <div className="grid grid-cols-[40px_1fr_60px_90px] gap-1 px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground border-b border-border/50">
         <div />
         <div className={side === "right" ? "text-right" : ""}>Name</div>
