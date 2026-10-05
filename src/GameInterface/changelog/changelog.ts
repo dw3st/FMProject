@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.0.4",
+    date: "2026-10-05",
+    items: [
+      { pt: "Ainda mais rostos parecidos com os jogadores reais: cerca de 2.400 nas principais ligas, agora com MLS, Portugal e Eredivisie mais completas.", en: "Even more faces that look like the real players: about 2,400 across the main leagues, with MLS, Portugal and the Eredivisie now more complete." },
+    ],
+  },
+  {
     version: "4.0.3",
     date: "2026-10-05",
     items: [
