@@ -5,7 +5,7 @@ import { advanceOneDay } from "@/backend/advanceDay";
 /**
  * Board and fans in the day pipeline (`.claude/rules/game/board-fans.md`): the objective is set at
  * creation and again at the rollover; a board forced to the floor sacks the manager only when the
- * new-game option allows it, and a sacked career no longer advances.
+ * new-game option allows it, and a sacked manager goes on without a club.
  */
 describe("board and fans in advanceOneDay", () => {
   const created: string[] = [];
@@ -23,7 +23,7 @@ describe("board and fans in advanceOneDay", () => {
     return meta;
   };
 
-  test("sacking enabled by default: a board at the floor sacks and ends the career", async () => {
+  test("sacking enabled by default: a board at the floor sacks — the manager is left without a club", async () => {
     const meta = await create();
     expect(meta.sackingEnabled).toBe(true);
     expect(meta.board).toMatchObject({ board: 60, fans: 60 });
@@ -36,13 +36,14 @@ describe("board and fans in advanceOneDay", () => {
     if (out.ok) expect(out.payload.sacked).toBe(true);
 
     const after = (await saveService.getMeta(meta.id))!;
-    expect(after.ended).toMatchObject({ reason: "board", clubName: "Test", date: meta.currentDate });
+    expect(after.unemployed?.sacking).toMatchObject({ reason: "board", clubName: "Test", date: meta.currentDate });
+    expect(after.clubId).toBe("");
     const inbox = await saveService.getInbox(meta.id);
     expect(inbox.some((m) => m.category === "board" && m.kind === "sacked")).toBe(true);
 
+    // The career goes on without a club (`.claude/rules/game/jobs.md`).
     const again = await advanceOneDay(saveService, meta.id);
-    expect(again.ok).toBe(false);
-    if (!again.ok) expect(again.status).toBe(409);
+    expect(again.ok).toBe(true);
   }, 120_000);
 
   test("sacking disabled: never sacked, no ultimatum; the rollover sets a new objective", async () => {
@@ -59,7 +60,7 @@ describe("board and fans in advanceOneDay", () => {
     if (out.ok) expect(out.payload.sacked).toBeUndefined();
 
     const after = (await saveService.getMeta(meta.id))!;
-    expect(after.ended).toBeUndefined();
+    expect(after.unemployed).toBeUndefined();
     const b = after.board!;
     expect(b.ultimatum).toBeUndefined();
     expect(b.board).toBeGreaterThanOrEqual(0);

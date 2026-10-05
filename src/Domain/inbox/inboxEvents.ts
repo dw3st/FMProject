@@ -15,7 +15,9 @@ import type {
   TransferOutInboxMessage,
   YouthInboxMessage,
   RetirementInboxMessage,
+  JobInboxMessage,
 } from "@/types/inboxTypes";
+import type { JobOffer } from "@/types/jobTypes";
 import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
@@ -411,6 +413,28 @@ export function buildBoardMessage(args: {
     preview,
     kind,
     ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)),
+  };
+}
+
+/** Job news (`.claude/rules/game/jobs.md`): an offer, or the takeover of a new club. The screen translates it. */
+export function buildJobMessage(args:
+  | { date: string; kind: "offer"; offer: JobOffer }
+  | { date: string; kind: "hired"; squadId: string; clubName: string; leagueSlug: string; leagueName: string },
+): JobInboxMessage {
+  const club = args.kind === "offer"
+    ? { squadId: args.offer.squadId, clubName: args.offer.clubName, leagueSlug: args.offer.leagueSlug, leagueName: args.offer.leagueName }
+    : { squadId: args.squadId, clubName: args.clubName, leagueSlug: args.leagueSlug, leagueName: args.leagueName };
+  return {
+    id:        args.kind === "offer" ? `job-offer-${args.offer.id}` : `job-hired-${args.date}-${randomUUID()}`,
+    date:      args.date,
+    createdAt: args.date,
+    read:      false,
+    category:  "job",
+    subject:   args.kind === "offer" ? `Job offer from ${club.clubName}` : `You are the new manager of ${club.clubName}`,
+    preview:   club.leagueName,
+    kind:      args.kind,
+    ...club,
+    ...(args.kind === "offer" ? { offer: args.offer } : {}),
   };
 }
 

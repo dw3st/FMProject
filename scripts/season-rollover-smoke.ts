@@ -368,7 +368,7 @@ try {
     dayMsTotal += ms;
     {
       const mb = await plain().getMeta(saveId);
-      if (mb?.ended) boardTrack.ended = true;
+      if (mb?.unemployed) boardTrack.ended = true;
       const b = mb?.board;
       if (b) {
         boardTrack.days++;
@@ -1115,7 +1115,7 @@ try {
   check(boardTrack.days === days, `board: meta.board present after every day (${boardTrack.days}/${days})`);
   check(boardTrack.outOfRange === 0, `board: meters always within 0..100 (${boardTrack.outOfRange} day(s) out)`);
   check(boardTrack.objectiveSeasons.size >= 2, `board: a new objective was set at the rollover (${boardTrack.objectiveSeasons.size} seen)`);
-  check(!boardTrack.ended, "board: sacking disabled never sacks (meta.ended never set)");
+  check(!boardTrack.ended, "board: sacking disabled never sacks (meta.unemployed never set)");
   {
     const finalMeta = (await plain().getMeta(saveId))!;
     check(finalMeta.sackingEnabled === false, "board: the smoke save has sacking disabled");
@@ -1394,6 +1394,105 @@ try {
     check(!!born && born.age === 17 && !!born.contract, "aposentadoria: the reborn player is a 17-year-old with a contract in the academy");
     check(!!born && (await plain().getRetired(saveId)).find((r) => r.id === "smoke_legend")?.rebornOffer === "accepted",
       "aposentadoria: the offer is marked accepted");
+  }
+
+  // ── Convites (`.claude/rules/game/jobs.md`) ──
+  // A forced offer from a club of the calendar-year league that ends first (another country) is
+  // accepted through the route; the career goes on in the new league until that country rolls over.
+  console.log("\n── Convites ──");
+  {
+    const metaC = (await plain().getMeta(saveId))!;
+    const dateC = metaC.currentDate!;
+    console.log(`  offers pending after the player's rollover window: ${(metaC.jobOffers ?? []).length}`);
+    check((metaC.jobOffers ?? []).every((o) => o.expires >= dateC && o.squadId !== playerSquadId),
+      "convites: pending offers are valid and never from the own club");
+    const target = [...(metaC.activeLeagues ?? [])]
+      .filter((l) => l.end > dateC && l.start <= dateC && countryOf(l.leagueSlug) !== playerCountry)
+      .sort((a, b) => a.end.localeCompare(b.end))[0];
+    check(!!target, `convites: a league in season to move to (${target?.leagueSlug ?? "none"})`);
+    if (target) {
+      const indexC = await plain().getSquadIndex(saveId);
+      const newClub = indexC.inLeague(target.leagueSlug)[0]!;
+      const offer: import("@/types/jobTypes").JobOffer = {
+        id: "job_smoke", squadId: newClub.squadId, clubName: newClub.name, leagueSlug: target.leagueSlug,
+        leagueName: target.leagueName, window: "season_end", date: dateC, expires: dateC, objective: null,
+        budget: 0, expectedPosition: 1, leagueSize: indexC.inLeague(target.leagueSlug).length, prestige: 0.5,
+      };
+      await plain().updateMeta(saveId, { jobOffers: [...(metaC.jobOffers ?? []), offer] });
+      const { apiRoutes } = await import("@/backend/routes");
+      const { devAutoLogin } = await import("@/backend/auth/AuthService");
+      // The reborn section above already recorded the save's owner (smoke-reborn).
+      const { session } = devAutoLogin("smoke-reborn@test.local");
+      const handler = apiRoutes["/api/saves/:saveId/jobs/:offerId" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      const res = await handler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/jobs/job_smoke`, {
+          method: "POST", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+          body: JSON.stringify({ accept: true }),
+        }),
+        { params: { saveId, offerId: "job_smoke" } },
+      ));
+      check(res.status === 200, `convites: forced offer from ${newClub.name} (${target.leagueSlug}) accepted (status ${res.status})`);
+
+      const ledgerSum = async () => {
+        let sum = 0;
+        for (const season of await plain().listLedgerSeasons(saveId!)) {
+          for (const e of await plain().getLedger(saveId!, season)) sum += e.amount;
+        }
+        return sum;
+      };
+      const managerChecks = async (when: string) => {
+        const ms = await plain().getManagers(saveId!);
+        const me = ms.filter((m) => m.isPlayer);
+        check(me.length === 1 && me[0]!.squadId === newClub.squadId, `convites (${when}): the player's manager is at ${newClub.squadId}`);
+        const clubs = ms.filter((m) => m.squadId).map((m) => m.squadId);
+        check(new Set(clubs).size === clubs.length, `convites (${when}): one manager per club (${clubs.length - new Set(clubs).size} duplicate(s))`);
+        return me[0];
+      };
+
+      const metaA = (await plain().getMeta(saveId))!;
+      check(metaA.clubId === newClub.squadId && metaA.leagueSlug === target.leagueSlug,
+        `convites: the career follows the new club (${metaA.clubId} in ${metaA.leagueSlug})`);
+      check(metaA.board?.board === 60 && metaA.board.objective?.leagueSlug === target.leagueSlug,
+        "convites: board at 60 with an objective in the new league");
+      const oldClub = (await plain().getSquadById(saveId, playerSquadId))!;
+      check(oldClub.staff === undefined && oldClub.youth === undefined && oldClub.styleFamiliarity === undefined,
+        "convites: the old club became AI (no staff, academy or familiarity)");
+      check(!!oldClub.financialTier && (oldClub.aiTransferBudget ?? 0) > 0, "convites: the old club got an AI tier and transfer budget");
+      const mine0 = (await plain().getSquadById(saveId, newClub.squadId))!;
+      check(Object.keys(mine0.staff ?? {}).length === 3 && mine0.financialTier === undefined,
+        "convites: the new club has the player's staff and no AI tier");
+      check(Math.abs((await ledgerSum()) - (mine0.finances?.budget ?? 0)) < 1,
+        `convites: ledger sums to the new club's balance (${Math.round(mine0.finances?.budget ?? 0)})`);
+      const tacC = (await plain().getTactics(saveId))!;
+      check(tacC.lineup.filter((id) => mine0.players.some((p) => p.id === id)).length === 11,
+        `convites: the tactic has an XI of the new club (${tacC.formation})`);
+      const meBefore = await managerChecks("after the switch");
+
+      // The career goes on in the new league until its country rolls over.
+      const rolledFrom = target.year;
+      let rolled = false;
+      let daysC = 0;
+      for (let g = 0; g < 260 && !rolled; g++) {
+        const out = await runBufferedDay(saveId);
+        if (!out.ok) { check(false, `convites: day failed ${out.status} ${out.error}`); break; }
+        daysC++;
+        const m = (await plain().getMeta(saveId))!;
+        const st = (m.activeLeagues ?? []).find((l) => l.leagueSlug === target.leagueSlug);
+        if (st && st.year > rolledFrom) rolled = true;
+      }
+      console.log(`  ${daysC} day(s) at ${newClub.name} until ${target.leagueSlug} rolled`);
+      check(rolled, `convites: ${target.leagueSlug} rolled over with the player's new club (${daysC} days)`);
+      const metaR = (await plain().getMeta(saveId))!;
+      check(metaR.clubId === newClub.squadId && !metaR.unemployed, "convites: still at the new club after the rollover");
+      check(metaR.board?.objective?.season !== metaA.board?.objective?.season,
+        `convites: a new objective at the new club's rollover (${metaR.board?.objective?.season})`);
+      const mineR = (await plain().getSquadById(saveId, newClub.squadId))!;
+      check(mineR.financialTier === undefined && mineR.aiTransferBudget === undefined,
+        "convites: the new club rolled over as the human club (no AI tier/budget)");
+      check(Math.abs((await ledgerSum()) - (mineR.finances?.budget ?? 0)) < 1, "convites: ledger still sums to the balance after the rollover");
+      const meAfter = await managerChecks("after the rollover");
+      check((meAfter?.seasons ?? 0) > (meBefore?.seasons ?? 0), `convites: the season at the new club counted (${meAfter?.seasons})`);
+    }
   }
 
   await checkFiles(saveId, "end");

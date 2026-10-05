@@ -81,8 +81,10 @@ export interface AdvanceBatchResult {
   matchDate: string | null;
   done: boolean;
   seasonEvents: SeasonEvent[];
-  /** The manager was sacked on the last simulated day (the career ended). */
+  /** The manager was sacked on the last simulated day (he is now without a club). */
   sacked?: boolean;
+  /** Job offers arrived on the last simulated day (`.claude/rules/game/jobs.md`): the batch stops there. */
+  jobOffers?: boolean;
   error?: { status: number; message: string };
 }
 
@@ -132,8 +134,11 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
     if (typeof step.payload.newDate === "string") result.newDate = step.payload.newDate;
     const ev = seasonEventOf(step.date, step.payload);
     if (ev) result.seasonEvents.push(ev);
-    // Sacked (`.claude/rules/game/board-fans.md`): the career is over, nothing more to simulate.
+    // Sacked (`.claude/rules/game/board-fans.md`): the manager lost his club, the batch stops.
     if (step.payload.sacked === true) { result.sacked = true; result.done = true; return result; }
+    if (typeof step.payload.jobOffers === "number" && step.payload.jobOffers > 0) {
+      result.jobOffers = true; result.done = true; return result;
+    }
   }
 }
 
@@ -170,6 +175,12 @@ export async function readAdvancePosition(saveId: string, service: SaveService =
   if (!meta) throw new Error("save not found");
   if (!meta.currentDate) throw new Error("save has no currentDate");
   const currentDate = meta.currentDate;
+  // Unemployed (`.claude/rules/game/jobs.md`): no matches to stop at — advance until the day after
+  // the next batch of offers is drawn.
+  if (meta.unemployed) {
+    const target = addDays(meta.unemployed.nextOfferDate, 1);
+    return { currentDate, target: target > currentDate ? target : addDays(currentDate, 1), matchDate: null };
+  }
   const cup = await playerCupSlug(meta.leagueSlug);
   const continental = await playerContinentalSlug(service, saveId, meta.clubId);
   const competitions = [meta.leagueSlug, cup, continental].filter((s): s is string => s !== null);

@@ -62,7 +62,7 @@ export interface BoardState {
 
 export type SackReason = "board" | "ultimatum";
 
-/** Set on `SaveMeta.ended` when the manager is sacked: the career is over. */
+/** The sacking itself (`SaveMeta.unemployed.sacking`): the news screen `/fired` shows it. */
 export interface CareerEnded {
   date: string;
   reason: SackReason;

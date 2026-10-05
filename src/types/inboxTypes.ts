@@ -1,5 +1,6 @@
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
+import type { JobOffer } from "@/types/jobTypes";
 
 export type InboxCategory =
   | "development"
@@ -12,7 +13,8 @@ export type InboxCategory =
   | "contract"
   | "youth"
   | "retirement"
-  | "board";
+  | "board"
+  | "job";
 
 interface InboxMessageBase {
   id:        string;
@@ -211,6 +213,23 @@ export interface BoardInboxMessage extends InboxMessageBase {
   reason?: SackReason;
 }
 
+/**
+ * Job news for the human manager (`.claude/rules/game/jobs.md`): a club's offer (answered through
+ * `POST /api/saves/:id/jobs/:offerId` while it is still in `SaveMeta.jobOffers`), or the
+ * confirmation that he took over a club.
+ */
+export interface JobInboxMessage extends InboxMessageBase {
+  category: "job";
+  kind: "offer" | "hired";
+  squadId: string;
+  clubName: string;
+  leagueSlug: string;
+  /** English fallback; the screen uses `competitionName`. */
+  leagueName: string;
+  /** offer: the offer as it arrived. */
+  offer?: JobOffer;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -222,4 +241,5 @@ export type InboxMessage =
   | ContractInboxMessage
   | YouthInboxMessage
   | RetirementInboxMessage
-  | BoardInboxMessage;
+  | BoardInboxMessage
+  | JobInboxMessage;

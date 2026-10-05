@@ -92,6 +92,16 @@ export function createManagerTracker(args: {
       if (next !== cur) { managers = next; changed = true; }
     },
 
+    /** Today's ranking (titles credited so far included). */
+    list: (): Promise<ManagerRecord[]> => load(),
+
+    /** Applies a change to the whole file (the human manager changing club, `.claude/rules/game/jobs.md`). */
+    async apply(fn: (m: ManagerRecord[]) => ManagerRecord[]): Promise<void> {
+      const cur = await load();
+      const next = fn(cur);
+      if (next !== cur) { managers = next; changed = true; }
+    },
+
     async flush(): Promise<void> {
       if (changed && managers) await service.writeManagers(saveId, managers);
     },

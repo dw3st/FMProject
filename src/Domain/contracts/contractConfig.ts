@@ -34,3 +34,9 @@ export const CONTRACT_CONFIG = {
   /** AI clubs that try the free pool each day. */
   FREE_AGENT_CLUBS_PER_DAY: 10,
 } as const;
+
+/**
+ * AI clubs never sign a player this old or older (market buys, the daily free-agent hire, the
+ * rollover refill): past it he is only waiting to retire.
+ */
+export const AI_SIGN_MAX_AGE = CONTRACT_CONFIG.AI_RENEW_MAX_AGE + 2;

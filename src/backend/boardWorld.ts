@@ -1,7 +1,7 @@
 import type { SaveService } from "@/backend/SaveService";
 import { clubLevel } from "@/backend/continentalWorld";
 import { financialTierOf, naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
-import { applyMatchResult, isDerby, matchExpectation, objectiveFor, type ObjectiveClub } from "@/Domain/boardFans/boardFans";
+import { applyMatchResult, expectedRank, isDerby, matchExpectation, objectiveFor, type ObjectiveClub } from "@/Domain/boardFans/boardFans";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import type { BoardState, SeasonObjective } from "@/types/boardTypes";
 import type { Fixture, LeagueSeasonState } from "@/types/calendarTypes";
@@ -46,6 +46,8 @@ export function objectiveFromSquads(args: {
   leagueSlug: string;
   zones: LeagueZone[];
   season: string;
+  /** Current table position (mid-season takeover); absent = by squad strength. */
+  rank?: number;
 }): SeasonObjective | null {
   if (!args.squads.some((s) => s.id === args.playerSquadId)) return null;
   return objectiveFor({
@@ -54,7 +56,13 @@ export function objectiveFromSquads(args: {
     zones: args.zones,
     leagueSlug: args.leagueSlug,
     season: args.season,
+    ...(args.rank !== undefined ? { rank: args.rank } : {}),
   });
+}
+
+/** Expected league position of a club from the squads of its league (strength + tier). */
+export function expectedPositionFromSquads(squads: Squad[], squadId: string): number {
+  return expectedRank(squadId, objectiveClubs(squads, squadId));
 }
 
 /**

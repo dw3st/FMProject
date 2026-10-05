@@ -94,6 +94,16 @@ describe("freeAgentTick", () => {
     expect(signed).toBeGreaterThan(0);
   });
 
+  test("never signs a free agent about to retire (35+)", () => {
+    const sq = squad(full().filter((p) => roleOf(p) !== "Forward").concat([player("f0", "ST", 5)]));
+    const pool = Array.from({ length: 6 }, (_, i) => ({ ...agent(`fa${i}`, "ST", 5), player: { ...agent(`fa${i}`, "ST", 5).player, age: 35 + i } }));
+    const rng = mulberry32(7);
+    for (let d = 0; d < 20; d++) {
+      const r = freeAgentTick({ squads: [sq], pool, date: "2027-07-01", rng, seasonEndOf: () => "2028-05-31" });
+      expect(r.signedIds.size).toBe(0);
+    }
+  });
+
   test("the human squad is never touched", () => {
     const sq = squad(full().slice(0, 12));
     const r = freeAgentTick({

@@ -23,6 +23,11 @@ export interface ManagerRecord {
   /** Season label of the last rollover counted in `seasons` (keeps a retried day from counting twice). */
   lastSeason?: string;
   titles: ManagerTitle[];
+  /**
+   * Human manager only: his passages through clubs, oldest first (`.claude/rules/game/jobs.md`).
+   * `to` is absent for the current club. `squadId` is "" while he is unemployed.
+   */
+  clubs?: { squadId: string; from: string; to?: string }[];
 }
 
 /** Cached country weight (`meta.managerWeights[country]`): computed once per country per season. */

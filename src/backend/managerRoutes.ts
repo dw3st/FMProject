@@ -13,7 +13,7 @@ export const managerRoutes = {
   /**
    * `GET` - `?scope=world|country` (country = the player's league country), `?offset=&limit=`
    * (limit 1..100, default 50). Response `{ total, playerRank, items }`; each item carries its rank
-   * within the scope, the club's name and the full title list.
+   * within the scope, the club's name and the full title list (the human manager also his club passages).
    */
   "/api/saves/:saveId/managers": async (req: Req) => {
     const saveId = req.params.saveId!;
@@ -48,7 +48,12 @@ export const managerRoutes = {
     );
     return Response.json({
       ...page,
-      items: page.items.map((m) => ({ ...m, clubName: index.byId(m.squadId)?.name ?? null })),
+      items: page.items.map((m) => ({
+        ...m,
+        clubName: m.squadId ? index.byId(m.squadId)?.name ?? null : null,
+        // The human manager's passages (`.claude/rules/game/jobs.md`), with the clubs' names.
+        ...(m.clubs ? { clubs: m.clubs.map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })) } : {}),
+      })),
     });
   },
 };

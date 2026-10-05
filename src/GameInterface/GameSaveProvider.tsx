@@ -17,9 +17,6 @@ import type { InboxMessage } from "@/types/inboxTypes";
 
 export type GameSaveApiResponse = SaveMeta & { season?: SeasonData };
 
-/** Pages outside the career: a sacked save never redirects away from these. */
-const NON_CAREER_PATHS = new Set(["/", "/login", "/start", "/new-game", "/fired", "/test", "/lab", "/coming-soon"]);
-
 export interface GameSaveContextValue {
   session: GameSession | null;
   squad: Squad | null;
@@ -153,14 +150,21 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
+      const squadUrl = (league: string, club: string) =>
+        club ? fetch(`/api/saves/${s.saveId}/squad/${league}/${club}`) : Promise.resolve(null);
       const [saveRes, squadRes, inboxRes] = await Promise.all([
         fetch(`/api/saves/${s.saveId}`),
-        fetch(`/api/saves/${s.saveId}/squad/${s.leagueSlug}/${s.clubId}`),
+        squadUrl(s.leagueSlug, s.clubId),
         fetch(`/api/saves/${s.saveId}/inbox`),
       ]);
 
       const saveJson = saveRes.ok ? ((await saveRes.json()) as GameSaveApiResponse) : null;
-      const squadJson = squadRes.ok ? ((await squadRes.json()) as Squad) : null;
+      let squadJson = squadRes?.ok ? ((await squadRes.json()) as Squad) : null;
+      // The manager changed club (or lost his: `.claude/rules/game/jobs.md`): the squad follows the save.
+      if (saveJson && saveJson.clubId !== s.clubId) {
+        const again = await squadUrl(saveJson.leagueSlug, saveJson.clubId);
+        squadJson = again?.ok ? ((await again.json()) as Squad) : null;
+      }
       const inboxJson = inboxRes.ok ? ((await inboxRes.json()) as InboxMessage[]) : null;
 
       let nextSession = s;
@@ -172,11 +176,6 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       }
       if (saveJson || squadJson) {
         saveSession(nextSession);
-      }
-      // Sacked (`.claude/rules/game/board-fans.md`): the career is over, every career page leads to /fired.
-      if (saveJson?.ended && typeof window !== "undefined" && !NON_CAREER_PATHS.has(window.location.pathname)) {
-        window.location.href = "/fired";
-        return;
       }
       setSession(nextSession);
       setSave(saveJson);

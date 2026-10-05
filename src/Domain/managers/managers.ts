@@ -75,13 +75,16 @@ export function rankManagers(managers: ManagerRecord[]): ManagerRecord[] {
  */
 export function buildInitialManagers(
   squads: Pick<Squad, "id" | "name" | "coach">[],
-  player: { squadId: string; name: string } | null,
+  player: { squadId: string; name: string; from?: string } | null,
 ): ManagerRecord[] {
   const used = new Set<string>();
   const out: ManagerRecord[] = [];
   for (const s of squads) {
     if (player && s.id === player.squadId) {
-      out.push({ id: "player", name: player.name, squadId: s.id, isPlayer: true, points: 0, seasons: 0, titles: [] });
+      out.push({
+        id: "player", name: player.name, squadId: s.id, isPlayer: true, points: 0, seasons: 0, titles: [],
+        ...(player.from ? { clubs: [{ squadId: s.id, from: player.from }] } : {}),
+      });
       used.add("player");
       continue;
     }

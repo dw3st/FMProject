@@ -59,3 +59,20 @@ export function processContractExpiries(args: {
   }
   return { squad: { ...squad, players: [...staying, ...renewed] }, renewed, released };
 }
+
+/**
+ * A club the human takes over (`.claude/rules/game/jobs.md`): the contracts that would expire at
+ * this season's rollover (`date` = the later of the season end and today, plus the grace) are
+ * renewed by the AI rule, as the AI board would have done; the others stay as they are (they leave
+ * at the rollover unless the human renews them).
+ */
+export function renewExpiringOnTakeover(args: { squad: Squad; date: string; nextSeasonEnd: string }): ExpiryResult {
+  const r = processContractExpiries({ ...args, isHuman: false });
+  if (r.renewed.length === 0) return { squad: args.squad, renewed: [], released: r.released };
+  const renewedById = new Map(r.renewed.map((p) => [p.id, p]));
+  return {
+    squad: { ...args.squad, players: args.squad.players.map((p) => renewedById.get(p.id) ?? p) },
+    renewed: r.renewed,
+    released: r.released,
+  };
+}
