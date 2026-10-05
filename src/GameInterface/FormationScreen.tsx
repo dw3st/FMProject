@@ -86,7 +86,11 @@ function getEnergyColor(energy: number) {
 
 export function FormationScreen() {
   const { t } = useTranslation();
-  const { session, squad, loading: saveLoading, mergeSession, currentDate } = useGameSave();
+  const { session, squad, save, loading: saveLoading, mergeSession, currentDate } = useGameSave();
+  // Today's man-marking (chosen in the match preview): the marker slots show a target icon.
+  const markedSlots = new Set(
+    save?.matchMarking && save.matchMarking.date === currentDate ? save.matchMarking.marks.map((m) => m.slot) : [],
+  );
   const [formations, setFormations] = useState<FormationOption[]>([]);
   const [baseSlots, setSlots] = useState<FormationSlot[]>([]);
   const [attacking, setAttacking] = useState<{ role: string; x: number; y: number }[]>([]);
@@ -667,6 +671,7 @@ export function FormationScreen() {
                 getOutOfPosition={(player, slotRole) => isPoorFit(aptitudeFor(player, slotRole))}
                 clubColors={squad?.colors}
                 instructionTag={editing ? undefined : (i) => instructionShort(slotInstructions[i])}
+                marked={editing ? undefined : (i) => markedSlots.has(i)}
               />
               {!editing && (
                 <div className="card-arcade rounded-md p-4 mt-3">
@@ -1068,7 +1073,10 @@ function FormationPitch({
   dragging,
   clubColors,
   instructionTag,
+  marked,
 }: {
+  /** The slot man-marks an opponent in today's match (player instructions). */
+  marked?: (slotIdx: number) => boolean;
   /** Short tag of the slot's role variant (player instructions); undefined = none. */
   instructionTag?: (slotIdx: number) => string | undefined;
   /** A drag is in progress: hover cards stay hidden. */
@@ -1211,6 +1219,12 @@ function FormationPitch({
               {instructionTag?.(i) && (
                 <span className="absolute -top-2 -right-4 rounded bg-primary px-1 text-[13px] font-bold uppercase font-display leading-tight text-primary-foreground pointer-events-none">
                   {instructionTag(i)}
+                </span>
+              )}
+
+              {marked?.(i) && (
+                <span className="absolute -bottom-1 -right-3 rounded-full bg-background p-0.5 text-primary pointer-events-none">
+                  <Icon name="target" size={16} />
                 </span>
               )}
 
