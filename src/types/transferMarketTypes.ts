@@ -47,6 +47,43 @@ export interface MarketState {
   loans?: ActiveLoan[];
   /** Sell-on clauses the human club holds on players it sold (removed once paid). */
   sellOnHeld?: SellOnHeld[];
+  /** AI rivals bidding for a player the human negotiates (`.claude/rules/game/negotiation.md`, Etapa 25). */
+  rivalBids?: RivalBid[];
+  /** Pre-contracts signed by the human with AI players whose contract ends (Etapa 25). */
+  preContracts?: PreContract[];
+  /** Players the human lost to a rival (kept for the talk screen, pruned after a week). */
+  lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
+}
+
+/** An AI club competing with the human for the same AI player (Etapa 25). */
+export interface RivalBid {
+  playerId: string;
+  playerName: string;
+  /** The selling club. */
+  fromClubId: string;
+  clubId: string;
+  clubName: string;
+  /** Fee offered to the seller, EUR. */
+  fee: number;
+  /** Weekly wage offered to the player, EUR. */
+  wage: number;
+  date: string;
+  /** If the human has not taken the player by then, the seller sells to this club. */
+  deadline: string;
+  /** The seller would accept this fee (the human's floor is fee × FLOOR_MULT). */
+  sellerAccepts: boolean;
+}
+
+/** The human signed an AI player for free, effective at the rollover of his club's country. */
+export interface PreContract {
+  playerId: string;
+  playerName: string;
+  fromClubId: string;
+  fromClubName: string;
+  /** Weekly wage and seasons agreed. */
+  wage: number;
+  years: number;
+  date: string;
 }
 
 export interface SellOnHeld {
@@ -87,7 +124,7 @@ export interface NegotiationRound {
   fee?: number;
   sellOnPct?: number;
   wageShare?: number;
-  outcome: "offer" | "accepted" | "counter" | "rejected" | "insulted";
+  outcome: "offer" | "accepted" | "counter" | "rejected" | "insulted" | "prefers_rival" | "lost";
 }
 
 export interface NegotiationTalk {

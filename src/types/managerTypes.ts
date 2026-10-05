@@ -12,6 +12,17 @@ export interface ManagerTitle {
   points: number;
 }
 
+/** Why a manager left a club (Etapa 25). */
+export type ManagerLeftReason = "sacked" | "moved" | "contract" | "interim";
+
+/** One spell of a manager at a club. `to` is absent for the current club. */
+export interface ManagerPassage {
+  squadId: string;
+  from: string;
+  to?: string;
+  left?: ManagerLeftReason;
+}
+
 export interface ManagerRecord {
   id: string;
   name: string;
@@ -24,10 +35,22 @@ export interface ManagerRecord {
   lastSeason?: string;
   titles: ManagerTitle[];
   /**
-   * Human manager only: his passages through clubs, oldest first (`.claude/rules/game/jobs.md`).
-   * `to` is absent for the current club. `squadId` is "" while he is unemployed.
+   * Passages through clubs, oldest first (`.claude/rules/game/managers.md`): every manager since
+   * Etapa 25. `squadId` is "" while he has no club.
    */
-  clubs?: { squadId: string; from: string; to?: string }[];
+  clubs?: ManagerPassage[];
+  /** Without a club since this date (the free pool). */
+  freeSince?: string;
+  /** Interim manager waiting for the club's hire. */
+  interim?: true;
+  /** Date of the current hiring (protects against an immediate sacking). */
+  hiredOn?: string;
+  /** Final position percentile of his last completed season (1 = champion). */
+  lastFinish?: number;
+  /** Free for too long: out of the pool and of the ranking tab (kept in the file). */
+  retired?: true;
+  /** Objective target of the current club for a season (cached for the Monday review). */
+  target?: { season: string; target: number };
 }
 
 /** Cached country weight (`meta.managerWeights[country]`): computed once per country per season. */

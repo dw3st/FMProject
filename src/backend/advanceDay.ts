@@ -2171,10 +2171,7 @@ export async function advanceOneDay(
     let unemployed: Unemployment | undefined = meta.unemployed;
     if (ended && board && playerSquadId) {
       await releaseHumanClub(saveService, saveId, { squadId: playerSquadId, date: currentDate });
-      await managerTracker.apply((ms) => sackHumanManager(ms, {
-        date: currentDate,
-        interim: { id: `coach_${playerSquadId}_${currentDate}`, name: `Técnico do ${meta.clubName}` },
-      }));
+      await managerTracker.apply((ms) => sackHumanManager(ms, { date: currentDate, clubName: meta.clubName }));
       unemployed = {
         since: currentDate,
         lastClubId: playerSquadId,
