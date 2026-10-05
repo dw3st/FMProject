@@ -24,7 +24,7 @@ describe("parseSlotInstructions", () => {
   test("rejects unknown / misfit variants, bad pressing, GK pressing, bad shapes", () => {
     expect(parseSlotInstructions({}, F433).ok).toBe(false);
     expect(parseSlotInstructions([{ variant: "x" }], F433).ok).toBe(false);
-    const misfit: unknown[] = []; misfit[slotOf("CB")] = { variant: "st_false9" };
+    const misfit: unknown[] = []; misfit[slotOf("CB")] = { variant: "st_target" };
     expect(parseSlotInstructions(misfit, F433).ok).toBe(false);
     expect(parseSlotInstructions([null, { press: "max" }], F433).ok).toBe(false);
     expect(parseSlotInstructions([{ press: "more" }], F433).ok).toBe(false);

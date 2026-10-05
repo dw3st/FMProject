@@ -41,8 +41,8 @@ describe("resolveSlotTuning", () => {
   });
 
   test("a variant the role does not accept falls back to the default (pressing kept)", () => {
-    expect(resolveSlotTuning("CB", { variant: "st_false9" })).toBe(roleEngine("CB"));
-    expect(effectiveInstruction("CB", { variant: "st_false9", press: "more" })).toEqual({ press: "more" });
+    expect(resolveSlotTuning("CB", { variant: "st_target" })).toBe(roleEngine("CB"));
+    expect(effectiveInstruction("CB", { variant: "st_target", press: "more" })).toEqual({ press: "more" });
     expect(effectiveInstruction("GK", { press: "more" })).toBeUndefined();
   });
 
@@ -55,7 +55,7 @@ describe("resolveSlotTuning", () => {
       }
     }
     expect(variantsForRole("GK")).toEqual([]);
-    expect(variantsForRole("ST")).toEqual(["st_poacher", "st_false9", "st_target"]);
+    expect(variantsForRole("ST")).toEqual(["st_poacher", "st_target"]);
   });
 });
 

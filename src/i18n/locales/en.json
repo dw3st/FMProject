@@ -2526,20 +2526,10 @@
         "short": "SS",
         "desc": "Plays as a second striker and attacks the box."
       },
-      "wm_wide": {
-        "name": "Wide",
-        "short": "WID",
-        "desc": "Hugs the touchline to stretch the play."
-      },
       "wm_inside": {
         "name": "Inside",
         "short": "INS",
         "desc": "Drifts inside to combine in midfield."
-      },
-      "w_wide": {
-        "name": "Wide winger",
-        "short": "WW",
-        "desc": "Stays wide, beats his man and crosses."
       },
       "w_inside": {
         "name": "Inside forward",
@@ -2550,11 +2540,6 @@
         "name": "Poacher",
         "short": "POA",
         "desc": "Lives in the box and waits for the chance."
-      },
-      "st_false9": {
-        "name": "False 9",
-        "short": "F9",
-        "desc": "Drops deep to link play and opens space behind."
       },
       "st_target": {
         "name": "Target man",

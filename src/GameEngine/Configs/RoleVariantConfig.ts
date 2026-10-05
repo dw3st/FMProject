@@ -55,13 +55,13 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
       offBallIntentWeights: { make_run: 0.05, hold_space: 0.8 },
       carryBias: 0.2,
     },
-    anchor: { attack: { dx: -6, dyIn: 0 } },
+    anchor: { attack: { dx: -8, dyIn: 0 } },
   },
   fb_inverted: {
     roles: ['LB', 'RB'],
     engine: {
       offBallIntentWeights: { offer_support: 0.8, hold_space: 0.5, make_run: 0.1 },
-      passBias: 0.3,
+      passBias: 0.5,
       passTargetWeight: 0.7,
     },
     anchor: { attack: { dx: 0, dyIn: 14 } },
@@ -70,7 +70,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   wb_attack: {
     roles: ['LWB', 'RWB'],
     engine: { bounds: { maxX: 100 }, offBallIntentWeights: { make_run: 0.55 } },
-    anchor: { attack: { dx: 8, dyIn: 0 } },
+    anchor: { attack: { dx: 12, dyIn: 0 } },
   },
   wb_defend: {
     roles: ['LWB', 'RWB'],
@@ -81,7 +81,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   cb_stopper: {
     roles: ['CB'],
     engine: {
-      defensiveIntentWeights: { track_mark: 0.8, press_holder: 0.7, step_into_carry_lane: 0.7, hold_shape: 0.5 },
+      defensiveIntentWeights: { track_mark: 0.85, press_holder: 0.6, step_into_carry_lane: 0.6, hold_shape: 0.55 },
     },
   },
   cb_cover: {
@@ -92,8 +92,8 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   cb_ball: {
     roles: ['CB'],
     engine: {
-      carryBias: 0.45,
-      passBias: 0,
+      carryBias: 0.35,
+      passBias: -0.15,
       bounds: { maxX: 60 },
       offBallIntentWeights: { offer_support: 0.45 },
     },
@@ -106,6 +106,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
       offBallIntentWeights: { make_run: 0, hold_space: 0.9, offer_support: 0.6 },
       defensiveIntentWeights: { hold_shape: 0.75, press_holder: 0.5 },
     },
+    anchor: { attack: { dx: -5, dyIn: 0 } },
   },
   dm_box: {
     roles: ['CDM'],
@@ -116,11 +117,11 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
   cm_link: {
     roles: ['CM'],
     engine: {
-      offBallIntentWeights: { offer_support: 1.3, make_run: 0.15 },
-      passBias: 1.0,
+      offBallIntentWeights: { offer_support: 1.4, make_run: 0.15 },
+      passBias: 1.2,
       carryBias: 0.35,
     },
-    anchor: { attack: { dx: -4, dyIn: 0 } },
+    anchor: { attack: { dx: -6, dyIn: 0 } },
   },
   cm_box: {
     roles: ['CM'],
@@ -129,6 +130,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
       bounds: { maxX: 95 },
       defensiveIntentWeights: { press_holder: 0.8 },
     },
+    anchor: { attack: { dx: 6, dyIn: 0 } },
   },
   // ── Attacking midfielder ──────────────────────────────────────────────────
   am_link: {
@@ -142,26 +144,16 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
     anchor: { attack: { dx: 6, dyIn: 0 } },
   },
   // ── Wide midfielder ───────────────────────────────────────────────────────
-  wm_wide: {
-    roles: ['LM', 'RM'],
-    engine: { offBallIntentWeights: { hold_space: 0.7 } },
-    anchor: { attack: { dx: 0, dyIn: -6 } },
-  },
   wm_inside: {
     roles: ['LM', 'RM'],
     engine: { offBallIntentWeights: { offer_support: 0.75 }, passBias: 0.6 },
-    anchor: { attack: { dx: 0, dyIn: 10 } },
+    anchor: { attack: { dx: 0, dyIn: 13 } },
   },
   // ── Winger ────────────────────────────────────────────────────────────────
-  w_wide: {
-    roles: ['LW', 'RW'],
-    engine: { carryBias: 1.0, offBallIntentWeights: { hold_space: 0.7, make_run: 0.55 } },
-    anchor: { attack: { dx: 0, dyIn: -4 } },
-  },
   w_inside: {
     roles: ['LW', 'RW'],
-    engine: { offBallIntentWeights: { make_run: 0.8 }, passTargetWeight: 0.6 },
-    anchor: { attack: { dx: 0, dyIn: 10 } },
+    engine: { offBallIntentWeights: { make_run: 0.85 }, passTargetWeight: 0.6 },
+    anchor: { attack: { dx: 0, dyIn: 12 } },
   },
   // ── Striker ───────────────────────────────────────────────────────────────
   st_poacher: {
@@ -170,29 +162,19 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
       bounds: { minX: 55 },
       offBallIntentWeights: { offer_support: 0.15, make_run: 0.9, hold_space: 0.5 },
       carryBias: 0.45,
-      passBias: -0.2,
+      passBias: -0.5,
     },
     anchor: { attack: { dx: 4, dyIn: 0 } },
-  },
-  st_false9: {
-    roles: ['ST'],
-    engine: {
-      bounds: { minX: 30 },
-      offBallIntentWeights: { offer_support: 0.9, make_run: 0.35 },
-      passBias: 0.5,
-      passTargetWeight: 0.8,
-      carryBias: 0.7,
-    },
-    anchor: { attack: { dx: -10, dyIn: 0 } },
   },
   st_target: {
     roles: ['ST'],
     engine: {
-      offBallIntentWeights: { offer_support: 0.6, make_run: 0.3, hold_space: 0.7 },
-      passTargetWeight: 0.75,
+      offBallIntentWeights: { offer_support: 0.55, make_run: 0.4, hold_space: 0.8 },
+      passTargetWeight: 0.9,
       passBias: 0.3,
-      carryBias: 0.3,
+      carryBias: 0.35,
     },
+    anchor: { attack: { dx: 3, dyIn: 0 } },
   },
 };
 

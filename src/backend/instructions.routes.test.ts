@@ -43,15 +43,15 @@ describe("player instructions routes", () => {
     const st = f433.attacking.findIndex((s) => s.role === "ST");
     const list: unknown[] = Array(11).fill(null);
     list[lb] = { variant: "fb_inverted" };
-    list[st] = { variant: "st_false9", press: "more" };
+    list[st] = { variant: "st_target", press: "more" };
 
     expect((await putTactics({ formation: "4-3-3", slotInstructions: list }, stranger.session.token)).status).toBe(404); // not the owner
     const ok = await putTactics({ formation: "4-3-3", slotInstructions: list });
     expect(ok.status).toBe(200);
-    expect((await saveService.getTactics(saveId))?.slotInstructions?.[st]).toEqual({ variant: "st_false9", press: "more" });
+    expect((await saveService.getTactics(saveId))?.slotInstructions?.[st]).toEqual({ variant: "st_target", press: "more" });
 
     const misfit = [...list];
-    misfit[lb] = { variant: "st_false9" };
+    misfit[lb] = { variant: "st_target" };
     expect((await putTactics({ slotInstructions: misfit })).status).toBe(400);
     expect((await putTactics({ slotInstructions: [{ variant: "nope" }] })).status).toBe(400);
     expect((await putTactics({ slotInstructions: [{ press: "more" }] })).status).toBe(400); // slot 0 = GK

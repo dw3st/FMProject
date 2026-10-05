@@ -37,7 +37,7 @@ describe("instruction matrix", () => {
     expect(naturalFormation("dm_box")).toBe("4-2-3-1");
     expect(naturalFormation("wb_attack")).toBe("3-5-2");
     expect(naturalFormation("wm_inside")).toBe("4-4-2");
-    expect(naturalFormation("st_false9")).toBe("4-3-3");
+    expect(naturalFormation("st_target")).toBe("4-3-3");
     const tasks = buildInstrTasks({ league: "x", parts: ["variants"], variants: ["fb_hold"], matches: 60, mirrorMatches: 25, baseMatches: 0 });
     expect(tasks.map((t) => `${t.kind}:${t.matches}`)).toEqual(["edge:25", "edge:25", "edge:10", "mirror:25"]);
     const p1 = { ...emptyInstrPair("fb_hold", "4-3-3", "edge"), matches: 2, wins: 2 };

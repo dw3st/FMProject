@@ -9,6 +9,17 @@ import { formationForSimId } from "@/Domain/matchFormations";
 import { autoLineupForFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { emptyInstrPair, playInstructionMatch, RANDOM_FORMATIONS, type InstrTask } from "@/lab/instructionMatrix";
 import type { Squad } from "@/types/playerTypes";
+import { ROLE_VARIANTS, type RoleVariant } from "@/GameEngine/Configs/RoleVariantConfig";
+
+// Calibration: ROLE_VARIANT_OVERRIDES='{"st_target":{"engine":{...},"anchor":{...}}}' replaces whole
+// `engine` / `anchor` blocks of the named variants in this worker (scripts only).
+if (process.env.ROLE_VARIANT_OVERRIDES) {
+  const o = JSON.parse(process.env.ROLE_VARIANT_OVERRIDES) as Record<string, Partial<RoleVariant>>;
+  for (const [id, patch] of Object.entries(o)) {
+    const v = ROLE_VARIANTS[id as keyof typeof ROLE_VARIANTS];
+    if (v) Object.assign(v, patch);
+  }
+}
 
 const cache = new Map<string, Squad[]>();
 function loadLeague(league: string): Squad[] {

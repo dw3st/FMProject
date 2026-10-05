@@ -65,14 +65,14 @@ describe("applying instructions", () => {
   test("live change keeps energy and attributes", () => {
     const s0 = freshState();
     const s = { ...s0, players: s0.players.map(p => (p.team === "A" && p.slotIndex === ST_SLOT ? { ...p, energy: 55 } : p)) };
-    const after = applyPlayerInstruction(s, "A", ST_SLOT, { variant: "st_false9", press: "more" });
+    const after = applyPlayerInstruction(s, "A", ST_SLOT, { variant: "st_target", press: "more" });
     const before = s.players.find(p => p.team === "A" && p.slotIndex === ST_SLOT)!;
     const st = after.players.find(p => p.team === "A" && p.slotIndex === ST_SLOT)!;
     expect(st.energy).toBe(55);
     expect(st.baseStats).toBe(before.baseStats);
-    expect(st.engine!.offBallIntentWeights.offer_support).toBe(0.9);
+    expect(st.engine!.offBallIntentWeights.offer_support).toBe(0.55);
     expect(st.engine!.defensiveIntentWeights.press_holder).toBeCloseTo(roleEngine("ST").defensiveIntentWeights.press_holder * 1.4);
-    expect(after.slotInstructions!.A![ST_SLOT]).toEqual({ variant: "st_false9", press: "more" });
+    expect(after.slotInstructions!.A![ST_SLOT]).toEqual({ variant: "st_target", press: "more" });
   });
 
   test("a substitute inherits the slot's instruction", () => {
@@ -104,8 +104,8 @@ describe("man-marking", () => {
     expect(marker.manMarkTargetId).toBe(star.id);
     const marks = assignMarkTargets(s.players, "A");
     expect(marks.get(marker.id)).toBe(star.id);
-    // nobody else is assigned the same target
-    expect([...marks.entries()].filter(([, t]) => t === star.id)).toHaveLength(1);
+    // the marker shadows him; at most one zonal defender also picks him up (double coverage)
+    expect([...marks.entries()].filter(([, t]) => t === star.id).length).toBeLessThanOrEqual(2);
   });
 
   test("at most two pairs, never the goalkeeper", () => {

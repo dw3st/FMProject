@@ -265,7 +265,7 @@ try {
   };
   const instrList = rotFormation.attacking.map((s, i) => {
     if (s.role === "LB" || s.role === "RB") return { variant: "fb_inverted" };
-    if (s.role === "ST") return { variant: "st_false9" };
+    if (s.role === "ST") return { variant: "st_target" };
     if (s.role === "CM" && rotFormation.attacking.findIndex((x) => x.role === "CM") === i) return { press: "more" };
     return null;
   });

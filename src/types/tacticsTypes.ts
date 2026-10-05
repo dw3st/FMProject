@@ -260,9 +260,9 @@ export type RoleVariantId =
   | "dm_anchor" | "dm_box"
   | "cm_link" | "cm_box"
   | "am_link" | "am_shadow"
-  | "wm_wide" | "wm_inside"
-  | "w_wide" | "w_inside"
-  | "st_poacher" | "st_false9" | "st_target";
+  | "wm_inside"
+  | "w_inside"
+  | "st_poacher" | "st_target";
 
 /** Individual pressing of a slot. */
 export type PressLevel = "less" | "normal" | "more";

@@ -310,14 +310,15 @@ export function assignMarkTargets(
   const assignedOpps = new Set<number>();
 
   // Man-marking pairs (player instructions) are fixed first; the greedy pass and the swap-improve
-  // only work on the rest.
+  // only work on the other defenders. The marked target stays in the pool: the zonal defender of
+  // his area still picks him up (the marker shadows him, he does not replace the back line) — the
+  // hole is left wherever the greedy pass finds the least danger.
   const fixedDefs = new Set<number>();
   for (const def of defenders) {
     const targetId = def.manMarkTargetId;
-    if (targetId === undefined || assignedOpps.has(targetId)) continue;
+    if (targetId === undefined) continue;
     if (!opponents.some(o => o.id === targetId)) continue;
     assignments.set(def.id, targetId);
-    assignedOpps.add(targetId);
     fixedDefs.add(def.id);
   }
 
@@ -549,8 +550,8 @@ function computeTrackMarkTarget(
     const by = ballHolder.y - markTarget.y;
     const gl = Math.hypot(gx, gy) || 1;
     const bl = Math.hypot(bx, by) || 1;
-    let dx = gx / gl + bx / bl;
-    let dy = gy / gl + by / bl;
+    let dx = (gx / gl) * (1 - MAN_MARK_CONFIG.BALL_SIDE) + (bx / bl) * MAN_MARK_CONFIG.BALL_SIDE;
+    let dy = (gy / gl) * (1 - MAN_MARK_CONFIG.BALL_SIDE) + (by / bl) * MAN_MARK_CONFIG.BALL_SIDE;
     const dl = Math.hypot(dx, dy);
     if (dl < 1e-6) { dx = gx / gl; dy = gy / gl; } else { dx /= dl; dy /= dl; }
     return {

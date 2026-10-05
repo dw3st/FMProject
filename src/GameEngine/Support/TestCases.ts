@@ -456,13 +456,13 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
-    id:          'false-nine',
-    name:        '11v11 — False 9',
-    description: 'Team A striker on the "False 9" variant (drops 10 yds, offers support, passes): select him to see the resolved tuning in the Decision panel.',
+    id:          'target-man',
+    name:        '11v11 — Target man',
+    description: 'Team A striker on the "Target man" variant (holds his position, offers to receive, the team routes passes to him): select him to see the resolved tuning in the Decision panel. (The false 9 was cut in calibration — see player-instructions.md.)',
     createState() {
       const f433 = formation433Json as Formation;
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
-      const list = f433.attacking.map(s => (s.role === 'ST' ? { variant: 'st_false9' as const } : null));
+      const list = f433.attacking.map(s => (s.role === 'ST' ? { variant: 'st_target' as const } : null));
       return applyTeamInstructions(base, 'A', list);
     },
   },
