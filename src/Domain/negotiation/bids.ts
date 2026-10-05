@@ -5,6 +5,7 @@ import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, 
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
 import { playerMatchesBand, playerOverallRating, priceCapForTier, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { buildAiLoanBid } from "@/Domain/negotiation/loans";
+import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -75,7 +76,9 @@ export function generateBidsForHuman(args: {
   const out: MarketBid[] = [];
   const all = () => [...args.pending, ...out];
   const room = () => all().length < B.MAX_PENDING;
-  const owned = (id: string) => humanSquad.players.find((p) => p.id === id && !p.loan) ?? null;
+  // Never a player the human club could not let go (squad of 15+, cover at the position, role minimums: the strict, AI-seller rule).
+  const owned = (id: string) =>
+    humanSquad.players.find((p) => p.id === id && !p.loan && !squadDepthBlocked(p, humanSquad, false)) ?? null;
   const buyersFor = (player: RosterPlayer, needKind?: "cover_need") =>
     Object.entries(profiles)
       .filter(([id]) => id !== humanSquad.id && squads.has(id))
@@ -100,7 +103,7 @@ export function generateBidsForHuman(args: {
 
   // Unlisted standout: a bigger club tries its luck.
   if (room() && rng() < B.UNLISTED_CHANCE) {
-    const free = humanSquad.players.filter((p) => !p.loan && !hasBid(all(), p.id, "transfer") && !args.sellList.some((c) => c.playerId === p.id));
+    const free = humanSquad.players.filter((p) => !p.loan && !squadDepthBlocked(p, humanSquad, false) && !hasBid(all(), p.id, "transfer") && !args.sellList.some((c) => c.playerId === p.id));
     const best = free.sort((a, b) => playerOverallRating(b) - playerOverallRating(a))[0];
     if (best) {
       const humanAvg = teamAvgRating(humanSquad);

@@ -177,6 +177,11 @@ export function dueLoans(loans: ActiveLoan[] | undefined, date: string, graceDay
   return (loans ?? []).filter((l) => l.until <= limit);
 }
 
+/** Players of `clubId` out on loan: they still count toward its 30-player cap. */
+export function outgoingLoanCount(loans: ActiveLoan[] | undefined, clubId: string): number {
+  return (loans ?? []).filter((l) => l.fromClubId === clubId).length;
+}
+
 /** Weekly wage the PARENT club still pays for its players out on loan. */
 export function parentLoanWages(loans: ActiveLoan[] | undefined, clubId: string): number {
   return (loans ?? [])

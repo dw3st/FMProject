@@ -112,8 +112,9 @@ export function processRetirements(args: {
   const records: RetiredPlayer[] = [];
   const humanRetired: RetiredPlayer[] = [];
   const squads = args.squads.map((sq) => {
+    // A player on loan retires with his own club, after he goes back (`.claude/rules/game/negotiation.md`).
     const leaving = sq.players.filter((p) =>
-      p.age >= R.MIN_AGE && retires(saveId, p.id, year, p.age, levelPercentile(levels.byRole[roleOf(p)], overallAvg(p))));
+      !p.loan && p.age >= R.MIN_AGE && retires(saveId, p.id, year, p.age, levelPercentile(levels.byRole[roleOf(p)], overallAvg(p))));
     if (leaving.length === 0) return sq;
     const isHuman = sq.id === humanSquadId;
     for (const p of leaving) {

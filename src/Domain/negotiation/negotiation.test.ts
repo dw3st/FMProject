@@ -7,12 +7,13 @@ import {
   sellOnShare, sellOnValueFraction, talkGate, parseSellOnPct,
 } from "@/Domain/negotiation/negotiation";
 import {
-  dueLoans, loanAvailability, loanUntil, parentLoanWages, respondToLoanRequest, squadsAfterLoanEnd, squadsAfterLoanStart,
+  dueLoans, outgoingLoanCount, loanAvailability, loanUntil, parentLoanWages, respondToLoanRequest, squadsAfterLoanEnd, squadsAfterLoanStart,
 } from "@/Domain/negotiation/loans";
 import { buildAiTransferBid, generateBidsForHuman, liveBids } from "@/Domain/negotiation/bids";
 import { squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
 import { clubWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import type { MarketBid } from "@/types/transferMarketTypes";
+import { toFreeAgent } from "@/Domain/contracts/freeAgents";
 
 function stats(v: number): RosterPlayer["stats"] {
   return {
@@ -277,5 +278,37 @@ describe("AI bids", () => {
     expect(again).toEqual([]);
     expect(liveBids(bids, "2027-03-07", human)).toEqual([]);
     expect(liveBids(bids, "2027-03-06", human).length).toBe(2);
+  });
+});
+
+describe("review fixes", () => {
+  test("bids skip a player the human club could not let go", () => {
+    const thin = squad("h");
+    const gks = thin.players.filter((p) => p.positions[0] === "GK");
+    const threeGk = { ...thin, players: thin.players.filter((p) => p.id !== gks[3]!.id) };
+    const buyer = squad("b", 6, { financialTier: "HIGH" });
+    const profiles = {
+      b: {
+        squadId: "b", sellList: [], lastUpdateDay: "2027-03-01",
+        needs: [{ position: "GK" as const, targetMin: 0, targetMax: 10, urgency: 1, budgetTier: "high" as const, intentType: "cover_need" as const }],
+      },
+    };
+    const bids = generateBidsForHuman({
+      date: "2027-03-01", rng: () => 0.1, humanSquad: threeGk, squads: new Map([["b", buyer]]), profiles,
+      sellList: [{ playerId: gks[0]!.id, priority: 1 }], loanList: [gks[1]!.id], pending: [],
+      seasonEndOf: () => "2027-05-31", newId: () => "x",
+    });
+    expect(bids).toEqual([]);
+  });
+  test("outgoing loans count toward the cap", () => {
+    const loans = [{ playerId: "a", playerName: "A", fromClubId: "h", fromClubName: "H", toClubId: "x", toClubName: "X", until: "2027-05-31", wageShare: 1, wage: 1, fee: 0, start: "2027-01-01" }];
+    expect(outgoingLoanCount(loans, "h")).toBe(1);
+    expect(outgoingLoanCount(loans, "x")).toBe(0);
+  });
+  test("a released player drops his clause and loan", () => {
+    const p = player("p", 6, 26, "CM", { sellOn: { clubId: "c", clubName: "C", pct: 10 }, loan: { fromClubId: "c", fromClubName: "C", until: "2027-05-31", wageShare: 1 } });
+    const f = toFreeAgent(p, "2027-06-01");
+    expect(f.player.sellOn).toBeUndefined();
+    expect(f.player.loan).toBeUndefined();
   });
 });
