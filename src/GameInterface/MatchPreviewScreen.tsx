@@ -22,6 +22,8 @@ import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
+import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
+import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { competitionName } from "@/Domain/world/labels";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import {
@@ -37,6 +39,7 @@ import {
 const Clock = iconOf("clock");
 const Cloud = iconOf("cloud");
 const MapPin = iconOf("map-pin");
+const Users = iconOf("squad");
 const User = iconOf("user");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -599,6 +602,8 @@ export function MatchPreviewScreen() {
   const { session, loading: saveLoading, fixtures, currentDate: simDate } = useGameSave();
   const [matchSetup, setMatchSetup] = useState<MatchSetupData | null>(null);
   const [fixture, setFixture] = useState<Fixture | null>(null);
+  // Expected attendance at home (`.claude/rules/game/facilities.md`).
+  const { data: facilitiesData } = useFacilities(session?.saveId, session?.currentDate ?? null);
   const [mySquadId, setMySquadId] = useState<string>("");
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
@@ -918,6 +923,12 @@ export function MatchPreviewScreen() {
   const currentDate = session.currentDate ?? "";
   const { weather, referee, venue: venueOrHost } = getMatchMeta(currentDate, session.clubName, isHome);
   const venue = fixture?.neutral ? t("cups.neutral") : venueOrHost;
+  const expectedCrowd = fixture && isHome && !fixture.neutral && facilitiesData
+    ? attendanceOf(facilitiesData.facilities, {
+        ...facilitiesData.demandInput,
+        ...(facilitiesData.season ? { fraction: seasonFraction(fixture.date, facilitiesData.season.start, facilitiesData.season.end) } : {}),
+      })
+    : null;
   const competition = fixture
     ? competitionName(fixture.competition, catalogLeagues, i18n.language)
     : "Premier Division";
@@ -1058,8 +1069,12 @@ export function MatchPreviewScreen() {
       {/* Match info */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
         <div className="card-arcade rounded-md px-6 py-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className={`grid grid-cols-2 ${expectedCrowd ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-6`}>
             <InfoCell icon={MapPin} label={t("matchPreview.venue")} value={venue} />
+            {expectedCrowd && (
+              <InfoCell icon={Users} label={t("matchPreview.expectedCrowd")}
+                value={`${Math.round(expectedCrowd.attendance).toLocaleString(i18n.language)} / ${expectedCrowd.capacity.toLocaleString(i18n.language)}`} />
+            )}
             <InfoCell icon={Cloud} label={t("matchPreview.weather")} value={`${weather.icon} ${weather.label}`} />
             <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value="20:00 GMT" />
             <InfoCell icon={User} label={t("matchPreview.officials")} value={referee} />
@@ -1221,7 +1236,7 @@ function InfoCell({
         <Icon className="w-4 h-4" />
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
-      <p className="text-base font-semibold text-foreground m-0">{value}</p>
+      <p className="text-base font-semibold text-foreground m-0 tabular-nums">{value}</p>
     </div>
   );
 }

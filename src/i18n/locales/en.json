@@ -979,7 +979,8 @@
       "board": "Board",
       "job": "Job offers",
       "transfer": "Negotiation",
-      "player": "Player"
+      "player": "Player",
+      "facilities": "Facilities"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1405,7 +1406,9 @@
         "cold": "Cold",
         "snow": "Snow",
         "hot": "Hot"
-      }
+      },
+      "works": "Works",
+      "worksDone": "finished {{date}}"
     }
   },
   "squadScreen": {
@@ -1535,7 +1538,8 @@
     "rotationIgnore": "Ignore",
     "rotationApplied": "The assistant rested {{count}} players",
     "rotationUndo": "Undo",
-    "suspendedReplaced": "{{out}} suspended, replaced by {{in}}"
+    "suspendedReplaced": "{{out}} suspended, replaced by {{in}}",
+    "expectedCrowd": "Expected crowd"
   },
   "matchResult": {
     "matchdayRound": "Matchday {{round}} • {{competition}}",
@@ -1700,10 +1704,18 @@
       "sellOnIn": "Sell-on clause: {{player}} ({{club}})",
       "sellOnOut": "Sell-on clause paid to {{club}}: {{player}}",
       "loanFeeIn": "Loan fee from {{club}}: {{player}}",
-      "loanFeeOut": "Loan fee paid to {{club}}: {{player}}"
+      "loanFeeOut": "Loan fee paid to {{club}}: {{player}}",
+      "facilityInstalment": "Works: {{facility}}",
+      "boardFunding": "Board funding: {{facility}}",
+      "facilitiesUpkeep": "Training ground and academy upkeep"
     },
     "seasonBasis": "Season to date",
-    "clubChange": "Club change"
+    "clubChange": "Club change",
+    "tabOverview": "Overview",
+    "tabFacilities": "Facilities",
+    "facilities": "Facilities works",
+    "facilitiesUpkeep": "Facilities upkeep",
+    "boardFunding": "Board funding"
   },
   "developmentScreen": {
     "squad": "Squad",
@@ -2193,6 +2205,113 @@
       "promiseMinutes": "Promise to {{name}}: {{target}} of 5 matches ({{played}} so far)",
       "promise_sale": "Promise to {{name}}: move by {{date}}",
       "promise_renewal": "Promise to {{name}}: renewal by {{date}}"
+    }
+  },
+  "facilities": {
+    "kpi": {
+      "capacity": "Capacity",
+      "duringWorks": "{{seats}} during works",
+      "avgAttendance": "Average crowd",
+      "occupancy": "{{pct}}% full",
+      "record": "Attendance record",
+      "ticket": "Ticket price",
+      "comfortLevel": "Comfort level {{level}}"
+    },
+    "stadium": {
+      "title": "Stadium",
+      "hint": "Click a stand to expand it",
+      "occupancy": "Occupancy"
+    },
+    "stand": {
+      "title": "Expand a stand",
+      "pick": "Pick a stand on the drawing to see the cost, the duration and the new capacity.",
+      "north": "North",
+      "south": "South",
+      "east": "East",
+      "west": "West",
+      "works": "Under works",
+      "expand": "Expand the {{stand}} stand",
+      "current": "{{seats}} seats today",
+      "seats": "Seats to add",
+      "newCapacity": "New capacity",
+      "halfDuringWorks": "During the works the stand holds half its seats. Seats above the demand bring no extra money."
+    },
+    "cost": "Cost",
+    "duration": "Duration",
+    "weeks": "{{count}} weeks",
+    "ask": "Ask the board",
+    "busy": "Works already under way",
+    "level": "Level {{level}}",
+    "now": "Now",
+    "nextLevel": "Level {{level}}",
+    "maxLevel": "Top level",
+    "preview": {
+      "approve": "The board should approve",
+      "funded": "The board pays {{pct}}%"
+    },
+    "reason": {
+      "board_low": "The board says: improve the results first.",
+      "negative_balance": "The board refuses while the balance is negative.",
+      "too_big": "Too big for the board's confidence: only projects up to 10% of the yearly revenue.",
+      "no_money": "The club cannot pay for it.",
+      "busy": "Works already under way.",
+      "maxLevel": "Already at the top level.",
+      "noClub": "You have no club.",
+      "error": "Something went wrong."
+    },
+    "kind": {
+      "stand": "Stand expansion",
+      "comfort": "Comfort",
+      "training": "Training ground",
+      "academy": "Academy"
+    },
+    "comfort": {
+      "about": "Seats, roofing, boxes: a higher ticket price.",
+      "effect": "Ticket price +{{pct}}%"
+    },
+    "training": {
+      "about": "Recovery, training injuries and training development.",
+      "effect": "Recovery {{recovery}} · training injuries {{injury}} · training development {{dev}}"
+    },
+    "academy": {
+      "about": "Quality and size of the yearly intake, chance of a wonderkid.",
+      "effect": "Intake level {{quality}} · up to {{max}} players · wonderkid {{promise}}%"
+    },
+    "outcome": {
+      "approvedTitle": "The board approved",
+      "refusedTitle": "The board refused",
+      "approved": "{{what}}: works start today, ready on {{date}}."
+    },
+    "chart": {
+      "title": "Crowd per home game",
+      "played": "Crowd",
+      "estimated": "Estimate",
+      "capacity": "Capacity",
+      "demand": "Demand",
+      "empty": "No home games this season yet."
+    },
+    "projects": {
+      "title": "Works",
+      "upkeep": "Upkeep {{amount}}/wk",
+      "none": "No works under way.",
+      "stand": "{{stand}} stand +{{seats}} seats",
+      "level": "{{what}} level {{level}}",
+      "delivery": "ready {{date}}"
+    },
+    "inbox": {
+      "subject": {
+        "approved": "Works approved: {{what}}",
+        "refused": "Works refused: {{what}}",
+        "completed": "Works finished: {{what}}",
+        "attendance_record": "New attendance record"
+      },
+      "approved": "The board approved {{what}} ({{cost}}). Ready on {{date}}; paid in monthly instalments.",
+      "approvedFunded": "The board approved {{what}} ({{cost}}) and pays {{pct}}% itself. Ready on {{date}}; paid in monthly instalments.",
+      "refused": "The board refused {{what}}. {{reason}}",
+      "completed": "{{what}} is finished.",
+      "attendance_record": "{{attendance}} fans: a new home attendance record (the old one was {{previous}}).",
+      "standWhat": "the {{stand}} stand (+{{seats}} seats)",
+      "levelWhat": "{{what}} level {{level}}"
     }
   }
 }
