@@ -66,6 +66,8 @@ const { leaguePrize } = await import("@/Domain/finance/prizes");
 const { autoLineupDefaultFormation, resolveUserLineup } = await import("@/Domain/advanceDay/matchSimulationLineups");
 const { isInjured } = await import("@/Domain/injury/injury");
 const { isSuspended } = await import("@/Domain/discipline/discipline");
+const { Player } = await import("@/Domain/Player");
+const { variantFitsRole: ROLE_VARIANT_FITS } = await import("@/GameEngine/Configs/RoleVariantConfig");
 const { followersAfterMood, stadiumFillRate } = await import("@/Domain/boardFans/boardFans");
 const { gateRevenue } = await import("@/Domain/finance/gate");
 type ClubMove = import("@/types/pyramidTypes").ClubMove;
@@ -239,6 +241,43 @@ try {
     facTrack.cost = body.project?.cost ?? 0;
     facTrack.boardShare = body.boardShare ?? 0;
     console.log(`Instalações: +1000 seats requested → ${res.status} ${JSON.stringify({ approved: body.approved, boardShare: body.boardShare, cost: facTrack.cost })}\n`);
+  }
+
+  // Instruções (`.claude/rules/game/player-instructions.md`): the human club plays the season with
+  // inverted full-backs, a false 9 and a midfielder pressing more, set through the tactics route;
+  // the instructions survive a formation change (sanitized), and every match day it man-marks the
+  // opponent's best outfield player (cleared by the next advance).
+  const instrTrack = {
+    putOk: false, sanitized: false, restored: false,
+    markDays: 0, markOk: 0, markLeftOver: 0, pendingMarkDate: null as string | null,
+  };
+  const { saveRoutes: instrSaveRoutes } = await import("@/backend/saves");
+  const { devAutoLogin: instrLogin } = await import("@/backend/auth/AuthService");
+  // The save's single owner row was recorded above (smoke-reborn); a new session of the same user.
+  const instrSession = instrLogin("smoke-reborn@test.local").session;
+  const instrCall = async (route: string, path: string, body: unknown) => {
+    const handler = (instrSaveRoutes as Record<string, (r: Request & { params: Record<string, string> }) => Promise<Response>>)[route]!;
+    return handler(Object.assign(new Request(`http://localhost${path}`, {
+      method: route.endsWith("/tactics") ? "PUT" : "POST",
+      headers: { cookie: `fs_session=${instrSession.token}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }), { params: { id: saveId } }) as Request & { params: Record<string, string> });
+  };
+  const instrList = rotFormation.attacking.map((s, i) => {
+    if (s.role === "LB" || s.role === "RB") return { variant: "fb_inverted" };
+    if (s.role === "ST") return { variant: "st_false9" };
+    if (s.role === "CM" && rotFormation.attacking.findIndex((x) => x.role === "CM") === i) return { press: "more" };
+    return null;
+  });
+  {
+    const tacticsPath = `/api/saves/${saveId}/tactics`;
+    instrTrack.putOk = (await instrCall("/api/saves/:id/tactics", tacticsPath, { slotInstructions: instrList })).status === 200;
+    // A formation without full-backs keeps only what still fits (the pressing, the ST variant).
+    await instrCall("/api/saves/:id/tactics", tacticsPath, { formation: "3-5-2" });
+    const f352 = formationForSimId("3-5-2");
+    const kept = (await plain().getTactics(saveId))?.slotInstructions ?? [];
+    instrTrack.sanitized = kept.every((ins, i) => !ins?.variant || ROLE_VARIANT_FITS(ins.variant, f352.attacking[i]!.role));
+    instrTrack.restored = (await instrCall("/api/saves/:id/tactics", tacticsPath, { formation: DEFAULT_SIM_FORMATION_ID, slotInstructions: instrList })).status === 200;
   }
 
   // Cup year per country at creation — used later to detect which cups got regenerated.
@@ -432,6 +471,22 @@ try {
       }
     }
 
+    // Instruções: man-mark the opponent's best outfield player on every human match day.
+    if (playerAnyFixtureToday) {
+      const fx = (await svc.getFixturesForDate(saveId, date)).find((f) => (f.home === playerSquadId || f.away === playerSquadId) && !f.played);
+      const opp = fx ? await svc.getSquadById(saveId, fx.home === playerSquadId ? fx.away : fx.home) : null;
+      if (opp) {
+        const outfield = opp.players.filter((p) => p.positions[0] !== "GK" && !isInjured(p, date) && !isSuspended(p));
+        const best = outfield.sort((a, b) => Player.computeOverallAvg(b) - Player.computeOverallAvg(a))[0];
+        const cmSlot = rotFormation.attacking.findIndex((s) => s.role === "CM");
+        if (best) {
+          instrTrack.markDays++;
+          const res = await instrCall("/api/saves/:id/match-marking", `/api/saves/${saveId}/match-marking`, { date, marks: [{ slot: cmSlot, targetId: best.id }] });
+          if (res.status === 200) { instrTrack.markOk++; instrTrack.pendingMarkDate = date; }
+        }
+      }
+    }
+
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -441,6 +496,10 @@ try {
     }
     days++;
     dayMsTotal += ms;
+    if (instrTrack.pendingMarkDate) {
+      if ((await plain().getMeta(saveId))?.matchMarking) instrTrack.markLeftOver++;
+      instrTrack.pendingMarkDate = null;
+    }
     for (const m of await plain().getInbox(saveId)) {
       if (m.category === "transfer") negoMessages.set(m.id, m.kind);
     }
@@ -1922,6 +1981,27 @@ try {
   }
   check(moraleTrack.talksSeen.size > 0, `moral: at least one talk request during the run (${moraleTrack.talksSeen.size})`);
   check(moraleTrack.resolved.size > 0, `moral: at least one promise resolved during the run (${moraleTrack.resolved.size})`);
+
+  // ── Instruções (`.claude/rules/game/player-instructions.md`) ──
+  console.log("\n── Instruções ──");
+  console.log(`  ${instrTrack.markDays} human match day(s); marking saved on ${instrTrack.markOk}; left over after the advance: ${instrTrack.markLeftOver}`);
+  check(instrTrack.putOk, "instruções: slot instructions saved through PUT /tactics");
+  check(instrTrack.sanitized, "instruções: a formation change keeps only the variants the new slots accept");
+  check(instrTrack.restored, "instruções: instructions restored with the 4-3-3 for the season");
+  check(instrTrack.markDays > 0 && instrTrack.markOk === instrTrack.markDays, `instruções: man-marking saved on every human match day (${instrTrack.markOk}/${instrTrack.markDays})`);
+  check(instrTrack.markLeftOver === 0, `instruções: match marking cleared by the next advance (${instrTrack.markLeftOver} left over)`);
+  {
+    // The AI never gets instructions: a simulated AI × AI fixture carries none, and no squad stores any.
+    const { computeMatchSimulationLineups } = await import("@/Domain/advanceDay/matchSimulationLineups");
+    const aiPair = allFiles.filter(({ squad }) => squad.id !== playerSquadId).slice(0, 2).map(({ squad }) => squad);
+    const sim = computeMatchSimulationLineups(
+      { id: "smoke-ai", date: (await plain().getMeta(saveId))!.currentDate!, competition: PLAYER_LEAGUE, round: 1, home: aiPair[0]!.id, away: aiPair[1]!.id, played: false } as import("@/types/calendarTypes").Fixture,
+      aiPair[0]!, aiPair[1]!, playerSquadId, await plain().getTactics(saveId), null, (await plain().getMeta(saveId))!.matchMarking,
+    );
+    const aiInstr = [sim.tactics.A, sim.tactics.B].some((t) => t.slotInstructions || t.manMarks);
+    const storing = allFiles.filter(({ squad }) => JSON.stringify(squad).includes("slotInstructions") || JSON.stringify(squad).includes("manMark"));
+    check(!aiInstr && storing.length === 0, `instruções: no AI club plays or stores instructions (${storing.length} squad file(s))`);
+  }
 
   // ── Convites (`.claude/rules/game/jobs.md`) ──
   // A forced offer from a club of the calendar-year league that ends first (another country) is
