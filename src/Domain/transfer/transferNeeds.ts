@@ -178,7 +178,7 @@ export function generateTransferNeeds(
 
 // ─── Candidate filtering ────────────────────────────────────────────────────
 
-function priceCapForTier(tier: TransferBudgetTier): number | null {
+export function priceCapForTier(tier: TransferBudgetTier): number | null {
   if (tier === "high") return null;
   if (tier === "mid") return PRICE_CAP_MID;
   return PRICE_CAP_LOW;

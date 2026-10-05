@@ -35,4 +35,73 @@ export interface MarketState {
   profiles: Record<string, SquadMarketProfile>;
   /** Human-managed sell list — persisted separately from AI profiles. */
   playerSellList: SellCandidate[];
+  /** Human players offered on loan (`.claude/rules/game/negotiation.md`). */
+  playerLoanList?: string[];
+  /** AI bids (transfer and loan) for the human's players, answered from the inbox. */
+  pendingBids?: MarketBid[];
+  /** Negotiation state per `<kind>:<playerId>` (rounds of the day, closed talks, last counter). */
+  talks?: Record<string, NegotiationTalk>;
+  /** Active loans involving the human club (in or out), for returns, wages and the UI. */
+  loans?: ActiveLoan[];
+}
+
+/** An AI club's bid for one of the human's players. */
+export interface MarketBid {
+  id: string;
+  kind: "transfer" | "loan";
+  playerId: string;
+  playerName: string;
+  clubId: string;
+  clubName: string;
+  date: string;
+  /** Last day the bid can be answered. */
+  expires: string;
+  /** Transfer fee (loan: the loan fee, usually 0), EUR. */
+  fee: number;
+  /** Transfer only: the most the club pays without a sell-on clause. */
+  maxFee?: number;
+  /** Transfer only: sell-on % the club gives the human club with this fee (0/10/20/30). */
+  sellOnPct?: number;
+  /** Loan only: share of the wage the borrower pays (0..1) and the return date. */
+  wageShare?: number;
+  until?: string;
+  /** The club already answered one human counter with its maximum. */
+  countered?: boolean;
+}
+
+export interface NegotiationRound {
+  by: "you" | "club";
+  fee?: number;
+  sellOnPct?: number;
+  wageShare?: number;
+  outcome: "offer" | "accepted" | "counter" | "rejected" | "insulted";
+}
+
+export interface NegotiationTalk {
+  playerId: string;
+  kind: "transfer" | "loan";
+  /** Day of `rounds` (resets on a new day). */
+  date: string;
+  rounds: number;
+  /** Talks closed until this date (inclusive) after a lowball. */
+  closedUntil?: string;
+  /** Last counter of the club (valid on `date`). */
+  counter?: { fee: number; sellOnPct?: number; wageShare?: number };
+  history: NegotiationRound[];
+}
+
+export interface ActiveLoan {
+  playerId: string;
+  playerName: string;
+  fromClubId: string;
+  fromClubName: string;
+  toClubId: string;
+  toClubName: string;
+  until: string;
+  /** Share of the wage the borrower pays, 0..1. */
+  wageShare: number;
+  /** Weekly wage of the contract. */
+  wage: number;
+  fee: number;
+  start: string;
 }

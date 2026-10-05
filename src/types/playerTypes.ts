@@ -131,6 +131,32 @@ export interface RosterPlayer {
   reborn?: RebornMark;
   /** Closed seasons (and partial stints), oldest first (`.claude/rules/game/history.md`). */
   history?: PlayerHistoryRow[];
+  /**
+   * Sell-on clause (`.claude/rules/game/negotiation.md`): `pct`% of the next fee he leaves for goes
+   * to `clubId`. Paid and cleared on that transfer.
+   */
+  sellOn?: SellOnClause;
+  /**
+   * On loan at the squad he is in (`.claude/rules/game/negotiation.md`). The contract stays the
+   * parent club's; the borrowing club pays `wageShare` (0..1) of the wage. Returns at `until`.
+   */
+  loan?: PlayerLoan;
+}
+
+export interface SellOnClause {
+  clubId: string;
+  clubName: string;
+  /** 10, 20 or 30. */
+  pct: number;
+}
+
+export interface PlayerLoan {
+  fromClubId: string;
+  fromClubName: string;
+  /** ISO date the player goes back. */
+  until: string;
+  /** Share of the wage the borrowing club pays, 0..1. */
+  wageShare: number;
 }
 
 export interface ClubFinances {
@@ -354,4 +380,6 @@ export interface PlayerHistoryRow {
   partial?: true;
   /** Partial row whose stats are still inside the current `seasonLog` (cleared at the next rollover). */
   open?: true;
+  /** Stint on loan (`.claude/rules/game/negotiation.md`). */
+  loan?: true;
 }

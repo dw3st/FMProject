@@ -1,0 +1,139 @@
+import { addDays } from "@/Domain/dates";
+import { Player } from "@/Domain/Player";
+import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf } from "@/Domain/aiFinance/aiClubFinance";
+import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
+import { playerMatchesBand, playerOverallRating, priceCapForTier, teamAvgRating } from "@/Domain/transfer/transferNeeds";
+import { buildAiLoanBid } from "@/Domain/negotiation/loans";
+import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiation";
+import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import type { MarketBid, SellCandidate, SquadMarketProfile } from "@/types/transferMarketTypes";
+
+const B = NEGOTIATION.BID;
+/** Rating slack around a need's band when an AI club considers a player the human listed. */
+const BAND_SLACK = 0.5;
+
+/** A transfer bid of `buyer` for `player`, or null when it cannot afford a fair price. */
+export function buildAiTransferBid(args: {
+  id: string;
+  player: RosterPlayer;
+  buyer: Squad;
+  date: string;
+  rng: () => number;
+}): MarketBid | null {
+  const { player, buyer, rng } = args;
+  if (buyer.players.length >= MAX_SQUAD) return null;
+  const value = new Player(playerOverallRating(player), player.age).price;
+  const cap = priceCapForTier(transferBudgetTierOf(buyer));
+  const maxFee = roundFeeDown(Math.min(aiTransferBudgetOf(buyer), cap ?? Infinity, value * B.MAX_RATIO));
+  if (maxFee <= 0 || maxFee < value * B.MIN_MAX_RATIO) return null;
+  if (!passesWageGate(aiClubFinance(buyer), estimateWeeklyWage(player, wageFactorOf(buyer)), Math.min(maxFee, value))) return null;
+  const sellOnPct = rng() < B.SELL_ON_CHANCE ? (rng() < 0.5 ? 10 : 20) : 0;
+  const mult = 1 + sellOnValueFraction(sellOnPct, player.age);
+  const opening = roundFeeDown(Math.min(value * (B.FEE_MIN + rng() * B.FEE_SPREAD), maxFee) / mult);
+  if (opening <= 0) return null;
+  return {
+    id: args.id,
+    kind: "transfer",
+    playerId: player.id,
+    playerName: player.name,
+    clubId: buyer.id,
+    clubName: buyer.name,
+    date: args.date,
+    expires: addDays(args.date, B.VALID_DAYS),
+    fee: opening,
+    maxFee,
+    sellOnPct,
+  };
+}
+
+function hasBid(bids: MarketBid[], playerId: string, kind: MarketBid["kind"]): boolean {
+  return bids.some((b) => b.playerId === playerId && b.kind === kind);
+}
+
+/**
+ * The day's new AI bids for the human club's players (`.claude/rules/game/negotiation.md`):
+ * - one transfer bid for a random sell-listed player, from a club whose needs cover his role;
+ * - now and then (`UNLISTED_CHANCE`), a bid of a bigger club for the human's best player;
+ * - per loan-listed player (`LOAN.BID_CHANCE`), a loan bid from a club with a `cover_need` there.
+ * Never a second bid of the same kind for a player with one pending; at most `MAX_PENDING` pending.
+ */
+export function generateBidsForHuman(args: {
+  date: string;
+  rng: () => number;
+  humanSquad: Squad;
+  squads: ReadonlyMap<string, Squad>;
+  profiles: Record<string, SquadMarketProfile>;
+  sellList: SellCandidate[];
+  loanList: string[];
+  pending: MarketBid[];
+  seasonEndOf: (squad: Squad) => string;
+  newId: () => string;
+}): MarketBid[] {
+  const { rng, humanSquad, squads, profiles, date } = args;
+  const out: MarketBid[] = [];
+  const all = () => [...args.pending, ...out];
+  const room = () => all().length < B.MAX_PENDING;
+  const owned = (id: string) => humanSquad.players.find((p) => p.id === id && !p.loan) ?? null;
+  const buyersFor = (player: RosterPlayer, needKind?: "cover_need") =>
+    Object.entries(profiles)
+      .filter(([id]) => id !== humanSquad.id && squads.has(id))
+      .filter(([, prof]) => prof.needs?.some((n) => playerMatchesBand(player, n.position) && (!needKind || n.intentType === needKind)))
+      .map(([id]) => squads.get(id)!);
+
+  // Listed player: one transfer bid per day.
+  const listed = args.sellList.map((c) => owned(c.playerId)).filter((p): p is RosterPlayer => !!p && !hasBid(all(), p.id, "transfer"));
+  if (listed.length > 0 && room()) {
+    const player = listed[Math.floor(rng() * listed.length)]!;
+    const rating = playerOverallRating(player);
+    const buyers = buyersFor(player).filter((b) => {
+      const need = profiles[b.id]!.needs.find((n) => playerMatchesBand(player, n.position))!;
+      return rating >= need.targetMin - BAND_SLACK && rating <= need.targetMax + BAND_SLACK;
+    });
+    if (buyers.length > 0) {
+      const buyer = buyers[Math.floor(rng() * buyers.length)]!;
+      const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng });
+      if (bid) out.push(bid);
+    }
+  }
+
+  // Unlisted standout: a bigger club tries its luck.
+  if (room() && rng() < B.UNLISTED_CHANCE) {
+    const free = humanSquad.players.filter((p) => !p.loan && !hasBid(all(), p.id, "transfer") && !args.sellList.some((c) => c.playerId === p.id));
+    const best = free.sort((a, b) => playerOverallRating(b) - playerOverallRating(a))[0];
+    if (best) {
+      const humanAvg = teamAvgRating(humanSquad);
+      const buyers = buyersFor(best).filter((b) => transferBudgetTierOf(b) === "high" && teamAvgRating(b) > humanAvg);
+      if (buyers.length > 0) {
+        const buyer = buyers[Math.floor(rng() * buyers.length)]!;
+        const bid = buildAiTransferBid({ id: args.newId(), player: best, buyer, date, rng });
+        if (bid) out.push(bid);
+      }
+    }
+  }
+
+  // Loan-listed players.
+  for (const id of args.loanList) {
+    if (!room()) break;
+    const player = owned(id);
+    if (!player || hasBid(all(), id, "loan")) continue;
+    if (rng() >= NEGOTIATION.LOAN.BID_CHANCE) continue;
+    const buyers = buyersFor(player, "cover_need");
+    if (buyers.length === 0) continue;
+    const buyer = buyers[Math.floor(rng() * buyers.length)]!;
+    const bid = buildAiLoanBid({
+      id: args.newId(), player, playerWage: currentWage(player, wageFactorOf(humanSquad)), buyer, date,
+      seasonEnd: args.seasonEndOf(buyer), rng,
+    });
+    if (bid) out.push(bid);
+  }
+  return out;
+}
+
+/** Bids still answerable on `date` whose player is still at the human club. */
+export function liveBids(bids: MarketBid[] | undefined, date: string, humanSquad: Squad | null): MarketBid[] {
+  if (!humanSquad) return [];
+  const ids = new Set(humanSquad.players.filter((p) => !p.loan).map((p) => p.id));
+  return (bids ?? []).filter((b) => b.expires >= date && ids.has(b.playerId));
+}
