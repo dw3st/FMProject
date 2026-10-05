@@ -70,3 +70,8 @@ mensagem na inbox para cada aposentado do clube do jogador, e um caminho forçad
 ## Livres: sorteio uma vez por ano
 
 O pool de livres só é sorteado uma vez por ano de mundo (`meta.freeAgentsRetiredYear`, `processRetirements({ processFreeAgents })`), não a cada virada de país; senão quase todo livre de 33+ se aposentaria na primeira temporada. Registros de livres têm `freeAgent: true` em `retired.json`. Erros `youthFull`/`offerClosed` da rota de oferta têm texto traduzido na `InboxScreen`.
+
+## Personalidade (Etapa 26)
+
+O renascido herda a personalidade do original (`personalityOf` usa `reborn.fromId`). Ver
+`.claude/rules/game/personality.md`.

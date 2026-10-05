@@ -150,3 +150,9 @@ por isso `TACKLE_WON_MULT` é baixo e `DRIBBLE_BASE` alto.
 **Limitações:** sem falta fora de desarme/drible/duelo (ex.: puxão sem bola), sem lei da vantagem,
 sem barreira; o tiro livre perigoso usa o layout fixo da formação; o expulso é sempre substituído
 "por ninguém" (o time não sacrifica um jogador para pôr um goleiro reserva).
+
+## Personalidade (Etapa 26)
+
+`FoulContext.temperament` / `CardContext.temperament` (t do infrator, `GamePlayer.temperament`): falta × (1 + 0,35 t),
+amarelo × (1 + 0,2 t), vermelho direto × (1 + 0,4 t) ÷ `TEMPERAMENT_CARD_NORM` (1). t = 0 / ausente devolve
+exatamente o de antes. Override por time em `PersonalityMatchConfig.ts`. Ver `.claude/rules/game/personality.md`.

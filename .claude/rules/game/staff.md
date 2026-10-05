@@ -94,3 +94,8 @@ multiplicadores nas funções puras (recuperação, lesão, DP), rotas (dono do 
 candidato fora do mercado, contratar/demitir, linha `staff` do extrato toda segunda).
 `scripts/season-rollover-smoke.ts` tem a seção "Equipe técnica": o clube do jogador termina com as 3
 funções, nenhum clube da IA grava staff, e há uma linha `staff` em toda segunda com `wages`.
+
+## Personalidade (Etapa 26)
+
+`obscurePlayer` também grava `personalityView` (traços ± ruído × 4, temperamento e profissionalismo "?" com ruído
+≥ 1). Ver `.claude/rules/game/personality.md`.

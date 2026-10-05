@@ -119,3 +119,8 @@ Ultima rodada (2026-10-01): todas as checagens passaram; 77 de 83 clubes da IA d
   mantida.
 - **Carreira nova começa com a base vazia;** a primeira safra chega na primeira virada do país.
 - Promover um jovem sem contrato (não deveria existir) devolve 409 `noContract` em vez de quebrar.
+
+## Personalidade (Etapa 26)
+
+Os jovens da safra têm personalidade pelo próprio id; a DP da base × profissionalismo. Ver
+`.claude/rules/game/personality.md`.

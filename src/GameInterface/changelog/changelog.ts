@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.2",
+    date: "2026-10-06",
+    items: [
+      { pt: "Personalidade dos jogadores: todo jogador tem ambição, lealdade, profissionalismo e temperamento, mostrados em faixas na ficha (com um resumo ao lado do nome). De outros clubes, o que você vê depende do seu olheiro-chefe.", en: "Player personality: every player has ambition, loyalty, professionalism and temperament, shown as bands on the player screen (with a summary next to the name). For other clubs, what you see depends on your chief scout." },
+      { pt: "O profissional evolui um pouco mais rápido e segura a forma por mais tempo; o desleixado, o contrário.", en: "Professionals develop a little faster and keep their level longer; sloppy players the opposite." },
+      { pt: "Cabeças quentes fazem mais faltas e levam mais cartões; os calmos, menos.", en: "Hot-heads commit more fouls and pick up more cards; calm players fewer." },
+      { pt: "A moral reage à personalidade: o pavio curto reage mais forte, o ambicioso cobra minutos e um clube maior, o leal perdoa promessas quebradas mas sente mais ser posto à venda.", en: "Morale follows personality: short fuses react more strongly, ambitious players want minutes and a bigger club, loyal ones forgive broken promises but hate being put up for sale." },
+      { pt: "Salários e transferências: o ambicioso pede mais e pode recusar um clube bem menor, o leal aceita menos para renovar com o clube de tantos anos e para jogar no país dele; a renovação e a contratação explicam o pedido.", en: "Wages and transfers: ambitious players ask for more and may refuse a much smaller club, loyal ones accept less to renew with their long-time club or to play in their own country; renewals and signings explain the demand." },
+    ],
+  },
+  {
     version: "4.1.2",
     date: "2026-10-06",
     items: [
@@ -854,6 +865,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Personalidade dos jogadores: ambição, lealdade, profissionalismo e temperamento mudando a moral, a evolução, a disciplina e os contratos", en: "Player personality: ambition, loyalty, professionalism and temperament changing morale, development, discipline and contracts" },
   { pt: "Olheiros de verdade: missões de observação, relatórios que revelam os jogadores aos poucos e promessas de fora para a base", en: "Real scouting: scouting missions, reports that reveal players bit by bit, and outside prospects for your academy" },
 ];

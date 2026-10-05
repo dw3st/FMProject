@@ -143,3 +143,9 @@ Detalhes em `.claude/rules/game/transfer-windows.md`.
   `prefers_rival` na rota.
 - **Pré-contrato (D2):** `POST /pre-contracts`, `market.preContracts`, chegada no passo 8a da virada do país do clube
   de origem.
+
+## Personalidade (Etapa 26)
+
+`respondToOffer({ ..., buyer })`: o score do vendedor IA ganha `+0,10 × t_ambição` com comprador de tier maior e
+`−0,10 × max(0, t_lealdade)`; a contraproposta usa o mesmo score. Compra, livre e pré-contrato podem ser recusados
+por `smallerClub`. Ver `.claude/rules/game/personality.md`.

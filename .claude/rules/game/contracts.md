@@ -116,3 +116,10 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
   Medido com janelas (`market-sim.ts 3`): elenco médio 27,0 → 25,1 → 24,4; open ≥ 94% em todo tier.
 - **Pré-contrato:** na virada do país do clube de origem, o passo **8a** (antes das expirações e da renovação da IA)
   leva os jogadores com pré-contrato ao clube do jogador com o contrato combinado (`applyDuePreContracts`).
+
+## Personalidade (Etapa 26)
+
+`contractDemand(..., ctx)` = `demandBreakdown(...).demand`: ambição ×(1 ± 0,08), lealdade na renovação no próprio
+clube (até −10% com 4 temporadas), compatriota (até −5%), clube menor (+10% × ambição por degrau de tier natural) e a
+recusa `smallerClub` (ambição ≥ 17, 2+ degraus). `renewalContract` (o que a IA paga) aplica ambição/lealdade/
+compatriota. Ver `.claude/rules/game/personality.md`.

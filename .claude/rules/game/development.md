@@ -251,3 +251,10 @@ This system guarantees:
 * Low complexity
 
 ---
+
+---
+
+## Personalidade (Etapa 26)
+
+Profissionalismo multiplica a DP de partida, treino e base (×0,92..×1,08) e o declínio por idade (×1,1..×0,9).
+Ver `.claude/rules/game/personality.md`.
