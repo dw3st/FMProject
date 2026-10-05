@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.7",
+    date: "2026-10-05",
+    items: [
+      { pt: "Negociação: o clube vendedor pode fazer uma contraproposta. Você tem 3 rodadas por dia por jogador, e uma oferta muito baixa encerra a conversa por duas semanas.", en: "Negotiation: the selling club can make a counter-offer. You get 3 rounds a day per player, and a very low offer ends the talks for two weeks." },
+      { pt: "Cláusula de venda futura: ofereça 10%, 20% ou 30% de uma venda futura para pagar menos agora, ou peça a cláusula quando vender. Ela é paga na próxima venda do jogador.", en: "Sell-on clause: offer 10%, 20% or 30% of a future sale to pay less now, or ask for one when you sell. It is paid on the player's next sale." },
+      { pt: "Os jogadores que você coloca à venda não são mais vendidos sozinhos: os clubes mandam propostas para a caixa de entrada e você aceita, recusa ou contrapropõe.", en: "Players you list for sale are no longer sold on their own: clubs send proposals to your inbox and you accept, refuse or counter." },
+      { pt: "Empréstimos: peça jogadores emprestados pagando parte do salário, ou coloque os seus para empréstimo. Eles voltam sozinhos no fim do prazo, e o elenco mostra quem está emprestado.", en: "Loans: borrow players paying part of their wage, or offer yours on loan. They come back on their own when the loan ends, and the squad shows who is on loan." },
+    ],
+  },
+  {
     version: "3.6",
     date: "2026-10-04",
     items: [

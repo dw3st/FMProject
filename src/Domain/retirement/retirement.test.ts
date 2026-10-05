@@ -57,6 +57,15 @@ describe("processRetirements", () => {
   const sq = squad(players);
   const levels = buildWorldLevels([sq]);
 
+  test("a player on loan does not retire at the borrower (he retires with his club)", () => {
+    const onLoan = { ...mk("loaned", "CB", 3, 41), loan: { fromClubId: "x", fromClubName: "X", until: "2027-05-31", wageShare: 1 } };
+    const r = processRetirements({
+      saveId: "s", year: 2027, date: "2027-06-01", squads: [squad([...players, onLoan])], freeAgents: [], levels, humanSquadId: "s1",
+    });
+    expect(r.squads[0]!.players.some((p) => p.id === "loaned")).toBe(true);
+    expect(r.retired.some((x) => x.id === "loaned")).toBe(false);
+  });
+
   test("age >= 40 retires, young stay; star in the top is world class with a pending offer", () => {
     const free: FreeAgent[] = [
       { player: mk("fa-old", "CM", 4, 40), since: "2027-01-01" },

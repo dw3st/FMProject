@@ -56,8 +56,17 @@ export function currentWage(p: RosterPlayer, factor: number): number {
   return p.contract?.wage ?? playerWeeklyWage(p, factor);
 }
 
+/**
+ * What THIS club pays a player per week: the full wage, or — for a player on loan here
+ * (`.claude/rules/game/negotiation.md`) — the agreed share of it.
+ */
+export function clubWage(p: RosterPlayer, factor: number): number {
+  const wage = currentWage(p, factor);
+  return p.loan ? Math.round(wage * p.loan.wageShare) : wage;
+}
+
 export function squadWeeklyWages(players: RosterPlayer[], factor: number): number {
-  return players.reduce((sum, p) => sum + currentWage(p, factor), 0);
+  return players.reduce((sum, p) => sum + clubWage(p, factor), 0);
 }
 
 /**

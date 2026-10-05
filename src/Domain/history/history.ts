@@ -85,9 +85,13 @@ function appendHistoryRow(player: RosterPlayer, row: PlayerHistoryRow | null): R
  * league archive, rankings, stars and retirement read its totals; the next season row subtracts
  * the open partials instead (`.claude/rules/game/history.md`).
  */
-export function closePartialSeason(player: RosterPlayer, club: HistoryClub, season: string): RosterPlayer {
+export function closePartialSeason(
+  player: RosterPlayer, club: HistoryClub, season: string, opts: { loan?: boolean } = {},
+): RosterPlayer {
   const row = historyRowFromLog(player.seasonLog, club, season, [], player.history);
-  return row ? appendHistoryRow(player, { ...row, partial: true, open: true }) : player;
+  return row
+    ? appendHistoryRow(player, { ...row, partial: true, open: true, ...(opts.loan ? { loan: true as const } : {}) })
+    : player;
 }
 
 /**
@@ -128,7 +132,9 @@ export function closeSeasonForPlayers(
 ): RosterPlayer[] {
   const titles = titlesByClub[club.squadId] ?? [];
   return players.map((p) => {
-    const row = historyRowFromLog(logs[p.id], club, season, titles, p.history);
+    const base = historyRowFromLog(logs[p.id], club, season, titles, p.history);
+    // A player on loan at the rollover: his row at the borrowing club is a loan stint.
+    const row = base && p.loan ? { ...base, loan: true as const } : base;
     const history = settleOpenPartials(p.history, titlesByClub);
     const settled = history === p.history ? p : { ...p, history };
     return appendHistoryRow(settled, row);

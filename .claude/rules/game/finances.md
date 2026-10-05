@@ -121,6 +121,10 @@ teto do fator) se afasta desse número.
 
 ## 2. Extrato (`ledger`)
 
+- Etapa 21 (`.claude/rules/game/negotiation.md`): `transfer_in`/`transfer_out` com `ref.stage = "sell_on"`
+  (cláusula de venda futura recebida, ou paga pelo jogador ao vender quem tinha cláusula) ou `"loan_fee"` (taxa de
+  empréstimo). A linha semanal `wages` soma a parte do salário dos jogadores emprestados que o clube paga (o
+  emprestado no elenco conta só a parte combinada; o cedido, o resto).
 - `saves/{id}/ledger/{temporada}.json`: lista de `LedgerEntry { date, kind, amount, label, ref? }`
   (`amount` com sinal). `kind`: `broadcasting`, `commercial`, `wages`, `operational`, `staff`, `gate`,
   `prize`, `transfer_in`, `transfer_out`, `club_change`. A temporada do extrato é o `year` da meta da liga do

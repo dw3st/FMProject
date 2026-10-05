@@ -3,6 +3,7 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 
 /**
@@ -34,8 +35,16 @@ export const contractRoutes = {
       const ref = await saveService.resolveSquadId(saveId, meta.clubId);
       if (!ref) return Response.json({ error: "squad not found" }, { status: 404 });
       const squad = await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug);
-      const player = squad?.players.find((p) => p.id === playerId);
-      if (!squad || !player) return Response.json({ error: "player not found" }, { status: 404 });
+      if (!squad) return Response.json({ error: "player not found" }, { status: 404 });
+      // One of ours out on loan (`.claude/rules/game/negotiation.md`): the contract is still ours,
+      // written into the borrowing club's squad where he plays.
+      const market = await saveService.getMarket(saveId);
+      const out = (market?.loans ?? []).find((l) => l.playerId === playerId && l.fromClubId === squad.id);
+      const holder = out ? await saveService.getSquadById(saveId, out.toClubId) : squad;
+      const player = holder?.players.find((p) => p.id === playerId);
+      if (!holder || !player) return Response.json({ error: "player not found" }, { status: 404 });
+      // A borrowed player keeps his parent club's contract.
+      if (!out && player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const check = evaluateContractOffer({ wage, years }, player, squad, date);
@@ -49,10 +58,15 @@ export const contractRoutes = {
         return Response.json({ error: "tooManyYears", demand: check.demand }, { status: 400 });
       }
       const contract = { until: addYearsIso(player.contract?.until ?? seasonEnd, years), wage };
-      await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
-        ...squad,
-        players: squad.players.map((p) => (p.id === playerId ? { ...p, contract } : p)),
-      });
+      if (out) {
+        await saveService.saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === playerId ? { ...p, contract } : p)) });
+        await saveService.saveMarket(saveId, { ...market!, loans: (market!.loans ?? []).map((l) => (l === out ? { ...l, wage } : l)) });
+      } else {
+        await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
+          ...squad,
+          players: squad.players.map((p) => (p.id === playerId ? { ...p, contract } : p)),
+        });
+      }
       await emitInboxMessage(
         saveId,
         buildContractMessage({ date, kind: "renewed", players: [{ id: player.id, name: player.name }], until: contract.until }),
@@ -124,7 +138,7 @@ export const contractRoutes = {
       const pool = await saveService.getFreeAgents(saveId);
       const agent = pool.find((f) => f.player.id === playerId);
       if (!agent) return Response.json({ error: "player not found" }, { status: 404 });
-      if (squad.players.length >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+      if ((await humanRosterSize(saveService, saveId, squad)) >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const check = evaluateContractOffer({ wage, years }, agent.player, squad, date);

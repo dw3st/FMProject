@@ -19,8 +19,8 @@ const statusConfig: Record<TransferStatus, { icon: ComponentType<SVGProps<SVGSVG
   rejected: { icon: XCircle,      labelKey: "transfers.rejected", class: "text-destructive bg-destructive/20 border-destructive/30" },
 };
 
-const KNOWN_REJECT_CODES = new Set(["squadDepth", "playerImportant", "offerTooLow", "clubRejected"]);
-const KNOWN_ACCEPT_CODES = new Set(["strongOffer", "willingToSell", "financial"]);
+const KNOWN_REJECT_CODES = new Set(["squadDepth", "playerImportant", "offerTooLow", "clubRejected", "insulted"]);
+const KNOWN_ACCEPT_CODES = new Set(["strongOffer", "willingToSell", "financial", "bidAccepted"]);
 
 /** Translate a reason returned by the engine. Falls back to the raw string for legacy records. */
 export function translateTransferReason(t: (key: string, opts?: Record<string, unknown>) => string, reason: string | undefined, accepted: boolean): string {

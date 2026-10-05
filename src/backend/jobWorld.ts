@@ -253,7 +253,11 @@ export async function releaseHumanClub(
     ]);
   }
   const market = await service.getMarket(saveId);
-  if (market?.playerSellList?.length) await service.saveMarket(saveId, { ...market, playerSellList: [] });
+  // The human's lists, bids, talks and clauses belong to the club he leaves (`.claude/rules/game/negotiation.md`);
+  // active loans stay in `loans` so they still end (and return) on their date.
+  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length)) {
+    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [] });
+  }
   // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
   const retired = await service.getRetired(saveId);
   if (retired.some((r) => r.squadId === args.squadId && r.rebornOffer === "pending")) {
@@ -316,7 +320,11 @@ export async function takeOverClub(
 
   // The new club starts with an empty sell list.
   const market = await service.getMarket(saveId);
-  if (market?.playerSellList?.length) await service.saveMarket(saveId, { ...market, playerSellList: [] });
+  // The human's lists, bids, talks and clauses belong to the club he leaves (`.claude/rules/game/negotiation.md`);
+  // active loans stay in `loans` so they still end (and return) on their date.
+  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length)) {
+    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [] });
+  }
 
   // Board and fans at 60 with this club's objective (mid-season: from the current position).
   const catalog = await getLeagueData();

@@ -39,6 +39,11 @@ export function computeAdvanceDayMoney(args: {
   homeFixturesToday: PlayerHomeFixtureToday[];
   /** Stadium fill from the club's fans (`stadiumFillRate`); absent = the default `GATE.FILL_RATE`. */
   fillRate?: number;
+  /**
+   * Wages the club still pays for its players out on loan (`parentLoanWages`,
+   * `.claude/rules/game/negotiation.md`), added to the weekly wages line.
+   */
+  loanedOutWages?: number;
 }): LedgerEntry[] {
   const { currentDate, playerSquad, homeFixturesToday, fillRate } = args;
   if (!playerSquad) return [];
@@ -48,7 +53,7 @@ export function computeAdvanceDayMoney(args: {
   const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
   if (dayOfWeek === 1) {
     const weeklyCommercial = Math.round((playerSquad.finances?.commercial ?? 0) / 52);
-    const weeklyWages = squadWeeklyWages(playerSquad.players, wageFactorOf(playerSquad));
+    const weeklyWages = squadWeeklyWages(playerSquad.players, wageFactorOf(playerSquad)) + Math.max(0, args.loanedOutWages ?? 0);
     const weeklyOperational = weeklyOperationalCost(playerSquad);
     entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
     entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });

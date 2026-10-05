@@ -199,5 +199,6 @@ export function pruneFreeAgents(pool: FreeAgent[], date: string): FreeAgent[] {
 
 /** A released player enters the pool healthy and with no club/contract. */
 export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
-  return { player: { ...player, squadId: "", contract: undefined, injury: undefined }, since: date };
+  // A sell-on clause or a loan ends with the contract (`.claude/rules/game/negotiation.md`).
+  return { player: { ...player, squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined }, since: date };
 }

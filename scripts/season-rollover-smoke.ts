@@ -181,6 +181,23 @@ try {
       assistantRotation: true,
     });
   }
+  // Negociação (`.claude/rules/game/negotiation.md`): two bench players on the sell list and one on
+  // the loan list, so AI clubs send bids to the inbox during the run (never sold on their own).
+  const negoListed: { sale: string[]; loan: string[] } = { sale: [], loan: [] };
+  const negoMessages = new Map<string, string>(); // inbox message id -> kind
+  {
+    const sq = (await plain().getSquadById(saveId, playerSquadId))!;
+    const xi = new Set(autoLineupDefaultFormation(sq));
+    const bench = sq.players.filter((p) => !xi.has(p.id) && p.positions[0] !== "GK");
+    negoListed.sale = bench.slice(0, 2).map((p) => p.id);
+    negoListed.loan = bench.slice(2, 3).map((p) => p.id);
+    const mk = (await plain().getMarket(saveId))!;
+    await plain().saveMarket(saveId, {
+      ...mk,
+      playerSellList: negoListed.sale.map((playerId) => ({ playerId, priority: 1 })),
+      playerLoanList: negoListed.loan,
+    });
+  }
 
   // Cup year per country at creation — used later to detect which cups got regenerated.
   const cupYearsStart = new Map<string, number>();
@@ -366,6 +383,9 @@ try {
     }
     days++;
     dayMsTotal += ms;
+    for (const m of await plain().getInbox(saveId)) {
+      if (m.category === "transfer") negoMessages.set(m.id, m.kind);
+    }
     {
       const mb = await plain().getMeta(saveId);
       if (mb?.unemployed) boardTrack.ended = true;
@@ -1443,6 +1463,184 @@ try {
     check(!!born && born.age === 17 && !!born.contract, "aposentadoria: the reborn player is a 17-year-old with a contract in the academy");
     check(!!born && (await plain().getRetired(saveId)).find((r) => r.id === "smoke_legend")?.rebornOffer === "accepted",
       "aposentadoria: the offer is marked accepted");
+  }
+
+  // ── Negociação (`.claude/rules/game/negotiation.md`) ──
+  // Natural AI bids for the listed players during the run; then, through the routes: a purchase
+  // with a counter-offer, a sale from an inbox bid (paying the clause the player carried), a loan in
+  // and a loan out that both go back on their date, and a sell-on clause of the human paid on a resale.
+  console.log("\n── Negociação ──");
+  {
+    const kinds = [...negoMessages.values()];
+    const count = (k: string) => kinds.filter((x) => x === k).length;
+    console.log(`  inbox: ${count("bid")} transfer bid(s), ${count("loan_bid")} loan bid(s) for the listed players`);
+    check(count("bid") > 0, `negociação: AI clubs bid for the listed players through the inbox (${count("bid")})`);
+    const sqN = (await plain().getSquadById(saveId, playerSquadId))!;
+    check(negoListed.sale.every((id) => sqN.players.some((p) => p.id === id)) || count("bid") > 0,
+      "negociação: listed players are never sold without the player's answer");
+
+    const { apiRoutes } = await import("@/backend/routes");
+    const { devAutoLogin } = await import("@/backend/auth/AuthService");
+    const { session } = devAutoLogin("smoke-reborn@test.local");
+    const call = async (key: string, path: string, params: Record<string, string>, body?: unknown) => {
+      const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      const res = await handler(Object.assign(
+        new Request(`http://localhost${path}`, {
+          method: body === undefined ? "GET" : "POST",
+          headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+          ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        }),
+        { params },
+      ));
+      return { status: res.status, body: (await res.json().catch(() => ({}))) as Record<string, unknown> };
+    };
+    const { Player: PlayerN } = await import("@/Domain/Player");
+    const { playerOverallRating: ratingN, teamAvgRating: avgN } = await import("@/Domain/transfer/transferNeeds");
+    const { addDays: addDaysN } = await import("@/Domain/dates");
+    const metaN = (await plain().getMeta(saveId))!;
+    const dateN = metaN.currentDate!;
+    // Plenty of money for the forced deals (the ledger is checked elsewhere; this only moves budget).
+    await plain().saveSquadById(saveId, { ...sqN, finances: { ...sqN.finances!, budget: (sqN.finances?.budget ?? 0) + 500_000_000 } });
+    // Keep the ledger summing to the balance (section "Convites" checks it again).
+    await plain().appendLedger(saveId, (await plain().getLeagueMeta(saveId, metaN.leagueSlug))!.year, [
+      { date: dateN, kind: "prize", amount: 500_000_000, label: "Smoke: negotiation money", ref: { stage: "board_bonus" } },
+    ]);
+
+    // 1. Purchase with a counter-offer.
+    const aiClubs = (await plain().getSquadsInLeague(saveId, metaN.leagueSlug)).filter((s) => s.id !== playerSquadId && s.players.length >= 22);
+    let bought: { id: string; from: string } | null = null;
+    for (const club of aiClubs) {
+      const avg = avgN(club);
+      const target = club.players.find((p) => !p.loan && p.positions[0] !== "GK" && p.age <= 30 && Math.abs(ratingN(p) - avg) < 0.25);
+      if (!target) continue;
+      const value = new PlayerN(ratingN(target), target.age).price;
+      const first = await call("/api/saves/:saveId/transfers", `/api/saves/${saveId}/transfers`, { saveId },
+        { playerId: target.id, fromSquadId: club.id, fee: Math.round(value * 0.85 / 100_000) * 100_000, sellOnPct: 10 });
+      const resp = first.body.response as { kind: string; counterFee?: number } | undefined;
+      if (resp?.kind !== "counter") continue;
+      const second = await call("/api/saves/:saveId/transfers", `/api/saves/${saveId}/transfers`, { saveId },
+        { playerId: target.id, fromSquadId: club.id, fee: resp.counterFee, sellOnPct: 10 });
+      check((second.body.response as { kind: string } | undefined)?.kind === "accept",
+        `negociação: counter of ${target.name} (${club.name}) accepted at ${resp.counterFee}`);
+      bought = { id: target.id, from: club.id };
+      break;
+    }
+    check(!!bought, "negociação: a purchase went through a counter-offer");
+    const mine1 = (await plain().getSquadById(saveId, playerSquadId))!;
+    const boughtPlayer = bought ? mine1.players.find((p) => p.id === bought!.id) : undefined;
+    check(!!boughtPlayer?.sellOn && boughtPlayer.sellOn.clubId === bought?.from && boughtPlayer.sellOn.pct === 10,
+      "negociação: the bought player carries the seller's 10% sell-on clause");
+
+    // 2. Sale from an inbox bid: the bought player, to another club, asking a 20% clause. The 10%
+    //    clause he carried goes to his old club.
+    const liveBids = ((await call("/api/saves/:saveId/negotiation", `/api/saves/${saveId}/negotiation`, { saveId })).body.bids ?? []) as import("@/types/transferMarketTypes").MarketBid[];
+    console.log(`  live bids at the end of the run: ${liveBids.length}`);
+    if (boughtPlayer && bought) {
+      const buyer = aiClubs.find((c) => c.id !== bought!.from)!;
+      await plain().saveSquadById(saveId, { ...(await plain().getSquadById(saveId, buyer.id))!, aiTransferBudget: 200_000_000 });
+      const mkB = (await plain().getMarket(saveId))!;
+      const bid = {
+        id: "smoke-bid", kind: "transfer" as const, playerId: boughtPlayer.id, playerName: boughtPlayer.name,
+        clubId: buyer.id, clubName: buyer.name, date: dateN, expires: addDaysN(dateN, 5), fee: 10_000_000, maxFee: 40_000_000, sellOnPct: 0,
+      };
+      await plain().saveMarket(saveId, { ...mkB, pendingBids: [...(mkB.pendingBids ?? []), bid] });
+      const oldClubBudget = aiTransferBudgetOf((await plain().getSquadById(saveId, bought.from))!);
+      const counter = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" },
+        { action: "counter", fee: 30_000_000, sellOnPct: 20 });
+      check(counter.status === 200, `negociação: counter on an inbox bid answered (${String(counter.body.status)})`);
+      const sale = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" }, { action: "accept" });
+      check(sale.status === 200 && sale.body.status === "sold", `negociação: inbox bid accepted, ${boughtPlayer.name} sold to ${buyer.name}`);
+      const sold = (await plain().getSquadById(saveId, buyer.id))!.players.find((p) => p.id === boughtPlayer.id);
+      check(sold?.sellOn?.clubId === playerSquadId && sold.sellOn.pct === 20, "negociação: the human keeps a 20% sell-on clause on the sold player");
+      check(aiTransferBudgetOf((await plain().getSquadById(saveId, bought.from))!) > oldClubBudget,
+        "negociação: the old 10% clause was paid to the first club (transfer budget up)");
+
+      // 3. Sell-on of the human paid on a resale (the AI market's own code path).
+      if (sold) {
+        const third = aiClubs.find((c) => c.id !== buyer.id && c.id !== bought!.from)!;
+        const { squadsAfterAcceptedTransfer } = await import("@/Domain/transfer/transferAcceptance");
+        const { executeTransferFee } = await import("@/backend/FinancialService");
+        const { sellOnFor, settleSellOn } = await import("@/backend/negotiationWorld");
+        const svcN = plain();
+        const sellerN = (await svcN.getSquadById(saveId, buyer.id))!;
+        const buyerN = (await svcN.getSquadById(saveId, third.id))!;
+        const moved = squadsAfterAcceptedTransfer(sold, sellerN, buyerN, buyerN.id, sold.id);
+        const owed = sellOnFor(sold, sellerN.id, 25_000_000);
+        const sRef = (await svcN.resolveSquadId(saveId, sellerN.id))!;
+        const bRef = (await svcN.resolveSquadId(saveId, buyerN.id))!;
+        await executeTransferFee(saveId, metaN, { squad: moved.buying, ...bRef, isPlayerClub: false }, { squad: moved.selling, ...sRef, isPlayerClub: false },
+          25_000_000, svcN, { playerName: sold.name, playerId: sold.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) });
+        const news = await settleSellOn(svcN, saveId, metaN, owed, sold, sellerN.name, dateN);
+        check(owed?.amount === 5_000_000 && news?.kind === "sell_on", "negociação: a resale paid the human's 20% clause (5M)");
+        const entries: LedgerEntry[] = [];
+        for (const season of await plain().listLedgerSeasons(saveId)) entries.push(...(await plain().getLedger(saveId, season)));
+        check(entries.some((e) => e.kind === "transfer_in" && e.ref?.stage === "sell_on" && e.amount === 5_000_000),
+          "negociação: the sell-on money is a transfer_in ledger line");
+      }
+    }
+
+    // 4. Loan in (≤ 23, not a starter of his club), then back on its date.
+    let loanedIn: string | null = null;
+    for (const club of aiClubs) {
+      const xi = new Set(autoLineupDefaultFormation(club));
+      const kid = club.players.find((p) => p.age <= 23 && !xi.has(p.id) && !p.loan && p.positions[0] !== "GK");
+      if (!kid) continue;
+      let r = await call("/api/saves/:saveId/loans", `/api/saves/${saveId}/loans`, { saveId }, { playerId: kid.id, fromSquadId: club.id, wageShare: 50, fee: 0 });
+      let resp = r.body.response as { kind: string; wageShare?: number; fee?: number } | undefined;
+      if (resp?.kind === "counter") {
+        r = await call("/api/saves/:saveId/loans", `/api/saves/${saveId}/loans`, { saveId },
+          { playerId: kid.id, fromSquadId: club.id, wageShare: Math.round((resp.wageShare ?? 1) * 100), fee: resp.fee ?? 0 });
+        resp = r.body.response as { kind: string } | undefined;
+      }
+      if (resp?.kind !== "accept") continue;
+      loanedIn = kid.id;
+      break;
+    }
+    check(!!loanedIn, "negociação: a loan in was agreed");
+
+    // 5. Loan out: a natural loan bid if one is live, else a forced one.
+    const mine2 = (await plain().getSquadById(saveId, playerSquadId))!;
+    let loanBid = liveBids.find((b) => b.kind === "loan" && mine2.players.some((p) => p.id === b.playerId));
+    if (!loanBid) {
+      const out = mine2.players.find((p) => !p.loan && p.positions[0] !== "GK" && p.id !== loanedIn)!;
+      loanBid = {
+        id: "smoke-loan", kind: "loan", playerId: out.id, playerName: out.name, clubId: aiClubs[0]!.id, clubName: aiClubs[0]!.name,
+        date: dateN, expires: addDaysN(dateN, 5), fee: 0, wageShare: 0.7, until: addDaysN(dateN, 30),
+      };
+      const mkL = (await plain().getMarket(saveId))!;
+      await plain().saveMarket(saveId, { ...mkL, pendingBids: [...(mkL.pendingBids ?? []), loanBid] });
+    }
+    const lo = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/${loanBid.id}`, { saveId, bidId: loanBid.id }, { action: "accept" });
+    check(lo.status === 200 && lo.body.status === "loaned", `negociação: ${loanBid.playerName} loaned out to ${loanBid.clubName} (${count("loan_bid") > 0 ? "natural" : "forced"} bid)`);
+
+    // Both loans end in 2 days: the day advance sends them back.
+    const mkE = (await plain().getMarket(saveId))!;
+    const soon = addDaysN(dateN, 2);
+    const ids = new Set([loanedIn, loanBid.playerId].filter((x): x is string => !!x));
+    await plain().saveMarket(saveId, { ...mkE, loans: (mkE.loans ?? []).map((l) => (ids.has(l.playerId) ? { ...l, until: soon } : l)) });
+    for (const l of (mkE.loans ?? []).filter((x) => ids.has(x.playerId))) {
+      const holder = (await plain().getSquadById(saveId, l.toClubId))!;
+      await plain().saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === l.playerId && p.loan ? { ...p, loan: { ...p.loan, until: soon } } : p)) });
+    }
+    const humanWithLoan = (await plain().getSquadById(saveId, playerSquadId))!;
+    const { squadWeeklyWages, wageFactorOf } = await import("@/Domain/finance/wages");
+    const borrowed = humanWithLoan.players.find((p) => p.id === loanedIn);
+    if (borrowed?.loan) {
+      check(squadWeeklyWages([borrowed], wageFactorOf(humanWithLoan)) === Math.round((borrowed.contract?.wage ?? 0) * borrowed.loan.wageShare),
+        "negociação: the borrowed player costs only the agreed share of his wage");
+    }
+    for (let g = 0; g < 3; g++) {
+      const out = await runBufferedDay(saveId);
+      if (!out.ok) { check(false, `negociação: day failed ${out.status} ${out.error}`); break; }
+    }
+    const mine3 = (await plain().getSquadById(saveId, playerSquadId))!;
+    check(!!loanedIn && !mine3.players.some((p) => p.id === loanedIn), "negociação: the borrowed player went back to his club on the date");
+    check(mine3.players.some((p) => p.id === loanBid!.playerId && !p.loan), "negociação: the loaned-out player came back on the date");
+    const inboxN = await plain().getInbox(saveId);
+    check(inboxN.some((m) => m.category === "transfer" && m.kind === "loan_back") && inboxN.some((m) => m.category === "transfer" && m.kind === "loan_home"),
+      "negociação: inbox news for both loans ending");
+    const back = mine3.players.find((p) => p.id === loanBid!.playerId);
+    console.log(`  history row of the loaned-out player: ${JSON.stringify((back?.history ?? []).slice(-1))}`);
   }
 
   // ── Convites (`.claude/rules/game/jobs.md`) ──

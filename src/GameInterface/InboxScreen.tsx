@@ -11,6 +11,8 @@ import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
 import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
+import { BidCard } from "@/GameInterface/Negotiation/BidCard";
+import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
@@ -23,6 +25,7 @@ const Trophy = iconOf("trophy");
 const Prospect = iconOf("user");
 const BoardIcon = iconOf("building");
 const JobIcon = iconOf("file-signature");
+const TagIcon = iconOf("tag");
 
 type FilterTab = "all" | "unread";
 
@@ -120,6 +123,13 @@ const CATEGORY_META: Record<
     bg: "bg-primary/15",
     border: "border-primary/30",
     Icon: BoardIcon,
+  },
+  transfer: {
+    labelKey: "inbox.categories.transfer",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: TagIcon,
   },
   job: {
     labelKey: "inbox.categories.job",
@@ -355,6 +365,10 @@ function leaguePrizeTexts(
   if (message.category === "job") {
     return { subject: t(`inbox.job.subject.${message.kind}`, { club: message.clubName }), preview: message.leagueName };
   }
+  if (message.category === "transfer") {
+    const vars = { club: message.clubName, player: message.playerName, fee: formatFee(message.fee ?? 0) };
+    return { subject: t(`inbox.transfer.subject.${message.kind}`, vars), preview: message.fee ? formatFee(message.fee) : message.clubName };
+  }
   if (message.category !== "season" || message.kind !== "league_prize") return null;
   return {
     subject: t("inbox.season.leaguePrizeSubject", { league: message.leagueName }),
@@ -479,6 +493,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         )}
         {message.category === "retirement" && <RetirementBody message={message} />}
         {message.category === "job" && <JobBody message={message} leagues={leagues} />}
+        {message.category === "transfer" && <TransferNegotiationBody message={message} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(
@@ -573,6 +588,37 @@ function RetirementBody({
           {error && <p className="text-sm text-destructive m-0">{error}</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Negotiation news (`.claude/rules/game/negotiation.md`): an AI bid card (live state from
+ * `GET /negotiation`), a loan that ended, or sell-on money received.
+ */
+function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, { category: "transfer" }> }) {
+  const { t } = useTranslation();
+  const { session, refresh } = useGameSave();
+  const [bid, setBid] = useState<MarketBid | null | undefined>(undefined);
+  const isBid = message.kind === "bid" || message.kind === "loan_bid";
+  const saveId = session?.saveId;
+  useEffect(() => {
+    if (!isBid || !saveId) return;
+    let alive = true;
+    void fetch(`/api/saves/${saveId}/negotiation`)
+      .then((r) => (r.ok ? r.json() : { bids: [] }))
+      .then((body: { bids?: MarketBid[] }) => { if (alive) setBid((body.bids ?? []).find((b) => b.id === message.bidId) ?? null); })
+      .catch(() => { if (alive) setBid(null); });
+    return () => { alive = false; };
+  }, [isBid, saveId, message.bidId]);
+  const vars = {
+    club: message.clubName, player: message.playerName, fee: formatFee(message.fee ?? 0),
+    share: Math.round((message.wageShare ?? 1) * 100), pct: message.sellOnPct ?? 0,
+  };
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-foreground m-0">{t(`inbox.transfer.body.${message.kind}`, vars)}</p>
+      {isBid && saveId && bid !== undefined && <BidCard saveId={saveId} bid={bid} onAnswered={() => void refresh()} />}
     </div>
   );
 }

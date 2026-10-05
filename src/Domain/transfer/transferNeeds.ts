@@ -178,7 +178,7 @@ export function generateTransferNeeds(
 
 // ─── Candidate filtering ────────────────────────────────────────────────────
 
-function priceCapForTier(tier: TransferBudgetTier): number | null {
+export function priceCapForTier(tier: TransferBudgetTier): number | null {
   if (tier === "high") return null;
   if (tier === "mid") return PRICE_CAP_MID;
   return PRICE_CAP_LOW;
@@ -205,6 +205,8 @@ export function findCandidates(
     if (squad.id === buyerSquadId) continue;
     if (excludeSellerSquadId && squad.id === excludeSellerSquadId) continue;
     for (const player of squad.players) {
+      // On loan (`.claude/rules/game/negotiation.md`): not the holding club's to sell.
+      if (player.loan) continue;
       if (!playerMatchesBand(player, need.position)) continue;
       // Nobody about to retire (`AI_SIGN_MAX_AGE`, the same cap as the rollover refill).
       if (player.age >= AI_SIGN_MAX_AGE) continue;

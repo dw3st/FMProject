@@ -16,7 +16,8 @@ export type InboxCategory =
   | "retirement"
   | "board"
   | "job"
-  | "club_record";
+  | "club_record"
+  | "transfer";
 
 interface InboxMessageBase {
   id:        string;
@@ -238,6 +239,30 @@ export interface ClubRecordInboxMessage extends InboxMessageBase {
   record: ClubRecordBroken;
 }
 
+/**
+ * Negotiation news (`.claude/rules/game/negotiation.md`): an AI bid for one of the human's players
+ * (`bid`, `loan_bid` — answered through `POST /api/saves/:id/bids/:bidId` while the bid is still
+ * pending), a loan that ended (`loan_back`: a borrowed player went back; `loan_home`: one of yours
+ * came back), or sell-on money received (`sell_on`).
+ */
+export interface TransferInboxMessage extends InboxMessageBase {
+  category: "transfer";
+  kind: "bid" | "loan_bid" | "loan_back" | "loan_home" | "sell_on";
+  playerId: string;
+  playerName: string;
+  /** The other club (bidder, parent, borrower or the buying club). */
+  clubName: string;
+  bidId?: string;
+  /** bid: fee offered; sell_on: amount received; loan_bid: loan fee. EUR. */
+  fee?: number;
+  sellOnPct?: number;
+  /** loan_bid: share of the wage the borrower pays (0..1) and the return date. */
+  wageShare?: number;
+  until?: string;
+  /** bid / loan_bid: last day to answer. */
+  expires?: string;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -251,4 +276,5 @@ export type InboxMessage =
   | RetirementInboxMessage
   | BoardInboxMessage
   | JobInboxMessage
-  | ClubRecordInboxMessage;
+  | ClubRecordInboxMessage
+  | TransferInboxMessage;

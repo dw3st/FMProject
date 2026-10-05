@@ -25,6 +25,7 @@ import {
   buildInjuryMessage,
   buildContractMessage,
   buildRetirementMessage,
+  buildTransferNegotiationMessage,
   buildYouthMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
@@ -65,6 +66,11 @@ import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/ad
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
+import { pruneTalks } from "@/Domain/negotiation/negotiation";
+import type { MarketState } from "@/types/transferMarketTypes";
+import { parentLoanWages } from "@/Domain/negotiation/loans";
+import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { liveBids } from "@/Domain/negotiation/bids";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
@@ -707,6 +713,9 @@ export async function advanceOneDay(
     const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
     // Club history: beaten records of the human club (`.claude/rules/game/club-history.md`), same deferral.
     const clubRecordMessages: ClubRecordBroken[] = [];
+    // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money.
+    // Deferred like the rest: emitted after any `clearInbox` this day.
+    const negotiationNews: Parameters<typeof buildTransferNegotiationMessage>[0][] = [];
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
@@ -1153,15 +1162,27 @@ export async function advanceOneDay(
     // guaranteed no-op — skip loading every squad + the market file for it (~25 MB/day).
     if (!options.marketFrozen) {
       let workingMeta = meta;
+      // Loans due back today go home first, so the market below sees the squads as they are.
+      let rawMarket = await saveService.getMarket(saveId);
+      if (rawMarket?.loans?.length) {
+        const back = await returnDueLoans(saveService, saveId, meta, rawMarket, currentDate);
+        if (back.market !== rawMarket) {
+          rawMarket = back.market;
+          await saveService.saveMarket(saveId, rawMarket);
+        }
+        negotiationNews.push(...back.news);
+      }
       const allSquadsMarket = await saveService.getAllSquads(saveId);
-      const rawMarket = await saveService.getMarket(saveId);
       const marketForTick = rawMarket
         ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] }
         : initMarketState(allSquadsMarket);
       const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
       const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
 
-      const { updatedMarket, completedTransfers } = dailyMarketTick(
+      // Clubs credited a sell-on clause today: their in-memory copy is stale, so they sit out the
+      // free-agent tick below (it would save that copy over the credit).
+      const sellOnPaidTo = new Set<string>();
+      const { updatedMarket, completedTransfers, newBids } = dailyMarketTick(
         marketForTick,
         allSquadsMarket,
         currentDate,
@@ -1176,8 +1197,20 @@ export async function advanceOneDay(
             const l = activeLeagues.find((x) => x.leagueSlug === sq.leagueSlug);
             return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
           },
+          newBidId: () => randomUUID(),
         },
       );
+      for (const bid of newBids) {
+        negotiationNews.push({
+          date: currentDate, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
+          playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
+          ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
+          ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
+          ...(bid.until ? { until: bid.until } : {}),
+          expires: bid.expires,
+        });
+      }
+      let marketAfterTick: MarketState = { ...updatedMarket, talks: pruneTalks(updatedMarket.talks, currentDate) };
 
       for (const tx of completedTransfers) {
         const buyerResolved = await saveService.resolveSquadId(saveId, tx.buyerSquad.id);
@@ -1189,6 +1222,8 @@ export async function advanceOneDay(
 
         const isBuyerPlayer = isPlayerSquadId(tx.buyerSquad.id, meta);
         const isSellerPlayer = isPlayerSquadId(tx.sellerSquad.id, meta);
+        // A sell-on clause the player carried comes out of this fee (`.claude/rules/game/negotiation.md`).
+        const owed = sellOnFor(tx.player, tx.sellerSquad.id, tx.fee);
 
         workingMeta = await executeTransferFee(
           saveId,
@@ -1207,7 +1242,14 @@ export async function advanceOneDay(
           },
           tx.fee,
           saveService,
+          { playerName: tx.player.name, playerId: tx.player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
         );
+        const sellOnNews = await settleSellOn(saveService, saveId, workingMeta, owed, tx.player, tx.sellerSquad.name, currentDate);
+        if (owed) sellOnPaidTo.add(owed.clubId);
+        if (sellOnNews) {
+          negotiationNews.push(sellOnNews);
+          marketAfterTick = marketAfterSellOnPaid(marketAfterTick, tx.player.id);
+        }
         // Club history: transfer records + the player's stats at the seller (`.claude/rules/game/club-history.md`).
         {
           const seasonOf = (leagueSlug: string) => {
@@ -1280,7 +1322,7 @@ export async function advanceOneDay(
         }
       }
 
-      await saveService.saveMarket(saveId, updatedMarket);
+      await saveService.saveMarket(saveId, marketAfterTick);
 
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
@@ -1288,7 +1330,7 @@ export async function advanceOneDay(
       const freeAgentPool = pruneFreeAgents(rawFreeAgents, currentDate);
       if (freeAgentPool.length !== rawFreeAgents.length) await saveService.writeFreeAgents(saveId, freeAgentPool);
       if (freeAgentPool.length > 0) {
-        const tradedToday = new Set(completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]));
+        const tradedToday = new Set([...completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]), ...sellOnPaidTo]);
         const hiringSquads = allSquadsMarket.filter((sq) => !tradedToday.has(sq.id));
         const fa = freeAgentTick({
           squads: hiringSquads,
@@ -1328,8 +1370,11 @@ export async function advanceOneDay(
           ...f,
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),
         }));
+        const loanedOutWages = isWeeklyTick
+          ? parentLoanWages((await saveService.getMarket(saveId))?.loans, playerSquad.id)
+          : 0;
         const moneyEntries = computeAdvanceDayMoney({
-          currentDate, playerSquad, homeFixturesToday,
+          currentDate, playerSquad, homeFixturesToday, loanedOutWages,
           ...(board ? { fillRate: stadiumFillRate(board.fans) } : {}),
         });
         if (moneyEntries.length > 0) {
@@ -1697,6 +1742,23 @@ export async function advanceOneDay(
         };
       }
 
+      // 7a. Loans held by clubs of this unit end with their season (`.claude/rules/game/negotiation.md`),
+      //     with the contracts' grace window, before retirements and expiries touch those players.
+      {
+        const mk = await saveService.getMarket(saveId);
+        if (mk?.loans?.length) {
+          const unitIds = new Set<string>();
+          for (const slug of unit.leagues) for (const sq of await saveService.getSquadsInLeague(saveId, slug)) unitIds.add(sq.id);
+          const back = await returnDueLoans(saveService, saveId, meta, mk, currentDate, {
+            graceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS, onlyBorrowers: unitIds,
+            // A loan of a rolling PARENT ends too when the contract does, so the expiry below sees him.
+            parentUnit: unitIds, contractGraceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS,
+          });
+          if (back.market !== mk) await saveService.saveMarket(saveId, back.market);
+          negotiationNews.push(...back.news);
+        }
+      }
+
       // 7b. Retirement (.claude/rules/game/retirement.md): players >= 34 (squads and free agents) may
       //     retire before contracts expire. Pending reborn offers of the human club expire here.
       {
@@ -1736,6 +1798,7 @@ export async function advanceOneDay(
             await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) });
           }
         }
+        await pruneSellOnHeld(saveService, saveId, res.retired.map((r) => r.id));
         for (const r of res.humanRetired) {
           deferredRetirementMessages.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
         }
@@ -1772,6 +1835,7 @@ export async function advanceOneDay(
           }
         }
       }
+      await pruneSellOnHeld(saveService, saveId, releasedNow.map((f) => f.player.id));
       if (releasedNow.length > 0 || due.units.length > 0) {
         const existing = await saveService.getFreeAgents(saveId);
         let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
@@ -2121,6 +2185,24 @@ export async function advanceOneDay(
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
+    for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
+    // Bids still pending when the inbox was cleared keep their message (like job offers).
+    if (seasonEnded) {
+      const mkB = await saveService.getMarket(saveId);
+      const humanB = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
+      const fresh = new Set(negotiationNews.map((n) => n.bidId).filter(Boolean));
+      for (const bid of liveBids(mkB?.pendingBids, currentDate, humanB)) {
+        if (fresh.has(bid.id)) continue;
+        await emitInboxMessage(saveId, buildTransferNegotiationMessage({
+          date: bid.date, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
+          playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
+          ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
+          ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
+          ...(bid.until ? { until: bid.until } : {}),
+          expires: bid.expires,
+        }), saveService);
+      }
+    }
     for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
     // Offers still pending when the inbox was cleared keep their message.
     if (seasonEnded) {

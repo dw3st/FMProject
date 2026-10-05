@@ -56,6 +56,8 @@ export function generateSellList(
     const minDepth = minBandDepth(band, tier);
 
     for (const player of bandPlayers) {
+      // A player on loan here is not the club's to sell.
+      if (player.loan) continue;
       const rating = playerOverallRating(player);
 
       // Protection: significantly above team average
