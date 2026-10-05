@@ -10,6 +10,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
+import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -68,6 +69,13 @@ const CATEGORY_META: Record<
     bg: "bg-fuchsia-500/15",
     border: "border-fuchsia-500/30",
     Icon: Award,
+  },
+  club_record: {
+    labelKey: "clubHistory.inboxCategory",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: Trophy,
   },
   continental: {
     labelKey: "inbox.categories.continental",
@@ -328,6 +336,10 @@ function leaguePrizeTexts(
   message: InboxMessage,
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): { subject: string; preview: string } | null {
+  if (message.category === "club_record") {
+    const x = clubRecordTexts(message.record, t, (slug) => slug);
+    return { subject: t("clubHistory.inboxSubject", { record: x.label }), preview: `${x.value} · ${x.detail}` };
+  }
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
   }
@@ -439,6 +451,10 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "cup" && <CupBody message={message} leagues={leagues} />}
         {message.category === "continental" && <ContinentalBody message={message} leagues={leagues} />}
         {message.category === "injury" && <InjuryBody message={message} />}
+        {message.category === "club_record" && (() => {
+          const x = clubRecordTexts(message.record, t, (slug) => competitionName(slug, leagues, i18n.language));
+          return <p className="text-sm text-foreground m-0">{t("clubHistory.inboxBody", { record: x.label, value: x.value, detail: x.detail })}</p>;
+        })()}
         {message.category === "youth" && (
           <p className="text-sm text-foreground m-0">
             {message.kind === "intake"

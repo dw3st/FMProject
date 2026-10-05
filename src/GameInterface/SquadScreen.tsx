@@ -9,6 +9,7 @@ import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
 import { Tabs } from "@/GameInterface/ui/Tabs";
 import { YouthTable } from "@/GameInterface/Components/YouthTable";
+import { ClubHistoryView } from "@/GameInterface/Components/ClubHistoryView";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -20,9 +21,10 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
-  const [tab, setTab] = useState<"squad" | "youth">(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "youth" ? "youth" : "squad",
-  );
+  const [tab, setTab] = useState<"squad" | "youth" | "history">(() => {
+    const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
+    return q === "youth" || q === "history" ? q : "squad";
+  });
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
@@ -112,18 +114,19 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
           </span>
         </ScreenTitle>
 
-        {squad.id === mySquadId && (
-          <Tabs
-            tabs={[
-              { key: "squad", label: t("squadScreen.tabSquad") },
-              { key: "youth", label: t("squadScreen.tabYouth") },
-            ]}
-            active={tab}
-            onChange={setTab}
-          />
-        )}
+        <Tabs
+          tabs={[
+            { key: "squad", label: t("squadScreen.tabSquad") },
+            ...(squad.id === mySquadId ? [{ key: "youth" as const, label: t("squadScreen.tabYouth") }] : []),
+            { key: "history", label: t("squadScreen.tabHistory") },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
 
-        {tab === "youth" && squad.id === mySquadId ? (
+        {tab === "history" && session ? (
+          <ClubHistoryView saveId={session.saveId} squadId={squad.id} leagueSlug={league} />
+        ) : tab === "youth" && squad.id === mySquadId ? (
           <YouthTable />
         ) : (
           <SquadRosterTable
