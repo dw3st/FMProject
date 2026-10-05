@@ -44,6 +44,8 @@ describe("negotiation routes", () => {
   }
 
   beforeAll(async () => {
+    // Exact counters: no random rival for the same target (Etapa 25).
+    process.env.FM_NO_RIVALS = "1";
     meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -57,6 +59,7 @@ describe("negotiation routes", () => {
   }, 120_000);
 
   afterAll(async () => {
+    delete process.env.FM_NO_RIVALS;
     if (saveId) await saveService.deleteSave(saveId);
   });
 

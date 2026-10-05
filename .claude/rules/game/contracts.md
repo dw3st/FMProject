@@ -108,3 +108,11 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
 - **Loans (Etapa 21):** a borrowed player keeps the parent club's contract; renewing him is 400 `onLoan`, and a loan
   never runs past the contract. Loans held by a rolling club go back before the expiries (`.claude/rules/game/negotiation.md`).
 - **Free pool:** `pruneFreeAgents` runs every day; `toFreeAgent` clears `injury`, `contract` and club on release. Released human players are also removed from `tactics.lineup` and `market.playerSellList`.
+
+## Etapa 25 (4.0): janelas e pré-contrato
+
+- **Livres fora da janela (D7):** contratar livre (humano, `freeAgentTick`, reposição da virada) não depende da janela
+  de transferências — regra real e o que mantém os elencos estáveis (`.claude/rules/game/transfer-windows.md`).
+  Medido com janelas (`market-sim.ts 3`): elenco médio 27,0 → 25,1 → 24,4; open ≥ 94% em todo tier.
+- **Pré-contrato:** na virada do país do clube de origem, o passo **8a** (antes das expirações e da renovação da IA)
+  leva os jogadores com pré-contrato ao clube do jogador com o contrato combinado (`applyDuePreContracts`).

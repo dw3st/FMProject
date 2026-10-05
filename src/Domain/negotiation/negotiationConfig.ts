@@ -40,7 +40,37 @@ export const NEGOTIATION = {
     UNLISTED_CHANCE: 0.03,
     /** Pending bids at a time. */
     MAX_PENDING: 6,
+    /** Live transfer bids for the same player (from different clubs, D6). */
+    MAX_PER_PLAYER: 2,
   },
+
+  /** Rivals for the same target (Etapa 25, `.claude/rules/game/negotiation.md`). */
+  RIVAL: {
+    /** One candidate a day (drawn by urgency) enters with BASE × need urgency × (0,5 + 0,5 × relative rating of the target). */
+    BASE: 0.25,
+    MAX_PER_TARGET: 2,
+    DEADLINE_DAYS: 3,
+    /** The human must offer at least the best rival fee the seller accepts × FLOOR_MULT. */
+    FLOOR_MULT: 1.05,
+    /** A candidate needs a transfer budget of at least value × BUDGET_RATIO. */
+    BUDGET_RATIO: 0.9,
+    /** Rival fee = value × (FEE_MIN + rng × FEE_SPREAD); wage = demand × (1 + rng × WAGE_SPREAD). */
+    FEE_MIN: 0.95,
+    FEE_SPREAD: 0.2,
+    WAGE_SPREAD: 0.1,
+  },
+
+  /** The player picks between two clubs the seller accepts (rival vs human, pre-contract vs renewal). */
+  PREFERENCE: {
+    WAGE: 0.45,
+    PRESTIGE: 0.35,
+    STARTER: 0.2,
+    /** Wage term saturates at this multiple of his demand. */
+    WAGE_CAP: 1.5,
+  },
+
+  /** Pre-contract with an AI player whose contract ends within this many days (D2). */
+  PRE_CONTRACT_DAYS: 183,
 
   LOAN: {
     /** Fewer days than this to the season end → the loan runs to the next season's end. */

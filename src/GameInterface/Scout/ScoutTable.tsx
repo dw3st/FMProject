@@ -37,6 +37,11 @@ interface Props {
   filtering?: boolean;
   mySquadId?: string;
   onOffer?: (player: DisplayPlayer) => void;
+  /**
+   * Transfer window closed (Etapa 25): the reason a fee offer cannot be made, or null. A free agent
+   * or a player whose contract is about to end (pre-contract) stays clickable.
+   */
+  offerBlocked?: (player: DisplayPlayer) => string | null;
   /** Sell-listed ids among `rows`. */
   sellListedIds?: Set<string>;
   /** True when the last search request failed (server error, network error, non-OK response). */
@@ -47,7 +52,7 @@ interface Props {
 
 export function ScoutTable({
   rows, total, page, pageSize, sortKey, sortDir, onSort, onPageChange,
-  loading, filtering, mySquadId, onOffer, sellListedIds = new Set(), error, onRetry,
+  loading, filtering, mySquadId, onOffer, offerBlocked, sellListedIds = new Set(), error, onRetry,
 }: Props) {
   const { t } = useTranslation();
   const { session, currentDate } = useGameSave();
@@ -183,14 +188,14 @@ export function ScoutTable({
               <div className="w-20 px-3 py-2.5 flex justify-center">
                 <button
                   type="button"
-                  disabled={!!mySquadId && player.squadId === mySquadId}
+                  disabled={(!!mySquadId && player.squadId === mySquadId) || (!player.free && !!offerBlocked?.(player))}
                   onClick={(e) => {
                     e.stopPropagation();
                     onOffer?.(player);
                   }}
-                  title={!!mySquadId && player.squadId === mySquadId ? t("scout.table.yourPlayer") : player.free ? t("scout.table.signFree") : t("scout.table.makeAnOffer")}
+                  title={!!mySquadId && player.squadId === mySquadId ? t("scout.table.yourPlayer") : player.free ? t("scout.table.signFree") : (offerBlocked?.(player) ?? t("scout.table.makeAnOffer"))}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-bold uppercase font-display tracking-[0.08em] border rounded-lg transition-all ${
-                    !!mySquadId && player.squadId === mySquadId
+                    (!!mySquadId && player.squadId === mySquadId) || (!player.free && !!offerBlocked?.(player))
                       ? "bg-muted/30 text-muted-foreground border-border cursor-not-allowed opacity-60"
                       : "bg-primary/20 text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground cursor-pointer"
                   }`}

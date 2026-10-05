@@ -21,6 +21,7 @@ import type {
   PlayerInboxMessage,
 } from "@/types/inboxTypes";
 import type { JobOffer } from "@/types/jobTypes";
+import type { ManagerNewsInboxMessage } from "@/types/inboxTypes";
 import { formatEurosText } from "@/Domain/money";
 
 /** Where inbox messages are written (the backend's `SaveService`). */
@@ -384,12 +385,17 @@ const BOARD_SUBJECT: Record<BoardInboxMessage["kind"], string> = {
   praise:        "The board praises your work",
   bonus:         "Board bonus for the season",
   sacked:        "You have been sacked",
+  contract_offer:   "The board offers you a new contract",
+  contract_renewed: "Contract renewed",
+  contract_ending:  "Your contract is ending",
+  contract_ended:   "Your contract has ended",
 };
 
 /** Board news for the human club (`.claude/rules/game/board-fans.md`); the screen translates it. */
 export function buildBoardMessage(args: {
   date: string;
   kind: BoardInboxMessage["kind"];
+  contract?: BoardInboxMessage["contract"];
   objective?: BoardInboxMessage["objective"];
   leagueName?: string;
   board?: number;
@@ -416,6 +422,24 @@ export function buildBoardMessage(args: {
     preview,
     kind,
     ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)),
+  };
+}
+
+/** Manager news of the player's league, grouped per day (`.claude/rules/game/managers.md`). */
+export function buildManagerNewsMessage(date: string, items: ManagerNewsInboxMessage["items"]): ManagerNewsInboxMessage {
+  const first = items[0];
+  const subject = !first ? "Manager news"
+    : first.kind === "sacked" ? `${first.clubName} sacked ${first.managerName}${items.length > 1 ? ` (+${items.length - 1})` : ""}`
+    : `${first.clubName} appointed ${first.managerName}${items.length > 1 ? ` (+${items.length - 1})` : ""}`;
+  return {
+    id: `manager_news-${date}`,
+    date,
+    createdAt: date,
+    read: false,
+    category: "manager_news",
+    subject,
+    preview: items.map((i) => i.clubName).join(", "),
+    items,
   };
 }
 
@@ -454,17 +478,31 @@ export function buildTransferNegotiationMessage(args: {
   wageShare?: number;
   until?: string;
   expires?: string;
+  country?: string;
+  opensOn?: string;
+  wage?: number;
+  years?: number;
 }): TransferInboxMessage {
   const { date, kind, playerName, clubName } = args;
   const subject =
-    kind === "bid" ? `${clubName} bid for ${playerName}`
+    kind === "window_open" ? `Transfer window open until ${args.until ?? ""}`
+    : kind === "window_closing" ? `Transfer window closes on ${args.until ?? ""}`
+    : kind === "window_closed" ? `Transfer window closed${args.opensOn ? ` — opens on ${args.opensOn}` : ""}`
+    : kind === "rival_bid" ? `${clubName} bid for ${playerName}`
+    : kind === "lost_to_rival" ? `${playerName} joined ${clubName}`
+    : kind === "pre_contract" ? `Pre-contract: ${playerName}`
+    : kind === "pre_contract_joined" ? `${playerName} joined on his pre-contract`
+    : kind === "pre_contract_failed" ? `Pre-contract fell through: ${playerName}`
+    : kind === "bid" ? `${clubName} bid for ${playerName}`
     : kind === "loan_bid" ? `${clubName} want ${playerName} on loan`
     : kind === "loan_back" ? `${playerName} returned to ${clubName}`
     : kind === "loan_home" ? `${playerName} is back from ${clubName}`
     : `Sell-on clause: ${playerName}`;
   return {
     ...args,
-    id: kind === "bid" || kind === "loan_bid" ? `transfer-${kind}-${args.bidId}` : `transfer-${date}-${kind}-${args.playerId}-${randomUUID()}`,
+    id: kind === "bid" || kind === "loan_bid" ? `transfer-${kind}-${args.bidId}`
+      : kind.startsWith("window_") ? `transfer-${date}-${kind}-${args.country ?? ""}`
+      : `transfer-${date}-${kind}-${args.playerId}-${randomUUID()}`,
     createdAt: date,
     read: false,
     category: "transfer",

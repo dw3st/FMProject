@@ -11,6 +11,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
+import { useTransferWindows } from "@/GameInterface/Transfers/transferWindow";
 import type { ClubVenue, LeagueData, Squad, StandingRow } from "@/types/playerTypes";
 import type { LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
@@ -58,6 +59,7 @@ export function DashboardScreen() {
     session, squad, save, fixtures, restDays, loading: saveLoading, currentDate, toggleDayType,
     inboxMessages, unreadInboxCount,
   } = useGameSave();
+  const windowsData = useTransferWindows();
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [standings, setStandings] = useState<StandingRow[] | null>(null);
@@ -209,7 +211,11 @@ export function DashboardScreen() {
 
   const players = squad?.players ?? [];
   const inbox = inboxMessages ?? [];
-  const attention = attentionItems({ players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox, morale: squad?.moraleClub });
+  const attention = attentionItems({
+    players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox, morale: squad?.moraleClub,
+    window: windowsData?.player ?? null,
+    renewalPending: !!save?.managerRenewal && save.managerRenewal.expires >= currentDate,
+  });
   const highlights = seasonHighlights(players);
   // Unread first, then the newest read ones (the inbox is newest first).
   const recentMessages = [...inbox.filter((m) => !m.read), ...inbox.filter((m) => m.read)].slice(0, 3);
@@ -234,6 +240,7 @@ export function DashboardScreen() {
         managerRank={managerRank}
         reputation={jobs?.reputation ?? null}
         pendingOffers={jobs?.offers.length ?? 0}
+        contract={save?.managerContract ?? null}
         board={boardState?.board ?? 60}
         fans={boardState?.fans ?? 60}
         boardTrend={boardState ? trendOf(boardState.history, currentDate, "board") : null}

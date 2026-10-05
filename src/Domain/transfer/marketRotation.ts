@@ -11,9 +11,11 @@ import { logDebug } from "@/Logger";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
 import { shuffle } from "@/Domain/rng";
+import { WINDOWS } from "@/Domain/market/windowConfig";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
-const TEAMS_PER_DAY_ATTEMPTS = 10;
+/** Legacy (no windows): attempts per day, all year (`dailyMarketTick` without `windows`). */
+export const TEAMS_PER_DAY_ATTEMPTS = 10;
 
 function cloneSquad(s: Squad): Squad {
   return { ...s, players: [...s.players] };
@@ -78,6 +80,53 @@ export interface DailyMarketTickOptions {
   seasonEndOf?: (squad: Squad) => string | undefined;
   /** League + season label of a selling squad, for the player's partial history row. */
   historyFrom?: (squad: Squad) => { league: string; season: string } | null;
+  /**
+   * Transfer windows (`.claude/rules/game/transfer-windows.md`): only buyers whose country has an
+   * open window try to buy or bid for the human's players. Absent = the legacy all-year market.
+   */
+  windows?: {
+    /** The buyer's window is open today. */
+    isOpen: (squad: Squad) => boolean;
+    /** Last open day of the buyer's window (a bid for the human expires by then). */
+    closesOn?: (squad: Squad) => string | undefined;
+    /** Deadline rush (last days of the buyer's window): weight `DEADLINE_MULT`. */
+    rush?: (squad: Squad) => boolean;
+  };
+}
+
+/** Rounds `x` to an integer, the fraction as a probability. */
+function stochasticRound(x: number, rng: () => number): number {
+  const f = Math.floor(x);
+  return f + (rng() < x - f ? 1 : 0);
+}
+
+/**
+ * Buyers that try today. Legacy: TEAMS_PER_DAY_ATTEMPTS from the whole pool. With windows: the
+ * world rate ATTEMPTS_PER_OPEN_DAY × (weighted share of the pool with an open window), drawn from
+ * the open buyers (deadline rush weighs DEADLINE_MULT).
+ */
+function pickBuyers(poolIds: string[], squads: Map<string, Squad>, rng: () => number, windows?: DailyMarketTickOptions["windows"]): string[] {
+  if (!windows) return sampleIndices(poolIds.length, TEAMS_PER_DAY_ATTEMPTS, rng).map((i) => poolIds[i]!);
+  const open: { id: string; w: number }[] = [];
+  for (const id of poolIds) {
+    const sq = squads.get(id);
+    if (!sq || !windows.isOpen(sq)) continue;
+    open.push({ id, w: windows.rush?.(sq) ? WINDOWS.DEADLINE_MULT : 1 });
+  }
+  if (open.length === 0 || poolIds.length === 0) return [];
+  const weight = open.reduce((s, o) => s + o.w, 0);
+  const count = Math.min(open.length, stochasticRound((WINDOWS.ATTEMPTS_PER_OPEN_DAY * weight) / poolIds.length, rng));
+  const out: string[] = [];
+  const pool = [...open];
+  while (out.length < count && pool.length > 0) {
+    const total = pool.reduce((s, o) => s + o.w, 0);
+    let r = rng() * total;
+    let i = 0;
+    for (; i < pool.length - 1; i++) { r -= pool[i]!.w; if (r < 0) break; }
+    out.push(pool[i]!.id);
+    pool.splice(i, 1);
+  }
+  return out;
 }
 
 /** Contract an AI club gives a signing: the curve wage at its factor, length by age. */
@@ -166,13 +215,12 @@ export function dailyMarketTick(
         (profiles[id]?.needs?.length ?? 0) > 0 &&
         (!excludePlayerSquadId || id !== excludePlayerSquadId),
     );
-  const pickIdx = sampleIndices(poolIds.length, TEAMS_PER_DAY_ATTEMPTS, rng);
+  const buyers = pickBuyers(poolIds, squads, rng, options?.windows);
 
   // Build sell list lookup for scoring
   const sellerSellLists = buildSellerSellLists(profiles);
 
-  for (const pi of pickIdx) {
-    const buyerId = poolIds[pi]!;
+  for (const buyerId of buyers) {
     const buyerSquad = squads.get(buyerId);
     if (!buyerSquad || buyerSquad.players.length >= MAX_SQUAD) continue;
 
@@ -253,6 +301,7 @@ export function dailyMarketTick(
       loanList: market.playerLoanList ?? [],
       pending,
       seasonEndOf: (sq) => options?.seasonEndOf?.(sq) ?? defaultSeasonEnd(currentDate),
+      ...(options?.windows ? { buyerOpen: options.windows.isOpen, ...(options.windows.closesOn ? { buyerClosesOn: options.windows.closesOn } : {}) } : {}),
       newId: options?.newBidId ?? (() => `bid-${currentDate}-${++bidSeq}`),
     })
     : [];

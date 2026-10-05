@@ -76,14 +76,17 @@ export function rankManagers(managers: ManagerRecord[]): ManagerRecord[] {
 export function buildInitialManagers(
   squads: Pick<Squad, "id" | "name" | "coach">[],
   player: { squadId: string; name: string; from?: string } | null,
+  /** Career start: every manager's first passage starts here (Etapa 25). */
+  from?: string,
 ): ManagerRecord[] {
+  const start = from ?? player?.from;
   const used = new Set<string>();
   const out: ManagerRecord[] = [];
   for (const s of squads) {
     if (player && s.id === player.squadId) {
       out.push({
         id: "player", name: player.name, squadId: s.id, isPlayer: true, points: 0, seasons: 0, titles: [],
-        ...(player.from ? { clubs: [{ squadId: s.id, from: player.from }] } : {}),
+        ...(start ? { clubs: [{ squadId: s.id, from: start }] } : {}),
       });
       used.add("player");
       continue;
@@ -93,7 +96,10 @@ export function buildInitialManagers(
     for (let n = 2; used.has(id); n++) id = `coach_${s.id}_${n}`;
     used.add(id);
     const name = s.coach?.name?.trim() || `Técnico do ${s.name}`;
-    out.push({ id, name, squadId: s.id, isPlayer: false, points: 0, seasons: 0, titles: [] });
+    out.push({
+      id, name, squadId: s.id, isPlayer: false, points: 0, seasons: 0, titles: [],
+      ...(start ? { clubs: [{ squadId: s.id, from: start }] } : {}),
+    });
   }
   return out;
 }

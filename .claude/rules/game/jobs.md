@@ -74,9 +74,9 @@ quando chegam ofertas (o avanço rápido para ali).
    `staff`, `styleFamiliarity` e a base (`academyToAi`: 1–2 promovidos pela regra da IA, o resto livre);
    a lista de venda do jogador zera; ofertas de renascido pendentes do clube expiram (e a rota
    `POST /reborn/:id` só aceita aposentados do clube atual).
-2. **Técnicos:** `moveHumanManager` — o técnico do clube novo vai para o antigo; o registro do jogador
-   ganha a passagem (`clubs: { squadId, from, to? }[]`). Vindo do desemprego, o técnico deslocado fica
-   sem clube (`squadId ""`, continua no ranking).
+2. **Técnicos (D4, Etapa 25):** `moveHumanManager` — sem troca: o técnico do clube novo vai para o pool
+   (`left: "moved"`; um interino sem pontos é apagado), o clube antigo recebe interino + vaga
+   (`meta.managerVacancies`) e contrata pela regra da IA (`managers.md`). O registro do jogador ganha a passagem.
 3. **Clube novo → do jogador** (`takeOverClub`): saldo 0 + `club_change` "arrive" com o orçamento que
    a proposta mostrou (`offer.budget`); os contratos que acabariam na virada desta temporada são renovados
    pela regra da IA (`renewExpiringOnTakeover`) e, dentro da janela de aviso (90 dias), a inbox recebe o
@@ -103,8 +103,9 @@ lista de venda só aceita jogadores do próprio elenco (400).
 
 ## Demissão → desemprego (`advanceDay`)
 
-No dia da demissão: mensagem `sacked`, `releaseHumanClub` (clube vira IA), `sackHumanManager` (o
-jogador sai, um técnico interino `coach_<clube>_<data>` assume), `meta.clubId = ""`, `meta.board`
+No dia da demissão: mensagem `sacked`, multa (`manager`, `severance`, ver "Contrato do técnico"),
+`releaseHumanClub` (clube vira IA), `sackHumanManager` (o jogador sai, um interino `coach_<clube>_<data>` assume
+e o clube ganha uma vaga, `managers.md`), `meta.clubId = ""`, `meta.board`
 removido e `meta.unemployed = { since, lastClubId, lastClubName, lastLeagueSlug, board, nextOfferDate,
 lastOfferDate?, sacking }` (`sacking` = o registro que a tela `/fired` mostra). `meta.leagueSlug` fica a
 liga antiga (calendário, virada e inbox continuam por ela). Desempregado o dia corre sem clube humano
@@ -137,7 +138,46 @@ novo (meta nova, temporada contada).
 
 ## Limitações
 
-- Técnicos da IA não trocam de clube entre si nem são demitidos; o técnico deslocado por uma contratação
-  vinda do desemprego fica sem clube para sempre.
-- Sem salário do técnico, sem multa rescisória, o jogador não procura emprego ativamente.
+- O jogador não procura emprego ativamente.
 - O prestígio é recalculado a cada janela (não guardado); a força do elenco muda com transferências.
+
+## Contrato do técnico do jogador (Etapa 25, 4.0)
+
+Spec `docs/superpowers/specs/2026-10-05-living-market-design.md` §3. Lógica pura em
+`src/Domain/managers/managerContract.ts` (`MANAGER_CONTRACT`).
+
+- `SaveMeta.managerContract { squadId, wage, until, signed }`, `managerEarnings` (só exibição, D9),
+  `managerRenewal { offeredOn, expires, wage, seasons }`, `managerContractNotices` (dedupe dos avisos).
+- **Salário semanal** = `wageRevenueBasis × (0,015 + 0,025 × reputação/100) / 52` (1,5% a 4% da receita), fixado na
+  assinatura. Toda segunda, linha `manager` no extrato (`computeAdvanceDayMoney({ managerWage })`); `managerEarnings`
+  soma.
+- **Carreira nova:** 2 temporadas (`createSave`). **Proposta de emprego:** 1–3 temporadas pelo prestígio
+  (`offerSeasons`: ≥ 0,35 → 2, ≥ 0,7 → 3); o cartão mostra salário, duração, compensação e orçamento líquido.
+- **Renovação:** com o contrato acabando na temporada atual e 85% das rodadas jogadas, a diretoria decide
+  (`contractDay`): ≥ 60 → 2 temporadas com o salário da reputação de hoje (nunca abaixo do atual); 40–59 → 1
+  temporada com o salário atual; < 40 → não renova (aviso `contract_ending`). Oferta na inbox (`board`,
+  `contract_offer`, Aceitar/Recusar via `POST /manager-contract`), válida até a virada. Aviso 7 dias antes do fim
+  quando não renovou.
+- **Fim do contrato (D5):** na virada do país do jogador com `until <= hoje` → desemprego **sem** demissão
+  (`meta.unemployed.sacking.reason = "contract"`, `/fired` mostra "Contrato encerrado"), mensagem `contract_ended`;
+  o clube recebe interino + vaga.
+- **Demitido:** `severancePay` = 0,5 × salário × semanas restantes (máx. 52) → `managerEarnings`; o clube antigo lança
+  `manager` (`ref.stage = "severance"`) antes do `club_change` "leave" (soma = saldo continua).
+- **Virada do país:** o `until` é reancorado no fim da temporada da liga nova (`reanchorContract`, mantém as
+  temporadas restantes) — um rebaixamento para uma liga que acaba antes não trava a renovação nem o fim.
+- **Sem "Pode ser demitido":** a diretoria sempre oferece (no mínimo 1 temporada com o salário atual).
+- **Proposta aceita depois de 85% da temporada da liga nova:** o contrato conta a partir da próxima temporada.
+  `careerStart` é apagado na troca (a carência de mercado vale só na carreira nova).
+- **Troca no meio do contrato (D3):** o clube novo paga ao antigo `compensationFee` = 0,5 × salário × semanas
+  restantes (máx. 52; zero no último mês), gravada na oferta (`offer.compensation`) — sai do saldo de chegada
+  (`arrive` = max(0, orçamento − compensação)); a troca e a demissão limpam também `preContracts`, `rivalBids` e
+  `lostTargets` do mercado; o clube
+  antigo (IA) recebe metade na verba (`aiBudgetWithPrize`).
+- **Vagas nas propostas de desemprego:** clubes com vaga pesam × 3 (`JOBS.VACANCY_WEIGHT`) no sorteio
+  (`pickOfferingClubs({ vacant })`). Se a IA contratar antes de o jogador aceitar, a oferta segue e o recém-contratado
+  vai ao pool.
+- **Telas:** cartão do clube no Painel "Contrato até AAAA · €X/sem"; renovação pendente no cartão Atenção; tipo
+  "Salário do técnico" em Finanças (despesas, projeção semanal, filtros).
+
+Testes: `bun test src/Domain/managers src/backend/jobs.test.ts src/backend/windows.routes.test.ts`. Smoke: Convites
+(compensação e interim no clube antigo, renovação aceita antes da virada do clube novo).

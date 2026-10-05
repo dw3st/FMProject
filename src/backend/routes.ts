@@ -12,6 +12,7 @@ import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
 import { jobRoutes } from "@/backend/jobRoutes";
 import { negotiationRoutes } from "@/backend/negotiationRoutes";
+import { marketRoutes } from "@/backend/marketRoutes";
 import { clubHistoryRoutes } from "@/backend/clubHistoryRoutes";
 import { obscureSquad, staffEffectsOf } from "@/Domain/staff/staff";
 import { inboxRoutes } from "@/backend/inbox";
@@ -89,6 +90,7 @@ export const apiRoutes = {
   ...managerRoutes,
   ...jobRoutes,
   ...negotiationRoutes,
+  ...marketRoutes,
   ...clubHistoryRoutes,
   ...inboxRoutes,
 

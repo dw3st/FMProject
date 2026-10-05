@@ -39,6 +39,12 @@ import type { JobOffer, JobWindow } from "@/types/jobTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData, Squad } from "@/types/playerTypes";
 import { logError } from "@/Logger";
+import { wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { aiBudgetWithPrize } from "@/Domain/finance/prizes";
+import {
+  compensationFee, contractUntil, MANAGER_CONTRACT, managerWeeklyWage, offerSeasons, type ManagerContract,
+} from "@/Domain/managers/managerContract";
+import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 
 /**
  * Job offers and club changes of the human manager — save I/O (`.claude/rules/game/jobs.md`).
@@ -105,6 +111,10 @@ async function buildOffer(args: {
   expires: string;
   activeLeagues: LeagueSeasonState[];
   index: SquadIndex;
+  /** The manager's reputation (wage of the contract on offer). */
+  reputation: number;
+  /** D3: compensation owed to the current club if he leaves now. */
+  compensation: number;
 }): Promise<JobOffer | null> {
   const { world, squadId } = args;
   const squad = world.squads.get(squadId);
@@ -137,6 +147,9 @@ async function buildOffer(args: {
     expectedPosition: rank ?? expectedPositionFromSquads(leagueSquads, squadId),
     leagueSize: leagueSquads.length,
     prestige: Math.round((world.prestige.get(squadId) ?? 0) * 1000) / 1000,
+    wage: managerWeeklyWage(wageRevenueBasisOf(squad), args.reputation),
+    seasons: offerSeasons(world.prestige.get(squadId) ?? 0),
+    ...(args.compensation > 0 ? { compensation: args.compensation } : {}),
   };
 }
 
@@ -161,6 +174,10 @@ export interface OfferRequest {
   unemployed?: { lastClubId: string; since: string; lastOfferDate?: string };
   activeLeagues: LeagueSeasonState[];
   index: SquadIndex;
+  /** Clubs with a vacant manager's job (`meta.managerVacancies`): × VACANCY_WEIGHT in the draw. */
+  vacant?: Set<string>;
+  /** The human manager's current contract (compensation, D3). */
+  contract?: ManagerContract;
 }
 
 /**
@@ -193,6 +210,7 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   let picked = pickOfferingClubs({
     candidates: eligible, band, count,
     home: { country: from?.country ?? null, continent: from?.continent ?? null }, rng,
+    ...(req.vacant ? { vacant: req.vacant } : {}),
   });
   if (picked.length === 0 && guaranteed) {
     const g = guaranteedClub(world.candidates.filter((c) => !exclude.has(c.squadId)), band);
@@ -202,7 +220,8 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
   for (const c of picked) {
     const offer = await buildOffer({
       service, saveId, world, squadId: c.squadId, window: req.window, date: req.date, expires: req.expires,
-      activeLeagues: req.activeLeagues, index: req.index,
+      activeLeagues: req.activeLeagues, index: req.index, reputation: rep,
+      compensation: req.humanSquadId ? compensationFee(req.contract, req.date) : 0,
     });
     if (offer) out.push(offer);
   }
@@ -230,7 +249,7 @@ async function ledgerSeasonOf(service: SaveService, saveId: string, league: stri
  * 1-2 promoted by the AI rule, the rest to the free agents), and leaves the player's sell list.
  */
 export async function releaseHumanClub(
-  service: SaveService, saveId: string, args: { squadId: string; date: string },
+  service: SaveService, saveId: string, args: { squadId: string; date: string; compensation?: number },
 ): Promise<void> {
   const index = await service.getSquadIndex(saveId);
   const entry = index.byId(args.squadId);
@@ -251,7 +270,9 @@ export async function releaseHumanClub(
   // the stadium it has built stays (venue capacity), works in progress are dropped.
   const { staff: _s, styleFamiliarity: _f, facilities: _fac, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
-  const ai: Squad = { ...rest, financialTier: tier, aiTransferBudget: seasonalTransferBudgetFor(tier, popularityOf(rest)) };
+  const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
+  // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).
+  const ai: Squad = { ...rest, financialTier: tier, aiTransferBudget: aiBudgetWithPrize(grant, args.compensation ?? 0, grant) };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);
   if (academy.released.length > 0) {
     await service.writeFreeAgents(saveId, [
@@ -261,8 +282,9 @@ export async function releaseHumanClub(
   const market = await service.getMarket(saveId);
   // The human's lists, bids, talks and clauses belong to the club he leaves (`.claude/rules/game/negotiation.md`);
   // active loans stay in `loans` so they still end (and return) on their date.
-  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length)) {
-    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [] });
+  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length
+    || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
+    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] });
   }
   // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
   const retired = await service.getRetired(saveId);
@@ -331,8 +353,9 @@ export async function takeOverClub(
   const market = await service.getMarket(saveId);
   // The human's lists, bids, talks and clauses belong to the club he leaves (`.claude/rules/game/negotiation.md`);
   // active loans stay in `loans` so they still end (and return) on their date.
-  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length)) {
-    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [] });
+  if (market && (market.playerSellList?.length || market.playerLoanList?.length || market.pendingBids?.length || market.talks || market.sellOnHeld?.length
+    || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
+    await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] });
   }
 
   // Board and fans at 60 with this club's objective (mid-season: from the current position).
@@ -372,14 +395,23 @@ export async function acceptJobOffer(
   const activeLeagues = meta.activeLeagues ?? [];
   const index = await service.getSquadIndex(saveId);
   const employedAt = !meta.unemployed && index.byId(meta.clubId) ? meta.clubId : null;
-  if (employedAt) await releaseHumanClub(service, saveId, { squadId: employedAt, date });
+  // D3: leaving mid-contract, the new club compensates the old one (out of the arriving balance).
+  // The compensation shown on the offer (what the player saw), never more than the arriving budget.
+  const compensation = employedAt ? Math.min(Math.max(0, offer.compensation ?? 0), Math.max(0, offer.budget)) : 0;
+  if (employedAt) await releaseHumanClub(service, saveId, { squadId: employedAt, date, compensation });
 
   const managers = await service.getManagers(saveId);
   if (managers.length > 0) {
-    await service.writeManagers(saveId, moveHumanManager(managers, { toSquadId: offer.squadId, fromSquadId: employedAt, date }));
+    await service.writeManagers(saveId, moveHumanManager(managers, {
+      toSquadId: offer.squadId, fromSquadId: employedAt, fromClubName: employedAt ? meta.clubName : undefined, date,
+    }));
   }
+  // The old club hires by the AI rule (interim + vacancy, D4); the new one is no longer vacant.
+  const vacancies = { ...(meta.managerVacancies ?? {}) };
+  delete vacancies[offer.squadId];
+  if (employedAt) vacancies[employedAt] = { since: date, hireOn: vacancyHireOn(date, mulberry32(seedFrom(`${saveId}:${employedAt}:${date}:vacancy`))) };
 
-  const taken = await takeOverClub(service, saveId, { squadId: offer.squadId, date, activeLeagues, startBalance: offer.budget });
+  const taken = await takeOverClub(service, saveId, { squadId: offer.squadId, date, activeLeagues, startBalance: Math.max(0, offer.budget - compensation) });
 
   // Inbox: the old club's news stays; every pending offer drops with its message.
   const catalog = await getLeagueData();
@@ -397,8 +429,20 @@ export async function acceptJobOffer(
     await service.appendInbox(saveId, buildContractMessage({ date, kind: "expiring", players: taken.expiring }));
   }
   const newState = activeLeagues.find((l) => l.leagueSlug === taken.leagueSlug);
+  // The manager's contract at the new club (`.claude/rules/game/jobs.md` → "Contrato do técnico").
+  const newSquad = await service.getSquadById(saveId, offer.squadId);
+  const wage = offer.wage ?? managerWeeklyWage(newSquad ? wageRevenueBasisOf(newSquad) : 0, await reputationOf(service, saveId, meta));
+  // Past the renewal point of the new league's season (85%), the contract counts from the next season.
+  const lateInSeason = !!newState && newState.totalRounds > 0 && newState.currentRound >= newState.totalRounds * MANAGER_CONTRACT.RENEWAL_PROGRESS;
+  const until = contractUntil(newState?.end ?? date, (offer.seasons ?? 1) + (lateInSeason ? 1 : 0));
 
   return service.updateMeta(saveId, {
+    managerContract: { squadId: offer.squadId, wage, until: until > date ? until : contractUntil(newState?.end ?? date, (offer.seasons ?? 1) + 1), signed: date },
+    managerRenewal: undefined,
+    managerContractNotices: undefined,
+    managerVacancies: vacancies,
+    // The new-career transfer grace never applies to a change of club.
+    careerStart: undefined,
     clubId: offer.squadId,
     clubName: taken.clubName,
     clubColors: taken.colors,

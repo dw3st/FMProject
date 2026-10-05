@@ -11,7 +11,8 @@ const PAGE_MAX = 100;
 /** Manager ranking (`.claude/rules/game/managers.md`). */
 export const managerRoutes = {
   /**
-   * `GET` - `?scope=world|country` (country = the player's league country), `?offset=&limit=`
+   * `GET` - `?scope=world|country|free` (country = the player's league country; free = managers
+   * without a club), `?offset=&limit=`
    * (limit 1..100, default 50). Response `{ total, playerRank, items }`; each item carries its rank
    * within the scope, the club's name and the full title list (the human manager also his club passages).
    */
@@ -28,7 +29,7 @@ export const managerRoutes = {
     const offset = int(q.get("offset"), 0);
     const limit = int(q.get("limit"), PAGE_DEFAULT);
     const scope = q.get("scope") ?? "world";
-    if (!(offset >= 0) || !(limit >= 1 && limit <= PAGE_MAX) || (scope !== "world" && scope !== "country")) {
+    if (!(offset >= 0) || !(limit >= 1 && limit <= PAGE_MAX) || (scope !== "world" && scope !== "country" && scope !== "free")) {
       return Response.json({ error: "invalid offset/limit/scope" }, { status: 400 });
     }
     const meta = await saveService.getMeta(saveId);
@@ -41,9 +42,12 @@ export const managerRoutes = {
       return slug ? countryOf.get(slug) ?? null : null;
     };
     const myCountry = countryOf.get(index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug) ?? null;
+    // Retired managers (free for too long) leave the ranking tab (`.claude/rules/game/managers.md`).
     const page = rankingPage(
-      rankManagers(await saveService.getManagers(saveId)),
-      scope === "world" ? () => true : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
+      rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired)),
+      scope === "world" ? () => true
+        : scope === "free" ? (m) => !m.squadId && !m.isPlayer
+        : (m) => myCountry !== null && countryOfClub(m.squadId) === myCountry,
       offset, limit,
     );
     return Response.json({
@@ -51,8 +55,11 @@ export const managerRoutes = {
       items: page.items.map((m) => ({
         ...m,
         clubName: m.squadId ? index.byId(m.squadId)?.name ?? null : null,
-        // The human manager's passages (`.claude/rules/game/jobs.md`), with the clubs' names.
-        ...(m.clubs ? { clubs: m.clubs.map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })) } : {}),
+        free: !m.squadId,
+        interim: !!m.interim,
+        // Every manager's passages (Etapa 25), with the clubs' names.
+        clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })),
+        ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0 } : {}),
       })),
     });
   },

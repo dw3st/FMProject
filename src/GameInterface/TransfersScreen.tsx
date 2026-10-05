@@ -9,10 +9,12 @@ import { WorldTransfers } from "@/GameInterface/Transfers/WorldTransfers";
 import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOverview";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { TransfersSplitResponse } from "@/types/transferTypes";
+import { useTransferWindows, WindowBanner, WindowsTable } from "@/GameInterface/Transfers/transferWindow";
 
 export function TransfersScreen() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"my" | "world" | "sell" | "loans">("my");
+  const [activeTab, setActiveTab] = useState<"my" | "world" | "sell" | "loans" | "windows">("my");
+  const windows = useTransferWindows();
   const [club, setClub] = useState<TransfersSplitResponse["club"]>([]);
   const [world, setWorld] = useState<TransfersSplitResponse["world"]>([]);
   const [playerSquadId, setPlayerSquadId] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export function TransfersScreen() {
                 },
                 { key: "sell", label: t("transfers.forSale") },
                 { key: "loans", label: t("negotiation.overview.tab") },
+                { key: "windows", label: t("transferWindows.tab") },
               ]}
               active={activeTab}
               onChange={setActiveTab}
@@ -68,8 +71,12 @@ export function TransfersScreen() {
           {t("screenTitles.transfers.main")}
         </ScreenTitle>
 
-        {activeTab === "loans" ? (
-          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["bids", "out", "in", "sellOn"]} /> : null
+        <WindowBanner data={windows} />
+
+        {activeTab === "windows" ? (
+          <WindowsTable data={windows} />
+        ) : activeTab === "loans" ? (
+          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["bids", "rivals", "preContracts", "out", "in", "sellOn"]} /> : null
         ) : loading && activeTab !== "sell" ? (
           <div className="card-arcade rounded-md p-12 text-center">
             <p className="text-muted-foreground text-sm m-0">{t("transfers.loadingTransfers")}</p>

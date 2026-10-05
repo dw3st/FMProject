@@ -26,6 +26,9 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
+import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
+import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -123,6 +126,10 @@ export const transferRoutes = {
         // Without a club (`.claude/rules/game/jobs.md`) there is nobody to buy for.
         if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
 
+        // Transfer window of the buyer — the human club (`.claude/rules/game/transfer-windows.md`).
+        const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
+        if (!windows.human().open) return windowClosedResponse(windows.human());
+
         // ── Resolve squads ────────────────────────────────────────────────────
         const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
         const sellerResolved = await saveService.resolveSquadId(saveId, fromSquadId);
@@ -144,7 +151,12 @@ export const transferRoutes = {
         }
 
         const player = sellerSquad.players.find((p) => p.id === playerId);
-        if (!player) return Response.json({ error: "player not found" }, { status: 404 });
+        if (!player) {
+          // Sold to a rival on the deadline (`.claude/rules/game/negotiation.md` → "Disputa").
+          const lost = (await saveService.getMarket(saveId))?.lostTargets?.find((l) => l.playerId === playerId);
+          if (lost) return Response.json({ response: { kind: "lost", clubName: lost.clubName, fee: lost.fee } });
+          return Response.json({ error: "player not found" }, { status: 404 });
+        }
         if (sellerSquad.id === buyerSquad.id) return Response.json({ error: "not for sale" }, { status: 400 });
         // On loan at that club: not its player to sell (`.claude/rules/game/negotiation.md`).
         if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
@@ -184,22 +196,66 @@ export const transferRoutes = {
         const gate = talkGate(talks[key], date0, meetsCounter);
         if (gate === "closed") return Response.json({ error: "talksClosed", until: talks[key]?.closedUntil }, { status: 409 });
         if (gate === "noRounds") return Response.json({ error: "noRounds" }, { status: 409 });
-        const answer: OfferResponse = meetsCounter
+        // Rivals (Etapa 25): the first offer of the day may bring another AI club in; the seller then
+        // asks the human for at least the best rival fee it accepts x 1,05.
+        let marketWithRivals = market;
+        if (market && talks[key]?.date !== date0) {
+          const rolled = await rollRivalFor(saveService, saveId, {
+            market, player, seller: sellerSquad, humanId: buyerSquad.id, date: date0, windows,
+          });
+          marketWithRivals = rolled.market;
+          if (rolled.news) await emitInboxMessage(saveId, buildTransferNegotiationMessage(rolled.news), saveService);
+        }
+        const rivals = liveRivals(marketWithRivals?.rivalBids, playerId, date0);
+        const floor = rivalFloor(rivals);
+        let answer: OfferResponse = meetsCounter && fee >= floor
           ? { kind: "accept", reason: "financial" }
           : respondToOffer({ player, seller: sellerSquad, fee, sellOnPct, ...(sellPriority !== undefined ? { sellPriority } : {}) });
+        if (floor > 0 && answer.kind === "accept" && fee < floor) answer = { kind: "counter", counterFee: floor };
+        if (floor > 0 && answer.kind === "counter" && answer.counterFee < floor) answer = { kind: "counter", counterFee: floor };
+        // The seller accepts: with a live rival it also accepts, the player chooses (preferenceScore).
+        let preference: { winner: string; clubName: string; reason: string } | null = null;
+        const accepting = rivals.filter((r) => r.sellerAccepts);
+        if (answer.kind === "accept" && accepting.length > 0) {
+          const prestige = await prestigeOf(saveService, saveId, date0, [buyerSquad.id, ...accepting.map((r) => r.clubId)]);
+          const options = [
+            { id: buyerSquad.id, name: buyerSquad.name, pref: { wage: contractWage, demand, prestige: prestige.get(buyerSquad.id) ?? 0.5, starter: starterChance(player, buyerSquad) } },
+            ...(await Promise.all(accepting.map(async (r) => {
+              const club = await saveService.getSquadById(saveId, r.clubId);
+              return {
+                id: r.clubId, name: r.clubName,
+                pref: { wage: r.wage, demand: club ? contractDemand(player, club, date0) : demand, prestige: prestige.get(r.clubId) ?? 0.5, starter: club ? starterChance(player, club) : 0.5 },
+              };
+            }))),
+          ];
+          const pick = preferredClub(options);
+          if (pick) {
+            preference = { winner: pick.winner.id, clubName: pick.winner.name, reason: pick.reason };
+            if (pick.winner.id !== buyerSquad.id) answer = { kind: "prefers_rival", clubName: pick.winner.name, reason: pick.reason };
+          }
+        }
+        const rivalInfo = rivals.length > 0
+          ? [...rivals].sort((a, b) => b.fee - a.fee).map((r) => ({ clubId: r.clubId, clubName: r.clubName, fee: r.fee, deadline: r.deadline, sellerAccepts: r.sellerAccepts }))
+          : undefined;
         const talk = recordRound(
           talks[key], { playerId, kind: "transfer", date: date0 }, { fee, sellOnPct },
           answer.kind === "accept" ? { by: "club", fee, sellOnPct, outcome: "accepted" }
           : answer.kind === "counter" ? { by: "club", fee: answer.counterFee, sellOnPct, outcome: "counter" }
+          : answer.kind === "prefers_rival" ? { by: "club", fee, outcome: "prefers_rival" }
           : { by: "club", outcome: answer.reason === "insulted" ? "insulted" : "rejected" },
         );
-        const marketBase = market ?? initMarketState(await saveService.getAllSquads(saveId));
-        await saveService.saveMarket(saveId, { ...marketBase, talks: { ...pruneTalks(marketBase.talks, date0), [key]: talk } });
-        if (answer.kind === "counter") {
-          return Response.json({ response: answer, talk });
+        const marketBase = marketWithRivals ?? initMarketState(await saveService.getAllSquads(saveId));
+        await saveService.saveMarket(saveId, {
+          ...marketBase,
+          talks: { ...pruneTalks(marketBase.talks, date0), [key]: talk },
+          // Bought: the rivals for him are gone.
+          ...(answer.kind === "accept" ? { rivalBids: (marketBase.rivalBids ?? []).filter((r) => r.playerId !== playerId) } : {}),
+        });
+        if (answer.kind === "counter" || answer.kind === "prefers_rival") {
+          return Response.json({ response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
         }
         const accepted = answer.kind === "accept";
-        const reason = answer.reason;
+        const reason = answer.kind === "accept" || answer.kind === "reject" ? answer.reason : "clubRejected";
 
         const transferId = randomUUID();
         const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
@@ -303,12 +359,15 @@ export const transferRoutes = {
         await saveService.appendTransfer(saveId, record);
         const ref: TransferRef = { kind: "transfer_ref", transferId };
         await saveService.appendDayEvent(saveId, date, ref);
+        if (accepted) {
+          await saveService.appendDayTransfers(saveId, date, [{ playerId, from: fromSquadId, to: buyerSquad.id, fee, kind: "transfer", date }]);
+        }
 
         // No clamp (see .claude/rules/game/finances.md) — this is only the response's echo of the
         // new budget, the real value already comes from executeTransferFee's persisted squad.
         const oldBudget = buyerSquad.finances?.budget ?? 0;
         const newBudget = accepted ? oldBudget - fee : oldBudget;
-        return Response.json({ record, newBudget, response: answer, talk });
+        return Response.json({ record, newBudget, response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
       });
     }
 

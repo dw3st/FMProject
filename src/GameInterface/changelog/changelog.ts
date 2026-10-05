@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.0",
+    date: "2026-10-05",
+    items: [
+      { pt: "Janelas de transferência: cada país tem uma janela na pré-temporada e outra no meio da temporada. Compras e empréstimos só com a janela aberta; jogadores livres podem ser contratados a qualquer momento. A tela de Transferências mostra a janela do seu país e uma aba com as janelas de todos.", en: "Transfer windows: every country has a pre-season window and a mid-season one. Purchases and loans only while the window is open; free agents can be signed at any time. The Transfers screen shows your country's window and a tab with every country's windows." },
+      { pt: "Pré-contrato: um jogador com contrato acabando nos próximos seis meses pode assinar com você sem taxa, mesmo com a janela fechada. Ele chega no fim da temporada dele.", en: "Pre-contracts: a player whose contract ends in the next six months can sign with you for free, even with the window closed. He joins at the end of his season." },
+      { pt: "Concorrência: outros clubes podem entrar na disputa pelo jogador que você negocia. O clube vendedor pede pelo menos o que o rival ofereceu, e o jogador escolhe entre os clubes pelo salário, pelo tamanho do clube e pela chance de jogar. Se você não cobrir a oferta no prazo, ele vai para o rival.", en: "Competition: other clubs can join the race for the player you are negotiating. The selling club asks for at least what the rival offered, and the player chooses between the clubs by the wage, the size of the club and the chance to play. If you do not match the offer in time, he joins the rival." },
+      { pt: "Técnicos da IA agora são demitidos por maus resultados e substituídos por técnicos sem clube. Todo técnico tem a sua carreira no ranking, com o motivo de cada saída, e há um filtro de técnicos livres.", en: "AI managers are now sacked after bad results and replaced by managers without a club. Every manager shows his career in the ranking, with the reason he left each club, and there is a filter for free managers." },
+      { pt: "Seu contrato de técnico: salário semanal no extrato, duração e renovação oferecida pela diretoria. Sem renovação, o contrato acaba e você fica livre para outras propostas; demitido, você recebe uma multa. Trocar de clube no meio do contrato custa uma compensação ao clube novo.", en: "Your manager's contract: a weekly wage in the ledger, a length and a renewal offered by the board. Without a renewal the contract ends and you are free for other offers; sacked, you get a payoff. Leaving mid-contract costs your new club a compensation." },
+      { pt: "Ao trocar de clube, o seu antigo clube contrata um técnico novo, como qualquer clube da liga, e você recebe as notícias de demissões e contratações de técnicos da sua liga.", en: "When you change club, your old club hires a new manager like any other club, and you get the news of manager sackings and hirings in your league." },
+    ],
+  },
+  {
     version: "3.9.5",
     date: "2026-10-05",
     items: [
@@ -791,5 +803,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Ligas de ano civil (Brasil, Argentina, Escandinávia e outras) com os elencos e a composição de 2027", en: "Calendar-year leagues (Brazil, Argentina, Scandinavia and others) with 2027 squads and line-ups" },
+  { pt: "Personalidade dos jogadores: ambição, lealdade, profissionalismo e temperamento mudando a moral, a evolução, a disciplina e os contratos", en: "Player personality: ambition, loyalty, professionalism and temperament changing morale, development, discipline and contracts" },
+  { pt: "Instruções individuais: variações de função por posição e marcação individual", en: "Individual instructions: role variations per position and man-marking" },
+  { pt: "Olheiros de verdade: missões de observação, relatórios que revelam os jogadores aos poucos e promessas de fora para a base", en: "Real scouting: scouting missions, reports that reveal players bit by bit, and outside prospects for your academy" },
 ];

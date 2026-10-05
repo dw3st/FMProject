@@ -4,6 +4,11 @@
  * the screen fetches and renders, these functions only shape what it already has.
  */
 import { moraleAttention } from "@/Domain/morale/morale";
+import { daysBetween } from "@/Domain/dates";
+import { WINDOWS } from "@/Domain/market/windowConfig";
+
+/** "Window closes in N days" from this many days before the close. */
+const WINDOW_ATTENTION_DAYS = WINDOWS.ATTENTION_DAYS;
 import type { ClubMoraleState, PlayerPromise, TalkReason } from "@/types/moraleTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { RosterPlayer, StandingRow } from "@/types/playerTypes";
@@ -85,7 +90,11 @@ export type AttentionItem =
   | { kind: "contractGroup"; count: number; names: string[] }
   | { kind: "youthIntake"; count: number }
   | { kind: "talk"; playerId: string; name: string; reason: TalkReason; club?: string }
-  | { kind: "promiseDue"; playerId: string; name: string; promise: PlayerPromise };
+  | { kind: "promiseDue"; playerId: string; name: string; promise: PlayerPromise }
+  // Etapa 25: the transfer window of the club's country and the manager's contract.
+  | { kind: "windowClosing"; days: number; until: string }
+  | { kind: "windowOpen"; until: string }
+  | { kind: "managerRenewal" };
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
 const ATTENTION_GROUP_AFTER = 3;
@@ -102,9 +111,19 @@ export function attentionItems(input: {
   inbox: InboxMessage[];
   /** Talk requests and promises of the human club (`.claude/rules/game/morale.md`). */
   morale?: ClubMoraleState;
+  /** The club's transfer window (`.claude/rules/game/transfer-windows.md`). */
+  window?: { open: boolean; until?: string } | null;
+  /** The board's renewal offer is waiting for an answer. */
+  renewalPending?: boolean;
 }): AttentionItem[] {
   const { players, today, seasonEnd, inbox } = input;
   const items: AttentionItem[] = [];
+
+  if (input.renewalPending) items.push({ kind: "managerRenewal" });
+  if (input.window?.open && input.window.until) {
+    const days = daysBetween(today, input.window.until);
+    items.push(days <= WINDOW_ATTENTION_DAYS ? { kind: "windowClosing", days, until: input.window.until } : { kind: "windowOpen", until: input.window.until });
+  }
 
   // Players asking to talk, then promises close to their deadline.
   if (input.morale) {

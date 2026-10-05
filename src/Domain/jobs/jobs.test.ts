@@ -172,20 +172,24 @@ describe("managers when the human changes club", () => {
     mgr("y", 0, { squadId: "other" }),
   ];
 
-  test("swap: the new club's coach takes the old club", () => {
-    const out = moveHumanManager(base(), { toSquadId: "new", fromSquadId: "old", date: "2027-05-20" });
+  test("no swap (D4): the new club's coach goes free, the old club gets an interim", () => {
+    const out = moveHumanManager(base(), { toSquadId: "new", fromSquadId: "old", fromClubName: "Old FC", date: "2027-05-20" });
     expect(out.find((m) => m.isPlayer)).toMatchObject({
       squadId: "new",
-      clubs: [{ squadId: "old", from: "2026-08-01", to: "2027-05-20" }, { squadId: "new", from: "2027-05-20" }],
+      clubs: [{ squadId: "old", from: "2026-08-01", to: "2027-05-20", left: "moved" }, { squadId: "new", from: "2027-05-20" }],
     });
-    expect(out.find((m) => m.id === "x")!.squadId).toBe("old");
-    expect(new Set(out.map((m) => m.squadId)).size).toBe(3);
+    expect(out.find((m) => m.id === "x")).toMatchObject({ squadId: "", freeSince: "2027-05-20" });
+    const interim = out.find((m) => m.squadId === "old" && !m.isPlayer)!;
+    expect(interim.interim).toBe(true);
+    expect(interim.name).toContain("Old FC");
+    expect(new Set(out.filter((m) => m.squadId).map((m) => m.squadId)).size).toBe(3);
   });
 
   test("sacked: an interim coach for the old club; hired while unemployed: the displaced coach is clubless", () => {
-    const sacked = sackHumanManager(base(), { date: "2027-02-01", interim: { id: "coach_old_i", name: "Interino" } });
+    const sacked = sackHumanManager(base(), { date: "2027-02-01", clubName: "Old FC" });
     expect(sacked.find((m) => m.isPlayer)!.squadId).toBe("");
-    expect(sacked.find((m) => m.id === "coach_old_i")!.squadId).toBe("old");
+    expect(sacked.find((m) => m.isPlayer)!.clubs!.at(-1)!.left).toBe("sacked");
+    expect(sacked.find((m) => !m.isPlayer && m.squadId === "old")!.interim).toBe(true);
     const hired = moveHumanManager(sacked, { toSquadId: "new", fromSquadId: null, date: "2027-03-01" });
     expect(hired.find((m) => m.isPlayer)!.clubs!.map((c) => c.squadId)).toEqual(["old", "new"]);
     expect(hired.find((m) => m.id === "x")!.squadId).toBe("");

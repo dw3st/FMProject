@@ -3,6 +3,7 @@ import { addDays } from "@/Domain/dates";
 import type { FinancialTier } from "@/types/playerTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import type { ManagerRecord, ManagerTitle } from "@/types/managerTypes";
+import { cleanRecord, closePassage, makeInterim, toFree } from "@/Domain/managers/managerRecords";
 
 /**
  * Job offers to the human manager (`.claude/rules/game/jobs.md`, Etapa 20). Pure: no I/O, a
@@ -196,10 +197,12 @@ export function pickOfferingClubs(args: {
   home: { country: string | null; continent: string | null };
   count: number;
   rng: () => number;
+  /** Clubs with a vacant manager's job weigh × VACANCY_WEIGHT (Etapa 25). */
+  vacant?: Set<string>;
 }): OfferCandidate[] {
   const pool = args.candidates.map((c) => ({
     c,
-    w: locationWeight(c, args.home)
+    w: (args.vacant?.has(c.squadId) ? JOBS.VACANCY_WEIGHT : 1) * locationWeight(c, args.home)
       * Math.exp(-((c.prestige - args.band.target) ** 2) / (2 * args.band.sigma ** 2)),
   }));
   const out: OfferCandidate[] = [];
@@ -288,45 +291,46 @@ export function mergeOffers(current: JobOffer[], incoming: JobOffer[]): JobOffer
 // ── Managers when the human changes club ──────────────────────────────────────
 
 /**
- * The human manager takes over `toSquadId` on `date`. The club's coach moves to the club the human
- * leaves (`fromSquadId`), so both keep one manager each; without a club to leave (unemployed) the
- * displaced coach has no club. The human's passages are kept in `clubs`.
+ * The human manager takes over `toSquadId` on `date` (D4, Etapa 25: no more swap). The club's coach
+ * goes to the free pool (`left: "moved"`); the club the human leaves (`fromSquadId`) gets an interim,
+ * and the caller opens a vacancy there so it hires by the AI rule. The human's passages are kept.
  */
 export function moveHumanManager(
   managers: ManagerRecord[],
-  args: { toSquadId: string; fromSquadId: string | null; date: string },
+  args: { toSquadId: string; fromSquadId: string | null; fromClubName?: string; date: string },
 ): ManagerRecord[] {
-  return managers.map((m) => {
+  const out: ManagerRecord[] = [];
+  for (const m of managers) {
     if (m.isPlayer) {
-      const clubs = closePassage(m.clubs ?? [], args.date);
-      return { ...m, squadId: args.toSquadId, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] };
+      const clubs = closePassage(m.clubs, args.date, "moved");
+      out.push(cleanRecord({ ...m, squadId: args.toSquadId, freeSince: undefined, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] }));
+    } else if (m.squadId === args.toSquadId) {
+      // An interim with nothing to his name just disappears (as when an AI club hires).
+      if (!(m.interim && m.points === 0 && m.titles.length === 0)) out.push(toFree(m, args.date, m.interim ? "interim" : "moved"));
+    } else {
+      out.push(m);
     }
-    if (m.squadId === args.toSquadId) return { ...m, squadId: args.fromSquadId ?? "" };
-    return m;
-  });
-}
-
-/**
- * The human manager is sacked from his club on `date`: he keeps no club, and the club gets a new
- * coach (`interim`, a fresh record) so it is never without one.
- */
-export function sackHumanManager(
-  managers: ManagerRecord[],
-  args: { date: string; interim: { id: string; name: string } },
-): ManagerRecord[] {
-  const me = managers.find((m) => m.isPlayer);
-  if (!me || !me.squadId) return managers;
-  const out = managers.map((m) =>
-    m.isPlayer ? { ...m, squadId: "", clubs: closePassage(m.clubs ?? [], args.date) } : m);
-  if (!out.some((m) => !m.isPlayer && m.squadId === me.squadId)) {
-    out.push({
-      id: args.interim.id, name: args.interim.name, squadId: me.squadId, isPlayer: false,
-      points: 0, seasons: 0, titles: [],
-    });
+  }
+  if (args.fromSquadId && !out.some((m) => !m.isPlayer && m.squadId === args.fromSquadId)) {
+    out.push(makeInterim(args.fromSquadId, args.fromClubName ?? args.fromSquadId, args.date, new Set(out.map((m) => m.id))));
   }
   return out;
 }
 
-function closePassage(clubs: NonNullable<ManagerRecord["clubs"]>, date: string) {
-  return clubs.map((c, i) => (i === clubs.length - 1 && !c.to ? { ...c, to: date } : c));
+/**
+ * The human manager leaves his club on `date` (sacked, or his contract ended: `left`): he keeps no
+ * club, and an interim takes over (the caller opens a vacancy so the club hires by the AI rule).
+ */
+export function sackHumanManager(
+  managers: ManagerRecord[],
+  args: { date: string; clubName: string; left?: "sacked" | "contract" },
+): ManagerRecord[] {
+  const me = managers.find((m) => m.isPlayer);
+  if (!me || !me.squadId) return managers;
+  const out = managers.map((m) =>
+    m.isPlayer ? cleanRecord({ ...m, squadId: "", freeSince: args.date, clubs: closePassage(m.clubs, args.date, args.left ?? "sacked") }) : m);
+  if (!out.some((m) => !m.isPlayer && m.squadId === me.squadId)) {
+    out.push(makeInterim(me.squadId, args.clubName, args.date, new Set(out.map((m) => m.id))));
+  }
+  return out;
 }

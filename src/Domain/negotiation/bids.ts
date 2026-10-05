@@ -68,6 +68,16 @@ function hasBid(bids: MarketBid[], playerId: string, kind: MarketBid["kind"]): b
 }
 
 /**
+ * D6 (Etapa 25): up to MAX_TRANSFER_BIDS_PER_PLAYER live transfer bids for the same player, never two
+ * from one club — a small auction through the inbox.
+ */
+function transferBidsFull(bids: MarketBid[], playerId: string): boolean {
+  return bids.filter((b) => b.playerId === playerId && b.kind === "transfer").length >= B.MAX_PER_PLAYER;
+}
+const bidClubs = (bids: MarketBid[], playerId: string) =>
+  new Set(bids.filter((b) => b.playerId === playerId).map((b) => b.clubId));
+
+/**
  * The day's new AI bids for the human club's players (`.claude/rules/game/negotiation.md`):
  * - one transfer bid for a random sell-listed player, from a club whose needs cover his role;
  * - now and then (`UNLISTED_CHANCE`), a bid of a bigger club for the human's best player;
@@ -85,22 +95,34 @@ export function generateBidsForHuman(args: {
   pending: MarketBid[];
   seasonEndOf: (squad: Squad) => string;
   newId: () => string;
+  /** Transfer windows: only buyers whose window is open bid (absent = every buyer). */
+  buyerOpen?: (squad: Squad) => boolean;
+  /** Last open day of the buyer's window: the bid expires by then. */
+  buyerClosesOn?: (squad: Squad) => string | undefined;
 }): MarketBid[] {
   const { rng, humanSquad, squads, profiles, date } = args;
-  const out: MarketBid[] = [];
-  const all = () => [...args.pending, ...out];
+  const pushed: MarketBid[] = [];
+  const out = {
+    push(bid: MarketBid) {
+      const close = args.buyerClosesOn?.(squads.get(bid.clubId) ?? humanSquad);
+      pushed.push(close && close < bid.expires ? { ...bid, expires: close } : bid);
+    },
+    get length() { return pushed.length; },
+  };
+  const all = () => [...args.pending, ...pushed];
   const room = () => all().length < B.MAX_PENDING;
   // Never a player the human club could not let go (squad of 15+, cover at the position, role minimums: the strict, AI-seller rule).
   const owned = (id: string) =>
     humanSquad.players.find((p) => p.id === id && !p.loan && !squadDepthBlocked(p, humanSquad, false)) ?? null;
   const buyersFor = (player: RosterPlayer, needKind?: "cover_need") =>
     Object.entries(profiles)
-      .filter(([id]) => id !== humanSquad.id && squads.has(id))
+      .filter(([id]) => id !== humanSquad.id && squads.has(id) && !bidClubs(all(), player.id).has(id))
+      .filter(([id]) => !args.buyerOpen || args.buyerOpen(squads.get(id)!))
       .filter(([, prof]) => prof.needs?.some((n) => playerMatchesBand(player, n.position) && (!needKind || n.intentType === needKind)))
       .map(([id]) => squads.get(id)!);
 
   // Listed player: one transfer bid per day.
-  const listed = args.sellList.map((c) => owned(c.playerId)).filter((p): p is RosterPlayer => !!p && !hasBid(all(), p.id, "transfer"));
+  const listed = args.sellList.map((c) => owned(c.playerId)).filter((p): p is RosterPlayer => !!p && !transferBidsFull(all(), p.id));
   if (listed.length > 0 && room()) {
     const player = listed[Math.floor(rng() * listed.length)]!;
     const rating = playerOverallRating(player);
@@ -120,7 +142,7 @@ export function generateBidsForHuman(args: {
   for (const c of args.sellList) {
     if (!c.requested || !room()) continue;
     const player = owned(c.playerId);
-    if (!player || hasBid(all(), player.id, "transfer")) continue;
+    if (!player || transferBidsFull(all(), player.id)) continue;
     if (rng() >= MORALE.REQUEST_BID_CHANCE) continue;
     const rating = playerOverallRating(player);
     const buyers = buyersFor(player).filter((b) => {
@@ -163,7 +185,7 @@ export function generateBidsForHuman(args: {
     });
     if (bid) out.push(bid);
   }
-  return out;
+  return pushed;
 }
 
 /** Bids still answerable on `date` whose player is still at the human club. */

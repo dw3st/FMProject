@@ -10,6 +10,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
+import { ManagerRenewalCard } from "@/GameInterface/Components/ManagerRenewalCard";
 import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
@@ -152,6 +153,13 @@ const CATEGORY_META: Record<
     color: "text-chart-3",
     bg: "bg-chart-3/15",
     border: "border-chart-3/30",
+    Icon: JobIcon,
+  },
+  manager_news: {
+    labelKey: "inbox.categories.manager_news",
+    color: "text-chart-5",
+    bg: "bg-chart-5/15",
+    border: "border-chart-5/30",
     Icon: JobIcon,
   },
 };
@@ -412,8 +420,14 @@ function leaguePrizeTexts(
     return { subject: t(`morale.inbox.subject.${key}`, { player: message.playerName }), preview: message.playerName };
   }
   if (message.category === "transfer") {
-    const vars = { club: message.clubName, player: message.playerName, fee: formatFee(message.fee ?? 0) };
+    const vars = transferVars(message);
     return { subject: t(`inbox.transfer.subject.${message.kind}`, vars), preview: message.fee ? formatFee(message.fee) : message.clubName };
+  }
+  if (message.category === "manager_news") {
+    return {
+      subject: t("inbox.managerNews.subject", { count: message.items.length }),
+      preview: message.items.map((i) => i.clubName).join(", "),
+    };
   }
   if (message.category !== "season" || message.kind !== "league_prize") return null;
   return {
@@ -542,6 +556,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "job" && <JobBody message={message} leagues={leagues} />}
         {message.category === "transfer" && <TransferNegotiationBody message={message} />}
         {message.category === "player" && <PlayerTalkBody message={message} />}
+        {message.category === "manager_news" && <ManagerNewsBody message={message} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(
@@ -550,6 +565,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
             )}
           </p>
         )}
+        {message.category === "board" && message.kind === "contract_offer" && <RenewalBody />}
         {message.category === "contract" && (
           <p className="text-sm text-foreground m-0">
             {t(`inbox.contract.${message.kind}`, {
@@ -644,6 +660,31 @@ function RetirementBody({
  * Negotiation news (`.claude/rules/game/negotiation.md`): an AI bid card (live state from
  * `GET /negotiation`), a loan that ended, or sell-on money received.
  */
+/** i18n variables of a negotiation / window message. */
+function transferVars(message: Extract<InboxMessage, { category: "transfer" }>) {
+  const day = (d?: string) => (d ? formatFullDate(d) : "—");
+  return {
+    club: message.clubName, player: message.playerName, fee: formatFee(message.fee ?? 0),
+    share: Math.round((message.wageShare ?? 1) * 100), pct: message.sellOnPct ?? 0,
+    country: message.country ?? message.clubName, until: day(message.until), opensOn: day(message.opensOn),
+    deadline: day(message.expires), wage: formatFee(message.wage ?? 0), years: message.years ?? 0,
+  };
+}
+
+/** Sackings and hirings of the day in the player's league (`.claude/rules/game/managers.md`). */
+function ManagerNewsBody({ message }: { message: Extract<InboxMessage, { category: "manager_news" }> }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="m-0 pl-5 space-y-1">
+      {message.items.map((i, n) => (
+        <li key={`${i.squadId}-${n}`} className="text-sm text-foreground">
+          {t(`inbox.managerNews.${i.kind}${i.interim ? "Interim" : ""}`, { club: i.clubName, manager: i.managerName })}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, { category: "transfer" }> }) {
   const { t } = useTranslation();
   const { session, refresh } = useGameSave();
@@ -659,10 +700,7 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
       .catch(() => { if (alive) setBid(null); });
     return () => { alive = false; };
   }, [isBid, saveId, message.bidId]);
-  const vars = {
-    club: message.clubName, player: message.playerName, fee: formatFee(message.fee ?? 0),
-    share: Math.round((message.wageShare ?? 1) * 100), pct: message.sellOnPct ?? 0,
-  };
+  const vars = transferVars(message);
   return (
     <div className="space-y-4">
       <p className="text-sm text-foreground m-0">{t(`inbox.transfer.body.${message.kind}`, vars)}</p>
@@ -747,6 +785,13 @@ function PrizeLine({ prize }: { prize?: number }) {
   );
 }
 
+/** The board's renewal offer, live from the save (Accept / Decline while pending). */
+function RenewalBody() {
+  const { session, save, refresh } = useGameSave();
+  if (!session) return null;
+  return <ManagerRenewalCard saveId={session.saveId} renewal={save?.managerRenewal} onAnswered={() => void refresh()} />;
+}
+
 /** Body text of a board message (`.claude/rules/game/board-fans.md`). */
 function boardText(
   message: Extract<InboxMessage, { category: "board" }>,
@@ -764,6 +809,12 @@ function boardText(
       return t("inbox.board.bonus", { amount: formatFee(message.bonus ?? 0) });
     case "sacked":
       return t(`inbox.board.sacked.${message.reason ?? "board"}`);
+    case "contract_offer":
+    case "contract_renewed":
+      return t(`inbox.board.${message.kind}`, {
+        wage: formatFee(message.contract?.wage ?? 0), count: message.contract?.seasons ?? 1,
+        until: message.contract?.until ? formatFullDate(message.contract.until) : "",
+      });
     default:
       return t(`inbox.board.${message.kind}`, { board: message.board ?? 0 });
   }

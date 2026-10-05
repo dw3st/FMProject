@@ -43,7 +43,7 @@ function formatWeekLabel(weekStart: string) {
 // ── Per-kind display metadata ────────────────────────────────────────────────
 
 const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in", "board_funding"];
-const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "operational", "transfer_out", "facilities", "facilities_upkeep"];
+const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "manager", "operational", "transfer_out", "facilities", "facilities_upkeep"];
 // `club_change` (the manager changed club) is a balance transfer, not income or expense.
 const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change"];
 
@@ -61,6 +61,7 @@ const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   facilities: { icon: "construction", labelKey: "financesScreen.facilities" },
   facilities_upkeep: { icon: "construction", labelKey: "financesScreen.facilitiesUpkeep" },
   board_funding: { icon: "handshake", labelKey: "financesScreen.boardFunding" },
+  manager: { icon: "staff", labelKey: "financesScreen.kinds.manager" },
 };
 
 function fixtureGateKind(competitionSlug: string): GateKind {
@@ -130,10 +131,12 @@ export function FinancesScreen() {
     return {
       wages: squadWeeklyWages(squad.players, wageFactorOf(squad)),
       staff: squadStaffWages(squad.staff, wageFactorOf(squad)),
+      // The manager's own wage (`.claude/rules/game/jobs.md` → "Contrato do técnico").
+      manager: save?.managerContract?.squadId === squad.id ? save.managerContract.wage : 0,
       operational: weeklyOperationalCost(squad),
       commercial: Math.round((squad.finances?.commercial ?? 0) / 52),
     };
-  }, [squad]);
+  }, [squad, save?.managerContract]);
 
   // Upcoming home fixtures (any competition) with a projected gate via the same gateRevenue used
   // server-side — see design spec §2 "Bilheteria".
@@ -355,11 +358,14 @@ export function FinancesScreen() {
                 <ProjectionRow icon="handshake" label={t("financesScreen.commercial")} value={weeklyProjection.commercial} positive />
                 <ProjectionRow icon="staff" label={t("financesScreen.playerSalaries")} value={-weeklyProjection.wages} />
                 <ProjectionRow icon="staff" label={t("financesScreen.staffSalaries")} value={-weeklyProjection.staff} />
+                {weeklyProjection.manager > 0 && (
+                  <ProjectionRow icon="staff" label={t("financesScreen.kinds.manager")} value={-weeklyProjection.manager} />
+                )}
                 <ProjectionRow icon="building" label={t("financesScreen.operational")} value={-weeklyProjection.operational} />
                 <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
                   <span className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] font-display font-bold">{t("financesScreen.weeklyProfitLoss")}</span>
                   {(() => {
-                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.operational;
+                    const net = weeklyProjection.commercial - weeklyProjection.wages - weeklyProjection.staff - weeklyProjection.manager - weeklyProjection.operational;
                     return (
                       <span className={`tabular-nums text-lg font-black font-display ${net >= 0 ? "text-chart-2" : "text-destructive"}`}>
                         {net >= 0 ? "+" : ""}{formatEuros(net)}

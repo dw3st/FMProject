@@ -62,6 +62,9 @@ export const JOBS = {
     GUARANTEED_AFTER_DAYS: 120,
   },
 
+  /** A club with a vacant job (AI manager sacked, interim in charge) is this much likelier to offer (Etapa 25). */
+  VACANCY_WEIGHT: 3,
+
   /** Season-end offers without a known first match of the new season stay this long. */
   SEASON_END_FALLBACK_DAYS: 30,
 } as const;

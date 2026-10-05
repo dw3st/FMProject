@@ -9,6 +9,8 @@ import type { CountryEntry } from "@/types/worldTypes";
 import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
 import { loadSession } from "@/GameInterface/gameSession";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
+import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
+import { addDays } from "@/Domain/dates";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -53,6 +55,7 @@ function useDebounced<T>(value: T, delay: number): T {
 
 export function ScoutScreen() {
   const { t, i18n } = useTranslation();
+  const windowsData = useTransferWindows();
   const [session] = useState(() => loadSession());
   const [filters, setFilters] = useState<ScoutFilterState>(() => loadFilters());
   const debouncedFilters = useDebounced(filters, 1_000);
@@ -200,6 +203,12 @@ export function ScoutScreen() {
           filtering={isFiltering}
           mySquadId={mySquadId}
           onOffer={(p) => (p.free ? setSignTarget(p) : setOfferTarget(p))}
+          offerBlocked={(p) => {
+            if (!windowsData || windowsData.player.open) return null;
+            const today = session?.currentDate ?? "";
+            const preContract = !!p.contractEnd && !!today && p.contractEnd >= today && p.contractEnd <= addDays(today, 183);
+            return preContract ? null : windowClosedText(t, i18n.language, windowsData.player.opensOn);
+          }}
           sellListedIds={sellListedIds}
           error={fetchError}
           onRetry={() => setRefreshTick((n) => n + 1)}

@@ -26,7 +26,7 @@ import type {
   Highlight,
   WeekMoney,
 } from "@/GameInterface/Dashboard/dashboardData";
-import { formatEuros } from "@/Domain/money";
+import { formatEuros, formatWageShort } from "@/Domain/money";
 import { projectProgress } from "@/Domain/facilities/facilities";
 import { addDays } from "@/Domain/dates";
 import type { ClubFacilities, FacilityKind, StandId } from "@/types/facilityTypes";
@@ -146,6 +146,7 @@ export function ClubCard({
   managerRank,
   reputation,
   pendingOffers,
+  contract,
   board,
   fans,
   boardTrend,
@@ -164,6 +165,8 @@ export function ClubCard({
   reputation: number | null;
   /** Pending job offers. */
   pendingOffers: number;
+  /** The manager's contract (Etapa 25): until / weekly wage. */
+  contract?: { until: string; wage: number } | null;
   board: number;
   fans: number;
   /** Change vs. 7 days ago (null without enough history). */
@@ -213,6 +216,11 @@ export function ClubCard({
           <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
             {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
           </a>
+        )}
+        {contract && (
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
+          </span>
         )}
       </div>
 
@@ -560,6 +568,27 @@ export function AttentionCard({
             ? t("morale.attention.promiseMinutes", { name: item.name, target: item.promise.target ?? 1, played: item.promise.played ?? 0 })
             : t(`morale.attention.promise_${item.promise.kind}`, { name: item.name, date: formatDay(item.promise.until ?? "", i18n.language) }),
           href: playerHref(item.playerId),
+        };
+      case "windowClosing":
+        return {
+          icon: "clock",
+          tone: "text-chart-4",
+          text: t("transferWindows.attention.closing", { count: item.days, date: formatDay(item.until, i18n.language) }),
+          href: "/transfers",
+        };
+      case "windowOpen":
+        return {
+          icon: "check-circle",
+          tone: "text-chart-2",
+          text: t("transferWindows.attention.open", { date: formatDay(item.until, i18n.language) }),
+          href: "/transfers",
+        };
+      case "managerRenewal":
+        return {
+          icon: "file-signature",
+          tone: "text-primary",
+          text: t("managerContract.attention"),
+          href: "/inbox",
         };
     }
   }

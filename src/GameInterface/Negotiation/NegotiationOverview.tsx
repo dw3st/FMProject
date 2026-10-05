@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { DataTable } from "@/GameInterface/ui/DataTable";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { formatFee } from "@/Domain/money";
-import type { ActiveLoan, MarketBid, SellOnHeld } from "@/types/transferMarketTypes";
+import type { ActiveLoan, MarketBid, PreContract, RivalBid, SellOnHeld } from "@/types/transferMarketTypes";
 
-type Section = "out" | "in" | "sellOn" | "bids";
+type Section = "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts";
 
 interface Overview {
   clubId: string;
@@ -13,6 +13,10 @@ interface Overview {
   loans: ActiveLoan[];
   loanList: string[];
   sellOnHeld: SellOnHeld[];
+  /** Etapa 25: rivals on the human's targets, pre-contracts, targets lost to a rival. */
+  rivals?: RivalBid[];
+  preContracts?: PreContract[];
+  lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
 }
 
 /**
@@ -50,6 +54,36 @@ export function NegotiationOverview({ saveId, sections }: { saveId: string; sect
   return (
     <div className="flex flex-col gap-6">
       {sections.map((s) => {
+        if (s === "rivals") {
+          const rivals = data.rivals ?? [];
+          return block(s, t("negotiation.overview.rivals"), (
+            <DataTable
+              rows={rivals}
+              rowKey={(r) => `${r.playerId}:${r.clubId}`}
+              columns={[
+                { key: "p", header: t("negotiation.overview.player"), cell: (r) => <span className="font-semibold text-foreground">{r.playerName}</span> },
+                { key: "c", header: t("negotiation.rival.club"), cell: (r) => r.clubName },
+                { key: "f", header: t("negotiation.overview.offer"), cell: (r) => formatFee(r.fee), className: "tabular-nums" },
+                { key: "d", header: t("negotiation.rival.deadline"), cell: (r) => fmtDate(r.deadline), className: "tabular-nums" },
+              ]}
+            />
+          ), rivals.length === 0);
+        }
+        if (s === "preContracts") {
+          const pcs = data.preContracts ?? [];
+          return block(s, t("negotiation.preContract.title"), (
+            <DataTable
+              rows={pcs}
+              rowKey={(p) => p.playerId}
+              columns={[
+                { key: "p", header: t("negotiation.overview.player"), cell: (p) => <span className="font-semibold text-foreground">{p.playerName}</span> },
+                { key: "c", header: t("negotiation.overview.from"), cell: (p) => p.fromClubName },
+                { key: "w", header: t("negotiation.preContract.wage"), cell: (p) => formatFee(p.wage), className: "tabular-nums" },
+                { key: "y", header: t("negotiation.preContract.years"), cell: (p) => p.years, className: "tabular-nums" },
+              ]}
+            />
+          ), pcs.length === 0);
+        }
         if (s === "out") {
           return block(s, t("negotiation.overview.loanedOut"), (
             <DataTable

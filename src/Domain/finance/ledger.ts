@@ -25,7 +25,12 @@ export type LedgerKind =
   /** Weekly upkeep of the training ground and academy above the club's implied level. */
   | "facilities_upkeep"
   /** The board's share of a project's instalment (board ≥ 85). */
-  | "board_funding";
+  | "board_funding"
+  /**
+   * The human manager's weekly wage (`.claude/rules/game/jobs.md` → "Contrato do técnico"); `ref.stage`
+   * "severance" is the payoff when he is sacked.
+   */
+  | "manager";
 
 /** One line of the club's cash extract. `amount` is signed (income positive, expense negative). */
 export interface LedgerEntry {
@@ -66,6 +71,7 @@ const LEDGER_KINDS: LedgerKind[] = [
   "facilities",
   "facilities_upkeep",
   "board_funding",
+  "manager",
 ];
 
 /**

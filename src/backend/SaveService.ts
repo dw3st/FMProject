@@ -20,7 +20,7 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import type { FamiliarityKey } from "@/types/familiarityTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
-import type { StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
+import type { DayTransfer, StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
@@ -28,6 +28,7 @@ import { initialStaff } from "@/Domain/staff/staff";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { initialFamiliarity } from "@/Domain/familiarity/familiarity";
 import { buildInitialManagers } from "@/Domain/managers/managers";
+import type { ManagerContract, ManagerRenewalOffer } from "@/Domain/managers/managerContract";
 import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
@@ -99,6 +100,18 @@ export interface SaveMeta {
   jobOffers?: JobOffer[];
   /** Season label of the player's league whose mid-season offer window already ran. */
   jobsMidSeason?: string;
+  /** First in-game day of the career (the new-career transfer grace, `.claude/rules/game/transfer-windows.md`). */
+  careerStart?: string;
+  /** The human manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"). */
+  managerContract?: ManagerContract;
+  /** Wages + severance the human manager received in the career (display only). */
+  managerEarnings?: number;
+  /** The board's pending renewal offer (answered through `POST /api/saves/:id/manager-contract`). */
+  managerRenewal?: ManagerRenewalOffer;
+  /** Contract notices already sent, as `<kind>:<until>` ("decided", "warned"). */
+  managerContractNotices?: string[];
+  /** AI clubs without a manager (interim in charge) and the day they hire (`.claude/rules/game/managers.md`). */
+  managerVacancies?: Record<string, { since: string; hireOn: string }>;
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────
@@ -490,6 +503,14 @@ export class SaveService {
     await this.dal.writeDayLog(saveId, date, log);
   }
 
+  /** Records player moves of the day in its log (`StoredDayLog.transfers`). */
+  async appendDayTransfers(saveId: string, date: string, moves: DayTransfer[]): Promise<void> {
+    if (moves.length === 0) return;
+    const existing = await this.dal.readDayLog(saveId, date);
+    const log: StoredDayLog = existing ?? { saveId, date, events: [] };
+    await this.dal.writeDayLog(saveId, date, { ...log, transfers: [...(log.transfers ?? []), ...moves] });
+  }
+
   /** Read a stored day log and resolve TransferRefs → full TransferEvents. */
   async resolveDayLog(saveId: string, date: string): Promise<DayLog | null> {
     const stored = await this.dal.readDayLog(saveId, date);
@@ -714,6 +735,7 @@ export class SaveService {
       formation:      body.formation      ?? "4-3-3",
       tactical_style: body.tactical_style ?? DEFAULT_TACTICAL_STYLE,
       currentDate: playerLeagueStart,
+      ...(playerLeagueStart ? { careerStart: playerLeagueStart } : {}),
       min_energy_to_train: DEFAULT_MIN_ENERGY_TO_TRAIN,
       training_intensity: DEFAULT_TRAINING_INTENSITY,
       activeLeagues,
@@ -835,7 +857,31 @@ export class SaveService {
     // replacing the imported coach of his club. Start kits never touch this file.
     await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId
       ? { squadId: playerSquadId, name: body.manager?.name?.trim() || body.clubName, ...(playerLeagueStart ? { from: playerLeagueStart } : {}) }
-      : null));
+      : null, playerLeagueStart));
+
+    // The human manager's first contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"):
+    // two seasons at the wage of a starting reputation.
+    if (playerSquadId) {
+      try {
+        const { managerWeeklyWage, contractUntil, MANAGER_CONTRACT } = await import("@/Domain/managers/managerContract");
+        const { managerReputation } = await import("@/Domain/jobs/jobs");
+        const squad = squadCache.get(playerSquadId);
+        const managers = await this.dal.readManagers(id);
+        const start = playerLeagueStart ?? now.slice(0, 10);
+        const rep = managerReputation(managers, 60, parseInt(start.slice(0, 4), 10));
+        const seasonEnd = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug)?.end ?? defaultSeasonEnd(start);
+        meta.managerContract = {
+          squadId: playerSquadId,
+          wage: managerWeeklyWage(squad?.wageRevenueBasis ?? 0, rep),
+          until: contractUntil(seasonEnd, MANAGER_CONTRACT.INITIAL_SEASONS),
+          signed: start,
+        };
+        meta.managerEarnings = 0;
+        await this.dal.writeMeta(meta);
+      } catch (e) {
+        logError("jobs", `save ${id}: failed to set the manager contract`, e);
+      }
+    }
 
     // National cups: one per country, over the country's league window (membership = squad folders).
     // Each country is generated independently — one country's failure must not skip the rest.
