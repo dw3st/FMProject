@@ -8,7 +8,7 @@ import {
 } from "@/Domain/negotiation/negotiation";
 import { loanUntil, loanWeeks, respondToLoanRequest } from "@/Domain/negotiation/loans";
 import { liveBids } from "@/Domain/negotiation/bids";
-import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD, MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
@@ -182,7 +182,7 @@ export const negotiationRoutes = {
       if (parent.id === borrower.id) return json({ error: "not for loan" }, 400);
       const player = parent.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
-      if ((await humanRosterSize(saveService, saveId, borrower)) >= MAX_SQUAD) return json({ error: "squadFull" }, 400);
+      if ((await humanRosterSize(saveService, saveId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);
       if (fee > (borrower.finances?.budget ?? 0)) return json({ error: "Insufficient funds" }, 400);
 
       const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();

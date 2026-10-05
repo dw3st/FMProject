@@ -103,7 +103,7 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
 
 - **Off-season signing dates:** `contractEndFor(date, seasonEnd, years)` (`contracts.ts`) is the one helper for every signing (human free agent, human transfer buy, AI market signing, daily free-agent hire): a `date` past the league's `end` counts from the next season's end.
 - **Renewal limits:** `renewalWithinLimits` — remaining seasons + `years` <= `MAX_YEARS` and age cap, else 400 `tooManyYears`.
-- **Squad cap:** the human transfer buy refuses at `MAX_SQUAD` (`squadFull`); AI buyers (market and sell-list matching) skip at `MAX_SQUAD`.
+- **Squad cap:** AI clubs stop at `MAX_SQUAD` (30; market, sell-list matching, refill). The human club has its own cap `HUMAN_MAX_SQUAD` (36, since 3.9.2: most clubs start the world at 30, so the human could not sign before selling) on the transfer buy, free-agent signing, loan request and youth promotion (`squadFull`).
 - **Role minimums on sale:** `evaluateTransferOffer` refuses (`squadDepth`) an AI seller's sale that would leave its main role below `MIN_BY_ROLE`. The smoke checks the minimums at the end of the run for the rolled clubs.
 - **Loans (Etapa 21):** a borrowed player keeps the parent club's contract; renewing him is 400 `onLoan`, and a loan
   never runs past the contract. Loans held by a rolling club go back before the expiries (`.claude/rules/game/negotiation.md`).

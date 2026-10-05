@@ -1,7 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { MAX_SQUAD, toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { overallAvg } from "@/Domain/playerRating";
 import { wageFactorOf, playerWeeklyWage } from "@/Domain/finance/wages";
@@ -25,7 +25,7 @@ function youthView(squad: Squad) {
     const [lo, hi] = potentialBand(player);
     return { player, overall: overallAvg(player), potential: { low: lo, high: hi } };
   });
-  return { youth, squadSize: squad.players.length, squadLimit: MAX_SQUAD };
+  return { youth, squadSize: squad.players.length, squadLimit: HUMAN_MAX_SQUAD };
 }
 
 /**
@@ -43,7 +43,7 @@ export const youthRoutes = {
     return Response.json(youthView(found.squad));
   },
 
-  /** `POST` - move an academy player into the squad (400 `squadFull` at 30). New wage from the curve. */
+  /** `POST` - move an academy player into the squad (400 `squadFull` at `HUMAN_MAX_SQUAD`). New wage from the curve. */
   "/api/saves/:saveId/youth/:playerId/promote": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
@@ -56,7 +56,7 @@ export const youthRoutes = {
       const { squad } = found;
       const player = squad.youth?.find((p) => p.id === playerId);
       if (!player) return Response.json({ error: "player not found" }, { status: 404 });
-      if ((await humanRosterSize(saveService, saveId, squad)) >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+      if ((await humanRosterSize(saveService, saveId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
       if (!player.contract) return Response.json({ error: "noContract" }, { status: 409 });
       const promoted: RosterPlayer = {
         ...player,

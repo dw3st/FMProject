@@ -14,6 +14,8 @@ const ROLES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
 export const MIN_BY_ROLE: Record<MainRole, number> = { GK: 3, Defender: 7, Midfielder: 7, Forward: 4 };
 export const MAX_SQUAD = 30;
+/** The human club's cap: most clubs start the world at 30, so the human gets room to sign before selling. */
+export const HUMAN_MAX_SQUAD = 36;
 
 export const roleOf = (p: RosterPlayer): MainRole => getMainRole(p.positions[0] ?? "CM");
 

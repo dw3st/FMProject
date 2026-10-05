@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.9.2",
+    date: "2026-10-05",
+    items: [
+      { pt: "O elenco do seu clube agora vai até 36 jogadores, para você poder contratar logo no começo sem precisar vender antes.", en: "Your club's squad now holds up to 36 players, so you can sign players right from the start without selling first." },
+    ],
+  },
+  {
     version: "3.9.1",
     date: "2026-10-05",
     items: [

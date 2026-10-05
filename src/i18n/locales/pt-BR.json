@@ -1483,7 +1483,7 @@
     "loading": "Carregando a base...",
     "loadFailed": "Não foi possível carregar a base.",
     "actionFailed": "Algo deu errado. Tente de novo.",
-    "squadFull": "O elenco está cheio (30). Dispense ou venda um jogador antes.",
+    "squadFull": "O elenco está cheio (36). Dispense ou venda um jogador antes.",
     "subtitle": "Os jovens chegam aos 16-17 anos a cada temporada e saem aos 19. Elenco: {{size}}/{{limit}}.",
     "empty": "Ainda não há jovens na base. A primeira safra chega no fim da temporada.",
     "player": "Jogador",
@@ -1875,7 +1875,7 @@
       "lowWage": "O salário é baixo demais para esse jogador.",
       "tooManyYears": "O jogador não assina tantos anos na idade dele.",
       "invalidYears": "Escolha entre 1 e 5 anos.",
-      "squadFull": "Seu elenco está cheio (30 jogadores).",
+      "squadFull": "Seu elenco está cheio (36 jogadores).",
       "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação."
     }
   },

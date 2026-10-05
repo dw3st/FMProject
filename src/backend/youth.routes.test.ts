@@ -4,6 +4,7 @@ import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { generateIntake } from "@/Domain/youth/youth";
+import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 
 describe("youth routes", () => {
   let saveId = "";
@@ -11,7 +12,7 @@ describe("youth routes", () => {
     if (saveId) await saveService.deleteSave(saveId);
   });
 
-  test("owner check, list, promote (limit 30), release to the free pool", async () => {
+  test("owner check, list, promote (limit HUMAN_MAX_SQUAD), release to the free pool", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -61,7 +62,7 @@ describe("youth routes", () => {
     expect(after.youth!.some((p) => p.id === pId)).toBe(false);
 
     // Squad limit: a full squad refuses.
-    const filler = after.players.slice(0, 30 - after.players.length).map((p, i) => ({ ...p, id: `fill_${i}` }));
+    const filler = Array.from({ length: HUMAN_MAX_SQUAD - after.players.length }, (_, i) => ({ ...after.players[i % after.players.length]!, id: `fill_${i}` }));
     const stuffed = { ...after, players: [...after.players, ...filler] };
     await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, stuffed);
     const thirdId = intake[2]!.id;

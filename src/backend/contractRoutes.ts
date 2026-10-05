@@ -2,7 +2,7 @@ import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
-import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal } from "@/Domain/morale/morale";
@@ -153,7 +153,7 @@ export const contractRoutes = {
       const pool = await saveService.getFreeAgents(saveId);
       const agent = pool.find((f) => f.player.id === playerId);
       if (!agent) return Response.json({ error: "player not found" }, { status: 404 });
-      if ((await humanRosterSize(saveService, saveId, squad)) >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+      if ((await humanRosterSize(saveService, saveId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const check = evaluateContractOffer({ wage, years }, agent.player, squad, date);
