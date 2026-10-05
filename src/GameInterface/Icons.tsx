@@ -92,6 +92,12 @@ import {
   Pencil,
   Plus,
   Volleyball,
+  Laugh,
+  Smile,
+  Meh,
+  Frown,
+  Angry,
+  MessagesSquare,
 } from "lucide-react";
 import type { SVGProps } from "react";
 
@@ -196,6 +202,12 @@ export type IconName =
   | "pencil"
   | "plus"
   | "ball"
+  | "face-very-happy"
+  | "face-content"
+  | "face-neutral"
+  | "face-unhappy"
+  | "face-furious"
+  | "talk"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -296,6 +308,12 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "pencil": Pencil,
   "plus": Plus,
   "ball": Volleyball,
+  "face-very-happy": Laugh,
+  "face-content": Smile,
+  "face-neutral": Meh,
+  "face-unhappy": Frown,
+  "face-furious": Angry,
+  "talk": MessagesSquare,
 };
 
 export interface IconProps {

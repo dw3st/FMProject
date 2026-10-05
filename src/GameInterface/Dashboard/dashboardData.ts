@@ -3,6 +3,8 @@
  * the player's club, the attention list, season highlights and the week's money. No I/O, no React —
  * the screen fetches and renders, these functions only shape what it already has.
  */
+import { moraleAttention } from "@/Domain/morale/morale";
+import type { ClubMoraleState, PlayerPromise, TalkReason } from "@/types/moraleTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { RosterPlayer, StandingRow } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
@@ -81,7 +83,9 @@ export type AttentionItem =
   | { kind: "lowFitnessGroup"; count: number; names: string[] }
   | { kind: "contract"; playerId: string; name: string; until: string }
   | { kind: "contractGroup"; count: number; names: string[] }
-  | { kind: "youthIntake"; count: number };
+  | { kind: "youthIntake"; count: number }
+  | { kind: "talk"; playerId: string; name: string; reason: TalkReason; club?: string }
+  | { kind: "promiseDue"; playerId: string; name: string; promise: PlayerPromise };
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
 const ATTENTION_GROUP_AFTER = 3;
@@ -96,9 +100,18 @@ export function attentionItems(input: {
   /** Last day of the player's league season (`save.season.end`); contracts are skipped without it. */
   seasonEnd: string | null;
   inbox: InboxMessage[];
+  /** Talk requests and promises of the human club (`.claude/rules/game/morale.md`). */
+  morale?: ClubMoraleState;
 }): AttentionItem[] {
   const { players, today, seasonEnd, inbox } = input;
   const items: AttentionItem[] = [];
+
+  // Players asking to talk, then promises close to their deadline.
+  if (input.morale) {
+    const due = moraleAttention({ id: "", name: "", colors: ["", ""], money: 0, players, moraleClub: input.morale }, today);
+    for (const x of due.talks) items.push({ kind: "talk", playerId: x.playerId, name: x.playerName, reason: x.reason, ...(x.clubName ? { club: x.clubName } : {}) });
+    for (const p of due.promisesDue) items.push({ kind: "promiseDue", playerId: p.playerId, name: p.playerName, promise: p });
+  }
 
   const injured = players
     .filter((p) => p.injury && isInjured(p, today))

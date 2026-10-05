@@ -16,6 +16,7 @@ import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal
 import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
+import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
 import { historyRowFromLog } from "@/Domain/history/history";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -173,6 +174,16 @@ export function PlayerScreen({
         </a>
 
         <PlayerCard player={displayPlayer} layout="wide" clubColors={squadColors} />
+
+        {isOwnPlayer && !player.loan && session && (
+          <PlayerMoralePanel
+            saveId={session.saveId}
+            playerId={player.id}
+            playerName={player.name}
+            onRenew={() => setRenewOpen(true)}
+            onChanged={() => void refresh()}
+          />
+        )}
 
         <section className="space-y-2">
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("career.title")}</h2>

@@ -978,7 +978,8 @@
       "retirement": "Retirement",
       "board": "Board",
       "job": "Job offers",
-      "transfer": "Negotiation"
+      "transfer": "Negotiation",
+      "player": "Player"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1862,7 +1863,8 @@
       "lowWage": "The wage is too low for this player.",
       "tooManyYears": "The player will not sign that many years at his age.",
       "invalidYears": "Choose between 1 and 5 years.",
-      "squadFull": "Your squad is full (30 players)."
+      "squadFull": "Your squad is full (30 players).",
+      "unhappy": "He is furious and will not renew without a renewal promise."
     }
   },
   "career": {
@@ -2076,6 +2078,121 @@
       "date": "Date",
       "offer": "Offer",
       "loanOffer": "Loan, {{share}}% of wage"
+    }
+  },
+  "morale": {
+    "title": "Morale {{value}}",
+    "sectionTitle": "Morale",
+    "column": "Morale",
+    "onlyUnhappy": "Unhappy only",
+    "band": {
+      "very_happy": "Very happy",
+      "content": "Content",
+      "neutral": "Neutral",
+      "unhappy": "Unhappy",
+      "furious": "Furious"
+    },
+    "trend": "{{value}} in 7 days",
+    "expected": "Expects {{lo}}-{{hi}} of 5 matches",
+    "played": "played {{n}}",
+    "transferRequest": "Asked for a transfer",
+    "reason": {
+      "minutes": "wants more playing time",
+      "contract": "wants to talk about his contract",
+      "wants_move": "wants to join {{club}}",
+      "chance": "asks for a chance in the team",
+      "none": "no open request"
+    },
+    "statusLabel": "Squad status",
+    "statusAuto": "Auto ({{status}})",
+    "status": {
+      "key": "Key player",
+      "starter": "Starter",
+      "rotation": "Rotation",
+      "backup": "Backup",
+      "youth": "Prospect"
+    },
+    "promisesTitle": "Promises",
+    "until": "until {{date}}",
+    "promise": {
+      "minutes": "plays {{target}} of the next 5 ({{played}} so far, {{left}} matches left)",
+      "sale": "sale or loan by {{date}}",
+      "renewal": "contract renewal by {{date}}"
+    },
+    "talk": {
+      "title": "Talk",
+      "open": "Talk",
+      "answerRequest": "Answer",
+      "answer": "Your answer",
+      "minutes": "Matches promised",
+      "ofFive": "{{n}} of 5",
+      "deadline": "Deadline",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "confirm": "Confirm",
+      "done": "Done. Morale {{change}}.",
+      "noEffect": "He has heard this recently. No effect.",
+      "error": {
+        "notYourPlayer": "He is not your player.",
+        "invalidAnswer": "That answer does not fit this talk.",
+        "invalidMinutes": "Choose 1 to 5 matches.",
+        "invalidDays": "Choose a valid deadline.",
+        "onLoan": "He is on loan.",
+        "noClub": "You have no club.",
+        "generic": "Could not send the answer."
+      }
+    },
+    "answer": {
+      "promise_minutes": "Promise minutes",
+      "promise_sale": "Promise a move",
+      "promise_renewal": "Promise a renewal",
+      "praise": "Praise",
+      "demand": "Demand more",
+      "refuse": "Refuse"
+    },
+    "answerHint": {
+      "promise_minutes": "He plays the matches you promise within the next 5. Kept: +8. Broken: -15 and a transfer request.",
+      "promise_sale": "He goes on the sell list and leaves (sale or loan) before the deadline. Broken: -15.",
+      "promise_renewal": "Opens the renewal now. Renew within 30 days or it is broken (-15).",
+      "praise": "+2. Works once a month.",
+      "demand": "+1 for a content player, -3 otherwise. Once a month.",
+      "refuse": "-5 (-10 on a contract talk)."
+    },
+    "contract": {
+      "refuses": "He is furious and will not renew unless you promised him a renewal.",
+      "unhappy": "Unhappy: he asks {{pct}}% more."
+    },
+    "inbox": {
+      "subject": {
+        "talk": "{{player}} wants to talk",
+        "promise_kept": "Promise kept: {{player}}",
+        "promise_broken": "Promise broken: {{player}}",
+        "transfer_request": "{{player}} asked for a transfer"
+      },
+      "talk": {
+        "minutes": "{{player}} is not getting the minutes he expects and wants to talk.",
+        "contract": "{{player}} is in the last months of his contract and wants to know his future.",
+        "wants_move": "{{player}} knows about the bid from {{club}} and wants to talk about leaving.",
+        "chance": "{{player}} is doing well and asks for a chance in the first team."
+      },
+      "promise_kept": {
+        "minutes": "You gave {{player}} the matches you promised. He is happier.",
+        "sale": "{{player}} left as promised.",
+        "renewal": "You renewed the contract of {{player}} as promised. He is happier."
+      },
+      "promise_broken": {
+        "minutes": "{{player}} did not get the matches you promised. He is upset and asked to leave.",
+        "sale": "{{player}} is still here after the deadline you promised. He is upset and asked to leave.",
+        "renewal": "{{player}} did not get the renewal you promised. He is upset and asked to leave."
+      },
+      "transfer_request": "{{player}} asked for a transfer. He is on your sell list.",
+      "closed": "This talk is closed."
+    },
+    "attention": {
+      "talk": "{{name}} {{reason}}",
+      "promiseMinutes": "Promise to {{name}}: {{target}} of 5 matches ({{played}} so far)",
+      "promise_sale": "Promise to {{name}}: move by {{date}}",
+      "promise_renewal": "Promise to {{name}}: renewal by {{date}}"
     }
   }
 }

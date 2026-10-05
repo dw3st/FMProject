@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { loadSession } from "@/GameInterface/gameSession";
 import {
-  ContractTermsFields, useContractDemand, useRefusalText,
+  ContractTermsFields, useContractDemandInfo, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
 
 interface ContractTarget {
@@ -30,7 +30,8 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
   const { t } = useTranslation();
   const session = loadSession();
   const refusalText = useRefusalText();
-  const demand = useContractDemand(session?.saveId, player?.id ?? null, mode === "renew" ? player?.squadId : undefined);
+  const demandInfo = useContractDemandInfo(session?.saveId, player?.id ?? null, mode === "renew" ? player?.squadId : undefined);
+  const demand = demandInfo?.demand ?? null;
   const [wage, setWage] = useState(0);
   const [years, setYears] = useState(2);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +97,13 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
           ) : (
             <>
               <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
+              {mode === "renew" && demandInfo?.refuses ? (
+                <p className="text-sm text-destructive m-0">{t("morale.contract.refuses")}</p>
+              ) : mode === "renew" && (demandInfo?.moraleDemandMult ?? 1) > 1 ? (
+                <p className="text-sm text-chart-4 m-0">
+                  {t("morale.contract.unhappy", { pct: Math.round(((demandInfo?.moraleDemandMult ?? 1) - 1) * 100) })}
+                </p>
+              ) : null}
               {error && <p className="text-sm text-destructive m-0" role="alert">{error}</p>}
               <div className="flex gap-3 pt-2">
                 <button

@@ -205,7 +205,7 @@ export function DashboardScreen() {
 
   const players = squad?.players ?? [];
   const inbox = inboxMessages ?? [];
-  const attention = attentionItems({ players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox });
+  const attention = attentionItems({ players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox, morale: squad?.moraleClub });
   const highlights = seasonHighlights(players);
   // Unread first, then the newest read ones (the inbox is newest first).
   const recentMessages = [...inbox.filter((m) => !m.read), ...inbox.filter((m) => m.read)].slice(0, 3);

@@ -2,28 +2,41 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatWageFull } from "@/Domain/money";
 
-/** Weekly wage the player asks of the human club (`GET .../players/:id/demand`). `from` = his squad id; omit for a free agent. */
-export function useContractDemand(saveId: string | undefined, playerId: string | null, from?: string): number | null {
-  const [demand, setDemand] = useState<number | null>(null);
+/** What the demand route answers: the wage, plus (own player) the morale behind it (`morale.md`). */
+export interface ContractDemandInfo {
+  demand: number;
+  moraleBand?: "very_happy" | "content" | "neutral" | "unhappy" | "furious";
+  moraleDemandMult?: number;
+  refuses?: boolean;
+}
+
+/** Demand plus morale info (`GET .../players/:id/demand`). `from` = his squad id; omit for a free agent. */
+export function useContractDemandInfo(saveId: string | undefined, playerId: string | null, from?: string): ContractDemandInfo | null {
+  const [info, setInfo] = useState<ContractDemandInfo | null>(null);
   useEffect(() => {
-    setDemand(null);
+    setInfo(null);
     if (!saveId || !playerId) return;
     const controller = new AbortController();
     const qs = from ? `?from=${encodeURIComponent(from)}` : "";
     fetch(`/api/saves/${saveId}/players/${encodeURIComponent(playerId)}/demand${qs}`, { signal: controller.signal })
-      .then(async (r) => (r.ok ? ((await r.json()) as { demand: number }).demand : null))
-      .then((d) => { if (!controller.signal.aborted) setDemand(d); })
+      .then(async (r) => (r.ok ? ((await r.json()) as ContractDemandInfo) : null))
+      .then((d) => { if (!controller.signal.aborted) setInfo(d); })
       .catch(() => { /* leave null */ });
     return () => controller.abort();
   }, [saveId, playerId, from]);
-  return demand;
+  return info;
+}
+
+/** Weekly wage the player asks of the human club (`GET .../players/:id/demand`). `from` = his squad id; omit for a free agent. */
+export function useContractDemand(saveId: string | undefined, playerId: string | null, from?: string): number | null {
+  return useContractDemandInfo(saveId, playerId, from)?.demand ?? null;
 }
 
 /** Translated reason for a refused contract offer (`error` from the API). */
 export function useRefusalText() {
   const { t } = useTranslation();
   return (error: string): string => {
-    const known = ["lowWage", "tooManyYears", "invalidYears", "squadFull"];
+    const known = ["lowWage", "tooManyYears", "invalidYears", "squadFull", "unhappy"];
     return known.includes(error) ? t(`contracts.refusal.${error}`) : error;
   };
 }

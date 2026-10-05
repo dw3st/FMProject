@@ -540,6 +540,22 @@ export function AttentionCard({
           text: t("dashboard.home.attention.youthIntake", { count: item.count }),
           href: youthHref,
         };
+      case "talk":
+        return {
+          icon: "talk",
+          tone: "text-chart-4",
+          text: t("morale.attention.talk", { name: item.name, reason: t(`morale.reason.${item.reason}`, { club: item.club ?? "" }) }),
+          href: playerHref(item.playerId),
+        };
+      case "promiseDue":
+        return {
+          icon: "handshake",
+          tone: "text-chart-4",
+          text: item.promise.kind === "minutes"
+            ? t("morale.attention.promiseMinutes", { name: item.name, target: item.promise.target ?? 1, played: item.promise.played ?? 0 })
+            : t(`morale.attention.promise_${item.promise.kind}`, { name: item.name, date: formatDay(item.promise.until ?? "", i18n.language) }),
+          href: playerHref(item.playerId),
+        };
     }
   }
 

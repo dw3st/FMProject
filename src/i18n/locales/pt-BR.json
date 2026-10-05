@@ -978,7 +978,8 @@
       "retirement": "Aposentadoria",
       "board": "Diretoria",
       "job": "Propostas",
-      "transfer": "Negociação"
+      "transfer": "Negociação",
+      "player": "Jogador"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1862,7 +1863,8 @@
       "lowWage": "O salário é baixo demais para esse jogador.",
       "tooManyYears": "O jogador não assina tantos anos na idade dele.",
       "invalidYears": "Escolha entre 1 e 5 anos.",
-      "squadFull": "Seu elenco está cheio (30 jogadores)."
+      "squadFull": "Seu elenco está cheio (30 jogadores).",
+      "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação."
     }
   },
   "career": {
@@ -2076,6 +2078,121 @@
       "date": "Data",
       "offer": "Oferta",
       "loanOffer": "Empréstimo, {{share}}% do salário"
+    }
+  },
+  "morale": {
+    "title": "Moral {{value}}",
+    "sectionTitle": "Moral",
+    "column": "Moral",
+    "onlyUnhappy": "Só insatisfeitos",
+    "band": {
+      "very_happy": "Muito feliz",
+      "content": "Contente",
+      "neutral": "Neutro",
+      "unhappy": "Insatisfeito",
+      "furious": "Revoltado"
+    },
+    "trend": "{{value}} em 7 dias",
+    "expected": "Espera jogar {{lo}}-{{hi}} de 5 jogos",
+    "played": "jogou {{n}}",
+    "transferRequest": "Pediu para sair",
+    "reason": {
+      "minutes": "quer mais minutos",
+      "contract": "quer falar do contrato",
+      "wants_move": "quer ir para o {{club}}",
+      "chance": "pede uma chance no time",
+      "none": "sem pedido aberto"
+    },
+    "statusLabel": "Papel no elenco",
+    "statusAuto": "Auto ({{status}})",
+    "status": {
+      "key": "Craque",
+      "starter": "Titular",
+      "rotation": "Rodízio",
+      "backup": "Reserva",
+      "youth": "Promessa"
+    },
+    "promisesTitle": "Promessas",
+    "until": "até {{date}}",
+    "promise": {
+      "minutes": "joga {{target}} das próximas 5 ({{played}} até agora, faltam {{left}} jogos)",
+      "sale": "venda ou empréstimo até {{date}}",
+      "renewal": "renovação até {{date}}"
+    },
+    "talk": {
+      "title": "Conversa",
+      "open": "Conversar",
+      "answerRequest": "Responder",
+      "answer": "Sua resposta",
+      "minutes": "Jogos prometidos",
+      "ofFive": "{{n}} de 5",
+      "deadline": "Prazo",
+      "days_one": "{{count}} dia",
+      "days_other": "{{count}} dias",
+      "confirm": "Confirmar",
+      "done": "Feito. Moral {{change}}.",
+      "noEffect": "Ele ouviu isso há pouco. Sem efeito.",
+      "error": {
+        "notYourPlayer": "Ele não é seu jogador.",
+        "invalidAnswer": "Essa resposta não serve para esta conversa.",
+        "invalidMinutes": "Escolha de 1 a 5 jogos.",
+        "invalidDays": "Escolha um prazo válido.",
+        "onLoan": "Ele está emprestado.",
+        "noClub": "Você está sem clube.",
+        "generic": "Não foi possível enviar a resposta."
+      }
+    },
+    "answer": {
+      "promise_minutes": "Prometer minutos",
+      "promise_sale": "Prometer saída",
+      "promise_renewal": "Prometer renovação",
+      "praise": "Elogiar",
+      "demand": "Cobrar",
+      "refuse": "Recusar"
+    },
+    "answerHint": {
+      "promise_minutes": "Ele joga os jogos prometidos dentro dos próximos 5. Cumprida: +8. Quebrada: -15 e pedido de transferência.",
+      "promise_sale": "Ele vai para a lista de venda e sai (venda ou empréstimo) antes do prazo. Quebrada: -15.",
+      "promise_renewal": "Abre a renovação agora. Renove em até 30 dias ou a promessa é quebrada (-15).",
+      "praise": "+2. Funciona uma vez por mês.",
+      "demand": "+1 para quem está contente, -3 nos demais. Uma vez por mês.",
+      "refuse": "-5 (-10 numa conversa de contrato)."
+    },
+    "contract": {
+      "refuses": "Ele está revoltado e não renova sem uma promessa de renovação.",
+      "unhappy": "Insatisfeito: pede {{pct}}% a mais."
+    },
+    "inbox": {
+      "subject": {
+        "talk": "{{player}} quer conversar",
+        "promise_kept": "Promessa cumprida: {{player}}",
+        "promise_broken": "Promessa quebrada: {{player}}",
+        "transfer_request": "{{player}} pediu para sair"
+      },
+      "talk": {
+        "minutes": "{{player}} não está jogando o que espera e quer conversar.",
+        "contract": "{{player}} está nos últimos meses de contrato e quer saber do futuro.",
+        "wants_move": "{{player}} sabe da proposta do {{club}} e quer conversar sobre sair.",
+        "chance": "{{player}} está indo bem e pede uma chance no time principal."
+      },
+      "promise_kept": {
+        "minutes": "Você deu a {{player}} os jogos prometidos. Ele está mais feliz.",
+        "sale": "{{player}} saiu como prometido.",
+        "renewal": "Você renovou com {{player}} como prometido. Ele está mais feliz."
+      },
+      "promise_broken": {
+        "minutes": "{{player}} não teve os jogos prometidos. Está chateado e pediu para sair.",
+        "sale": "{{player}} continua no clube depois do prazo prometido. Está chateado e pediu para sair.",
+        "renewal": "{{player}} não teve a renovação prometida. Está chateado e pediu para sair."
+      },
+      "transfer_request": "{{player}} pediu para sair. Ele está na sua lista de venda.",
+      "closed": "Esta conversa está encerrada."
+    },
+    "attention": {
+      "talk": "{{name}} {{reason}}",
+      "promiseMinutes": "Promessa a {{name}}: {{target}} de 5 jogos ({{played}} até agora)",
+      "promise_sale": "Promessa a {{name}}: saída até {{date}}",
+      "promise_renewal": "Promessa a {{name}}: renovação até {{date}}"
     }
   }
 }
