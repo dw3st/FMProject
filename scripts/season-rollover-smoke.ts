@@ -1539,7 +1539,9 @@ try {
     const managers = await plain().getManagers(saveId);
     const mine = managers.filter((m) => m.isPlayer);
     check(mine.length === 1 && mine[0]!.squadId === playerSquadId, `técnicos: exactly one player manager, at ${playerSquadId}`);
-    check(new Set(managers.map((m) => m.squadId)).size === managers.length, "técnicos: one manager per club");
+    // Since 4.0 free managers (`squadId` "") live in the same file (`.claude/rules/game/transfer-windows.md`).
+    const employed = managers.filter((m) => m.squadId !== "");
+    check(new Set(employed.map((m) => m.squadId)).size === employed.length, "técnicos: one manager per club");
     check(managers.every((m) => m.points >= 0), "técnicos: no manager with negative points");
     check(managers.every((m) => m.points === m.titles.reduce((a, t) => a + t.points, 0)), "técnicos: points add up to the titles");
     const rcT = [...rolledCountries.values()].find((r) => r.closed.has(PLAYER_LEAGUE));
@@ -1551,8 +1553,21 @@ try {
       `técnicos: ${PLAYER_LEAGUE} champion ${String(champT)}'s manager scored the league title`);
     const rolledLeagueSet = new Set(rolls.flatMap((r) => r.leagues));
     const rolledClubs = allFiles.filter(({ squad }) => rolledLeagueSet.has(squad.leagueSlug ?? "")).map(({ squad }) => squad.id);
-    check(rolledClubs.every((id) => (managers.find((m) => m.squadId === id)?.seasons ?? 0) >= 1),
-      `técnicos: every manager of the ${rolledClubs.length} rolled clubs has a season`);
+    // A manager hired after his club's rollover (AI sackings since 4.0) has not completed a season there yet.
+    const rollDateOf = new Map<string, string>();
+    for (const r of rolls) for (const l of r.leagues) if (!rollDateOf.has(l)) rollDateOf.set(l, r.date);
+    const leagueOfClub = new Map(allFiles.map(({ squad }) => [squad.id, squad.leagueSlug ?? ""] as const));
+    const counted = rolledClubs.filter((id) => {
+      const m = employed.find((x) => x.squadId === id);
+      const spell = m?.clubs?.[m.clubs.length - 1];
+      const rolledOn = rollDateOf.get(leagueOfClub.get(id) ?? "");
+      // A rollover-day sacking (AI managers, 4.0) puts a new manager in on the rollover date itself.
+      return !m || !spell || !rolledOn || spell.from < rolledOn;
+    });
+    const noSeason = counted.filter((id) => (employed.find((m) => m.squadId === id)?.seasons ?? 0) < 1);
+    check(noSeason.length === 0,
+      `técnicos: every manager in charge at the rollover of the ${counted.length}/${rolledClubs.length} rolled clubs has a season`
+      + (noSeason.length ? ` — e.g. ${noSeason.slice(0, 3).map((id) => { const m = employed.find((x) => x.squadId === id); return `${id}:${m?.id ?? "none"}:${JSON.stringify(m?.clubs?.slice(-1) ?? [])}@${rollDateOf.get(leagueOfClub.get(id) ?? "")}`; }).join("; ")} (${noSeason.length})` : ""));
     const titles = managers.flatMap((m) => m.titles);
     check(titles.some((t) => t.kind === "cup"), "técnicos: at least one national cup title credited");
     check(titles.some((t) => t.kind === "continental"), "técnicos: at least one continental title credited");
