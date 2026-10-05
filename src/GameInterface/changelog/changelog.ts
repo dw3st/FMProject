@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.8",
+    date: "2026-10-05",
+    items: [
+      { pt: "Moral dos jogadores: cada jogador do seu elenco tem moral e um papel (craque, titular, rodízio, reserva ou promessa). Jogar menos do que espera, perder e ser posto à venda sem pedir derrubam a moral; vencer, marcar e jogar bem levantam.", en: "Player morale: every player in your squad has a morale and a role (key player, starter, rotation, backup or prospect). Playing less than he expects, losing and being listed without asking bring it down; winning, scoring and playing well lift it." },
+      { pt: "A moral conta em campo, no desenvolvimento e no contrato: um jogador feliz rende um pouco mais e evolui mais rápido; um insatisfeito pede salário maior, e um revoltado pede para sair.", en: "Morale counts on the pitch, in development and in contracts: a happy player performs a little better and improves faster; an unhappy one asks for a higher wage, and a furious one asks to leave." },
+      { pt: "Conversas: os jogadores pedem para conversar pela caixa de entrada (minutos, contrato, proposta de outro clube, chance no time). Prometa minutos, uma saída ou a renovação, elogie ou recuse. O jogo cobra as promessas.", en: "Talks: players ask to talk through your inbox (minutes, contract, another club's bid, a chance in the team). Promise minutes, a move or a renewal, praise or refuse. The game holds you to your promises." },
+      { pt: "Coluna Moral e filtro de insatisfeitos no elenco, moral com a tendência da semana e papel editável na ficha do jogador, e os pedidos de conversa e promessas no cartão Atenção do painel.", en: "Morale column and an unhappy filter in the squad, morale with the weekly trend and an editable role on the player screen, and talk requests and promises in the dashboard's Attention card." },
+    ],
+  },
+  {
     version: "3.7",
     date: "2026-10-05",
     items: [
