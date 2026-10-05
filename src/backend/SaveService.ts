@@ -10,6 +10,7 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
+import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { BoardState, CareerEnded } from "@/types/boardTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -206,6 +207,14 @@ export class SaveService {
 
   writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
     return this.dal.writeRetired(saveId, retired);
+  }
+
+  getClubHistory(saveId: string, squadId: string): Promise<ClubHistory | null> {
+    return this.dal.readClubHistory(saveId, squadId);
+  }
+
+  writeClubHistory(saveId: string, history: ClubHistory): Promise<void> {
+    return this.dal.writeClubHistory(saveId, history);
   }
 
   // ── Transfers ──────────────────────────────────────────────────────────────

@@ -2,6 +2,9 @@ import { randomUUID } from "crypto";
 import { seasonLabel } from "@/Domain/history/history";
 import { saveService } from "@/backend/SaveService";
 import { executeTransferFee } from "@/backend/FinancialService";
+import { recordTransferHistory } from "@/backend/clubHistoryWorld";
+import { buildClubRecordMessage } from "@/Domain/clubHistory/recordMessage";
+import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { isPlayerSquadId } from "@/Domain/clubLookup";
 import type { TransferRecord, TransfersSplitResponse } from "@/types/transferTypes";
 import type { TransferRef } from "@/types/dayLogTypes";
@@ -210,6 +213,23 @@ export const transferRoutes = {
             { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
             fee,
           );
+
+          // Club history (`.claude/rules/game/club-history.md`): transfer records of both clubs.
+          {
+            const seasonOf = (leagueSlug: string) => {
+              const l = (meta.activeLeagues ?? []).find((x) => x.leagueSlug === leagueSlug);
+              return l ? seasonLabel(l.year, l.start, l.end) : date.slice(0, 4);
+            };
+            const changes = await recordTransferHistory(saveService, saveId, {
+              buyer: buying, seller: selling, playerId, fee, date,
+              buyerSeason: seasonOf(buyerResolved.leagueSlug), sellerSeason: seasonOf(sellerResolved.leagueSlug),
+            });
+            // The buyer is the human club here.
+            for (const c of changes) {
+              if (c.squadId !== buyerSquad.id) continue;
+              for (const r of c.broken) await emitInboxMessage(saveId, buildClubRecordMessage(date, r), saveService);
+            }
+          }
 
           // Board (`.claude/rules/game/board-fans.md`): spending past the balance costs confidence.
           const budgetAfter = (buyerSquad.finances?.budget ?? 0) - fee;

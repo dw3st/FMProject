@@ -89,3 +89,30 @@ export interface ClubHistory {
 export type ClubRecordBroken = {
   [K in ClubRecordKind]: { kind: K; value: NonNullable<ClubRecords[K]> };
 }[ClubRecordKind];
+
+/** A player in the club's top 10 (`GET /api/saves/:id/clubs/:squadId/history`). */
+export interface ClubTopPlayer extends ClubScorer {
+  playerId: string;
+  /** Still in the club's squad. */
+  current: boolean;
+  retired: boolean;
+}
+
+/** `GET /api/saves/:id/clubs/:squadId/history`. */
+export interface ClubHistoryResponse {
+  squadId: string;
+  name: string;
+  colors: [string, string];
+  leagueSlug: string;
+  venue: { name: string; city: string; capacity: number } | null;
+  manager: string | null;
+  /** Managers of earlier seasons (season rows), other than the current one. */
+  pastManagers: string[];
+  /** First season of the history (or the current one when there is none yet). */
+  since: string | null;
+  seasons: ClubSeasonRow[];
+  titles: { title: string; seasons: string[] }[];
+  topScorers: ClubTopPlayer[];
+  topApps: ClubTopPlayer[];
+  records: ClubRecords;
+}

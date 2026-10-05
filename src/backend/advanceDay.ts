@@ -90,6 +90,9 @@ import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
 import { continentalPoints, cupPoints, leaguePoints, promotionPoints } from "@/Domain/managers/managers";
 import { createManagerTracker } from "@/backend/managerWorld";
+import { cupAndContinentalFixtures, recordLeagueSeasonHistory, recordTransferHistory } from "@/backend/clubHistoryWorld";
+import { buildClubRecordMessage } from "@/Domain/clubHistory/recordMessage";
+import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
 import { continentsToRegenerate as continentsToRegenerateContinental, buildContinentalArchive } from "@/Domain/continental/continentalProgress";
 import {
   advanceContinentalStages,
@@ -698,6 +701,8 @@ export async function advanceOneDay(
     const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
     // Retirement news for the human club: same deferral.
     const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
+    // Club history: beaten records of the human club (`.claude/rules/game/club-history.md`), same deferral.
+    const clubRecordMessages: ClubRecordBroken[] = [];
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
@@ -1199,6 +1204,18 @@ export async function advanceOneDay(
           tx.fee,
           saveService,
         );
+        // Club history: transfer records + the player's stats at the seller (`.claude/rules/game/club-history.md`).
+        {
+          const seasonOf = (leagueSlug: string) => {
+            const l = activeLeagues.find((x) => x.leagueSlug === leagueSlug);
+            return l ? seasonLabel(l.year, l.start, l.end) : currentDate.slice(0, 4);
+          };
+          const changes = await recordTransferHistory(saveService, saveId, {
+            buyer: buying, seller: selling, playerId: tx.player.id, fee: tx.fee, date: currentDate,
+            buyerSeason: seasonOf(buyerResolved.leagueSlug), sellerSeason: seasonOf(sellerResolved.leagueSlug),
+          });
+          for (const c of changes) if (isPlayerSquadId(c.squadId, meta)) clubRecordMessages.push(...c.broken);
+        }
 
         const transferId = randomUUID();
         const record: TransferRecord = {
@@ -1434,6 +1451,9 @@ export async function advanceOneDay(
       const unitState = updatedActiveLeagues[stateIdx(unit.leagues[0]!)]!;
       const unitWeight = await managerTracker.weightOf(unitCountry, seasonLabel(unitState.year, unitState.start, unitState.end));
 
+      // Cup + continental fixtures for the club-history records, read once for the unit.
+      let unitCupFixtures: Fixture[] | undefined;
+
       // 3. Archive + reset every league with the OLD membership. Reset squads are saved where
       //    they live now, before any move; moved clubs get their new tier's income here.
       const closedYear = new Map<string, number>();
@@ -1497,6 +1517,14 @@ export async function advanceOneDay(
               ),
             };
           }
+          // Club history: the season row, scorers and records of every club of the league.
+          clubRecordMessages.push(...await recordLeagueSeasonHistory(saveService, saveId, {
+            league: slug, tier: unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1, season,
+            start: state.start, end: state.end, table,
+            fixtures: [...fixturesByLeague.get(slug)!, ...(unitCupFixtures ??= await cupAndContinentalFixtures(saveService, saveId, unitCountry))],
+            squads: transition.squadsToSave.map((r) => r.squad), titlesByClub, tierChanges: plan.tierChanges,
+            nameOf: (id) => index.byId(id)?.name ?? id, watchSquadId: playerClubSquadId,
+          }));
         }
         for (const [pid, log] of Object.entries(transition.archive.playerLogs)) {
           closedLogs[pid] = { appearances: log.appearances, goals: log.goals };
@@ -2016,6 +2044,7 @@ export async function advanceOneDay(
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
+    for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
 
     await managerTracker.flush();
 
