@@ -11,10 +11,14 @@ import type { TransferRef } from "@/types/dayLogTypes";
 import type { SellCandidate } from "@/types/transferMarketTypes";
 import { collectSellListedIds } from "@/Domain/scout/scoutQuery";
 import {
-  evaluateTransferOffer,
   squadsAfterAcceptedTransfer,
 } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
+import {
+  activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToOffer, talkGate, talkKey, type OfferResponse,
+} from "@/Domain/negotiation/negotiation";
+import { sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
 import { requireSaveOwner } from "@/backend/auth/middleware";
@@ -95,7 +99,9 @@ export const transferRoutes = {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
 
-      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears } = body as Record<string, unknown>;
+      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears, sellOnPct: rawSellOn } = body as Record<string, unknown>;
+      const sellOnPct = parseSellOnPct(rawSellOn);
+      if (sellOnPct === null) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       if (typeof playerId !== "string" || playerId.length === 0) {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
@@ -138,6 +144,9 @@ export const transferRoutes = {
 
         const player = sellerSquad.players.find((p) => p.id === playerId);
         if (!player) return Response.json({ error: "player not found" }, { status: 404 });
+        if (sellerSquad.id === buyerSquad.id) return Response.json({ error: "not for sale" }, { status: 400 });
+        // On loan at that club: not its player to sell (`.claude/rules/game/negotiation.md`).
+        if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
         // ── Look up seller's sell list for acceptance boost ───────────────────
         const rawMarket = await saveService.getMarket(saveId);
@@ -165,8 +174,31 @@ export const transferRoutes = {
           ?? defaultSeasonEnd(meta.currentDate ?? new Date().toISOString().slice(0, 10));
         const newContract = { until: contractEndFor(meta.currentDate ?? new Date().toISOString().slice(0, 10), seasonEnd, contractYears), wage: contractWage };
 
-        // ── AI acceptance decision ────────────────────────────────────────────
-        const { accepted, reason } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority);
+        // ── Negotiation (`.claude/rules/game/negotiation.md`): patience, then accept / counter / refuse ──
+        const date0 = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+        const talks = market?.talks ?? {};
+        const key = talkKey("transfer", playerId);
+        const counter = activeCounter(talks[key], date0);
+        const meetsCounter = !!counter && fee >= counter.fee && (counter.sellOnPct ?? 0) === sellOnPct;
+        const gate = talkGate(talks[key], date0, meetsCounter);
+        if (gate === "closed") return Response.json({ error: "talksClosed", until: talks[key]?.closedUntil }, { status: 409 });
+        if (gate === "noRounds") return Response.json({ error: "noRounds" }, { status: 409 });
+        const answer: OfferResponse = meetsCounter
+          ? { kind: "accept", reason: "financial" }
+          : respondToOffer({ player, seller: sellerSquad, fee, sellOnPct, ...(sellPriority !== undefined ? { sellPriority } : {}) });
+        const talk = recordRound(
+          talks[key], { playerId, kind: "transfer", date: date0 }, { fee, sellOnPct },
+          answer.kind === "accept" ? { by: "club", fee, sellOnPct, outcome: "accepted" }
+          : answer.kind === "counter" ? { by: "club", fee: answer.counterFee, sellOnPct, outcome: "counter" }
+          : { by: "club", outcome: answer.reason === "insulted" ? "insulted" : "rejected" },
+        );
+        const marketBase = market ?? initMarketState(await saveService.getAllSquads(saveId));
+        await saveService.saveMarket(saveId, { ...marketBase, talks: { ...pruneTalks(marketBase.talks, date0), [key]: talk } });
+        if (answer.kind === "counter") {
+          return Response.json({ response: answer, talk });
+        }
+        const accepted = answer.kind === "accept";
+        const reason = answer.reason;
 
         const transferId = randomUUID();
         const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
@@ -203,7 +235,10 @@ export const transferRoutes = {
               const l = (meta.activeLeagues ?? []).find((x) => x.leagueSlug === sellerResolved.leagueSlug);
               return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
             })(),
+            sellOnPct > 0 ? { clubId: sellerSquad.id, clubName: sellerSquad.name, pct: sellOnPct } : null,
           );
+          // A clause the player already carried is paid out of this fee (the seller keeps the rest).
+          const owed = sellOnFor(player, sellerSquad.id, fee);
 
           // Exchange money via FinancialService — it also persists both squads (roster + money).
           // Saving `selling` / `buying` again here would overwrite the fee exchange.
@@ -214,7 +249,11 @@ export const transferRoutes = {
             { squad: buying, ...buyerResolved, isPlayerClub: true },
             { squad: selling, ...sellerResolved, isPlayerClub: isSellerPlayerClub },
             fee,
+            saveService,
+            { playerName: player.name, playerId, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
           );
+          const sellOnNews = await settleSellOn(saveService, saveId, updatedMeta, owed, player, sellerSquad.name, date);
+          if (sellOnNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(sellOnNews), saveService);
 
           // Club history (`.claude/rules/game/club-history.md`): transfer records of both clubs.
           {
@@ -242,14 +281,15 @@ export const transferRoutes = {
           }
 
           // Remove the sold player from the seller's sell list in the market profile
-          if (market && sellerProfile) {
+          const latest = await saveService.getMarket(saveId);
+          if (latest && sellerProfile) {
             const updatedProfile = {
               ...sellerProfile,
               sellList: (sellerProfile.sellList ?? []).filter((c) => c.playerId !== playerId),
             };
             await saveService.saveMarket(saveId, {
-              ...market,
-              profiles: { ...market.profiles, [fromSquadId]: updatedProfile },
+              ...latest,
+              profiles: { ...latest.profiles, [fromSquadId]: updatedProfile },
             });
           }
         }
@@ -262,7 +302,7 @@ export const transferRoutes = {
         // new budget, the real value already comes from executeTransferFee's persisted squad.
         const oldBudget = buyerSquad.finances?.budget ?? 0;
         const newBudget = accepted ? oldBudget - fee : oldBudget;
-        return Response.json({ record, newBudget });
+        return Response.json({ record, newBudget, response: answer, talk });
       });
     }
 
@@ -306,9 +346,12 @@ export const transferRoutes = {
         const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
         const listed = (market?.playerSellList ?? []).some((c) => c.playerId === playerId);
         // Only the human club's own players can be listed (toggling one off always works).
-        if (!listed && !(await saveService.getSquadById(saveId, meta.clubId))?.players.some((p) => p.id === playerId)) {
+        const own = (await saveService.getSquadById(saveId, meta.clubId))?.players.find((p) => p.id === playerId);
+        if (!listed && !own) {
           return Response.json({ error: "not your player" }, { status: 400 });
         }
+        // A borrowed player is not the human's to sell (`.claude/rules/game/negotiation.md`).
+        if (!listed && own?.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
         const allSquads = await saveService.getAllSquads(saveId);
         const baseMarket = market ?? initMarketState(allSquads);

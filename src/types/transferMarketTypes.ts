@@ -43,6 +43,17 @@ export interface MarketState {
   talks?: Record<string, NegotiationTalk>;
   /** Active loans involving the human club (in or out), for returns, wages and the UI. */
   loans?: ActiveLoan[];
+  /** Sell-on clauses the human club holds on players it sold (removed once paid). */
+  sellOnHeld?: SellOnHeld[];
+}
+
+export interface SellOnHeld {
+  playerId: string;
+  playerName: string;
+  pct: number;
+  /** Club the player was sold to, and when. */
+  toClubName: string;
+  date: string;
 }
 
 /** An AI club's bid for one of the human's players. */

@@ -157,3 +157,18 @@ export function respondToHumanCounter(bid: MarketBid, fee: number, sellOnPct: nu
 export function sellOnShare(fee: number, pct: number): number {
   return Math.round((fee * Math.max(0, pct)) / 100);
 }
+
+/**
+ * What the seller owes under the player's sell-on clause on a sale for `fee`, or null (no clause,
+ * or the clause is the seller's own).
+ */
+export function sellOnOwed(
+  player: RosterPlayer,
+  sellerId: string,
+  fee: number,
+): { clubId: string; clubName: string; pct: number; amount: number } | null {
+  const c = player.sellOn;
+  if (!c || c.clubId === sellerId || fee <= 0) return null;
+  const amount = sellOnShare(fee, c.pct);
+  return amount > 0 ? { clubId: c.clubId, clubName: c.clubName, pct: c.pct, amount } : null;
+}

@@ -93,8 +93,15 @@ export async function executeTransferFee(
   seller: ClubRef,
   fee: number,
   service: SaveService = saveService,
+  /**
+   * `sellOn`: share of this fee owed under the player's sell-on clause — the seller keeps
+   * `fee − amount` (the receiving club is paid by `paySellOnReceiver`). `loan`: the fee is a loan
+   * fee (ledger text). `playerName` labels the ledger lines.
+   */
+  opts: { sellOn?: { amount: number; clubName: string }; loan?: boolean; playerName?: string; playerId?: string } = {},
 ): Promise<SaveMeta> {
-  const { buyer: paid, seller: credited } = transferFeeSquads(buyer, seller, fee);
+  const sellOnAmount = Math.min(fee, Math.max(0, opts.sellOn?.amount ?? 0));
+  const { buyer: paid, seller: credited } = transferFeeSquads(buyer, seller, fee, sellOnAmount);
   await Promise.all([
     service.saveSquad(saveId, buyer.leagueSlug, buyer.clubSlug, paid),
     service.saveSquad(saveId, seller.leagueSlug, seller.clubSlug, credited),
@@ -105,20 +112,30 @@ export async function executeTransferFee(
     const playerRef = buyer.isPlayerClub ? buyer : seller;
     const season = await ledgerSeasonFor(service, saveId, playerRef.leagueSlug, date);
     const entries: LedgerEntry[] = [];
-    if (buyer.isPlayerClub) {
+    const stage = opts.loan ? { stage: "loan_fee" } : {};
+    const who = opts.playerName ? { playerName: opts.playerName, ...(opts.playerId ? { playerId: opts.playerId } : {}) } : {};
+    if (buyer.isPlayerClub && fee > 0) {
       entries.push({
         date, kind: "transfer_out", amount: -fee,
-        label: `Transfer fee paid to ${seller.squad.name}`,
-        ref: { opponentId: seller.squad.id, clubName: seller.squad.name },
+        label: opts.loan ? `Loan fee paid to ${seller.squad.name}` : `Transfer fee paid to ${seller.squad.name}`,
+        ref: { opponentId: seller.squad.id, clubName: seller.squad.name, ...stage, ...who },
       });
     }
-    if (seller.isPlayerClub) {
+    if (seller.isPlayerClub && fee > 0) {
       entries.push({
         date, kind: "transfer_in", amount: fee,
-        label: `Transfer fee from ${buyer.squad.name}`,
-        ref: { opponentId: buyer.squad.id, clubName: buyer.squad.name },
+        label: opts.loan ? `Loan fee from ${buyer.squad.name}` : `Transfer fee from ${buyer.squad.name}`,
+        ref: { opponentId: buyer.squad.id, clubName: buyer.squad.name, ...stage, ...who },
       });
+      if (sellOnAmount > 0) {
+        entries.push({
+          date, kind: "transfer_out", amount: -sellOnAmount,
+          label: `Sell-on clause paid to ${opts.sellOn!.clubName}${opts.playerName ? `: ${opts.playerName}` : ""}`,
+          ref: { clubName: opts.sellOn!.clubName, stage: "sell_on", ...who },
+        });
+      }
     }
+    if (entries.length === 0) return meta;
     await service.appendLedger(saveId, season, entries);
   }
 
@@ -134,13 +151,50 @@ export function transferFeeSquads(
   buyer: Pick<ClubRef, "squad" | "isPlayerClub">,
   seller: Pick<ClubRef, "squad" | "isPlayerClub">,
   fee: number,
+  /** Part of the fee the seller passes on under a sell-on clause. */
+  sellOnAmount = 0,
 ): { buyer: Squad; seller: Squad } {
-  const humanDelta = (s: Squad, delta: number): Squad =>
-    s.finances ? { ...s, finances: { ...s.finances, budget: (s.finances.budget ?? 0) + delta } } : s;
+  const net = fee - sellOnAmount;
   return {
     buyer: buyer.isPlayerClub ? humanDelta(buyer.squad, -fee) : applyAITransferSpend(buyer.squad, fee),
-    seller: seller.isPlayerClub ? humanDelta(seller.squad, fee) : applyAITransferSale(seller.squad, fee),
+    seller: seller.isPlayerClub ? humanDelta(seller.squad, net) : applyAITransferSale(seller.squad, net),
   };
+}
+
+const humanDelta = (s: Squad, delta: number): Squad =>
+  s.finances ? { ...s, finances: { ...s.finances, budget: (s.finances.budget ?? 0) + delta } } : s;
+
+/**
+ * Pays a sell-on clause (`.claude/rules/game/negotiation.md`) to the club holding it: the human
+ * club through the ledger (`transfer_in`, stage `sell_on`), an AI club into its transfer budget
+ * (`applyAITransferSale`, same cap). The seller already kept only `fee − amount`
+ * (`executeTransferFee`'s `sellOn`). Reads the receiving squad by id, so call it after the transfer
+ * squads were saved.
+ */
+export async function paySellOnReceiver(
+  service: SaveService,
+  saveId: string,
+  meta: SaveMeta,
+  receiverId: string,
+  amount: number,
+  info: { playerName: string; playerId: string; fromClubName: string },
+): Promise<void> {
+  if (amount <= 0) return;
+  const squad = await service.getSquadById(saveId, receiverId);
+  if (!squad) return;
+  if (receiverId === meta.clubId) {
+    const ref = await service.resolveSquadId(saveId, receiverId);
+    if (!ref) return;
+    const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+    const season = await ledgerSeasonFor(service, saveId, ref.leagueSlug, date);
+    await recordMoney(service, saveId, season, ref, {
+      date, kind: "transfer_in", amount,
+      label: `Sell-on clause: ${info.playerName}`,
+      ref: { clubName: info.fromClubName, stage: "sell_on", playerName: info.playerName, playerId: info.playerId },
+    });
+    return;
+  }
+  await service.saveSquadById(saveId, applyAITransferSale(squad, amount));
 }
 
 // ── Ledger (player club cash extract) ──────────────────────────────────────────

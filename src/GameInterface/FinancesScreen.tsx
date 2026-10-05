@@ -83,6 +83,7 @@ export function FinancesScreen() {
       stage: d.stage ? t(`${d.stageScope === "continental" ? "continental" : "cups"}.stage.${d.stage}`) : "",
       position: d.position,
       club: d.club ?? "",
+      player: d.player ?? "",
     });
   };
 

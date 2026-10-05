@@ -2,21 +2,18 @@ import {
   evaluateTransferOffer,
   squadsAfterAcceptedTransfer,
 } from "@/Domain/transfer/transferAcceptance";
-import type { Squad, RosterPlayer, PlayerContract } from "@/types/playerTypes";
-import type { MarketState, SellCandidate, SquadMarketProfile, TransferNeed } from "@/types/transferMarketTypes";
-import { defaultRng, generateTransferNeeds, playerMatchesBand, playerOverallRating, processTeamTransferAttempt } from "@/Domain/transfer/transferNeeds";
+import type { Squad, RosterPlayer } from "@/types/playerTypes";
+import type { MarketBid, MarketState, SellCandidate, SquadMarketProfile, TransferNeed } from "@/types/transferMarketTypes";
+import { generateBidsForHuman, liveBids } from "@/Domain/negotiation/bids";
+import { defaultRng, generateTransferNeeds, processTeamTransferAttempt } from "@/Domain/transfer/transferNeeds";
 import { generateSellList, getSellPriority } from "@/Domain/transfer/sellList";
-import { Player } from "@/Domain/Player";
 import { logDebug } from "@/Logger";
-import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
-import { wageFactorOf } from "@/Domain/finance/wages";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
 import { shuffle } from "@/Domain/rng";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
 const TEAMS_PER_DAY_ATTEMPTS = 10;
-const PLAYER_SELL_LIST_MATCH_CHANCE = 1;
 
 function cloneSquad(s: Squad): Squad {
   return { ...s, players: [...s.players] };
@@ -57,6 +54,8 @@ interface CompletedAITransfer {
 export interface DailyMarketTickResult {
   updatedMarket: MarketState;
   completedTransfers: CompletedAITransfer[];
+  /** Bids made today for the human's players (already in `updatedMarket.pendingBids`). */
+  newBids: MarketBid[];
 }
 
 export interface DailyMarketTickOptions {
@@ -69,10 +68,12 @@ export interface DailyMarketTickOptions {
    * the market unchanged.
    */
   marketFrozen?: boolean;
-  /** Human-managed sell list. When provided, a daily 10% roll can trigger an AI club to match against it. */
+  /** Human-managed sell list. AI clubs bid for these players through the inbox. */
   playerSellList?: SellCandidate[];
-  /** Squad object for the human's club (needed for sell-list matching). */
+  /** Squad object for the human's club (needed for the bids). */
   playerSquad?: Squad | null;
+  /** Id of a new bid (default: a counter). */
+  newBidId?: () => string;
   /** Last day of the squad's league season (contract end). Falls back to the next May 31. */
   seasonEndOf?: (squad: Squad) => string | undefined;
   /** League + season label of a selling squad, for the player's partial history row. */
@@ -110,91 +111,6 @@ function buildSellerSellLists(profiles: Record<string, SquadMarketProfile>): Rec
   return out;
 }
 
-/**
- * Attempts to match an AI buyer against a single player from the human's sell list.
- * The buyer is the AI club whose profile best covers the player's position.
- * Returns a completed transfer if successful, or null.
- */
-function tryMatchPlayerSellList(
-  playerSellList: SellCandidate[],
-  playerSquad: Squad,
-  squads: Map<string, Squad>,
-  profiles: Record<string, SquadMarketProfile>,
-  excludePlayerSquadId: string | null,
-  rng: () => number,
-  contractFor: (player: RosterPlayer, buyer: Squad) => PlayerContract,
-  historyFrom?: (squad: Squad) => { league: string; season: string } | null,
-): CompletedAITransfer | null {
-  if (playerSellList.length === 0) return null;
-
-  // Pick a random listed player
-  const candidate = playerSellList[Math.floor(rng() * playerSellList.length)];
-  if (!candidate) return null;
-
-  const playerSquadCurrent = squads.get(playerSquad.id) ?? playerSquad;
-  const listedPlayer = playerSquadCurrent.players.find((p) => p.id === candidate.playerId);
-  if (!listedPlayer) return null;
-
-  // Find an AI buyer whose needs include this player's position
-  const buyerIds = Object.entries(profiles)
-    .filter(([id, profile]) => {
-      if (id === excludePlayerSquadId) return false;
-      return profile.needs?.some((n) => playerMatchesBand(listedPlayer, n.position));
-    })
-    .map(([id]) => id);
-
-  if (buyerIds.length === 0) return null;
-
-  // Pick the best-scoring buyer (or random among top candidates)
-  const buyerId = buyerIds[Math.floor(rng() * buyerIds.length)]!;
-  const buyerSquad = squads.get(buyerId);
-  if (!buyerSquad || buyerSquad.players.length >= MAX_SQUAD) return null;
-
-  const buyerProfile = profiles[buyerId]!;
-  const matchingNeed = buyerProfile.needs.find((n) => playerMatchesBand(listedPlayer, n.position));
-  if (!matchingNeed) return null;
-
-  const rating = playerOverallRating(listedPlayer);
-  if (rating < matchingNeed.targetMin || rating > matchingNeed.targetMax) return null;
-
-  const fee = new Player(rating, listedPlayer.age).price;
-  // AI buyer finances (see src/Domain/aiFinance): seasonal transfer budget and wage cap. The
-  // candidate's wage is estimated at the BUYING club's wage factor, not the seller's.
-  if (fee > aiTransferBudgetOf(buyerSquad)) return null;
-  if (!passesWageGate(aiClubFinance(buyerSquad), estimateWeeklyWage(listedPlayer, wageFactorOf(buyerSquad)), fee)) return null;
-  const sellPriority = candidate.priority;
-  const { accepted } = evaluateTransferOffer(listedPlayer, playerSquadCurrent, fee, sellPriority, { humanSeller: true });
-  if (!accepted) return null;
-
-  const { selling, buying } = squadsAfterAcceptedTransfer(
-    listedPlayer,
-    playerSquadCurrent,
-    buyerSquad,
-    buyerId,
-    listedPlayer.id,
-    contractFor(listedPlayer, buyerSquad),
-    historyFrom?.(playerSquadCurrent) ?? null,
-  );
-
-  squads.set(playerSquad.id, selling);
-  squads.set(buyerId, buying);
-
-  if (buyerProfile) {
-    profiles[buyerId] = profileWithoutNeed(buyerProfile, matchingNeed);
-  }
-
-  return {
-    player: listedPlayer,
-    sellerSquad: playerSquadCurrent,
-    buyerSquad,
-    updatedSeller: selling,
-    updatedBuyer: buying,
-    fee,
-    sellerMeta: squadRef(playerSquadCurrent),
-    buyerMeta: squadRef(buyerSquad),
-  };
-}
-
 export function dailyMarketTick(
   market: MarketState,
   allSquads: Squad[],
@@ -202,7 +118,7 @@ export function dailyMarketTick(
   rng: () => number = defaultRng,
   options?: DailyMarketTickOptions,
 ): DailyMarketTickResult {
-  if (options?.marketFrozen) return { updatedMarket: market, completedTransfers: [] };
+  if (options?.marketFrozen) return { updatedMarket: market, completedTransfers: [], newBids: [] };
 
   const excludePlayerSquadId = options?.excludePlayerSquadId ?? null;
   const squadById = new Map(allSquads.map((s) => [s.id, s] as const));
@@ -320,66 +236,38 @@ export function dailyMarketTick(
     });
   }
 
-  // 10% daily chance: an AI club attempts to match the human's sell list
+  // Bids for the human club's players (`.claude/rules/game/negotiation.md`): AI clubs no longer
+  // buy from the human's sell list on their own — they send a bid the player answers in the inbox.
   const playerSellList = options?.playerSellList ?? market.playerSellList ?? [];
   const playerSquad = options?.playerSquad ?? null;
-  logDebug("transfers", "sell-list guard", {
-    hasPlayerSquad: !!playerSquad,
-    playerSquadName: playerSquad?.name ?? null,
-    sellListLength: playerSellList.length,
-    hasExcludeId: !!excludePlayerSquadId,
-  });
-  if (
-    playerSquad &&
-    playerSellList.length > 0 &&
-    excludePlayerSquadId &&
-    rng() < PLAYER_SELL_LIST_MATCH_CHANCE
-  ) {
-    logDebug(
-      "transfers",
-      "sell-list match triggered — checking",
-      playerSellList.length,
-      "listed player(s) for",
-      playerSquad.name,
-    );
-    const matchResult = tryMatchPlayerSellList(
-      playerSellList,
-      playerSquad,
+  const pending = playerSquad ? liveBids(market.pendingBids, currentDate, squads.get(playerSquad.id) ?? playerSquad) : [];
+  let bidSeq = 0;
+  const newBids = playerSquad && excludePlayerSquadId
+    ? generateBidsForHuman({
+      date: currentDate,
+      rng,
+      humanSquad: squads.get(playerSquad.id) ?? playerSquad,
       squads,
       profiles,
-      excludePlayerSquadId,
-      rng,
-      (p, b) => aiSigningContract(p, b, currentDate, options),
-      options?.historyFrom,
-    );
-    if (matchResult) {
-      logDebug(
-        "transfers",
-        `sell-list match SUCCESS: ${matchResult.player.name} → ${matchResult.buyerSquad.name} for €${matchResult.fee.toLocaleString()}`,
-      );
-      completedTransfers.push(matchResult);
-    } else {
-      logDebug("transfers", "sell-list match attempted but no deal completed (no buyer or offer rejected)");
-    }
-  }
-
-  const soldPlayerIds = new Set(
-    completedTransfers
-      .filter((tx) => tx.sellerSquad.id === excludePlayerSquadId)
-      .map((tx) => tx.player.id),
-  );
-  const updatedPlayerSellList =
-    soldPlayerIds.size > 0
-      ? (market.playerSellList ?? []).filter((c) => !soldPlayerIds.has(c.playerId))
-      : market.playerSellList;
+      sellList: playerSellList,
+      loanList: market.playerLoanList ?? [],
+      pending,
+      seasonEndOf: (sq) => options?.seasonEndOf?.(sq) ?? defaultSeasonEnd(currentDate),
+      newId: options?.newBidId ?? (() => `bid-${currentDate}-${++bidSeq}`),
+    })
+    : [];
+  if (newBids.length > 0) logDebug("transfers", `${newBids.length} bid(s) for the human club's players`);
 
   return {
     updatedMarket: {
+      ...market,
       shuffledTeamIds,
       rotationIndex,
       profiles,
-      playerSellList: updatedPlayerSellList,
+      playerSellList: market.playerSellList ?? [],
+      pendingBids: [...pending, ...newBids],
     },
     completedTransfers,
+    newBids,
   };
 }

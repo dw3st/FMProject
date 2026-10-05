@@ -14,6 +14,8 @@ export interface LedgerDescription {
   stageScope?: "cup" | "continental";
   position?: number;
   club?: string;
+  /** Sell-on / loan lines: the player's name. */
+  player?: string;
 }
 
 export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): LedgerDescription | null {
@@ -29,6 +31,13 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
       return ref?.competition ? { key: "gate", competition: ref.competition } : null;
     case "transfer_in":
     case "transfer_out":
+      // Etapa 21 (`.claude/rules/game/negotiation.md`): sell-on clauses and loan fees.
+      if (ref?.stage === "sell_on" && ref.clubName) {
+        return { key: entry.kind === "transfer_in" ? "sellOnIn" : "sellOnOut", club: ref.clubName, ...(ref.playerName ? { player: ref.playerName } : {}) };
+      }
+      if (ref?.stage === "loan_fee" && ref.clubName) {
+        return { key: entry.kind === "transfer_in" ? "loanFeeIn" : "loanFeeOut", club: ref.clubName, ...(ref.playerName ? { player: ref.playerName } : {}) };
+      }
       return ref?.clubName
         ? { key: entry.kind === "transfer_in" ? "transferIn" : "transferOut", club: ref.clubName }
         : null;

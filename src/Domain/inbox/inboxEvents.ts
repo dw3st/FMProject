@@ -16,6 +16,7 @@ import type {
   YouthInboxMessage,
   RetirementInboxMessage,
   JobInboxMessage,
+  TransferInboxMessage,
 } from "@/types/inboxTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import { formatEurosText } from "@/Domain/money";
@@ -435,6 +436,38 @@ export function buildJobMessage(args:
     kind:      args.kind,
     ...club,
     ...(args.kind === "offer" ? { offer: args.offer } : {}),
+  };
+}
+
+/** Negotiation news (`.claude/rules/game/negotiation.md`). English fallback text; the screen translates it. */
+export function buildTransferNegotiationMessage(args: {
+  date: string;
+  kind: TransferInboxMessage["kind"];
+  playerId: string;
+  playerName: string;
+  clubName: string;
+  bidId?: string;
+  fee?: number;
+  sellOnPct?: number;
+  wageShare?: number;
+  until?: string;
+  expires?: string;
+}): TransferInboxMessage {
+  const { date, kind, playerName, clubName } = args;
+  const subject =
+    kind === "bid" ? `${clubName} bid for ${playerName}`
+    : kind === "loan_bid" ? `${clubName} want ${playerName} on loan`
+    : kind === "loan_back" ? `${playerName} returned to ${clubName}`
+    : kind === "loan_home" ? `${playerName} is back from ${clubName}`
+    : `Sell-on clause: ${playerName}`;
+  return {
+    ...args,
+    id: kind === "bid" || kind === "loan_bid" ? `transfer-${kind}-${args.bidId}` : `transfer-${date}-${kind}-${args.playerId}-${randomUUID()}`,
+    createdAt: date,
+    read: false,
+    category: "transfer",
+    subject,
+    preview: args.fee ? `€${formatCount(args.fee)}` : clubName,
   };
 }
 
