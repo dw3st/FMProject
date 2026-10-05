@@ -53,6 +53,9 @@ function sessionFromSaveJson(s: GameSession, raw: GameSaveApiResponse): GameSess
     leagueSlug: raw.leagueSlug ?? s.leagueSlug,
     leagueName: raw.leagueName ?? s.leagueName,
     clubId: raw.clubId ?? s.clubId,
+    // …and the club itself changes with a job offer (Etapa 20): name and colours follow the server too.
+    clubName: raw.clubName ?? s.clubName,
+    clubColors: raw.clubColors ?? s.clubColors,
     currentDate: raw.currentDate ?? s.currentDate,
     formation: raw.formation ?? s.formation,
     tactical_style: raw.tactical_style ?? s.tactical_style,

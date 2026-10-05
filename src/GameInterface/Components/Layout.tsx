@@ -97,7 +97,7 @@ export function Layout({ children }: { children: ReactNode }) {
       )}
 
       {fastForward && (
-        <FastForwardModal progress={fastForward} onStop={stopFastForward} onDismiss={dismissFastForward} />
+        <FastForwardModal progress={fastForward} onStop={stopFastForward} onDismiss={dismissFastForward} unemployed={!!save?.unemployed} />
       )}
 
       {/* Rendered last so it stacks above the day summary. */}
