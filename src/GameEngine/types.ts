@@ -379,6 +379,11 @@ export interface GamePlayer {
   /** Morale this player plays at (`.claude/rules/game/morale.md`); absent = neutral 65. Debug display only. */
   morale?: number;
   /**
+   * Temperament t (−1 calm … +1 hot-headed, `.claude/rules/game/personality.md`), or the team
+   * override (`PersonalityMatchConfig`). Absent = 0. Scales the foul and card chances.
+   */
+  temperament?: number;
+  /**
    * Fitness-coach multiplier on this player's injury risk (`Domain/staff`), fixed for the match.
    * Absent = 1 (hand-built test players).
    */

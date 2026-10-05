@@ -9,6 +9,7 @@ import { FOUL_CONFIG as C } from '@/GameEngine/Configs/FoulConfig';
 import type { RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
 import { PITCH_LENGTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
+import { temperamentFoulMult, temperamentRedMult, temperamentYellowMult } from '@/Domain/personality/personality';
 
 /** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
 export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
@@ -30,6 +31,11 @@ export interface FoulContext {
   tackleWon: boolean;
   /** The challenge happens inside the offender's own penalty area. */
   inOwnBox: boolean;
+  /**
+   * Offender's temperament t (−1 calm … +1 hot-headed, `src/Domain/personality`); absent = 0.
+   * Foul chance × (1 + 0,35 × t).
+   */
+  temperament?: number;
 }
 
 /** Probability that a resolved tackle / loose-ball duel is a foul. */
@@ -45,7 +51,8 @@ export function foulChance(ctx: FoulContext): number {
   const yellow   = ctx.onYellow ? C.ON_YELLOW_MULT : 1;
   const won      = ctx.tackleWon ? C.TACKLE_WON_MULT : 1;
   const box      = ctx.inOwnBox ? C.IN_BOX_MULT : 1;
-  return clamp(base * angle * aggr * skill * tired * yellow * won * box, 0, C.MAX_CHANCE);
+  const temper   = temperamentFoulMult(ctx.temperament ?? 0);
+  return clamp(base * angle * aggr * skill * tired * yellow * won * box * temper, 0, C.MAX_CHANCE);
 }
 
 export interface CardContext {
@@ -54,12 +61,23 @@ export interface CardContext {
   clearChance: boolean;
   /** Offender is already on a yellow card (a second yellow becomes a red — the caller handles that). */
   onYellow: boolean;
+  /**
+   * Offender's temperament t (absent = 0): yellow × (1 + 0,2 × t), straight red × (1 + 0,4 × t),
+   * divided by `TEMPERAMENT_CARD_NORM` when t ≠ 0 (world volume, `FoulConfig`).
+   */
+  temperament?: number;
 }
 
 export interface CardRollResult {
   card: CardColour | 'none';
   yellowChance: number;
   redChance: number;
+}
+
+/** Temperament card multiplier; exactly 1 at t = 0 / absent (the normalizer only applies off neutral). */
+function cardTemper(mult: (t: number) => number, t: number | undefined): number {
+  if (!t) return 1;
+  return mult(t) / C.TEMPERAMENT_CARD_NORM;
 }
 
 /** Card for a foul: straight red rolled first (one `rng()` draw), then yellow (a second draw). */
@@ -69,14 +87,16 @@ export function cardRoll(ctx: CardContext, rng: () => number = Math.random): Car
     C.YELLOW_BASE
       * (behind ? C.BEHIND_YELLOW_MULT : 1)
       * (ctx.clearChance ? C.CLEAR_CHANCE_YELLOW_MULT : 1)
-      * (ctx.onYellow ? C.ON_YELLOW_YELLOW_MULT : 1),
+      * (ctx.onYellow ? C.ON_YELLOW_YELLOW_MULT : 1)
+      * cardTemper(temperamentYellowMult, ctx.temperament),
     0, C.MAX_YELLOW,
   );
   const redChance = clamp(
     C.RED_BASE
       * (behind ? C.BEHIND_RED_MULT : 1)
       * (ctx.clearChance ? C.CLEAR_CHANCE_RED_MULT : 1)
-      * (ctx.onYellow ? C.ON_YELLOW_RED_MULT : 1),
+      * (ctx.onYellow ? C.ON_YELLOW_RED_MULT : 1)
+      * cardTemper(temperamentRedMult, ctx.temperament),
     0, C.MAX_RED,
   );
   if (rng() < redChance) return { card: 'red', yellowChance, redChance };

@@ -897,3 +897,42 @@ describe("quickSim side morale (`src/Domain/morale`)", () => {
     expect(lo.away.attack).toBeCloseTo(base.away.attack * 0.98);
   });
 });
+
+describe("quickSim temperament (`src/Domain/personality`)", () => {
+  const neutral = { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament: 10.5 };
+  const neutralSquad = (id: string): Squad => {
+    const s = makeSquad(id, 5);
+    return { ...s, players: s.players.map((p) => ({ ...p, personality: neutral })) };
+  };
+  const input = (home: Squad, away: Squad, ht?: number, at?: number) => ({
+    fixtureId: "t",
+    home, away,
+    homeLineup: ROLES.map((_, i) => `${home.id}-p${i}`),
+    awayLineup: ROLES.map((_, i) => `${away.id}-p${i}`),
+    homeRoles: ROLES,
+    awayRoles: ROLES,
+    ...(ht !== undefined ? { homeTemperament: ht } : {}),
+    ...(at !== undefined ? { awayTemperament: at } : {}),
+  });
+
+  test("a neutral XI and a 10.5 override give the same match", () => {
+    for (const seed of [1, 2, 3]) {
+      const a = quickSimMatch(input(neutralSquad("h"), neutralSquad("a")), mulberry32(seed)).recording;
+      const b = quickSimMatch(input(makeSquad("h", 5), makeSquad("a", 5), 10.5, 10.5), mulberry32(seed)).recording;
+      expect(b.teamStats).toEqual(a.teamStats);
+    }
+  });
+
+  test("a hot-headed side fouls and is booked more than a calm one", () => {
+    let hotF = 0, calmF = 0, hotC = 0, calmC = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const r = quickSimMatch(input(makeSquad("h", 5), makeSquad("a", 5), 20, 1), mulberry32(seed)).recording;
+      hotF += r.teamStats.home.fouls ?? 0;
+      calmF += r.teamStats.away.fouls ?? 0;
+      hotC += (r.teamStats.home.yellowCards ?? 0) + (r.teamStats.home.redCards ?? 0);
+      calmC += (r.teamStats.away.yellowCards ?? 0) + (r.teamStats.away.redCards ?? 0);
+    }
+    expect(hotF / calmF).toBeGreaterThan(1.8);
+    expect(hotC / calmC).toBeGreaterThan(2);
+  });
+});

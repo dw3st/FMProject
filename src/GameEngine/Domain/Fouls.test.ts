@@ -74,3 +74,22 @@ describe('isClearChance', () => {
     expect(isClearChance({ x: 50, y: 37, attackDir: 1 }, [])).toBe(false);
   });
 });
+
+describe('temperament (personality)', () => {
+  test('t = 0 gives exactly the plain result; ±1 scales the foul chance by 1 ± 0.35', () => {
+    const front = { ...base, angle: 'front' as const };
+    expect(foulChance({ ...front, temperament: 0 })).toBe(foulChance(front));
+    expect(foulChance({ ...front, temperament: 1 })).toBeCloseTo(foulChance(front) * 1.35, 9);
+    expect(foulChance({ ...front, temperament: -1 })).toBeCloseTo(foulChance(front) * 0.65, 9);
+  });
+  test('cards: same draws, chances scaled', () => {
+    const ctx = { angle: 'side' as const, clearChance: false, onYellow: false };
+    const plain = cardRoll(ctx, () => 0.99);
+    expect(cardRoll({ ...ctx, temperament: 0 }, () => 0.99)).toEqual(plain);
+    const hot = cardRoll({ ...ctx, temperament: 1 }, () => 0.99);
+    expect(hot.yellowChance).toBeCloseTo(plain.yellowChance * 1.2 / C.TEMPERAMENT_CARD_NORM, 9);
+    expect(hot.redChance).toBeCloseTo(plain.redChance * 1.4 / C.TEMPERAMENT_CARD_NORM, 9);
+    const calm = cardRoll({ ...ctx, temperament: -1 }, () => 0.99);
+    expect(calm.yellowChance).toBeLessThan(plain.yellowChance);
+  });
+});

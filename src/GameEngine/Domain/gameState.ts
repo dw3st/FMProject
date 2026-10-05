@@ -62,6 +62,8 @@ import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { withTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { matchMoraleOf } from '@/GameEngine/Configs/MoraleConfig';
+import { matchTemperamentOf } from '@/GameEngine/Configs/PersonalityMatchConfig';
+import { temperamentFoulMult } from '@/Domain/personality/personality';
 import { withMoraleExecution } from '@/Domain/morale/morale';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
@@ -269,6 +271,7 @@ function buildGamePlayerForSlot(
     strengthAttr:     buffed.strength,
     injuryLoad:       rp.seasonLog?.load ?? 0,
     morale:           matchMoraleOf(team, rp.morale),
+    temperament:      matchTemperamentOf(team, rp),
   };
 }
 
@@ -340,6 +343,7 @@ function buildTeam(
       strengthAttr:     buffed.strength,
       injuryLoad:       rp.seasonLog?.load ?? 0,
       morale:           matchMoraleOf(team, rp.morale),
+      temperament:      matchTemperamentOf(team, rp),
     });
   }
 
@@ -809,7 +813,7 @@ export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' 
     gameBus.emit('card', { playerId: player.id, playerName: player.name, team: player.team, card: c, secondYellow, minute });
     const label = c === 'red' ? (secondYellow ? 'Second yellow -> RED' : 'RED card') : 'Yellow card';
     debugLog('card', `${label}: ${player.name} (team ${player.team}), minute ${minute}`, {
-      playerId: player.id, data: { card: c, secondYellow, minute },
+      playerId: player.id, data: { card: c, secondYellow, minute, tempMult: temperamentFoulMult(player.temperament ?? 0) },
     });
   };
 
@@ -1106,8 +1110,9 @@ export function maybeFoul(
     kind === 'dribble' ? (tackleWon ? 'front' : 'behind') :
                          'side';
   const onYellow = yellowsOf(state, offender.id) > 0;
+  const temperament = offender.temperament ?? 0;
   const chance = foulChance({
-    kind, angle, inOwnBox, tackleWon, onYellow,
+    kind, angle, inOwnBox, tackleWon, onYellow, temperament,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
     tackling:   offender.runtimeStats.withoutBall.tackling,
     energy:     offender.energy,
@@ -1121,7 +1126,7 @@ export function maybeFoul(
     x: spot.x, y: spot.y, inBox: inOwnBox, minute,
   });
   debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
-    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y },
+    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament) },
   });
 
   let s: GameState = {
@@ -1129,7 +1134,7 @@ export function maybeFoul(
     players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
   };
   const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
-  const { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow }, rng);
+  const { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament }, rng);
   if (card !== 'none') s = bookPlayer(s, s.players.find(p => p.id === offender.id) ?? offender, card, minute);
   return awardFoulRestart(s, fouled.team, spot, inOwnBox, offender.id, minute);
 }
