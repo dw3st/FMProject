@@ -1,3 +1,4 @@
+import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 import { AI_SIGN_MAX_AGE, CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
@@ -200,5 +201,6 @@ export function pruneFreeAgents(pool: FreeAgent[], date: string): FreeAgent[] {
 /** A released player enters the pool healthy and with no club/contract. */
 export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
   // A sell-on clause or a loan ends with the contract (`.claude/rules/game/negotiation.md`).
-  return { player: { ...player, squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined }, since: date };
+  // Morale is the human club's only (`.claude/rules/game/morale.md`).
+  return { player: { ...stripPlayerMorale(player), squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined }, since: date };
 }

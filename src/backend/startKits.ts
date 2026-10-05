@@ -1,3 +1,4 @@
+import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
 import { fileURLToPath } from "node:url";
 import { readdir, stat, mkdir } from "fs/promises";
 import { saveService } from "@/backend/SaveService";
@@ -58,9 +59,11 @@ export async function listStartKits(): Promise<string[]> {
  * restores the new career's own values afterwards.
  */
 export function stripHumanOnly(squad: Squad): Squad {
-  if (!squad.staff && !squad.styleFamiliarity) return squad;
+  // Morale too (`.claude/rules/game/morale.md`): the kit carries no club's morale.
+  const hasMorale = !!squad.moraleClub || squad.players.some((p) => p.morale !== undefined || p.moraleLog || p.squadStatus);
+  if (!squad.staff && !squad.styleFamiliarity && !hasMorale) return squad;
   const { staff: _staff, styleFamiliarity: _fam, ...rest } = squad;
-  return rest;
+  return hasMorale ? stripClubMorale(rest) : rest;
 }
 
 /** Read a save's full world into a serialisable snapshot. */
@@ -219,6 +222,8 @@ export async function applyRandomStartKit(
         finances: { ...postKitSquad.finances, budget: preKitBudget },
         ...(preKitStaff ? { staff: preKitStaff } : {}),
         ...(preKitFamiliarity ? { styleFamiliarity: preKitFamiliarity } : {}),
+        // The kit's players carry no morale: start the human club's at 65 again.
+        ...(preKitSquad?.moraleClub ? { players: initClubMorale(postKitSquad).players, moraleClub: initClubMorale(postKitSquad).moraleClub } : {}),
       });
     }
   }

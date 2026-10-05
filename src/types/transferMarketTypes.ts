@@ -20,6 +20,8 @@ export interface SellCandidate {
   playerId: string;
   /** 0–1: how willing the club is to sell this player. Higher = easier to buy. */
   priority: number;
+  /** Human list only: he asked to leave (transfer request, `.claude/rules/game/morale.md`). */
+  requested?: true;
 }
 
 export interface SquadMarketProfile {

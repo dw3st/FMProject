@@ -8,6 +8,7 @@ import { buildAiLoanBid } from "@/Domain/negotiation/loans";
 import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
+import { MORALE } from "@/Domain/morale/moraleConfig";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, SellCandidate, SquadMarketProfile } from "@/types/transferMarketTypes";
 
@@ -99,6 +100,24 @@ export function generateBidsForHuman(args: {
       const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng });
       if (bid) out.push(bid);
     }
+  }
+
+  // Transfer request (`.claude/rules/game/morale.md`): he wants out, so clubs come in more often
+  // and from a wider rating band than for a plain listing.
+  for (const c of args.sellList) {
+    if (!c.requested || !room()) continue;
+    const player = owned(c.playerId);
+    if (!player || hasBid(all(), player.id, "transfer")) continue;
+    if (rng() >= MORALE.REQUEST_BID_CHANCE) continue;
+    const rating = playerOverallRating(player);
+    const buyers = buyersFor(player).filter((b) => {
+      const need = profiles[b.id]!.needs.find((n) => playerMatchesBand(player, n.position))!;
+      return rating >= need.targetMin - MORALE.REQUEST_BAND_SLACK && rating <= need.targetMax + MORALE.REQUEST_BAND_SLACK;
+    });
+    if (buyers.length === 0) continue;
+    const buyer = buyers[Math.floor(rng() * buyers.length)]!;
+    const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng });
+    if (bid) out.push(bid);
   }
 
   // Unlisted standout: a bigger club tries its luck.

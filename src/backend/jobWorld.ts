@@ -1,3 +1,4 @@
+import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
 import type { SaveMeta, SaveService } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { getLeagueData, type LeagueDataEntry } from "@/backend/advanceDay";
@@ -243,7 +244,8 @@ export async function releaseHumanClub(
     );
   }
   const academy = academyToAi(squad);
-  const { staff: _s, styleFamiliarity: _f, ...rest } = academy.squad;
+  // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
+  const { staff: _s, styleFamiliarity: _f, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const ai: Squad = { ...rest, financialTier: tier, aiTransferBudget: seasonalTransferBudgetFor(tier, popularityOf(rest)) };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);
@@ -297,8 +299,9 @@ export async function takeOverClub(
     squad, date: seasonEnd > args.date ? seasonEnd : args.date, nextSeasonEnd: addYearsIso(seasonEnd, 1),
   }).squad;
   const { financialTier: _t, aiTransferBudget: _b, ...rest } = renewed;
+  // Morale starts over at the new club: everyone at 65, no talks or promises.
   const human: Squad = {
-    ...rest,
+    ...initClubMorale(rest),
     finances: { ...(rest.finances ?? { broadcasting: 0, commercial: 0, total: 0, followers: 0 }), budget: 0 },
     staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad),
     styleFamiliarity: initialFamiliarity(DEFAULT_TACTICAL_STYLE),

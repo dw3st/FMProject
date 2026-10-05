@@ -281,6 +281,29 @@ describe("AI bids", () => {
   });
 });
 
+describe("transfer request (morale)", () => {
+  test("a requested player draws bids from a wider band than a plain listing", () => {
+    const human = squad("h");
+    const buyer = squad("b", 6, { financialTier: "HIGH" });
+    const p = human.players.find((q) => q.id === "hcm0")!;
+    const rating = playerOverallRating(p);
+    // The need's band misses him by 0.8: outside the plain slack (0.5), inside the request's (1).
+    const profiles = {
+      b: {
+        squadId: "b", sellList: [], lastUpdateDay: "2027-03-01",
+        needs: [{ position: "Midfielder" as const, targetMin: rating + 0.8, targetMax: rating + 1.5, urgency: 1, budgetTier: "high" as const, intentType: "cover_need" as const }],
+      },
+    };
+    const args = (requested: boolean) => ({
+      date: "2027-03-01", rng: () => 0.1, humanSquad: human, squads: new Map([["b", buyer]]), profiles,
+      sellList: [{ playerId: p.id, priority: 1, ...(requested ? { requested: true as const } : {}) }], loanList: [], pending: [],
+      seasonEndOf: () => "2027-05-31", newId: () => "x",
+    });
+    expect(generateBidsForHuman(args(false))).toEqual([]);
+    expect(generateBidsForHuman(args(true)).map((b) => b.playerId)).toEqual([p.id]);
+  });
+});
+
 describe("review fixes", () => {
   test("bids skip a player the human club could not let go", () => {
     const thin = squad("h");
