@@ -465,7 +465,9 @@ export function querySummary(state: GameState): {
   passInFlight: boolean;
   shotInFlight: boolean;
   setPiece: string | null;
-  players: Array<{ id: number; name: string; team: TeamId; role: string; x: number; y: number }>;
+  players: Array<{ id: number; name: string; team: TeamId; role: string; x: number; y: number; variant?: string; press?: string; manMarks?: number }>;
+  /** Man-marking pairs per team (player instructions). */
+  manMarks: GameState['manMarks'] | null;
 } {
   const holder = state.ballHolderId != null ? state.players.find(p => p.id === state.ballHolderId) : null;
   return {
@@ -477,7 +479,13 @@ export function querySummary(state: GameState): {
     shotInFlight: !!state.shot,
     setPiece: state.setPiece?.type ?? null,
     players: state.players
-      .map(p => ({ id: p.id, name: p.name, team: p.team, role: p.role, x: +p.x.toFixed(2), y: +p.y.toFixed(2) }))
+      .map(p => ({
+        id: p.id, name: p.name, team: p.team, role: p.role, x: +p.x.toFixed(2), y: +p.y.toFixed(2),
+        ...(p.instruction?.variant ? { variant: p.instruction.variant } : {}),
+        ...(p.instruction?.press ? { press: p.instruction.press } : {}),
+        ...(p.manMarkTargetId !== undefined ? { manMarks: p.manMarkTargetId } : {}),
+      }))
       .sort((a, b) => a.id - b.id),
+    manMarks: state.manMarks ?? null,
   };
 }
