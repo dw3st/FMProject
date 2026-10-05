@@ -9,12 +9,11 @@
  * then the ESPN heuristic ones. `--leagues` keeps only players of those leagues (stars of the list
  * `STARS` first).
  */
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { croppedPlayerFaceSvg } from "@/Domain/faces/playerFaceSvg";
 import type { FaceTraits } from "@/Domain/faces/faceTraits";
-import { LEAGUES } from "@/../scripts/faces/wikidata";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const out = process.argv[2];
@@ -28,10 +27,16 @@ const labelOrder = readFileSync(join(ROOT, "data_process/wikidata/faceTraitLabel
   .split("\n").filter((l) => l.trim() && !l.startsWith("#")).map((l) => l.split(/\s+/)[0]!);
 const espn: Record<string, string> = read("data_process/espn/faceAthletes.json");
 const espnTraits: Record<string, FaceTraits> = read("data_process/espn/faceTraits.json");
+const tsdb: Record<string, { image: string; name: string; team: string }> = existsSync(join(ROOT, "data_process/thesportsdb/photoMeta.json"))
+  ? read("data_process/thesportsdb/photoMeta.json") : {};
+const tsdbOrder = existsSync(join(ROOT, "data_process/thesportsdb/faceTraitLabels.txt"))
+  ? readFileSync(join(ROOT, "data_process/thesportsdb/faceTraitLabels.txt"), "utf8").split("\n").filter((l) => l.trim() && !l.startsWith("#")).map((l) => l.split(/\s+/)[0]!)
+  : [];
+const TSDB_MAX = 40;
 
 interface Row { id: string; name: string; club: string; league: string; nat?: string; colors: string[] }
 const byId = new Map<string, Row>();
-for (const league of LEAGUES) {
+for (const league of readdirSync(join(ROOT, "src/example_data/squads"))) {
   const dir = join(ROOT, "src/example_data/squads", league);
   for (const f of readdirSync(dir)) {
     const sq = JSON.parse(readFileSync(join(dir, f), "utf8"));
@@ -49,14 +54,16 @@ const ids = [...stars, ...labelled.filter((id) => !stars.includes(id))].slice(0,
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const svgImg = (svg: string) => `<img class="face" alt="" src="data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}">`;
 
-const card = (id: string) => {
+const card = (id: string, source: "commons" | "tsdb" = "commons") => {
   const r = byId.get(id)!;
   const t = traits[id];
-  const m = meta[id];
-  const src = m ? "Wikimedia Commons" : "ESPN";
-  const photoUrl = m ? m.thumb : `https://a.espncdn.com/i/headshots/soccer/players/full/${espn[id]}.png`;
+  const m = source === "commons" ? meta[id] : undefined;
+  const ts = source === "tsdb" ? tsdb[id] : undefined;
+  const src = m ? "Wikimedia Commons" : ts ? "TheSportsDB" : "ESPN";
+  const photoUrl = m ? m.thumb : ts ? `${ts.image}/preview` : `https://a.espncdn.com/i/headshots/soccer/players/full/${espn[id]}.png`;
   const credit = m
     ? `<a href="${esc(m.page)}" target="_blank" rel="noopener">${esc(m.license)}</a> · ${esc(m.artist)}`
+    : ts ? `TheSportsDB: ${esc(ts.name)} (${esc(ts.team)}) · só referência local`
     : "ESPN (sem licença livre: só referência local)";
   return `<div class="card">
   <div class="head"><b>${esc(r.name)}</b><span>${esc(r.club)} · ${esc(r.league)} · ${esc(r.nat ?? "?")}</span></div>
@@ -71,7 +78,7 @@ const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><met
 :root{--bg:#f6f6f4;--fg:#1b1b1b;--muted:#666;--card:#fff;--border:#ddd;--ph:#e9e9e9}
 @media (prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--muted:#9a9a9a;--card:#1e1e1e;--border:#333;--ph:#2a2a2a}}
 body{background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif;margin:0;padding:16px}
-h1{font-size:20px;margin:0 0 4px} p{color:var(--muted);margin:0 0 16px;max-width:900px}
+h1{font-size:20px;margin:0 0 4px} h2{font-size:18px;margin:24px 0 4px} p{color:var(--muted);margin:0 0 16px;max-width:900px}
 a{color:inherit}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px}
@@ -84,7 +91,10 @@ a{color:inherit}
 </style></head><body>
 <h1>Piloto de rostos (Wikidata/Commons → facesjs)</h1>
 <p>Página local, não publicada. Fotos carregadas do Wikimedia Commons pela URL (licença e autor em cada cartão). Traços das fotos do Commons rotulados à mão (pele 1–7, cor e comprimento do cabelo, barba); os demais, da heurística sobre as fotos da ESPN (só pele e cor do cabelo). ${ids.length} jogadores.</p>
-<div class="grid">${ids.filter((id) => byId.has(id)).map(card).join("\n")}</div>
+<div class="grid">${ids.filter((id) => byId.has(id)).map((id) => card(id)).join("\n")}</div>
+${tsdbOrder.length ? `<h2>TheSportsDB</h2>
+<p>Jogadores sem foto livre no Commons, anotados à mão a partir da foto recortada do TheSportsDB (carregada pela URL, só para conferência local).</p>
+<div class="grid">${tsdbOrder.filter((id) => byId.has(id) && tsdb[id]).slice(0, TSDB_MAX).map((id) => card(id, "tsdb")).join("\n")}</div>` : ""}
 </body></html>`;
 writeFileSync(out, html);
 console.log(`${ids.length} players → ${out}`);

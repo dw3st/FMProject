@@ -1,42 +1,32 @@
 /**
- * Face pilot: order in which players are labelled by hand (only those with a free Commons photo).
- *   bun scripts/faces/labelQueue.ts [--all] → ids, one per line
- * 1. world top 300 by overall; 2. auto XI (4-3-3) of every club of the pilot leagues;
- * 3. the other players of the 40 strongest clubs (average XI overall).
- * Already labelled players (faceTraitLabels.txt) and unusable photos (faceTraitSkips.txt) are skipped unless --all.
+ * Face pilot: order in which players are labelled by hand (see `priority.ts`).
+ *   bun scripts/faces/labelQueue.ts [--source wikidata|thesportsdb] [--all] → ids, one per line
+ * wikidata (default): players with a free Commons photo, skipping faceTraitLabels/faceTraitSkips.
+ * thesportsdb: players with a TheSportsDB photo and no Commons label, skipping the TheSportsDB
+ * labels/skips. --all keeps the already labelled/skipped ones.
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { Player } from "@/Domain/Player";
-import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
-import { LEAGUES } from "@/../scripts/faces/wikidata";
+import { idsInFile, priorityPlayers } from "@/../scripts/faces/priority";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const meta = JSON.parse(readFileSync(join(ROOT, "data_process/wikidata/photoMeta.json"), "utf8"));
-const labelsFile = join(ROOT, "data_process/wikidata/faceTraitLabels.txt");
-const ids = (file: string) => existsSync(file)
-  ? readFileSync(file, "utf8").split("\n").filter((l) => l.trim() && !l.startsWith("#")).map((l) => l.split(/\s+/)[0]!)
-  : [];
-// Labelled players and unusable photos (faceTraitSkips.txt) are left out unless --all.
-const done = new Set(process.argv.includes("--all") ? [] : [...ids(labelsFile), ...ids(join(ROOT, "data_process/wikidata/faceTraitSkips.txt"))]);
+const at = (p: string) => join(ROOT, p);
+const arg = process.argv.indexOf("--source");
+const source = arg > 0 ? process.argv[arg + 1] : "wikidata";
+const all = process.argv.includes("--all");
 
-const all: { id: string; ovr: number }[] = [];
-const clubs: { league: string; sq: any; xi: string[]; level: number }[] = [];
-const squadsDir = join(ROOT, "src/example_data/squads");
-for (const league of readdirSync(squadsDir)) for (const f of readdirSync(join(squadsDir, league))) {
-  const sq = JSON.parse(readFileSync(join(squadsDir, league, f), "utf8"));
-  for (const p of sq.players) all.push({ id: p.id, ovr: Player.computeOverallAvg(p) });
-  if (LEAGUES.includes(league)) {
-    const xi = autoLineupDefaultFormation(sq).filter(Boolean);
-    const byId = new Map(sq.players.map((p: any) => [p.id, p]));
-    const level = xi.reduce((s, id) => s + Player.computeOverallAvg(byId.get(id) as never), 0) / Math.max(1, xi.length);
-    clubs.push({ league, sq, xi, level });
-  }
+const wdLabels = idsInFile(at("data_process/wikidata/faceTraitLabels.txt"));
+let photo: Record<string, unknown>;
+let done: Set<string>;
+if (source === "thesportsdb") {
+  photo = JSON.parse(readFileSync(at("data_process/thesportsdb/photoMeta.json"), "utf8"));
+  done = new Set([...wdLabels, ...(all ? [] : [
+    ...idsInFile(at("data_process/thesportsdb/faceTraitLabels.txt")),
+    ...idsInFile(at("data_process/thesportsdb/faceTraitSkips.txt")),
+  ])]);
+} else {
+  photo = JSON.parse(readFileSync(at("data_process/wikidata/photoMeta.json"), "utf8"));
+  done = new Set(all ? [] : [...wdLabels, ...idsInFile(at("data_process/wikidata/faceTraitSkips.txt"))]);
 }
-const order: string[] = [];
-const push = (id: string) => { if (meta[id] && !done.has(id) && !order.includes(id)) order.push(id); };
-all.sort((a, b) => b.ovr - a.ovr).slice(0, 300).forEach((p) => push(p.id));
-for (const c of clubs) c.xi.forEach(push);
-for (const c of clubs.sort((a, b) => b.level - a.level).slice(0, 40)) for (const p of c.sq.players) push(p.id);
-console.log(order.join("\n"));
+console.log(priorityPlayers().filter((p) => photo[p.id] && !done.has(p.id)).map((p) => p.id).join("\n"));

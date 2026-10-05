@@ -122,3 +122,18 @@ barba), não de heurística.
   `mergeTraits` descarta o rótulo se o casamento mudar. Uma pessoa do Wikidata casada com dois jogadores cai dos dois.
 - A foto do item do Wikidata às vezes é de outra pessoa (vimos dois goleiros): esses entram em `faceTraitSkips.txt`.
 - Página local de comparação: `bun scripts/faces/pilotPage.ts <arquivo.html> [n]` (nunca publicar).
+
+### Traços reais (TheSportsDB)
+
+Complemento para quem não tem foto livre no Commons (uso em casa: as fotos servem só para anotar, nunca vão
+para o repositório nem para o jogo).
+
+- `bun scripts/fetchTheSportsDB.ts [--limit N] [--no-download]`: fila de prioridade (`scripts/faces/priority.ts`:
+  top 300 do mundo, XI automático das ligas do piloto, 40 clubes mais fortes) menos quem já tem rótulo do Commons;
+  busca jogador a jogador (`searchplayers.php`, chave grátis `123`, sequencial, ~2 s de pausa; o elenco por time
+  vem limitado a 10 jogadores nessa chave). Par aceito por nome + ano de nascimento, único; um jogador do
+  TheSportsDB casado com dois nossos cai dos dois. Metadados (sem imagem) em `data_process/thesportsdb/photoMeta.json`;
+  recortes em `data_process/thesportsdb/photos/` e respostas em `cache/` (os dois no `.gitignore`).
+- Rótulos: `data_process/thesportsdb/faceTraitLabels.txt` (guarda o `idPlayer` da foto vista);
+  `bun scripts/faces/labelQueue.ts --source thesportsdb` dá a fila. `mergeTraits` mescla: ESPN < TheSportsDB < Commons.
+  `FACE_VERSION` 6.
