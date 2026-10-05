@@ -639,13 +639,17 @@ export const apiRoutes = {
     const entries = await saveService.getLedger(saveId!, season);
     const squad = await saveService.getSquadById(saveId!, meta.clubId);
     const balance = squad ? getClubBudget(squad) : 0;
+    // A season that changed club (`.claude/rules/game/jobs.md`): totals and the weekly chart are the
+    // current club's only, from the last arrival on; the entries list stays complete.
+    const lastArrival = entries.findLastIndex((e) => e.kind === "club_change" && e.ref?.stage === "arrive");
+    const atCurrentClub = lastArrival >= 0 ? entries.slice(lastArrival) : entries;
 
     return Response.json({
       season,
       seasons,
       entries,
-      totals: totalsByKind(entries),
-      weekly: weeklyNet(entries),
+      totals: totalsByKind(atCurrentClub),
+      weekly: weeklyNet(atCurrentClub.filter((e) => e.kind !== "club_change")),
       balance,
     });
   },
