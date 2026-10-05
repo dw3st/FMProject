@@ -7,6 +7,7 @@ import { contractRoutes } from "@/backend/contractRoutes";
 import { staffRoutes } from "@/backend/staffRoutes";
 import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
+import { facilityRoutes } from "@/backend/facilityRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
 import { jobRoutes } from "@/backend/jobRoutes";
@@ -83,6 +84,7 @@ export const apiRoutes = {
   ...staffRoutes,
   ...moraleRoutes,
   ...youthRoutes,
+  ...facilityRoutes,
   ...rebornRoutes,
   ...managerRoutes,
   ...jobRoutes,

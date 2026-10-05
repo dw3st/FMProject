@@ -66,6 +66,9 @@ import { resolveSimMode } from "@/Domain/advanceDay/simMode";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
+import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
+import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
+import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotation";
@@ -378,7 +381,7 @@ export async function advanceOneDay(
     // The player's club home fixtures today, across every competition (league, cup, continental —
     // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
     // loop below processes each competition's rounds for the day.
-    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean }> = [];
+    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean; opponentId: string }> = [];
 
     const tactics = await saveService.getTactics(saveId);
 
@@ -504,7 +507,7 @@ export async function advanceOneDay(
           const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
           if (fixture.home === playerSquadId) {
             const gateKind: GateKind = isContinentalSlug(leagueSlug) ? "continental" : isCupSlug(leagueSlug) ? "cup" : "league";
-            playerHomeFixturesToday.push({ competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true });
+            playerHomeFixturesToday.push({ competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true, opponentId: fixture.away });
           }
           const useRecording =
             playedMatchOverride !== null &&
@@ -720,6 +723,8 @@ export async function advanceOneDay(
     const deferredContractMessages: Parameters<typeof buildContractMessage>[0][] = [];
     // Academy news (new intake, released at 19): same deferral.
     const deferredYouthMessages: Parameters<typeof buildYouthMessage>[0][] = [];
+    // Facilities news (finished works, attendance record): same deferral, same reason.
+    const facilityMessages: Parameters<typeof buildFacilityMessage>[0][] = [];
     // Retirement news for the human club: same deferral.
     const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
     // Club history: beaten records of the human club (`.claude/rules/game/club-history.md`), same deferral.
@@ -1383,23 +1388,63 @@ export async function advanceOneDay(
     let negativeBalanceMessage: Parameters<typeof buildSeasonMessage>[0] | null = null;
     const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
     const isWeeklyTick = dayOfWeek === 1;
-    const needsPlayerSquad = isWeeklyTick || playerHomeFixturesToday.length > 0;
-    if (needsPlayerSquad && playerEntry && playerSquadId) {
+    // Facilities (`.claude/rules/game/facilities.md`): instalments and finished works can fall on
+    // any day, so the human squad is read every day.
+    if (playerEntry && playerSquadId) {
       // Re-read the squad: it may have been updated by the match loop above (own fixture today).
-      const playerSquad = await saveService.getSquad(saveId, playerEntry.leagueSlug, playerEntry.stem);
-      if (playerSquad) {
+      let playerSquad = await saveService.getSquad(saveId, playerEntry.leagueSlug, playerEntry.stem);
+      // Facilities day: instalments / finished works, then today's home attendance.
+      let facilityEntries: LedgerEntry[] = [];
+      let attendanceToday: number[] | null = null;
+      if (playerSquad?.facilities) {
+        const day = advanceFacilities(playerSquad.facilities, currentDate);
+        facilityEntries = day.entries;
+        for (const p of day.completed) {
+          facilityMessages.push({
+            date: currentDate, kind: "completed", facility: p.kind,
+            ...(p.stand ? { stand: p.stand, seats: p.seats } : {}), ...(p.level !== undefined ? { level: p.level } : {}),
+          });
+        }
+        let next = day.facilities;
+        if (playerHomeFixturesToday.length > 0) {
+          const md = facilitiesMatchday(next, playerHomeFixturesToday, currentDate, {
+            followers: playerSquad.finances?.followers ?? 0,
+            tier: await leagueTierOf(playerEntry.leagueSlug),
+            ...(board ? { fans: board.fans } : {}),
+            ...(playerLeagueState ? { fraction: seasonFraction(currentDate, playerLeagueState.start, playerLeagueState.end) } : {}),
+          });
+          next = md.facilities;
+          attendanceToday = md.attendance;
+          if (md.recordBroken) {
+            facilityMessages.push({
+              date: currentDate, kind: "attendance_record", attendance: Math.round(md.recordBroken.attendance),
+              previous: md.recordBroken.previous, competition: md.recordBroken.competition,
+            });
+          }
+        }
+        if (next !== playerSquad.facilities) {
+          playerSquad = withFacilities(playerSquad, next);
+          await saveService.saveSquad(saveId, playerEntry.leagueSlug, playerEntry.stem, playerSquad);
+        }
+      }
+      if (playerSquad && (isWeeklyTick || playerHomeFixturesToday.length > 0 || facilityEntries.length > 0)) {
         const catalogForFinance = await getLeagueData();
-        const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f) => ({
-          ...f,
+        const priceMult = playerSquad.facilities ? comfortPriceMult(playerSquad.facilities.comfort) : 1;
+        const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f, i) => ({
+          competition: f.competition, kind: f.kind, ...(f.neutral ? { neutral: true } : {}),
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),
+          ...(attendanceToday ? { attendance: attendanceToday[i]!, priceMult } : {}),
         }));
         const loanedOutWages = isWeeklyTick
           ? parentLoanWages((await saveService.getMarket(saveId))?.loans, playerSquad.id)
           : 0;
-        const moneyEntries = computeAdvanceDayMoney({
-          currentDate, playerSquad, homeFixturesToday, loanedOutWages,
-          ...(board ? { fillRate: stadiumFillRate(board.fans) } : {}),
-        });
+        const moneyEntries = [
+          ...computeAdvanceDayMoney({
+            currentDate, playerSquad, homeFixturesToday, loanedOutWages,
+            ...(board ? { fillRate: stadiumFillRate(board.fans) } : {}),
+          }),
+          ...facilityEntries,
+        ];
         if (moneyEntries.length > 0) {
           const playerLeagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
           const season = playerLeagueMeta?.year ?? new Date(currentDate).getFullYear();
@@ -2220,6 +2265,7 @@ export async function advanceOneDay(
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
+    for (const msg of facilityMessages) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
     for (const msg of moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService);

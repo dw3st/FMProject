@@ -2,6 +2,7 @@ import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarType
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
+import type { BoardRefusal, FacilityKind, StandId } from "@/types/facilityTypes";
 
 export type InboxCategory =
   | "development"
@@ -18,7 +19,8 @@ export type InboxCategory =
   | "job"
   | "club_record"
   | "transfer"
-  | "player";
+  | "player"
+  | "facilities";
 
 interface InboxMessageBase {
   id:        string;
@@ -283,6 +285,29 @@ export interface PlayerInboxMessage extends InboxMessageBase {
   clubName?: string;
 }
 
+/**
+ * Facilities news (`.claude/rules/game/facilities.md`): the board's answer to a project request
+ * (`approved` / `refused`), a project finished (`completed`), a new home attendance record.
+ */
+export interface FacilityInboxMessage extends InboxMessageBase {
+  category: "facilities";
+  kind: "approved" | "refused" | "completed" | "attendance_record";
+  facility?: FacilityKind;
+  stand?: StandId;
+  seats?: number;
+  level?: number;
+  cost?: number;
+  /** approved: share of the cost the board pays. */
+  boardShare?: number;
+  /** approved: completion date. */
+  end?: string;
+  reason?: BoardRefusal;
+  /** attendance_record */
+  attendance?: number;
+  previous?: number;
+  competition?: string;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -298,4 +323,5 @@ export type InboxMessage =
   | JobInboxMessage
   | ClubRecordInboxMessage
   | TransferInboxMessage
-  | PlayerInboxMessage;
+  | PlayerInboxMessage
+  | FacilityInboxMessage;

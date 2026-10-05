@@ -19,6 +19,8 @@ import {
 } from "@/Domain/jobs/jobs";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { initialStaff } from "@/Domain/staff/staff";
+import { initialFacilities } from "@/Domain/facilities/facilities";
+import { leagueTierOf } from "@/backend/facilityWorld";
 import { academyToAi } from "@/Domain/youth/youth";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { renewExpiringOnTakeover } from "@/Domain/contracts/expiry";
@@ -245,7 +247,9 @@ export async function releaseHumanClub(
   }
   const academy = academyToAi(squad);
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
-  const { staff: _s, styleFamiliarity: _f, ...rest } = stripClubMorale(academy.squad);
+  // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
+  // the stadium it has built stays (venue capacity), works in progress are dropped.
+  const { staff: _s, styleFamiliarity: _f, facilities: _fac, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const ai: Squad = { ...rest, financialTier: tier, aiTransferBudget: seasonalTransferBudgetFor(tier, popularityOf(rest)) };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);
@@ -306,6 +310,8 @@ export async function takeOverClub(
     staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad),
     styleFamiliarity: initialFamiliarity(DEFAULT_TACTICAL_STYLE),
   };
+  // Facilities of the club (`.claude/rules/game/facilities.md`): set up from its stadium and tier.
+  human.facilities = initialFacilities(human, await leagueTierOf(entry.leagueSlug));
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, human);
   await recordMoney(
     service, saveId, await ledgerSeasonOf(service, saveId, entry.leagueSlug, args.date), ref,

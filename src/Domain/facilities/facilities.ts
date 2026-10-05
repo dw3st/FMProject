@@ -396,3 +396,32 @@ export function withFacilities(squad: Squad, f: ClubFacilities): Squad {
     ...(squad.venue && squad.venue.capacity !== seats ? { venue: { ...squad.venue, capacity: seats } } : {}),
   };
 }
+
+export interface HomeGameToday {
+  competition: string;
+  opponentId: string;
+  neutral?: boolean;
+}
+
+/**
+ * Today's home games of the human club: attendance of each (unrounded, 0 on a neutral venue) and
+ * the attendance log / record updated. `recordBroken` only when a previous record existed.
+ */
+export function facilitiesMatchday(
+  f: ClubFacilities, games: HomeGameToday[], date: string, input: DemandInput,
+): { facilities: ClubFacilities; attendance: number[]; recordBroken: { previous: number; attendance: number; competition: string; opponentId: string } | null } {
+  let cur = f;
+  let recordBroken: { previous: number; attendance: number; competition: string; opponentId: string } | null = null;
+  const attendance = games.map((g) => {
+    if (g.neutral) return 0;
+    const a = attendanceOf(cur, input);
+    const r = recordAttendance(cur, {
+      date, competition: g.competition, opponentId: g.opponentId,
+      attendance: Math.round(a.attendance), capacity: a.capacity, demand: Math.round(a.demand),
+    });
+    cur = r.facilities;
+    if (r.recordBroken) recordBroken = { ...r.recordBroken, competition: g.competition, opponentId: g.opponentId };
+    return a.attendance;
+  });
+  return { facilities: cur, attendance, recordBroken };
+}
