@@ -76,11 +76,11 @@ describe('isClearChance', () => {
 });
 
 describe('temperament (personality)', () => {
-  test('t = 0 gives exactly the plain result; ±1 scales the foul chance by 1 ± 0.35', () => {
+  test('t = 0 gives exactly the plain result; ±1 scales the foul chance by 1 ± 0.45', () => {
     const front = { ...base, angle: 'front' as const };
     expect(foulChance({ ...front, temperament: 0 })).toBe(foulChance(front));
-    expect(foulChance({ ...front, temperament: 1 })).toBeCloseTo(foulChance(front) * 1.35, 9);
-    expect(foulChance({ ...front, temperament: -1 })).toBeCloseTo(foulChance(front) * 0.65, 9);
+    expect(foulChance({ ...front, temperament: 1 })).toBeCloseTo(foulChance(front) * 1.45, 9);
+    expect(foulChance({ ...front, temperament: -1 })).toBeCloseTo(foulChance(front) * 0.55, 9);
   });
   test('cards: same draws, chances scaled', () => {
     const ctx = { angle: 'side' as const, clearChance: false, onYellow: false };

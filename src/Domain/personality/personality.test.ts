@@ -75,17 +75,17 @@ describe("multipliers are neutral at 10,5", () => {
 
 describe("effects", () => {
   test("professionalism", () => {
-    expect(professionalismDpMult(withP({ professionalism: 20 }))).toBeCloseTo(1.08);
-    expect(professionalismDpMult(withP({ professionalism: 1 }))).toBeCloseTo(0.92);
+    expect(professionalismDpMult(withP({ professionalism: 20 }))).toBeCloseTo(1.15);
+    expect(professionalismDpMult(withP({ professionalism: 1 }))).toBeCloseTo(0.85);
     expect(professionalismDecayMult(withP({ professionalism: 20 }))).toBeCloseTo(0.9);
     // A professional ignores the low-morale DP loss, keeps the happy bonus.
     expect(shieldedMoraleDpMult(withP({ professionalism: 16 }), 0.9)).toBe(1);
     expect(shieldedMoraleDpMult(withP({ professionalism: 16 }), 1.05)).toBe(1.05);
     expect(shieldedMoraleDpMult(withP({ professionalism: 12 }), 0.9)).toBe(0.9);
-    expect(personalDpMult(withP({ professionalism: 20 }), 0.9)).toBeCloseTo(1.08);
+    expect(personalDpMult(withP({ professionalism: 20 }), 0.9)).toBeCloseTo(1.15);
   });
   test("temperament", () => {
-    expect(temperamentFoulMult(1)).toBeCloseTo(1.35);
+    expect(temperamentFoulMult(1)).toBeCloseTo(1.45);
     expect(temperamentYellowMult(-1)).toBeCloseTo(0.8);
     expect(temperamentRedMult(1)).toBeCloseTo(1.4);
   });

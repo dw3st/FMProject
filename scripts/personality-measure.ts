@@ -35,6 +35,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { mulberry32 } from "@/Domain/rng";
 import { applyDevelopment, applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import { personalDpMult, professionalismDecayMult } from "@/Domain/personality/personality";
+import { PERSONALITY } from "@/Domain/personality/personalityConfig";
 import { overallAvg } from "@/Domain/playerRating";
 import { moraleDay, suggestedStatuses, type ClubMatchSummary } from "@/Domain/morale/morale";
 import { addDays } from "@/Domain/dates";
@@ -51,6 +52,12 @@ const SUM = argVal("--sum");
 const SEED = Number(argVal("--seed") ?? 1);
 const ENGINE_SEED = argVal("--engine-seed");
 if (ENGINE_SEED !== undefined) Math.random = mulberry32(Number(ENGINE_SEED));
+// PERSONALITY_OVERRIDES='{"FOUL_WEIGHT":0.45}' patches the config in-process (candidate values).
+if (process.env.PERSONALITY_OVERRIDES) {
+  const o = JSON.parse(process.env.PERSONALITY_OVERRIDES) as Record<string, unknown>;
+  Object.assign(PERSONALITY as unknown as Record<string, unknown>, o);
+  console.log("PERSONALITY overrides:", o);
+}
 
 const NEUTRAL = { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament: 10.5 };
 

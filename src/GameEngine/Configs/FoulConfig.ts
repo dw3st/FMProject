@@ -60,9 +60,9 @@ export const FOUL_CONFIG = {
   /**
    * Personality (Etapa 26): the temperament card multipliers are divided by this (t ≠ 0) so the
    * world's card volume stays where it was calibrated (hot-heads foul more and are booked more per
-   * foul, which lifts the cards a little). 1 = no normalization (measured, `personality.md`).
+   * foul, which lifts the reds, mostly second yellows, ~13%). 1,04 keeps yellows and reds within ±5% (measured, `personality.md`).
    */
-  TEMPERAMENT_CARD_NORM: 1,
+  TEMPERAMENT_CARD_NORM: 1.04,
 
   // ── Clear chance (`isClearChance`) ──────────────────────────────────────────
   /** The fouled player must be within this distance (yards) of the goal he attacks. */

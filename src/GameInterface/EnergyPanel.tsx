@@ -133,7 +133,7 @@ function EnergyTeamTable({
         );
       })()}
       {players.length > 0 && (() => {
-        // Temperament (`.claude/rules/game/personality.md`): foul chance x (1 + 0.35 t) per player.
+        // Temperament (`.claude/rules/game/personality.md`): foul chance x (1 + 0.45 t) per player.
         const t = players.reduce((a, p) => a + (p.temperament ?? 0), 0) / players.length;
         return (
           <div className="px-3 py-1 text-[10px] text-muted-foreground tabular-nums">

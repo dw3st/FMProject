@@ -435,7 +435,7 @@ export const TEST_SCENARIOS: TestScenario[] = [
   {
     id:          'hothead',
     name:        '11v11 — Hot-heads vs calm side',
-    description: 'Team A players all at temperament 20 (hot-headed: fouls x1.35, yellows x1.2, straight reds x1.4), Team B at 1 (very calm, x0.65) from the roster itself (`.claude/rules/game/personality.md`). Set Team A to High press, keep the Temperament selectors on "Roster" and watch the foul/card log entries (`tempMult`) and the Energy panel.',
+    description: 'Team A players all at temperament 20 (hot-headed: fouls x1.45, yellows x1.2, straight reds x1.4), Team B at 1 (very calm, fouls x0.55) from the roster itself (`.claude/rules/game/personality.md`). Set Team A to High press, keep the Temperament selectors on "Roster" and watch the foul/card log entries (`tempMult`) and the Energy panel.',
     createState() {
       const f433 = formation433Json as Formation;
       const temper = (ps: RosterPlayer[], temperament: number) => freshRoster(ps).map(p => ({

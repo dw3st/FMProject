@@ -140,7 +140,7 @@ export function personalityViewOf(p: RosterPlayer): PersonalityView {
 
 // ── Development (professionalism) ────────────────────────────────────────────
 
-/** DP multiplier: ×0,92 (sloppy) … ×1,08 (model professional). */
+/** DP multiplier: ×0,85 (sloppy) … ×1,15 (model professional). */
 export function professionalismDpMult(p: PersonalityHolder): number {
   return 1 + P.DP_WEIGHT * t(p, "professionalism");
 }

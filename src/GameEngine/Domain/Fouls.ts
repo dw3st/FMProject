@@ -33,7 +33,7 @@ export interface FoulContext {
   inOwnBox: boolean;
   /**
    * Offender's temperament t (−1 calm … +1 hot-headed, `src/Domain/personality`); absent = 0.
-   * Foul chance × (1 + 0,35 × t).
+   * Foul chance × (1 + 0,45 × t) (`PERSONALITY.FOUL_WEIGHT`).
    */
   temperament?: number;
 }

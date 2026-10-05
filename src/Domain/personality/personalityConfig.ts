@@ -18,16 +18,24 @@ export const PERSONALITY = {
   SUMMARY_MIN_DEV: 4.5,
 
   // ── Development (professionalism) ──
-  /** DP × (1 + DP_WEIGHT × t). */
-  DP_WEIGHT: 0.08,
+  /**
+   * DP × (1 + DP_WEIGHT × t). 0,08 (spec) → 0,15: at 0,08 a young model professional (18) vs a sloppy
+   * one (3) opened only 0,13 of overall in 4 seasons (M3 target 0,2–0,4); at 0,15, 0,23. The world's
+   * mean by age band does not move (≤ 0,003).
+   */
+  DP_WEIGHT: 0.15,
   /** Age decay × (1 − DECAY_WEIGHT × t). */
   DECAY_WEIGHT: 0.1,
   /** From this t a professional ignores the low-morale DP loss. */
   PRO_MORALE_SHIELD_T: 0.4,
 
   // ── Discipline (temperament) ──
-  /** Foul chance × (1 + FOUL_WEIGHT × t); yellow × (1 + YELLOW_WEIGHT × t); straight red × (1 + RED_WEIGHT × t). */
-  FOUL_WEIGHT: 0.35,
+  /**
+   * Foul chance × (1 + FOUL_WEIGHT × t); yellow × (1 + YELLOW_WEIGHT × t); straight red × (1 + RED_WEIGHT × t).
+   * FOUL_WEIGHT 0,35 (spec) → 0,45: at 0,35 a side at 20 fouled only 1,45× a side at 1 (M2 target 1,5–2×; the
+   * foul-chance cap 0,9 flattens it); at 0,45, 1,82×.
+   */
+  FOUL_WEIGHT: 0.45,
   YELLOW_WEIGHT: 0.2,
   RED_WEIGHT: 0.4,
 
