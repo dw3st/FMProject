@@ -9,7 +9,8 @@
  */
 
 import { MORALE } from "@/Domain/morale/moraleConfig";
-import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
+import { simulateMatch, type TeamInstructions } from "@/GameEngine/Domain/SimulateMatch";
+import { addSlotRaws, createSlotCollector } from "@/lab/slotStats";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { lineOrderLineup, poorFitStarters } from "@/Domain/positions/positionLineup";
@@ -106,6 +107,7 @@ function emptyTeamRaw(): TeamRawStats {
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
+    markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
 }
 
@@ -157,6 +159,10 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.directFreeKickShots         += src.directFreeKickShots;
   dst.directFreeKickGoals         += src.directFreeKickGoals;
   dst.setPieceGoals               += src.setPieceGoals;
+  dst.markedTargetShots           += src.markedTargetShots;
+  dst.markedTargetGoals           += src.markedTargetGoals;
+  dst.manMarkedMinutes            += src.manMarkedMinutes;
+  dst.slotStats                    = addSlotRaws(dst.slotStats, src.slotStats);
 }
 
 async function loadFormation(id: string): Promise<Formation> {
@@ -205,6 +211,8 @@ interface LineupFit {
 let sideFamiliarity: { A?: number; B?: number } = {};
 /** Morale of each whole side (set per worker message): engine execution + quickSim strength. Absent = 65. */
 let sideMorale: { A?: number; B?: number } = {};
+/** Player instructions of each side (set per worker message): full engine only. */
+let sideInstructions: { A?: TeamInstructions; B?: TeamInstructions } = {};
 
 function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
   return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
@@ -291,11 +299,17 @@ function runOneMatch(
     return { teamA, teamB, draw: !homeWon && !awayWon, appearancesA, appearancesB };
   }
 
+  const slotCollector = createSlotCollector();
   const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, {
     knockout,
     executionFamiliarity: sideFamiliarity,
     morale: sideMorale,
+    instructions: sideInstructions,
+    onTick: slotCollector.onTick,
   });
+  const slotRaws = slotCollector.finish(r);
+  teamA.slotStats = slotRaws.A;
+  teamB.slotStats = slotRaws.B;
   const sA = r.teamStats.A;
   const sB = r.teamStats.B;
 
@@ -342,6 +356,9 @@ function runOneMatch(
   teamA.directFreeKickShots += sA.directFreeKickShots; teamB.directFreeKickShots += sB.directFreeKickShots;
   teamA.directFreeKickGoals += sA.directFreeKickGoals; teamB.directFreeKickGoals += sB.directFreeKickGoals;
   teamA.setPieceGoals       += sA.setPieceGoals;       teamB.setPieceGoals       += sB.setPieceGoals;
+  teamA.markedTargetShots   += sA.markedTargetShots;   teamB.markedTargetShots   += sB.markedTargetShots;
+  teamA.markedTargetGoals   += sA.markedTargetGoals;   teamB.markedTargetGoals   += sB.markedTargetGoals;
+  teamA.manMarkedMinutes    += sA.manMarked;           teamB.manMarkedMinutes    += sB.manMarked;
 
   const winner = r.decider?.winner ?? (r.score.A > r.score.B ? "A" : r.score.B > r.score.A ? "B" : null);
   if (winner === "A") teamA.wins++;
@@ -377,6 +394,10 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
     sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
     sideMorale = { A: variantA.morale, B: variantB.morale };
+    sideInstructions = {
+      A: { slotInstructions: variantA.slotInstructions, manMarks: variantA.manMarks },
+      B: { slotInstructions: variantB.slotInstructions, manMarks: variantB.manMarks },
+    };
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on

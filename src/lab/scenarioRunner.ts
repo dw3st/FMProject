@@ -7,6 +7,7 @@
  * - Aggregates raw totals into PairResult + per-variant VariantSummary.
  */
 
+import { slotViews } from "@/lab/slotStats";
 import type {
   BalanceScenario,
   CongestionMatchResult,
@@ -199,6 +200,9 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgDirectFreeKickGoals: r2(t.directFreeKickGoals / matches),
     avgSetPieceGoals: r2(t.setPieceGoals / matches),
     setPieceGoalPct: pct(t.setPieceGoals, t.goals),
+    avgMarkedTargetShots: r2(t.markedTargetShots / matches),
+    avgMarkedTargetGoals: r2(t.markedTargetGoals / matches),
+    slotStats: slotViews(t.slotStats, matches),
   };
 }
 
@@ -227,6 +231,7 @@ function emptyTotals(): VariantTotals {
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
+    markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
   };
 }
@@ -281,6 +286,9 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.directFreeKickShots   += src.directFreeKickShots;
   dst.directFreeKickGoals   += src.directFreeKickGoals;
   dst.setPieceGoals         += src.setPieceGoals;
+  dst.markedTargetShots     += src.markedTargetShots;
+  dst.markedTargetGoals     += src.markedTargetGoals;
+  dst.manMarkedMinutes      += src.manMarkedMinutes;
   dst.goalsConceded   += opp.goals;
   dst.shotsConceded   += opp.shots;
   dst.xgConceded      += opp.xg;
@@ -345,6 +353,8 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgDirectFreeKickGoals: r2(totals.directFreeKickGoals / games),
     avgSetPieceGoals: r2(totals.setPieceGoals / games),
     setPieceGoalPct: pct(totals.setPieceGoals, totals.goals),
+    avgMarkedTargetShots: r2(totals.markedTargetShots / games),
+    avgMarkedTargetGoals: r2(totals.markedTargetGoals / games),
   };
 }
 

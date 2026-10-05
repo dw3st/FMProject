@@ -6,7 +6,7 @@
  * matches per pair in parallel workers, and aggregates the results.
  */
 
-import type { TacticalStyle, Mentality, TacticalAxes, CustomFormation } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality, TacticalAxes, CustomFormation, SlotInstruction } from "@/types/tacticsTypes";
 
 // ── Squad spec — how to build the 20-player roster for a side ────────────────
 
@@ -101,6 +101,16 @@ export interface Variant {
    * engine, line strengths in the quickSim. Absent = neutral (65).
    */
   morale?: number;
+  /**
+   * Player instructions of this side (`player-instructions.md`): per-slot role variant / pressing
+   * (index = slot of `formation`). Absent = default. Full engine only (the quickSim ignores them).
+   */
+  slotInstructions?: (SlotInstruction | null)[];
+  /**
+   * Man-marking: this side's `slot` marks the opponent in `targetSlot` (the opponent's formation
+   * slot — the lab has no fixed player ids). At most 2. Full engine only.
+   */
+  manMarks?: { slot: number; targetSlot: number }[];
   squad: SquadSpec;
 }
 
@@ -214,6 +224,46 @@ export interface TeamRawStats {
   directFreeKickGoals: number;
   /** Goals from corners, free kicks in the attacking third and penalties. */
   setPieceGoals: number;
+  // Man-marking (`player-instructions.md`), summed across games: this side's players while marked.
+  /** Shots / goals of this side's players while an opponent man-marked them. */
+  markedTargetShots: number;
+  markedTargetGoals: number;
+  /** Game minutes this side's players spent man-marked. */
+  manMarkedMinutes: number;
+  /** Per formation slot (full engine only), summed across games. */
+  slotStats: LabSlotRaw[];
+}
+
+/** One formation slot of a side, summed across games (`src/lab/slotStats.ts`). */
+export interface LabSlotRaw {
+  role: string;
+  passes: number;
+  shots: number;
+  goals: number;
+  crosses: number;
+  tackles: number;
+  /** Ticks spent pressing (decision `press`). */
+  pressTicks: number;
+  /** Sum of x (attacking frame) / |y − 37| while his team had the ball (not holding it). */
+  xSum: number;
+  widthSum: number;
+  posSamples: number;
+  endEnergySum: number;
+  endEnergyN: number;
+}
+
+/** Per-match view of a slot. */
+export interface LabSlotView {
+  role: string;
+  passes: number;
+  shots: number;
+  goals: number;
+  crosses: number;
+  tackles: number;
+  pressTicks: number;
+  avgX: number;
+  avgWidth: number;
+  endEnergy: number;
 }
 
 /** One match-in-sequence slice of a congestion run — see `CongestionSpec`. */
@@ -311,6 +361,11 @@ export interface PerMatchView {
   avgDirectFreeKickGoals: number;
   avgSetPieceGoals: number;
   setPieceGoalPct: number;
+  /** Shots / goals of this side's man-marked players per match (`player-instructions.md`). */
+  avgMarkedTargetShots: number;
+  avgMarkedTargetGoals: number;
+  /** Per formation slot, per match (full engine only). */
+  slotStats: LabSlotView[];
 }
 
 /** One match-in-sequence slice of a congestion run, aggregated to a per-match view. */
@@ -401,6 +456,9 @@ export interface VariantSummary {
   avgDirectFreeKickGoals: number;
   avgSetPieceGoals: number;
   setPieceGoalPct: number;
+  /** Shots / goals of this variant's man-marked players per match. */
+  avgMarkedTargetShots: number;
+  avgMarkedTargetGoals: number;
 }
 
 export interface ScenarioResult {

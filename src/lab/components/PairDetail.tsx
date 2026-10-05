@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { Bar } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { ensureChartsRegistered } from "@/lab/components/chartSetup";
-import type { CongestionMatchResult, PerMatchView, ScenarioResult } from "@/lab/types";
+import type { CongestionMatchResult, LabSlotView, PerMatchView, ScenarioResult } from "@/lab/types";
 
 ensureChartsRegistered();
 
@@ -78,6 +78,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Direct FK goals",   key: "avgDirectFreeKickGoals" },
     { stat: "Set-piece goals",   key: "avgSetPieceGoals" },
     { stat: "Set-piece goal%",   key: "setPieceGoalPct" },
+    { stat: "Marked tgt shots",  key: "avgMarkedTargetShots" },
+    { stat: "Marked tgt goals",  key: "avgMarkedTargetGoals" },
   ];
 
   const data = {
@@ -132,6 +134,10 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
           <Bar data={data} options={options} />
         </div>
       </div>
+
+      {(pair.teamA.slotStats.length > 0 || pair.teamB.slotStats.length > 0) && (
+        <SlotTable a={pair.teamA.slotStats} b={pair.teamB.slotStats} labelA={labelFor(aId)} labelB={labelFor(bId)} />
+      )}
 
       {pair.congestion && pair.congestion.length > 0 && (
         <CongestionTable congestion={pair.congestion} labelA={labelFor(aId)} labelB={labelFor(bId)} />
@@ -227,6 +233,50 @@ function ResultBadge({
     <div className={`rounded border ${styles[colour]} py-3`}>
       <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
       <div className="text-2xl font-bold">{pct.toFixed(1)}%</div>
+    </div>
+  );
+}
+
+/** Per formation slot, per match (player instructions: where each variant shows up). */
+function SlotTable({ a, b, labelA, labelB }: { a: LabSlotView[]; b: LabSlotView[]; labelA: string; labelB: string }) {
+  const cols: { label: string; key: keyof LabSlotView }[] = [
+    { label: "Passes", key: "passes" },
+    { label: "Shots", key: "shots" },
+    { label: "Goals", key: "goals" },
+    { label: "Crosses", key: "crosses" },
+    { label: "Tackles", key: "tackles" },
+    { label: "Press ticks", key: "pressTicks" },
+    { label: "x w/ ball", key: "avgX" },
+    { label: "|y−37|", key: "avgWidth" },
+    { label: "End energy", key: "endEnergy" },
+  ];
+  const side = (rows: LabSlotView[], label: string, cls: string) => rows.map((s, i) => (
+    <tr key={`${label}-${i}`} className="border-t border-white/5">
+      <td className={`py-1 pr-3 ${cls}`}>{label}</td>
+      <td className="py-1 pr-3 text-white/70">#{i} {s.role}</td>
+      {cols.map((c) => (
+        <td key={c.label} className="py-1 pr-3 text-right text-white tabular-nums">{Number(s[c.key]).toFixed(2)}</td>
+      ))}
+    </tr>
+  ));
+  return (
+    <div className="bg-white/[0.03] border border-white/10 rounded p-4">
+      <h3 className="text-sm font-semibold mb-3 text-white/80">Per slot (per match)</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-white/50 text-left">
+              <th className="py-1 pr-3">Side</th>
+              <th className="py-1 pr-3">Slot</th>
+              {cols.map((c) => <th key={c.label} className="py-1 pr-3 text-right">{c.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {side(a, labelA, "text-emerald-300")}
+            {side(b, labelB, "text-rose-300")}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
