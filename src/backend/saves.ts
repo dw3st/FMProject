@@ -10,6 +10,8 @@ import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
+import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
+import { withSaveLock } from "@/backend/saveLock";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
@@ -229,6 +231,15 @@ export const saveRoutes = {
       if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
         return Response.json({ error: "custom formation missing" }, { status: 400 });
       }
+      // Player instructions are per slot of the formation being saved: a body list is validated
+      // against it (400 on an unknown / misfit variant), a kept list is sanitized (formation change).
+      const playFormation = formationForTactics({ formation: formationId, customFormation });
+      let slotInstructions = sanitizeSlotInstructions(playFormation, existing.slotInstructions);
+      if (body.slotInstructions !== undefined) {
+        const parsed = parseSlotInstructions(body.slotInstructions, playFormation);
+        if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+        slotInstructions = parsed.value;
+      }
 
       const updated: TacticsSave = {
         formation:      formationId,
@@ -238,6 +249,7 @@ export const saveRoutes = {
         ...(customFormation ? { customFormation } : {}),
         ...(axesOverride ? { axesOverride } : {}),
         ...(setPieceTakers ? { setPieceTakers } : {}),
+        ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
       };
 
       await saveService.saveTactics(id, updated);
@@ -249,6 +261,47 @@ export const saveRoutes = {
     }
 
     return Response.json({ error: "method not allowed" }, { status: 405 });
+  },
+
+  /**
+   * Man-marking for today's match (player instructions): up to 2 pairs of an outfield slot of the
+   * user's formation and an outfield player of today's opponent. Cleared by the next advance.
+   */
+  "/api/saves/:id/match-marking": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const id = req.params.id!;
+    const auth = requireSaveOwner(req, id);
+    if (auth instanceof Response) return auth;
+    let body: { date?: unknown; marks?: unknown };
+    try { body = await req.json(); } catch {
+      return Response.json({ error: "invalid body" }, { status: 400 });
+    }
+    return withSaveLock(id, async () => {
+      const meta = await saveService.getMeta(id);
+      if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+      if (!meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
+      if (body.date !== meta.currentDate) {
+        return Response.json({ error: "date must be the current date" }, { status: 400 });
+      }
+      const fixtures = await saveService.getFixturesForDate(id, meta.currentDate!);
+      const fixture = fixtures.find((f) => (f.home === meta.clubId || f.away === meta.clubId) && !f.played);
+      if (!fixture) return Response.json({ error: "no match today" }, { status: 400 });
+      const opponent = await saveService.getSquadById(id, fixture.home === meta.clubId ? fixture.away : fixture.home);
+      if (!opponent) return Response.json({ error: "opponent squad not found" }, { status: 404 });
+      const tactics = await saveService.getTactics(id);
+      const formation = formationForTactics(tactics ?? { formation: meta.formation ?? "4-3-3" });
+      const parsed = parseMatchMarks(
+        body.marks,
+        formation,
+        new Set(opponent.players.map((p) => p.id)),
+        new Set(opponent.players.filter((p) => (p.positions?.[0] ?? "") === "GK").map((p) => p.id)),
+      );
+      if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+      await saveService.updateMeta(id, {
+        matchMarking: parsed.value.length > 0 ? { date: meta.currentDate!, marks: parsed.value } : undefined,
+      });
+      return Response.json({ ok: true, matchMarking: parsed.value.length > 0 ? { date: meta.currentDate, marks: parsed.value } : null });
+    });
   },
 
   "/api/saves/:id/rotation-override": async (req: Request & { params: Record<string, string> }) => {

@@ -573,7 +573,7 @@ export async function advanceOneDay(
             };
             playedMatchOverride = null;
           } else {
-            const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics, meta.rotationOverride);
+            const sim = computeMatchSimulationLineups(fixture, homeSquad, awaySquad, playerSquadId, tactics, meta.rotationOverride, meta.matchMarking);
             const userPlays = fixture.home === playerSquadId || fixture.away === playerSquadId;
             const mode = userPlays
               ? "full"
@@ -2492,6 +2492,8 @@ export async function advanceOneDay(
     if (managerContractNotices !== meta.managerContractNotices) metaPatch.managerContractNotices = managerContractNotices;
     if (managerEarned > 0) metaPatch.managerEarnings = (meta.managerEarnings ?? 0) + managerEarned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
+    // Man-marking is chosen per match day (player instructions): the advance clears it.
+    if (meta.matchMarking) metaPatch.matchMarking = undefined;
     if (ended) {
       metaPatch.managerContract = undefined;
       metaPatch.managerRenewal = undefined;

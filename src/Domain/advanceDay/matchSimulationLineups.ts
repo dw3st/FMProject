@@ -1,5 +1,6 @@
 import type { Fixture } from "@/types/calendarTypes";
-import type { TacticsSave } from "@/types/tacticsTypes";
+import type { MatchMarking, TacticsSave } from "@/types/tacticsTypes";
+import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { AiFormationRecord, Squad } from "@/types/playerTypes";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
@@ -166,6 +167,7 @@ export function computeMatchSimulationLineups(
   playerSquadId: string | undefined,
   tactics: TacticsSave | null,
   rotationOverride?: RotationOverride | null,
+  matchMarking?: MatchMarking | null,
 ): {
   homeFormation: Formation;
   homeLineup: string[];
@@ -213,6 +215,7 @@ export function computeMatchSimulationLineups(
     axesOverride: t.axesOverride,
     familiarity: squadFamiliarityLevels(userSquad, t.tactical_style),
     ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
+    ...userInstructions(userFormation, t, matchMarking, date),
   };
   const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
 
@@ -242,5 +245,24 @@ export function computeMatchSimulationLineups(
     userRotationApplied: user.rotationApplied,
     tactics: { A: aiTactics, B: userTactics },
     aiFormations: { home: ai.record },
+  };
+}
+
+/**
+ * The human side's player instructions for a fixture (`.claude/rules/game/player-instructions.md`):
+ * the saved per-slot instructions (sanitized against the formation) and the match marking of
+ * `date` (roster ids). The AI never gets either.
+ */
+export function userInstructions(
+  formation: Formation,
+  tactics: TacticsSave,
+  matchMarking: MatchMarking | null | undefined,
+  date: string,
+): Pick<TeamTactics, "slotInstructions" | "manMarks"> {
+  const slotInstructions = sanitizeSlotInstructions(formation, tactics.slotInstructions);
+  const marks = matchMarking && matchMarking.date === date ? matchMarking.marks : [];
+  return {
+    ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
+    ...(marks.length > 0 ? { manMarks: marks.map((m) => ({ slot: m.slot, targetRosterId: m.targetId })) } : {}),
   };
 }
