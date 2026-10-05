@@ -54,7 +54,7 @@ Carreira nova: ~40. Calculada na hora (`GET /jobs`, janelas), nada gravado.
 
 | Janela | Quando | Ofertas | Validade |
 |---|---|---|---|
-| `season_end` | virada do país do jogador (não demitido) | Poisson(λ) até 3, λ = 0,3 × e^(0,0474 × (reputação − 40)): 40 → 0,3; 80 → ~2 | até a véspera do 1º jogo da temporada nova (sem calendário: 30 dias) |
+| `season_end` | virada do país do jogador (não demitido) | Poisson(λ) até 3, λ = 0,3 × e^(0,0474 × (reputação − 40)): 40 → 0,3; 80 → ~2 | até a véspera do 1º jogo da temporada nova, no mínimo 1 dia (sem calendário: 30 dias) |
 | `mid_season` | uma vez por temporada, quando o clube jogou metade das rodadas (`meta.jobsMidSeason`) | 0–1, só com reputação ≥ 60 ou diretoria ≥ 80 | 7 dias |
 | `unemployed` | 7 dias depois da demissão, depois a cada 14 (`unemployed.nextOfferDate`) | 1–3 | 14 dias |
 
@@ -72,17 +72,21 @@ quando chegam ofertas (o avanço rápido para ali).
 1. **Clube antigo → IA** (`releaseHumanClub`, só empregado): o saldo sai do extrato (`club_change`
    "leave", `−saldo`), ganha `financialTier` (tier natural) e `aiTransferBudget` (verba sazonal), perde
    `staff`, `styleFamiliarity` e a base (`academyToAi`: 1–2 promovidos pela regra da IA, o resto livre);
-   a lista de venda do jogador zera.
+   a lista de venda do jogador zera; ofertas de renascido pendentes do clube expiram (e a rota
+   `POST /reborn/:id` só aceita aposentados do clube atual).
 2. **Técnicos:** `moveHumanManager` — o técnico do clube novo vai para o antigo; o registro do jogador
    ganha a passagem (`clubs: { squadId, from, to? }[]`). Vindo do desemprego, o técnico deslocado fica
    sem clube (`squadId ""`, continua no ranking).
-3. **Clube novo → do jogador** (`takeOverClub`): saldo 0 + `club_change` "arrive" com a verba sazonal da
-   IA; tira `financialTier`/`aiTransferBudget`; `staff` inicial pelo tier (`initialStaff`, semente
+3. **Clube novo → do jogador** (`takeOverClub`): saldo 0 + `club_change` "arrive" com o orçamento que
+   a proposta mostrou (`offer.budget`); os contratos que acabariam na virada desta temporada são renovados
+   pela regra da IA (`renewExpiringOnTakeover`) e, dentro da janela de aviso (90 dias), a inbox recebe o
+   aviso de contratos com os que sobraram; lista de venda vazia; tira `financialTier`/`aiTransferBudget`; `staff` inicial pelo tier (`initialStaff`, semente
    save:clube:data); familiaridade inicial (`balanced` 75); `tactics.json` com a formação da IA do clube
    (`aiRecordFor`), estilo equilibrado e XI automático; diretoria e torcida em 60 com a meta do clube novo.
 4. **Inbox:** as mensagens antigas ficam; as de proposta caem; entram "hired" e a meta da diretoria.
 5. **Meta:** `clubId`, `clubName`, `clubColors`, `leagueSlug`, `leagueName`, `followedLeagues` (sem a
-   liga nova), `formation`, `tactical_style`, `board`; `jobOffers` vazio; sai `unemployed`,
+   liga nova), `formation`, `tactical_style`, `board`; `jobOffers` vazio; `jobsMidSeason` = temporada
+   atual da liga nova (a janela do meio da temporada não abre logo depois da troca); sai `unemployed`,
    `rotationOverride`, `style_focus`.
 
 409 `offerClosed`: oferta vencida, inexistente ou de clube que sumiu. `POST { accept: false }` só tira a
@@ -91,6 +95,11 @@ oferta.
 **Extrato:** a soma de todos os lançamentos continua igual ao saldo do clube atual: "leave" zera o saldo
 antigo, "arrive" traz o novo (cada um na temporada do extrato da liga do seu clube). Desempregado, a soma
 é 0. `club_change` não conta como receita nem despesa na tela de Finanças (`clubLeave`/`clubArrive`).
+Numa temporada com troca de clube, `GET /ledger` calcula `totals` e `weekly` só a partir da última
+chegada (o gráfico ignora o próprio `club_change`); a lista `entries` continua completa.
+
+Desempregado, a compra (`POST /transfers`) e a lista de venda (`POST /sell-list`) devolvem 409 `noClub`; a
+lista de venda só aceita jogadores do próprio elenco (400).
 
 ## Demissão → desemprego (`advanceDay`)
 
