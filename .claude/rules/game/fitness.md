@@ -52,6 +52,10 @@ fatorCarga   = 1 − 0,5 × min(1, carga / LOAD_HIGH)              // LOAD_HIGH 
 fatorStamina = 0,90 + 0,20 × stamina/10
 ```
 
+**Centro de treinamento (3.9):** a recuperação diária (descanso, dias de treino e quem não jogou no dia de
+jogo) é multiplicada também pelo CT (× 0,97 … 1,08, nível 3 neutro), somando ao preparador físico;
+nunca dentro da partida (`.claude/rules/game/facilities.md`).
+
 `RECOVERY_BASE` subiu de 0,35 para 0,45 durante o balanceamento desta tarefa — na curva de exemplo
 do design (26 anos, carga 0, stamina 7, saindo de 55 pós-jogo), um valor por dia de folga:
 

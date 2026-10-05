@@ -30,6 +30,8 @@ import {
   LeagueMiniTable,
   NextMatchCard,
   WeekFinancesCard,
+  WorksCard,
+  recentlyCompleted,
   formatDay,
   type MatchSide,
 } from "@/GameInterface/Dashboard/HomeCards";
@@ -268,6 +270,11 @@ export function DashboardScreen() {
         leagues={leagues}
         onToggleDayType={toggleDayType}
       />
+
+      {squad?.facilities && currentDate
+        && (squad.facilities.projects.length > 0 || recentlyCompleted(squad.facilities, currentDate).length > 0) && (
+        <WorksCard facilities={squad.facilities} today={currentDate} />
+      )}
 
       <AttentionCard
         items={attention}

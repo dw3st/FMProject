@@ -10,7 +10,7 @@ export const YOUTH = {
   LEVEL_SIGMA: 0.5,
   LEVEL_MIN: 1.5,
   LEVEL_MAX: 8,
-  /** Rare prospect: chance and level bonus. */
+  /** Rare prospect: chance at a level-3 academy (the actual chance is `FACILITIES.ACADEMY_PROMISE`) and level bonus. */
   PROMISE_CHANCE: 0.05,
   PROMISE_BONUS: 1.0,
   TIER_BONUS: { LOW: -0.3, MEDIUM: 0, HIGH: 0.2, ELITE: 0.4 } as const,

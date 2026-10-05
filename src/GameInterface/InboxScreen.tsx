@@ -119,6 +119,13 @@ const CATEGORY_META: Record<
     border: "border-chart-5/30",
     Icon: Prospect,
   },
+  facilities: {
+    labelKey: "inbox.categories.facilities",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: BoardIcon,
+  },
   board: {
     labelKey: "inbox.categories.board",
     color: "text-primary",
@@ -351,6 +358,28 @@ function EmptyState() {
   );
 }
 
+/** Translated subject and body of a facilities message (`.claude/rules/game/facilities.md`). */
+function facilityTexts(
+  message: Extract<InboxMessage, { category: "facilities" }>,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): { subject: string; body: string } {
+  const what = message.facility
+    ? message.facility === "stand" && message.stand
+      ? t("facilities.inbox.standWhat", { stand: t(`facilities.stand.${message.stand}`), seats: (message.seats ?? 0).toLocaleString() })
+      : t("facilities.inbox.levelWhat", { what: t(`facilities.kind.${message.facility}`), level: message.level ?? "" })
+    : "";
+  const vars = {
+    what, cost: formatFee(message.cost ?? 0), date: message.end ?? "",
+    pct: Math.round((message.boardShare ?? 0) * 100),
+    attendance: (message.attendance ?? 0).toLocaleString(), previous: (message.previous ?? 0).toLocaleString(),
+    reason: message.reason ? t(`facilities.reason.${message.reason}`) : "",
+  };
+  const body = message.kind === "approved" && (message.boardShare ?? 0) > 0
+    ? t("facilities.inbox.approvedFunded", vars)
+    : t(`facilities.inbox.${message.kind}`, vars);
+  return { subject: t(`facilities.inbox.subject.${message.kind}`, vars), body };
+}
+
 /** Subject shown for a message (translated for league prize news), shared with the dashboard card. */
 export function inboxSubject(
   message: InboxMessage,
@@ -367,6 +396,10 @@ function leaguePrizeTexts(
   if (message.category === "club_record") {
     const x = clubRecordTexts(message.record, t, (slug) => slug);
     return { subject: t("clubHistory.inboxSubject", { record: x.label }), preview: `${x.value} · ${x.detail}` };
+  }
+  if (message.category === "facilities") {
+    const x = facilityTexts(message, t);
+    return { subject: x.subject, preview: x.body };
   }
   if (message.category === "board") {
     return { subject: t(`inbox.board.subject.${message.kind}`), preview: boardText(message, t, message.leagueName ?? "") };
@@ -505,6 +538,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
         {message.category === "retirement" && <RetirementBody message={message} />}
+        {message.category === "facilities" && <p className="text-sm text-foreground m-0">{facilityTexts(message, t).body}</p>}
         {message.category === "job" && <JobBody message={message} leagues={leagues} />}
         {message.category === "transfer" && <TransferNegotiationBody message={message} />}
         {message.category === "player" && <PlayerTalkBody message={message} />}

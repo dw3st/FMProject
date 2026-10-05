@@ -3,6 +3,7 @@ import { developYouthSeason, generateIntake, intakeSize, lineAverage, potentialB
 import { roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import { initialFacilities } from "@/Domain/facilities/facilities";
 
 function mk(i: number, pos: string, level: number): RosterPlayer {
   const v = Math.round(level);
@@ -43,6 +44,25 @@ describe("youth intake", () => {
     }
     expect(new Set(a.map((p) => p.id)).size).toBe(a.length);
     expect(generateIntake({ ...base, year: 2028 })[0]!.id).not.toBe(a[0]!.id);
+  });
+
+  test("academy level (facilities): quality ±0.15/level, up to 6 players at level 5", () => {
+    const withAcademy = (level: number) => {
+      const sq = squad();
+      return squad({ facilities: { ...initialFacilities(sq, 1), academy: level } });
+    };
+    const meanLevel = (sq: Squad) => {
+      const all: number[] = [];
+      for (let y = 0; y < 80; y++) for (const p of generateIntake({ ...base, squad: sq, year: 4000 + y })) all.push(overallAvg(p));
+      return { mean: all.reduce((a, b) => a + b, 0) / all.length, sizes: all.length };
+    };
+    const lo = meanLevel(withAcademy(1));
+    const hi = meanLevel(withAcademy(5));
+    expect(hi.mean - lo.mean).toBeGreaterThan(0.35);
+    expect(hi.mean - lo.mean).toBeLessThan(0.85);
+    const sizes = Array.from({ length: 200 }, (_, y) => generateIntake({ ...base, squad: withAcademy(5), year: 5000 + y }).length);
+    expect(Math.max(...sizes)).toBe(6);
+    expect(Math.min(...sizes)).toBe(3);
   });
 
   test("level sits about 1.8 under the line average", () => {

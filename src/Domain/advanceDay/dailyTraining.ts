@@ -22,6 +22,7 @@ import {
 } from "@/GameEngine/PlayerDevelopment";
 import rolesData from "@/Data/roles.json";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { trainFamiliarity } from "@/Domain/familiarity/familiarity";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import type { FamiliarityKey } from "@/types/familiarityTypes";
@@ -147,7 +148,12 @@ export function buildTrainingEvent(
   date: string,
   rng: () => number = Math.random,
 ): TrainingResult {
-  const { recoveryMult, injuryMult, devMult } = staffEffectsOf(squad);
+  const staffFx = staffEffectsOf(squad);
+  // Training ground (`.claude/rules/game/facilities.md`): stacks with the staff, training only.
+  const ground = trainingGroundEffectsOf(squad);
+  const devMult = staffFx.devMult;
+  const recoveryMult = staffFx.recoveryMult * ground.recoveryMult;
+  const injuryMult = staffFx.injuryMult * ground.injuryMult;
   // Clear a healed injury BEFORE eligibility/training is decided — a player who returns today can
   // train (or be ineligible on fitness) the same day, same as `matches.ts`.
   const healedPlayerIds: string[] = [];
@@ -231,7 +237,7 @@ export function buildTrainingEvent(
         const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
         const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
         const { updatedPlayer, levelChanges, dpGained } =
-          applyTrainingDevelopment(p, policy.intensity, weights, devMult * rebornDpMult(p) * moraleDpMult(p));
+          applyTrainingDevelopment(p, policy.intensity, weights, devMult * ground.devMult * rebornDpMult(p) * moraleDpMult(p));
         next = updatedPlayer;
         if (dpGained > 0) {
           eff!.dpGained = +dpGained.toFixed(2);

@@ -22,3 +22,14 @@ export function gateRevenue(capacity: number, kind: GateKind, neutral = false, f
   const price = GATE.TICKET_PRICE * (kind === "continental" ? GATE.CONTINENTAL_MULT : 1);
   return Math.round(capacity * fillRate * price);
 }
+
+/**
+ * Gate of a human-club home game from its attendance (`.claude/rules/game/facilities.md`):
+ * attendance × price × `priceMult` (comfort). With `attendance = capacity × fillRate` and
+ * `priceMult = 1` it equals `gateRevenue` exactly.
+ */
+export function gateFromAttendance(attendance: number, kind: GateKind, neutral = false, priceMult = 1): number {
+  if (neutral || attendance <= 0) return 0;
+  const price = GATE.TICKET_PRICE * (kind === "continental" ? GATE.CONTINENTAL_MULT : 1);
+  return Math.round(attendance * price * priceMult);
+}

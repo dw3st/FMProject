@@ -103,7 +103,11 @@ Clássico: mesma cidade (`venue.city`, sem acento/caixa); sem rival da cidade, o
 
 ## Efeitos
 
-- **Bilheteria:** `stadiumFillRate(fans)` — 0,45 (torcida 0), 0,65 (60, igual a `GATE.FILL_RATE` da IA), 0,9 (100),
+- **Obras (3.9):** a diretoria decide os pedidos de obra das instalações pelo medidor e pelo saldo (< 50 ou
+  saldo negativo recusa; 50–69 só obras até 10% da receita; ≥ 70 aprova; ≥ 85 paga 25–50%). Ver
+  `.claude/rules/game/facilities.md`.
+- **Bilheteria:** `stadiumFillRate(fans)` (desde a 3.9, a ocupação da torcida entra na **demanda** de público,
+  `facilities.md`) — 0,45 (torcida 0), 0,65 (60, igual a `GATE.FILL_RATE` da IA), 0,9 (100),
   linear por partes. `computeAdvanceDayMoney({ fillRate })` e a projeção do `FinancesScreen`.
 - **Seguidores:** ver "Fim de temporada".
 

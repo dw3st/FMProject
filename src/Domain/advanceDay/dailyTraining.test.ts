@@ -12,6 +12,8 @@ import {
 } from "@/types/developmentTypes";
 import { Player } from "@/Domain/Player";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { initialFacilities } from "@/Domain/facilities/facilities";
+import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -230,7 +232,7 @@ describe("buildTrainingEvent", () => {
 
       // p2 is below the training threshold — skips training entirely, gets a full rest-day
       // recovery (recoverDay) instead, same curve as an actual rest day.
-      const p2NextFitness = recoverDay(50, { age: 22, load: 0, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult });
+      const p2NextFitness = recoverDay(50, { age: 22, load: 0, stamina: 10, recoveryMult: staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult });
       expect(p2?.seasonLog?.trainingSessions).toBe(0);
       expect(p2?.seasonLog?.fitness).toBe(+(50 + +(p2NextFitness - 50).toFixed(1)).toFixed(1));
       expect(p2?.seasonLog?.fitness).toBeGreaterThan(50);
@@ -470,3 +472,23 @@ describe("style familiarity on a training day", () => {
     expect(resolveTrainingPolicy(meta, "other", "other").styleFocus).toBeUndefined();
   });
 });
+
+describe("training ground (facilities)", () => {
+  test("a level-5 ground recovers faster and develops more than a level-1 ground", () => {
+    const tired = (s: Squad): Squad => ({
+      ...s,
+      players: s.players.map((p) => ({ ...p, seasonLog: makeSeasonLog({ fitness: 40 }) })),
+    });
+    const base: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      venue: { name: "A", city: "B", capacity: 10000 },
+      players: [basePlayer({ id: "p1", name: "One" }), basePlayer({ id: "p2", name: "Two" })],
+    };
+    const withGround = (level: number): Squad => ({ ...base, facilities: { ...initialFacilities(base, 1), training: level } });
+    const policy = { minEnergyToTrain: 90, intensity: "normal" as const };
+    const fitnessOf = (s: Squad) => buildTrainingEvent("s", tired(s), policy, "2027-02-05", () => 0.99)
+      .updatedSquad.players.reduce((a, p) => a + (p.seasonLog?.fitness ?? 0), 0);
+    expect(fitnessOf(withGround(5))).toBeGreaterThan(fitnessOf(withGround(1)));
+  });
+});
+

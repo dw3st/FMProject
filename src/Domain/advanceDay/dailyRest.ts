@@ -4,6 +4,7 @@ import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import { clearHealed } from "@/Domain/injury/injury";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 
 export const MAX_POINTS_LOST_PER_REST = 2;
 
@@ -57,7 +58,8 @@ export function rollRestOutcome(
  * - `trainingSessions` (points) never goes below 0.
  */
 export function buildRestEvent(squadId: string, squad: Squad, date: string): RestResult {
-  const { recoveryMult } = staffEffectsOf(squad);
+  // Staff × training ground (`.claude/rules/game/facilities.md`).
+  const recoveryMult = staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
   // Clear a healed injury before anything else, same as `matches.ts` / `dailyTraining.ts`.
   const healedPlayerIds: string[] = [];
   const players = squad.players.map((p) => {

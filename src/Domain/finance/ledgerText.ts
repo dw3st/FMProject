@@ -16,6 +16,8 @@ export interface LedgerDescription {
   club?: string;
   /** Sell-on / loan lines: the player's name. */
   player?: string;
+  /** Facilities lines: the project kind (`facilities.kind.*`). */
+  facility?: string;
 }
 
 export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): LedgerDescription | null {
@@ -41,6 +43,12 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
       return ref?.clubName
         ? { key: entry.kind === "transfer_in" ? "transferIn" : "transferOut", club: ref.clubName }
         : null;
+    case "facilities":
+    case "board_funding":
+      // `.claude/rules/game/facilities.md`: the project kind (and stand) of an instalment.
+      return ref?.facility ? { key: entry.kind === "facilities" ? "facilityInstalment" : "boardFunding", facility: ref.facility } : null;
+    case "facilities_upkeep":
+      return { key: "facilitiesUpkeep" };
     case "club_change":
       return ref?.clubName ? { key: ref.stage === "leave" ? "clubLeave" : "clubArrive", club: ref.clubName } : null;
     case "prize": {

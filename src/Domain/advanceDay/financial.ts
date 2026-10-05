@@ -1,4 +1,5 @@
-import { gateRevenue, type GateKind } from "@/Domain/finance/gate";
+import { gateFromAttendance, gateRevenue, type GateKind } from "@/Domain/finance/gate";
+import { weeklyUpkeep } from "@/Domain/facilities/facilities";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { squadStaffWages } from "@/Domain/staff/staff";
@@ -25,6 +26,12 @@ export interface PlayerHomeFixtureToday {
   label: string;
   /** Neutral-venue fixture (a cup/continental final) — always 0 gate revenue. */
   neutral?: boolean;
+  /**
+   * Human club with facilities (`.claude/rules/game/facilities.md`): the attendance of this game
+   * (min(capacity, demand)) and the comfort price multiplier. Absent = the old capacity × fill gate.
+   */
+  attendance?: number;
+  priceMult?: number;
 }
 
 /**
@@ -62,11 +69,18 @@ export function computeAdvanceDayMoney(args: {
     if (weeklyStaff > 0) {
       entries.push({ date: currentDate, kind: "staff", amount: -weeklyStaff, label: "Technical staff" });
     }
+    // Training ground and academy above the club's implied level (`.claude/rules/game/facilities.md`).
+    const upkeep = weeklyUpkeep(playerSquad, wageRevenueBasisOf(playerSquad));
+    if (upkeep > 0) {
+      entries.push({ date: currentDate, kind: "facilities_upkeep", amount: -upkeep, label: "Facilities upkeep" });
+    }
   }
 
   const capacity = playerSquad.venue?.capacity ?? 0;
   for (const f of homeFixturesToday) {
-    const amount = gateRevenue(capacity, f.kind, f.neutral, fillRate);
+    const amount = f.attendance !== undefined
+      ? gateFromAttendance(f.attendance, f.kind, f.neutral, f.priceMult ?? 1)
+      : gateRevenue(capacity, f.kind, f.neutral, fillRate);
     if (amount <= 0) continue;
     entries.push({
       date: currentDate,

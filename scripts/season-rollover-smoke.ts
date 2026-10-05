@@ -199,6 +199,47 @@ try {
     });
   }
 
+  // Instalações (`.claude/rules/game/facilities.md`): a happy board (forced to 90 for the request,
+  // then put back) approves a +1000-seat stand, funding part of it; it finishes within the run.
+  const facTrack: { approved: boolean; projectId: string | null; cost: number; boardShare: number; seatsBefore: number } = {
+    approved: false, projectId: null, cost: 0, boardShare: 0, seatsBefore: 0,
+  };
+  {
+    const { apiRoutes } = await import("@/backend/routes");
+    const { devAutoLogin } = await import("@/backend/auth/AuthService");
+    const { recordSaveOwnership } = await import("@/backend/auth/saveOwnership");
+    const { recordMoney } = await import("@/backend/FinancialService");
+    const { user, session } = devAutoLogin("smoke-facilities@test.local");
+    recordSaveOwnership(saveId, user.id);
+    const m = (await plain().getMeta(saveId))!;
+    const sq = (await plain().getSquadById(saveId, playerSquadId))!;
+    facTrack.seatsBefore = sq.venue?.capacity ?? 0;
+    // Enough cash for any seat price (<= EUR 6k x 1000), recorded through the ledger like any money.
+    if ((sq.finances?.budget ?? 0) < 6_000_000) {
+      const e = index0.byId(playerSquadId)!;
+      await recordMoney(plain(), saveId, (await plain().getLeagueMeta(saveId, PLAYER_LEAGUE))!.year,
+        { leagueSlug: e.leagueSlug, clubSlug: e.stem },
+        { date: m.currentDate!, kind: "board_funding", amount: 6_000_000, label: "Smoke: facilities funding", ref: { facility: "stand" } });
+    }
+    const boardBefore = m.board!;
+    await plain().updateMeta(saveId, { board: { ...boardBefore, board: 90 } });
+    const handler = apiRoutes["/api/saves/:saveId/facilities/request" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    const res = await handler(Object.assign(
+      new Request(`http://localhost/api/saves/${saveId}/facilities/request`, {
+        method: "POST", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+        body: JSON.stringify({ kind: "stand", stand: "east", seats: 1000 }),
+      }),
+      { params: { saveId } },
+    ));
+    const body = await res.json() as { approved?: boolean; boardShare?: number; project?: { id: string; cost: number } };
+    await plain().updateMeta(saveId, { board: boardBefore });
+    facTrack.approved = res.status === 200 && body.approved === true;
+    facTrack.projectId = body.project?.id ?? null;
+    facTrack.cost = body.project?.cost ?? 0;
+    facTrack.boardShare = body.boardShare ?? 0;
+    console.log(`Instalações: +1000 seats requested → ${res.status} ${JSON.stringify({ approved: body.approved, boardShare: body.boardShare, cost: facTrack.cost })}\n`);
+  }
+
   // Cup year per country at creation — used later to detect which cups got regenerated.
   const cupYearsStart = new Map<string, number>();
   for (const slug of (await plain().listCompetitionSlugs(saveId)).filter(isCupSlug)) {
@@ -567,7 +608,9 @@ try {
         }
         const gateToday = dayLedger.filter((e) => e.kind === "gate").reduce((s, e) => s + e.amount, 0);
         const boardBonusToday = dayLedger.filter((e) => e.ref?.stage === "board_bonus").reduce((s, e) => s + e.amount, 0);
-        const delta = entries.reduce((s, e) => s + e.amount, 0) + gateToday + boardBonusToday;
+        // Facilities instalments / board funding of the day (`.claude/rules/game/facilities.md`).
+        const facilitiesToday = dayLedger.filter((e) => e.kind === "facilities" || e.kind === "board_funding").reduce((s, e) => s + e.amount, 0);
+        const delta = entries.reduce((s, e) => s + e.amount, 0) + gateToday + boardBonusToday + facilitiesToday;
         const closedTable = archive?.standings ?? [];
         const playerTablePos = closedTable.findIndex((r) => r.squadId === playerSquadId);
         leaguePrizeAmount = playerTablePos >= 0 ? leaguePrize(tv, playerTablePos + 1, closedTable.length) : 0;
@@ -1181,17 +1224,50 @@ try {
     const inboxNow = await plain().getInbox(saveId);
     check(inboxNow.some((m) => m.category === "board" && m.kind === "objective"),
       "board: the inbox has the objective message of the new season");
-    // Gate: every league home gate sits in the fans' fill range and the amounts vary with the fans.
-    const capacity = humanFinal?.venue?.capacity ?? 0;
+    // Gate: the league home gates come from the attendance (facilities: min(capacity, demand), demand
+    // = anchor capacity x the fans' fill x followers x tier x season phase); each one sits in the fans'
+    // fill range of the anchor stadium, widened by the phase (0.98..1.06) and the followers' change.
+    const capacity = humanFinal?.facilities?.anchor.capacity ?? humanFinal?.venue?.capacity ?? 0;
     const leagueGates = allLedgerEntries.filter(
       (e) => e.kind === "gate" && !!e.ref?.competition && !isCupSlug(e.ref.competition) && !isContinentalSlug(e.ref.competition),
     );
-    const lo = gateRevenue(capacity, "league", false, stadiumFillRate(0));
-    const hi = gateRevenue(capacity, "league", false, stadiumFillRate(100));
+    const lo = gateRevenue(capacity, "league", false, stadiumFillRate(0)) * 0.98 * 0.85;
+    const hi = gateRevenue(capacity, "league", false, stadiumFillRate(100)) * 1.06 * 1.3;
     check(leagueGates.length > 0 && leagueGates.every((e) => e.amount >= lo - 1 && e.amount <= hi + 1),
-      `board: ${leagueGates.length} league gate(s) within the fans' fill range ${lo}..${hi}`);
+      `board: ${leagueGates.length} league gate(s) within the fans' fill range ${Math.round(lo)}..${Math.round(hi)}`);
     check(new Set(leagueGates.map((e) => e.amount)).size > 1,
       `board: the gate varies with the fans (${new Set(leagueGates.map((e) => e.amount)).size} distinct amounts)`);
+  }
+
+  // ── Instalações (`.claude/rules/game/facilities.md`) ──
+  console.log("\n── Instalações ──");
+  {
+    const human = (await plain().getSquadById(saveId, playerSquadId))!;
+    const f = human.facilities;
+    check(facTrack.approved, "instalações: the board approved the +1000-seat stand (board forced to 90)");
+    check(!!f && f.completed.some((c) => c.id === facTrack.projectId),
+      `instalações: the project finished within the run (completed: ${f?.completed.map((c) => c.id).join(", ") ?? "none"})`);
+    check((human.venue?.capacity ?? 0) === facTrack.seatsBefore + 1000,
+      `instalações: venue capacity ${facTrack.seatsBefore} → ${human.venue?.capacity} (+1000)`);
+    const done = f?.completed.find((c) => c.id === facTrack.projectId);
+    const rowsAfter = (f?.attendance ?? []).filter((r) => done && r.date > done.date);
+    check(rowsAfter.length > 0 && rowsAfter.every((r) => r.capacity === facTrack.seatsBefore + 1000),
+      `instalações: ${rowsAfter.length} home game(s) after the works used the new capacity`);
+    check((f?.attendance ?? []).every((r) => r.attendance <= r.capacity), "instalações: attendance never above the capacity");
+    const paid = allLedgerEntries.filter((e) => e.kind === "facilities" && e.ref?.facility === "stand").reduce((s, e) => s - e.amount, 0);
+    const funded = allLedgerEntries.filter((e) => e.kind === "board_funding" && e.label !== "Smoke: facilities funding").reduce((s, e) => s + e.amount, 0);
+    check(paid === facTrack.cost, `instalações: instalments sum to the cost (${paid} == ${facTrack.cost})`);
+    check(funded === Math.round(facTrack.cost * facTrack.boardShare),
+      `instalações: board funding ${funded} == ${Math.round(facTrack.boardShare * 100)}% of the cost`);
+    // League gates match the logged attendance (x comfort price).
+    const priceMult = 1 + 0.06 * ((f?.comfort ?? 1) - 1);
+    const byDate = new Map((f?.attendance ?? []).map((r) => [`${r.date}:${r.competition}`, r]));
+    const matched = allLedgerEntries.filter((e) => e.kind === "gate" && !!e.ref?.competition
+      && !isCupSlug(e.ref.competition) && !isContinentalSlug(e.ref.competition) && byDate.has(`${e.date}:${e.ref.competition}`));
+    check(matched.length > 0 && matched.every((e) => Math.abs(e.amount - byDate.get(`${e.date}:${e.ref!.competition}`)!.attendance * 25 * priceMult) <= 25 * priceMult),
+      `instalações: ${matched.length} league gate(s) = logged attendance × ticket price`);
+    const aiWith = allFiles.filter(({ squad }) => squad.id !== playerSquadId && !!squad.facilities).length;
+    check(aiWith === 0, `instalações: no AI club stores facilities (${aiWith})`);
   }
 
   console.log("\n── Fôlego ──");

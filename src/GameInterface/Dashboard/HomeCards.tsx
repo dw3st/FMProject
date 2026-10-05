@@ -25,6 +25,9 @@ import type {
   WeekMoney,
 } from "@/GameInterface/Dashboard/dashboardData";
 import { formatEuros } from "@/Domain/money";
+import { projectProgress } from "@/Domain/facilities/facilities";
+import { addDays } from "@/Domain/dates";
+import type { ClubFacilities, FacilityKind, StandId } from "@/types/facilityTypes";
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
@@ -736,4 +739,52 @@ export function WeekFinancesCard({ week, balance }: { week: WeekMoney | null; ba
       </a>
     </HomeCard>
   );
+}
+
+/**
+ * Works card (`.claude/rules/game/facilities.md`): the facility projects in progress (progress bar,
+ * delivery date) and the ones finished in the last 7 days. The caller shows it only when there is
+ * something to show.
+ */
+export function WorksCard({ facilities, today }: { facilities: ClubFacilities; today: string }) {
+  const { t, i18n } = useTranslation();
+  const what = (p: { kind: FacilityKind; stand?: StandId; seats?: number; level?: number }) => p.kind === "stand"
+    ? t("facilities.projects.stand", { stand: t(`facilities.stand.${p.stand}`), seats: (p.seats ?? 0).toLocaleString(i18n.language) })
+    : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
+  const recent = recentlyCompleted(facilities, today);
+  return (
+    <HomeCard title={t("dashboard.home.works")} href="/finances?tab=facilities" linkLabel={t("financesScreen.tabFacilities")}>
+      <div className="flex flex-col gap-3">
+        {facilities.projects.map((p) => {
+          const progress = Math.round(projectProgress(p, today) * 100);
+          return (
+            <div key={p.id} className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-sm font-semibold text-foreground">{what(p)}</span>
+                <span className="text-sm text-muted-foreground tabular-nums">{t("facilities.projects.delivery", { date: formatDay(p.end, i18n.language) })}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-1.5 bg-border rounded overflow-hidden flex-1 min-w-16">
+                  <div className="h-full bg-primary rounded" style={{ width: `${progress}%` }} />
+                </div>
+                <span className="text-sm tabular-nums text-muted-foreground w-12 text-right">{progress}%</span>
+              </div>
+            </div>
+          );
+        })}
+        {recent.map((c) => (
+          <div key={c.id} className="flex items-center gap-2 text-sm">
+            <Icon name="check-circle" size={16} className="text-chart-2 shrink-0" />
+            <span className="text-foreground">{what(c)}</span>
+            <span className="text-muted-foreground tabular-nums">· {t("dashboard.home.worksDone", { date: formatDay(c.date, i18n.language) })}</span>
+          </div>
+        ))}
+      </div>
+    </HomeCard>
+  );
+}
+
+/** Projects finished in the last 7 days. */
+export function recentlyCompleted(f: ClubFacilities, today: string) {
+  return f.completed.filter((c) => c.date <= today && c.date >= addDays(today, -7));
 }

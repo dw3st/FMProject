@@ -17,6 +17,10 @@ import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
 import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { formatEuros } from "@/Domain/money";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { FacilitiesView } from "@/GameInterface/Facilities/FacilitiesView";
+import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
+import { facilitiesGate, seasonFraction } from "@/Domain/facilities/facilities";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -38,8 +42,8 @@ function formatWeekLabel(weekStart: string) {
 
 // ── Per-kind display metadata ────────────────────────────────────────────────
 
-const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in"];
-const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "operational", "transfer_out"];
+const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in", "board_funding"];
+const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "operational", "transfer_out", "facilities", "facilities_upkeep"];
 // `club_change` (the manager changed club) is a balance transfer, not income or expense.
 const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change"];
 
@@ -54,6 +58,9 @@ const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   operational: { icon: "building", labelKey: "financesScreen.operational" },
   transfer_out: { icon: "arrow-up-right", labelKey: "financesScreen.transfersOut" },
   club_change: { icon: "building", labelKey: "financesScreen.clubChange" },
+  facilities: { icon: "construction", labelKey: "financesScreen.facilities" },
+  facilities_upkeep: { icon: "construction", labelKey: "financesScreen.facilitiesUpkeep" },
+  board_funding: { icon: "handshake", labelKey: "financesScreen.boardFunding" },
 };
 
 function fixtureGateKind(competitionSlug: string): GateKind {
@@ -73,6 +80,11 @@ export function FinancesScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
+  // Tabs: overview | facilities (`.claude/rules/game/facilities.md`); `?tab=facilities` opens it.
+  const [tab, setTab] = useState<"overview" | "facilities">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "facilities" ? "facilities" : "overview");
+  // Attendance-based gate of the coming home games (the same model the server uses).
+  const { data: facilitiesData } = useFacilities(session?.saveId, session?.currentDate ?? null);
 
   // Translated text of a ledger line from its kind + ref; the stored English label is only a fallback.
   const ledgerText = (entry: LedgerEntry): string => {
@@ -84,6 +96,7 @@ export function FinancesScreen() {
       position: d.position,
       club: d.club ?? "",
       player: d.player ?? "",
+      facility: d.facility ? t(`facilities.kind.${d.facility}`) : "",
     });
   };
 
@@ -133,9 +146,17 @@ export function FinancesScreen() {
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((f: Fixture) => {
         const kind = fixtureGateKind(f.competition);
-        return { fixture: f, kind, projected: gateRevenue(capacity, kind, f.neutral, fillRate) };
+        const fd = facilitiesData;
+        const projected = fd && !f.neutral
+          ? facilitiesGate(fd.facilities, {
+              ...fd.demandInput,
+              ...(fd.season ? { fraction: seasonFraction(f.date, fd.season.start, fd.season.end) } : {}),
+              date: f.date,
+            }, kind)
+          : gateRevenue(capacity, kind, f.neutral, fillRate);
+        return { fixture: f, kind, projected };
       });
-  }, [fixtures, squad, session, fillRate]);
+  }, [fixtures, squad, session, fillRate, facilitiesData]);
 
   const projectedRemainingGate = useMemo(
     () => gateProjections.reduce((sum, g) => sum + g.projected, 0),
@@ -192,6 +213,26 @@ export function FinancesScreen() {
         >
           {t("screenTitles.finances.main")}
         </ScreenTitle>
+
+        <SegmentedTabs
+          tabs={[
+            { key: "overview", label: t("financesScreen.tabOverview") },
+            { key: "facilities", label: t("financesScreen.tabFacilities") },
+          ]}
+          active={tab}
+          onChange={(k) => setTab(k)}
+          aria-label={t("screenTitles.finances.main")}
+        />
+
+        {tab === "facilities" ? (
+          <FacilitiesView
+            saveId={session.saveId}
+            squadId={squad?.id ?? session.clubId}
+            fixtures={fixtures}
+            leagues={leagues}
+            currentDate={session.currentDate ?? null}
+          />
+        ) : (<>
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -420,6 +461,7 @@ export function FinancesScreen() {
             </div>
           )}
         </div>
+        </>)}
     </ScreenContainer>
   );
 }

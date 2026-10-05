@@ -7,6 +7,7 @@ import {
 } from "@/Domain/advanceDay/matches";
 import { addMatchLoad, decayLoad, postMatchFitness, recoverDay } from "@/Domain/fitness/fitness";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
@@ -192,7 +193,7 @@ describe("buildMatchEventFromRecording — post-match fitness and load", () => {
     const { updatedHome } = buildMatchEventFromRecording(fixture, home, away, recording);
     const bench = updatedHome.players.find((p) => p.id === "h-p1")!;
     // makeSquad: age 25, stamina 5 — same recoverDay curve as an actual rest day.
-    const expectedFitness = +recoverDay(77, { age: 25, load: 15, stamina: 5, recoveryMult: staffEffectsOf(home).recoveryMult }).toFixed(1);
+    const expectedFitness = +recoverDay(77, { age: 25, load: 15, stamina: 5, recoveryMult: staffEffectsOf(home).recoveryMult * trainingGroundEffectsOf(home).recoveryMult }).toFixed(1);
     expect(bench.seasonLog!.fitness).toBe(expectedFitness);
     expect(bench.seasonLog!.fitness).toBeGreaterThan(77); // did recover, wasn't left untouched
     expect(bench.seasonLog!.load).toBe(decayLoad(15));

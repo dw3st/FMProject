@@ -54,15 +54,15 @@ export async function listStartKits(): Promise<string[]> {
 }
 
 /**
- * Drops the human-club-only fields (`staff`, `styleFamiliarity`): a kit is a player-less world, so
+ * Drops the human-club-only fields (`staff`, `styleFamiliarity`, `facilities`): a kit is a player-less world, so
  * the club the generator played as must not carry them into the next careers. `applyRandomStartKit`
  * restores the new career's own values afterwards.
  */
 export function stripHumanOnly(squad: Squad): Squad {
   // Morale too (`.claude/rules/game/morale.md`): the kit carries no club's morale.
   const hasMorale = !!squad.moraleClub || squad.players.some((p) => p.morale !== undefined || p.moraleLog || p.squadStatus);
-  if (!squad.staff && !squad.styleFamiliarity && !hasMorale) return squad;
-  const { staff: _staff, styleFamiliarity: _fam, ...rest } = squad;
+  if (!squad.staff && !squad.styleFamiliarity && !squad.facilities && !hasMorale) return squad;
+  const { staff: _staff, styleFamiliarity: _fam, facilities: _fac, ...rest } = squad;
   return hasMorale ? stripClubMorale(rest) : rest;
 }
 
@@ -208,6 +208,8 @@ export async function applyRandomStartKit(
   const preKitStaff = preKitSquad?.staff;
   // Same for the style familiarity (human club only, set by `createSave`).
   const preKitFamiliarity = preKitSquad?.styleFamiliarity;
+  // And the facilities (`.claude/rules/game/facilities.md`), set up by `createSave`.
+  const preKitFacilities = preKitSquad?.facilities;
 
   const kit = kits[Math.floor(Math.random() * kits.length)]!;
   await applyKit(kit, saveId);
@@ -222,6 +224,7 @@ export async function applyRandomStartKit(
         finances: { ...postKitSquad.finances, budget: preKitBudget },
         ...(preKitStaff ? { staff: preKitStaff } : {}),
         ...(preKitFamiliarity ? { styleFamiliarity: preKitFamiliarity } : {}),
+        ...(preKitFacilities ? { facilities: preKitFacilities } : {}),
         // The kit's players carry no morale: start the human club's at 65 again.
         ...(preKitSquad?.moraleClub ? { players: initClubMorale(postKitSquad).players, moraleClub: initClubMorale(postKitSquad).moraleClub } : {}),
       });

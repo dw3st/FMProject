@@ -6,6 +6,7 @@ import { renewalContract } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/playerRating";
 import { effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
+import { academyEffectsOf } from "@/Domain/facilities/facilities";
 import { applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import ROLES from "@/Data/roles.json";
 import type { MainRole } from "@/Domain/roles";
@@ -90,9 +91,12 @@ function pickRoles(squad: Squad, count: number, key: string): MainRole[] {
   return picked;
 }
 
-/** Deterministic intake size (3-5) for a club + year. */
-export function intakeSize(saveId: string, squadId: string, year: number): number {
-  return Y.INTAKE_MIN + Math.floor(unit(`${saveId}:${squadId}:${year}:n`) * (Y.INTAKE_MAX - Y.INTAKE_MIN + 1));
+/**
+ * Deterministic intake size (3-5; 3-6 with a level-5 academy, `.claude/rules/game/facilities.md`)
+ * for a club + year.
+ */
+export function intakeSize(saveId: string, squadId: string, year: number, max: number = Y.INTAKE_MAX): number {
+  return Y.INTAKE_MIN + Math.floor(unit(`${saveId}:${squadId}:${year}:n`) * (max - Y.INTAKE_MIN + 1));
 }
 
 /**
@@ -110,7 +114,9 @@ export function generateIntake(args: {
 }): RosterPlayer[] {
   const { saveId, squad, year, nextSeasonEnd, assistantRating } = args;
   const seed = `${saveId}:${squad.id}:${year}`;
-  const n = intakeSize(saveId, squad.id, year);
+  // Academy (`.claude/rules/game/facilities.md`): stored level for the human club, the tier's for AI.
+  const academy = academyEffectsOf(squad);
+  const n = intakeSize(saveId, squad.id, year, academy.intakeMax);
   const roles = pickRoles(squad, n, seed);
   const tier = Y.TIER_BONUS[financialTierOf(squad)];
   const assistant = assistantRating === undefined ? 0 : assistantLevelBonus(assistantRating);
@@ -120,9 +126,9 @@ export function generateIntake(args: {
     const role = roles[i]!;
     const specifics = MAIN_ROLE_TO_SPECIFICS[role];
     const specific = specifics[Math.floor(unit(`${seed}:pos:${i}`) * specifics.length)]!;
-    const promise = unit(`${seed}:promise:${i}`) < Y.PROMISE_CHANCE;
+    const promise = unit(`${seed}:promise:${i}`) < academy.promiseChance;
     const level = clamp(
-      lineAverage(squad, role) - Y.LEVEL_OFFSET + tier + assistant + Y.LEVEL_SIGMA * gauss(`${seed}:lvl:${i}`)
+      lineAverage(squad, role) - Y.LEVEL_OFFSET + tier + assistant + academy.qualityBonus + Y.LEVEL_SIGMA * gauss(`${seed}:lvl:${i}`)
         + (promise ? Y.PROMISE_BONUS : 0),
       Y.LEVEL_MIN, Y.LEVEL_MAX,
     );

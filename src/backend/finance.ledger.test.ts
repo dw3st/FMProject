@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import { facilitiesGate, seasonFraction, seasonPhaseMult } from "@/Domain/facilities/facilities";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, runBufferedDay } from "@/backend/advanceDay";
 import { applyBroadcasting, executeTransferFee } from "@/backend/FinancialService";
@@ -149,10 +150,16 @@ describe("finance ledger — continental home gate", () => {
     // (`.claude/rules/game/board-fans.md`); continental days are never Mondays (no weekly drift).
     const fans = (await saveService.getMeta(saveId))!.board!.fans;
     const fill = stadiumFillRate(fans);
-    expect(gateEntry!.amount).toBe(gateRevenue(capacity, "continental", false, fill));
+    // Facilities (`.claude/rules/game/facilities.md`): the gate comes from the attendance — with the
+    // default facilities it is the old capacity × fill gate times the season phase (0.98..1.06).
+    const state = (await saveService.getMeta(saveId))!.activeLeagues!.find((l) => l.leagueSlug === meta.leagueSlug)!;
+    const phase = seasonPhaseMult(seasonFraction(matchDate, state.start, state.end));
+    const input = { followers: squad!.finances!.followers, tier: 1, fans, fraction: seasonFraction(matchDate, state.start, state.end) };
+    expect(gateEntry!.amount).toBe(facilitiesGate(squad!.facilities!, input, "continental"));
+    expect(Math.abs(gateEntry!.amount - gateRevenue(capacity, "continental", false, fill) * phase)).toBeLessThanOrEqual(1);
     // Rounding happens once, on the doubled price — not "round league gate, then double" (that
     // can differ by a euro from rounding twice). Same shape, off by at most a rounding unit.
-    expect(Math.abs(gateEntry!.amount - gateRevenue(capacity, "league", false, fill) * 2)).toBeLessThanOrEqual(1);
+    expect(Math.abs(gateEntry!.amount - facilitiesGate(squad!.facilities!, input, "league") * 2)).toBeLessThanOrEqual(1);
   }, 300_000);
 });
 

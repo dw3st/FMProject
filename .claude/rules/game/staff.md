@@ -15,6 +15,9 @@ Visual: `.claude/rules/ui-standard.md`.
   ausente = vaga = efeito de **nota 3**.
 - Sem multa, sem duração de contrato, sem migração de save (protótipo).
 
+Os efeitos do centro de treinamento (`.claude/rules/game/facilities.md`) se multiplicam aos do staff
+(recuperação, lesão de treino, DP do treino), com a mesma regra de nível implícito para a IA.
+
 ## Efeitos (`src/Domain/staff/staffConfig.ts`)
 
 Curva linear por partes passando por `[nota 1, nota 5, nota 10]`; a nota 5 é sempre exatamente neutra.

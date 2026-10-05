@@ -1,5 +1,6 @@
 import { WAGE_CONFIG } from "@/Domain/finance/wageConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { overallAvg } from "@/Domain/playerRating";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -70,6 +71,21 @@ export function squadWeeklyWages(players: RosterPlayer[], factor: number): numbe
 }
 
 /**
+ * Seats the gate estimate counts. A club with facilities (the human club,
+ * `.claude/rules/game/facilities.md`) counts at most the seats its demand fills: the demand anchor
+ * grown by the followers (min(capacity, anchor capacity × (followers / anchor followers)^0.7)), so
+ * new seats nobody buys never inflate the revenue (and the operational cost and wage factor with it).
+ */
+function revenueSeats(squad: Squad): number {
+  const capacity = squad.venue?.capacity ?? 0;
+  const a = squad.facilities?.anchor;
+  if (!a) return capacity;
+  const followers = squad.finances?.followers ?? 0;
+  const growth = a.followers > 0 && followers > 0 ? Math.pow(followers / a.followers, FACILITIES.FOLLOWERS_EXPONENT) : 1;
+  return Math.min(capacity, a.capacity * growth);
+}
+
+/**
  * Estimated annual revenue: broadcasting + commercial + an estimated league gate
  * (`gateRevenue` at league price × the club's home games this season). `homeGames` is normally
  * `clubsInLeague - 1` — the caller (career creation, season rollover, the calibration script)
@@ -78,8 +94,7 @@ export function squadWeeklyWages(players: RosterPlayer[], factor: number): numbe
 export function clubAnnualRevenue(squad: Squad, homeGames: number): number {
   const finances = squad.finances;
   const base = (finances?.broadcasting ?? 0) + (finances?.commercial ?? 0);
-  const capacity = squad.venue?.capacity ?? 0;
-  const gate = gateRevenue(capacity, "league") * Math.max(0, homeGames);
+  const gate = gateRevenue(revenueSeats(squad), "league") * Math.max(0, homeGames);
   return base + gate;
 }
 

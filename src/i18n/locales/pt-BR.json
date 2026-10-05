@@ -979,7 +979,8 @@
       "board": "Diretoria",
       "job": "Propostas",
       "transfer": "Negociação",
-      "player": "Jogador"
+      "player": "Jogador",
+      "facilities": "Instalações"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1405,7 +1406,9 @@
         "cold": "Frio",
         "snow": "Neve",
         "hot": "Calor"
-      }
+      },
+      "works": "Obras",
+      "worksDone": "concluída em {{date}}"
     }
   },
   "squadScreen": {
@@ -1535,7 +1538,8 @@
     "rotationIgnore": "Ignorar",
     "rotationApplied": "O assistente poupou {{count}} jogadores",
     "rotationUndo": "Desfazer",
-    "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}"
+    "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}",
+    "expectedCrowd": "Público esperado"
   },
   "matchResult": {
     "matchdayRound": "Rodada {{round}} • {{competition}}",
@@ -1700,10 +1704,18 @@
       "sellOnIn": "Cláusula de venda: {{player}} ({{club}})",
       "sellOnOut": "Cláusula de venda paga ao {{club}}: {{player}}",
       "loanFeeIn": "Taxa de empréstimo do {{club}}: {{player}}",
-      "loanFeeOut": "Taxa de empréstimo paga ao {{club}}: {{player}}"
+      "loanFeeOut": "Taxa de empréstimo paga ao {{club}}: {{player}}",
+      "facilityInstalment": "Obra: {{facility}}",
+      "boardFunding": "Verba da diretoria: {{facility}}",
+      "facilitiesUpkeep": "Manutenção do CT e da base"
     },
     "seasonBasis": "Temporada até agora",
-    "clubChange": "Troca de clube"
+    "clubChange": "Troca de clube",
+    "tabOverview": "Visão geral",
+    "tabFacilities": "Instalações",
+    "facilities": "Obras",
+    "facilitiesUpkeep": "Manutenção das instalações",
+    "boardFunding": "Verba da diretoria"
   },
   "developmentScreen": {
     "squad": "Elenco",
@@ -2193,6 +2205,113 @@
       "promiseMinutes": "Promessa a {{name}}: {{target}} de 5 jogos ({{played}} até agora)",
       "promise_sale": "Promessa a {{name}}: saída até {{date}}",
       "promise_renewal": "Promessa a {{name}}: renovação até {{date}}"
+    }
+  },
+  "facilities": {
+    "kpi": {
+      "capacity": "Capacidade",
+      "duringWorks": "{{seats}} durante a obra",
+      "avgAttendance": "Público médio",
+      "occupancy": "{{pct}}% de ocupação",
+      "record": "Recorde de público",
+      "ticket": "Preço do ingresso",
+      "comfortLevel": "Conforto nível {{level}}"
+    },
+    "stadium": {
+      "title": "Estádio",
+      "hint": "Clique num setor para ampliar",
+      "occupancy": "Ocupação"
+    },
+    "stand": {
+      "title": "Ampliar um setor",
+      "pick": "Escolha um setor no desenho para ver o custo, o prazo e a nova capacidade.",
+      "north": "Norte",
+      "south": "Sul",
+      "east": "Leste",
+      "west": "Oeste",
+      "works": "Em obras",
+      "expand": "Ampliar o setor {{stand}}",
+      "current": "{{seats}} lugares hoje",
+      "seats": "Lugares a mais",
+      "newCapacity": "Nova capacidade",
+      "halfDuringWorks": "Durante a obra o setor fica com metade dos lugares. Lugares acima da demanda não rendem dinheiro."
+    },
+    "cost": "Custo",
+    "duration": "Prazo",
+    "weeks": "{{count}} semanas",
+    "ask": "Pedir à diretoria",
+    "busy": "Já há uma obra em andamento",
+    "level": "Nível {{level}}",
+    "now": "Agora",
+    "nextLevel": "Nível {{level}}",
+    "maxLevel": "Nível máximo",
+    "preview": {
+      "approve": "A diretoria deve aprovar",
+      "funded": "A diretoria paga {{pct}}%"
+    },
+    "reason": {
+      "board_low": "A diretoria diz: melhore os resultados primeiro.",
+      "negative_balance": "A diretoria recusa enquanto o saldo estiver negativo.",
+      "too_big": "Grande demais para a confiança da diretoria: só obras de até 10% da receita anual.",
+      "no_money": "O clube não tem dinheiro para isso.",
+      "busy": "Já há uma obra em andamento.",
+      "maxLevel": "Já está no nível máximo.",
+      "noClub": "Você está sem clube.",
+      "error": "Algo deu errado."
+    },
+    "kind": {
+      "stand": "Ampliação de setor",
+      "comfort": "Conforto",
+      "training": "Centro de treinamento",
+      "academy": "Base"
+    },
+    "comfort": {
+      "about": "Cadeiras, cobertura, camarotes: ingresso mais caro.",
+      "effect": "Ingresso +{{pct}}%"
+    },
+    "training": {
+      "about": "Recuperação, lesões e evolução no treino.",
+      "effect": "Recuperação {{recovery}} · lesões no treino {{injury}} · evolução no treino {{dev}}"
+    },
+    "academy": {
+      "about": "Qualidade e tamanho da safra, chance de promessa.",
+      "effect": "Nível da safra {{quality}} · até {{max}} jovens · promessa {{promise}}%"
+    },
+    "outcome": {
+      "approvedTitle": "A diretoria aprovou",
+      "refusedTitle": "A diretoria recusou",
+      "approved": "{{what}}: a obra começa hoje e fica pronta em {{date}}."
+    },
+    "chart": {
+      "title": "Público por jogo em casa",
+      "played": "Público",
+      "estimated": "Estimativa",
+      "capacity": "Capacidade",
+      "demand": "Demanda",
+      "empty": "Nenhum jogo em casa nesta temporada ainda."
+    },
+    "projects": {
+      "title": "Obras",
+      "upkeep": "Manutenção {{amount}}/sem.",
+      "none": "Nenhuma obra em andamento.",
+      "stand": "Setor {{stand}} +{{seats}} lugares",
+      "level": "{{what}} nível {{level}}",
+      "delivery": "entrega {{date}}"
+    },
+    "inbox": {
+      "subject": {
+        "approved": "Obra aprovada: {{what}}",
+        "refused": "Obra recusada: {{what}}",
+        "completed": "Obra concluída: {{what}}",
+        "attendance_record": "Novo recorde de público"
+      },
+      "approved": "A diretoria aprovou {{what}} ({{cost}}). Pronta em {{date}}; paga em parcelas mensais.",
+      "approvedFunded": "A diretoria aprovou {{what}} ({{cost}}) e paga {{pct}}% com verba própria. Pronta em {{date}}; paga em parcelas mensais.",
+      "refused": "A diretoria recusou {{what}}. {{reason}}",
+      "completed": "{{what}}: obra concluída.",
+      "attendance_record": "{{attendance}} torcedores: novo recorde de público em casa (o anterior era {{previous}}).",
+      "standWhat": "o setor {{stand}} (+{{seats}} lugares)",
+      "levelWhat": "{{what}} nível {{level}}"
     }
   }
 }
