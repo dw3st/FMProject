@@ -7,6 +7,8 @@ import { Label } from "@/GameInterface/ui/Label";
 import { answersFor } from "@/Domain/morale/morale";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import type { TalkAnswer, TalkReason } from "@/types/moraleTypes";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { summaryTrait } from "@/Domain/personality/personality";
 
 const SALE_DAYS = [30, 60, 90] as const;
 
@@ -26,7 +28,11 @@ interface Props {
 /** Talk with a human-club player (`.claude/rules/game/morale.md`): the answers his reason allows. */
 export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }: Props) {
   const { t } = useTranslation();
+  const { squad } = useGameSave();
   const answers = answersFor(reason);
+  // Personality hint (`personality.md`): how he tends to take the talk (own player: exact).
+  const own = player ? squad?.players.find((p) => p.id === player.id) : undefined;
+  const summary = own ? summaryTrait(own) : "balanced";
   const [answer, setAnswer] = useState<TalkAnswer>(answers[0]!);
   const [minutes, setMinutes] = useState(3);
   const [days, setDays] = useState<number>(MORALE.SALE_PROMISE_DAYS);
@@ -77,6 +83,11 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
           <p className="text-sm text-muted-foreground m-0 mt-1">
             {player.name} · {reason ? t(`morale.reason.${reason}`, { club: clubName ?? "" }) : t("morale.reason.none")}
           </p>
+          {summary !== "balanced" && (
+            <p className="text-sm text-muted-foreground m-0 mt-1">
+              {t(`personality.summary.${summary}`)}: {t(`personality.talkHint.${summary}`)}
+            </p>
+          )}
         </div>
         <div className="p-6 space-y-5">
           {result ? (

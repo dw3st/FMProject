@@ -1,3 +1,4 @@
+import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { STAFF_NAME_POOLS, STAFF_NATIONALITIES } from "@/Domain/staff/staffNames";
 import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
@@ -157,7 +158,8 @@ export function obscurePlayer(player: RosterPlayer, noise: number, saveId: strin
     stats[k] = Math.round(clamp(shifted, 0, 10) * 10) / 10;
   }
   const { overallAvg: _cached, ...rest } = player;
-  return { ...rest, stats };
+  // Personality (`personality.md`): the same uncertainty blurs the traits (some unknown from 1).
+  return { ...rest, stats, personalityView: obscurePersonality(personalityOf(player), noise, saveId, player.id) };
 }
 
 export function obscureSquad(squad: Squad, noise: number, saveId: string): Squad {

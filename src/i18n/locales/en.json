@@ -1931,7 +1931,8 @@
       "tooManyYears": "The player will not sign that many years at his age.",
       "invalidYears": "Choose between 1 and 5 years.",
       "squadFull": "Your squad is full (36 players).",
-      "unhappy": "He is furious and will not renew without a renewal promise."
+      "unhappy": "He is furious and will not renew without a renewal promise.",
+      "smallerClub": "Too ambitious for a club this size: he refuses."
     }
   },
   "career": {
@@ -2561,6 +2562,74 @@
     "errors": {
       "saveFailed": "Could not save the instructions.",
       "markingFailed": "Could not save the marking."
+    }
+  },
+  "personality": {
+    "title": "Personality",
+    "scoutUncertain": "Scout: uncertain",
+    "trait": {
+      "ambition": "Ambition",
+      "loyalty": "Loyalty",
+      "professionalism": "Professionalism",
+      "temperament": "Temperament"
+    },
+    "band": {
+      "ambition": {
+        "very_low": "Content with little",
+        "low": "Unambitious",
+        "medium": "Moderate",
+        "high": "Ambitious",
+        "very_high": "Very ambitious"
+      },
+      "loyalty": {
+        "very_low": "Mercenary",
+        "low": "Not very loyal",
+        "medium": "Average",
+        "high": "Loyal",
+        "very_high": "One-club man"
+      },
+      "professionalism": {
+        "very_low": "Sloppy",
+        "low": "Casual",
+        "medium": "Average",
+        "high": "Professional",
+        "very_high": "Model professional"
+      },
+      "temperament": {
+        "very_low": "Very calm",
+        "low": "Calm",
+        "medium": "Steady",
+        "high": "Fiery",
+        "very_high": "Hot-headed"
+      }
+    },
+    "summary": {
+      "balanced": "Balanced",
+      "ambitious": "Ambitious",
+      "settled": "Settled",
+      "loyal": "Loyal idol",
+      "mercenary": "Mercenary",
+      "professional": "Professional",
+      "sloppy": "Sloppy",
+      "hothead": "Short fuse",
+      "calm": "Cool head"
+    },
+    "talkHint": {
+      "ambitious": "wants minutes and a big club",
+      "settled": "does not ask for much",
+      "loyal": "forgives a broken promise, hates being listed",
+      "mercenary": "goes where the money is",
+      "professional": "takes being pushed well",
+      "sloppy": "loses interest easily",
+      "hothead": "reacts strongly to a refusal",
+      "calm": "takes it all calmly"
+    },
+    "demand": {
+      "ambitious": "Ambitious: {{pct}}",
+      "settled": "Settled: {{pct}}",
+      "loyal": "Loyal to the club: {{pct}}",
+      "compatriot": "Plays in his country: {{pct}}",
+      "smallerClub": "Wants a bigger club: {{pct}}"
     }
   }
 }

@@ -1,3 +1,4 @@
+import { summaryOf } from "@/Domain/personality/personality";
 import { useState, useMemo } from "react";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
@@ -168,6 +169,7 @@ export function SquadRosterTable({
             <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
               <a
                 href={playerDetailHref(player)}
+                title={player.personality ? t(`personality.summary.${summaryOf(player.personality.traits)}`) : undefined}
                 className="text-foreground hover:text-primary hover:underline no-underline"
                 onClick={(e) => {
                   e.stopPropagation();

@@ -17,6 +17,8 @@ import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
+import { PersonalityPanel, PersonalitySummaryBadge } from "@/GameInterface/Components/PersonalityPanel";
+import { personalityViewOf } from "@/Domain/personality/personality";
 import { historyRowFromLog } from "@/Domain/history/history";
 import { addDays } from "@/Domain/dates";
 import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
@@ -185,7 +187,14 @@ export function PlayerScreen({
           </div>
         </a>
 
-        <PlayerCard player={displayPlayer} layout="wide" clubColors={squadColors} />
+        <PlayerCard
+          player={displayPlayer}
+          layout="wide"
+          clubColors={squadColors}
+          nameBadge={<PersonalitySummaryBadge view={personalityViewOf(player)} className="mt-0.5" />}
+        />
+
+        <PersonalityPanel player={player} />
 
         {isOwnPlayer && !player.loan && session && (
           <PlayerMoralePanel
