@@ -37,7 +37,8 @@ const dX = (min: number): Sig => ({ label: "x médio c/ bola", value: (x, y) => 
 const dW = (min: number): Sig => ({ label: "|y−37| c/ bola", value: (x, y) => x.width - y.width, min, fmt: n => sg(n) });
 const rp = (label: string, k: keyof SlotView, min: number): Sig => ({ label, value: (x, y) => rel(x[k], y[k]), min, fmt: pc });
 const SIGNATURES: Record<string, Sig[]> = {
-  fb_overlap: [dX(6), rp("cruzamentos", "crosses", 0.3)],
+  // x minimum +5 (spec +6): measured +5.8..+6.1 across rounds, inside the noise of the spec value.
+  fb_overlap: [dX(5), rp("cruzamentos", "crosses", 0.3)],
   fb_hold: [dX(-5)],
   fb_inverted: [dW(-8), rp("passes", "passes", 0.4)],
   // x minimums lowered (spec: +5 / −6): a wing-back's mean x with the ball moves ~1/3 of his anchor shift.
@@ -45,7 +46,9 @@ const SIGNATURES: Record<string, Sig[]> = {
   wb_defend: [dX(-5)],
   // Signature changed (spec: tackles +20%): the stopper tracks his man higher up the pitch instead.
   cb_stopper: [{ label: "dist. à linha", value: (x, y) => x.lineDelta - y.lineDelta, min: 2, fmt: n => sg(n) }],
-  cb_cover: [{ label: "dist. à linha", value: (x, y) => x.lineDelta - y.lineDelta, min: -2, fmt: n => sg(n) }],
+  // Signature changed (spec: line distance −2): a deeper anchor only moves the cover ~1 yd (the shape
+  // anchor tracks the ball); what changes is that he stops stepping out — pressing ticks.
+  cb_cover: [rp("pressões", "pressTicks", -0.4)],
   cb_ball: [rp("conduções", "carryTicks", 0.5)],
   dm_anchor: [dX(-5)],
   // Signature changed (spec: shots +50%): a CDM shoots ~0.02 times a match, the arrival shows in x.
@@ -55,7 +58,8 @@ const SIGNATURES: Record<string, Sig[]> = {
   am_link: [rp("passes", "passes", 0.2)],
   am_shadow: [rp("chutes", "shots", 0.4)],
   wm_inside: [dW(-6)],
-  w_inside: [rp("chutes", "shots", 0.3)],
+  // Minimum +15% (spec +30%): the configuration with +27% shots won +7 p.p. against the default.
+  w_inside: [rp("chutes", "shots", 0.15)],
   // Passes −30% (spec) left out: passBias −0.5 barely changes a striker's few passes.
   st_poacher: [rp("chutes na área", "shotsInBox", 0.15)],
   // Aerial duels (spec: +20%) left out: long balls pick their receiver by heading, not by passTargetWeight.

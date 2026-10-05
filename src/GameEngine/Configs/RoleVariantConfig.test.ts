@@ -18,7 +18,7 @@ describe("resolveSlotTuning", () => {
     const base = roleEngine("LB");
     const t = resolveSlotTuning("LB", { variant: "fb_overlap" });
     expect(t.bounds).toEqual({ minX: base.bounds.minX, maxX: 85 });
-    expect(t.offBallIntentWeights).toEqual({ offer_support: base.offBallIntentWeights.offer_support, hold_space: 0.35, make_run: 0.45 });
+    expect(t.offBallIntentWeights).toEqual({ offer_support: base.offBallIntentWeights.offer_support, hold_space: 0.45, make_run: 0.35 });
     expect(t.carryBias).toBe(0.6);
     expect(t.offBallBias).toBe(0.35);
     expect(t.passBias).toBe(base.passBias);
