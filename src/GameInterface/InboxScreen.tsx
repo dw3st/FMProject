@@ -572,10 +572,13 @@ function JobBody({
   const { t, i18n } = useTranslation();
   const { session, save, currentDate, refresh } = useGameSave();
   const league = competitionName(message.leagueSlug, leagues, i18n.language) || message.leagueName;
-  if (message.kind === "hired" || !message.offer || !session) {
+  if (message.kind === "hired") {
     return <p className="text-sm text-foreground m-0">{t("inbox.job.hired", { club: message.clubName, league })}</p>;
   }
   const offer = message.offer;
+  if (!offer || !session) {
+    return <p className="text-sm text-foreground m-0">{t("inbox.job.offer", { club: message.clubName, league })}</p>;
+  }
   const pending = (save?.jobOffers ?? []).some((o) => o.id === offer.id) && offer.expires >= currentDate;
   return (
     <div className="space-y-4">
