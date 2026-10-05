@@ -189,3 +189,11 @@ This gives:
 * No hidden complexity
 
 ---
+
+---
+
+# Etapa 21 — negociação (implementado)
+
+A regra acima (aceita com `decisionScore > 0,8`) continua sendo a da IA × IA. Para o jogador humano a
+resposta ganhou a **contraproposta**, a **paciência** e a **cláusula de venda futura**, e as vendas do jogador
+passam por propostas na inbox. Ver `.claude/rules/game/negotiation.md`.

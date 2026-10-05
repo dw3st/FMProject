@@ -17,6 +17,7 @@ interface PlayerHistoryRow {
   titles: string[]; // "league:<slug>" | "cup:<slug>" | "continental:<slug>"
   partial?: true;   // passagem num clube que ele deixou no meio da temporada (transferência)
   open?: true;      // parcial cujos números ainda estão dentro do seasonLog atual (some na virada)
+  loan?: true;      // passagem por empréstimo (`.claude/rules/game/negotiation.md`), "(empréstimo)" na tabela
 }
 ```
 

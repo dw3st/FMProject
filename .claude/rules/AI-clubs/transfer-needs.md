@@ -266,9 +266,14 @@ already sold before anyone picked the club. A still-earlier, general-purpose per
 once `marketFrozen` replaced its only caller. The human club is still excluded separately
 (`excludePlayerSquadId`) in live play, where the market is not frozen.
 
-**Phase 3 — Human sell list matching** (checked daily):
-- Tries to find an AI buyer for any player the human has listed
-- Same evaluation path as Phase 2
+**Phase 3 — Bids for the human's players** (daily, Etapa 21 — `.claude/rules/game/negotiation.md`):
+- The human's sell list is no longer sold on its own. `generateBidsForHuman` sends one transfer bid a day for a
+  random listed player from a club whose needs cover his role (rating band ±0.5), now and then a bid of a bigger
+  club for his best unlisted player, and loan bids for loan-listed players from clubs with a `cover_need` there.
+- Bids go to `market.pendingBids` and the inbox; the human accepts, refuses or counters
+  (`POST /api/saves/:id/bids/:bidId`).
+- Players on loan (`RosterPlayer.loan`) are never candidates (`findCandidates`) nor on an AI sell list.
+- A fee transfer of a player with a sell-on clause pays `pct` of the fee to the clause holder (the seller keeps the rest).
 
 ---
 
