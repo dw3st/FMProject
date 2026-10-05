@@ -5,7 +5,9 @@ import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { recordMoney } from "@/backend/FinancialService";
-import { loadJobWorld } from "@/backend/jobWorld";
+import { loadJobWorld, seasonEndExpiry } from "@/backend/jobWorld";
+import { overallAvg } from "@/Domain/playerRating";
+import type { RetiredPlayer } from "@/types/playerTypes";
 import { addDays } from "@/Domain/dates";
 import type { JobOffer } from "@/types/jobTypes";
 
@@ -54,7 +56,7 @@ describe("jobs: sacking, offers, changing club", () => {
         method, headers: { cookie: `fs_session=${token}`, "content-type": "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
       }),
-      { params: { saveId, offerId } },
+      { params: { saveId, offerId, retiredId: path.split("/")[5] ?? "" } },
     ));
   };
 
@@ -75,8 +77,23 @@ describe("jobs: sacking, offers, changing club", () => {
     const target = index.inLeague("la_liga")[0]!.squadId;
     const declined = await offerFor(meta, index.inLeague("serie_a")[0]!.squadId, date);
     const expired = { ...(await offerFor(meta, index.inLeague("bundesliga")[0]!.squadId, addDays(date, -1))), id: "job_old" };
-    const accepted = await offerFor(meta, target, addDays(date, 3));
+    const accepted = { ...(await offerFor(meta, target, addDays(date, 3))), budget: 7_777_777 };
     await saveService.updateMeta(meta.id, { jobOffers: [declined, expired, accepted] });
+    // A reborn offer pending at the old club, and the new club's best player out of contract this season.
+    const legend = (id: string): RetiredPlayer => ({
+      id, name: id, nationality: "Brazil", positions: ["ST"], preferredFoot: "right",
+      profile: { summary: "s", archetype: "a" } as RetiredPlayer["profile"], retiredOn: date, squadId: "33", age: 39,
+      wasWorldClass: true, appearances: 1, goals: 1, rebornOffer: "pending",
+      statsAtRetirement: old.players[0]!.stats,
+    });
+    await saveService.writeRetired(meta.id, [legend("legend_a")]);
+    const laLigaEnd = meta.activeLeagues!.find((l) => l.leagueSlug === "la_liga")!.end;
+    const targetSquad = (await saveService.getSquadById(meta.id, target))!;
+    const star = [...targetSquad.players].filter((p) => p.age < 30).sort((a, b) => overallAvg(b) - overallAvg(a))[0]!;
+    await saveService.saveSquadById(meta.id, {
+      ...targetSquad,
+      players: targetSquad.players.map((p) => (p.id === star.id ? { ...p, contract: { ...p.contract!, until: laLigaEnd } } : p)),
+    });
 
     const key = "/api/saves/:saveId/jobs/:offerId";
     const post = (id: string, body: unknown, token = session.token) =>
@@ -102,6 +119,14 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(after.jobOffers).toEqual([]);
     expect(after.board).toMatchObject({ board: 60, fans: 60 });
     expect(after.board?.objective?.leagueSlug).toBe("la_liga");
+    const ll = after.activeLeagues!.find((l) => l.leagueSlug === "la_liga")!;
+    expect(after.jobsMidSeason).toBe(`${ll.year}-${String((ll.year + 1) % 100).padStart(2, "0")}`);
+    // The old club's reborn offer closed, and cannot be accepted from the new club.
+    expect((await saveService.getRetired(meta.id)).find((r) => r.id === "legend_a")!.rebornOffer).toBe("expired");
+    await saveService.writeRetired(meta.id, [{ ...legend("legend_b") }]);
+    const reborn = await call("/api/saves/:saveId/reborn/:retiredId", meta.id, `/api/saves/${meta.id}/reborn/legend_b`, "POST",
+      session.token, { accept: true });
+    expect(reborn.status).toBe(409);
 
     const oldNow = (await saveService.getSquadById(meta.id, "33"))!;
     expect(oldNow.staff).toBeUndefined();
@@ -118,8 +143,17 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(mine.styleFamiliarity?.balanced).toBe(75);
     expect(mine.financialTier).toBeUndefined();
     expect(mine.aiTransferBudget).toBeUndefined();
-    expect(mine.finances!.budget).toBeGreaterThan(0);
+    expect(mine.finances!.budget).toBe(7_777_777);
+    // The AI board's renewal of the expiring star happened at the takeover.
+    expect(mine.players.find((p) => p.id === star.id)!.contract!.until > laLigaEnd).toBe(true);
     expect(await ledgerSum(meta.id)).toBe(mine.finances!.budget);
+
+    // Finances screen: the season's totals start at the arrival; the entries stay complete.
+    const ledgerRes = await call("/api/saves/:saveId/ledger", meta.id, `/api/saves/${meta.id}/ledger`, "GET", session.token);
+    const ledger = (await ledgerRes.json()) as { entries: { kind: string }[]; totals: Record<string, number> };
+    expect(ledger.entries.some((e) => e.kind === "broadcasting")).toBe(true);
+    expect(ledger.totals.broadcasting).toBe(0);
+    expect(ledger.totals.club_change).toBe(7_777_777);
 
     const tactics = (await saveService.getTactics(meta.id))!;
     expect(tactics.formation).toBe(after.formation!);
@@ -202,4 +236,12 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(world.candidates.length).toBeGreaterThan(1000);
     expect(world.candidates.every((c) => c.prestige >= 0 && c.prestige <= 1)).toBe(true);
   }, 120_000);
+});
+
+describe("season-end offer validity", () => {
+  test("until the eve of the first match, at least one day", () => {
+    expect(seasonEndExpiry("2027-05-20", "2027-08-15")).toBe("2027-08-14");
+    expect(seasonEndExpiry("2027-05-20", "2027-05-21")).toBe("2027-05-21");
+    expect(seasonEndExpiry("2027-05-20", null)).toBe("2027-06-19");
+  });
 });

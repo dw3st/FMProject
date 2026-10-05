@@ -20,10 +20,13 @@ import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { initialStaff } from "@/Domain/staff/staff";
 import { academyToAi } from "@/Domain/youth/youth";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { renewExpiringOnTakeover } from "@/Domain/contracts/expiry";
+import { addYearsIso } from "@/Domain/contracts/contracts";
+import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { aiRecordFor, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
-import { buildBoardMessage, buildJobMessage } from "@/Domain/inbox/inboxEvents";
+import { buildBoardMessage, buildContractMessage, buildJobMessage } from "@/Domain/inbox/inboxEvents";
 import { competitionName } from "@/Domain/world/labels";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
@@ -205,7 +208,11 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
 
 /** Validity of a season-end offer: until the eve of the club's first match of the new season. */
 export function seasonEndExpiry(date: string, firstMatch: string | null): string {
-  return firstMatch && firstMatch > date ? addDays(firstMatch, -1) : addDays(date, JOBS.SEASON_END_FALLBACK_DAYS);
+  if (!firstMatch) return addDays(date, JOBS.SEASON_END_FALLBACK_DAYS);
+  // At least one full day to answer, even when the new season starts tomorrow.
+  const eve = addDays(firstMatch, -1);
+  const minimum = addDays(date, 1);
+  return eve > minimum ? eve : minimum;
 }
 
 // ── Changing club ─────────────────────────────────────────────────────────────
@@ -247,6 +254,12 @@ export async function releaseHumanClub(
   }
   const market = await service.getMarket(saveId);
   if (market?.playerSellList?.length) await service.saveMarket(saveId, { ...market, playerSellList: [] });
+  // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
+  const retired = await service.getRetired(saveId);
+  if (retired.some((r) => r.squadId === args.squadId && r.rebornOffer === "pending")) {
+    await service.writeRetired(saveId, retired.map((r) =>
+      r.squadId === args.squadId && r.rebornOffer === "pending" ? { ...r, rebornOffer: "expired" as const } : r));
+  }
 }
 
 /**
@@ -256,8 +269,13 @@ export async function releaseHumanClub(
  * and the tactic's formation.
  */
 export async function takeOverClub(
-  service: SaveService, saveId: string, args: { squadId: string; date: string; activeLeagues: LeagueSeasonState[] },
-): Promise<{ board: BoardState; formation: string; leagueSlug: string; clubName: string; colors: [string, string] }> {
+  service: SaveService, saveId: string,
+  args: { squadId: string; date: string; activeLeagues: LeagueSeasonState[]; startBalance?: number },
+): Promise<{
+  board: BoardState; formation: string; leagueSlug: string; clubName: string; colors: [string, string];
+  /** Players whose contract still ends with this season (warning window only). */
+  expiring: { id: string; name: string }[];
+}> {
   const index = await service.getSquadIndex(saveId);
   const entry = index.byId(args.squadId);
   if (!entry) throw new Error(`takeOverClub: club ${args.squadId} not found`);
@@ -265,8 +283,16 @@ export async function takeOverClub(
   const squad = await service.getSquad(saveId, ref.leagueSlug, ref.clubSlug);
   if (!squad) throw new Error(`takeOverClub: squad ${args.squadId} not found`);
 
-  const start = aiTransferBudgetOf(squad);
-  const { financialTier: _t, aiTransferBudget: _b, ...rest } = squad;
+  // What the offer showed (or, without one, the AI budget it has now).
+  const start = args.startBalance ?? aiTransferBudgetOf(squad);
+  // Contracts that would end at this season's rollover: the AI board's renewals happen now, since
+  // the human only renews by hand from here on.
+  const state = args.activeLeagues.find((l) => l.leagueSlug === entry.leagueSlug);
+  const seasonEnd = state?.end ?? args.date;
+  const renewed = renewExpiringOnTakeover({
+    squad, date: seasonEnd > args.date ? seasonEnd : args.date, nextSeasonEnd: addYearsIso(seasonEnd, 1),
+  }).squad;
+  const { financialTier: _t, aiTransferBudget: _b, ...rest } = renewed;
   const human: Squad = {
     ...rest,
     finances: { ...(rest.finances ?? { broadcasting: 0, commercial: 0, total: 0, followers: 0 }), budget: 0 },
@@ -288,9 +314,12 @@ export async function takeOverClub(
     assistantRotation: false,
   });
 
+  // The new club starts with an empty sell list.
+  const market = await service.getMarket(saveId);
+  if (market?.playerSellList?.length) await service.saveMarket(saveId, { ...market, playerSellList: [] });
+
   // Board and fans at 60 with this club's objective (mid-season: from the current position).
   const catalog = await getLeagueData();
-  const state = args.activeLeagues.find((l) => l.leagueSlug === entry.leagueSlug);
   const leagueSquads = await service.getSquadsInLeague(saveId, entry.leagueSlug);
   const rank = await currentRank(service, saveId, entry.leagueSlug, args.squadId);
   const objective = objectiveFromSquads({
@@ -301,12 +330,16 @@ export async function takeOverClub(
     season: state ? seasonLabel(state.year, state.start, state.end) : "",
     ...(rank !== null ? { rank } : {}),
   });
+  const inWarning = args.date >= addDays(seasonEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE);
   return {
     board: initialBoardState(args.date, objective),
     formation,
     leagueSlug: entry.leagueSlug,
     clubName: squad.name,
     colors: entry.colors,
+    expiring: inWarning
+      ? human.players.filter((p) => p.contract && p.contract.until <= seasonEnd).map((p) => ({ id: p.id, name: p.name }))
+      : [],
   };
 }
 
@@ -329,7 +362,7 @@ export async function acceptJobOffer(
     await service.writeManagers(saveId, moveHumanManager(managers, { toSquadId: offer.squadId, fromSquadId: employedAt, date }));
   }
 
-  const taken = await takeOverClub(service, saveId, { squadId: offer.squadId, date, activeLeagues });
+  const taken = await takeOverClub(service, saveId, { squadId: offer.squadId, date, activeLeagues, startBalance: offer.budget });
 
   // Inbox: the old club's news stays; every pending offer drops with its message.
   const catalog = await getLeagueData();
@@ -342,6 +375,11 @@ export async function acceptJobOffer(
   if (taken.board.objective) {
     await service.appendInbox(saveId, buildBoardMessage({ date, kind: "objective", objective: taken.board.objective, leagueName }));
   }
+  // Inside the contract-warning window the 90-day notice was missed: send it now.
+  if (taken.expiring.length > 0) {
+    await service.appendInbox(saveId, buildContractMessage({ date, kind: "expiring", players: taken.expiring }));
+  }
+  const newState = activeLeagues.find((l) => l.leagueSlug === taken.leagueSlug);
 
   return service.updateMeta(saveId, {
     clubId: offer.squadId,
@@ -354,6 +392,8 @@ export async function acceptJobOffer(
     tactical_style: DEFAULT_TACTICAL_STYLE,
     board: taken.board,
     jobOffers: [],
+    // The new league's mid-season window counts from now (never right after the switch).
+    jobsMidSeason: newState ? seasonLabel(newState.year, newState.start, newState.end) : meta.jobsMidSeason,
     unemployed: undefined,
     rotationOverride: undefined,
     style_focus: undefined,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { processContractExpiries } from "@/Domain/contracts/expiry";
+import { processContractExpiries, renewExpiringOnTakeover } from "@/Domain/contracts/expiry";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 function player(id: string, age: number, level: number, until: string, wage = 1000): RosterPlayer {
@@ -66,5 +66,16 @@ describe("processContractExpiries", () => {
     const r = processContractExpiries({ squad: sq, date: DATE, nextSeasonEnd: NEXT, isHuman: false });
     expect(r.squad.players).toHaveLength(10);
     expect(r.released).toHaveLength(0);
+  });
+});
+
+describe("renewExpiringOnTakeover", () => {
+  test("renews by the AI rule and keeps the others in the squad", () => {
+    const sq = squad([...base, player("good", 26, 5, DATE), player("old", 35, 5, DATE)]);
+    const r = renewExpiringOnTakeover({ squad: sq, date: DATE, nextSeasonEnd: NEXT });
+    expect(r.renewed.map((p) => p.id)).toEqual(["good"]);
+    expect(r.squad.players).toHaveLength(22);
+    expect(r.squad.players.find((p) => p.id === "good")!.contract!.until >= NEXT).toBe(true);
+    expect(r.squad.players.find((p) => p.id === "old")!.contract!.until).toBe(DATE);
   });
 });
