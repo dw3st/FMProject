@@ -1,6 +1,6 @@
 import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
-import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
+import { AI_SIGN_MAX_AGE, CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { addYearsIso, aiRenewalYears, contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
 import { overallAvg } from "@/Domain/playerRating";
 import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/transfer/transferNeeds";
@@ -101,7 +101,7 @@ export function refillSquad(args: {
     if (!isHuman) {
       const fin = aiClubFinance(squad);
       const candidates = pool
-        .filter((f) => !taken.has(f.player.id) && roleOf(f.player) === role && f.player.age < C.AI_RENEW_MAX_AGE + 2)
+        .filter((f) => !taken.has(f.player.id) && roleOf(f.player) === role && f.player.age < AI_SIGN_MAX_AGE)
         .map((f) => f.player)
         .sort((a, b) => overallAvg(b) - overallAvg(a));
       for (const p of candidates) {
@@ -168,7 +168,7 @@ export function freeAgentTick(args: {
       let best: { player: RosterPlayer; score: number } | null = null;
       for (const f of pool) {
         const p = f.player;
-        if (signedIds.has(p.id) || roleOf(p) !== need.position) continue;
+        if (signedIds.has(p.id) || roleOf(p) !== need.position || p.age >= AI_SIGN_MAX_AGE) continue;
         const rating = overallAvg(p);
         if (rating < need.targetMin || rating > need.targetMax) continue;
         if (need.intentType === "future_investment" && p.age > 23) continue;
