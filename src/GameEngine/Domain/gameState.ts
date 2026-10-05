@@ -1338,7 +1338,7 @@ export function setManMarksBySlot(
   team: TeamId,
   marks: { slot: number; targetRosterId?: string; targetSlot?: number }[] | undefined,
 ): GameState {
-  if (!marks || marks.length === 0) return state;
+  if (!marks || (marks.length === 0 && !state.manMarks?.[team]?.length)) return state;
   const resolved: { markerSlot: number; targetId: number }[] = [];
   for (const m of marks) {
     const target = state.players.find(p => p.team !== team && (

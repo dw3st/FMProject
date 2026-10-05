@@ -303,7 +303,11 @@ export interface GameEvents {
     | { type: 'giveBall';      id: number }
     | { type: 'patchPlayers';  players: import('@/GameEngine/types').GamePlayer[] }
     | { type: 'triggerPhase';  phase: 'halfTime' | 'matchEnd' | 'endPeriod' }
-    | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent };
+    | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent }
+    /** Player instructions (`/test`): one slot's role variant / pressing, live. */
+    | { type: 'setInstruction'; team: import('@/GameEngine/types').TeamId; slot: number; instruction: import('@/types/tacticsTypes').SlotInstruction | null }
+    /** Man-marking (`/test`): the team's slots mark the opponent slots (replaces the pairs). */
+    | { type: 'setManMarks'; team: import('@/GameEngine/types').TeamId; marks: { slot: number; targetSlot: number }[] };
 
   /**
    * Emitted when team tactics change at runtime (TestScreen tactic buttons).
