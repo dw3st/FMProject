@@ -18,6 +18,8 @@ import {
   completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, seasonEndOf, startLoan,
 } from "@/backend/negotiationWorld";
 import type { MarketState } from "@/types/transferMarketTypes";
+import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
+import { liveRivals } from "@/Domain/negotiation/rivals";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -36,8 +38,13 @@ export const negotiationRoutes = {
     const market = await saveService.getMarket(saveId);
     const squad = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
     const date = meta.currentDate ?? "";
+    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
     return json({
       clubId: meta.clubId,
+      window: windows.human(),
+      preContracts: market?.preContracts ?? [],
+      rivals: (market?.rivalBids ?? []).filter((r) => r.deadline >= date),
+      lostTargets: market?.lostTargets ?? [],
       bids: liveBids(market?.pendingBids, date, squad),
       loans: (market?.loans ?? []).filter((l) => l.fromClubId === meta.clubId || l.toClubId === meta.clubId),
       loanList: market?.playerLoanList ?? [],
@@ -58,7 +65,15 @@ export const negotiationRoutes = {
     const talk = market?.talks?.[talkKey(kind, req.params.playerId!)];
     const date = meta.currentDate ?? "";
     const today = talk && (talk.date === date || (talk.closedUntil && talk.closedUntil >= date)) ? talk : null;
-    return json({ talk: today, gate: talkGate(today ?? undefined, date) });
+    const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId));
+    return json({
+      talk: today, gate: talkGate(today ?? undefined, date),
+      // Etapa 25: the buyer's (human) window, rivals for the target, a loss to a rival.
+      window: windows.human(),
+      rivals: liveRivals(market?.rivalBids, req.params.playerId!, date)
+        .map((r) => ({ clubId: r.clubId, clubName: r.clubName, fee: r.fee, deadline: r.deadline, sellerAccepts: r.sellerAccepts })),
+      lost: market?.lostTargets?.find((l) => l.playerId === req.params.playerId) ?? null,
+    });
   },
 
   /**
@@ -93,6 +108,9 @@ export const negotiationRoutes = {
         await saveService.saveMarket(saveId, withoutBid);
         return json({ ok: true, status: "rejected" });
       }
+      // The buyer's window (an AI club here) must be open to sign (`.claude/rules/game/transfer-windows.md`).
+      const buyerWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId))).ofSquad(bid.clubId);
+      if (!buyerWindow.open) return windowClosedResponse(buyerWindow);
 
       const seller = await saveService.getSquadById(saveId, meta.clubId);
       const buyer = await saveService.getSquadById(saveId, bid.clubId);
@@ -130,6 +148,7 @@ export const negotiationRoutes = {
           }
           const done = await completeHumanSale(saveService, saveId, meta, withoutBid, { player, seller, buyer, fee, sellOnPct: pct });
           await saveService.saveMarket(saveId, done.market);
+          await saveService.appendDayTransfers(saveId, date, [{ playerId: player.id, from: seller.id, to: buyer.id, fee, kind: "transfer", date }]);
           return json({ ok: true, status: "sold", record: done.record });
         }
         const share = bid.wageShare ?? 1;
@@ -142,6 +161,7 @@ export const negotiationRoutes = {
           until: bid.until ?? seasonEndOf(meta.activeLeagues, buyer.leagueSlug, date), fee: bid.fee,
         });
         await saveService.saveMarket(saveId, next);
+        await saveService.appendDayTransfers(saveId, date, [{ playerId: player.id, from: seller.id, to: buyer.id, fee: bid.fee, kind: "loan", date }]);
         return json({ ok: true, status: "loaned" });
       } catch (err) {
         logError("negotiation", `save ${saveId}: failed to complete bid ${bidId}`, err);
@@ -176,6 +196,9 @@ export const negotiationRoutes = {
       if (!meta) return json({ error: "save not found" }, 404);
       if (meta.unemployed || !meta.clubId) return json({ error: "noClub" }, 409);
       const date = meta.currentDate ?? "";
+      // The borrower is the human club: its window must be open to start a loan.
+      const humanWindow = (await loadWindowContext(meta, await saveService.getSquadIndex(saveId))).human();
+      if (!humanWindow.open) return windowClosedResponse(humanWindow);
       const borrower = await saveService.getSquadById(saveId, meta.clubId);
       const parent = await saveService.getSquadById(saveId, fromSquadId);
       if (!borrower || !parent) return json({ error: "squad not found" }, 404);
@@ -211,6 +234,7 @@ export const negotiationRoutes = {
       if (answer.kind === "accept") {
         try {
           next = await startLoan(saveService, saveId, meta, next, { player, parent, borrower, wageShare, until, fee });
+          await saveService.appendDayTransfers(saveId, date, [{ playerId, from: parent.id, to: borrower.id, fee, kind: "loan", date }]);
         } catch (err) {
           logError("negotiation", `save ${saveId}: failed to start loan of ${playerId}`, err);
           return json({ error: "failed to complete" }, 500);

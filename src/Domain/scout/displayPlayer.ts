@@ -36,6 +36,8 @@ export interface DisplayPlayer {
   free?: boolean;
   /** Year the contract ends ("—" when none). */
   contractUntil?: string;
+  /** Last day of the contract (pre-contract eligibility, Etapa 25). */
+  contractEnd?: string;
   value: string;
   goals: number;
   assists: number;
@@ -100,6 +102,7 @@ export function toDisplayPlayer(
     salary: player.contract ? formatWageShort(player.contract.wage) : domain.salaryLabel(options?.wageFactor),
     wage: player.contract?.wage ?? weeklyWage(domain.overallRating) * (options?.wageFactor ?? 1),
     contractUntil: player.contract ? player.contract.until.slice(0, 4) : "—",
+    ...(player.contract ? { contractEnd: player.contract.until } : {}),
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,
     nationality: nat,

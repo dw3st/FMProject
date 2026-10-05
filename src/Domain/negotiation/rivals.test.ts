@@ -114,7 +114,7 @@ describe("pre-contracts", () => {
   });
 
   test("due at the rollover of the origin club's country", () => {
-    const pcs = [{ playerId: "a", playerName: "a", fromClubId: "x", fromClubName: "x", wage: 1, years: 1, date: "d" }];
+    const pcs = [{ playerId: "a", playerName: "a", fromClubId: "x", fromClubName: "x", toClubId: "h", wage: 1, years: 1, date: "d" }];
     expect(dueAtRollover(pcs, new Set(["x"])).length).toBe(1);
     expect(dueAtRollover(pcs, new Set(["y"])).length).toBe(0);
   });

@@ -9,15 +9,19 @@ import type { LeagueData } from "@/types/playerTypes";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
+import { formatFee } from "@/Domain/money";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
   rank: number;
   clubName: string | null;
-  /** Human manager only: his passages through clubs (`.claude/rules/game/jobs.md`). */
-  clubs?: { squadId: string; from: string; to?: string; clubName: string | null }[];
+  /** Every manager's passages through clubs, with the reason he left (Etapa 25). */
+  clubs?: { squadId: string; from: string; to?: string; left?: string; clubName: string | null }[];
+  free?: boolean;
+  /** The human manager: wages and severance received in the career. */
+  earnings?: number;
 };
 type Page = { total: number; playerRank: number | null; items: Row[] };
-type Scope = "world" | "country";
+type Scope = "world" | "country" | "free";
 
 const PAGE = 50;
 
@@ -71,6 +75,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
         options={[
           { key: "world", label: t("statsScreen.managers.world") },
           { key: "country", label: t("statsScreen.managers.country") },
+          { key: "free", label: t("statsScreen.managers.free") },
         ]}
         value={scope}
         onChange={setScope}
@@ -109,18 +114,26 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             <StatsRow
               key={m.id}
               highlight={m.isPlayer}
-              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 1 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
               expanded={isOpen}
             >
               <RankCell rank={m.rank} />
               <CrestCell squadId={m.squadId} />
               <NameCell highlight={m.isPlayer}><span className="truncate">{m.name}</span></NameCell>
-              <ClubCell>{m.clubName ?? "-"}</ClubCell>
+              <ClubCell>
+                {m.clubName ?? t("statsScreen.managers.noClub")}
+                {m.interim && <span className="text-muted-foreground"> · {t("statsScreen.managers.interim")}</span>}
+              </ClubCell>
               <NumberCell strong>{m.points}</NumberCell>
               <NumberCell>{m.titles.length}</NumberCell>
             </StatsRow>,
             isOpen && (
               <StatsDetailRow key={`${m.id}-titles`} colSpan={6}>
+                {m.isPlayer && m.earnings !== undefined && (
+                  <p className="text-sm text-foreground m-0 mb-3 tabular-nums">
+                    {t("statsScreen.managers.earnings", { amount: formatFee(m.earnings) })}
+                  </p>
+                )}
                 {m.clubs && m.clubs.length > 0 && (
                   <div className="mb-3">
                     <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-1">
@@ -133,6 +146,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                           <span className="font-semibold">{c.clubName ?? "-"}</span>
                           <span className="text-muted-foreground tabular-nums ml-auto">
                             {formatDay(c.from, i18n.language, "year")} – {c.to ? formatDay(c.to, i18n.language, "year") : t("statsScreen.managers.current")}
+                            {c.left && <> · {t(`statsScreen.managers.leftReason.${c.left}`)}</>}
                           </span>
                         </li>
                       ))}

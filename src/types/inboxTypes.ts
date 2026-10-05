@@ -20,7 +20,8 @@ export type InboxCategory =
   | "club_record"
   | "transfer"
   | "player"
-  | "facilities";
+  | "facilities"
+  | "manager_news";
 
 interface InboxMessageBase {
   id:        string;
@@ -217,6 +218,8 @@ export interface BoardInboxMessage extends InboxMessageBase {
   bonus?: number;
   /** sacked */
   reason?: SackReason;
+  /** contract_offer / contract_renewed: the terms (`.claude/rules/game/jobs.md` → "Contrato do técnico"). */
+  contract?: { wage: number; seasons: number; until?: string };
 }
 
 /**
@@ -250,7 +253,12 @@ export interface ClubRecordInboxMessage extends InboxMessageBase {
  */
 export interface TransferInboxMessage extends InboxMessageBase {
   category: "transfer";
-  kind: "bid" | "loan_bid" | "loan_back" | "loan_home" | "sell_on";
+  kind:
+    | "bid" | "loan_bid" | "loan_back" | "loan_home" | "sell_on"
+    // Etapa 25 (`.claude/rules/game/transfer-windows.md`, `negotiation.md`)
+    | "window_open" | "window_closing" | "window_closed"
+    | "rival_bid" | "lost_to_rival" | "pre_contract" | "pre_contract_joined" | "pre_contract_failed";
+  /** "" for the window news. */
   playerId: string;
   playerName: string;
   /** The other club (bidder, parent, borrower or the buying club). */
@@ -262,8 +270,23 @@ export interface TransferInboxMessage extends InboxMessageBase {
   /** loan_bid: share of the wage the borrower pays (0..1) and the return date. */
   wageShare?: number;
   until?: string;
-  /** bid / loan_bid: last day to answer. */
+  /** bid / loan_bid: last day to answer; rival_bid: the human's deadline. */
   expires?: string;
+  /** window_*: the country, the window's last day / the next opening. */
+  country?: string;
+  opensOn?: string;
+  /** pre_contract: weekly wage and seasons agreed. */
+  wage?: number;
+  years?: number;
+}
+
+/**
+ * Manager news of the player's league (`.claude/rules/game/managers.md`, Etapa 25): sackings and
+ * hirings of the day, grouped in one message.
+ */
+export interface ManagerNewsInboxMessage extends InboxMessageBase {
+  category: "manager_news";
+  items: { kind: "sacked" | "hired"; squadId: string; clubName: string; managerName: string; interim?: boolean }[];
 }
 
 /**
@@ -324,4 +347,5 @@ export type InboxMessage =
   | ClubRecordInboxMessage
   | TransferInboxMessage
   | PlayerInboxMessage
-  | FacilityInboxMessage;
+  | FacilityInboxMessage
+  | ManagerNewsInboxMessage;

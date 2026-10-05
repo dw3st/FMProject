@@ -277,13 +277,16 @@
     "returnToMenu": "Voltar ao Menu",
     "reason": {
       "board": "A confiança da diretoria chegou ao limite.",
-      "ultimatum": "O ultimato da diretoria não foi cumprido."
+      "ultimatum": "O ultimato da diretoria não foi cumprido.",
+      "contract": "O contrato acabou e não foi renovado."
     },
     "days": "{{count}} dias",
     "positionValue": "{{n}}º",
     "noCareer": "Nenhuma carreira encerrada.",
     "noAchievements": "Nenhum título",
-    "seeOffers": "Ver propostas"
+    "seeOffers": "Ver propostas",
+    "contractEnded": "Contrato encerrado",
+    "contractEndedBody": "Seu contrato com o {{club}} acabou sem renovação. Outros clubes vão fazer propostas."
   },
   "staff": {
     "subtitle": "Três profissionais definem desenvolvimento, recuperação e observação.",
@@ -980,7 +983,8 @@
       "job": "Propostas",
       "transfer": "Negociação",
       "player": "Jogador",
-      "facilities": "Instalações"
+      "facilities": "Instalações",
+      "manager_news": "Técnicos"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1047,7 +1051,11 @@
         "ultimatum_met": "A diretoria aprovou a reação",
         "praise": "A diretoria elogia seu trabalho",
         "bonus": "Bônus da diretoria pela temporada",
-        "sacked": "Você foi demitido"
+        "sacked": "Você foi demitido",
+        "contract_offer": "A diretoria oferece um novo contrato",
+        "contract_renewed": "Contrato renovado",
+        "contract_ending": "Seu contrato está acabando",
+        "contract_ended": "Seu contrato acabou"
       },
       "objective": "Meta para {{season}} em {{league}}: {{objective}}.",
       "warning": "A confiança da diretoria caiu para {{board}}%. Os resultados precisam melhorar.",
@@ -1057,8 +1065,15 @@
       "bonus": "A diretoria liberou {{amount}} de bônus para o orçamento.",
       "sacked": {
         "board": "A diretoria perdeu a confiança no seu trabalho e encerrou o contrato.",
-        "ultimatum": "O ultimato não foi cumprido. A diretoria encerrou o contrato."
-      }
+        "ultimatum": "O ultimato não foi cumprido. A diretoria encerrou o contrato.",
+        "contract": "Seu contrato acabou sem renovação."
+      },
+      "contract_offer_one": "A diretoria oferece um novo contrato: {{wage}} por semana por {{count}} temporada.",
+      "contract_offer_other": "A diretoria oferece um novo contrato: {{wage}} por semana por {{count}} temporadas.",
+      "contract_renewed_one": "Você assinou um novo contrato: {{wage}} por semana por mais {{count}} temporada, até {{until}}.",
+      "contract_renewed_other": "Você assinou um novo contrato: {{wage}} por semana por mais {{count}} temporadas, até {{until}}.",
+      "contract_ending": "Seu contrato acaba com esta temporada e não será renovado. Você fica livre na virada da temporada.",
+      "contract_ended": "Seu contrato acabou sem renovação. Você está livre para aceitar propostas de outros clubes."
     },
     "job": {
       "subject": {
@@ -1074,15 +1089,38 @@
         "loan_bid": "{{club}} quer {{player}} emprestado",
         "loan_back": "{{player}} voltou ao {{club}}",
         "loan_home": "{{player}} voltou do {{club}}",
-        "sell_on": "Cláusula de venda: {{player}}"
+        "sell_on": "Cláusula de venda: {{player}}",
+        "window_open": "Janela de transferências aberta",
+        "window_closing": "A janela de transferências fecha em {{until}}",
+        "window_closed": "Janela de transferências fechada",
+        "rival_bid": "{{club}} fez proposta por {{player}}",
+        "lost_to_rival": "{{player}} foi para o {{club}}",
+        "pre_contract": "Pré-contrato: {{player}}",
+        "pre_contract_joined": "{{player}} chegou pelo pré-contrato",
+        "pre_contract_failed": "O pré-contrato caiu: {{player}}"
       },
       "body": {
         "bid": "O {{club}} oferece {{fee}} por {{player}}.",
         "loan_bid": "O {{club}} quer {{player}} emprestado e pagaria {{share}}% do salário.",
         "loan_back": "O empréstimo de {{player}} acabou e ele voltou ao {{club}}.",
         "loan_home": "O empréstimo de {{player}} ao {{club}} acabou. Ele voltou ao seu elenco.",
-        "sell_on": "{{player}} foi vendido pelo {{club}}. Sua cláusula de venda rendeu {{fee}}."
+        "sell_on": "{{player}} foi vendido pelo {{club}}. Sua cláusula de venda rendeu {{fee}}.",
+        "window_open": "A janela de transferências em {{country}} está aberta até {{until}}.",
+        "window_closing": "A janela de transferências em {{country}} fecha em {{until}}. Compras com taxa e empréstimos param nessa data.",
+        "window_closed": "A janela de transferências em {{country}} fechou. Ela abre de novo em {{opensOn}}. Jogadores livres continuam disponíveis.",
+        "rival_bid": "O {{club}} ofereceu {{fee}} por {{player}}. Cubra a oferta até {{deadline}} ou o clube vende para eles.",
+        "lost_to_rival": "{{player}} foi para o {{club}} por {{fee}}. Sua negociação acabou.",
+        "pre_contract": "{{player}} assinou um pré-contrato ({{wage}} por semana, {{years}} temporadas). Ele deixa o {{club}} no fim da temporada dele.",
+        "pre_contract_joined": "{{player}} deixou o {{club}} e chegou ao seu elenco pelo pré-contrato.",
+        "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio)."
       }
+    },
+    "managerNews": {
+      "subject_one": "Notícia de técnicos na sua liga",
+      "subject_other": "{{count}} trocas de técnico na sua liga",
+      "sacked": "O {{club}} demitiu {{manager}}. Um interino assume.",
+      "hired": "O {{club}} contratou {{manager}}.",
+      "hiredInterim": "O {{club}} efetivou o interino {{manager}}."
     }
   },
   "finances": {
@@ -1707,7 +1745,10 @@
       "loanFeeOut": "Taxa de empréstimo paga ao {{club}}: {{player}}",
       "facilityInstalment": "Obra: {{facility}}",
       "boardFunding": "Verba da diretoria: {{facility}}",
-      "facilitiesUpkeep": "Manutenção do CT e da base"
+      "facilitiesUpkeep": "Manutenção do CT e da base",
+      "managerWage": "Salário do técnico",
+      "managerSeverance": "Multa rescisória do técnico",
+      "managerCompensation": "Compensação pelo técnico"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -1715,7 +1756,10 @@
     "tabFacilities": "Instalações",
     "facilities": "Obras",
     "facilitiesUpkeep": "Manutenção das instalações",
-    "boardFunding": "Verba da diretoria"
+    "boardFunding": "Verba da diretoria",
+    "kinds": {
+      "manager": "Salário do técnico"
+    }
   },
   "developmentScreen": {
     "squad": "Elenco",
@@ -1833,7 +1877,17 @@
       "empty": "Nenhum técnico ainda.",
       "hint": "Clique num técnico para ver os títulos. Pontos: ligas e copas nacionais pesadas pela força do país, títulos continentais e acessos.",
       "career": "Carreira",
-      "current": "atual"
+      "current": "atual",
+      "free": "Livres",
+      "noClub": "Sem clube",
+      "interim": "Interino",
+      "earnings": "Ganhos na carreira: {{amount}}",
+      "leftReason": {
+        "sacked": "demitido",
+        "moved": "saiu para outro clube",
+        "contract": "fim de contrato",
+        "interim": "interino"
+      }
     }
   },
   "players": {
@@ -1995,6 +2049,13 @@
       "offers": "Propostas",
       "none": "Nenhuma proposta no momento.",
       "hint": "Aguardar propostas avança os dias. Ligas, Estatísticas e Olheiro continuam abertos."
+    },
+    "offer": {
+      "wage": "Contrato",
+      "wageValue": "{{wage}}/sem",
+      "years_one": "{{count}} temporada",
+      "years_other": "{{count}} temporadas",
+      "compensation": "Compensação ao {{club}}: {{amount}} (já descontada)"
     }
   },
   "negotiation": {
@@ -2033,7 +2094,8 @@
       "squadFull": "Seu elenco está cheio.",
       "noClub": "Você está sem clube.",
       "generic": "Algo deu errado. Tente de novo.",
-      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele."
+      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele.",
+      "windowClosed": "A janela de transferências está fechada."
     },
     "history": {
       "title": "Rodadas de hoje",
@@ -2089,7 +2151,37 @@
       "soldTo": "Vendido para",
       "date": "Data",
       "offer": "Oferta",
-      "loanOffer": "Empréstimo, {{share}}% do salário"
+      "loanOffer": "Empréstimo, {{share}}% do salário",
+      "rivals": "Concorrência pelos seus alvos"
+    },
+    "rival": {
+      "title": "Concorrência",
+      "club": "Clube rival",
+      "deadline": "Prazo",
+      "line": "{{club}} ofereceu {{fee}} — o clube decide em {{date}}",
+      "preference": {
+        "wage": "Ele prefere o {{club}}: oferta salarial mais alta",
+        "prestige": "Ele prefere o {{club}}: clube maior",
+        "starter": "Ele prefere o {{club}}: mais chances de jogar"
+      },
+      "prefers": {
+        "wage": "O clube aceita, mas ele prefere a oferta salarial do {{club}}. Suba o salário para convencê-lo.",
+        "prestige": "O clube aceita, mas ele prefere ir para o {{club}}, um clube maior.",
+        "starter": "O clube aceita, mas ele espera jogar mais no {{club}}."
+      },
+      "lost": "Tarde demais: ele foi para o {{club}} por {{fee}}."
+    },
+    "preContract": {
+      "title": "Pré-contratos",
+      "tab": "Pré-contrato",
+      "wage": "Salário",
+      "years": "Temporadas",
+      "explain": "O contrato dele acaba em {{date}}. Assine agora, sem taxa: ele chega no fim da temporada dele.",
+      "send": "Oferecer pré-contrato",
+      "signed": "{{name}} assinou um pré-contrato. Ele chega no fim da temporada dele.",
+      "prefersCurrent": "Ele prefere renovar com o clube dele. Ofereça um salário melhor.",
+      "notEligible": "O contrato dele não acaba nos próximos seis meses.",
+      "hint": "dá para assinar um pré-contrato"
     }
   },
   "morale": {
@@ -2313,5 +2405,38 @@
       "standWhat": "o setor {{stand}} (+{{seats}} lugares)",
       "levelWhat": "{{what}} nível {{level}}"
     }
+  },
+  "transferWindows": {
+    "tab": "Janelas",
+    "openUntil": "Janela de transferências aberta até {{date}}",
+    "closedOpensOn": "Janela de transferências fechada — abre em {{date}}",
+    "closedOpensOnShort": "Janela fechada (abre em {{date}})",
+    "closed": "Janela fechada",
+    "loading": "Carregando janelas...",
+    "country": "País",
+    "current": "Agora",
+    "next": "Próxima",
+    "kind": {
+      "pre": "Pré-temporada",
+      "mid": "Meio da temporada"
+    },
+    "attention": {
+      "closing_one": "A janela de transferências fecha amanhã ({{date}})",
+      "closing_other": "A janela de transferências fecha em {{count}} dias ({{date}})",
+      "open": "Janela de transferências aberta até {{date}}"
+    }
+  },
+  "managerContract": {
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "renewed": "Você renovou o contrato.",
+    "declined": "Você recusou a renovação. Seu contrato acaba com a temporada.",
+    "noOffer": "Esta proposta não está mais disponível.",
+    "offerClosed": "A proposta não vale mais.",
+    "offerTerms_one": "{{wage}} por semana · {{count}} temporada",
+    "offerTerms_other": "{{wage}} por semana · {{count}} temporadas",
+    "validUntil": "Vale até {{date}}",
+    "attention": "A diretoria oferece um novo contrato",
+    "cardLine": "Contrato até {{year}} · {{wage}}/sem"
   }
 }

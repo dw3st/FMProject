@@ -64,7 +64,10 @@ describe("manager ranking at the rollover", () => {
     expect(league!.points).toBe(Math.round(100 * w!.weight));
 
     // Every Premier League manager got a season; promoted Championship clubs scored 20.
-    for (const id of plIds) expect(after.find((m) => m.squadId === id)!.seasons).toBe(1);
+    // (A club may sack its manager at the rollover, Etapa 25: the season goes to the one in charge.)
+    for (const id of plIds) {
+      expect(after.some((m) => m.seasons === 1 && (m.squadId === id || (m.clubs ?? []).some((c) => c.squadId === id && c.to === today)))).toBe(true);
+    }
     const index2 = await saveService.getSquadIndex(saveId);
     const promoted = [...championshipIds].filter((id) => index2.byId(id)?.leagueSlug === "premier_league");
     expect(promoted.length).toBeGreaterThan(0);

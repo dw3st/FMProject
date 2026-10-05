@@ -38,7 +38,9 @@ export function roundFeeDown(fee: number): number {
 export type OfferResponse =
   | { kind: "accept"; reason: TransferAcceptReason }
   | { kind: "counter"; counterFee: number }
-  | { kind: "reject"; reason: TransferRejectReason | "insulted" };
+  | { kind: "reject"; reason: TransferRejectReason | "insulted" }
+  /** Etapa 25: the seller accepts, but the player prefers a rival club (preferenceScore). */
+  | { kind: "prefers_rival"; clubName: string; reason: "wage" | "prestige" | "starter" };
 
 /**
  * The AI seller's answer to a bid (`docs/superpowers/specs/2026-10-04-negotiation-loans-design.md` §1):

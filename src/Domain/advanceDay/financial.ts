@@ -51,6 +51,8 @@ export function computeAdvanceDayMoney(args: {
    * `.claude/rules/game/negotiation.md`), added to the weekly wages line.
    */
   loanedOutWages?: number;
+  /** The human manager's weekly wage (`.claude/rules/game/jobs.md` → "Contrato do técnico"), charged on Mondays. */
+  managerWage?: number;
 }): LedgerEntry[] {
   const { currentDate, playerSquad, homeFixturesToday, fillRate } = args;
   if (!playerSquad) return [];
@@ -68,6 +70,9 @@ export function computeAdvanceDayMoney(args: {
     const weeklyStaff = squadStaffWages(playerSquad.staff, wageFactorOf(playerSquad));
     if (weeklyStaff > 0) {
       entries.push({ date: currentDate, kind: "staff", amount: -weeklyStaff, label: "Technical staff" });
+    }
+    if ((args.managerWage ?? 0) > 0) {
+      entries.push({ date: currentDate, kind: "manager", amount: -Math.round(args.managerWage!), label: "Manager wage" });
     }
     // Training ground and academy above the club's implied level (`.claude/rules/game/facilities.md`).
     const upkeep = weeklyUpkeep(playerSquad, wageRevenueBasisOf(playerSquad));

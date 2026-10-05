@@ -46,7 +46,7 @@ export const NEGOTIATION = {
 
   /** Rivals for the same target (Etapa 25, `.claude/rules/game/negotiation.md`). */
   RIVAL: {
-    /** Chance a candidate enters = BASE × need urgency × (0,5 + 0,5 × relative rating of the target). */
+    /** One candidate a day (drawn by urgency) enters with BASE × need urgency × (0,5 + 0,5 × relative rating of the target). */
     BASE: 0.25,
     MAX_PER_TARGET: 2,
     DEADLINE_DAYS: 3,

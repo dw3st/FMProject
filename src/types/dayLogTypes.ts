@@ -204,10 +204,22 @@ export interface TransferRef {
 
 export type StoredDayEvent = MatchEvent | StoredTrainingEvent | StoredRestEvent | TransferRef;
 
+/** A player changing club on the day (Etapa 25, `.claude/rules/game/transfer-windows.md`): fee transfers, loan starts, free signings. */
+export interface DayTransfer {
+  playerId: string;
+  from: string;
+  to: string;
+  fee: number;
+  kind: "transfer" | "loan" | "free" | "pre_contract";
+  date: string;
+}
+
 export interface StoredDayLog {
   saveId: string;
   date:   string;   // "YYYY-MM-DD"
   events: StoredDayEvent[];
+  /** Every player move of the day (checked against the buyer's window by the season smoke). */
+  transfers?: DayTransfer[];
 }
 
 // ── API-facing (resolved): full TransferEvent ──────────────────────────────

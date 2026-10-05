@@ -29,6 +29,11 @@ export interface JobOffer {
   leagueSize: number;
   /** Club prestige 0..1 (world percentile of strength + financial tier). */
   prestige: number;
+  /** The manager's contract on offer (Etapa 25): weekly wage, seasons. */
+  wage?: number;
+  seasons?: number;
+  /** Compensation the new club pays the current one (D3), deducted from `budget` on arrival. */
+  compensation?: number;
 }
 
 /** The manager was sacked and has no club (`SaveMeta.unemployed`). */

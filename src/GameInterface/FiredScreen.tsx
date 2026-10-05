@@ -53,9 +53,11 @@ export function FiredScreen() {
 
           <div>
             <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0 text-destructive">
-              {t("fired.youveFired")}
+              {ended.reason === "contract" ? t("fired.contractEnded") : t("fired.youveFired")}
             </h1>
-            <p className="text-muted-foreground mt-2 m-0">{t("fired.boardTerminated", { club: ended.clubName })}</p>
+            <p className="text-muted-foreground mt-2 m-0">
+              {ended.reason === "contract" ? t("fired.contractEndedBody", { club: ended.clubName }) : t("fired.boardTerminated", { club: ended.clubName })}
+            </p>
           </div>
 
           <div className="card-arcade rounded-md p-4 border border-destructive/30">

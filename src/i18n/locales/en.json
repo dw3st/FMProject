@@ -277,13 +277,16 @@
     "returnToMenu": "Return to Menu",
     "reason": {
       "board": "Board confidence hit rock bottom.",
-      "ultimatum": "The board's ultimatum was not met."
+      "ultimatum": "The board's ultimatum was not met.",
+      "contract": "The contract ran out and was not renewed."
     },
     "days": "{{count}} days",
     "positionValue": "#{{n}}",
     "noCareer": "No ended career.",
     "noAchievements": "No titles",
-    "seeOffers": "See offers"
+    "seeOffers": "See offers",
+    "contractEnded": "Contract Ended",
+    "contractEndedBody": "Your contract at {{club}} ended without a renewal. Other clubs will make you offers."
   },
   "staff": {
     "subtitle": "Three professionals shape development, recovery and scouting.",
@@ -980,7 +983,8 @@
       "job": "Job offers",
       "transfer": "Negotiation",
       "player": "Player",
-      "facilities": "Facilities"
+      "facilities": "Facilities",
+      "manager_news": "Managers"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1047,7 +1051,11 @@
         "ultimatum_met": "The board approves the reaction",
         "praise": "The board praises your work",
         "bonus": "Board bonus for the season",
-        "sacked": "You have been sacked"
+        "sacked": "You have been sacked",
+        "contract_offer": "The board offers you a new contract",
+        "contract_renewed": "Contract renewed",
+        "contract_ending": "Your contract is ending",
+        "contract_ended": "Your contract has ended"
       },
       "objective": "Objective for {{season}} in {{league}}: {{objective}}.",
       "warning": "Board confidence fell to {{board}}%. Results must improve.",
@@ -1057,8 +1065,15 @@
       "bonus": "The board released a {{amount}} bonus for the budget.",
       "sacked": {
         "board": "The board lost confidence in your work and terminated your contract.",
-        "ultimatum": "The ultimatum was not met. The board terminated your contract."
-      }
+        "ultimatum": "The ultimatum was not met. The board terminated your contract.",
+        "contract": "Your contract ended without a renewal."
+      },
+      "contract_offer_one": "The board offers you a new contract: {{wage}} a week for {{count}} season.",
+      "contract_offer_other": "The board offers you a new contract: {{wage}} a week for {{count}} seasons.",
+      "contract_renewed_one": "You signed a new contract: {{wage}} a week for {{count}} more season, until {{until}}.",
+      "contract_renewed_other": "You signed a new contract: {{wage}} a week for {{count}} more seasons, until {{until}}.",
+      "contract_ending": "Your contract ends with this season and will not be renewed. You will be free at the season rollover.",
+      "contract_ended": "Your contract ended without a renewal. You are free to accept other clubs' offers."
     },
     "job": {
       "subject": {
@@ -1074,15 +1089,38 @@
         "loan_bid": "{{club}} want {{player}} on loan",
         "loan_back": "{{player}} went back to {{club}}",
         "loan_home": "{{player}} is back from {{club}}",
-        "sell_on": "Sell-on clause: {{player}}"
+        "sell_on": "Sell-on clause: {{player}}",
+        "window_open": "Transfer window open",
+        "window_closing": "Transfer window closes on {{until}}",
+        "window_closed": "Transfer window closed",
+        "rival_bid": "{{club}} bid for {{player}}",
+        "lost_to_rival": "{{player}} joined {{club}}",
+        "pre_contract": "Pre-contract: {{player}}",
+        "pre_contract_joined": "{{player}} arrived on his pre-contract",
+        "pre_contract_failed": "Pre-contract fell through: {{player}}"
       },
       "body": {
         "bid": "{{club}} offer {{fee}} for {{player}}.",
         "loan_bid": "{{club}} want {{player}} on loan and would pay {{share}}% of his wage.",
         "loan_back": "The loan of {{player}} ended and he went back to {{club}}.",
         "loan_home": "The loan of {{player}} at {{club}} ended. He is back in your squad.",
-        "sell_on": "{{player}} was sold by {{club}}. Your sell-on clause paid {{fee}}."
+        "sell_on": "{{player}} was sold by {{club}}. Your sell-on clause paid {{fee}}.",
+        "window_open": "The transfer window in {{country}} is open until {{until}}.",
+        "window_closing": "The transfer window in {{country}} closes on {{until}}. Fee transfers and loans stop then.",
+        "window_closed": "The transfer window in {{country}} closed. It opens again on {{opensOn}}. Free agents can still be signed.",
+        "rival_bid": "{{club}} offered {{fee}} for {{player}}. Match it before {{deadline}} or the club sells him to them.",
+        "lost_to_rival": "{{player}} joined {{club}} for {{fee}}. Your negotiation is over.",
+        "pre_contract": "{{player}} signed a pre-contract ({{wage}} a week, {{years}} seasons). He leaves {{club}} at the end of his season.",
+        "pre_contract_joined": "{{player}} left {{club}} and joined your squad on his pre-contract.",
+        "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full)."
       }
+    },
+    "managerNews": {
+      "subject_one": "Manager news in your league",
+      "subject_other": "{{count}} manager changes in your league",
+      "sacked": "{{club}} sacked {{manager}}. An interim takes charge.",
+      "hired": "{{club}} appointed {{manager}}.",
+      "hiredInterim": "{{club}} confirmed interim {{manager}} as manager."
     }
   },
   "finances": {
@@ -1707,7 +1745,10 @@
       "loanFeeOut": "Loan fee paid to {{club}}: {{player}}",
       "facilityInstalment": "Works: {{facility}}",
       "boardFunding": "Board funding: {{facility}}",
-      "facilitiesUpkeep": "Training ground and academy upkeep"
+      "facilitiesUpkeep": "Training ground and academy upkeep",
+      "managerWage": "Manager wage",
+      "managerSeverance": "Manager severance",
+      "managerCompensation": "Manager compensation"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -1715,7 +1756,10 @@
     "tabFacilities": "Facilities",
     "facilities": "Facilities works",
     "facilitiesUpkeep": "Facilities upkeep",
-    "boardFunding": "Board funding"
+    "boardFunding": "Board funding",
+    "kinds": {
+      "manager": "Manager wage"
+    }
   },
   "developmentScreen": {
     "squad": "Squad",
@@ -1833,7 +1877,17 @@
       "empty": "No managers yet.",
       "hint": "Click a manager to see his titles. Points: league titles and national cups weighted by the country's strength, continental titles and promotions.",
       "career": "Career",
-      "current": "now"
+      "current": "now",
+      "free": "Free",
+      "noClub": "No club",
+      "interim": "Interim",
+      "earnings": "Career earnings: {{amount}}",
+      "leftReason": {
+        "sacked": "sacked",
+        "moved": "left for another club",
+        "contract": "contract ended",
+        "interim": "interim spell"
+      }
     }
   },
   "players": {
@@ -1995,6 +2049,13 @@
       "offers": "Offers",
       "none": "No offers right now.",
       "hint": "Wait for offers advances the days. Leagues, Stats and Scout stay open."
+    },
+    "offer": {
+      "wage": "Contract",
+      "wageValue": "{{wage}}/wk",
+      "years_one": "{{count}} season",
+      "years_other": "{{count}} seasons",
+      "compensation": "Compensation to {{club}}: {{amount}} (already deducted)"
     }
   },
   "negotiation": {
@@ -2033,7 +2094,8 @@
       "squadFull": "Your squad is full.",
       "noClub": "You have no club.",
       "generic": "Something went wrong. Try again.",
-      "squadDepth": "You cannot let him go: your squad would be left without cover in his position."
+      "squadDepth": "You cannot let him go: your squad would be left without cover in his position.",
+      "windowClosed": "The transfer window is closed."
     },
     "history": {
       "title": "Today's rounds",
@@ -2089,7 +2151,37 @@
       "soldTo": "Sold to",
       "date": "Date",
       "offer": "Offer",
-      "loanOffer": "Loan, {{share}}% of wage"
+      "loanOffer": "Loan, {{share}}% of wage",
+      "rivals": "Competition for your targets"
+    },
+    "rival": {
+      "title": "Competition",
+      "club": "Rival club",
+      "deadline": "Deadline",
+      "line": "{{club}} offered {{fee}} — the seller decides on {{date}}",
+      "preference": {
+        "wage": "He prefers {{club}}: the better wage offer",
+        "prestige": "He prefers {{club}}: the bigger club",
+        "starter": "He prefers {{club}}: more chances to play"
+      },
+      "prefers": {
+        "wage": "The club accepts, but he prefers {{club}}'s wage offer. Raise the wage to win him over.",
+        "prestige": "The club accepts, but he prefers to join {{club}}, a bigger club.",
+        "starter": "The club accepts, but he expects to play more at {{club}}."
+      },
+      "lost": "Too late: he joined {{club}} for {{fee}}."
+    },
+    "preContract": {
+      "title": "Pre-contracts",
+      "tab": "Pre-contract",
+      "wage": "Wage",
+      "years": "Seasons",
+      "explain": "His contract ends on {{date}}. Sign him now for free: he joins at the end of his season.",
+      "send": "Offer pre-contract",
+      "signed": "{{name}} signed a pre-contract. He joins at the end of his season.",
+      "prefersCurrent": "He would rather renew with his club. Offer a better wage.",
+      "notEligible": "His contract does not end in the next six months.",
+      "hint": "a pre-contract is possible"
     }
   },
   "morale": {
@@ -2313,5 +2405,38 @@
       "standWhat": "the {{stand}} stand (+{{seats}} seats)",
       "levelWhat": "{{what}} level {{level}}"
     }
+  },
+  "transferWindows": {
+    "tab": "Windows",
+    "openUntil": "Transfer window open until {{date}}",
+    "closedOpensOn": "Transfer window closed — opens on {{date}}",
+    "closedOpensOnShort": "Window closed (opens on {{date}})",
+    "closed": "Window closed",
+    "loading": "Loading windows...",
+    "country": "Country",
+    "current": "Now",
+    "next": "Next",
+    "kind": {
+      "pre": "Pre-season",
+      "mid": "Mid-season"
+    },
+    "attention": {
+      "closing_one": "Transfer window closes tomorrow ({{date}})",
+      "closing_other": "Transfer window closes in {{count}} days ({{date}})",
+      "open": "Transfer window open until {{date}}"
+    }
+  },
+  "managerContract": {
+    "accept": "Accept",
+    "decline": "Decline",
+    "renewed": "You renewed your contract.",
+    "declined": "You turned the renewal down. Your contract ends with the season.",
+    "noOffer": "This offer is no longer available.",
+    "offerClosed": "The offer is no longer valid.",
+    "offerTerms_one": "{{wage}} a week · {{count}} season",
+    "offerTerms_other": "{{wage}} a week · {{count}} seasons",
+    "validUntil": "Valid until {{date}}",
+    "attention": "The board offers you a new contract",
+    "cardLine": "Contract until {{year}} · {{wage}}/wk"
   }
 }

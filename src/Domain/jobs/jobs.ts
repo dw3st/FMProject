@@ -197,10 +197,12 @@ export function pickOfferingClubs(args: {
   home: { country: string | null; continent: string | null };
   count: number;
   rng: () => number;
+  /** Clubs with a vacant manager's job weigh × VACANCY_WEIGHT (Etapa 25). */
+  vacant?: Set<string>;
 }): OfferCandidate[] {
   const pool = args.candidates.map((c) => ({
     c,
-    w: locationWeight(c, args.home)
+    w: (args.vacant?.has(c.squadId) ? JOBS.VACANCY_WEIGHT : 1) * locationWeight(c, args.home)
       * Math.exp(-((c.prestige - args.band.target) ** 2) / (2 * args.band.sigma ** 2)),
   }));
   const out: OfferCandidate[] = [];
@@ -297,14 +299,18 @@ export function moveHumanManager(
   managers: ManagerRecord[],
   args: { toSquadId: string; fromSquadId: string | null; fromClubName?: string; date: string },
 ): ManagerRecord[] {
-  const out: ManagerRecord[] = managers.map((m) => {
+  const out: ManagerRecord[] = [];
+  for (const m of managers) {
     if (m.isPlayer) {
       const clubs = closePassage(m.clubs, args.date, "moved");
-      return cleanRecord({ ...m, squadId: args.toSquadId, freeSince: undefined, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] });
+      out.push(cleanRecord({ ...m, squadId: args.toSquadId, freeSince: undefined, clubs: [...clubs, { squadId: args.toSquadId, from: args.date }] }));
+    } else if (m.squadId === args.toSquadId) {
+      // An interim with nothing to his name just disappears (as when an AI club hires).
+      if (!(m.interim && m.points === 0 && m.titles.length === 0)) out.push(toFree(m, args.date, m.interim ? "interim" : "moved"));
+    } else {
+      out.push(m);
     }
-    if (m.squadId === args.toSquadId) return toFree(m, args.date, "moved");
-    return m;
-  });
+  }
   if (args.fromSquadId && !out.some((m) => !m.isPlayer && m.squadId === args.fromSquadId)) {
     out.push(makeInterim(args.fromSquadId, args.fromClubName ?? args.fromSquadId, args.date, new Set(out.map((m) => m.id))));
   }

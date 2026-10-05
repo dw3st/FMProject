@@ -128,12 +128,16 @@ export function hireManager(
   return { managers: out, vacated };
 }
 
-/** Free managers out for more than RETIRE_AFTER_DAYS retire (kept in the file, off the pool). */
+/**
+ * Free managers out for more than RETIRE_AFTER_DAYS (two seasons; one season without ranking points)
+ * retire: kept in the file, off the pool and the ranking tab.
+ */
 export function retireStale(managers: ManagerRecord[], date: string): ManagerRecord[] {
   let changed = false;
   const out = managers.map((m) => {
     if (m.isPlayer || m.squadId || m.retired || !m.freeSince) return m;
-    if (daysBetween(m.freeSince, date) <= AI_MANAGERS.RETIRE_AFTER_DAYS) return m;
+    const limit = m.points > 0 ? AI_MANAGERS.RETIRE_AFTER_DAYS : AI_MANAGERS.RETIRE_NO_POINTS_AFTER_DAYS;
+    if (daysBetween(m.freeSince, date) <= limit) return m;
     changed = true;
     return { ...m, retired: true as const };
   });
@@ -222,7 +226,7 @@ export function chooseHire(r: HireRequest): { managerId: string; kind: "free" | 
   if (r.interim) {
     options.push({
       id: r.interim.managerId, kind: "interim",
-      s: score(r.interim) + ((r.interim.interimPpg ?? 0) >= h.INTERIM_PPG ? h.INTERIM_BONUS : 0),
+      s: score(r.interim) + ((r.interim.interimPpg ?? 0) >= h.INTERIM_PPG ? h.INTERIM_BONUS : -h.INTERIM_PENALTY),
     });
   }
   const best = options.sort((a, b) => b.s - a.s)[0];

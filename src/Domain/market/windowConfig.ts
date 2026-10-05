@@ -16,7 +16,7 @@ export const WINDOWS = {
   ATTENTION_DAYS: 7,
 
   /** AI market: attempts per open day over the whole world, scaled by the share of clubs whose window is open. */
-  ATTEMPTS_PER_OPEN_DAY: 28,
+  ATTEMPTS_PER_OPEN_DAY: 35,
   /** ...× this in the last DEADLINE_DAYS of a window (deadline day rush). */
   DEADLINE_MULT: 1.5,
   DEADLINE_DAYS: 5,

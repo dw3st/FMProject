@@ -44,7 +44,13 @@ export const clubHistoryRoutes = {
 
     const managers = await saveService.getManagers(saveId);
     const currentManager = managers.find((m) => m.squadId === squadId)?.name ?? null;
-    const pastManagers = [...new Set(history.seasons.map((s) => s.manager).filter((m): m is string => !!m))]
+    // Previous managers from their passages (`managers.json`, Etapa 25), most recent first, then the
+    // names of the season lines (a manager whose record is gone).
+    const fromPassages = managers
+      .flatMap((m) => (m.clubs ?? []).filter((c) => c.squadId === squadId && c.to).map((c) => ({ name: m.name, to: c.to! })))
+      .sort((a, b) => (a.to < b.to ? 1 : a.to > b.to ? -1 : 0))
+      .map((x) => x.name);
+    const pastManagers = [...new Set([...fromPassages, ...history.seasons.map((s) => s.manager).filter((m): m is string => !!m)])]
       .filter((m) => m !== currentManager);
 
     const body: ClubHistoryResponse = {

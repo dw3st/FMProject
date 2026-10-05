@@ -102,3 +102,50 @@ export function renewalDue(args: { until: string; seasonEnd: string; played: num
   if (args.until > args.seasonEnd || args.totalRounds <= 0) return false;
   return args.played >= args.totalRounds * MANAGER_CONTRACT.RENEWAL_PROGRESS;
 }
+
+export type ContractNoticeKind = "contract_offer" | "contract_ending";
+
+/**
+ * One day of the human manager's contract (pure): the board's renewal decision at 85% of the last
+ * season, the warning a week before a contract that will not continue ends. `notices` dedupe
+ * (`decided:<until>`, `warned:<until>`).
+ */
+export function contractDay(args: {
+  date: string;
+  contract: ManagerContract;
+  renewal?: ManagerRenewalOffer;
+  notices: string[];
+  board: number;
+  seasonEnd: string;
+  played: number;
+  totalRounds: number;
+  /** Weekly wage of today's reputation at this club (`managerWeeklyWage`). */
+  reputationWage: number;
+}): { renewal?: ManagerRenewalOffer; notices: string[]; message?: { kind: ContractNoticeKind; contract?: { wage: number; seasons: number } } } {
+  const { contract, date } = args;
+  const decided = `decided:${contract.until}`;
+  const warned = `warned:${contract.until}`;
+  let notices = args.notices;
+  if (!notices.includes(decided) && renewalDue({ until: contract.until, seasonEnd: args.seasonEnd, played: args.played, totalRounds: args.totalRounds })) {
+    notices = [...notices.filter((n) => n.endsWith(contract.until)), decided];
+    const offer = renewalDecision({ board: args.board, currentWage: contract.wage, reputationWage: args.reputationWage });
+    if (offer) {
+      return {
+        notices,
+        renewal: { offeredOn: date, expires: addDays(args.seasonEnd, 120), wage: offer.wage, seasons: offer.seasons },
+        message: { kind: "contract_offer", contract: offer },
+      };
+    }
+    return { notices, message: { kind: "contract_ending" } };
+  }
+  const ending = contract.until <= args.seasonEnd && date >= addDays(args.seasonEnd, -MANAGER_CONTRACT.END_NOTICE_DAYS);
+  if (ending && !notices.includes(warned)) {
+    return { ...(args.renewal ? { renewal: args.renewal } : {}), notices: [...notices, warned], message: { kind: "contract_ending" } };
+  }
+  return { ...(args.renewal ? { renewal: args.renewal } : {}), notices };
+}
+
+/** The contract after accepting a renewal: `seasons` more seasons at the offered wage. */
+export function renewedContract(contract: ManagerContract, offer: Pick<ManagerRenewalOffer, "wage" | "seasons">, date: string): ManagerContract {
+  return { ...contract, wage: offer.wage, until: addYearsIso(contract.until, offer.seasons), signed: date };
+}

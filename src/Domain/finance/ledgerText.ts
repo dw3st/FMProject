@@ -49,6 +49,8 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
       return ref?.facility ? { key: entry.kind === "facilities" ? "facilityInstalment" : "boardFunding", facility: ref.facility } : null;
     case "facilities_upkeep":
       return { key: "facilitiesUpkeep" };
+    case "manager":
+      return { key: ref?.stage === "severance" ? "managerSeverance" : ref?.stage === "compensation" ? "managerCompensation" : "managerWage" };
     case "club_change":
       return ref?.clubName ? { key: ref.stage === "leave" ? "clubLeave" : "clubArrive", club: ref.clubName } : null;
     case "prize": {

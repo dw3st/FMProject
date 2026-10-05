@@ -77,15 +77,30 @@ export function JobOfferCard({
         </div>
       </div>
 
-      <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 m-0">
+      <dl className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 m-0">
         <div className="min-w-0">
           <dt className={label}>{t("jobs.objective")}</dt>
           <dd className="m-0 text-sm text-foreground">{offer.objective ? objectiveText(offer.objective, t) : "—"}</dd>
         </div>
         <div className="min-w-0">
           <dt className={label}>{t("jobs.budget")}</dt>
-          <dd className="m-0 text-sm text-foreground tabular-nums">{formatFee(offer.budget)}</dd>
+          <dd className="m-0 text-sm text-foreground tabular-nums">
+            {formatFee(Math.max(0, offer.budget - (offer.compensation ?? 0)))}
+            {(offer.compensation ?? 0) > 0 && (
+              <span className="block text-muted-foreground">
+                {t("jobs.offer.compensation", { club: currentClubName ?? "", amount: formatFee(offer.compensation ?? 0) })}
+              </span>
+            )}
+          </dd>
         </div>
+        {offer.wage !== undefined && (
+          <div className="min-w-0">
+            <dt className={label}>{t("jobs.offer.wage")}</dt>
+            <dd className="m-0 text-sm text-foreground tabular-nums">
+              {t("jobs.offer.wageValue", { wage: formatFee(offer.wage) })} · {t("jobs.offer.years", { count: offer.seasons ?? 1 })}
+            </dd>
+          </div>
+        )}
         <div className="min-w-0">
           <dt className={label}>{t("jobs.squadStrength")}</dt>
           <dd className="m-0 text-sm text-foreground tabular-nums">

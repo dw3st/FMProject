@@ -80,6 +80,8 @@ export interface PreContract {
   playerName: string;
   fromClubId: string;
   fromClubName: string;
+  /** The human club that signed him (a pre-contract falls through if the manager changed club). */
+  toClubId: string;
   /** Weekly wage and seasons agreed. */
   wage: number;
   years: number;

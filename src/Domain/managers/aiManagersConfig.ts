@@ -47,7 +47,11 @@ export const AI_MANAGERS = {
     /** The interim gets +INTERIM_BONUS when the club earned ≥ INTERIM_PPG points per game under him. */
     INTERIM_BONUS: 10,
     INTERIM_PPG: 1.6,
+    /** ...otherwise −INTERIM_PENALTY: a club prefers a proper hire from the pool (keeps the pool small). */
+    INTERIM_PENALTY: 30,
   },
   /** A manager free for this many days (two seasons) retires (out of the pool and the ranking tab). */
   RETIRE_AFTER_DAYS: 730,
+  /** ...~nine months for a manager without ranking points (keeps the free pool under 0,1 × clubs). */
+  RETIRE_NO_POINTS_AFTER_DAYS: 270,
 } as const;

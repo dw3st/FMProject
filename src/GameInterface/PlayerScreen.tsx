@@ -18,6 +18,8 @@ import { CareerTable } from "@/GameInterface/Components/CareerTable";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
 import { historyRowFromLog } from "@/Domain/history/history";
+import { addDays } from "@/Domain/dates";
+import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import type { LeagueData } from "@/types/playerTypes";
 
 export function PlayerScreen({
@@ -29,7 +31,7 @@ export function PlayerScreen({
   league: string;
   club: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, squad: mySquad, loading: saveLoading, refresh } = useGameSave();
   const [player, setPlayer] = useState<RosterPlayer | null>(null);
   const [squadId, setSquadId] = useState("");
@@ -38,6 +40,8 @@ export function PlayerScreen({
   const [squadWageFactor, setSquadWageFactor] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
+  // Transfer window of the human club (Etapa 25): closed = no offer, but a pre-contract when eligible.
+  const windowsData = useTransferWindows();
   const [renewOpen, setRenewOpen] = useState(false);
   const lastTransferResult = useRef<TransferRecord | null>(null);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
@@ -87,6 +91,10 @@ export function PlayerScreen({
   const isOwnPlayer = !!player && !!mySquadId && player.squadId === mySquadId;
 
   const backTo = `/squad/${league}/${club}`;
+  const today = session?.currentDate ?? "";
+  const canPreContract = !!player?.contract && !!today && player.contract.until >= today && player.contract.until <= addDays(today, 183);
+  const offerState: "open" | "closed" | "precontract" =
+    !windowsData || windowsData.player.open ? "open" : canPreContract ? "precontract" : "closed";
 
   function handleTransferComplete(record: TransferRecord) {
     lastTransferResult.current = record;
@@ -127,11 +135,15 @@ export function PlayerScreen({
             !isOwnPlayer && !player.loan ? (
               <button
                 type="button"
+                disabled={offerState === "closed"}
                 onClick={() => setOfferTarget(displayPlayer)}
-                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0"
+                title={offerState === "closed" ? windowClosedText(t, i18n.language, windowsData?.player.opensOn) : undefined}
+                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Icon name="user-plus" className="w-4 h-4" />
-                {t("playerScreen.makeOffer")}
+                {offerState === "closed"
+                  ? windowClosedText(t, i18n.language, windowsData?.player.opensOn)
+                  : offerState === "precontract" ? t("negotiation.preContract.tab") : t("playerScreen.makeOffer")}
               </button>
             ) : isOwnPlayer && !player.loan ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
