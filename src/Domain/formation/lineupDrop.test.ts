@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { dropOnLineup } from "@/Domain/formation/lineupDrop";
+import { dropOnLineup, tabUnderDrag } from "@/Domain/formation/lineupDrop";
 
 const L = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"];
 
@@ -34,5 +34,26 @@ describe("dropOnLineup", () => {
     expect(dropOnLineup(L, { kind: "slot", index: 3 }, { kind: "bench", playerId: "z" }, blocked)).toBeNull();
     expect(dropOnLineup(L, { kind: "slot", index: 3 }, { kind: "slot", index: 3 })).toBeNull();
     expect(dropOnLineup(L, { kind: "bench", playerId: "y" }, { kind: "bench", playerId: "z" })).toBeNull();
+  });
+});
+
+describe("drag between pitch and bench (#72)", () => {
+  it("a suspended or injured bench player can't be dragged onto the pitch, nor swapped in from it", () => {
+    const blocked = (id: string) => id === "susp";
+    expect(dropOnLineup(L, { kind: "bench", playerId: "susp" }, { kind: "slot", index: 0 }, blocked)).toBeNull();
+    expect(dropOnLineup(L, { kind: "slot", index: 0 }, { kind: "bench", playerId: "susp" }, blocked)).toBeNull();
+  });
+
+  it("a starter dragged from the XI list onto another slot swaps them (same as on the pitch)", () => {
+    const r = dropOnLineup(L, { kind: "slot", index: 10 }, { kind: "slot", index: 0 })!;
+    expect(r[0]).toBe("k");
+    expect(r[10]).toBe("a");
+  });
+
+  it("hovering a squad-panel tab opens it", () => {
+    expect(tabUnderDrag("tab:bench")).toBe("bench");
+    expect(tabUnderDrag("tab:starting")).toBe("starting");
+    expect(tabUnderDrag("slot:3")).toBeNull();
+    expect(tabUnderDrag(null)).toBeNull();
   });
 });

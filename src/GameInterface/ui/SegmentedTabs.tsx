@@ -18,6 +18,8 @@ interface Props<K extends string> {
   fill?: boolean;
   className?: string;
   "aria-label"?: string;
+  /** Extra attributes per tab button (e.g. a `data-drop` target for drag and drop). */
+  tabProps?: (key: K) => Record<string, unknown>;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props<K extends string> {
  * (`.claude/rules/ui-standard.md` → Abas).
  */
 export function SegmentedTabs<K extends string>({
-  tabs, active, onChange, wrap, compact, fill, className = "", "aria-label": ariaLabel,
+  tabs, active, onChange, wrap, compact, fill, className = "", "aria-label": ariaLabel, tabProps,
 }: Props<K>) {
   return (
     <div
@@ -44,6 +46,7 @@ export function SegmentedTabs<K extends string>({
             aria-selected={on}
             disabled={tab.disabled}
             onClick={() => onChange(tab.key)}
+            {...tabProps?.(tab.key)}
             className={`${compact ? "px-3" : "px-4"} ${fill ? "flex-1" : ""} inline-flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-[0.08em] font-display transition-all cursor-pointer border-0 disabled:opacity-40 disabled:cursor-not-allowed ${
               on
                 ? "bg-card text-foreground shadow-sm"
