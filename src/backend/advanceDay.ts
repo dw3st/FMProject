@@ -1,3 +1,4 @@
+import { applyMoraleDay } from "@/backend/moraleWorld";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService, type SaveMeta } from "@/backend/SaveService";
@@ -26,6 +27,7 @@ import {
   buildContractMessage,
   buildRetirementMessage,
   buildTransferNegotiationMessage,
+  buildPlayerMessage,
   buildYouthMessage,
   buildTransferInMessage,
   buildTransferOutMessage,
@@ -716,6 +718,9 @@ export async function advanceOneDay(
     // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money.
     // Deferred like the rest: emitted after any `clearInbox` this day.
     const negotiationNews: Parameters<typeof buildTransferNegotiationMessage>[0][] = [];
+    // New AI transfer bids for the human club's players today: a player who wants the move asks to
+    // talk (`.claude/rules/game/morale.md`).
+    const moraleBids: { playerId: string; clubId: string; clubName: string }[] = [];
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
@@ -1209,6 +1214,7 @@ export async function advanceOneDay(
         },
       );
       for (const bid of newBids) {
+        if (bid.kind === "transfer") moraleBids.push({ playerId: bid.playerId, clubId: bid.clubId, clubName: bid.clubName });
         negotiationNews.push({
           date: currentDate, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
           playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
@@ -2177,6 +2183,17 @@ export async function advanceOneDay(
     if (newOffers.length > 0) jobOffers = mergeOffers(jobOffers, newOffers);
     const jobMessages: Parameters<typeof buildJobMessage>[0][] = newOffers.map((offer) => ({ date: currentDate, kind: "offer" as const, offer }));
 
+    // ── Morale of the human club (`.claude/rules/game/morale.md`): today's matches, bids, Monday ──
+    // After the market and the rollover (the squad as it ends the day); news deferred past `clearInbox`.
+    // The start-kit pre-simulation (`marketFrozen`) is the world before the career: no morale yet.
+    const moraleNews = !ended && meta.clubId && !unemployed && !options.marketFrozen
+      ? await applyMoraleDay(saveService, saveId, {
+          clubId: meta.clubId, date: currentDate,
+          events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
+          bids: moraleBids,
+        })
+      : [];
+
     // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
     if (seasonEnded) {
       await saveService.writeTransfers(saveId, []);
@@ -2194,6 +2211,7 @@ export async function advanceOneDay(
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
+    for (const msg of moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService);
     // Bids still pending when the inbox was cleared keep their message (like job offers).
     if (seasonEnded) {
       const mkB = await saveService.getMarket(saveId);
