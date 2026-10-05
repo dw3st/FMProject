@@ -1548,7 +1548,10 @@ try {
       const counter = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" },
         { action: "counter", fee: 30_000_000, sellOnPct: 20 });
       check(counter.status === 200, `negociação: counter on an inbox bid answered (${String(counter.body.status)})`);
-      const sale = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" }, { action: "accept" });
+      // A counter inside the AI club's max closes the sale at once; otherwise accept its answer.
+      const sale = counter.body.status === "sold"
+        ? counter
+        : await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" }, { action: "accept" });
       check(sale.status === 200 && sale.body.status === "sold", `negociação: inbox bid accepted, ${boughtPlayer.name} sold to ${buyer.name}`);
       const sold = (await plain().getSquadById(saveId, buyer.id))!.players.find((p) => p.id === boughtPlayer.id);
       check(sold?.sellOn?.clubId === playerSquadId && sold.sellOn.pct === 20, "negociação: the human keeps a 20% sell-on clause on the sold player");
