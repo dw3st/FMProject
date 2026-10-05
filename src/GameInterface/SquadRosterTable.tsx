@@ -16,6 +16,8 @@ import { Icon } from "@/GameInterface/Icons";
 import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { moraleBand, moraleOf } from "@/Domain/morale/morale";
+import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
 type RosterRow = DisplayPlayer & { morale: number };
 
@@ -33,7 +35,9 @@ export function SquadRosterTable({
   onOffer: (player: DisplayPlayer) => void;
 }) {
   const { t } = useTranslation();
-  const { currentDate } = useGameSave();
+  const { currentDate, session } = useGameSave();
+  // Same star index as the player profile (`useStarPlayers`) — the list used to show none.
+  const stars = useStarPlayers(session?.saveId, currentDate);
   const [sortKey, setSortKey] = useState<string>("pos");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   // Morale (`.claude/rules/game/morale.md`) exists only for the human club's own squad.
@@ -173,6 +177,7 @@ export function SquadRosterTable({
               >
                 {player.name}
               </a>
+              {stars.get(player.id) && <StarBadge kind={stars.get(player.id)} className="ml-1.5 align-middle" />}
               {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
             </div>
@@ -227,7 +232,6 @@ function RatingBadge({ value }: { value: number }) {
   }
   return (
     <span className={`inline-flex items-center gap-1 text-sm font-black tabular-nums ${ratingTextClass10(value)}`}>
-      <Icon name="star" className="w-3 h-3 fill-current" />
       {value.toFixed(1)}
     </span>
   );
