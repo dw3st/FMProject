@@ -39,18 +39,33 @@ export const HAIR_COLORS: Record<HairColor, string> = {
   grey: "#9c9a98",
 };
 
-/** facesjs male hair ids by length (`bald` keeps a shaved head). */
+/**
+ * facesjs male hair ids by length, chosen after rendering every id (`scripts/faces/renderSheet.ts`):
+ * flat tops ("high", "juice"), mohawks and the bowl-shaped "afro" were dropped. `TEXTURED_HAIR_IDS`
+ * (curly fades, curls, locs) is used for the darker skin tones (5–7); the labels carry no hair texture.
+ */
 export const HAIR_IDS: Record<HairLength, readonly string[]> = {
-  bald: ["bald", "short-bald"],
-  short: ["crop", "crop-fade", "crop-fade2", "short", "short2", "short3", "short-fade", "short-fade-2", "spike", "spike2", "faux-hawk", "fauxhawk-fade", "blowoutFade", "curlyFade1", "curlyFade2", "messy-short", "tall-fade"],
-  medium: ["messy", "shaggy1", "shaggy2", "curly", "curly2", "curly3", "middle-part", "parted", "hair", "afro", "juice"],
-  long: ["longHair", "dreads", "afro2"],
+  bald: ["bald"],
+  short: ["crop", "crop-fade", "crop-fade2", "short", "short2", "short3", "short-fade", "spike2", "messy-short", "tall-fade"],
+  medium: ["messy", "shaggy1", "shaggy2", "middle-part", "parted", "hair"],
+  long: ["longHair"],
 };
+export const TEXTURED_HAIR_IDS: Record<HairLength, readonly string[]> = {
+  bald: ["bald"],
+  short: ["curlyFade1", "curlyFade2", "short-fade", "short-fade-2", "crop-fade"],
+  medium: ["curly", "curly2", "curly3", "afro2"],
+  long: ["dreads"],
+};
+const TEXTURED_FROM_SKIN = 5;
+
+export function hairIdsFor(length: HairLength, skin: SkinTone | undefined): readonly string[] {
+  return (skin ?? 0) >= TEXTURED_FROM_SKIN ? TEXTURED_HAIR_IDS[length] : HAIR_IDS[length];
+}
 
 export const FACIAL_HAIR_IDS: Record<BeardKind, readonly string[]> = {
   none: ["none"],
   stubble: ["goatee-thin", "goatee-thin-stache", "soul-stache", "mustache-thin", "chin-strap", "chin-strapStache"],
-  full: ["beard1", "beard2", "beard3", "beard4", "beard5", "beard6", "fullgoatee", "fullgoatee2", "loganGoatee2Stache", "honest-abe-stache"],
+  full: ["beard1", "beard2", "beard3", "beard4", "fullgoatee", "fullgoatee2", "loganGoatee2Stache", "honest-abe-stache"],
 };
 
 /** Picks one id from a list with the face RNG (deterministic per player). */
@@ -75,7 +90,8 @@ export function applyFaceTraits(face: TraitFace, traits: FaceTraits | undefined,
   if (traits.skin) face.body.color = SKIN_COLORS[traits.skin];
   if (traits.hairColor) face.hair.color = HAIR_COLORS[traits.hairColor];
   if (traits.hairLength) {
-    if (!HAIR_IDS[traits.hairLength].includes(face.hair.id)) face.hair.id = pick(HAIR_IDS[traits.hairLength], rng);
+    const ids = hairIdsFor(traits.hairLength, traits.skin);
+    if (!ids.includes(face.hair.id)) face.hair.id = pick(ids, rng);
     // Long straight hair needs its back layer; any other length drops a random one.
     if (face.hairBg) face.hairBg.id = face.hair.id === "longHair" ? "longHair" : "none";
   }
