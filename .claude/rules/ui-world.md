@@ -77,3 +77,23 @@ max-age=31536000, immutable` e `Content-Security-Policy: default-src 'none'; sty
 import do `facesjs`). Mudou a saída do rosto (versão do `facesjs`, recorte, mistura por região)? Suba
 `FACE_VERSION`, senão o navegador continua com o SVG antigo. O `import()` dinâmico anterior não era
 separado pelo bundler do `Bun.serve` em produção (+346 KB min / +110 KB gzip na ficha e no painel).
+
+### Traços reais (piloto, ESPN)
+
+Piloto em 4 ligas (`brazil_serie_a`, `premier_league`, `la_liga`, `ligue_1`): cor da pele (7 tons) e
+cor do cabelo tirados das fotos da ESPN. **A foto nunca é guardada no repositório nem publicada**; só os
+parâmetros derivados.
+
+- `bun scripts/fetchHeadshots.ts [--leagues a,b] [--probe]`: mapeia nossos jogadores para atletas da ESPN
+  (`scripts/faces/athleteMap.ts`: `es_<id>`, `playerOverrides.json` ou nome único dentro do time da ESPN
+  do clube) → `data_process/espn/faceAthletes.json`; lê nos elencos da API quem tem foto e baixa em
+  `data_process/espn/headshots/` (no `.gitignore`).
+- `bun scripts/extractFaceTraits.ts [--debug]`: heurística sobre a imagem (`scripts/faces/traits.ts`,
+  decodificador PNG próprio em `png.ts`) → `data_process/espn/faceTraits.json`, chaveado pelo NOSSO id.
+  Copiar para `src/example_data/faceTraits.json` (e `src/Data`). Comprimento do cabelo e barba são medidos
+  mas descartados (`DROP`): acerto perto do acaso.
+- `bun scripts/faces/evalTraits.ts`: acerto contra os rótulos manuais (`data_process/espn/faceTraitLabels.txt`).
+- Uso: `faces.ts` lê `src/Data/faceTraits.json` uma vez (`faceTraitsOf`); `playerFaceSvg(..., traits)` chama
+  `applyFaceTraits` (`src/Domain/faces/faceTraits.ts`) depois do `generate`, com RNG próprio, então o
+  resto do rosto não muda. Jogador sem traços = rosto de antes. Mudou o arquivo? Suba `FACE_VERSION`.
+- Cobertura: a ESPN só tem foto de ~4% dos jogadores dessas ligas (91 de 2255 mapeados, 2026-10-05).

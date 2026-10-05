@@ -1,0 +1,78 @@
+/**
+ * Face traits of real players (pilot), derived offline from ESPN headshots by
+ * `scripts/extractFaceTraits.ts`. Only these parameters are kept — never the photo.
+ *
+ * Every trait is optional: an unreliable one is simply left out and the face falls back to the
+ * seeded, nationality-based draw (`faceProfile.ts`).
+ */
+
+/** 1 = lightest … 7 = darkest. */
+export type SkinTone = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type HairColor = "black" | "darkBrown" | "brown" | "blond" | "red" | "grey";
+export type HairLength = "bald" | "short" | "medium" | "long";
+export type BeardKind = "none" | "stubble" | "full";
+
+export interface FaceTraits {
+  skin?: SkinTone;
+  hairColor?: HairColor;
+  hairLength?: HairLength;
+  beard?: BeardKind;
+}
+
+/** Skin colours, light → dark: the facesjs race palettes in order, plus one tone between them (3). */
+export const SKIN_COLORS: Record<SkinTone, string> = {
+  1: "#f2d6cb",
+  2: "#ddb7a0",
+  3: "#cf9f83",
+  4: "#bb876f",
+  5: "#a67358",
+  6: "#74453d",
+  7: "#5c3937",
+};
+
+export const HAIR_COLORS: Record<HairColor, string> = {
+  black: "#272421",
+  darkBrown: "#3D2314",
+  brown: "#5A3825",
+  blond: "#CC9966",
+  red: "#B55239",
+  grey: "#9c9a98",
+};
+
+/** facesjs male hair ids by length (`bald` keeps a shaved head). */
+export const HAIR_IDS: Record<HairLength, readonly string[]> = {
+  bald: ["bald", "short-bald"],
+  short: ["crop", "crop-fade", "crop-fade2", "short", "short2", "short3", "short-fade", "short-fade-2", "spike", "spike2", "faux-hawk", "fauxhawk-fade", "blowoutFade", "curlyFade1", "curlyFade2", "messy-short", "tall-fade"],
+  medium: ["messy", "shaggy1", "shaggy2", "curly", "curly2", "curly3", "middle-part", "parted", "hair", "afro", "juice"],
+  long: ["longHair", "dreads", "afro2"],
+};
+
+export const FACIAL_HAIR_IDS: Record<BeardKind, readonly string[]> = {
+  none: ["none"],
+  stubble: ["goatee-thin", "goatee-thin-stache", "soul-stache", "mustache-thin", "chin-strap", "chin-strapStache"],
+  full: ["beard1", "beard2", "beard3", "beard4", "beard5", "beard6", "fullgoatee", "fullgoatee2", "loganGoatee2Stache", "honest-abe-stache"],
+};
+
+/** Picks one id from a list with the face RNG (deterministic per player). */
+function pick<T>(list: readonly T[], rng: () => number): T {
+  return list[Math.floor(rng() * list.length) % list.length]!;
+}
+
+/** Minimal shape of the facesjs face fields the traits override. */
+export interface TraitFace {
+  body: { color: string };
+  hair: { id: string; color: string };
+  facialHair: { id: string };
+}
+
+/**
+ * Overrides the drawn face with the real player's traits, in place. Absent traits keep the seeded
+ * draw. Uses its own RNG (from the player id) so the rest of the face is unchanged.
+ */
+export function applyFaceTraits(face: TraitFace, traits: FaceTraits | undefined, rng: () => number): void {
+  if (!traits) return;
+  if (traits.skin) face.body.color = SKIN_COLORS[traits.skin];
+  if (traits.hairColor) face.hair.color = HAIR_COLORS[traits.hairColor];
+  if (traits.hairLength && !HAIR_IDS[traits.hairLength].includes(face.hair.id)) face.hair.id = pick(HAIR_IDS[traits.hairLength], rng);
+  if (traits.beard && !FACIAL_HAIR_IDS[traits.beard].includes(face.facialHair.id)) face.facialHair.id = pick(FACIAL_HAIR_IDS[traits.beard], rng);
+}

@@ -9,14 +9,20 @@
  */
 import { faceToSvgString, generate } from "facesjs";
 import { faceRng, pickFaceRace } from "@/Domain/faces/faceProfile";
+import { applyFaceTraits, type FaceTraits } from "@/Domain/faces/faceTraits";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 
 const DEFAULT_COLORS = ["#4b5563", "#e5e7eb", "#111827"];
 
-/** Same id + nationality + colours → byte-identical SVG (full 400×600 facesjs portrait). */
+/**
+ * Same id + nationality + colours (+ traits) → byte-identical SVG (full 400×600 facesjs portrait).
+ * `traits` (real player's skin/hair, `faceTraits.ts`) override the seeded draw where present.
+ */
 export function playerFaceSvg(
   playerId: string,
   nationality: string | undefined | null,
   clubColors: readonly (string | undefined)[] | undefined,
+  traits?: FaceTraits,
 ): string {
   const rng = faceRng(playerId);
   const race = pickFaceRace(nationality, rng);
@@ -37,6 +43,7 @@ export function playerFaceSvg(
       },
       { gender: "male", race },
     );
+    applyFaceTraits(face, traits, mulberry32(seedFrom(`face-traits:${playerId}`)));
     return faceToSvgString(face);
   } finally {
     Math.random = original;
@@ -48,8 +55,9 @@ export function croppedPlayerFaceSvg(
   playerId: string,
   nationality: string | undefined | null,
   clubColors: readonly (string | undefined)[] | undefined,
+  traits?: FaceTraits,
 ): string {
-  return playerFaceSvg(playerId, nationality, clubColors)
+  return playerFaceSvg(playerId, nationality, clubColors, traits)
     .replace(/viewBox="[^"]*"/, 'viewBox="-80 40 560 560"')
     .replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="xMidYMin slice"')
     .replace(/ width="[^"]*"/, ' width="560"')

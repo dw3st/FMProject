@@ -57,3 +57,6 @@ results.json
 persistent/
 
 .superpowers/
+
+# Face pilot: ESPN photos are never committed
+data_process/espn/headshots/

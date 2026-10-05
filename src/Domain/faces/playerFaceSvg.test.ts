@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { croppedPlayerFaceSvg, playerFaceSvg } from "@/Domain/faces/playerFaceSvg";
 import { FACE_VERSION, faceUrl } from "@/Domain/faces/faceUrl";
 import { faceRegionOf, faceRng, pickFaceRace } from "@/Domain/faces/faceProfile";
+import { applyFaceTraits, HAIR_COLORS, HAIR_IDS, SKIN_COLORS } from "@/Domain/faces/faceTraits";
 
 describe("player faces", () => {
   test("same id, nationality and colours give the same SVG", () => {
@@ -63,5 +64,29 @@ describe("cropped face + url", () => {
     expect(q.get("nat")).toBe("Côte d'Ivoire");
     expect(q.get("colors")).toBe("DA291C,FFE500");
     expect(faceUrl("p", null, undefined)).toBe(`/api/faces/p.svg?v=${FACE_VERSION}`);
+  });
+});
+
+describe("real player traits", () => {
+  test("no traits gives the same face as before", () => {
+    expect(playerFaceSvg("player_42", "Brazil", ["#DA291C"], undefined)).toBe(playerFaceSvg("player_42", "Brazil", ["#DA291C"]));
+    expect(playerFaceSvg("player_42", "Brazil", ["#DA291C"], {})).toBe(playerFaceSvg("player_42", "Brazil", ["#DA291C"]));
+  });
+
+  test("skin tone and hair colour override the seeded draw, deterministically", () => {
+    const svg = playerFaceSvg("player_42", "England", ["#111111"], { skin: 7, hairColor: "blond" });
+    expect(svg).toContain(SKIN_COLORS[7]);
+    expect(svg).toContain(HAIR_COLORS.blond);
+    expect(svg).toBe(playerFaceSvg("player_42", "England", ["#111111"], { skin: 7, hairColor: "blond" }));
+  });
+
+  test("hair length and beard pick ids from their lists", () => {
+    const rng = () => 0.5;
+    const face = { body: { color: "#000" }, hair: { id: "afro", color: "#000" }, facialHair: { id: "beard1" } };
+    applyFaceTraits(face, { hairLength: "short", beard: "none" }, rng);
+    expect(HAIR_IDS.short).toContain(face.hair.id);
+    expect(face.facialHair.id).toBe("none");
+    applyFaceTraits(face, { hairLength: "short" }, rng);
+    expect(HAIR_IDS.short).toContain(face.hair.id); // already short: kept
   });
 });

@@ -6,7 +6,10 @@
  * Deterministic → cached in memory (bounded) and sent as `immutable` for a year; the URL carries
  * `FACE_VERSION`, so a face change is a new URL.
  */
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { croppedPlayerFaceSvg } from "@/Domain/faces/playerFaceSvg";
+import type { FaceTraits } from "@/Domain/faces/faceTraits";
 import { faceRegionOf } from "@/Domain/faces/faceProfile";
 import {
   FACE_COLOR_RE,
@@ -16,6 +19,23 @@ import {
 } from "@/Domain/faces/faceUrl";
 
 const MAX_CACHE = 2000;
+
+/**
+ * Real players' face traits (pilot, `scripts/extractFaceTraits.ts`): world data, read once from
+ * `src/Data/faceTraits.json`. Missing file = no traits (every face is the seeded draw).
+ */
+const TRAITS_FILE = fileURLToPath(new URL("../Data/faceTraits.json", import.meta.url));
+let traitsMap: Record<string, FaceTraits> | null = null;
+export function faceTraitsOf(playerId: string): FaceTraits | undefined {
+  if (!traitsMap) {
+    try {
+      traitsMap = JSON.parse(readFileSync(TRAITS_FILE, "utf8")) as Record<string, FaceTraits>;
+    } catch {
+      traitsMap = {};
+    }
+  }
+  return Object.hasOwn(traitsMap, playerId) ? traitsMap[playerId] : undefined;
+}
 const cache = new Map<string, string>();
 
 export interface FaceRequest {
@@ -50,7 +70,7 @@ function renderFace(req: FaceRequest): string {
     cache.set(key, hit);
     return hit;
   }
-  const svg = croppedPlayerFaceSvg(req.playerId, req.nationality, req.colors);
+  const svg = croppedPlayerFaceSvg(req.playerId, req.nationality, req.colors, faceTraitsOf(req.playerId));
   cache.set(key, svg);
   if (cache.size > MAX_CACHE) cache.delete(cache.keys().next().value!);
   return svg;
