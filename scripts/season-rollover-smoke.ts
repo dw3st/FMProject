@@ -1421,9 +1421,8 @@ try {
       await plain().updateMeta(saveId, { jobOffers: [...(metaC.jobOffers ?? []), offer] });
       const { apiRoutes } = await import("@/backend/routes");
       const { devAutoLogin } = await import("@/backend/auth/AuthService");
-      const { recordSaveOwnership } = await import("@/backend/auth/saveOwnership");
-      const { user, session } = devAutoLogin("smoke-jobs@test.local");
-      recordSaveOwnership(saveId, user.id);
+      // The reborn section above already recorded the save's owner (smoke-reborn).
+      const { session } = devAutoLogin("smoke-reborn@test.local");
       const handler = apiRoutes["/api/saves/:saveId/jobs/:offerId" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
       const res = await handler(Object.assign(
         new Request(`http://localhost/api/saves/${saveId}/jobs/job_smoke`, {
