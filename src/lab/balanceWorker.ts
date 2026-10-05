@@ -8,6 +8,7 @@
  * Output : { type: 'progress' | 'result' } via postMessage
  */
 
+import { MORALE } from "@/Domain/morale/moraleConfig";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -101,7 +102,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -137,6 +138,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.fatigueSubstitutions        += src.fatigueSubstitutions;
   dst.injuries                    += src.injuries;
   dst.outOfPosition               += src.outOfPosition;
+  dst.morale                      += src.morale;
   dst.fouls                       += src.fouls;
   dst.yellowCards                 += src.yellowCards;
   dst.redCards                    += src.redCards;
@@ -201,6 +203,8 @@ interface LineupFit {
 
 /** Familiarity of each side with its own style (set per worker message): quickSim strength + engine execution. */
 let sideFamiliarity: { A?: number; B?: number } = {};
+/** Morale of each whole side (set per worker message): engine execution + quickSim strength. Absent = 65. */
+let sideMorale: { A?: number; B?: number } = {};
 
 function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
   return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
@@ -224,6 +228,8 @@ function runOneMatch(
   const teamB = emptyTeamRaw();
   teamA.outOfPosition = fit.poorA;
   teamB.outOfPosition = fit.poorB;
+  teamA.morale = sideMorale.A ?? MORALE.NEUTRAL;
+  teamB.morale = sideMorale.B ?? MORALE.NEUTRAL;
 
   if (simEngine === "quick") {
     const q = quickSimMatch({
@@ -237,6 +243,8 @@ function runOneMatch(
       knockout,
       homeFamiliarity: sideFamiliarity.A,
       awayFamiliarity: sideFamiliarity.B,
+      homeMorale: sideMorale.A,
+      awayMorale: sideMorale.B,
     });
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
@@ -286,6 +294,7 @@ function runOneMatch(
   const r = simulateMatch(squadA, squadB, formationA, formationB, fit.fullLineupA, fit.fullLineupB, {
     knockout,
     executionFamiliarity: sideFamiliarity,
+    morale: sideMorale,
   });
   const sA = r.teamStats.A;
   const sB = r.teamStats.B;
@@ -367,6 +376,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
     applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
     sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
+    sideMorale = { A: variantA.morale, B: variantB.morale };
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on

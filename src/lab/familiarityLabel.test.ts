@@ -11,3 +11,10 @@ describe("lab: familiarity in the variant label", () => {
     expect(variantAutoLabel(v({ familiarity: 100 }))).toBe("4-3-3 · Possession · fam 100");
   });
 });
+
+describe("lab: morale in the variant label", () => {
+  test("absent = no suffix; set = ' · mor N'", () => {
+    expect(variantAutoLabel(v({ morale: 25 }))).toBe("4-3-3 · Possession · mor 25");
+    expect(variantAutoLabel(v({ familiarity: 100, morale: 100 }))).toBe("4-3-3 · Possession · fam 100 · mor 100");
+  });
+});
