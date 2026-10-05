@@ -209,7 +209,8 @@ try {
     const { devAutoLogin } = await import("@/backend/auth/AuthService");
     const { recordSaveOwnership } = await import("@/backend/auth/saveOwnership");
     const { recordMoney } = await import("@/backend/FinancialService");
-    const { user, session } = devAutoLogin("smoke-facilities@test.local");
+    // The save has a single owner row: this user is reused by the reborn/negotiation/jobs sections below.
+    const { user, session } = devAutoLogin("smoke-reborn@test.local");
     recordSaveOwnership(saveId, user.id);
     const m = (await plain().getMeta(saveId))!;
     const sq = (await plain().getSquadById(saveId, playerSquadId))!;
@@ -1553,9 +1554,8 @@ try {
     // Forced reborn: a pending world-class record, accepted through the route.
     const { apiRoutes } = await import("@/backend/routes");
     const { devAutoLogin } = await import("@/backend/auth/AuthService");
-    const { recordSaveOwnership } = await import("@/backend/auth/saveOwnership");
-    const { user, session } = devAutoLogin("smoke-reborn@test.local");
-    recordSaveOwnership(saveId, user.id);
+    // The Instalações section above already recorded the save's owner (smoke-reborn).
+    const { session } = devAutoLogin("smoke-reborn@test.local");
     const template = humanFinal!.players[0]!;
     const legend = {
       id: "smoke_legend", name: "Smoke Legend", nationality: template.nationality ?? null, positions: ["ST"],
