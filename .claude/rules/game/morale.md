@@ -53,7 +53,7 @@ Visual: `.claude/rules/ui-standard.md`. Mecanismo de execução espelhado de `st
 | Insatisfeito | 25–39 | ×0,95 | +15% |
 | Revoltado | < 25 | ×0,9 | +15%, e recusa renovar sem promessa de renovação |
 
-**Partida:** `fator` = (moral − 65)/65 abaixo de 65 (−1 em 0) e 0,5 × (moral − 65)/35 acima (+0,5 em 100).
+**Partida:** `fator` = (moral − 65)/65 abaixo de 65 (−1 em 0) e (moral − 65)/35 acima (+1 em 100): simétrico, atributos de ×0,98 a ×1,02.
 Motor: atributos × (1 + 0,02 × fator), teto 10, por jogador, na montagem do titular e do banco (depois da
 execução da familiaridade). Em 65 / ausente a função devolve o **mesmo objeto**: nada muda por construção. O
 quickSim só aplica quando recebe a moral de um lado (`homeMorale`/`awayMorale`, o lab): linhas × (1 + 0,02 ×
@@ -67,8 +67,12 @@ fator). O avanço de dia nunca passa nada (quickSim é IA × IA).
   (`PUT .../squad-status`, `null` volta ao sugerido).
 - **Expectativa** (jogos completos em 5 oficiais): key 4–5, starter 3–4, rotation 2–3, backup 0–1, youth 0–1.
 - **Janela:** os minutos das últimas 5 partidas oficiais do clube (liga, copa, continental), por jogador
-  (0 quando não jogou); vale com ≥ 3 jogos, escalada para 5.
-- **Segunda-feira:** acima do topo da expectativa +1 (+2/+3 com 1/2 jogos a mais), dentro 0, abaixo −1,5 por jogo
+  (0 quando não jogou), com as mesmas saídas sintéticas do pós-jogo (lesionado sem substituto, expulso:
+  `substitutionsWithExits`); vale com ≥ 3 jogos, escalada para 5. Partida em que ele já estava lesionado ou suspenso
+  antes do jogo não entra na janela (nem conta para uma promessa de minutos). A janela zera na virada do país do
+  clube.
+- **Segunda-feira** (só se entrou partida nova na janela desde a última segunda; pausa e entressafra não mexem,
+  `moraleLog.newMatches`): acima do topo da expectativa +1 (+2/+3 com 1/2 jogos a mais), dentro 0, abaixo −1,5 por jogo
   faltando (arredondado, pelo menos −1, no máximo −6). Lesionado ou suspenso nunca perde por minutos.
 
 ## Variação (`moraleDay`, um dia, nesta ordem)
@@ -88,12 +92,15 @@ fator). O avanço de dia nunca passa nada (quickSim é IA × IA).
 
 **Pedido de transferência:** revoltado (< 25) numa segunda pede para sair: entra na lista de venda marcado
 (`SellCandidate.requested`) e a inbox avisa. Com o pedido, propostas da IA chegam mais (25% de chance extra por dia
-e faixa de nota ±1 em vez de ±0,5). É retirado numa segunda com moral ≥ 50 (sai da lista se só estava por pedido;
+e faixa de nota ±1 em vez de ±0,5), e o clube do jogador vende como um vendedor LOW da IA: pressão financeira 1,0
+no `saleContext` e a proposta limitada à taxa que esse vendedor aceita (`buildAiTransferBid` com `seller`). Um
+jogador que o técnico listou à mão nunca é marcado nem tirado da lista pelo pedido. É retirado numa segunda com moral ≥ 50 (sai da lista se só estava por pedido;
 uma promessa de saída aberta o mantém).
 
 ## Conversas (inbox `player`)
 
-O jogador pede conversa (no máximo 2 pedidos novos por semana, um aberto por jogador, 28 dias de silêncio depois
+O jogador pede conversa (no máximo 2 pedidos novos por semana somando todos os motivos, inclusive `wants_move`,
+`moraleClub.week`; um aberto por jogador, 28 dias de silêncio depois
 de respondido):
 
 | Motivo | Quando | Respostas |
@@ -135,7 +142,7 @@ de respondido):
 
 - `/test`: seletor de moral por time ("Roster" = cada jogador com a própria, ou 0/25/50/65/80/100 para o time
   inteiro, via override); o `EnergyPanel` mostra a moral média e o multiplicador de atributos; cenário `morale-gap`
-  (A em 100, B em 20 pelo próprio elenco); o painel QuickSim recebe a moral dos dois lados.
+  (A em 100, ×1,02; B em 20, pelo próprio elenco); o painel QuickSim recebe a moral dos dois lados.
 - `/lab`: `Variant.morale` (slider, ausente = 65) → `simulateMatch(..., { morale })` e `homeMorale/awayMorale` no
   quickSim; rótulo `· mor N`; linha "Morale" no `PairDetail` (`TeamRawStats.morale` → `avgMorale`).
 - Nenhuma estatística nova em `Statistics.ts`: o efeito aparece em vitórias, gols e chutes.
@@ -148,7 +155,7 @@ processos de 400 somados (`--out`/`--sum`); erro padrão da vitória ±1,2 p.p. 
 
 | Confronto | jogos | V / E / D do lado testado | V−D | gols | chutes |
 |---|---|---|---|---|---|
-| 100 × 65 | 1600 | 36,3 / 27,4 / 36,4 | −0,1 | 1,14–1,14 | 2,70–2,68 |
+| 100 × 65 | 1600 | 40,7 / 26,4 / 32,9 | +7,8 | 1,22–1,08 | 2,89–2,56 |
 | 25 × 65 | 800 | 34,0 / 26,4 / 39,6 | **−5,6** | 1,08–1,18 | 2,60–2,77 |
 | 65 × 65 (`--engine-seed 11`) | 200 | 35,0 / 27,5 / 37,5 | −2,5 | 1,20–1,27 | 2,65–2,76 |
 | sem moral nenhuma (`--baseline --engine-seed 11`) | 200 | 35,0 / 27,5 / 37,5 | −2,5 | 1,20–1,27 | 2,65–2,76 |
@@ -157,10 +164,10 @@ processos de 400 somados (`--out`/`--sum`); erro padrão da vitória ±1,2 p.p. 
   devolve o mesmo objeto, nenhum sorteio a mais).
 - **25 × 65:** −5,6 p.p. em V−D (≈ −2,8 p.p. em vitórias, a métrica da familiaridade (V − D)/2): dentro da faixa
   ±2–4 do spec. Atributos × 0,988.
-- **100 × 65:** sem efeito mensurável (−0,1 ± ~2,4). Com o fator +0,5 do spec os atributos sobem só 1% (a metade
-  da familiaridade 100, que mede +3,5 p.p.); a escala esperada seria ~+1,7 p.p. em (V − D)/2, abaixo do ruído e da
-  faixa ±2–4 do spec. Mantido como o spec define (lado positivo deliberadamente menor que o negativo).
-- quickSim (20 000 jogos pareados, mesma semente): 100 × 65 V−D 0,0; 25 × 65 −0,4; 65 × 65 e sem moral idênticos
+- **100 × 65 (fator +1, atributos ×1,02):** 1600 jogos, V/E/D 40,7 / 26,4 / 32,9, **V−D +7,8** (≈ +3,9 p.p. em
+  vitórias, (V − D)/2), gols 1,22–1,08, chutes 2,89–2,56: dentro da faixa ±2–4. Na primeira versão (fator +0,5,
+  ×1,01) o lado feliz não se distinguia do ruído (V−D −0,1 em 1600 jogos); por isso ficou simétrico.
+- quickSim (20 000 jogos pareados, mesma semente): 100 × 65 V−D +1,0 (fator +1); 25 × 65 −0,4; 65 × 65 e sem moral idênticos
   (37,1/25,9/37,0). O efeito no quickSim é pequeno (força × 1 ± 0,012, expoente de força 0,29) e só existe no lab.
 
 ```
@@ -184,7 +191,8 @@ responde os primeiros pedidos com uma promessa: minutos, renovação ou saída, 
 ## Limitações
 
 - O peso da torcida no resultado é ±1 fixo (sem clássico/expectativa).
-- O "propostas chegam mais" do pedido de transferência é só frequência e faixa de nota; o preço da proposta não muda.
 - Uma promessa de saída cumprida não dá +8 (o jogador já saiu); o empréstimo também conta como saída.
-- Equilíbrio: titular regular de clube que vence fica perto de 100 (minutos +1 e resultados positivos superam a
-  deriva de 5%); clube que perde muito fica perto de 65.
+- Equilíbrio: na temporada, titular regular de clube que vence ainda tende a 85–100 (minutos +1 por semana com jogo
+  e resultados positivos superam a deriva de 5%); nas pausas e na entressafra só a deriva age, puxando para 65.
+- Pedidos de conversa abertos na virada do país do jogador são reenviados depois do `clearInbox` (id estável
+  `player-talk-<talkId>`).
