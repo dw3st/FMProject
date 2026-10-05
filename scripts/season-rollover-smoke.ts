@@ -264,6 +264,13 @@ try {
   let wageLineChecks = 0;
   const wageLineMismatches: string[] = [];
 
+  // ── Moral (see "Moral" section below, `.claude/rules/game/morale.md`) ────
+  const moraleTrack = {
+    days: 0, outOfRange: 0, missing: 0, min: Infinity, max: -Infinity,
+    talksSeen: new Set<string>(), answered: [] as string[], resolved: new Set<string>(),
+  };
+  const { answerTalk } = await import("@/Domain/morale/morale");
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -440,6 +447,38 @@ try {
     const metaAfter = (await plain().getMeta(saveId))!;
     if (metaAfter.currentDate !== addOneDay(date)) {
       check(false, `day ${date}: currentDate went to ${metaAfter.currentDate} (expected ${addOneDay(date)})`);
+    }
+
+    // Moral: the human club's morale every day; the first talk requests are answered with a promise
+    // (minutes / renewal / sale, by reason) so at least one promise gets resolved during the run.
+    if (metaAfter.clubId === playerSquadId) {
+      const mine = await plain().getSquadById(saveId, playerSquadId);
+      if (mine) {
+        moraleTrack.days++;
+        for (const p of mine.players) {
+          if (p.morale === undefined) { moraleTrack.missing++; continue; }
+          if (!(p.morale >= 0 && p.morale <= 100)) moraleTrack.outOfRange++;
+          moraleTrack.min = Math.min(moraleTrack.min, p.morale);
+          moraleTrack.max = Math.max(moraleTrack.max, p.morale);
+        }
+        for (const t of mine.moraleClub?.talks ?? []) moraleTrack.talksSeen.add(t.id);
+        const open = (mine.moraleClub?.talks ?? [])[0];
+        if (open && moraleTrack.answered.length < 3) {
+          const answer = open.reason === "contract" ? "promise_renewal" : open.reason === "wants_move" ? "promise_sale" : "promise_minutes";
+          const r = answerTalk({
+            squad: mine, playerId: open.playerId, answer, date: metaAfter.currentDate!,
+            ...(answer === "promise_minutes" ? { minutes: 2 } : {}), ...(answer === "promise_sale" ? { days: 14 } : {}),
+            newId: () => `smoke-${moraleTrack.answered.length}-${open.id}`,
+          });
+          if (!("error" in r)) {
+            await plain().saveSquadById(saveId, r.squad);
+            moraleTrack.answered.push(`${open.playerName} (${open.reason} → ${answer})`);
+          }
+        }
+      }
+      for (const m of await plain().getInbox(saveId)) {
+        if (m.category === "player" && (m.kind === "promise_kept" || m.kind === "promise_broken")) moraleTrack.resolved.add(m.id);
+      }
     }
 
     // Which leagues rolled today (year advanced).
@@ -1645,6 +1684,23 @@ try {
     const back = mine3.players.find((p) => p.id === loanBid!.playerId);
     console.log(`  history row of the loaned-out player: ${JSON.stringify((back?.history ?? []).slice(-1))}`);
   }
+
+  // ── Moral (`.claude/rules/game/morale.md`) ──
+  // Morale present and in 0..100 on the human club every day; no AI club stores morale; at least one
+  // talk request and one resolved promise during the run.
+  console.log("\n── Moral ──");
+  console.log(`  ${moraleTrack.days} day(s) read; morale range ${moraleTrack.min}..${moraleTrack.max}; ` +
+    `${moraleTrack.talksSeen.size} talk request(s); answered: ${moraleTrack.answered.join("; ") || "none"}; ` +
+    `${moraleTrack.resolved.size} promise(s) resolved`);
+  check(moraleTrack.days > 0 && moraleTrack.missing === 0, `moral: every human-club player has morale every day (${moraleTrack.missing} missing)`);
+  check(moraleTrack.outOfRange === 0, `moral: morale within 0..100 (${moraleTrack.outOfRange} out of range)`);
+  {
+    const aiWithMorale = allFiles.filter(({ squad }) => squad.id !== playerSquadId
+      && (squad.moraleClub !== undefined || squad.players.some((p) => p.morale !== undefined || p.moraleLog !== undefined || p.squadStatus !== undefined)));
+    check(aiWithMorale.length === 0, `moral: no AI club stores morale (${aiWithMorale.length}: ${aiWithMorale.slice(0, 3).map(({ squad }) => squad.id).join(", ")})`);
+  }
+  check(moraleTrack.talksSeen.size > 0, `moral: at least one talk request during the run (${moraleTrack.talksSeen.size})`);
+  check(moraleTrack.resolved.size > 0, `moral: at least one promise resolved during the run (${moraleTrack.resolved.size})`);
 
   // ── Convites (`.claude/rules/game/jobs.md`) ──
   // A forced offer from a club of the calendar-year league that ends first (another country) is

@@ -1,3 +1,4 @@
+import { moraleDpMult } from "@/Domain/morale/morale";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
@@ -98,6 +99,30 @@ export function computeMinutesPlayed(
   return minutes;
 }
 
+/**
+ * The substitution log plus synthetic exits for players who left without a substitute: injured
+ * and removed outright (stopped at the injury minute) and sent off (stopped at the red card), so
+ * `computeMinutesPlayed` never credits them the full match. Shared by the post-match pipeline and
+ * the morale minutes window (`src/backend/moraleWorld.ts`).
+ */
+export function substitutionsWithExits(
+  substitutions: Pick<MatchSubstitution, "playerOutId" | "playerInId" | "matchMinute">[],
+  injuries: Pick<MatchInjury, "playerId" | "matchMinute">[],
+  cards: Pick<MatchCard, "playerId" | "card" | "matchMinute">[],
+): Pick<MatchSubstitution, "playerOutId" | "playerInId" | "matchMinute">[] {
+  const subbedOutIds = new Set(substitutions.map((s) => s.playerOutId));
+  const injuredOutIds = new Set(injuries.map((inj) => inj.playerId));
+  return [
+    ...substitutions,
+    ...injuries
+      .filter((inj) => !subbedOutIds.has(inj.playerId))
+      .map((inj) => ({ playerOutId: inj.playerId, playerInId: `__injured_out_${inj.playerId}`, matchMinute: inj.matchMinute })),
+    ...cards
+      .filter((c) => c.card === "red" && !subbedOutIds.has(c.playerId) && !injuredOutIds.has(c.playerId))
+      .map((c) => ({ playerOutId: c.playerId, playerInId: `__sent_off_${c.playerId}`, matchMinute: c.matchMinute })),
+  ];
+}
+
 export interface MatchSimResult {
   event: MatchEvent;
   updatedHome: Squad;
@@ -181,28 +206,9 @@ function finalizeSquadsAfterMatch(
   // so it can't accidentally start tracking a bogus "player" — `computeMinutesPlayed` only reads
   // `minutes[id]` for ids it was given in `playerIds` (now includes injured-removed players — see
   // both collectors, `buildMatchEvent`/`buildPlayedMatchRecording.ts`).
-  const subbedOutIds = new Set(substitutions.map((s) => s.playerOutId));
-  const injuredOutIds = new Set(injuries.map((inj) => inj.playerId));
   const minutesSubstitutions = fullMinutesForInjured
     ? substitutions
-    : [
-        ...substitutions,
-        ...injuries
-          .filter((inj) => !subbedOutIds.has(inj.playerId))
-          .map((inj) => ({
-            playerOutId: inj.playerId,
-            playerInId: `__injured_out_${inj.playerId}`,
-            matchMinute: inj.matchMinute,
-          })),
-        // Sent off: off the pitch at the red-card minute, no substitute.
-        ...cards
-          .filter((c) => c.card === "red" && !subbedOutIds.has(c.playerId) && !injuredOutIds.has(c.playerId))
-          .map((c) => ({
-            playerOutId: c.playerId,
-            playerInId: `__sent_off_${c.playerId}`,
-            matchMinute: c.matchMinute,
-          })),
-      ];
+    : substitutionsWithExits(substitutions, injuries, cards);
   const minutesPlayed = computeMinutesPlayed(Object.keys(playerStats), minutesSubstitutions, totalMinutes);
   const injuryByPlayer = new Map(injuries.map((inj) => [inj.playerId, inj]));
   const injuriesApplied: AppliedInjury[] = [];
@@ -315,7 +321,7 @@ function finalizeSquadsAfterMatch(
       const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
       const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
       const rating = playerRatings[p.id] ?? 0;
-      const { updatedPlayer, levelChanges } = applyDevelopment(p, rating, weights, devMult * rebornDpMult(p));
+      const { updatedPlayer, levelChanges } = applyDevelopment(p, rating, weights, devMult * rebornDpMult(p) * moraleDpMult(p));
       if (levelChanges) allChanges.push(levelChanges);
       return updatedPlayer;
     });

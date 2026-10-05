@@ -5,6 +5,7 @@ import { advanceUntilRoutes } from "@/backend/advanceUntil";
 import { transferRoutes } from "@/backend/transfers";
 import { contractRoutes } from "@/backend/contractRoutes";
 import { staffRoutes } from "@/backend/staffRoutes";
+import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
@@ -80,6 +81,7 @@ export const apiRoutes = {
   ...transferRoutes,
   ...contractRoutes,
   ...staffRoutes,
+  ...moraleRoutes,
   ...youthRoutes,
   ...rebornRoutes,
   ...managerRoutes,

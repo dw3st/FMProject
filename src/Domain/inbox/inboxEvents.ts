@@ -1,3 +1,4 @@
+import type { PlayerNews } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
@@ -17,6 +18,7 @@ import type {
   RetirementInboxMessage,
   JobInboxMessage,
   TransferInboxMessage,
+  PlayerInboxMessage,
 } from "@/types/inboxTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import { formatEurosText } from "@/Domain/money";
@@ -468,6 +470,25 @@ export function buildTransferNegotiationMessage(args: {
     category: "transfer",
     subject,
     preview: args.fee ? `€${formatCount(args.fee)}` : clubName,
+  };
+}
+
+/** Player talk / promise news (`.claude/rules/game/morale.md`). Subject in English (fallback; the screen translates). */
+export function buildPlayerMessage(args: PlayerNews): PlayerInboxMessage {
+  const { date, kind, playerName } = args;
+  const subject =
+    kind === "talk" ? `${playerName} wants to talk`
+    : kind === "promise_kept" ? `Promise kept: ${playerName}`
+    : kind === "promise_broken" ? `Promise broken: ${playerName}`
+    : `${playerName} asked for a transfer`;
+  return {
+    ...args,
+    id: kind === "talk" && args.talkId ? `player-talk-${args.talkId}` : `player-${date}-${kind}-${args.playerId}-${randomUUID()}`,
+    createdAt: date,
+    read: false,
+    category: "player",
+    subject,
+    preview: playerName,
   };
 }
 

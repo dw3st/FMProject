@@ -12,6 +12,7 @@ import { YouthTable } from "@/GameInterface/Components/YouthTable";
 import { ClubHistoryView } from "@/GameInterface/Components/ClubHistoryView";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOverview";
+import { MoralePromises } from "@/GameInterface/Morale/MoralePromises";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 
@@ -133,6 +134,14 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         ) : tab === "loans" && squad.id === mySquadId && session ? (
           <NegotiationOverview saveId={session.saveId} sections={["out", "in"]} />
         ) : (
+          <>
+          {squad.id === mySquadId && (
+            <MoralePromises
+              talks={squad.moraleClub?.talks ?? []}
+              promises={squad.moraleClub?.promises ?? []}
+              playerHref={(id) => `/player/${encodeURIComponent(league)}/${encodeURIComponent(club)}/${encodeURIComponent(id)}`}
+            />
+          )}
           <SquadRosterTable
             squad={squad}
             leagueSlug={league}
@@ -140,6 +149,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
             mySquadId={mySquadId}
             onOffer={setOfferTarget}
           />
+          </>
         )}
     </ScreenContainer>
 

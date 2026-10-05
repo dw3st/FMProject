@@ -10,7 +10,7 @@ import {
   dueLoans, outgoingLoanCount, loanAvailability, loanUntil, parentLoanWages, respondToLoanRequest, squadsAfterLoanEnd, squadsAfterLoanStart,
 } from "@/Domain/negotiation/loans";
 import { buildAiTransferBid, generateBidsForHuman, liveBids } from "@/Domain/negotiation/bids";
-import { squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
+import { saleContext, squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
 import { clubWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
@@ -278,6 +278,44 @@ describe("AI bids", () => {
     expect(again).toEqual([]);
     expect(liveBids(bids, "2027-03-07", human)).toEqual([]);
     expect(liveBids(bids, "2027-03-06", human).length).toBe(2);
+  });
+});
+
+describe("transfer request (morale)", () => {
+  test("a requested player draws bids from a wider band than a plain listing", () => {
+    const human = squad("h");
+    const buyer = squad("b", 6, { financialTier: "HIGH" });
+    const p = human.players.find((q) => q.id === "hcm0")!;
+    const rating = playerOverallRating(p);
+    // The need's band misses him by 0.8: outside the plain slack (0.5), inside the request's (1).
+    const profiles = {
+      b: {
+        squadId: "b", sellList: [], lastUpdateDay: "2027-03-01",
+        needs: [{ position: "Midfielder" as const, targetMin: rating + 0.8, targetMax: rating + 1.5, urgency: 1, budgetTier: "high" as const, intentType: "cover_need" as const }],
+      },
+    };
+    const args = (requested: boolean) => ({
+      date: "2027-03-01", rng: () => 0.1, humanSquad: human, squads: new Map([["b", buyer]]), profiles,
+      sellList: [{ playerId: p.id, priority: 1, ...(requested ? { requested: true as const } : {}) }], loanList: [], pending: [],
+      seasonEndOf: () => "2027-05-31", newId: () => "x",
+    });
+    expect(generateBidsForHuman(args(false))).toEqual([]);
+    expect(generateBidsForHuman(args(true)).map((b) => b.playerId)).toEqual([p.id]);
+  });
+});
+
+describe("transfer request pricing (morale)", () => {
+  test("a player who asked to leave is priced as a LOW-tier sale: cheaper bid, lower ceiling, pressure 1", () => {
+    const human = squad("h", 6, { finances: { broadcasting: 0, commercial: 0, total: 0, budget: 500_000_000, followers: 0 } });
+    const buyer = squad("b", 6, { financialTier: "HIGH", aiTransferBudget: 500_000_000 });
+    const p = human.players.find((q) => q.id === "hcm0")!;
+    const asked = { ...p, moraleLog: { minutes: [], trend: [], transferRequest: "2027-03-01" } };
+    const plain = buildAiTransferBid({ id: "1", player: p, buyer, date: "2027-03-01", rng: () => 0.99, seller: human })!;
+    const req = buildAiTransferBid({ id: "2", player: asked, buyer, date: "2027-03-01", rng: () => 0.99, seller: human })!;
+    expect(req.fee).toBeLessThan(plain.fee);
+    expect(req.maxFee!).toBeLessThan(plain.maxFee!);
+    expect(saleContext(asked, human, 1, { humanSeller: true }).financialPressure).toBe(1);
+    expect(saleContext(p, human, 1, { humanSeller: true }).financialPressure).toBe(0.1);
   });
 });
 

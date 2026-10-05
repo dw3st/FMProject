@@ -1,3 +1,4 @@
+import { afterListedForSale } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
 import { seasonLabel } from "@/Domain/history/history";
 import { saveService } from "@/backend/SaveService";
@@ -374,6 +375,14 @@ export const transferRoutes = {
 
         const updatedMarket = { ...baseMarket, playerSellList: newList };
         await saveService.saveMarket(saveId, updatedMarket);
+        // Listed without asking for it: −8 morale (`.claude/rules/game/morale.md`).
+        if (existingIdx < 0 && own) {
+          const human = await saveService.getSquadById(saveId, meta.clubId);
+          if (human) {
+            const after = afterListedForSale(human, playerId);
+            if (after !== human) await saveService.saveSquadById(saveId, after);
+          }
+        }
         return Response.json({ playerSellList: newList });
       });
     }

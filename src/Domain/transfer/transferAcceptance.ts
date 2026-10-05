@@ -1,3 +1,4 @@
+import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { closePartialSeason } from "@/Domain/history/history";
 import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import type { Squad, RosterPlayer, PlayerContract, SellOnClause } from "@/types/playerTypes";
@@ -84,6 +85,9 @@ export function squadDepthBlocked(player: RosterPlayer, fromSquad: Squad, humanS
   return false;
 }
 
+/** Seller pressure of the human club for a player with a transfer request (an AI LOW-tier seller). */
+export const REQUESTED_SALE_PRESSURE = 1.0;
+
 /** Everything of the seller's decision that does not depend on the fee. */
 export interface SaleContext {
   /** Fair price (`Player.price`). */
@@ -106,7 +110,11 @@ export function saleContext(
   // AI sellers: pressure from their financial tier (they keep no balance). The human club's
   // listed players are evaluated on its real budget.
   let financialPressure: number;
-  if (opts.humanSeller) {
+  if (opts.humanSeller && player.moraleLog?.transferRequest) {
+    // He asked to leave (`.claude/rules/game/morale.md`): the human club sells under the pressure of
+    // an AI LOW-tier seller.
+    financialPressure = REQUESTED_SALE_PRESSURE;
+  } else if (opts.humanSeller) {
     const balance = fromSquad.finances?.budget ?? 0;
     financialPressure = balance < 10_000_000 ? 1.0 : balance < 50_000_000 ? 0.5 : 0.1;
   } else {
@@ -151,9 +159,10 @@ export function squadsAfterAcceptedTransfer(
     : player;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { sellOn: _paid, loan: _loan, ...rest } = closed;
-  const updatedPlayer: RosterPlayer = {
+  // Morale belongs to the human club he leaves (`.claude/rules/game/morale.md`): a new club starts fresh.
+  const updatedPlayer: RosterPlayer = stripPlayerMorale({
     ...rest, squadId: buyerSquadId, ...(contract ? { contract } : {}), ...(sellOn ? { sellOn } : {}),
-  };
+  });
   return {
     selling: {
       ...sellingSquad,

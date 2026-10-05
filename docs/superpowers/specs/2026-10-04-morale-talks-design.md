@@ -29,7 +29,7 @@ Faixas: ≥ 80 **muito feliz**, 60–79 **contente**, 40–59 **neutro**, 25–3
 
 ## 3. Efeitos
 
-- **Partida (motor e quickSim):** atributos × (1 + 0,02 × fator), fator −1 (moral 0) … 0 (65) … +0,5 (100) —
+- **Partida (motor e quickSim):** atributos × (1 + 0,02 × fator), fator −1 (moral 0) … 0 (65) … +1 (100; era +0,5, sem efeito mensurável; medido 100 × 65 V−D +7,8 em 1600 jogos, 25 × 65 −5,6 em 800) —
   o mesmo mecanismo de execução da familiaridade (Etapa 15), em 65 nada muda.
 - **Desenvolvimento:** DP × 0,9 (revoltado) … 1,05 (muito feliz).
 - **Contrato:** insatisfeito pede +15% no salário; revoltado recusa renovar (a não ser com promessa).

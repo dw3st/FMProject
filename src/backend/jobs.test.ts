@@ -131,6 +131,9 @@ describe("jobs: sacking, offers, changing club", () => {
     const oldNow = (await saveService.getSquadById(meta.id, "33"))!;
     expect(oldNow.staff).toBeUndefined();
     expect(oldNow.styleFamiliarity).toBeUndefined();
+    // Morale ends with the club (`.claude/rules/game/morale.md`).
+    expect(oldNow.moraleClub).toBeUndefined();
+    expect(oldNow.players.every((p) => p.morale === undefined && !p.moraleLog)).toBe(true);
     expect(oldNow.youth).toBeUndefined();
     expect(oldNow.financialTier).toBeDefined();
     expect(oldNow.aiTransferBudget).toBeGreaterThan(0);
@@ -141,6 +144,8 @@ describe("jobs: sacking, offers, changing club", () => {
     const mine = (await saveService.getSquadById(meta.id, target))!;
     expect(Object.keys(mine.staff ?? {}).length).toBe(3);
     expect(mine.styleFamiliarity?.balanced).toBe(75);
+    expect(mine.moraleClub).toEqual({ talks: [], promises: [] });
+    expect(mine.players.every((p) => p.morale === 65)).toBe(true);
     expect(mine.financialTier).toBeUndefined();
     expect(mine.aiTransferBudget).toBeUndefined();
     expect(mine.finances!.budget).toBe(7_777_777);

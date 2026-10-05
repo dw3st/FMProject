@@ -4,7 +4,8 @@ import { withSaveLock } from "@/backend/saveLock";
 import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
-import { buildContractMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
+import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
+import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal } from "@/Domain/morale/morale";
 
 /**
  * `POST /api/saves/:saveId/players/:playerId/renew` `{ wage, years }` — renew a player of the
@@ -47,6 +48,10 @@ export const contractRoutes = {
       if (!out && player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+      // A furious player only renews with an open renewal promise (`.claude/rules/game/morale.md`).
+      if (!out && refusesRenewal(squad, player)) {
+        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date) }, { status: 400 });
+      }
       const check = evaluateContractOffer({ wage, years }, player, squad, date);
       if (!check.accepted) {
         return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
@@ -62,10 +67,13 @@ export const contractRoutes = {
         await saveService.saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === playerId ? { ...p, contract } : p)) });
         await saveService.saveMarket(saveId, { ...market!, loans: (market!.loans ?? []).map((l) => (l === out ? { ...l, wage } : l)) });
       } else {
-        await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
+        // Renewal accepted: +6 morale, and an open renewal promise is kept (`morale.md`).
+        const renewed = afterRenewal({
           ...squad,
           players: squad.players.map((p) => (p.id === playerId ? { ...p, contract } : p)),
-        });
+        }, playerId, date);
+        await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, renewed.squad);
+        for (const n of renewed.news) await emitInboxMessage(saveId, buildPlayerMessage(n), saveService);
       }
       await emitInboxMessage(
         saveId,
@@ -105,7 +113,14 @@ export const contractRoutes = {
     }
     if (!player) return Response.json({ error: "player not found" }, { status: 404 });
     const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
-    return Response.json({ demand: contractDemand(player, mine, date) });
+    // Own player: the morale behind the demand (an unhappy one asks more, a furious one refuses).
+    const own = !from || from === mine.id ? mine.players.find((p) => p.id === playerId) : undefined;
+    return Response.json({
+      demand: contractDemand(player, mine, date),
+      ...(own && own.morale !== undefined
+        ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
+        : {}),
+    });
   },
 
   /**

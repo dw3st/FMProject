@@ -871,3 +871,29 @@ describe("quickSim: style familiarity", () => {
     expect(hi.xgAway).toBeLessThan(base.xgAway);
   });
 });
+
+describe("quickSim side morale (`src/Domain/morale`)", () => {
+  const input = (hm?: number, am?: number) => ({
+    fixtureId: "m",
+    home: makeSquad("h", 5),
+    away: makeSquad("a", 5),
+    homeLineup: ROLES.map((_, i) => `h-p${i}`),
+    awayLineup: ROLES.map((_, i) => `a-p${i}`),
+    homeRoles: ROLES,
+    awayRoles: ROLES,
+    ...(hm !== undefined ? { homeMorale: hm } : {}),
+    ...(am !== undefined ? { awayMorale: am } : {}),
+  });
+
+  test("65 (or absent) changes nothing; 100 lifts every line ×(1 + 0.02)", () => {
+    const base = quickSimMatch(input(), mulberry32(7)).breakdown;
+    expect(quickSimMatch(input(65, 65), mulberry32(7)).breakdown).toEqual(base);
+    const hi = quickSimMatch(input(100), mulberry32(7)).breakdown;
+    for (const k of ["attack", "midfield", "defense", "goalkeeper"] as const) {
+      expect(hi.home[k]).toBeCloseTo(base.home[k] * 1.02);
+      expect(hi.away[k]).toBe(base.away[k]);
+    }
+    const lo = quickSimMatch(input(undefined, 0), mulberry32(7)).breakdown;
+    expect(lo.away.attack).toBeCloseTo(base.away.attack * 0.98);
+  });
+});

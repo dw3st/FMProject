@@ -12,6 +12,7 @@ import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
 import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
+import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 
@@ -26,6 +27,7 @@ const Prospect = iconOf("user");
 const BoardIcon = iconOf("building");
 const JobIcon = iconOf("file-signature");
 const TagIcon = iconOf("tag");
+const TalkIcon = iconOf("talk");
 
 type FilterTab = "all" | "unread";
 
@@ -130,6 +132,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-2/15",
     border: "border-chart-2/30",
     Icon: TagIcon,
+  },
+  player: {
+    labelKey: "inbox.categories.player",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: TalkIcon,
   },
   job: {
     labelKey: "inbox.categories.job",
@@ -365,6 +374,10 @@ function leaguePrizeTexts(
   if (message.category === "job") {
     return { subject: t(`inbox.job.subject.${message.kind}`, { club: message.clubName }), preview: message.leagueName };
   }
+  if (message.category === "player") {
+    const key = message.kind === "talk" ? "talk" : message.kind;
+    return { subject: t(`morale.inbox.subject.${key}`, { player: message.playerName }), preview: message.playerName };
+  }
   if (message.category === "transfer") {
     const vars = { club: message.clubName, player: message.playerName, fee: formatFee(message.fee ?? 0) };
     return { subject: t(`inbox.transfer.subject.${message.kind}`, vars), preview: message.fee ? formatFee(message.fee) : message.clubName };
@@ -494,6 +507,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "retirement" && <RetirementBody message={message} />}
         {message.category === "job" && <JobBody message={message} leagues={leagues} />}
         {message.category === "transfer" && <TransferNegotiationBody message={message} />}
+        {message.category === "player" && <PlayerTalkBody message={message} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(

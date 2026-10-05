@@ -13,6 +13,11 @@ import { AvgBadge } from "@/GameInterface/Components/AvgBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
+import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { moraleBand, moraleOf } from "@/Domain/morale/morale";
+
+type RosterRow = DisplayPlayer & { morale: number };
 
 export function SquadRosterTable({
   squad,
@@ -31,6 +36,9 @@ export function SquadRosterTable({
   const { currentDate } = useGameSave();
   const [sortKey, setSortKey] = useState<string>("pos");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  // Morale (`.claude/rules/game/morale.md`) exists only for the human club's own squad.
+  const showMorale = !!mySquadId && squad.id === mySquadId;
+  const [onlyUnhappy, setOnlyUnhappy] = useState(false);
 
   const columns = [
     { key: "pos", label: t("dashboard.squadRosterTable.pos"), width: "w-24 min-w-[4.5rem]" },
@@ -42,16 +50,24 @@ export function SquadRosterTable({
     { key: "valueMillions", label: t("dashboard.squadRosterTable.value"), width: "w-16" },
     { key: "goals", label: t("dashboard.squadRosterTable.goals"), width: "w-10" },
     { key: "avgRating", label: t("dashboard.squadRosterTable.rating"), width: "w-20" },
+    ...(showMorale ? [{ key: "morale", label: t("morale.column"), width: "w-36" }] : []),
   ];
 
-  const players = useMemo<DisplayPlayer[]>(() => {
+  const allPlayers = useMemo<RosterRow[]>(() => {
     const wageFactor = wageFactorOf(squad);
     return squad.players.map((p) => ({
       ...toDisplayPlayer(p, squad.name, { squadCountry: squad.country, wageFactor, currentDate }),
       leagueSlug,
       clubSlug,
+      morale: moraleOf(p),
     }));
   }, [squad, leagueSlug, clubSlug, currentDate]);
+  const players = useMemo(
+    () => (showMorale && onlyUnhappy
+      ? allPlayers.filter((p) => { const b = moraleBand(p.morale); return b === "unhappy" || b === "furious"; })
+      : allPlayers),
+    [allPlayers, showMorale, onlyUnhappy],
+  );
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -64,8 +80,8 @@ export function SquadRosterTable({
 
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
-      const aVal = a[sortKey as keyof DisplayPlayer];
-      const bVal = b[sortKey as keyof DisplayPlayer];
+      const aVal = a[sortKey as keyof RosterRow];
+      const bVal = b[sortKey as keyof RosterRow];
       if (sortKey === "pos" && typeof aVal === "string" && typeof bVal === "string") {
         const cmp = comparePositions(aVal, bVal);
         if (cmp !== 0) return sortDir === "asc" ? cmp : -cmp;
@@ -81,7 +97,7 @@ export function SquadRosterTable({
     });
   }, [players, sortKey, sortDir]);
 
-  if (players.length === 0) {
+  if (allPlayers.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-12">
         <p className="text-muted-foreground text-sm m-0">{t("dashboard.squadRosterTable.noPlayers")}</p>
@@ -99,6 +115,12 @@ export function SquadRosterTable({
         <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display">
           <span className="text-primary font-black font-display">{players.length}</span> {t("dashboard.squadRosterTable.players")}
         </span>
+        {showMorale && (
+          <Chip selected={onlyUnhappy} onClick={() => setOnlyUnhappy((v) => !v)}>
+            <Icon name="face-unhappy" size={16} />
+            {t("morale.onlyUnhappy")}
+          </Chip>
+        )}
       </div>
 
       <div className="flex items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
@@ -165,6 +187,11 @@ export function SquadRosterTable({
             <div className="px-3 py-2.5 w-20">
               <RatingBadge value={player.avgRating} />
             </div>
+            {showMorale && (
+              <div className="px-3 py-2.5 w-36">
+                <MoraleBadge morale={player.morale} />
+              </div>
+            )}
             <div className="w-10 px-3 py-2.5">
               <FitStatusIcon status={player.status} injury={player.injury} suspendedMatches={player.suspendedMatches} />
             </div>

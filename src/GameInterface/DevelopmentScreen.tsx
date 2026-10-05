@@ -135,7 +135,8 @@ function buildWarnings(player: RosterPlayer): string[] {
   if (player.age >= 32) warnings.push("ageDecline");
   if (player.age >= 34) warnings.push("reduceLoad");
   const log = player.seasonLog;
-  if (log && log.morale < 40) warnings.push("lowMorale");
+  // Morale (`.claude/rules/game/morale.md`): an unhappy player develops slower.
+  if (player.morale !== undefined && player.morale < 40) warnings.push("lowMorale");
   if (log && log.fitness < 50) warnings.push("poorFitness");
   if (log && log.appearances === 0) warnings.push("noMatchTime");
   return warnings;

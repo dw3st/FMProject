@@ -96,6 +96,11 @@ export interface Variant {
    * the style's tactic weights (engine) or the line strengths (quickSim). Absent = neutral (50).
    */
   familiarity?: number;
+  /**
+   * Morale 0..100 of this whole side (`src/Domain/morale`): attributes × (1 + 0.02 × factor) in the
+   * engine, line strengths in the quickSim. Absent = neutral (65).
+   */
+  morale?: number;
   squad: SquadSpec;
 }
 
@@ -180,6 +185,8 @@ export interface TeamRawStats {
   injuries: number;
   /** Starters with `training`/`unsuitable` aptitude for their slot, summed across games. */
   outOfPosition: number;
+  /** Morale the side played at (`Variant.morale`, 65 when absent), summed across games. */
+  morale: number;
   // Discipline (`.claude/rules/game-engine/fouls.md`), summed across games.
   /** Fouls committed. */
   fouls: number;
@@ -280,6 +287,8 @@ export interface PerMatchView {
   /** Injuries per match. */
   avgInjuries: number;
   avgOutOfPosition: number;
+  /** Morale the side played at (65 = neutral). */
+  avgMorale: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;
@@ -368,6 +377,8 @@ export interface VariantSummary {
   /** Injuries per match. */
   avgInjuries: number;
   avgOutOfPosition: number;
+  /** Morale the side played at (65 = neutral). */
+  avgMorale: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;

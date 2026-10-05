@@ -1,5 +1,6 @@
 import type { StaffRecord } from "@/Domain/staff/staffTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
+import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/moraleTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -141,6 +142,15 @@ export interface RosterPlayer {
    * parent club's; the borrowing club pays `wageShare` (0..1) of the wage. Returns at `until`.
    */
   loan?: PlayerLoan;
+  /**
+   * Morale 0..100 (`.claude/rules/game/morale.md`). Human club only; absent = the neutral start
+   * (65). AI clubs never store it and play at the neutral value.
+   */
+  morale?: number;
+  /** Role in the squad chosen by the manager (human club only); absent = the suggested one. */
+  squadStatus?: SquadStatus;
+  /** Morale bookkeeping: minutes window, 7-day trend, talks (human club only). */
+  moraleLog?: PlayerMoraleLog;
 }
 
 export interface SellOnClause {
@@ -259,6 +269,11 @@ export interface Squad {
    * Recomputed when the season or the roster changes; the human club uses its tactics instead.
    */
   aiFormation?: AiFormationRecord;
+  /**
+   * Talk requests and promises of the human club (`.claude/rules/game/morale.md`). AI clubs never
+   * store it; a club switch clears it (old club) and starts it empty (new club).
+   */
+  moraleClub?: ClubMoraleState;
 }
 
 /** AI club's formation for a season (`chooseAiFormation`). */

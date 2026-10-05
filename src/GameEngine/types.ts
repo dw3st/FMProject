@@ -376,6 +376,8 @@ export interface GamePlayer {
    * energy cost from the same source value.
    */
   injuryLoad: number;
+  /** Morale this player plays at (`.claude/rules/game/morale.md`); absent = neutral 65. Debug display only. */
+  morale?: number;
   /**
    * Fitness-coach multiplier on this player's injury risk (`Domain/staff`), fixed for the match.
    * Absent = 1 (hand-built test players).

@@ -191,6 +191,23 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         <span className="text-white/80 w-14 text-right">{variant.familiarity ?? "50"}</span>
       </div>
 
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20">Morale</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={variant.morale ?? 65}
+          onChange={(e) => {
+            const v = parseInt(e.target.value);
+            patch({ morale: v === 65 ? undefined : v });
+          }}
+          className="flex-1"
+        />
+        <span className="text-white/80 w-14 text-right">{variant.morale ?? "65"}</span>
+      </div>
+
       <label className="flex items-center gap-2 text-xs cursor-pointer">
         <span className="text-white/50 w-20">Positions</span>
         <input

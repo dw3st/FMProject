@@ -59,6 +59,8 @@ import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { withTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
+import { matchMoraleOf } from '@/GameEngine/Configs/MoraleConfig';
+import { withMoraleExecution } from '@/Domain/morale/morale';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { getOffBallBias } from '@/GameEngine/Domain/OffBallMovement';
@@ -204,13 +206,14 @@ function buildGamePlayerForSlot(
   engineId: number,
 ): GamePlayer {
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-  // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes.
-  const buffed = withTeamExecution(computeBuffedStats(
+  // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes, and the
+  // player's morale his own (`.claude/rules/game/morale.md`; 65 / absent = unchanged).
+  const buffed = withMoraleExecution(withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
-  ), team);
+  ), team), matchMoraleOf(team, rp.morale));
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -263,6 +266,7 @@ function buildGamePlayerForSlot(
     age:              rp.age,
     strengthAttr:     buffed.strength,
     injuryLoad:       rp.seasonLog?.load ?? 0,
+    morale:           matchMoraleOf(team, rp.morale),
   };
 }
 
@@ -293,12 +297,12 @@ function buildTeam(
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-    const buffed = withTeamExecution(computeBuffedStats(
+    const buffed = withMoraleExecution(withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
-    ), team);
+    ), team), matchMoraleOf(team, rp.morale));
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -333,6 +337,7 @@ function buildTeam(
       age:              rp.age,
       strengthAttr:     buffed.strength,
       injuryLoad:       rp.seasonLog?.load ?? 0,
+      morale:           matchMoraleOf(team, rp.morale),
     });
   }
 

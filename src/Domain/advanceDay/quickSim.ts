@@ -25,6 +25,7 @@ import { INJURY } from "@/Domain/injury/injuryConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import { familiarityFactor } from "@/Domain/familiarity/familiarity";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
+import { moraleQuickSimMult } from "@/Domain/morale/morale";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -76,6 +77,12 @@ export interface QuickSimInput {
    */
   homeFamiliarity?: number;
   awayFamiliarity?: number;
+  /**
+   * Morale (0..100) of a whole side (`src/Domain/morale`, the lab): line strengths × (1 + 0.02 ×
+   * moraleFactor). Absent = neutral — the day advance never passes it (quickSim is AI × AI only).
+   */
+  homeMorale?: number;
+  awayMorale?: number;
 }
 
 export interface QuickSimResult {
@@ -188,6 +195,13 @@ function withFamiliarity(s: TeamStrength, familiarity: number | undefined): Team
   const f = familiarityFactor(familiarity);
   if (f === 0) return s;
   const k = 1 + FAMILIARITY.QUICKSIM_STRENGTH * f;
+  return { ...s, attack: s.attack * k, midfield: s.midfield * k, defense: s.defense * k, goalkeeper: s.goalkeeper * k };
+}
+
+/** Side morale scales the four line strengths (not pace); 65 / absent = unchanged. */
+function withMorale(s: TeamStrength, morale: number | undefined): TeamStrength {
+  const k = moraleQuickSimMult(morale);
+  if (k === 1) return s;
   return { ...s, attack: s.attack * k, midfield: s.midfield * k, defense: s.defense * k, goalkeeper: s.goalkeeper * k };
 }
 
@@ -738,8 +752,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const homeXI = resolveXI(input.home, input.homeLineup, input.homeRoles);
   const awayXI = resolveXI(input.away, input.awayLineup, input.awayRoles);
 
-  const home = withFamiliarity(strengthOf(homeXI), input.homeFamiliarity);
-  const away = withFamiliarity(strengthOf(awayXI), input.awayFamiliarity);
+  const home = withMorale(withFamiliarity(strengthOf(homeXI), input.homeFamiliarity), input.homeMorale);
+  const away = withMorale(withFamiliarity(strengthOf(awayXI), input.awayFamiliarity), input.awayMorale);
   const xgHome = expectedGoals(home, away, !input.neutral);
   const xgAway = expectedGoals(away, home, false);
   // Match-day dominance: one side's chances rise as the other's fall (anti-correlated,

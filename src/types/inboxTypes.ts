@@ -17,7 +17,8 @@ export type InboxCategory =
   | "board"
   | "job"
   | "club_record"
-  | "transfer";
+  | "transfer"
+  | "player";
 
 interface InboxMessageBase {
   id:        string;
@@ -263,6 +264,25 @@ export interface TransferInboxMessage extends InboxMessageBase {
   expires?: string;
 }
 
+/**
+ * Player talks and promises (`.claude/rules/game/morale.md`): a talk request (`talk`, answered
+ * through `POST /api/saves/:id/talks/:playerId` while it is still open in `Squad.moraleClub.talks`),
+ * a promise kept or broken, a transfer request.
+ */
+export interface PlayerInboxMessage extends InboxMessageBase {
+  category: "player";
+  kind: "talk" | "promise_kept" | "promise_broken" | "transfer_request";
+  playerId: string;
+  playerName: string;
+  /** talk: why he asked. */
+  reason?: "minutes" | "contract" | "wants_move" | "chance";
+  talkId?: string;
+  /** promise_kept / promise_broken. */
+  promiseKind?: "minutes" | "sale" | "renewal";
+  /** wants_move: the club that bid for him. */
+  clubName?: string;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -277,4 +297,5 @@ export type InboxMessage =
   | BoardInboxMessage
   | JobInboxMessage
   | ClubRecordInboxMessage
-  | TransferInboxMessage;
+  | TransferInboxMessage
+  | PlayerInboxMessage;

@@ -1,3 +1,4 @@
+import { initClubMorale } from "@/Domain/morale/morale";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { readdir } from "fs/promises";
@@ -786,7 +787,8 @@ export class SaveService {
           ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
         const contracted = withContracts(squad, leagueEnd);
 
-        await this.dal.writeSquad(id, league, clubSlug, contracted);
+        // Morale (`.claude/rules/game/morale.md`): human club only — everyone at 65, nothing open.
+        await this.dal.writeSquad(id, league, clubSlug, isPlayerClub ? initClubMorale(contracted) : contracted);
         this.squadIndexCache.delete(id);
         squadCache.set(squad.id, contracted);
         copied++;
