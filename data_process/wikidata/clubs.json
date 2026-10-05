@@ -1,0 +1,392 @@
+{
+ "33": {
+  "qid": "Q18656",
+  "label": "Manchester United F.C.",
+  "desc": "association football club in Manchester, England"
+ },
+ "34": {
+  "qid": "Q18716",
+  "label": "Newcastle United F.C.",
+  "desc": "association football club in Newcastle upon Tyne, England"
+ },
+ "35": {
+  "qid": "Q19568",
+  "label": "AFC Bournemouth",
+  "desc": "association football club in Bournemouth, England"
+ },
+ "36": {
+  "qid": "Q18708",
+  "label": "Fulham F.C.",
+  "desc": "association football club in London, England"
+ },
+ "40": {
+  "qid": "Q1130849",
+  "label": "Liverpool F.C.",
+  "desc": "association football club in Liverpool, England"
+ },
+ "42": {
+  "qid": "Q9617",
+  "label": "Arsenal F.C.",
+  "desc": "association football club in London, England"
+ },
+ "45": {
+  "qid": "Q5794",
+  "label": "Everton F.C.",
+  "desc": "association football club in Liverpool, England"
+ },
+ "47": {
+  "qid": "Q18741",
+  "label": "Tottenham Hotspur F.C.",
+  "desc": "association football club in London, England"
+ },
+ "49": {
+  "qid": "Q9616",
+  "label": "Chelsea F.C.",
+  "desc": "association football club in London, England"
+ },
+ "50": {
+  "qid": "Q50602",
+  "label": "Manchester City F.C.",
+  "desc": "association football club in Manchester, England"
+ },
+ "51": {
+  "qid": "Q19453",
+  "label": "Brighton & Hove Albion F.C.",
+  "desc": "football club in Brighton & Hove, England"
+ },
+ "52": {
+  "qid": "Q19467",
+  "label": "Crystal Palace F.C.",
+  "desc": "association football club in London, England"
+ },
+ "55": {
+  "qid": "Q19571",
+  "label": "Brentford F.C.",
+  "desc": "association football club in London, England"
+ },
+ "63": {
+  "qid": "Q1128631",
+  "label": "Leeds United F.C.",
+  "desc": "association football club in Leeds, England"
+ },
+ "65": {
+  "qid": "Q19490",
+  "label": "Nottingham Forest F.C.",
+  "desc": "association football club in West Bridgford, England"
+ },
+ "66": {
+  "qid": "Q18711",
+  "label": "Aston Villa F.C.",
+  "desc": "association football club in Birmingham, England"
+ },
+ "77": {
+  "qid": "Q845137",
+  "label": "Angers SCO",
+  "desc": "club de football français"
+ },
+ "79": {
+  "qid": "Q19516",
+  "label": "Lille OSC",
+  "desc": "club de football français"
+ },
+ "80": {
+  "qid": "Q704",
+  "label": "Olympique lyonnais",
+  "desc": "club de football français"
+ },
+ "81": {
+  "qid": "Q132885",
+  "label": "Olympique de Marseille",
+  "desc": "club de football français"
+ },
+ "84": {
+  "qid": "Q185163",
+  "label": "OGC Nice",
+  "desc": "club de football français"
+ },
+ "85": {
+  "qid": "Q483020",
+  "label": "Paris Saint-Germain FC",
+  "desc": "club de football français"
+ },
+ "91": {
+  "qid": "Q180305",
+  "label": "AS Monaco FC",
+  "desc": "club de football monégasque"
+ },
+ "94": {
+  "qid": "Q19509",
+  "label": "Stade rennais FC",
+  "desc": "club de football français"
+ },
+ "95": {
+  "qid": "Q126334",
+  "label": "RC Strasbourg Alsace",
+  "desc": "club de football français"
+ },
+ "96": {
+  "qid": "Q19518",
+  "label": "Toulouse FC",
+  "desc": "club de football français"
+ },
+ "97": {
+  "qid": "Q48911",
+  "label": "FC Lorient",
+  "desc": "club de football français"
+ },
+ "106": {
+  "qid": "Q218372",
+  "label": "Stade brestois 29",
+  "desc": "club de football français"
+ },
+ "108": {
+  "qid": "Q182876",
+  "label": "AJ Auxerre",
+  "desc": "club de football français"
+ },
+ "111": {
+  "qid": "Q328658",
+  "label": "Le Havre AC",
+  "desc": "club de football français"
+ },
+ "114": {
+  "qid": "Q1051013",
+  "label": "Paris FC",
+  "desc": "club de football français"
+ },
+ "116": {
+  "qid": "Q191843",
+  "label": "RC Lens",
+  "desc": "club de football français"
+ },
+ "118": {
+  "qid": "Q198032",
+  "label": "Esporte Clube Bahia",
+  "desc": "clube esportivo brasileiro"
+ },
+ "119": {
+  "qid": "Q80845",
+  "label": "Sport Club Internacional",
+  "desc": "clube multiesportivo brasileiro"
+ },
+ "120": {
+  "qid": "Q80958",
+  "label": "Botafogo F.R.",
+  "desc": "association football team from Rio de Janeiro (fixed by hand)"
+ },
+ "121": {
+  "qid": "Q80964",
+  "label": "Sociedade Esportiva Palmeiras",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "124": {
+  "qid": "Q80987",
+  "label": "Fluminense F.C.",
+  "desc": "sports club in Rio de Janeiro, Brazil best known for its professional association football team"
+ },
+ "126": {
+  "qid": "Q38568",
+  "label": "São Paulo Futebol Clube",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "127": {
+  "qid": "Q17479",
+  "label": "Clube de Regatas do Flamengo",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "128": {
+  "qid": "Q80955",
+  "label": "Santos Futebol Clube",
+  "desc": "clube poliesportivo brasileiro de Santos, SP"
+ },
+ "130": {
+  "qid": "Q221695",
+  "label": "Grêmio Foot-Ball Porto Alegrense",
+  "desc": "clube multiesportivo brasileiro"
+ },
+ "131": {
+  "qid": "Q35933",
+  "label": "Sport Club Corinthians Paulista",
+  "desc": "clube esportivo do estado de São Paulo, Brasil"
+ },
+ "132": {
+  "qid": "Q2536715",
+  "label": "Associação Chapecoense de Futebol",
+  "desc": "clube de futebol brasileiro da cidade de Chapecó-SC"
+ },
+ "133": {
+  "qid": "Q5014111",
+  "label": "Club de Regatas Vasco da Gama",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "134": {
+  "qid": "Q506832",
+  "label": "Club Athletico Paranaense",
+  "desc": "clube multiesportivo brasileiro sediado em Curitiba, Paraná"
+ },
+ "135": {
+  "qid": "Q188277",
+  "label": "Cruzeiro Esporte Clube",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "136": {
+  "qid": "Q274465",
+  "label": "Esporte Clube Vitória",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "147": {
+  "qid": "Q478317",
+  "label": "Coritiba Foot Ball Club",
+  "desc": "clube poliesportivo brasileiro"
+ },
+ "529": {
+  "qid": "Q7156",
+  "label": "Fútbol Club Barcelona",
+  "desc": "club deportivo de Barcelona, España"
+ },
+ "530": {
+  "qid": "Q8701",
+  "label": "Atlético de Madrid",
+  "desc": "club de fútbol español"
+ },
+ "531": {
+  "qid": "Q8687",
+  "label": "Athletic Club",
+  "desc": "club de fútbol de Bilbao, España"
+ },
+ "532": {
+  "qid": "Q10333",
+  "label": "Valencia Club de Fútbol",
+  "desc": "club de fútbol de Valencia, España"
+ },
+ "533": {
+  "qid": "Q12297",
+  "label": "Villarreal Club de Fútbol",
+  "desc": "club de fútbol en Villarreal, España"
+ },
+ "536": {
+  "qid": "Q10329",
+  "label": "Sevilla Fútbol Club",
+  "desc": "club deportivo de Sevilla, España"
+ },
+ "538": {
+  "qid": "Q8749",
+  "label": "Real Club Celta de Vigo",
+  "desc": "club de fútbol español"
+ },
+ "539": {
+  "qid": "Q8823",
+  "label": "Levante Unión Deportiva",
+  "desc": "club de fútbol español"
+ },
+ "540": {
+  "qid": "Q8780",
+  "label": "Real Club Deportivo Espanyol de Barcelona",
+  "desc": "club de fútbol español"
+ },
+ "541": {
+  "qid": "Q8682",
+  "label": "Real Madrid Club de Fútbol",
+  "desc": "club deportivo de Madrid, España"
+ },
+ "542": {
+  "qid": "Q223620",
+  "label": "Deportivo Alavés",
+  "desc": "club de fútbol español"
+ },
+ "543": {
+  "qid": "Q8723",
+  "label": "Real Betis Balompié",
+  "desc": "club de fútbol de Sevilla, España"
+ },
+ "546": {
+  "qid": "Q8806",
+  "label": "Getafe Club de Fútbol",
+  "desc": "club de fútbol español con sede en la ciudad de Getafe"
+ },
+ "548": {
+  "qid": "Q10315",
+  "label": "Real Sociedad de Fútbol",
+  "desc": "club de fútbol de San Sebastián, España"
+ },
+ "727": {
+  "qid": "Q10286",
+  "label": "Club Atlético Osasuna",
+  "desc": "club de fútbol de España"
+ },
+ "728": {
+  "qid": "Q10300",
+  "label": "Rayo Vallecano",
+  "desc": "club de fútbol de España"
+ },
+ "746": {
+  "qid": "Q18739",
+  "label": "Sunderland A.F.C.",
+  "desc": "association football club in Sunderland, England"
+ },
+ "794": {
+  "qid": "Q541744",
+  "label": "Red Bull Bragantino",
+  "desc": "clube esportivo brasileiro"
+ },
+ "797": {
+  "qid": "Q10512",
+  "label": "Elche Club de Fútbol",
+  "desc": "club de fútbol español"
+ },
+ "1062": {
+  "qid": "Q270995",
+  "label": "Clube Atlético Mineiro",
+  "desc": "clube de futebol brasileiro"
+ },
+ "1198": {
+  "qid": "Q2552872",
+  "label": "Clube do Remo",
+  "desc": "clube esportivo de Belém, Pará"
+ },
+ "7848": {
+  "qid": "Q2622870",
+  "label": "Mirassol Futebol Clube",
+  "desc": "clube de futebol brasileiro"
+ },
+ "es_388": {
+  "qid": "Q19580",
+  "label": "Coventry City F.C.",
+  "desc": "association football club in Coventry, England"
+ },
+ "of_gb_hull_city": {
+  "qid": "Q19477",
+  "label": "Hull City A.F.C.",
+  "desc": "association football club in Hull, England"
+ },
+ "of_gb_ipswich_town": {
+  "qid": "Q9653",
+  "label": "Ipswich Town F.C.",
+  "desc": "association football club in Ipswich, England"
+ },
+ "of_es_deportivo": {
+  "qid": "Q8760",
+  "label": "Real Club Deportivo de A Coruña",
+  "desc": "club de fútbol de La Coruña, España"
+ },
+ "of_es_malaga": {
+  "qid": "Q8857",
+  "label": "Málaga Club de Fútbol",
+  "desc": "club de fútbol español"
+ },
+ "of_es_racing_santander": {
+  "qid": "Q12236",
+  "label": "Racing de Santander",
+  "desc": "club de fútbol de Santander, España"
+ },
+ "es_170": {
+  "qid": "Q501693",
+  "label": "ES Troyes AC",
+  "desc": "club de football français"
+ },
+ "es_2697": {
+  "qid": "Q210864",
+  "label": "Le Mans Football Club",
+  "desc": "club de football français"
+ }
+}

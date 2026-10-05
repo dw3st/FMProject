@@ -89,4 +89,13 @@ describe("real player traits", () => {
     applyFaceTraits(face, { hairLength: "short" }, rng);
     expect(HAIR_IDS.short).toContain(face.hair.id); // already short: kept
   });
+
+  test("long straight hair gets its back layer, other lengths drop it", () => {
+    const face = { body: { color: "#000" }, hair: { id: "longHair", color: "#000" }, facialHair: { id: "none" }, hairBg: { id: "none" } };
+    applyFaceTraits(face, { hairLength: "long" }, () => 0);
+    expect(face.hairBg.id).toBe("longHair");
+    applyFaceTraits(face, { hairLength: "bald" }, () => 0);
+    expect(face.hairBg.id).toBe("none");
+    expect(HAIR_IDS.bald).toContain(face.hair.id);
+  });
 });

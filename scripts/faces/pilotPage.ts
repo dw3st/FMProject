@@ -1,83 +1,83 @@
 /**
- * Face pilot: a LOCAL comparison page (never published): ESPN photo (loaded by URL from ESPN, not
- * embedded) | current face | new face with the extracted traits, plus the traits and the hand label.
+ * Face pilot: a LOCAL comparison page (never published). Per player: the Commons photo (loaded by
+ * URL from Wikimedia, not embedded) | current face | new face with the traits, plus the traits and
+ * the photo's licence/author.
  *
- *   bun scripts/faces/pilotPage.ts <out.html>
+ *   bun scripts/faces/pilotPage.ts <out.html> [max=64]
+ *
+ * Players: the Wikidata-labelled ones in label order (stars first, data_process/wikidata/faceTraits*),
+ * then the ESPN heuristic ones.
  */
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { croppedPlayerFaceSvg } from "@/Domain/faces/playerFaceSvg";
 import type { FaceTraits } from "@/Domain/faces/faceTraits";
+import { LEAGUES } from "@/../scripts/faces/wikidata";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const out = process.argv[2];
-if (!out) throw new Error("usage: bun scripts/faces/pilotPage.ts <out.html>");
-const LEAGUES = ["brazil_serie_a", "premier_league", "la_liga", "ligue_1"];
-const STARS = ["Mbapp", "Vinícius", "Salah", "Saka", "Lewandowski", "Neymar", "Haaland", "Yamal", "Bellingham", "Raphinha"];
+if (!out) throw new Error("usage: bun scripts/faces/pilotPage.ts <out.html> [max]");
+const MAX = Number(process.argv[3] ?? 64);
+const read = (p: string) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
 
-const traits: Record<string, FaceTraits> = JSON.parse(readFileSync(join(ROOT, "src/example_data/faceTraits.json"), "utf8"));
-const athletes: Record<string, string> = JSON.parse(readFileSync(join(ROOT, "data_process/espn/faceAthletes.json"), "utf8"));
-const labels = new Map(readFileSync(join(ROOT, "data_process/espn/faceTraitLabels.txt"), "utf8").trim().split("\n")
-  .map((l) => l.trim().split(/\s+/)).map(([id, ...rest]) => [id!, rest.join(" ")]));
+const traits: Record<string, FaceTraits> = read("src/example_data/faceTraits.json");
+const meta: Record<string, { file: string; license: string; artist: string; thumb: string; page: string }> = read("data_process/wikidata/photoMeta.json");
+const labelOrder = readFileSync(join(ROOT, "data_process/wikidata/faceTraitLabels.txt"), "utf8")
+  .split("\n").filter((l) => l.trim() && !l.startsWith("#")).map((l) => l.split(/\s+/)[0]!);
+const espn: Record<string, string> = read("data_process/espn/faceAthletes.json");
+const espnTraits: Record<string, FaceTraits> = read("data_process/espn/faceTraits.json");
 
 interface Row { id: string; name: string; club: string; league: string; nat?: string; colors: string[] }
-const rows: Row[] = [];
-const stars: Row[] = [];
+const byId = new Map<string, Row>();
 for (const league of LEAGUES) {
   const dir = join(ROOT, "src/example_data/squads", league);
   for (const f of readdirSync(dir)) {
     const sq = JSON.parse(readFileSync(join(dir, f), "utf8"));
-    for (const p of sq.players) {
-      const row: Row = { id: p.id, name: p.name, club: sq.name, league, nat: p.nationality, colors: sq.colors ?? [] };
-      if (traits[p.id]) rows.push(row);
-      else if (STARS.some((s) => `${p.name} ${p.fullName ?? ""}`.includes(s))) stars.push(row);
-    }
+    for (const p of sq.players) byId.set(p.id, { id: p.id, name: p.name, club: sq.name, league, nat: p.nationality, colors: sq.colors ?? [] });
   }
 }
-rows.sort((a, b) => a.league.localeCompare(b.league) || a.club.localeCompare(b.club));
+const ids = [...labelOrder, ...Object.keys(espnTraits).filter((id) => !labelOrder.includes(id))].slice(0, MAX);
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const svgImg = (svg: string) => `<img class="face" alt="" src="data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}">`;
-const photo = (aid: string | undefined) => aid
-  ? `<img class="photo" alt="" loading="lazy" referrerpolicy="no-referrer" src="https://a.espncdn.com/i/headshots/soccer/players/full/${aid}.png">`
-  : `<div class="none">sem foto na ESPN</div>`;
 
-const card = (r: Row, withTraits: boolean) => {
-  const t = traits[r.id];
-  const aid = athletes[r.id];
-  const before = croppedPlayerFaceSvg(r.id, r.nat, r.colors);
-  const after = croppedPlayerFaceSvg(r.id, r.nat, r.colors, t);
+const card = (id: string) => {
+  const r = byId.get(id)!;
+  const t = traits[id];
+  const m = meta[id];
+  const src = m ? "Wikimedia Commons" : "ESPN";
+  const photoUrl = m ? m.thumb : `https://a.espncdn.com/i/headshots/soccer/players/full/${espn[id]}.png`;
+  const credit = m
+    ? `<a href="${esc(m.page)}" target="_blank" rel="noopener">${esc(m.license)}</a> · ${esc(m.artist)}`
+    : "ESPN (sem licença livre: só referência local)";
   return `<div class="card">
   <div class="head"><b>${esc(r.name)}</b><span>${esc(r.club)} · ${esc(r.league)} · ${esc(r.nat ?? "?")}</span></div>
-  <div class="cols"><div>${photo(withTraits ? aid : undefined)}<small>ESPN</small></div><div>${svgImg(before)}<small>atual</small></div><div>${svgImg(after)}<small>novo</small></div></div>
-  ${withTraits ? `<div class="meta">extraído: ${esc(JSON.stringify(t))}<br>rótulo manual: ${esc(labels.get(aid ?? "") ?? "-")}</div>` : ""}
+  <div class="cols"><div><img class="photo" alt="" loading="lazy" referrerpolicy="no-referrer" src="${esc(photoUrl)}"><small>${src}</small></div><div>${svgImg(croppedPlayerFaceSvg(id, r.nat, r.colors))}<small>atual</small></div><div>${svgImg(croppedPlayerFaceSvg(id, r.nat, r.colors, t))}<small>novo</small></div></div>
+  <div class="meta">traços: ${esc(JSON.stringify(t))}<br>foto: ${credit}</div>
 </div>`;
 };
 
 const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Piloto de rostos</title>
 <style>
-:root{--bg:#f6f6f4;--fg:#1b1b1b;--muted:#666;--card:#fff;--border:#ddd}
-@media (prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--muted:#9a9a9a;--card:#1e1e1e;--border:#333}}
+:root{--bg:#f6f6f4;--fg:#1b1b1b;--muted:#666;--card:#fff;--border:#ddd;--ph:#e9e9e9}
+@media (prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--muted:#9a9a9a;--card:#1e1e1e;--border:#333;--ph:#2a2a2a}}
 body{background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif;margin:0;padding:16px}
 h1{font-size:20px;margin:0 0 4px} p{color:var(--muted);margin:0 0 16px;max-width:900px}
+a{color:inherit}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px}
 .head{display:flex;flex-direction:column;margin-bottom:6px}.head span{color:var(--muted);font-size:13px}
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
 .cols small{display:block;color:var(--muted)}
-.photo{width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 10%;background:#e9e9e9;border-radius:6px}
-.face{width:100%;aspect-ratio:1;border-radius:6px;background:#e9e9e9}
-.none{aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:var(--muted);background:#e9e9e9;border-radius:6px;font-size:13px}
-.meta{margin-top:6px;font-size:13px;color:var(--muted)}
-h2{font-size:16px;margin:24px 0 8px}
+.photo{width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 15%;background:var(--ph);border-radius:6px}
+.face{width:100%;aspect-ratio:1;border-radius:6px;background:var(--ph)}
+.meta{margin-top:6px;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 </style></head><body>
-<h1>Piloto de rostos (ESPN → facesjs)</h1>
-<p>Página local, não publicada. Fotos carregadas da ESPN pela URL. Traços usados: cor da pele (7 tons) e cor do cabelo. Comprimento do cabelo e barba foram medidos mas descartados (acerto perto do acaso). ${rows.length} jogadores com foto nas 4 ligas.</p>
-<div class="grid">${rows.map((r) => card(r, true)).join("\n")}</div>
-<h2>Estrelas sem foto na ESPN (rosto continua o sorteio de hoje)</h2>
-<div class="grid">${stars.map((r) => card(r, false)).join("\n")}</div>
+<h1>Piloto de rostos (Wikidata/Commons → facesjs)</h1>
+<p>Página local, não publicada. Fotos carregadas do Wikimedia Commons pela URL (licença e autor em cada cartão). Traços das fotos do Commons rotulados à mão (pele 1–7, cor e comprimento do cabelo, barba); os demais, da heurística sobre as fotos da ESPN (só pele e cor do cabelo). ${ids.length} jogadores.</p>
+<div class="grid">${ids.filter((id) => byId.has(id)).map(card).join("\n")}</div>
 </body></html>`;
 writeFileSync(out, html);
-console.log(`${rows.length} players with traits + ${stars.length} stars without photo → ${out}`);
+console.log(`${ids.length} players → ${out}`);

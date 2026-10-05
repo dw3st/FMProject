@@ -63,6 +63,7 @@ export interface TraitFace {
   body: { color: string };
   hair: { id: string; color: string };
   facialHair: { id: string };
+  hairBg?: { id: string };
 }
 
 /**
@@ -73,6 +74,10 @@ export function applyFaceTraits(face: TraitFace, traits: FaceTraits | undefined,
   if (!traits) return;
   if (traits.skin) face.body.color = SKIN_COLORS[traits.skin];
   if (traits.hairColor) face.hair.color = HAIR_COLORS[traits.hairColor];
-  if (traits.hairLength && !HAIR_IDS[traits.hairLength].includes(face.hair.id)) face.hair.id = pick(HAIR_IDS[traits.hairLength], rng);
+  if (traits.hairLength) {
+    if (!HAIR_IDS[traits.hairLength].includes(face.hair.id)) face.hair.id = pick(HAIR_IDS[traits.hairLength], rng);
+    // Long straight hair needs its back layer; any other length drops a random one.
+    if (face.hairBg) face.hairBg.id = face.hair.id === "longHair" ? "longHair" : "none";
+  }
   if (traits.beard && !FACIAL_HAIR_IDS[traits.beard].includes(face.facialHair.id)) face.facialHair.id = pick(FACIAL_HAIR_IDS[traits.beard], rng);
 }

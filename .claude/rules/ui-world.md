@@ -97,3 +97,22 @@ parâmetros derivados.
   `applyFaceTraits` (`src/Domain/faces/faceTraits.ts`) depois do `generate`, com RNG próprio, então o
   resto do rosto não muda. Jogador sem traços = rosto de antes. Mudou o arquivo? Suba `FACE_VERSION`.
 - Cobertura: a ESPN só tem foto de ~4% dos jogadores dessas ligas (91 de 2255 mapeados, 2026-10-05).
+
+### Traços reais (piloto, Wikidata/Commons)
+
+Mesmas 4 ligas, foto do **Wikimedia Commons** pelo Wikidata (P18), só com licença livre. Fotos de jogo
+(ângulos e fundos variados), então os traços vêm de **rótulo visual** (pele, cor e comprimento do cabelo,
+barba), não de heurística.
+
+- `bun scripts/faces/wdClubs.ts`: clube → item do Wikidata (`data_process/wikidata/clubs.json`, revisado à mão).
+- `bun scripts/fetchWikidataPhotos.ts [--no-download]`: por clube, SPARQL de quem jogou lá (P54) nascido
+  ≥ 1983; casa por nome + ano de nascimento (idade da temporada 2026/27), único dos dois lados; quem não
+  casa vai para a busca do Wikidata entre futebolistas (`haswbstatement:P106=Q937857`) com o mesmo teste.
+  Licença e autor pelo `imageinfo` do Commons; só CC BY / CC BY-SA / CC0 / domínio público →
+  `data_process/wikidata/photoMeta.json` (sem imagem). Miniaturas de 400 px em `data_process/wikidata/photos/`
+  (no `.gitignore`); respostas da API em `data_process/wikidata/cache/` (no `.gitignore`).
+- Rótulos: `data_process/wikidata/faceTraitLabels.txt` → `faceTraits.json`. `bun scripts/faces/mergeTraits.ts`
+  junta ESPN + Wikidata (Wikidata vence) em `src/example_data/faceTraits.json` (e `src/Data`).
+- `applyFaceTraits` aplica também comprimento (`HAIR_IDS`; cabelo longo liso ganha o `hairBg` `longHair`) e
+  barba (`FACIAL_HAIR_IDS`). `FACE_VERSION` 4.
+- Página local de comparação: `bun scripts/faces/pilotPage.ts <arquivo.html> [n]` (nunca publicar).
