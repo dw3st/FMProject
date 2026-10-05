@@ -25,6 +25,8 @@ import {
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 
+const NEUTRAL_PERSONALITY = { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament: 10.5 };
+
 function stats(v: number): PlayerStatsRecord {
   return {
     passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
@@ -35,7 +37,9 @@ function stats(v: number): PlayerStatsRecord {
 function player(id: string, pos: string, level: number, extra: Partial<RosterPlayer> = {}): RosterPlayer {
   return {
     id, name: `P ${id}`, age: 26, squadId: "h", preferredFoot: "right", positions: [pos],
-    stats: stats(level), profile: { summary: "", archetype: "" }, ...extra,
+    stats: stats(level), profile: { summary: "", archetype: "" },
+    // Neutral personality: the morale rules on their own (`personality.md` effects tested below).
+    personality: NEUTRAL_PERSONALITY, ...extra,
   };
 }
 
@@ -315,5 +319,46 @@ describe("club switch", () => {
     const ai = stripClubMorale(init);
     expect(ai.moraleClub).toBeUndefined();
     expect(ai.players.every((p) => p.morale === undefined)).toBe(true);
+  });
+});
+
+describe("personality (`personality.md`)", () => {
+  const withPers = (sq: Squad, id: string, p: Partial<typeof NEUTRAL_PERSONALITY>, extra: Partial<RosterPlayer> = {}): Squad => ({
+    ...sq,
+    players: sq.players.map((x) => (x.id === id ? { ...x, ...extra, personality: { ...NEUTRAL_PERSONALITY, ...p } } : x)),
+  });
+
+  test("temperament scales event deltas (a hot-head reacts 25% more)", () => {
+    const sq = withPers(withPers(fullSquad(), "g2", { temperament: 20 }), "g1", { temperament: 1 });
+    const out = moraleDay({ squad: sq, date: "2027-03-02", monday: false, bids: [], sellList: [], newId, matches: [{ result: "L", minutes: {}, goals: {}, ratings: {} }] });
+    const p = (id: string) => out.squad.players.find((x) => x.id === id)!;
+    expect(p("g2").morale).toBe(63.8); // 65 − 1.25, one decimal
+    expect(p("g1").morale).toBe(64.3); // 65 − 0.75
+  });
+
+  test("ambition moves the transfer-request threshold; a loyal player never asks from morale alone", () => {
+    let sq = withPers(fullSquad(), "d5", { ambition: 20, loyalty: 5 }, { morale: 31 });
+    sq = withPers(sq, "d4", { loyalty: 18 }, { morale: 5 });
+    const out = moraleDay({ squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId });
+    expect(out.listRequested).toContain("d5");
+    expect(out.listRequested).not.toContain("d4");
+  });
+
+  test("wants_move: a stronger club tempts only the ambitious; the loyal needs morale below 40", () => {
+    let sq = withPers(fullSquad(), "m4", { ambition: 15, loyalty: 8 }, { morale: 80 });
+    sq = withPers(sq, "m3", { ambition: 8, loyalty: 8 }, { morale: 80 });
+    sq = withPers(sq, "m2", { loyalty: 18 }, { morale: 50 });
+    const bids = ["m4", "m3", "m2"].map((playerId) => ({ playerId, clubName: "Big", stronger: true }));
+    const out = moraleDay({ squad: sq, date: "2027-03-03", monday: false, matches: [], sellList: [], newId, bids });
+    expect(out.squad.moraleClub!.talks.map((t) => t.playerId)).toEqual(["m4"]);
+  });
+
+  test("the loyal feels being listed more; demand works on a professional", () => {
+    const sq = withPers(fullSquad(), "d4", { loyalty: 20 });
+    expect(afterListedForSale(sq, "d4").players.find((p) => p.id === "d4")!.morale).toBe(65 + MORALE.LISTED_UNASKED * 1.5);
+    const pro = withPers(fullSquad(), "d3", { professionalism: 15 }, { morale: 50 });
+    const r = answerTalk({ squad: pro, playerId: "d3", answer: "demand", date: "2027-03-01", newId });
+    if ("error" in r) throw new Error(r.error);
+    expect(r.change).toBe(MORALE.DEMAND_GOOD);
   });
 });

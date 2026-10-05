@@ -8,6 +8,37 @@ export interface ContractDemandInfo {
   moraleBand?: "very_happy" | "content" | "neutral" | "unhappy" | "furious";
   moraleDemandMult?: number;
   refuses?: boolean;
+  /** Personality parts of the demand (`personality.md`), each a multiplier (1 = no effect). */
+  ambition?: number;
+  loyalty?: number;
+  compatriot?: number;
+  smallerClub?: number;
+  /** A very ambitious player refuses a club two tiers smaller than his. */
+  refusesSmallerClub?: boolean;
+}
+
+/** The personality lines explaining a demand ("Loyal to the club: −7%"). */
+export function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | undefined }) {
+  const { t } = useTranslation();
+  if (!info) return null;
+  const pct = (m: number | undefined) => Math.round(((m ?? 1) - 1) * 100);
+  const sign = (n: number) => (n > 0 ? `+${n}%` : `−${Math.abs(n)}%`);
+  const lines: { key: string; text: string }[] = [];
+  const amb = pct(info.ambition);
+  if (amb !== 0) lines.push({ key: "amb", text: t(amb > 0 ? "personality.demand.ambitious" : "personality.demand.settled", { pct: sign(amb) }) });
+  const loy = pct(info.loyalty);
+  if (loy !== 0) lines.push({ key: "loy", text: t("personality.demand.loyal", { pct: sign(loy) }) });
+  const com = pct(info.compatriot);
+  if (com !== 0) lines.push({ key: "com", text: t("personality.demand.compatriot", { pct: sign(com) }) });
+  const sm = pct(info.smallerClub);
+  if (sm !== 0) lines.push({ key: "sm", text: t("personality.demand.smallerClub", { pct: sign(sm) }) });
+  if (lines.length === 0 && !info.refusesSmallerClub) return null;
+  return (
+    <ul className="m-0 p-0 list-none space-y-1">
+      {lines.map((l) => <li key={l.key} className="text-sm text-muted-foreground tabular-nums">{l.text}</li>)}
+      {info.refusesSmallerClub && <li className="text-sm text-destructive">{t("contracts.refusal.smallerClub")}</li>}
+    </ul>
+  );
 }
 
 /** Demand plus morale info (`GET .../players/:id/demand`). `from` = his squad id; omit for a free agent. */
@@ -36,7 +67,7 @@ export function useContractDemand(saveId: string | undefined, playerId: string |
 export function useRefusalText() {
   const { t } = useTranslation();
   return (error: string): string => {
-    const known = ["lowWage", "tooManyYears", "invalidYears", "squadFull", "unhappy"];
+    const known = ["lowWage", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub"];
     return known.includes(error) ? t(`contracts.refusal.${error}`) : error;
   };
 }
@@ -47,10 +78,12 @@ interface Props {
   onWage: (w: number) => void;
   onYears: (y: number) => void;
   demand: number | null;
+  /** Demand info: shows the personality lines under the asking wage. */
+  info?: ContractDemandInfo | null;
 }
 
 /** Wage + length inputs shared by the renew, offer and free-agent signing modals. */
-export function ContractTermsFields({ wage, years, onWage, onYears, demand }: Props) {
+export function ContractTermsFields({ wage, years, onWage, onYears, demand, info }: Props) {
   const { t } = useTranslation();
   return (
     <div className="space-y-3">
@@ -59,6 +92,7 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand }: Pr
           ? t("contracts.loadingDemand")
           : <>{t("contracts.asking")}: <span className="text-primary font-semibold tabular-nums">{formatWageFull(demand)}</span> {t("contracts.perWeek")}</>}
       </p>
+      <PersonalityDemandLines info={info} />
       <div className="flex items-center gap-3">
         <label className="flex-1 text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
           {t("contracts.weeklyWage")}

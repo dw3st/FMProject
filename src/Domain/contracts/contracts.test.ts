@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  addYearsIso, aiShouldRenew, contractDemand, evaluateContractOffer, initialContract, isExpired, renewalContract,
+  addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer, initialContract, isExpired, renewalContract,
 } from "@/Domain/contracts/contracts";
 import { currentWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -14,6 +14,8 @@ function player(id: string, age: number, level = 5): RosterPlayer {
       tackling: v, pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v,
     },
     profile: { summary: "" } as RosterPlayer["profile"],
+    // Neutral personality: the contract rules on their own (personality effects tested below).
+    personality: { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament: 10.5 },
   };
 }
 
@@ -132,5 +134,45 @@ describe("contractEndFor / renewalWithinLimits", () => {
     expect(renewalWithinLimits(p, "2027-01-10", "2027-05-31", 3)).toBe(false);
     const old = { age: 34, contract: { until: "2027-05-31", wage: 1 } } as never;
     expect(renewalWithinLimits(old, "2027-01-10", "2027-05-31", 3)).toBe(false);
+  });
+});
+
+describe("personality (`personality.md`)", () => {
+  const withP = (p: RosterPlayer, traits: Partial<NonNullable<RosterPlayer["personality"]>>): RosterPlayer =>
+    ({ ...p, personality: { ...p.personality!, ...traits } });
+  const finances = (income: number) => ({ broadcasting: income, commercial: 0, total: income, budget: 0, followers: 0 });
+
+  test("ambition shifts every demand by up to ±8%", () => {
+    const base = player("a", 26);
+    const sq = squad([player("x", 26)]);
+    const plain = contractDemand(base, sq, "d");
+    expect(contractDemand(withP(base, { ambition: 20 }), sq, "d")).toBe(Math.round(demandBreakdown(base, sq, "d").base * 1.08));
+    expect(contractDemand(withP(base, { ambition: 1 }), sq, "d")).toBeLessThan(plain);
+  });
+
+  test("loyalty discounts the renewal by seasons at the club; compatriot discount on a signing", () => {
+    const loyal = withP({ ...player("l", 26), history: [
+      { season: "2024-25", squadId: "c1" }, { season: "2025-26", squadId: "c1" }, { season: "2026-27", squadId: "c1" },
+    ] as never }, { loyalty: 20 });
+    const own = squad([loyal]);
+    const b = demandBreakdown(loyal, own, "d");
+    expect(b.loyalty).toBeCloseTo(0.9);
+    expect(b.compatriot).toBe(1);
+    const foreign = { ...withP(player("n", 26), { loyalty: 20 }), nationality: "Brazil" };
+    const brazil = { ...squad([player("x", 26)]), country: "Brazil" };
+    expect(demandBreakdown(foreign, brazil, "d").compatriot).toBeCloseTo(0.95);
+  });
+
+  test("ambition and a smaller club: premium, refusal from two tiers down", () => {
+    const amb = withP(player("s", 26), { ambition: 18 });
+    const elite = { finances: finances(300_000_000) };
+    const small = { ...squad([player("x", 26)]), finances: finances(5_000_000) };
+    const b = demandBreakdown(amb, small, "d", { fromSquad: elite });
+    expect(b.refuses).toBe(true);
+    expect(evaluateContractOffer({ wage: 10_000_000, years: 2 }, amb, small, "d", { fromSquad: elite }).reason).toBe("smallerClub");
+    const mid = { ...squad([player("x", 26)]), finances: finances(100_000_000) };
+    const one = demandBreakdown(amb, mid, "d", { fromSquad: elite });
+    expect(one.refuses).toBe(false);
+    expect(one.smallerClub).toBeGreaterThan(1);
   });
 });

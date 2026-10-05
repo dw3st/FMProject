@@ -1,11 +1,22 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal } from "@/Domain/morale/morale";
+
+/** The last club of a free agent (his latest history row), for the smaller-club rule (`personality.md`). */
+async function lastClubOf(saveId: string, player: RosterPlayer): Promise<Squad | null> {
+  const rows = player.history ?? [];
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const id = rows[i]!.squadId;
+    if (id) return saveService.getSquadById(saveId, id);
+  }
+  return null;
+}
 
 /**
  * `POST /api/saves/:saveId/players/:playerId/renew` `{ wage, years }` — renew a player of the
@@ -115,8 +126,13 @@ export const contractRoutes = {
     const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
     // Own player: the morale behind the demand (an unhappy one asks more, a furious one refuses).
     const own = !from || from === mine.id ? mine.players.find((p) => p.id === playerId) : undefined;
+    // Personality parts of the demand (`personality.md`): where he comes from = his club, or the
+    // last club of a free agent.
+    const fromSquad = own ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
+    const b = demandBreakdown(player, mine, date, { fromSquad });
     return Response.json({
-      demand: contractDemand(player, mine, date),
+      demand: b.demand,
+      ambition: b.ambition, loyalty: b.loyalty, compatriot: b.compatriot, smallerClub: b.smallerClub, refusesSmallerClub: b.refuses,
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
         : {}),
@@ -156,7 +172,7 @@ export const contractRoutes = {
       if ((await humanRosterSize(saveService, saveId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
-      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date);
+      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: await lastClubOf(saveId, agent.player) });
       if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end

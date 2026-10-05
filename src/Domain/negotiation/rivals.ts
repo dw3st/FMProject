@@ -107,7 +107,7 @@ export function rollRival(args: {
   return {
     playerId: player.id, playerName: player.name, fromClubId: seller.id,
     clubId: c.squad.id, clubName: c.squad.name, fee, wage, date: args.date, deadline,
-    sellerAccepts: respondToOffer({ player, seller, fee }).kind === "accept",
+    sellerAccepts: respondToOffer({ player, seller, buyer: c.squad, fee }).kind === "accept",
   };
 }
 

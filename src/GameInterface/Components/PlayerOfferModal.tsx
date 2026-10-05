@@ -8,7 +8,7 @@ import { translateTransferReason } from "@/GameInterface/Transfers/transferShare
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { NegotiationTalk } from "@/types/transferMarketTypes";
-import { ContractTermsFields, useContractDemand, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
+import { ContractTermsFields, useContractDemandInfo, useRefusalText } from "@/GameInterface/Contracts/ContractTermsFields";
 import { Icon } from "@/GameInterface/Icons";
 import { formatFee } from "@/Domain/money";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -84,7 +84,8 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [preDone, setPreDone] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const refusalText = useRefusalText();
-  const demand = useContractDemand(saveId, player?.id ?? null, player?.squadId);
+  const demandInfo = useContractDemandInfo(saveId, player?.id ?? null, player?.squadId);
+  const demand = demandInfo?.demand ?? null;
   const [wage, setWage] = useState(0);
   const [years, setYears] = useState(3);
   const [contractError, setContractError] = useState<string | null>(null);
@@ -186,7 +187,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; accepted?: boolean; reason?: string };
       if (!res.ok) {
-        if (body.error && ["lowWage", "tooManyYears", "invalidYears"].includes(body.error)) setContractError(refusalText(body.error));
+        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub"].includes(body.error)) setContractError(refusalText(body.error));
         else setMessage(errorText(body.error));
         return;
       }
@@ -221,7 +222,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         preference?: { winner: string; clubName: string; reason: string };
       };
       if (!res.ok) {
-        if (body.error && ["lowWage", "tooManyYears", "invalidYears"].includes(body.error)) {
+        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub"].includes(body.error)) {
           setContractError(refusalText(body.error));
         } else if (body.error === "windowClosed") {
           setMessage(windowClosedText(t, i18n.language, body.opensOn));
@@ -389,7 +390,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground m-0">{t("negotiation.preContract.explain", { date: fmtDate(player.contractEnd ?? currentDate) })}</p>
                   <label className={LABEL}>{t("contracts.terms")}</label>
-                  <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
+                  <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
                   {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
                 </div>
               ) : tab === "transfer" ? (
@@ -437,7 +438,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
 
                   <div>
                     <label className={LABEL}>{t("contracts.terms")}</label>
-                    <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
+                    <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
                     {contractError && <p className="text-sm text-destructive m-0 mt-2" role="alert">{contractError}</p>}
                   </div>
                 </>

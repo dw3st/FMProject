@@ -22,7 +22,7 @@ export function preContractEligible(player: RosterPlayer, date: string): boolean
 
 export type PreContractAnswer =
   | { accepted: true; preference: { human: number; current: number } }
-  | { accepted: false; reason: "notEligible" | "lowWage" | "tooManyYears" | "invalidYears" | "prefersCurrent"; demand: number; preference?: { human: number; current: number } };
+  | { accepted: false; reason: "notEligible" | "lowWage" | "tooManyYears" | "invalidYears" | "prefersCurrent" | "smallerClub"; demand: number; preference?: { human: number; current: number } };
 
 /**
  * The player's answer: the contract terms must be acceptable (`evaluateContractOffer` at the human
@@ -42,10 +42,12 @@ export function answerPreContract(args: {
   nextSeasonEnd: string;
 }): PreContractAnswer {
   const { player, human, current, date } = args;
-  const demand = contractDemand(player, human, date);
+  // Personality (`personality.md`): coming from `current` (smaller-club premium / refusal).
+  const ctx = { fromSquad: current };
+  const demand = contractDemand(player, human, date, ctx);
   if (!preContractEligible(player, date)) return { accepted: false, reason: "notEligible", demand };
-  const terms = evaluateContractOffer(args.offer, player, human, date);
-  if (!terms.accepted) return { accepted: false, reason: terms.reason as "lowWage" | "tooManyYears" | "invalidYears", demand: terms.demand };
+  const terms = evaluateContractOffer(args.offer, player, human, date, ctx);
+  if (!terms.accepted) return { accepted: false, reason: terms.reason as "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub", demand: terms.demand };
   const renewal = renewalContract(player, current, args.nextSeasonEnd, 1);
   const fin = aiClubFinance(current);
   const billWithout = squadWeeklyWages(current.players.filter((p) => p.id !== player.id), wageFactorOf(current));

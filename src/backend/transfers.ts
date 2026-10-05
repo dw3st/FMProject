@@ -172,13 +172,15 @@ export const transferRoutes = {
         // ── Contract offer to the player ──────────────────────────────────────
         // Every signing creates a contract. `wage` defaults to the player's demand and `years`
         // to 3 (shortened to fit the age limit) when the client sends neither.
-        const demand = contractDemand(player, buyerSquad, meta.currentDate ?? "");
+        // Personality (`personality.md`): the seller's club is where he comes from (smaller-club premium / refusal).
+        const demandCtx = { fromSquad: sellerSquad };
+        const demand = contractDemand(player, buyerSquad, meta.currentDate ?? "", demandCtx);
         const contractYears = typeof offeredYears === "number"
           ? offeredYears
           : Math.min(3, Math.max(1, 36 - player.age));
         const contractWage = typeof offeredWage === "number" ? offeredWage : demand;
         const contractCheck = evaluateContractOffer(
-          { wage: contractWage, years: contractYears }, player, buyerSquad, meta.currentDate ?? "",
+          { wage: contractWage, years: contractYears }, player, buyerSquad, meta.currentDate ?? "", demandCtx,
         );
         if (!contractCheck.accepted) {
           return Response.json({ error: contractCheck.reason, demand: contractCheck.demand }, { status: 400 });
@@ -210,7 +212,7 @@ export const transferRoutes = {
         const floor = rivalFloor(rivals);
         let answer: OfferResponse = meetsCounter && fee >= floor
           ? { kind: "accept", reason: "financial" }
-          : respondToOffer({ player, seller: sellerSquad, fee, sellOnPct, ...(sellPriority !== undefined ? { sellPriority } : {}) });
+          : respondToOffer({ player, seller: sellerSquad, buyer: buyerSquad, fee, sellOnPct, ...(sellPriority !== undefined ? { sellPriority } : {}) });
         if (floor > 0 && answer.kind === "accept" && fee < floor) answer = { kind: "counter", counterFee: floor };
         if (floor > 0 && answer.kind === "counter" && answer.counterFee < floor) answer = { kind: "counter", counterFee: floor };
         // The seller accepts: with a live rival it also accepts, the player chooses (preferenceScore).
@@ -224,7 +226,7 @@ export const transferRoutes = {
               const club = await saveService.getSquadById(saveId, r.clubId);
               return {
                 id: r.clubId, name: r.clubName,
-                pref: { wage: r.wage, demand: club ? contractDemand(player, club, date0) : demand, prestige: prestige.get(r.clubId) ?? 0.5, starter: club ? starterChance(player, club) : 0.5 },
+                pref: { wage: r.wage, demand: club ? contractDemand(player, club, date0, demandCtx) : demand, prestige: prestige.get(r.clubId) ?? 0.5, starter: club ? starterChance(player, club) : 0.5 },
               };
             }))),
           ];

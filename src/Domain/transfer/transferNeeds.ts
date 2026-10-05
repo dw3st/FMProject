@@ -1,3 +1,4 @@
+import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
 import { Player } from "@/Domain/Player";
 import {
   aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
@@ -200,10 +201,13 @@ export function findCandidates(
 ): RosterPlayer[] {
   const cap = priceCapForTier(need.budgetTier);
   const out: RosterPlayer[] = [];
+  const buyer = allSquads.find((s) => s.id === buyerSquadId);
 
   for (const squad of allSquads) {
     if (squad.id === buyerSquadId) continue;
     if (excludeSellerSquadId && squad.id === excludeSellerSquadId) continue;
+    // A very ambitious player turns down a much smaller club (`personality.md`).
+    const steps = buyer ? tierStepsDown(squad, buyer) : 0;
     for (const player of squad.players) {
       // On loan (`.claude/rules/game/negotiation.md`): not the holding club's to sell.
       if (player.loan) continue;
@@ -216,6 +220,7 @@ export function findCandidates(
       if (need.intentType === "future_investment" && player.age > 23) continue;
       const price = new Player(rating, player.age).price;
       if (cap != null && price > cap) continue;
+      if (refusesSmallerClub(player, steps)) continue;
       out.push(player);
     }
   }
