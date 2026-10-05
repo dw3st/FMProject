@@ -543,7 +543,7 @@
     "playersInStartingLineup": "{{count}} players in starting lineup",
     "playersOnBench": "{{count}} players on bench",
     "preview": "Preview",
-    "clickPositionHint": "Click or drag a position to swap players",
+    "clickPositionHint": "Click a position for its instructions; drag it onto another to swap",
     "outOfPosition": "Out of position",
     "outOfPositionPrimary": "Out of position — primary: {{position}} ({{role}})",
     "rating": "Rating",

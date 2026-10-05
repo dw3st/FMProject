@@ -430,14 +430,8 @@ export function FormationScreen() {
     } else if (selectedSlotIdx === slotIdx) {
       setSelectedSlotIdx(null);
     } else {
-      // Swap two slots
-      const newLineup = [...lineup];
-      while (newLineup.length <= Math.max(selectedSlotIdx, slotIdx)) newLineup.push("");
-      const tmp = newLineup[selectedSlotIdx]!;
-      newLineup[selectedSlotIdx] = newLineup[slotIdx]!;
-      newLineup[slotIdx] = tmp;
-      setLineup(newLineup);
-      setSelectedSlotIdx(null);
+      // Another slot: move the selection there (its instructions open). Swapping is by dragging.
+      setSelectedSlotIdx(slotIdx);
     }
   }
 

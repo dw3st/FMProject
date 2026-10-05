@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.1.1",
+    date: "2026-10-06",
+    items: [
+      { pt: "Na Formação, clicar em outro jogador já mostra as instruções dele. Para trocar dois jogadores de lugar, arraste um sobre o outro.", en: "On the Formation screen, clicking another player now shows his instructions straight away. To swap two players, drag one onto the other." },
+    ],
+  },
+  {
     version: "4.1",
     date: "2026-10-05",
     items: [

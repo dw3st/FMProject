@@ -543,7 +543,7 @@
     "playersInStartingLineup": "{{count}} jogadores escalados",
     "playersOnBench": "{{count}} jogadores no banco",
     "preview": "Pré-visualização",
-    "clickPositionHint": "Clique ou arraste uma posição para trocar de jogador",
+    "clickPositionHint": "Clique numa posição para ver as instruções; arraste sobre outra para trocar",
     "outOfPosition": "Fora de posição",
     "outOfPositionPrimary": "Fora de posição — principal: {{position}} ({{role}})",
     "rating": "Nota",
