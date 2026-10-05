@@ -73,6 +73,9 @@ export const rebornRoutes = {
       const rec = retired.find((r) => r.id === retiredId);
       if (!rec) return Response.json({ error: "not found" }, { status: 404 });
       if (rec.rebornOffer !== "pending") return Response.json({ error: "offerClosed" }, { status: 409 });
+      // Only the club the player retired from can take him back (`.claude/rules/game/jobs.md`).
+      const owner = await saveService.getMeta(saveId);
+      if (!owner || rec.squadId !== owner.clubId) return Response.json({ error: "offerClosed" }, { status: 409 });
       const mark = (status: NonNullable<RetiredPlayer["rebornOffer"]>) =>
         saveService.writeRetired(saveId, retired.map((r) => (r.id === retiredId ? { ...r, rebornOffer: status } : r)));
       if (!body.accept) {
