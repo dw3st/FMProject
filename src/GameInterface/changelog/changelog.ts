@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.0.3",
+    date: "2026-10-05",
+    items: [
+      { pt: "Mais rostos parecidos com os jogadores reais: agora são cerca de 1.750 nas principais ligas, incluindo quase todos os 300 melhores do mundo.", en: "More faces that look like the real players: about 1,750 across the main leagues now, including almost all of the world's top 300." },
+    ],
+  },
+  {
     version: "4.0.2",
     date: "2026-10-05",
     items: [
