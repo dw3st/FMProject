@@ -1,6 +1,7 @@
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
+import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
 
 export type InboxCategory =
   | "development"
@@ -14,7 +15,8 @@ export type InboxCategory =
   | "youth"
   | "retirement"
   | "board"
-  | "job";
+  | "job"
+  | "club_record";
 
 interface InboxMessageBase {
   id:        string;
@@ -230,6 +232,12 @@ export interface JobInboxMessage extends InboxMessageBase {
   offer?: JobOffer;
 }
 
+/** A record of the human club fell (`.claude/rules/game/club-history.md`). */
+export interface ClubRecordInboxMessage extends InboxMessageBase {
+  category: "club_record";
+  record: ClubRecordBroken;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -242,4 +250,5 @@ export type InboxMessage =
   | YouthInboxMessage
   | RetirementInboxMessage
   | BoardInboxMessage
-  | JobInboxMessage;
+  | JobInboxMessage
+  | ClubRecordInboxMessage;

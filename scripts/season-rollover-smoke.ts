@@ -1296,6 +1296,53 @@ try {
     }
   }
 
+  // ── História do clube ────────────────────────────────────────────────────
+  // See `.claude/rules/game/club-history.md`: at the country rollover every club of a rolled league gets
+  // the season row; the club's scorers add up to the career rows at the club; the champion has the title.
+  console.log("\n── História do clube ──");
+  {
+    const files = await plain().listSquadFiles(saveId);
+    const free = await plain().getFreeAgents(saveId);
+    const retiredCH = await plain().getRetired(saveId);
+    // Goals per club from every career row in the world (squads, free agents, retired players).
+    const rowGoals = new Map<string, number>();
+    const histories = [
+      ...files.flatMap(({ squad }) => squad.players.map((p) => p.history ?? [])),
+      ...free.map((f) => f.player.history ?? []),
+      ...retiredCH.map((r) => r.history ?? []),
+    ];
+    for (const h of histories) for (const r of h) rowGoals.set(r.squadId, (rowGoals.get(r.squadId) ?? 0) + r.goals);
+    let clubs = 0;
+    let withRow = 0;
+    let goalsMatch = 0;
+    let champTitle = 0;
+    let champs = 0;
+    for (const rc of rolledCountries.values()) {
+      for (const [slug, year] of rc.closed) {
+        const arch = await fsDal.readLeagueSeasonArchive(saveId, slug, year);
+        if (!arch || arch.standings.length === 0) continue;
+        const label = seasonLabel(arch.year, arch.start, arch.end);
+        for (const [i, st] of arch.standings.entries()) {
+          clubs++;
+          const h = await fsDal.readClubHistory(saveId, st.squadId);
+          const row = h?.seasons.find((x) => x.season === label && x.league === slug);
+          if (row) withRow++;
+          const sum = Object.values(h?.scorers ?? {}).reduce((a, x) => a + x.goals, 0);
+          if (sum === (rowGoals.get(st.squadId) ?? 0)) goalsMatch++;
+          if (i === 0 && st.mp > 0) {
+            champs++;
+            if (row?.titles.includes(`league:${slug}`)) champTitle++;
+          }
+        }
+      }
+    }
+    check(clubs > 0 && withRow === clubs, `história do clube: ${withRow}/${clubs} clubs of the rolled leagues have the season row`);
+    check(goalsMatch === clubs, `história do clube: ${goalsMatch}/${clubs} clubs' scorers add up to the career rows`);
+    check(champs > 0 && champTitle === champs, `história do clube: ${champTitle}/${champs} champions have the league title`);
+    const mine = await fsDal.readClubHistory(saveId, playerSquadId);
+    console.log(`  player club: ${mine?.seasons.length ?? 0} season(s), records ${Object.keys(mine?.records ?? {}).join(", ")}`);
+  }
+
   // ── Técnicos ─────────────────────────────────────────────────────────────
   // See `.claude/rules/game/managers.md`: one manager per club (the player's replacing his club's coach);
   // the league champion's manager scores the league title at the rollover; cup and continental

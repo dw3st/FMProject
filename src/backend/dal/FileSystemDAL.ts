@@ -2,6 +2,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
 import type { TransferRecord } from "@/types/transferTypes";
 import type { StoredDayLog } from "@/types/dayLogTypes";
@@ -25,6 +26,9 @@ function seasonArchivePath(saveId: string, year: number) {
 }
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
+function clubHistoryPath(saveId: string, squadId: string) {
+  return `${SAVES_DIR}/${saveId}/clubHistory/${squadId}.json`;
+}
 function managersPath(saveId: string) { return `${SAVES_DIR}/${saveId}/managers.json`; }
 function transfersPath(saveId: string) { return `${SAVES_DIR}/${saveId}/transfers.json`; }
 function transfersArchivePath(saveId: string, year: number) {
@@ -147,6 +151,17 @@ export class FileSystemDAL implements ISaveDAL {
   async writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(retiredPath(saveId), JSON.stringify(retired));
+  }
+
+  async readClubHistory(saveId: string, squadId: string): Promise<ClubHistory | null> {
+    const file = Bun.file(clubHistoryPath(saveId, squadId));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<ClubHistory>;
+  }
+
+  async writeClubHistory(saveId: string, history: ClubHistory): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}/clubHistory`, { recursive: true });
+    await Bun.write(clubHistoryPath(saveId, history.squadId), JSON.stringify(history));
   }
 
   async readTransfers(saveId: string): Promise<TransferRecord[]> {

@@ -3,6 +3,7 @@ import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
+import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type {
   SeasonArchive,
   LeagueDateIndex,
@@ -168,6 +169,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
     this.buffer(`retired:${saveId}`, retired, () => this.inner.writeRetired(saveId, retired));
+  }
+
+  // ── Club history ──────────────────────────────────────────────────────────────
+  readClubHistory(saveId: string, squadId: string): Promise<ClubHistory | null> {
+    return this.readThrough(`clubHistory:${saveId}:${squadId}`, () => this.inner.readClubHistory(saveId, squadId));
+  }
+  async writeClubHistory(saveId: string, history: ClubHistory): Promise<void> {
+    this.buffer(`clubHistory:${saveId}:${history.squadId}`, history, () => this.inner.writeClubHistory(saveId, history));
   }
 
   // ── Transfers ─────────────────────────────────────────────────────────────────
