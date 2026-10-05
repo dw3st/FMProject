@@ -885,12 +885,12 @@ describe("quickSim side morale (`src/Domain/morale`)", () => {
     ...(am !== undefined ? { awayMorale: am } : {}),
   });
 
-  test("65 (or absent) changes nothing; 100 lifts every line ×(1 + 0.02 × 0.5)", () => {
+  test("65 (or absent) changes nothing; 100 lifts every line ×(1 + 0.02)", () => {
     const base = quickSimMatch(input(), mulberry32(7)).breakdown;
     expect(quickSimMatch(input(65, 65), mulberry32(7)).breakdown).toEqual(base);
     const hi = quickSimMatch(input(100), mulberry32(7)).breakdown;
     for (const k of ["attack", "midfield", "defense", "goalkeeper"] as const) {
-      expect(hi.home[k]).toBeCloseTo(base.home[k] * 1.01);
+      expect(hi.home[k]).toBeCloseTo(base.home[k] * 1.02);
       expect(hi.away[k]).toBe(base.away[k]);
     }
     const lo = quickSimMatch(input(undefined, 0), mulberry32(7)).breakdown;

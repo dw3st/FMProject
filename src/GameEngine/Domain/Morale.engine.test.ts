@@ -44,7 +44,7 @@ describe("morale in the engine", () => {
     expect(neutral.benchA.map((p) => p.fit)).toEqual(base.benchA.map((p) => p.fit));
   });
 
-  test("a player's own morale scales his attributes (×1.01 at 100), capped at 10", () => {
+  test("a player's own morale scales his attributes (×1.02 at 100), capped at 10", () => {
     const base = build(home, away);
     const happy = build(home.map((p) => ({ ...p, morale: 100 })), away);
     const a0 = base.players.find((p) => p.team === "A")!;
@@ -52,7 +52,7 @@ describe("morale in the engine", () => {
     const before = a0.fit!.stats as unknown as Record<string, number>;
     const after = h0.fit!.stats as unknown as Record<string, number>;
     for (const k of Object.keys(before)) {
-      expect(after[k]!).toBeCloseTo(Math.min(10, before[k]! * 1.01));
+      expect(after[k]!).toBeCloseTo(Math.min(10, before[k]! * 1.02));
     }
     expect(h0.morale).toBe(100);
     // The AI side is untouched.

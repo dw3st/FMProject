@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import type { SaveService } from "@/backend/SaveService";
 import { emptyMarket } from "@/backend/negotiationWorld";
-import { computeMinutesPlayed } from "@/Domain/advanceDay/matches";
+import { computeMinutesPlayed, substitutionsWithExits } from "@/Domain/advanceDay/matches";
 import { moraleDay, type ClubMatchSummary, type PlayerNews } from "@/Domain/morale/morale";
 import { teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import type { MatchEvent } from "@/types/dayLogTypes";
@@ -24,7 +24,12 @@ export function clubMatchSummary(event: MatchEvent, clubId: string): ClubMatchSu
     result = (side === "home" ? pens.home > pens.away : pens.away > pens.home) ? "W" : "L";
   }
   const ids = Object.keys(event.playerStats).filter((id) => event.playerTeams[id] === side);
-  const minutes = computeMinutesPlayed(ids, event.substitutions ?? [], event.decider ? 120 : 90);
+  // Same synthetic exits as the post-match pipeline (injured with no sub, sent off).
+  const all = computeMinutesPlayed(
+    ids, substitutionsWithExits(event.substitutions ?? [], event.injuries ?? [], event.cards ?? []), event.decider ? 120 : 90,
+  );
+  const minutes: Record<string, number> = {};
+  for (const id of ids) minutes[id] = all[id] ?? 0;
   const goals: Record<string, number> = {};
   const ratings: Record<string, number> = {};
   for (const id of ids) {
@@ -35,15 +40,16 @@ export function clubMatchSummary(event: MatchEvent, clubId: string): ClubMatchSu
   return { result, minutes, goals, ratings };
 }
 
-/** Puts requested players on the sell list (flagged) and takes withdrawn requests off it. */
+/**
+ * Puts requested players on the sell list (flagged) and takes withdrawn requests off it. A player
+ * the manager listed himself keeps his plain entry: never flagged, never removed here.
+ */
 export function marketAfterRequests(market: MarketState, add: string[], remove: string[]): MarketState {
   if (add.length === 0 && remove.length === 0) return market;
   const drop = new Set(remove);
   const list: SellCandidate[] = (market.playerSellList ?? []).filter((c) => !(drop.has(c.playerId) && c.requested));
   for (const id of add) {
-    const i = list.findIndex((c) => c.playerId === id);
-    if (i >= 0) list[i] = { ...list[i]!, requested: true };
-    else list.push({ playerId: id, priority: 1, requested: true });
+    if (!list.some((c) => c.playerId === id)) list.push({ playerId: id, priority: 1, requested: true });
   }
   return { ...market, playerSellList: list };
 }
@@ -61,6 +67,10 @@ export async function applyMoraleDay(
     date: string;
     events: MatchEvent[];
     bids: { playerId: string; clubId: string; clubName: string }[];
+    /** Players injured or suspended before today's matches. */
+    unavailable?: ReadonlySet<string>;
+    /** The club's country rolled over today. */
+    seasonRolled?: boolean;
   },
 ): Promise<PlayerNews[]> {
   const squad = await service.getSquadById(saveId, args.clubId);
@@ -82,6 +92,8 @@ export async function applyMoraleDay(
     matches,
     bids,
     sellList: market?.playerSellList ?? [],
+    ...(args.unavailable ? { unavailable: args.unavailable } : {}),
+    ...(args.seasonRolled ? { seasonRolled: true } : {}),
     newId: () => randomUUID(),
   });
   await service.saveSquadById(saveId, out.squad);

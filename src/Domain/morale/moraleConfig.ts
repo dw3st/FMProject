@@ -16,8 +16,8 @@ export const MORALE = {
   // ── Match effect ────────────────────────────────────────────────────────
   /** Attributes × (1 + EXECUTION_STAT_SCALE × factor) — same scale as style familiarity. */
   EXECUTION_STAT_SCALE: 0.02,
-  /** Factor at morale 100 (it is −1 at 0 and 0 at NEUTRAL). */
-  FACTOR_AT_MAX: 0.5,
+  /** Factor at morale 100 (it is −1 at 0 and 0 at NEUTRAL): symmetric, attributes up to ±2%. */
+  FACTOR_AT_MAX: 1,
   /** quickSim: line strengths × (1 + QUICKSIM_STRENGTH × factor), only when a side morale is given. */
   QUICKSIM_STRENGTH: 0.02,
 

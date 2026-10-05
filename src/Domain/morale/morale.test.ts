@@ -4,6 +4,7 @@ import {
   afterRenewal,
   answerTalk,
   answersFor,
+  clampMorale,
   initClubMorale,
   minutesDelta,
   moraleBand,
@@ -64,13 +65,13 @@ describe("value, band and effects", () => {
     expect(moraleBand(24.9)).toBe("furious");
   });
 
-  test("factor: -1 at 0, 0 at 65, +0.5 at 100; absent = 0", () => {
+  test("factor: -1 at 0, 0 at 65, +1 at 100; absent = 0", () => {
     expect(moraleFactor(0)).toBe(-1);
     expect(moraleFactor(65)).toBe(0);
-    expect(moraleFactor(100)).toBe(0.5);
+    expect(moraleFactor(100)).toBe(1);
     expect(moraleFactor(undefined)).toBe(0);
     expect(moraleExecutionMult(65)).toBe(1);
-    expect(moraleExecutionMult(100)).toBeCloseTo(1.01);
+    expect(moraleExecutionMult(100)).toBeCloseTo(1.02);
     expect(moraleExecutionMult(0)).toBeCloseTo(0.98);
     expect(moraleQuickSimMult(undefined)).toBe(1);
   });
@@ -79,7 +80,7 @@ describe("value, band and effects", () => {
     const s = stats(5);
     expect(withMoraleExecution(s, 65)).toBe(s);
     expect(withMoraleExecution(s, undefined)).toBe(s);
-    expect(withMoraleExecution(s, 100).passing).toBeCloseTo(5.05);
+    expect(withMoraleExecution(s, 100).passing).toBeCloseTo(5.1);
     expect(withMoraleExecution(stats(10), 100).passing).toBe(10);
   });
 
@@ -147,13 +148,51 @@ describe("moraleDay", () => {
   test("Monday: benched key player loses, drifts towards 65, asks to talk when below 40", () => {
     const sq = fullSquad();
     sq.players = sq.players.map((p) =>
-      p.id === "f0" ? { ...p, morale: 38, moraleLog: { minutes: [0, 0, 0, 0, 0], trend: [] } } : p);
+      p.id === "f0" ? { ...p, morale: 38, moraleLog: { minutes: [0, 0, 0, 0, 0], trend: [], newMatches: 2 } } : p);
     const out = moraleDay({ squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId });
     const f0 = out.squad.players.find((x) => x.id === "f0")!;
     // 38 - 6 = 32, then +5% of (65 - 32)
     expect(f0.morale).toBeCloseTo(33.7, 1);
     expect(out.squad.moraleClub!.talks.map((t) => t.reason)).toEqual(["minutes"]);
     expect(out.news.some((n) => n.kind === "talk" && n.playerId === "f0")).toBe(true);
+  });
+
+  test("Monday without a new match in the window: no minutes delta (international break, off-season)", () => {
+    const sq = fullSquad();
+    sq.players = sq.players.map((p) =>
+      p.id === "f0" ? { ...p, morale: 50, moraleLog: { minutes: [0, 0, 0, 0, 0], trend: [], newMatches: 0 } } : p);
+    const out = moraleDay({ squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId });
+    const f0 = out.squad.players.find((x) => x.id === "f0")!;
+    expect(f0.morale).toBe(clampMorale(50 + 15 * MORALE.DRIFT)); // drift only
+    expect(f0.moraleLog!.newMatches).toBe(0);
+  });
+
+  test("unavailable before the match: no window entry, no promise match; season rollover resets windows", () => {
+    const sq = {
+      ...fullSquad(),
+      moraleClub: { talks: [], promises: [{ id: "p1", playerId: "d4", playerName: "x", kind: "minutes" as const, madeOn: "2027-03-01", target: 1, matches: 0, played: 0 }] },
+    };
+    sq.players = sq.players.map((p) => (p.id === "d4" ? { ...p, moraleLog: { minutes: [90], trend: [] } } : p));
+    const out = moraleDay({
+      squad: sq, date: "2027-03-03", monday: false, bids: [], sellList: [], newId,
+      matches: [{ result: "D", minutes: {}, goals: {}, ratings: {} }], unavailable: new Set(["d4"]),
+    });
+    const d4 = out.squad.players.find((x) => x.id === "d4")!;
+    expect(d4.moraleLog!.minutes).toEqual([90]);
+    expect(out.squad.moraleClub!.promises[0]!.matches).toBe(0);
+    const rolled = moraleDay({ squad: out.squad, date: "2027-03-04", monday: false, matches: [], bids: [], sellList: [], seasonRolled: true, newId });
+    expect(rolled.squad.players.find((x) => x.id === "d4")!.moraleLog!.minutes).toEqual([]);
+  });
+
+  test("the weekly cap of talk requests covers wants_move talks", () => {
+    const sq = fullSquad();
+    sq.players = sq.players.map((p) => ({ ...p, morale: 30 }));
+    const bids = ["d4", "d5", "m4"].map((playerId) => ({ playerId, clubName: "Rich", stronger: true }));
+    const out = moraleDay({ squad: sq, date: "2027-03-03", monday: false, matches: [], bids, sellList: [], newId });
+    expect(out.squad.moraleClub!.talks).toHaveLength(MORALE.MAX_NEW_TALKS_PER_WEEK);
+    expect(out.squad.moraleClub!.week).toEqual({ start: "2027-03-01", count: MORALE.MAX_NEW_TALKS_PER_WEEK });
+    const later = moraleDay({ squad: out.squad, date: "2027-03-04", monday: false, matches: [], sellList: [], newId, bids: [{ playerId: "m3", clubName: "R", stronger: true }] });
+    expect(later.squad.moraleClub!.talks).toHaveLength(MORALE.MAX_NEW_TALKS_PER_WEEK);
   });
 
   test("Monday: furious player requests a transfer (listed), withdrawn when fine again", () => {

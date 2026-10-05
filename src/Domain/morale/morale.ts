@@ -38,7 +38,7 @@ export function moraleBand(v: number): MoraleBand {
   return "furious";
 }
 
-/** −1 at 0, 0 at the neutral value, +0.5 at 100 (linear on each side). Undefined = 0. */
+/** −1 at 0, 0 at the neutral value, +1 at 100 (linear on each side). Undefined = 0. */
 export function moraleFactor(v: number | undefined): number {
   if (v === undefined || !Number.isFinite(v)) return 0;
   const m = clamp(v, MORALE.MIN, MORALE.MAX);
@@ -240,6 +240,10 @@ export interface MoraleDayInput {
   bids: { playerId: string; clubName: string; stronger: boolean }[];
   /** Players on the human's sell list (with the `requested` flag). */
   sellList: { playerId: string; requested?: boolean }[];
+  /** Injured or suspended before today's matches: no window entry, no promise match for them. */
+  unavailable?: ReadonlySet<string>;
+  /** The human club's country rolled over today: the minutes windows start over. */
+  seasonRolled?: boolean;
   newId: () => string;
 }
 
@@ -261,6 +265,12 @@ export function moraleTrend(p: RosterPlayer): number | null {
   const t = p.moraleLog?.trend ?? [];
   if (t.length < 2) return null;
   return round1(t[t.length - 1]! - t[0]!);
+}
+
+/** Monday of the week of `date` (ISO). */
+export function weekStartOf(date: string): string {
+  const dow = new Date(`${date}T12:00:00Z`).getUTCDay();
+  return addDays(date, -((dow + 6) % 7));
 }
 
 function hasOpenTalk(state: ClubMoraleState, playerId: string): boolean {
@@ -313,6 +323,10 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     news.push({ date, kind: "promise_kept", playerId: pr.playerId, playerName: pr.playerName, promiseKind: pr.kind });
   };
 
+  const unavailable = input.unavailable ?? new Set<string>();
+  const week = weekStartOf(date);
+  let weekCount = state.week?.start === week ? state.week.count : 0;
+
   // Every player starts from a stored value.
   for (const p of players.values()) if (p.morale === undefined) set({ ...p, morale: MORALE.NEUTRAL });
 
@@ -324,13 +338,20 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
         + ((m.ratings[p.id] ?? 0) >= MORALE.GOOD_RATING ? MORALE.GOOD_RATING_BONUS : 0);
       d += Math.min(MORALE.MATCH_PERSONAL_CAP, personal);
       const log = logOf(p);
-      const minutes = [...log.minutes, m.minutes[p.id] ?? 0].slice(-MORALE.WINDOW);
-      set({ ...withMoraleDelta(p, d), moraleLog: { ...log, minutes } });
+      // A match he could not play (injured, suspended) does not count against his minutes.
+      const out = unavailable.has(p.id) && (m.minutes[p.id] ?? 0) === 0;
+      const nextLog = out ? log : {
+        ...log,
+        minutes: [...log.minutes, m.minutes[p.id] ?? 0].slice(-MORALE.WINDOW),
+        newMatches: (log.newMatches ?? 0) + 1,
+      };
+      set({ ...withMoraleDelta(p, d), moraleLog: nextLog });
     }
     // Minutes promises: count the match, resolve as soon as decided.
     const next: PlayerPromise[] = [];
     for (const pr of state.promises) {
       if (pr.kind !== "minutes" || !players.has(pr.playerId)) { next.push(pr); continue; }
+      if (unavailable.has(pr.playerId) && (m.minutes[pr.playerId] ?? 0) === 0) { next.push(pr); continue; }
       const matches = (pr.matches ?? 0) + 1;
       const played = (pr.played ?? 0) + ((m.minutes[pr.playerId] ?? 0) > 0 ? 1 : 0);
       const target = pr.target ?? 1;
@@ -360,19 +381,27 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     if ((pr.kind === "sale" || pr.kind === "renewal") && pr.until && pr.until < date) { breakPromise(pr); continue; }
     promises.push(pr);
   }
-  state = { talks, promises };
+  state = { ...state, talks, promises };
+
+  // ── Season over: the minutes windows start again ──
+  if (input.seasonRolled) {
+    for (const p of [...players.values()]) {
+      if (p.moraleLog) set({ ...p, moraleLog: { ...p.moraleLog, minutes: [], newMatches: 0 } });
+    }
+  }
 
   // ── Monday ──
   if (input.monday) {
     const suggested = suggestedStatuses({ players: [...players.values()] });
-    let newTalks = 0;
     for (const p0 of [...players.values()]) {
       const status = statusOf(p0, suggested);
       const log = logOf(p0);
       const excused = isInjured(p0, date) || isSuspended(p0);
-      let v = moraleOf(p0) + minutesDelta(status, log.minutes, excused);
+      // The window only counts again once new matches entered it (breaks, off-season: no change).
+      const fresh = (log.newMatches ?? 0) > 0;
+      let v = moraleOf(p0) + (fresh ? minutesDelta(status, log.minutes, excused) : 0);
       v += (MORALE.NEUTRAL - v) * MORALE.DRIFT;
-      let p: RosterPlayer = { ...p0, morale: clampMorale(v) };
+      let p: RosterPlayer = { ...p0, morale: clampMorale(v), ...(p0.moraleLog ? { moraleLog: { ...log, newMatches: 0 } } : {}) };
       set(p);
       // Transfer request: furious and not yet asked; withdrawn once he is fine again.
       if (moraleOf(p) < MORALE.TRANSFER_REQUEST_BELOW) requestTransfer(p.id);
@@ -386,7 +415,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
         p = players.get(p.id)!;
       }
       // Talk triggers.
-      if (newTalks >= MORALE.MAX_NEW_TALKS_PER_WEEK || hasOpenTalk(state, p.id) || quiet(p, date) || p.loan) continue;
+      if (weekCount >= MORALE.MAX_NEW_TALKS_PER_WEEK || hasOpenTalk(state, p.id) || quiet(p, date) || p.loan) continue;
       const reason = talkReasonOf(p, status, date, state);
       if (reason) {
         const talk: TalkRequest = {
@@ -395,7 +424,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
         };
         state = { ...state, talks: [...state.talks, talk] };
         news.push({ date, kind: "talk", playerId: p.id, playerName: p.name, reason, talkId: talk.id });
-        newTalks++;
+        weekCount++;
       }
     }
   }
@@ -403,7 +432,8 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
   // ── Bids: a player who wants the move asks to talk ──
   for (const b of input.bids) {
     const p = players.get(b.playerId);
-    if (!p || p.loan || hasOpenTalk(state, p.id) || hasPromise(state, p.id, "sale")) continue;
+    if (weekCount >= MORALE.MAX_NEW_TALKS_PER_WEEK) break;
+    if (!p || p.loan || hasOpenTalk(state, p.id) || hasPromise(state, p.id, "sale") || quiet(p, date)) continue;
     if (moraleOf(p) >= MORALE.WANTS_MOVE_BELOW && !b.stronger) continue;
     const talk: TalkRequest = {
       id: input.newId(), playerId: p.id, playerName: p.name, reason: "wants_move", date,
@@ -411,7 +441,9 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     };
     state = { ...state, talks: [...state.talks, talk] };
     news.push({ date, kind: "talk", playerId: p.id, playerName: p.name, reason: "wants_move", talkId: talk.id, clubName: b.clubName });
+    weekCount++;
   }
+  state = { ...state, week: { start: week, count: weekCount } };
 
   // ── Daily trend ──
   for (const p of [...players.values()]) set({ ...p, moraleLog: pushTrend(logOf(p), moraleOf(p)) });
@@ -537,6 +569,7 @@ export function answerTalk(args: {
   if (talk) nextLog = { ...nextLog, quietUntil: addDays(date, MORALE.TALK_QUIET_DAYS) };
   const updated: RosterPlayer = { ...withMoraleDelta(player, change), moraleLog: nextLog };
   const nextState: ClubMoraleState = {
+    ...state,
     talks: talk ? state.talks.filter((t) => t.id !== talk.id) : state.talks,
     promises: promise
       ? [...state.promises.filter((p) => !(p.playerId === playerId && p.kind === promise!.kind)), promise]
@@ -568,6 +601,7 @@ export function afterRenewal(squad: Squad, playerId: string, date: string): { sq
       ...squad,
       players: squad.players.map((p) => (p.id === playerId ? withMoraleDelta(p, d) : p)),
       moraleClub: {
+        ...state,
         talks: state.talks.filter((t) => !(t.playerId === playerId && t.reason === "contract")),
         promises: state.promises.filter((p) => p !== promise),
       },

@@ -19,8 +19,10 @@ export type TalkAnswer = "promise_minutes" | "promise_sale" | "promise_renewal" 
 
 /** Per-player morale bookkeeping (human club only). */
 export interface PlayerMoraleLog {
-  /** Minutes in the club's last official matches (newest last, at most 5). */
+  /** Minutes in the club's last official matches (newest last, at most 5); skips matches he was unavailable for. */
   minutes: number[];
+  /** Window entries added since the last Monday evaluation: no new match, no minutes delta. */
+  newMatches?: number;
   /** Daily morale values (newest last, at most 8): the 7-day trend. */
   trend: number[];
   /** Last praise / demand talk (works once per `PRAISE_EVERY_DAYS`). */
@@ -64,4 +66,6 @@ export interface PlayerPromise {
 export interface ClubMoraleState {
   talks: TalkRequest[];
   promises: PlayerPromise[];
+  /** Talk requests created this week (Monday start), any reason: at most `MAX_NEW_TALKS_PER_WEEK`. */
+  week?: { start: string; count: number };
 }

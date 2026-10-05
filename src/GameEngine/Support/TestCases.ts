@@ -435,7 +435,7 @@ export const TEST_SCENARIOS: TestScenario[] = [
   {
     id:          'morale-gap',
     name:        '11v11 — Morale gap',
-    description: 'Team A players at morale 100 (very happy, attributes x1.010), Team B at 20 (furious, x0.986) from the roster itself — the per-player path of a real match (`.claude/rules/game/morale.md`). Keep the Morale selectors on "Roster" and open the Energy panel to see the multiplier of each side.',
+    description: 'Team A players at morale 100 (very happy, attributes x1.020), Team B at 20 (furious, x0.986) from the roster itself — the per-player path of a real match (`.claude/rules/game/morale.md`). Keep the Morale selectors on "Roster" and open the Energy panel to see the multiplier of each side.',
     createState() {
       const f433 = formation433Json as Formation;
       const withMorale = (ps: RosterPlayer[], morale: number) => freshRoster(ps).map(p => ({ ...p, morale }));

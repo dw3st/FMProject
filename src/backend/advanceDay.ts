@@ -1,3 +1,4 @@
+import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
@@ -394,6 +395,14 @@ export async function advanceOneDay(
     // The player's squad: meta.clubId is the squadId.
     const playerEntry = index.byId(meta.clubId);
     const playerSquadId: string | undefined = playerEntry?.squadId;
+
+    // Morale (`.claude/rules/game/morale.md`): who could not play today (injured / suspended before
+    // the matches) — those matches never count against his minutes.
+    const moraleUnavailable = new Set<string>();
+    if (playerSquadId && !options.marketFrozen) {
+      const pre = await saveService.getSquadById(saveId, playerSquadId);
+      for (const p of pre?.players ?? []) if (isUnavailable(p, currentDate)) moraleUnavailable.add(p.id);
+    }
 
     // Cup ties run in the full engine only when a club of the player's league is involved.
     const playerLeagueClubs = new Set(index.inLeague(meta.leagueSlug).map((t) => t.squadId));
@@ -2191,6 +2200,8 @@ export async function advanceOneDay(
           clubId: meta.clubId, date: currentDate,
           events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
           bids: moraleBids,
+          unavailable: moraleUnavailable,
+          seasonRolled: seasonEnded,
         })
       : [];
 
@@ -2212,6 +2223,18 @@ export async function advanceOneDay(
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
     for (const msg of moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService);
+    // Talk requests still open when the inbox was cleared keep their message (stable id per talk).
+    if (seasonEnded && meta.clubId && !ended) {
+      const humanT = await saveService.getSquadById(saveId, meta.clubId);
+      const freshTalks = new Set(moraleNews.map((n) => n.talkId).filter(Boolean));
+      for (const talk of humanT?.moraleClub?.talks ?? []) {
+        if (freshTalks.has(talk.id)) continue;
+        await emitInboxMessage(saveId, buildPlayerMessage({
+          date: talk.date, kind: "talk", playerId: talk.playerId, playerName: talk.playerName, reason: talk.reason,
+          talkId: talk.id, ...(talk.clubName ? { clubName: talk.clubName } : {}),
+        }), saveService);
+      }
+    }
     // Bids still pending when the inbox was cleared keep their message (like job offers).
     if (seasonEnded) {
       const mkB = await saveService.getMarket(saveId);
