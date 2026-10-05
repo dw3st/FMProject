@@ -211,14 +211,14 @@ export type IconName =
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
-/** A classic black-and-white football (lucide has no soccer ball): white leather, black panels, whatever the theme. */
+/** A classic black-and-white football (lucide has no soccer ball): white leather with a white rim, black panels, whatever the theme. */
 function SoccerBall(props: SVGProps<SVGSVGElement>) {
   const clip = useId();
   const { strokeWidth: _strokeWidth, ...rest } = props;
   return (
     <svg viewBox="0 0 24 24" {...rest}>
-      <defs><clipPath id={clip}><circle cx="12" cy="12" r="10.5" /></clipPath></defs>
-      <circle cx="12" cy="12" r="10.5" fill="#f4f4f5" />
+      <defs><clipPath id={clip}><circle cx="12" cy="12" r="9.4" /></clipPath></defs>
+      <circle cx="12" cy="12" r="11" fill="#f4f4f5" />
       <g clipPath={`url(#${clip})`} fill="#18181b">
         <polygon points="12.00,7.70 16.09,10.67 14.53,15.48 9.47,15.48 7.91,10.67" />
         <polygon points="21.26,2.25 20.17,5.61 16.64,5.61 15.55,2.25 18.41,0.18" />
@@ -234,7 +234,7 @@ function SoccerBall(props: SVGProps<SVGSVGElement>) {
         <line x1="9.47" y1="15.48" x2="7.30" y2="18.47" />
         <line x1="7.91" y1="10.67" x2="4.39" y2="9.53" />
       </g>
-      <circle cx="12" cy="12" r="10.5" fill="none" stroke="#18181b" strokeWidth="0.8" />
+      <circle cx="12" cy="12" r="9.4" fill="none" stroke="#18181b" strokeWidth="0.6" />
     </svg>
   );
 }

@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.9.5",
+    date: "2026-10-05",
+    items: [
+      { pt: "A bola de futebol dos gols ganhou um contorno branco e não se mistura mais com o fundo escuro.", en: "The goal football now has a white rim and no longer blends into the dark background." },
+    ],
+  },
+  {
     version: "3.9.4",
     date: "2026-10-05",
     items: [
