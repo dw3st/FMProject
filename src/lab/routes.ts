@@ -12,6 +12,9 @@ import {
 import { getRun, listRuns, startRun, subscribe } from "@/lab/runRegistry";
 import { FORMATION_IDS } from "@/Domain/matchFormations";
 import { getMatrixRun, listMatrixRuns, startMatrixRun } from "@/lab/formationMatrixRun";
+import { getInstrMatrixRun, listInstrMatrixRuns, startInstrMatrixRun } from "@/lab/instructionMatrixRun";
+import type { InstrPlanPart } from "@/lab/instructionMatrixPool";
+import { isRoleVariantId } from "@/GameEngine/Configs/RoleVariantConfig";
 import type { BalanceScenario } from "@/lab/types";
 import { fileURLToPath } from "node:url";
 
@@ -113,6 +116,36 @@ export const labApiRoutes = {
       b.workers ?? 4,
     );
     return jsonResponse({ id: run.id });
+  },
+
+  /** Instruction matrix (player instructions, Etapa 27) — "Instructions" mode of /matrix. */
+  "/api/lab/instr-matrix": async (req: Request) => {
+    if (req.method === "GET") return jsonResponse(await listInstrMatrixRuns());
+    if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+    const b = (await req.json()) as { league?: string; parts?: string[]; variants?: string[]; matches?: number; mirrorMatches?: number; baseMatches?: number; workers?: number };
+    const PARTS: InstrPlanPart[] = ["variants", "press", "random", "marking", "base"];
+    const parts = Array.isArray(b.parts) ? b.parts.filter((p): p is InstrPlanPart => PARTS.includes(p as InstrPlanPart)) : [];
+    if (parts.length === 0 || typeof b.league !== "string" || !/^[\w-]+$/.test(b.league)) {
+      return jsonResponse({ error: "invalid_plan" }, 400);
+    }
+    if (b.variants !== undefined && !(Array.isArray(b.variants) && b.variants.every(isRoleVariantId))) {
+      return jsonResponse({ error: "invalid_plan" }, 400);
+    }
+    const clamp = (n: unknown, d: number) => Math.max(0, Math.min(1200, Math.floor(typeof n === "number" ? n : d)));
+    const run = startInstrMatrixRun({
+      league: b.league, parts,
+      ...(b.variants && b.variants.length > 0 ? { variants: b.variants.filter(isRoleVariantId) } : {}),
+      matches: Math.max(1, clamp(b.matches, 100)),
+      mirrorMatches: clamp(b.mirrorMatches, 50),
+      baseMatches: clamp(b.baseMatches, 100),
+    }, b.workers ?? 3);
+    return jsonResponse({ id: run.id });
+  },
+
+  "/api/lab/instr-matrix/:id": async (req: Request) => {
+    const { id } = (req as Request & { params: { id: string } }).params;
+    const run = await getInstrMatrixRun(id);
+    return run ? jsonResponse(run) : jsonResponse({ error: "not_found" }, 404);
   },
 
   "/api/lab/matrix/:id": async (req: Request) => {

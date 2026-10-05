@@ -15,7 +15,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { awardCorner, createMatchState, forceInjurySubstitution, maybeFoul } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, forceInjurySubstitution, maybeFoul, setManMarksBySlot } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
@@ -440,6 +440,43 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const f433 = formation433Json as Formation;
       const withMorale = (ps: RosterPlayer[], morale: number) => freshRoster(ps).map(p => ({ ...p, morale }));
       return createMatchState(withMorale(teamRedPlayers, 100), f433, withMorale(teamBluePlayers, 20), f433);
+    },
+  },
+
+  {
+    id:          'inverted-fullbacks',
+    name:        '11v11 — Inverted full-backs',
+    description: 'Team A full-backs on the "Inverted" role variant (player instructions): they tuck into midfield (+14 yds toward the centre) when A has the ball. Turn on the Instructions overlay for the tags and compare the LB/RB width with Team B (default).',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const list = f433.attacking.map(s => (s.role === 'LB' || s.role === 'RB' ? { variant: 'fb_inverted' as const } : null));
+      return applyTeamInstructions(base, 'A', list);
+    },
+  },
+
+  {
+    id:          'target-man',
+    name:        '11v11 — Target man',
+    description: 'Team A striker on the "Target man" variant (holds his position, offers to receive, the team routes passes to him): select him to see the resolved tuning in the Decision panel. (The false 9 was cut in calibration — see player-instructions.md.)',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const list = f433.attacking.map(s => (s.role === 'ST' ? { variant: 'st_target' as const } : null));
+      return applyTeamInstructions(base, 'A', list);
+    },
+  },
+
+  {
+    id:          'man-mark-star',
+    name:        '11v11 — Man-marking the star',
+    description: 'The first central midfielder of Team B man-marks the Team A striker (dashed line + ring with the Instructions overlay). The marker follows him across the pitch while B defends and plays his own role when B has the ball.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cmSlot = f433.attacking.findIndex(s => s.role === 'CM');
+      const stSlot = f433.attacking.findIndex(s => s.role === 'ST');
+      return setManMarksBySlot(base, 'B', [{ slot: cmSlot, targetSlot: stSlot }]);
     },
   },
 

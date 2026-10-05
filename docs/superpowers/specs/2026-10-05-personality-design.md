@@ -1,6 +1,6 @@
 # Etapa 26 — Personalidade dos jogadores — Design
 
-Data: 2026-10-05. Status: **proposta** (decisões abertas no fim). Versão **4.1**.
+Data: 2026-10-05. Status: **proposta** (decisões abertas no fim). Versão **4.2**.
 Depende de: moral (Etapa 23, `morale.md`), contratos (Etapa 7), negociação (Etapa 21), disciplina (Etapa 12),
 base e renascido (Etapas 11/11b), staff/olheiro (Etapa 10). Medição no molde de `style-training.md` e `morale.md`.
 
@@ -172,7 +172,7 @@ bun test src/Domain/personality src/GameEngine/Domain/Fouls.test.ts src/GameEngi
   renascido aceito = a do original; disciplina dentro da faixa já existente; pelo menos uma recusa ou pedido ajustado
   por personalidade registrado (via chamada de `demand`); moral segue em 0..100.
 
-Regra nova `.claude/rules/game/personality.md`, changelog **4.1** (+ `upcoming`), `package.json`, ROADMAP etapa 26.
+Regra nova `.claude/rules/game/personality.md`, changelog **4.2** (+ `upcoming`), `package.json`, ROADMAP etapa 26.
 
 ## 10. Limitações
 

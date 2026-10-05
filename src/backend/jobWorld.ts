@@ -457,6 +457,7 @@ export async function acceptJobOffer(
     jobsMidSeason: newState ? seasonLabel(newState.year, newState.start, newState.end) : meta.jobsMidSeason,
     unemployed: undefined,
     rotationOverride: undefined,
+    matchMarking: undefined,
     style_focus: undefined,
   });
 }

@@ -23,7 +23,7 @@ import { getTeamPassConfig, getTeamWidth } from '@/GameEngine/Configs/AttackConf
 import { applyPassIntent, getPassTargetBias } from '@/GameEngine/Configs/IntentConfig';
 import { computeOpenAngle, MAX_OPEN_ANGLE } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { engineOf } from '@/GameEngine/Domain/roleEngineData';
 
 export interface PassLaneInfo {
   toId: number;
@@ -235,7 +235,7 @@ function getFarFlankScore(holder: GamePlayer, receiver: GamePlayer): number {
  * unchanged (the holder-side tendency is roles.json `passBias`, in evalPass).
  */
 function getReceiverRoleScore(receiver: GamePlayer): number {
-  return roleEngine(receiver.role).passTargetWeight - 0.5;
+  return engineOf(receiver).passTargetWeight - 0.5;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

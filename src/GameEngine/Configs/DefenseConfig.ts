@@ -57,6 +57,34 @@ const DEFAULTS = {
 
 export type DefenseConfigValues = { [K in keyof typeof DEFAULTS]: number };
 
+/**
+ * Man-marking (player instructions, `.claude/rules/game/player-instructions.md`): the tuning a
+ * marker defends with while his team is out of possession. The only new constants of Etapa 27 —
+ * a new mechanic, not a bias on top of an existing weight.
+ */
+export const MAN_MARK_CONFIG = {
+  /** Floor on the marked target's threat: the marker stays tight even far from his own goal. */
+  THREAT_FLOOR: 0.7,
+  /** Marker's `track_mark` intent weight (replaces the role's). */
+  TRACK_MARK_WEIGHT: 0.9,
+  /** Marker's `hold_shape` intent weight (replaces the role's); `press_holder` stays the role's. */
+  HOLD_SHAPE_WEIGHT: 0.3,
+  /** Yards added to each side of the marker's X bounds (Y = full width: he follows the target). */
+  X_BOUNDS_EXTENSION: 10,
+  /**
+   * Yards the marker stands from his target, goal-side and toward the ball (between the target and
+   * both his own goal and the ball). The zonal lane-cut (`computeTrackMarkTarget`) leaves ~9 yds.
+   */
+  TIGHT_DISTANCE: 1,
+  /**
+   * 0..1 — how much the marker leans toward the ball rather than toward his own goal. Ball-side
+   * puts him on the passing line to his target, where he can intercept (`resolveInterception`).
+   */
+  BALL_SIDE: 0.3,
+  /** Yards the marker reads ahead along his target's run (toward the target's own target position). */
+  ANTICIPATION: 4,
+};
+
 // ── Per-team storage ──────────────────────────────────────────────────────────
 
 const TEAM_CONFIGS: Record<TeamId, DefenseConfigValues> = {

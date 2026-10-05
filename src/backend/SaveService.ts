@@ -7,7 +7,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { generateLeagueCalendar } from "@/Domain/season/generateCalendar";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
+import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
@@ -87,6 +87,8 @@ export interface SaveMeta {
   managerWeights?: Record<string, CountryWeight>;
   /** Rotation swaps the user accepted (or opted out of) for the match played on `date`. */
   rotationOverride?: { date: string; swaps: { out: string; in: string }[]; optOut?: boolean };
+  /** Man-marking chosen for the match on `date` (player instructions, max 2 pairs); cleared by the next advance. */
+  matchMarking?: MatchMarking;
   /** Board and fans of the human club (`.claude/rules/game/board-fans.md`). */
   board?: BoardState;
   /** New-game option: the board may sack the manager (default on). */

@@ -35,7 +35,10 @@ export function variantAutoLabel(v: Variant): string {
   const formation = v.customFormation ? `Free ${customShape(v.customFormation.slots)}` : v.formation;
   const label = generateVariantLabel(formation, v.tacticalStyle, v.mentality, v.axesOverride);
   const withFam = v.familiarity === undefined ? label : `${label} · fam ${v.familiarity}`;
-  return v.morale === undefined ? withFam : `${withFam} · mor ${v.morale}`;
+  const withMor = v.morale === undefined ? withFam : `${withFam} · mor ${v.morale}`;
+  const instr = (v.slotInstructions ?? []).filter((i) => i && (i.variant || (i.press && i.press !== "normal"))).length;
+  const withInstr = instr > 0 ? `${withMor} · instr ${instr}` : withMor;
+  return v.manMarks && v.manMarks.length > 0 ? `${withInstr} · mark` : withInstr;
 }
 
 /** Auto-name for the whole scenario based on its variant pool. */

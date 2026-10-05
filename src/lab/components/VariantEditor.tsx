@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { TACTICAL_STYLE_OPTIONS, MENTALITY_OPTIONS, DEFAULT_MENTALITY, axesFor } from "@/types/tacticsTypes";
 import type { TacticalStyle, Mentality, TacticalAxes } from "@/types/tacticsTypes";
-import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
+import { CUSTOM_PRESETS, customToFormation } from "@/Domain/formation/zones";
+import { formationForSimId } from "@/Domain/matchFormations";
+import { variantsForRole } from "@/GameEngine/Configs/RoleVariantConfig";
+import type { PressLevel, RoleVariantId, SlotInstruction } from "@/types/tacticsTypes";
 import type { RawAttributes, Variant } from "@/lab/types";
 import { RAW_ATTRIBUTE_KEYS } from "@/lab/types";
 import type { FormationCatalog } from "@/lab/api";
@@ -28,7 +31,7 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
     const next = { ...variant, ...p };
     // If formation, tactic or mentality changed (not label), and the current label is
     // still the auto-generated one, keep it in sync.
-    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p || 'axesOverride' in p || 'customFormation' in p) && !('label' in p)) {
+    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p || 'axesOverride' in p || 'customFormation' in p || 'slotInstructions' in p || 'manMarks' in p) && !('label' in p)) {
       if (variant.label === variantAutoLabel(variant)) {
         next.label = variantAutoLabel(next);
       }
@@ -108,6 +111,8 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
           ))}
         </select>
       </div>
+
+      <InstructionsEditor variant={variant} onPatch={patch} />
 
       <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20">Free form.</span>
@@ -258,6 +263,85 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
               />
             </label>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Player instructions of a variant (`player-instructions.md`): per-slot variant / pressing, man-marking by slot. */
+function InstructionsEditor({ variant, onPatch }: { variant: Variant; onPatch: (p: Partial<Variant>) => void }) {
+  const [open, setOpen] = useState(false);
+  const formation = variant.customFormation ? customToFormation(variant.customFormation) : formationForSimId(variant.formation);
+  const list = variant.slotInstructions ?? [];
+  const marks = variant.manMarks ?? [];
+  const setSlot = (i: number, next: SlotInstruction | null) => {
+    const copy = [...list];
+    while (copy.length <= i) copy.push(null);
+    copy[i] = next;
+    onPatch({ slotInstructions: copy.some(Boolean) ? copy : undefined });
+  };
+  const setMarks = (next: { slot: number; targetSlot: number }[]) => onPatch({ manMarks: next.length ? next : undefined });
+  return (
+    <div className="text-xs space-y-1">
+      <button type="button" onClick={() => setOpen(!open)} className="text-white/50 hover:text-white">
+        {open ? "▾" : "▸"} Instructions ({list.filter(Boolean).length}{marks.length ? ` · ${marks.length} mark` : ""})
+      </button>
+      {open && (
+        <div className="space-y-1 pl-2">
+          {formation.attacking.map((s, i) => {
+            if (s.role === "GK") return null;
+            const cur = list[i] ?? null;
+            return (
+              <div key={i} className="flex items-center gap-1">
+                <span className="text-white/50 w-14">#{i} {s.role}</span>
+                <select
+                  value={cur?.variant ?? ""}
+                  onChange={(e) => setSlot(i, { ...(e.target.value ? { variant: e.target.value as RoleVariantId } : {}), ...(cur?.press ? { press: cur.press } : {}) })}
+                  className="bg-black/40 border border-white/10 rounded px-1 py-0.5 text-xs flex-1"
+                >
+                  <option value="">default</option>
+                  {variantsForRole(s.role).map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <select
+                  value={cur?.press ?? "normal"}
+                  onChange={(e) => setSlot(i, { ...(cur?.variant ? { variant: cur.variant } : {}), ...(e.target.value !== "normal" ? { press: e.target.value as PressLevel } : {}) })}
+                  className="bg-black/40 border border-white/10 rounded px-1 py-0.5 text-xs"
+                >
+                  {(["less", "normal", "more"] as const).map((p) => <option key={p} value={p}>press {p}</option>)}
+                </select>
+              </div>
+            );
+          })}
+          {[0, 1].map((k) => {
+            const m = marks[k];
+            return (
+              <div key={k} className="flex items-center gap-1">
+                <span className="text-white/50 w-14">mark {k + 1}</span>
+                <select
+                  value={m ? String(m.slot) : ""}
+                  onChange={(e) => {
+                    const next = marks.filter((_, j) => j !== k);
+                    if (e.target.value) next.splice(k, 0, { slot: Number(e.target.value), targetSlot: m?.targetSlot ?? 9 });
+                    setMarks(next);
+                  }}
+                  className="bg-black/40 border border-white/10 rounded px-1 py-0.5 text-xs flex-1"
+                >
+                  <option value="">off</option>
+                  {formation.attacking.map((s, i) => (s.role === "GK" ? null : <option key={i} value={i}>marker #{i} {s.role}</option>))}
+                </select>
+                <select
+                  value={m ? String(m.targetSlot) : ""}
+                  disabled={!m}
+                  onChange={(e) => setMarks(marks.map((x, j) => (j === k ? { ...x, targetSlot: Number(e.target.value) } : x)))}
+                  className="bg-black/40 border border-white/10 rounded px-1 py-0.5 text-xs flex-1"
+                  title="Opponent's formation slot"
+                >
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((i) => <option key={i} value={i}>opp. slot #{i}</option>)}
+                </select>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

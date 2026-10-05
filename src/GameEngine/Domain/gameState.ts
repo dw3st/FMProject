@@ -1,4 +1,6 @@
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair } from '@/GameEngine/types';
+import type { SlotInstruction } from '@/types/tacticsTypes';
+import { effectiveInstruction, resolveSlotTuning } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
@@ -12,8 +14,8 @@ import { resolvePenaltyShootout, penaltyChance, type PenaltySide } from '@/GameE
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
-import { resolveBasePosition } from '@/GameEngine/FormationSlots';
+import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
+import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlots';
 import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets } from '@/GameEngine/Domain/DefensivePositioning';
@@ -461,6 +463,10 @@ export function performSubstitution(
     basePosition:   outPlayer.basePosition,
     targetPosition: outPlayer.targetPosition,
     bounds:         outPlayer.bounds,
+    // The slot's instruction (role variant / pressing / man-marking) belongs to the slot.
+    engine:          outPlayer.engine,
+    instruction:     outPlayer.instruction,
+    manMarkTargetId: outPlayer.manMarkTargetId,
     ballSupportScale: roleEngine(role).ballSupportScale,
     baseStats:      newBaseStats,
     runtimeStats:   getRuntimeLineup(newBaseStats, { energy: inPlayer.energy }),
@@ -581,7 +587,7 @@ function cleanupAfterPlayerLeft(state: GameState, leftId: number): GameState {
     delete rest[leftId];
     s = { ...s, decisions: rest };
   }
-  return s;
+  return refreshManMarks(s);
 }
 
 /** Removes a player from the pitch outright (no bench candidate / no subs left — "play on with 10"). */
@@ -670,7 +676,8 @@ function ensureCompetentGK(state: GameState, team: TeamId): GameState {
 
   const roleEng    = roleEngine('GK');
   const xBoundsBase = roleEng.bounds;
-  const xBounds    = team === 'A' ? xBoundsBase : mirrorBounds({ ...xBoundsBase, minY: 0, maxY: PITCH_WIDTH });
+  // Mirroring follows the attack direction (correct after half-time too), not the team.
+  const xBounds    = deepest.attackDir === 1 ? xBoundsBase : mirrorBounds({ ...xBoundsBase, minY: 0, maxY: PITCH_WIDTH });
   const goalY      = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
   const bounds: MovementBounds = {
     minX: xBounds.minX, maxX: xBounds.maxX,
@@ -690,8 +697,12 @@ function ensureCompetentGK(state: GameState, team: TeamId): GameState {
     bounds,
     ballSupportScale:  roleEng.ballSupportScale,
   });
+  // The emergency keeper plays the GK role: no outfield slot instruction, no man-marking.
+  delete promoted.engine;
+  delete promoted.instruction;
+  delete promoted.manMarkTargetId;
 
-  return { ...state, players: state.players.map(p => (p.id === deepest.id ? promoted : p)) };
+  return refreshManMarks({ ...state, players: state.players.map(p => (p.id === deepest.id ? promoted : p)) });
 }
 
 /**
@@ -1179,45 +1190,206 @@ export function changeFormation(
   newFormation: Formation,
 ): GameState {
   const teamPlayers = state.players.filter(p => p.team === team);
-  const attackDir   = (team === 'A' ? 1 : -1) as 1 | -1;
+  const instructions = state.slotInstructions?.[team];
 
   const updated = teamPlayers.map((p, arrIndex) => {
     const slotIndex = p.slotIndex >= 0 ? p.slotIndex : arrIndex;
     const slotDef   = newFormation.attacking[slotIndex];
     if (!slotDef) return p;
     const role     = slotDef.role;
-    const roleEng  = roleEngine(role);
-    const startPos = resolveBasePosition(slotIndex, attackDir, newFormation, 'attacking');
-    const yRange   = slotDef.yRange ?? roleEng.yRange;
-    const xBoundsA = roleEng.bounds;
-    const xBounds  = team === 'A' ? xBoundsA : mirrorBounds({ ...xBoundsA, minY: 0, maxY: 74 });
-    const bounds   = {
-      minX: xBounds.minX,
-      maxX: xBounds.maxX,
-      minY: Math.max(0,           startPos.y - yRange),
-      maxY: Math.min(PITCH_WIDTH, startPos.y + yRange),
-    };
-    // Keep existing baseStats — we no longer have the raw PlayerStatsRecord post-lineup.
-    // The formation change adjusts movement bounds and base positions; stats stay as-is.
-    return {
+    // The slot keeps its instruction; a variant the new role does not accept falls back to default.
+    // Mirroring follows the player's attackDir (correct after half-time too).
+    const setup = slotSetup(slotDef, slotIndex, p.attackDir, newFormation, instructions?.[slotIndex]);
+    const next: GamePlayer = {
       ...p,
       role,
       slotIndex,
-      basePosition:    startPos,
-      bounds,
-      ballSupportScale: roleEng.ballSupportScale,
+      basePosition:    setup.basePosition,
+      bounds:          setup.bounds,
+      ballSupportScale: roleEngine(role).ballSupportScale,
       runtimeStats:    getRuntimeLineup(p.baseStats, { energy: p.energy }),
       fatigueBaselineEnergy: p.energy,
     };
+    // Keep existing baseStats — we no longer have the raw PlayerStatsRecord post-lineup.
+    // The formation change adjusts movement bounds and base positions; stats stay as-is.
+    delete next.engine;
+    delete next.instruction;
+    if (setup.engine) next.engine = setup.engine;
+    if (setup.instruction) next.instruction = setup.instruction;
+    return next;
   });
 
   const otherPlayers = state.players.filter(p => p.team !== team);
-  return {
+  return refreshManMarks({
     ...state,
     players:    [...otherPlayers, ...updated].sort((a, b) => a.id - b.id),
     formationA: team === 'A' ? newFormation : state.formationA,
     formationB: team === 'B' ? newFormation : state.formationB,
+  });
+}
+
+// ── Player instructions (Etapa 27, `.claude/rules/game/player-instructions.md`) ──
+
+/**
+ * Tuning, anchor and bounds of a slot under an instruction. Without an instruction this is exactly
+ * what `buildGamePlayerForSlot` computes (role tuning, formation slot, role bounds), and `engine` /
+ * `instruction` come back `undefined` so the player stays identical to a freshly built one.
+ */
+function slotSetup(
+  slotDef: { role: PlayerRole; yRange?: number },
+  slotIndex: number,
+  attackDir: 1 | -1,
+  formation: Formation,
+  instr: SlotInstruction | null | undefined,
+): { engine?: RoleEngineTuning; instruction?: SlotInstruction; basePosition: { x: number; y: number }; bounds: MovementBounds } {
+  const instruction  = effectiveInstruction(slotDef.role, instr);
+  const engine       = resolveSlotTuning(slotDef.role, instruction);
+  const basePosition = slotBasePosition({ slotIndex, attackDir, instruction }, formation, 'attacking');
+  const yRange  = slotDef.yRange ?? engine.yRange;
+  const xA      = engine.bounds;
+  const xBounds = attackDir === 1 ? xA : mirrorBounds({ ...xA, minY: 0, maxY: PITCH_WIDTH });
+  return {
+    ...(instruction ? { engine, instruction } : {}),
+    basePosition,
+    bounds: {
+      minX: xBounds.minX,
+      maxX: xBounds.maxX,
+      minY: Math.max(0,           basePosition.y - yRange),
+      maxY: Math.min(PITCH_WIDTH, basePosition.y + yRange),
+    },
   };
+}
+
+/**
+ * Apply (or change, live) the instruction of one slot of `team`: rebuilds the slot player's tuning,
+ * anchor and bounds without touching energy or attributes; effective from the next tick. `null` /
+ * default = back to the role's tuning.
+ */
+export function applyPlayerInstruction(
+  state: GameState,
+  team: TeamId,
+  slot: number,
+  instruction: SlotInstruction | null | undefined,
+): GameState {
+  const formation = team === 'A' ? state.formationA : state.formationB;
+  const slotDef = formation.attacking[slot];
+  const list = [...(state.slotInstructions?.[team] ?? [])];
+  while (list.length <= slot) list.push(null);
+  list[slot] = instruction ?? null;
+  const slotInstructions = { ...state.slotInstructions, [team]: list };
+  if (!slotDef) return { ...state, slotInstructions };
+  const players = state.players.map(p => {
+    if (p.team !== team || p.slotIndex !== slot) return p;
+    const setup = slotSetup(slotDef, slot, p.attackDir, formation, instruction);
+    const next: GamePlayer = { ...p, basePosition: setup.basePosition, bounds: setup.bounds };
+    delete next.engine;
+    delete next.instruction;
+    if (setup.engine) next.engine = setup.engine;
+    if (setup.instruction) next.instruction = setup.instruction;
+    debugLog('instruction', `${p.name}: ${setup.instruction?.variant ?? 'default'} / press ${setup.instruction?.press ?? 'normal'}`, {
+      playerId: p.id, data: { slot, variant: setup.instruction?.variant ?? null, press: setup.instruction?.press ?? 'normal' },
+    });
+    return next;
+  });
+  return { ...state, players, slotInstructions };
+}
+
+/** Apply every slot instruction of a team (index = slot). */
+export function applyTeamInstructions(
+  state: GameState,
+  team: TeamId,
+  instructions: (SlotInstruction | null)[] | undefined,
+): GameState {
+  if (!instructions || instructions.length === 0) return state;
+  let s = state;
+  for (let i = 0; i < instructions.length; i++) {
+    if (instructions[i]) s = applyPlayerInstruction(s, team, i, instructions[i]);
+  }
+  return { ...s, slotInstructions: { ...s.slotInstructions, [team]: [...instructions] } };
+}
+
+/** Maximum man-marking pairs per team and match. */
+export const MAX_MAN_MARKS = 2;
+
+/**
+ * Set (replace) a team's man-marking pairs: the outfield player in `markerSlot` marks the
+ * opponent outfield player `targetId` (engine id). At most `MAX_MAN_MARKS`, one marker and one
+ * target per pair; invalid pairs are skipped. Effective from the next tick.
+ */
+export function setManMarks(
+  state: GameState,
+  team: TeamId,
+  marks: { markerSlot: number; targetId: number }[],
+): GameState {
+  const pairs: ManMarkPair[] = [];
+  for (const m of marks) {
+    if (pairs.length >= MAX_MAN_MARKS) break;
+    const marker = state.players.find(p => p.team === team && p.slotIndex === m.markerSlot && p.role !== 'GK');
+    const target = state.players.find(p => p.id === m.targetId && p.team !== team && p.role !== 'GK');
+    if (!marker || !target) continue;
+    if (pairs.some(p => p.markerId === marker.id || p.targetId === target.id)) continue;
+    pairs.push({ markerSlot: m.markerSlot, markerId: marker.id, targetId: target.id });
+    debugLog('instruction', `${marker.name} man-marks ${target.name}`, { playerId: marker.id, data: { targetId: target.id } });
+  }
+  return syncManMarkFlags({ ...state, manMarks: { ...state.manMarks, [team]: pairs } }, team);
+}
+
+/**
+ * Man-marking from slot/roster terms (saves, the lab): the opponent target is named by roster id
+ * (`targetRosterId`, the match marking of a save) or by the opponent's slot (`targetSlot`, the lab).
+ */
+export function setManMarksBySlot(
+  state: GameState,
+  team: TeamId,
+  marks: { slot: number; targetRosterId?: string; targetSlot?: number }[] | undefined,
+): GameState {
+  if (!marks || (marks.length === 0 && !state.manMarks?.[team]?.length)) return state;
+  const resolved: { markerSlot: number; targetId: number }[] = [];
+  for (const m of marks) {
+    const target = state.players.find(p => p.team !== team && (
+      m.targetRosterId !== undefined ? p.rosterId === m.targetRosterId : p.slotIndex === m.targetSlot
+    ));
+    if (target) resolved.push({ markerSlot: m.slot, targetId: target.id });
+  }
+  return setManMarks(state, team, resolved);
+}
+
+/** Re-resolve every pair after a player left / came on: the marker follows its slot, a target off the pitch drops the pair. */
+function refreshManMarks(state: GameState): GameState {
+  if (!state.manMarks) return state;
+  let s = state;
+  for (const team of ['A', 'B'] as const) {
+    const pairs = s.manMarks?.[team];
+    if (!pairs || pairs.length === 0) continue;
+    const next: ManMarkPair[] = [];
+    for (const pair of pairs) {
+      const marker = s.players.find(p => p.team === team && p.slotIndex === pair.markerSlot && p.role !== 'GK');
+      const target = s.players.find(p => p.id === pair.targetId && p.team !== team && p.role !== 'GK');
+      if (!marker || !target) {
+        debugLog('instruction', `Man-marking pair dropped (slot ${pair.markerSlot}, target ${pair.targetId})`, { data: { ...pair } });
+        continue;
+      }
+      next.push({ ...pair, markerId: marker.id });
+    }
+    s = syncManMarkFlags({ ...s, manMarks: { ...s.manMarks, [team]: next } }, team);
+  }
+  return s;
+}
+
+/** Writes `manMarkTargetId` on the team's markers (and clears it everywhere else on the team). */
+function syncManMarkFlags(state: GameState, team: TeamId): GameState {
+  const byMarker = new Map((state.manMarks?.[team] ?? []).map(p => [p.markerId, p.targetId]));
+  let changed = false;
+  const players = state.players.map(p => {
+    if (p.team !== team) return p;
+    const target = byMarker.get(p.id);
+    if (target === p.manMarkTargetId) return p;
+    changed = true;
+    const next = { ...p };
+    if (target === undefined) delete next.manMarkTargetId; else next.manMarkTargetId = target;
+    return next;
+  });
+  return changed ? { ...state, players } : state;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -3122,6 +3294,12 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     };
   }
 
+  // Man-marking time (player instructions): the marked targets, for the marked-target statistics.
+  if (s.manMarks && isLivePhase(s.matchPhase)) {
+    const targetIds = [...(s.manMarks.A ?? []), ...(s.manMarks.B ?? [])].map(p => p.targetId);
+    gameBus.emit('manMarkTick', { targetIds, seconds: dt * TIME_SCALE });
+  }
+
   // ── 1. Formation movement — runs every tick, including during passes/shots ──
   {
     const markAssignments = assignMarkTargets(s.players, defendingTeam);
@@ -3210,13 +3388,13 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         }
       } else if (isOffBallRun && (decision?.type === 'support_run' || decision?.type === 'create_space')) {
         const visionNorm = Math.min(1, player.runtimeStats.withBall.carryVision / 18);
-        const roleBias   = getOffBallBias(player.role);
+        const roleBias   = getOffBallBias(player);
         const baseLookahead = OFF_BALL_CONFIG.BASE_LOOKAHEAD
           + (OFF_BALL_CONFIG.MAX_LOOKAHEAD - OFF_BALL_CONFIG.BASE_LOOKAHEAD) * visionNorm;
         const lookahead  = baseLookahead * roleBias;
         const rawX = player.x + decision.dx * lookahead;
         const rawY = player.y + decision.dy * lookahead;
-        const base = attackingAnchor(resolveBasePosition(player.slotIndex, player.attackDir, formation, 'attacking'), player, ballPos);
+        const base = attackingAnchor(slotBasePosition(player, formation, 'attacking'), player, ballPos);
         const pushUpT    = Math.min(1, s.possessionTime / POSSESSION_PUSH_UP.BASE_SECONDS);
         const pushUpBias = PUSH_UP_ROLE_BIAS[player.role] ?? 0;
         const pushedBaseX = base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
@@ -3245,13 +3423,18 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime);
       }
 
+      // Man-marker tracking his target (player instructions): no separation from teammates, and he
+      // gets the press acceleration burst to stay on his man.
+      const tightMarking = phase === 'defending' && player.manMarkTargetId !== undefined && decision?.type === 'track_mark';
+
       // Keep off-ball targets off the touchline itself (#37): wide bounds (LB yRange 50) and
       // off-ball runs past the line clamp to y = 0 / 74, stacking teammates on the line.
       if (player.role !== 'GK' && !isPressing) {
         let ty = Math.max(OFF_BALL_TOUCHLINE_MARGIN, Math.min(PITCH_WIDTH - OFF_BALL_TOUCHLINE_MARGIN, target.y));
         let tx = target.x;
-        // Light separation: don't settle on top of a teammate (they stacked on the line).
-        for (const mate of s.players) {
+        // Light separation: don't settle on top of a teammate (they stacked on the line). A man-marker
+        // tracking his target is exempt: he must stay on his man even when a zonal defender is close.
+        for (const mate of tightMarking ? [] : s.players) {
           if (mate.id === player.id || mate.team !== player.team || mate.id === s.ballHolderId) continue;
           const sx = tx - mate.x;
           const sy = ty - mate.y;
@@ -3278,7 +3461,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const holderJustReceived = holder.justReceivedTicks > 0
         && isOffBallRun
         && (holder.x - player.x) ** 2 + (holder.y - player.y) ** 2 < 225; // 15*15
-      const accelBurst   = isPressing
+      const accelBurst   = isPressing || tightMarking
         ? player.runtimeStats.withoutBall.acceleration * getDefenseConfig(player.team).PRESS_ACCEL_SPEED_BOOST
         : holderJustReceived
           ? player.runtimeStats.withoutBall.acceleration * CARRY_ACCEL_SPEED_BOOST

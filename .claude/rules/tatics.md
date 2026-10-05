@@ -53,6 +53,7 @@ interface TacticsSave {
   lineup:           string[];                // ordered playerIds — index = formation slot index
   assistantRotation?: boolean;               // rest tired starters automatically
   setPieceTakers?:  { corners?: string; freeKicks?: string; penalties?: string }; // absent = automatic
+  slotInstructions?: ({ variant?: RoleVariantId; press?: "less" | "normal" | "more" } | null)[]; // index = slot
 }
 ```
 
@@ -60,6 +61,12 @@ interface TacticsSave {
 by default; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; reaches the engine as
 `GameState.setPieceTakers` (simulated matches and the live match). The AI never sets it. See
 `.claude/rules/game-engine/set-pieces-play.md` → "Cobradores".
+
+`slotInstructions` (Etapa 27): per-slot role variant (18 variants, e.g. inverted full-back, target man)
+and individual pressing; validated per slot by `parseSlotInstructions` on `PUT /api/saves/:id/tactics`
+(misfit variant → 400), sanitized on a formation change (`sanitizeSlotInstructions`). Man-marking is
+per match (`SaveMeta.matchMarking`, `POST /api/saves/:id/match-marking`). The AI never sets either. See
+`.claude/rules/game/player-instructions.md`.
 
 API: `GET /api/saves/:id/tactics` · `PUT /api/saves/:id/tactics`. The file is written on the
 first `PUT`; until then the save's `formation`/`tactical_style` (`SaveMeta`) and an empty lineup

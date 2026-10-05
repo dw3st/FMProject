@@ -22,6 +22,8 @@ import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
+import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
+import { Player } from "@/Domain/Player";
 import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
 import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { competitionName } from "@/Domain/world/labels";
@@ -596,6 +598,10 @@ interface MatchSetupData {
   rotationSuggestion?: { out: string; in: string }[];
   /** Tired-starter swaps already in the XI (assistant on, or accepted). */
   rotationApplied?: { out: string; in: string }[];
+  /** Opponent's probable XI (slot order of `oppFormation`) — the man-marking target picker. */
+  oppLineup?: string[];
+  /** Man-marking already chosen for today's match. */
+  matchMarking?: { date: string; marks: MarkPair[] } | null;
 }
 
 export function MatchPreviewScreen() {
@@ -626,6 +632,9 @@ export function MatchPreviewScreen() {
   const [showLastMinuteSubs, setShowLastMinuteSubs] = useState(false);
   const [rotationBusy, setRotationBusy] = useState(false);
   const [rotationHidden, setRotationHidden] = useState(false);
+  /** Man-marking of this match (player instructions); null = what match-setup returned. */
+  const [marks, setMarks] = useState<MarkPair[] | null>(null);
+  const [markError, setMarkError] = useState(false);
 
   useEffect(() => {
     if (saveLoading) return;
@@ -898,6 +907,35 @@ export function MatchPreviewScreen() {
 
   const playerName = (id: string) => myPlayersById.get(id)?.name ?? id;
   const playerFitness = (id: string) => Math.round(myPlayersById.get(id)?.seasonLog?.fitness ?? 100);
+
+  const currentMarks: MarkPair[] = marks ?? matchSetup?.matchMarking?.marks ?? [];
+  const markerOptions = myFormationSlots
+    .map((s, i) => ({ s, i, p: myPlayersById.get(myLineup[i] ?? "") }))
+    .filter((e) => e.s.role !== "GK" && e.p)
+    .map((e) => ({ value: String(e.i), label: `${e.s.role} · ${e.p!.name}` }));
+  const oppPlayersById = new Map((matchSetup?.opponentSquad?.players ?? []).map((p) => [p.id, p]));
+  const targetOptions = oppFormationSlots
+    .map((s, i) => ({ s, p: oppPlayersById.get(matchSetup?.oppLineup?.[i] ?? "") }))
+    .filter((e) => e.s.role !== "GK" && e.p)
+    .map((e) => ({ value: e.p!.id, label: `${e.s.role} · ${e.p!.name}`, overall: Player.computeOverallAvg(e.p!) }));
+
+  async function saveMarks(next: MarkPair[]) {
+    if (!session) return;
+    const prev = currentMarks;
+    setMarks(next);
+    setMarkError(false);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/match-marking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: session.currentDate, marks: next }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      setMarks(prev);
+      setMarkError(true);
+    }
+  }
 
   async function postRotation(swaps: { out: string; in: string }[], optOut = false) {
     if (!session || rotationBusy) return;
@@ -1182,6 +1220,16 @@ export function MatchPreviewScreen() {
                 </p>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Man-marking for this match (player instructions) */}
+      {matchSetup && markerOptions.length > 0 && targetOptions.length > 0 && (
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
+          <div className="card-arcade rounded-md p-4">
+            <ManMarkingPanel markers={markerOptions} targets={targetOptions} value={currentMarks} onChange={saveMarks} />
+            {markError && <p className="text-sm text-destructive m-0 mt-2">{t("instructions.errors.markingFailed")}</p>}
           </div>
         </div>
       )}

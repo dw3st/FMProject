@@ -1,7 +1,7 @@
 import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
 import type { PlayerDecision } from '@/GameEngine/Domain/DecisionTree';
 import { scorePassQuality } from '@/GameEngine/Domain/PassLanes';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { engineOf, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
 import {
@@ -44,8 +44,8 @@ const CREATE_SPACE_MIN_BIAS = 0.5;
 
 // ── Public role helpers ───────────────────────────────────────────────────────
 
-export function getOffBallBias(role: PlayerRole): number {
-  return roleEngine(role).offBallBias;
+export function getOffBallBias(player: { role: PlayerRole; engine?: RoleEngineTuning }): number {
+  return engineOf(player).offBallBias;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ function selectOffBallIntent(ctx: OffBallContext): {
   intent: OffBallIntent;
   scores: Record<OffBallIntent, number>;
 } {
-  const roleWeights     = roleEngine(ctx.player.role).offBallIntentWeights;
+  const roleWeights     = engineOf(ctx.player).offBallIntentWeights;
   const buildUpMult     = INTENT_BUILD_UP[ctx.buildUpTactic];
   const widthMult       = INTENT_WIDTH[ctx.widthTactic];
   const movementUrgency = Math.max(0, 1 - ctx.currentPassScore);
@@ -438,7 +438,7 @@ export function evaluateOffBall(
 
   // Fallback when even the best cell fails the threshold.
   if (bestScore < OFF_BALL_CONFIG.MIN_SCORE_THRESHOLD) {
-    const roleBias = getOffBallBias(player.role);
+    const roleBias = getOffBallBias(player);
     if (roleBias >= CREATE_SPACE_MIN_BIAS) {
       const away = createSpaceDirection(player, allPlayers);
       if (isDebugEnabled()) {
@@ -446,6 +446,7 @@ export function evaluateOffBall(
           playerId: player.id, playerName: player.name,
           bestScore, intent, intentScores, decision: 'create_space',
           currentPassScore: ctx.currentPassScore,
+        variant: player.instruction?.variant,
         });
       }
       return { type: 'create_space', dx: away.dx, dy: away.dy };
@@ -455,6 +456,7 @@ export function evaluateOffBall(
         playerId: player.id, playerName: player.name,
         bestScore, intent, intentScores, decision: 'idle',
         currentPassScore: ctx.currentPassScore,
+        variant: player.instruction?.variant,
       });
     }
     return { type: 'idle' };
@@ -472,6 +474,7 @@ export function evaluateOffBall(
       playerId: player.id, playerName: player.name,
       bestScore, intent, intentScores, decision: 'support_run',
       currentPassScore: ctx.currentPassScore,
+        variant: player.instruction?.variant,
     });
   }
   return { type: 'support_run', dx: dirX, dy: dirY };

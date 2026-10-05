@@ -24,6 +24,7 @@ export type DebugCategory =
   | 'injury'        // in-match injuries (forced substitution)
   | 'foul'          // fouls, free kicks and penalties
   | 'card'          // yellow / red cards and sendings-off
+  | 'instruction'   // player instructions applied / changed, man-marking pairs
   | 'aerial'        // crosses, long balls, aerial duels, keeper claims, headers
   | 'setPiece';     // corners, direct free kicks and the wall, set-piece deliveries
 

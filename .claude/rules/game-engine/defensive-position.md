@@ -186,18 +186,24 @@ Each intent is scored from role weights × tactic multipliers × context signals
 
 ### Role intent weights (roles.json `engine.defensiveIntentWeights`)
 
+Current values (corrected 2026-10-05, Etapa 27 — the earlier table predated a retune):
+
 | Role | hold_shape | track_mark | press_holder | step_into_carry_lane |
 |---|---|---|---|---|
-| CB | 0.80 | 0.90 | 0.15 | 0.75 |
-| LB/RB | 0.55 | 0.65 | 0.35 | 0.55 |
-| LWB/RWB | 0.40 | 0.50 | 0.50 | 0.45 |
-| CDM | 0.50 | 0.65 | 0.75 | 0.55 |
-| CM | 0.40 | 0.55 | 0.65 | 0.40 |
-| CAM | 0.20 | 0.30 | 0.45 | 0.25 |
-| LM/RM | 0.25 | 0.35 | 0.45 | 0.30 |
-| LW/RW | 0.20 | 0.25 | 0.40 | 0.20 |
-| ST | 0.10 | 0.15 | 0.30 | 0.15 |
+| CB | 0.70 | 0.50 | 0.50 | 0.50 |
+| LB/RB | 0.70 | 0.50 | 0.50 | 0.50 |
+| LWB/RWB | 0.70 | 0.50 | 0.50 | 0.50 |
+| CDM | 0.50 | 0.50 | 0.70 | 0.50 |
+| CM | 0.50 | 0.50 | 0.70 | 0.50 |
+| CAM | 0.50 | 0.50 | 0.50 | 0.50 |
+| LM/RM | 0.50 | 0.50 | 0.50 | 0.50 |
+| LW/RW | 0.50 | 0.50 | 0.50 | 0.50 |
+| ST | 0.10 | 0.50 | 0.50 | 0.50 |
 | GK | 0.00 | 0.00 | 0.00 | 0.00 (never reaches intent scoring) |
+
+The weights are read per player through `engineOf(player)` / `defensiveWeightsOf(player)`: a slot
+instruction (role variant, individual pressing) replaces or scales them, and a man-marker defends
+with `track_mark` 0.9 / `hold_shape` 0.3 (`MAN_MARK_CONFIG`, `.claude/rules/game/player-instructions.md`).
 
 ---
 

@@ -218,6 +218,10 @@ export interface GameEvents {
     holderThreat:   number;
     markThreat:     number;
     carryLaneBonus: number;
+    /** The slot's role variant (player instructions); absent = default. */
+    variant?:       string;
+    /** Engine id of the opponent this player man-marks; absent = zonal. */
+    manMarkTargetId?: number;
   };
   /** Emitted every tick for each off-ball attacker when debug mode is on. */
   offBallScores: {
@@ -232,7 +236,15 @@ export interface GameEvents {
       make_run:      number;
     };
     decision:         'support_run' | 'create_space' | 'idle';
+    /** The slot's role variant (player instructions); absent = default. */
+    variant?:         string;
   };
+  /**
+   * Emitted every live tick while a team has man-marking pairs (`GameState.manMarks`): the marked
+   * targets and the game-seconds elapsed. Feeds `Statistics.ts` (minutes marked, the target's
+   * touches / shots / goals while marked).
+   */
+  manMarkTick: { targetIds: number[]; seconds: number };
 
   /**
    * Emitted every tick for the ball holder when debug mode is on — top-N
@@ -291,7 +303,11 @@ export interface GameEvents {
     | { type: 'giveBall';      id: number }
     | { type: 'patchPlayers';  players: import('@/GameEngine/types').GamePlayer[] }
     | { type: 'triggerPhase';  phase: 'halfTime' | 'matchEnd' | 'endPeriod' }
-    | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent };
+    | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent }
+    /** Player instructions (`/test`): one slot's role variant / pressing, live. */
+    | { type: 'setInstruction'; team: import('@/GameEngine/types').TeamId; slot: number; instruction: import('@/types/tacticsTypes').SlotInstruction | null }
+    /** Man-marking (`/test`): the team's slots mark the opponent slots (replaces the pairs). */
+    | { type: 'setManMarks'; team: import('@/GameEngine/types').TeamId; marks: { slot: number; targetSlot: number }[] };
 
   /**
    * Emitted when team tactics change at runtime (TestScreen tactic buttons).

@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.1",
+    date: "2026-10-05",
+    items: [
+      { pt: "Instruções individuais: escolha a função de cada posição na tela de táticas (lateral que apoia, fica ou é invertido, zagueiro que sai na marcação, na sobra ou com bola, volante fixo ou que chega, meia de ligação, meia que chega na área, meia armador, segundo atacante, meia por dentro, ponta por dentro, centroavante de área ou pivô) e quanto cada jogador pressiona.", en: "Player instructions: pick each position's role on the tactics screen (overlapping, holding or inverted full-back, stopper, cover or ball-playing centre-back, anchor or box-to-box midfielder, link midfielder, box crasher, playmaker, shadow striker, inside midfielder, inside forward, poacher or target man) and how much each player presses." },
+      { pt: "Marcação individual: na prévia da partida (ou ao vivo), escolha até 2 jogadores para seguir um adversário, com um botão para marcar o melhor jogador deles.", en: "Man-marking: in the match preview (or live), pick up to 2 players to follow an opponent, with a button to mark their best player." },
+      { pt: "Durante a partida, a nova aba Instruções do painel de substituições muda funções, pressão e marcação só para aquele jogo.", en: "During a match, the new Instructions tab in the substitutions panel changes roles, pressing and marking for that match only." },
+    ],
+  },
+  {
     version: "4.0.4",
     date: "2026-10-05",
     items: [
@@ -832,6 +841,5 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Personalidade dos jogadores: ambição, lealdade, profissionalismo e temperamento mudando a moral, a evolução, a disciplina e os contratos", en: "Player personality: ambition, loyalty, professionalism and temperament changing morale, development, discipline and contracts" },
-  { pt: "Instruções individuais: variações de função por posição e marcação individual", en: "Individual instructions: role variations per position and man-marking" },
   { pt: "Olheiros de verdade: missões de observação, relatórios que revelam os jogadores aos poucos e promessas de fora para a base", en: "Real scouting: scouting missions, reports that reveal players bit by bit, and outside prospects for your academy" },
 ];

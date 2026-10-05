@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { tickState, getBallPos, endCurrentPeriod } from "@/GameEngine/Domain/gameState";
+import { tickState, getBallPos, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -224,6 +224,8 @@ export interface DebugOverlays {
   aerial:                boolean;
   /** Set pieces (`set-pieces-play.md`): the wall of a direct free kick, the delivery options of a corner / crossed free kick. */
   setPieces:             boolean;
+  /** Player instructions: the role-variant tag under each player, man-marking pairs (dashed line + ring on the target). */
+  instructions:          boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -236,6 +238,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   switchPlay:            false,
   aerial:                false,
   setPieces:             true,
+  instructions:          true,
 };
 
 interface Props {
@@ -462,6 +465,22 @@ export function PixiPitch({
       shotLbl.anchor.set(0.5, 1);
       shotLbl.visible = false;
       passLabelsCtr.addChild(shotLbl);
+
+      // Player-instruction tags (role variant / pressing) — pool of 22, reused every tick
+      const instrLabelStyle = new TextStyle({
+        fontSize:   9,
+        fontFamily: 'monospace',
+        fontWeight: 'bold',
+        fill:       0x7dd3fc,
+        dropShadow: { color: 0x000000, blur: 4, distance: 0, alpha: 1 },
+      });
+      const instrLabelPool: Text[] = Array.from({ length: 22 }, () => {
+        const t = new Text({ text: '', style: instrLabelStyle });
+        t.anchor.set(0.5, 0);
+        t.visible = false;
+        passLabelsCtr.addChild(t);
+        return t;
+      });
 
       const world = new Container();
       world.sortableChildren = true;
@@ -766,6 +785,7 @@ export function PixiPitch({
         movementTargetsGfx.clear();
         throughBallGfx.clear();
         for (const lbl of laneLabelPool) lbl.visible = false;
+        for (const lbl of instrLabelPool) lbl.visible = false;
         shotLbl.visible = false;
         if (debugModeRef.current) {
           const ovl        = debugOverlaysRef.current;
@@ -995,6 +1015,43 @@ export function PixiPitch({
               const { px: sx, py: sy } = toPixel(player.x, player.y);
               const { px: ex, py: ey } = toPixel(target.x, target.y);
               movementTargetsGfx.moveTo(sx, sy).lineTo(ex, ey).stroke({ width: 1.5, color: 0xff44ff, alpha: 0.65 });
+            }
+          }
+
+          // ── Player instructions: variant tags, man-marking pairs ──────────────
+          if (ovl.instructions) {
+            let li = 0;
+            for (const player of stateRef.current.players) {
+              const instr = player.instruction;
+              if (!instr || li >= instrLabelPool.length) continue;
+              const tag = `${instr.variant ?? ''}${instr.press === 'more' ? ' P+' : instr.press === 'less' ? ' P-' : ''}`.trim();
+              if (!tag) continue;
+              const { px, py } = toPixel(player.x, player.y);
+              const lbl = instrLabelPool[li++]!;
+              lbl.text = tag;
+              lbl.x = px;
+              lbl.y = py + 10;
+              lbl.visible = true;
+            }
+            for (const team of ['A', 'B'] as const) {
+              for (const pair of stateRef.current.manMarks?.[team] ?? []) {
+                const marker = stateRef.current.players.find(p => p.id === pair.markerId);
+                const target = stateRef.current.players.find(p => p.id === pair.targetId);
+                if (!marker || !target) continue;
+                const { px: mx, py: my } = toPixel(marker.x, marker.y);
+                const { px: tx, py: ty } = toPixel(target.x, target.y);
+                const len = Math.hypot(tx - mx, ty - my);
+                if (len > 2) {
+                  const ux = (tx - mx) / len;
+                  const uy = (ty - my) / len;
+                  for (let d = 0; d < len - 2; d += 10) {
+                    const e = Math.min(d + 6, len);
+                    throughBallGfx.moveTo(mx + ux * d, my + uy * d).lineTo(mx + ux * e, my + uy * e)
+                      .stroke({ width: 2, color: 0x38bdf8, alpha: 0.9 });
+                  }
+                }
+                throughBallGfx.circle(tx, ty, 11).stroke({ width: 2, color: 0x38bdf8, alpha: 0.95 });
+              }
             }
           }
 
@@ -1258,6 +1315,10 @@ export function PixiPitch({
           };
         } else if (cmd.type === 'patchPlayers') {
           stateRef.current = { ...stateRef.current, players: cmd.players };
+        } else if (cmd.type === 'setInstruction') {
+          stateRef.current = applyPlayerInstruction(stateRef.current, cmd.team, cmd.slot, cmd.instruction);
+        } else if (cmd.type === 'setManMarks') {
+          stateRef.current = setManMarksBySlot(stateRef.current, cmd.team, cmd.marks.map(m => ({ slot: m.slot, targetSlot: m.targetSlot })));
         } else if (cmd.type === 'setTeamIntent') {
           const teamIntent = { ...stateRef.current.teamIntent, [cmd.team]: cmd.intent };
           stateRef.current = { ...stateRef.current, teamIntent };

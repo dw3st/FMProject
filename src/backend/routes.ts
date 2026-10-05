@@ -26,7 +26,8 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Formation } from "@/GameEngine/types";
-import { aiMatchFormation, resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { aiMatchFormation, autoLineupForFormationWithFitness, resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import { isSquadInSave, resolveSquadRoute } from "@/backend/squadRouteResolve";
@@ -496,6 +497,14 @@ export const apiRoutes = {
       override: save.rotationOverride,
     });
     myTactics = { ...myTactics, lineup: resolved.lineup };
+    // Player instructions: slot instructions fitted to the formation actually played, today's
+    // man-marking, and the opponent's probable XI (the marking target picker).
+    const slotInstructions = sanitizeSlotInstructions(resolvedMyFormation, myTactics.slotInstructions);
+    myTactics = { ...myTactics, slotInstructions: slotInstructions.length > 0 ? slotInstructions : undefined };
+    const oppLineup = opponentSquad && oppFormation && matchDate
+      ? autoLineupForFormationWithFitness(opponentSquad, oppFormation, matchDate)
+      : [];
+    const matchMarking = save.matchMarking && save.matchMarking.date === matchDate ? save.matchMarking : null;
 
     return Response.json({
       save,
@@ -510,6 +519,8 @@ export const apiRoutes = {
       injuredReplaced: resolved.injuredReplaced,
       rotationSuggestion: resolved.rotationSuggestion,
       rotationApplied: resolved.rotationApplied,
+      oppLineup,
+      matchMarking,
     });
   },
 

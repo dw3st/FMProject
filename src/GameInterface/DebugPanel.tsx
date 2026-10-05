@@ -4,6 +4,8 @@ import type { DebugEntry } from "@/GameEngine/Support/DebugLog";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import type { GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import type { GameState } from "@/GameEngine/types";
+import { engineOf } from "@/GameEngine/Domain/roleEngineData";
+import { instructionAnchor } from "@/GameEngine/Configs/RoleVariantConfig";
 import { JsonView, darkStyles } from "react-json-view-lite";
 import "react-json-view-lite/dist/index.css";
 
@@ -20,6 +22,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   injury:       "text-rose-500",
   foul:         "text-amber-400",
   card:         "text-yellow-300",
+  instruction:  "text-sky-300",
   aerial:       "text-teal-300",
   setPiece:     "text-lime-300",
 };
@@ -194,6 +197,9 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
           {rightPanelMode === 'holder' ? 'Decision Scores' : rightPanelMode === 'offball' ? 'Off-Ball Scores' : rightPanelMode === 'defensive' ? 'Defensive Scores' : 'Scores'}
         </div>
         <div className="flex-1 flex flex-col px-3 py-2 gap-2 overflow-y-auto">
+
+          {/* ── Resolved slot tuning of the selected player (player instructions) ── */}
+          {selectedPlayer && <TuningBlock player={selectedPlayer} />}
 
           {/* ── Ball holder view ── */}
           {rightPanelMode === 'holder' && (scores ? (
@@ -512,6 +518,41 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
     <div className="mt-3 card-arcade rounded-xl overflow-hidden flex">
       {logSection}
       {scoresSection}
+    </div>
+  );
+}
+
+/** Engine tuning the selected player plays with (role + slot instruction, `player-instructions.md`). */
+function TuningBlock({ player }: { player: import('@/GameEngine/types').GamePlayer }) {
+  const e = engineOf(player);
+  const a = player.instruction ? {
+    attack: instructionAnchor(player.instruction, 'attacking'),
+    defend: instructionAnchor(player.instruction, 'defending'),
+  } : null;
+  const f = (n: number) => n.toFixed(2);
+  return (
+    <div className="space-y-0.5 pb-1.5 border-b border-white/5">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-bold tracking-widest uppercase text-sky-300/80">Tuning · {player.role}</span>
+        <span className="text-[9px] text-sky-300">{player.instruction?.variant ?? 'default'}{player.instruction?.press ? ` · ${player.instruction.press}` : ''}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-2 text-[9px] tabular-nums text-muted-foreground/70">
+        <span>x {e.bounds.minX}–{e.bounds.maxX}</span>
+        <span>carry {f(e.carryBias)}</span>
+        <span>pass {f(e.passBias)}</span>
+        <span>target {f(e.passTargetWeight)}</span>
+        <span>offBall {f(e.offBallBias)}</span>
+        <span>mark {player.manMarkTargetId ?? '—'}</span>
+        <span>sup {f(e.offBallIntentWeights.offer_support)}</span>
+        <span>hold {f(e.offBallIntentWeights.hold_space)}</span>
+        <span>run {f(e.offBallIntentWeights.make_run)}</span>
+        <span>shape {f(e.defensiveIntentWeights.hold_shape)}</span>
+        <span>track {f(e.defensiveIntentWeights.track_mark)}</span>
+        <span>press {f(e.defensiveIntentWeights.press_holder)}</span>
+        <span>step {f(e.defensiveIntentWeights.step_into_carry_lane)}</span>
+        {a?.attack && <span>atk {a.attack.dx}/{a.attack.dyIn}</span>}
+        {a?.defend && <span>def {a.defend.dx}/{a.defend.dyIn}</span>}
+      </div>
     </div>
   );
 }

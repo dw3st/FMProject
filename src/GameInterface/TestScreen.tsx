@@ -23,7 +23,8 @@ import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import type { TestScenario } from "@/GameEngine/Support/TestCases";
-import { createMatchState, getBallPos } from "@/GameEngine/Domain/gameState";
+import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
+import { variantsForRole } from "@/GameEngine/Configs/RoleVariantConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import type { Squad } from "@/types/playerTypes";
 
@@ -38,7 +39,7 @@ import { applyTeamTacticsConfig, getDefenseConfig } from "@/GameEngine/Configs/D
 import { getTeamExecutionMult } from "@/GameEngine/Configs/FamiliarityConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { DEFAULT_TACTICAL_STYLE, TACTICAL_STYLE_OPTIONS, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
-import type { TacticalStyle, Mentality } from "@/types/tacticsTypes";
+import type { TacticalStyle, Mentality, SlotInstruction, PressLevel, RoleVariantId } from "@/types/tacticsTypes";
 import type { GameState, GamePlayer, Formation, TeamIntent, TeamId } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
@@ -371,6 +372,13 @@ export function TestScreen() {
   const [moraleB, setMoraleB] = useState<number | undefined>(undefined);
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
+  // Player instructions per team (`player-instructions.md`): slot variants / pressing, man-marking.
+  const [instr, setInstr] = useState<Record<TeamId, (SlotInstruction | null)[]>>({ A: [], B: [] });
+  const [manMarks, setManMarksUi] = useState<Record<TeamId, { slot: number; targetSlot: number }[]>>({ A: [], B: [] });
+  const instrRef = useRef(instr);
+  const manMarksRef = useRef(manMarks);
+  instrRef.current = instr;
+  manMarksRef.current = manMarks;
   const [intentOverrideA, setIntentOverrideA] = useState<IntentOverride>('auto');
   const [intentOverrideB, setIntentOverrideB] = useState<IntentOverride>('auto');
   // Live readout of the engine's per-team intent. Updated from teamIntentChanged
@@ -546,7 +554,11 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    let state: GameState = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    for (const team of ['A', 'B'] as const) {
+      state = applyTeamInstructions(state, team, instrRef.current[team]);
+      state = setManMarksBySlot(state, team, manMarksRef.current[team]);
+    }
     setMatchState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -1097,6 +1109,87 @@ export function TestScreen() {
         </div>
       )}
 
+      {/* ── Player instructions (slot variants / pressing / man-marking) ── */}
+      {mode === '11v11' && formObjA && formObjB && (
+        <div className="card-arcade rounded-xl p-4 grid grid-cols-2 gap-4">
+          {(['A', 'B'] as const).map(team => {
+            const formation = team === 'A' ? formObjA : formObjB;
+            const oppFormation = team === 'A' ? formObjB : formObjA;
+            const list = instr[team];
+            const setSlot = (slot: number, next: SlotInstruction | null) => {
+              const copy = [...list];
+              while (copy.length <= slot) copy.push(null);
+              copy[slot] = next;
+              setInstr(prev => ({ ...prev, [team]: copy }));
+              gameBus.emit('testCommand', { type: 'setInstruction', team, slot, instruction: next });
+            };
+            const marks = manMarks[team];
+            const setMarks = (next: { slot: number; targetSlot: number }[]) => {
+              setManMarksUi(prev => ({ ...prev, [team]: next }));
+              gameBus.emit('testCommand', { type: 'setManMarks', team, marks: next });
+            };
+            return (
+              <div key={team} className="space-y-1.5">
+                <p className={`text-[10px] font-bold tracking-widest uppercase ${team === 'A' ? 'text-blue-400' : 'text-red-400'}`}>Team {team} Instructions</p>
+                {formation.attacking.map((slot, i) => {
+                  if (slot.role === 'GK') return null;
+                  const cur = list[i] ?? null;
+                  const variants = variantsForRole(slot.role);
+                  return (
+                    <div key={i} className="flex items-center gap-1 text-[10px]">
+                      <span className="w-8 font-bold text-muted-foreground">{slot.role}</span>
+                      <select
+                        value={cur?.variant ?? ''}
+                        onChange={e => setSlot(i, { ...(e.target.value ? { variant: e.target.value as RoleVariantId } : {}), ...(cur?.press ? { press: cur.press } : {}) })}
+                        className="bg-secondary/40 border border-border rounded px-1 py-0.5 text-[10px] text-foreground cursor-pointer flex-1"
+                      >
+                        <option value="">default</option>
+                        {variants.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                      <select
+                        value={cur?.press ?? 'normal'}
+                        onChange={e => setSlot(i, { ...(cur?.variant ? { variant: cur.variant } : {}), ...(e.target.value !== 'normal' ? { press: e.target.value as PressLevel } : {}) })}
+                        className="bg-secondary/40 border border-border rounded px-1 py-0.5 text-[10px] text-foreground cursor-pointer"
+                      >
+                        {(['less', 'normal', 'more'] as const).map(p => <option key={p} value={p}>press {p}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+                <p className="text-[9px] font-bold text-muted-foreground tracking-widest uppercase pt-1">Man-marking (max 2)</p>
+                {[0, 1].map(k => {
+                  const m = marks[k];
+                  return (
+                    <div key={k} className="flex items-center gap-1 text-[10px]">
+                      <select
+                        value={m ? String(m.slot) : ''}
+                        onChange={e => {
+                          const next = marks.filter((_, j) => j !== k);
+                          if (e.target.value) next.splice(k, 0, { slot: Number(e.target.value), targetSlot: m?.targetSlot ?? oppFormation.attacking.findIndex(s => s.role === 'ST') });
+                          setMarks(next);
+                        }}
+                        className="bg-secondary/40 border border-border rounded px-1 py-0.5 text-[10px] text-foreground cursor-pointer flex-1"
+                      >
+                        <option value="">marker: none</option>
+                        {formation.attacking.map((s, i) => s.role === 'GK' ? null : <option key={i} value={i}>marker #{i} {s.role}</option>)}
+                      </select>
+                      <select
+                        value={m ? String(m.targetSlot) : ''}
+                        disabled={!m}
+                        onChange={e => setMarks(marks.map((x, j) => (j === k ? { ...x, targetSlot: Number(e.target.value) } : x)))}
+                        className="bg-secondary/40 border border-border rounded px-1 py-0.5 text-[10px] text-foreground cursor-pointer flex-1"
+                      >
+                        {oppFormation.attacking.map((s, i) => s.role === 'GK' ? null : <option key={i} value={i}>target #{i} {s.role}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* ── Mini scenarios ── */}
       {mode === 'scenario' && (
         <div className="card-arcade rounded-xl overflow-hidden">
@@ -1246,6 +1339,7 @@ export function TestScreen() {
               { key: 'switchPlay'            as const, label: 'Switch',        color: 'text-violet-400'  },
               { key: 'aerial'                as const, label: 'Aerial',        color: 'text-teal-300'    },
               { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
+              { key: 'instructions'          as const, label: 'Instructions',  color: 'text-sky-300'     },
             ] as const
           ).map(({ key, label, color }) => (
             <button
