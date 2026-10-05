@@ -3,7 +3,7 @@ import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
 import { useTranslation } from "react-i18next";
 import type { Squad } from "@/types/playerTypes";
-import { comparePositions } from "@/types/positionOrder";
+import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import { toDisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
@@ -84,13 +84,9 @@ export function SquadRosterTable({
 
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
+      if (sortKey === "pos") return compareSquadPositions(a, b, sortDir);
       const aVal = a[sortKey as keyof RosterRow];
       const bVal = b[sortKey as keyof RosterRow];
-      if (sortKey === "pos" && typeof aVal === "string" && typeof bVal === "string") {
-        const cmp = comparePositions(aVal, bVal);
-        if (cmp !== 0) return sortDir === "asc" ? cmp : -cmp;
-        return a.name.localeCompare(b.name);
-      }
       if (typeof aVal === "string" && typeof bVal === "string") {
         return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
