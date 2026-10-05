@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.7",
+    date: "2026-10-04",
+    items: [
+      { pt: "História do clube: aba \"História\" no elenco de qualquer clube, com títulos, temporadas, artilheiros, jogadores com mais jogos e recordes desde o começo da carreira.", en: "Club history: a \"History\" tab in any club's squad screen, with titles, seasons, top scorers, most appearances and records since the career began." },
+      { pt: "Recordes do clube: maior vitória e derrota, mais gols numa temporada, melhor posição, maior invencibilidade, contratação e venda recordes. A caixa de entrada avisa quando um recorde do seu clube cai.", en: "Club records: biggest win and defeat, most goals in a season, highest finish, longest unbeaten run, record signing and sale. Your inbox tells you when one of your club's records falls." },
+    ],
+  },
+  {
     version: "3.4.7",
     date: "2026-10-04",
     items: [
