@@ -1173,8 +1173,16 @@ export async function advanceOneDay(
         negotiationNews.push(...back.news);
       }
       const allSquadsMarket = await saveService.getAllSquads(saveId);
+      // A market file written before the first tick (the human's sell/loan lists, from a route or
+      // `emptyMarket`) has no rotation yet: give it one instead of crashing or never refreshing.
+      const rotation = rawMarket?.shuffledTeamIds?.length ? null : initMarketState(allSquadsMarket);
       const marketForTick = rawMarket
-        ? { ...rawMarket, playerSellList: rawMarket.playerSellList ?? [] }
+        ? {
+            ...rawMarket,
+            ...(rotation ? { shuffledTeamIds: rotation.shuffledTeamIds, rotationIndex: 0 } : {}),
+            profiles: rawMarket.profiles ?? {},
+            playerSellList: rawMarket.playerSellList ?? [],
+          }
         : initMarketState(allSquadsMarket);
       const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
       const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
