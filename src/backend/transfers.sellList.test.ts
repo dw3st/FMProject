@@ -63,5 +63,14 @@ describe("POST /api/saves/:saveId/sell-list is serialised per save (M3)", () => 
     expect(ids).toContain(playerA!.id);
     expect(ids).toContain(playerB!.id);
     expect(finalList).toHaveLength(2);
+
+    // Only the human club's own players; nobody while unemployed (`.claude/rules/game/jobs.md`).
+    const index = await saveService.getSquadIndex(saveId);
+    const other = await saveService.getSquadById(saveId, index.inLeague("la_liga")[0]!.squadId);
+    expect((await post(other!.players[0]!.id)).status).toBe(400);
+    const m = (await saveService.getMeta(saveId))!;
+    await saveService.updateMeta(saveId, { clubId: "" });
+    expect((await post(playerA!.id)).status).toBe(409);
+    await saveService.updateMeta(saveId, { clubId: m.clubId });
   }, 60_000);
 });

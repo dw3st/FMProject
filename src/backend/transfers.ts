@@ -278,8 +278,17 @@ export const transferRoutes = {
       // dailyMarketTick (advance-day) or another sell-list toggle on the same save must not
       // interleave with this read-modify-write, or one toggle can silently undo another.
       return withSaveLock(saveId, async () => {
+        const meta = await saveService.getMeta(saveId);
+        if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+        // Without a club (`.claude/rules/game/jobs.md`) there is nothing to sell.
+        if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
         const rawMarket = await saveService.getMarket(saveId);
         const market = rawMarket ? { ...rawMarket, playerSellList: (rawMarket.playerSellList ?? []) as SellCandidate[] } : null;
+        const listed = (market?.playerSellList ?? []).some((c) => c.playerId === playerId);
+        // Only the human club's own players can be listed (toggling one off always works).
+        if (!listed && !(await saveService.getSquadById(saveId, meta.clubId))?.players.some((p) => p.id === playerId)) {
+          return Response.json({ error: "not your player" }, { status: 400 });
+        }
 
         const allSquads = await saveService.getAllSquads(saveId);
         const baseMarket = market ?? initMarketState(allSquads);
