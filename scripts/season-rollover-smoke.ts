@@ -1281,7 +1281,9 @@ try {
         if (!hit) continue; // retired or released
         const seasonRows = (hit.p.history ?? []).filter((h) => h.season === label);
         if (seasonRows.length > 0) withRow++;
-        if (seasonRows.reduce((a, h) => a + h.apps, 0) === log.appearances) appsMatch++;
+        const rowApps = seasonRows.reduce((a, h) => a + h.apps, 0);
+        if (rowApps === log.appearances) appsMatch++;
+        else console.log(`  mismatch ${pid} (${hit.p.name}, now ${hit.squadId}): rows ${rowApps} vs archived ${log.appearances} — ${JSON.stringify(seasonRows.map((h) => ({ c: h.squadId, a: h.apps, p: h.partial ?? false, o: h.open ?? false })))}`);
         if (seasonRows.some((h) => h.open)) openLeft++;
       }
       const alive = played.filter(([pid]) => players.some(({ p }) => p.id === pid)).length;
