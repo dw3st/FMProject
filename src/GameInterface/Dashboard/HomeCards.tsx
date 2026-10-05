@@ -14,6 +14,8 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import type { StarKind } from "@/Domain/world/stars";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
@@ -599,12 +601,15 @@ export function HighlightsCard({
   clubColors,
   playerHref,
   statsHref,
+  stars,
 }: {
   mode: "season" | "overall";
   items: Highlight[];
   clubColors: readonly string[];
   playerHref: (playerId: string) => string;
   statsHref: string;
+  /** Star per player id (`useStarPlayers`), the same marks the player profile shows. */
+  stars?: ReadonlyMap<string, StarKind>;
 }) {
   const { t } = useTranslation();
   return (
@@ -615,6 +620,7 @@ export function HighlightsCard({
       <ul className="list-none m-0 p-0 flex flex-col">
         {items.map((h) => {
           const role = h.player.stats ? preferredRole(h.player) : undefined;
+          const star = stars?.get(h.player.id);
           return (
             <li key={h.player.id} className="border-t border-border/50 first:border-t-0">
               <a
@@ -629,7 +635,10 @@ export function HighlightsCard({
                   fallback={playerInitials(h.player.name)}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold truncate">{h.player.name}</div>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-semibold truncate">{h.player.name}</span>
+                    {star && <StarBadge kind={star} />}
+                  </div>
                   <div className="text-sm text-muted-foreground tabular-nums">
                     {role && (
                       <span className={`font-display font-bold mr-2 ${getDetailedPositionColor(role)}`}>

@@ -9,7 +9,7 @@ import type { FormationSlot, FormationShape } from "@/types/formationSlots";
 import { PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/Domain/pitch";
 import { useDragDrop, DragGhost } from "@/GameInterface/Components/useDragDrop";
 import type { DragSource, DropTarget } from "@/GameInterface/Components/useDragDrop";
-import { dropOnLineup } from "@/Domain/formation/lineupDrop";
+import { dropOnLineup, tabUnderDrag } from "@/Domain/formation/lineupDrop";
 import {
   CUSTOM_FORMATION_ID,
   ZONE_COLS,
@@ -122,6 +122,11 @@ export function FormationScreen() {
   }
 
   const { drag, dragProps, consumeClick } = useDragDrop(handleDrop);
+  // Hovering a squad-panel tab while dragging opens it (pitch -> bench without letting go, #72).
+  const dragOverTab = tabUnderDrag(drag?.over);
+  useEffect(() => {
+    if (dragOverTab) setBenchTab(dragOverTab);
+  }, [dragOverTab]);
 
   useEffect(() => {
     if (!saveLoading && !session) {
@@ -616,6 +621,7 @@ export function FormationScreen() {
                 occupiedZones={occupiedZones}
                 dragProps={dragProps}
                 dropHover={dropHover}
+                dragging={drag !== null}
                 players={startingBySlot}
                 selectedSlotIdx={selectedSlotIdx}
                 onSlotClick={handleSlotClick}
@@ -637,6 +643,7 @@ export function FormationScreen() {
                   ]}
                   active={benchTab}
                   onChange={setBenchTab}
+                  tabProps={(key) => ({ "data-drop": `tab:${key}` })}
                 />
 
                 {selectedSlotIdx !== null ? (
@@ -645,7 +652,7 @@ export function FormationScreen() {
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground mb-3 m-0 shrink-0">
-                    {benchTab === "starting" ? t("formations.currentStartingLineup") : t("formations.clickSlotHint")}
+                    {benchTab === "starting" ? t("formations.dragStartingHint") : t("formations.clickSlotHint")}
                   </p>
                 )}
 
@@ -994,8 +1001,11 @@ function FormationPitch({
   occupiedZones,
   dragProps,
   dropHover,
+  dragging,
   clubColors,
 }: {
+  /** A drag is in progress: hover cards stay hidden. */
+  dragging?: boolean;
   /** Kit colours of the club, used for the generated faces on the markers. */
   clubColors?: readonly string[];
   editing?: boolean;
@@ -1089,16 +1099,17 @@ function FormationPitch({
           return (
             <div
               key={`${slot.role}-${i}`}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-200 group ${
+              data-drop={`slot:${i}`}
+              data-pitch-marker
+              {...dragProps({ kind: "slot", key: String(i) }, player ? player.name : slot.role)}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-200 group select-none touch-none ${
                 isSelected ? " z-20" : " z-10 hover:z-[100]"
               }`}
               style={{ left: `${slot.x}%`, top: `${topPct}%` }}
             >
               <button
+                type="button"
                 onClick={() => onSlotClick(i)}
-                data-drop={`slot:${i}`}
-                data-pitch-marker
-                {...dragProps({ kind: "slot", key: String(i) }, player ? player.name : slot.role)}
                 className={`relative w-12 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 cursor-pointer select-none touch-none border-0 p-0 ${
                   dropHover === `slot:${i}` || isSelected
                     ? `${player ? "bg-transparent" : "bg-primary"} ring-2 ring-primary ring-offset-2 ring-offset-background`
@@ -1138,7 +1149,9 @@ function FormationPitch({
 
               {player && (
                 <>
-                  <div className={`absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm font-semibold px-2 py-0.5 rounded ${
+                  <div
+                    onClick={() => onSlotClick(i)}
+                    className={`absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm font-semibold px-2 py-0.5 rounded cursor-pointer ${
                     isSelected
                       ? "bg-primary text-primary-foreground"
                       : oop
@@ -1148,7 +1161,7 @@ function FormationPitch({
                     {player.name.split(" ").pop()}
                   </div>
 
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <div className={`opacity-0 ${dragging ? "" : "group-hover:opacity-100"} transition-opacity duration-200 pointer-events-none`}>
                     <div
                       className={`absolute z-[100] bottom-full mb-2 w-48 p-3 rounded-md bg-card border  ${oop ? "border-chart-4/40" : "border-border"} ${tipPanelPos}`}
                     >

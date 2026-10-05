@@ -43,3 +43,16 @@ export function dropOnLineup(
   }
   return null;
 }
+
+/** Tab of the squad panel (starting XI / bench) under a dragged item, from its `data-drop` value. */
+export type SquadPanelTab = "starting" | "bench";
+
+/**
+ * While dragging, hovering a squad-panel tab (`data-drop="tab:bench"`) opens it, so a pitch player
+ * can be dropped on a bench player (and a bench player found) without letting go (#72).
+ */
+export function tabUnderDrag(over: string | null | undefined): SquadPanelTab | null {
+  if (over === "tab:bench") return "bench";
+  if (over === "tab:starting") return "starting";
+  return null;
+}

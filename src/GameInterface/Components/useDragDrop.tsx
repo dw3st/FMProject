@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from "react";
 
 /** What is being dragged: a pitch slot (by index) or a bench player (by id). */
 export interface DragSource {
@@ -102,6 +102,8 @@ export function useDragDrop(onDrop: (source: DragSource, target: DropTarget) => 
   const dragProps = useCallback(
     (source: DragSource, label: string) => ({
       onPointerDown: (e: ReactPointerEvent<HTMLElement>) => start(source, label, e),
+      // A native HTML drag (selected text, a link, an image) fires pointercancel and kills ours.
+      onDragStart: (e: ReactDragEvent<HTMLElement>) => e.preventDefault(),
     }),
     [start],
   );

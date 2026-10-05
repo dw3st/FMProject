@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.9.1",
+    date: "2026-10-05",
+    items: [
+      { pt: "Na Formação, arraste um jogador sobre outro para trocá-los, ou um reserva até o campo. Para substituir um titular, arraste-o e pare sobre a aba Reservas.", en: "On the Formation screen, drag a player onto another to swap them, or a substitute onto the pitch. To take a starter off, drag him and hold over the Bench tab." },
+    ],
+    fixes: [
+      { pt: "As estrelas dos craques agora aparecem também na lista do elenco e nos destaques do Painel, iguais às da ficha do jogador.", en: "Star players now show their star in the squad list and the Dashboard highlights too, the same as on the player profile." },
+      { pt: "Ordenar o elenco pela posição agrupa goleiros, defensores, meias e atacantes, e cada posição dentro deles.", en: "Sorting the squad by position now groups goalkeepers, defenders, midfielders and forwards, and each position within them." },
+    ],
+  },
+  {
     version: "3.9",
     date: "2026-10-05",
     items: [

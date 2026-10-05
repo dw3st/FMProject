@@ -4,6 +4,7 @@ import { WeekCard } from "@/GameInterface/Dashboard/WeekCalendar";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
@@ -80,6 +81,7 @@ export function DashboardScreen() {
 
   const saveId = session?.saveId;
   const leagueSlug = session?.leagueSlug;
+  const stars = useStarPlayers(saveId, currentDate);
 
   useEffect(() => {
     if (!saveId || !leagueSlug) return;
@@ -290,6 +292,7 @@ export function DashboardScreen() {
           clubColors={clubColors}
           playerHref={playerHref}
           statsHref="/stats?tab=team"
+          stars={stars}
         />
         <InboxCard messages={recentMessages} unread={unreadInboxCount} subjectOf={(m) => inboxSubject(m, t)} />
       </div>
