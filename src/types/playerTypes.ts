@@ -1,3 +1,4 @@
+import type { ClubFacilities } from "@/types/facilityTypes";
 import type { StaffRecord } from "@/Domain/staff/staffTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/moraleTypes";
@@ -254,6 +255,11 @@ export interface Squad {
    * Present-but-empty role = vacant.
    */
   staff?: StaffRecord;
+  /**
+   * Club facilities: stadium stands, comfort, training ground, academy (`src/Domain/facilities`).
+   * Human club only; AI clubs use the implied level of their financial tier.
+   */
+  facilities?: ClubFacilities;
   /**
    * Style familiarity 0..100 (`src/Domain/familiarity`). Human club only, set at career creation
    * and moved by daily training; AI clubs store none and follow the implicit rule.

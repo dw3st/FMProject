@@ -19,7 +19,13 @@ export type LedgerKind =
    * club's balance out of the ledger, "arrive" brings the new club's starting balance in, so the
    * ledger keeps summing to the current club's budget.
    */
-  | "club_change";
+  | "club_change"
+  /** Club facilities (`.claude/rules/game/facilities.md`): monthly instalments of a project. */
+  | "facilities"
+  /** Weekly upkeep of the training ground and academy above the club's implied level. */
+  | "facilities_upkeep"
+  /** The board's share of a project's instalment (board ≥ 85). */
+  | "board_funding";
 
 /** One line of the club's cash extract. `amount` is signed (income positive, expense negative). */
 export interface LedgerEntry {
@@ -39,6 +45,10 @@ export interface LedgerEntry {
     /** Transfers: the other club's name. */
     clubName?: string;
     playerName?: string;
+    /** Facilities lines: the project kind ("stand", "comfort", "training", "academy"). */
+    facility?: string;
+    /** Stand projects: which stand. */
+    stand?: string;
   };
 }
 
@@ -53,6 +63,9 @@ const LEDGER_KINDS: LedgerKind[] = [
   "transfer_in",
   "transfer_out",
   "club_change",
+  "facilities",
+  "facilities_upkeep",
+  "board_funding",
 ];
 
 /**

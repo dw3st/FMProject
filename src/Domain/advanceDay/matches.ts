@@ -25,6 +25,7 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { clearHealed, mergeInjury, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
 import { applyMatchCards, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
 
@@ -219,7 +220,9 @@ function finalizeSquadsAfterMatch(
   for (const c of cards) cardsByPlayer.set(c.playerId, [...(cardsByPlayer.get(c.playerId) ?? []), c]);
 
   function applyMatchToSquad(squad: Squad): Squad {
-    const { recoveryMult } = staffEffectsOf(squad);
+    // Members who did not play recover like a rest day: staff × training ground
+    // (`.claude/rules/game/facilities.md`); the post-match fitness of who played is untouched.
+    const recoveryMult = staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
     return {
       ...squad,
       players: squad.players.map((p0) => {
