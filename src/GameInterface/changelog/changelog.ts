@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.0.2",
+    date: "2026-10-05",
+    items: [
+      { pt: "A bola dos gols ganhou um desenho novo, em traços com os gomos da bola de verdade.", en: "The goal football has a new look, drawn in lines with the panels of a real ball." },
+    ],
+  },
+  {
     version: "4.0.1",
     date: "2026-10-05",
     items: [

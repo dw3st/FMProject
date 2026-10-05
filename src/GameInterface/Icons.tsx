@@ -211,30 +211,14 @@ export type IconName =
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
-/** A classic black-and-white football (lucide has no soccer ball): white leather with a white rim, black panels, whatever the theme. */
+/** A line-art football (lucide has no soccer ball): pentagon and hexagon seams in `currentColor`, like the other icons. */
 function SoccerBall(props: SVGProps<SVGSVGElement>) {
   const clip = useId();
-  const { strokeWidth: _strokeWidth, ...rest } = props;
   return (
-    <svg viewBox="0 0 24 24" {...rest}>
-      <defs><clipPath id={clip}><circle cx="12" cy="12" r="9.4" /></clipPath></defs>
-      <circle cx="12" cy="12" r="11" fill="#f4f4f5" />
-      <g clipPath={`url(#${clip})`} fill="#18181b">
-        <polygon points="12.00,7.70 16.09,10.67 14.53,15.48 9.47,15.48 7.91,10.67" />
-        <polygon points="21.26,2.25 20.17,5.61 16.64,5.61 15.55,2.25 18.41,0.18" />
-        <polygon points="24.13,17.80 20.60,17.80 19.51,14.44 22.37,12.37 25.22,14.44" />
-        <polygon points="10.24,25.33 9.15,21.97 12.00,19.90 14.85,21.97 13.76,25.33" />
-        <polygon points="-1.22,14.44 1.63,12.37 4.49,14.44 3.40,17.80 -0.13,17.80" />
-        <polygon points="5.59,0.18 8.45,2.25 7.36,5.61 3.83,5.61 2.74,2.25" />
-      </g>
-      <g stroke="#18181b" strokeWidth="0.9" strokeLinecap="round">
-        <line x1="12.00" y1="7.70" x2="12.00" y2="4.00" />
-        <line x1="16.09" y1="10.67" x2="19.61" y2="9.53" />
-        <line x1="14.53" y1="15.48" x2="16.70" y2="18.47" />
-        <line x1="9.47" y1="15.48" x2="7.30" y2="18.47" />
-        <line x1="7.91" y1="10.67" x2="4.39" y2="9.53" />
-      </g>
-      <circle cx="12" cy="12" r="9.4" fill="none" stroke="#18181b" strokeWidth="0.6" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <defs><clipPath id={clip}><circle cx="12" cy="12" r="10" /></clipPath></defs>
+      <path clipPath={`url(#${clip})`} d="M12.00,8.40 L15.42,10.89 L14.12,14.91 L9.88,14.91 L8.58,10.89 Z M12.00,8.40 L12.00,5.70 M15.42,10.89 L17.99,10.05 M14.12,14.91 L15.70,17.10 M9.88,14.91 L8.30,17.10 M8.58,10.89 L6.01,10.05 M16.23,6.18 L15.00,2.37 L18.23,0.02 L21.46,2.37 L20.23,6.18 Z M18.85,14.22 L22.08,11.88 L25.31,14.22 L24.08,18.03 L20.08,18.03 Z M12.00,19.20 L15.23,21.55 L14.00,25.35 L10.00,25.35 L8.77,21.55 Z M5.15,14.22 L3.92,18.03 L-0.08,18.03 L-1.31,14.22 L1.92,11.88 Z M7.77,6.18 L3.77,6.18 L2.54,2.37 L5.77,0.02 L9.00,2.37 Z M12.00,5.70 L16.23,6.18 M12.00,5.70 L7.77,6.18 M17.99,10.05 L18.85,14.22 M17.99,10.05 L16.23,6.18 M15.70,17.10 L12.00,19.20 M15.70,17.10 L18.85,14.22 M8.30,17.10 L5.15,14.22 M8.30,17.10 L12.00,19.20 M6.01,10.05 L7.77,6.18 M6.01,10.05 L5.15,14.22" />
+      <circle cx="12" cy="12" r="10" />
     </svg>
   );
 }
