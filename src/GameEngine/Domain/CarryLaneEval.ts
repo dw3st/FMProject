@@ -10,7 +10,7 @@
 
 import type { GamePlayer } from '@/GameEngine/types';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { engineOf } from '@/GameEngine/Domain/roleEngineData';
 import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 
 // ── Scoring helpers ───────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ export function evaluateCarryLaneBreakdown(
     angleScore     * cfg.ANGLE_WEIGHT      -
     crowdPenalty   * cfg.CROWD_PENALTY_WEIGHT;
 
-  const roleBias        = roleEngine(player.role).carryBias;
+  const roleBias        = engineOf(player).carryBias;
   const visionBonus     = getVisionBonus(player, progressScore, angleScore);
   const pressurePenalty = getPressurePenalty(player, opponents);
 

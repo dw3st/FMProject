@@ -90,6 +90,15 @@ export interface PlayerStats {
   directFreeKickGoals:      number;
   /** Goals from a set piece: corner, free kick in the attacking third, penalty (also in `goals`). */
   setPieceGoals:            number;
+  // ── Man-marking (player instructions, `.claude/rules/game/player-instructions.md`) ──
+  /** Game minutes this player spent man-marked by an opponent. */
+  manMarked:                number;
+  /** Passes this player received while man-marked. */
+  markedTargetTouches:      number;
+  /** Shots this player took while man-marked. */
+  markedTargetShots:        number;
+  /** Goals this player scored while man-marked. */
+  markedTargetGoals:        number;
 }
 
 export interface TeamStats extends PlayerStats {
@@ -156,6 +165,10 @@ function emptyStats(): PlayerStats {
     directFreeKickShots:      0,
     directFreeKickGoals:      0,
     setPieceGoals:            0,
+    manMarked:                0,
+    markedTargetTouches:      0,
+    markedTargetShots:        0,
+    markedTargetGoals:        0,
   };
 }
 
@@ -180,6 +193,9 @@ const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number;
  * average is only over players who actually played — see `TeamStats.avgEndEnergy`.
  */
 const endEnergy = new Map<number, { team: TeamId; energy: number }>();
+
+/** Players currently man-marked (refreshed by every `manMarkTick`; cleared at `initStats`). */
+let markedNow = new Set<number>();
 
 function get(id: number): PlayerStats {
   if (!store.has(id)) store.set(id, emptyStats());
@@ -206,11 +222,20 @@ gameBus.on('matchEnd', e => {
 });
 
 gameBus.on('passAttempted', e => { get(e.player).passesAttempted++; notify(); });
-gameBus.on('passCompleted', e => { get(e.player).passesCompleted++; notify(); });
+gameBus.on('passCompleted', e => {
+  get(e.player).passesCompleted++;
+  if (markedNow.has(e.toId)) get(e.toId).markedTargetTouches++;
+  notify();
+});
 gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); });
-gameBus.on('shot',          e => { const s = get(e.player); s.shots++; s.xg += e.xg; notify(); });
+gameBus.on('shot',          e => {
+  const s = get(e.player); s.shots++; s.xg += e.xg;
+  if (markedNow.has(e.player)) s.markedTargetShots++;
+  notify();
+});
 gameBus.on('goalScored',    e => {
   get(e.scorerId).goals++;
+  if (markedNow.has(e.scorerId)) get(e.scorerId).markedTargetGoals++;
   if (e.header) get(e.scorerId).headerGoals++;
   if (e.setPiece) get(e.scorerId).setPieceGoals++;
   if (e.setPiece === 'direct_free_kick') get(e.scorerId).directFreeKickGoals++;
@@ -321,6 +346,13 @@ gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
 gameBus.on('freeKickAwarded', e => { get(e.takerId).freeKicks++; notify(); });
 gameBus.on('directFreeKick',  e => { get(e.player).directFreeKickShots++; notify(); });
 
+// ── Man-marking ───────────────────────────────────────────────────────────────
+gameBus.on('manMarkTick', e => {
+  markedNow = new Set(e.targetIds);
+  const minutes = e.seconds / 60;
+  for (const id of e.targetIds) get(id).manMarked += minutes;
+});
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -331,6 +363,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   store.clear();
   playerTeam.clear();
   endEnergy.clear();
+  markedNow = new Set();
   teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
   teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
   for (const { id, team } of players) {
@@ -397,6 +430,10 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.directFreeKickShots      += stats.directFreeKickShots;
     result.directFreeKickGoals      += stats.directFreeKickGoals;
     result.setPieceGoals            += stats.setPieceGoals;
+    result.manMarked                += stats.manMarked;
+    result.markedTargetTouches      += stats.markedTargetTouches;
+    result.markedTargetShots        += stats.markedTargetShots;
+    result.markedTargetGoals        += stats.markedTargetGoals;
   }
   return result;
 }

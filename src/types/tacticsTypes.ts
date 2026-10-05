@@ -243,6 +243,46 @@ export interface TacticsSave {
   assistantRotation?: boolean;
   /** Set-piece takers (player ids); a missing duty = automatic (`set-pieces-play.md` §4). */
   setPieceTakers?: SetPieceTakersSave;
+  /**
+   * Per-slot player instructions (role variant + individual pressing), index = slot (same as
+   * `lineup`); `null`/absent = default (`.claude/rules/game/player-instructions.md`).
+   */
+  slotInstructions?: (SlotInstruction | null)[];
+}
+
+// ── Player instructions (Etapa 27) ───────────────────────────────────────────
+
+/** Role variants (`src/GameEngine/Configs/RoleVariantConfig.ts` → `ROLE_VARIANTS`). */
+export type RoleVariantId =
+  | "fb_overlap" | "fb_hold" | "fb_inverted"
+  | "wb_attack" | "wb_defend"
+  | "cb_stopper" | "cb_cover" | "cb_ball"
+  | "dm_anchor" | "dm_box"
+  | "cm_link" | "cm_box"
+  | "am_link" | "am_shadow"
+  | "wm_wide" | "wm_inside"
+  | "w_wide" | "w_inside"
+  | "st_poacher" | "st_false9" | "st_target";
+
+/** Individual pressing of a slot. */
+export type PressLevel = "less" | "normal" | "more";
+
+/** Instruction of one formation slot; absent fields = default. */
+export interface SlotInstruction {
+  variant?: RoleVariantId;
+  press?: PressLevel;
+}
+
+/** One man-marking pair of a match: the user's slot marks an opponent (roster id). */
+export interface MatchMark {
+  slot: number;
+  targetId: string;
+}
+
+/** Man-marking chosen for one match day (`SaveMeta.matchMarking`). At most 2 pairs. */
+export interface MatchMarking {
+  date: string;
+  marks: MatchMark[];
 }
 
 /** Manager's set-piece takers per duty (player ids). Absent duty = automatic. */

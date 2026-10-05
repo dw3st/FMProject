@@ -17,10 +17,10 @@
  */
 
 import type { GamePlayer, Formation, TeamId, TeamIntent } from '@/GameEngine/types';
-import { resolveBasePosition } from '@/GameEngine/FormationSlots';
-import { getDefenseConfig, getDefenseTacticKeys } from '@/GameEngine/Configs/DefenseConfig';
+import { slotBasePosition } from '@/GameEngine/FormationSlots';
+import { getDefenseConfig, getDefenseTacticKeys, MAN_MARK_CONFIG } from '@/GameEngine/Configs/DefenseConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
-import { mainRoleOf, roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { engineOf, mainRoleOf } from '@/GameEngine/Domain/roleEngineData';
 import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import {
@@ -215,6 +215,35 @@ interface DefensiveIntentContext {
   markDangerScore: number;
 }
 
+/**
+ * Defensive intent weights a player defends with: the slot tuning (`engineOf`, role + instruction),
+ * or the man-marking tuning while he marks an opponent (`MAN_MARK_CONFIG`; press stays the slot's).
+ */
+export function defensiveWeightsOf(player: GamePlayer): DefensiveIntentWeights {
+  const w = engineOf(player).defensiveIntentWeights;
+  if (player.manMarkTargetId === undefined) return w;
+  return { ...w, track_mark: MAN_MARK_CONFIG.TRACK_MARK_WEIGHT, hold_shape: MAN_MARK_CONFIG.HOLD_SHAPE_WEIGHT };
+}
+
+/** Movement bounds while defending: a marker gets X ± `X_BOUNDS_EXTENSION` and the full width. */
+export function defensiveBoundsOf(player: GamePlayer): GamePlayer['bounds'] {
+  if (player.manMarkTargetId === undefined) return player.bounds;
+  const ext = MAN_MARK_CONFIG.X_BOUNDS_EXTENSION;
+  return {
+    minX: Math.max(0, player.bounds.minX - ext),
+    maxX: Math.min(PITCH_LENGTH, player.bounds.maxX + ext),
+    minY: 0,
+    maxY: PITCH_WIDTH,
+  };
+}
+
+/** The mark's threat (0..1 from own goal distance), floored for a man-marker (`MAN_MARK_CONFIG.THREAT_FLOOR`). */
+function markThreatFor(player: GamePlayer, rawThreat: number, markTargetId: number | undefined): number {
+  return player.manMarkTargetId !== undefined && markTargetId === player.manMarkTargetId
+    ? Math.max(rawThreat, MAN_MARK_CONFIG.THREAT_FLOOR)
+    : rawThreat;
+}
+
 /** Role weights for the five defensive intents (from `roleEngine` / roles data). */
 interface DefensiveIntentWeights {
   hold_shape: number;
@@ -280,7 +309,20 @@ export function assignMarkTargets(
   const assignments = new Map<number, number>();
   const assignedOpps = new Set<number>();
 
+  // Man-marking pairs (player instructions) are fixed first; the greedy pass and the swap-improve
+  // only work on the rest.
+  const fixedDefs = new Set<number>();
+  for (const def of defenders) {
+    const targetId = def.manMarkTargetId;
+    if (targetId === undefined || assignedOpps.has(targetId)) continue;
+    if (!opponents.some(o => o.id === targetId)) continue;
+    assignments.set(def.id, targetId);
+    assignedOpps.add(targetId);
+    fixedDefs.add(def.id);
+  }
+
   for (const def of sortedDefenders) {
+    if (fixedDefs.has(def.id)) continue;
     // Assign this defender to their nearest unassigned opponent — with a soft
     // zone-fit bias and a danger discount so dangerous, isolated, near-goal
     // attackers attract a defender even if a closer / safer opp is available.
@@ -309,7 +351,7 @@ export function assignMarkTargets(
   // current assignment (still valid, just sub-optimal). This prevents any chance
   // of an infinite loop from floating-point pathology or NaN propagation.
   const playerById = new Map(allPlayers.map(p => [p.id, p]));
-  const defIds = [...assignments.keys()];
+  const defIds = [...assignments.keys()].filter(id => !fixedDefs.has(id));
   const MAX_SWAP_PASSES = 20;
   let improved = true;
   let passCount = 0;
@@ -370,7 +412,7 @@ function markAssignmentCost(def: GamePlayer, opp: GamePlayer, oppDanger = 0): nu
   const dx       = def.x - opp.x;
   const dy       = def.y - opp.y;
   const distSq   = dx * dx + dy * dy;
-  const outDist  = outOfZoneDistance(opp, def.bounds);
+  const outDist  = outOfZoneDistance(opp, defensiveBoundsOf(def));
   return distSq
     + outDist * outDist * ASSIGN_ZONE_COST_WEIGHT
     - oppDanger * CROWD_AWARE_DEFENSE.ASSIGN_DANGER_DISCOUNT;
@@ -435,7 +477,7 @@ export function computeDefensiveShapeAnchor(
   formation: Formation,
   cfg: DefenseConfigValues,
 ): { x: number; y: number } {
-  const base = resolveBasePosition(player.slotIndex, player.attackDir, formation, 'defending');
+  const base = slotBasePosition(player, formation, 'defending');
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
 
   let rawX = base.x;
@@ -492,8 +534,34 @@ function computeTrackMarkTarget(
   cfg: DefenseConfigValues,
 ): { x: number; y: number; threat: number; pull: number } {
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
+  // Man-marking: tight on the target, goal-side and ball-side, ignoring the shape anchor.
+  if (player.manMarkTargetId === markTarget.id) {
+    // Read the target's run: aim at where he is heading (up to ANTICIPATION yds ahead).
+    const rx = markTarget.targetPosition.x - markTarget.x;
+    const ry = markTarget.targetPosition.y - markTarget.y;
+    const rl = Math.hypot(rx, ry);
+    const lead = rl > 1e-6 ? Math.min(rl, MAN_MARK_CONFIG.ANTICIPATION) / rl : 0;
+    const mx = markTarget.x + rx * lead;
+    const my = markTarget.y + ry * lead;
+    const gx = ownGoalX - markTarget.x;
+    const gy = (GOAL_Y_MIN + GOAL_Y_MAX) / 2 - markTarget.y;
+    const bx = ballHolder.x - markTarget.x;
+    const by = ballHolder.y - markTarget.y;
+    const gl = Math.hypot(gx, gy) || 1;
+    const bl = Math.hypot(bx, by) || 1;
+    let dx = gx / gl + bx / bl;
+    let dy = gy / gl + by / bl;
+    const dl = Math.hypot(dx, dy);
+    if (dl < 1e-6) { dx = gx / gl; dy = gy / gl; } else { dx /= dl; dy /= dl; }
+    return {
+      x: mx + dx * MAN_MARK_CONFIG.TIGHT_DISTANCE,
+      y: my + dy * MAN_MARK_CONFIG.TIGHT_DISTANCE,
+      threat: MAN_MARK_CONFIG.THREAT_FLOOR,
+      pull: 1,
+    };
+  }
   const distFromOwnGoal = Math.abs(markTarget.x - ownGoalX);
-  const threat = Math.max(0, 1 - distFromOwnGoal / cfg.THREAT_HORIZON);
+  const threat = markThreatFor(player, Math.max(0, 1 - distFromOwnGoal / cfg.THREAT_HORIZON), markTarget.id);
 
   // Non-linear curve: more response at medium threat, less waiting for full danger.
   // threat=0.3 → curved≈0.41; threat=0.5 → curved≈0.65; threat=0.7 → curved≈0.84
@@ -639,7 +707,7 @@ function buildDefensiveIntentContext(
     ? Math.max(0, 1 - Math.abs(ballHolder.x - ownGoalX) / cfg.THREAT_HORIZON)
     : 0;
   const markThreat = markTarget
-    ? Math.max(0, 1 - Math.abs(markTarget.x - ownGoalX) / cfg.THREAT_HORIZON)
+    ? markThreatFor(player, Math.max(0, 1 - Math.abs(markTarget.x - ownGoalX) / cfg.THREAT_HORIZON), markTarget.id)
     : 0;
 
   const holderInMyCorridor = ballHolder != null
@@ -710,7 +778,7 @@ function buildDefensiveIntentContext(
     markDangerScore = computeOppDanger(markTarget, ownGoalX, cfg.THREAT_HORIZON, attackerOutfield);
   }
 
-  const roleWeights = roleEngine(player.role).defensiveIntentWeights;
+  const roleWeights = defensiveWeightsOf(player);
 
   return {
     player,
@@ -898,7 +966,7 @@ function scoreTrackMarkIntent(
   // hand-off happen for low-danger drifts (hold_shape wins) but forces the
   // defender to chase a dangerous mark even far outside their zone.
   if (ctx.markTarget) {
-    const outDist = outOfZoneDistance(ctx.markTarget, ctx.player.bounds);
+    const outDist = outOfZoneDistance(ctx.markTarget, defensiveBoundsOf(ctx.player));
     if (outDist > 0) {
       const zonePenalty     = Math.min(1, outDist / OUT_OF_ZONE_RANGE);
       const threatRelief    = 1 - ctx.markThreat; // high threat → no discount
@@ -1049,7 +1117,7 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
     && ctx.markTarget != null
     && ctx.ballHolder.id === ctx.markTarget.id;
 
-  const w = roleEngine(ctx.player.role).defensiveIntentWeights;
+  const w = defensiveWeightsOf(ctx.player);
 
   // Quadratic patience ramp: slow at first, accelerates the longer the opponent
   // holds the ball. The existing intent scores already encode situational danger —
@@ -1141,6 +1209,8 @@ export function evaluateDefensiveDecision(
       holderThreat: ctx.holderThreat,
       markThreat:   ctx.markThreat,
       carryLaneBonus,
+      variant:      player.instruction?.variant,
+      manMarkTargetId: player.manMarkTargetId,
     });
   }
 
@@ -1208,7 +1278,7 @@ export function computeDefensivePosition(
   playerDecision: string | undefined,
   markTargetId: number | undefined,
 ): { x: number; y: number } {
-  const { bounds } = player;
+  const bounds   = defensiveBoundsOf(player);
   const cfg      = getDefenseConfig(player.team);
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
 

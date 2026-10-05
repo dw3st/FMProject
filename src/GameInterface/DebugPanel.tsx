@@ -20,6 +20,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   injury:       "text-rose-500",
   foul:         "text-amber-400",
   card:         "text-yellow-300",
+  instruction:  "text-sky-300",
   aerial:       "text-teal-300",
   setPiece:     "text-lime-300",
 };

@@ -13,7 +13,7 @@
  */
 
 import type { GamePlayer, Formation } from '@/GameEngine/types';
-import { resolveBasePosition } from '@/GameEngine/FormationSlots';
+import { slotBasePosition } from '@/GameEngine/FormationSlots';
 import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS, getTeamAttackWidth } from '@/GameEngine/Configs/AttackConfig';
 import type { TeamId } from '@/GameEngine/types';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
@@ -59,7 +59,7 @@ export function computeAttackingPosition(
 ): { x: number; y: number } {
   const { ballSupportScale, bounds } = player;
 
-  const base    = attackingAnchor(resolveBasePosition(player.slotIndex, player.attackDir, formation, 'attacking'), player, ballPos);
+  const base    = attackingAnchor(slotBasePosition(player, formation, 'attacking'), player, ballPos);
   const anchorX = base.x;
   const anchorY = base.y;
 

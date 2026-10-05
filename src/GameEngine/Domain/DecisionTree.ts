@@ -24,7 +24,7 @@ const PITCH_CENTER_Y = PITCH_WIDTH / 2;
 export function isPlayerInRecovery(player: GamePlayer): boolean {
   return player.recoveryTime > 0;
 }
-import { roleEngine } from '@/GameEngine/Domain/roleEngineData';
+import { engineOf } from '@/GameEngine/Domain/roleEngineData';
 import { getTeamBuildUp, getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
@@ -494,7 +494,7 @@ function evalPass(player: GamePlayer, opponents: GamePlayer[], allPlayers: GameP
   // pass ACTION competes with carry / through ball on its quality plus the
   // holder role's pass tendency (roles.json passBias — the pass mirror of
   // carryBias): midfielders circulate, centre-backs recycle less.
-  const roleBias = roleEngine(player.role).passBias * getTeamPassConfig(player.team).ROLE_BIAS_WEIGHT;
+  const roleBias = engineOf(player).passBias * getTeamPassConfig(player.team).ROLE_BIAS_WEIGHT;
   const raw      = Math.max(0, best.quality + roleBias);
   const score    = compress(raw, PASS_STRONG_RAW);
   return {
@@ -624,7 +624,7 @@ function evalLongBall(player: GamePlayer, allPlayers: GamePlayer[]): ActionScore
 }
 
 function evalDribble(player: GamePlayer, opponents: GamePlayer[]): ActionScore {
-  const roleTendency = roleEngine(player.role).carryBias;
+  const roleTendency = engineOf(player).carryBias;
   if (roleTendency < DRIBBLE_MIN_BIAS) {
     return {
       type: 'dribble', score: 0,

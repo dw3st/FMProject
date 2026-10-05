@@ -383,6 +383,23 @@ export interface GamePlayer {
    * Absent = 1 (hand-built test players).
    */
   injuryMult?: number;
+  /**
+   * Engine tuning resolved for this player's slot: the role's `roles.json` tuning + the slot's
+   * instruction (`RoleVariantConfig.resolveSlotTuning`). Absent = `roleEngine(role)` (test players,
+   * old snapshots); read through `engineOf(player)`.
+   */
+  engine?: import('./Domain/roleEngineData').RoleEngineTuning;
+  /** The slot's effective instruction (role variant / pressing). Absent = default. */
+  instruction?: import('@/types/tacticsTypes').SlotInstruction;
+  /** Engine id of the opponent this player man-marks (`GameState.manMarks`). Absent = zonal. */
+  manMarkTargetId?: number;
+}
+
+/** One man-marking pair (`GameState.manMarks`). */
+export interface ManMarkPair {
+  markerSlot: number;
+  markerId:   number;
+  targetId:   number;
 }
 
 /**
@@ -611,6 +628,17 @@ export interface GameState {
    * The AI never sets this.
    */
   setPieceTakers?: Partial<Record<TeamId, SetPieceTakers>>;
+  /**
+   * Manager's per-slot instructions per team (index = slot; `player-instructions.md`). Kept so a
+   * formation change or a substitute re-resolves the slot's tuning. The AI never sets this.
+   */
+  slotInstructions?: Partial<Record<TeamId, (import('@/types/tacticsTypes').SlotInstruction | null)[]>>;
+  /**
+   * Man-marking pairs per team (the marking team's key): the player in `markerSlot` marks the
+   * opponent `targetId` (engine id). `markerId` follows the slot across substitutions; a pair whose
+   * target left the pitch is dropped. Only applies while the marking team is defending.
+   */
+  manMarks?: Partial<Record<TeamId, ManMarkPair[]>>;
   /**
    * Open set-piece phase: a goal by `team` before `until` (match-time, game-seconds) counts as a
    * set-piece goal of `kind`. Opened by a corner, a free kick in the attacking third or a penalty;

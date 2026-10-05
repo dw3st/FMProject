@@ -13,12 +13,12 @@
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
-import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes } from '@/types/tacticsTypes';
+import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes, type SlotInstruction } from '@/types/tacticsTypes';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
-import { tickState, createMatchState, knockoutDecider } from '@/GameEngine/Domain/gameState';
+import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
@@ -87,6 +87,17 @@ export interface SimulateMatchOptions {
    * lab's formation matrix). Must not mutate the state.
    */
   onTick?: (state: GameState) => void;
+  /**
+   * Player instructions / man-marking per side for callers that apply their own tactics (the lab,
+   * scripts) — `tactics[team]` takes precedence when given.
+   */
+  instructions?: { A?: TeamInstructions; B?: TeamInstructions };
+}
+
+/** Player instructions of one side (`player-instructions.md`). */
+export interface TeamInstructions {
+  slotInstructions?: (SlotInstruction | null)[];
+  manMarks?: { slot: number; targetRosterId?: string; targetSlot?: number }[];
 }
 
 export interface TeamTactics {
@@ -96,6 +107,13 @@ export interface TeamTactics {
   setPieceTakers?: SetPieceTakers;
   /** Style familiarity (`src/Domain/familiarity`); absent = neutral (no effect). */
   familiarity?: FamiliarityLevels;
+  /** Per-slot player instructions (index = slot); absent = default (`player-instructions.md`). */
+  slotInstructions?: (SlotInstruction | null)[];
+  /**
+   * Man-marking pairs: this side's `slot` marks the opponent named by roster id
+   * (`targetRosterId`) or by the opponent's slot (`targetSlot`, the lab). At most 2.
+   */
+  manMarks?: { slot: number; targetRosterId?: string; targetSlot?: number }[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -191,6 +209,13 @@ export function simulateMatch(
       ? { setPieceTakers: { A: options.tactics.A.setPieceTakers, B: options.tactics.B.setPieceTakers } }
       : {}),
   };
+
+  // Player instructions (manager's slots) and man-marking — the AI never sets either.
+  for (const team of ['A', 'B'] as const) {
+    const instr = options.tactics?.[team] ?? options.instructions?.[team];
+    s = applyTeamInstructions(s, team, instr?.slotInstructions);
+    s = setManMarksBySlot(s, team, instr?.manMarks);
+  }
 
   // Reset shared accumulators so live-game stats don't bleed in
   initStats(s.players.map(p => ({ id: p.id, team: p.team })));

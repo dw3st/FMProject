@@ -49,3 +49,12 @@ export function roleEngine(role: PlayerRole): RoleEngineTuning {
 export function mainRoleOf(role: PlayerRole): string {
   return roles[role].mainRole;
 }
+
+/**
+ * Engine tuning a player actually plays with: the slot tuning resolved with the manager's
+ * instruction (`GamePlayer.engine`, `RoleVariantConfig.resolveSlotTuning`), else the role's
+ * `roles.json` tuning (test players, old snapshots). Every reader of role tuning goes through this.
+ */
+export function engineOf(player: { role: PlayerRole; engine?: RoleEngineTuning }): RoleEngineTuning {
+  return player.engine ?? roleEngine(player.role);
+}

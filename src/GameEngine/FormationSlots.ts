@@ -10,6 +10,8 @@
 
 import type { Formation, FormationSlotDef, Phase } from '@/GameEngine/types';
 import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
+import type { SlotInstruction } from '@/types/tacticsTypes';
+import { applyAnchorOffset, instructionAnchor } from '@/GameEngine/Configs/RoleVariantConfig';
 
 /**
  * Compute the absolute field position for a player's formation slot in the given phase.
@@ -34,4 +36,18 @@ export function resolveBasePosition(
   return attackDir === -1
     ? { x: PITCH_LENGTH - slot.x, y: slot.y }
     : { x: slot.x, y: slot.y };
+}
+
+/**
+ * The slot position a player actually anchors on: `resolveBasePosition` shifted by the slot
+ * instruction's role-variant anchor (`RoleVariantConfig`, player instructions). Without an
+ * instruction this is exactly `resolveBasePosition`.
+ */
+export function slotBasePosition(
+  player: { slotIndex: number; attackDir: 1 | -1; instruction?: SlotInstruction },
+  formation: Formation,
+  phase: Phase,
+): { x: number; y: number } {
+  const base = resolveBasePosition(player.slotIndex, player.attackDir, formation, phase);
+  return applyAnchorOffset(base, instructionAnchor(player.instruction, phase), player.attackDir);
 }
