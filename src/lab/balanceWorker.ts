@@ -8,6 +8,7 @@
  * Output : { type: 'progress' | 'result' } via postMessage
  */
 
+import { personalityOf } from "@/Domain/personality/personality";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { simulateMatch, type TeamInstructions } from "@/GameEngine/Domain/SimulateMatch";
 import { addSlotRaws, createSlotCollector } from "@/lab/slotStats";
@@ -103,7 +104,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -141,6 +142,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.injuries                    += src.injuries;
   dst.outOfPosition               += src.outOfPosition;
   dst.morale                      += src.morale;
+  dst.temperament                 += src.temperament;
   dst.fouls                       += src.fouls;
   dst.yellowCards                 += src.yellowCards;
   dst.redCards                    += src.redCards;
@@ -211,11 +213,22 @@ interface LineupFit {
 let sideFamiliarity: { A?: number; B?: number } = {};
 /** Morale of each whole side (set per worker message): engine execution + quickSim strength. Absent = 65. */
 let sideMorale: { A?: number; B?: number } = {};
+/** Temperament override (1..20) of each whole side (set per worker message). Absent = each player's own. */
+let sideTemperament: { A?: number; B?: number } = {};
 /** Player instructions of each side (set per worker message): full engine only. */
 let sideInstructions: { A?: TeamInstructions; B?: TeamInstructions } = {};
 
 function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
   return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
+}
+
+/** Mean temperament (1..20) of a lineup: the side override, else each player's own. */
+function xiTemperament(squad: Squad, lineup: string[] | undefined, override: number | undefined): number {
+  if (override !== undefined) return override;
+  const byId = new Map(squad.players.map((p) => [p.id, p]));
+  const xi = (lineup ?? []).map((id) => byId.get(id)).filter((p): p is Squad["players"][number] => !!p);
+  const list = xi.length > 0 ? xi : squad.players.slice(0, 11);
+  return list.length ? list.reduce((a, p) => a + personalityOf(p).temperament, 0) / list.length : 10.5;
 }
 
 function runOneMatch(
@@ -238,6 +251,8 @@ function runOneMatch(
   teamB.outOfPosition = fit.poorB;
   teamA.morale = sideMorale.A ?? MORALE.NEUTRAL;
   teamB.morale = sideMorale.B ?? MORALE.NEUTRAL;
+  teamA.temperament = xiTemperament(squadA, simEngine === "quick" ? quickLineupA : fit.fullLineupA, sideTemperament.A);
+  teamB.temperament = xiTemperament(squadB, simEngine === "quick" ? quickLineupB : fit.fullLineupB, sideTemperament.B);
 
   if (simEngine === "quick") {
     const q = quickSimMatch({
@@ -253,6 +268,8 @@ function runOneMatch(
       awayFamiliarity: sideFamiliarity.B,
       homeMorale: sideMorale.A,
       awayMorale: sideMorale.B,
+      homeTemperament: sideTemperament.A,
+      awayTemperament: sideTemperament.B,
     });
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
@@ -304,6 +321,7 @@ function runOneMatch(
     knockout,
     executionFamiliarity: sideFamiliarity,
     morale: sideMorale,
+    temperament: sideTemperament,
     instructions: sideInstructions,
     onTick: slotCollector.onTick,
   });
@@ -394,6 +412,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
     sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
     sideMorale = { A: variantA.morale, B: variantB.morale };
+    sideTemperament = { A: variantA.temperament, B: variantB.temperament };
     sideInstructions = {
       A: { slotInstructions: variantA.slotInstructions, manMarks: variantA.manMarks },
       B: { slotInstructions: variantB.slotInstructions, manMarks: variantB.manMarks },

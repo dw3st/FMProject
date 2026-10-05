@@ -1,4 +1,5 @@
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
+import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { MORALE } from '@/Domain/morale/moraleConfig';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
@@ -90,6 +91,8 @@ const SPEEDS = [
 /** Familiarity values offered per team in /test (50 = neutral; `src/Domain/familiarity`). */
 const FAMILIARITY_TEST_OPTIONS = [0, 25, 50, 75, 100] as const;
 const MORALE_TEST_OPTIONS = [undefined, 0, 25, 50, 65, 80, 100] as const;
+/** Temperament of a whole side (`personality.md`; 10.5 = neutral); undefined = each player's own. */
+const TEMPERAMENT_TEST_OPTIONS = [undefined, 1, 5, 10, 15, 20] as const;
 
 const MENTALITY_LABEL: Record<Mentality, string> = {
   attacking: 'Attack',
@@ -370,6 +373,9 @@ export function TestScreen() {
   // `undefined` = "Roster": every player at his own stored morale (the per-player path of a real match).
   const [moraleA, setMoraleA] = useState<number | undefined>(undefined);
   const [moraleB, setMoraleB] = useState<number | undefined>(undefined);
+  // Temperament of each whole side (`personality.md`): fouls and cards; undefined = each player's own.
+  const [tempA, setTempA] = useState<number | undefined>(undefined);
+  const [tempB, setTempB] = useState<number | undefined>(undefined);
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
   // Player instructions per team (`player-instructions.md`): slot variants / pressing, man-marking.
@@ -550,6 +556,8 @@ export function TestScreen() {
     if (!formObjA || !formObjB) return;
     setTeamMoraleOverride('A', moraleA);
     setTeamMoraleOverride('B', moraleB);
+    setTeamTemperamentOverride('A', tempA);
+    setTeamTemperamentOverride('B', tempB);
     const base = createMatchState(SQUADS[squadA]!.players, formObjA, SQUADS[squadB]!.players, formObjB, undefined, undefined, {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
@@ -564,11 +572,13 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
     setTeamMoraleOverride('B', moraleB);
+    setTeamTemperamentOverride('A', tempA);
+    setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
     setScenarioState(state);
@@ -586,11 +596,13 @@ export function TestScreen() {
     if (mode !== 'scenario') return;
     setTeamMoraleOverride('A', moraleA);
     setTeamMoraleOverride('B', moraleB);
+    setTeamTemperamentOverride('A', tempA);
+    setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -967,10 +979,10 @@ export function TestScreen() {
           <div className="grid grid-cols-2 gap-4">
             {(
               [
-                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, axes: axesA, setAxes: setAxesA, mentality: mentalityA, setMentality: setMentalityA, fam: famA, setFam: setFamA, morale: moraleA, setMorale: setMoraleA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
-                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, axes: axesB, setAxes: setAxesB, mentality: mentalityB, setMentality: setMentalityB, fam: famB, setFam: setFamB, morale: moraleB, setMorale: setMoraleB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
+                { team: 'A' as TeamId, label: 'Team A Tactics', cls: 'text-blue-400', tactics: tacticsA, setTactics: setTacticsA, axes: axesA, setAxes: setAxesA, mentality: mentalityA, setMentality: setMentalityA, fam: famA, setFam: setFamA, morale: moraleA, setMorale: setMoraleA, temp: tempA, setTemp: setTempA, intentOverride: intentOverrideA, setIntentOverride: setIntentOverrideA },
+                { team: 'B' as TeamId, label: 'Team B Tactics', cls: 'text-red-400',  tactics: tacticsB, setTactics: setTacticsB, axes: axesB, setAxes: setAxesB, mentality: mentalityB, setMentality: setMentalityB, fam: famB, setFam: setFamB, morale: moraleB, setMorale: setMoraleB, temp: tempB, setTemp: setTempB, intentOverride: intentOverrideB, setIntentOverride: setIntentOverrideB },
               ] as const
-            ).map(({ team, label, cls, tactics, setTactics: setT, axes, setAxes: setAX, mentality, setMentality: setM, fam, setFam: setF, morale, setMorale: setMo, intentOverride, setIntentOverride: setIO }) => {
+            ).map(({ team, label, cls, tactics, setTactics: setT, axes, setAxes: setAX, mentality, setMentality: setM, fam, setFam: setF, morale, setMorale: setMo, temp, setTemp: setTp, intentOverride, setIntentOverride: setIO }) => {
               const liveIntent = liveTeamIntent[team];
               const badge = INTENT_BADGE[liveIntent];
               return (
@@ -1071,6 +1083,25 @@ export function TestScreen() {
                           onClick={() => setMo(v)}
                           className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
                             morale === v
+                              ? 'bg-primary/20 border-primary/40 text-primary'
+                              : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {v ?? 'Roster'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Temperament of the whole side - foul / card multiplier (personality, 10.5 = neutral) */}
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-bold text-muted-foreground tracking-widest uppercase">Temperament ({temp ?? 'roster'})</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {TEMPERAMENT_TEST_OPTIONS.map(v => (
+                        <button
+                          key={v ?? 'roster'}
+                          onClick={() => setTp(v)}
+                          className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                            temp === v
                               ? 'bg-primary/20 border-primary/40 text-primary'
                               : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
                           }`}
@@ -1412,7 +1443,7 @@ export function TestScreen() {
           Energy
         </button>
       </div>
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel

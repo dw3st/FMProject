@@ -433,6 +433,19 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'hothead',
+    name:        '11v11 — Hot-heads vs calm side',
+    description: 'Team A players all at temperament 20 (hot-headed: fouls x1.35, yellows x1.2, straight reds x1.4), Team B at 1 (very calm, x0.65) from the roster itself (`.claude/rules/game/personality.md`). Set Team A to High press, keep the Temperament selectors on "Roster" and watch the foul/card log entries (`tempMult`) and the Energy panel.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const temper = (ps: RosterPlayer[], temperament: number) => freshRoster(ps).map(p => ({
+        ...p, personality: { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament },
+      }));
+      return createMatchState(temper(teamRedPlayers, 20), f433, temper(teamBluePlayers, 1), f433);
+    },
+  },
+
+  {
     id:          'morale-gap',
     name:        '11v11 — Morale gap',
     description: 'Team A players at morale 100 (very happy, attributes x1.020), Team B at 20 (furious, x0.986) from the roster itself — the per-player path of a real match (`.claude/rules/game/morale.md`). Keep the Morale selectors on "Roster" and open the Energy panel to see the multiplier of each side.',

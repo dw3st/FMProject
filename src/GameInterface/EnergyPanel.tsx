@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import type { GameState, GamePlayer } from "@/GameEngine/types";
 import type { StaffEffects } from "@/Domain/staff/staff";
 import { moraleExecutionMult } from "@/Domain/morale/morale";
+import { temperamentFoulMult, temperamentYellowMult } from "@/Domain/personality/personality";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 
 /**
@@ -128,6 +129,15 @@ function EnergyTeamTable({
         return (
           <div className="px-3 py-1 text-[10px] text-muted-foreground tabular-nums">
             Morale {Math.round(avg)}: attributes x{moraleExecutionMult(avg).toFixed(3)}
+          </div>
+        );
+      })()}
+      {players.length > 0 && (() => {
+        // Temperament (`.claude/rules/game/personality.md`): foul chance x (1 + 0.35 t) per player.
+        const t = players.reduce((a, p) => a + (p.temperament ?? 0), 0) / players.length;
+        return (
+          <div className="px-3 py-1 text-[10px] text-muted-foreground tabular-nums">
+            Temperament {(10.5 + 9.5 * t).toFixed(1)}: fouls x{temperamentFoulMult(t).toFixed(2)} / yellow x{temperamentYellowMult(t).toFixed(2)}
           </div>
         );
       })()}
