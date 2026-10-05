@@ -83,7 +83,9 @@ export async function startLoan(
   const parentRef = await service.resolveSquadId(saveId, parent.id);
   const borrowerRef = await service.resolveSquadId(saveId, borrower.id);
   if (!parentRef || !borrowerRef) throw new Error(`startLoan: squads ${parent.id}/${borrower.id} not found`);
-  const loan: PlayerLoan = { fromClubId: parent.id, fromClubName: parent.name, until: args.until, wageShare: args.wageShare };
+  // Never past the contract (it stays the parent's).
+  const until = player.contract?.until && player.contract.until < args.until ? player.contract.until : args.until;
+  const loan: PlayerLoan = { fromClubId: parent.id, fromClubName: parent.name, until, wageShare: args.wageShare };
   const moved = squadsAfterLoanStart(player, parent, borrower, loan, historyFromOf(meta.activeLeagues, parentRef.leagueSlug));
   await executeTransferFee(
     saveId, meta,
@@ -94,7 +96,7 @@ export async function startLoan(
   const record: ActiveLoan = {
     playerId: player.id, playerName: player.name,
     fromClubId: parent.id, fromClubName: parent.name, toClubId: borrower.id, toClubName: borrower.name,
-    until: args.until, wageShare: args.wageShare, wage: currentWage(player, wageFactorOf(parent)), fee: args.fee, start: date,
+    until, wageShare: args.wageShare, wage: currentWage(player, wageFactorOf(parent)), fee: args.fee, start: date,
   };
   if (parent.id === meta.clubId) await dropFromLineup(service, saveId, player.id);
   return { ...marketWithoutPlayer(market, player.id), loans: [...(market.loans ?? []).filter((l) => l.playerId !== player.id), record] };

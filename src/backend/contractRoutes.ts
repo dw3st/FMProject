@@ -36,6 +36,8 @@ export const contractRoutes = {
       const squad = await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug);
       const player = squad?.players.find((p) => p.id === playerId);
       if (!squad || !player) return Response.json({ error: "player not found" }, { status: 404 });
+      // A borrowed player keeps his parent club's contract (`.claude/rules/game/negotiation.md`).
+      if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const check = evaluateContractOffer({ wage, years }, player, squad, date);
