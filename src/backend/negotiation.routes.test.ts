@@ -188,6 +188,14 @@ describe("negotiation routes", () => {
     const nego = await route("/api/saves/:saveId/negotiation")(req(`/api/saves/${saveId}/negotiation`, "GET", { saveId }));
     const body = (await nego.json()) as { loans: { playerId: string }[] };
     expect(body.loans.some((l) => l.playerId === p.id)).toBe(true);
+    // The contract is still ours: renewing him writes into the borrower's squad.
+    const until0 = there.contract!.until;
+    const renew = await route("/api/saves/:saveId/players/:playerId/renew")(
+      req(`/api/saves/${saveId}/players/${p.id}/renew`, "POST", { saveId, playerId: p.id }, { wage: (there.contract?.wage ?? 0) * 3, years: 1 }),
+    );
+    expect(renew.status).toBe(200);
+    const renewed = (await saveService.getSquadById(saveId, borrower.id))!.players.find((q) => q.id === p.id)!;
+    expect(renewed.contract!.until > until0).toBe(true);
   }, 60_000);
 
   test("an expired bid is closed; validation errors", async () => {
@@ -211,5 +219,25 @@ describe("negotiation routes", () => {
       req(`/api/saves/${saveId}/transfers`, "POST", { saveId }, { playerId: "x", fromSquadId: "y", fee: 1, sellOnPct: 15 }),
     );
     expect(badPct.status).toBe(400);
+  }, 60_000);
+
+  test("a bid that would leave the squad too thin is refused (409 squadDepth)", async () => {
+    const sq = await human();
+    const thin = { ...sq, players: sq.players.filter((p) => !p.loan).slice(0, 14) };
+    await saveService.saveSquadById(saveId, thin);
+    const p = thin.players[5]!;
+    const { club: buyer } = await aiTarget();
+    const bid: MarketBid = {
+      id: "bid-thin", kind: "transfer", playerId: p.id, playerName: p.name, clubId: buyer.id, clubName: buyer.name,
+      date: meta.currentDate!, expires: addDays(meta.currentDate!, 5), fee: 1_000_000, maxFee: 1_000_000,
+    };
+    const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...market, pendingBids: [bid] });
+    const res = await route("/api/saves/:saveId/bids/:bidId")(
+      req(`/api/saves/${saveId}/bids/bid-thin`, "POST", { saveId, bidId: "bid-thin" }, { action: "accept" }),
+    );
+    expect(res.status).toBe(409);
+    const errBody = await res.json();
+    expect(JSON.stringify(errBody)).toBe(JSON.stringify({ error: "squadDepth" }));
   }, 60_000);
 });

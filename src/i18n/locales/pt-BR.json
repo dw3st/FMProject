@@ -2017,7 +2017,8 @@
       "onLoan": "Um jogador emprestado não pode ser vendido nem emprestado.",
       "squadFull": "Seu elenco está cheio.",
       "noClub": "Você está sem clube.",
-      "generic": "Algo deu errado. Tente de novo."
+      "generic": "Algo deu errado. Tente de novo.",
+      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele."
     },
     "history": {
       "title": "Rodadas de hoje",

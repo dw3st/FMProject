@@ -10,11 +10,12 @@ import { loanUntil, loanWeeks, respondToLoanRequest } from "@/Domain/negotiation
 import { liveBids } from "@/Domain/negotiation/bids";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
-import { wageFactorOf } from "@/Domain/finance/wages";
+import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
+import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import {
-  completeHumanSale, emptyMarket, findLiveBid, seasonEndOf, startLoan,
+  completeHumanSale, emptyMarket, findLiveBid, humanRosterSize, seasonEndOf, startLoan,
 } from "@/backend/negotiationWorld";
 import type { MarketState } from "@/types/transferMarketTypes";
 
@@ -96,6 +97,8 @@ export const negotiationRoutes = {
       const seller = await saveService.getSquadById(saveId, meta.clubId);
       const buyer = await saveService.getSquadById(saveId, bid.clubId);
       const player = seller?.players.find((p) => p.id === bid.playerId && !p.loan);
+      // The human club never lets a player go below its squad / position / role minimums.
+      if (seller && player && squadDepthBlocked(player, seller, false)) return json({ error: "squadDepth" }, 409);
       if (!seller || !buyer || !player || buyer.players.length >= MAX_SQUAD) {
         await saveService.saveMarket(saveId, withoutBid);
         return json({ error: "offerClosed" }, 409);
@@ -128,6 +131,11 @@ export const negotiationRoutes = {
           const done = await completeHumanSale(saveService, saveId, meta, withoutBid, { player, seller, buyer, fee, sellOnPct: pct });
           await saveService.saveMarket(saveId, done.market);
           return json({ ok: true, status: "sold", record: done.record });
+        }
+        const share = bid.wageShare ?? 1;
+        if (!passesWageGate(aiClubFinance(buyer), Math.round(currentWage(player, wageFactorOf(seller)) * share), 0)) {
+          await saveService.saveMarket(saveId, withoutBid);
+          return json({ error: "offerClosed" }, 409);
         }
         const next = await startLoan(saveService, saveId, meta, withoutBid, {
           player, parent: seller, borrower: buyer, wageShare: bid.wageShare ?? 1,
@@ -174,7 +182,7 @@ export const negotiationRoutes = {
       if (parent.id === borrower.id) return json({ error: "not for loan" }, 400);
       const player = parent.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
-      if (borrower.players.length >= MAX_SQUAD) return json({ error: "squadFull" }, 400);
+      if ((await humanRosterSize(saveService, saveId, borrower)) >= MAX_SQUAD) return json({ error: "squadFull" }, 400);
       if (fee > (borrower.finances?.budget ?? 0)) return json({ error: "Insufficient funds" }, 400);
 
       const market: MarketState = (await saveService.getMarket(saveId)) ?? emptyMarket();

@@ -2017,7 +2017,8 @@
       "onLoan": "A player on loan cannot be sold or loaned out.",
       "squadFull": "Your squad is full.",
       "noClub": "You have no club.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "squadDepth": "You cannot let him go: your squad would be left without cover in his position."
     },
     "history": {
       "title": "Today's rounds",

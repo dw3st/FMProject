@@ -17,7 +17,7 @@ import { getSellPriority } from "@/Domain/transfer/sellList";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToOffer, talkGate, talkKey, type OfferResponse,
 } from "@/Domain/negotiation/negotiation";
-import { sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { humanRosterSize, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
@@ -134,7 +134,7 @@ export const transferRoutes = {
         if (!sellerSquad) return Response.json({ error: "selling squad not found" }, { status: 404 });
         if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
 
-        if (buyerSquad.players.length >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+        if ((await humanRosterSize(saveService, saveId, buyerSquad)) >= MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;
@@ -253,7 +253,12 @@ export const transferRoutes = {
             { playerName: player.name, playerId, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
           );
           const sellOnNews = await settleSellOn(saveService, saveId, updatedMeta, owed, player, sellerSquad.name, date);
-          if (sellOnNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(sellOnNews), saveService);
+          if (sellOnNews) {
+            await emitInboxMessage(saveId, buildTransferNegotiationMessage(sellOnNews), saveService);
+            // Buying back a player whose clause we held: it was paid (to us), drop the receivable.
+            const held = await saveService.getMarket(saveId);
+            if (held) await saveService.saveMarket(saveId, marketAfterSellOnPaid(held, playerId));
+          }
 
           // Club history (`.claude/rules/game/club-history.md`): transfer records of both clubs.
           {

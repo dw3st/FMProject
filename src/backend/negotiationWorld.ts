@@ -9,7 +9,11 @@ import { executeTransferFee, paySellOnReceiver } from "@/backend/FinancialServic
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
 import { seasonLabel } from "@/Domain/history/history";
 import { sellOnOwed } from "@/Domain/negotiation/negotiation";
-import { dueLoans, squadsAfterLoanEnd, squadsAfterLoanStart } from "@/Domain/negotiation/loans";
+import { dueLoans, outgoingLoanCount, squadsAfterLoanEnd, squadsAfterLoanStart } from "@/Domain/negotiation/loans";
+import { isExpired } from "@/Domain/contracts/contracts";
+import { MAX_SQUAD, MIN_BY_ROLE, refillSquad, roleOf, toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { overallAvg } from "@/Domain/playerRating";
+import type { FreeAgent } from "@/types/playerTypes";
 import { squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
 import { aiRenewalYears, contractEndFor, defaultSeasonEnd, renewalContract } from "@/Domain/contracts/contracts";
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
@@ -104,8 +108,11 @@ export async function startLoan(
 
 /**
  * Ends every loan due on `date` (`graceDays` ahead at a rollover; `onlyBorrowers` limits it to
- * loans held by those squads): the player goes back to his parent club. Returns the market without
- * those loans and the human club's news (the caller emits it, after any `clearInbox`).
+ * loans held by those squads). `parentUnit` + `contractGraceDays` (rollover): a loan whose PARENT is
+ * rolling also ends when the player's contract ends within the grace window, so the contract expiry
+ * sees him at his club. The player goes back to his parent club; an AI parent above 30 releases its
+ * worst player, and a borrower left below a role minimum is refilled (`refillSquad`). Returns the
+ * market without those loans and the human club's news (the caller emits it, after any `clearInbox`).
  */
 export async function returnDueLoans(
   service: SaveService,
@@ -113,13 +120,29 @@ export async function returnDueLoans(
   meta: SaveMeta,
   market: MarketState,
   date: string,
-  opts: { graceDays?: number; onlyBorrowers?: ReadonlySet<string> } = {},
+  opts: {
+    graceDays?: number;
+    onlyBorrowers?: ReadonlySet<string>;
+    parentUnit?: ReadonlySet<string>;
+    contractGraceDays?: number;
+  } = {},
 ): Promise<{ market: MarketState; news: NewsArgs[] }> {
-  const due = dueLoans(market.loans, date, opts.graceDays ?? 0)
-    .filter((l) => !opts.onlyBorrowers || opts.onlyBorrowers.has(l.toClubId));
+  const dueIds = new Set(dueLoans(market.loans, date, opts.graceDays ?? 0)
+    .filter((l) => !opts.onlyBorrowers || opts.onlyBorrowers.has(l.toClubId))
+    .map((l) => l.playerId));
+  if (opts.parentUnit) {
+    for (const l of market.loans ?? []) {
+      if (dueIds.has(l.playerId) || !opts.parentUnit.has(l.fromClubId)) continue;
+      const holder = await service.getSquadById(saveId, l.toClubId);
+      const p = holder?.players.find((x) => x.id === l.playerId);
+      if (!p || isExpired(p.contract, date, opts.contractGraceDays ?? 0)) dueIds.add(l.playerId);
+    }
+  }
+  const due = (market.loans ?? []).filter((l) => dueIds.has(l.playerId));
   if (due.length === 0) return { market, news: [] };
   const news: NewsArgs[] = [];
   const ended = new Set<string>();
+  let pool: FreeAgent[] | null = null;
   for (const l of due) {
     ended.add(l.playerId);
     const borrower = await service.getSquadById(saveId, l.toClubId);
@@ -127,16 +150,48 @@ export async function returnDueLoans(
     const player = borrower?.players.find((p) => p.id === l.playerId && p.loan);
     if (!borrower || !parent || !player) continue; // retired, released or gone: nothing to move back
     const back = squadsAfterLoanEnd(player, borrower, parent, historyFromOf(meta.activeLeagues, borrower.leagueSlug));
-    await service.saveSquadById(saveId, back.borrower);
-    await service.saveSquadById(saveId, back.parent);
-    if (l.toClubId === meta.clubId) {
+    let borrowerAfter = back.borrower;
+    let parentAfter = back.parent;
+    const humanParent = parent.id === meta.clubId;
+    const humanBorrower = borrower.id === meta.clubId;
+    // AI parent above the cap: the worst player (never the one coming back) goes to the free pool.
+    if (!humanParent && parentAfter.players.length > MAX_SQUAD) {
+      pool ??= await service.getFreeAgents(saveId);
+      const extra = [...parentAfter.players].filter((p) => p.id !== player.id && !p.loan)
+        .sort((x, y) => overallAvg(x) - overallAvg(y))
+        .slice(0, parentAfter.players.length - MAX_SQUAD);
+      const gone = new Set(extra.map((p) => p.id));
+      parentAfter = { ...parentAfter, players: parentAfter.players.filter((p) => !gone.has(p.id)) };
+      pool = [...pool, ...extra.map((p) => toFreeAgent(p, date))];
+    }
+    // The borrower keeps its role minimums (the same refill as the rollover; the human only gets youth).
+    const role = roleOf(player);
+    if (borrowerAfter.players.filter((p) => roleOf(p) === role).length < MIN_BY_ROLE[role]) {
+      pool ??= await service.getFreeAgents(saveId);
+      const r = refillSquad({
+        squad: borrowerAfter, pool, isHuman: humanBorrower, tagPrefix: `loan${date.replace(/-/g, "")}`,
+        nextSeasonEnd: seasonEndOf(meta.activeLeagues, borrower.leagueSlug, date),
+      });
+      borrowerAfter = r.squad;
+      const signed = new Set(r.signed.map((p) => p.id));
+      pool = pool.filter((f) => !signed.has(f.player.id));
+    }
+    await service.saveSquadById(saveId, borrowerAfter);
+    await service.saveSquadById(saveId, parentAfter);
+    if (humanBorrower) {
       await dropFromLineup(service, saveId, l.playerId);
       news.push({ date, kind: "loan_back", playerId: l.playerId, playerName: l.playerName, clubName: l.fromClubName });
-    } else if (l.fromClubId === meta.clubId) {
+    } else if (humanParent) {
       news.push({ date, kind: "loan_home", playerId: l.playerId, playerName: l.playerName, clubName: l.toClubName });
     }
   }
+  if (pool) await service.writeFreeAgents(saveId, pool);
   return { market: { ...market, loans: (market.loans ?? []).filter((l) => !ended.has(l.playerId)) }, news };
+}
+
+/** Squad size for the human club's 30-player cap: its players plus those out on loan. */
+export async function humanRosterSize(service: SaveService, saveId: string, squad: Squad): Promise<number> {
+  return squad.players.length + outgoingLoanCount((await service.getMarket(saveId))?.loans, squad.id);
 }
 
 /**
@@ -239,6 +294,16 @@ export async function completeHumanSale(
     record,
     meta: nextMeta,
   };
+}
+
+/** Players retired or released free: their clauses can never be paid, so they leave the receivables. */
+export async function pruneSellOnHeld(service: SaveService, saveId: string, playerIds: string[]): Promise<void> {
+  if (playerIds.length === 0) return;
+  const market = await service.getMarket(saveId);
+  if (!market?.sellOnHeld?.length) return;
+  const gone = new Set(playerIds);
+  if (!market.sellOnHeld.some((h) => gone.has(h.playerId))) return;
+  await service.saveMarket(saveId, { ...market, sellOnHeld: market.sellOnHeld.filter((h) => !gone.has(h.playerId)) });
 }
 
 /** The held clause was paid: drop it from the human's receivables. */

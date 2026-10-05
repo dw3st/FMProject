@@ -69,7 +69,8 @@ import { dailyMarketTick, initMarketState } from "@/Domain/transfer/marketRotati
 import { pruneTalks } from "@/Domain/negotiation/negotiation";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
-import { marketAfterSellOnPaid, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { liveBids } from "@/Domain/negotiation/bids";
 import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
@@ -1178,6 +1179,9 @@ export async function advanceOneDay(
       const playerSquadForMarket = findPlayerSquad(allSquadsMarket, meta);
       const resolvedPlayerSquadId = playerSquadForMarket?.id ?? null;
 
+      // Clubs credited a sell-on clause today: their in-memory copy is stale, so they sit out the
+      // free-agent tick below (it would save that copy over the credit).
+      const sellOnPaidTo = new Set<string>();
       const { updatedMarket, completedTransfers, newBids } = dailyMarketTick(
         marketForTick,
         allSquadsMarket,
@@ -1241,6 +1245,7 @@ export async function advanceOneDay(
           { playerName: tx.player.name, playerId: tx.player.id, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
         );
         const sellOnNews = await settleSellOn(saveService, saveId, workingMeta, owed, tx.player, tx.sellerSquad.name, currentDate);
+        if (owed) sellOnPaidTo.add(owed.clubId);
         if (sellOnNews) {
           negotiationNews.push(sellOnNews);
           marketAfterTick = marketAfterSellOnPaid(marketAfterTick, tx.player.id);
@@ -1325,7 +1330,7 @@ export async function advanceOneDay(
       const freeAgentPool = pruneFreeAgents(rawFreeAgents, currentDate);
       if (freeAgentPool.length !== rawFreeAgents.length) await saveService.writeFreeAgents(saveId, freeAgentPool);
       if (freeAgentPool.length > 0) {
-        const tradedToday = new Set(completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]));
+        const tradedToday = new Set([...completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]), ...sellOnPaidTo]);
         const hiringSquads = allSquadsMarket.filter((sq) => !tradedToday.has(sq.id));
         const fa = freeAgentTick({
           squads: hiringSquads,
@@ -1746,6 +1751,8 @@ export async function advanceOneDay(
           for (const slug of unit.leagues) for (const sq of await saveService.getSquadsInLeague(saveId, slug)) unitIds.add(sq.id);
           const back = await returnDueLoans(saveService, saveId, meta, mk, currentDate, {
             graceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS, onlyBorrowers: unitIds,
+            // A loan of a rolling PARENT ends too when the contract does, so the expiry below sees him.
+            parentUnit: unitIds, contractGraceDays: CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS,
           });
           if (back.market !== mk) await saveService.saveMarket(saveId, back.market);
           negotiationNews.push(...back.news);
@@ -1791,6 +1798,7 @@ export async function advanceOneDay(
             await saveService.saveMarket(saveId, { ...mk, playerSellList: mk.playerSellList.filter((c) => !goneHuman.has(c.playerId)) });
           }
         }
+        await pruneSellOnHeld(saveService, saveId, res.retired.map((r) => r.id));
         for (const r of res.humanRetired) {
           deferredRetirementMessages.push({ date: currentDate, kind: r.rebornOffer === "pending" ? "reborn" : "retired", retired: r });
         }
@@ -1827,6 +1835,7 @@ export async function advanceOneDay(
           }
         }
       }
+      await pruneSellOnHeld(saveService, saveId, releasedNow.map((f) => f.player.id));
       if (releasedNow.length > 0 || due.units.length > 0) {
         const existing = await saveService.getFreeAgents(saveId);
         let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
@@ -2177,6 +2186,23 @@ export async function advanceOneDay(
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
     for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
+    // Bids still pending when the inbox was cleared keep their message (like job offers).
+    if (seasonEnded) {
+      const mkB = await saveService.getMarket(saveId);
+      const humanB = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
+      const fresh = new Set(negotiationNews.map((n) => n.bidId).filter(Boolean));
+      for (const bid of liveBids(mkB?.pendingBids, currentDate, humanB)) {
+        if (fresh.has(bid.id)) continue;
+        await emitInboxMessage(saveId, buildTransferNegotiationMessage({
+          date: bid.date, kind: bid.kind === "loan" ? "loan_bid" : "bid", bidId: bid.id,
+          playerId: bid.playerId, playerName: bid.playerName, clubName: bid.clubName, fee: bid.fee,
+          ...(bid.sellOnPct ? { sellOnPct: bid.sellOnPct } : {}),
+          ...(bid.wageShare !== undefined ? { wageShare: bid.wageShare } : {}),
+          ...(bid.until ? { until: bid.until } : {}),
+          expires: bid.expires,
+        }), saveService);
+      }
+    }
     for (const msg of boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService);
     // Offers still pending when the inbox was cleared keep their message.
     if (seasonEnded) {

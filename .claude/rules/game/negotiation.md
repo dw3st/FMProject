@@ -37,6 +37,19 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
   (400 `onLoan`); o mercado da IA o ignora. Volta na data (checado todo dia, antes do mercado) e na virada do país
   do clube que o tem (passo 7a, com a mesma folga de 60 dias dos contratos, antes da aposentadoria e das
   expirações). A linha de histórico no clube emprestado ganha `loan: true` ("(empréstimo)").
+- **Mínimos do elenco do jogador:** uma venda ou um empréstimo aceito pela inbox nunca deixa o clube do jogador com
+  14 ou menos, sem outro jogador na posição ou abaixo dos mínimos por linha (409 `squadDepth`); esses jogadores nem
+  recebem propostas.
+- **Teto de 30:** os cedidos por empréstimo contam no teto do clube do jogador (compra, livre, promoção da base,
+  pedir empréstimo — `humanRosterSize`). Na volta, um clube da IA acima de 30 dispensa o pior para os livres, e o
+  clube que devolve abaixo de um mínimo por linha é reposto (`refillSquad`; o jogador humano só recebe jovens).
+- **Contrato de um cedido:** o jogador renova o próprio emprestado (a rota acha o jogador por `market.loans` e grava
+  no elenco de quem o tem). Na virada do país do clube de origem, um empréstimo cujo contrato acaba dentro da folga de
+  60 dias também volta antes das expirações. Emprestado não se aposenta no clube que o pegou (se aposenta no dele).
+- **Proposta aceita de empréstimo:** a folha da IA é conferida de novo no aceite (`passesWageGate` da parte dela).
+- **Inbox:** propostas ainda vivas são reenviadas depois do `clearInbox` da virada do país do jogador.
+- **Cláusulas a receber (`sellOnHeld`):** saem quando pagas (inclusive ao recomprar o jogador), quando ele se aposenta
+  ou sai livre (`toFreeAgent` também apaga `sellOn` e `loan`).
 - **IA × IA:** nunca empresta. Sem migração (protótipo).
 
 ## Arquivos
@@ -115,5 +128,3 @@ voltam na data pelo avanço do dia, com as mensagens.
   dela deixa de contar o jogador.
 - "Titular" para empréstimo é o XI automático 4-3-3, não a formação escolhida pela IA na temporada.
 - A conversa é por dia de jogo, não por janela de transferências (não há janelas).
-- Uma proposta ainda pendente quando o país do jogador vira perde a mensagem no `clearInbox` (a proposta continua
-  em "Transferências → Empréstimos" até vencer).

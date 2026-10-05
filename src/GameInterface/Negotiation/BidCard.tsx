@@ -49,7 +49,12 @@ export function BidCard({
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; status?: string; bid?: MarketBid };
       if (!res.ok) {
-        setError(body.error === "noRounds" ? t("negotiation.bid.walkedAway") : body.error === "offerClosed" ? t("negotiation.bid.closed") : t("negotiation.errors.generic"));
+        setError(
+          body.error === "noRounds" ? t("negotiation.bid.walkedAway")
+          : body.error === "offerClosed" ? t("negotiation.bid.closed")
+          : body.error === "squadDepth" ? t("negotiation.errors.squadDepth")
+          : t("negotiation.errors.generic"),
+        );
         if (body.error === "offerClosed" || body.error === "noRounds") setCurrent(null);
         return;
       }
