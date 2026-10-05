@@ -15,6 +15,7 @@ import { wageFactorOf } from "@/Domain/finance/wages";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { historyRowFromLog } from "@/Domain/history/history";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -122,7 +123,7 @@ export function PlayerScreen({
         <ScreenTitle
           accent={t("screenTitles.player.accent")}
           trailing={
-            !isOwnPlayer ? (
+            !isOwnPlayer && !player.loan ? (
               <button
                 type="button"
                 onClick={() => setOfferTarget(displayPlayer)}
@@ -131,16 +132,19 @@ export function PlayerScreen({
                 <Icon name="user-plus" className="w-4 h-4" />
                 {t("playerScreen.makeOffer")}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setRenewOpen(true)}
-                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0"
-              >
-                <Icon name="file-signature" className="w-4 h-4" />
-                {t("contracts.renew")}
-              </button>
-            )
+            ) : isOwnPlayer && !player.loan ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {session && <ListToggles saveId={session.saveId} playerId={player.id} />}
+                <button
+                  type="button"
+                  onClick={() => setRenewOpen(true)}
+                  className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0"
+                >
+                  <Icon name="file-signature" className="w-4 h-4" />
+                  {t("contracts.renew")}
+                </button>
+              </div>
+            ) : undefined
           }
         >
           {t("screenTitles.player.main")}
@@ -174,7 +178,10 @@ export function PlayerScreen({
           <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("career.title")}</h2>
           <CareerTable
             rows={player.history ?? []}
-            current={historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "", [], player.history)}
+            current={(() => {
+              const row = historyRowFromLog(player.seasonLog, { squadId, clubName: squadName, league }, "", [], player.history);
+              return row && player.loan ? { ...row, loan: true as const } : row;
+            })()}
             leagues={leagues}
           />
         </section>

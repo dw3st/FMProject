@@ -915,12 +915,14 @@
       "squadDepth": "Elenco insuficiente para liberar o jogador",
       "playerImportant": "O jogador é importante para o time",
       "offerTooLow": "Proposta muito baixa",
-      "clubRejected": "O clube recusou a proposta"
+      "clubRejected": "O clube recusou a proposta",
+      "insulted": "O clube se irritou e encerrou a conversa"
     },
     "acceptReasons": {
       "strongOffer": "Proposta muito atrativa",
       "willingToSell": "O clube estava disposto a vender o jogador",
-      "financial": "O clube aceitou pela situação financeira"
+      "financial": "O clube aceitou pela situação financeira",
+      "bidAccepted": "Você aceitou a proposta do clube"
     },
     "availableBudget": "Orçamento disponível",
     "estValue": "Valor estimado",
@@ -975,7 +977,8 @@
       "youth": "Base",
       "retirement": "Aposentadoria",
       "board": "Diretoria",
-      "job": "Propostas"
+      "job": "Propostas",
+      "transfer": "Negociação"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1062,6 +1065,22 @@
       },
       "offer": "O {{club}} ({{league}}) quer você como técnico.",
       "hired": "Você é o novo técnico do {{club}} ({{league}}). A diretoria definiu a meta da temporada."
+    },
+    "transfer": {
+      "subject": {
+        "bid": "{{club}} fez proposta por {{player}}",
+        "loan_bid": "{{club}} quer {{player}} emprestado",
+        "loan_back": "{{player}} voltou ao {{club}}",
+        "loan_home": "{{player}} voltou do {{club}}",
+        "sell_on": "Cláusula de venda: {{player}}"
+      },
+      "body": {
+        "bid": "O {{club}} oferece {{fee}} por {{player}}.",
+        "loan_bid": "O {{club}} quer {{player}} emprestado e pagaria {{share}}% do salário.",
+        "loan_back": "O empréstimo de {{player}} acabou e ele voltou ao {{club}}.",
+        "loan_home": "O empréstimo de {{player}} ao {{club}} acabou. Ele voltou ao seu elenco.",
+        "sell_on": "{{player}} foi vendido pelo {{club}}. Sua cláusula de venda rendeu {{fee}}."
+      }
     }
   },
   "finances": {
@@ -1676,7 +1695,11 @@
       "transferOut": "Taxa de transferência paga a {{club}}",
       "boardBonus": "Bônus da diretoria",
       "clubLeave": "Saldo deixado no {{club}}",
-      "clubArrive": "Chegada ao {{club}}"
+      "clubArrive": "Chegada ao {{club}}",
+      "sellOnIn": "Cláusula de venda: {{player}} ({{club}})",
+      "sellOnOut": "Cláusula de venda paga ao {{club}}: {{player}}",
+      "loanFeeIn": "Taxa de empréstimo do {{club}}: {{player}}",
+      "loanFeeOut": "Taxa de empréstimo paga ao {{club}}: {{player}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube"
@@ -1852,7 +1875,8 @@
     "assists": "A",
     "rating": "Nota",
     "titles": "Títulos",
-    "total": "Total"
+    "total": "Total",
+    "loan": "(empréstimo)"
   },
   "board": {
     "objectiveLabel": "Meta da temporada",
@@ -1956,6 +1980,100 @@
       "offers": "Propostas",
       "none": "Nenhuma proposta no momento.",
       "hint": "Aguardar propostas avança os dias. Ligas, Estatísticas e Olheiro continuam abertos."
+    }
+  },
+  "negotiation": {
+    "title": "Negociação",
+    "tabs": {
+      "transfer": "Transferência",
+      "loan": "Empréstimo"
+    },
+    "onLoan": "Emprestado",
+    "loanBadgeTitle": "Emprestado pelo {{club}} até {{date}}",
+    "sellOn": "Cláusula de venda futura",
+    "sellOnHint": "Dar ao clube uma parte de uma venda futura baixa a taxa que ele pede.",
+    "wageShare": "Salário que você paga",
+    "loanFee": "Taxa de empréstimo",
+    "loanDuration": "Até o fim da temporada (ou da próxima, se faltarem menos de dois meses).",
+    "returns": "Volta em",
+    "patience": "Rodadas restantes hoje: {{count}} de {{total}}",
+    "closedUntil": "O clube encerrou a conversa até {{date}}.",
+    "counterReceived": "O clube pede {{fee}}.",
+    "loanCounter": "O clube quer {{share}}% do salário pago e uma taxa de {{fee}}.",
+    "loanRefusal": {
+      "starter": "Ele é titular: o clube não empresta.",
+      "notAvailable": "O clube não quer emprestá-lo.",
+      "onLoan": "Ele já está emprestado.",
+      "squadDepth": "O clube não tem reposição na posição dele."
+    },
+    "loanAgreed": "{{name}} chega por empréstimo",
+    "loanUntil": "Volta em {{date}}",
+    "acceptCounter": "Aceitar {{fee}}",
+    "acceptLoanCounter": "Aceitar {{share}}% + {{fee}}",
+    "requestLoan": "Pedir empréstimo",
+    "errors": {
+      "talksClosed": "O clube não quer conversar sobre este jogador por enquanto.",
+      "noRounds": "Sem rodadas hoje. Tente amanhã.",
+      "onLoan": "Um jogador emprestado não pode ser vendido nem emprestado.",
+      "squadFull": "Seu elenco está cheio.",
+      "noClub": "Você está sem clube.",
+      "generic": "Algo deu errado. Tente de novo."
+    },
+    "history": {
+      "title": "Rodadas de hoje",
+      "you": "Você",
+      "club": "Clube",
+      "share": "{{share}}% do salário",
+      "sellOn": "{{pct}}% de venda futura",
+      "outcome": {
+        "offer": "{{terms}}",
+        "accepted": "Aceitou",
+        "counter": "Contraproposta: {{terms}}",
+        "rejected": "Recusou",
+        "insulted": "Se irritou, conversa encerrada por 14 dias"
+      }
+    },
+    "bid": {
+      "closed": "Esta proposta está encerrada.",
+      "walkedAway": "O clube desistiu.",
+      "done": {
+        "sold": "Vendido.",
+        "loaned": "Empréstimo fechado.",
+        "rejected": "Proposta recusada.",
+        "countered": "Contraproposta enviada."
+      },
+      "validUntil": "Válida até",
+      "finalOffer": "Esta é a oferta final do clube.",
+      "yourPrice": "Seu preço",
+      "askSellOn": "Pedir cláusula de venda futura",
+      "sendCounter": "Enviar contraproposta",
+      "accept": "Aceitar",
+      "counter": "Contrapropor",
+      "reject": "Recusar"
+    },
+    "lists": {
+      "listSale": "Colocar à venda",
+      "unlistSale": "Tirar da venda",
+      "listLoan": "Colocar para empréstimo",
+      "unlistLoan": "Tirar do empréstimo"
+    },
+    "overview": {
+      "tab": "Empréstimos",
+      "loanedOutTab": "Emprestados",
+      "none": "Nenhum.",
+      "loanedOut": "Emprestados",
+      "loanedIn": "Vindos por empréstimo",
+      "sellOnHeld": "Cláusulas de venda a receber",
+      "bids": "Propostas pelos seus jogadores",
+      "player": "Jogador",
+      "club": "Clube",
+      "from": "De",
+      "theyPay": "Eles pagam",
+      "youPay": "Você paga",
+      "soldTo": "Vendido para",
+      "date": "Data",
+      "offer": "Oferta",
+      "loanOffer": "Empréstimo, {{share}}% do salário"
     }
   }
 }

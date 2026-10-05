@@ -11,6 +11,8 @@ export interface DisplayPlayer {
   id: string;
   /** Reborn academy star (own badge). */
   reborn?: boolean;
+  /** On loan here (`.claude/rules/game/negotiation.md`): parent club name and return date. */
+  loan?: { fromClubName: string; until: string };
   squadId?: string;
   /** Primary position (first in list), used for sorting. */
   pos: string;
@@ -110,5 +112,6 @@ export function toDisplayPlayer(
     preferredFoot: player.preferredFoot,
     injury: injuryInfo,
     ...(player.reborn ? { reborn: true } : {}),
+    ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
   };
 }

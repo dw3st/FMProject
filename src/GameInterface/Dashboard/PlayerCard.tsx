@@ -11,6 +11,7 @@ import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
+import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -144,6 +145,7 @@ export function PlayerCard({
               {player.name}
               {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
               {player.reborn && <RebornBadge className="mt-0.5" />}
+              {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="mt-0.5" />}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">

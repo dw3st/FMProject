@@ -23,7 +23,7 @@ export function CareerTable({
   const line = (r: PlayerHistoryRow, key: string, isCurrent: boolean) => (
     <StatsRow key={key} highlight={isCurrent}>
       <StatsCell className="tabular-nums whitespace-nowrap text-muted-foreground">{isCurrent ? t("career.current") : r.season}</StatsCell>
-      <StatsCell className={`max-w-[12rem] truncate ${isCurrent ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{r.clubName}</StatsCell>
+      <StatsCell className={`max-w-[12rem] truncate ${isCurrent ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{r.clubName}{r.loan ? ` ${t("career.loan")}` : ""}</StatsCell>
       <NumberCell>{r.apps}</NumberCell>
       <NumberCell strong>{r.goals}</NumberCell>
       <NumberCell>{r.assists}</NumberCell>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
+import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
 import { useTranslation } from "react-i18next";
 import type { Squad } from "@/types/playerTypes";
 import { comparePositions } from "@/types/positionOrder";
@@ -151,6 +152,7 @@ export function SquadRosterTable({
                 {player.name}
               </a>
               {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
+              {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
             </div>
             <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">

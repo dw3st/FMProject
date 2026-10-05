@@ -915,12 +915,14 @@
       "squadDepth": "Squad depth is insufficient",
       "playerImportant": "Player is important to the team",
       "offerTooLow": "Offer is too low",
-      "clubRejected": "Club rejected the offer"
+      "clubRejected": "Club rejected the offer",
+      "insulted": "The club was insulted and broke off talks"
     },
     "acceptReasons": {
       "strongOffer": "Offer was very strong",
       "willingToSell": "Club was willing to sell this player",
-      "financial": "Club accepted due to financial situation"
+      "financial": "Club accepted due to financial situation",
+      "bidAccepted": "You accepted the club's proposal"
     },
     "availableBudget": "Available budget",
     "estValue": "Est. value",
@@ -975,7 +977,8 @@
       "youth": "Academy",
       "retirement": "Retirement",
       "board": "Board",
-      "job": "Job offers"
+      "job": "Job offers",
+      "transfer": "Negotiation"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1062,6 +1065,22 @@
       },
       "offer": "{{club}} ({{league}}) wants you as their manager.",
       "hired": "You are the new manager of {{club}} ({{league}}). The board has set this season's objective."
+    },
+    "transfer": {
+      "subject": {
+        "bid": "{{club}} bid for {{player}}",
+        "loan_bid": "{{club}} want {{player}} on loan",
+        "loan_back": "{{player}} went back to {{club}}",
+        "loan_home": "{{player}} is back from {{club}}",
+        "sell_on": "Sell-on clause: {{player}}"
+      },
+      "body": {
+        "bid": "{{club}} offer {{fee}} for {{player}}.",
+        "loan_bid": "{{club}} want {{player}} on loan and would pay {{share}}% of his wage.",
+        "loan_back": "The loan of {{player}} ended and he went back to {{club}}.",
+        "loan_home": "The loan of {{player}} at {{club}} ended. He is back in your squad.",
+        "sell_on": "{{player}} was sold by {{club}}. Your sell-on clause paid {{fee}}."
+      }
     }
   },
   "finances": {
@@ -1676,7 +1695,11 @@
       "transferOut": "Transfer fee paid to {{club}}",
       "boardBonus": "Board bonus",
       "clubLeave": "Balance left at {{club}}",
-      "clubArrive": "Arrival at {{club}}"
+      "clubArrive": "Arrival at {{club}}",
+      "sellOnIn": "Sell-on clause: {{player}} ({{club}})",
+      "sellOnOut": "Sell-on clause paid to {{club}}: {{player}}",
+      "loanFeeIn": "Loan fee from {{club}}: {{player}}",
+      "loanFeeOut": "Loan fee paid to {{club}}: {{player}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change"
@@ -1852,7 +1875,8 @@
     "assists": "Ast",
     "rating": "Rating",
     "titles": "Titles",
-    "total": "Total"
+    "total": "Total",
+    "loan": "(loan)"
   },
   "board": {
     "objectiveLabel": "Season objective",
@@ -1956,6 +1980,100 @@
       "offers": "Offers",
       "none": "No offers right now.",
       "hint": "Wait for offers advances the days. Leagues, Stats and Scout stay open."
+    }
+  },
+  "negotiation": {
+    "title": "Negotiation",
+    "tabs": {
+      "transfer": "Transfer",
+      "loan": "Loan"
+    },
+    "onLoan": "On loan",
+    "loanBadgeTitle": "On loan from {{club}} until {{date}}",
+    "sellOn": "Sell-on clause",
+    "sellOnHint": "Giving the club a share of a future sale lowers the fee it asks.",
+    "wageShare": "Wage you pay",
+    "loanFee": "Loan fee",
+    "loanDuration": "Until the end of the season (or the next one, if fewer than two months remain).",
+    "returns": "Returns",
+    "patience": "Rounds left today: {{count}} of {{total}}",
+    "closedUntil": "The club broke off talks until {{date}}.",
+    "counterReceived": "The club asks for {{fee}}.",
+    "loanCounter": "The club wants {{share}}% of the wage paid and a {{fee}} loan fee.",
+    "loanRefusal": {
+      "starter": "He is a starter: the club will not lend him.",
+      "notAvailable": "The club does not want to lend him.",
+      "onLoan": "He is already on loan.",
+      "squadDepth": "The club has no cover in his position."
+    },
+    "loanAgreed": "{{name}} joins on loan",
+    "loanUntil": "Returns on {{date}}",
+    "acceptCounter": "Accept {{fee}}",
+    "acceptLoanCounter": "Accept {{share}}% + {{fee}}",
+    "requestLoan": "Ask for loan",
+    "errors": {
+      "talksClosed": "The club is not talking to you about this player for now.",
+      "noRounds": "No rounds left today. Try again tomorrow.",
+      "onLoan": "A player on loan cannot be sold or loaned out.",
+      "squadFull": "Your squad is full.",
+      "noClub": "You have no club.",
+      "generic": "Something went wrong. Try again."
+    },
+    "history": {
+      "title": "Today's rounds",
+      "you": "You",
+      "club": "Club",
+      "share": "{{share}}% of wage",
+      "sellOn": "{{pct}}% sell-on",
+      "outcome": {
+        "offer": "{{terms}}",
+        "accepted": "Accepted",
+        "counter": "Counter-offer: {{terms}}",
+        "rejected": "Refused",
+        "insulted": "Insulted, talks off for 14 days"
+      }
+    },
+    "bid": {
+      "closed": "This proposal is closed.",
+      "walkedAway": "The club walked away.",
+      "done": {
+        "sold": "Sold.",
+        "loaned": "Loan agreed.",
+        "rejected": "Proposal refused.",
+        "countered": "Counter-offer sent."
+      },
+      "validUntil": "Valid until",
+      "finalOffer": "This is the club's final offer.",
+      "yourPrice": "Your price",
+      "askSellOn": "Ask for a sell-on clause",
+      "sendCounter": "Send counter-offer",
+      "accept": "Accept",
+      "counter": "Counter-offer",
+      "reject": "Refuse"
+    },
+    "lists": {
+      "listSale": "List for sale",
+      "unlistSale": "Remove from sale",
+      "listLoan": "Offer on loan",
+      "unlistLoan": "Remove from loan list"
+    },
+    "overview": {
+      "tab": "Loans",
+      "loanedOutTab": "On loan",
+      "none": "None.",
+      "loanedOut": "Out on loan",
+      "loanedIn": "Borrowed",
+      "sellOnHeld": "Sell-on clauses to receive",
+      "bids": "Proposals for your players",
+      "player": "Player",
+      "club": "Club",
+      "from": "From",
+      "theyPay": "They pay",
+      "youPay": "You pay",
+      "soldTo": "Sold to",
+      "date": "Date",
+      "offer": "Offer",
+      "loanOffer": "Loan, {{share}}% of wage"
     }
   }
 }
