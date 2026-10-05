@@ -77,6 +77,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [years, setYears] = useState(3);
   const [contractError, setContractError] = useState<string | null>(null);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
+  // Default length the player accepts at his age (age + years <= 36), as the server's default.
+  useEffect(() => {
+    if (player) setYears(Math.min(3, Math.max(1, 36 - player.age)));
+  }, [player?.id]);
 
   const slider = useMemo(
     () =>
