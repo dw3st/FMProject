@@ -5,6 +5,7 @@ import { isInjured } from "@/Domain/injury/injury";
 import { isSuspended } from "@/Domain/discipline/discipline";
 import { daysBetween } from "@/Domain/dates";
 import { formatWageShort } from "@/Domain/money";
+import { weeklyWage } from "@/Domain/finance/wages";
 
 /** A player row as the squad, scout and player screens show it (built on the server for the scout search). */
 export interface DisplayPlayer {
@@ -29,6 +30,8 @@ export interface DisplayPlayer {
   /** Minutes-equivalent accumulated fatigue (`seasonLog.load`, absent = 0). See `FITNESS.LOAD_HIGH`. */
   load: number;
   salary: string;
+  /** Weekly wage in EUR behind `salary` (for sorting; the label is text). */
+  wage: number;
   /** Scout only: a free agent (no club). */
   free?: boolean;
   /** Year the contract ends ("—" when none). */
@@ -95,6 +98,7 @@ export function toDisplayPlayer(
     energy: log ? Math.round(log.fitness) : 100,
     load: log?.load ?? 0,
     salary: player.contract ? formatWageShort(player.contract.wage) : domain.salaryLabel(options?.wageFactor),
+    wage: player.contract?.wage ?? weeklyWage(domain.overallRating) * (options?.wageFactor ?? 1),
     contractUntil: player.contract ? player.contract.until.slice(0, 4) : "—",
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,

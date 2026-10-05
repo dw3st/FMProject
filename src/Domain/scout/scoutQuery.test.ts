@@ -17,7 +17,7 @@ const STATS = (v = 5): PlayerStatsRecord => ({
 
 const P = (over: Partial<DisplayPlayer> & { id: string }): DisplayPlayer => ({
   pos: "CM", positions: [over.pos ?? "CM"], name: `Player ${over.id}`, age: 25, avg: 6, energy: 100, load: 0,
-  salary: "10k", value: "5.0M", goals: 0, assists: 0, avgRating: 0, phase: 3, training: 3, moral: 3,
+  salary: "10k", wage: 10_000, value: "5.0M", goals: 0, assists: 0, avgRating: 0, phase: 3, training: 3, moral: 3,
   status: "fit", club: "Club", stats: STATS(), preferredFoot: "right", valueMillions: 5,
   nationality: "Brazil", leagueSlug: "premier_league", clubSlug: "club", ...over,
 });
@@ -268,7 +268,7 @@ describe("parity with the legacy client filter/sort", () => {
     });
   }
 
-  for (const key of ["avg", "age", "name", "club", "valueMillions", "salary", "pos", "phase"]) {
+  for (const key of ["avg", "age", "name", "club", "valueMillions", "pos", "phase"]) {
     for (const dir of ["asc", "desc"] as const) {
       test(`sort: ${key} ${dir}`, () => {
         expect(ids(sortScoutPlayers(players, key, dir))).toEqual(ids(legacySort(players, key, dir)));
@@ -281,4 +281,10 @@ describe("parity with the legacy client filter/sort", () => {
     expect(sizes[0]).toBe(50);
     expect(sizes.slice(1).some((n) => n > 0 && n < 50)).toBe(true);
   });
+});
+
+test("salary sorts by the weekly wage, not by the text label", () => {
+  const ps = [P({ id: "a", salary: "61k", wage: 61_000 }), P({ id: "b", salary: "329k", wage: 329_000 }), P({ id: "c", salary: "9k", wage: 9_000 })];
+  expect(sortScoutPlayers(ps, "salary", "desc").map((p) => p.id)).toEqual(["b", "a", "c"]);
+  expect(sortScoutPlayers(ps, "salary", "asc").map((p) => p.id)).toEqual(["c", "a", "b"]);
 });

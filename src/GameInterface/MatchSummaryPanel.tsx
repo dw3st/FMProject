@@ -30,7 +30,7 @@ const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
   goal: "bg-primary",
   penaltyGoal: "bg-primary",
   penaltyMissed: "bg-muted-foreground",
-  yellow: "bg-chart-4",
+  yellow: "bg-card-yellow",
   red: "bg-destructive",
   offside: "bg-muted-foreground",
   sub: "bg-chart-2",

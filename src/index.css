@@ -97,6 +97,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  /* Football card colours: a real yellow (chart-4 reads orange). */
+  --color-card-yellow: oklch(0.88 0.18 98);
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);

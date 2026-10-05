@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.9.3",
+    date: "2026-10-05",
+    items: [
+      { pt: "O cartão amarelo agora é amarelo de verdade na partida, no resumo e no resultado.", en: "The yellow card is now a real yellow in the match, the summary and the result." },
+    ],
+    fixes: [
+      { pt: "Ordenar pelo salário no elenco e no olheiro agora segue o valor, do mais caro ao mais barato e ao contrário.", en: "Sorting by salary in the squad and scout lists now follows the amount, highest to lowest and back." },
+    ],
+  },
+  {
     version: "3.9.2",
     date: "2026-10-05",
     items: [

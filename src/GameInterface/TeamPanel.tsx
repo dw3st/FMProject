@@ -31,7 +31,7 @@ function EnergyReadout({ energy }: { energy: number }) {
 
 /** Card shown in the lineup list: a small upright rectangle in the card colour. */
 function CardMark({ red }: { red?: boolean }) {
-  return <span className={`inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 ${red ? "bg-destructive" : "bg-chart-4"}`} aria-hidden />;
+  return <span className={`inline-block w-2.5 h-3.5 rounded-[2px] shrink-0 ${red ? "bg-destructive" : "bg-card-yellow"}`} aria-hidden />;
 }
 
 /** Goals, assists and cards of one player in this match (#69). */

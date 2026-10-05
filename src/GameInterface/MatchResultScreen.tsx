@@ -696,7 +696,7 @@ export function MatchResultScreen() {
                     {c.matchMinute + 1}&apos;
                   </span>
                   <span
-                    className={`inline-block w-2.5 h-3.5 rounded-sm shrink-0 ${c.card === "yellow" ? "bg-chart-4" : "bg-destructive"}`}
+                    className={`inline-block w-2.5 h-3.5 rounded-sm shrink-0 ${c.card === "yellow" ? "bg-card-yellow" : "bg-destructive"}`}
                     aria-label={c.card === "yellow" ? t("matchResult.yellowCard") : t("matchResult.redCard")}
                   />
                   <span className="text-foreground font-medium truncate flex-1">

@@ -115,8 +115,10 @@ export function filterScoutPlayers(
 
 export function sortScoutPlayers(players: DisplayPlayer[], sortKey: string, sortDir: ScoutSortDir): DisplayPlayer[] {
   return [...players].sort((a, b) => {
-    const aVal = a[sortKey as keyof DisplayPlayer];
-    const bVal = b[sortKey as keyof DisplayPlayer];
+    // The salary column is a text label ("61k"); it sorts by the wage behind it.
+    const key = (sortKey === "salary" ? "wage" : sortKey) as keyof DisplayPlayer;
+    const aVal = a[key];
+    const bVal = b[key];
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }

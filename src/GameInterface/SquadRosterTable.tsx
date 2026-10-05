@@ -85,8 +85,10 @@ export function SquadRosterTable({
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
       if (sortKey === "pos") return compareSquadPositions(a, b, sortDir);
-      const aVal = a[sortKey as keyof RosterRow];
-      const bVal = b[sortKey as keyof RosterRow];
+      // Text columns that are really numbers sort by the number behind the label.
+      const key = (sortKey === "salary" ? "wage" : sortKey) as keyof RosterRow;
+      const aVal = a[key];
+      const bVal = b[key];
       if (typeof aVal === "string" && typeof bVal === "string") {
         return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
