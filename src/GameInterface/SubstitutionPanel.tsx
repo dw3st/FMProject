@@ -8,6 +8,9 @@ import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Chip } from "@/GameInterface/ui/Chip";
+import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
+import { ManMarkingPanel } from "@/GameInterface/Components/ManMarkingPanel";
+import type { SlotInstruction } from "@/types/tacticsTypes";
 
 // ── Energy bar helpers ───────────────────────────────────────────────────────
 
@@ -59,6 +62,10 @@ export interface SubstitutionPanelProps {
   ratings?: Record<number, number>;
   onQueueSub: (sub: PendingSub) => void;
   onChangeFormation: (formationId: string) => void;
+  /** Live slot instruction change (player instructions) — this match only. */
+  onInstruction?: (slot: number, instruction: SlotInstruction | null) => void;
+  /** Live man-marking (engine ids of opponents on the pitch). */
+  onManMarks?: (marks: { markerSlot: number; targetId: number }[]) => void;
   onClose: () => void;
 }
 
@@ -72,10 +79,14 @@ export function SubstitutionPanel({
   ratings,
   onQueueSub,
   onChangeFormation,
+  onInstruction,
+  onManMarks,
   onClose,
 }: SubstitutionPanelProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"subs" | "formation">("subs");
+  const [activeTab, setActiveTab] = useState<"subs" | "formation" | "instructions">("subs");
+  const [instrSlot, setInstrSlot] = useState<number | null>(null);
+  const instructionShort = useInstructionShort();
   const [selectedOutId, setSelectedOutId] = useState<number | null>(null);
 
   const subsRemaining =
@@ -178,6 +189,7 @@ export function SubstitutionPanel({
             tabs={[
               { key: "subs", label: t("substitutionPanel.playerSwap") },
               { key: "formation", label: t("substitutionPanel.formation") },
+              ...(onInstruction ? [{ key: "instructions" as const, label: t("substitutionPanel.tabInstructions") }] : []),
             ]}
             active={activeTab}
             onChange={setActiveTab}
@@ -384,6 +396,49 @@ export function SubstitutionPanel({
                 </div>
               </div>
             </>
+          )}
+
+          {activeTab === "instructions" && onInstruction && (
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+              <p className="text-sm text-muted-foreground m-0">{t("instructions.liveOnly")}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {onPitch.map((p) => {
+                  const instr = gameState.slotInstructions?.[playerTeam]?.[p.slotIndex];
+                  const tag = instructionShort(instr);
+                  return (
+                    <Chip
+                      key={p.id}
+                      selected={instrSlot === p.slotIndex}
+                      onClick={() => setInstrSlot(p.slotIndex)}
+                      className="py-2"
+                    >
+                      {p.role} · {p.name.split(" ").pop()}{tag ? ` · ${tag}` : ""}{instr?.press && instr.press !== "normal" ? ` · ${t(`instructions.press.${instr.press}`)}` : ""}
+                    </Chip>
+                  );
+                })}
+              </div>
+              {instrSlot !== null && (() => {
+                const p = onPitch.find((q) => q.slotIndex === instrSlot);
+                if (!p) return null;
+                return (
+                  <SlotInstructionChips
+                    role={p.role}
+                    instruction={gameState.slotInstructions?.[playerTeam]?.[instrSlot]}
+                    onChange={(next) => onInstruction(instrSlot, next)}
+                  />
+                );
+              })()}
+              {onManMarks && (
+                <ManMarkingPanel
+                  markers={onPitch.filter((p) => p.role !== "GK").map((p) => ({ value: String(p.slotIndex), label: `${p.role} · ${p.name}` }))}
+                  targets={gameState.players
+                    .filter((p) => p.team !== playerTeam && p.role !== "GK")
+                    .map((p) => ({ value: String(p.id), label: `${p.role} · ${p.name}`, overall: displayRating10(p) }))}
+                  value={(gameState.manMarks?.[playerTeam] ?? []).map((m) => ({ slot: m.markerSlot, targetId: String(m.targetId) }))}
+                  onChange={(next) => onManMarks(next.map((m) => ({ markerSlot: m.slot, targetId: Number(m.targetId) })))}
+                />
+              )}
+            </div>
           )}
 
           {activeTab === "formation" && (

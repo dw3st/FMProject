@@ -1623,7 +1623,8 @@
     "noAvailable": "No bench players available.",
     "selectBench": "Tap a player on the bench →",
     "cancelSelection": "Cancel selection",
-    "changeFormationHint": "Change formation mid-match. Players keep their positions and adapt to the new shape."
+    "changeFormationHint": "Change formation mid-match. Players keep their positions and adapt to the new shape.",
+    "tabInstructions": "Instructions"
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -2438,5 +2439,143 @@
     "validUntil": "Valid until {{date}}",
     "attention": "The board offers you a new contract",
     "cardLine": "Contract until {{year}} · {{wage}}/wk"
+  },
+  "instructions": {
+    "title": "Instructions",
+    "role": "Role",
+    "pressLabel": "Pressing",
+    "default": "Default",
+    "defaultDesc": "Plays the position as usual.",
+    "noGoalkeeper": "No instructions for the goalkeeper.",
+    "pickSlot": "Click a position on the pitch to give it instructions.",
+    "liveOnly": "Changes here only last for this match.",
+    "saved": "Instructions saved",
+    "press": {
+      "less": "Less",
+      "normal": "Normal",
+      "more": "More"
+    },
+    "variant": {
+      "fb_overlap": {
+        "name": "Overlapping",
+        "short": "OVL",
+        "desc": "Joins the attack down the flank and overlaps the winger."
+      },
+      "fb_hold": {
+        "name": "Stays back",
+        "short": "HLD",
+        "desc": "Holds his position and covers behind."
+      },
+      "fb_inverted": {
+        "name": "Inverted",
+        "short": "INV",
+        "desc": "Moves inside into midfield when the team has the ball."
+      },
+      "wb_attack": {
+        "name": "Attacking wing-back",
+        "short": "AWB",
+        "desc": "Plays high and makes runs in behind."
+      },
+      "wb_defend": {
+        "name": "Defensive wing-back",
+        "short": "DWB",
+        "desc": "Stays deeper and protects the flank."
+      },
+      "cb_stopper": {
+        "name": "Stopper",
+        "short": "STP",
+        "desc": "Steps out to engage and press attackers."
+      },
+      "cb_cover": {
+        "name": "Cover",
+        "short": "COV",
+        "desc": "Drops a little deeper to sweep up behind the line."
+      },
+      "cb_ball": {
+        "name": "Ball-playing",
+        "short": "BPD",
+        "desc": "Carries the ball forward and builds the play."
+      },
+      "dm_anchor": {
+        "name": "Anchor",
+        "short": "ANC",
+        "desc": "Stays in front of the defence and never pushes on."
+      },
+      "dm_box": {
+        "name": "Box-to-box",
+        "short": "BTB",
+        "desc": "Pushes forward and arrives in the box."
+      },
+      "cm_link": {
+        "name": "Link",
+        "short": "LNK",
+        "desc": "Drops to receive and keeps the ball moving."
+      },
+      "cm_box": {
+        "name": "Box crasher",
+        "short": "BOX",
+        "desc": "Makes late runs into the box."
+      },
+      "am_link": {
+        "name": "Playmaker",
+        "short": "PLM",
+        "desc": "Drops between the lines to set up play."
+      },
+      "am_shadow": {
+        "name": "Shadow striker",
+        "short": "SS",
+        "desc": "Plays as a second striker and attacks the box."
+      },
+      "wm_wide": {
+        "name": "Wide",
+        "short": "WID",
+        "desc": "Hugs the touchline to stretch the play."
+      },
+      "wm_inside": {
+        "name": "Inside",
+        "short": "INS",
+        "desc": "Drifts inside to combine in midfield."
+      },
+      "w_wide": {
+        "name": "Wide winger",
+        "short": "WW",
+        "desc": "Stays wide, beats his man and crosses."
+      },
+      "w_inside": {
+        "name": "Inside forward",
+        "short": "IF",
+        "desc": "Cuts inside to shoot."
+      },
+      "st_poacher": {
+        "name": "Poacher",
+        "short": "POA",
+        "desc": "Lives in the box and waits for the chance."
+      },
+      "st_false9": {
+        "name": "False 9",
+        "short": "F9",
+        "desc": "Drops deep to link play and opens space behind."
+      },
+      "st_target": {
+        "name": "Target man",
+        "short": "TGT",
+        "desc": "Holds the ball up and wins headers."
+      }
+    },
+    "marking": {
+      "title": "Man-marking",
+      "hint": "Up to 2 players follow a specific opponent while we defend.",
+      "marker": "Marker",
+      "target": "Target",
+      "best": "Their best player",
+      "none": "No one",
+      "add": "Add marking",
+      "remove": "Remove",
+      "marks": "Marks {{name}}"
+    },
+    "errors": {
+      "saveFailed": "Could not save the instructions.",
+      "markingFailed": "Could not save the marking."
+    }
   }
 }

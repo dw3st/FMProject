@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION } from "@/GameEngine/Domain/gameState";
+import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
@@ -24,7 +24,7 @@ import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
 import type { GameState, GamePlayer, TeamId, Formation, PendingSub } from "@/GameEngine/types";
-import type { TacticsSave, TacticalStyle, Mentality } from "@/types/tacticsTypes";
+import type { TacticsSave, TacticalStyle, Mentality, SlotInstruction } from "@/types/tacticsTypes";
 import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
@@ -272,6 +272,8 @@ export function MatchScreen() {
           oppFormation: Formation;
           myLineup: string[];
           myTactics: TacticsSave;
+          /** Man-marking chosen for this match in the preview (player instructions). */
+          matchMarking?: { date: string; marks: { slot: number; targetId: string }[] } | null;
         };
       })
       .then((data) => {
@@ -334,7 +336,7 @@ export function MatchScreen() {
         setTeamMoraleOverride("B", data.opponentSquad ? undefined : MORALE.NEUTRAL);
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
         const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers, matchDate);
-        const state: GameState = snap ? snap.state : {
+        const fresh: GameState | null = snap ? null : {
           ...createMatchState(
             myEligiblePlayers,
             data.myFormation,
@@ -355,6 +357,13 @@ export function MatchScreen() {
                   : { A: data.fixture.aggregate.away, B: data.fixture.aggregate.home } }
             : {}),
         };
+        // Player instructions of the user's side: the saved slot instructions and this match's
+        // man-marking (`.claude/rules/game/player-instructions.md`). The AI side never has any.
+        const state: GameState = snap ? snap.state : setManMarksBySlot(
+          applyTeamInstructions(fresh!, "A", tactics.slotInstructions),
+          "A",
+          (data.matchMarking?.marks ?? []).map((m) => ({ slot: m.slot, targetRosterId: m.targetId })),
+        );
         if (snap) {
           importStatsState(snap.stats);
           importRatings(snap.ratings);
@@ -697,6 +706,16 @@ export function MatchScreen() {
         pendingSubsA: [...prev.pendingSubsA, sub],
       };
     });
+  }
+
+  /** Live instruction change (player instructions): only this match, never saved. */
+  function handleInstruction(slot: number, instruction: SlotInstruction | null) {
+    setGameState((prev) => (prev ? applyPlayerInstruction(prev, "A", slot, instruction) : prev));
+  }
+
+  /** Live man-marking (targets are opponents on the pitch, engine ids). */
+  function handleManMarks(marks: { markerSlot: number; targetId: number }[]) {
+    setGameState((prev) => (prev ? setManMarks(prev, "A", marks) : prev));
   }
 
   function handleChangeFormation(formationId: string) {
@@ -1044,6 +1063,8 @@ export function MatchScreen() {
           ratings={ratings}
           onQueueSub={handleQueueSub}
           onChangeFormation={handleChangeFormation}
+          onInstruction={handleInstruction}
+          onManMarks={handleManMarks}
           onClose={handleCloseSubPanel}
         />
       )}

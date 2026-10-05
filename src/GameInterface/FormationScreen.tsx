@@ -31,7 +31,7 @@ import {
   effectiveAxes,
   hasAxesOverride,
 } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot } from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction } from "@/types/tacticsTypes";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { getMainRole } from "@/Domain/roles";
 import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -63,6 +63,7 @@ import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
+import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 
 interface FormationOption {
   id: string;
@@ -101,6 +102,10 @@ export function FormationScreen() {
   const [selectedSlotIdx, setSelectedSlotIdx] = useState<number | null>(null);
   const [benchTab, setBenchTab] = useState<"starting" | "bench">("starting");
   const [lineupReady, setLineupReady] = useState(false);
+  /** Per-slot player instructions (role variant / pressing), index = slot. */
+  const [slotInstructions, setSlotInstructions] = useState<(SlotInstruction | null)[]>([]);
+  const [instructionError, setInstructionError] = useState(false);
+  const instructionShort = useInstructionShort();
 
   const formationId = session?.formation ?? DEFAULT_FORMATION;
 
@@ -152,6 +157,40 @@ export function FormationScreen() {
       })
       .catch(() => { setLineupReady(true); });
   }, [session?.saveId, mergeSession]);
+
+  // Slot instructions follow the formation: the server sanitizes them when the formation changes.
+  useEffect(() => {
+    if (!session) return;
+    let alive = true;
+    fetch(`/api/saves/${session.saveId}/tactics`)
+      .then((r) => r.json())
+      .then((t: TacticsSave | null) => { if (alive) setSlotInstructions(t?.slotInstructions ?? []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [session?.saveId, formationId, customFormation]);
+
+  async function handleInstruction(slot: number, next: SlotInstruction | null) {
+    if (!session) return;
+    const prev = slotInstructions;
+    const list = [...prev];
+    while (list.length <= slot) list.push(null);
+    list[slot] = next;
+    setSlotInstructions(list);
+    setInstructionError(false);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotInstructions: list }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const saved = (await res.json()) as TacticsSave;
+      setSlotInstructions(saved.slotInstructions ?? []);
+    } catch {
+      setSlotInstructions(prev);
+      setInstructionError(true);
+    }
+  }
 
   // Auto-fill lineup when no saved lineup exists and both slots and squad are available.
   useEffect(() => {
@@ -627,7 +666,32 @@ export function FormationScreen() {
                 onSlotClick={handleSlotClick}
                 getOutOfPosition={(player, slotRole) => isPoorFit(aptitudeFor(player, slotRole))}
                 clubColors={squad?.colors}
+                instructionTag={editing ? undefined : (i) => instructionShort(slotInstructions[i])}
               />
+              {!editing && (
+                <div className="card-arcade rounded-md p-4 mt-3">
+                  <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">
+                    {t("instructions.title")}
+                    {selectedSlotIdx !== null && slots[selectedSlotIdx] && (
+                      <span className={`ml-2 ${getDetailedPositionColor(slots[selectedSlotIdx]!.role)}`}>
+                        {slots[selectedSlotIdx]!.role}
+                      </span>
+                    )}
+                  </h3>
+                  {selectedSlotIdx !== null && slots[selectedSlotIdx] ? (
+                    <SlotInstructionChips
+                      role={slots[selectedSlotIdx]!.role}
+                      instruction={slotInstructions[selectedSlotIdx]}
+                      onChange={(next) => handleInstruction(selectedSlotIdx, next)}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground m-0">{t("instructions.pickSlot")}</p>
+                  )}
+                  {instructionError && (
+                    <p className="text-sm text-destructive m-0 mt-2">{t("instructions.errors.saveFailed")}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Squad Panel — absolute inside cell so pitch dictates row height */}
@@ -1003,7 +1067,10 @@ function FormationPitch({
   dropHover,
   dragging,
   clubColors,
+  instructionTag,
 }: {
+  /** Short tag of the slot's role variant (player instructions); undefined = none. */
+  instructionTag?: (slotIdx: number) => string | undefined;
   /** A drag is in progress: hover cards stay hidden. */
   dragging?: boolean;
   /** Kit colours of the club, used for the generated faces on the markers. */
@@ -1140,6 +1207,12 @@ function FormationPitch({
                   </span>
                 )}
               </button>
+
+              {instructionTag?.(i) && (
+                <span className="absolute -top-2 -right-4 rounded bg-primary px-1 text-[13px] font-bold uppercase font-display leading-tight text-primary-foreground pointer-events-none">
+                  {instructionTag(i)}
+                </span>
+              )}
 
               {oop && !isSelected && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-chart-4 flex items-center justify-center pointer-events-none">

@@ -1623,7 +1623,8 @@
     "noAvailable": "Nenhum jogador do banco disponível.",
     "selectBench": "Toque em um jogador no banco →",
     "cancelSelection": "Cancelar seleção",
-    "changeFormationHint": "Mude de formação durante a partida. Os jogadores mantêm suas posições e se adaptam à nova estrutura."
+    "changeFormationHint": "Mude de formação durante a partida. Os jogadores mantêm suas posições e se adaptam à nova estrutura.",
+    "tabInstructions": "Instruções"
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -2438,5 +2439,143 @@
     "validUntil": "Vale até {{date}}",
     "attention": "A diretoria oferece um novo contrato",
     "cardLine": "Contrato até {{year}} · {{wage}}/sem"
+  },
+  "instructions": {
+    "title": "Instruções",
+    "role": "Função",
+    "pressLabel": "Pressão",
+    "default": "Padrão",
+    "defaultDesc": "Joga a posição normalmente.",
+    "noGoalkeeper": "Sem instruções para o goleiro.",
+    "pickSlot": "Clique numa posição do campo para dar instruções.",
+    "liveOnly": "As mudanças aqui valem só para esta partida.",
+    "saved": "Instruções salvas",
+    "press": {
+      "less": "Menos",
+      "normal": "Normal",
+      "more": "Mais"
+    },
+    "variant": {
+      "fb_overlap": {
+        "name": "Apoia",
+        "short": "APO",
+        "desc": "Sobe pelo lado e passa do ponta no ataque."
+      },
+      "fb_hold": {
+        "name": "Fica",
+        "short": "FIC",
+        "desc": "Segura a posição e faz a cobertura."
+      },
+      "fb_inverted": {
+        "name": "Invertido",
+        "short": "INV",
+        "desc": "Fecha para o meio-campo quando o time tem a bola."
+      },
+      "wb_attack": {
+        "name": "Ala ofensivo",
+        "short": "ALO",
+        "desc": "Joga adiantado e ataca a profundidade."
+      },
+      "wb_defend": {
+        "name": "Ala defensivo",
+        "short": "ALD",
+        "desc": "Fica mais recuado e protege o lado."
+      },
+      "cb_stopper": {
+        "name": "Sai na marcação",
+        "short": "SAI",
+        "desc": "Sai para marcar e pressionar o atacante."
+      },
+      "cb_cover": {
+        "name": "Na sobra",
+        "short": "SOB",
+        "desc": "Fica um pouco atrás para cobrir a linha."
+      },
+      "cb_ball": {
+        "name": "Zagueiro com bola",
+        "short": "BOL",
+        "desc": "Conduz a bola e ajuda na saída."
+      },
+      "dm_anchor": {
+        "name": "Volante fixo",
+        "short": "FIX",
+        "desc": "Fica na frente da zaga e não sobe."
+      },
+      "dm_box": {
+        "name": "Volante que chega",
+        "short": "CHG",
+        "desc": "Sobe e chega na área."
+      },
+      "cm_link": {
+        "name": "Meia de ligação",
+        "short": "LIG",
+        "desc": "Recua para receber e faz a bola girar."
+      },
+      "cm_box": {
+        "name": "Chega na área",
+        "short": "CHA",
+        "desc": "Chega de trás dentro da área."
+      },
+      "am_link": {
+        "name": "Meia armador",
+        "short": "ARM",
+        "desc": "Recua entre as linhas para armar o jogo."
+      },
+      "am_shadow": {
+        "name": "Segundo atacante",
+        "short": "2AT",
+        "desc": "Joga como segundo atacante e ataca a área."
+      },
+      "wm_wide": {
+        "name": "Aberto",
+        "short": "ABE",
+        "desc": "Fica colado na linha lateral para abrir o campo."
+      },
+      "wm_inside": {
+        "name": "Por dentro",
+        "short": "DEN",
+        "desc": "Fecha por dentro para tabelar no meio."
+      },
+      "w_wide": {
+        "name": "Ponta aberto",
+        "short": "PAB",
+        "desc": "Fica aberto, dribla e cruza."
+      },
+      "w_inside": {
+        "name": "Ponta por dentro",
+        "short": "PDE",
+        "desc": "Corta para dentro para finalizar."
+      },
+      "st_poacher": {
+        "name": "De área",
+        "short": "ARE",
+        "desc": "Fica na área esperando a chance."
+      },
+      "st_false9": {
+        "name": "Falso 9",
+        "short": "F9",
+        "desc": "Recua para armar e abre espaço atrás."
+      },
+      "st_target": {
+        "name": "Pivô",
+        "short": "PIV",
+        "desc": "Segura a bola de costas e ganha no alto."
+      }
+    },
+    "marking": {
+      "title": "Marcação individual",
+      "hint": "Até 2 jogadores seguem um adversário específico quando defendemos.",
+      "marker": "Marcador",
+      "target": "Alvo",
+      "best": "Melhor jogador deles",
+      "none": "Ninguém",
+      "add": "Adicionar marcação",
+      "remove": "Remover",
+      "marks": "Marca {{name}}"
+    },
+    "errors": {
+      "saveFailed": "Não foi possível salvar as instruções.",
+      "markingFailed": "Não foi possível salvar a marcação."
+    }
   }
 }
