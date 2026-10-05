@@ -91,7 +91,6 @@ import {
   FileJson,
   Pencil,
   Plus,
-  Volleyball,
   Laugh,
   Smile,
   Meh,
@@ -99,7 +98,7 @@ import {
   Angry,
   MessagesSquare,
 } from "lucide-react";
-import type { SVGProps } from "react";
+import { useId, type SVGProps } from "react";
 
 /** Star icon rendered filled (solid) — used for an active "followed" toggle. */
 function StarFilled(props: SVGProps<SVGSVGElement>) {
@@ -212,6 +211,34 @@ export type IconName =
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
 
+/** A classic black-and-white football (lucide has no soccer ball): white leather, black panels, whatever the theme. */
+function SoccerBall(props: SVGProps<SVGSVGElement>) {
+  const clip = useId();
+  const { strokeWidth: _strokeWidth, ...rest } = props;
+  return (
+    <svg viewBox="0 0 24 24" {...rest}>
+      <defs><clipPath id={clip}><circle cx="12" cy="12" r="10.5" /></clipPath></defs>
+      <circle cx="12" cy="12" r="10.5" fill="#f4f4f5" />
+      <g clipPath={`url(#${clip})`} fill="#18181b">
+        <polygon points="12.00,7.70 16.09,10.67 14.53,15.48 9.47,15.48 7.91,10.67" />
+        <polygon points="21.26,2.25 20.17,5.61 16.64,5.61 15.55,2.25 18.41,0.18" />
+        <polygon points="24.13,17.80 20.60,17.80 19.51,14.44 22.37,12.37 25.22,14.44" />
+        <polygon points="10.24,25.33 9.15,21.97 12.00,19.90 14.85,21.97 13.76,25.33" />
+        <polygon points="-1.22,14.44 1.63,12.37 4.49,14.44 3.40,17.80 -0.13,17.80" />
+        <polygon points="5.59,0.18 8.45,2.25 7.36,5.61 3.83,5.61 2.74,2.25" />
+      </g>
+      <g stroke="#18181b" strokeWidth="0.9" strokeLinecap="round">
+        <line x1="12.00" y1="7.70" x2="12.00" y2="4.00" />
+        <line x1="16.09" y1="10.67" x2="19.61" y2="9.53" />
+        <line x1="14.53" y1="15.48" x2="16.70" y2="18.47" />
+        <line x1="9.47" y1="15.48" x2="7.30" y2="18.47" />
+        <line x1="7.91" y1="10.67" x2="4.39" y2="9.53" />
+      </g>
+      <circle cx="12" cy="12" r="10.5" fill="none" stroke="#18181b" strokeWidth="0.8" />
+    </svg>
+  );
+}
+
 const ICON_MAP: Record<IconName, IconComponent> = {
   "play":         Play,
   "pause":        Pause,
@@ -307,7 +334,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "file-json": FileJson,
   "pencil": Pencil,
   "plus": Plus,
-  "ball": Volleyball,
+  "ball": SoccerBall,
   "face-very-happy": Laugh,
   "face-content": Smile,
   "face-neutral": Meh,

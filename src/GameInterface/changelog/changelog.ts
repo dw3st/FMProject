@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.9.4",
+    date: "2026-10-05",
+    items: [
+      { pt: "Os gols agora aparecem com uma bola de futebol de verdade no resultado e na partida, no lugar do ícone laranja.", en: "Goals now show a real football in the result and the match, instead of the orange icon." },
+    ],
+  },
+  {
     version: "3.9.3",
     date: "2026-10-05",
     items: [

@@ -125,7 +125,7 @@ function ResultPlayerRow({
   const ratingClass = rating != null && Number.isFinite(rating) ? ratingTextClass10(rating) : "text-muted-foreground";
 
   const rowClass = highlight
-    ? "bg-chart-4/10 border border-chart-4/35 rounded-lg"
+    ? "bg-primary/10 border border-primary/30 rounded-lg"
     : "";
 
   if (align === "left") {
@@ -134,8 +134,8 @@ function ResultPlayerRow({
         <RoleBadge role={role} align="left" />
         <span className="flex-1 text-base text-foreground font-medium truncate">{lastName}</span>
         {goals > 0 && (
-          <span className="flex items-center gap-0.5 text-chart-4 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
-            <Icon name="target" className="w-4 h-4" />
+          <span className="flex items-center gap-0.5 text-foreground shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
+            <Icon name="ball" className="w-4 h-4" />
             {goals > 1 && <span className="text-base font-black tabular-nums">{goals}</span>}
           </span>
         )}
@@ -158,9 +158,9 @@ function ResultPlayerRow({
         </span>
       )}
       {goals > 0 && (
-        <span className="flex items-center gap-0.5 text-chart-4 shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
+        <span className="flex items-center gap-0.5 text-foreground shrink-0" title={`${goals} goal${goals > 1 ? "s" : ""}`}>
           {goals > 1 && <span className="text-base font-black tabular-nums">{goals}</span>}
-          <Icon name="target" className="w-4 h-4" />
+          <Icon name="ball" className="w-4 h-4" />
         </span>
       )}
       <span className="flex-1 text-base text-foreground font-medium truncate text-right">{lastName}</span>
@@ -504,9 +504,9 @@ export function MatchResultScreen() {
               {matchEvent.scorers.map((s, i) => (
                 <span
                   key={i}
-                  className="text-base font-semibold text-chart-4/90 flex items-center gap-1"
+                  className="text-base font-semibold text-foreground flex items-center gap-1"
                 >
-                  <Icon name="target" className="w-3.5 h-3.5 shrink-0" />
+                  <Icon name="ball" className="w-4 h-4 shrink-0" />
                   {s.playerName}
                   {s.goals > 1 ? ` (${s.goals} ${t("matchResult.goals")})` : ` (${t("matchResult.goal")})`}
                   <span className="text-muted-foreground/60">{s.team === "home" ? homeName : awayName}</span>
