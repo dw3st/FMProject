@@ -49,8 +49,10 @@ describe("morale in the engine", () => {
     const happy = build(home.map((p) => ({ ...p, morale: 100 })), away);
     const a0 = base.players.find((p) => p.team === "A")!;
     const h0 = happy.players.find((p) => p.team === "A" && p.rosterId === a0.rosterId)!;
-    for (const k of Object.keys(a0.fit!.stats) as (keyof typeof a0.fit!.stats)[]) {
-      expect(h0.fit!.stats[k]).toBeCloseTo(Math.min(10, a0.fit!.stats[k] * 1.01));
+    const before = a0.fit!.stats as unknown as Record<string, number>;
+    const after = h0.fit!.stats as unknown as Record<string, number>;
+    for (const k of Object.keys(before)) {
+      expect(after[k]!).toBeCloseTo(Math.min(10, before[k]! * 1.01));
     }
     expect(h0.morale).toBe(100);
     // The AI side is untouched.
