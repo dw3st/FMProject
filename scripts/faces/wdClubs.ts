@@ -5,11 +5,10 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { curlJson, LEAGUES, sleep } from "@/../scripts/faces/wikidata";
+import { curlJson, LEAGUE_LANG as LANG, LEAGUES, sleep } from "@/../scripts/faces/wikidata";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const OUT = join(ROOT, "data_process/wikidata/clubs.json");
-const LANG: Record<string, string> = { brazil_serie_a: "pt", premier_league: "en", la_liga: "es", ligue_1: "fr" };
 const ALIAS: Record<string, string> = {
   "Atletico-MG": "Clube Atlético Mineiro", "Atletico Paranaense": "Club Athletico Paranaense", "Sao Paulo": "São Paulo Futebol Clube",
   "Gremio": "Grêmio Foot-Ball Porto Alegrense", "Vitoria": "Esporte Clube Vitória", "Chapecoense-sc": "Associação Chapecoense de Futebol",

@@ -43,11 +43,16 @@ function keysOf(names: (string | undefined)[]): Set<string> {
   return k;
 }
 
-/** 2 = same full name key, 1 = initial+surname or label tokens inside our full name, 0 = no. */
+/**
+ * 2 = same full name key, 1 = our abbreviated name ("B. Saka") equals a label's initial+surname, or all
+ * label tokens inside our full name; 0 = no. The initial+surname key is only built from an
+ * abbreviated `name`, never from `fullName` (that matched "Matheus … Oliveira" to "Malcom … Oliveira").
+ */
 function nameScore(p: Ours, w: WdPerson): number {
-  const ours = keysOf([p.name, p.fullName]);
-  const fullOurs = new Set([toks(p.name).join(" "), toks(p.fullName).join(" ")]);
-  for (const n of w.names) if (fullOurs.has(toks(n).join(" "))) return 2;
+  const ours = p.name.includes(".") ? new Set([toks(p.name).join(" ")]) : new Set<string>();
+  // Empty keys never match: a label in a non-Latin script normalises to "" and so does a missing fullName.
+  const fullOurs = new Set([toks(p.name).join(" "), toks(p.fullName).join(" ")].filter((k) => k.length > 0));
+  for (const n of w.names) { const k = toks(n).join(" "); if (k && fullOurs.has(k)) return 2; }
   for (const k of keysOf(w.names)) if (k.includes(" ") && k.split(" ")[0]!.length === 1 && ours.has(k)) return 1;
   const ft = new Set(toks(p.fullName));
   for (const n of w.names) { const t = toks(n); if (t.length >= 2 && t.every((x) => ft.has(x))) return 1; }
@@ -167,6 +172,11 @@ for (const p of unmatched) {
 const second = pickUnique(cands2, new Set(Object.values(matches).map((m) => m.qid)));
 for (const [pid, w] of second) matches[pid] = { qid: w.qid, image: w.image };
 console.log(`search pass: ${second.size}/${unmatched.length} more matched`);
+// One Wikidata person per player: a person matched by two clubs' passes (same name and age in both
+// squads) is ambiguous, so both players lose the match.
+const owners = new Map<string, string[]>();
+for (const [pid, m] of Object.entries(matches)) owners.set(m.qid, [...(owners.get(m.qid) ?? []), pid]);
+for (const pids of owners.values()) if (pids.length > 1) for (const pid of pids) delete matches[pid];
 
 // 3. Licences (50 files per request).
 const FREE = /^(cc[ -]by(-sa)?([ -]\d|$)|cc0|public domain|pd\b|pd-)/i;

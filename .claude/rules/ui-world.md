@@ -100,7 +100,7 @@ parâmetros derivados.
 
 ### Traços reais (piloto, Wikidata/Commons)
 
-Mesmas 4 ligas, foto do **Wikimedia Commons** pelo Wikidata (P18), só com licença livre. Fotos de jogo
+Ligas principais (`LEAGUES` em `scripts/faces/wikidata.ts`: Premier, La Liga, Bundesliga, Serie A, Ligue 1, Brasileirão A, Portugal, Eredivisie, Argentina, MLS), foto do **Wikimedia Commons** pelo Wikidata (P18), só com licença livre. O resto do mundo mantém o rosto sorteado. Fotos de jogo
 (ângulos e fundos variados), então os traços vêm de **rótulo visual** (pele, cor e comprimento do cabelo,
 barba), não de heurística.
 
@@ -114,5 +114,11 @@ barba), não de heurística.
 - Rótulos: `data_process/wikidata/faceTraitLabels.txt` → `faceTraits.json`. `bun scripts/faces/mergeTraits.ts`
   junta ESPN + Wikidata (Wikidata vence) em `src/example_data/faceTraits.json` (e `src/Data`).
 - `applyFaceTraits` aplica também comprimento (`HAIR_IDS`; cabelo longo liso ganha o `hairBg` `longHair`) e
-  barba (`FACIAL_HAIR_IDS`). `FACE_VERSION` 4.
+  barba (`FACIAL_HAIR_IDS`); tons 5–7 usam a lista `TEXTURED_HAIR_IDS` (cachos, fades, locs). As listas foram
+  escolhidas olhando cada id renderizado (`bun scripts/faces/renderSheet.ts <out.html> hair|allhair|beard|combos`).
+  `FACE_VERSION` 5.
+- Fila de anotação: `bun scripts/faces/labelQueue.ts` (top 300 do mundo, XI automático dos clubes das ligas, demais dos
+  40 clubes mais fortes; pula rotulados e `faceTraitSkips.txt`). Cada rótulo guarda o qid do Wikidata da foto vista;
+  `mergeTraits` descarta o rótulo se o casamento mudar. Uma pessoa do Wikidata casada com dois jogadores cai dos dois.
+- A foto do item do Wikidata às vezes é de outra pessoa (vimos dois goleiros): esses entram em `faceTraitSkips.txt`.
 - Página local de comparação: `bun scripts/faces/pilotPage.ts <arquivo.html> [n]` (nunca publicar).

@@ -239,6 +239,156 @@
   "label": "Coritiba Foot Ball Club",
   "desc": "clube poliesportivo brasileiro"
  },
+ "157": {
+  "qid": "Q15789",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "160": {
+  "qid": "Q106394",
+  "label": "SC Freiburg",
+  "desc": "German football club"
+ },
+ "162": {
+  "qid": "Q51976",
+  "label": "SV Werder Bremen",
+  "desc": "association football club in Bremen, Germany"
+ },
+ "163": {
+  "qid": "Q101959",
+  "label": "Borussia Mönchengladbach",
+  "desc": "professional association football club in Mönchengladbach, North Rhine-Westphalia, Germany"
+ },
+ "164": {
+  "qid": "Q105254",
+  "label": "1. FSV Mainz 05",
+  "desc": "Bundesliga football club in Germany"
+ },
+ "165": {
+  "qid": "Q41420",
+  "label": "Borussia Dortmund",
+  "desc": "German professional sports club based in Dortmund"
+ },
+ "167": {
+  "qid": "Q22707",
+  "label": "TSG 1899 Hoffenheim",
+  "desc": "German association football club"
+ },
+ "168": {
+  "qid": "Q104761",
+  "label": "Bayer 04 Leverkusen",
+  "desc": "association football club in Leverkusen, Germany"
+ },
+ "169": {
+  "qid": "Q38245",
+  "label": "Eintracht Frankfurt",
+  "desc": "sports club based in Frankfurt am Main, Hesse, Germany"
+ },
+ "170": {
+  "qid": "Q15755",
+  "label": "FC Augsburg",
+  "desc": "German association football club"
+ },
+ "172": {
+  "qid": "Q4512",
+  "label": "VfB Stuttgart",
+  "desc": "German football team based in the city of Stuttgart, founded in 1893"
+ },
+ "173": {
+  "qid": "Q702455",
+  "label": "RB Leipzig",
+  "desc": "association football club in Leipzig, Saxony, Germany"
+ },
+ "175": {
+  "qid": "Q51974",
+  "label": "Hamburger SV",
+  "desc": "German sports club based in Hamburg, with its largest branch being its football department"
+ },
+ "182": {
+  "qid": "Q141971",
+  "label": "1. FC Union Berlin",
+  "desc": "association football club in Berlin, Germany"
+ },
+ "192": {
+  "qid": "Q104770",
+  "label": "1. FC Köln",
+  "desc": "German football club based in Cologne, in North Rhine-Westphalia"
+ },
+ "487": {
+  "qid": "Q2609",
+  "label": "SS Lazio",
+  "desc": "club calcistico italiano di Roma"
+ },
+ "488": {
+  "qid": "Q8603",
+  "label": "Unione Sportiva Sassuolo Calcio",
+  "desc": "club calcistico italiano di Sassuolo (MO)"
+ },
+ "489": {
+  "qid": "Q1543",
+  "label": "AC Milan",
+  "desc": "club calcistico italiano di Milano"
+ },
+ "490": {
+  "qid": "Q1900",
+  "label": "Cagliari Calcio",
+  "desc": "club calcistico italiano di Cagliari"
+ },
+ "492": {
+  "qid": "Q2641",
+  "label": "SSC Napoli",
+  "desc": "club calcistico italiano di Napoli"
+ },
+ "494": {
+  "qid": "Q2798",
+  "label": "Udinese Calcio",
+  "desc": "club calcistico italiano di Udine"
+ },
+ "495": {
+  "qid": "Q2074",
+  "label": "Genoa CFC",
+  "desc": "club calcistico italiano di Genova"
+ },
+ "496": {
+  "qid": "Q1422",
+  "label": "Juventus FC",
+  "desc": "club calcistico italiano di Torino"
+ },
+ "497": {
+  "qid": "Q2739",
+  "label": "AS Roma",
+  "desc": "club calcistico italiano di Roma"
+ },
+ "499": {
+  "qid": "Q1886",
+  "label": "Atalanta Bergamasca Calcio",
+  "desc": "club calcistico italiano di Bergamo"
+ },
+ "500": {
+  "qid": "Q1893",
+  "label": "Bologna FC 1909",
+  "desc": "club calcistico italiano di Bologna"
+ },
+ "502": {
+  "qid": "Q2052",
+  "label": "ACF Fiorentina",
+  "desc": "club calcistico italiano di Firenze"
+ },
+ "503": {
+  "qid": "Q2768",
+  "label": "Torino FC",
+  "desc": "club calcistico italiano di Torino"
+ },
+ "505": {
+  "qid": "Q631",
+  "label": "FC Inter",
+  "desc": "club calcistico italiano di Milano"
+ },
+ "523": {
+  "qid": "Q2693",
+  "label": "Parma Calcio 1913",
+  "desc": "club calcistico italiano di Parma"
+ },
  "529": {
   "qid": "Q7156",
   "label": "Fútbol Club Barcelona",
@@ -334,6 +484,16 @@
   "label": "Elche Club de Fútbol",
   "desc": "club de fútbol español"
  },
+ "867": {
+  "qid": "Q13391",
+  "label": "US Lecce",
+  "desc": "club calcistico italiano di Lecce"
+ },
+ "895": {
+  "qid": "Q1120838",
+  "label": "Como 1907",
+  "desc": "club calcistico italiano di Como"
+ },
  "1062": {
   "qid": "Q270995",
   "label": "Clube Atlético Mineiro",
@@ -379,6 +539,36 @@
   "label": "Racing de Santander",
   "desc": "club de fútbol de Santander, España"
  },
+ "es_10388": {
+  "qid": "Q692691",
+  "label": "SV Elversberg",
+  "desc": "German association football club, located in Spiesen-Elversberg, Saarland"
+ },
+ "es_133": {
+  "qid": "Q32494",
+  "label": "Schalke 04",
+  "desc": "German football club from the Schalke district of Gelsenkirchen"
+ },
+ "es_3307": {
+  "qid": "Q160532",
+  "label": "SC Paderborn 07",
+  "desc": "German association football club based in Paderborn, North Rhine-Westphalia"
+ },
+ "of_it_frosinone": {
+  "qid": "Q845043",
+  "label": "Frosinone Calcio",
+  "desc": "club calcistico italiano di Frosinone"
+ },
+ "of_it_monza": {
+  "qid": "Q289482",
+  "label": "AC Monza",
+  "desc": "club calcistico italiano di Monza"
+ },
+ "of_it_venezia": {
+  "qid": "Q501245",
+  "label": "Venezia F.C.",
+  "desc": "association football club based in Venice, Italy"
+ },
  "es_170": {
   "qid": "Q501693",
   "label": "ES Troyes AC",
@@ -388,5 +578,490 @@
   "qid": "Q210864",
   "label": "Le Mans Football Club",
   "desc": "club de football français"
+ },
+ "es_21607": {
+  "qid": "Q2410944",
+  "label": "Académico Viseu Futebol Club",
+  "desc": "clube profissional de futebol português"
+ },
+ "es_21610": {
+  "qid": "Q838134",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "es_21613": {
+  "qid": "Q1386850",
+  "label": "Futebol Clube de Alverca",
+  "desc": "association football team from Alverca, Portugal"
+ },
+ "es_3472": {
+  "qid": "Q216459",
+  "label": "Clube Desportivo Nacional",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "es_3696": {
+  "qid": "Q1346314",
+  "label": "Moreirense Futebol Clube",
+  "desc": "clube profissional de futebol português"
+ },
+ "of_pt_arouca": {
+  "qid": "Q1386869",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_pt_benfica": {
+  "qid": "Q131499",
+  "label": "Sport Lisboa e Benfica",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "of_pt_braga": {
+  "qid": "Q75684",
+  "label": "Sporting Clube de Braga",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "of_pt_casa_pia": {
+  "qid": "Q1046440",
+  "label": "Casa Pia Atlético Clube",
+  "desc": "association football club"
+ },
+ "of_pt_estoril": {
+  "qid": "Q634829",
+  "label": "G.D. Estoril Praia",
+  "desc": "sports club in Estoril, Portugal"
+ },
+ "of_pt_famalicao": {
+  "qid": "Q1387105",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_pt_gil_vicente": {
+  "qid": "Q926438",
+  "label": "Gil Vicente Futebol Clube",
+  "desc": "clube profissional de futebol português"
+ },
+ "of_pt_maritimo": {
+  "qid": "Q216503",
+  "label": "Club Sport Marítimo",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "of_pt_porto": {
+  "qid": "Q128446",
+  "label": "Futebol Clube do Porto",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "of_pt_rio_ave": {
+  "qid": "Q622432",
+  "label": "Rio Ave Futebol Clube",
+  "desc": "Clube Profissional de Futebol de Portugal"
+ },
+ "of_pt_santa_clara": {
+  "qid": "Q740637",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_pt_sporting_cp": {
+  "qid": "Q75729",
+  "label": "Sporting Clube de Portugal",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "of_pt_vitoria_guimaraes": {
+  "qid": "Q223450",
+  "label": "Vitória Sport Clube",
+  "desc": "clube profissional multidesportivo português"
+ },
+ "es_143": {
+  "qid": "Q854167",
+  "label": "Fortuna Sittard",
+  "desc": "voetbalclub uit Nederland"
+ },
+ "es_151": {
+  "qid": "Q209895",
+  "label": "Sparta Rotterdam",
+  "desc": "voetbalclub uit Nederland"
+ },
+ "es_3706": {
+  "qid": "Q749589",
+  "label": "Go Ahead Eagles",
+  "desc": "voetbalclub uit Deventer"
+ },
+ "es_3735": {
+  "qid": "Q1071713",
+  "label": "Telstar",
+  "desc": "Nederlandse voetbalclub uit Velsen-Zuid"
+ },
+ "of_nl_ado_den_haag": {
+  "qid": "Q24904",
+  "label": "ADO Den Haag",
+  "desc": "Nederlandse voetbalclub uit Den Haag"
+ },
+ "of_nl_ajax": {
+  "qid": "Q81888",
+  "label": "AFC Ajax",
+  "desc": "Nederlandse profvoetbalclub uit Amsterdam"
+ },
+ "of_nl_az": {
+  "qid": "Q191264",
+  "label": "AZ",
+  "desc": "Nederlandse voetbalclub uit Alkmaar"
+ },
+ "of_nl_cambuur": {
+  "qid": "Q875120",
+  "label": "SC Cambuur",
+  "desc": "voetbalclub uit Leeuwarden"
+ },
+ "of_nl_excelsior": {
+  "qid": "Q370712",
+  "label": "Excelsior Rotterdam",
+  "desc": "Nederlandse voetbalclub uit Rotterdam"
+ },
+ "of_nl_fc_groningen": {
+  "qid": "Q24711",
+  "label": "FC Groningen",
+  "desc": "Nederlandse voetbalclub uit Groningen"
+ },
+ "of_nl_fc_twente": {
+  "qid": "Q19603",
+  "label": "FC Twente",
+  "desc": "Nederlandse voetbalclub uit Enschede"
+ },
+ "of_nl_fc_utrecht": {
+  "qid": "Q24680",
+  "label": "FC Utrecht",
+  "desc": "Nederlandse voetbalclub uit Utrecht"
+ },
+ "of_nl_feyenoord": {
+  "qid": "Q134241",
+  "label": "Feyenoord",
+  "desc": "Nederlandse voetbalclub uit Rotterdam"
+ },
+ "of_nl_nec": {
+  "qid": "Q318348",
+  "label": "N.E.C.",
+  "desc": "Nederlandse voetbalclub uit Nijmegen"
+ },
+ "of_nl_pec_zwolle": {
+  "qid": "Q269151",
+  "label": "PEC Zwolle",
+  "desc": "Nederlandse voetbalclub uit Zwolle"
+ },
+ "of_nl_psv": {
+  "qid": "Q11938",
+  "label": "PSV Eindhoven",
+  "desc": "Nederlandse voetbalclub uit Eindhoven"
+ },
+ "of_nl_sc_heerenveen": {
+  "qid": "Q200321",
+  "label": "sc Heerenveen",
+  "desc": "Nederlandse voetbalclub uit Heerenveen"
+ },
+ "of_nl_willem_ii": {
+  "qid": "Q332664",
+  "label": "Willem II",
+  "desc": "Nederlandse voetbalclub uit Tilburg"
+ },
+ "of_ar_aldosivi": {
+  "qid": "Q971490",
+  "label": "Club Atlético Aldosivi",
+  "desc": "club deportivo de Mar del Plata, Argentina"
+ },
+ "of_ar_argentinos_juniors": {
+  "qid": "Q220621",
+  "label": "Asociación Atlética Argentinos Juniors",
+  "desc": "club deportivo de Buenos Aires, Argentina"
+ },
+ "of_ar_atletico_tucuman": {
+  "qid": "Q757470",
+  "label": "Atlético Tucumán",
+  "desc": "club deportivo de San Miguel de Tucumán, Argentina"
+ },
+ "of_ar_banfield": {
+  "qid": "Q692646",
+  "label": "Club Atlético Banfield",
+  "desc": "club deportivo de Banfield, Argentina"
+ },
+ "of_ar_barracas_central": {
+  "qid": "Q2469894",
+  "label": "Barracas Central",
+  "desc": "club deportivo de Buenos Aires, Argentina"
+ },
+ "of_ar_belgrano": {
+  "qid": "Q59962",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_boca_juniors": {
+  "qid": "Q170703",
+  "label": "Boca Juniors",
+  "desc": "club deportivo de Buenos Aires, Argentina"
+ },
+ "of_ar_central_cordoba_sde": {
+  "qid": "Q5060684",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_defensa_y_justicia": {
+  "qid": "Q1024338",
+  "label": "Club Social y Deportivo Defensa y Justicia",
+  "desc": "club deportivo de Florencio Varela, Argentina"
+ },
+ "of_ar_estudiantes": {
+  "qid": "Q214940",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_estudiantes_de_rio_cuarto": {
+  "qid": "Q8206935",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_gimnasia_la_plata": {
+  "qid": "Q18640",
+  "label": "Club de Gimnasia y Esgrima La Plata",
+  "desc": "club deportivo de La Plata, Argentina"
+ },
+ "of_ar_gimnasia_y_esgrima_de_mendoza": {
+  "qid": "Q2707037",
+  "label": "Club Atlético Gimnasia y Esgrima",
+  "desc": "club deportivo de Mendoza, Argentina"
+ },
+ "of_ar_huracan": {
+  "qid": "Q327172",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_independiente": {
+  "qid": "Q214978",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_independiente_rivadavia": {
+  "qid": "Q2454482",
+  "label": "Club Sportivo Independiente Rivadavia",
+  "desc": "club deportivo de Mendoza, Argentina"
+ },
+ "of_ar_instituto": {
+  "qid": "Q1421829",
+  "label": "Instituto Atlético Central Córdoba",
+  "desc": "Argentine sports club based in Córdoba"
+ },
+ "of_ar_lanus": {
+  "qid": "Q324589",
+  "label": "Club Atlético Lanús",
+  "desc": "club deportivo de Lanús, Argentina"
+ },
+ "of_ar_newells_old_boys": {
+  "qid": "Q221882",
+  "label": "Club Atlético Newell’s Old Boys",
+  "desc": "club deportivo de Rosario, Argentina"
+ },
+ "of_ar_platense": {
+  "qid": "Q151907",
+  "label": "Club Atlético Platense",
+  "desc": "club deportivo de Vicente López, Argentina"
+ },
+ "of_ar_racing_club": {
+  "qid": "Q276533",
+  "label": "Racing Club",
+  "desc": "club deportivo de Avellaneda, Argentina"
+ },
+ "of_ar_riestra": {
+  "qid": "Q4382304",
+  "label": "Deportivo Riestra",
+  "desc": "club deportivo de Buenos Aires, Argentina"
+ },
+ "of_ar_river_plate": {
+  "qid": "Q15799",
+  "label": "Club Atlético River Plate",
+  "desc": "club deportivo de Buenos Aires, Argentina"
+ },
+ "of_ar_rosario_central": {
+  "qid": "Q318307",
+  "label": "Club Atlético Rosario Central",
+  "desc": "club deportivo de Rosario, Argentina"
+ },
+ "of_ar_san_lorenzo": {
+  "qid": "Q218282",
+  "label": "Club Atlético San Lorenzo de Almagro",
+  "desc": "club deportivo de Buenos Aires, Argentina"
+ },
+ "of_ar_sarmiento": {
+  "qid": "Q519966",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_talleres": {
+  "qid": "Q1022939",
+  "label": "Talleres de Córdoba",
+  "desc": "club deportivo de Córdoba, Argentina"
+ },
+ "of_ar_tigre": {
+  "qid": "Q80886",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_ar_union_de_santa_fe": {
+  "qid": "Q80899",
+  "label": "Club Atlético Unión",
+  "desc": "club deportivo de Santa Fe, Argentina"
+ },
+ "of_ar_velez_sarsfield": {
+  "qid": "Q215163",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_us_atlanta_united_fc": {
+  "qid": "Q16836317",
+  "label": "Atlanta United FC",
+  "desc": "American professional soccer club based in Atlanta"
+ },
+ "of_us_austin_fc": {
+  "qid": "Q60643348",
+  "label": "Austin FC",
+  "desc": "professional soccer team in Austin, Texas, United States"
+ },
+ "of_us_cf_montreal": {
+  "qid": "Q167615",
+  "label": "CF Montréal",
+  "desc": "Canadian professional soccer team"
+ },
+ "of_us_charlotte_football_club": {
+  "qid": "Q78944434",
+  "label": "Charlotte FC",
+  "desc": "professional soccer club in Charlotte, North Carolina, USA"
+ },
+ "of_us_chicago_fire": {
+  "qid": "Q308683",
+  "label": "Chicago Fire FC",
+  "desc": "soccer club in Chicago, Illinois, USA"
+ },
+ "of_us_colorado_rapids": {
+  "qid": "Q642408",
+  "label": "Colorado Rapids",
+  "desc": "soccer club in Commerce City, Colorado, USA"
+ },
+ "of_us_columbus_crew": {
+  "qid": "Q457163",
+  "label": "Columbus Crew",
+  "desc": "soccer club in Columbus, Ohio, USA"
+ },
+ "of_us_dc_united": {
+  "qid": "Q238593",
+  "label": "D.C. United",
+  "desc": "soccer club in Washington, DC, USA"
+ },
+ "of_us_fc_cincinnati": {
+  "qid": "Q20855983",
+  "label": "FC Cincinnati",
+  "desc": "soccer club in Cincinnati, Ohio, USA"
+ },
+ "of_us_fc_dallas": {
+  "qid": "Q642291",
+  "label": "FC Dallas",
+  "desc": "soccer club in Frisco, Texas, USA"
+ },
+ "of_us_houston_dynamo": {
+  "qid": "Q328313",
+  "label": "Houston Dynamo FC",
+  "desc": "soccer club in Houston, Texas, USA"
+ },
+ "of_us_inter_miami_cf": {
+  "qid": "Q16844931",
+  "label": "Inter Miami CF",
+  "desc": "American professional soccer club based in Miami"
+ },
+ "of_us_la_galaxy": {
+  "qid": "Q204357",
+  "label": "LA Galaxy",
+  "desc": "Major League Soccer club in Los Angeles, United States"
+ },
+ "of_us_los_angeles_football_club": {
+  "qid": "Q18380286",
+  "label": "Los Angeles FC",
+  "desc": "association football club in Los Angeles, California, USA"
+ },
+ "of_us_minnesota_united_fc": {
+  "qid": "Q19828435",
+  "label": "Minnesota United FC",
+  "desc": "American professional soccer club based in Saint Paul, Minnesota, United States"
+ },
+ "of_us_nashville_sc": {
+  "qid": "Q47518754",
+  "label": "Nashville SC",
+  "desc": "Major League Soccer franchise in Nashville, Tennessee"
+ },
+ "of_us_new_england_revolution": {
+  "qid": "Q309095",
+  "label": "New England Revolution",
+  "desc": "professional soccer club based in Boston, Massachusetts, United States"
+ },
+ "of_us_new_york_city": {
+  "qid": "Q13361030",
+  "label": "",
+  "desc": "fixed by hand"
+ },
+ "of_us_new_york_red_bulls": {
+  "qid": "Q204220",
+  "label": "Red Bull New York",
+  "desc": "Major League Soccer franchise in Harrison, New Jersey, USA"
+ },
+ "of_us_orlando_city": {
+  "qid": "Q15214308",
+  "label": "Orlando City SC",
+  "desc": "soccer club in Major League Soccer"
+ },
+ "of_us_philadelphia_union": {
+  "qid": "Q689874",
+  "label": "Philadelphia Union",
+  "desc": "Major League Soccer club based in Chester, PA"
+ },
+ "of_us_portland_timbers": {
+  "qid": "Q1031200",
+  "label": "Portland Timbers",
+  "desc": "soccer club in Portland, Oregon, USA"
+ },
+ "of_us_real_salt_lake": {
+  "qid": "Q391353",
+  "label": "Real Salt Lake",
+  "desc": "soccer club in Sandy, Utah, USA"
+ },
+ "of_us_san_diego_football_club": {
+  "qid": "Q118945347",
+  "label": "San Diego FC",
+  "desc": "soccer team based in San Diego, California, USA"
+ },
+ "of_us_san_jose_earthquakes": {
+  "qid": "Q575370",
+  "label": "San Jose Earthquakes",
+  "desc": "Major League Soccer franchise in San Jose, California"
+ },
+ "of_us_seattle_sounders": {
+  "qid": "Q632511",
+  "label": "Seattle Sounders FC",
+  "desc": "American Major League Soccer team"
+ },
+ "of_us_sporting_kansas_city": {
+  "qid": "Q329812",
+  "label": "Sporting Kansas City",
+  "desc": "Major League Soccer club that plays in Kansas City, Kansas, USA"
+ },
+ "of_us_st_louis_city_sc": {
+  "qid": "Q66642491",
+  "label": "St. Louis City SC",
+  "desc": "Major League Soccer team based in St. Louis"
+ },
+ "of_us_toronto_fc": {
+  "qid": "Q327238",
+  "label": "Toronto FC",
+  "desc": "soccer club in Toronto, Ontario, Canada"
+ },
+ "of_us_vancouver_whitecaps": {
+  "qid": "Q196107",
+  "label": "Vancouver Whitecaps FC",
+  "desc": "Major League Soccer team in Vancouver, BC, Canada"
+ },
+ "of_ar_estudiantes_de_buenos_aires": {
+  "qid": "Q2333719",
+  "label": "",
+  "desc": "fixed by hand"
  }
 }

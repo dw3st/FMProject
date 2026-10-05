@@ -1,5 +1,14 @@
 /** Shared helpers for the Wikidata/Commons face pilot. curl (Bun's fetch is unreliable on Windows), polite UA. */
-export const LEAGUES = ["brazil_serie_a", "premier_league", "la_liga", "ligue_1"];
+/** Leagues covered by the face pilot (the main leagues; the rest of the world keeps the seeded face). */
+export const LEAGUES = [
+  "premier_league", "la_liga", "bundesliga", "serie_a", "ligue_1", "brazil_serie_a",
+  "of_portuguese_primeira_liga", "of_eredivisie", "of_argentine_premier_division", "of_major_league_soccer",
+];
+/** Search language per league (club names). */
+export const LEAGUE_LANG: Record<string, string> = {
+  premier_league: "en", la_liga: "es", bundesliga: "de", serie_a: "it", ligue_1: "fr", brazil_serie_a: "pt",
+  of_portuguese_primeira_liga: "pt", of_eredivisie: "nl", of_argentine_premier_division: "es", of_major_league_soccer: "en",
+};
 export const UA = "FMProjectFacesPilot/0.1 (https://westlab.dev; emygdiowestphalen@gmail.com) curl";
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

@@ -41,20 +41,21 @@ export const HAIR_COLORS: Record<HairColor, string> = {
 
 /**
  * facesjs male hair ids by length, chosen after rendering every id (`scripts/faces/renderSheet.ts`):
- * flat tops ("high", "juice"), mohawks and the bowl-shaped "afro" were dropped. `TEXTURED_HAIR_IDS`
+ * flat tops ("high", "juice"), mohawks, the bowl-shaped "afro" and the near-shaved fades
+ * ("short-fade*", which read as bald) were dropped. `TEXTURED_HAIR_IDS`
  * (curly fades, curls, locs) is used for the darker skin tones (5–7); the labels carry no hair texture.
  */
 export const HAIR_IDS: Record<HairLength, readonly string[]> = {
   bald: ["bald"],
-  short: ["crop", "crop-fade", "crop-fade2", "short", "short2", "short3", "short-fade", "spike2", "messy-short", "tall-fade"],
+  short: ["crop", "crop-fade", "crop-fade2", "short", "short2", "short3", "spike2", "messy-short", "tall-fade"],
   medium: ["messy", "shaggy1", "shaggy2", "middle-part", "parted", "hair"],
   long: ["longHair"],
 };
 export const TEXTURED_HAIR_IDS: Record<HairLength, readonly string[]> = {
   bald: ["bald"],
-  short: ["curlyFade1", "curlyFade2", "short-fade", "short-fade-2", "crop-fade"],
+  short: ["curlyFade1", "curlyFade2", "crop-fade", "crop"],
   medium: ["curly", "curly2", "curly3", "afro2"],
-  long: ["dreads"],
+  long: ["dreads", "afro2"],
 };
 const TEXTURED_FROM_SKIN = 5;
 

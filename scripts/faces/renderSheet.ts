@@ -5,7 +5,7 @@
  */
 import { writeFileSync } from "node:fs";
 import { faceToSvgString, generate } from "facesjs";
-import { FACIAL_HAIR_IDS, HAIR_IDS, HAIR_COLORS, SKIN_COLORS, applyFaceTraits, type FaceTraits } from "@/Domain/faces/faceTraits";
+import { FACIAL_HAIR_IDS, HAIR_IDS, TEXTURED_HAIR_IDS, HAIR_COLORS, SKIN_COLORS, type FaceTraits } from "@/Domain/faces/faceTraits";
 import { playerFaceSvg } from "@/Domain/faces/playerFaceSvg";
 
 const [out, mode = "hair"] = process.argv.slice(2);
@@ -14,7 +14,7 @@ const face = (hair: string, beard: string, skin: string, hairColor: string) => {
   const f = generate({ teamColors: ["#2b6cb0", "#ffffff", "#1a365d"], jersey: { id: "jersey" }, glasses: { id: "none" }, accessories: { id: "none" }, hair: { id: hair, color: hairColor }, facialHair: { id: beard }, body: { color: skin }, hairBg: { id: hair === "longHair" ? "longHair" : "none" }, head: { id: "head1", shave: "rgba(0,0,0,0)" } } as never, { gender: "male", race: "white" });
   return faceToSvgString(f);
 };
-if (mode === "hair") for (const [len, ids] of Object.entries(HAIR_IDS)) for (const id of ids) cells.push({ label: `${len}:${id}`, svg: face(id, "none", SKIN_COLORS[4], HAIR_COLORS.black) });
+if (mode === "hair") for (const [len, ids] of [...Object.entries(HAIR_IDS), ...Object.entries(TEXTURED_HAIR_IDS).map(([k, v]) => [`tex-${k}`, v] as const)]) for (const id of ids) cells.push({ label: `${len}:${id}`, svg: face(id, "none", SKIN_COLORS[1], HAIR_COLORS.black) });
 if (mode === "allhair") for (const id of ["afro","afro2","bald","blowoutFade","cornrows","crop-fade","crop-fade2","crop","curly","curly2","curly3","curlyFade1","curlyFade2","dreads","emo","faux-hawk","fauxhawk-fade","hair","high","juice","longHair","messy-short","messy","middle-part","parted","shaggy1","shaggy2","short-bald","short-fade-2","short-fade","short","short2","short3","shortBangs","spike","spike2","spike3","spike4","tall-fade"]) cells.push({ label: id, svg: face(id, "none", SKIN_COLORS[2], HAIR_COLORS.brown) });
 if (mode === "beard") for (const [k, ids] of Object.entries(FACIAL_HAIR_IDS)) for (const id of ids) for (const s of [2, 7] as const) cells.push({ label: `${k}:${id} s${s}`, svg: face("short", id, SKIN_COLORS[s], HAIR_COLORS.black) });
 if (mode === "combos") {

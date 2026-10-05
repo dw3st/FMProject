@@ -3,10 +3,11 @@
  * URL from Wikimedia, not embedded) | current face | new face with the traits, plus the traits and
  * the photo's licence/author.
  *
- *   bun scripts/faces/pilotPage.ts <out.html> [max=64]
+ *   bun scripts/faces/pilotPage.ts <out.html> [max=64] [--leagues a,b]
  *
  * Players: the Wikidata-labelled ones in label order (stars first, data_process/wikidata/faceTraits*),
- * then the ESPN heuristic ones.
+ * then the ESPN heuristic ones. `--leagues` keeps only players of those leagues (stars of the list
+ * `STARS` first).
  */
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -37,7 +38,13 @@ for (const league of LEAGUES) {
     for (const p of sq.players) byId.set(p.id, { id: p.id, name: p.name, club: sq.name, league, nat: p.nationality, colors: sq.colors ?? [] });
   }
 }
-const ids = [...labelOrder, ...Object.keys(espnTraits).filter((id) => !labelOrder.includes(id))].slice(0, MAX);
+const leaguesArg = process.argv.indexOf("--leagues");
+const onlyLeagues = leaguesArg > 0 ? new Set(process.argv[leaguesArg + 1]!.split(",")) : null;
+const STARS = ["Kane", "Musiala", "Lautaro", "Leão", "Wirtz", "Olise", "Kvaratskhelia", "Barella", "Gyökeres", "Messi", "Suárez", "De Bruyne", "Lewandowski", "Son", "Paredes", "Otamendi", "McTominay", "Pulišić"];
+const labelled = [...labelOrder, ...Object.keys(espnTraits).filter((id) => !labelOrder.includes(id))]
+  .filter((id) => !onlyLeagues || onlyLeagues.has(byId.get(id)?.league ?? ""));
+const stars = labelled.filter((id) => STARS.some((s) => byId.get(id)?.name.includes(s)));
+const ids = [...stars, ...labelled.filter((id) => !stars.includes(id))].slice(0, MAX);
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const svgImg = (svg: string) => `<img class="face" alt="" src="data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}">`;
