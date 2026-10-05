@@ -1,3 +1,5 @@
+import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
+import { MORALE } from "@/Domain/morale/moraleConfig";
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
@@ -326,6 +328,10 @@ export function MatchScreen() {
         const opponentPlayers = (data.opponentSquad?.players ?? data.mySquad.players).filter(
           (p) => !isUnavailable(p, matchDate),
         );
+        // Morale (`.claude/rules/game/morale.md`): every player at his own stored value — the AI side
+        // stores none (neutral). No team override from another screen may leak into a real match.
+        setTeamMoraleOverride("A", undefined);
+        setTeamMoraleOverride("B", data.opponentSquad ? undefined : MORALE.NEUTRAL);
         const oppSlots = getFormationSlots(data.oppFormation as unknown as FormationShape, "attacking");
         const oppLineup = autoFillLineupWithFitness(oppSlots, opponentPlayers, matchDate);
         const state: GameState = snap ? snap.state : {

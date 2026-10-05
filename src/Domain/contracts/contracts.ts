@@ -1,3 +1,4 @@
+import { moraleDemandMult } from "@/Domain/morale/morale";
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { overallAvg } from "@/Domain/playerRating";
 import { playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
@@ -51,7 +52,8 @@ export function contractDemand(player: RosterPlayer, squad: Squad, _date: string
   const rating = overallAvg(player);
   const importance = 1 + clamp(rating - avg, 0, C.IMPORTANCE_CAP) * C.IMPORTANCE_WEIGHT;
   const young = player.age <= C.YOUNG_MAX_AGE && rating >= avg ? C.YOUNG_RISING_BONUS : 1;
-  return Math.round(playerWeeklyWage(player, wageFactorOf(squad)) * importance * young);
+  // An unhappy (or furious) player asks more (`.claude/rules/game/morale.md`); no stored morale = 1.
+  return Math.round(playerWeeklyWage(player, wageFactorOf(squad)) * importance * young * moraleDemandMult(player));
 }
 
 export function evaluateContractOffer(

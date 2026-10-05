@@ -1,3 +1,4 @@
+import { moraleDpMult } from "@/Domain/morale/morale";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
@@ -315,7 +316,7 @@ function finalizeSquadsAfterMatch(
       const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
       const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
       const rating = playerRatings[p.id] ?? 0;
-      const { updatedPlayer, levelChanges } = applyDevelopment(p, rating, weights, devMult * rebornDpMult(p));
+      const { updatedPlayer, levelChanges } = applyDevelopment(p, rating, weights, devMult * rebornDpMult(p) * moraleDpMult(p));
       if (levelChanges) allChanges.push(levelChanges);
       return updatedPlayer;
     });
