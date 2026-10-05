@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.0.1",
+    date: "2026-10-05",
+    items: [
+      { pt: "Rostos mais parecidos com os jogadores de verdade: mais de mil craques das principais ligas (Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Brasileirão, Portugal, Eredivisie, Argentina e MLS) agora têm o tom de pele, o cabelo e a barba próximos do real.", en: "Faces that look more like the real players: over a thousand players from the main leagues (Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Brasileirão, Portugal, Eredivisie, Argentina and MLS) now have skin tone, hair and beard close to the real thing." },
+    ],
+  },
+  {
     version: "4.0",
     date: "2026-10-05",
     items: [
