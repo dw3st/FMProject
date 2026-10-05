@@ -5,7 +5,8 @@ import {
   retireStale, rolloverSackChance, sackManager, vacancyHireOn, weeklySackChance, type SackInput,
 } from "@/Domain/managers/aiManagers";
 import {
-  compensationFee, contractUntil, managerWeeklyWage, offerSeasons, renewalDecision, renewalDue, severancePay, weeksLeft,
+  compensationFee, contractDay, contractUntil, managerWeeklyWage, offerSeasons, renewalDecision, renewalDue, renewedContract,
+  severancePay, weeksLeft,
 } from "@/Domain/managers/managerContract";
 
 const m = (id: string, squadId: string, extra: Partial<ManagerRecord> = {}): ManagerRecord => ({
@@ -85,6 +86,14 @@ describe("free pool and hirings", () => {
     expect(r.find((x) => x.id === "a")!.retired).toBe(true);
   });
 
+  test("a free manager without ranking points retires after half a season, with points after two", () => {
+    const ms = [m("a", "", { freeSince: "2027-01-01" }), m("b", "", { freeSince: "2027-01-01", points: 20 })];
+    const r = retireStale(ms, "2027-08-01");
+    expect(r.find((x) => x.id === "a")!.retired).toBe(true);
+    expect(r.find((x) => x.id === "b")!.retired).toBeUndefined();
+    expect(retireStale(ms, "2029-01-10").find((x) => x.id === "b")!.retired).toBe(true);
+  });
+
   test("hire choice: close to the club's prestige, local first", () => {
     const pick = chooseHire({
       prestige: 0.6, country: "England", continent: "Europe",
@@ -141,5 +150,20 @@ describe("the human manager's contract", () => {
     expect(renewalDue({ until: "2027-05-17", seasonEnd: "2027-05-17", played: 33, totalRounds: 38 })).toBe(true);
     expect(renewalDue({ until: "2027-05-17", seasonEnd: "2027-05-17", played: 30, totalRounds: 38 })).toBe(false);
     expect(renewalDue({ until: "2028-05-17", seasonEnd: "2027-05-17", played: 38, totalRounds: 38 })).toBe(false);
+  });
+
+  test("contract day: the board's offer at 85%, the warning a week before the end, renewal extends", () => {
+    const contract = { squadId: "c", wage: 100, until: "2027-05-17", signed: "2025-08-01" };
+    const base = { contract, notices: [] as string[], seasonEnd: "2027-05-17", totalRounds: 38, reputationWage: 150 };
+    expect(contractDay({ ...base, date: "2027-03-01", board: 70, played: 20 }).message).toBeUndefined();
+    const offer = contractDay({ ...base, date: "2027-04-20", board: 70, played: 33 });
+    expect(offer.message).toEqual({ kind: "contract_offer", contract: { seasons: 2, wage: 150 } });
+    expect(offer.renewal).toMatchObject({ seasons: 2, wage: 150 });
+    // Decided once; a week before the end the warning arrives (offer still pending, not accepted).
+    const later = contractDay({ ...base, notices: offer.notices, renewal: offer.renewal, date: "2027-05-12", board: 70, played: 37 });
+    expect(later.message).toEqual({ kind: "contract_ending" });
+    const refused = contractDay({ ...base, date: "2027-04-20", board: 30, played: 33 });
+    expect(refused).toMatchObject({ message: { kind: "contract_ending" } });
+    expect(renewedContract(contract, { wage: 150, seasons: 2 }, "2027-04-21")).toMatchObject({ until: "2029-05-17", wage: 150 });
   });
 });

@@ -240,7 +240,10 @@ Called once per game day from `advanceDay.ts`.
 - `generateTransferNeeds()` + `generateSellList()` for each team
 - Uses Fisher–Yates rotation so all clubs are updated gradually
 
-**Phase 2 — AI transfer attempts** (10 random teams/day):
+**Phase 2 — AI transfer attempts** (Etapa 25: only buyers whose country's transfer window is open —
+`dailyMarketTick(..., { windows })`, `.claude/rules/game/transfer-windows.md`; attempts per day =
+`ATTEMPTS_PER_OPEN_DAY (35) × weighted share of the pool with an open window`, weight 1,5 in the last 5 days of a
+window; without `windows`, the legacy 10 random teams/day):
 - Pick highest-urgency need
 - Score all candidates across other squads
 - Calculate fee (fairPrice × random multiplier)
@@ -284,7 +287,9 @@ once `marketFrozen` replaced its only caller. The human club is still excluded s
 | `PRICE_CAP_MID` | €40M | Max price for mid-tier AI |
 | `PRICE_CAP_LOW` | €15M | Max price for low-tier AI |
 | `TEAMS_PER_DAY_NEEDS` | 10 | Profiles refreshed per day |
-| `TEAMS_PER_DAY_ATTEMPTS` | 10 | Transfer attempts per day |
+| `TEAMS_PER_DAY_ATTEMPTS` | 10 | Transfer attempts per day (legacy, no windows) |
+| `WINDOWS.ATTEMPTS_PER_OPEN_DAY` | 35 | World attempts per day if every window were open (scaled by the open share) |
+| `WINDOWS.DEADLINE_MULT` | 1.5 | Weight of a buyer in the last 5 days of its window |
 | `MAX_SELL_LIST` | 5 | Max players on an AI sell list |
 | `SELL_ABOVE_AVG_PROTECTION` | 0.5 | Rating gap above avg to protect |
 | `SELL_YOUNG_PROTECTION` | 23 | Age below which players are never listed |

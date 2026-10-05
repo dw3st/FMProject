@@ -18,6 +18,7 @@ import { talkKey } from "@/Domain/negotiation/negotiation";
 import { seasonLabel } from "@/Domain/history/history";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
+import { playerMatchesBand, playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketState, RivalBid } from "@/types/transferMarketTypes";
 import type { TransferRecord } from "@/types/transferTypes";
@@ -38,14 +39,16 @@ export async function rollRivalFor(
   args: { market: MarketState; player: RosterPlayer; seller: Squad; humanId: string; date: string; windows: WindowContext },
 ): Promise<{ market: MarketState; rival: RivalBid | null; news: News | null }> {
   const { market, player, seller, date, windows } = args;
+  // Route tests that check exact counters turn the random rivals off (`FM_NO_RIVALS=1`).
+  if (process.env.FM_NO_RIVALS === "1") return { market, rival: null, news: null };
   const existing = liveRivals(market.rivalBids, player.id, date);
-  const cache = new Map<string, Squad | null>();
-  // Profiles hold the needs; only clubs with a need on his line are read from disk.
+  // Profiles hold the needs; only clubs with a need covering his line and rating are read from disk.
+  const rating = playerOverallRating(player);
   const squads = new Map<string, Squad>();
   for (const [id, prof] of Object.entries(market.profiles ?? {})) {
-    if (!prof.needs?.length || id === seller.id || id === args.humanId) continue;
-    if (!cache.has(id)) cache.set(id, await service.getSquadById(saveId, id));
-    const sq = cache.get(id);
+    if (id === seller.id || id === args.humanId) continue;
+    if (!prof.needs?.some((n) => playerMatchesBand(player, n.position) && rating >= n.targetMin - 0.5 && rating <= n.targetMax + 0.5)) continue;
+    const sq = await service.getSquadById(saveId, id);
     if (sq) squads.set(id, sq);
   }
   const candidates = rivalCandidates({

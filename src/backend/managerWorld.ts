@@ -244,14 +244,17 @@ export function createAiManagerDesk(args: {
           if (row.squadId === args.humanClubId || vacancies[row.squadId] || sackedSet.has(row.squadId)) continue;
           const m = ms.find((x) => x.squadId === row.squadId);
           if (!m || m.isPlayer) continue;
-          const squad = await service.getSquadById(saveId, row.squadId);
-          const p = weeklySackChance({
+          const input = {
             position: i + 1, target: targets.get(row.squadId) ?? Math.ceil(table.length / 2), size: table.length,
-            form: formPpg(row.form), tier: squad ? financialTierOf(squad) : "MEDIUM",
+            form: formPpg(row.form),
             ...(m.hiredOn ? { daysInCharge: daysBetween(m.hiredOn, date) } : {}),
             progress, roundsLeft: state.totalRounds - row.mp,
             sackedThisSeason: already.has(row.squadId), ...(m.interim ? { interim: true } : {}),
-          });
+          };
+          // The tier (patience) needs the squad: read only for a club at risk.
+          if (weeklySackChance({ ...input, tier: "MEDIUM" }) <= 0) continue;
+          const squad = await service.getSquadById(saveId, row.squadId);
+          const p = weeklySackChance({ ...input, tier: squad ? financialTierOf(squad) : "MEDIUM" });
           if (p > 0 && rngFor(row.squadId, "sack")() < p) {
             sackedSet.add(row.squadId);
             await sack(row.squadId);

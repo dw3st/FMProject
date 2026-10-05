@@ -128,3 +128,18 @@ voltam na data pelo avanço do dia, com as mensagens.
   dela deixa de contar o jogador.
 - "Titular" para empréstimo é o XI automático 4-3-3, não a formação escolhida pela IA na temporada.
 - A conversa é por dia de jogo, não por janela de transferências (não há janelas).
+
+## Etapa 25 (4.0): janela, rival e pré-contrato
+
+Detalhes em `.claude/rules/game/transfer-windows.md`.
+
+- **Janela:** compra, pedir empréstimo e responder proposta (aceitar/contrapropor) exigem a janela aberta do **comprador**
+  (409 `windowClosed { opensOn }`); as propostas da IA vencem no fecho da janela do comprador; conversas caem quando a
+  janela do jogador fecha.
+- **Propostas pelos jogadores do humano (D6):** até 2 vivas por jogador, de clubes diferentes; só de compradores com
+  janela aberta.
+- **Disputa:** rivais da IA (`market.rivalBids`) impõem um piso (taxa rival × 1,05) e o jogador escolhe o clube
+  (`preferenceScore`); no prazo, o rival compra (`lost_to_rival`). `respondToOffer` ganhou o caso
+  `prefers_rival` na rota.
+- **Pré-contrato (D2):** `POST /pre-contracts`, `market.preContracts`, chegada no passo 8a da virada do país do clube
+  de origem.

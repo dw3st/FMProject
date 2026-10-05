@@ -313,6 +313,15 @@ try {
   };
   const { answerTalk } = await import("@/Domain/morale/morale");
 
+  // ── Mercado vivo (see "Mercado vivo" section below, `.claude/rules/game/transfer-windows.md`) ──
+  const { loadWindowContext } = await import("@/backend/marketWindowWorld");
+  const { managerInvariantBreaks } = await import("@/Domain/managers/aiManagers");
+  const livelyTrack = {
+    moves: 0, outside: [] as string[], kinds: new Set<string>(),
+    managerChecks: 0, invariantBreaks: [] as string[], openPassagesWithLeft: 0, closedWithoutLeft: 0, orphanInterims: [] as string[],
+    vacancySince: new Map<string, string>(), vacancyFilled: 0, vacancyLate: [] as string[],
+  };
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -457,6 +466,45 @@ try {
     // `MatchEvent.injuries`, possibly empty) and check the player's league round against the
     // pre-day injury snapshot taken above.
     const dayLog = await plain().getDayLog(saveId, date);
+    // Mercado vivo: every fee transfer / loan start of the day inside the buyer's window.
+    if (dayLog?.transfers?.length) {
+      const wctx = await loadWindowContext(meta, await plain().getSquadIndex(saveId), date);
+      for (const mv of dayLog.transfers) {
+        if (mv.kind !== "transfer" && mv.kind !== "loan") continue;
+        const st = mv.to === meta.clubId ? wctx.human() : wctx.ofSquad(mv.to);
+        livelyTrack.moves++;
+        if (!st.open) livelyTrack.outside.push(`${date} ${mv.playerId} -> ${mv.to}`);
+        else livelyTrack.kinds.add(st.current?.kind ?? "grace");
+      }
+    }
+    // Mercado vivo: vacancies filled within 21 days (daily, from the meta), managers checked on Mondays.
+    {
+      const mv = (await plain().getMeta(saveId))!;
+      const vac = mv.managerVacancies ?? {};
+      for (const [club, v] of Object.entries(vac)) if (!livelyTrack.vacancySince.has(club)) livelyTrack.vacancySince.set(club, v.since);
+      for (const [club, since] of [...livelyTrack.vacancySince]) {
+        if (vac[club]) continue;
+        livelyTrack.vacancySince.delete(club);
+        livelyTrack.vacancyFilled++;
+        const waited = Math.round((Date.parse(date) - Date.parse(since)) / 86_400_000);
+        if (waited > 22) livelyTrack.vacancyLate.push(`${club} ${since}..${date}`);
+      }
+      if (new Date(`${date}T12:00:00Z`).getUTCDay() === 1) {
+        livelyTrack.managerChecks++;
+        const ms = await plain().getManagers(saveId);
+        const allIds = [...(await idMembership(saveId)).keys()];
+        const br = managerInvariantBreaks(ms, allIds);
+        if (br.missing.length + br.doubled.length > 0) livelyTrack.invariantBreaks.push(`${date}: missing ${br.missing.slice(0, 3).join(",")} doubled ${br.doubled.slice(0, 3).join(",")}`);
+        if (new Set(ms.map((m) => m.id)).size !== ms.length) livelyTrack.invariantBreaks.push(`${date}: duplicate manager id`);
+        for (const m of ms) {
+          for (const c of m.clubs ?? []) {
+            if (c.to && !c.left) livelyTrack.closedWithoutLeft++;
+            if (!c.to && c.left) livelyTrack.openPassagesWithLeft++;
+          }
+          if (m.interim && m.squadId && !vac[m.squadId]) livelyTrack.orphanInterims.push(`${date} ${m.id}`);
+        }
+      }
+    }
     if (dayLog) {
       for (const event of dayLog.events) {
         if (event.kind !== "match") continue;
@@ -602,6 +650,7 @@ try {
         // match) and the board bonus are read from the ledger lines of the day.
         const entries = computeAdvanceDayMoney({
           currentDate: date, playerSquad: prePlayerSquad, homeFixturesToday: [],
+          ...(meta.managerContract?.squadId === prePlayerSquad.id ? { managerWage: meta.managerContract.wage } : {}),
         });
         const dayLedger: LedgerEntry[] = [];
         for (const season of await plain().listLedgerSeasons(saveId)) {
@@ -1585,6 +1634,21 @@ try {
   // with a counter-offer, a sale from an inbox bid (paying the clause the player carried), a loan in
   // and a loan out that both go back on their date, and a sell-on clause of the human paid on a resale.
   console.log("\n── Negociação ──");
+  // Etapa 25: fee buys and loans need the human club's window open — advance to it (the run ends after
+  // the player's country rollover, a few days before the summer window opens). No random rival here:
+  // the deals below check exact counters (the "Mercado vivo" section forces its own rival).
+  process.env.FM_NO_RIVALS = "1";
+  {
+    const { loadWindowContext: lwc } = await import("@/backend/marketWindowWorld");
+    let waited = 0;
+    for (; waited < 60; waited++) {
+      const m = (await plain().getMeta(saveId))!;
+      if ((await lwc(m, await plain().getSquadIndex(saveId))).human().open) break;
+      const out = await runBufferedDay(saveId);
+      if (!out.ok) { check(false, `negociação: day failed ${out.status} ${out.error}`); break; }
+    }
+    console.log(`  ${waited} day(s) advanced to the human club's transfer window`);
+  }
   {
     const kinds = [...negoMessages.values()];
     const count = (k: string) => kinds.filter((x) => x === k).length;
@@ -1761,6 +1825,72 @@ try {
     console.log(`  history row of the loaned-out player: ${JSON.stringify((back?.history ?? []).slice(-1))}`);
   }
 
+  delete process.env.FM_NO_RIVALS;
+
+  // ── Mercado vivo (`.claude/rules/game/transfer-windows.md`, Etapa 25) ──
+  // Every fee transfer / loan start inside the buyer's window, transfers in both windows crossed; one
+  // manager per club every Monday, passages closed with a reason, AI sackings and vacancies filled in
+  // 21 days; the manager's wage every Monday; a rival that wins the deadline takes the player.
+  console.log("\n── Mercado vivo ──");
+  {
+    console.log(`  ${livelyTrack.moves} fee transfer(s)/loan start(s) logged; windows seen: ${[...livelyTrack.kinds].join(", ")}`);
+    check(livelyTrack.moves > 0, `mercado vivo: transfers logged in the day logs (${livelyTrack.moves})`);
+    check(livelyTrack.outside.length === 0, `mercado vivo: no fee transfer or loan start outside the buyer's window (${livelyTrack.outside.slice(0, 3).join("; ")})`);
+    check(livelyTrack.kinds.has("pre") && livelyTrack.kinds.has("mid"), `mercado vivo: transfers in both windows (${[...livelyTrack.kinds].join(", ")})`);
+    const ms = await plain().getManagers(saveId);
+    const sacked = ms.flatMap((m) => (m.clubs ?? []).filter((c) => c.left === "sacked")).length;
+    console.log(`  ${livelyTrack.managerChecks} Monday manager check(s); ${sacked} sacking(s); ${livelyTrack.vacancyFilled} vacancy(ies) filled; ` +
+      `${ms.filter((m) => !m.isPlayer && !m.squadId && !m.retired).length} free manager(s)`);
+    check(livelyTrack.managerChecks > 0 && livelyTrack.invariantBreaks.length === 0,
+      `mercado vivo: one manager per club on every Monday (${livelyTrack.invariantBreaks.slice(0, 2).join("; ")})`);
+    check(livelyTrack.closedWithoutLeft === 0 && livelyTrack.openPassagesWithLeft === 0,
+      `mercado vivo: closed passages carry a reason (${livelyTrack.closedWithoutLeft} without, ${livelyTrack.openPassagesWithLeft} open with one)`);
+    check(sacked > 0, `mercado vivo: AI managers were sacked during the run (${sacked})`);
+    check(livelyTrack.vacancyFilled > 0 && livelyTrack.vacancyLate.length === 0,
+      `mercado vivo: vacancies filled within 21 days (${livelyTrack.vacancyFilled} filled, late: ${livelyTrack.vacancyLate.slice(0, 3).join("; ")})`);
+    check(livelyTrack.orphanInterims.length === 0, `mercado vivo: every interim waits on a vacancy (${livelyTrack.orphanInterims.slice(0, 3).join("; ")})`);
+
+    // The manager's wage: a `manager` line every Monday with the contract's wage.
+    const mm = (await plain().getMeta(saveId))!;
+    const ledgerAll: LedgerEntry[] = [];
+    for (const season of await plain().listLedgerSeasons(saveId)) ledgerAll.push(...(await plain().getLedger(saveId, season)));
+    const wageMondays = new Set(ledgerAll.filter((e) => e.kind === "wages").map((e) => e.date));
+    const managerLines = ledgerAll.filter((e) => e.kind === "manager" && e.ref?.stage !== "severance");
+    const managerMondays = new Set(managerLines.map((e) => e.date));
+    check(wageMondays.size > 0 && [...wageMondays].every((d) => managerMondays.has(d)),
+      `mercado vivo: a manager wage line on every Monday with wages (${managerMondays.size}/${wageMondays.size})`);
+    check(!!mm.managerContract && managerLines.every((e) => -e.amount === mm.managerContract!.wage),
+      `mercado vivo: the manager line is the contract wage (${mm.managerContract?.wage})`);
+    const share = mm.managerContract ? (mm.managerContract.wage * 52) / Math.max(1, (await plain().getSquadById(saveId, playerSquadId))!.wageRevenueBasis ?? 1) : 0;
+    console.log(`  manager wage ${mm.managerContract?.wage}/week = ${(100 * share).toFixed(2)}% of the club's revenue; earnings ${mm.managerEarnings}`);
+    check(share >= 0.015 && share <= 0.04, `mercado vivo: manager wage 1,5..4% of the revenue (${(100 * share).toFixed(2)}%)`);
+
+    // A rival wins the deadline: forced on an AI target of the player's league.
+    const { Player: PlayerM } = await import("@/Domain/Player");
+    const { playerOverallRating: ratingM } = await import("@/Domain/transfer/transferNeeds");
+    const { contractDemand: demandM } = await import("@/Domain/contracts/contracts");
+    const clubsM = (await plain().getSquadsInLeague(saveId, mm.leagueSlug)).filter((s) => s.id !== playerSquadId && s.players.length >= 22);
+    const seller = clubsM[0]!;
+    const rival = clubsM.find((c) => c.id !== seller.id && c.players.length < 29)!;
+    const target = seller.players.find((p) => !p.loan && p.positions[0] !== "GK" && p.age <= 29)!;
+    const fee = Math.round(new PlayerM(ratingM(target), target.age).price * 1.3);
+    await plain().saveSquadById(saveId, { ...rival, aiTransferBudget: fee * 2 });
+    const mkM = (await plain().getMarket(saveId))!;
+    const dateM = mm.currentDate!;
+    await plain().saveMarket(saveId, {
+      ...mkM,
+      rivalBids: [...(mkM.rivalBids ?? []), {
+        playerId: target.id, playerName: target.name, fromClubId: seller.id, clubId: rival.id, clubName: rival.name,
+        fee, wage: demandM(target, rival, dateM), date: dateM, deadline: dateM, sellerAccepts: true,
+      }],
+    });
+    const outM = await runBufferedDay(saveId);
+    check(outM.ok, "mercado vivo: the deadline day ran");
+    const atRival = (await plain().getSquadById(saveId, rival.id))!.players.some((p) => p.id === target.id);
+    const lostNews = (await plain().getInbox(saveId)).some((m) => m.category === "transfer" && m.kind === "lost_to_rival" && m.playerId === target.id);
+    check(atRival && lostNews, `mercado vivo: ${target.name} went to the rival ${rival.name} on the deadline, inbox lost_to_rival (${atRival}, ${lostNews})`);
+  }
+
   // ── Moral (`.claude/rules/game/morale.md`) ──
   // Morale present and in 0..100 on the human club every day; no AI club stores morale; at least one
   // talk request and one resolved promise during the run.
@@ -1832,6 +1962,18 @@ try {
       };
 
       const metaA = (await plain().getMeta(saveId))!;
+      // Etapa 25 (D3/D4): the new club compensated the old one (arrival below the offer's budget),
+      // the old club has an interim and a vacancy, the manager a contract at the new club.
+      {
+        const arrive = (await plain().getLedger(saveId, (await plain().getLeagueMeta(saveId, target.leagueSlug))!.year))
+          .filter((e) => e.kind === "club_change" && e.ref?.stage === "arrive").at(-1);
+        console.log(`  arrival balance ${arrive?.amount} (offer budget 0, compensation ${-(arrive?.amount ?? 0)})`);
+        check((arrive?.amount ?? 0) < 0, "convites: the compensation to the old club came out of the arrival balance");
+        const msA = await plain().getManagers(saveId);
+        check(msA.find((m) => !m.isPlayer && m.squadId === playerSquadId)?.interim === true && !!metaA.managerVacancies?.[playerSquadId],
+          "convites: the old club has an interim and a vacancy (no manager swap)");
+        check(metaA.managerContract?.squadId === newClub.squadId, "convites: the manager has a contract at the new club");
+      }
       check(metaA.clubId === newClub.squadId && metaA.leagueSlug === target.leagueSlug,
         `convites: the career follows the new club (${metaA.clubId} in ${metaA.leagueSlug})`);
       check(metaA.board?.board === 60 && metaA.board.objective?.leagueSlug === target.leagueSlug,
@@ -1854,13 +1996,68 @@ try {
       const rolledFrom = target.year;
       let rolled = false;
       let daysC = 0;
+      // The 1-season contract ends with this season: the board stays happy so it offers a renewal,
+      // which the smoke accepts. A pre-contract with a player of the same league joins at the rollover.
+      let renewalAccepted = false;
+      let preSigned: { id: string; from: string } | null = null;
+      const { addDays: addDaysC } = await import("@/Domain/dates");
+      const callC = async (key: string, path: string, params: Record<string, string>, body: unknown) => {
+        const h = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+        const r = await h(Object.assign(new Request(`http://localhost${path}`, {
+          method: "POST", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" }, body: JSON.stringify(body),
+        }), { params }));
+        return { status: r.status, body: (await r.json().catch(() => ({}))) as Record<string, unknown> };
+      };
       for (let g = 0; g < 260 && !rolled; g++) {
+        const before = (await plain().getMeta(saveId))!;
+        if (before.board && before.board.board < 65) await plain().updateMeta(saveId, { board: { ...before.board, board: 65 } });
+        if (before.managerRenewal && !renewalAccepted) {
+          const r = await callC("/api/saves/:saveId/manager-contract", `/api/saves/${saveId}/manager-contract`, { saveId }, { accept: true });
+          renewalAccepted = r.status === 200;
+        }
+        const st0 = (before.activeLeagues ?? []).find((l) => l.leagueSlug === target.leagueSlug);
+        if (!preSigned && st0 && before.currentDate! >= addDaysC(st0.end, -150)) {
+          // Room for him (squad of 30 at most): the weakest players of the new club go to the free agents.
+          {
+            const mineP = (await plain().getSquadById(saveId, newClub.squadId))!;
+            if (mineP.players.length > 27) {
+              const { toFreeAgent } = await import("@/Domain/contracts/freeAgents");
+              const { overallAvg } = await import("@/Domain/playerRating");
+              const out = [...mineP.players].filter((p) => !p.loan).sort((a, b) => overallAvg(a) - overallAvg(b)).slice(0, mineP.players.length - 27);
+              const gone = new Set(out.map((p) => p.id));
+              await plain().saveSquadById(saveId, { ...mineP, players: mineP.players.filter((p) => !gone.has(p.id)) });
+              await plain().writeFreeAgents(saveId, [...(await plain().getFreeAgents(saveId)), ...out.map((p) => toFreeAgent(p, before.currentDate!))]);
+              const tacP = await plain().getTactics(saveId);
+              if (tacP) await plain().saveTactics(saveId, { ...tacP, lineup: tacP.lineup.map((id) => (gone.has(id) ? "" : id)) });
+            }
+          }
+          // Several candidates: one that prefers to renew with his club is skipped.
+          const others = (await plain().getSquadsInLeague(saveId, target.leagueSlug)).filter((c) => c.id !== newClub.squadId && c.players.length >= 20);
+          let last = "";
+          for (const other of others.slice(0, 6)) {
+            const pl = other.players.find((p) => !p.loan && p.age <= 30 && p.positions[0] !== "GK");
+            if (!pl) continue;
+            await plain().saveSquadById(saveId, { ...other, players: other.players.map((p) => (p.id === pl.id ? { ...p, contract: { until: st0.end, wage: p.contract?.wage ?? 1000 } } : p)) });
+            const r = await callC("/api/saves/:saveId/pre-contracts", `/api/saves/${saveId}/pre-contracts`, { saveId },
+              { playerId: pl.id, fromSquadId: other.id, wage: Math.max(50_000, (pl.contract?.wage ?? 0) * 5), years: 2 });
+            last = `${r.status} ${JSON.stringify(r.body).slice(0, 80)}`;
+            if (r.status === 200 && r.body.accepted === true) { preSigned = { id: pl.id, from: other.id }; break; }
+          }
+          check(!!preSigned, `convites: a pre-contract signed with a player of ${target.leagueSlug} (${last})`);
+          if (!preSigned) preSigned = { id: "", from: "" };
+        }
         const out = await runBufferedDay(saveId);
         if (!out.ok) { check(false, `convites: day failed ${out.status} ${out.error}`); break; }
         daysC++;
         const m = (await plain().getMeta(saveId))!;
         const st = (m.activeLeagues ?? []).find((l) => l.leagueSlug === target.leagueSlug);
         if (st && st.year > rolledFrom) rolled = true;
+      }
+      check(renewalAccepted, "convites: the board offered a contract renewal before the rollover (accepted)");
+      if (preSigned?.id) {
+        const joined = (await plain().getSquadById(saveId, newClub.squadId))!.players.some((p) => p.id === preSigned!.id);
+        const gone = !(await plain().getSquadById(saveId, preSigned.from))!.players.some((p) => p.id === preSigned!.id);
+        check(joined && gone, "convites: the pre-contracted player joined at his club's rollover");
       }
       console.log(`  ${daysC} day(s) at ${newClub.name} until ${target.leagueSlug} rolled`);
       check(rolled, `convites: ${target.leagueSlug} rolled over with the player's new club (${daysC} days)`);

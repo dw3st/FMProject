@@ -1,6 +1,6 @@
 # Etapa 25 — Mercado mais vivo — Design
 
-Data: 2026-10-05. Status: **em aprovação**. Versão **4.0**.
+Data: 2026-10-05. Status: **aprovado** (D1–D9 com a recomendação) e implementado. Versão **4.0**.
 
 Regras de base: `.claude/rules/AI-clubs/finance.md`, `AI-clubs/transfer-needs.md`, `game/negotiation.md`,
 `game/jobs.md`, `game/managers.md`, `game/board-fans.md`, `game/contracts.md`, `game/morale.md`. Sem migração de

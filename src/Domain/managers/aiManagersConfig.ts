@@ -52,6 +52,6 @@ export const AI_MANAGERS = {
   },
   /** A manager free for this many days (two seasons) retires (out of the pool and the ranking tab). */
   RETIRE_AFTER_DAYS: 730,
-  /** ...~nine months for a manager without ranking points (keeps the free pool under 0,1 × clubs). */
-  RETIRE_NO_POINTS_AFTER_DAYS: 270,
+  /** ...half a season for a manager without ranking points (keeps the free pool under 0,1 × clubs). */
+  RETIRE_NO_POINTS_AFTER_DAYS: 180,
 } as const;

@@ -343,6 +343,7 @@ for (let season = 0; season < seasons; season++) {
       }
     }
     hireDue(date);
+    managers = retireStale(managers, date);
     if (day % 30 === 0) { sample(seasonCounts); sample(total); }
     date = addDays(date, 1);
     day++;
