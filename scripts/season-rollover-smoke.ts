@@ -2188,6 +2188,26 @@ try {
       || ((r.statNoise ?? 0) >= 0.5) !== !!r.avgRange
       || (r.knowledge >= 100 && (r.statNoise ?? 0) > 0));
     check(res.rows.length > 0 && incoherent.length === 0, `olheiros: search rows show ranges and "?" coherent with knowledge (${incoherent.length} of ${res.rows.length})`);
+    // Sorted by what the user sees (4.3.1): the middle of the shown range, never the real rating;
+    // the salary of a little-known player is a range (the row never carries the exact wage).
+    const { rangeMid } = await import("@/Domain/scouting/seen");
+    const { computeOverallAvg } = await import("@/Domain/playerRating");
+    const realById = new Map(allFiles.flatMap(({ squad }) => squad.players.map((p) => [p.id, p] as const)));
+    const ranged = res.rows.filter((r) => r.avgRange);
+    const viewBroken = ranged.filter((r) => r.avg !== rangeMid(r.avgRange!) || r.valueMillions !== rangeMid(r.valueRange!));
+    const orderBroken = res.rows.some((r, i) => i > 0 && r.avg > res.rows[i - 1]!.avg);
+    let realInversions = 0;
+    for (let i = 1; i < ranged.length; i++) {
+      const a = realById.get(ranged[i - 1]!.id), b = realById.get(ranged[i]!.id);
+      if (a && b && computeOverallAvg(b) > computeOverallAvg(a)) realInversions++;
+    }
+    check(ranged.length > 1 && viewBroken.length === 0 && !orderBroken && realInversions > 0,
+      `olheiros: search sorted by the seen overall, not the real one (${ranged.length} ranged rows, ${viewBroken.length} off the view, ${realInversions} real-rating inversions)`);
+    const wageLeaks = ranged.filter((r) => {
+      const real = realById.get(r.id)?.contract?.wage;
+      return !r.wageRange || !r.salary.includes("–") || r.wage !== Math.round(rangeMid(r.wageRange)) || (real !== undefined && r.wage === real && r.wageRange[0] !== r.wageRange[1]);
+    });
+    check(wageLeaks.length === 0, `olheiros: little-known players' salary shown as a range, never the exact wage (${wageLeaks.length} of ${ranged.length})`);
     // Index build cost: the per-player blur against the old uniform one (informative; fails above 2x).
     const { loadViewer, obscureSquadForViewer } = await import("@/backend/scoutingWorld");
     const { obscureSquad } = await import("@/Domain/staff/staff");

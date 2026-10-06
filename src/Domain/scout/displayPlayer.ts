@@ -10,6 +10,7 @@ import { formatWageShort } from "@/Domain/money";
 import { weeklyWage } from "@/Domain/finance/wages";
 import { attributesHidden } from "@/Domain/scouting/knowledge";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { rangeMid, seenOverallRange, seenValueRange, seenWageRange, wageRangeLabel } from "@/Domain/scouting/seen";
 import { potentialBand } from "@/Domain/youth/potential";
 
 /** A player row as the squad, scout and player screens show it (built on the server for the scout search). */
@@ -79,6 +80,8 @@ export interface DisplayPlayer {
   statNoise?: number;
   /** Last observation day of the player (absent: never observed). */
   seen?: string;
+  /** Weekly wage range (whole €), shown instead of the wage when the uncertainty is large. */
+  wageRange?: [number, number];
   /** Market value range (millions of €), shown instead of `value` when the uncertainty is large. */
   valueRange?: [number, number];
   /** Potential range (≤ 23), widened by the uncertainty. */
@@ -89,8 +92,13 @@ export interface DisplayPlayer {
   suspendedMatches?: number;
 }
 
-/** The scouting fields of a blurred player (`player.scoutView`), from his blurred overall. */
-function scoutFields(player: RosterPlayer, avg: number): Partial<DisplayPlayer> {
+/**
+ * The scouting fields of a blurred player (`player.scoutView`), from his blurred overall. With a
+ * range on screen, `avg`, `valueMillions` and `wage` become the middle of the shown range (the
+ * search sorts and filters by them) and the labels show the range: the row never carries a finer
+ * value than the screen (`.claude/rules/game/scouting.md`).
+ */
+function scoutFields(player: RosterPlayer, avg: number, wageFactor: number): Partial<DisplayPlayer> {
   const view = player.scoutView;
   if (!view) return {};
   const noise = view.noise;
@@ -104,11 +112,16 @@ function scoutFields(player: RosterPlayer, avg: number): Partial<DisplayPlayer> 
     ...(view.seen ? { seen: view.seen } : {}),
     ...(attributesHidden(view.knowledge) ? { hiddenAttrs: true } : {}),
   };
-  if (noise >= T) {
-    const lo = Math.max(0, avg - noise);
-    const hi = Math.min(10, avg + noise);
-    out.avgRange = [r1(lo), r1(hi)];
-    out.valueRange = [r1(new Player(lo, player.age).valueMillions), r1(new Player(hi, player.age).valueMillions)];
+  const range = seenOverallRange(avg, noise);
+  if (range) {
+    out.avgRange = range;
+    out.avg = rangeMid(range);
+    out.valueRange = seenValueRange(range, player.age);
+    out.valueMillions = rangeMid(out.valueRange);
+    out.value = out.valueMillions >= 100 ? `${Math.round(out.valueMillions)}M` : `${out.valueMillions.toFixed(1)}M`;
+    out.wageRange = seenWageRange(range, wageFactor);
+    out.wage = Math.round(rangeMid(out.wageRange));
+    out.salary = wageRangeLabel(out.wageRange);
   }
   if (player.age <= 23) {
     const [pl, ph] = potentialBand({ ...player, overallAvg: undefined });
@@ -171,6 +184,6 @@ export function toDisplayPlayer(
     ...(player.reborn ? { reborn: true } : {}),
     personality: personalityViewOf(player),
     ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
-    ...scoutFields(player, avg),
+    ...scoutFields(player, avg, options?.wageFactor ?? 1),
   };
 }

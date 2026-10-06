@@ -130,7 +130,8 @@ export function viewFor(viewer: Viewer, player: RosterPlayer, leagueSlug: string
 export function obscureSquadForViewer(viewer: Viewer, squad: Squad): Squad {
   if (squad.id === viewer.ownClubId) return squad;
   const league = squad.leagueSlug ?? "";
-  return { ...squad, players: squad.players.map((p) => obscureForViewer(p, viewFor(viewer, p, league), viewer.saveId)) };
+  const factor = wageFactorOf(squad);
+  return { ...squad, players: squad.players.map((p) => obscureForViewer(p, viewFor(viewer, p, league), viewer.saveId, factor)) };
 }
 
 export function obscurePlayerForViewer(viewer: Viewer, player: RosterPlayer, leagueSlug: string): RosterPlayer {
