@@ -80,6 +80,7 @@ import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
 
 // Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
 // No max cap — the pitch fills the available host space (which is itself constrained by the column
@@ -123,6 +124,21 @@ function assertSavedMyClubTactics(t: TacticsSave): void {
   }
 }
 
+/** Possession: game-seconds with the ball per team, only while the ball is in play (read on every emission). */
+function accumulatePossession(
+  acc: { A: number; B: number; lastTime: number; lastPhase: string },
+  gs: GameState,
+): void {
+  const phase = gs.matchPhase ?? "";
+  const dtGame = phase === acc.lastPhase ? gs.matchTime - acc.lastTime : 0;
+  if (dtGame > 0 && isLivePhase(gs.matchPhase) && gs.ballHolderId != null) {
+    const holder = gs.players.find((p) => p.id === gs.ballHolderId);
+    if (holder) acc[holder.team] += dtGame;
+  }
+  acc.lastTime = gs.matchTime;
+  acc.lastPhase = phase;
+}
+
 export function MatchScreen() {
   const { t } = useTranslation();
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -144,6 +160,9 @@ export function MatchScreen() {
   const isTester = !!useCurrentUser()?.isTester;
   const [reportOpen, setReportOpen] = useState(false);
   const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  const uiThrottleRef = useRef<UiStateThrottle<GameState> | null>(null);
+  const deliveredStateRef = useRef<GameState | null>(null);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   /** Live-match mentality for team A (my club). Team B (AI) always stays balanced. Not saved. */
   const [mentality, setMentality] = useState<Mentality>(DEFAULT_MENTALITY);
@@ -423,8 +442,19 @@ export function MatchScreen() {
       });
   }, []);
 
+  // The pitch emits every simulated frame; the ref and the per-frame accumulators (possession, players seen)
+  // follow every emission, the React state at most every UI_STATE_INTERVAL_MS (spec 2026-10-06 §2): at once on
+  // a phase or score change and while paused (UI edits, commands).
   useEffect(() => {
-    return gameBus.on("stateChanged", (s) => {
+    const throttle = createUiStateThrottle<GameState>({
+      deliver: (gs) => {
+        deliveredStateRef.current = gs;
+        setGameState(gs);
+      },
+      isUrgent: isUrgentStateChange,
+    });
+    uiThrottleRef.current = throttle;
+    const off = gameBus.on("stateChanged", (s) => {
       const next = {
         ...s,
         score: s.score ?? { A: 0, B: 0 },
@@ -433,12 +463,27 @@ export function MatchScreen() {
         decisions: s.decisions ?? {},
       };
       gameStateRef.current = next;
-      setGameState(next);
+      accumulatePossession(possessionRef.current, next);
+      for (const p of next.players) knownPlayersRef.current.set(p.id, p);
+      throttle.push(next, pausedRef.current);
     });
+    return () => {
+      off();
+      throttle.cancel();
+      uiThrottleRef.current = null;
+    };
   }, []);
 
+  // Pausing hands the latest state over at once: the substitution panel and the instructions edit it.
   useEffect(() => {
-    gameStateRef.current = gameState;
+    pausedRef.current = paused;
+    if (paused) uiThrottleRef.current?.flush();
+  }, [paused]);
+
+  // React-side edits (substitution panel, resume) land in `gameState` first: keep the ref on them. A state the
+  // throttle delivered is already in the ref (or behind it), so it never moves the ref back.
+  useEffect(() => {
+    if (gameState !== deliveredStateRef.current) gameStateRef.current = gameState;
   }, [gameState]);
 
   /** Keep PixiPitch internal stateRef aligned with React (pending subs, formation, etc.). */
@@ -503,20 +548,6 @@ export function MatchScreen() {
     ];
     return () => offs.forEach((off) => off());
   }, [t, showNotice]);
-
-  // Possession: game-seconds with the ball per team, only while the ball is in play.
-  useEffect(() => {
-    if (!gameState) return;
-    const acc = possessionRef.current;
-    const phase = gameState.matchPhase ?? "";
-    const dtGame = phase === acc.lastPhase ? gameState.matchTime - acc.lastTime : 0;
-    if (dtGame > 0 && isLivePhase(gameState.matchPhase) && gameState.ballHolderId != null) {
-      const holder = gameState.players.find((p) => p.id === gameState.ballHolderId);
-      if (holder) acc[holder.team] += dtGame;
-    }
-    acc.lastTime = gameState.matchTime;
-    acc.lastPhase = phase;
-  }, [gameState]);
 
   useEffect(() => {
     return gameBus.on("halfTime", () => {
@@ -788,7 +819,7 @@ export function MatchScreen() {
   const passToId = gameState.pass?.toId ?? undefined;
   const score = gameState.score ?? { A: 0, B: 0 };
   const decisions = gameState.decisions;
-  for (const p of gameState.players) knownPlayersRef.current.set(p.id, p);
+  for (const p of gameState.players) knownPlayersRef.current.set(p.id, p);  // also on every emission (above)
   const playerEvents = playerMatchEvents(gameState.cards, getAllPlayerStats());
   // Players of the shown team who left the pitch (sent off, injured or substituted), in the order
   // they first appeared, so their goals, assists and cards stay visible (#69).

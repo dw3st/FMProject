@@ -66,6 +66,7 @@ const AXIS_ROWS: { key: keyof TacticalAxes; label: string; values: string[] }[] 
   { key: "build_up", label: "Build", values: ["direct", "balanced", "possession"] },
 ];
 import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
+import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -614,25 +615,42 @@ export function TestScreen() {
     setPlayerList(players);
   }, [attrA, attrB]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The pitch emits every simulated frame; the ref follows every emission, the React panels at most every
+  // UI_STATE_INTERVAL_MS (spec 2026-10-06 §2): at once on a phase/score change, while paused (commands) and on
+  // a new ball holder (re-pins the intent override below without delay).
+  const uiThrottleRef = useRef<UiStateThrottle<GameState> | null>(null);
   useEffect(() => {
-    return gameBus.on('stateChanged', s => {
-      liveStateRef.current = s;
-      setLiveDecisions(s.decisions);
-      setLiveBallHolder(s.ballHolderId);
-      setLiveGameState(s);
-      if (s.teamIntent) setLiveTeamIntent(s.teamIntent);
-      if (selectedPlayerId !== null) {
-        const p = s.players.find(pl => pl.id === selectedPlayerId) ?? null;
-        setLivePlayer(p);
-      }
-      // Live re-evaluate the parked click each tick — keeps the panel in sync
-      // as players move (also useful when this gets wired into engine systems).
-      const pos = pitchClickPosRef.current;
-      if (pos) {
-        setEvalResult(evaluatePoint(s, pos.x, pos.y, evalConfigRef.current));
-      }
+    const throttle = createUiStateThrottle<GameState>({
+      isUrgent: isUrgentStateChange,
+      deliver: s => {
+        setLiveDecisions(s.decisions);
+        setLiveGameState(s);
+        if (s.teamIntent) setLiveTeamIntent(s.teamIntent);
+        const selected = selectedPlayerIdRef.current;
+        if (selected !== null) {
+          const p = s.players.find(pl => pl.id === selected) ?? null;
+          setLivePlayer(p);
+        }
+        // Live re-evaluate the parked click — keeps the panel in sync
+        // as players move (also useful when this gets wired into engine systems).
+        const pos = pitchClickPosRef.current;
+        if (pos) {
+          setEvalResult(evaluatePoint(s, pos.x, pos.y, evalConfigRef.current));
+        }
+      },
     });
-  }, [selectedPlayerId]);
+    uiThrottleRef.current = throttle;
+    const off = gameBus.on('stateChanged', s => {
+      liveStateRef.current = s;
+      setLiveBallHolder(s.ballHolderId);
+      throttle.push(s, pausedRef.current);
+    });
+    return () => {
+      off();
+      throttle.cancel();
+      uiThrottleRef.current = null;
+    };
+  }, []);
 
   // Track engine-side intent changes (counter-attack triggered, possession reset, etc.)
   useEffect(() => gameBus.on('teamIntentChanged', e => {
@@ -836,7 +854,10 @@ export function TestScreen() {
   const selectedPlayerIdRef = useRef(selectedPlayerId);
   useEffect(() => { selectedPlayerIdRef.current = selectedPlayerId; }, [selectedPlayerId]);
   const pausedRef = useRef(paused);
-  useEffect(() => { pausedRef.current = paused; }, [paused]);
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (paused) uiThrottleRef.current?.flush();
+  }, [paused]);
 
   // ── Keybinds ──────────────────────────────────────────────────────────────
   useEffect(() => {
