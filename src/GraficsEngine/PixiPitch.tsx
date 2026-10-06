@@ -572,8 +572,12 @@ export function PixiPitch({
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
+        const stepsRan = simCarryRef.current + gameSeconds + 1e-9 >= SIM_STEP;
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
+        // Steps ran but nothing changed (frozen countdown, matchEnd): the last step moved nothing, so the
+        // drawing must not keep blending towards the step before it (it would shimmer with the carry).
+        if (result.state === prevState && stepsRan) renderPrevRef.current = renderCurRef.current;
         // advanceSim returns the same reference when zero whole steps ran (not enough
         // carried+elapsed time yet, or tickState's own noop paths — e.g. matchEnd, or
         // a frozen presentation/set-piece countdown). Nothing changed: skip the emit.
