@@ -8,7 +8,7 @@ import {
   prospectFee, pruneProspects, shortlistAlerts, starterLineAverages,
   type MissionWeekInput, type PoolEntry, type ScoutingNews, type TravelDistance, type ViewerContext,
 } from "@/Domain/scouting/missions";
-import { buildScoutingMessage, newsToMessageArgs, type ScoutingMessageArgs } from "@/Domain/scouting/scoutingMessages";
+import { newsToMessageArgs, type ScoutingMessageArgs } from "@/Domain/scouting/scoutingMessages";
 import { effectiveRating, obscureForViewer } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -61,7 +61,7 @@ export interface Viewer {
 /** Top `FAMOUS_COUNT` of the world by overall (public fame), cached per save and day. */
 const famousCache = new Map<string, { key: string; ids: Set<string> }>();
 
-export function famousIdsOf(squads: Squad[]): Set<string> {
+function famousIdsOf(squads: Squad[]): Set<string> {
   const all = squads.flatMap((s) => s.players).map((p) => ({ id: p.id, ov: p.overallAvg ?? computeOverallAvg(p) }));
   all.sort((a, b) => b.ov - a.ov || (a.id < b.id ? -1 : 1));
   return new Set(all.slice(0, S.FAMOUS_COUNT).map((x) => x.id));
@@ -111,7 +111,7 @@ export async function loadViewer(service: SaveService, saveId: string, opts: { s
 }
 
 /** Effective knowledge of `player` (at a club of `leagueSlug`, "" for a free agent). */
-export function viewerKnowledge(viewer: Viewer, player: RosterPlayer, leagueSlug: string): number {
+function viewerKnowledge(viewer: Viewer, player: RosterPlayer, leagueSlug: string): number {
   const own = !!viewer.ownClubId && (player.squadId === viewer.ownClubId || player.loan?.fromClubId === viewer.ownClubId);
   const implicit = implicitKnowledge({
     playerLeague: leagueSlug, playerCountry: viewer.leagueCountry.get(leagueSlug),
@@ -436,6 +436,3 @@ export async function scoutingDay(
   if (state !== original) await service.writeScouting(saveId, state);
   return result;
 }
-
-/** Inbox messages from the day's step (the caller emits them after `clearInbox`). */
-export const scoutingMessages = (args: ScoutingMessageArgs[]) => args.map(buildScoutingMessage);

@@ -361,6 +361,6 @@ All weights and thresholds live in `ThroughBallConfig.ts`. Notable:
   status is recorded. If a non-intended teammate (who happened to be onside)
   picks up the ball, no offside is called even if they were offside. Phase 6
   will broaden this to per-runner snapshots.
-- **`role.json` migration** for `chaseLooseBallWeight` / `defendChaseWeight`.
+- **`roles.json` migration** for `chaseLooseBallWeight` / `defendChaseWeight`.
   Currently in `ThroughBallConfig.ts` as a TS constant; should move to JSON to
   match `defensiveIntentWeights` / `offBallIntentWeights`.

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   addSeason, awardTitle, buildInitialManagers, continentalPoints, countryWeight, cupPoints,
-  leaguePoints, managerOfSquad, promotionPoints, rankManagers, rankingPage,
+  leaguePoints, promotionPoints, rankManagers, rankingPage,
 } from "@/Domain/managers/managers";
 import { MANAGERS } from "@/Domain/managers/managerConfig";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -80,7 +80,6 @@ describe("records", () => {
     expect(out.find((m) => m.squadId === "1")).toMatchObject({ id: "coach_7", name: "Coach Seven", isPlayer: false, points: 0 });
     expect(out.find((m) => m.squadId === "2")).toMatchObject({ id: "coach_2", name: "Técnico do Beta" });
     expect(out.find((m) => m.squadId === "3")).toMatchObject({ id: "player", name: "Me", isPlayer: true });
-    expect(managerOfSquad(out, "3")!.isPlayer).toBe(true);
   });
 
   test("coach ids shared by two clubs stay unique", () => {

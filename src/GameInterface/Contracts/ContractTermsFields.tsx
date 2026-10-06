@@ -18,7 +18,7 @@ export interface ContractDemandInfo {
 }
 
 /** The personality lines explaining a demand ("Loyal to the club: −7%"). */
-export function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | undefined }) {
+function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | undefined }) {
   const { t } = useTranslation();
   if (!info) return null;
   const pct = (m: number | undefined) => Math.round(((m ?? 1) - 1) * 100);
@@ -56,11 +56,6 @@ export function useContractDemandInfo(saveId: string | undefined, playerId: stri
     return () => controller.abort();
   }, [saveId, playerId, from]);
   return info;
-}
-
-/** Weekly wage the player asks of the human club (`GET .../players/:id/demand`). `from` = his squad id; omit for a free agent. */
-export function useContractDemand(saveId: string | undefined, playerId: string | null, from?: string): number | null {
-  return useContractDemandInfo(saveId, playerId, from)?.demand ?? null;
 }
 
 /** Translated reason for a refused contract offer (`error` from the API). */

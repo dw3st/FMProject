@@ -579,7 +579,7 @@ describe("quickSim aggregate", () => {
   });
 });
 
-// ── injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ───────────
+// ── injuries (Task 3, docs/superpowers/archive/2026-09-28-injuries.md) ───────────
 
 describe("quickSimMatch — injuries", () => {
   function extremeRiskSquad(id: string): Squad {

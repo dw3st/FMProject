@@ -26,7 +26,7 @@ async function loadHuman(saveId: string): Promise<{ squad: Squad; date: string }
 }
 
 /** Morale overview of the human club: one row per player, open talks and promises. */
-export function moraleView(squad: Squad) {
+function moraleView(squad: Squad) {
   const suggested = suggestedStatuses(squad);
   const state = clubMoraleOf(squad);
   return {

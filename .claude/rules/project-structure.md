@@ -74,7 +74,7 @@ All engine → UI/statistics communication goes through `GameEngine/Infrastructu
 ## Engine debug log
 Engine debug output goes through `GameEngine/Support/DebugLog.ts` (`debugLog(category, message,
 meta?)`), a no-op unless debug mode is on (`setDebugMode`). Never `console.log` game events.
-`DebugCategory` lists the categories; `GameInterface/DebugPanel.tsx` (`CATEGORY_COLOR`) colours them.
+`DebugCategory` lists the categories; `GameInterface/DebugPanel.tsx` (`CATEGORY_CLASS`) colours them.
 Adding a category: extend `DebugCategory`, add its colour, call `debugLog` at the engine point.
 
 Server-side logs use `@/Logger`: `logDebug(namespace, …)` (only for namespaces in

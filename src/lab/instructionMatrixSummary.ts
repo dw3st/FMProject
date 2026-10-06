@@ -60,7 +60,7 @@ export interface InstrPairRaw {
   y: SideAgg;
 }
 
-export function emptySlotAgg(): SlotAgg {
+function emptySlotAgg(): SlotAgg {
   return {
     passes: 0, passesReceived: 0, shots: 0, shotsInBox: 0, goals: 0, crosses: 0, tackles: 0,
     aerialDuels: 0, pressTicks: 0, carryTicks: 0, posXSum: 0, posWidthSum: 0, posSamples: 0,
@@ -125,7 +125,7 @@ export interface SlotView {
   markedMinutes: number;
 }
 
-export function slotView(s: SlotAgg, matches: number): SlotView {
+function slotView(s: SlotAgg, matches: number): SlotView {
   const m = Math.max(1, matches);
   return {
     passes: s.passes / m,

@@ -21,7 +21,7 @@ export interface ScoutTarget {
   squadId?: string;
 }
 
-export type ScoutFocusLine = "GK" | "Defender" | "Midfielder" | "Forward";
+type ScoutFocusLine = "GK" | "Defender" | "Midfielder" | "Forward";
 
 /** Optional focus of a region mission. */
 export interface ScoutFocus {

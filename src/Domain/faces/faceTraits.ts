@@ -59,7 +59,7 @@ export const TEXTURED_HAIR_IDS: Record<HairLength, readonly string[]> = {
 };
 const TEXTURED_FROM_SKIN = 5;
 
-export function hairIdsFor(length: HairLength, skin: SkinTone | undefined): readonly string[] {
+function hairIdsFor(length: HairLength, skin: SkinTone | undefined): readonly string[] {
   return (skin ?? 0) >= TEXTURED_FROM_SKIN ? TEXTURED_HAIR_IDS[length] : HAIR_IDS[length];
 }
 

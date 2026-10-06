@@ -14,10 +14,6 @@ export function setTeamMoraleOverride(team: TeamId, morale: number | undefined):
   TEAM_MORALE_OVERRIDE[team] = morale;
 }
 
-export function getTeamMoraleOverride(team: TeamId): number | undefined {
-  return TEAM_MORALE_OVERRIDE[team];
-}
-
 /** The morale a player of `team` plays at: the team override, else his own. */
 export function matchMoraleOf(team: TeamId, playerMorale: number | undefined): number | undefined {
   return TEAM_MORALE_OVERRIDE[team] ?? playerMorale;

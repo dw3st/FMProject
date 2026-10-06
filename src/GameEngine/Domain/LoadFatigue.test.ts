@@ -7,7 +7,7 @@ import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 import type { Squad } from "@/types/playerTypes";
 
 /**
- * Task 3 of `docs/superpowers/plans/2026-09-27-stamina.md` — `seasonLog.load` raises the in-match
+ * Task 3 of `docs/superpowers/archive/2026-09-27-stamina.md` — `seasonLog.load` raises the in-match
  * energy drain (`GamePlayer.drainMultiplier`, consumed by `consumeEnergy` in `RuntimeLineup.ts`).
  * See `docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Na partida".
  */

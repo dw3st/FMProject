@@ -304,7 +304,7 @@ export async function releaseHumanClub(
  * automatic XI, the board and fans at 60 with the objective for this club. Returns the new board
  * and the tactic's formation.
  */
-export async function takeOverClub(
+async function takeOverClub(
   service: SaveService, saveId: string,
   args: { squadId: string; date: string; activeLeagues: LeagueSeasonState[]; startBalance?: number },
 ): Promise<{

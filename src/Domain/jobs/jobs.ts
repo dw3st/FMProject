@@ -32,7 +32,7 @@ export function rankPercentile(managers: Pick<ManagerRecord, "id" | "points">[],
 }
 
 /** First year of a season label ("2026-27" → 2026, "2027" → 2027). */
-export function seasonStartYear(label: string): number {
+function seasonStartYear(label: string): number {
   const y = parseInt(label.slice(0, 4), 10);
   return Number.isFinite(y) ? y : 0;
 }
@@ -180,7 +180,7 @@ export function eligibleCandidates(candidates: OfferCandidate[], f: CandidateFil
 }
 
 /** Location weight: same country 3, same continent 2, elsewhere 1. */
-export function locationWeight(c: OfferCandidate, home: { country: string | null; continent: string | null }): number {
+function locationWeight(c: OfferCandidate, home: { country: string | null; continent: string | null }): number {
   const l = JOBS.location;
   if (home.country && c.country === home.country) return l.SAME_COUNTRY;
   if (home.continent && c.continent === home.continent) return l.SAME_CONTINENT;

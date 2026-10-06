@@ -12,6 +12,9 @@ Scripts import app code through `@/…`; script-to-script imports use `@/../scri
 | `importEspn.ts` | Applies the ESPN snapshot on top of the base world: 2026/27 squads, pyramid, calendar, crests (`.claude/rules/data/espn-import.md`) |
 | `generateStartKits.ts` | Pre-simulates the start kits (`bun run kits:generate`) |
 | `generate-world-map.ts` | Regenerates the new-game world map paths (`NewGame/worldMapPaths.ts`) |
+| `fetchHeadshots.ts`, `extractFaceTraits.ts` | Face pilot, ESPN: headshots → skin/hair traits (`.claude/rules/ui-world.md` → "Rostos dos jogadores") |
+| `fetchWikidataPhotos.ts`, `fetchTheSportsDB.ts` | Face pilot, Wikidata/Commons and TheSportsDB photos for labelling (same rule) |
+| `faces/` | Face pilot modules and tools (`labelQueue`, `mergeTraits`, `evalTraits`, `wdClubs`, `pilotPage`, `renderSheet`) |
 | `espn/`, `openfootball/`, `world/` | Pure modules (with tests) used by the importers |
 
 ## Smoke runs
@@ -22,6 +25,8 @@ Scripts import app code through `@/…`; script-to-script imports use `@/../scri
 | `membership-smoke.ts` | A club changes league inside a save |
 | `bench-advance-day.ts` | Times the live `advanceOneDay` on the full world |
 | `contracts-sim.ts` | Multi-season AI wage economy with contracts |
+| `market-sim.ts` | Multi-season living market: windows, AI managers (`.claude/rules/game/transfer-windows.md`) |
+| `scouting-index-bench.ts` | Cost of the scout search's per-player knowledge (`.claude/rules/game/scouting.md`) |
 | `mcp-smoke.ts` | Runs every MCP query against a debug snapshot |
 | `_bench.ts` | Per-match timing of the full engine |
 
@@ -35,6 +40,8 @@ Scripts import app code through `@/…`; script-to-script imports use `@/../scri
 | `fouls-calibrate.ts`, `aerial-calibrate.ts`, `setpiece-calibrate.ts` | Fouls/cards, aerial play, set pieces |
 | `wage-calibrate.ts` | Wage curve and club wage factor |
 | `familiarity-measure.ts` | Style familiarity effect |
+| `morale-measure.ts`, `personality-measure.ts` | Morale effect; personality (discipline, development, morale) |
+| `instruction-matrix.ts` | Role variants, individual pressing and man-marking (`.claude/rules/game/player-instructions.md`) |
 | `width-measure.ts` | Attacking width axis |
 | `passing-mix-diagnostic.ts`, `byline-diagnostic.ts` | Passing mix per line; goal-line runs |
 | `formation-balance.ts` (+ `-worker`), `tactics-balance.ts` (+ `-worker`) | Formation / tactic pairs, one Bun Worker per pair (`bun run balance:formations`, `balance:tactics`) |

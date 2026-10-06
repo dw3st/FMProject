@@ -12,7 +12,7 @@ const BAND_ICON: Record<MoraleBand, IconName> = {
 };
 
 /** Text colour of each band (theme tokens only). */
-export const BAND_TONE: Record<MoraleBand, string> = {
+const BAND_TONE: Record<MoraleBand, string> = {
   very_happy: "text-chart-2",
   content: "text-primary",
   neutral: "text-muted-foreground",

@@ -231,8 +231,7 @@ Press commit: `press: 8` ticks — prevents the presser abandoning pursuit each 
 | `DEFENSIVE_LINE_HEIGHT` | 0.50 | 0 = deep, 1 = high line |
 | `HORIZONTAL_COMPACTNESS` | 0.60 | Y squeeze toward center |
 | `PRESS_INTENSITY` | 0.50 | Secondary press range multiplier |
-| `PRESS_ACCEL_RANGE_BONUS` | 5 yds | Max extra press reach from acceleration |
-| `PRESS_ACCEL_SPEED_BOOST` | 1.0 yds/s | Speed added when pressing |
+| `PRESS_ACCEL_SPEED_BOOST` | 0.8 yds/s | Speed added when pressing |
 | `BLOCK_SHIFT_WEIGHT` | 0.80 | Lateral block-follows-ball strength |
 | `LANE_BLOCK_WEIGHT` | 0.40 | X nudge toward ball-goal corridor |
 | `MARK_PULL_MAX` | 0.90 | |

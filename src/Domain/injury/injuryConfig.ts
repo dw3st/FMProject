@@ -3,7 +3,7 @@
  * §1 "Lesões"). Used by the engine, quickSim, training and the daily advance — see `injury.ts`.
  *
  * `BASE` and `CONTACT_BASE` are calibrated against the full engine by
- * `scripts/injury-calibrate.ts` (Task 2, `docs/superpowers/plans/2026-09-28-injuries.md`) —
+ * `scripts/injury-calibrate.ts` (Task 2, `docs/superpowers/archive/2026-09-28-injuries.md`) —
  * 300 headless matches (Premier League + `of_championship`), both fresh (fitness 100, load 0),
  * scaling both constants uniformly to land on ~0.3 injuries/match (both teams combined). Measured:
  * 0.280 injuries/match over 300 matches. Rerun the script (`--apply`) after any change to the
@@ -52,7 +52,7 @@ export const INJURY = {
   CONTACT_BASE: 0.002307,
 
   /**
-   * quickSim-only multiplier on `CONTACT_BASE` (Task 3, `docs/superpowers/plans/2026-09-28-
+   * quickSim-only multiplier on `CONTACT_BASE` (Task 3, `docs/superpowers/archive/2026-09-28-
    * injuries.md`). quickSim has no loose-ball duels and only one side of each tackle attempt
    * (the tackler) generates a contact event per player, so its raw contact-event volume is lower
    * than the full engine's (tackles + tackle attempts + duels on both participants). This scales

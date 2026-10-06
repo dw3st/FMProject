@@ -279,7 +279,7 @@ describe("buildMatchEvent — full engine post-match fitness and load", () => {
   }, 30_000);
 });
 
-// ── buildMatchEventFromRecording — injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ──
+// ── buildMatchEventFromRecording — injuries (Task 3, docs/superpowers/archive/2026-09-28-injuries.md) ──
 
 describe("buildMatchEventFromRecording — injuries", () => {
   test("a recorded injury writes player.injury with a returnDate after the match date", () => {

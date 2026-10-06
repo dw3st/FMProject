@@ -1,6 +1,6 @@
 /**
  * Calibrates quickSim's in-match energy drain against the full engine, per line
- * (GK/DEF/MID/FWD) — Task 4 of `docs/superpowers/plans/2026-09-27-stamina.md`. See
+ * (GK/DEF/MID/FWD) — Task 4 of `docs/superpowers/archive/2026-09-27-stamina.md`. See
  * `docs/superpowers/specs/2026-09-27-stamina-design.md` §1 "Motor × quickSim".
  *
  * Part 1 — for three leagues (one strong, one mid `of_*`, one weak `of_*`), runs N engine

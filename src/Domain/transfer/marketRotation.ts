@@ -15,7 +15,7 @@ import { WINDOWS } from "@/Domain/market/windowConfig";
 
 export const TEAMS_PER_DAY_NEEDS = 10;
 /** Legacy (no windows): attempts per day, all year (`dailyMarketTick` without `windows`). */
-export const TEAMS_PER_DAY_ATTEMPTS = 10;
+const TEAMS_PER_DAY_ATTEMPTS = 10;
 
 function cloneSquad(s: Squad): Squad {
   return { ...s, players: [...s.players] };

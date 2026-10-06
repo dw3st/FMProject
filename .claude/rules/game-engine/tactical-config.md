@@ -162,7 +162,7 @@ landing point), so the share moves with the game rather than flipping at a thres
 
 ### 2. Add the mapping
 
-Add a new entry to the appropriate map (`BUILD_UP_PASS`, `BUILD_UP_CARRY`, or `WIDTH_ATTACK_WIDTH` in `AttackConfig.ts`; `mapTacticsToDefense` in `DefenseConfig.ts`). Use the existing config's field names directly — do not invent new "bias" or "modifier" fields.
+Add a new entry to the appropriate map (`BUILD_UP_PASS`, `BUILD_UP_CARRY`, or `WIDTH_ATTACK_WIDTH` in `AttackConfig.ts`; `mapAxesToDefense` in `DefenseConfig.ts`). Use the existing config's field names directly — do not invent new "bias" or "modifier" fields.
 
 ### 3. Update the consumer
 

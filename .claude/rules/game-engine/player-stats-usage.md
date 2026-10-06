@@ -99,15 +99,7 @@ crowdPenalty *= (1 - visionNorm * VISION_CROWD_REDUCTION (0.25))
 ```
 High vision players are less penalised for carrying into crowded zones.
 
-**4. Off-ball lane unlocking** (`OffBallMovement.ts → buildCandidateLanes`)
-
-| visionNorm | Extra lanes unlocked |
-|---|---|
-| > 0.40 | ±15° angles |
-| > 0.60 | ±45° angles |
-| > 0.80 | ±60° and lateral (−90°) |
-
-**5. Off-ball lookahead distance** (`gameState.ts`)
+**4. Off-ball lookahead distance** (`gameState.ts`)
 ```ts
 lookahead = BASE_LOOKAHEAD (8) + (MAX_LOOKAHEAD (16) - 8) * visionNorm
 ```
@@ -360,7 +352,7 @@ recoveryRate = (0.30 + (stamina / 10) * 0.30) * recoveryScale
 ```
 
 **3. Daily recovery** (`src/Domain/fitness/fitness.ts → staminaRecoveryFactor`, used by
-`recoverDay`): `factor = STAMINA_RECOVERY_BASE + STAMINA_RECOVERY_SPAN * (stamina / 10)` — one of
+`recoverDay`): `factor = STAMINA_RECOVERY.base + STAMINA_RECOVERY.span * (stamina / 10)` — one of
 the four multipliers (with age, load, and the fixed `RECOVERY_BASE`) on how much of the fitness gap
 to 100 a player closes on a rest day. See `.claude/rules/game/fitness.md` → "Recuperação diária".
 

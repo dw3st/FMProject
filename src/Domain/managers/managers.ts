@@ -29,11 +29,6 @@ export function promotionPoints(): number {
   return MANAGERS.POINTS.PROMOTION;
 }
 
-/** The manager in charge of a club (the human manager replaces his club's coach, so at most one). */
-export function managerOfSquad(managers: ManagerRecord[], squadId: string): ManagerRecord | undefined {
-  return managers.find((m) => m.squadId === squadId);
-}
-
 const sameTitle = (a: ManagerTitle, b: ManagerTitle) =>
   a.season === b.season && a.kind === b.kind && a.competition === b.competition && a.squadId === b.squadId;
 

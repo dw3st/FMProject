@@ -342,8 +342,7 @@
     "playerNotFound": "Player not found.",
     "currentTeam": "Current team",
     "openSquadPage": "Open squad page →",
-    "makeOffer": "Make offer",
-    "backToSquad": "Back to squad"
+    "makeOffer": "Make offer"
   },
   "nav": {
     "squad": "Squad",
@@ -916,7 +915,6 @@
   "transfers": {
     "incoming": "Incoming Transfers",
     "outgoing": "Outgoing Transfers",
-    "makeOffer": "Make an offer",
     "complete": "Complete",
     "rejected": "Rejected",
     "offerRejected": "Offer rejected",
@@ -2137,8 +2135,7 @@
       "squadFull": "Your squad is full.",
       "noClub": "You have no club.",
       "generic": "Something went wrong. Try again.",
-      "squadDepth": "You cannot let him go: your squad would be left without cover in his position.",
-      "windowClosed": "The transfer window is closed."
+      "squadDepth": "You cannot let him go: your squad would be left without cover in his position."
     },
     "history": {
       "title": "Today's rounds",
@@ -2491,7 +2488,6 @@
     "noGoalkeeper": "No instructions for the goalkeeper.",
     "pickSlot": "Click a position on the pitch to give it instructions.",
     "liveOnly": "Changes here only last for this match.",
-    "saved": "Instructions saved",
     "press": {
       "less": "Less",
       "normal": "Normal",
@@ -2595,10 +2591,8 @@
       "marker": "Marker",
       "target": "Target",
       "best": "Their best player",
-      "none": "No one",
       "add": "Add marking",
-      "remove": "Remove",
-      "marks": "Marks {{name}}"
+      "remove": "Remove"
     },
     "errors": {
       "saveFailed": "Could not save the instructions.",

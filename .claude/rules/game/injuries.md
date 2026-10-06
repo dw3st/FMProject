@@ -1,7 +1,7 @@
 # Lesões
 
 Spec: `docs/superpowers/specs/2026-09-28-injuries-design.md`. Plano:
-`docs/superpowers/plans/2026-09-28-injuries.md`. Etapa 5 do `docs/ROADMAP.md`, versão **1.5**.
+`docs/superpowers/archive/2026-09-28-injuries.md`. Etapa 5 do `docs/ROADMAP.md`, versão **1.5**.
 
 ## Regra
 
@@ -29,11 +29,11 @@ Spec: `docs/superpowers/specs/2026-09-28-injuries-design.md`. Plano:
 | `src/Domain/advanceDay/matches.ts` | `finalizeSquadsAfterMatch` — grava `injury` com `returnDate` no pós-jogo, cura (`clearHealed`) antes de tudo |
 | `src/Domain/advanceDay/dailyTraining.ts` | Lesão de treino pesado (`trainingInjuryChance`), cura do dia |
 | `src/Domain/advanceDay/dailyRest.ts` | Cura (`clearHealed`) para quem descansa |
-| `src/Domain/lineupHelpers.ts` | `filterEligiblePlayers`, `replaceUnavailableStarters` — nunca escala lesionado |
+| `src/Domain/lineupHelpers.ts` | `eligiblePool` (interno de `autoFillLineup`), `replaceUnavailableStarters` — nunca escala lesionado |
 | `src/Domain/advanceDay/matchSimulationLineups.ts` | `resolveUserLineup`/`computeMatchSimulationLineups` — troca automática do titular lesionado, `injuredReplaced` |
 | `src/Domain/inbox/inboxEvents.ts` + `src/types/inboxTypes.ts` | `buildInjuryMessage`, categoria `injury` (`kind: "injured" | "returned"`) |
 | `src/backend/advanceDay.ts` | Junta as lesões do dia (partida + treino + volta) e emite a inbox do clube do jogador uma única vez, depois de tudo |
-| `src/GameInterface/Dashboard/PlayerCard.tsx`, `SquadTable.tsx`, `SquadRosterTable.tsx` | Status "lesionado" + gravidade + dias para voltar |
+| `src/GameInterface/Dashboard/PlayerCard.tsx`, `SquadRosterTable.tsx`, `Dashboard/HomeCards.tsx` | Status "lesionado" + gravidade + dias para voltar |
 | `src/GameInterface/FormationScreen.tsx` | Lesionado bloqueado na escalação, com aviso da data de volta |
 | `src/GameInterface/MatchPreviewScreen.tsx` | Aviso das trocas automáticas (`injuredReplaced`) |
 | `src/GameInterface/MatchScreen.tsx` | Notícia rápida na tela ao vivo (`gameBus.on("injury", ...)`) |
@@ -208,7 +208,7 @@ já recalibrado do motor).
 
 ## 5. Escalação
 
-- `filterEligiblePlayers(players, date)` (`src/Domain/lineupHelpers.ts`) — usado por todo seletor
+- `eligiblePool(players, date)` (`src/Domain/lineupHelpers.ts`, chamado por `autoFillLineup`) — usado por todo seletor
   automático (IA, botão "auto", adversário da prévia): filtra fora quem está `isInjured` na data.
 - `replaceUnavailableStarters(slots, lineup, players, date)` — para uma escalação **salva** do
   jogador: troca todo titular lesionado na data pelo melhor reserva elegível do mesmo papel
@@ -226,7 +226,7 @@ já recalibrado do motor).
 
 - **`pickForRole` (`src/GameEngine/Domain/gameState.ts`) ignora lesão.** É o preenchimento de
   fallback do `buildTeam()` do motor quando um slot não tem jogador definido — não passa por
-  `filterEligiblePlayers`/`isInjured`. Na prática nunca é alcançado com um elenco normal, porque
+  `eligiblePool`/`isInjured`. Na prática nunca é alcançado com um elenco normal, porque
   todo caminho real de montagem de XI (`resolveUserLineup`, os seletores da IA) já filtra os
   lesionados antes de chegar ao motor; documentado aqui porque é a única brecha teórica.
 - **Sem linha do tempo da lesão na partida ao vivo.** O aviso em tela (`MatchScreen.tsx`, evento

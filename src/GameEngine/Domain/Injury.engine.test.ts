@@ -8,7 +8,7 @@ import type { Squad } from "@/types/playerTypes";
 import type { GameState } from "@/GameEngine/types";
 
 /**
- * Task 2 of `docs/superpowers/plans/2026-09-28-injuries.md` — in-match injuries. See
+ * Task 2 of `docs/superpowers/archive/2026-09-28-injuries.md` — in-match injuries. See
  * `docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Na partida".
  */
 

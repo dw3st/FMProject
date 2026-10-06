@@ -1314,7 +1314,7 @@ export function applyTeamInstructions(
 }
 
 /** Maximum man-marking pairs per team and match. */
-export const MAX_MAN_MARKS = 2;
+const MAX_MAN_MARKS = 2;
 
 /**
  * Set (replace) a team's man-marking pairs: the outfield player in `markerSlot` marks the

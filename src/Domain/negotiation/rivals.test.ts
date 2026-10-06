@@ -4,7 +4,7 @@ import type { RivalBid, SquadMarketProfile } from "@/types/transferMarketTypes";
 import {
   liveRivals, preferenceScore, preferredClub, rivalCandidates, rivalFloor, rollRival, starterChance,
 } from "@/Domain/negotiation/rivals";
-import { answerPreContract, dueAtRollover, preContractEligible } from "@/Domain/negotiation/preContract";
+import { answerPreContract, preContractEligible } from "@/Domain/negotiation/preContract";
 import { respondToOffer } from "@/Domain/negotiation/negotiation";
 
 function stats(v: number): RosterPlayer["stats"] {
@@ -113,11 +113,6 @@ describe("pre-contracts", () => {
       .toMatchObject({ accepted: false, reason: "notEligible" });
   });
 
-  test("due at the rollover of the origin club's country", () => {
-    const pcs = [{ playerId: "a", playerName: "a", fromClubId: "x", fromClubName: "x", toClubId: "h", wage: 1, years: 1, date: "d" }];
-    expect(dueAtRollover(pcs, new Set(["x"])).length).toBe(1);
-    expect(dueAtRollover(pcs, new Set(["y"])).length).toBe(0);
-  });
 });
 
 describe("personality: an AI club buying from a much bigger club (`personality.md`)", () => {

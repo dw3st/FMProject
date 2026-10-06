@@ -1,7 +1,7 @@
 # Finanças do clube (salários, extrato, bilheteria, premiação)
 
 Spec: `docs/superpowers/specs/2026-09-27-prizes-and-finances-design.md`. Plano:
-`docs/superpowers/plans/2026-09-27-prizes-and-finances.md`. Ver também
+`docs/superpowers/archive/2026-09-27-prizes-and-finances.md`. Ver também
 `.claude/rules/AI-clubs/finance.md` (orçamento e mercado da IA, que consome a mesma curva de
 salário e as mesmas verbas de prêmio).
 
@@ -158,7 +158,7 @@ teto do fator) se afasta desse número.
 - **Start kits preservam o orçamento e os fatores do jogador.** Um kit é uma fotografia genérica do
   mundo, sem conceito de jogador — todo clube nele, inclusive o que vai virar o do jogador, está
   com o `finances.budget` que tinha quando o kit foi gerado. `applyRandomStartKit` captura o
-  orçamento do clube do jogador ANTES de aplicar o kit e o restaura DEPOIS (`FinancesService`/
+  orçamento do clube do jogador ANTES de aplicar o kit e o restaura DEPOIS (`applyRandomStartKit`,
   `startKits.ts`), preservando a invariante acima também numa carreira com pré-simulação (ligas de
   ano civil). Da mesma forma, `applyKit` lê `wageFactor`/`wageRevenueBasis` de TODOS os squads
   frescos do save (calculados por `createSave` com o tamanho real da liga) antes de sobrescrever
@@ -329,7 +329,7 @@ weekly, balance }`. `FinancesScreen.tsx` lê só essa rota (mais `squad`/`fixtur
 
 ```
 bun test src/Domain/finance src/Domain/advanceDay/financial.test.ts \
-  src/backend/FinancialService.test.ts src/backend/dal src/backend/routes.test.ts
+  src/backend/FinancialService.test.ts src/backend/dal src/backend/routes.ledger.test.ts
 ```
 
 Cobrem: curva de salário (monotônica, piso, euros inteiros), `clubWageFactor`/

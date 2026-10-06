@@ -12,12 +12,12 @@ export interface ScoutingScout {
   busy: boolean;
 }
 
-export interface ScoutingMissionView extends ScoutAssignment {
+interface ScoutingMissionView extends ScoutAssignment {
   weeklyCost: number;
   scout: ScoutingScout | null;
 }
 
-export interface ShortlistView extends ShortlistEntry {
+interface ShortlistView extends ShortlistEntry {
   missing?: boolean;
   club?: string;
   leagueSlug?: string;
@@ -50,7 +50,7 @@ export interface ScoutingData {
 }
 
 /** A prospect on the screen: identity only (`prospectView`, the attributes stay on the server). */
-export interface ProspectView extends Omit<ScoutProspect, "player"> {
+interface ProspectView extends Omit<ScoutProspect, "player"> {
   player: Pick<RosterPlayer, "id" | "name" | "age" | "positions" | "nationality">;
 }
 

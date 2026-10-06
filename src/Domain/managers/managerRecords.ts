@@ -11,8 +11,8 @@ export function closePassage(clubs: ManagerPassage[] | undefined, date: string, 
   return out;
 }
 
-export const interimName = (clubName: string) => `Técnico interino do ${clubName}`;
-export const interimId = (squadId: string, date: string) => `coach_${squadId}_${date}`;
+const interimName = (clubName: string) => `Técnico interino do ${clubName}`;
+const interimId = (squadId: string, date: string) => `coach_${squadId}_${date}`;
 
 /** A fresh interim record for a club. */
 export function makeInterim(squadId: string, clubName: string, date: string, taken?: Set<string>): ManagerRecord {

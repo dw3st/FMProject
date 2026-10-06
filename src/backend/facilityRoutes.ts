@@ -44,7 +44,7 @@ async function loadHuman(saveId: string): Promise<Human | Response> {
 }
 
 /** Body → request; `null` when invalid. */
-export function parseFacilityRequest(body: unknown): FacilityRequest | null {
+function parseFacilityRequest(body: unknown): FacilityRequest | null {
   if (!body || typeof body !== "object") return null;
   const b = body as Record<string, unknown>;
   if (b.kind === "stand") {

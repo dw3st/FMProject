@@ -1,6 +1,6 @@
 /**
  * Calibrates `INJURY.BASE` (per-minute risk) and `INJURY.CONTACT_BASE` (tackle / loose-ball duel
- * risk) against the full engine — Task 2 of `docs/superpowers/plans/2026-09-28-injuries.md`. See
+ * risk) against the full engine — Task 2 of `docs/superpowers/archive/2026-09-28-injuries.md`. See
  * `docs/superpowers/specs/2026-09-28-injuries-design.md` §1 "Na partida".
  *
  * Runs N full engine matches (`simulateMatch`) across two leagues — the Premier League and one

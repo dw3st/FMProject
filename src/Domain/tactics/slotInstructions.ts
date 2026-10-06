@@ -5,7 +5,7 @@ import { effectiveInstruction, isRoleVariantId, variantFitsRole } from "@/GameEn
 const PRESS_LEVELS: readonly PressLevel[] = ["less", "normal", "more"];
 
 /** Maximum man-marking pairs of a match (`.claude/rules/game/player-instructions.md`). */
-export const MAX_MATCH_MARKS = 2;
+const MAX_MATCH_MARKS = 2;
 
 /**
  * Validates a `TacticsSave.slotInstructions` body against the formation it will play in: an array
@@ -61,11 +61,6 @@ export function sanitizeSlotInstructions(
   const out = formation.attacking.map((slot, i) => effectiveInstruction(slot.role, instructions[i]) ?? null);
   while (out.length > 0 && out[out.length - 1] === null) out.pop();
   return out;
-}
-
-/** Number of slots with a non-default instruction. */
-export function countInstructions(instructions: (SlotInstruction | null)[] | undefined): number {
-  return (instructions ?? []).filter(i => i && (i.variant || (i.press && i.press !== "normal"))).length;
 }
 
 /**
