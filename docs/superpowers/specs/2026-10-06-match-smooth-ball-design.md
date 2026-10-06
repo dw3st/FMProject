@@ -20,8 +20,14 @@ no mockup `.superpowers/brainstorm/88313-1791327579/content/ball.html`: **B — 
    (`prevState`). O `PixiPitch` desenha jogadores e bola em `lerp(prev, atual, alpha)`, `alpha = carry / SIM_STEP`
    (0..1). Sem suavizar quando o deslocamento de um passo passa de um limite (`TELEPORT_YDS`, ex.: saída de bola,
    bola parada, troca de lado, substituição) ou quando o estado foi trocado de fora (comandos do `/test`,
-   `matchStateSync` adotado): aí usa o atual. Só desenho: motor, sorteios e estatísticas não mudam. A altura da bola,
-   os efeitos e o rastro usam a mesma posição desenhada da bola.
+   `matchStateSync` adotado) e moveu algo: aí usa o atual. Só desenho: motor, sorteios e estatísticas não mudam.
+   Marcadores, nomes, brilho da posse, barrinhas de fôlego e selo de cartão seguem as posições desenhadas; a bola, a
+   altura, a sombra e o rastro seguem a bola desenhada. Os efeitos de chute, gol, falta, cartão e impedimento usam as
+   coordenadas do evento do motor (diferença de no máximo um passo). As sobreposições de debug do `/test` ficam no
+   estado atual do motor, sem interpolar: mostram dados calculados nesse estado (alvos, linhas, marcação, células) e
+   ancorá-las nos marcadores misturaria dois instantes (diferença de no máximo um passo, ~0,15 jarda num jogador).
+   `TELEPORT_YDS` = 4: o maior deslocamento real num passo é o de um chute de longe (~1,75 jarda a 35 jardas, ~2,25 a
+   45); passes ficam em ~0,75 e corridas em ~0,15, e os reposicionamentos são de dezenas de jardas.
 2. **React a ~10 Hz.** `MatchScreen` e `TestScreen` atualizam o estado React no máximo a cada `UI_STATE_INTERVAL_MS`
    (100 ms), com atualização final garantida (trailing), e na hora em mudança de fase, placar ou pausa. O ref do estado
    continua atualizado a cada quadro. Tudo que hoje acumula por quadro (ex.: posse no `MatchScreen`) tem de continuar
