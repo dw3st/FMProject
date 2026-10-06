@@ -102,6 +102,11 @@ export interface Variant {
    */
   morale?: number;
   /**
+   * Temperament 1..20 of this whole side (`src/Domain/personality`): fouls and cards in the engine
+   * and the quickSim. Absent = each player's own (derived from his id).
+   */
+  temperament?: number;
+  /**
    * Player instructions of this side (`player-instructions.md`): per-slot role variant / pressing
    * (index = slot of `formation`). Absent = default. Full engine only (the quickSim ignores them).
    */
@@ -197,6 +202,8 @@ export interface TeamRawStats {
   outOfPosition: number;
   /** Morale the side played at (`Variant.morale`, 65 when absent), summed across games. */
   morale: number;
+  /** Mean temperament (1..20) of the side's XI (the override, or each player's own), summed across games. */
+  temperament: number;
   // Discipline (`.claude/rules/game-engine/fouls.md`), summed across games.
   /** Fouls committed. */
   fouls: number;
@@ -339,6 +346,8 @@ export interface PerMatchView {
   avgOutOfPosition: number;
   /** Morale the side played at (65 = neutral). */
   avgMorale: number;
+  /** Mean temperament of the XI (1..20, 10.5 = neutral). */
+  avgTemperament: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;
@@ -434,6 +443,8 @@ export interface VariantSummary {
   avgOutOfPosition: number;
   /** Morale the side played at (65 = neutral). */
   avgMorale: number;
+  /** Mean temperament of the XI (1..20, 10.5 = neutral). */
+  avgTemperament: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;

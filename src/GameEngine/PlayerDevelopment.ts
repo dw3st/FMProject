@@ -100,15 +100,17 @@ export interface DevelopmentResult {
  * @param matchRating The player's match rating (0–10); pass 0 if didn't play
  * @param weights     Role DP category weights (from roles.json)
  * @param dpMult      Assistant-coach multiplier on the DP earned (`src/Domain/staff`); default 1
+ * @param decayMult   Multiplier on the age decay (professionalism, `src/Domain/personality`); default 1
  */
 export function applyDevelopment(
   player: RosterPlayer,
   matchRating: number,
   weights: RoleDPWeights,
   dpMult = 1,
+  decayMult = 1,
 ): DevelopmentResult {
   const earnedDP = BASE_DP * performanceMultiplier(matchRating) * dpMult;
-  const netDP    = earnedDP * ageGrowthMultiplier(player.age) - ageDecayPerMatch(player.age);
+  const netDP    = earnedDP * ageGrowthMultiplier(player.age) - ageDecayPerMatch(player.age) * decayMult;
   return distributeAndResolve(player, netDP, weights);
 }
 

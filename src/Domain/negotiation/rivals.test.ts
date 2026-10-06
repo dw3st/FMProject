@@ -119,3 +119,31 @@ describe("pre-contracts", () => {
     expect(dueAtRollover(pcs, new Set(["y"])).length).toBe(0);
   });
 });
+
+describe("personality: an AI club buying from a much bigger club (`personality.md`)", () => {
+  const eliteFin = { broadcasting: 300_000_000, commercial: 0, total: 300_000_000, budget: 0, followers: 1_000_000 };
+  const lowFin = { broadcasting: 5_000_000, commercial: 0, total: 5_000_000, budget: 0, followers: 1_000_000 };
+  const traits = (ambition: number) => ({ ambition, loyalty: 10.5, professionalism: 10.5, temperament: 10.5 });
+  const seller = squad("sel", 6, { finances: eliteFin });
+  const small = squad("buy", 6, { finances: lowFin, aiTransferBudget: 500_000_000 });
+  const base = seller.players.find((p) => p.positions[0] === "CM")!;
+  const profiles = { buy: need("Midfielder", 5, 7) };
+
+  test("rival candidates: a very ambitious target never lists the small club", () => {
+    const cand = (ambition: number) => rivalCandidates({
+      player: { ...base, personality: traits(ambition) }, sellerId: "sel", humanId: "hum", profiles,
+      squadOf: (id) => (id === "buy" ? small : id === "sel" ? seller : null),
+    }).map((c) => c.squad.id);
+    expect(cand(20)).toEqual([]);
+    expect(cand(10)).toEqual(["buy"]);
+  });
+
+  test("AI bid for the human's player: none from a club two tiers smaller when he is very ambitious", async () => {
+    const { buildAiTransferBid } = await import("@/Domain/negotiation/bids");
+    const bid = (ambition: number) => buildAiTransferBid({
+      id: "b", player: { ...base, personality: traits(ambition) }, buyer: small, seller, date: "2027-06-10", rng: () => 0.5,
+    });
+    expect(bid(20)).toBeNull();
+    expect(bid(10)).not.toBeNull();
+  });
+});

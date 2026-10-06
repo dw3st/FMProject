@@ -2,6 +2,7 @@ import type { ClubFacilities } from "@/types/facilityTypes";
 import type { StaffRecord } from "@/Domain/staff/staffTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/moraleTypes";
+import type { Personality, PersonalityView } from "@/types/personalityTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -152,6 +153,16 @@ export interface RosterPlayer {
   squadStatus?: SquadStatus;
   /** Morale bookkeeping: minutes window, 7-day trend, talks (human club only). */
   moraleLog?: PlayerMoraleLog;
+  /**
+   * Personality override (`.claude/rules/game/personality.md`). The game never writes it: the
+   * traits are derived from the id (`personalityOf`). Tests and future curated data only.
+   */
+  personality?: Personality;
+  /**
+   * Screen-only view of the personality of a player outside the human club, blurred by the chief
+   * scout (`obscurePlayer`). Never read by the engine or the day advance.
+   */
+  personalityView?: PersonalityView;
 }
 
 export interface SellOnClause {

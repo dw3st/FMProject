@@ -107,3 +107,8 @@ bun test src/Domain/discipline src/Domain/advanceDay src/Domain/lineupHelpers.te
 `bun scripts/season-rollover-smoke.ts`, seção "Disciplina": médias por partida em todo jogo logado
 (faltas 8–16, amarelos 1,5–4,5, vermelhos ≤ 0,3, pênaltis 0,1–0,4); nenhum suspenso (foto antes do
 dia, como as lesões) num XI da liga do jogador; pelo menos uma suspensão cumprida na corrida.
+
+## Personalidade (Etapa 26)
+
+No quickSim o temperamento do XI escala o número de faltas do lado, quem as comete e os cartões do infrator (os
+mesmos fatores do motor); um XI neutro sorteia o mesmo de antes. Ver `.claude/rules/game/personality.md`.

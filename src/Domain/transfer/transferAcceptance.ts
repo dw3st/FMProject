@@ -4,6 +4,7 @@ import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import type { Squad, RosterPlayer, PlayerContract, SellOnClause } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
 import { aiFinancialPressure } from "@/Domain/aiFinance/aiClubFinance";
+import { sellPush, tierStepsDown } from "@/Domain/personality/personality";
 
 function playerOverallRating(player: RosterPlayer): number {
   return Player.overallAvg(player);
@@ -42,7 +43,7 @@ export function evaluateTransferOffer(
   fromSquad: Squad,
   fee: number,
   sellPriority?: number,
-  opts: { humanSeller?: boolean } = {},
+  opts: { humanSeller?: boolean; buyer?: Pick<Squad, "finances"> } = {},
 ): { accepted: boolean; reason: TransferRejectReason | TransferAcceptReason } {
   if (squadDepthBlocked(player, fromSquad, !!opts.humanSeller)) {
     return { accepted: false, reason: "squadDepth" };
@@ -96,13 +97,18 @@ export interface SaleContext {
   financialPressure: number;
   /** `sellPriority × 0.5` when the player is on the seller's list. */
   priorityBonus: number;
+  /**
+   * AI seller, a known buyer (`personality.md`): + 0,10 × t_ambition when the buyer is a bigger club
+   * (he forces the move), − 0,10 × max(0, t_loyalty) (he does not want to leave). 0 otherwise.
+   */
+  personalityPush: number;
 }
 
 export function saleContext(
   player: RosterPlayer,
   fromSquad: Squad,
   sellPriority?: number,
-  opts: { humanSeller?: boolean } = {},
+  opts: { humanSeller?: boolean; buyer?: Pick<Squad, "finances"> } = {},
 ): SaleContext {
   const pRating = playerOverallRating(player);
   const relativeStrength = pRating - teamAvgRating(fromSquad);
@@ -121,17 +127,21 @@ export function saleContext(
     financialPressure = aiFinancialPressure(fromSquad);
   }
   const priorityBonus = sellPriority != null && sellPriority > 0 ? sellPriority * 0.5 : 0;
-  return { value: Math.max(1, value), relativeStrength, financialPressure, priorityBonus };
+  const personalityPush = !opts.humanSeller && opts.buyer
+    ? sellPush(player, tierStepsDown(opts.buyer, fromSquad) > 0)
+    : 0;
+  return { value: Math.max(1, value), relativeStrength, financialPressure, priorityBonus, personalityPush };
 }
 
 /** `offerScore × 0,6 + pressão × 0,3 − força relativa × 0,5 + lista de venda`. */
 export function saleDecisionScore(ctx: SaleContext, fee: number): number {
-  return (fee / ctx.value) * 0.6 + ctx.financialPressure * 0.3 - ctx.relativeStrength * 0.5 + ctx.priorityBonus;
+  return (fee / ctx.value) * 0.6 + ctx.financialPressure * 0.3 - ctx.relativeStrength * 0.5 + ctx.priorityBonus
+    + (ctx.personalityPush ?? 0);
 }
 
 /** Inverse of `saleDecisionScore`: the (effective) fee that reaches `score`. */
 export function feeForSaleScore(ctx: SaleContext, score: number): number {
-  return ((score - ctx.financialPressure * 0.3 + ctx.relativeStrength * 0.5 - ctx.priorityBonus) * ctx.value) / 0.6;
+  return ((score - ctx.financialPressure * 0.3 + ctx.relativeStrength * 0.5 - ctx.priorityBonus - (ctx.personalityPush ?? 0)) * ctx.value) / 0.6;
 }
 
 /**

@@ -98,9 +98,12 @@ export function PlayerCard({
   player,
   layout = "narrow",
   clubColors,
+  nameBadge,
 }: {
   player: DisplayPlayer;
   layout?: "narrow" | "wide";
+  /** Wide layout: an extra badge after the name (the personality summary on the player screen). */
+  nameBadge?: React.ReactNode;
   /** Jersey colours of the player's club; defaults to the user's club (dashboard card). */
   clubColors?: readonly string[];
 }) {
@@ -146,6 +149,7 @@ export function PlayerCard({
               {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
               {player.reborn && <RebornBadge className="mt-0.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="mt-0.5" />}
+              {nameBadge}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">

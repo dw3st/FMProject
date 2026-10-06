@@ -54,10 +54,12 @@ export function respondToOffer(args: {
   fee: number;
   sellOnPct?: number;
   sellPriority?: number;
+  /** The buying club (personality push on the seller's score, `personality.md`). */
+  buyer?: Pick<Squad, "finances">;
 }): OfferResponse {
   const { player, seller, fee } = args;
   if (squadDepthBlocked(player, seller, false)) return { kind: "reject", reason: "squadDepth" };
-  const ctx = saleContext(player, seller, args.sellPriority);
+  const ctx = saleContext(player, seller, args.sellPriority, args.buyer ? { buyer: args.buyer } : {});
   const mult = 1 + sellOnValueFraction(args.sellOnPct ?? 0, player.age);
   const effective = fee * mult;
   if (effective < ctx.value * NEGOTIATION.LOWBALL_RATIO) return { kind: "reject", reason: "insulted" };

@@ -242,7 +242,7 @@ export function dailyMarketTick(
     if (!sellerSquad || !buyer) continue;
 
     const sellPriority = getSellPriority(player.id, profiles[sellerSquad.id]?.sellList ?? []) ?? undefined;
-    const { accepted } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority);
+    const { accepted } = evaluateTransferOffer(player, sellerSquad, fee, sellPriority, { buyer });
     if (!accepted) continue;
 
     const { selling, buying } = squadsAfterAcceptedTransfer(

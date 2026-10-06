@@ -5,6 +5,7 @@
  * non-deterministic for production call sites. Produces a PlayedMatchRecording so the normal
  * post-match pipeline (seasonLog, energy, development) applies unchanged.
  */
+import { temperamentFoulMult, temperamentRedMult, temperamentT, temperamentTOf, temperamentYellowMult } from "@/Domain/personality/personality";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MatchCard, MatchInjury, MatchPlayerStats, MatchTeamStats } from "@/types/dayLogTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
@@ -83,6 +84,12 @@ export interface QuickSimInput {
    */
   homeMorale?: number;
   awayMorale?: number;
+  /**
+   * Temperament (1..20) of a whole side (`src/Domain/personality`, the lab and `/test`). Absent =
+   * each player's own (derived from his id): fouls and cards scale with it.
+   */
+  homeTemperament?: number;
+  awayTemperament?: number;
 }
 
 export interface QuickSimResult {
@@ -482,6 +489,7 @@ function rollDiscipline(
   ratingDelta: Record<string, number>,
   cards: MatchCard[],
   rng: Rng,
+  temperamentOverride?: number,
 ): { committed: number; yellow: number; red: number; oppPenalties: number; oppPenaltyGoals: number; oppOffsides: number } {
   const W = RATING_WEIGHTS;
   const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppPenaltyGoals: 0, oppOffsides: 0 };
@@ -517,14 +525,25 @@ function rollDiscipline(
 
   out.oppOffsides = samplePoisson(C.OFFSIDES_PER_SIDE * Math.pow(oppLevel / C.LEVEL_REF, C.OFFSIDE_LEVEL_EXPONENT), rng);
 
+  // Temperament (`personality.md`): hot-heads foul more (the side's count and the pick) and are
+  // booked more per foul. A neutral XI (t = 0) draws exactly what it did before.
+  const overrideT = temperamentTOf(temperamentOverride);
+  const tempT = new Map(xi.map((x) => [x.p.id, overrideT ?? temperamentT(x.p)]));
+  const foulMult = (x: XIPlayer) => temperamentFoulMult(tempT.get(x.p.id) ?? 0);
+  const sideFoulMult = avg(xi.map(foulMult)) / C.TEMPERAMENT_FOUL_NORM;
+  const cardMult = (mult: (t: number) => number, id: string) => {
+    const tt = tempT.get(id) ?? 0;
+    return tt === 0 ? 1 : mult(tt) / C.TEMPERAMENT_CARD_NORM;
+  };
+
   // Fouls by `xi` (penalty fouls included), in minute order so a second yellow follows the first.
-  const n = Math.max(samplePoisson(C.FOULS_PER_SIDE, rng), out.oppPenalties);
+  const n = Math.max(samplePoisson(C.FOULS_PER_SIDE * sideFoulMult, rng), out.oppPenalties);
   const minutes = Array.from({ length: n }, () => 1 + Math.floor(rng() * minutesTotal)).sort((a, b) => a - b);
   const booked = new Set<string>();
   const sentOff = new Set<string>();
   const weight = (x: XIPlayer) =>
     C.FOUL_LINE_WEIGHT[groupOf(x)] * Math.max(0.2, 1 + 0.6 * (0.5 - stat(x.p, "tackling") / 10)) *
-    (booked.has(x.p.id) ? C.BOOKED_FOUL_MULT : 1);
+    (booked.has(x.p.id) ? C.BOOKED_FOUL_MULT : 1) * foulMult(x);
   const penaltyFoulIdx = new Set<number>();
   while (penaltyFoulIdx.size < out.oppPenalties) penaltyFoulIdx.add(Math.floor(rng() * n));
   minutes.forEach((minute, i) => {
@@ -537,7 +556,7 @@ function rollDiscipline(
     if (penaltyFoulIdx.has(i)) add(W.PENALTY_CONCEDED);
     const card = (kind: "yellow" | "red", secondYellow: boolean) =>
       cards.push({ team, playerId: id, playerName: fouler.p.name, card: kind, secondYellow, matchMinute: minute });
-    if (rng() < C.DIRECT_RED_PER_FOUL) {
+    if (rng() < C.DIRECT_RED_PER_FOUL * cardMult(temperamentRedMult, id)) {
       card("red", false);
       sentOff.add(id);
       out.red++;
@@ -545,7 +564,7 @@ function rollDiscipline(
       return;
     }
     const wasBooked = booked.has(id);
-    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1)) {
+    if (rng() < C.YELLOW_PER_FOUL * (wasBooked ? C.BOOKED_CARD_MULT : 1) * cardMult(temperamentYellowMult, id)) {
       card("yellow", false);
       out.yellow++;
       add(W.YELLOW_CARD);
@@ -806,9 +825,9 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const cards: MatchCard[] = [];
   const ratingDelta: Record<string, number> = {};
   const homeDisc = rollDiscipline(homeXI, "home", awayXI, awayGoals, xgAwayDay,
-    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng);
+    teamLevel(away), totalMinutes, playerStats, ratingDelta, cards, rng, input.homeTemperament);
   const awayDisc = rollDiscipline(awayXI, "away", homeXI, homeGoals, xgHomeDay,
-    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng);
+    teamLevel(home), totalMinutes, playerStats, ratingDelta, cards, rng, input.awayTemperament);
   cards.sort((a, b) => a.matchMinute - b.matchMinute);
 
   // Aerial play last (`aerial.md`), so every earlier rng draw is unchanged by it.

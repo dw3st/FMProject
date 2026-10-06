@@ -10,6 +10,7 @@
  *   // result.score, result.teamStats, result.playerStats, result.playerRatings
  */
 
+import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
@@ -82,6 +83,12 @@ export interface SimulateMatchOptions {
    * Always set or cleared here, so no override leaks from a previous match.
    */
   morale?: { A?: number; B?: number };
+  /**
+   * Temperament (1..20) of a whole side (the lab, `/test`, scripts): every player of that team fouls
+   * and is booked as if he had it (`PersonalityMatchConfig.ts`). Absent = each player's own
+   * (derived from his id). Always set or cleared here.
+   */
+  temperament?: { A?: number; B?: number };
   /**
    * Called with the state after every tick (diagnostics only — `scripts/formation-matrix.ts`, the
    * lab's formation matrix). Must not mutate the state.
@@ -194,6 +201,8 @@ export function simulateMatch(
 
   setTeamMoraleOverride('A', options.morale?.A);
   setTeamMoraleOverride('B', options.morale?.B);
+  setTeamTemperamentOverride('A', options.temperament?.A);
+  setTeamTemperamentOverride('B', options.temperament?.B);
 
   // Build state — skip preMatch presentation so the loop starts in firstHalf
   let s: GameState = {

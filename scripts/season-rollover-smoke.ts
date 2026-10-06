@@ -1982,6 +1982,61 @@ try {
   check(moraleTrack.talksSeen.size > 0, `moral: at least one talk request during the run (${moraleTrack.talksSeen.size})`);
   check(moraleTrack.resolved.size > 0, `moral: at least one promise resolved during the run (${moraleTrack.resolved.size})`);
 
+  // ── Personalidade (`.claude/rules/game/personality.md`) ──
+  // Every player of the world has a personality in 1..20 (derived from the id); the reborn player
+  // accepted above has the original's; discipline stays in the band checked under "Disciplina";
+  // at least one demand of the demand route is shaped by personality; morale stays in 0..100.
+  console.log("\n── Personalidade ──");
+  {
+    const { personalityOf, PERSONALITY_TRAITS } = await import("@/Domain/personality/personality");
+    const finalFiles = await plain().listSquadFiles(saveId);
+    const everyone = [
+      ...finalFiles.flatMap(({ squad }) => [...squad.players, ...(squad.youth ?? [])]),
+      ...(await plain().getFreeAgents(saveId)).map((f) => f.player),
+    ];
+    const bad = everyone.filter((p) => {
+      const pers = personalityOf(p);
+      return PERSONALITY_TRAITS.some((t) => !Number.isInteger(pers[t]) || pers[t] < 1 || pers[t] > 20);
+    });
+    const mean = (t: (typeof PERSONALITY_TRAITS)[number]) =>
+      everyone.reduce((a, p) => a + personalityOf(p)[t], 0) / Math.max(1, everyone.length);
+    console.log(`  ${everyone.length} players; mean ${PERSONALITY_TRAITS.map((t) => `${t} ${mean(t).toFixed(2)}`).join(", ")}`);
+    check(everyone.length > 0 && bad.length === 0, `personalidade: every player has traits in 1..20 (${bad.length} of ${everyone.length} invalid)`);
+    const human = finalFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
+    const born = human?.youth?.find((p) => p.reborn?.fromId === "smoke_legend");
+    check(!!born && JSON.stringify(personalityOf(born)) === JSON.stringify(personalityOf({ id: "smoke_legend" })),
+      "personalidade: the accepted reborn player has the original's personality");
+    check(per(disc.fouls) >= 8 && per(disc.fouls) <= 16 && per(disc.yellows) >= 1.5 && per(disc.yellows) <= 4.5,
+      `personalidade: discipline with personalities still in the bands (fouls ${per(disc.fouls).toFixed(2)}, yellows ${per(disc.yellows).toFixed(2)})`);
+
+    // Demand route on players of other clubs: the parts shaped by the personality.
+    const { apiRoutes } = await import("@/backend/routes");
+    const { devAutoLogin } = await import("@/backend/auth/AuthService");
+    // The save's single owner row was recorded earlier (smoke-reborn); a new session of the same user.
+    const { session } = devAutoLogin("smoke-reborn@test.local");
+    const demandHandler = apiRoutes["/api/saves/:saveId/players/:playerId/demand" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    const others = finalFiles.filter(({ squad }) => squad.id !== playerSquadId)
+      .flatMap(({ squad }) => squad.players.filter((p) => !p.loan).slice(0, 2).map((p) => ({ p, from: squad.id })))
+      .slice(0, 120);
+    let shaped = 0, smaller = 0, refusals = 0, compatriots = 0, asked = 0;
+    for (const { p, from } of others) {
+      const res = await demandHandler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/players/${p.id}/demand?from=${from}`, { headers: { cookie: `fs_session=${session.token}` } }),
+        { params: { saveId, playerId: p.id } },
+      ));
+      if (res.status !== 200) continue;
+      asked++;
+      const d = (await res.json()) as { ambition?: number; compatriot?: number; smallerClub?: number; refusesSmallerClub?: boolean };
+      if ((d.ambition ?? 1) !== 1 || (d.compatriot ?? 1) !== 1 || (d.smallerClub ?? 1) !== 1) shaped++;
+      if ((d.smallerClub ?? 1) > 1) smaller++;
+      if ((d.compatriot ?? 1) < 1) compatriots++;
+      if (d.refusesSmallerClub) refusals++;
+    }
+    console.log(`  demand route: ${asked} asked, ${shaped} shaped by personality, ${smaller} smaller-club premium, ${refusals} refusal(s), ${compatriots} compatriot discount(s)`);
+    check(asked > 0 && shaped > 0, `personalidade: at least one demand shaped by personality (${shaped} of ${asked})`);
+    check(moraleTrack.outOfRange === 0, "personalidade: human-club morale stays in 0..100 with personalities");
+  }
+
   // ── Instruções (`.claude/rules/game/player-instructions.md`) ──
   console.log("\n── Instruções ──");
   console.log(`  ${instrTrack.markDays} human match day(s); marking saved on ${instrTrack.markOk}; left over after the advance: ${instrTrack.markLeftOver}`);

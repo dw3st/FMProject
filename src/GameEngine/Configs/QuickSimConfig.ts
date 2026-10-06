@@ -244,6 +244,13 @@ export const QUICK_SIM_CONFIG = {
   /** Card chance on a booked player's foul (engine: 1.15). */
   BOOKED_CARD_MULT: 1.15,
   DIRECT_RED_PER_FOUL: 0.0008,
+  /**
+   * Personality (Etapa 26, `personality.md`): fouls per side × the XI's mean temperament foul
+   * multiplier ÷ TEMPERAMENT_FOUL_NORM; the fouler's cards × the engine's temperament card factors ÷
+   * TEMPERAMENT_CARD_NORM (t ≠ 0). Cards 1,04: without it the reds (mostly second yellows) rose 13% (measured, `personality.md`).
+   */
+  TEMPERAMENT_FOUL_NORM: 1,
+  TEMPERAMENT_CARD_NORM: 1.04,
   /** 0.115 → 0.14 with aerial play: the engine's IN_BOX_MULT went up (PL 0.27 / Championship 0.29 penalties per match). */
   PENALTIES_PER_SIDE: 0.17,
   OFFSIDES_PER_SIDE: 0.64,

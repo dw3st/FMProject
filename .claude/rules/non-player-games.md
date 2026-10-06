@@ -1119,3 +1119,9 @@ Tentativa de trazer 4-3-2-1 (+11,2) e 4-1-2-1-2 (+9,8) para ±8 com uma alavanca
 pontas: `HEADER_XG_MULT` 0,9 → 1,2, `formation-matrix.ts --rows 4-3-2-1,4-1-2-1-2 --matches 300` (1200
 jogos cada): 4-3-2-1 +8,3, 4-1-2-1-2 +13,2 — dentro do ruído (±2,4–3,5), sem as duas em ±8 e somando
 gols de cabeça no mundo todo. Revertido antes da coleta; ver `formations.md` → "Limitações".
+
+## Personalidade no quickSim (Etapa 26)
+
+`rollDiscipline` escala as faltas do lado pela média do fator de temperamento do XI, quem comete e os cartões
+(`TEMPERAMENT_FOUL_NORM` = 1, `TEMPERAMENT_CARD_NORM` = 1,04); `homeTemperament`/`awayTemperament` sobrepõem o lado
+(lab, `/test`). Medição em `.claude/rules/game/personality.md`.

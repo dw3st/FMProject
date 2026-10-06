@@ -294,3 +294,11 @@ once `marketFrozen` replaced its only caller. The human club is still excluded s
 | `SELL_ABOVE_AVG_PROTECTION` | 0.5 | Rating gap above avg to protect |
 | `SELL_YOUNG_PROTECTION` | 23 | Age below which players are never listed |
 | `SELL_AGE_THRESHOLD` | 30 | Age above which aging penalty applies |
+
+---
+
+## Personalidade (Etapa 26)
+
+`findCandidates` pula o jogador muito ambicioso (≥ 17) de um clube 2+ tiers naturais acima do comprador;
+`evaluateTransferOffer(..., { buyer })` soma o empurrão de ambição/lealdade ao score do vendedor. Ver
+`.claude/rules/game/personality.md`.

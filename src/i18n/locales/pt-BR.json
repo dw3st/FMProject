@@ -1931,7 +1931,8 @@
       "tooManyYears": "O jogador não assina tantos anos na idade dele.",
       "invalidYears": "Escolha entre 1 e 5 anos.",
       "squadFull": "Seu elenco está cheio (36 jogadores).",
-      "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação."
+      "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação.",
+      "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa."
     }
   },
   "career": {
@@ -2561,6 +2562,74 @@
     "errors": {
       "saveFailed": "Não foi possível salvar as instruções.",
       "markingFailed": "Não foi possível salvar a marcação."
+    }
+  },
+  "personality": {
+    "title": "Personalidade",
+    "scoutUncertain": "Olheiro: incerto",
+    "trait": {
+      "ambition": "Ambição",
+      "loyalty": "Lealdade",
+      "professionalism": "Profissionalismo",
+      "temperament": "Temperamento"
+    },
+    "band": {
+      "ambition": {
+        "very_low": "Acomodado",
+        "low": "Pouco ambicioso",
+        "medium": "Moderado",
+        "high": "Ambicioso",
+        "very_high": "Muito ambicioso"
+      },
+      "loyalty": {
+        "very_low": "Mercenário",
+        "low": "Pouco leal",
+        "medium": "Regular",
+        "high": "Leal",
+        "very_high": "Fiel ao clube"
+      },
+      "professionalism": {
+        "very_low": "Desleixado",
+        "low": "Pouco dedicado",
+        "medium": "Regular",
+        "high": "Profissional",
+        "very_high": "Exemplar"
+      },
+      "temperament": {
+        "very_low": "Muito calmo",
+        "low": "Calmo",
+        "medium": "Equilibrado",
+        "high": "Esquentado",
+        "very_high": "Cabeça quente"
+      }
+    },
+    "summary": {
+      "balanced": "Equilibrado",
+      "ambitious": "Ambicioso",
+      "settled": "Acomodado",
+      "loyal": "Ídolo leal",
+      "mercenary": "Mercenário",
+      "professional": "Profissional",
+      "sloppy": "Desleixado",
+      "hothead": "Pavio curto",
+      "calm": "Cabeça fria"
+    },
+    "talkHint": {
+      "ambitious": "quer minutos e um clube grande",
+      "settled": "não pede muito",
+      "loyal": "perdoa promessa quebrada, detesta ser posto à venda",
+      "mercenary": "vai aonde está o dinheiro",
+      "professional": "aceita bem uma cobrança",
+      "sloppy": "perde o interesse fácil",
+      "hothead": "reage forte a uma recusa",
+      "calm": "leva tudo com calma"
+    },
+    "demand": {
+      "ambitious": "Ambicioso: {{pct}}",
+      "settled": "Acomodado: {{pct}}",
+      "loyal": "Leal ao clube: {{pct}}",
+      "compatriot": "Joga no país dele: {{pct}}",
+      "smallerClub": "Quer um clube maior: {{pct}}"
     }
   }
 }

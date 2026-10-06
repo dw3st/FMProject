@@ -96,7 +96,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone }: Props) {
             </div>
           ) : (
             <>
-              <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} />
+              <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} />
               {mode === "renew" && demandInfo?.refuses ? (
                 <p className="text-sm text-destructive m-0">{t("morale.contract.refuses")}</p>
               ) : mode === "renew" && (demandInfo?.moraleDemandMult ?? 1) > 1 ? (

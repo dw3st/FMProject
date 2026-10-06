@@ -1,3 +1,4 @@
+import { listedUnaskedMult, moraleVolatility } from "@/Domain/personality/personality";
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
@@ -82,7 +83,9 @@ describe("morale routes", () => {
     const before = (await human()).players.find((p) => p.id === listed.id)!.morale!;
     const sell = await call("/api/saves/:saveId/sell-list", `/api/saves/${saveId}/sell-list`, "POST", session.token, { saveId }, { playerId: listed.id });
     expect(sell.status).toBe(200);
-    expect((await human()).players.find((p) => p.id === listed.id)!.morale).toBe(before + MORALE.LISTED_UNASKED);
+    // × his loyalty and temperament (`personality.md`).
+    const hit = MORALE.LISTED_UNASKED * listedUnaskedMult(listed) * moraleVolatility(listed);
+    expect((await human()).players.find((p) => p.id === listed.id)!.morale).toBeCloseTo(before + hit, 1);
 
     // A furious player refuses to renew, unless a renewal promise is open; then it is kept.
     const angry = start.players.find((p) => p.age <= 27 && p.id !== pid && p.id !== mover.id && p.id !== listed.id)!;
@@ -102,7 +105,7 @@ describe("morale routes", () => {
     const afterRenew = await human();
     expect(afterRenew.moraleClub!.promises.some((p) => p.playerId === angry.id)).toBe(false);
     expect(afterRenew.players.find((p) => p.id === angry.id)!.morale)
-      .toBe(10 + MORALE.PROMISE_MADE + MORALE.RENEWAL_ACCEPTED + MORALE.PROMISE_KEPT);
+      .toBeCloseTo(10 + (MORALE.PROMISE_MADE + MORALE.RENEWAL_ACCEPTED + MORALE.PROMISE_KEPT) * moraleVolatility(angry), 0);
 
     // The day advance keeps morale in 0..100 with a trend.
     const out = await advanceOneDay(saveService, saveId);

@@ -6,8 +6,41 @@ import { addDays } from "@/Domain/dates";
 import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
 import { seedFrom } from "@/Domain/rng";
+import {
+  ambitionDemandMult, compatriotMult, loyaltyRenewalMult, refusesSmallerClub, seasonsAtClub, smallerClubMult, tierStepsDown,
+} from "@/Domain/personality/personality";
 
-type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears";
+type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub";
+
+/**
+ * Where a signing comes from (`.claude/rules/game/personality.md`): the player's current club (a
+ * purchase) or his last club (a free agent). Only used to compare the clubs' natural tiers.
+ */
+export interface DemandContext {
+  fromSquad?: Pick<Squad, "finances"> | null;
+  /**
+   * A renewal at `squad`, his own club (also for one of its players out on loan, who is not in
+   * `squad.players`): loyalty applies, no compatriot discount, no smaller-club premium or refusal.
+   * Absent = decided by membership of `squad.players`.
+   */
+  renewal?: boolean;
+}
+
+/** The parts of a wage demand (each a multiplier, 1 = no effect) and whether he refuses the club. */
+export interface DemandBreakdown {
+  demand: number;
+  /** Before personality (curve × importance × youth × morale). */
+  base: number;
+  ambition: number;
+  /** Own-club renewal only. */
+  loyalty: number;
+  /** A club of his nationality's country (not his own club). */
+  compatriot: number;
+  /** A club smaller than his current/last one (ambition). */
+  smallerClub: number;
+  /** Ambition ≥ 17 and the club two or more tiers smaller. */
+  refuses: boolean;
+}
 
 export interface ContractOfferResult {
   accepted: boolean;
@@ -46,14 +79,43 @@ export function initialContract(player: RosterPlayer, squad: Squad, seasonEnd: s
   return { until: addYearsIso(seasonEnd, years - 1), wage: playerWeeklyWage(player, wageFactorOf(squad)) };
 }
 
-/** Weekly wage the player asks for at this club. `date` is part of the signature for future seasonality. */
-export function contractDemand(player: RosterPlayer, squad: Squad, _date: string): number {
+/**
+ * Personality multiplier on a wage at `squad` (`.claude/rules/game/personality.md`): ambition
+ * always; on a renewal at his own club, loyalty by seasons there; on a signing elsewhere, the
+ * compatriot discount and the smaller-club premium (from `ctx.fromSquad`).
+ */
+function personalityParts(player: RosterPlayer, squad: Squad, ctx: DemandContext = {}) {
+  const member = squad.players.some((p) => p.id === player.id);
+  const own = ctx.renewal ?? member;
+  const steps = own ? 0 : tierStepsDown(ctx.fromSquad, squad);
+  return {
+    ambition: ambitionDemandMult(player),
+    loyalty: own ? loyaltyRenewalMult(player, seasonsAtClub(player, squad.id, true)) : 1,
+    compatriot: own ? 1 : compatriotMult(player, squad.country),
+    smallerClub: smallerClubMult(player, steps),
+    refuses: refusesSmallerClub(player, steps),
+  };
+}
+
+/** The demand and its parts (see `DemandBreakdown`). */
+export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: string, ctx: DemandContext = {}): DemandBreakdown {
   const avg = teamAverage(squad);
   const rating = overallAvg(player);
   const importance = 1 + clamp(rating - avg, 0, C.IMPORTANCE_CAP) * C.IMPORTANCE_WEIGHT;
   const young = player.age <= C.YOUNG_MAX_AGE && rating >= avg ? C.YOUNG_RISING_BONUS : 1;
   // An unhappy (or furious) player asks more (`.claude/rules/game/morale.md`); no stored morale = 1.
-  return Math.round(playerWeeklyWage(player, wageFactorOf(squad)) * importance * young * moraleDemandMult(player));
+  const base = playerWeeklyWage(player, wageFactorOf(squad)) * importance * young * moraleDemandMult(player);
+  const parts = personalityParts(player, squad, ctx);
+  return {
+    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub),
+    base: Math.round(base),
+    ...parts,
+  };
+}
+
+/** Weekly wage the player asks for at this club. `date` is part of the signature for future seasonality. */
+export function contractDemand(player: RosterPlayer, squad: Squad, date: string, ctx: DemandContext = {}): number {
+  return demandBreakdown(player, squad, date, ctx).demand;
 }
 
 export function evaluateContractOffer(
@@ -61,8 +123,12 @@ export function evaluateContractOffer(
   player: RosterPlayer,
   squad: Squad,
   date: string,
+  ctx: DemandContext = {},
 ): ContractOfferResult {
-  const demand = contractDemand(player, squad, date);
+  const breakdown = demandBreakdown(player, squad, date, ctx);
+  const demand = breakdown.demand;
+  // A very ambitious player turns down a much smaller club whatever the terms (`personality.md`).
+  if (breakdown.refuses) return { accepted: false, reason: "smallerClub", demand };
   if (!Number.isInteger(offer.years) || offer.years < C.MIN_YEARS || offer.years > C.MAX_YEARS) {
     return { accepted: false, reason: "invalidYears", demand };
   }
@@ -83,7 +149,11 @@ export function aiRenewalYears(player: RosterPlayer): number {
  * `seasonEnd` as the first. Wage is the curve at the club's factor (what the AI pays).
  */
 export function renewalContract(player: RosterPlayer, squad: Squad, seasonEnd: string, years: number): PlayerContract {
-  return { until: addYearsIso(seasonEnd, Math.max(0, years - 1)), wage: playerWeeklyWage(player, wageFactorOf(squad)) };
+  // The AI pays the curve shaped by his personality (ambition; loyalty on a renewal at his club,
+  // the compatriot discount on a signing) — `.claude/rules/game/personality.md`.
+  const p = personalityParts(player, squad);
+  const wage = Math.round(playerWeeklyWage(player, wageFactorOf(squad)) * p.ambition * p.loyalty * p.compatriot);
+  return { until: addYearsIso(seasonEnd, Math.max(0, years - 1)), wage };
 }
 
 /**

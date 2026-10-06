@@ -1,9 +1,10 @@
+import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
 import { Player } from "@/Domain/Player";
 import {
-  aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
+  aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
-import { wageFactorOf } from "@/Domain/finance/wages";
 import { AI_SIGN_MAX_AGE } from "@/Domain/contracts/contractConfig";
+import { renewalContract } from "@/Domain/contracts/contracts";
 import type { MainRole } from "@/Domain/roles";
 import { getMainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
@@ -200,10 +201,13 @@ export function findCandidates(
 ): RosterPlayer[] {
   const cap = priceCapForTier(need.budgetTier);
   const out: RosterPlayer[] = [];
+  const buyer = allSquads.find((s) => s.id === buyerSquadId);
 
   for (const squad of allSquads) {
     if (squad.id === buyerSquadId) continue;
     if (excludeSellerSquadId && squad.id === excludeSellerSquadId) continue;
+    // A very ambitious player turns down a much smaller club (`personality.md`).
+    const steps = buyer ? tierStepsDown(squad, buyer) : 0;
     for (const player of squad.players) {
       // On loan (`.claude/rules/game/negotiation.md`): not the holding club's to sell.
       if (player.loan) continue;
@@ -216,6 +220,7 @@ export function findCandidates(
       if (need.intentType === "future_investment" && player.age > 23) continue;
       const price = new Player(rating, player.age).price;
       if (cap != null && price > cap) continue;
+      if (refusesSmallerClub(player, steps)) continue;
       out.push(player);
     }
   }
@@ -403,7 +408,6 @@ export function processTeamTransferAttempt(
   if (needs.length === 0) return null;
 
   const buyerBudget = aiTransferBudgetOf(buyerSquad);
-  const buyerFactor = wageFactorOf(buyerSquad);
   const buyerAvg = teamAvgRating(buyerSquad);
   const need = [...needs].sort((a, b) => b.urgency - a.urgency)[0]!;
   const candidates = findCandidates(need, allSquads, buyerSquad.id, excludePlayerClubSquadId);
@@ -420,7 +424,8 @@ export function processTeamTransferAttempt(
     const fairPrice = new Player(rating, player.age).price;
     const fee = Math.round(fairPrice * (0.9 + rng() * 0.25));
     if (fee > buyerBudget) continue;
-    if (!passesWageGate(finance, estimateWeeklyWage(player, buyerFactor), fee)) continue;
+    // The wage it would pay: the curve shaped by his personality (`renewalContract`, `personality.md`).
+    if (!passesWageGate(finance, renewalContract(player, buyerSquad, "2000-01-01", 1).wage, fee)) continue;
     const sellerSquadId = squadByPlayerId.get(player.id) ?? "";
     const sellList = sellerSellLists[sellerSquadId] ?? [];
     const score = scoreCandidate(player, need, fee, buyerBudget, rng, sellList, buyerAvg);

@@ -196,3 +196,11 @@ responde os primeiros pedidos com uma promessa: minutos, renovação ou saída, 
   e resultados positivos superam a deriva de 5%); nas pausas e na entressafra só a deriva age, puxando para 65.
 - Pedidos de conversa abertos na virada do país do jogador são reenviados depois do `clearInbox` (id estável
   `player-talk-<talkId>`).
+
+## Personalidade (Etapa 26)
+
+Temperamento escala todo delta de evento (`withEventDelta`, ×1 ± 0,25), ambição o déficit de minutos e os limiares
+(pedido de transferência `25 + 8 × t`, `wants_move` `60 + 10 × t`, clube mais forte só com ambição ≥ 13), lealdade o
+listado sem pedir (×1 + 0,5 t) e a promessa quebrada (×1 − 0,3 t); leal (≥ 15) não pede transferência por moral e
+só quer sair com moral < 40; profissional ignora a perda de DP por moral baixa e aceita bem "cobrar". Ver
+`.claude/rules/game/personality.md`.

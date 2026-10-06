@@ -61,6 +61,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Injuries",          key: "avgInjuries" },
     { stat: "Out of position",   key: "avgOutOfPosition" },
     { stat: "Morale",            key: "avgMorale" },
+    { stat: "Temperament",       key: "avgTemperament" },
     { stat: "Fouls",             key: "avgFouls" },
     { stat: "Yellow cards",      key: "avgYellowCards" },
     { stat: "Red cards",         key: "avgRedCards" },

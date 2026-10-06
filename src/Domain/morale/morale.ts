@@ -12,6 +12,9 @@ import { overallAvg } from "@/Domain/playerRating";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 import { isInjured } from "@/Domain/injury/injury";
 import { isSuspended } from "@/Domain/discipline/discipline";
+import {
+  listedUnaskedMult, minutesDeficitMult, moraleVolatility, promiseBrokenMult, takesDemandWell, transferRequestBelow, wantsMove,
+} from "@/Domain/personality/personality";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type {
   ClubMoraleState, MoraleBand, PlayerMoraleLog, PlayerPromise, SquadStatus, TalkAnswer, TalkReason, TalkRequest,
@@ -171,6 +174,14 @@ export function withMoraleDelta(p: RosterPlayer, delta: number): RosterPlayer {
   return { ...p, morale: clampMorale(moraleOf(p) + delta) };
 }
 
+/**
+ * Morale moved by an EVENT `delta`, scaled by his temperament (`personality.md`: a hot-head reacts
+ * up to 25% more, a calm one 25% less). The weekly drift never goes through here.
+ */
+export function withEventDelta(p: RosterPlayer, delta: number): RosterPlayer {
+  return withMoraleDelta(p, delta * moraleVolatility(p));
+}
+
 export function emptyClubMorale(): ClubMoraleState {
   return { talks: [], promises: [] };
 }
@@ -302,7 +313,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
   const set = (p: RosterPlayer) => players.set(p.id, p);
   const delta = (id: string, d: number) => {
     const p = players.get(id);
-    if (p) set(withMoraleDelta(p, d));
+    if (p) set(withEventDelta(p, d));
   };
   const requestTransfer = (id: string) => {
     const p = players.get(id);
@@ -314,7 +325,9 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     news.push({ date, kind: "transfer_request", playerId: id, playerName: p.name });
   };
   const breakPromise = (pr: PlayerPromise) => {
-    delta(pr.playerId, MORALE.PROMISE_BROKEN);
+    // The loyal one forgives a broken promise more (`personality.md`).
+    const who = players.get(pr.playerId);
+    delta(pr.playerId, MORALE.PROMISE_BROKEN * (who ? promiseBrokenMult(who) : 1));
     news.push({ date, kind: "promise_broken", playerId: pr.playerId, playerName: pr.playerName, promiseKind: pr.kind });
     requestTransfer(pr.playerId);
   };
@@ -345,7 +358,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
         minutes: [...log.minutes, m.minutes[p.id] ?? 0].slice(-MORALE.WINDOW),
         newMatches: (log.newMatches ?? 0) + 1,
       };
-      set({ ...withMoraleDelta(p, d), moraleLog: nextLog });
+      set({ ...withEventDelta(p, d), moraleLog: nextLog });
     }
     // Minutes promises: count the match, resolve as soon as decided.
     const next: PlayerPromise[] = [];
@@ -399,12 +412,16 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
       const excused = isInjured(p0, date) || isSuspended(p0);
       // The window only counts again once new matches entered it (breaks, off-season: no change).
       const fresh = (log.newMatches ?? 0) > 0;
-      let v = moraleOf(p0) + (fresh ? minutesDelta(status, log.minutes, excused) : 0);
+      // Personality: an ambitious player feels missing minutes more; every event × temperament.
+      const md = fresh ? minutesDelta(status, log.minutes, excused) : 0;
+      let v = moraleOf(p0) + (md < 0 ? md * minutesDeficitMult(p0) : md) * moraleVolatility(p0);
       v += (MORALE.NEUTRAL - v) * MORALE.DRIFT;
       let p: RosterPlayer = { ...p0, morale: clampMorale(v), ...(p0.moraleLog ? { moraleLog: { ...log, newMatches: 0 } } : {}) };
       set(p);
-      // Transfer request: furious and not yet asked; withdrawn once he is fine again.
-      if (moraleOf(p) < MORALE.TRANSFER_REQUEST_BELOW) requestTransfer(p.id);
+      // Transfer request: furious and not yet asked (the threshold moves with ambition; a loyal
+      // player never asks from morale alone); withdrawn once he is fine again.
+      const below = transferRequestBelow(p, MORALE.TRANSFER_REQUEST_BELOW);
+      if (below !== null && moraleOf(p) < below) requestTransfer(p.id);
       p = players.get(p.id)!;
       const plog = logOf(p);
       if (plog.transferRequest && moraleOf(p) >= MORALE.TRANSFER_REQUEST_WITHDRAW && !hasPromise(state, p.id, "sale")) {
@@ -434,7 +451,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     const p = players.get(b.playerId);
     if (weekCount >= MORALE.MAX_NEW_TALKS_PER_WEEK) break;
     if (!p || p.loan || hasOpenTalk(state, p.id) || hasPromise(state, p.id, "sale") || quiet(p, date)) continue;
-    if (moraleOf(p) >= MORALE.WANTS_MOVE_BELOW && !b.stronger) continue;
+    if (!wantsMove(p, moraleOf(p), b.stronger, MORALE.WANTS_MOVE_BELOW)) continue;
     const talk: TalkRequest = {
       id: input.newId(), playerId: p.id, playerName: p.name, reason: "wants_move", date,
       expires: addDays(date, MORALE.TALK_VALID_DAYS), clubName: b.clubName,
@@ -557,7 +574,7 @@ export function answerTalk(args: {
       const band = moraleBand(moraleOf(player));
       change = answer === "praise"
         ? MORALE.PRAISE
-        : band === "very_happy" || band === "content" ? MORALE.DEMAND_GOOD : MORALE.DEMAND_BAD;
+        : band === "very_happy" || band === "content" || takesDemandWell(player) ? MORALE.DEMAND_GOOD : MORALE.DEMAND_BAD;
       nextLog = { ...nextLog, talkedOn: date };
       break;
     }
@@ -567,7 +584,7 @@ export function answerTalk(args: {
   }
 
   if (talk) nextLog = { ...nextLog, quietUntil: addDays(date, MORALE.TALK_QUIET_DAYS) };
-  const updated: RosterPlayer = { ...withMoraleDelta(player, change), moraleLog: nextLog };
+  const updated: RosterPlayer = { ...withEventDelta(player, change), moraleLog: nextLog };
   const nextState: ClubMoraleState = {
     ...state,
     talks: talk ? state.talks.filter((t) => t.id !== talk.id) : state.talks,
@@ -599,7 +616,7 @@ export function afterRenewal(squad: Squad, playerId: string, date: string): { sq
   return {
     squad: {
       ...squad,
-      players: squad.players.map((p) => (p.id === playerId ? withMoraleDelta(p, d) : p)),
+      players: squad.players.map((p) => (p.id === playerId ? withEventDelta(p, d) : p)),
       moraleClub: {
         ...state,
         talks: state.talks.filter((t) => !(t.playerId === playerId && t.reason === "contract")),
@@ -623,7 +640,11 @@ export function afterListedForSale(squad: Squad, playerId: string): Squad {
   const asked = !!player.moraleLog?.transferRequest
     || clubMoraleOf(squad).promises.some((p) => p.playerId === playerId && p.kind === "sale");
   if (asked) return squad;
-  return { ...squad, players: squad.players.map((p) => (p.id === playerId ? withMoraleDelta(p, MORALE.LISTED_UNASKED) : p)) };
+  // The loyal one feels being listed more (`personality.md`).
+  return {
+    ...squad,
+    players: squad.players.map((p) => (p.id === playerId ? withEventDelta(p, MORALE.LISTED_UNASKED * listedUnaskedMult(p)) : p)),
+  };
 }
 
 /** Open talk requests and promises due within `days` (the dashboard's Attention card). */

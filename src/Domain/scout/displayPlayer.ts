@@ -1,3 +1,5 @@
+import { personalityViewOf } from "@/Domain/personality/personality";
+import type { PersonalityView } from "@/types/personalityTypes";
 import { positionAptitudes, preferredRole, type Aptitude, type DetailedRole } from "@/Domain/positions/positionAptitude";
 import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
@@ -10,6 +12,8 @@ import { weeklyWage } from "@/Domain/finance/wages";
 /** A player row as the squad, scout and player screens show it (built on the server for the scout search). */
 export interface DisplayPlayer {
   id: string;
+  /** Personality as the screens see it (exact for the own club, the scout's view otherwise). */
+  personality?: PersonalityView;
   /** Reborn academy star (own badge). */
   reborn?: boolean;
   /** On loan here (`.claude/rules/game/negotiation.md`): parent club name and return date. */
@@ -119,6 +123,7 @@ export function toDisplayPlayer(
     preferredFoot: player.preferredFoot,
     injury: injuryInfo,
     ...(player.reborn ? { reborn: true } : {}),
+    personality: personalityViewOf(player),
     ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
   };
 }
