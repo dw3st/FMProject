@@ -18,6 +18,12 @@ type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears" | "smallerClu
  */
 export interface DemandContext {
   fromSquad?: Pick<Squad, "finances"> | null;
+  /**
+   * A renewal at `squad`, his own club (also for one of its players out on loan, who is not in
+   * `squad.players`): loyalty applies, no compatriot discount, no smaller-club premium or refusal.
+   * Absent = decided by membership of `squad.players`.
+   */
+  renewal?: boolean;
 }
 
 /** The parts of a wage demand (each a multiplier, 1 = no effect) and whether he refuses the club. */
@@ -79,11 +85,12 @@ export function initialContract(player: RosterPlayer, squad: Squad, seasonEnd: s
  * compatriot discount and the smaller-club premium (from `ctx.fromSquad`).
  */
 function personalityParts(player: RosterPlayer, squad: Squad, ctx: DemandContext = {}) {
-  const own = squad.players.some((p) => p.id === player.id);
+  const member = squad.players.some((p) => p.id === player.id);
+  const own = ctx.renewal ?? member;
   const steps = own ? 0 : tierStepsDown(ctx.fromSquad, squad);
   return {
     ambition: ambitionDemandMult(player),
-    loyalty: own ? loyaltyRenewalMult(player, seasonsAtClub(player, squad.id)) : 1,
+    loyalty: own ? loyaltyRenewalMult(player, seasonsAtClub(player, squad.id, true)) : 1,
     compatriot: own ? 1 : compatriotMult(player, squad.country),
     smallerClub: smallerClubMult(player, steps),
     refuses: refusesSmallerClub(player, steps),

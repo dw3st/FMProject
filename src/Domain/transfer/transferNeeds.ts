@@ -1,10 +1,10 @@
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
 import { Player } from "@/Domain/Player";
 import {
-  aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf,
+  aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
-import { wageFactorOf } from "@/Domain/finance/wages";
 import { AI_SIGN_MAX_AGE } from "@/Domain/contracts/contractConfig";
+import { renewalContract } from "@/Domain/contracts/contracts";
 import type { MainRole } from "@/Domain/roles";
 import { getMainRole } from "@/Domain/roles";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
@@ -408,7 +408,6 @@ export function processTeamTransferAttempt(
   if (needs.length === 0) return null;
 
   const buyerBudget = aiTransferBudgetOf(buyerSquad);
-  const buyerFactor = wageFactorOf(buyerSquad);
   const buyerAvg = teamAvgRating(buyerSquad);
   const need = [...needs].sort((a, b) => b.urgency - a.urgency)[0]!;
   const candidates = findCandidates(need, allSquads, buyerSquad.id, excludePlayerClubSquadId);
@@ -425,7 +424,8 @@ export function processTeamTransferAttempt(
     const fairPrice = new Player(rating, player.age).price;
     const fee = Math.round(fairPrice * (0.9 + rng() * 0.25));
     if (fee > buyerBudget) continue;
-    if (!passesWageGate(finance, estimateWeeklyWage(player, buyerFactor), fee)) continue;
+    // The wage it would pay: the curve shaped by his personality (`renewalContract`, `personality.md`).
+    if (!passesWageGate(finance, renewalContract(player, buyerSquad, "2000-01-01", 1).wage, fee)) continue;
     const sellerSquadId = squadByPlayerId.get(player.id) ?? "";
     const sellList = sellerSellLists[sellerSquadId] ?? [];
     const score = scoreCandidate(player, need, fee, buyerBudget, rng, sellList, buyerAvg);

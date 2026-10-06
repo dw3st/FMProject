@@ -3,6 +3,9 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import type { Personality } from "@/types/personalityTypes";
+import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
+import { staffEffectsOf } from "@/Domain/staff/staff";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
@@ -61,9 +64,11 @@ export const contractRoutes = {
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       // A furious player only renews with an open renewal promise (`.claude/rules/game/morale.md`).
       if (!out && refusesRenewal(squad, player)) {
-        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date) }, { status: 400 });
+        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date, { renewal: true }) }, { status: 400 });
       }
-      const check = evaluateContractOffer({ wage, years }, player, squad, date);
+      // A renewal at his own club, also when he is out on loan (`personality.md`): loyalty, no
+      // smaller-club premium — the same context as the demand route.
+      const check = evaluateContractOffer({ wage, years }, player, squad, date, { renewal: true });
       if (!check.accepted) {
         return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       }
@@ -126,13 +131,28 @@ export const contractRoutes = {
     const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
     // Own player: the morale behind the demand (an unhappy one asks more, a furious one refuses).
     const own = !from || from === mine.id ? mine.players.find((p) => p.id === playerId) : undefined;
+    // One of ours out on loan: still a renewal at his own club (same context as the renew route).
+    const lentOut = !own && (await saveService.getMarket(saveId))?.loans?.some((l) => l.playerId === playerId && l.fromClubId === mine.id);
+    const renewal = !!own || !!lentOut;
     // Personality parts of the demand (`personality.md`): where he comes from = his club, or the
     // last club of a free agent.
-    const fromSquad = own ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
-    const b = demandBreakdown(player, mine, date, { fromSquad });
+    const fromSquad = renewal ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
+    const b = demandBreakdown(player, mine, date, { fromSquad, renewal });
+    // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
+    // (`obscurePersonality`) — nothing when he is unsure. `demand` (and the refusal on submit) stay real.
+    let parts: Record<string, number | boolean> = {};
+    if (renewal) {
+      parts = { ambition: b.ambition, loyalty: b.loyalty };
+    } else {
+      const view = obscurePersonality(personalityOf(player), staffEffectsOf(mine).scoutNoise, saveId, player.id);
+      if (!view.uncertain && Object.values(view.traits).every((v) => v !== null)) {
+        const seen = demandBreakdown({ ...player, personality: view.traits as Personality }, mine, date, { fromSquad });
+        parts = { ambition: seen.ambition, compatriot: seen.compatriot, smallerClub: seen.smallerClub, refusesSmallerClub: seen.refuses };
+      }
+    }
     return Response.json({
       demand: b.demand,
-      ambition: b.ambition, loyalty: b.loyalty, compatriot: b.compatriot, smallerClub: b.smallerClub, refusesSmallerClub: b.refuses,
+      ...parts,
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
         : {}),

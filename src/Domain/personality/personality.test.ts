@@ -28,6 +28,13 @@ describe("generation", () => {
     for (const k of PERSONALITY_TRAITS) expect(Math.abs(sums[k]! / n - 10.5)).toBeLessThan(0.2);
   });
 
+  test("loyalty (ambition mix) is unbiased: world mean ~10,5", () => {
+    let sum = 0;
+    const n = 40_000;
+    for (let i = 0; i < n; i++) sum += generatePersonality(`loyal_${i}`).loyalty;
+    expect(Math.abs(sum / n - 10.5)).toBeLessThan(0.05);
+  });
+
   test("override wins; reborn inherits the original", () => {
     expect(personalityOf(withP({ ambition: 3 })).ambition).toBe(3);
     expect(personalityOf({ id: "reborn_player_9_2030", reborn: { fromId: "player_9" } })).toEqual(personalityOf({ id: "player_9" }));
@@ -119,9 +126,13 @@ describe("effects", () => {
   });
   test("seasons at club", () => {
     const row = (season: string, squadId: string) => ({ season, squadId } as never);
-    const p = { squadId: "a", history: [row("2026-27", "a"), row("2027-28", "a"), row("2028-29", "b")] };
-    expect(seasonsAtClub(p, "a")).toBe(3);
-    expect(seasonsAtClub(p, "b")).toBe(1);
+    const history = [row("2026-27", "a"), row("2027-28", "a"), row("2028-29", "b")];
+    const inSeason = { history, seasonLog: { appearances: 3, trainingSessions: 10 } as never };
+    expect(seasonsAtClub(inSeason, "a", true)).toBe(3);
+    expect(seasonsAtClub(inSeason, "b", false)).toBe(1);
+    // At the rollover the log was just reset: the closed season (already a history row) counts once.
+    const rolled = { history, seasonLog: { appearances: 0, trainingSessions: 0 } as never };
+    expect(seasonsAtClub(rolled, "a", true)).toBe(2);
   });
 });
 

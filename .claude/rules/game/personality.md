@@ -9,7 +9,7 @@ Spec: `docs/superpowers/specs/2026-10-05-personality-design.md` (D1–D7 aprovad
   **temperamento** (20 = cabeça quente). Sem 5º traço (D1).
 - **Derivados, nunca gravados** (D4): `personalityOf(player)` (`src/Domain/personality/personality.ts`) gera os
   traços do id: cada traço = `1 + round(média de 3 sorteios × 19)` com `mulberry32(seedFrom("personality:<id>:<traço>"))`
-  (sino, média 10,5); lealdade = `round(0,75 × sorteio + 0,25 × (21 − ambição))` (leve anticorrelação). Sem
+  (sino, média 10,5); lealdade = `0,75 × sorteio + 0,25 × (21 − ambição)` arredondado com desempate determinístico sem viés no .5 (leve anticorrelação; média do mundo 10,5). Sem
   correlação com idade, posição ou nota. Nada muda no mundo, nos kits nem nos saves (sem migração); o mesmo jogador
   tem a mesma personalidade em qualquer carreira. Jovens da base (ids novos) já nascem com a sua; o **renascido**
   herda a do original (`reborn.fromId`). `RosterPlayer.personality` é só override (testes, dados curados futuros):
@@ -74,21 +74,26 @@ Spec: `docs/superpowers/specs/2026-10-05-personality-design.md` (D1–D7 aprovad
 ### Contratos e mercado
 
 - **Pedido** (`demandBreakdown`): base (curva × importância × jovem × moral) × ambição `1 + 0,08 × t` × lealdade
-  (só renovação no próprio clube: `1 − 0,10 × max(0, t) × min(1, temporadas / 4)`; temporadas = temporadas no
-  `history` naquele clube + a atual) × compatriota (contratação por clube do país da nacionalidade, D5:
+  (só renovação no próprio clube, inclusive de um cedido por empréstimo — `DemandContext.renewal`, igual na rota
+  `renew` e no `demand`: `1 − 0,10 × max(0, t) × min(1, temporadas / 4)`; temporadas = temporadas no `history`
+  naquele clube + a atual quando ela já começou para ele (algo no `seasonLog`: na virada, com o log zerado, a
+  temporada recém-fechada conta uma vez só)) × compatriota (contratação por clube do país da nacionalidade, D5:
   `1 − 0,05 × max(0, t_lealdade)`) × clube menor (cada degrau de tier natural abaixo do clube de origem:
   `+0,10 × max(0, t_ambição)`).
 - **Recusa** `smallerClub`: ambição ≥ 17 e o comprador 2+ tiers naturais (`naturalFinancialTier` pela receita)
   abaixo do clube atual (livre: o último clube no `history`). Compra (`POST /transfers`), livre (`/free-agents/:id/sign`)
-  e pré-contrato devolvem 400 `smallerClub`. A IA (D7) também: `findCandidates` pula o candidato que recusaria.
-- **Salário que a IA paga** (`renewalContract`: renovação da virada, livres, refil, compras da IA): a curva ×
+  e pré-contrato devolvem 400 `smallerClub`. A IA (D7) também: `findCandidates`, os rivais (`rivalCandidates`) e as propostas da IA pelos jogadores do humano
+  (`generateBidsForHuman`, `buildAiTransferBid`) pulam o comprador que ele recusaria.
+- **Salário que a IA paga** (`renewalContract`, também o usado no portão de folha da compra da IA e das propostas: renovação da virada, livres, refil, compras da IA): a curva ×
   ambição × lealdade (renovação) ou × compatriota (contratação).
 - **Vendedor IA** (`saleContext(..., { buyer })`): `+0,10 × t_ambição` quando o comprador tem tier natural maior,
   `−0,10 × max(0, t_lealdade)` sempre. Vale no mercado IA × IA, nas ofertas do humano (`respondToOffer` com
   `buyer`, inclusive a contraproposta) e na avaliação das rivais. Sem comprador (empréstimos, vendas do humano)
   não muda nada.
-- `GET .../players/:id/demand` devolve `ambition`, `loyalty`, `compatriot`, `smallerClub` (multiplicadores) e
-  `refusesSmallerClub` (o `refuses` existente continua sendo o da moral).
+- `GET .../players/:id/demand`: `demand` (e o `refuses` da moral) sempre reais. Jogador próprio (inclusive cedido):
+  `ambition`, `loyalty` exatos. De fora: `ambition`, `compatriot`, `smallerClub` e `refusesSmallerClub` calculados
+  sobre a personalidade vista pelo olheiro (`obscurePersonality`), e omitidos quando a incerteza é ≥ 0,5 — a tela
+  nunca revela o traço exato; a recusa no envio usa o valor real.
 
 ### Olheiro (D6: sem filtros nesta etapa)
 

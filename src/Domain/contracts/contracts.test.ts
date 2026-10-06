@@ -153,11 +153,17 @@ describe("personality (`personality.md`)", () => {
   test("loyalty discounts the renewal by seasons at the club; compatriot discount on a signing", () => {
     const loyal = withP({ ...player("l", 26), history: [
       { season: "2024-25", squadId: "c1" }, { season: "2025-26", squadId: "c1" }, { season: "2026-27", squadId: "c1" },
-    ] as never }, { loyalty: 20 });
+    ] as never, seasonLog: { appearances: 5, trainingSessions: 20 } as never }, { loyalty: 20 });
     const own = squad([loyal]);
     const b = demandBreakdown(loyal, own, "d");
     expect(b.loyalty).toBeCloseTo(0.9);
     expect(b.compatriot).toBe(1);
+    // A player of the club out on loan (not in its squad list): an explicit renewal, same parts.
+    const away = squad([player("x", 26)]);
+    const lent = demandBreakdown(loyal, away, "d", { renewal: true, fromSquad: { finances: { broadcasting: 900_000_000, commercial: 0, total: 0, budget: 0, followers: 0 } } });
+    expect(lent.loyalty).toBeCloseTo(0.9);
+    expect(lent.smallerClub).toBe(1);
+    expect(lent.refuses).toBe(false);
     const foreign = { ...withP(player("n", 26), { loyalty: 20 }), nationality: "Brazil" };
     const brazil = { ...squad([player("x", 26)]), country: "Brazil" };
     expect(demandBreakdown(foreign, brazil, "d").compatriot).toBeCloseTo(0.95);

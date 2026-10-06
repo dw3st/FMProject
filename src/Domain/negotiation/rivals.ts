@@ -8,6 +8,7 @@ import { playerMatchesBand, playerOverallRating, priceCapForTier, teamAvgRating 
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { respondToOffer, roundFeeDown, roundFeeUp } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
+import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { RivalBid, SquadMarketProfile } from "@/types/transferMarketTypes";
 
@@ -45,6 +46,7 @@ export function rivalCandidates(args: {
   const rating = playerOverallRating(player);
   const value = new Player(rating, player.age).price;
   const out: RivalCandidate[] = [];
+  const seller = args.squadOf(args.sellerId) ?? null;
   for (const [id, prof] of Object.entries(args.profiles)) {
     if (id === args.sellerId || id === args.humanId || args.exclude?.has(id)) continue;
     const need = prof.needs?.find((n) => playerMatchesBand(player, n.position)
@@ -53,8 +55,10 @@ export function rivalCandidates(args: {
     const squad = args.squadOf(id);
     if (!squad || squad.players.length >= MAX_SQUAD) continue;
     if (args.windowOpen && !args.windowOpen(squad)) continue;
+    // A very ambitious player turns down a much smaller club (`personality.md`).
+    if (refusesSmallerClub(player, tierStepsDown(seller, squad))) continue;
     if (aiTransferBudgetOf(squad) < value * R.BUDGET_RATIO) continue;
-    if (!passesWageGate(aiClubFinance(squad), contractDemand(player, squad, ""), value)) continue;
+    if (!passesWageGate(aiClubFinance(squad), contractDemand(player, squad, "", { fromSquad: seller }), value)) continue;
     out.push({ squad, urgency: need.urgency });
   }
   return out;
@@ -100,7 +104,7 @@ export function rollRival(args: {
   const cap = priceCapForTier(transferBudgetTierOf(c.squad)) ?? Infinity;
   const fee = roundFeeDown(Math.min(value * (R.FEE_MIN + rng() * R.FEE_SPREAD), aiTransferBudgetOf(c.squad), cap));
   if (fee <= 0) return null;
-  const wage = Math.round(contractDemand(player, c.squad, args.date) * (1 + rng() * R.WAGE_SPREAD));
+  const wage = Math.round(contractDemand(player, c.squad, args.date, { fromSquad: seller }) * (1 + rng() * R.WAGE_SPREAD));
   let deadline = addDays(args.date, R.DEADLINE_DAYS);
   const close = args.closesOn?.(c.squad);
   if (close && close < deadline) deadline = close;

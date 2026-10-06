@@ -31,6 +31,17 @@ function draw(id: string, trait: string): number {
   return 1 + Math.round(raw * (P.MAX - P.MIN));
 }
 
+/**
+ * Rounds to the nearest integer; an exact .5 goes up or down by a deterministic coin (hash of
+ * `key`), so the mean stays unbiased (`Math.round` always rounds .5 up: +0,125 on the loyalty mix).
+ */
+function roundHalfUnbiased(x: number, key: string): number {
+  const f = Math.floor(x);
+  const frac = x - f;
+  if (Math.abs(frac - 0.5) > 1e-9) return Math.round(x);
+  return f + (mulberry32(seedFrom(`personality:${key}`))() < 0.5 ? 0 : 1);
+}
+
 const cache = new Map<string, Personality>();
 
 /** The personality generated for an id (no override). */
@@ -39,7 +50,7 @@ export function generatePersonality(id: string): Personality {
   if (hit) return hit;
   const ambition = draw(id, "ambition");
   const loyalty = clamp(
-    Math.round(P.LOYALTY_OWN * draw(id, "loyalty") + P.LOYALTY_AMBITION * (P.MAX + P.MIN - ambition)),
+    roundHalfUnbiased(P.LOYALTY_OWN * draw(id, "loyalty") + P.LOYALTY_AMBITION * (P.MAX + P.MIN - ambition), `${id}:loyalty-tie`),
     P.MIN, P.MAX,
   );
   const out: Personality = {
@@ -238,10 +249,16 @@ export function ambitionDemandMult(p: PersonalityHolder): number {
   return 1 + P.AMBITION_DEMAND * t(p, "ambition");
 }
 
-/** Seasons at `squadId`: closed seasons there in his history, plus the current one when he is there. */
-export function seasonsAtClub(p: Pick<RosterPlayer, "squadId" | "history">, squadId: string): number {
+/**
+ * Seasons at `squadId`: closed seasons there in his history, plus the season in progress when he is
+ * the club's (`member`) and it has started for him (anything in his `seasonLog`). At the rollover
+ * the log was just reset and the closed season is already a history row: it never counts twice.
+ */
+export function seasonsAtClub(p: Pick<RosterPlayer, "history" | "seasonLog">, squadId: string, member: boolean): number {
   const seasons = new Set((p.history ?? []).filter((r) => r.squadId === squadId && !r.loan).map((r) => r.season));
-  return seasons.size + (p.squadId === squadId ? 1 : 0);
+  const log = p.seasonLog;
+  const started = !!log && ((log.appearances ?? 0) > 0 || (log.trainingSessions ?? 0) > 0);
+  return seasons.size + (member && started ? 1 : 0);
 }
 
 /** Own-club renewal × this: a loyal player with years at the club asks up to 10% less. */

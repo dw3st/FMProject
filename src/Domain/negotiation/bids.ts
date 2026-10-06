@@ -1,7 +1,7 @@
 import { addDays } from "@/Domain/dates";
 import { Player } from "@/Domain/Player";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
-import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate, transferBudgetTierOf } from "@/Domain/aiFinance/aiClubFinance";
+import { aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
 import { playerMatchesBand, playerOverallRating, priceCapForTier, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { buildAiLoanBid } from "@/Domain/negotiation/loans";
@@ -12,6 +12,8 @@ const ACCEPT_SCORE = 0.8;
 import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
+import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
+import { renewalContract } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, SellCandidate, SquadMarketProfile } from "@/types/transferMarketTypes";
 
@@ -31,11 +33,14 @@ export function buildAiTransferBid(args: {
 }): MarketBid | null {
   const { player, buyer, rng } = args;
   if (buyer.players.length >= MAX_SQUAD) return null;
+  // A very ambitious player turns down a much smaller club (`personality.md`).
+  if (args.seller && refusesSmallerClub(player, tierStepsDown(args.seller, buyer))) return null;
   const value = new Player(playerOverallRating(player), player.age).price;
   const cap = priceCapForTier(transferBudgetTierOf(buyer));
   const maxFee = roundFeeDown(Math.min(aiTransferBudgetOf(buyer), cap ?? Infinity, value * B.MAX_RATIO));
   if (maxFee <= 0 || maxFee < value * B.MIN_MAX_RATIO) return null;
-  if (!passesWageGate(aiClubFinance(buyer), estimateWeeklyWage(player, wageFactorOf(buyer)), Math.min(maxFee, value))) return null;
+  // The wage the buyer would pay (curve × personality, `renewalContract`).
+  if (!passesWageGate(aiClubFinance(buyer), renewalContract(player, buyer, args.date, 1).wage, Math.min(maxFee, value))) return null;
   const sellOnPct = rng() < B.SELL_ON_CHANCE ? (rng() < 0.5 ? 10 : 20) : 0;
   const mult = 1 + sellOnValueFraction(sellOnPct, player.age);
   let opening = roundFeeDown(Math.min(value * (B.FEE_MIN + rng() * B.FEE_SPREAD), maxFee) / mult);
@@ -119,6 +124,8 @@ export function generateBidsForHuman(args: {
       .filter(([id]) => id !== humanSquad.id && squads.has(id) && !bidClubs(all(), player.id).has(id))
       .filter(([id]) => !args.buyerOpen || args.buyerOpen(squads.get(id)!))
       .filter(([, prof]) => prof.needs?.some((n) => playerMatchesBand(player, n.position) && (!needKind || n.intentType === needKind)))
+      // A transfer (not a loan): a very ambitious player refuses a much smaller club (`personality.md`).
+      .filter(([id]) => needKind !== undefined || !refusesSmallerClub(player, tierStepsDown(humanSquad, squads.get(id)!)))
       .map(([id]) => squads.get(id)!);
 
   // Listed player: one transfer bid per day.
