@@ -1369,7 +1369,13 @@ export function PixiPitch({
           drawEffect(effectsGfx, fx, effectNow, effectCtx);
           const txt = effectTexts.get(fx);
           const at = txt ? effectTextAnchor(fx, effectNow, effectCtx) : null;
-          if (txt && at) { txt.x = at.x; txt.y = at.y; txt.alpha = effectAlpha(fx, effectNow); }
+          if (txt && at) {
+            // Keep the label inside the canvas (anchor is bottom-centre): shots end on the goal line.
+            const half = txt.width / 2 + 4;
+            txt.x = Math.min(canvasWidth - half, Math.max(half, at.x));
+            txt.y = Math.max(txt.height + 4, at.y);
+            txt.alpha = effectAlpha(fx, effectNow);
+          }
         }
 
         // ── Crowd heatmap overlay (drawn on top with per-cell alpha) ──
