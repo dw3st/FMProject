@@ -418,12 +418,12 @@ export function PixiPitch({
         py: m.marginY + y * m.scale,
       });
 
-      // Pitch lines
       // Mowing stripes (static, drawn once — the pitch remounts on resize)
       const stripesGraphics = new Graphics();
       drawStripes(stripesGraphics, m);
       app.stage.addChild(stripesGraphics);
 
+      // Pitch lines
       const pitchGraphics = new Graphics();
       drawPitch(pitchGraphics, m);
       app.stage.addChild(pitchGraphics);
@@ -798,7 +798,7 @@ export function PixiPitch({
 
         // Players: game pos → pixels (exact position). Name must refresh every frame so
         // substitutions update the label on the pitch.
-        const booked = bookedPlayerIds(stateRef.current.cards);
+        const booked = bookedPlayerIds(stateRef.current.cards ?? []) // old /test snapshots have no cards;
         holderGlowGfx.clear();
         fatigueGfx.clear();
         const barW = markerR * FATIGUE_BAR.W;
