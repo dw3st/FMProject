@@ -8,6 +8,9 @@ import { isSuspended } from "@/Domain/discipline/discipline";
 import { daysBetween } from "@/Domain/dates";
 import { formatWageShort } from "@/Domain/money";
 import { weeklyWage } from "@/Domain/finance/wages";
+import { attributesHidden } from "@/Domain/scouting/knowledge";
+import { STAFF } from "@/Domain/staff/staffConfig";
+import { potentialBand } from "@/Domain/youth/potential";
 
 /** A player row as the squad, scout and player screens show it (built on the server for the scout search). */
 export interface DisplayPlayer {
@@ -65,10 +68,50 @@ export interface DisplayPlayer {
    * chief scout's uncertainty is large (`overallRange`, `src/Domain/staff`). Absent = exact.
    */
   avgRange?: [number, number];
+  /**
+   * Scouting (`.claude/rules/game/scouting.md`): what the user knows of a player outside his squad.
+   * Absent = exact (own squad, or a screen that does not blur).
+   */
+  knowledge?: number;
+  /** Attributes hidden ("?"): knowledge below `SCOUTING.HIDDEN_BELOW`. */
+  hiddenAttrs?: boolean;
+  /** ± points of uncertainty on every attribute. */
+  statNoise?: number;
+  /** Last observation day of the player (absent: never observed). */
+  seen?: string;
+  /** Market value range (millions of €), shown instead of `value` when the uncertainty is large. */
+  valueRange?: [number, number];
+  /** Potential range (≤ 23), widened by the uncertainty. */
+  potentialRange?: [number, number];
   /** Active injury details, when `status === "injured"` and `currentDate` was supplied. */
   injury?: { severity: "light" | "medium" | "severe"; returnDate: string; daysLeft: number };
   /** Matches of a ban still to serve, when `status === "suspended"`. */
   suspendedMatches?: number;
+}
+
+/** The scouting fields of a blurred player (`player.scoutView`), from his blurred overall. */
+function scoutFields(player: RosterPlayer, avg: number): Partial<DisplayPlayer> {
+  const view = player.scoutView;
+  if (!view) return {};
+  const noise = view.noise;
+  const r1 = (v: number) => Math.round(v * 10) / 10;
+  const out: Partial<DisplayPlayer> = {
+    knowledge: view.knowledge,
+    statNoise: r1(noise),
+    ...(view.seen ? { seen: view.seen } : {}),
+    ...(attributesHidden(view.knowledge) ? { hiddenAttrs: true } : {}),
+  };
+  if (noise >= STAFF.RANGE_THRESHOLD) {
+    const lo = Math.max(0, avg - noise);
+    const hi = Math.min(10, avg + noise);
+    out.avgRange = [r1(lo), r1(hi)];
+    out.valueRange = [r1(new Player(lo, player.age).valueMillions), r1(new Player(hi, player.age).valueMillions)];
+  }
+  if (player.age <= 23) {
+    const [pl, ph] = potentialBand({ ...player, overallAvg: undefined });
+    out.potentialRange = [r1(Math.max(0, pl - noise)), r1(Math.min(10, ph + noise))];
+  }
+  return out;
 }
 
 export function toDisplayPlayer(
@@ -125,5 +168,6 @@ export function toDisplayPlayer(
     ...(player.reborn ? { reborn: true } : {}),
     personality: personalityViewOf(player),
     ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
+    ...scoutFields(player, avg),
   };
 }

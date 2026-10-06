@@ -5,7 +5,7 @@ import { renewalWithinLimits, addYearsIso, contractDemand, defaultSeasonEnd, dem
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Personality } from "@/types/personalityTypes";
 import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
-import { staffEffectsOf } from "@/Domain/staff/staff";
+import { loadViewer, viewFor } from "@/backend/scoutingWorld";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
@@ -144,7 +144,10 @@ export const contractRoutes = {
     if (renewal) {
       parts = { ambition: b.ambition, loyalty: b.loyalty };
     } else {
-      const view = obscurePersonality(personalityOf(player), staffEffectsOf(mine).scoutNoise, saveId, player.id);
+      // The uncertainty of this very player (`.claude/rules/game/scouting.md`).
+      const viewer = await loadViewer(saveService, saveId);
+      const noise = viewer ? viewFor(viewer, player, fromSquad?.leagueSlug ?? (from ? (await saveService.getSquadIndex(saveId)).byId(from)?.leagueSlug ?? "" : "")).noise : 0;
+      const view = obscurePersonality(personalityOf(player), noise, saveId, player.id);
       if (!view.uncertain && Object.values(view.traits).every((v) => v !== null)) {
         const seen = demandBreakdown({ ...player, personality: view.traits as Personality }, mine, date, { fromSquad });
         parts = { ambition: seen.ambition, compatriot: seen.compatriot, smallerClub: seen.smallerClub, refusesSmallerClub: seen.refuses };

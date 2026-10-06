@@ -3,6 +3,7 @@ import type { StaffRecord } from "@/Domain/staff/staffTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/moraleTypes";
 import type { Personality, PersonalityView } from "@/types/personalityTypes";
+import type { ScoutView } from "@/types/scoutingTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -163,6 +164,11 @@ export interface RosterPlayer {
    * scout (`obscurePlayer`). Never read by the engine or the day advance.
    */
   personalityView?: PersonalityView;
+  /**
+   * Screen-only: how well the human manager knows this player (`.claude/rules/game/scouting.md`),
+   * set on API responses together with the blurred stats. Never stored, never read by the engine.
+   */
+  scoutView?: ScoutView;
 }
 
 export interface SellOnClause {

@@ -9,10 +9,13 @@ import { WINDOWS } from "@/Domain/market/windowConfig";
 
 /** "Window closes in N days" from this many days before the close. */
 const WINDOW_ATTENTION_DAYS = WINDOWS.ATTENTION_DAYS;
+/** Scouting news stays on the Attention card this many days. */
+const SCOUTING_ATTENTION_DAYS = 7;
 import type { ClubMoraleState, PlayerPromise, TalkReason } from "@/types/moraleTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { RosterPlayer, StandingRow } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import type { ShortlistReason } from "@/types/scoutingTypes";
 import { isoWeekStart, type LedgerEntry } from "@/Domain/finance/ledger";
 import { isInjured } from "@/Domain/injury/injury";
 import { isSuspended } from "@/Domain/discipline/discipline";
@@ -94,7 +97,10 @@ export type AttentionItem =
   // Etapa 25: the transfer window of the club's country and the manager's contract.
   | { kind: "windowClosing"; days: number; until: string }
   | { kind: "windowOpen"; until: string }
-  | { kind: "managerRenewal" };
+  | { kind: "managerRenewal" }
+  // Etapa 28 (`.claude/rules/game/scouting.md`): a gem found / a shortlist alert in the last 7 days.
+  | { kind: "scoutGem"; name: string; club: string }
+  | { kind: "shortlistAlert"; name: string; reason: ShortlistReason };
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
 const ATTENTION_GROUP_AFTER = 3;
@@ -168,6 +174,13 @@ export function attentionItems(input: {
 
   const intake = inbox.find((m) => !m.read && m.category === "youth" && m.kind === "intake");
   if (intake && intake.category === "youth") items.push({ kind: "youthIntake", count: intake.count ?? 0 });
+
+  // Scouting news of the last week (gems, shortlist alerts), unread first.
+  for (const m of inbox) {
+    if (m.category !== "scouting" || daysBetween(m.date, today) > SCOUTING_ATTENTION_DAYS) continue;
+    if (m.kind === "gem") items.push({ kind: "scoutGem", name: m.playerName ?? "", club: m.clubName ?? "" });
+    else if (m.kind === "shortlist" && m.reason) items.push({ kind: "shortlistAlert", name: m.playerName ?? "", reason: m.reason });
+  }
 
   return items;
 }

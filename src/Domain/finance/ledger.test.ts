@@ -73,7 +73,7 @@ describe("totalsByKind", () => {
     const totals = totalsByKind([]);
     expect(Object.values(totals).every((v) => v === 0)).toBe(true);
     expect(Object.keys(totals).sort()).toEqual(
-      ["broadcasting", "commercial", "wages", "operational", "staff", "gate", "prize", "transfer_in", "transfer_out", "club_change", "facilities", "facilities_upkeep", "board_funding", "manager"].sort(),
+      ["broadcasting", "commercial", "wages", "operational", "staff", "gate", "prize", "transfer_in", "transfer_out", "club_change", "facilities", "facilities_upkeep", "board_funding", "manager", "scouting"].sort(),
     );
   });
 });

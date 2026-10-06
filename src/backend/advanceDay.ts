@@ -55,6 +55,8 @@ import type { JobOffer, Unemployment } from "@/types/jobTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { mergeOffers, pruneOffers, sackHumanManager } from "@/Domain/jobs/jobs";
 import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
+import { rememberPlayers, scoutingDay } from "@/backend/scoutingWorld";
+import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { addDays, addOneDay } from "@/Domain/dates";
 import {
   buildMatchEvent,
@@ -1463,6 +1465,15 @@ export async function advanceOneDay(
       await aiDesk.retire();
     }
 
+    // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ────────────
+    // Opponents of today's matches are noticed; Mondays the missions work, the shortlist is checked
+    // and the travel is charged (ledger lines added to the money block below); the 1st of the month
+    // the chief recommends. Messages are deferred past any `clearInbox` like the rest.
+    const scouting = await scoutingDay(saveService, saveId, {
+      date: currentDate, meta,
+      matchEvents: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
+    });
+
     // ── Financial updates (player's club ledger) ─────────────────────────────
     // Weekly commercial/wages/operational on Mondays, plus a gate entry for every home fixture
     // of the player's club today across every competition (playerHomeFixturesToday, filled by the
@@ -1515,7 +1526,7 @@ export async function advanceOneDay(
           await saveService.saveSquad(saveId, playerEntry.leagueSlug, playerEntry.stem, playerSquad);
         }
       }
-      if (playerSquad && (isWeeklyTick || playerHomeFixturesToday.length > 0 || facilityEntries.length > 0)) {
+      if (playerSquad && (isWeeklyTick || playerHomeFixturesToday.length > 0 || facilityEntries.length > 0 || scouting.entries.length > 0)) {
         const catalogForFinance = await getLeagueData();
         const priceMult = playerSquad.facilities ? comfortPriceMult(playerSquad.facilities.comfort) : 1;
         const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f, i) => ({
@@ -1534,6 +1545,7 @@ export async function advanceOneDay(
             ...(board ? { fillRate: stadiumFillRate(board.fans) } : {}),
           }),
           ...facilityEntries,
+          ...(meta.clubId && playerSquad.id === meta.clubId ? scouting.entries : []),
         ];
         if (moneyEntries.length > 0) {
           const playerLeagueMeta = await saveService.getLeagueMeta(saveId, meta.leagueSlug);
@@ -2002,6 +2014,8 @@ export async function advanceOneDay(
             deferredContractMessages.push({
               date: currentDate, kind: "released", players: res.released.map((p) => ({ id: p.id, name: p.name })),
             });
+            // The manager keeps knowing who leaves (`.claude/rules/game/scouting.md`).
+            await rememberPlayers(saveService, saveId, res.released.map((p) => p.id), currentDate);
           }
         }
       }
@@ -2429,6 +2443,7 @@ export async function advanceOneDay(
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of facilityMessages) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
+    for (const msg of scouting.messages) await emitInboxMessage(saveId, buildScoutingMessage(msg), saveService);
     for (const msg of negotiationNews) await emitInboxMessage(saveId, buildTransferNegotiationMessage(msg), saveService);
     for (const msg of moraleNews) await emitInboxMessage(saveId, buildPlayerMessage(msg), saveService);
     // Talk requests still open when the inbox was cleared keep their message (stable id per talk).

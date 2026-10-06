@@ -18,6 +18,10 @@ export interface ScoutFilterState {
   onlyForSale: boolean;
   /** When true, only the free-agent pool (and never club players). */
   onlyFree: boolean;
+  /** Only players on the user's shortlist (`.claude/rules/game/scouting.md`). */
+  onlyShortlist?: boolean;
+  /** Only players known at least this well (0 = everyone). */
+  minKnowledge?: number;
 }
 
 export function defaultAttributeRanges(): Record<AttributeId, { min: number; max: number }> {
@@ -43,5 +47,7 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     attributeRanges: defaultAttributeRanges(),
     onlyForSale: false,
     onlyFree: false,
+    onlyShortlist: false,
+    minKnowledge: 0,
   };
 }

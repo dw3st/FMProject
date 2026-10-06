@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   developmentMultiplier, effectiveRating, initialStaff, injuryMultiplier, makeStaffMember, obscurePlayer,
-  overallRange, recoveryMultiplier, scoutNoiseOf, staffEffectsOf, staffMarket, staffWeeklyWage,
+  overallRange, recoveryMultiplier, scoutGainMultOf, scoutUncertaintyMultOf, squadStaffWages, staffEffectsOf, staffMarket, staffWeeklyWage,
 } from "@/Domain/staff/staff";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -21,9 +21,17 @@ describe("staff effects", () => {
     expect(injuryMultiplier(1)).toBeCloseTo(1.1);
     expect(injuryMultiplier(5)).toBeCloseTo(1);
     expect(injuryMultiplier(10)).toBeCloseTo(0.85);
-    expect(scoutNoiseOf(1)).toBeCloseTo(1.5);
-    expect(scoutNoiseOf(5)).toBeCloseTo(0.6);
-    expect(scoutNoiseOf(10)).toBeCloseTo(0);
+    expect(scoutUncertaintyMultOf(1)).toBeCloseTo(1.3);
+    expect(scoutUncertaintyMultOf(5)).toBeCloseTo(1);
+    expect(scoutUncertaintyMultOf(10)).toBeCloseTo(0.75);
+    expect(scoutGainMultOf(1)).toBeCloseTo(0.7);
+    expect(scoutGainMultOf(10)).toBeCloseTo(1.4);
+  });
+
+  test("field scouts are paid like the rest of the staff", () => {
+    const chief = makeStaffMember("c", "scout", 5, 1);
+    const field = makeStaffMember("f", "scout", 7, 1);
+    expect(squadStaffWages({ scout: chief, scouts: [field] }, 1)).toBe(staffWeeklyWage(5, 1) + staffWeeklyWage(7, 1));
   });
 
   test("hired staff wins over tier; vacant role counts as 3; no staff uses the tier", () => {
@@ -43,7 +51,7 @@ describe("staff generation", () => {
 
   test("starting staff within one point of the implicit rating", () => {
     const s = initialStaff("save1", squad({ financialTier: "HIGH" }));
-    for (const m of Object.values(s)) expect(Math.abs(m!.rating - 6)).toBeLessThanOrEqual(1);
+    for (const role of ["assistant", "fitness", "scout"] as const) expect(Math.abs(s[role]!.rating - 6)).toBeLessThanOrEqual(1);
   });
 
   test("market: 5 per role, stable within a week, renews the next Monday", () => {

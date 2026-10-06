@@ -27,6 +27,8 @@ function staffView(squad: Squad) {
     const m = staff[role];
     if (m) members[role] = { ...m, wage: staffWeeklyWage(m.rating, factor) };
   }
+  // Field scouts (`.claude/rules/game/scouting.md`).
+  if (staff.scouts?.length) members.scouts = staff.scouts.map((s) => ({ ...s, wage: staffWeeklyWage(s.rating, factor) }));
   return { staff: members, effects: staffEffectsOf(squad), weeklyTotal: squadStaffWages(staff, factor) };
 }
 

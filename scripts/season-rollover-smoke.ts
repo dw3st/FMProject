@@ -53,7 +53,7 @@ const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
 const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial");
-const { addOneDay } = await import("@/Domain/dates");
+const { addDays, addOneDay } = await import("@/Domain/dates");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 const { continentalGoodClubsThisSeason } = await import("@/backend/continentalWorld");
@@ -280,6 +280,54 @@ try {
     instrTrack.restored = (await instrCall("/api/saves/:id/tactics", tacticsPath, { formation: DEFAULT_SIM_FORMATION_ID, slotInstructions: instrList })).status === 200;
   }
 
+  // Olheiros (`.claude/rules/game/scouting.md`): two field scouts hired; a foreign-country mission (chief),
+  // a player mission (a foreign star) and a youth mission; a shortlist of foreign players whose contracts
+  // end within ~6-10 months (a contract_ending alert falls inside the run).
+  const scoutTrack = {
+    setupOk: false, playerTarget: "", playerTargetSquad: "", playerScout: "", playerMaxK: 0, mondays: 0, travelMissing: [] as string[], reports: 0,
+    prospectSigned: false, prospectChecks: [] as string[], kinds: new Set<string>(),
+  };
+  const { apiRoutes: scoutApi } = await import("@/backend/routes");
+  const scoutSession = instrLogin("smoke-reborn@test.local").session;
+  const scoutCall = async (route: string, method: string, body?: unknown, params: Record<string, string> = {}) => {
+    const handler = (scoutApi as unknown as Record<string, (r: Request & { params: Record<string, string> }) => Promise<Response>>)[route]!;
+    return handler(Object.assign(new Request(`http://localhost${route.replace(":saveId", saveId!)}`, {
+      method, headers: { cookie: `fs_session=${scoutSession.token}`, "content-type": "application/json" },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }), { params: { saveId: saveId!, ...params } }) as Request & { params: Record<string, string> });
+  };
+  {
+    const lc = new Map((leagueData as Array<LeagueEntry & { country?: string }>).map((l) => [l.slug, l.country ?? ""]));
+    const ownCountry = lc.get(PLAYER_LEAGUE) ?? "";
+    const foreign = ownCountry === "Spain" ? "England" : "Spain";
+    const foreignLeague = foreign === "Spain" ? "la_liga" : "premier_league";
+    const today = (await plain().getMeta(saveId))!.currentDate!;
+    const market = await (await scoutCall("/api/saves/:saveId/staff/scouts/market", "GET")).json() as { candidates: Array<{ id: string }> };
+    const hired: string[] = [];
+    for (const c of market.candidates.slice(0, 2)) {
+      if ((await scoutCall("/api/saves/:saveId/staff/scouts/hire", "POST", { candidateId: c.id })).status === 200) hired.push(c.id);
+    }
+    const index = await plain().getSquadIndex(saveId);
+    const foreignSquads = (await Promise.all(index.inLeague(foreignLeague).map((t) => plain().getSquadById(saveId!, t.squadId))))
+      .filter((x): x is Squad => !!x);
+    const star = foreignSquads.flatMap((sq) => sq.players.map((p) => ({ p, sq })))
+      .sort((a, b) => Player.computeOverallAvg(b.p) - Player.computeOverallAvg(a.p))[0]!;
+    scoutTrack.playerTarget = star.p.id;
+    scoutTrack.playerTargetSquad = star.sq.id;
+    scoutTrack.playerScout = hired[0] ?? "";
+    const statuses = [
+      (await scoutCall("/api/saves/:saveId/scouting/missions", "POST", { scoutId: "chief", target: { kind: "country", country: foreign }, weeks: 12 })).status,
+      (await scoutCall("/api/saves/:saveId/scouting/missions", "POST", { scoutId: hired[0], target: { kind: "player", playerId: star.p.id, squadId: star.sq.id }, weeks: 3 })).status,
+      (await scoutCall("/api/saves/:saveId/scouting/missions", "POST", { scoutId: hired[1], target: { kind: "youth", country: foreign }, weeks: 8 })).status,
+    ];
+    const ending = foreignSquads.flatMap((sq) => sq.players.map((p) => ({ p, sq })))
+      .filter(({ p }) => p.contract && p.contract.until > addDays(today, 200) && p.contract.until < addDays(today, 320) && !p.loan)
+      .slice(0, 5);
+    for (const { p, sq } of ending) await scoutCall("/api/saves/:saveId/scouting/shortlist", "POST", { playerId: p.id, squadId: sq.id });
+    scoutTrack.setupOk = hired.length === 2 && statuses.every((s) => s === 200) && ending.length > 0;
+    console.log(`Olheiros: field scouts ${hired.length}, missions ${statuses.join("/")}, shortlist ${ending.length}, target ${star.p.name}\n`);
+  }
+
   // Cup year per country at creation — used later to detect which cups got regenerated.
   const cupYearsStart = new Map<string, number>();
   for (const slug of (await plain().listCompetitionSlugs(saveId)).filter(isCupSlug)) {
@@ -487,6 +535,10 @@ try {
       }
     }
 
+    // Olheiros: missions that work this Monday (each one is charged travel on the day).
+    const scoutMonday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1 && meta.clubId === playerSquadId;
+    const scoutActive = scoutMonday ? (await plain().getScouting(saveId)).missions.filter((m) => m.start < date).length : 0;
+
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -502,6 +554,41 @@ try {
     }
     for (const m of await plain().getInbox(saveId)) {
       if (m.category === "transfer") negoMessages.set(m.id, m.kind);
+    }
+    // Olheiros: knowledge of the player target, travel lines, prospects signed into the academy.
+    {
+      for (const m of await plain().getInbox(saveId)) if (m.category === "scouting") scoutTrack.kinds.add(m.kind);
+      const st = await plain().getScouting(saveId);
+      scoutTrack.playerMaxK = Math.max(scoutTrack.playerMaxK, st.knowledge[scoutTrack.playerTarget]?.k ?? 0);
+      // A weak field scout may need a second player mission to reach 100 (up to 3 weeks each).
+      if (scoutTrack.playerMaxK < 100 && !st.missions.some((m) => m.scoutId === scoutTrack.playerScout) && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
+        await scoutCall("/api/saves/:saveId/scouting/missions", "POST", {
+          scoutId: scoutTrack.playerScout, target: { kind: "player", playerId: scoutTrack.playerTarget, squadId: scoutTrack.playerTargetSquad }, weeks: 3,
+        });
+      }
+      scoutTrack.reports = Math.max(scoutTrack.reports, st.reports.length);
+      if (scoutMonday) {
+        scoutTrack.mondays++;
+        const seasons = await plain().listLedgerSeasons(saveId);
+        const lines = (await Promise.all(seasons.map((y) => plain().getLedger(saveId!, y)))).flat()
+          .filter((e) => e.date === date && e.kind === "scouting" && e.ref?.stage !== "prospect").length;
+        if (lines !== scoutActive) scoutTrack.travelMissing.push(`${date}: ${lines}/${scoutActive}`);
+      }
+      const pr = st.prospects.find((p) => p.expires >= addOneDay(date));
+      if (!scoutTrack.prospectSigned && pr && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
+        const before = (await plain().getSquadById(saveId, playerSquadId))!;
+        const res = await scoutCall("/api/saves/:saveId/scouting/prospects/:prospectId/sign", "POST", undefined, { prospectId: pr.player.id });
+        if (res.status === 200) {
+          scoutTrack.prospectSigned = true;
+          const after = (await plain().getSquadById(saveId, playerSquadId))!;
+          const youth = after.youth?.find((p) => p.id === pr.player.id);
+          if (!youth) scoutTrack.prospectChecks.push("not in the academy");
+          if (!youth?.contract) scoutTrack.prospectChecks.push("no contract");
+          if ((after.finances?.budget ?? 0) !== (before.finances?.budget ?? 0) - pr.fee) scoutTrack.prospectChecks.push("fee not charged");
+        } else if (res.status !== 400) {
+          scoutTrack.prospectChecks.push(`sign ${res.status}`);
+        }
+      }
     }
     {
       const mb = await plain().getMeta(saveId);
@@ -2056,6 +2143,45 @@ try {
     const aiInstr = [sim.tactics.A, sim.tactics.B].some((t) => t.slotInstructions || t.manMarks);
     const storing = allFiles.filter(({ squad }) => JSON.stringify(squad).includes("slotInstructions") || JSON.stringify(squad).includes("manMark"));
     check(!aiInstr && storing.length === 0, `instruções: no AI club plays or stores instructions (${storing.length} squad file(s))`);
+  }
+
+  // ── Olheiros (`.claude/rules/game/scouting.md`) ──
+  console.log("\n── Olheiros ──");
+  {
+    const st = await plain().getScouting(saveId);
+    console.log(`  ${scoutTrack.mondays} Monday(s), ${scoutTrack.reports} report(s), knowledge entries ${Object.keys(st.knowledge).length}, inbox kinds ${[...scoutTrack.kinds].join(",")}`);
+    check(scoutTrack.setupOk, "olheiros: field scouts hired, three missions and a shortlist created through the routes");
+    check(scoutTrack.playerMaxK >= 100, `olheiros: the player mission brought knowledge to 100 (${scoutTrack.playerMaxK})`);
+    check(scoutTrack.reports > 0 && scoutTrack.kinds.has("report"), `olheiros: reports written and announced (${scoutTrack.reports})`);
+    check(scoutTrack.kinds.has("mission_done"), "olheiros: a mission finished with its message");
+    check(scoutTrack.mondays > 0 && scoutTrack.travelMissing.length === 0, `olheiros: a travel line per active mission every Monday (${scoutTrack.travelMissing.slice(0, 3).join("; ") || "ok"})`);
+    check(scoutTrack.kinds.has("shortlist"), "olheiros: at least one shortlist alert");
+    check(scoutTrack.prospectSigned && scoutTrack.prospectChecks.length === 0, `olheiros: a prospect signed into the academy with contract and compensation (${scoutTrack.prospectChecks.join(", ") || (scoutTrack.prospectSigned ? "ok" : "none signed")})`);
+    const aiScouting = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.scouts?.length ?? 0) > 0);
+    check(aiScouting.length === 0, `olheiros: no AI club stores field scouts (${aiScouting.length})`);
+    // The search blurs every row by its knowledge: hidden below 20, a range from ±0.5, exact at 100.
+    const { searchScout, parseScoutQuery } = await import("@/backend/scoutSearch");
+    const foreignLeague = (leagueData.find((l) => l.slug === PLAYER_LEAGUE) as { country?: string } | undefined)?.country === "Spain" ? "premier_league" : "la_liga";
+    const res = (await searchScout(saveId, parseScoutQuery({ filters: { league: foreignLeague }, pageSize: 200 })))!;
+    const incoherent = res.rows.filter((r) => r.knowledge === undefined
+      || (r.knowledge < 20) !== !!r.hiddenAttrs
+      || ((r.statNoise ?? 0) >= 0.5) !== !!r.avgRange
+      || (r.knowledge >= 100 && (r.statNoise ?? 0) > 0));
+    check(res.rows.length > 0 && incoherent.length === 0, `olheiros: search rows show ranges and "?" coherent with knowledge (${incoherent.length} of ${res.rows.length})`);
+    // Index build cost: the per-player blur against the old uniform one (informative; fails above 2x).
+    const { loadViewer, obscureSquadForViewer } = await import("@/backend/scoutingWorld");
+    const { obscureSquad } = await import("@/Domain/staff/staff");
+    const { mapSquadsToScoutPlayers } = await import("@/Domain/scout/scoutQuery");
+    const squads = allFiles.map(({ squad }) => squad);
+    const t0 = performance.now();
+    mapSquadsToScoutPlayers(squads.map((sq) => (sq.id === playerSquadId ? sq : obscureSquad(sq, 0.6, saveId!))));
+    const tOld = performance.now() - t0;
+    const t1 = performance.now();
+    const viewer = (await loadViewer(plain(), saveId, { squads }))!;
+    mapSquadsToScoutPlayers(squads.map((sq) => obscureSquadForViewer(viewer, sq)));
+    const tNew = performance.now() - t1;
+    console.log(`  search index blur: ${tNew.toFixed(0)} ms vs ${tOld.toFixed(0)} ms uniform (x${(tNew / tOld).toFixed(2)})`);
+    check(tNew <= 2 * tOld, `olheiros: search index build within 2x of the uniform blur (x${(tNew / tOld).toFixed(2)})`);
   }
 
   // ── Convites (`.claude/rules/game/jobs.md`) ──

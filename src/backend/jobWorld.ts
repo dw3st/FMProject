@@ -22,6 +22,7 @@ import { initialStaff } from "@/Domain/staff/staff";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { academyToAi } from "@/Domain/youth/youth";
+import { scoutingOnClubLeft } from "@/backend/scoutingWorld";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { renewExpiringOnTakeover } from "@/Domain/contracts/expiry";
 import { addYearsIso } from "@/Domain/contracts/contracts";
@@ -286,6 +287,9 @@ export async function releaseHumanClub(
     || market.preContracts?.length || market.rivalBids?.length || market.lostTargets?.length)) {
     await service.saveMarket(saveId, { ...market, playerSellList: [], playerLoanList: [], pendingBids: [], talks: {}, sellOnHeld: [], preContracts: [], rivalBids: [], lostTargets: [] });
   }
+  // Scouting (`.claude/rules/game/scouting.md`): missions and prospects stay with the club, the
+  // knowledge and shortlist follow the manager, who keeps knowing his old players.
+  await scoutingOnClubLeft(service, saveId, squad.players.map((p) => p.id), args.date);
   // Reborn offers of the old club's retirees close with it (`.claude/rules/game/retirement.md`).
   const retired = await service.getRetired(saveId);
   if (retired.some((r) => r.squadId === args.squadId && r.rebornOffer === "pending")) {

@@ -56,6 +56,12 @@ Todas com `requireSaveOwner` + `withSaveLock`:
   curva com o fator do clube, `until` do contrato original).
 - `POST .../youth/:playerId/release` -> sai da base e entra em `freeAgents.json` (`toFreeAgent`).
 
+## Jovens de fora (Etapa 28)
+
+Missões de jovens dos olheiros encontram jovens de 16–17 sem clube de outro país (`generateProspects`, o mesmo
+`generateIntake` ancorado na liga de nível 1 do país); contratados para a base com compensação de formação (até o
+limite de 18, `400 youthFull`). Ver `.claude/rules/game/scouting.md`.
+
 ## Inbox `youth`
 
 `YouthInboxMessage`: `kind: "intake"` (`year`, `count`, `best`: destaque da safra) e `kind: "released"`

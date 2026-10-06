@@ -1,4 +1,6 @@
 import {
+  Binoculars,
+  Gem,
   Play,
   Pause,
   Bug,
@@ -106,6 +108,8 @@ function StarFilled(props: SVGProps<SVGSVGElement>) {
 }
 
 export type IconName =
+  | "binoculars"
+  | "gem"
   | "play"
   | "pause"
   | "debug"
@@ -224,6 +228,8 @@ function SoccerBall(props: SVGProps<SVGSVGElement>) {
 }
 
 const ICON_MAP: Record<IconName, IconComponent> = {
+  "binoculars":   Binoculars,
+  "gem":          Gem,
   "play":         Play,
   "pause":        Pause,
   "debug":        Bug,

@@ -1,7 +1,6 @@
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
-import { obscurePlayer, obscureSquad, overallRange, staffEffectsOf } from "@/Domain/staff/staff";
-import { STAFF } from "@/Domain/staff/staffConfig";
+import { loadViewer, obscurePlayerForViewer, obscureSquadForViewer } from "@/backend/scoutingWorld";
 import {
   collectNationalities, collectSellListedIds, mapFreeAgentsToScoutPlayers, mapSquadsToScoutPlayers, runScoutQuery,
   type ScoutQuery, type ScoutSearchResponse,
@@ -15,6 +14,7 @@ interface ScoutIndex {
   players: DisplayPlayer[];
   nationalities: string[];
   sellListedIds: Set<string>;
+  shortlistIds: Set<string>;
 }
 
 /** One entry per save; a couple of saves at most so a long-running server does not grow unbounded. */
@@ -39,33 +39,22 @@ async function buildScoutIndex(saveId: string, key: string): Promise<ScoutIndex>
     saveService.getMarket(saveId),
     saveService.getFreeAgents(saveId),
   ]);
-  // What the user sees of players outside his own squad is blurred by the chief scout's
-  // uncertainty (`.claude/rules/game/staff.md`); his own squad is always exact.
-  const meta = await saveService.getMeta(saveId);
-  const own = squads.find((s) => s.id === meta?.clubId);
-  const noise = own ? staffEffectsOf(own).scoutNoise : 0;
-  const seen = noise > 0
-    ? squads.map((s) => (s.id === meta?.clubId ? s : obscureSquad(s, noise, saveId)))
-    : squads;
-  const seenAgents = noise > 0
-    ? freeAgents.map((f) => ({ ...f, player: obscurePlayer(f.player, noise, saveId) }))
+  // What the user sees of players outside his own squad is blurred by how well he knows each one
+  // (`.claude/rules/game/scouting.md`); his own squad is always exact. Rows carry `knowledge`,
+  // `hiddenAttrs` and the ranges (`toDisplayPlayer` reads `scoutView`).
+  const viewer = await loadViewer(saveService, saveId, { squads });
+  const seen = viewer ? squads.map((s) => obscureSquadForViewer(viewer, s)) : squads;
+  const seenAgents = viewer
+    ? freeAgents.map((f) => ({ ...f, player: obscurePlayerForViewer(viewer, f.player, "") }))
     : freeAgents;
-  const withRange = (rows: DisplayPlayer[], ownSquadId: string | undefined) =>
-    noise >= STAFF.RANGE_THRESHOLD
-      ? rows.map((r) => {
-          const range = r.squadId === ownSquadId ? undefined : overallRange(r.avg, noise);
-          return range ? { ...r, avgRange: range } : r;
-        })
-      : rows;
-  const players = withRange(
-    [...mapSquadsToScoutPlayers(seen), ...mapFreeAgentsToScoutPlayers(seenAgents)],
-    meta?.clubId,
-  );
+  const players = [...mapSquadsToScoutPlayers(seen), ...mapFreeAgentsToScoutPlayers(seenAgents)];
+  const shortlistIds = new Set((await saveService.getScouting(saveId)).shortlist.map((e) => e.playerId));
   const entry: ScoutIndex = {
     key,
     players,
     nationalities: collectNationalities(players),
     sellListedIds: new Set(collectSellListedIds(market)),
+    shortlistIds,
   };
   cache.delete(saveId);
   cache.set(saveId, entry);
@@ -153,6 +142,8 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       attributeRanges: asAttributeRanges(f.attributeRanges, defaults.attributeRanges),
       onlyForSale: f.onlyForSale === true,
       onlyFree: f.onlyFree === true,
+      onlyShortlist: f.onlyShortlist === true,
+      minKnowledge: asFiniteNumber(f.minKnowledge, 0),
     },
     sortKey: typeof b.sortKey === "string" ? b.sortKey : "avg",
     sortDir: b.sortDir === "asc" ? "asc" : "desc",
@@ -164,10 +155,11 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
 export async function searchScout(saveId: string, query: ScoutQuery): Promise<ScoutSearchResponse | null> {
   const index = await getScoutIndex(saveId);
   if (!index) return null;
-  const page = runScoutQuery(index.players, query, index.sellListedIds);
+  const page = runScoutQuery(index.players, query, index.sellListedIds, index.shortlistIds);
   return {
     ...page,
     nationalities: index.nationalities,
     sellListedIds: page.rows.filter((r) => index.sellListedIds.has(r.id)).map((r) => r.id),
+    shortlistIds: page.rows.filter((r) => index.shortlistIds.has(r.id)).map((r) => r.id),
   };
 }

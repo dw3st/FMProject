@@ -3,6 +3,7 @@ import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boar
 import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
 import type { BoardRefusal, FacilityKind, StandId } from "@/types/facilityTypes";
+import type { ScoutGrade, ScoutTarget, ShortlistReason } from "@/types/scoutingTypes";
 
 export type InboxCategory =
   | "development"
@@ -21,7 +22,8 @@ export type InboxCategory =
   | "transfer"
   | "player"
   | "facilities"
-  | "manager_news";
+  | "manager_news"
+  | "scouting";
 
 interface InboxMessageBase {
   id:        string;
@@ -331,6 +333,32 @@ export interface FacilityInboxMessage extends InboxMessageBase {
   competition?: string;
 }
 
+/**
+ * Scouting news (`.claude/rules/game/scouting.md`): a mission's weekly report, a finished mission,
+ * a gem, the chief's monthly recommendation, a shortlist alert, a new prospect, a signed prospect.
+ */
+export interface ScoutingInboxMessage extends InboxMessageBase {
+  category: "scouting";
+  kind: "report" | "mission_done" | "gem" | "recommendation" | "shortlist" | "prospect" | "prospect_signed";
+  /** report / mission_done: the mission's target. */
+  target?: ScoutTarget;
+  /** report: players observed this week; mission_done: in total. */
+  count?: number;
+  /** report: best grades of the week; recommendation: the picks. */
+  players?: { playerId: string; name: string; grade: ScoutGrade; gem?: boolean; club?: string }[];
+  /** gem / shortlist / prospect / prospect_signed: the player. */
+  playerId?: string;
+  playerName?: string;
+  clubName?: string;
+  grade?: ScoutGrade;
+  reportId?: string;
+  /** shortlist: what changed. */
+  reason?: ShortlistReason;
+  /** prospect / prospect_signed: training compensation; prospect: offer deadline. */
+  fee?: number;
+  expires?: string;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -348,4 +376,5 @@ export type InboxMessage =
   | TransferInboxMessage
   | PlayerInboxMessage
   | FacilityInboxMessage
-  | ManagerNewsInboxMessage;
+  | ManagerNewsInboxMessage
+  | ScoutingInboxMessage;

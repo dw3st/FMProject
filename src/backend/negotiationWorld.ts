@@ -4,6 +4,7 @@
  * `src/Domain/negotiation/`; this module reads and writes squads, the market and the ledger.
  */
 import { randomUUID } from "crypto";
+import { rememberPlayers } from "@/backend/scoutingWorld";
 import type { SaveMeta, SaveService } from "@/backend/SaveService";
 import { executeTransferFee, paySellOnReceiver } from "@/backend/FinancialService";
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
@@ -62,12 +63,17 @@ export function marketWithoutPlayer(market: MarketState, playerId: string): Mark
   };
 }
 
-/** Takes a player who left the human club out of its saved lineup (the slot stays, empty). */
+/**
+ * Takes a player who left the human club out of its saved lineup (the slot stays, empty). The
+ * manager keeps knowing him fully (`.claude/rules/game/scouting.md`, decaying as usual).
+ */
 export async function dropFromLineup(service: SaveService, saveId: string, playerId: string): Promise<void> {
   const tac = await service.getTactics(saveId);
   if (tac && tac.lineup.includes(playerId)) {
     await service.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (id === playerId ? "" : id)) });
   }
+  const date = (await service.getMeta(saveId))?.currentDate;
+  if (date) await rememberPlayers(service, saveId, [playerId], date);
 }
 
 /**

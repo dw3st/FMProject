@@ -43,7 +43,7 @@ function formatWeekLabel(weekStart: string) {
 // ── Per-kind display metadata ────────────────────────────────────────────────
 
 const INCOME_KINDS: LedgerKind[] = ["broadcasting", "commercial", "gate", "prize", "transfer_in", "board_funding"];
-const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "manager", "operational", "transfer_out", "facilities", "facilities_upkeep"];
+const EXPENSE_KINDS: LedgerKind[] = ["wages", "staff", "manager", "operational", "transfer_out", "facilities", "facilities_upkeep", "scouting"];
 // `club_change` (the manager changed club) is a balance transfer, not income or expense.
 const ALL_KINDS: LedgerKind[] = [...INCOME_KINDS, ...EXPENSE_KINDS, "club_change"];
 
@@ -60,6 +60,7 @@ const KIND_META: Record<LedgerKind, { icon: IconName; labelKey: string }> = {
   club_change: { icon: "building", labelKey: "financesScreen.clubChange" },
   facilities: { icon: "construction", labelKey: "financesScreen.facilities" },
   facilities_upkeep: { icon: "construction", labelKey: "financesScreen.facilitiesUpkeep" },
+  scouting: { icon: "binoculars", labelKey: "financesScreen.scouting" },
   board_funding: { icon: "handshake", labelKey: "financesScreen.boardFunding" },
   manager: { icon: "staff", labelKey: "financesScreen.kinds.manager" },
 };

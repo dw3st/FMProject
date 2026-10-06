@@ -30,7 +30,9 @@ export type LedgerKind =
    * The human manager's weekly wage (`.claude/rules/game/jobs.md` → "Contrato do técnico"); `ref.stage`
    * "severance" is the payoff when he is sacked.
    */
-  | "manager";
+  | "manager"
+  /** Scouting travel (`.claude/rules/game/scouting.md`): weekly, one line per active mission. */
+  | "scouting";
 
 /** One line of the club's cash extract. `amount` is signed (income positive, expense negative). */
 export interface LedgerEntry {
@@ -72,6 +74,7 @@ const LEDGER_KINDS: LedgerKind[] = [
   "facilities_upkeep",
   "board_funding",
   "manager",
+  "scouting",
 ];
 
 /**

@@ -1,5 +1,6 @@
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
@@ -36,6 +37,11 @@ export interface ISaveDAL {
   // ── Free agents ───────────────────────────────────────────────────────────
   readFreeAgents(saveId: string): Promise<FreeAgent[]>;
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void>;
+
+  // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ─────────────
+  /** `null` when nothing was ever observed. */
+  readScouting(saveId: string): Promise<ScoutingState | null>;
+  writeScouting(saveId: string, state: ScoutingState): Promise<void>;
 
   // ── Manager ranking ───────────────────────────────────────────────────────
   readManagers(saveId: string): Promise<ManagerRecord[]>;

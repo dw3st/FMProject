@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.3",
+    date: "2026-10-06",
+    items: [
+      { pt: "Central de Olheiros: o que você sabe de cada jogador de fora agora depende de quanto ele foi observado. Desconhecidos aparecem com faixas largas e atributos ocultos; quanto mais observado, mais exato.", en: "Scouting centre: what you know about each outside player now depends on how much he has been watched. Unknown players show wide ranges and hidden attributes; the more he is watched, the more exact he gets." },
+      { pt: "Missões de observação: mande o olheiro-chefe e até 4 olheiros de campo para um país, uma liga, um continente, um jogador ou os jovens de um país, com foco por posição e idade. As viagens aparecem nas Finanças.", en: "Scouting missions: send your chief scout and up to 4 field scouts to a country, a league, a continent, a player or a country's youth, with a focus on position and age. Travel costs show up in Finances." },
+      { pt: "Relatórios com nota de A a E, joias escondidas pelo mundo e as indicações do olheiro-chefe todo mês.", en: "Reports graded A to E, hidden gems around the world and your chief scout's picks every month." },
+      { pt: "Lista de observação: marque até 50 jogadores com a estrela e receba avisos quando ficarem à venda, com contrato acabando, livres ou mudarem de clube.", en: "Shortlist: star up to 50 players and get told when they go on sale, near the end of their contract, become free agents or move clubs." },
+      { pt: "Jovens sem clube encontrados nas missões podem entrar direto na sua base, pagando uma compensação de formação.", en: "Club-less youngsters found on missions can join your academy straight away for a training compensation." },
+    ],
+  },
+  {
     version: "4.2",
     date: "2026-10-06",
     items: [
@@ -865,5 +876,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Olheiros de verdade: missões de observação, relatórios que revelam os jogadores aos poucos e promessas de fora para a base", en: "Real scouting: scouting missions, reports that reveal players bit by bit, and outside prospects for your academy" },
+  { pt: "Seleções nacionais: convocações, datas FIFA e a Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
+  { pt: "Imprensa e notícias do mundo: coletivas que mexem com a moral e a diretoria", en: "Press and world news: press conferences that move morale and the board" },
 ];

@@ -23,6 +23,7 @@ import { historyRowFromLog } from "@/Domain/history/history";
 import { addDays } from "@/Domain/dates";
 import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import type { LeagueData } from "@/types/playerTypes";
+import { PlayerKnowledgePanel } from "@/GameInterface/Scouting/PlayerKnowledgePanel";
 
 export function PlayerScreen({
   playerId,
@@ -193,6 +194,10 @@ export function PlayerScreen({
           clubColors={squadColors}
           nameBadge={<PersonalitySummaryBadge view={personalityViewOf(player)} className="mt-0.5" />}
         />
+
+        {!isOwnPlayer && session && (
+          <PlayerKnowledgePanel saveId={session.saveId} playerId={player.id} squadId={squadId} />
+        )}
 
         <PersonalityPanel player={player} />
 
