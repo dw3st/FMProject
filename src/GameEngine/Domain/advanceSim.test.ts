@@ -226,3 +226,55 @@ describe("advanceSim against the real engine", () => {
     }
   }, 30_000);
 });
+
+describe("advanceSim prevState", () => {
+  /** Each step returns a NEW state tagged with its step number (`n`). */
+  function makeCountingTick(stopAt?: { n: number; by: "goal" | "phase" }) {
+    let n = 0;
+    const tick = (state: GameState): TickResult => {
+      n++;
+      const phase = stopAt?.by === "phase" && n === stopAt.n ? "halfTime" : state.matchPhase;
+      const next = { ...state, matchPhase: phase, n } as unknown as GameState;
+      const goalScored = stopAt?.by === "goal" && n === stopAt.n ? "A" : null;
+      return { state: next, passCompleted: false, tackled: false, goalScored };
+    };
+    return tick;
+  }
+  const stepOf = (s: GameState) => (s as unknown as { n?: number }).n ?? 0;
+
+  test("zero steps: prevState is the input state", () => {
+    const state = fakeState();
+    const result = advanceSim(state, 0.005, 0, SIM_STEP, makeCountingTick());
+    expect(result.state).toBe(state);
+    expect(result.prevState).toBe(state);
+  });
+
+  test("one step: prevState is the input state, state is the stepped one", () => {
+    const state = fakeState();
+    const result = advanceSim(state, SIM_STEP, 0, SIM_STEP, makeCountingTick());
+    expect(result.prevState).toBe(state);
+    expect(stepOf(result.state)).toBe(1);
+  });
+
+  test("several steps: prevState is the state right before the last step", () => {
+    const state = fakeState();
+    const result = advanceSim(state, SIM_STEP * 4, 0, SIM_STEP, makeCountingTick());
+    expect(stepOf(result.state)).toBe(4);
+    expect(stepOf(result.prevState)).toBe(3);
+  });
+
+  test("stopped by a goal: prevState is the state before the step that scored", () => {
+    const result = advanceSim(fakeState(), SIM_STEP * 5, 0, SIM_STEP, makeCountingTick({ n: 2, by: "goal" }));
+    expect(result.stoppedBy).toBe("goal");
+    expect(stepOf(result.state)).toBe(2);
+    expect(stepOf(result.prevState)).toBe(1);
+  });
+
+  test("stopped by a phase change: prevState is the state before that step", () => {
+    const result = advanceSim(fakeState(), SIM_STEP * 5, 0, SIM_STEP, makeCountingTick({ n: 3, by: "phase" }));
+    expect(result.stoppedBy).toBe("phase");
+    expect(stepOf(result.state)).toBe(3);
+    expect(stepOf(result.prevState)).toBe(2);
+    expect(result.prevState.matchPhase).toBe("firstHalf");
+  });
+});

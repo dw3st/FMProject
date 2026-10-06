@@ -55,6 +55,13 @@ type AdvanceSimStopReason = "goal" | "phase";
 export interface AdvanceSimResult {
   state: GameState;
   /**
+   * The state right before the LAST step that ran (the renderer interpolates
+   * between `prevState` and `state` by `carry / step`). Same reference as the
+   * input `state` when zero steps ran; when the batch stops early (goal/phase),
+   * the state before the step that stopped it.
+   */
+  prevState: GameState;
+  /**
    * Leftover game-seconds (always in `[0, step)`) that didn't amount to a
    * whole step — feed this back in as `carry` on the next call. Always `0`
    * when `stoppedBy` is set.
@@ -85,10 +92,11 @@ export function advanceSim(
 ): AdvanceSimResult {
   let total = carry + gameSeconds;
   if (total <= 0) {
-    return { state, carry: Math.max(0, total) };
+    return { state, prevState: state, carry: Math.max(0, total) };
   }
 
   let current = state;
+  let previous = state;
 
   // Epsilon guard against floating-point residue (summing many 1/60 steps
   // can leave `total` sitting a hair below a step boundary it should have
@@ -99,16 +107,17 @@ export function advanceSim(
     const phaseBefore = current.matchPhase;
 
     const { state: next, goalScored } = tick(current, step);
+    previous = current;
     current = next;
     total -= step;
 
     if (goalScored !== null) {
-      return { state: current, carry: 0, stoppedBy: "goal" };
+      return { state: current, prevState: previous, carry: 0, stoppedBy: "goal" };
     }
     if (current.matchPhase !== phaseBefore) {
-      return { state: current, carry: 0, stoppedBy: "phase" };
+      return { state: current, prevState: previous, carry: 0, stoppedBy: "phase" };
     }
   }
 
-  return { state: current, carry: Math.max(0, total) };
+  return { state: current, prevState: previous, carry: Math.max(0, total) };
 }
