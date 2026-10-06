@@ -26,7 +26,7 @@ const MAX_CACHE = 2000;
  */
 const TRAITS_FILE = fileURLToPath(new URL("../Data/faceTraits.json", import.meta.url));
 let traitsMap: Record<string, FaceTraits> | null = null;
-export function faceTraitsOf(playerId: string): FaceTraits | undefined {
+function faceTraitsOf(playerId: string): FaceTraits | undefined {
   if (!traitsMap) {
     try {
       traitsMap = JSON.parse(readFileSync(TRAITS_FILE, "utf8")) as Record<string, FaceTraits>;

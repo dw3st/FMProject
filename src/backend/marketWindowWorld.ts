@@ -31,7 +31,7 @@ export interface WindowContext {
   countries: () => { country: string; status: WindowStatus }[];
 }
 
-export function buildWindowContext(args: {
+function buildWindowContext(args: {
   date: string;
   activeLeagues: LeagueSeasonState[];
   catalog: LeagueDataEntry[];

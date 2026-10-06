@@ -46,7 +46,7 @@ export interface TeamStrength {
   forwardFinishing: number;
 }
 
-export interface QuickSimBreakdown {
+interface QuickSimBreakdown {
   home: TeamStrength;
   away: TeamStrength;
   xgHome: number;

@@ -72,8 +72,6 @@ export function finishPercentile(position: number, size: number): number {
 
 // ── Records ──────────────────────────────────────────────────────────────────
 
-export { closePassage, interimId, interimName, makeInterim, toFree } from "@/Domain/managers/managerRecords";
-
 /**
  * The club's manager goes to the free pool (`left`, default "sacked") and an interim takes over so
  * the club always has one. The human manager is never touched here.

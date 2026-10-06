@@ -54,7 +54,7 @@ export function emptyMarket(): MarketState {
 }
 
 /** The human's lists without `playerId` (sold / loaned / gone). */
-export function marketWithoutPlayer(market: MarketState, playerId: string): MarketState {
+function marketWithoutPlayer(market: MarketState, playerId: string): MarketState {
   return {
     ...market,
     playerSellList: (market.playerSellList ?? []).filter((c) => c.playerId !== playerId),
@@ -67,7 +67,7 @@ export function marketWithoutPlayer(market: MarketState, playerId: string): Mark
  * Takes a player who left the human club out of its saved lineup (the slot stays, empty). The
  * manager keeps knowing him fully (`.claude/rules/game/scouting.md`, decaying as usual).
  */
-export async function dropFromLineup(service: SaveService, saveId: string, playerId: string): Promise<void> {
+async function dropFromLineup(service: SaveService, saveId: string, playerId: string): Promise<void> {
   const tac = await service.getTactics(saveId);
   if (tac && tac.lineup.includes(playerId)) {
     await service.saveTactics(saveId, { ...tac, lineup: tac.lineup.map((id) => (id === playerId ? "" : id)) });
@@ -227,7 +227,7 @@ export async function settleSellOn(
 }
 
 /** Contract an AI club gives a signing: the curve wage at its factor, length by age. */
-export function aiContractFor(player: RosterPlayer, buyer: Squad, date: string, seasonEnd: string) {
+function aiContractFor(player: RosterPlayer, buyer: Squad, date: string, seasonEnd: string) {
   const years = aiRenewalYears(player);
   const contract = renewalContract(player, buyer, seasonEnd, years);
   return { ...contract, until: contractEndFor(date, seasonEnd, years) };

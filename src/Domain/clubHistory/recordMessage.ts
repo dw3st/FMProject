@@ -14,7 +14,7 @@ const LABEL: Record<ClubRecordBroken["kind"], string> = {
 };
 
 /** English fallback of a broken record's new value (the inbox screen translates it). */
-export function recordDetail(r: ClubRecordBroken): string {
+function recordDetail(r: ClubRecordBroken): string {
   switch (r.kind) {
     case "biggestWin":
     case "biggestLoss":

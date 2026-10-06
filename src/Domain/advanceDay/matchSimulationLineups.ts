@@ -253,7 +253,7 @@ export function computeMatchSimulationLineups(
  * the saved per-slot instructions (sanitized against the formation) and the match marking of
  * `date` (roster ids). The AI never gets either.
  */
-export function userInstructions(
+function userInstructions(
   formation: Formation,
   tactics: TacticsSave,
   matchMarking: MatchMarking | null | undefined,

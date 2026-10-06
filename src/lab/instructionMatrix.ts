@@ -54,7 +54,7 @@ export const RANDOM_FORMATIONS = ['4-3-3', '4-2-3-1', '3-5-2', '4-4-2'];
 const BACK_LINE = new Set<PlayerRole>(['CB', 'LB', 'RB', 'LWB', 'RWB']);
 
 /** Instruction list (index = slot) + tracked slots of a set in a formation. */
-export function instructionsFor(
+function instructionsFor(
   spec: InstrSetSpec,
   formation: Formation,
   rng: () => number,
@@ -80,7 +80,7 @@ export function instructionsFor(
 }
 
 /** The `n` best forwards of a lineup (by overall), as slots — the man-marking targets. */
-export function bestForwardSlots(squad: Squad, formation: Formation, lineup: string[], n: number): number[] {
+function bestForwardSlots(squad: Squad, formation: Formation, lineup: string[], n: number): number[] {
   const byId = new Map(squad.players.map(p => [p.id, p]));
   return formation.attacking
     .map((s, i) => ({ i, role: s.role, p: byId.get(lineup[i] ?? '') }))
@@ -91,7 +91,7 @@ export function bestForwardSlots(squad: Squad, formation: Formation, lineup: str
 }
 
 /** Marker slots: the central midfielders (CDM / CM) or the centre-backs, in slot order. */
-export function markerSlots(formation: Formation, n: number, by: 'mid' | 'cb' = 'mid'): number[] {
+function markerSlots(formation: Formation, n: number, by: 'mid' | 'cb' = 'mid'): number[] {
   const roles = by === 'cb' ? ['CB'] : ['CDM', 'CM'];
   return formation.attacking.flatMap((s, i) => (roles.includes(s.role) ? [i] : [])).slice(0, n);
 }

@@ -53,7 +53,7 @@ export function seasonWindows(season: SeasonDates): TransferWindow[] {
 }
 
 /** Windows of the season around `season` (one year back and two ahead), sorted by open date. */
-export function windowsAround(season: SeasonDates): TransferWindow[] {
+function windowsAround(season: SeasonDates): TransferWindow[] {
   const out: TransferWindow[] = [];
   for (const k of [-1, 0, 1, 2]) {
     out.push(...seasonWindows({ start: shiftYears(season.start, k), end: shiftYears(season.end, k) }));
@@ -88,7 +88,7 @@ export function isWindowOpen(season: SeasonDates, date: string): boolean {
 }
 
 /** D1: a new career's club trades for ARRIVAL_GRACE_DAYS from the career start. */
-export function inArrivalGrace(careerStart: string | undefined, date: string): boolean {
+function inArrivalGrace(careerStart: string | undefined, date: string): boolean {
   return !!careerStart && date >= careerStart && date < addDays(careerStart, WINDOWS.ARRIVAL_GRACE_DAYS);
 }
 

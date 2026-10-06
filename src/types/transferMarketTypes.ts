@@ -2,7 +2,7 @@ import type { MainRole } from "@/Domain/roles";
 
 export type TransferBudgetTier = "low" | "mid" | "high";
 
-export type TransferIntentType =
+type TransferIntentType =
   | "cover_need"
   | "future_investment"
   | "improvement";

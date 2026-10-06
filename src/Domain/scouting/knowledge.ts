@@ -7,7 +7,7 @@ import type { KnowledgeEntry } from "@/types/scoutingTypes";
 /** Pure knowledge model (`.claude/rules/game/scouting.md` §1). No I/O. */
 
 /** Piecewise-linear through `[rating 1, rating 5, rating 10]` (same shape as the staff curves). */
-export function ratingCurve(rating: number, [atMin, atNeutral, atMax]: readonly [number, number, number]): number {
+function ratingCurve(rating: number, [atMin, atNeutral, atMax]: readonly [number, number, number]): number {
   const r = clamp(rating, 1, 10);
   if (r <= 5) return atMin + (atNeutral - atMin) * ((r - 1) / 4);
   return atNeutral + (atMax - atNeutral) * ((r - 5) / 5);

@@ -146,7 +146,7 @@ function PlayerRow({
   );
 }
 
-export type DepartedReason = "sentOff" | "injured" | "subbedOff";
+type DepartedReason = "sentOff" | "injured" | "subbedOff";
 
 /** A player who left the pitch during the match, and why. */
 export interface DepartedPlayer {

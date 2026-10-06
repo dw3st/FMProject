@@ -89,7 +89,7 @@ export function collectNationalities(players: DisplayPlayer[]): string[] {
 }
 
 /** An attribute as the screen shows it: the value, or the middle of its range (`seenAttributeRange`). */
-export function seenAttributeValue(value: number, noise: number | undefined): number {
+function seenAttributeValue(value: number, noise: number | undefined): number {
   const range = seenAttributeRange(value, noise);
   return range ? rangeMid(range) : value;
 }

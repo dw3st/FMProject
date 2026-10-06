@@ -219,14 +219,14 @@ interface DefensiveIntentContext {
  * Defensive intent weights a player defends with: the slot tuning (`engineOf`, role + instruction),
  * or the man-marking tuning while he marks an opponent (`MAN_MARK_CONFIG`; press stays the slot's).
  */
-export function defensiveWeightsOf(player: GamePlayer): DefensiveIntentWeights {
+function defensiveWeightsOf(player: GamePlayer): DefensiveIntentWeights {
   const w = engineOf(player).defensiveIntentWeights;
   if (player.manMarkTargetId === undefined) return w;
   return { ...w, track_mark: MAN_MARK_CONFIG.TRACK_MARK_WEIGHT, hold_shape: MAN_MARK_CONFIG.HOLD_SHAPE_WEIGHT };
 }
 
 /** Movement bounds while defending: a marker gets X ± `X_BOUNDS_EXTENSION` and the full width. */
-export function defensiveBoundsOf(player: GamePlayer): GamePlayer['bounds'] {
+function defensiveBoundsOf(player: GamePlayer): GamePlayer['bounds'] {
   if (player.manMarkTargetId === undefined) return player.bounds;
   const ext = MAN_MARK_CONFIG.X_BOUNDS_EXTENSION;
   return {

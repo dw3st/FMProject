@@ -18,7 +18,7 @@ const lvlIdx = (level: number) => clamp(Math.round(level), F.MIN_LEVEL, F.MAX_LE
 // ── Levels and effects ────────────────────────────────────────────────────────
 
 /** Level by financial tier — AI clubs, and the starting level of a human club. */
-export function impliedLevel(squad: Squad): number {
+function impliedLevel(squad: Squad): number {
   return F.IMPLIED_LEVEL[financialTierOf(squad)];
 }
 
@@ -312,7 +312,7 @@ export function projectRunning(f: ClubFacilities, kind: FacilityKind): boolean {
   return f.projects.some((p) => p.kind === kind);
 }
 
-export function instalmentCount(start: string, end: string): number {
+function instalmentCount(start: string, end: string): number {
   return Math.max(1, Math.ceil(daysBetween(start, end) / F.INSTALMENT_DAYS));
 }
 

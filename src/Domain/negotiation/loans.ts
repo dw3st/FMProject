@@ -58,7 +58,7 @@ export function loanAvailability(
  * a share of the wage that grows with the player's importance, plus — above the squad average —
  * part of his value per season.
  */
-export function loanMinimum(player: RosterPlayer, parent: Squad, weeks: number): number {
+function loanMinimum(player: RosterPlayer, parent: Squad, weeks: number): number {
   const ctx = saleContext(player, parent);
   const share = Math.min(L.SHARE_MAX, Math.max(L.SHARE_MIN, L.SHARE_BASE + L.SHARE_SLOPE * ctx.relativeStrength));
   const wageTotal = currentWage(player, wageFactorOf(parent)) * weeks;

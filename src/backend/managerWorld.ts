@@ -145,7 +145,7 @@ export async function worldPrestige(
   return map;
 }
 
-export type ManagerNewsItem = ManagerNewsInboxMessage["items"][number];
+type ManagerNewsItem = ManagerNewsInboxMessage["items"][number];
 
 /**
  * The day's AI-manager desk (`.claude/rules/game/managers.md` → "Técnicos da IA"): it works on the

@@ -6,7 +6,7 @@
 export const FLAG_ASSET_VERSION = "v1";
 
 /** `gb`, `gb-eng`, `es-ct`... — the flag-icons file stems. */
-export const FLAG_CODE_RE = /^[a-z]{2}(-[a-z]{2,3})?$/;
+const FLAG_CODE_RE = /^[a-z]{2}(-[a-z]{2,3})?$/;
 
 /** URL of a country flag, or `undefined` for a code that can't be a flag. */
 export function flagUrl(code: string): string | undefined {

@@ -81,12 +81,6 @@ export function moraleDemandMult(p: Pick<RosterPlayer, "morale">): number {
   return band === "unhappy" || band === "furious" ? MORALE.UNHAPPY_DEMAND_MULT : 1;
 }
 
-/** Same squad, every player at `morale` (the lab and `/test` set a whole side). */
-export function withSquadMorale<T extends { players: RosterPlayer[] }>(squad: T, morale: number | undefined): T {
-  if (morale === undefined) return squad;
-  return { ...squad, players: squad.players.map((p) => ({ ...p, morale })) };
-}
-
 // ── Squad status ─────────────────────────────────────────────────────────────
 
 /**
@@ -153,7 +147,7 @@ export function minutesDelta(status: SquadStatus, minutes: number[], excused = f
 }
 
 /** Below the expected minutes (a reason to ask for a talk). */
-export function belowExpectation(status: SquadStatus, minutes: number[]): boolean {
+function belowExpectation(status: SquadStatus, minutes: number[]): boolean {
   const p = windowMatches(minutes);
   return p !== null && p < expectedRange(status)[0];
 }
@@ -164,12 +158,12 @@ function emptyLog(): PlayerMoraleLog {
   return { minutes: [], trend: [] };
 }
 
-export function logOf(p: RosterPlayer): PlayerMoraleLog {
+function logOf(p: RosterPlayer): PlayerMoraleLog {
   return p.moraleLog ?? emptyLog();
 }
 
 /** Morale moved by `delta`, clamped. */
-export function withMoraleDelta(p: RosterPlayer, delta: number): RosterPlayer {
+function withMoraleDelta(p: RosterPlayer, delta: number): RosterPlayer {
   if (delta === 0) return p;
   return { ...p, morale: clampMorale(moraleOf(p) + delta) };
 }
@@ -178,11 +172,11 @@ export function withMoraleDelta(p: RosterPlayer, delta: number): RosterPlayer {
  * Morale moved by an EVENT `delta`, scaled by his temperament (`personality.md`: a hot-head reacts
  * up to 25% more, a calm one 25% less). The weekly drift never goes through here.
  */
-export function withEventDelta(p: RosterPlayer, delta: number): RosterPlayer {
+function withEventDelta(p: RosterPlayer, delta: number): RosterPlayer {
   return withMoraleDelta(p, delta * moraleVolatility(p));
 }
 
-export function emptyClubMorale(): ClubMoraleState {
+function emptyClubMorale(): ClubMoraleState {
   return { talks: [], promises: [] };
 }
 
@@ -217,7 +211,7 @@ export function stripClubMorale(squad: Squad): Squad {
 
 // ── News (inbox `player`) ────────────────────────────────────────────────────
 
-export type PlayerNewsKind = "talk" | "promise_kept" | "promise_broken" | "transfer_request";
+type PlayerNewsKind = "talk" | "promise_kept" | "promise_broken" | "transfer_request";
 
 export interface PlayerNews {
   date: string;
@@ -279,7 +273,7 @@ export function moraleTrend(p: RosterPlayer): number | null {
 }
 
 /** Monday of the week of `date` (ISO). */
-export function weekStartOf(date: string): string {
+function weekStartOf(date: string): string {
   const dow = new Date(`${date}T12:00:00Z`).getUTCDay();
   return addDays(date, -((dow + 6) % 7));
 }

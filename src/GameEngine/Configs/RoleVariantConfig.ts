@@ -181,7 +181,7 @@ export const ROLE_VARIANTS: Record<RoleVariantId, RoleVariant> = {
 export const ROLE_VARIANT_IDS = Object.keys(ROLE_VARIANTS) as RoleVariantId[];
 
 /** Individual pressing: multipliers on the two press weights (`press_holder`, `step_into_carry_lane`). */
-export const PRESS_LEVEL_MULT: Record<PressLevel, { press_holder: number; step_into_carry_lane: number }> = {
+const PRESS_LEVEL_MULT: Record<PressLevel, { press_holder: number; step_into_carry_lane: number }> = {
   less:   { press_holder: 0.6, step_into_carry_lane: 0.8 },
   normal: { press_holder: 1,   step_into_carry_lane: 1 },
   more:   { press_holder: 1.4, step_into_carry_lane: 1.15 },
@@ -198,11 +198,6 @@ export function variantsForRole(role: string): RoleVariantId[] {
 
 export function variantFitsRole(variant: RoleVariantId, role: string): boolean {
   return ROLE_VARIANTS[variant].roles.includes(role as PlayerRole);
-}
-
-/** True when the instruction changes nothing (absent variant, normal/absent pressing). */
-export function isDefaultInstruction(instr: SlotInstruction | null | undefined): boolean {
-  return !instr || (!instr.variant && (!instr.press || instr.press === 'normal'));
 }
 
 /**

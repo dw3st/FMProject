@@ -177,7 +177,7 @@ async function scoutingView(saveId: string, state: ScoutingState) {
 }
 
 /** A prospect as the screen sees him: identity only, never his exact attributes. */
-export function prospectView(p: ScoutProspect) {
+function prospectView(p: ScoutProspect) {
   const { player } = p;
   return {
     player: { id: player.id, name: player.name, age: player.age, positions: player.positions, nationality: player.nationality },

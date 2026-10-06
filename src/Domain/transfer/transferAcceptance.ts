@@ -87,7 +87,7 @@ export function squadDepthBlocked(player: RosterPlayer, fromSquad: Squad, humanS
 }
 
 /** Seller pressure of the human club for a player with a transfer request (an AI LOW-tier seller). */
-export const REQUESTED_SALE_PRESSURE = 1.0;
+const REQUESTED_SALE_PRESSURE = 1.0;
 
 /** Everything of the seller's decision that does not depend on the fee. */
 export interface SaleContext {

@@ -2,7 +2,6 @@ import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { logError } from "@/Logger";
-import { emitInboxMessage, buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToHumanCounter, talkGate, talkKey,
 } from "@/Domain/negotiation/negotiation";
@@ -277,12 +276,3 @@ export const negotiationRoutes = {
     });
   },
 };
-
-/** Emits the human club's negotiation news (used by the day advance after `clearInbox`). */
-export async function emitNegotiationNews(
-  saveId: string,
-  news: Parameters<typeof buildTransferNegotiationMessage>[0][],
-  service = saveService,
-): Promise<void> {
-  for (const n of news) await emitInboxMessage(saveId, buildTransferNegotiationMessage(n), service);
-}

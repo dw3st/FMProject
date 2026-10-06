@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { MoraleBand, PlayerPromise, SquadStatus, TalkAnswer, TalkRequest } from "@/types/moraleTypes";
 
 /** One row of `GET /api/saves/:id/morale` (`src/backend/moraleRoutes.ts`). */
-export interface MoraleRow {
+interface MoraleRow {
   id: string;
   name: string;
   morale: number;

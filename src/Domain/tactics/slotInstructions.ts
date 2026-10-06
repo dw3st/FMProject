@@ -5,7 +5,7 @@ import { effectiveInstruction, isRoleVariantId, variantFitsRole } from "@/GameEn
 const PRESS_LEVELS: readonly PressLevel[] = ["less", "normal", "more"];
 
 /** Maximum man-marking pairs of a match (`.claude/rules/game/player-instructions.md`). */
-export const MAX_MATCH_MARKS = 2;
+const MAX_MATCH_MARKS = 2;
 
 /**
  * Validates a `TacticsSave.slotInstructions` body against the formation it will play in: an array
