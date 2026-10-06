@@ -80,7 +80,7 @@ não cobra taxa, valida `evaluateContractOffer` e o limite de 30 jogadores (`squ
 
 ## Telas
 
-- Elenco (`SquadTable`, `SquadRosterTable`): colunas "Salário" (do contrato) e "Contrato" (ano do fim).
+- Elenco (`SquadRosterTable`): colunas "Salário" (do contrato) e "Contrato" (ano do fim).
 - `PlayerScreen`: botão **Renovar** no jogador do próprio clube.
 - `PlayerOfferModal`: anos e salário na compra.
 - `ScoutScreen`: visão de livres.

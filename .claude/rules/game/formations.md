@@ -11,7 +11,7 @@ Etapa 18 do `docs/ROADMAP.md` (#59); equilíbrio entre elas na Etapa 19 (#63, 3.
   `yRange` próprio: os limites vêm do papel (`movement-bounds.md`).
 - Todas são escolhíveis pelo jogador (tela de Formação, troca na partida ao vivo, `/test`, `/lab`).
   A lista é `FORMATION_IDS` (`src/Domain/matchFormations.ts`, registro com os 17 JSONs);
-  `SUPPORTED_FORMATIONS` (`SetPieceLayouts.ts`) só marca as 3 com bolas paradas feitas à mão
+  o registro de `SetPieceLayouts.ts` (`getFormationSetPieces`) só tem as 3 com bolas paradas feitas à mão
   (4-3-3, 4-4-2, 3-5-2). As outras 14 usam `generateSetPieces` (layouts gerados das próprias vagas,
   o mesmo caminho da formação livre) — antes as 7 antigas sem layout manual apareciam como
   "em breve"; agora todas valem.
