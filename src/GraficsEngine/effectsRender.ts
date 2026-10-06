@@ -6,7 +6,6 @@ import { GOAL_Y_MIN, GOAL_Y_MAX, PITCH_LENGTH, PITCH_WIDTH } from "@/GameEngine/
 
 export interface EffectCtx {
   toPixel: (x: number, y: number) => { px: number; py: number };
-  scale: number;       // px per yard
   markerR: number;     // marker radius px
   netDepth: number;    // goal net depth px
 }

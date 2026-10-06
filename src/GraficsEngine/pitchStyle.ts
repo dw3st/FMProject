@@ -2,10 +2,8 @@
  * Visual constants of the live-match pitch (spec 2026-10-06-match-pitch-visual-design.md).
  * Distances in "marker radii" are multiplied by the marker radius (px); heights are in yards.
  */
-import { PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-
-/** Mowing stripes across the 115-yard length; DARK is the old flat pitch colour. */
-export const PITCH_STRIPES = { COUNT: 15, DARK: PITCH_COLOR, LIGHT: 0x10773a } as const;
+/** Mowing stripes across the 115-yard length: LIGHT bands over the flat PITCH_COLOR background. */
+export const PITCH_STRIPES = { COUNT: 15, LIGHT: 0x10773a } as const;
 
 /** Ground shadow under each marker (offsets/size in marker radii). */
 export const MARKER_SHADOW = { DX: 0.25, DY: 0.35, SCALE_Y: 0.8, ALPHA: 0.3 } as const;

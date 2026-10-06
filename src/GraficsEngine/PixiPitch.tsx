@@ -766,7 +766,7 @@ export function PixiPitch({
         fill: 0xffffff,
         dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.9 },
       });
-      const effectCtx: EffectCtx = { toPixel, scale: m.scale, markerR, netDepth: m.goalNetDepth };
+      const effectCtx: EffectCtx = { toPixel, markerR, netDepth: m.goalNetDepth };
       let effectNow = 0;
       let effects: PitchEffect[] = [];
       let trail: TrailPoint[] = [];
