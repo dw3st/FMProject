@@ -10,6 +10,7 @@ import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 import { ManMarkingPanel } from "@/GameInterface/Components/ManMarkingPanel";
+import { DragGhost, useDragDrop } from "@/GameInterface/Components/useDragDrop";
 import type { SlotInstruction } from "@/types/tacticsTypes";
 
 // ── Energy bar helpers ───────────────────────────────────────────────────────
@@ -119,12 +120,27 @@ export function SubstitutionPanel({
   }
 
   function handleSelectIn(inId: number) {
+    if (consumeClick()) return;
     if (!selectedOutId) return;
     onQueueSub({ outId: selectedOutId, inId });
     setSelectedOutId(null);
   }
 
   const canAddMore = subsRemaining - pendingCount > 0;
+
+  // Drag a bench player onto a starter (or a starter onto a bench player) to queue the swap.
+  // `slot:<id>` holds the engine id of a starter here, `bench:<id>` the engine id of a sub.
+  const { drag, dragProps, consumeClick } = useDragDrop((source, target) => {
+    if (!canAddMore) return;
+    let outId: number | null = null;
+    let inId: number | null = null;
+    if (source.kind === "bench" && target.kind === "slot") { inId = Number(source.key); outId = target.index; }
+    if (source.kind === "slot" && target.kind === "bench") { outId = Number(source.key); inId = Number(target.playerId); }
+    if (outId === null || inId === null || queuedOutIds.has(outId) || queuedInIds.has(inId)) return;
+    if (!onPitch.some((p) => p.id === outId) || !availableBench.some((p) => p.id === inId)) return;
+    onQueueSub({ outId, inId });
+    setSelectedOutId(null);
+  });
 
   function RoleBadge({ role }: { role: string }) {
     const main = getMainRole(role);
@@ -144,6 +160,7 @@ export function SubstitutionPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+      <DragGhost drag={drag} />
       <div className="bg-card border border-border rounded-md w-[80vw] h-[80vh] max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)] flex flex-col overflow-hidden">
 
         {/* Header */}
@@ -287,10 +304,14 @@ export function SubstitutionPanel({
                         <button
                           key={p.id}
                           type="button"
-                          onClick={() => !isOut && canAddMore && handleSelectOut(p.id)}
+                          onClick={() => !consumeClick() && !isOut && canAddMore && handleSelectOut(p.id)}
                           disabled={isDisabled && !isSelected}
+                          data-drop={`slot:${p.id}`}
+                          {...(!isOut && canAddMore ? dragProps({ kind: "slot", key: String(p.id) }, p.name) : {})}
                           className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg border text-left transition-all ${
-                            isSelected
+                            drag?.over === `slot:${p.id}` && drag.source.kind === "bench"
+                              ? "bg-primary/20 border-primary"
+                              : isSelected
                               ? "bg-primary/20 border-primary/60 ring-1 ring-primary/40"
                               : isOut
                                 ? "opacity-40 border-border cursor-not-allowed"
@@ -361,9 +382,13 @@ export function SubstitutionPanel({
                             key={p.id}
                             type="button"
                             onClick={() => canPick && handleSelectIn(p.id)}
-                            disabled={!canPick}
+                            aria-disabled={!canPick}
+                            data-drop={`bench:${p.id}`}
+                            {...(canAddMore ? dragProps({ kind: "bench", key: String(p.id) }, p.name) : {})}
                             className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg border text-left transition-all ${
-                              canPick
+                              drag?.over === `bench:${p.id}` && drag.source.kind === "slot"
+                                ? "bg-chart-2/20 border-chart-2"
+                                : canPick
                                 ? "border-chart-2/25 hover:border-chart-2/60 hover:bg-chart-2/10 cursor-pointer"
                                 : "border-border/40 opacity-70 cursor-default"
                             }`}

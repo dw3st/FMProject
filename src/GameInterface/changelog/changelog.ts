@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.1.2",
+    date: "2026-10-06",
+    items: [
+      { pt: "Substituições ao vivo: arraste o reserva sobre o titular (ou o titular sobre o reserva) para fazer a troca.", en: "Live substitutions: drag a substitute onto a starter (or a starter onto a substitute) to make the change." },
+    ],
+  },
+  {
     version: "4.1.1",
     date: "2026-10-06",
     items: [
