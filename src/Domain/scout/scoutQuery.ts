@@ -123,8 +123,9 @@ export function sortScoutPlayers(players: DisplayPlayer[], sortKey: string, sort
   return [...players].sort((a, b) => {
     // The salary column is a text label ("61k"); it sorts by the wage behind it.
     const key = (sortKey === "salary" ? "wage" : sortKey) as keyof DisplayPlayer;
-    const aVal = a[key];
-    const bVal = b[key];
+    // Knowledge: rows without it are the user's own players (exact = 100).
+    const aVal = key === "knowledge" ? (a.knowledge ?? 100) : a[key];
+    const bVal = key === "knowledge" ? (b.knowledge ?? 100) : b[key];
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }

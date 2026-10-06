@@ -191,6 +191,17 @@ export function ScoutFilters({
           <Icon name="tag" className="w-4 h-4" />
           {t("scout.filters.freeAgentsOnly")}
         </Chip>
+        <Chip selected={!!filters.onlyShortlist} onClick={() => setFilters({ ...filters, onlyShortlist: !filters.onlyShortlist })}>
+          <Icon name="star" className="w-4 h-4" />
+          {t("scouting.filters.onlyShortlist")}
+        </Chip>
+        <Chip
+          selected={(filters.minKnowledge ?? 0) >= 60}
+          onClick={() => setFilters({ ...filters, minKnowledge: (filters.minKnowledge ?? 0) >= 60 ? 0 : 60 })}
+        >
+          <Icon name="binoculars" className="w-4 h-4" />
+          {t("scouting.filters.known")}
+        </Chip>
       </div>
 
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />

@@ -315,6 +315,13 @@
       "assistant": "Development points x{{mult}}",
       "fitness": "Recovery x{{recovery}}, injury risk x{{injury}}",
       "scout": "Uncertainty x{{uncertainty}} · knowledge gained x{{gain}}"
+    },
+    "scouts": {
+      "title": "Field scouts",
+      "subtitle": "{{count}} of {{max}} hired. Each one leads one scouting mission.",
+      "fieldScout": "Field scout",
+      "tab": "Scouts",
+      "fireConfirmBody": "His mission is cancelled."
     }
   },
   "comingSoon": {
@@ -984,7 +991,8 @@
       "transfer": "Negotiation",
       "player": "Player",
       "facilities": "Facilities",
-      "manager_news": "Managers"
+      "manager_news": "Managers",
+      "scouting": "Scouting"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1121,6 +1129,35 @@
       "sacked": "{{club}} sacked {{manager}}. An interim takes charge.",
       "hired": "{{club}} appointed {{manager}}.",
       "hiredInterim": "{{club}} confirmed interim {{manager}} as manager."
+    },
+    "scouting": {
+      "open": "Open the scouting centre",
+      "subject": {
+        "report": "Scouting report: {{target}}",
+        "mission_done": "Mission finished: {{target}}",
+        "gem": "Gem found: {{player}}",
+        "recommendation": "Chief scout picks",
+        "shortlist": "Shortlist: {{player}}",
+        "prospect": "Prospect available: {{player}}",
+        "prospect_signed": "Prospect signed: {{player}}"
+      },
+      "body": {
+        "report": "{{count}} players observed this week. Best: {{players}}.",
+        "mission_done": "The mission ended after {{count}} players observed.",
+        "gem": "{{player}} ({{club}}) has the potential to become a starter. Grade {{grade}}.",
+        "recommendation": "This month the chief scout recommends: {{players}}.",
+        "shortlist": "{{player}}: {{reason}}.",
+        "prospect": "{{player}} ({{club}}), with no club, can join the academy for {{fee}} until {{expires}}.",
+        "prospect_signed": "{{player}} joined the academy. Training compensation: {{fee}}."
+      },
+      "reason": {
+        "for_sale": "now for sale",
+        "loan_listed": "available on loan",
+        "contract_ending": "contract ends within six months",
+        "free": "now a free agent",
+        "transferred": "moved to another club",
+        "retired": "retired"
+      }
     }
   },
   "finances": {
@@ -1749,7 +1786,10 @@
       "facilitiesUpkeep": "Training ground and academy upkeep",
       "managerWage": "Manager wage",
       "managerSeverance": "Manager severance",
-      "managerCompensation": "Manager compensation"
+      "managerCompensation": "Manager compensation",
+      "scoutingTravel": "Scouting travel: {{competition}}",
+      "scoutingTravelPlayer": "Scouting travel: {{player}}",
+      "prospectFee": "Training compensation: {{player}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -1760,7 +1800,8 @@
     "boardFunding": "Board funding",
     "kinds": {
       "manager": "Manager wage"
-    }
+    },
+    "scouting": "Scouting"
   },
   "developmentScreen": {
     "squad": "Squad",
@@ -1984,8 +2025,8 @@
       "accent": "Cups"
     },
     "scout": {
-      "main": "Player",
-      "accent": "Search"
+      "main": "Scouting",
+      "accent": "Centre"
     },
     "squad": {
       "main": "Squad"
@@ -2630,6 +2671,143 @@
       "loyal": "Loyal to the club: {{pct}}",
       "compatriot": "Plays in his country: {{pct}}",
       "smallerClub": "Wants a bigger club: {{pct}}"
+    }
+  },
+  "scouting": {
+    "tabs": {
+      "search": "Search",
+      "missions": "Missions",
+      "reports": "Reports",
+      "shortlist": "Shortlist",
+      "gems": "Gems"
+    },
+    "filters": {
+      "onlyShortlist": "Shortlist only",
+      "known": "Known (60+)"
+    },
+    "knowledge": "Knowledge",
+    "knowledgeTitle": "Knowledge {{k}}/100",
+    "rangeTitle": "Overall seen by your scouts",
+    "errors": {
+      "shortlistFull": "The shortlist is full",
+      "generic": "Could not save",
+      "invalidTarget": "Choose a valid target",
+      "invalidWeeks": "Choose a valid duration",
+      "invalidFocus": "Invalid focus",
+      "scoutBusy": "This scout is already on a mission",
+      "noClub": "You need a club for this",
+      "youthFull": "The academy is full",
+      "offerClosed": "This prospect is no longer available",
+      "scoutsFull": "No more room for field scouts"
+    },
+    "shortlist": {
+      "add": "Add to shortlist",
+      "remove": "Remove from shortlist",
+      "empty": "No player on the shortlist yet. Use the star on a player to follow him.",
+      "count": "{{count}} of {{max}} players"
+    },
+    "noClub": "Without a club you can read reports and the shortlist, but not send scouts.",
+    "chief": "Chief scout",
+    "fieldScout": "Field scout",
+    "vacant": "Vacant",
+    "rating": "Rating {{rating}}",
+    "kind": {
+      "country": "Country",
+      "league": "League",
+      "continent": "Continent",
+      "player": "Player",
+      "youth": "Youth"
+    },
+    "target": {
+      "youthOf": "Youth of {{country}}"
+    },
+    "weeksProgress": "{{done}}/{{total}} weeks",
+    "weeklyCost": "{{cost}} per week",
+    "observedCount": "{{count}} observed",
+    "cancelMission": "Cancel mission",
+    "idle": "No mission",
+    "newMission": "New mission",
+    "fieldScoutsHint": "Hire up to {{max}} field scouts in Technical staff to run more missions.",
+    "targetLabel": "Target",
+    "country": "Country",
+    "pickCountry": "Choose a country",
+    "league": "League",
+    "pickLeague": "Choose a league",
+    "continents": {
+      "Europe": "Europe",
+      "South America": "South America",
+      "Asia": "Asia",
+      "Oceania": "Oceania",
+      "Africa": "Africa",
+      "North America": "North America"
+    },
+    "duration": "Duration",
+    "weeksN": "{{n}} weeks",
+    "focus": "Focus",
+    "lines": {
+      "all": "All",
+      "GK": "Goalkeepers",
+      "Defender": "Defenders",
+      "Midfielder": "Midfielders",
+      "Forward": "Forwards"
+    },
+    "anyAge": "Any age",
+    "maxAge": "Up to {{age}}",
+    "improves": "Only who improves the squad",
+    "send": "Send scout",
+    "gem": "Gem",
+    "col": {
+      "grade": "Grade",
+      "player": "Player",
+      "age": "Age",
+      "club": "Club",
+      "overall": "Overall",
+      "potential": "Potential",
+      "value": "Value",
+      "wage": "Wage asked",
+      "verdict": "Verdict",
+      "status": "Status",
+      "note": "Note"
+    },
+    "forSale": "For sale",
+    "noClubProspect": "No club ({{country}})",
+    "text": {
+      "ready": "Ready for the starting XI",
+      "future": "One for the future",
+      "squad": "Squad option",
+      "no_upgrade": "Does not improve the squad"
+    },
+    "mission": "Mission",
+    "allMissions": "All missions",
+    "finishedMission": "Finished mission",
+    "noReports": "No reports yet. Send a scout on a mission.",
+    "status": {
+      "free": "Free agent",
+      "contractEnding": "Contract ends {{year}}",
+      "injured": "Injured"
+    },
+    "notePlaceholder": "Add a note",
+    "prospects": {
+      "title": "Prospects",
+      "hint": "Club-less youngsters found on youth missions. Sign them into the academy for a training compensation.",
+      "empty": "No prospect available. Send a scout on a youth mission.",
+      "fee": "Compensation {{fee}}",
+      "until": "Available until {{date}}",
+      "sign": "Sign for the academy"
+    },
+    "gems": {
+      "title": "Gems",
+      "empty": "No gem found yet."
+    },
+    "seenOn": "Last observed on {{date}}",
+    "neverSeen": "Never observed",
+    "lowKnowledge": "Low knowledge ({{k}}): the attributes may be wrong.",
+    "beingObserved": "Being observed: week {{done}} of {{total}}",
+    "noFreeScout": "Every scout is on a mission.",
+    "observe": "Observe",
+    "attention": {
+      "gem": "Gem found: {{name}} ({{club}})",
+      "shortlist": "Shortlist: {{name}} ({{reason}})"
     }
   }
 }

@@ -315,6 +315,13 @@
       "assistant": "Pontos de desenvolvimento x{{mult}}",
       "fitness": "Recuperação x{{recovery}}, risco de lesão x{{injury}}",
       "scout": "Incerteza x{{uncertainty}} · conhecimento ganho x{{gain}}"
+    },
+    "scouts": {
+      "title": "Olheiros de campo",
+      "subtitle": "{{count}} de {{max}} contratados. Cada um conduz uma missão.",
+      "fieldScout": "Olheiro de campo",
+      "tab": "Olheiros",
+      "fireConfirmBody": "A missão dele é cancelada."
     }
   },
   "comingSoon": {
@@ -984,7 +991,8 @@
       "transfer": "Negociação",
       "player": "Jogador",
       "facilities": "Instalações",
-      "manager_news": "Técnicos"
+      "manager_news": "Técnicos",
+      "scouting": "Olheiros"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1121,6 +1129,35 @@
       "sacked": "O {{club}} demitiu {{manager}}. Um interino assume.",
       "hired": "O {{club}} contratou {{manager}}.",
       "hiredInterim": "O {{club}} efetivou o interino {{manager}}."
+    },
+    "scouting": {
+      "open": "Abrir a central de olheiros",
+      "subject": {
+        "report": "Relatório de observação: {{target}}",
+        "mission_done": "Missão encerrada: {{target}}",
+        "gem": "Joia encontrada: {{player}}",
+        "recommendation": "Indicações do olheiro-chefe",
+        "shortlist": "Observado: {{player}}",
+        "prospect": "Jovem disponível: {{player}}",
+        "prospect_signed": "Jovem contratado: {{player}}"
+      },
+      "body": {
+        "report": "{{count}} jogadores observados nesta semana. Melhores: {{players}}.",
+        "mission_done": "A missão terminou com {{count}} jogadores observados.",
+        "gem": "{{player}} ({{club}}) tem potencial para virar titular. Nota {{grade}}.",
+        "recommendation": "Neste mês o olheiro-chefe indica: {{players}}.",
+        "shortlist": "{{player}}: {{reason}}.",
+        "prospect": "{{player}} ({{club}}), sem clube, pode entrar na base por {{fee}} até {{expires}}.",
+        "prospect_signed": "{{player}} entrou na base. Compensação de formação: {{fee}}."
+      },
+      "reason": {
+        "for_sale": "está à venda",
+        "loan_listed": "disponível por empréstimo",
+        "contract_ending": "contrato acaba em até seis meses",
+        "free": "ficou livre",
+        "transferred": "mudou de clube",
+        "retired": "se aposentou"
+      }
     }
   },
   "finances": {
@@ -1749,7 +1786,10 @@
       "facilitiesUpkeep": "Manutenção do CT e da base",
       "managerWage": "Salário do técnico",
       "managerSeverance": "Multa rescisória do técnico",
-      "managerCompensation": "Compensação pelo técnico"
+      "managerCompensation": "Compensação pelo técnico",
+      "scoutingTravel": "Viagens de observação: {{competition}}",
+      "scoutingTravelPlayer": "Viagens de observação: {{player}}",
+      "prospectFee": "Compensação de formação: {{player}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -1760,7 +1800,8 @@
     "boardFunding": "Verba da diretoria",
     "kinds": {
       "manager": "Salário do técnico"
-    }
+    },
+    "scouting": "Olheiros"
   },
   "developmentScreen": {
     "squad": "Elenco",
@@ -1984,8 +2025,8 @@
       "accent": "Copas"
     },
     "scout": {
-      "main": "Busca de",
-      "accent": "Jogadores"
+      "main": "Central de",
+      "accent": "Olheiros"
     },
     "squad": {
       "main": "Elenco"
@@ -2630,6 +2671,143 @@
       "loyal": "Leal ao clube: {{pct}}",
       "compatriot": "Joga no país dele: {{pct}}",
       "smallerClub": "Quer um clube maior: {{pct}}"
+    }
+  },
+  "scouting": {
+    "tabs": {
+      "search": "Busca",
+      "missions": "Missões",
+      "reports": "Relatórios",
+      "shortlist": "Observados",
+      "gems": "Joias"
+    },
+    "filters": {
+      "onlyShortlist": "Só observados",
+      "known": "Conhecidos (60+)"
+    },
+    "knowledge": "Conhecimento",
+    "knowledgeTitle": "Conhecimento {{k}}/100",
+    "rangeTitle": "Nível visto pelos olheiros",
+    "errors": {
+      "shortlistFull": "A lista de observação está cheia",
+      "generic": "Não foi possível salvar",
+      "invalidTarget": "Escolha um alvo válido",
+      "invalidWeeks": "Escolha uma duração válida",
+      "invalidFocus": "Foco inválido",
+      "scoutBusy": "Este olheiro já está em missão",
+      "noClub": "É preciso ter um clube",
+      "youthFull": "A base está cheia",
+      "offerClosed": "Este jovem não está mais disponível",
+      "scoutsFull": "Não há mais vaga para olheiros de campo"
+    },
+    "shortlist": {
+      "add": "Observar",
+      "remove": "Deixar de observar",
+      "empty": "Nenhum jogador observado ainda. Use a estrela num jogador para acompanhá-lo.",
+      "count": "{{count}} de {{max}} jogadores"
+    },
+    "noClub": "Sem clube você vê relatórios e a lista, mas não pode enviar olheiros.",
+    "chief": "Olheiro-chefe",
+    "fieldScout": "Olheiro de campo",
+    "vacant": "Vago",
+    "rating": "Nota {{rating}}",
+    "kind": {
+      "country": "País",
+      "league": "Liga",
+      "continent": "Continente",
+      "player": "Jogador",
+      "youth": "Jovens"
+    },
+    "target": {
+      "youthOf": "Jovens de {{country}}"
+    },
+    "weeksProgress": "{{done}}/{{total}} semanas",
+    "weeklyCost": "{{cost}} por semana",
+    "observedCount": "{{count}} observados",
+    "cancelMission": "Cancelar missão",
+    "idle": "Sem missão",
+    "newMission": "Nova missão",
+    "fieldScoutsHint": "Contrate até {{max}} olheiros de campo na Equipe técnica para fazer mais missões.",
+    "targetLabel": "Alvo",
+    "country": "País",
+    "pickCountry": "Escolha um país",
+    "league": "Liga",
+    "pickLeague": "Escolha uma liga",
+    "continents": {
+      "Europe": "Europa",
+      "South America": "América do Sul",
+      "Asia": "Ásia",
+      "Oceania": "Oceania",
+      "Africa": "África",
+      "North America": "América do Norte"
+    },
+    "duration": "Duração",
+    "weeksN": "{{n}} semanas",
+    "focus": "Foco",
+    "lines": {
+      "all": "Todos",
+      "GK": "Goleiros",
+      "Defender": "Defensores",
+      "Midfielder": "Meias",
+      "Forward": "Atacantes"
+    },
+    "anyAge": "Qualquer idade",
+    "maxAge": "Até {{age}}",
+    "improves": "Só quem melhora o elenco",
+    "send": "Enviar olheiro",
+    "gem": "Joia",
+    "col": {
+      "grade": "Nota",
+      "player": "Jogador",
+      "age": "Idade",
+      "club": "Clube",
+      "overall": "Nível",
+      "potential": "Potencial",
+      "value": "Valor",
+      "wage": "Salário pedido",
+      "verdict": "Avaliação",
+      "status": "Situação",
+      "note": "Anotação"
+    },
+    "forSale": "À venda",
+    "noClubProspect": "Sem clube ({{country}})",
+    "text": {
+      "ready": "Pronto para o time titular",
+      "future": "Para o futuro",
+      "squad": "Opção para o elenco",
+      "no_upgrade": "Não melhora o elenco"
+    },
+    "mission": "Missão",
+    "allMissions": "Todas as missões",
+    "finishedMission": "Missão encerrada",
+    "noReports": "Nenhum relatório ainda. Mande um olheiro em missão.",
+    "status": {
+      "free": "Livre",
+      "contractEnding": "Contrato até {{year}}",
+      "injured": "Lesionado"
+    },
+    "notePlaceholder": "Anotar",
+    "prospects": {
+      "title": "Jovens sem clube",
+      "hint": "Jovens encontrados nas missões de base. Contrate para a base pagando a compensação de formação.",
+      "empty": "Nenhum jovem disponível. Mande um olheiro numa missão de jovens.",
+      "fee": "Compensação {{fee}}",
+      "until": "Disponível até {{date}}",
+      "sign": "Contratar para a base"
+    },
+    "gems": {
+      "title": "Joias",
+      "empty": "Nenhuma joia encontrada ainda."
+    },
+    "seenOn": "Observado em {{date}}",
+    "neverSeen": "Nunca observado",
+    "lowKnowledge": "Conhecimento baixo ({{k}}): os atributos podem estar errados.",
+    "beingObserved": "Em observação: semana {{done}} de {{total}}",
+    "noFreeScout": "Todos os olheiros estão em missão.",
+    "observe": "Observar",
+    "attention": {
+      "gem": "Joia encontrada: {{name}} ({{club}})",
+      "shortlist": "Observado: {{name}} ({{reason}})"
     }
   }
 }

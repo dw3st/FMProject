@@ -8,6 +8,8 @@ import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
+import { KnowledgeBar, valueText } from "@/GameInterface/Scouting/KnowledgeBar";
+import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
 
 const columns = [
   { key: "pos", label: "Pos", width: "w-14" },
@@ -15,11 +17,12 @@ const columns = [
   { key: "age", label: "Age", width: "w-12" },
   { key: "club", label: "Club", width: "w-32" },
   { key: "avg", label: "OVR", width: "w-20" },
+  { key: "knowledge", label: "Knowledge", width: "w-28" },
   { key: "phase", label: "Phase", width: "w-16" },
   { key: "training", label: "Train", width: "w-16" },
   { key: "moral", label: "Moral", width: "w-16" },
   { key: "salary", label: "Salary", width: "w-20" },
-  { key: "valueMillions", label: "Value", width: "w-16" },
+  { key: "valueMillions", label: "Value", width: "w-24" },
 ];
 
 interface Props {
@@ -48,11 +51,15 @@ interface Props {
   error?: boolean;
   /** Called when the user clicks the retry button in the error state. */
   onRetry?: () => void;
+  /** Shortlisted ids among `rows` (`scouting.md`) and the star toggle. */
+  shortlistIds?: Set<string>;
+  onShortlistChange?: (playerId: string, on: boolean) => void;
 }
 
 export function ScoutTable({
   rows, total, page, pageSize, sortKey, sortDir, onSort, onPageChange,
   loading, filtering, mySquadId, onOffer, offerBlocked, sellListedIds = new Set(), error, onRetry,
+  shortlistIds, onShortlistChange,
 }: Props) {
   const { t } = useTranslation();
   const { session, currentDate } = useGameSave();
@@ -93,7 +100,7 @@ export function ScoutTable({
             onClick={() => onSort(col.key)}
             className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
           >
-            {col.label}
+            {col.key === "knowledge" ? t("scouting.knowledge") : col.label}
             {sortKey === col.key &&
               (sortDir === "asc" ? (
                 <Icon name="chevron-up" className="w-3 h-3 text-primary" />
@@ -139,6 +146,15 @@ export function ScoutTable({
                 {positionLabel(t, player.natural, player.pos)}
               </div>
               <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
+                {shortlistIds && session && player.squadId !== mySquadId && (
+                  <ShortlistStar
+                    saveId={session.saveId}
+                    playerId={player.id}
+                    squadId={player.squadId}
+                    on={shortlistIds.has(player.id)}
+                    onChange={(on) => onShortlistChange?.(player.id, on)}
+                  />
+                )}
                 {sellListedIds.has(player.id) && (
                   <span title={t("scout.table.forSale")} className="shrink-0"><Icon name="tag" className="w-3 h-3 text-primary" /></span>
                 )}
@@ -170,6 +186,9 @@ export function ScoutTable({
               <div className="px-3 py-2.5 w-20">
                 <AvgBadge value={player.avg} range={player.avgRange} />
               </div>
+              <div className="px-3 py-2.5 w-28">
+                {player.knowledge !== undefined ? <KnowledgeBar value={player.knowledge} /> : <span className="text-sm text-muted-foreground">—</span>}
+              </div>
               <div className="px-3 py-2.5 w-16">
                 <StatusBadge level={player.phase} />
               </div>
@@ -182,8 +201,8 @@ export function ScoutTable({
               <div className="px-3 py-2.5 w-20 text-muted-foreground font-medium">
                 {player.salary}
               </div>
-              <div className={`px-3 py-2.5 w-16 font-bold ${ratingTextClass10(player.avg)}`}>
-                {player.value}
+              <div className={`px-3 py-2.5 w-24 font-bold ${ratingTextClass10(player.avg)}`}>
+                {valueText(player.value, player.valueRange)}
               </div>
               <div className="w-20 px-3 py-2.5 flex justify-center">
                 <button

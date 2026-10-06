@@ -17,6 +17,22 @@ import type { TransferRecord } from "@/types/transferTypes";
 import type { ScoutQuery, ScoutSearchResponse, ScoutSortDir } from "@/Domain/scout/scoutQuery";
 import { countryDisplayName, leagueLabel } from "@/Domain/world/labels";
 import countriesRaw from "@/Data/countries.json";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { useScouting, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
+import { MissionsTab } from "@/GameInterface/Scouting/MissionsTab";
+import { GemsTab, ReportsTab, ShortlistTab } from "@/GameInterface/Scouting/ReportTables";
+
+type ScoutTab = "search" | "missions" | "reports" | "shortlist" | "gems";
+const SCOUT_TABS: ScoutTab[] = ["search", "missions", "reports", "shortlist", "gems"];
+
+function initialTab(): ScoutTab {
+  try {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return SCOUT_TABS.includes(t as ScoutTab) ? (t as ScoutTab) : "search";
+  } catch {
+    return "search";
+  }
+}
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
 const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
@@ -72,6 +88,10 @@ export function ScoutScreen() {
   const [leagueRows, setLeagueRows] = useState<LeagueData[]>([]);
   const [mySquadId, setMySquadId] = useState<string>("");
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
+  const [tab, setTab] = useState<ScoutTab>(() => initialTab());
+  const scouting = useScouting(session?.saveId);
+  // Shortlist stars toggled in the search table (until the next search refresh).
+  const [starOverrides, setStarOverrides] = useState<Record<string, boolean>>({});
   const [signTarget, setSignTarget] = useState<DisplayPlayer | null>(null);
 
   const isFiltering = filters !== debouncedFilters || fetching;
@@ -171,6 +191,21 @@ export function ScoutScreen() {
   );
 
   const sellListedIds = useMemo(() => new Set(result?.sellListedIds ?? []), [result]);
+  const shortlistIds = useMemo(() => {
+    const ids = new Set(result?.shortlistIds ?? []);
+    for (const [id, on] of Object.entries(starOverrides)) { if (on) ids.add(id); else ids.delete(id); }
+    return ids;
+  }, [result, starOverrides]);
+
+  function changeTab(next: ScoutTab) {
+    setTab(next);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", next);
+      window.history.replaceState(null, "", url);
+    } catch { /* unavailable */ }
+    if (next !== "search") void scouting.reload();
+  }
 
   function refreshAfterTransfer(record: TransferRecord) {
     if (record.status !== "accepted") return;
@@ -184,6 +219,40 @@ export function ScoutScreen() {
           {t("screenTitles.scout.main")}
         </ScreenTitle>
 
+        <SegmentedTabs<ScoutTab>
+          tabs={SCOUT_TABS.map((k) => ({ key: k, label: t(`scouting.tabs.${k}`) }))}
+          active={tab}
+          onChange={changeTab}
+          aria-label={t("screenTitles.scout.accent")}
+          wrap
+        />
+
+        {tab !== "search" && session && !scouting.data && (
+          <p className="text-sm text-muted-foreground m-0">{scouting.error ? t("warnings.errors.loadFailed") : t("common.loading")}</p>
+        )}
+        {tab === "missions" && session && scouting.data && (
+          <MissionsTab
+            saveId={session.saveId}
+            data={scouting.data}
+            leagues={leagueRows}
+            onChanged={(next?: ScoutingData) => (next ? scouting.setData(next) : void scouting.reload())}
+          />
+        )}
+        {tab === "reports" && session && scouting.data && (
+          <ReportsTab saveId={session.saveId} data={scouting.data} leagues={leagueRows} onChanged={() => void scouting.reload()} />
+        )}
+        {tab === "shortlist" && session && scouting.data && (
+          <ShortlistTab saveId={session.saveId} data={scouting.data} onChanged={() => void scouting.reload()} />
+        )}
+        {tab === "gems" && session && scouting.data && (
+          <GemsTab
+            saveId={session.saveId}
+            data={scouting.data}
+            onChanged={(next?: ScoutingData) => (next ? scouting.setData(next) : void scouting.reload())}
+          />
+        )}
+
+        {tab === "search" && <>
         <ScoutFilters
           filters={filters}
           setFilters={handleSetFilters}
@@ -212,7 +281,10 @@ export function ScoutScreen() {
           sellListedIds={sellListedIds}
           error={fetchError}
           onRetry={() => setRefreshTick((n) => n + 1)}
+          shortlistIds={shortlistIds}
+          onShortlistChange={(id, on) => setStarOverrides((prev) => ({ ...prev, [id]: on }))}
         />
+        </>}
       </ScreenContainer>
 
       <PlayerOfferModal

@@ -17,6 +17,7 @@ import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
+import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
 
 const STAT_ABBR: Partial<Record<keyof PlayerStatsRecord, string>> = {
   finishing:    "FIN",
@@ -37,13 +38,24 @@ function StatBar({
   statKey,
   value,
   wide,
+  noise = 0,
+  hidden = false,
 }: {
   statKey: keyof PlayerStatsRecord;
   value: number;
   wide?: boolean;
+  /** Scouting uncertainty (`scouting.md`): ± points, shown as a range from 0.5. */
+  noise?: number;
+  /** Knowledge too low: the attribute is unknown ("?"). */
+  hidden?: boolean;
 }) {
-  const pct = (value / 10) * 100;
+  const pct = hidden ? 0 : (value / 10) * 100;
   const color = ratingBarFillClass10(value);
+  const shown = hidden
+    ? "?"
+    : noise >= 0.5
+      ? `${Math.max(0, Math.round(value - noise))}–${Math.min(10, Math.round(value + noise))}`
+      : `${value}`;
   const attr = ATTRIBUTE_LABELS[statKey as AttributeId];
   return (
     <div className="relative flex items-center gap-2 group/stat">
@@ -60,7 +72,7 @@ function StatBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`font-black w-4 text-right text-sm tabular-nums ${ratingTextClass10(value)}`}>{value}</span>
+      <span className={`font-black text-right text-sm tabular-nums ${hidden ? "w-4 text-muted-foreground" : noise >= 0.5 ? "w-10" : "w-4"} ${hidden ? "" : ratingTextClass10(value)}`}>{shown}</span>
 
       <StatHoverPopover label={attr.label} description={attr.description} />
     </div>
@@ -171,7 +183,14 @@ export function PlayerCard({
             {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="mt-2" />}
           </div>
 
-          <AvgRing value={player.avg} size="lg" />
+          <div className="flex flex-col items-center gap-1">
+            <AvgRing value={player.avg} size="lg" />
+            {player.avgRange && (
+              <span className="text-sm text-muted-foreground tabular-nums" title={t("scouting.rangeTitle")}>
+                {Math.round(player.avgRange[0] * 10)}–{Math.round(player.avgRange[1] * 10)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Two columns: story | stats grid */}
@@ -180,7 +199,7 @@ export function PlayerCard({
             <div className="grid grid-cols-3 gap-4">
               <div className="card-arcade rounded-md p-4 text-center border border-border/50">
                 <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{t("dashboard.playerCard.value")}</p>
-                <p className={`text-lg md:text-xl font-black font-display m-0 ${ratingTextClass10(player.avg)}`}>{player.value}</p>
+                <p className={`text-lg md:text-xl font-black font-display m-0 tabular-nums ${ratingTextClass10(player.avg)}`}>{valueText(player.value, player.valueRange)}</p>
               </div>
               <div className="card-arcade rounded-md p-4 text-center border border-border/50">
                 <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{t("dashboard.playerCard.salary")}</p>
@@ -207,7 +226,7 @@ export function PlayerCard({
                   </p>
                   <div className="space-y-2">
                     {group.keys.map((key) => (
-                      <StatBar key={key} statKey={key} value={player.stats[key]} wide />
+                      <StatBar key={key} statKey={key} value={player.stats[key]} wide noise={player.statNoise} hidden={player.hiddenAttrs} />
                     ))}
                   </div>
                 </div>

@@ -590,6 +590,20 @@ export function AttentionCard({
           text: t("managerContract.attention"),
           href: "/inbox",
         };
+      case "scoutGem":
+        return {
+          icon: "gem",
+          tone: "text-chart-5",
+          text: t("scouting.attention.gem", { name: item.name, club: item.club }),
+          href: "/scout?tab=gems",
+        };
+      case "shortlistAlert":
+        return {
+          icon: "binoculars",
+          tone: "text-chart-2",
+          text: t("scouting.attention.shortlist", { name: item.name, reason: t(`inbox.scouting.reason.${item.reason}`) }),
+          href: "/scout?tab=shortlist",
+        };
     }
   }
 

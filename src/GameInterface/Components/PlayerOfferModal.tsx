@@ -17,6 +17,8 @@ import { Button } from "@/GameInterface/ui/Button";
 import { NegotiationHistory } from "@/GameInterface/Negotiation/NegotiationHistory";
 import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import { addDays } from "@/Domain/dates";
+import { Notice } from "@/GameInterface/ui/Notice";
+import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
 
 /** Pre-contract window (D2): the target's contract ends within this many days. */
 const PRE_CONTRACT_DAYS = 183;
@@ -421,8 +423,17 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                       </div>
                     )}
                     <p className="text-sm text-muted-foreground mt-1 m-0">
-                      {t("transfers.estValue")}: <span className="text-foreground/80 font-semibold">{player.value}</span>
+                      {t("transfers.estValue")}: <span className="text-foreground/80 font-semibold tabular-nums">{valueText(player.value, player.valueRange)}</span>
+                      {player.avgRange && (
+                        <> · {t("scouting.col.overall")}: <span className="text-foreground/80 font-semibold tabular-nums">{Math.round(player.avgRange[0] * 10)}–{Math.round(player.avgRange[1] * 10)}</span></>
+                      )}
+                      {player.potentialRange && (
+                        <> · {t("scouting.col.potential")}: <span className="text-foreground/80 font-semibold tabular-nums">{Math.round(player.potentialRange[0] * 10)}–{Math.round(player.potentialRange[1] * 10)}</span></>
+                      )}
                     </p>
+                    {player.knowledge !== undefined && player.knowledge < 60 && (
+                      <Notice kind="warning" className="mt-2">{t("scouting.lowKnowledge", { k: player.knowledge })}</Notice>
+                    )}
                   </div>
 
                   <div>
