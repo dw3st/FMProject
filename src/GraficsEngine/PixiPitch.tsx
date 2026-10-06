@@ -720,7 +720,7 @@ export function PixiPitch({
       // ── Ball ──
       // Ground shadow (stays on the ground) + the ball, lifted by its illustrative height.
       const ballShadow = new Graphics()
-        .ellipse(0, 0, BALL.RADIUS, BALL.RADIUS * 0.6)
+        .ellipse(0, 0, BALL.RADIUS, BALL.RADIUS * BALL.SHADOW_RATIO_Y)
         .fill({ color: 0x000000, alpha: 1 });
       ballShadow.zIndex = -1;
       world.addChild(ballShadow);
@@ -1269,10 +1269,10 @@ export function PixiPitch({
         ball.x = bx;
         ball.y = by - h * m.scale * BALL.LIFT_PX_PER_YD;
         ball.scale.set(1 + h * BALL.GROW_PER_YD);
-        ballShadow.x = bx + 1.5;
-        ballShadow.y = by + 2;
+        ballShadow.x = bx + BALL.SHADOW_DX;
+        ballShadow.y = by + BALL.SHADOW_DY;
         ballShadow.scale.set(Math.max(BALL.SHADOW_MIN_SCALE, 1 - h * BALL.SHADOW_SHRINK_PER_YD));
-        ballShadow.alpha = Math.max(BALL.SHADOW_MIN_ALPHA, BALL.SHADOW_ALPHA * (1 - h / 12));
+        ballShadow.alpha = Math.max(BALL.SHADOW_MIN_ALPHA, BALL.SHADOW_ALPHA * (1 - h / BALL.SHADOW_FADE_YDS));
 
         // ── Crowd heatmap overlay (drawn on top with per-cell alpha) ──
         crowdHeatmapGfx.clear();

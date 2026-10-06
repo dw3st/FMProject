@@ -28,6 +28,8 @@ export const BALL = {
   RADIUS: 6, PATCH: 0x222222,
   SHADOW_ALPHA: 0.35, SHADOW_MIN_ALPHA: 0.1,
   LIFT_PX_PER_YD: 0.6, GROW_PER_YD: 0.06, SHADOW_SHRINK_PER_YD: 0.04, SHADOW_MIN_SCALE: 0.5,
+  /** Shadow ellipse height / width, its offset (px) from the ball, and the height (yd) at which it fades to its minimum. */
+  SHADOW_RATIO_Y: 0.6, SHADOW_DX: 1.5, SHADOW_DY: 2, SHADOW_FADE_YDS: 12,
 } as const;
 
 /** Peak height (yards) of each kind of ball in the air. */
