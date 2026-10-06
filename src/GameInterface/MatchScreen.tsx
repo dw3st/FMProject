@@ -190,12 +190,17 @@ export function MatchScreen() {
   /**
    * 0..1 elapsed fraction driving the full-time overlay's progress bar. Unlike half-time /
    * extra-time (whose pause is tracked by the engine's own `presentationCountdown`, read
-   * directly off `gameState` below), `matchEnd` freezes the engine entirely — there is no
+   * every frame into `breakProgress`), `matchEnd` freezes the engine entirely — there is no
    * engine value left counting down — so this is driven by a rAF loop timed against the same
    * speed-scaled delay used to schedule the navigation to the result screen.
    */
   const [matchEndProgress, setMatchEndProgress] = useState(0);
   const matchEndAnimRef = useRef<number | null>(null);
+  /**
+   * 0..1 elapsed fraction of the half-time / extra-time break, read every frame off the engine's own
+   * `presentationCountdown` in `gameStateRef` (the React `gameState` only updates ~10 times a second).
+   */
+  const [breakProgress, setBreakProgress] = useState(0);
   /** Mirrors `gameSpeed` for the gameBus handlers below, which are registered once (`[]` deps)
    *  and would otherwise close over the initial render's speed forever. */
   const gameSpeedRef = useRef(gameSpeed);
@@ -554,6 +559,21 @@ export function MatchScreen() {
   }, [t, showNotice]);
 
   useEffect(() => {
+    if (matchOverlay !== "halfTime" && matchOverlay !== "extraTime") return;
+    let raf = 0;
+    const tick = () => {
+      const gs = gameStateRef.current;
+      if (gs) {
+        const frac = 1 - Math.max(0, Math.min(1, gs.presentationCountdown / PRESENTATION_DURATION));
+        setBreakProgress((prev) => (prev === frac ? prev : frac));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [matchOverlay]);
+
+  useEffect(() => {
     return gameBus.on("halfTime", () => {
       setMatchOverlay("halfTime");
     });
@@ -863,13 +883,13 @@ export function MatchScreen() {
     .sort((a, b) => a.item.minute - b.item.minute || a.i - b.i)
     .map(({ item }) => ({ ...item, minute: item.minute + 1 }));
 
-  // Half-time/extra-time: read straight off the engine's own countdown, so the bar tracks
-  // exactly what actually gates the pause (including e.g. staying put while `paused`).
+  // Half-time/extra-time: the engine's own countdown, read every frame (`breakProgress`), so the bar
+  // tracks exactly what actually gates the pause (including e.g. staying put while `paused`).
   // Full-time: no engine countdown left once matchPhase is 'matchEnd' — use the rAF-driven
   // fraction timed against the same speed-scaled delay that schedules the navigation.
   const overlayProgress =
     matchOverlay === "halfTime" || matchOverlay === "extraTime"
-      ? 1 - Math.max(0, Math.min(1, gameState.presentationCountdown / PRESENTATION_DURATION))
+      ? breakProgress
       : matchOverlay === "matchEnd"
       ? matchEndProgress
       : undefined;
