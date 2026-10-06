@@ -1393,8 +1393,11 @@ try {
   // `wages` line, the human club kept its three professionals, and AI clubs store none.
   console.log("\n── Equipe técnica ──");
   const humanFinal = allFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
-  check(!!humanFinal?.staff && Object.keys(humanFinal.staff).length === 3,
-    `staff: the human club has its 3 professionals at the end (${Object.keys(humanFinal?.staff ?? {}).join(", ")})`);
+  // The three roles; `staff.scouts` (field scouts, `.claude/rules/game/scouting.md`) is a separate list.
+  const { STAFF_ROLES } = await import("@/Domain/staff/staffTypes");
+  const staffRoles = STAFF_ROLES.filter((r) => !!humanFinal?.staff?.[r]);
+  check(staffRoles.length === 3,
+    `staff: the human club has its 3 professionals at the end (${staffRoles.join(", ")}; ${humanFinal?.staff?.scouts?.length ?? 0} field scout(s))`);
   check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.staff === undefined),
     "staff: no AI club stores staff (they use the implicit tier rating)");
   const wageDates = new Set(allLedgerEntries.filter((e) => e.kind === "wages").map((e) => e.date));
@@ -1567,10 +1570,17 @@ try {
   // club keeps it in `squad.youth`; AI clubs promote 1-2 into the squad (<= 30) and drop the rest.
   console.log("\n── Base ──");
   {
-    const youthN = humanFinal?.youth?.length ?? 0;
-    check(youthN >= 3 && youthN <= 5, `base: the human club has ${youthN} academy player(s) (3-5)`);
-    check((humanFinal?.youth ?? []).every((p) => p.age >= 16 && p.age <= 17 && !!p.contract),
-      "base: academy players are 16-17 with a contract");
+    // The academy also holds a prospect signed by the scouts (`prospect_*`, `scouting.md`) during the
+    // season: 16-17 when signed, a year older after the rollover (the academy keeps players up to 18).
+    const academy = humanFinal?.youth ?? [];
+    const intake = academy.filter((p) => /^youth_.+_\d{4}_\d+$/.test(p.id));
+    const youthN = intake.length;
+    check(youthN >= 3 && youthN <= 5, `base: the human club has ${youthN} academy player(s) from the intake (3-5; ${academy.length} in the academy)`);
+    const { YOUTH } = await import("@/Domain/youth/youthConfig");
+    const badAcademy = academy.filter((p) => !p.contract || p.age < YOUTH.INTAKE_AGE_MIN
+      || p.age > (intake.includes(p) ? YOUTH.INTAKE_AGE_MAX : YOUTH.RELEASE_AGE - 1));
+    check(badAcademy.length === 0,
+      `base: intake players are 16-17, the others under ${YOUTH.RELEASE_AGE}, all with a contract (${badAcademy.map((p) => `${p.id} ${p.age}${p.contract ? "" : " no contract"}`).join(", ") || "ok"})`);
     check(!(humanFinal?.players ?? []).some((p) => /^youth_.+_\d{4}_\d+$/.test(p.id)),
       "base: no academy player entered the human first team on its own");
     const rolledLeagues = new Set(["premier_league", "of_championship", "serie_a", "of_italian_serie_b"]);
@@ -2102,9 +2112,19 @@ try {
     // The save's single owner row was recorded earlier (smoke-reborn); a new session of the same user.
     const { session } = devAutoLogin("smoke-reborn@test.local");
     const demandHandler = apiRoutes["/api/saves/:saveId/players/:playerId/demand" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
-    const others = finalFiles.filter(({ squad }) => squad.id !== playerSquadId)
+    // The personality lines of another club's player only show when the user knows him well (scout
+    // noise < 0.5, `scouting.md`): most of the world is barely known, so the well-known players
+    // (knowledge ≥ 80: the player mission, shortlist, sold players) go first, then a plain sample.
+    const knownK = (await plain().getScouting(saveId)).knowledge;
+    const aiPlayers = finalFiles.filter(({ squad }) => squad.id !== playerSquadId)
+      .flatMap(({ squad }) => squad.players.filter((p) => !p.loan).map((p) => ({ p, from: squad.id })));
+    const wellKnown = aiPlayers.filter(({ p }) => (knownK[p.id]?.k ?? 0) >= 80).slice(0, 60);
+    const sample = finalFiles.filter(({ squad }) => squad.id !== playerSquadId)
       .flatMap(({ squad }) => squad.players.filter((p) => !p.loan).slice(0, 2).map((p) => ({ p, from: squad.id })))
+      .filter(({ p }) => !wellKnown.some((w) => w.p.id === p.id))
       .slice(0, 120);
+    const others = [...wellKnown, ...sample];
+    console.log(`  demand route: ${wellKnown.length} well-known player(s) (knowledge >= 80) + ${sample.length} sampled`);
     let shaped = 0, smaller = 0, refusals = 0, compatriots = 0, asked = 0;
     for (const { p, from } of others) {
       const res = await demandHandler(Object.assign(
