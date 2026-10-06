@@ -8,7 +8,10 @@ Visual: `.claude/rules/ui-standard.md`.
 - Três funções no clube, um profissional por função, nota 1..10:
   - **Auxiliar técnico** (`assistant`): multiplica os pontos de desenvolvimento (DP).
   - **Preparador físico** (`fitness`): multiplica a recuperação diária de fôlego e o risco de lesão.
-  - **Olheiro-chefe** (`scout`): incerteza do que o jogador vê de atletas de fora do próprio elenco.
+  - **Olheiro-chefe** (`scout`): multiplica a incerteza do que o jogador vê de atletas de fora do próprio
+    elenco e o conhecimento que as missões ganham; desde a 4.3 a incerteza vem do **conhecimento por
+    jogador** (`.claude/rules/game/scouting.md`). Conduz uma missão; até 4 **olheiros de campo**
+    (`staff.scouts`) conduzem as outras.
 - **Só o clube do jogador simula staff** (`Squad.staff`). Clubes da IA não gravam nada e usam a nota
   implícita do tier (`STAFF.IMPLIED_RATING`: LOW 4, MEDIUM 5, HIGH 6, ELITE 7), no espírito de
   `.claude/rules/AI-clubs/finance.md` (regras, não simulação). `Squad.staff` presente com a função
@@ -27,10 +30,11 @@ Curva linear por partes passando por `[nota 1, nota 5, nota 10]`; a nota 5 é se
 | DP (auxiliar) | x0,90 | x1,00 | x1,15 |
 | Recuperação de fôlego (físico) | x0,95 | x1,00 | x1,10 |
 | Risco de lesão (físico) | x1,10 | x1,00 | x0,85 |
-| Incerteza dos atributos (olheiro) | +/-1,5 | +/-0,6 | 0 |
+| Multiplicador da incerteza (olheiro) | x1,30 | x1,00 | x0,75 |
+| Multiplicador do conhecimento ganho nas missões (olheiro) | x0,70 | x1,00 | x1,40 |
 
-`staffEffectsOf(squad)` devolve os quatro números (`devMult`, `recoveryMult`, `injuryMult`,
-`scoutNoise`) e é a única porta de entrada: quem tem `squad.staff` usa a nota contratada, os demais o
+`staffEffectsOf(squad)` devolve os números (`devMult`, `recoveryMult`, `injuryMult`,
+`scoutUncertaintyMult`, `scoutGainMult`) e é a única porta de entrada: quem tem `squad.staff` usa a nota contratada, os demais o
 tier.
 
 ## Onde entra
@@ -42,7 +46,7 @@ tier.
 | Lesão, motor | `InjuryFactors.staffMult` (multiplica o produto dos fatores em `injuryRatePerMinute`/`contactInjuryChance`); `GamePlayer.injuryMult`, preenchido por `createMatchState(..., injuryMult: { A, B })`; `simulateMatch` deriva dos dois elencos (`options.injuryMult` sobrescreve); `MatchScreen`/`TestScreen` também passam |
 | Lesão, quickSim | `rollSideInjuries(..., staffMult)` com `staffEffectsOf(input.home/away).injuryMult` |
 | Lesão, treino | `trainingInjuryChance(intensity, injuryMult)` |
-| Olheiro | `obscurePlayer`/`obscureSquad` (ruído determinístico por hash `save:jogador:atributo`, amplitude = `scoutNoise`, limitado a 0..10). Aplicado só nas respostas de tela: `scout-search` (`avgRange` quando a incerteza >= 0,5) e `GET /squad/:league/:club?scouted=1` (tela do elenco e ficha do jogador). **O motor e o avanço de dia nunca recebem valores com ruído**; o próprio elenco é sempre exato |
+| Olheiro | `obscureForViewer` (ruído determinístico por hash `save:jogador:atributo`, amplitude = `2,0 × (1 − k/100)^1,2 × multiplicador do chefe`, k = conhecimento do jogador, `scouting.md`; limitado a 0..10). Aplicado só nas respostas de tela: `scout-search` (`avgRange` quando a incerteza >= 0,5, "?" abaixo de k 20) e `GET /squad/:league/:club?scouted=1` (tela do elenco e ficha do jogador). **O motor e o avanço de dia nunca recebem valores com ruído**; o próprio elenco é sempre exato |
 
 ## Contratação e custo
 
@@ -98,4 +102,10 @@ funções, nenhum clube da IA grava staff, e há uma linha `staff` em toda segun
 ## Personalidade (Etapa 26)
 
 `obscurePlayer` também grava `personalityView` (traços ± ruído × 4, temperamento e profissionalismo "?" com ruído
-≥ 1). Ver `.claude/rules/game/personality.md`.
+≥ 1). Ver `.claude/rules/game/personality.md`. Desde a 4.3 o ruído é o do jogador (conhecimento, `scouting.md`).
+
+## Olheiros de campo (Etapa 28)
+
+`Squad.staff.scouts` (até 4): mercado semanal próprio (`fieldScoutMarket`, 5 candidatos nota 2..9), salário de staff
+(somado à linha `staff`), cartões e aba "Olheiros" na Equipe técnica; rotas `GET .../staff/scouts/market`,
+`POST .../staff/scouts/hire|fire`. Demitir cancela a missão dele. Ver `.claude/rules/game/scouting.md`.

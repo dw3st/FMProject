@@ -240,7 +240,8 @@ servidor: 100 linhas por página, cerca de 59 KB por página, contra os ~24,7 MB
 `/api/saves/:id/all-squads`. As linhas, nacionalidades e ids na lista de venda ficam num cache por
 save, com chave `currentDate` mais a versão de escrita de `src/backend/dal/saveDataVersion.ts`
 (`bumpSaveDataVersion`, chamado a cada gravação de elenco/mercado), então transferências e edições
-na lista de venda no meio do dia invalidam o cache.
+na lista de venda no meio do dia invalidam o cache. Desde a 4.3 cada linha sai borrada pelo conhecimento
+daquele jogador (`.claude/rules/game/scouting.md`); gravar `scouting.json` também incrementa a versão.
 
 ---
 

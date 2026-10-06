@@ -128,7 +128,9 @@ teto do fator) se afasta desse número.
 - `saves/{id}/ledger/{temporada}.json`: lista de `LedgerEntry { date, kind, amount, label, ref? }`
   (`amount` com sinal). `kind`: `broadcasting`, `commercial`, `wages`, `operational`, `staff`, `gate`,
   `prize`, `transfer_in`, `transfer_out`, `club_change`, `manager` (salário do técnico do jogador toda segunda e,
-  com `ref.stage = "severance"`, a multa quando demitido — Etapa 25, `.claude/rules/game/jobs.md`). A temporada do extrato é o `year` da meta da liga do
+  com `ref.stage = "severance"`, a multa quando demitido — Etapa 25, `.claude/rules/game/jobs.md`), `scouting`
+  (viagens das missões de observação toda segunda e, com `ref.stage = "prospect"`, a compensação de formação de um
+  jovem de fora — Etapa 28, `.claude/rules/game/scouting.md`). A temporada do extrato é o `year` da meta da liga do
   jogador; a virada começa um arquivo novo.
 - `applyMoney(squad, entry)` (`ledger.ts`) é pura: devolve o squad com `finances.budget` movido por
   `entry.amount`, **sem clamp** — o saldo pode ficar negativo. `recordMoney(service, saveId,
