@@ -45,6 +45,19 @@ describe("createUiStateThrottle", () => {
     expect(delivered).toEqual([1, 4]);
   });
 
+  test("the trailing fires at lastAt + interval, not interval after the push", () => {
+    const { th, delivered, advance, timers } = harness();
+    th.push(1); // delivered at t = 0
+    advance(60);
+    th.push(2); // t = 60: waits 40 ms (100 − 60)
+    expect(timers).toHaveLength(1);
+    expect(timers[0]!.at).toBe(UI_STATE_INTERVAL_MS);
+    advance(39);
+    expect(delivered).toEqual([1]);
+    advance(1);
+    expect(delivered).toEqual([1, 2]);
+  });
+
   test("a push after the interval is delivered at once", () => {
     const { th, delivered, advance, timers } = harness();
     th.push(1);
