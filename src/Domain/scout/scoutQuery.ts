@@ -4,6 +4,7 @@ import { toDisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { getMainRole } from "@/Domain/roles";
 import { ATTRIBUTE_LIST } from "@/Domain/attributes";
 import { wageFactorOf } from "@/Domain/finance/wages";
+import { rangeMid, seenAttributeRange } from "@/Domain/scouting/seen";
 import type { FreeAgent, Squad } from "@/types/playerTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 
@@ -87,6 +88,17 @@ export function collectNationalities(players: DisplayPlayer[]): string[] {
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
+/** An attribute as the screen shows it: the value, or the middle of its range (`seenAttributeRange`). */
+export function seenAttributeValue(value: number, noise: number | undefined): number {
+  const range = seenAttributeRange(value, noise);
+  return range ? rangeMid(range) : value;
+}
+
+/**
+ * Filters and sorting read only what the user sees (`.claude/rules/game/scouting.md`): rows of
+ * blurred players carry the middle of the shown overall/value/wage ranges in `avg`,
+ * `valueMillions` and `wage` (`toDisplayPlayer`), never the real numbers.
+ */
 export function filterScoutPlayers(
   players: DisplayPlayer[],
   filters: ScoutFilterState,
@@ -112,7 +124,10 @@ export function filterScoutPlayers(
       const range = filters.attributeRanges?.[attr.id];
       if (!range) continue;
       if (range.min <= 0 && range.max >= 10) continue;
-      const v = player.stats[attr.id];
+      // What the screen shows (`scouting.md`): hidden attributes ("?") never pass an attribute
+      // filter, and an attribute shown as a range filters by the middle of that range.
+      if (player.hiddenAttrs) return false;
+      const v = seenAttributeValue(player.stats[attr.id], player.statNoise);
       if (v < range.min || v > range.max) return false;
     }
     return true;

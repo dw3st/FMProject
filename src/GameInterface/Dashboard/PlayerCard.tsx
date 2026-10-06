@@ -18,6 +18,7 @@ import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
+import { seenAttributeRange } from "@/Domain/scouting/seen";
 
 const STAT_ABBR: Partial<Record<keyof PlayerStatsRecord, string>> = {
   finishing:    "FIN",
@@ -51,11 +52,8 @@ function StatBar({
 }) {
   const pct = hidden ? 0 : (value / 10) * 100;
   const color = ratingBarFillClass10(value);
-  const shown = hidden
-    ? "?"
-    : noise >= 0.5
-      ? `${Math.max(0, Math.round(value - noise))}–${Math.min(10, Math.round(value + noise))}`
-      : `${value}`;
+  const range = seenAttributeRange(value, noise);
+  const shown = hidden ? "?" : range ? `${range[0]}–${range[1]}` : `${value}`;
   const attr = ATTRIBUTE_LABELS[statKey as AttributeId];
   return (
     <div className="relative flex items-center gap-2 group/stat">
@@ -72,7 +70,7 @@ function StatBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`font-black text-right text-sm tabular-nums ${hidden ? "w-4 text-muted-foreground" : noise >= 0.5 ? "w-10" : "w-4"} ${hidden ? "" : ratingTextClass10(value)}`}>{shown}</span>
+      <span className={`font-black text-right text-sm tabular-nums ${hidden ? "w-4 text-muted-foreground" : range ? "w-10" : "w-4"} ${hidden ? "" : ratingTextClass10(value)}`}>{shown}</span>
 
       <StatHoverPopover label={attr.label} description={attr.description} />
     </div>

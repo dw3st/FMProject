@@ -8,6 +8,8 @@ import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { ScoutView } from "@/types/scoutingTypes";
 import { clamp } from "@/Domain/math";
+import { overallAvg } from "@/Domain/playerRating";
+import { rangeMid, seenOverallRange, seenWageRange } from "@/Domain/scouting/seen";
 
 /** Pure staff model (`.claude/rules/game/staff.md`). No I/O. */
 
@@ -176,8 +178,15 @@ export function obscurePlayer(player: RosterPlayer, noise: number, saveId: strin
  * the same deterministic blur with the per-player amplitude `view.noise`, plus the screen-only
  * `scoutView` (knowledge, noise, last observation) the screens read to show ranges and "?".
  */
-export function obscureForViewer(player: RosterPlayer, view: ScoutView, saveId: string): RosterPlayer {
-  return { ...obscurePlayer(player, view.noise, saveId), scoutView: view };
+export function obscureForViewer(player: RosterPlayer, view: ScoutView, saveId: string, wageFactor = 1): RosterPlayer {
+  const out: RosterPlayer = { ...obscurePlayer(player, view.noise, saveId), scoutView: view };
+  // With a range on screen the exact wage never leaves the server: the contract carries the middle
+  // of the wage range seen (blurred overall ± noise on the club's curve), like the value.
+  const range = player.contract && view.noise >= STAFF.RANGE_THRESHOLD ? seenOverallRange(overallAvg(out), view.noise) : undefined;
+  if (range && player.contract) {
+    out.contract = { ...player.contract, wage: Math.round(rangeMid(seenWageRange(range, wageFactor))) };
+  }
+  return out;
 }
 
 export function obscureSquad(squad: Squad, noise: number, saveId: string): Squad {
