@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ScoutAssignment, ScoutProspect, ScoutReport, ShortlistEntry } from "@/types/scoutingTypes";
+import type { RosterPlayer } from "@/types/playerTypes";
 
 /** `GET /api/saves/:id/scouting` (`src/backend/scoutingRoutes.ts`). */
 export interface ScoutingScout {
@@ -45,7 +46,12 @@ export interface ScoutingData {
   missions: ScoutingMissionView[];
   reports: ScoutReport[];
   shortlist: ShortlistView[];
-  prospects: ScoutProspect[];
+  prospects: ProspectView[];
+}
+
+/** A prospect on the screen: identity only (`prospectView`, the attributes stay on the server). */
+export interface ProspectView extends Omit<ScoutProspect, "player"> {
+  player: Pick<RosterPlayer, "id" | "name" | "age" | "positions" | "nationality">;
 }
 
 export function useScouting(saveId: string | undefined) {

@@ -20,7 +20,7 @@ import { daysBetween } from "@/Domain/dates";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type {
-  ScoutAssignment, ScoutFocus, ScoutTarget, ScoutTargetKind, ScoutingState, ShortlistEntry,
+  ScoutAssignment, ScoutFocus, ScoutProspect, ScoutTarget, ScoutTargetKind, ScoutingState, ShortlistEntry,
 } from "@/types/scoutingTypes";
 import countriesRaw from "@/Data/countries.json";
 
@@ -70,7 +70,7 @@ async function findPlayer(saveId: string, playerId: string, squadId: string | un
 }
 
 /** Validates a mission target against the save's world; `null` = invalid. */
-async function validTarget(saveId: string, raw: unknown): Promise<ScoutTarget | null> {
+async function validTarget(saveId: string, raw: unknown, ownClubId: string): Promise<ScoutTarget | null> {
   if (!raw || typeof raw !== "object") return null;
   const t = raw as Record<string, unknown>;
   const kind = t.kind as ScoutTargetKind;
@@ -92,6 +92,8 @@ async function validTarget(saveId: string, raw: unknown): Promise<ScoutTarget | 
   if (typeof t.playerId !== "string") return null;
   const found = await findPlayer(saveId, t.playerId, typeof t.squadId === "string" ? t.squadId : undefined);
   if (!found) return null;
+  // The club's own players (and those it loaned out) are already fully known.
+  if (found.squad?.id === ownClubId || found.player.loan?.fromClubId === ownClubId) return null;
   return { kind, playerId: found.player.id, playerName: found.player.name, squadId: found.squad?.id ?? "" };
 }
 
@@ -168,7 +170,21 @@ async function scoutingView(saveId: string, state: ScoutingState) {
     missions,
     reports: state.reports,
     shortlist,
-    prospects: state.prospects,
+    // Only what the card shows: the exact attributes stay on the server (the report carries the
+    // seen ranges); the player is exact once he is in the academy.
+    prospects: state.prospects.map(prospectView),
+  };
+}
+
+/** A prospect as the screen sees him: identity only, never his exact attributes. */
+export function prospectView(p: ScoutProspect) {
+  const { player } = p;
+  return {
+    player: { id: player.id, name: player.name, age: player.age, positions: player.positions, nationality: player.nationality },
+    country: p.country,
+    expires: p.expires,
+    reportId: p.reportId,
+    fee: p.fee,
   };
 }
 
@@ -197,7 +213,7 @@ export const scoutingRoutes = {
     return withSaveLock(saveId, async () => {
       const h = await human(saveId);
       if (h instanceof Response) return h;
-      const target = await validTarget(saveId, body.target);
+      const target = await validTarget(saveId, body.target, h.squad.id);
       if (!target) return Response.json({ error: "invalidTarget" }, { status: 400 });
       const focus = validFocus(body.focus);
       if (focus === null) return Response.json({ error: "invalidFocus" }, { status: 400 });

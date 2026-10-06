@@ -72,7 +72,7 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
 - **Toda segunda** (`advanceScoutingWeek`), cada missão criada antes do dia trabalha: região observa
   `6 + nota` (≤ 16) jogadores sorteados (`seedFrom(save:missão:segunda)`, peso maior a quem tem k baixo),
   +30 × ganhoNota × ganhoChefe cada; jogador +35 × os mesmos ganhos. `ganhoNota` = [0,6 ; 1,0 ; 1,4].
-- Todo adversário que jogou contra o clube do jogador ganha +8 no dia. Quem sai do clube do jogador (venda,
+- Todo adversário que entrou em campo contra o clube do jogador (com estatística ou nota na partida; o banco que não jogou, não) ganha +8 no dia. Quem sai do clube do jogador (venda,
   empréstimo, volta de empréstimo, livre, troca de clube do técnico) fica com k 100 guardado.
 - Viagem (`kind: "scouting"`, segunda, por missão ativa): receita anual / 52 × 0,04% (mesmo país) · 0,08%
   (mesmo continente) · 0,15% (fora); missão de jogador pela metade. `ledgerText`: `scoutingTravel`,
@@ -95,7 +95,7 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
 
 Até 50 (`409 shortlistFull`), nota pessoal. Toda segunda: +3 de conhecimento, e alerta (`shortlist`) quando
 entra na lista de venda ou de empréstimo, fica a ≤ 183 dias do fim do contrato, fica livre, muda de clube ou se
-aposenta (sai da lista e do conhecimento). O jogador é procurado no último clube, nos livres e por fim em todos
+aposenta (sai da lista e do conhecimento). Quem some do mundo sem registro de aposentado (livre podado depois de uma temporada) também sai, com o alerta de aposentado. O jogador é procurado no último clube, nos livres e por fim em todos
 os elencos (só quando algum sumiu).
 
 ## Jovens sem clube (prospectos)
@@ -117,8 +117,8 @@ relatórios e lista continuam visíveis.
 
 | Rota | Faz |
 |---|---|
-| `GET /api/saves/:id/scouting` | Olheiros (livre/ocupado), missões (custo semanal), relatórios, lista (com situação atual), prospectos |
-| `POST /api/saves/:id/scouting/missions { scoutId, target, focus?, weeks }` | 400 `invalidTarget`/`invalidWeeks`/`invalidFocus`, 409 `scoutBusy`/`noClub` |
+| `GET /api/saves/:id/scouting` | Olheiros (livre/ocupado), missões (custo semanal), relatórios, lista (com situação atual), prospectos (só identidade: os atributos ficam no servidor, a tela usa as faixas do relatório) |
+| `POST /api/saves/:id/scouting/missions { scoutId, target, focus?, weeks }` | 400 `invalidTarget`/`invalidWeeks`/`invalidFocus`, 409 `scoutBusy`/`noClub`; jogador do próprio clube (ou cedido por ele) é `invalidTarget`; missão de jogador cujo alvo sumiu acaba sem cobrar viagem |
 | `DELETE /api/saves/:id/scouting/missions/:missionId` | Cancela |
 | `POST /api/saves/:id/scouting/shortlist { playerId, squadId?, note? }` · `DELETE .../shortlist/:playerId` | 409 `shortlistFull` |
 | `POST /api/saves/:id/scouting/prospects/:prospectId/sign` | 400 `youthFull`, 409 `offerClosed` |

@@ -3,12 +3,13 @@ import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
-import { scoutingDay, loadViewer, viewFor } from "@/backend/scoutingWorld";
+import { scoutingDay, loadViewer, ownSideOpponents, viewFor } from "@/backend/scoutingWorld";
 import { searchScout, parseScoutQuery } from "@/backend/scoutSearch";
 import { addDays } from "@/Domain/dates";
 import { SCOUTING } from "@/Domain/scouting/scoutingConfig";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import type { ScoutProspect } from "@/types/scoutingTypes";
+import type { MatchEvent } from "@/types/dayLogTypes";
 
 function nextMonday(date: string): string {
   let d = addDays(date, 1);
@@ -66,6 +67,9 @@ describe("scouting routes and the weekly step", () => {
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "country", country: "Spain" }, weeks: 4 })).status).toBe(200);
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "league", league: "la_liga" }, weeks: 4 })).status).toBe(409);
     expect((await call(MISSIONS, "POST", session.token, { scoutId: field.id, target: { kind: "youth", country: "Spain" }, weeks: 8 })).status).toBe(200);
+    // A player mission on the club's own player is pointless (already known): 400.
+    const ownPlayer = (await saveService.getSquadById(saveId, "33"))!.players[0]!;
+    expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "player", playerId: ownPlayer.id, squadId: "33" }, weeks: 3 })).status).toBe(400);
 
     // Shortlist a Spanish player.
     const index = await saveService.getSquadIndex(saveId);
@@ -126,6 +130,10 @@ describe("scouting routes and the weekly step", () => {
     await saveService.saveSquadById(saveId, { ...after, youth: Array.from({ length: YOUTH.MAX_SIZE }, (_, i) => ({ ...target, id: `y${i}` })) });
     const st = await saveService.getScouting(saveId);
     await saveService.writeScouting(saveId, { ...st, prospects: [mk("pr_two", "2099-01-01")] });
+    // The screen never gets a prospect's exact attributes (only the report's seen ranges).
+    const seenView = await (await call("/api/saves/:saveId/scouting", "GET", session.token)).json() as any;
+    expect(seenView.prospects[0].player.id).toBe("pr_two");
+    expect(seenView.prospects[0].player.stats).toBeUndefined();
     expect((await call(SIGN, "POST", session.token, undefined, { prospectId: "pr_two" })).status).toBe(400);
 
     // Firing the field scout cancels his mission.
@@ -138,4 +146,16 @@ describe("scouting routes and the weekly step", () => {
     viewer = (await loadViewer(saveService, saveId))!;
     expect(viewer.ownClubId).toBe("");
   }, 240_000);
+});
+
+describe("ownSideOpponents", () => {
+  test("only the opponents who took the pitch, never the own side nor the unused bench", () => {
+    const event = {
+      kind: "match", home: "me", away: "them",
+      playerTeams: { m1: "home", t1: "away", t2: "away", bench: "away" },
+      playerStats: { m1: {}, t1: {} }, playerRatings: { m1: 6, t1: 6, t2: 7 },
+    } as unknown as MatchEvent;
+    expect(ownSideOpponents([event], "me").sort()).toEqual(["t1", "t2"]);
+    expect(ownSideOpponents([event], "other")).toEqual([]);
+  });
 });

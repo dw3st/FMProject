@@ -67,13 +67,26 @@ export function famousIdsOf(squads: Squad[]): Set<string> {
   return new Set(all.slice(0, S.FAMOUS_COUNT).map((x) => x.id));
 }
 
+/** In-flight scans keyed by `saveId#date`, so concurrent screens share one `getAllSquads`. */
+const famousInFlight = new Map<string, Promise<Set<string>>>();
+
 async function famousIds(service: SaveService, saveId: string, date: string, squads?: Squad[]): Promise<Set<string>> {
   const hit = famousCache.get(saveId);
   if (hit && hit.key === date) return hit.ids;
-  const ids = famousIdsOf(squads ?? (await service.getAllSquads(saveId)));
-  famousCache.set(saveId, { key: date, ids });
-  if (famousCache.size > 4) famousCache.delete(famousCache.keys().next().value!);
-  return ids;
+  const flightKey = `${saveId}#${date}`;
+  const pending = squads ? undefined : famousInFlight.get(flightKey);
+  if (pending) return pending;
+  const build = (async () => {
+    const ids = famousIdsOf(squads ?? (await service.getAllSquads(saveId)));
+    famousCache.set(saveId, { key: date, ids });
+    if (famousCache.size > 4) famousCache.delete(famousCache.keys().next().value!);
+    return ids;
+  })();
+  if (!squads) {
+    famousInFlight.set(flightKey, build);
+    build.finally(() => famousInFlight.delete(flightKey)).catch(() => {});
+  }
+  return build;
 }
 
 /** The human manager's view: own club, league and country, stored knowledge and the chief's multiplier. */
@@ -217,12 +230,14 @@ export interface ScoutingDayResult {
 
 const isMonday = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay() === 1;
 
-function ownSideOpponents(events: MatchEvent[], ownClubId: string): string[] {
+export function ownSideOpponents(events: MatchEvent[], ownClubId: string): string[] {
   const out: string[] = [];
   for (const e of events) {
     if (e.home !== ownClubId && e.away !== ownClubId) continue;
     const ownSide = e.home === ownClubId ? "home" : "away";
-    for (const [id, side] of Object.entries(e.playerTeams ?? {})) if (side !== ownSide) out.push(id);
+    // `playerTeams` maps both whole squads; only who took the pitch (stats / rating) is noticed.
+    const played = new Set([...Object.keys(e.playerStats ?? {}), ...Object.keys(e.playerRatings ?? {})]);
+    for (const [id, side] of Object.entries(e.playerTeams ?? {})) if (side !== ownSide && played.has(id)) out.push(id);
   }
   return out;
 }
@@ -323,6 +338,8 @@ export async function scoutingDay(
           if (mission.target.kind === "youth") youthMissions.push({ mission, rating });
         }
         inputs.push({ mission, leaderRating: rating, pool });
+        // A player mission whose target vanished (or joined the club) just ends: no trip to pay.
+        if (mission.target.kind === "player" && pool.length === 0) continue;
         const cost = missionCost(mission.target.kind, await missionDistance(service, saveId, mission, ownCountry), revenue);
         if (cost > 0) {
           result.entries.push({
@@ -364,7 +381,13 @@ export async function scoutingDay(
           continue;
         }
         const found = await locatePlayer(service, saveId, e.playerId, e.squadId, all);
-        if (!found) { shortlist.push(e); continue; }
+        if (!found) {
+          // Left the world without a retirement record (a free agent pruned after a season): he
+          // leaves the list too, or every Monday would scan all the squads looking for him.
+          result.messages.push({ date, kind: "shortlist", reason: "retired", playerId: e.playerId, playerName: e.name });
+          delete knowledge[e.playerId];
+          continue;
+        }
         const now: ShortlistStatus = {
           squadId: found.squad?.id ?? "",
           forSale: forSale.has(e.playerId),
