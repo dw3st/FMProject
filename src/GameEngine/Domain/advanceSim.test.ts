@@ -247,6 +247,7 @@ describe("advanceSim prevState", () => {
     const result = advanceSim(state, 0.005, 0, SIM_STEP, makeCountingTick());
     expect(result.state).toBe(state);
     expect(result.prevState).toBe(state);
+    expect(result.steps).toBe(0);
   });
 
   test("one step: prevState is the input state, state is the stepped one", () => {
@@ -261,11 +262,13 @@ describe("advanceSim prevState", () => {
     const result = advanceSim(state, SIM_STEP * 4, 0, SIM_STEP, makeCountingTick());
     expect(stepOf(result.state)).toBe(4);
     expect(stepOf(result.prevState)).toBe(3);
+    expect(result.steps).toBe(4);
   });
 
   test("stopped by a goal: prevState is the state before the step that scored", () => {
     const result = advanceSim(fakeState(), SIM_STEP * 5, 0, SIM_STEP, makeCountingTick({ n: 2, by: "goal" }));
     expect(result.stoppedBy).toBe("goal");
+    expect(result.steps).toBe(2);
     expect(stepOf(result.state)).toBe(2);
     expect(stepOf(result.prevState)).toBe(1);
   });
@@ -277,4 +280,12 @@ describe("advanceSim prevState", () => {
     expect(stepOf(result.prevState)).toBe(2);
     expect(result.prevState.matchPhase).toBe("firstHalf");
   });
+});
+
+test("advanceSim counts steps even when the tick returns the same state", () => {
+  const state = fakeState();
+  const { tick } = makeNoopTick();
+  const result = advanceSim(state, SIM_STEP * 3, 0, SIM_STEP, tick);
+  expect(result.state).toBe(state);
+  expect(result.steps).toBe(3);
 });

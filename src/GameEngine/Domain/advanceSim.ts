@@ -61,6 +61,8 @@ export interface AdvanceSimResult {
    * the state before the step that stopped it.
    */
   prevState: GameState;
+  /** Whole steps that ran (`tick` calls), including the one that stopped the batch. */
+  steps: number;
   /**
    * Leftover game-seconds (always in `[0, step)`) that didn't amount to a
    * whole step — feed this back in as `carry` on the next call. Always `0`
@@ -92,11 +94,12 @@ export function advanceSim(
 ): AdvanceSimResult {
   let total = carry + gameSeconds;
   if (total <= 0) {
-    return { state, prevState: state, carry: Math.max(0, total) };
+    return { state, prevState: state, steps: 0, carry: Math.max(0, total) };
   }
 
   let current = state;
   let previous = state;
+  let steps = 0;
 
   // Epsilon guard against floating-point residue (summing many 1/60 steps
   // can leave `total` sitting a hair below a step boundary it should have
@@ -109,15 +112,16 @@ export function advanceSim(
     const { state: next, goalScored } = tick(current, step);
     previous = current;
     current = next;
+    steps++;
     total -= step;
 
     if (goalScored !== null) {
-      return { state: current, prevState: previous, carry: 0, stoppedBy: "goal" };
+      return { state: current, prevState: previous, steps, carry: 0, stoppedBy: "goal" };
     }
     if (current.matchPhase !== phaseBefore) {
-      return { state: current, prevState: previous, carry: 0, stoppedBy: "phase" };
+      return { state: current, prevState: previous, steps, carry: 0, stoppedBy: "phase" };
     }
   }
 
-  return { state: current, prevState: previous, carry: Math.max(0, total) };
+  return { state: current, prevState: previous, steps, carry: Math.max(0, total) };
 }
