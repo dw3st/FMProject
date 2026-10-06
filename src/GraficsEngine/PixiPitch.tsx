@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
+import { CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES } from "@/GraficsEngine/pitchStyle";
+import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import { tickState, getBallPos, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
@@ -166,6 +168,14 @@ function cssColorToPixiHex(css: string): number {
 
 const DEFAULT_TEAM_A = 0x2d6cdf;
 const DEFAULT_TEAM_B = 0xdf3b2d;
+
+/** Mowing stripes inside the pitch rectangle; the background (margins) stays the dark colour. */
+function drawStripes(g: Graphics, m: PitchMetrics) {
+  const w = m.width / PITCH_STRIPES.COUNT;
+  for (let i = 1; i < PITCH_STRIPES.COUNT; i += 2) {
+    g.rect(m.marginX + i * w, m.marginY, w, m.height).fill(PITCH_STRIPES.LIGHT);
+  }
+}
 
 function drawPitch(g: Graphics, m: PitchMetrics) {
   const LINE = { width: 2, color: 0xffffff, alpha: 0.9 };
@@ -409,6 +419,11 @@ export function PixiPitch({
       });
 
       // Pitch lines
+      // Mowing stripes (static, drawn once — the pitch remounts on resize)
+      const stripesGraphics = new Graphics();
+      drawStripes(stripesGraphics, m);
+      app.stage.addChild(stripesGraphics);
+
       const pitchGraphics = new Graphics();
       drawPitch(pitchGraphics, m);
       app.stage.addChild(pitchGraphics);
@@ -485,6 +500,14 @@ export function PixiPitch({
       const world = new Container();
       world.sortableChildren = true;
       app.stage.addChild(world);
+
+      // Ground glow under the ball holder and the stamina bars (redrawn every frame)
+      const holderGlowGfx = new Graphics();
+      holderGlowGfx.zIndex = -1;
+      world.addChild(holderGlowGfx);
+      const fatigueGfx = new Graphics();
+      fatigueGfx.zIndex = 5; // with the names, under the ball
+      world.addChild(fatigueGfx);
 
       // ── Game state ──
       const stateRef = { current: normalizeGameState(initialState!) };
@@ -615,7 +638,7 @@ export function PixiPitch({
         face.label = 'face';
         face.anchor.set(0.5);
         face.width = face.height = (markerR - 1) * 2;
-        marker.addChildAt(face, 1); // above the disc, below the ring
+        marker.addChildAt(face, 2); // above shadow + disc, below the ring
         marker.label = url;
       }
 
@@ -643,11 +666,20 @@ export function PixiPitch({
       function addPlayerSprite(player: PitchPlayer): void {
         const color = player.team === "A" ? fillA : fillB;
         const marker = new Container();
+        const shadow = new Graphics()
+          .ellipse(markerR * MARKER_SHADOW.DX, markerR * MARKER_SHADOW.DY, markerR, markerR * MARKER_SHADOW.SCALE_Y)
+          .fill({ color: 0x000000, alpha: MARKER_SHADOW.ALPHA });
         const disc = new Graphics().circle(0, 0, markerR).fill(color);
         const ring = new Graphics()
           .circle(0, 0, markerR - MARKER_RING_W / 2 + 0.5).stroke({ width: MARKER_RING_W, color })
           .circle(0, 0, markerR + 0.5).stroke(player.team === "A" ? outlineA : outlineB);
-        marker.addChild(disc, ring);
+        const cardBadge = new Graphics()
+          .roundRect(markerR * CARD_BADGE.X, markerR * CARD_BADGE.Y, markerR * CARD_BADGE.W, markerR * CARD_BADGE.H, 2)
+          .fill(CARD_BADGE.YELLOW)
+          .stroke({ width: 1, color: 0x000000, alpha: 0.4 });
+        cardBadge.label = "card";
+        cardBadge.visible = false;
+        marker.addChild(shadow, disc, ring, cardBadge);
         const { px, py } = toPixel(player.x, player.y);
         marker.x = px;
         marker.y = py;
@@ -766,6 +798,10 @@ export function PixiPitch({
 
         // Players: game pos → pixels (exact position). Name must refresh every frame so
         // substitutions update the label on the pitch.
+        const booked = bookedPlayerIds(stateRef.current.cards);
+        holderGlowGfx.clear();
+        fatigueGfx.clear();
+        const barW = markerR * FATIGUE_BAR.W;
         for (const player of stateRef.current.players) {
           const g     = playerGraphics.get(player.id);
           const label = playerLabels.get(player.id);
@@ -773,6 +809,22 @@ export function PixiPitch({
           const { px, py } = toPixel(player.x, player.y);
           g.x = px;
           g.y = py;
+          const badge = g.getChildByLabel("card");
+          if (badge) badge.visible = booked.has(player.id);
+          if (player.id === stateRef.current.ballHolderId) {
+            holderGlowGfx
+              .ellipse(px, py + markerR * 0.2, markerR * HOLDER_GLOW.RX, markerR * HOLDER_GLOW.RY)
+              .fill({ color: 0xffffff, alpha: HOLDER_GLOW.ALPHA });
+          }
+          const barX = px - barW / 2;
+          const barY = py + markerR + FATIGUE_BAR.GAP;
+          fatigueGfx
+            .roundRect(barX, barY, barW, FATIGUE_BAR.H, 2)
+            .fill({ color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
+          const fill = fatigueFill(player.energy);
+          if (fill > 0) {
+            fatigueGfx.roundRect(barX, barY, barW * fill, FATIGUE_BAR.H, 2).fill(fatigueColor(player.energy));
+          }
           if (label) {
             if (label.text !== player.name) label.text = player.name;
             label.x = px;
