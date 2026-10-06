@@ -4,7 +4,7 @@ import { FATIGUE_BAR } from "@/GraficsEngine/pitchStyle";
 import type { CardRecord } from "@/GameEngine/types";
 
 const card = (playerId: number, c: "yellow" | "red"): CardRecord => ({
-  team: "A", playerId, playerName: "x", playerRosterId: "r", card: c, secondYellow: false, matchMinute: 10,
+  team: "A", playerId, playerName: "x", playerRosterId: "r", card: c, secondYellow: false, matchMinute: 10, energy: 80,
 });
 
 describe("fatigueColor", () => {
