@@ -49,6 +49,10 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
       return ref?.facility ? { key: entry.kind === "facilities" ? "facilityInstalment" : "boardFunding", facility: ref.facility } : null;
     case "facilities_upkeep":
       return { key: "facilitiesUpkeep" };
+    case "scouting":
+      // `.claude/rules/game/scouting.md`: the mission's region (country / league slug / continent) or player.
+      if (ref?.stage === "prospect") return { key: "prospectFee", player: ref.playerName ?? "" };
+      return ref?.playerName ? { key: "scoutingTravelPlayer", player: ref.playerName } : { key: "scoutingTravel", ...(ref?.competition ? { competition: ref.competition } : {}) };
     case "manager":
       return { key: ref?.stage === "severance" ? "managerSeverance" : ref?.stage === "compensation" ? "managerCompensation" : "managerWage" };
     case "club_change":

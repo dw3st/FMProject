@@ -10,6 +10,7 @@ import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { BoardState } from "@/types/boardTypes";
@@ -222,6 +223,17 @@ export class SaveService {
 
   writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void> {
     return this.dal.writeManagers(saveId, managers);
+  }
+
+  // ── Scouting (`.claude/rules/game/scouting.md`) ─────────────────────────────
+
+  /** The human manager's scouting state; an empty one when nothing was ever observed. */
+  async getScouting(saveId: string): Promise<ScoutingState> {
+    return (await this.dal.readScouting(saveId)) ?? emptyScoutingState();
+  }
+
+  writeScouting(saveId: string, state: ScoutingState): Promise<void> {
+    return this.dal.writeScouting(saveId, state);
   }
 
   // ── Retired players ────────────────────────────────────────────────────────

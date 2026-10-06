@@ -1,6 +1,7 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures } from "@/types/calendarTypes";
@@ -26,6 +27,7 @@ function seasonArchivePath(saveId: string, year: number) {
 }
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
+function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
 function clubHistoryPath(saveId: string, squadId: string) {
   return `${SAVES_DIR}/${saveId}/clubHistory/${squadId}.json`;
 }
@@ -128,6 +130,19 @@ export class FileSystemDAL implements ISaveDAL {
   async writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(freeAgentsPath(saveId), JSON.stringify(agents));
+    bumpSaveDataVersion(saveId);
+  }
+
+  async readScouting(saveId: string): Promise<ScoutingState | null> {
+    const file = Bun.file(scoutingPath(saveId));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<ScoutingState>;
+  }
+
+  async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(scoutingPath(saveId), JSON.stringify(state));
+    // The scout search blurs every player by this file's knowledge: rebuild its index.
     bumpSaveDataVersion(saveId);
   }
 

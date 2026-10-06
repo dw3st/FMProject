@@ -31,6 +31,8 @@ export interface ScoutSearchResponse extends ScoutPage {
   nationalities: string[];
   /** Ids of the returned rows that are on any sell list (AI or human). */
   sellListedIds: string[];
+  /** Ids of the returned rows on the user's shortlist (`.claude/rules/game/scouting.md`). */
+  shortlistIds?: string[];
 }
 
 const SCOUT_PAGE_SIZE_MIN = 10;
@@ -89,12 +91,16 @@ export function filterScoutPlayers(
   players: DisplayPlayer[],
   filters: ScoutFilterState,
   sellListedIds: Set<string>,
+  shortlistIds: Set<string> = new Set(),
 ): DisplayPlayer[] {
   const name = filters.name ? filters.name.toLowerCase() : "";
   return players.filter((player) => {
     // Free agents only show in the "free agents" view; every other search is club players only.
     if (filters.onlyFree ? !player.free : player.free) return false;
     if (filters.onlyForSale && !sellListedIds.has(player.id)) return false;
+    if (filters.onlyShortlist && !shortlistIds.has(player.id)) return false;
+    // Rows without `knowledge` are exact (own squad).
+    if ((filters.minKnowledge ?? 0) > 0 && (player.knowledge ?? 100) < filters.minKnowledge!) return false;
     if (name && !player.name.toLowerCase().includes(name)) return false;
     if (filters.position !== "all" && getMainRole(player.pos) !== filters.position) return false;
     if (player.age < filters.minAge || player.age > filters.maxAge) return false;
@@ -154,8 +160,9 @@ export function runScoutQuery(
   players: DisplayPlayer[],
   query: ScoutQuery,
   sellListedIds: Set<string>,
+  shortlistIds: Set<string> = new Set(),
 ): ScoutPage {
-  const filtered = filterScoutPlayers(players, query.filters, sellListedIds);
+  const filtered = filterScoutPlayers(players, query.filters, sellListedIds, shortlistIds);
   const sorted = sortScoutPlayers(filtered, query.sortKey, query.sortDir);
   return paginate(sorted, query.page, query.pageSize);
 }

@@ -2,6 +2,7 @@ import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
+import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type {
@@ -161,6 +162,14 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void> {
     this.buffer(`managers:${saveId}`, managers, () => this.inner.writeManagers(saveId, managers));
+  }
+
+  // ── Scouting ──────────────────────────────────────────────────────────────────
+  readScouting(saveId: string): Promise<ScoutingState | null> {
+    return this.readThrough(`scouting:${saveId}`, () => this.inner.readScouting(saveId));
+  }
+  async writeScouting(saveId: string, state: ScoutingState): Promise<void> {
+    this.buffer(`scouting:${saveId}`, state, () => this.inner.writeScouting(saveId, state));
   }
 
   // ── Retired players ───────────────────────────────────────────────────────────

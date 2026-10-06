@@ -101,7 +101,7 @@ export function StaffScreen() {
     const e = data.effects;
     if (role === "assistant") return t("staff.effects.assistant", { mult: fmt(e.devMult) });
     if (role === "fitness") return t("staff.effects.fitness", { recovery: fmt(e.recoveryMult), injury: fmt(e.injuryMult) });
-    return t("staff.effects.scout", { noise: fmt(e.scoutNoise, 1) });
+    return t("staff.effects.scout", { uncertainty: fmt(e.scoutUncertaintyMult), gain: fmt(e.scoutGainMult) });
   };
 
   const columns: DataTableColumn<StaffMember>[] = [

@@ -314,7 +314,7 @@
     "effects": {
       "assistant": "Development points x{{mult}}",
       "fitness": "Recovery x{{recovery}}, injury risk x{{injury}}",
-      "scout": "Scouting uncertainty +/-{{noise}}"
+      "scout": "Uncertainty x{{uncertainty}} · knowledge gained x{{gain}}"
     }
   },
   "comingSoon": {

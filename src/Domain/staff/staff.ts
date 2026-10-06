@@ -6,6 +6,7 @@ import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { weeklyWage, wageFactorOf } from "@/Domain/finance/wages";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
+import type { ScoutView } from "@/types/scoutingTypes";
 import { clamp } from "@/Domain/math";
 
 /** Pure staff model (`.claude/rules/game/staff.md`). No I/O. */
@@ -31,14 +32,19 @@ export const developmentMultiplier = (rating: number) => curve(rating, STAFF.ASS
 export const recoveryMultiplier = (rating: number) => curve(rating, STAFF.FITNESS_RECOVERY);
 /** Fitness coach rating -> multiplier on injury rate / contact chance. */
 export const injuryMultiplier = (rating: number) => curve(rating, STAFF.FITNESS_INJURY);
-/** Chief scout rating -> +/- points of attribute uncertainty. */
-export const scoutNoiseOf = (rating: number) => curve(rating, STAFF.SCOUT_NOISE);
+/** Chief scout rating -> multiplier on the per-player attribute uncertainty (`scouting.md`). */
+export const scoutUncertaintyMultOf = (rating: number) => curve(rating, STAFF.SCOUT_UNCERTAINTY_MULT);
+/** Chief scout rating -> multiplier on the knowledge every scouting mission gains. */
+export const scoutGainMultOf = (rating: number) => curve(rating, STAFF.SCOUT_GAIN_MULT);
 
 export interface StaffEffects {
   devMult: number;
   recoveryMult: number;
   injuryMult: number;
-  scoutNoise: number;
+  /** Chief scout: multiplier on the uncertainty of what the user sees (`scouting.md`). */
+  scoutUncertaintyMult: number;
+  /** Chief scout: multiplier on the knowledge gained by every mission. */
+  scoutGainMult: number;
 }
 
 /**
@@ -58,7 +64,8 @@ export function staffEffectsOf(squad: Squad): StaffEffects {
     devMult: developmentMultiplier(effectiveRating(squad, "assistant")),
     recoveryMult: recoveryMultiplier(effectiveRating(squad, "fitness")),
     injuryMult: injuryMultiplier(effectiveRating(squad, "fitness")),
-    scoutNoise: scoutNoiseOf(effectiveRating(squad, "scout")),
+    scoutUncertaintyMult: scoutUncertaintyMultOf(effectiveRating(squad, "scout")),
+    scoutGainMult: scoutGainMultOf(effectiveRating(squad, "scout")),
   };
 }
 
@@ -84,7 +91,9 @@ export function staffWeeklyWage(rating: number, clubFactor: number): number {
  */
 export function squadStaffWages(staff: StaffRecord | undefined, clubFactor: number): number {
   if (!staff) return 0;
-  return STAFF_ROLES.reduce((sum, role) => sum + (staff[role] ? staffWeeklyWage(staff[role]!.rating, clubFactor) : 0), 0);
+  const roles = STAFF_ROLES.reduce((sum, role) => sum + (staff[role] ? staffWeeklyWage(staff[role]!.rating, clubFactor) : 0), 0);
+  // Field scouts (`scouting.md`) are paid like the rest of the staff.
+  return roles + (staff.scouts ?? []).reduce((sum, s) => sum + staffWeeklyWage(s.rating, clubFactor), 0);
 }
 
 // -- Generation -------------------------------------------------------------
@@ -162,6 +171,15 @@ export function obscurePlayer(player: RosterPlayer, noise: number, saveId: strin
   return { ...rest, stats, personalityView: obscurePersonality(personalityOf(player), noise, saveId, player.id) };
 }
 
+/**
+ * What the user sees of a player he knows to `view.knowledge` (`.claude/rules/game/scouting.md`):
+ * the same deterministic blur with the per-player amplitude `view.noise`, plus the screen-only
+ * `scoutView` (knowledge, noise, last observation) the screens read to show ranges and "?".
+ */
+export function obscureForViewer(player: RosterPlayer, view: ScoutView, saveId: string): RosterPlayer {
+  return { ...obscurePlayer(player, view.noise, saveId), scoutView: view };
+}
+
 export function obscureSquad(squad: Squad, noise: number, saveId: string): Squad {
   if (noise <= 0) return squad;
   return { ...squad, players: squad.players.map((p) => obscurePlayer(p, noise, saveId)) };
@@ -172,4 +190,17 @@ export function overallRange(avg: number, noise: number): [number, number] | und
   if (noise < STAFF.RANGE_THRESHOLD) return undefined;
   const r1 = (v: number) => Math.round(v * 10) / 10;
   return [r1(Math.max(0, avg - noise)), r1(Math.min(10, avg + noise))];
+}
+
+/**
+ * The week's field-scout candidates (`.claude/rules/game/scouting.md`): `MARKET_SIZE` of them,
+ * ratings 2..9, stable for save + week, distinct from the chief-scout market.
+ */
+export function fieldScoutMarket(saveId: string, date: string, clubFactor: number): StaffMember[] {
+  const week = weekStartOf(date);
+  const rng = mulberry32(seedFrom(`field-scout-market:${saveId}:${week}`));
+  return Array.from({ length: STAFF.MARKET_SIZE }, (_, i) => {
+    const rating = 2 + Math.floor(rng() * 8);
+    return makeStaffMember(`${saveId}:${week}:field-scout:${i}`, "scout", rating, clubFactor);
+  }).sort((a, b) => b.rating - a.rating);
 }

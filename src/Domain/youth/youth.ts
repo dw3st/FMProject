@@ -155,13 +155,7 @@ export function generateIntake(args: {
   return out;
 }
 
-/** Displayed "potential" band: current level + the expected growth by age (no hidden attribute). */
-export function potentialBand(player: RosterPlayer): [number, number] {
-  const now = overallAvg(player);
-  let growth = 0;
-  for (let a = player.age; a <= 23; a++) growth += Y.GROWTH_BY_AGE[a] ?? 0;
-  return [now + growth * Y.POTENTIAL_BAND[0], now + growth * Y.POTENTIAL_BAND[1]];
-}
+export { potentialBand } from "@/Domain/youth/potential";
 
 /** One season of academy training (no matches): DP from training sessions, then age + 1. */
 export function developYouthSeason(player: RosterPlayer, dpMult: number): RosterPlayer {

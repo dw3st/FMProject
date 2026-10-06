@@ -314,7 +314,7 @@
     "effects": {
       "assistant": "Pontos de desenvolvimento x{{mult}}",
       "fitness": "Recuperação x{{recovery}}, risco de lesão x{{injury}}",
-      "scout": "Incerteza de observação +/-{{noise}}"
+      "scout": "Incerteza x{{uncertainty}} · conhecimento ganho x{{gain}}"
     }
   },
   "comingSoon": {

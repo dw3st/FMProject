@@ -16,6 +16,7 @@ import { BidCard } from "@/GameInterface/Negotiation/BidCard";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
+import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scoutingText";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -29,6 +30,7 @@ const BoardIcon = iconOf("building");
 const JobIcon = iconOf("file-signature");
 const TagIcon = iconOf("tag");
 const TalkIcon = iconOf("talk");
+const ScoutIcon = iconOf("binoculars");
 
 type FilterTab = "all" | "unread";
 
@@ -161,6 +163,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-5/15",
     border: "border-chart-5/30",
     Icon: JobIcon,
+  },
+  scouting: {
+    labelKey: "inbox.categories.scouting",
+    color: "text-chart-2",
+    bg: "bg-chart-2/15",
+    border: "border-chart-2/30",
+    Icon: ScoutIcon,
   },
 };
 
@@ -423,6 +432,10 @@ function leaguePrizeTexts(
     const vars = transferVars(message);
     return { subject: t(`inbox.transfer.subject.${message.kind}`, vars), preview: message.fee ? formatFee(message.fee) : message.clubName };
   }
+  if (message.category === "scouting") {
+    const x = scoutingTexts(message, t);
+    return { subject: x.subject, preview: x.body };
+  }
   if (message.category === "manager_news") {
     return {
       subject: t("inbox.managerNews.subject", { count: message.items.length }),
@@ -557,6 +570,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "transfer" && <TransferNegotiationBody message={message} />}
         {message.category === "player" && <PlayerTalkBody message={message} />}
         {message.category === "manager_news" && <ManagerNewsBody message={message} />}
+        {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(

@@ -16,8 +16,12 @@ export const STAFF = {
   FITNESS_RECOVERY: [0.95, 1, 1.1],
   /** Fitness coach: multiplier on the injury rate / contact chance (lower is better). */
   FITNESS_INJURY: [1.1, 1, 0.85],
-  /** Chief scout: attribute uncertainty (± points of a 0..10 attribute). */
-  SCOUT_NOISE: [1.5, 0.6, 0],
+  /**
+   * Chief scout (`.claude/rules/game/scouting.md`): multiplier on the per-player uncertainty and on
+   * the knowledge every scouting mission gains. The uncertainty itself comes from the knowledge.
+   */
+  SCOUT_UNCERTAINTY_MULT: [1.3, 1.0, 0.75],
+  SCOUT_GAIN_MULT: [0.7, 1.0, 1.4],
   /** Overall is shown as a range once the uncertainty reaches this. */
   RANGE_THRESHOLD: 0.5,
 

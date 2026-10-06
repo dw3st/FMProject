@@ -61,10 +61,18 @@ describe("personality: smaller-club refusal on the routes", () => {
     if (saveId) await saveService.deleteSave(saveId);
   });
 
-  /** The human club's chief scout: 10 = exact view (noise 0), 1 = very unsure (noise 1,5). */
+  /**
+   * The human club's chief scout and what the manager knows of the free agent
+   * (`.claude/rules/game/scouting.md`): 10 = fully observed (exact view), 1 = never observed (very unsure).
+   */
   async function setScout(rating: number) {
     const h = (await saveService.getSquadById(saveId, meta.clubId))!;
     await saveService.saveSquadById(saveId, { ...h, staff: { ...h.staff, scout: makeStaffMember("t", "scout", rating, 1) } });
+    const s = await saveService.getScouting(saveId);
+    const knowledge = { ...s.knowledge };
+    if (rating >= 10) knowledge.free_ambitious = { k: 100, seen: meta.currentDate! };
+    else delete knowledge.free_ambitious;
+    await saveService.writeScouting(saveId, { ...s, knowledge });
   }
 
   test("free agent and purchase: an ambitious star of a much bigger club refuses (400 smallerClub)", async () => {

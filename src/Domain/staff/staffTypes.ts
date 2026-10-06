@@ -13,7 +13,10 @@ export interface StaffMember {
   wage: number;
 }
 
-export type StaffRecord = Partial<Record<StaffRole, StaffMember>>;
+export type StaffRecord = Partial<Record<StaffRole, StaffMember>> & {
+  /** Field scouts (`.claude/rules/game/scouting.md`), up to `SCOUTING.MAX_FIELD_SCOUTS`; each leads one mission. */
+  scouts?: StaffMember[];
+};
 
 export function isStaffRole(v: unknown): v is StaffRole {
   return typeof v === "string" && (STAFF_ROLES as readonly string[]).includes(v);
