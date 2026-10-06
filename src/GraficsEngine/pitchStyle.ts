@@ -31,6 +31,8 @@ export const BALL = {
   GLOSS_ALPHA: 0.7, OUTLINE_ALPHA: 0.35,
   /** A drawn ball move (px per frame) above this is a jump, not a roll: the seams do not spin. */
   SPIN_TELEPORT_PX: 36,
+  /** Max seam rotation per frame (rad): faster reads as flicker. */
+  SPIN_MAX_PER_FRAME: 0.35,
   SHADOW_ALPHA: 0.35, SHADOW_MIN_ALPHA: 0.1,
   LIFT_PX_PER_YD: 0.6, GROW_PER_YD: 0.06, SHADOW_SHRINK_PER_YD: 0.04, SHADOW_MIN_SCALE: 0.5,
   /** Shadow ellipse height / width, its offset (px) from the ball, and the height (yd) at which it fades to its minimum. */

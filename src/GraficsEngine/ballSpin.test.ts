@@ -16,3 +16,11 @@ describe("nextSpinAngle", () => {
     expect(nextSpinAngle(2, { x: 5, y: 5 }, { x: 5, y: 5 }, 6, false, 36)).toBe(2);
   });
 });
+
+describe("nextSpinAngle cap", () => {
+  test("a fast ball spins at most maxStep per frame", () => {
+    expect(nextSpinAngle(0, { x: 0, y: 0 }, { x: 30, y: 0 }, 6, false, 100, 0.35)).toBeCloseTo(0.35);
+    expect(nextSpinAngle(0, { x: 0, y: 0 }, { x: -30, y: 0 }, 6, false, 100, 0.35)).toBeCloseTo(-0.35);
+    expect(nextSpinAngle(0, { x: 0, y: 0 }, { x: 1.2, y: 0 }, 6, false, 100, 0.35)).toBeCloseTo(0.2);
+  });
+});

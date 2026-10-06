@@ -933,6 +933,9 @@ export function PixiPitch({
         holderGlowGfx.clear();
         fatigueGfx.clear();
         const barW = markerR * FATIGUE_BAR.W;
+        // ballHolderId keeps the last toucher while the ball travels: glow only on a real holder.
+        const st0 = stateRef.current;
+        const glowId = st0.pass || st0.shot || st0.looseBall ? null : st0.ballHolderId;
         for (const player of stateRef.current.players) {
           const g     = playerGraphics.get(player.id);
           const label = playerLabels.get(player.id);
@@ -943,7 +946,7 @@ export function PixiPitch({
           g.y = py;
           const badge = g.getChildByLabel("card");
           if (badge) badge.visible = booked.has(player.id);
-          if (player.id === stateRef.current.ballHolderId) {
+          if (player.id === glowId) {
             holderGlowGfx
               .ellipse(px, py + markerR * 0.2, markerR * HOLDER_GLOW.RX, markerR * HOLDER_GLOW.RY)
               .fill({ color: 0xffffff, alpha: HOLDER_GLOW.ALPHA });
@@ -1382,7 +1385,7 @@ export function PixiPitch({
         const ballPos = drawnB;
         const { px: bx, py: by } = toPixel(ballPos.x, ballPos.y);
         const h = drawnB.h;
-        seamAngle = nextSpinAngle(seamAngle, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX);
+        seamAngle = nextSpinAngle(seamAngle, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX, BALL.SPIN_MAX_PER_FRAME);
         prevBallPx = { x: bx, y: by };
         seams.rotation = seamAngle;
         ball.x = bx;
