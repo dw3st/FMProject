@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
@@ -33,6 +33,11 @@ function initialTab(): ScoutTab {
     return "search";
   }
 }
+
+// Memoised so a tab switch (the search stays mounted, hidden) re-renders neither the filters nor
+// the 100-row table: their props are stable while the query and the result do not change.
+const MemoScoutFilters = memo(ScoutFilters);
+const MemoScoutTable = memo(ScoutTable);
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
 const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
@@ -110,19 +115,32 @@ export function ScoutScreen() {
     setPage(0);
   }
 
-  function handleSetFilters(f: ScoutFilterState) {
+  const handleSetFilters = useCallback((f: ScoutFilterState) => {
     setFilters(f);
     saveFilters(f);
-  }
+  }, []);
 
-  function handleSort(key: string) {
+  const handleSort = useCallback((key: string) => {
     if (sortKey === key) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortKey(key);
       setSortDir("desc");
     }
-  }
+  }, [sortKey, sortDir]);
+
+  const handleOffer = useCallback((p: DisplayPlayer) => (p.free ? setSignTarget(p) : setOfferTarget(p)), []);
+  const handleRetry = useCallback(() => setRefreshTick((n) => n + 1), []);
+  const handleShortlistChange = useCallback(
+    (id: string, on: boolean) => setStarOverrides((prev) => ({ ...prev, [id]: on })),
+    [],
+  );
+  const currentDate = session?.currentDate ?? "";
+  const offerBlocked = useCallback((p: DisplayPlayer) => {
+    if (!windowsData || windowsData.player.open) return null;
+    const preContract = !!p.contractEnd && !!currentDate && p.contractEnd >= currentDate && p.contractEnd <= addDays(currentDate, 183);
+    return preContract ? null : windowClosedText(t, i18n.language, windowsData.player.opensOn);
+  }, [windowsData, currentDate, t, i18n.language]);
 
   // Static data: league list (filter options) and the user's squad id (disables offers on own players).
   useEffect(() => {
@@ -136,6 +154,13 @@ export function ScoutScreen() {
       .then((squad) => setMySquadId(squad?.id ?? session.clubId))
       .catch(() => setMySquadId(session.clubId));
   }, [session]);
+
+  // The search only follows the query while its tab is open (`scouting.md`): on another tab the
+  // key stays frozen, so nothing is requested there, and coming back with the same query neither
+  // re-renders the table from scratch nor fetches again (the tab stays mounted, just hidden).
+  const liveSearchKey = JSON.stringify([debouncedFilters, sortKey, sortDir, page, refreshTick]);
+  const [searchKey, setSearchKey] = useState(liveSearchKey);
+  if (tab === "search" && searchKey !== liveSearchKey) setSearchKey(liveSearchKey);
 
   // Server-side search: re-run on (debounced) filter, sort, page, or explicit refresh.
   useEffect(() => {
@@ -167,7 +192,9 @@ export function ScoutScreen() {
         setFetching(false);
       });
     return () => controller.abort();
-  }, [session, debouncedFilters, sortKey, sortDir, page, refreshTick]);
+    // `searchKey` stands for filters, sort, page and refresh (frozen while another tab is open).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, searchKey]);
 
   const leagueFilterOptions = useMemo(
     () => [
@@ -252,14 +279,15 @@ export function ScoutScreen() {
           />
         )}
 
-        {tab === "search" && <>
-        <ScoutFilters
+        {/* Kept mounted while hidden: switching tabs never rebuilds the table nor refetches. */}
+        <div hidden={tab !== "search"} className={`${tab === "search" ? "flex" : "hidden"} flex-col gap-6`}>
+        <MemoScoutFilters
           filters={filters}
           setFilters={handleSetFilters}
           leagueOptions={leagueFilterOptions}
           nationalityOptions={nationalityFilterOptions}
         />
-        <ScoutTable
+        <MemoScoutTable
           rows={result?.rows ?? []}
           total={result?.total ?? 0}
           page={result?.page ?? 0}
@@ -271,20 +299,15 @@ export function ScoutScreen() {
           loading={!result && fetching}
           filtering={isFiltering}
           mySquadId={mySquadId}
-          onOffer={(p) => (p.free ? setSignTarget(p) : setOfferTarget(p))}
-          offerBlocked={(p) => {
-            if (!windowsData || windowsData.player.open) return null;
-            const today = session?.currentDate ?? "";
-            const preContract = !!p.contractEnd && !!today && p.contractEnd >= today && p.contractEnd <= addDays(today, 183);
-            return preContract ? null : windowClosedText(t, i18n.language, windowsData.player.opensOn);
-          }}
+          onOffer={handleOffer}
+          offerBlocked={offerBlocked}
           sellListedIds={sellListedIds}
           error={fetchError}
-          onRetry={() => setRefreshTick((n) => n + 1)}
+          onRetry={handleRetry}
           shortlistIds={shortlistIds}
-          onShortlistChange={(id, on) => setStarOverrides((prev) => ({ ...prev, [id]: on }))}
+          onShortlistChange={handleShortlistChange}
         />
-        </>}
+        </div>
       </ScreenContainer>
 
       <PlayerOfferModal
