@@ -342,8 +342,7 @@
     "playerNotFound": "Jogador não encontrado.",
     "currentTeam": "Clube atual",
     "openSquadPage": "Abrir página do elenco →",
-    "makeOffer": "Fazer Oferta",
-    "backToSquad": "Voltar ao elenco"
+    "makeOffer": "Fazer Oferta"
   },
   "nav": {
     "squad": "Elenco",
@@ -916,7 +915,6 @@
   "transfers": {
     "incoming": "Contratações",
     "outgoing": "Vendas",
-    "makeOffer": "Fazer proposta",
     "complete": "Concluída",
     "rejected": "Recusada",
     "offerRejected": "Proposta recusada",
@@ -2137,8 +2135,7 @@
       "squadFull": "Seu elenco está cheio.",
       "noClub": "Você está sem clube.",
       "generic": "Algo deu errado. Tente de novo.",
-      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele.",
-      "windowClosed": "A janela de transferências está fechada."
+      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele."
     },
     "history": {
       "title": "Rodadas de hoje",
@@ -2491,7 +2488,6 @@
     "noGoalkeeper": "Sem instruções para o goleiro.",
     "pickSlot": "Clique numa posição do campo para dar instruções.",
     "liveOnly": "As mudanças aqui valem só para esta partida.",
-    "saved": "Instruções salvas",
     "press": {
       "less": "Menos",
       "normal": "Normal",
@@ -2595,10 +2591,8 @@
       "marker": "Marcador",
       "target": "Alvo",
       "best": "Melhor jogador deles",
-      "none": "Ninguém",
       "add": "Adicionar marcação",
-      "remove": "Remover",
-      "marks": "Marca {{name}}"
+      "remove": "Remover"
     },
     "errors": {
       "saveFailed": "Não foi possível salvar as instruções.",
