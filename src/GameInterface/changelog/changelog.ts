@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.3.1",
+    date: "2026-10-06",
+    items: [
+      { pt: "Olheiros: a busca ordena e filtra pelo que você vê de cada jogador (o meio da faixa), e o salário de quem você conhece pouco aparece em faixa, como o valor.", en: "Scouting: the search sorts and filters by what you see of each player (the middle of the range), and the wage of little-known players shows as a range, like the value." },
+    ],
+    fixes: [
+      { pt: "Trocar de aba na Central de Olheiros ficou instantâneo: a busca não é refeita ao voltar.", en: "Switching tabs in the Scouting centre is now instant: the search is not redone when you come back." },
+    ],
+  },
+  {
     version: "4.3",
     date: "2026-10-06",
     items: [

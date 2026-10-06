@@ -26,6 +26,7 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 | `src/Domain/scouting/missions.ts` (+ teste) | `starterLineAverages`, `seenProfile`, `relativeNote`/`gradeOf`, `isGem`, `buildReport`, `missionPool`, `pickObserved`, `advanceScoutingWeek`, `missionCost`, `allowedWeeks`, `monthlyRecommendations`, `shortlistAlerts`, `prospectFee`, `generateProspects`, `addProspects`, `pruneProspects` |
 | `src/Domain/scouting/scoutingMessages.ts` | Inbox `scouting` (`buildScoutingMessage`) |
 | `src/Domain/staff/staff.ts` | `obscureForViewer` (borrão com amplitude por jogador + `scoutView`), `fieldScoutMarket`, `scoutUncertaintyMultOf`/`scoutGainMultOf`; `squadStaffWages` soma os olheiros de campo |
+| `src/Domain/scouting/seen.ts` | Valores vistos: faixas de nível/valor/salário/atributo e o meio da faixa (busca e telas) |
 | `src/Domain/scout/displayPlayer.ts` | `knowledge`, `hiddenAttrs`, `statNoise`, `seen`, `avgRange`, `valueRange`, `potentialRange` (de `scoutView`) |
 | `src/backend/scoutingWorld.ts` | E/S: `loadViewer`/`viewFor`/`obscureSquadForViewer` (telas), `scoutingDay` (passo do avanço do dia), `rememberPlayers`, `scoutingOnClubLeft`, `missionLeagues`, `missionDistance` |
 | `src/backend/scoutingRoutes.ts` (+ `scouting.routes.test.ts`) | Rotas (abaixo) |
@@ -59,7 +60,20 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
 
 - O sorteio é o de sempre (`signedNoise(save:jogador:atributo)`), só a amplitude é por jogador: a faixa converge
   ao valor real sem pular. A personalidade usa o mesmo ruído do jogador.
-- Filtros da busca usam o valor com ruído (decisão 7). O potencial (≤ 23) e o valor saem em faixa.
+- O potencial (≤ 23), o valor e o salário saem em faixa.
+- **A busca ordena e filtra pelo que a tela mostra (4.3.1):** com faixa na tela, a linha (`toDisplayPlayer`)
+  carrega em `avg`, `valueMillions` e `wage` o **meio da faixa mostrada** (`src/Domain/scouting/seen.ts`:
+  `seenOverallRange` com as pontas arredondadas como na tela, `seenValueRange`, `seenWageRange`, `rangeMid`), e os
+  rótulos (`value`, `salary`) mostram a faixa: duas linhas com a mesma faixa empatam (ordem de entrada, sem desempate
+  pela nota real). Filtro de atributo: atributo em faixa filtra pelo meio da faixa das barras
+  (`seenAttributeRange`, inteiros 0..10); atributo oculto ("?", k < 20) nunca passa num filtro de atributo ativo.
+  Próprio elenco e quem tem ruído < 0,5 continuam com o número (exato no próprio elenco e em k 100).
+- **Salário em faixa:** com ruído ≥ 0,5, o salário de um jogador de fora é a faixa da curva do clube dele
+  (`weeklyWage(ponta) × fator de salário do clube`) sobre a faixa de nível vista. O JSON das telas nunca leva o
+  salário exato: `obscureForViewer(..., wageFactor)` troca o `contract.wage` pelo meio dessa faixa (como o valor,
+  que já sai do nível borrado). Próprio elenco, cedidos/emprestados do jogador (k 100) e ruído < 0,5: salário exato.
+- **Decisão mantida:** o pedido de salário da negociação (`/demand`, contratos, contraproposta) é o pedido real do
+  jogador, não uma estimativa; ele pode revelar um pouco do nível.
 - A fama (top 100 por overall) é calculada no build do índice da busca e guardada por save e dia.
 
 ## Olheiros e missões
@@ -129,7 +143,9 @@ relatórios e lista continuam visíveis.
 ## Telas
 
 - **Central de Olheiros** ("CENTRAL DE **OLHEIROS**" / "SCOUTING **CENTRE**"): `SegmentedTabs` Busca | Missões |
-  Relatórios | Observados | Joias (`?tab=`). Busca: coluna Conhecimento (barra 64px + número), estrela, "?" e
+  Relatórios | Observados | Joias (`?tab=`). A aba Busca fica **montada e escondida** nas outras abas (filtros e
+  tabela memoizados: trocar de aba não rerenderiza as 100 linhas), e a busca só segue a consulta com a aba aberta
+  (a chave da busca congela nas outras abas: nenhuma requisição lá, e voltar sem mudar nada não busca de novo). Busca: coluna Conhecimento (barra 64px + número), estrela, "?" e
   faixas, chips "Só observados" e "Conhecidos (60+)". Missões: cartão por olheiro, barra de semanas, custo,
   Cancelar, modal "Nova missão" (alvo, duração e foco em chips). Relatórios: tabela padrão com nota, joia e
   filtro por missão. Observados: situação e anotação. Joias: prospectos ("Contratar para a base") e relatórios-joia.
@@ -142,9 +158,9 @@ relatórios e lista continuam visíveis.
 
 ## Números
 
-- Índice da busca (`bun scripts/scouting-index-bench.ts 3`, 36 437 jogadores): borrão + linhas 916 ms × 884 ms do
-  borrão uniforme antigo (**×1,04**); carregar o conhecimento 8 ms (fama já em cache; o smoke mede de novo e só
-  falha acima de 2×).
+- Índice da busca (`bun scripts/scouting-index-bench.ts 5`, 36 437 jogadores): borrão + linhas 956 ms × 889 ms do
+  borrão uniforme antigo (**×1,08**; ×1,02 antes das faixas de salário e dos meios da 4.3.1, mesma máquina);
+  carregar o conhecimento 7 ms (fama já em cache; o smoke mede de novo e só falha acima de 2×).
 - Semana típica (chefe nota 5, missão de país): 11 observados, +30 cada, 5 relatórios; viagem de um clube de
   receita €411M a outro país do continente ≈ €6,3k/semana.
 
@@ -160,12 +176,18 @@ estrangeiro (chefe), de jogador (uma estrela estrangeira; refeita se um olheiro 
 semanas) e de jovens; lista com jogadores cujo contrato acaba em 6–10 meses. Confere k 100 na missão de jogador,
 relatórios e mensagens, missão encerrada, uma linha `scouting` por missão ativa em toda segunda, pelo menos um
 alerta da lista, um prospecto contratado (base, contrato, compensação), nenhum clube da IA com olheiros, linhas
-da busca coerentes com k ("?" abaixo de 20, faixa a partir de ±0,5, exato em 100) e o custo do borrão (≤ 2×).
+da busca coerentes com k ("?" abaixo de 20, faixa a partir de ±0,5, exato em 100), a busca ordenada pelo meio da
+faixa vista (e não pela nota real: pelo menos uma inversão contra a nota real entre as linhas em faixa), o salário
+em faixa nessas linhas (nunca o exato) e o custo do borrão (≤ 2×). Teste: `src/Domain/scout/scoutSeen.test.ts`.
 
 ## Limitações
 
 - A IA não tem incerteza: ela "sabe" tudo; só o jogador pode errar.
-- O pedido de salário e a contraproposta seguem o valor real (vazam um pouco do nível).
+- O pedido de salário e a contraproposta seguem o valor real (vazam um pouco do nível) — decisão mantida.
+- O centro da faixa vista é o nível borrado: o ruído do nível (média ponderada de 13 atributos) é menor que o
+  ruído de cada atributo, então o meio da faixa fica mais perto do nível real do que a largura da faixa sugere
+  (Premier League, ruído ±2: erro rms do centro 0,46 contra a faixa de ±2).
+- Telas que leem elencos sem `?scouted=1` (prévia, tabelas de liga) continuam exatas.
 - Estatísticas públicas (gols, nota média, estrelas) não são escondidas.
 - O passo do dia não conta a fama (+25) ao somar o ganho de uma partida ou da lista; a fama só põe um piso na tela.
 - O conhecimento de um aposentado só sai do arquivo quando ele estava na lista (os demais saem pela poda).
