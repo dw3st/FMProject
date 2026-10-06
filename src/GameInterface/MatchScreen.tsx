@@ -1,6 +1,6 @@
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
-import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
@@ -558,7 +558,8 @@ export function MatchScreen() {
     return () => offs.forEach((off) => off());
   }, [t, showNotice]);
 
-  useEffect(() => {
+  // Layout effect: the first value is set before the overlay paints (never the previous break's 100%).
+  useLayoutEffect(() => {
     if (matchOverlay !== "halfTime" && matchOverlay !== "extraTime") return;
     let raf = 0;
     const tick = () => {
