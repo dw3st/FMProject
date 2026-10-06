@@ -392,6 +392,8 @@ export function TestScreen() {
   // and stateChanged so the badge stays accurate even after manual overrides.
   const [liveTeamIntent, setLiveTeamIntent] = useState<{ A: TeamIntent; B: TeamIntent }>({ A: 'balanced', B: 'balanced' });
   const [matchState, setMatchState] = useState<GameState | null>(null);
+  /** Throttle of the live panels (stateChanged effect below); cancelled when a scenario/squad reset rebuilds the state. */
+  const uiThrottleRef = useRef<UiStateThrottle<GameState> | null>(null);
   const [scenario, setScenario]   = useState<TestScenario>(() => {
     const id = urlStr('scene'); return MINI_SCENARIOS.find(s => s.id === id) ?? MINI_SCENARIOS[0]!;
   });
@@ -568,6 +570,7 @@ export function TestScreen() {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
     }
+    uiThrottleRef.current?.cancel(); // a pending delivery would bring the old match back
     setMatchState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -582,6 +585,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     setScenarioState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -601,6 +605,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     setScenarioState(state);
     setPlayerList(state.players);
   }, [famA, famB, moraleA, moraleB, tempA, tempB]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -615,10 +620,10 @@ export function TestScreen() {
     setPlayerList(players);
   }, [attrA, attrB]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The pitch emits every simulated frame; the ref follows every emission, the React panels at most every
-  // UI_STATE_INTERVAL_MS (spec 2026-10-06 §2): at once on a phase/score change, while paused (commands) and on
-  // a new ball holder (re-pins the intent override below without delay).
-  const uiThrottleRef = useRef<UiStateThrottle<GameState> | null>(null);
+  // The pitch emits every simulated frame; the ref and `setLiveBallHolder` follow every emission (outside the
+  // throttle, so a new ball holder re-pins the intent override below without delay), the other React panels at
+  // most every UI_STATE_INTERVAL_MS (spec 2026-10-06 §2), at once on a phase/score change and while paused
+  // (commands).
   useEffect(() => {
     const throttle = createUiStateThrottle<GameState>({
       isUrgent: isUrgentStateChange,
