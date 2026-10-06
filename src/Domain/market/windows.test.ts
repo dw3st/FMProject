@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  humanWindowStatus, isDeadlineRush, isWindowOpen, midWindow, seasonWindows, windowStatus,
+  humanWindowStatus, isDeadlineRush, midWindow, seasonWindows, windowStatus,
 } from "@/Domain/market/windows";
 
 const europe = { start: "2026-08-15", end: "2027-05-17" };
@@ -27,8 +27,6 @@ describe("transfer windows", () => {
   test("status: open until / opens on, across seasons", () => {
     expect(windowStatus(europe, "2026-08-20")).toMatchObject({ open: true, until: "2026-08-31" });
     expect(windowStatus(europe, "2027-02-05")).toMatchObject({ open: false, opensOn: "2027-05-31" });
-    expect(isWindowOpen(europe, "2027-06-10")).toBe(true);
-    expect(isWindowOpen(europe, "2027-09-01")).toBe(false);
     expect(windowStatus(europe, "2027-09-01").opensOn).toBe("2028-01-01");
   });
 

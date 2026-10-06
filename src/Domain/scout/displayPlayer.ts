@@ -66,7 +66,7 @@ export interface DisplayPlayer {
   nationality: string;
   /**
    * Scout rows of players outside the user's own squad: the overall shown as a range when the
-   * chief scout's uncertainty is large (`overallRange`, `src/Domain/staff`). Absent = exact.
+   * chief scout's uncertainty is large (`seenOverallRange`, `src/Domain/scouting/seen.ts`). Absent = exact.
    */
   avgRange?: [number, number];
   /**

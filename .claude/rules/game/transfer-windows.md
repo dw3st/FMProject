@@ -38,7 +38,7 @@ Versão **4.0**. Técnicos da IA e contrato do técnico do jogador: `managers.md
 | `src/backend/marketWindowWorld.ts` | `buildWindowContext` / `loadWindowContext`: status por liga/clube/país do dia, o do clube humano, `windowClosedResponse` |
 | `src/Domain/transfer/marketRotation.ts` | `dailyMarketTick(..., { windows })`: só compradores com janela aberta (fase 2 e propostas da fase 3) |
 | `src/Domain/negotiation/rivals.ts` (+ teste) | Candidatos rivais, `rollRival`, `rivalFloor`, `starterChance`, `preferenceScore`, `preferredClub` |
-| `src/Domain/negotiation/preContract.ts` | `preContractEligible`, `answerPreContract`, `dueAtRollover` |
+| `src/Domain/negotiation/preContract.ts` | `preContractEligible`, `answerPreContract` |
 | `src/backend/rivalWorld.ts` | `rollRivalFor`, `resolveRivalDeadlines` (venda ao rival no prazo), `applyDuePreContracts`, `prestigeOf` |
 | `src/backend/marketRoutes.ts` | `GET /transfer-windows`, `POST /pre-contracts`, `GET/POST /manager-contract` |
 | `src/GameInterface/Transfers/transferWindow.tsx` | `useTransferWindows`, faixa `WindowBanner`, aba `WindowsTable` |

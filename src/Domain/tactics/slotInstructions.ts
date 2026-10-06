@@ -63,11 +63,6 @@ export function sanitizeSlotInstructions(
   return out;
 }
 
-/** Number of slots with a non-default instruction. */
-export function countInstructions(instructions: (SlotInstruction | null)[] | undefined): number {
-  return (instructions ?? []).filter(i => i && (i.variant || (i.press && i.press !== "normal"))).length;
-}
-
 /**
  * Validates a match-marking body: at most `MAX_MATCH_MARKS` pairs of an outfield slot of the user's
  * formation and an outfield opponent (by roster id, from `opponentIds` / `opponentGoalkeepers`), one

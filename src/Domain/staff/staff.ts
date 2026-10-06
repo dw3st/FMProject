@@ -194,13 +194,6 @@ export function obscureSquad(squad: Squad, noise: number, saveId: string): Squad
   return { ...squad, players: squad.players.map((p) => obscurePlayer(p, noise, saveId)) };
 }
 
-/** The overall range shown instead of a single number once the uncertainty is large enough. */
-export function overallRange(avg: number, noise: number): [number, number] | undefined {
-  if (noise < STAFF.RANGE_THRESHOLD) return undefined;
-  const r1 = (v: number) => Math.round(v * 10) / 10;
-  return [r1(Math.max(0, avg - noise)), r1(Math.min(10, avg + noise))];
-}
-
 /**
  * The week's field-scout candidates (`.claude/rules/game/scouting.md`): `MARKET_SIZE` of them,
  * ratings 2..9, stable for save + week, distinct from the chief-scout market.

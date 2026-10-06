@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   developmentMultiplier, effectiveRating, initialStaff, injuryMultiplier, makeStaffMember, obscurePlayer,
-  overallRange, recoveryMultiplier, scoutGainMultOf, scoutUncertaintyMultOf, squadStaffWages, staffEffectsOf, staffMarket, staffWeeklyWage,
+  recoveryMultiplier, scoutGainMultOf, scoutUncertaintyMultOf, squadStaffWages, staffEffectsOf, staffMarket, staffWeeklyWage,
 } from "@/Domain/staff/staff";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -75,10 +75,6 @@ describe("scout noise", () => {
     expect(a.stats).not.toEqual(player.stats);
   });
 
-  test("range only when uncertain", () => {
-    expect(overallRange(6, 0.4)).toBeUndefined();
-    expect(overallRange(6, 0.6)).toEqual([5.4, 6.6]);
-  });
 });
 
 import { recoverDay } from "@/Domain/fitness/fitness";

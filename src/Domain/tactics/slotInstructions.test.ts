@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { countInstructions, parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
+import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { formationForTactics } from "@/Domain/matchFormations";
 
 const F433 = formationForTactics({ formation: "4-3-3" });
@@ -18,7 +18,6 @@ describe("parseSlotInstructions", () => {
     expect(r.value[slotOf("LB")]).toEqual({ variant: "fb_overlap" });
     expect(r.value[slotOf("ST")]).toEqual({ press: "more" });
     expect(r.value[slotOf("CAM")] ?? null).toBeNull();
-    expect(countInstructions(r.value)).toBe(2);
   });
 
   test("rejects unknown / misfit variants, bad pressing, GK pressing, bad shapes", () => {

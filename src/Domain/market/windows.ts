@@ -83,10 +83,6 @@ export function windowStatus(season: SeasonDates, date: string): WindowStatus {
     : { open: false, ...(next ? { opensOn: next.open, next } : {}) };
 }
 
-export function isWindowOpen(season: SeasonDates, date: string): boolean {
-  return windowStatus(season, date).open;
-}
-
 /** D1: a new career's club trades for ARRIVAL_GRACE_DAYS from the career start. */
 function inArrivalGrace(careerStart: string | undefined, date: string): boolean {
   return !!careerStart && date >= careerStart && date < addDays(careerStart, WINDOWS.ARRIVAL_GRACE_DAYS);

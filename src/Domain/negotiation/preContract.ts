@@ -5,7 +5,6 @@ import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { preferenceScore, starterChance } from "@/Domain/negotiation/rivals";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import type { PreContract } from "@/types/transferMarketTypes";
 
 /**
  * Pre-contracts (D2, Etapa 25, `.claude/rules/game/negotiation.md`): the human signs an AI player
@@ -60,9 +59,4 @@ export function answerPreContract(args: {
     return { accepted: false, reason: "prefersCurrent", demand, preference };
   }
   return { accepted: true, preference };
-}
-
-/** Pre-contracts of players at `squadIds` (the clubs whose country rolls today). */
-export function dueAtRollover(preContracts: PreContract[] | undefined, squadIds: Set<string>): PreContract[] {
-  return (preContracts ?? []).filter((p) => squadIds.has(p.fromClubId));
 }
