@@ -9,7 +9,6 @@ import {
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import type { ShotState } from "@/GameEngine/types";
 import { tickState, getBallPos, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
@@ -312,6 +311,8 @@ interface Props {
   effectLabels?: { save: string; wide: string; offside: string };
 }
 
+const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
+
 export function PixiPitch({
   canvasWidth = 900,
   canvasHeight = 520,
@@ -348,7 +349,7 @@ export function PixiPitch({
   const crowdClickPosRef         = useRef(crowdClickPos);
   const faceUrlsRef              = useRef(faceUrls);
   const effectLabelsRef          = useRef(effectLabels);
-  const labelsOf = () => effectLabelsRef.current ?? { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
+  const labelsOf = () => effectLabelsRef.current ?? DEFAULT_EFFECT_LABELS;
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
 
@@ -769,9 +770,11 @@ export function PixiPitch({
       let effectNow = 0;
       let effects: PitchEffect[] = [];
       let trail: TrailPoint[] = [];
-      let lastShot: ShotState | null = null;
+      /** The goal shot seen in this tick's shotResolved, consumed by the goalScored that follows. */
+      let pendingGoalShot: { toX: number; toY: number } | null = null;
 
       const pushEffect = (data: Parameters<typeof addEffect>[1], text?: string) => {
+        if (document.hidden || !app.ticker.started) return; // no frames drawn: don't queue effects
         effects = addEffect(effects, data, effectNow);
         if (text) {
           const t = new Text({ text, style: effectTextStyle });
@@ -784,18 +787,18 @@ export function PixiPitch({
       const playerPos = (id: number) => stateRef.current.players.find((p) => p.id === id);
 
       const unsubShotFx = gameBus.on("shotResolved", (e) => {
-        if (e.isGoal || !lastShot) return;
-        const s = lastShot;
+        if (e.isGoal) { pendingGoalShot = { toX: e.toX, toY: e.toY }; return; }
         const labels = labelsOf();
         pushEffect(
-          { kind: "shot", fromX: s.fromX, fromY: s.fromY, toX: s.toX, toY: s.toY, result: e.inPosts ? "save" : "wide" },
+          { kind: "shot", fromX: e.fromX, fromY: e.fromY, toX: e.toX, toY: e.toY, result: e.inPosts ? "save" : "wide" },
           e.inPosts ? labels.save : labels.wide,
         );
       });
       const unsubGoalFx = gameBus.on("goalScored", (e) => {
         const dir = stateRef.current.players.find((p) => p.team === e.team)?.attackDir ?? 1;
-        const goalX = lastShot ? lastShot.toX : dir === 1 ? PITCH_LENGTH : 0;
-        const goalY = lastShot ? lastShot.toY : PITCH_WIDTH / 2;
+        const goalX = pendingGoalShot ? pendingGoalShot.toX : dir === 1 ? PITCH_LENGTH : 0;
+        const goalY = pendingGoalShot ? pendingGoalShot.toY : PITCH_WIDTH / 2;
+        pendingGoalShot = null;
         pushEffect({ kind: "goal", goalX, goalY, color: e.team === "A" ? fillA : fillB });
       });
       const unsubFoulFx = gameBus.on("foul", (e) => pushEffect({ kind: "foul", x: e.x, y: e.y }));
@@ -1346,7 +1349,7 @@ export function PixiPitch({
         // ── Pitch effects + trail (real-time clock, frozen while paused) ──
         effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
         const st = stateRef.current;
-        if (st.shot) lastShot = st.shot;
+        pendingGoalShot = null; // a goal shot only pairs with a goalScored of the same tick
         // The trail follows the DRAWN ball: elevation in yards = h * LIFT (px = h * scale * LIFT).
         trail = liveTrail(
           pushTrail(

@@ -10,7 +10,7 @@ export interface GameEvents {
   /** Emitted the moment a goal is scored. */
   goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
-  shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean };
+  shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean; fromX: number; fromY: number; toX: number; toY: number };
 
   // ── Pass events ──────────────────────────────────────────────────────────
   /** Emitted when the holder starts a pass. */

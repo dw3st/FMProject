@@ -3505,7 +3505,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const defendingGK = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
 
       const { isGoal, inPosts, goalChance } = resolveShot(shooter, defendingGK, s.shot);
-      gameBus.emit('shotResolved', { player: shooter.id, xg: s.shot.xg, goalChance, isGoal, inPosts });
+      gameBus.emit('shotResolved', { player: shooter.id, xg: s.shot.xg, goalChance, isGoal, inPosts, fromX: s.shot.fromX, fromY: s.shot.fromY, toX: s.shot.toX, toY: s.shot.toY });
 
       if (inPosts && isGoal) {
         const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };

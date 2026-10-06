@@ -40,7 +40,19 @@ export const EFFECT_DURATION = { shot: 1.5, goal: 1.5, foul: 1.5, card: 2, offsi
 export const EFFECT_FADE_SHARE = 0.3;
 
 /** Ball trail: passes at least MIN_PASS_YDS long, points kept SECONDS, line width px, max alpha. */
-export const TRAIL = { MIN_PASS_YDS: 20, SECONDS: 0.4, WIDTH: 4, ALPHA: 0.6 } as const;
+export const TRAIL = { MIN_PASS_YDS: 20, SECONDS: 0.4, WIDTH: 4, ALPHA: 0.6, MAX_GAP_SECONDS: 0.1 } as const;
+
+/** Geometry of the pitch effects (multipliers of the marker radius unless noted). */
+export const EFFECT_SHAPE = {
+  DASH: 10, DASH_ON: 6, LINE_W: 2, CROSS_W: 3,
+  SHOT_RING_INNER: 0.5, SHOT_RING_ALPHA: 0.6,
+  NET_BULGE: 0.8, NET_CTRL: 1.6,
+  CONFETTI: 12, CONFETTI_R: 2.5, CONFETTI_SPREAD: 0.9, CONFETTI_BASE: 2, CONFETTI_STEP: 0.8, CONFETTI_RINGS: 4, CONFETTI_Y: 1.2, CONFETTI_WHITE_EVERY: 3,
+  FOUL_CROSS: 0.6,
+  CARD_W: 0.7, CARD_H: 1, CARD_LIFT: 1.8, CARD_TILT: 0.35, CARD_OUTLINE_ALPHA: 0.4,
+  OFFSIDE_RING: 1.4,
+  TEXT_SHOT: 2.4, TEXT_CARD: 3, TEXT_OFFSIDE: 2.4,
+} as const;
 
 /** Effect colours. */
 export const EFFECT_COLOR = { HIGHLIGHT: 0xffd34d, WHITE: 0xffffff, RED_CARD: 0xe53935 } as const;
