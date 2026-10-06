@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES } from "@/GraficsEngine/pitchStyle";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
+import { ballHeight } from "@/GraficsEngine/ballHeight";
 import { tickState, getBallPos, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
@@ -717,9 +718,26 @@ export function PixiPitch({
       }
 
       // ── Ball ──
-      const ball = new Graphics();
-      ball.circle(0, 0, 6).fill(0xffffff);
-      ball.circle(0, 0, 6).stroke({ width: 2, color: 0x000000, alpha: 0.25 });
+      // Ground shadow (stays on the ground) + the ball, lifted by its illustrative height.
+      const ballShadow = new Graphics()
+        .ellipse(0, 0, BALL.RADIUS, BALL.RADIUS * 0.6)
+        .fill({ color: 0x000000, alpha: 1 });
+      ballShadow.zIndex = -1;
+      world.addChild(ballShadow);
+
+      const ball = new Container();
+      const ballR = BALL.RADIUS;
+      const patch: number[] = [];
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+        patch.push(Math.cos(a) * ballR * 0.45, Math.sin(a) * ballR * 0.45);
+      }
+      ball.addChild(
+        new Graphics()
+          .circle(0, 0, ballR).fill(0xffffff)
+          .poly(patch).fill(BALL.PATCH)
+          .circle(0, 0, ballR).stroke({ width: 1, color: 0x000000, alpha: 0.35 }),
+      );
       ball.zIndex = 10; // always render on top of player sprites
       world.addChild(ball);
 
@@ -1244,11 +1262,17 @@ export function PixiPitch({
           }
         }
 
-        // Ball: game coords → pixels
+        // Ball: game coords → pixels; a raised ball is drawn higher and bigger, its shadow stays below.
         const ballPos = getBallPos(stateRef.current);
         const { px: bx, py: by } = toPixel(ballPos.x, ballPos.y);
+        const h = ballHeight(stateRef.current);
         ball.x = bx;
-        ball.y = by;
+        ball.y = by - h * m.scale * BALL.LIFT_PX_PER_YD;
+        ball.scale.set(1 + h * BALL.GROW_PER_YD);
+        ballShadow.x = bx + 1.5;
+        ballShadow.y = by + 2;
+        ballShadow.scale.set(Math.max(BALL.SHADOW_MIN_SCALE, 1 - h * BALL.SHADOW_SHRINK_PER_YD));
+        ballShadow.alpha = Math.max(BALL.SHADOW_MIN_ALPHA, BALL.SHADOW_ALPHA * (1 - h / 12));
 
         // ── Crowd heatmap overlay (drawn on top with per-cell alpha) ──
         crowdHeatmapGfx.clear();
