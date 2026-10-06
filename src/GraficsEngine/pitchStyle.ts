@@ -54,3 +54,12 @@ export const EFFECT_SHAPE = {
 
 /** Effect colours. */
 export const EFFECT_COLOR = { HIGHLIGHT: 0xffd34d, WHITE: 0xffffff, RED_CARD: 0xe53935 } as const;
+
+/**
+ * Largest move (yards) of a player or the ball in ONE sim step (1/60 s of game) that the renderer still
+ * interpolates; anything bigger is a reposition (kickoff, set piece, side switch, substitution) drawn at once.
+ * Fastest real moves per step: carry/press up to ~9 yd/s → 0.15 yd; passes and high balls eased at up to
+ * 1.5 × 28–30 yd/s → ~0.75 yd; a shot (t × 2/s, smoothstep) peaks at 3 × distance/s → ~1.75 yd from 35 yd,
+ * ~2.25 yd from 45 yd. Repositions are tens of yards. 4 leaves room above the longest shot.
+ */
+export const TELEPORT_YDS = 4;

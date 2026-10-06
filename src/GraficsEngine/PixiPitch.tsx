@@ -1,16 +1,16 @@
 import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { drawnBall, drawnPlayerPositions, interpAlpha, samePositions } from "@/GraficsEngine/renderInterp";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
-import { ballHeight } from "@/GraficsEngine/ballHeight";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import { tickState, getBallPos, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
-import { advanceSim } from "@/GameEngine/Domain/advanceSim";
+import { tickState, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
+import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
 import { reconcileMatchStateSync } from "@/GraficsEngine/matchStateSync";
@@ -560,6 +560,12 @@ export function PixiPitch({
       // Spec: docs/superpowers/specs/2026-09-25-match-live-controls-design.md §3.
       const pump = createPump(defaultNow);
       const simCarryRef = { current: 0 };
+      // Render interpolation (spec 2026-10-06-match-smooth-ball §1): the frame draws
+      // lerp(renderPrev, renderCur, carry / SIM_STEP). Only pumpSimulation sets the pair;
+      // when `stateRef.current` is swapped from outside (matchStateSync, /test commands,
+      // tactics change) and moved something, the draw falls back to the current state.
+      const renderPrevRef = { current: stateRef.current };
+      const renderCurRef = { current: stateRef.current };
 
       const pumpSimulation = () => {
         const elapsedRealSeconds = pump(pausedRef.current);
@@ -573,6 +579,8 @@ export function PixiPitch({
         // a frozen presentation/set-piece countdown). Nothing changed: skip the emit.
         if (result.state === prevState) return;
         stateRef.current = result.state;
+        renderPrevRef.current = result.prevState;
+        renderCurRef.current = result.state;
         gameBus.emit('stateChanged', stateRef.current);
       };
 
@@ -872,6 +880,17 @@ export function PixiPitch({
       app.ticker.add(() => {
         pumpSimulation();
 
+        // Drawn positions: between the last two sim steps. Paused, carry does not move,
+        // so alpha (and the drawing) stays frozen.
+        const drawState = stateRef.current;
+        if (drawState !== renderCurRef.current) {
+          if (samePositions(drawState, renderCurRef.current)) renderCurRef.current = drawState;
+          else { renderPrevRef.current = drawState; renderCurRef.current = drawState; }
+        }
+        const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
+        const drawnPos = drawnPlayerPositions(renderPrevRef.current, drawState, alpha, TELEPORT_YDS);
+        const drawnB = drawnBall(renderPrevRef.current, drawState, alpha, TELEPORT_YDS);
+
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
         const currentPlayerIds = new Set(stateRef.current.players.map(p => p.id));
@@ -896,7 +915,8 @@ export function PixiPitch({
           const g     = playerGraphics.get(player.id);
           const label = playerLabels.get(player.id);
           if (!g) continue;
-          const { px, py } = toPixel(player.x, player.y);
+          const at = drawnPos.get(player.id) ?? player;
+          const { px, py } = toPixel(at.x, at.y);
           g.x = px;
           g.y = py;
           const badge = g.getChildByLabel("card");
@@ -922,7 +942,9 @@ export function PixiPitch({
           }
         }
 
-        // Debug overlays
+        // Debug overlays: drawn from the CURRENT engine state on purpose (not interpolated). They show
+        // engine data (targets, lanes, marks, cells) computed from that state; anchoring them to the drawn
+        // markers would mix two instants. The gap is at most one sim step (~0.15 yd for a player).
         passLinesGfx.clear();
         movementTargetsGfx.clear();
         throughBallGfx.clear();
@@ -1335,9 +1357,9 @@ export function PixiPitch({
         }
 
         // Ball: game coords → pixels; a raised ball is drawn higher and bigger, its shadow stays below.
-        const ballPos = getBallPos(stateRef.current);
+        const ballPos = drawnB;
         const { px: bx, py: by } = toPixel(ballPos.x, ballPos.y);
-        const h = ballHeight(stateRef.current);
+        const h = drawnB.h;
         ball.x = bx;
         ball.y = by - h * m.scale * BALL.LIFT_PX_PER_YD;
         ball.scale.set(1 + h * BALL.GROW_PER_YD);
