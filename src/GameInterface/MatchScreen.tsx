@@ -201,7 +201,11 @@ export function MatchScreen() {
   const gameSpeedRef = useRef(gameSpeed);
   useEffect(() => { gameSpeedRef.current = gameSpeed; }, [gameSpeed]);
   const [ratings, setRatings] = useState<Record<number, number>>(() => getAllRatings());
-  /** Every player seen on the pitch, so a sent-off player can still be listed (#69). */
+  /**
+   * Every player seen on the pitch, so a sent-off player can still be listed (#69). Filled on every
+   * `stateChanged` emission: a player only leaves the pitch inside a simulated step, and every step's state
+   * reaches that handler, so he was always registered before (the initial state never has a departed player).
+   */
   const knownPlayersRef = useRef(new Map<number, GamePlayer>());
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
@@ -819,7 +823,6 @@ export function MatchScreen() {
   const passToId = gameState.pass?.toId ?? undefined;
   const score = gameState.score ?? { A: 0, B: 0 };
   const decisions = gameState.decisions;
-  for (const p of gameState.players) knownPlayersRef.current.set(p.id, p);  // also on every emission (above)
   const playerEvents = playerMatchEvents(gameState.cards, getAllPlayerStats());
   // Players of the shown team who left the pitch (sent off, injured or substituted), in the order
   // they first appeared, so their goals, assists and cards stay visible (#69).
