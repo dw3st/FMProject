@@ -67,6 +67,8 @@ export interface SeenProfile {
   /** Centre of the overall range (the blurred overall). */
   seenOverall: number;
   potential: [number, number];
+  /** High end of the potential band of the blurred player, before widening (grades and gems use it). */
+  potentialSeenHigh: number;
   value: [number, number];
   wageDemand: number;
 }
@@ -84,6 +86,7 @@ export function seenProfile(player: RosterPlayer, k: number, ctx: Pick<ViewerCon
     seenOverall: r1(ov),
     overall: [r1(lo), r1(hi)],
     potential: [r1(clamp(pot[0] - noise, 0, 10)), r1(clamp(pot[1] + noise, 0, 10))],
+    potentialSeenHigh: r1(pot[1]),
     value: [value(lo), value(hi)],
     wageDemand: Math.round(weeklyWage(ov) * ctx.ownWageFactor),
   };
@@ -120,7 +123,7 @@ export function buildReport(entry: PoolEntry, k: number, ctx: ViewerContext, arg
   const line = lineOf(p);
   const seen = seenProfile(p, k, ctx);
   const lineAvg = ctx.lineAverages[line] ?? 5;
-  const grade = gradeOf(relativeNote(seen.seenOverall, seen.potential[1], p.age, lineAvg));
+  const grade = gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg));
   return {
     id: `rep_${seedFrom(`${ctx.saveId}:${args.missionId ?? "x"}:${p.id}:${ctx.date}`).toString(36)}`,
     date: ctx.date,
@@ -142,7 +145,7 @@ export function buildReport(entry: PoolEntry, k: number, ctx: ViewerContext, arg
     ...(p.contract ? { contractUntil: p.contract.until } : {}),
     forSale: !!entry.forSale,
     grade,
-    gem: isGem({ age: p.age, country: entry.country, ownCountry: ctx.ownCountry, potentialHigh: seen.potential[1], lineAverage: lineAvg, youthMission: args.youthMission }),
+    gem: isGem({ age: p.age, country: entry.country, ownCountry: ctx.ownCountry, potentialHigh: seen.potentialSeenHigh, lineAverage: lineAvg, youthMission: args.youthMission }),
     text: reportText(seen.seenOverall, lineAvg, grade, p.age),
     ...(entry.prospectId ? { prospectId: entry.prospectId } : {}),
   };
