@@ -816,7 +816,7 @@ export function PixiPitch({
 
         // Players: game pos → pixels (exact position). Name must refresh every frame so
         // substitutions update the label on the pitch.
-        const booked = bookedPlayerIds(stateRef.current.cards ?? []) // old /test snapshots have no cards;
+        const booked = bookedPlayerIds(stateRef.current.cards);
         holderGlowGfx.clear();
         fatigueGfx.clear();
         const barW = markerR * FATIGUE_BAR.W;
