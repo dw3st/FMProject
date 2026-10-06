@@ -23,7 +23,14 @@ export const FATIGUE_BAR = {
 
 /** Ball drawing: radius px, ground shadow, how a raised ball is drawn per yard of height. */
 export const BALL = {
-  RADIUS: 6, PATCH: 0x222222,
+  RADIUS: 6,
+  /** Modern ball: radial shading (centre at CENTRE of the radius, light to rim), seams, fixed gloss, outline. */
+  SHADE_CENTRE: 0.3, SHADE_LIGHT: 0xffffff, SHADE_MID: 0xf1f1f1, SHADE_RIM: 0xb9bec4,
+  SEAM_BLUE: 0x2457c5, SEAM_RED: 0xe8423a, SEAM_GREY: 0x9aa3ad,
+  SEAM_BLUE_W: 1, SEAM_RED_W: 1, SEAM_GREY_W: 0.6,
+  GLOSS_ALPHA: 0.7, OUTLINE_ALPHA: 0.35,
+  /** A drawn ball move (px per frame) above this is a jump, not a roll: the seams do not spin. */
+  SPIN_TELEPORT_PX: 36,
   SHADOW_ALPHA: 0.35, SHADOW_MIN_ALPHA: 0.1,
   LIFT_PX_PER_YD: 0.6, GROW_PER_YD: 0.06, SHADOW_SHRINK_PER_YD: 0.04, SHADOW_MIN_SCALE: 0.5,
   /** Shadow ellipse height / width, its offset (px) from the ball, and the height (yd) at which it fades to its minimum. */

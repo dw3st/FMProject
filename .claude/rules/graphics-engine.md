@@ -30,3 +30,6 @@ alwaysApply: false
 - `ballHeight.ts` — illustrative ball height for high balls and shots (raised ball + ground shadow)
 - `pitchEffects.ts` — pure effect queue (shot, goal, foul, card, offside) and ball trail, on a real-time clock frozen while paused
 - `effectsRender.ts` — Pixi drawing of the effects and the trail
+- `renderInterp.ts` — drawing between sim steps: players and ball are drawn at `lerp(prev, cur, carry / step)`; the engine never sees these positions
+- `ballSpin.ts` — pure seam-spin angle of the ball (distance rolled / radius; none paused or on a jump)
+- `GameInterface/uiStateThrottle.ts` — throttles React state echoes of the match so a fast simulation does not re-render every step

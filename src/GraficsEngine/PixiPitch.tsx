@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { Application, CanvasSource, Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, syncRenderPair, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import {
@@ -747,17 +748,42 @@ export function PixiPitch({
 
       const ball = new Container();
       const ballR = BALL.RADIUS;
-      const patch: number[] = [];
-      for (let i = 0; i < 5; i++) {
-        const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-        patch.push(Math.cos(a) * ballR * 0.45, Math.sin(a) * ballR * 0.45);
-      }
+      const shade = new FillGradient({
+        type: "radial",
+        center: { x: 0.38, y: 0.32 }, innerRadius: 0,
+        outerCenter: { x: 0.5, y: 0.5 }, outerRadius: 0.5,
+        colorStops: [
+          { offset: 0, color: BALL.SHADE_LIGHT },
+          { offset: 0.5, color: BALL.SHADE_MID },
+          { offset: 1, color: BALL.SHADE_RIM },
+        ],
+        textureSpace: "local",
+      });
+      ball.addChild(new Graphics().circle(0, 0, ballR).fill(shade));
+      // Seams (spin with the distance rolled). Every control point lies inside the ball (radius <= 22.4 of 24), so no mask is needed.
+      const seams = new Container();
+      const k = ballR / 24; // the reference SVG has radius 24
+      seams.addChild(
+        new Graphics()
+          .moveTo(-20 * k, -6 * k).quadraticCurveTo(-4 * k, -14 * k, 18 * k, -12 * k)
+          .stroke({ width: BALL.SEAM_BLUE_W, color: BALL.SEAM_BLUE })
+          .moveTo(-18 * k, 10 * k).quadraticCurveTo(0, 2 * k, 20 * k, 8 * k)
+          .stroke({ width: BALL.SEAM_BLUE_W, color: BALL.SEAM_BLUE })
+          .moveTo(-6 * k, -4 * k).lineTo(6 * k, 6 * k)
+          .stroke({ width: BALL.SEAM_RED_W, color: BALL.SEAM_RED })
+          .moveTo(-22 * k, 2 * k).quadraticCurveTo(-8 * k, 18 * k, 10 * k, 22 * k)
+          .stroke({ width: BALL.SEAM_GREY_W, color: BALL.SEAM_GREY })
+          .moveTo(-10 * k, -22 * k).quadraticCurveTo(10 * k, -14 * k, 22 * k, -2 * k)
+          .stroke({ width: BALL.SEAM_GREY_W, color: BALL.SEAM_GREY }),
+      );
+      ball.addChild(seams);
       ball.addChild(
         new Graphics()
-          .circle(0, 0, ballR).fill(0xffffff)
-          .poly(patch).fill(BALL.PATCH)
-          .circle(0, 0, ballR).stroke({ width: 1, color: 0x000000, alpha: 0.35 }),
+          .ellipse(-ballR * 0.3, -ballR * 0.4, ballR * 0.36, ballR * 0.22).fill({ color: 0xffffff, alpha: BALL.GLOSS_ALPHA })
+          .circle(0, 0, ballR).stroke({ width: 1, color: 0x000000, alpha: BALL.OUTLINE_ALPHA }),
       );
+      let seamAngle = 0;
+      let prevBallPx: { x: number; y: number } | null = null;
       ball.zIndex = 10; // always render on top of player sprites
       world.addChild(ball);
 
@@ -1356,6 +1382,9 @@ export function PixiPitch({
         const ballPos = drawnB;
         const { px: bx, py: by } = toPixel(ballPos.x, ballPos.y);
         const h = drawnB.h;
+        seamAngle = nextSpinAngle(seamAngle, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX);
+        prevBallPx = { x: bx, y: by };
+        seams.rotation = seamAngle;
         ball.x = bx;
         ball.y = by - h * m.scale * BALL.LIFT_PX_PER_YD;
         ball.scale.set(1 + h * BALL.GROW_PER_YD);

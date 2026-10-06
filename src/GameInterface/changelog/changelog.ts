@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.1",
+    date: "2026-10-06",
+    items: [
+      { pt: "Bola nova no campo da partida", en: "New ball on the match pitch" },
+    ],
+    fixes: [
+      { pt: "Partida ao vivo mais suave, sem trancos nas velocidades 2× e 4×", en: "Smoother live match, no stutter at 2× and 4× speed" },
+    ],
+  },
+  {
     version: "4.4",
     date: "2026-10-06",
     items: [
