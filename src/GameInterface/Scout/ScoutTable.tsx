@@ -21,7 +21,7 @@ const columns = [
   { key: "phase", label: "Phase", width: "w-16" },
   { key: "training", label: "Train", width: "w-16" },
   { key: "moral", label: "Moral", width: "w-16" },
-  { key: "salary", label: "Salary", width: "w-20" },
+  { key: "salary", label: "Salary", width: "w-28" },
   { key: "valueMillions", label: "Value", width: "w-24" },
 ];
 
@@ -198,7 +198,7 @@ export function ScoutTable({
               <div className="px-3 py-2.5 w-16">
                 <StatusBadge level={player.moral} />
               </div>
-              <div className="px-3 py-2.5 w-20 text-muted-foreground font-medium">
+              <div className="px-3 py-2.5 w-28 whitespace-nowrap tabular-nums text-muted-foreground font-medium">
                 {player.salary}
               </div>
               <div className={`px-3 py-2.5 w-24 font-bold ${ratingTextClass10(player.avg)}`}>
