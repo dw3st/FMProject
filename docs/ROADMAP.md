@@ -245,7 +245,7 @@ estrelas por cor com legenda · #30 cor por posição detalhada · #31 posiçõe
 
 Fechados na 1.5.1 (2026-09-28): **#25** escudo do Figueirense · **#26** escudo do Athletic Club ·
 **#27** confirmação ao excluir save. A causa dos escudos era o mapa global com busca aproximada entre
-ligas em `data_process/pipeline.py`.
+ligas no antigo pipeline Python (`data_process/pipeline.py`, removido em 2026-10-06).
 
 Fechados em 2026-09-28: **#3** ruído dos `of_*` (fator de sorte único por jogador + teto suave via
 previsor de nível, em vez de ruído independente por atributo) e **#14** jovem promissor nascendo

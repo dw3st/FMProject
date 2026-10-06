@@ -13,7 +13,7 @@ test("logoUrlFromIndex", () => {
 
 // Regression for issues #25/#26: two different clubs (e.g. Figueirense and
 // Fluminense, or Athletic Club Brazil and Athletic Bilbao) ended up pointing at
-// byte-identical crest files, because data_process/pipeline.py's logo matcher
+// byte-identical crest files, because the old Python pipeline's logo matcher (data_process/pipeline.py, removed)
 // searched a single cross-league map (exact and fuzzy) instead of staying scoped
 // to each club's own league source directory. Two DIFFERENT native squadIds must
 // never resolve to identical crest file content. `espn/*` entries are excluded —
