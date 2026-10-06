@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { GameState } from "@/GameEngine/types";
-import { drawnBall, drawnPlayerPositions, interpAlpha, lerpPos, samePositions } from "@/GraficsEngine/renderInterp";
+import { drawnBall, drawnPlayerPositions, interpAlpha, lerpPos, nextRenderPair, samePositions, syncRenderPair } from "@/GraficsEngine/renderInterp";
 
 function st(players: { id: number; x: number; y: number }[], extra: Partial<GameState> = {}): GameState {
   return { players, ballHolderId: players[0]?.id ?? null, pass: null, shot: null, looseBall: null, ...extra } as unknown as GameState;
@@ -64,5 +64,42 @@ describe("samePositions", () => {
     expect(samePositions(a, { ...a, players: a.players.map((p) => ({ ...p })) })).toBe(true);
     expect(samePositions(a, st([{ id: 1, x: 10, y: 10 }, { id: 2, x: 6, y: 5 }]))).toBe(false);
     expect(samePositions(a, st([{ id: 1, x: 10, y: 10 }]))).toBe(false);
+  });
+});
+
+describe("render pair", () => {
+  const a = st([{ id: 1, x: 10, y: 10 }]);
+  const b = st([{ id: 1, x: 11, y: 10 }]);
+  const c = st([{ id: 1, x: 12, y: 10 }]);
+
+  test("N steps: the pair becomes (step before the last, last)", () => {
+    const pair = nextRenderPair({ prev: a, cur: a }, { prevState: a, result: { state: c, prevState: b }, steps: 2 });
+    expect(pair.prev).toBe(b);
+    expect(pair.cur).toBe(c);
+  });
+  test("0 steps: the pair is unchanged", () => {
+    const before = { prev: a, cur: b };
+    expect(nextRenderPair(before, { prevState: b, result: { state: b, prevState: b }, steps: 0 })).toBe(before);
+  });
+  test("steps that change nothing collapse the pair on cur", () => {
+    const pair = nextRenderPair({ prev: a, cur: b }, { prevState: b, result: { state: b, prevState: b }, steps: 3 });
+    expect(pair.prev).toBe(b);
+    expect(pair.cur).toBe(b);
+  });
+  test("external swap without movement keeps the blend", () => {
+    const echo = { ...b, players: b.players.map((p) => ({ ...p })) } as GameState;
+    const pair = syncRenderPair({ prev: a, cur: b }, echo);
+    expect(pair.prev).toBe(a);
+    expect(pair.cur).toBe(echo);
+  });
+  test("external swap with movement draws the new state as is", () => {
+    const moved = st([{ id: 1, x: 40, y: 20 }]);
+    const pair = syncRenderPair({ prev: a, cur: b }, moved);
+    expect(pair.prev).toBe(moved);
+    expect(pair.cur).toBe(moved);
+  });
+  test("same state: the pair is untouched", () => {
+    const before = { prev: a, cur: b };
+    expect(syncRenderPair(before, b)).toBe(before);
   });
 });

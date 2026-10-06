@@ -75,3 +75,37 @@ export function samePositions(a: GameState, b: GameState): boolean {
   const bb = getBallPos(b);
   return ba.x === bb.x && ba.y === bb.y && ballHeight(a) === ballHeight(b);
 }
+
+/** The two states the frame blends between: `prev` (step before) and `cur` (last step the pitch drew). */
+export interface RenderPair { prev: GameState; cur: GameState }
+
+/**
+ * The pair after a simulation pump. `prevState` is the state handed to `advanceSim`; `result` its new state and
+ * the state before its last step; `steps` how many whole steps ran.
+ * - steps ran and the state changed → (step before the last, last);
+ * - no step → unchanged (the carry alone moves the blend);
+ * - steps ran but the state is the same (frozen countdown, matchEnd) → collapsed: the last step moved
+ *   nothing, so the drawing must not keep blending towards an older step (it would shimmer with the carry).
+ *   Collapsed on `prevState` (the state the pump started from, i.e. the one on screen).
+ */
+export function nextRenderPair(
+  pair: RenderPair,
+  pump: { prevState: GameState; result: { state: GameState; prevState: GameState }; steps: number },
+): RenderPair {
+  if (pump.steps === 0) return pair;
+  if (pump.result.state === pump.prevState) {
+    const still = pump.prevState;
+    return pair.prev === still && pair.cur === still ? pair : { prev: still, cur: still };
+  }
+  return { prev: pump.result.prevState, cur: pump.result.state };
+}
+
+/**
+ * The pair for the state about to be drawn. A state swapped in from outside the pump (React echo, tactics
+ * change, /test command) that moved nothing keeps the blend; one that moved something is drawn as is.
+ */
+export function syncRenderPair(pair: RenderPair, drawState: GameState): RenderPair {
+  if (drawState === pair.cur) return pair;
+  if (samePositions(drawState, pair.cur)) return { prev: pair.prev, cur: drawState };
+  return { prev: drawState, cur: drawState };
+}

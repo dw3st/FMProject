@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
-import { drawnBall, drawnPlayerPositions, interpAlpha, samePositions } from "@/GraficsEngine/renderInterp";
+import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, syncRenderPair, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
@@ -561,30 +561,25 @@ export function PixiPitch({
       const pump = createPump(defaultNow);
       const simCarryRef = { current: 0 };
       // Render interpolation (spec 2026-10-06-match-smooth-ball §1): the frame draws
-      // lerp(renderPrev, renderCur, carry / SIM_STEP). Only pumpSimulation sets the pair;
-      // when `stateRef.current` is swapped from outside (matchStateSync, /test commands,
-      // tactics change) and moved something, the draw falls back to the current state.
-      const renderPrevRef = { current: stateRef.current };
-      const renderCurRef = { current: stateRef.current };
+      // lerp(pair.prev, current, carry / SIM_STEP). The pump moves the pair (`nextRenderPair`);
+      // the draw checks it against the state actually in `stateRef` (`syncRenderPair`), so a
+      // swap from outside (matchStateSync, /test commands, tactics change) that moved something
+      // is drawn as is.
+      let renderPair: RenderPair = { prev: stateRef.current, cur: stateRef.current };
 
       const pumpSimulation = () => {
         const elapsedRealSeconds = pump(pausedRef.current);
         if (elapsedRealSeconds <= 0) return;
         const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
-        const stepsRan = simCarryRef.current + gameSeconds + 1e-9 >= SIM_STEP;
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
-        // Steps ran but nothing changed (frozen countdown, matchEnd): the last step moved nothing, so the
-        // drawing must not keep blending towards the step before it (it would shimmer with the carry).
-        if (result.state === prevState && stepsRan) renderPrevRef.current = renderCurRef.current;
+        renderPair = nextRenderPair(renderPair, { prevState, result, steps: result.steps });
         // advanceSim returns the same reference when zero whole steps ran (not enough
         // carried+elapsed time yet, or tickState's own noop paths — e.g. matchEnd, or
         // a frozen presentation/set-piece countdown). Nothing changed: skip the emit.
         if (result.state === prevState) return;
         stateRef.current = result.state;
-        renderPrevRef.current = result.prevState;
-        renderCurRef.current = result.state;
         gameBus.emit('stateChanged', stateRef.current);
       };
 
@@ -887,13 +882,10 @@ export function PixiPitch({
         // Drawn positions: between the last two sim steps. Paused, carry does not move,
         // so alpha (and the drawing) stays frozen.
         const drawState = stateRef.current;
-        if (drawState !== renderCurRef.current) {
-          if (samePositions(drawState, renderCurRef.current)) renderCurRef.current = drawState;
-          else { renderPrevRef.current = drawState; renderCurRef.current = drawState; }
-        }
+        renderPair = syncRenderPair(renderPair, drawState);
         const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
-        const drawnPos = drawnPlayerPositions(renderPrevRef.current, drawState, alpha, TELEPORT_YDS);
-        const drawnB = drawnBall(renderPrevRef.current, drawState, alpha, TELEPORT_YDS);
+        const drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        const drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
 
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
