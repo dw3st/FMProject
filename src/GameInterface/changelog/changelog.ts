@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4",
+    date: "2026-10-06",
+    items: [
+      { pt: "Campo da partida renovado: gramado listrado, sombras e bola de verdade que sobe nos cruzamentos", en: "Refreshed match pitch: striped grass, shadows and a real ball that rises on crosses" },
+      { pt: "Cada jogador mostra o fôlego, o cartão amarelo e quem está com a bola", en: "Every player shows stamina, yellow cards and who has the ball" },
+      { pt: "Lances marcados no gramado: chutes, defesas, gols, faltas, cartões e impedimentos", en: "Plays marked on the pitch: shots, saves, goals, fouls, cards and offsides" },
+    ],
+  },
+  {
     version: "4.3.1",
     date: "2026-10-06",
     items: [

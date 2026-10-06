@@ -63,7 +63,7 @@ faz com `throughBallScores`), mais leitura do estado para o rastro.
 
 Não existe "TRAVE": o motor não registra bola na trave.
 
-**Única mudança no motor:** o evento `offsideCalled` ganha `lineX` (a linha do penúltimo defensor no momento do
+**Mudanças no motor (só dado):** `shotResolved` passa a trazer `fromX/fromY/toX/toY` (o efeito de gol não depende do último chute em jogo; gol de pênalti cai no gol do lado de ataque). Além disso, o evento `offsideCalled` ganha `lineX` (a linha do penúltimo defensor no momento do
 passe). Hoje o passe guarda só `receiverOffside`/`aerialOffsideIds` (booleanos/ids); passa a guardar também
 `offsideLineX` (`PassState` e `LooseBallState`, opcional), gravado onde esses campos já são calculados (com
 `computeOffsideLine`), e os três pontos que emitem `offsideCalled` o repassam. Só dado; nenhuma regra, estatística
@@ -82,7 +82,8 @@ efeito mostra só o anel no atacante.
 | `src/GraficsEngine/pitchStyle.ts` | Constantes: cores das faixas, sombra, brilho, barrinha, bola, durações e alturas |
 | `src/GraficsEngine/ballHeight.ts` (+ teste) | Altura da bola a partir de `pass`/`shot` |
 | `src/GraficsEngine/pitchEffects.ts` (+ teste) | Fila de efeitos: adicionar por evento, avançar, alpha, expirar, pausa |
-| `src/GraficsEngine/fatigue.ts` (+ teste) | `fatigueColor(energy)` |
+| `src/GraficsEngine/markerInfo.ts` (+ teste) | `fatigueColor`, `fatigueFill`, `bookedPlayerIds` (selo de amarelo) |
+| `src/GraficsEngine/effectsRender.ts` | Desenho Pixi dos efeitos e do rastro |
 | `src/GraficsEngine/PixiPitch.tsx` | Gramado, marcadores, bola, assinaturas de eventos e desenho dos efeitos |
 | `src/GameEngine/Infrastructure/EventBus.ts`, `types.ts`, `Domain/gameState.ts` | `offsideLineX` no passe/bola solta e `offsideCalled.lineX` |
 | `src/GameInterface/changelog/changelog.ts`, `package.json` | Versão 4.4 |

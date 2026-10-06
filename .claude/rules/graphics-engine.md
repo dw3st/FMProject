@@ -8,6 +8,7 @@ alwaysApply: false
 - Renders `GameState` to the canvas — reads game state, never owns it
 - Converts game-space yards → canvas pixels with `toPixel(x, y)` (built from `buildMetrics`)
 - Idle/visual motion is pixel-space only and does not affect `GameState`
+- Pitch effects listen to gameBus events (shotResolved, goalScored, foul, card, offsideCalled) inside PixiPitch and are skipped while the tab is hidden; spec docs/superpowers/specs/2026-10-06-match-pitch-visual-design.md
 
 ## Pixi conventions
 - Use Pixi v8 (`Application`, `Graphics`, `Container` from `pixi.js`)
@@ -24,3 +25,8 @@ alwaysApply: false
 - `simClock.ts` + `pump.ts` — keep the match ticking while the tab is hidden (Worker pulse, shared real-time pump)
 - `matchStateSync.ts` — stops a React state echo from rewinding the pitch's simulation
 - `playerFaces.ts` — face SVGs rasterised once into circular sprites
+- `pitchStyle.ts` — every visual constant of the live pitch (stripes, shadows, stamina bar, ball, effects)
+- `markerInfo.ts` — stamina bar colour/fill, booked players (card badge)
+- `ballHeight.ts` — illustrative ball height for high balls and shots (raised ball + ground shadow)
+- `pitchEffects.ts` — pure effect queue (shot, goal, foul, card, offside) and ball trail, on a real-time clock frozen while paused
+- `effectsRender.ts` — Pixi drawing of the effects and the trail
