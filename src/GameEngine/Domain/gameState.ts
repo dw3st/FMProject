@@ -1843,6 +1843,7 @@ function startPass(state: GameState): GameState {
       t: 0,
       distance,
       receiverOffside,
+      offsideLineX: offsideLineAt(holder, state.players),
       intendedRunnerId: null,
     },
     setPiece: null,
@@ -2052,6 +2053,7 @@ function startThroughBall(
       t:                0,
       distance,
       receiverOffside:  runnerOffside,
+      offsideLineX:     offsideLineAt(holder, state.players),
       intendedRunnerId: decision.intendedRunnerId,
     },
     setPiece: null,
@@ -2440,7 +2442,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     (winner.team === lb.fromTeamLastTouch && (lb.offsideIds ?? []).includes(winner.id));
 
   if (flaggedOffside) {
-    gameBus.emit('offsideCalled', { team: winner.team, receiverId: winner.id });
+    gameBus.emit('offsideCalled', { team: winner.team, receiverId: winner.id, lineX: lb.offsideLineX });
     if (isTB) gameBus.emit('throughBallLostInFlight', { player: lb.fromPasserId, interceptorId: winner.id });
     aerialOutcome(winner.id, false);
     const defenders = s.players.filter(p => p.team !== winner.team);
@@ -2539,6 +2541,12 @@ function gaussianPair(rng: () => number): [number, number] {
   return [r * Math.cos(2 * Math.PI * u2), r * Math.sin(2 * Math.PI * u2)];
 }
 
+/** Offside line (x) for a ball played by `holder` right now; undefined when offside doesn't apply. */
+function offsideLineAt(holder: GamePlayer, players: GamePlayer[]): number | undefined {
+  if (!OFFSIDE_CONFIG.ENABLED) return undefined;
+  return computeOffsideLine(holder.attackDir, players, holder.team, holder.x) ?? undefined;
+}
+
 /** Outfield attackers of `holder`'s team in an offside position right now. */
 function offsideIdsAt(holder: GamePlayer, players: GamePlayer[]): number[] {
   if (!OFFSIDE_CONFIG.ENABLED) return [];
@@ -2593,8 +2601,8 @@ function clearanceBall(
 const uniform = (rng: () => number, lo: number, hi: number) => lo + rng() * (hi - lo);
 
 /** Offside free kick for the team defending against `offender` at `at` (aerial path). */
-function aerialOffsideFreeKick(s: GameState, offender: GamePlayer, at: { x: number; y: number }): GameState {
-  gameBus.emit('offsideCalled', { team: offender.team, receiverId: offender.id });
+function aerialOffsideFreeKick(s: GameState, offender: GamePlayer, at: { x: number; y: number }, lineX?: number): GameState {
+  gameBus.emit('offsideCalled', { team: offender.team, receiverId: offender.id, lineX });
   const defenders = s.players.filter(p => p.team !== offender.team);
   if (defenders.length === 0) return s;
   const taker = nearestPlayerTo(defenders, at);
@@ -2676,6 +2684,7 @@ export function startAerialBall(
     receiverOffside: false,
     intendedRunnerId: intendedId,
     aerialOffsideIds: offsideIdsAt(holder, state.players),
+    offsideLineX: offsideLineAt(holder, state.players),
     ...(state.setPiece ? { fromSetPiece: true } : {}),
     ...(state.setPiece?.variant ? { setPieceVariant: state.setPiece.variant } : {}),
   };
@@ -2792,7 +2801,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     // An offside attacker challenging for it is flagged before any duel or foul (no penalty for him).
     if ((pass.aerialOffsideIds ?? []).includes(a.id)) {
       resolved(a.id, false, 'offside');
-      return done(aerialOffsideFreeKick(s, a, { x: a.x, y: a.y }));
+      return done(aerialOffsideFreeKick(s, a, { x: a.x, y: a.y }, pass.offsideLineX));
     }
     // A set-piece delivery: the defenders are set, goal-side of their man (`set-pieces-play.md`).
     const setPieceCross = pass.setPieceVariant === 'box' && kind === 'cross';
@@ -2846,6 +2855,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         receiverOffside: pass.intendedRunnerId !== null && (pass.aerialOffsideIds ?? []).includes(pass.intendedRunnerId),
         source: kind,
         offsideIds: pass.aerialOffsideIds ?? [],
+        offsideLineX: pass.offsideLineX,
       },
     });
   }
@@ -2873,7 +2883,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         intendedRunnerId: null,
         receiverOffside: false,
         source: attacking ? kind : 'clearance',
-        ...(attacking ? { offsideIds: pass.aerialOffsideIds ?? [] } : {}),
+        ...(attacking ? { offsideIds: pass.aerialOffsideIds ?? [], offsideLineX: pass.offsideLineX } : {}),
       },
     }, prevHolderId);
   };
@@ -2895,7 +2905,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
   if (winner.team === passerTeam) {
     if ((pass.aerialOffsideIds ?? []).includes(winner.id)) {
       resolved(winner.id, false, 'offside');
-      return done(aerialOffsideFreeKick(s, winner, { x: winner.x, y: winner.y }));
+      return done(aerialOffsideFreeKick(s, winner, { x: winner.x, y: winner.y }, pass.offsideLineX));
     }
     const goalX = winner.attackDir === 1 ? PITCH_LENGTH : 0;
     // The winner meets the ball at the landing point.
@@ -2927,6 +2937,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
         pass: {
           fromId: w.id, toId: mate.id, toX: mate.x, toY: mate.y, kind: 'regular', t: 0, distance,
           receiverOffside: checkReceiverOffside(w, mate, s.players), intendedRunnerId: null,
+          offsideLineX: offsideLineAt(w, s.players),
         },
       });
     }
@@ -3945,6 +3956,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
             fromTeamLastTouch: passerTeam,
             intendedRunnerId: activePass.intendedRunnerId,
             receiverOffside: activePass.receiverOffside,
+            offsideLineX: activePass.offsideLineX,
           },
         },
         passCompleted: false, tackled: false, goalScored: null,
@@ -3958,7 +3970,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // The offside position was determined when the pass was played (at t=0).
     // Enforce only at the moment the receiver would touch the ball (t=1).
     if (activePass.receiverOffside) {
-      gameBus.emit('offsideCalled', { team: receiver.team, receiverId: receiver.id });
+      gameBus.emit('offsideCalled', { team: receiver.team, receiverId: receiver.id, lineX: activePass.offsideLineX });
       gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
       // Award possession to the defending team's player nearest to the receiver
       const defenders = s.players.filter(p => p.team !== receiver.team);

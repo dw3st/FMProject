@@ -453,6 +453,11 @@ export interface PassState {
    */
   receiverOffside: boolean;
   /**
+   * Offside line (x, yards) of the defending side when the ball was played — drawn by the pitch
+   * when offside is called. Absent when offside doesn't apply (set pieces, offside disabled).
+   */
+  offsideLineX?: number;
+  /**
    * Through balls only — the attacker the holder *targeted* with the cell pick.
    * This player is informational; the engine does NOT force them to receive — whoever
    * arrives first wins the loose ball (Phase 5). Null for regular passes.
@@ -506,6 +511,11 @@ interface LooseBallState {
   intendedRunnerId: number | null;
   /** Snapshot of intended runner's offside status at kick time. Enforced if the intended runner picks up. */
   receiverOffside: boolean;
+  /**
+   * Offside line (x, yards) of the defending side when the ball was played — drawn by the pitch
+   * when offside is called. Absent when offside doesn't apply (set pieces, offside disabled).
+   */
+  offsideLineX?: number;
   /** Origin of the loose ball — absent = 'through'. Only through balls feed the through-ball stats. */
   source?: LooseBallSource;
   /**

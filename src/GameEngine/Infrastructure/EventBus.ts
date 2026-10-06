@@ -131,7 +131,7 @@ export interface GameEvents {
 
   // ── Offside event ─────────────────────────────────────────────────────────
   /** Emitted when a pass completion is cancelled due to the receiver being offside. */
-  offsideCalled: { team: TeamId; receiverId: number };
+  offsideCalled: { team: TeamId; receiverId: number; lineX?: number };
 
   // ── Debug events ──────────────────────────────────────────────────────────
   /** Emitted every tick for the ball holder when debug mode is on. */
