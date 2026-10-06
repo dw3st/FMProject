@@ -95,13 +95,16 @@ function scoutFields(player: RosterPlayer, avg: number): Partial<DisplayPlayer> 
   if (!view) return {};
   const noise = view.noise;
   const r1 = (v: number) => Math.round(v * 10) / 10;
+  // Rounded for the screen, but never across the range threshold: the attribute bars (ranges from
+  // `statNoise` ≥ 0.5) and the overall range must agree — 0.46 used to show as 0.5.
+  const T = STAFF.RANGE_THRESHOLD;
   const out: Partial<DisplayPlayer> = {
     knowledge: view.knowledge,
-    statNoise: r1(noise),
+    statNoise: noise >= T ? Math.max(T, r1(noise)) : Math.min(r1(noise), T - 0.01),
     ...(view.seen ? { seen: view.seen } : {}),
     ...(attributesHidden(view.knowledge) ? { hiddenAttrs: true } : {}),
   };
-  if (noise >= STAFF.RANGE_THRESHOLD) {
+  if (noise >= T) {
     const lo = Math.max(0, avg - noise);
     const hi = Math.min(10, avg + noise);
     out.avgRange = [r1(lo), r1(hi)];
