@@ -4,6 +4,12 @@ import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline,
 import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES } from "@/GraficsEngine/pitchStyle";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import { ballHeight } from "@/GraficsEngine/ballHeight";
+import {
+  addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
+  type PitchEffect, type TrailPoint,
+} from "@/GraficsEngine/pitchEffects";
+import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
+import type { ShotState } from "@/GameEngine/types";
 import { tickState, getBallPos, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
 import { advanceSim } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
@@ -302,6 +308,8 @@ interface Props {
    * plain team-colour circle; `/test` and the lab don't pass this at all.
    */
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
+  /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
+  effectLabels?: { save: string; wide: string; offside: string };
 }
 
 export function PixiPitch({
@@ -324,6 +332,7 @@ export function PixiPitch({
   keepTickerAlive = false,
   captureRef,
   faceUrls,
+  effectLabels,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -338,6 +347,8 @@ export function PixiPitch({
   const crowdEvalConfigRef       = useRef(crowdEvalConfig);
   const crowdClickPosRef         = useRef(crowdClickPos);
   const faceUrlsRef              = useRef(faceUrls);
+  const effectLabelsRef          = useRef(effectLabels);
+  const labelsOf = () => effectLabelsRef.current ?? { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
 
@@ -353,6 +364,7 @@ export function PixiPitch({
   useEffect(() => { crowdOverlayModeRef.current      = crowdOverlayMode;      }, [crowdOverlayMode]);
   useEffect(() => { crowdEvalConfigRef.current       = crowdEvalConfig;       }, [crowdEvalConfig]);
   useEffect(() => { crowdClickPosRef.current         = crowdClickPos;         }, [crowdClickPos]);
+  useEffect(() => { effectLabelsRef.current = effectLabels; }, [effectLabels]);
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
@@ -740,6 +752,63 @@ export function PixiPitch({
       );
       ball.zIndex = 10; // always render on top of player sprites
       world.addChild(ball);
+
+      // ── Pitch effects (shot, goal, foul, card, offside) + ball trail ──
+      const effectsGfx = new Graphics();
+      effectsGfx.zIndex = 8; // above names, below the ball
+      world.addChild(effectsGfx);
+      const effectTexts = new Map<PitchEffect, Text>();
+      const effectTextStyle = new TextStyle({
+        fontSize: Math.round(markerR * 0.9),
+        fontFamily: '"Barlow Condensed", sans-serif',
+        fontWeight: '700',
+        fill: 0xffffff,
+        dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.9 },
+      });
+      const effectCtx: EffectCtx = { toPixel, scale: m.scale, markerR, netDepth: m.goalNetDepth };
+      let effectNow = 0;
+      let effects: PitchEffect[] = [];
+      let trail: TrailPoint[] = [];
+      let lastShot: ShotState | null = null;
+
+      const pushEffect = (data: Parameters<typeof addEffect>[1], text?: string) => {
+        effects = addEffect(effects, data, effectNow);
+        if (text) {
+          const t = new Text({ text, style: effectTextStyle });
+          t.anchor.set(0.5, 1);
+          t.zIndex = 9;
+          world.addChild(t);
+          effectTexts.set(effects[effects.length - 1]!, t);
+        }
+      };
+      const playerPos = (id: number) => stateRef.current.players.find((p) => p.id === id);
+
+      const unsubShotFx = gameBus.on("shotResolved", (e) => {
+        if (e.isGoal || !lastShot) return;
+        const s = lastShot;
+        const labels = labelsOf();
+        pushEffect(
+          { kind: "shot", fromX: s.fromX, fromY: s.fromY, toX: s.toX, toY: s.toY, result: e.inPosts ? "save" : "wide" },
+          e.inPosts ? labels.save : labels.wide,
+        );
+      });
+      const unsubGoalFx = gameBus.on("goalScored", (e) => {
+        const dir = stateRef.current.players.find((p) => p.team === e.team)?.attackDir ?? 1;
+        const goalX = lastShot ? lastShot.toX : dir === 1 ? PITCH_LENGTH : 0;
+        const goalY = lastShot ? lastShot.toY : PITCH_WIDTH / 2;
+        pushEffect({ kind: "goal", goalX, goalY, color: e.team === "A" ? fillA : fillB });
+      });
+      const unsubFoulFx = gameBus.on("foul", (e) => pushEffect({ kind: "foul", x: e.x, y: e.y }));
+      const unsubCardFx = gameBus.on("card", (e) => {
+        const p = playerPos(e.playerId);
+        if (!p) return;
+        pushEffect({ kind: "card", x: p.x, y: p.y, card: e.card, name: e.playerName }, e.playerName);
+      });
+      const unsubOffsideFx = gameBus.on("offsideCalled", (e) => {
+        const p = playerPos(e.receiverId);
+        if (!p) return;
+        pushEffect({ kind: "offside", lineX: e.lineX ?? null, x: p.x, y: p.y }, labelsOf().offside);
+      });
 
       // ── Crowd heatmap overlay ──
       // Added LAST so it draws on top of pitch lines, players, and debug overlays.
@@ -1274,6 +1343,32 @@ export function PixiPitch({
         ballShadow.scale.set(Math.max(BALL.SHADOW_MIN_SCALE, 1 - h * BALL.SHADOW_SHRINK_PER_YD));
         ballShadow.alpha = Math.max(BALL.SHADOW_MIN_ALPHA, BALL.SHADOW_ALPHA * (1 - h / BALL.SHADOW_FADE_YDS));
 
+        // ── Pitch effects + trail (real-time clock, frozen while paused) ──
+        effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
+        const st = stateRef.current;
+        if (st.shot) lastShot = st.shot;
+        // The trail follows the DRAWN ball: elevation in yards = h * LIFT (px = h * scale * LIFT).
+        trail = liveTrail(
+          pushTrail(
+            trail,
+            !pausedRef.current && shouldTrail(st) ? { x: ballPos.x, y: ballPos.y - h * BALL.LIFT_PX_PER_YD } : null,
+            effectNow,
+          ),
+          effectNow,
+        );
+        effects = liveEffects(effects, effectNow);
+        for (const [fx, txt] of effectTexts) {
+          if (!effects.includes(fx)) { world.removeChild(txt); txt.destroy(); effectTexts.delete(fx); }
+        }
+        effectsGfx.clear();
+        drawTrail(effectsGfx, trail, effectNow, effectCtx);
+        for (const fx of effects) {
+          drawEffect(effectsGfx, fx, effectNow, effectCtx);
+          const txt = effectTexts.get(fx);
+          const at = txt ? effectTextAnchor(fx, effectNow, effectCtx) : null;
+          if (txt && at) { txt.x = at.x; txt.y = at.y; txt.alpha = effectAlpha(fx, effectNow); }
+        }
+
         // ── Crowd heatmap overlay (drawn on top with per-cell alpha) ──
         crowdHeatmapGfx.clear();
         if (crowdOverlayEnabledRef.current) {
@@ -1459,6 +1554,13 @@ export function PixiPitch({
         unsubTactics();
         unsubTbScores();
         unsubCross();
+        unsubShotFx();
+        unsubGoalFx();
+        unsubFoulFx();
+        unsubCardFx();
+        unsubOffsideFx();
+        for (const txt of effectTexts.values()) txt.destroy();
+        effectTexts.clear();
       };
     };
 

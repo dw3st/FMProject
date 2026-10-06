@@ -655,6 +655,7 @@
     "subbedOff": "Substituído aos {{minute}}'"
   },
   "match": {
+    "effects": { "save": "DEFESA", "wide": "PRA FORA", "offside": "IMPEDIMENTO" },
     "playerEvents": {
       "goals": "Gols: {{count}}",
       "assists": "Assistências: {{count}}",

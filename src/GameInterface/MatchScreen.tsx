@@ -739,6 +739,11 @@ export function MatchScreen() {
     [teamAMeta, teamBMeta],
   );
 
+  const effectLabels = useMemo(
+    () => ({ save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside") }),
+    [t],
+  );
+
   // Face per team and roster id. The jersey wears the kit actually used on the pitch (an away
   // side in its change colours gets a matching shirt), then the club's other colours.
   const faceUrls = useMemo(() => {
@@ -997,6 +1002,7 @@ export function MatchScreen() {
                   canvasWidth={pitchSize.w}
                   canvasHeight={pitchSize.h}
                   paused={paused}
+                  effectLabels={effectLabels}
                   debugMode={debug}
                   initialState={gameState}
                   gameSpeed={gameSpeed}
