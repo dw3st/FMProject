@@ -407,7 +407,7 @@ function fillSide(
 }
 
 /**
- * In-match injuries for one side, no substitutions (`docs/superpowers/plans/2026-09-28-
+ * In-match injuries for one side, no substitutions (`docs/superpowers/archive/2026-09-28-
  * injuries.md` Task 3): every XI player is treated as playing the full `minutesTotal` (quickSim
  * has no bench swap), so this is the only place an injury can remove a player from a quickSim
  * match — it never actually does (no lineup change), it just records the event and severity for

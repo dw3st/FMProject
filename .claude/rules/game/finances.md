@@ -1,7 +1,7 @@
 # Finanças do clube (salários, extrato, bilheteria, premiação)
 
 Spec: `docs/superpowers/specs/2026-09-27-prizes-and-finances-design.md`. Plano:
-`docs/superpowers/plans/2026-09-27-prizes-and-finances.md`. Ver também
+`docs/superpowers/archive/2026-09-27-prizes-and-finances.md`. Ver também
 `.claude/rules/AI-clubs/finance.md` (orçamento e mercado da IA, que consome a mesma curva de
 salário e as mesmas verbas de prêmio).
 

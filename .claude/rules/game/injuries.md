@@ -1,7 +1,7 @@
 # Lesões
 
 Spec: `docs/superpowers/specs/2026-09-28-injuries-design.md`. Plano:
-`docs/superpowers/plans/2026-09-28-injuries.md`. Etapa 5 do `docs/ROADMAP.md`, versão **1.5**.
+`docs/superpowers/archive/2026-09-28-injuries.md`. Etapa 5 do `docs/ROADMAP.md`, versão **1.5**.
 
 ## Regra
 

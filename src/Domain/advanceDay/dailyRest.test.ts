@@ -224,7 +224,7 @@ describe("generateRestDays", () => {
   });
 });
 
-// ── injuries (Task 3, docs/superpowers/plans/2026-09-28-injuries.md) ───────────
+// ── injuries (Task 3, docs/superpowers/archive/2026-09-28-injuries.md) ───────────
 
 describe("buildRestEvent — injuries", () => {
   test("clears a healed injury (returnDate reached) and reports it in healedPlayerIds", () => {

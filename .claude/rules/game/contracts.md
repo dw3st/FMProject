@@ -1,6 +1,6 @@
 # Contratos, jogadores livres e salários fixos
 
-Spec: `docs/superpowers/specs/2026-09-30-contracts-design.md`. Planos: `2026-09-30-contracts-1.md` (modelo,
+Spec: `docs/superpowers/specs/2026-09-30-contracts-design.md`. Planos (`docs/superpowers/archive/`): `2026-09-30-contracts-1.md` (modelo,
 expiração, renovação) e `2026-09-30-contracts-2.md` (livres, elencos estáveis, telas). Etapa 7 do
 `docs/ROADMAP.md`, versão **1.7**. O declínio dos craques (#6) é a Etapa 4 do plano 2, fora deste arquivo.
 

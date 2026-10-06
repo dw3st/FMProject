@@ -41,7 +41,7 @@ interface AppliedSuspension {
 
 /**
  * An in-match injury after `player.injury` has been written (`returnDate` computed) — Task 3
- * (`docs/superpowers/plans/2026-09-28-injuries.md`). Callers (e.g. `advanceDay.ts`) use this to
+ * (`docs/superpowers/archive/2026-09-28-injuries.md`). Callers (e.g. `advanceDay.ts`) use this to
  * build the "injured" inbox message for the human club without recomputing the return date.
  */
 interface AppliedInjury extends MatchInjury {
