@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { DetailedRole, PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import { depthStatus, depthTarget, squadDepth } from "@/Domain/squad/depth";
+import { customToFormation, slotForZone } from "@/Domain/formation/zones";
 
 const BASE: PlayerStatsRecord = {
   passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5,
@@ -65,17 +66,49 @@ describe("squadDepth", () => {
     expect(d.groups.centralMid.status).toBe("short");
   });
 
-  test("a long injury does not count, a short one and a ban do", () => {
+  test("a long injury does not count, a short one does", () => {
     const longOut = gk({ injury: { severity: "severe", returnDate: "2027-05-01" } });
     const shortOut = gk({ injury: { severity: "light", returnDate: "2027-03-04" } });
-    const banned = gk({ suspension: { matches: 1 } });
-    const d = squadDepth([longOut, shortOut, banned], DATE, F433);
-    expect(d.groups.gk.supply).toBe(2);
+    const d = squadDepth([longOut, shortOut], DATE, F433);
+    expect(d.groups.gk.supply).toBe(1);
     const byId = new Map(d.cells.GK.players.map((p) => [p.id, p]));
     expect(byId.get(longOut.id)!.longInjury).toBe(true);
     expect(byId.get(shortOut.id)!.unavailable).toBe("injured");
     expect(byId.get(shortOut.id)!.daysOut).toBe(3);
-    expect(byId.get(banned.id)!.unavailable).toBe("suspended");
+    expect(byId.get(shortOut.id)!.longInjury).toBe(false);
+  });
+
+  test("a banned (not injured) player still counts", () => {
+    const banned = gk({ suspension: { matches: 2 } });
+    const d = squadDepth([banned, gk()], DATE, F433);
+    expect(d.groups.gk.supply).toBe(2);
+    expect(d.groups.gk.status).toBe("ok");
+    const row = d.cells.GK.players.find((p) => p.id === banned.id)!;
+    expect(row.unavailable).toBe("suspended");
+    expect(row.longInjury).toBe(false);
+    expect(row.daysOut).toBeUndefined();
+  });
+
+  test("natural LB who adapts to LWB counts once on the left", () => {
+    const lb = mk("Defender", "LB");
+    const d = squadDepth([lb], DATE, F433);
+    expect(d.cells.LB.players.map((p) => [p.id, p.natural])).toEqual([[lb.id, true]]);
+    expect(d.cells.LWB.players.map((p) => [p.id, p.natural])).toEqual([[lb.id, false]]);
+    expect(d.groups.leftBack.supply).toBe(1);
+  });
+
+  test("free formation: back three with wing-backs", () => {
+    const zones: [number, number][] = [[0, 2], [1, 1], [1, 2], [1, 3], [2, 0], [2, 4], [2, 1], [2, 3], [4, 2], [5, 1], [5, 3]];
+    const formation = customToFormation({ slots: zones.map(([r, c]) => slotForZone(r, c)!) });
+    const roles = formation.attacking.map((s) => s.role);
+    const cbs = [mk("Defender", "CB"), mk("Defender", "CB"), mk("Defender", "CB"), mk("Defender", "CB")];
+    const d = squadDepth([...cbs, mk("Defender", "LWB")], DATE, roles);
+    expect(d.groups.cb).toMatchObject({ slots: 3, target: 5, status: "thin" });
+    expect(d.groups.leftBack).toMatchObject({ slots: 1, target: 2 });
+    expect(d.cells.LWB.inFormation).toBe(true);
+    expect(d.cells.LB.inFormation).toBe(false);
+    expect(d.groups.leftWide.status).toBe("unused");
+    expect(d.groups.st.slots).toBe(2);
   });
 
   test("a position the formation does not use and nobody plays is hidden", () => {
