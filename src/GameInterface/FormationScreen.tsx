@@ -31,7 +31,9 @@ import {
   effectiveAxes,
   hasAxesOverride,
 } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction } from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
+import { applyLineupPreset, buildLineupPreset } from "@/Domain/tactics/lineupPresets";
+import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { getMainRole } from "@/Domain/roles";
 import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -110,6 +112,11 @@ export function FormationScreen() {
   const [slotInstructions, setSlotInstructions] = useState<(SlotInstruction | null)[]>([]);
   const [instructionError, setInstructionError] = useState(false);
   const instructionShort = useInstructionShort();
+  /** Saved lineups (#84). */
+  const [lineupPresets, setLineupPresets] = useState<LineupPresets>({});
+  const [presetBusy, setPresetBusy] = useState(false);
+  const [presetError, setPresetError] = useState(false);
+  const [presetSwaps, setPresetSwaps] = useState<{ key: LineupPresetKey; lines: PresetSwapLine[] } | null>(null);
 
   const formationId = session?.formation ?? DEFAULT_FORMATION;
 
@@ -153,6 +160,7 @@ export function FormationScreen() {
         setCustomFormation(t.customFormation ?? null);
         setAxesOverride(t.axesOverride);
         setAssistantRotation(t.assistantRotation === true);
+        setLineupPresets(t.lineupPresets ?? {});
         mergeSession({
           formation: t.formation,
           tactical_style: t.tactical_style,
@@ -193,6 +201,79 @@ export function FormationScreen() {
     } catch {
       setSlotInstructions(prev);
       setInstructionError(true);
+    }
+  }
+
+  // ── Saved lineups (#84) ─────────────────────────────────────────────────────
+
+  async function putPresets(next: LineupPresets) {
+    if (!session) return;
+    setPresetBusy(true);
+    setPresetError(false);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lineupPresets: next }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const saved = (await res.json()) as TacticsSave;
+      setLineupPresets(saved.lineupPresets ?? {});
+    } catch {
+      setPresetError(true);
+    } finally {
+      setPresetBusy(false);
+    }
+  }
+
+  function handleSavePreset(key: LineupPresetKey) {
+    if (editing) return;
+    const preset = buildLineupPreset(
+      { formation: formationId, customFormation, lineup, slotInstructions },
+      currentDate,
+    );
+    void putPresets({ ...lineupPresets, [key]: preset });
+  }
+
+  function handleDeletePreset(key: LineupPresetKey) {
+    const next: LineupPresets = { ...lineupPresets };
+    delete next[key];
+    void putPresets(next);
+  }
+
+  /** Uses a preset: formation, XI and instructions are saved at once; unavailable starters swapped. */
+  async function handleUsePreset(key: LineupPresetKey) {
+    const preset = lineupPresets[key];
+    if (!session || !squad || !preset || editing) return;
+    const applied = applyLineupPreset(preset, squad.players, currentDate);
+    setPresetBusy(true);
+    setPresetError(false);
+    try {
+      const updated = await saveFormationAndTactics(session.saveId, {
+        formation: applied.formation,
+        tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        lineup: applied.lineup,
+        slotInstructions: applied.slotInstructions,
+        ...(applied.customFormation ? { customFormation: applied.customFormation } : {}),
+      });
+      if (applied.customFormation) setCustomFormation(applied.customFormation);
+      setSavedLineup(applied.lineup);
+      setSlotInstructions(applied.slotInstructions);
+      setSelectedSlotIdx(null);
+      mergeSession(updated);
+      const nameOf = (id: string) => squad.players.find((p) => p.id === id)?.name;
+      setPresetSwaps({
+        key,
+        lines: applied.replaced.map((r) => ({
+          outName: nameOf(r.out) ?? t("formations.presets.unknownPlayer"),
+          inName: nameOf(r.in) ?? "—",
+          reason: r.reason,
+        })),
+      });
+    } catch {
+      setPresetError(true);
+    } finally {
+      setPresetBusy(false);
     }
   }
 
@@ -797,6 +878,17 @@ export function FormationScreen() {
               </div>
             </div>
           </div>
+
+          <LineupPresetsPanel
+            presets={lineupPresets}
+            busy={presetBusy}
+            disabled={editing || !squad}
+            swaps={presetSwaps}
+            error={presetError}
+            onSave={handleSavePreset}
+            onUse={handleUsePreset}
+            onDelete={handleDeletePreset}
+          />
 
           {/* Assistant rotation */}
           <label className="card-arcade rounded-md p-5 flex items-center justify-between gap-4 cursor-pointer">

@@ -514,6 +514,30 @@
     }
   },
   "formations": {
+    "presets": {
+      "unknownPlayer": "Um jogador",
+      "title": "Escalações salvas",
+      "hint": "Guarde até três escalações (formação, titulares e instruções) e troque entre elas com um clique.",
+      "empty": "Vazio",
+      "starters_one": "{{count}} titular",
+      "starters_other": "{{count}} titulares",
+      "savedOn": "Salva em {{date}}",
+      "use": "Usar",
+      "save": "Salvar atual",
+      "overwrite": "Sobrescrever",
+      "delete": "Apagar escalação {{key}}",
+      "confirm": "Confirmar",
+      "confirmOverwrite": "Substituir a escalação {{key}}?",
+      "confirmDelete": "Apagar a escalação {{key}}?",
+      "error": "Não foi possível salvar. Tente de novo.",
+      "applied": "Escalação {{key}} em uso.",
+      "appliedWithSwaps": "Escalação {{key}} em uso, com trocas:",
+      "swap": {
+        "injured": "{{out}} está lesionado: entra {{in}}",
+        "suspended": "{{out}} está suspenso: entra {{in}}",
+        "left": "{{out}} saiu do elenco: entra {{in}}"
+      }
+    },
     "custom": "Personalizada",
     "editor": {
       "edit": "Editar formação",
