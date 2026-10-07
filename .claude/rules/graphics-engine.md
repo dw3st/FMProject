@@ -33,3 +33,4 @@ alwaysApply: false
 - `renderInterp.ts` — drawing between sim steps: players and ball are drawn at `lerp(prev, cur, carry / step)`; the engine never sees these positions
 - `ballSpin.ts` — pure seam-spin angle of the ball (distance rolled / radius; none paused or on a jump)
 - `GameInterface/uiStateThrottle.ts` — throttles React state echoes of the match so a fast simulation does not re-render every step
+- `pitchMirror.ts` — `mirrorX`: the live match draws the pitch mirrored on x when the user (engine team A) plays away (#98, `PixiPitch` `mirror` prop), so the home side attacks the way it is listed. Drawing only: `toPixel` and the click inverse go through it; nothing derived from yards may assume "x = 0 is drawn on the left" (the goal-net bulge reads the drawn side). The `GameState` never changes
