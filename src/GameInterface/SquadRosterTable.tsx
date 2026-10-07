@@ -22,7 +22,7 @@ import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
-type RosterRow = DisplayPlayer & { morale: number };
+type RosterRow = DisplayPlayer & { morale: number; flagCode?: string };
 
 export function SquadRosterTable({
   squad,
@@ -67,6 +67,7 @@ export function SquadRosterTable({
       leagueSlug,
       clubSlug,
       morale: moraleOf(p),
+      flagCode: nationalityFlagCode(p.nationality),
     }));
   }, [squad, leagueSlug, clubSlug, currentDate]);
   const players = useMemo(
@@ -169,9 +170,9 @@ export function SquadRosterTable({
               {positionLabel(t, player.natural, player.pos)}
             </div>
             <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
-              {nationalityFlagCode(player.nationality) && (
-                <span title={player.nationality} aria-label={player.nationality} role="img" className="mr-2 inline-flex align-middle">
-                  <Flag code={nationalityFlagCode(player.nationality)!} />
+              {player.flagCode && (
+                <span title={player.ownNationality} aria-label={player.ownNationality} role="img" className="mr-2 inline-flex align-middle">
+                  <Flag code={player.flagCode} />
                 </span>
               )}
               <a

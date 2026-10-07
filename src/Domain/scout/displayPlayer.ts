@@ -64,6 +64,8 @@ export interface DisplayPlayer {
   valueMillions: number;
   /** Nationality label for lists / filters; may be inferred from club country. */
   nationality: string;
+  /** The player's own nationality only (no club-country fallback); "" when unknown. */
+  ownNationality?: string;
   /**
    * Scout rows of players outside the user's own squad: the overall shown as a range when the
    * chief scout's uncertainty is large (`seenOverallRange`, `src/Domain/scouting/seen.ts`). Absent = exact.
@@ -169,6 +171,7 @@ export function toDisplayPlayer(
     value: domain.priceLabel,
     valueMillions: domain.valueMillions,
     nationality: nat,
+    ownNationality: (player.nationality && String(player.nationality).trim()) || "",
     goals: log?.goals ?? 0,
     assists: log?.assists ?? 0,
     avgRating: log ? Math.round((log.avgRating ?? 0) * 10) / 10 : 0,
