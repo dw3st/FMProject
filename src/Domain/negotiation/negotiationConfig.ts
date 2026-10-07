@@ -58,6 +58,10 @@ export const NEGOTIATION = {
     /** r < 1: the need's rating band widens by BAND_PER_DISCOUNT × (1 − r), at most BAND_MAX_EXTRA. */
     BAND_PER_DISCOUNT: 2.5,
     BAND_MAX_EXTRA: 0.5,
+    /** r < 1: a club bids only if it can pay at least DISCOUNT_AFFORD × the asking price. */
+    DISCOUNT_AFFORD: 0.9,
+    /** Lowest asking price: MIN_RATIO × the value (and never below €0,1M). */
+    MIN_RATIO: 0.3,
     /** r < 1: clubs tried in turn until one can bid (budget, wage room); 1 = the plain listing. */
     DISCOUNT_TRIES: 2,
     /** r < 1: opening fee = asking × (DISCOUNT_FEE_MIN + rng × DISCOUNT_FEE_SPREAD). */

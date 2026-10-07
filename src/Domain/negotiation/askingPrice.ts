@@ -10,6 +10,7 @@ import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 const A = NEGOTIATION.ASKING;
+const MIN_PRICE = 100_000;
 
 /** Asking / value; 1 without a price or a value. */
 export function askingRatio(asking: number | undefined, value: number): number {
@@ -45,17 +46,31 @@ export function askingStep(price: number): number {
   return price < 10_000_000 ? 100_000 : 1_000_000;
 }
 
-/** Validates and rounds a raw asking price: null when invalid (not a finite number > 0 or too big). */
-export function parseAskingPrice(raw: unknown): number | null {
+/** Lowest asking price for a player of `value`: MIN_RATIO × value, never below €0,1M. */
+export function askingFloor(value: number): number {
+  return Math.max(MIN_PRICE, roundFeeUp(Math.max(0, value) * A.MIN_RATIO));
+}
+
+/** The default asking price: his value (at least €0,1M for a player valued at 0). */
+export function defaultAskingPrice(value: number): number {
+  return Math.max(MIN_PRICE, value);
+}
+
+/**
+ * Validates and rounds a raw asking price: null when invalid (not a finite number, above
+ * MAX_PRICE, or below the floor for `value`; without `value`, only > 0).
+ */
+export function parseAskingPrice(raw: unknown, value?: number): number | null {
   if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0 || raw > A.MAX_PRICE) return null;
-  return roundFeeUp(raw);
+  const price = roundFeeUp(raw);
+  return value !== undefined && price < askingFloor(value) ? null : price;
 }
 
 /** One step up or down from `price`, on the field's grid; never below the smallest step. */
-export function stepAskingPrice(price: number, dir: 1 | -1): number {
+export function stepAskingPrice(price: number, dir: 1 | -1, floor = MIN_PRICE): number {
   if (dir > 0) return roundFeeUp(price + askingStep(price));
   const down = roundFeeDown(price - askingStep(Math.max(0, price - 1)));
-  return Math.max(100_000, down);
+  return Math.max(floor, MIN_PRICE, down);
 }
 
 /** Market value of a player, EUR — the reference of the asking price (same as the AI's fair price). */

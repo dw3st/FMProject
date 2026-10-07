@@ -39,13 +39,11 @@ export function buildAiTransferBid(args: {
   // A very ambitious player turns down a much smaller club (`personality.md`).
   if (args.seller && refusesSmallerClub(player, tierStepsDown(args.seller, buyer))) return null;
   const value = new Player(playerOverallRating(player), player.age).price;
-  // Asking price (#88): below the value a club never needs more room than for a plain listing (nor
-  // more than close to the asking price); above it, it must afford at least the value.
+  // Asking price (#88): below the value a club must afford close to the asking price (the bid sits
+  // near it); above it, at least the value. Without a price: the plain listing.
   const r = askingRatio(args.askingPrice, value);
   const ref = r < 1 ? args.askingPrice! : value;
-  const minAfford = r < 1
-    ? Math.min(value * B.MIN_MAX_RATIO, ref * NEGOTIATION.ASKING.DISCOUNT_FEE_MIN)
-    : r > 1 ? value : value * B.MIN_MAX_RATIO;
+  const minAfford = r < 1 ? ref * NEGOTIATION.ASKING.DISCOUNT_AFFORD : r > 1 ? value : value * B.MIN_MAX_RATIO;
   const cap = priceCapForTier(transferBudgetTierOf(buyer));
   const maxFee = roundFeeDown(Math.min(aiTransferBudgetOf(buyer), cap ?? Infinity, value * B.MAX_RATIO));
   if (maxFee <= 0 || maxFee < minAfford) return null;
@@ -63,7 +61,7 @@ export function buildAiTransferBid(args: {
   if (args.seller && player.moraleLog?.transferRequest) {
     const lowTierFee = roundFeeDown(Math.max(value * B.MIN_MAX_RATIO, feeForSaleScore(saleContext(player, args.seller, 1, { humanSeller: true }), ACCEPT_SCORE)));
     opening = Math.min(opening, roundFeeDown(lowTierFee / mult));
-    ceiling = Math.min(maxFee, Math.max(opening, lowTierFee));
+    ceiling = Math.min(ceiling, Math.max(opening, lowTierFee));
   }
   if (opening <= 0) return null;
   return {

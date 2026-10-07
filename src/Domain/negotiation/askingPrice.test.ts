@@ -4,9 +4,10 @@ import type { SellCandidate, SquadMarketProfile } from "@/types/transferMarketTy
 import { Player } from "@/Domain/Player";
 import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import { mulberry32 } from "@/Domain/rng";
+import { respondToHumanCounter, sellOnValueFraction } from "@/Domain/negotiation/negotiation";
 import { buildAiTransferBid, generateBidsForHuman } from "@/Domain/negotiation/bids";
 import {
-  askingBand, askingBandExtra, askingFreqMult, askingOpening, askingRatio, askingStep, parseAskingPrice, stepAskingPrice,
+  askingBand, askingBandExtra, askingFloor, defaultAskingPrice, askingFreqMult, askingOpening, askingRatio, askingStep, parseAskingPrice, stepAskingPrice,
 } from "@/Domain/negotiation/askingPrice";
 
 function stats(v: number): RosterPlayer["stats"] {
@@ -149,5 +150,56 @@ describe("asking price on AI bids", () => {
     const plain = count(undefined);
     expect(count(Math.round(value * 1.3))).toBeLessThan(plain * 0.8);
     expect(count(Math.round(value * 0.8))).toBeGreaterThan(plain);
+  });
+});
+
+describe("asking price: floor, transfer request, counters", () => {
+  test("floor is 0.3 x value (at least 0.1M); a 0 value defaults to 0.1M", () => {
+    expect(askingFloor(20_000_000)).toBe(6_000_000);
+    expect(askingFloor(0)).toBe(100_000);
+    expect(defaultAskingPrice(0)).toBe(100_000);
+    expect(defaultAskingPrice(7_000_000)).toBe(7_000_000);
+    expect(parseAskingPrice(5_900_000, 20_000_000)).toBeNull();
+    expect(parseAskingPrice(6_000_000, 20_000_000)).toBe(6_000_000);
+    expect(parseAskingPrice(100_000, 0)).toBe(100_000);
+  });
+  test("transfer request: price = value gives exactly the same bids as no price", () => {
+    const w = world(0.8);
+    const asked = { ...w.p, moraleLog: { minutes: [], trend: [], transferRequest: "2027-03-01" } };
+    const human = { ...w.human, players: w.human.players.map((q) => (q.id === asked.id ? asked : q)) };
+    const value = valueOf(asked);
+    const ww = { ...w, human, p: asked };
+    for (let seed = 1; seed <= 30; seed++) {
+      const plain = bidsOn(ww, [{ playerId: asked.id, priority: 1, requested: true }], seed);
+      const priced = bidsOn(ww, [{ playerId: asked.id, priority: 1, requested: true, askingPrice: value }], seed);
+      expect(priced).toEqual(plain);
+    }
+  });
+  test("transfer request with an asking price never caps above the asking price", () => {
+    const w = world(-0.2);
+    const asked = { ...w.p, moraleLog: { minutes: [], trend: [], transferRequest: "2027-03-01" } };
+    const value = valueOf(asked);
+    for (const ratio of [0.5, 0.8, 1.2]) {
+      const asking = Math.round(value * ratio);
+      for (let seed = 1; seed <= 20; seed++) {
+        const bid = buildAiTransferBid({ id: "x", player: asked, buyer: w.squads.get("a")!, date: "2027-03-01", rng: mulberry32(seed), seller: w.human, askingPrice: asking });
+        if (!bid) continue;
+        expect(bid.maxFee!).toBeLessThanOrEqual(asking);
+        expect(bid.fee).toBeLessThanOrEqual(bid.maxFee!);
+      }
+    }
+  });
+  test("a counter with a sell-on clause stays within the asking price", () => {
+    const w = world(-0.2);
+    const value = valueOf(w.p);
+    for (const ratio of [0.8, 1.2]) {
+      const asking = Math.round(value * ratio);
+      const bid = buildAiTransferBid({ id: "x", player: w.p, buyer: w.squads.get("a")!, date: "2027-03-01", rng: mulberry32(3), askingPrice: asking })!;
+      const answer = respondToHumanCounter(bid, asking * 2, 20, w.p.age);
+      expect(answer.kind).toBe("counter");
+      if (answer.kind !== "counter") continue;
+      expect(answer.bid.fee).toBeLessThanOrEqual(asking / (1 + sellOnValueFraction(20, w.p.age)));
+      expect(respondToHumanCounter(bid, answer.bid.fee, 20, w.p.age).kind).toBe("accept");
+    }
   });
 });
