@@ -25,7 +25,8 @@ bun scripts/importOpenFootball.ts   # mundo base a partir de data_process/native
 rm -rf src/Data/squads src/Data/logos/espn          # ver "Sincronizar sem lixo" abaixo
 cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (ele confere isso)
 bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
-bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) — ver abaixo
+bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de mercado (derived.json) — ver abaixo
+bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -191,6 +192,28 @@ zero (baixos, sem a recalibração), e o craque de verdade só some do mundo.
   mundo, posição fora da linha, campo desconhecido. Idempotente; grava só os elencos alterados, no formato
   original; imprime antes → depois (posição e nota).
 - Exige `src/Data/roles.json` igual a `src/example_data/roles.json` (como os importadores).
+
+## Recalibração pelo valor de mercado
+
+Spec: `docs/superpowers/specs/2026-10-07-market-value-recalibration-design.md`. Os elencos do mundo são casados com
+os do Transfermarkt (API local, `scripts/fetchTransfermarkt.ts`, cache em `data_process/transfermarkt/cache/`) e o
+valor de mercado reordena as notas dentro de cada liga.
+
+- `bun scripts/buildMarketDerived.ts [--report <arquivo>]` lê o cache, `leagueMap.json`, os overrides e
+  `src/example_data/squads` **logo depois do `importEspn`** (antes de qualquer recalibração) e grava
+  `data_process/transfermarkt/derived.json`: por jogador `targetOverall`, `naturalPosition`, `birthDate`, `heightCm`
+  e `nationality` (só quando falta), mais o resumo por liga. Uma liga só é reordenada com cobertura ≥ 40% **e** pelo
+  menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela a
+  multiset de notas da liga não muda, só quem recebe qual.
+- `bun scripts/applyMarketRecalibration.ts` aplica o `derived.json` (lógica pura em `scripts/transfermarkt/apply.ts`,
+  com teste): grava `naturalPosition` (e troca a linha de `positions[0]` quando a do Transfermarkt é outra), reescala
+  os atributos até a nota-alvo com o mesmo `rescaleToOverall` das correções manuais, copia nascimento e altura e
+  preenche a nacionalidade que falta (nunca troca uma existente). Idempotente; grava só os elencos alterados; id do
+  `derived.json` fora do mundo é só aviso.
+- Regenerar do zero: `fetchTransfermarkt` (rede, horas; retoma do cache) → `buildMarketDerived` sobre o mundo saído do
+  `importEspn` → a cadeia de "Regenerar" acima.
+- **Nunca entram no repositório:** o cache cru, nem nenhum valor de mercado (o `derived.json` só tem nota, posição,
+  datas, altura e nacionalidade).
 
 ## Atletas duplicados
 

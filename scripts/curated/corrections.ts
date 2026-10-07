@@ -114,19 +114,27 @@ export function applyCorrection(player: RosterPlayer, correction: PlayerCorrecti
 
   if (correction.overall !== undefined) {
     const target = correction.overall;
-    if (Math.abs(computeOverallAvg(next) - target) > OVERALL_TOLERANCE) {
-      const role = fixedNaturalRole(next) ?? bestSpecificRole(next.stats, next.positions[0] ?? "CM");
-      const weights = roles[role]?.attrWeights ?? roles.CM?.attrWeights ?? {};
-      const base = next;
-      const overallOf = (s: PlayerStatsRecord) => computeOverallAvg({ ...base, stats: s });
-      next = { ...next, stats: shiftToOverall(player.id, next.stats, weights, target, overallOf) };
-    }
+    next = rescaleToOverall(next, target, roles);
   }
 
   const changed = JSON.stringify(withoutCache(next)) !== JSON.stringify(withoutCache(player));
   if (changed) delete next.overallAvg;
   else next = player;
   return { player: next, changed, before, after: { position: preferredRole(next), overall: computeOverallAvg(next) } };
+}
+
+/**
+ * Rescales the attributes so the overall hits `target`: the recalibration's single shift (`shiftToOverall`) on the
+ * attributes weighted by the natural position (fixed, else the best of the line). Returns the same player when the
+ * overall is already within `OVERALL_TOLERANCE` (idempotent). Shared by the manual corrections and the market
+ * recalibration (`scripts/transfermarkt/apply.ts`).
+ */
+export function rescaleToOverall(player: RosterPlayer, target: number, roles: AttrWeights): RosterPlayer {
+  if (Math.abs(computeOverallAvg(player) - target) <= OVERALL_TOLERANCE) return player;
+  const role = fixedNaturalRole(player) ?? bestSpecificRole(player.stats, player.positions[0] ?? "CM");
+  const weights = roles[role]?.attrWeights ?? roles.CM?.attrWeights ?? {};
+  const overallOf = (s: PlayerStatsRecord) => computeOverallAvg({ ...player, stats: s });
+  return { ...player, stats: shiftToOverall(player.id, player.stats, weights, target, overallOf) };
 }
 
 function withoutCache(p: RosterPlayer): RosterPlayer {
