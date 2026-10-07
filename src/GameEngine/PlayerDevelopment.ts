@@ -21,6 +21,27 @@ const BASE_DP    = 10;   // DP earned per match at 1.0 multiplier
 const BASE_COST  = 10;   // base DP required for a stat level-up
 const SCALE      = 0.10; // how steeply cost grows with value
 
+/*
+ * Pace calibration for the 0.1 steps (scripts/development-pace.ts, "realista": progress reset and age +1 at every
+ * rollover, as in the game). With whole-point steps and the progress reset at each rollover, a stat only moved in
+ * a season when its DP passed half a point, so most of the growth and of the veteran decline never showed. The
+ * 0.1 steps have no such dead zone, so the same DP moved ~2x faster up and ~3x faster down. These scales bring the
+ * 3-season average change back to within ±10% of the old pace at every starting age (18, 21, 24, 27, 31, 33).
+ */
+
+/** Scale on the growth DP (match and training). */
+export const GROWTH_DP_SCALE = 0.43;
+
+/**
+ * Scale on the age decay per match, by age band. 28–29 decays more than before because the old dead zone also
+ * hid that age's small growth; 30–34 much less (a season's decline there stayed under half a point); 35+ a bit less.
+ */
+export function decayDpScale(age: number): number {
+  if (age <= 29) return 1.5;
+  if (age <= 34) return 0.35;
+  return 0.7;
+}
+
 /** Training-only: per-intensity fraction of BASE_DP earned per session. */
 const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
   heavy:  0.25, // spec: 25% of a rating-6 match
@@ -124,7 +145,8 @@ export function applyDevelopment(
   decayMult = 1,
 ): DevelopmentResult {
   const earnedDP = BASE_DP * performanceMultiplier(matchRating) * dpMult;
-  const netDP    = earnedDP * ageGrowthMultiplier(player.age) - ageDecayPerMatch(player.age) * decayMult;
+  const netDP    = earnedDP * ageGrowthMultiplier(player.age) * GROWTH_DP_SCALE
+    - ageDecayPerMatch(player.age) * decayDpScale(player.age) * decayMult;
   return distributeAndResolve(player, netDP, weights);
 }
 
@@ -165,7 +187,7 @@ export function applyTrainingDevelopment(
   }
 
   const earnedDP = BASE_DP * TRAINING_DP_RATIO[intensity] * ageFactor * dpMult;
-  const netDP    = earnedDP * ageGrowthMultiplier(player.age);
+  const netDP    = earnedDP * ageGrowthMultiplier(player.age) * GROWTH_DP_SCALE;
   const result   = distributeAndResolve(player, netDP, weights);
   return { ...result, dpGained: netDP };
 }
