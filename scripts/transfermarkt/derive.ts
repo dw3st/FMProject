@@ -1,6 +1,6 @@
 import type { MainRole } from "@/Domain/roles";
 import type { DetailedRole } from "@/types/playerTypes";
-import { fitEffects, levelOf, type Effects, type ValuedPlayer } from "@/../scripts/transfermarkt/level";
+import { fitConditionalEffects, fitEffects, levelOf, type Effects, type RatedPlayer } from "@/../scripts/transfermarkt/level";
 import { COVERAGE_MIN, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
 
 /** What the Transfermarkt says about one matched player (already parsed; nationality already in world spelling). */
@@ -53,11 +53,16 @@ const round4 = (x: number) => Math.round(x * 1e4) / 1e4;
  * `COVERAGE_MIN` the valued players are reordered by level and unmatched youths capped. Positions, birth
  * date, height and nationality are taken from every match regardless of coverage.
  */
-export function buildDerived(players: LeaguePlayer[], coverageMin = COVERAGE_MIN): DerivedResult {
-  const valued: ValuedPlayer[] = players
+export function buildDerived(
+  players: LeaguePlayer[],
+  coverageMin = COVERAGE_MIN,
+  /** "conditional" (default): premium at equal overall; "median": the old per-band medians, for comparison. */
+  effectsMode: "conditional" | "median" = "conditional",
+): DerivedResult {
+  const valued: RatedPlayer[] = players
     .filter((p) => p.match?.value != null && p.match.value > 0)
-    .map((p) => ({ id: p.id, league: p.league, age: p.age, line: p.line, value: p.match!.value! }));
-  const effects = fitEffects(valued);
+    .map((p) => ({ id: p.id, league: p.league, age: p.age, line: p.line, value: p.match!.value!, overall: p.overall }));
+  const effects = effectsMode === "median" ? fitEffects(valued) : fitConditionalEffects(valued);
   const level = new Map(valued.map((v) => [v.id, levelOf(v, effects)]));
 
   const byLeague = new Map<string, LeaguePlayer[]>();

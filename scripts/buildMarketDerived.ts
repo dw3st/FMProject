@@ -29,6 +29,8 @@ const CACHE = join(TM, "cache");
 
 const args = process.argv.slice(2);
 const reportArg = args.includes("--report") ? args[args.indexOf("--report") + 1] : undefined;
+/** --median-effects: the old per-band medians, only to compare reports; never for the committed derived.json. */
+const effectsMode = args.includes("--median-effects") ? "median" : "conditional";
 
 {
   const runtimeRoles = join(ROOT, "src", "Data", "roles.json");
@@ -162,8 +164,8 @@ for (const [league, squads] of squadsByLeague) {
   }
 }
 
-const derived = buildDerived(all);
-writeFileSync(join(TM, "derived.json"), stableStringify({ leagues: derived.leagues, players: derived.players }));
+const derived = buildDerived(all, COVERAGE_MIN, effectsMode);
+if (effectsMode === "conditional") writeFileSync(join(TM, "derived.json"), stableStringify({ leagues: derived.leagues, players: derived.players }));
 
 // ── 3. Report ──
 const naturalBefore = (p: RosterPlayer): DetailedRole => fixedNaturalRole(p) ?? preferredRole(p);
@@ -173,6 +175,7 @@ const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 log(`Recalibração pelo valor de mercado — ${new Date().toISOString().slice(0, 10)}`);
 log(`Mínimo de cobertura para reordenar: ${pct(COVERAGE_MIN)}`);
+log(`Efeitos de idade/linha: ${effectsMode === "median" ? "medianas por faixa (antigo, só comparação)" : "condicionados à nota atual"}`);
 log();
 log("== Cobertura por liga (valorados ÷ jogadores) ==");
 for (const [slug, s] of Object.entries(derived.leagues)) {
@@ -207,6 +210,7 @@ for (const [slug, s] of Object.entries(derived.leagues))
 
 log();
 log("== Efeitos estimados sobre log(valor) (idade relativa aos 27, linha relativa ao meio) ==");
+if ("slope" in derived.effects) log(`inclinação da nota: ${(derived.effects as { slope: number }).slope.toFixed(2)} por ponto de nota`);
 log(`linha: ${Object.entries(derived.effects.line).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(", ")}`);
 log(`idade: ${[...derived.effects.age].sort((a, b) => a[0] - b[0]).map(([a, v]) => `${a} ${v.toFixed(2)}`).join(", ")}`);
 
@@ -266,6 +270,32 @@ for (const j of jumps) {
   log(`${(j.d >= 0 ? "+" : "") + j.d.toFixed(2)} ${before.get(j.id)!.toFixed(2)} → ${after.get(j.id)!.toFixed(2)}  ${p.name} (${p.age}) / ${t ? `${t.name} (${t.age ?? "?"})` : "sem par"}  ${squad.name} [${league}] ${j.id}`);
 }
 
+log();
+log("== Mudanças de mais de 1 ponto por idade ==");
+for (const [label, test] of [["<= 19", (a: number) => a <= 19], ["20-34", (a: number) => a >= 20 && a <= 34], [">= 35", (a: number) => a >= 35]] as const) {
+  let up = 0, down = 0, n = 0;
+  for (const id of derived.targets.keys()) {
+    const { p } = playerOf.get(id)!;
+    if (!test(p.age)) continue;
+    n++;
+    const d = after.get(id)! - before.get(id)!;
+    if (d > 1) up++; else if (d < -1) down++;
+  }
+  log(`  ${label.padEnd(6)} com nota nova ${String(n).padStart(5)}: sobem > 1 ${up}, descem > 1 ${down}`);
+}
+
+log();
+log("== Jogadores de referência (posição na liga, antes → depois) ==");
+const rankIn = (league: string, id: string, m: Map<string, number>) =>
+  1 + all.filter((x) => x.league === league && m.get(x.id)! > m.get(id)!).length;
+for (const name of ["Kylian Mbappé", "Vinícius Júnior", "Lamine Yamal", "J. Bellingham", "G. de Arrascaeta", "Pedro", "Jorginho", "Vozinha", "Edoardo Borrelli", "Morten Hjulmand", "O. Vlachodimos", "Law McCabe"]) {
+  for (const x of all) {
+    const { p, squad } = playerOf.get(x.id)!;
+    if (p.name !== name) continue;
+    if (name === "Pedro" || name === "Jorginho") { if (squad.name !== "Flamengo") continue; }
+    log(`  ${name} (${p.age}, ${squad.name}): ${before.get(x.id)!.toFixed(2)} (${rankIn(x.league, x.id, before)}º) → ${after.get(x.id)!.toFixed(2)} (${rankIn(x.league, x.id, after)}º) de ${derived.leagues[x.league]!.players}`);
+  }
+}
 log();
 log("== Nacionalidade ==");
 log(`preenchidas: ${nationalityFilled}`);
