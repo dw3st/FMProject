@@ -196,90 +196,92 @@ export const saveRoutes = {
     }
 
     if (req.method === "PUT") {
-      const meta = await saveService.getMeta(id);
-      if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-
       let body: Partial<TacticsSave>;
       try { body = await req.json(); } catch {
         return Response.json({ error: "invalid body" }, { status: 400 });
       }
+      // Read-modify-write of tactics.json + meta: serialized with the other writers of the save.
+      return withSaveLock(id, async () => {
+        const meta = await saveService.getMeta(id);
+        if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
 
-      const existing = (await saveService.getTactics(id)) ?? {
-        formation:      meta.formation      ?? "4-3-3",
-        tactical_style: meta.tactical_style ?? DEFAULT_TACTICAL_STYLE,
-        lineup:         [],
-      } satisfies TacticsSave;
+        const existing = (await saveService.getTactics(id)) ?? {
+          formation:      meta.formation      ?? "4-3-3",
+          tactical_style: meta.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+          lineup:         [],
+        } satisfies TacticsSave;
 
-      let customFormation = existing.customFormation;
-      if (body.customFormation !== undefined) {
-        const parsed = parseCustomFormation(body.customFormation);
-        if (!parsed) return Response.json({ error: "invalid custom formation" }, { status: 400 });
-        customFormation = parsed;
-      }
-      let axesOverride = existing.axesOverride;
-      if (body.axesOverride !== undefined) {
-        const parsed = parseAxesOverride(body.axesOverride);
-        if (!parsed) return Response.json({ error: "invalid axes override" }, { status: 400 });
-        axesOverride = Object.keys(parsed).length ? parsed : undefined;
-      }
-      let setPieceTakers = existing.setPieceTakers;
-      if (body.setPieceTakers !== undefined) {
-        const parsed = parseSetPieceTakers(body.setPieceTakers);
-        if (!parsed) return Response.json({ error: "invalid set-piece takers" }, { status: 400 });
-        setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
-      }
-      const formationId = body.formation ?? existing.formation;
-      if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
-        return Response.json({ error: "custom formation missing" }, { status: 400 });
-      }
-      // Player instructions are per slot of the formation being saved: a body list is validated
-      // against it (400 on an unknown / misfit variant), a kept list is sanitized (formation change).
-      const playFormation = formationForTactics({ formation: formationId, customFormation });
-      let slotInstructions = sanitizeSlotInstructions(playFormation, existing.slotInstructions);
-      if (body.slotInstructions !== undefined) {
-        const parsed = parseSlotInstructions(body.slotInstructions, playFormation);
-        if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-        slotInstructions = parsed.value;
-      }
-      // Saved lineups (#84): validated whole (each preset against its own formation); never played.
-      let lineupPresets = existing.lineupPresets;
-      if (body.lineupPresets !== undefined) {
-        const parsed = parseLineupPresets(body.lineupPresets);
-        if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-        lineupPresets = Object.keys(parsed.value).length ? parsed.value : undefined;
-      }
+        let customFormation = existing.customFormation;
+        if (body.customFormation !== undefined) {
+          const parsed = parseCustomFormation(body.customFormation);
+          if (!parsed) return Response.json({ error: "invalid custom formation" }, { status: 400 });
+          customFormation = parsed;
+        }
+        let axesOverride = existing.axesOverride;
+        if (body.axesOverride !== undefined) {
+          const parsed = parseAxesOverride(body.axesOverride);
+          if (!parsed) return Response.json({ error: "invalid axes override" }, { status: 400 });
+          axesOverride = Object.keys(parsed).length ? parsed : undefined;
+        }
+        let setPieceTakers = existing.setPieceTakers;
+        if (body.setPieceTakers !== undefined) {
+          const parsed = parseSetPieceTakers(body.setPieceTakers);
+          if (!parsed) return Response.json({ error: "invalid set-piece takers" }, { status: 400 });
+          setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
+        }
+        const formationId = body.formation ?? existing.formation;
+        if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
+          return Response.json({ error: "custom formation missing" }, { status: 400 });
+        }
+        // Player instructions are per slot of the formation being saved: a body list is validated
+        // against it (400 on an unknown / misfit variant), a kept list is sanitized (formation change).
+        const playFormation = formationForTactics({ formation: formationId, customFormation });
+        let slotInstructions = sanitizeSlotInstructions(playFormation, existing.slotInstructions);
+        if (body.slotInstructions !== undefined) {
+          const parsed = parseSlotInstructions(body.slotInstructions, playFormation);
+          if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+          slotInstructions = parsed.value;
+        }
+        // Saved lineups (#84): validated whole (each preset against its own formation); never played.
+        let lineupPresets = existing.lineupPresets;
+        if (body.lineupPresets !== undefined) {
+          const parsed = parseLineupPresets(body.lineupPresets);
+          if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+          lineupPresets = Object.keys(parsed.value).length ? parsed.value : undefined;
+        }
 
-      const updated: TacticsSave = {
-        formation:      formationId,
-        tactical_style: body.tactical_style ?? existing.tactical_style,
-        lineup:         body.lineup         ?? existing.lineup,
-        assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
-        ...(customFormation ? { customFormation } : {}),
-        ...(axesOverride ? { axesOverride } : {}),
-        ...(setPieceTakers ? { setPieceTakers } : {}),
-        ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
-        ...(lineupPresets ? { lineupPresets } : {}),
-      };
+        const updated: TacticsSave = {
+          formation:      formationId,
+          tactical_style: body.tactical_style ?? existing.tactical_style,
+          lineup:         body.lineup         ?? existing.lineup,
+          assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
+          ...(customFormation ? { customFormation } : {}),
+          ...(axesOverride ? { axesOverride } : {}),
+          ...(setPieceTakers ? { setPieceTakers } : {}),
+          ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
+          ...(lineupPresets ? { lineupPresets } : {}),
+        };
 
-      // Today's man-marking follows the formation: a pair whose marker slot changed role (or became
-      // the goalkeeper) is dropped (player instructions).
-      let matchMarking = meta.matchMarking;
-      if (matchMarking) {
-        const before = formationForTactics(existing);
-        const marks = matchMarking.marks.filter((m) => {
-          const role = playFormation.attacking[m.slot]?.role;
-          return role !== undefined && role !== "GK" && role === before.attacking[m.slot]?.role;
+        // Today's man-marking follows the formation: a pair whose marker slot changed role (or became
+        // the goalkeeper) is dropped (player instructions).
+        let matchMarking = meta.matchMarking;
+        if (matchMarking) {
+          const before = formationForTactics(existing);
+          const marks = matchMarking.marks.filter((m) => {
+            const role = playFormation.attacking[m.slot]?.role;
+            return role !== undefined && role !== "GK" && role === before.attacking[m.slot]?.role;
+          });
+          if (marks.length !== matchMarking.marks.length) matchMarking = marks.length > 0 ? { ...matchMarking, marks } : undefined;
+        }
+
+        await saveService.saveTactics(id, updated);
+        await saveService.updateMeta(id, {
+          formation:      updated.formation,
+          tactical_style: updated.tactical_style,
+          ...(matchMarking !== meta.matchMarking ? { matchMarking } : {}),
         });
-        if (marks.length !== matchMarking.marks.length) matchMarking = marks.length > 0 ? { ...matchMarking, marks } : undefined;
-      }
-
-      await saveService.saveTactics(id, updated);
-      await saveService.updateMeta(id, {
-        formation:      updated.formation,
-        tactical_style: updated.tactical_style,
-        ...(matchMarking !== meta.matchMarking ? { matchMarking } : {}),
+        return Response.json(updated);
       });
-      return Response.json(updated);
     }
 
     return Response.json({ error: "method not allowed" }, { status: 405 });
