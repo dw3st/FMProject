@@ -33,6 +33,9 @@ export const changelog: ChangelogEntry[] = [
       { pt: "Bandeira da nacionalidade de cada jogador no elenco", en: "Each player's nationality flag in the squad" },
       { pt: "Filtros por tema na caixa de entrada", en: "Topic filters in the inbox" },
     ],
+    fixes: [
+      { pt: "Notas e posições do elenco do São Paulo corrigidas", en: "São Paulo squad ratings and positions corrected" },
+    ],
   },
   {
     version: "4.4.1",

@@ -1,4 +1,18 @@
 {
-  "es_252800": { "name": "Iago (São Paulo)", "naturalPosition": "RB" },
-  "player_0233": { "name": "Cauly (São Paulo)", "naturalPosition": "CAM" }
+  "player_0227": { "name": "R. Arboleda (São Paulo)", "overall": 4.85 },
+  "player_0228": { "name": "Sabino (São Paulo)", "overall": 4.75 },
+  "player_3711": { "name": "Domingos Duarte (São Paulo)", "overall": 4.65 },
+  "player_0247": { "name": "Luciano (São Paulo)", "overall": 4.75 },
+  "player_0217": { "name": "Rafael (São Paulo)", "overall": 4.7 },
+  "player_0233": { "name": "Cauly (São Paulo)", "naturalPosition": "CAM", "overall": 4.65 },
+  "player_0240": { "name": "Pablo Maia (São Paulo)", "overall": 4.55 },
+  "es_236596": { "name": "Artur (São Paulo)", "overall": 4.45 },
+  "es_252800": { "name": "Iago (São Paulo)", "naturalPosition": "RB", "overall": 4.4 },
+  "player_0242": { "name": "André Silva (São Paulo)", "overall": 4.4 },
+  "player_2793": { "name": "Pedro Lima (São Paulo)", "overall": 4.3 },
+  "player_0219": { "name": "Nicolas (São Paulo)", "overall": 4.0 },
+  "player_0246": { "name": "Lucca Marques Alencar (São Paulo)", "overall": 4.0 },
+  "player_0241": { "name": "Pedro Ferreira (São Paulo)", "overall": 3.9 },
+  "player_0222": { "name": "Igor Felisberto (São Paulo)", "overall": 3.7 },
+  "player_0223": { "name": "Isac (São Paulo)", "overall": 3.7 }
 }
