@@ -39,12 +39,16 @@ export function buildAiTransferBid(args: {
   // A very ambitious player turns down a much smaller club (`personality.md`).
   if (args.seller && refusesSmallerClub(player, tierStepsDown(args.seller, buyer))) return null;
   const value = new Player(playerOverallRating(player), player.age).price;
-  // Asking price (#88): below the value, a club only needs to afford the asking price.
+  // Asking price (#88): below the value a club never needs more room than for a plain listing (nor
+  // more than close to the asking price); above it, it must afford at least the value.
   const r = askingRatio(args.askingPrice, value);
   const ref = r < 1 ? args.askingPrice! : value;
+  const minAfford = r < 1
+    ? Math.min(value * B.MIN_MAX_RATIO, ref * NEGOTIATION.ASKING.DISCOUNT_FEE_MIN)
+    : r > 1 ? value : value * B.MIN_MAX_RATIO;
   const cap = priceCapForTier(transferBudgetTierOf(buyer));
   const maxFee = roundFeeDown(Math.min(aiTransferBudgetOf(buyer), cap ?? Infinity, value * B.MAX_RATIO));
-  if (maxFee <= 0 || maxFee < ref * B.MIN_MAX_RATIO) return null;
+  if (maxFee <= 0 || maxFee < minAfford) return null;
   // The wage the buyer would pay (curve × personality, `renewalContract`).
   if (!passesWageGate(aiClubFinance(buyer), renewalContract(player, buyer, args.date, 1).wage, Math.min(maxFee, ref))) return null;
   const sellOnPct = rng() < B.SELL_ON_CHANCE ? (rng() < 0.5 ? 10 : 20) : 0;
@@ -141,18 +145,22 @@ export function generateBidsForHuman(args: {
   const askingOf = (player: RosterPlayer) => args.sellList.find((c) => c.playerId === player.id)?.askingPrice;
   const ratioOf = (player: RosterPlayer) =>
     askingRatio(askingOf(player), playerMarketValue(player));
-  /** A transfer bid from a random club whose need band (± slack) covers him. */
-  const tryBid = (player: RosterPlayer, slack: number) => {
+  /**
+   * A transfer bid from a random club whose need band (± slack) covers him. Priced below his value
+   * (#88), a club that cannot bid (budget, wage room) gives way to another, up to DISCOUNT_TRIES.
+   */
+  const tryBid = (player: RosterPlayer, slack: number, discounted = false) => {
     const rating = playerOverallRating(player);
     const buyers = buyersFor(player).filter((b) => {
       const need = profiles[b.id]!.needs.find((n) => playerMatchesBand(player, n.position))!;
       return rating >= need.targetMin - slack && rating <= need.targetMax + slack;
     });
-    if (buyers.length === 0) return;
-    const buyer = buyers[Math.floor(rng() * buyers.length)]!;
     const asking = askingOf(player);
-    const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad, ...(asking !== undefined ? { askingPrice: asking } : {}) });
-    if (bid) out.push(bid);
+    for (let tries = discounted ? NEGOTIATION.ASKING.DISCOUNT_TRIES : 1; tries > 0 && buyers.length > 0; tries--) {
+      const buyer = buyers.splice(Math.floor(rng() * buyers.length), 1)[0]!;
+      const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad, ...(asking !== undefined ? { askingPrice: asking } : {}) });
+      if (bid) { out.push(bid); return; }
+    }
   };
 
   // Listed player: one transfer bid per day (an asking price above his value lets it through less often).
@@ -160,7 +168,7 @@ export function generateBidsForHuman(args: {
   if (listed.length > 0 && room()) {
     const player = listed[Math.floor(rng() * listed.length)]!;
     const r = ratioOf(player);
-    if (r <= 1 || rng() < askingFreqMult(r)) tryBid(player, BAND_SLACK + askingBandExtra(r));
+    if (r <= 1 || rng() < askingFreqMult(r)) tryBid(player, BAND_SLACK + askingBandExtra(r), r < 1);
   }
 
   // Priced below his value: an extra daily chance (freqMult − 1) for each such player.
@@ -170,7 +178,7 @@ export function generateBidsForHuman(args: {
     if (!player || transferBidsFull(all(), player.id)) continue;
     const r = ratioOf(player);
     if (r >= 1 || rng() >= askingFreqMult(r) - 1) continue;
-    tryBid(player, BAND_SLACK + askingBandExtra(r));
+    tryBid(player, BAND_SLACK + askingBandExtra(r), true);
   }
 
   // Transfer request (`.claude/rules/game/morale.md`): he wants out, so clubs come in more often
@@ -181,7 +189,7 @@ export function generateBidsForHuman(args: {
     if (!player || transferBidsFull(all(), player.id)) continue;
     const r = ratioOf(player);
     if (rng() >= Math.min(1, MORALE.REQUEST_BID_CHANCE * askingFreqMult(r))) continue;
-    tryBid(player, MORALE.REQUEST_BAND_SLACK + askingBandExtra(r));
+    tryBid(player, MORALE.REQUEST_BAND_SLACK + askingBandExtra(r), r < 1);
   }
 
   // Unlisted standout: a bigger club tries its luck.

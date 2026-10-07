@@ -21,6 +21,20 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
   proposta pelo melhor jogador fora da lista. O jogador aceita, recusa ou contrapropõe (taxa + cláusula pedida):
   a IA aceita até o teto (`min(verba, priceCap, valor × 1,25)`, menor com cláusula), responde uma vez com o teto
   e, numa segunda contraproposta acima dele, desiste (409 `noRounds`).
+- **Preço pedido (#88, `SellCandidate.askingPrice`):** ao colocar à venda o jogador define um preço (padrão = o
+  valor de mercado, `playerMarketValue`; passos de €0,1M abaixo de €10M e €1M acima, arredondado para cima). Com
+  `r = preço / valor` (`src/Domain/negotiation/askingPrice.ts`, constantes em `NEGOTIATION.ASKING`):
+  - **r < 1:** chance extra diária de proposta de `freqMult − 1`, `freqMult = min(2, 1 + 2 × (1 − r))`; faixa de
+    nota da necessidade ±(0,5 + min(0,5; 2,5 × (1 − r))); até 2 clubes tentados em sequência até um conseguir
+    propor (verba, folha); a verba mínima nunca passa a de uma listagem comum (`min(valor × 0,6, preço × 0,95)`);
+    a proposta abre em `preço × (0,95..1,0)` e o teto é o preço.
+  - **r > 1:** a escolha diária do jogador só passa com chance `r^−2`; o clube precisa caber o valor; abre em
+    `valor + (preço − valor) × (0,2..0,7)` e o teto é o preço (contraproposta até ele).
+  - **r = 1 ou sem preço:** exatamente as propostas de antes (teste com o mesmo `rng`). Tudo continua limitado
+    por verba, teto do tier, folha, janela, `MAX_PER_PLAYER` e `MAX_PENDING`; a cláusula de venda futura desconta a
+    abertura como antes. O pedido de transferência por moral (`requested`) usa o mesmo preço (sem preço, o valor)
+    e a chance dele × `freqMult`.
+  - Medição: `bun scripts/asking-price-measure.ts [sementes] [dias]` (ver "Medição do preço pedido").
 - **Empréstimo, pedir (jogador ← IA):** duração até o fim da temporada da liga do jogador (da próxima, se faltam
   menos de 60 dias; nunca além do contrato), % do salário pago (0–100) e taxa opcional. A IA só empresta quem não
   é titular do XI automático 4-3-3 e é ≤ 23 anos, está na lista de venda dela ou sobra na linha (mais que o mínimo
@@ -60,6 +74,8 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
 | `src/Domain/negotiation/negotiation.ts` | `respondToOffer`, cláusula (`sellOnValueFraction`, `sellOnOwed`), arredondamento, conversa (`talkGate`, `recordRound`, `pruneTalks`), `respondToHumanCounter` |
 | `src/Domain/negotiation/loans.ts` | `loanUntil`, `loanAvailability`, `loanMinimum`, `respondToLoanRequest`, `buildAiLoanBid`, `squadsAfterLoanStart/End`, `dueLoans`, `parentLoanWages` |
 | `src/Domain/negotiation/bids.ts` | `buildAiTransferBid`, `generateBidsForHuman`, `liveBids` |
+| `src/Domain/negotiation/askingPrice.ts` (+ teste) | Preço pedido: `askingRatio`, `askingFreqMult`, `askingBandExtra`, `askingOpening`, `parseAskingPrice`, `stepAskingPrice`, `playerMarketValue` |
+| `src/GameInterface/Negotiation/AskingPriceModal.tsx` | Campo do preço pedido (ficha e lista de venda) |
 | `src/Domain/negotiation/negotiation.test.ts` | Testes puros |
 | `src/Domain/transfer/transferAcceptance.ts` | `saleContext`, `saleDecisionScore`, `feeForSaleScore`, `squadDepthBlocked` (compartilhados com `evaluateTransferOffer`); `squadsAfterAcceptedTransfer` derruba `sellOn`/`loan` e grava a cláusula nova |
 | `src/Domain/transfer/marketRotation.ts` | `dailyMarketTick` gera as propostas (`newBids`) no lugar do antigo `tryMatchPlayerSellList` e preserva os campos novos do mercado |
@@ -95,6 +111,7 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
 | `POST /api/saves/:id/bids/:bidId { action: accept\|reject\|counter, fee?, sellOnPct? }` | Responde uma proposta; 409 `offerClosed` (vencida, sumida, clube sem verba/folha/vaga), `noRounds` |
 | `POST /api/saves/:id/loans { playerId, fromSquadId, wageShare 0..100, fee }` | Pede empréstimo: `{ response, talk, until }` |
 | `GET/POST /api/saves/:id/loan-list { playerId }` | Lista de empréstimo (alterna) |
+| `GET/POST /api/saves/:id/sell-list { playerId, askingPrice? }` | Sem `askingPrice`: alterna. Com `askingPrice` (número > 0, até €2 bi): coloca à venda a esse preço ou só atualiza o preço (nunca tira da lista); `null` volta ao valor. 400 `invalidPrice`, `not your player`, `onLoan`; 409 `noClub` |
 
 ## Telas
 
@@ -106,6 +123,9 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
 - **Elenco:** selo "Emprestado"; aba "Emprestados" (cedidos e recebidos).
 - **Transferências:** aba "Empréstimos" (propostas, cedidos, recebidos, cláusulas a receber).
 
+- **Preço pedido (#88):** "Colocar à venda" na ficha abre o campo do preço (valor de mercado como referência, −/+ no
+  passo, "Usar o valor", texto do efeito: abaixo = propostas mais rápidas, acima = menos propostas); listado, o botão
+  "Pedido €X" edita o preço. Na aba de transferências a lista de venda mostra o pedido e a % do valor, com "Preço".
 ## `/test`, `/lab`
 
 Sem efeito de partida: nada a exibir.
@@ -149,3 +169,24 @@ Detalhes em `.claude/rules/game/transfer-windows.md`.
 `respondToOffer({ ..., buyer })`: o score do vendedor IA ganha `+0,10 × t_ambição` com comprador de tier maior e
 `−0,10 × max(0, t_lealdade)`; a contraproposta usa o mesmo score. Compra, livre e pré-contrato podem ser recusados
 por `smallerClub`. Ver `.claude/rules/game/personality.md`.
+
+## Medição do preço pedido
+
+`bun scripts/asking-price-measure.ts 40 60` (mundo inteiro, clube humano da Premier League, um jogador comum de cada
+linha listado sozinho, 60 dias de janela aberta, 10 clubes renovam as necessidades por dia, 40 sementes). "ignorar" =
+as propostas ficam pendentes até vencer (no máximo 2 vivas por jogador); "recusar" = recusadas no mesmo dia.
+
+| Jogador | r | propostas (ignorar) | propostas (recusar) | taxa / valor | 1ª proposta (dia) |
+|---|---|---|---|---|---|
+| Zagueiro 5,31 | 1,0 | 12,6 | 19,3 | 0,83 | 2,3 |
+| | 0,8 | 16,8 | 32,8 | 0,71 | 1,1 |
+| | 1,2 | 6,7 | 8,4 | 1,06 | 4,3 |
+| Meia 5,27 | 1,0 | 14,5 | 21,3 | 0,86 | 1,6 |
+| | 0,8 | 18,0 | 45,1 | 0,74 | 0,8 |
+| | 1,2 | 8,2 | 9,2 | 1,05 | 4,8 |
+| Atacante 5,17 | 1,0 | 10,2 | 12,7 | 0,91 | 3,4 |
+| | 0,8 | 14,0 | 21,8 | 0,75 | 1,4 |
+| | 1,2 | 8,0 | 9,2 | 1,06 | 3,6 |
+
+A taxa média fica abaixo do preço pela cláusula de venda futura (25% das propostas abrem mais baixo) e pelos clubes
+cuja verba ou teto de preço não chega ao pedido (eles ainda propõem, dentro do mínimo de uma listagem comum).
