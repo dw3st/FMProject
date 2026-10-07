@@ -12,18 +12,20 @@ import { KnowledgeBar, valueText } from "@/GameInterface/Scouting/KnowledgeBar";
 import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
 
 const columns = [
-  { key: "pos", label: "Pos", width: "w-14" },
-  { key: "name", label: "Name", width: "flex-1 min-w-[140px]" },
-  { key: "age", label: "Age", width: "w-12" },
-  { key: "club", label: "Club", width: "w-32" },
-  { key: "avg", label: "OVR", width: "w-20" },
-  { key: "knowledge", label: "Knowledge", width: "w-28" },
-  { key: "phase", label: "Phase", width: "w-16" },
-  { key: "training", label: "Train", width: "w-16" },
-  { key: "moral", label: "Moral", width: "w-16" },
-  { key: "salary", label: "Salary", width: "w-28" },
-  { key: "valueMillions", label: "Value", width: "w-24" },
+  { key: "pos", label: "Pos", width: "4rem" },
+  { key: "name", label: "Name", width: "minmax(9rem,1fr)" },
+  { key: "age", label: "Age", width: "4.5rem" },
+  { key: "club", label: "Club", width: "8rem" },
+  { key: "avg", label: "OVR", width: "5rem" },
+  { key: "knowledge", label: "Knowledge", width: "8.5rem" },
+  { key: "phase", label: "Phase", width: "5rem" },
+  { key: "training", label: "Train", width: "5rem" },
+  { key: "moral", label: "Moral", width: "5rem" },
+  { key: "salary", label: "Salary", width: "7rem" },
+  { key: "valueMillions", label: "Value", width: "6rem" },
 ];
+// One grid template shared by the header and every row keeps labels over their values.
+const GRID_COLUMNS = [...columns.map((c) => c.width), "5rem"].join(" ");
 
 interface Props {
   /** Current page of already filtered + sorted rows (server-side scout search). */
@@ -93,12 +95,12 @@ export function ScoutTable({
         )}
       </div>
 
-      <div className="flex items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
+      <div style={{ gridTemplateColumns: GRID_COLUMNS }} className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
         {columns.map((col) => (
           <button
             key={col.key}
             onClick={() => onSort(col.key)}
-            className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
+            className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 uppercase font-display font-bold tracking-[0.08em] text-[13px] ${sortKey === col.key ? "text-primary" : "text-muted-foreground"}`}
           >
             {col.key === "knowledge" ? t("scouting.knowledge") : col.label}
             {sortKey === col.key &&
@@ -109,7 +111,7 @@ export function ScoutTable({
               ))}
           </button>
         ))}
-        <div className="w-20 px-3 py-3 text-center">{t("scout.table.action")}</div>
+        <div className="px-3 py-3 text-center">{t("scout.table.action")}</div>
       </div>
 
       <div className={`flex-1 overflow-y-auto transition-opacity ${showUpdating ? "opacity-50 pointer-events-none" : ""}`}>
@@ -134,7 +136,8 @@ export function ScoutTable({
           rows.map((player, index) => (
             <div
               key={player.id}
-              className={`flex items-center text-sm tabular-nums border-b border-border/30 transition-all ${
+              style={{ gridTemplateColumns: GRID_COLUMNS }}
+              className={`grid items-center text-sm tabular-nums border-b border-border/30 transition-all ${
                 index % 2 === 0
                   ? "bg-transparent hover:bg-muted/20"
                   : "bg-muted/5 hover:bg-muted/20"
@@ -142,10 +145,10 @@ export function ScoutTable({
             >
               {/** Disable offer for your own squad */ }
               {/** (we still show your players in the scout DB) */ }
-              <div className={`px-3 py-2.5 font-black ${positionLabelColor(player.natural, player.pos)} w-14`}>
+              <div className={`px-3 py-2.5 font-black ${positionLabelColor(player.natural, player.pos)}`}>
                 {positionLabel(t, player.natural, player.pos)}
               </div>
-              <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold truncate flex items-center gap-1.5">
+              <div className="px-3 py-2.5 min-w-0 font-semibold truncate flex items-center gap-1.5">
                 {shortlistIds && session && player.squadId !== mySquadId && (
                   <ShortlistStar
                     saveId={session.saveId}
@@ -170,8 +173,8 @@ export function ScoutTable({
                 )}
                 {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
               </div>
-              <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
-              <div className="px-3 py-2.5 w-32 truncate font-medium">
+              <div className="px-3 py-2.5 text-muted-foreground font-medium">{player.age}</div>
+              <div className="px-3 py-2.5 truncate font-medium">
                 {player.leagueSlug && player.clubSlug ? (
                   <a
                     href={`/squad/${encodeURIComponent(player.leagueSlug)}/${encodeURIComponent(player.clubSlug)}`}
@@ -183,28 +186,28 @@ export function ScoutTable({
                   <span className="text-muted-foreground">{player.club}</span>
                 )}
               </div>
-              <div className="px-3 py-2.5 w-20">
+              <div className="px-3 py-2.5">
                 <AvgBadge value={player.avg} range={player.avgRange} />
               </div>
-              <div className="px-3 py-2.5 w-28">
+              <div className="px-3 py-2.5">
                 {player.knowledge !== undefined ? <KnowledgeBar value={player.knowledge} /> : <span className="text-sm text-muted-foreground">—</span>}
               </div>
-              <div className="px-3 py-2.5 w-16">
+              <div className="px-3 py-2.5">
                 <StatusBadge level={player.phase} />
               </div>
-              <div className="px-3 py-2.5 w-16">
+              <div className="px-3 py-2.5">
                 <StatusBadge level={player.training} />
               </div>
-              <div className="px-3 py-2.5 w-16">
+              <div className="px-3 py-2.5">
                 <StatusBadge level={player.moral} />
               </div>
-              <div className="px-3 py-2.5 w-28 whitespace-nowrap tabular-nums text-muted-foreground font-medium">
+              <div className="px-3 py-2.5 whitespace-nowrap tabular-nums text-muted-foreground font-medium">
                 {player.salary}
               </div>
-              <div className={`px-3 py-2.5 w-24 font-bold ${ratingTextClass10(player.avg)}`}>
+              <div className={`px-3 py-2.5 font-bold ${ratingTextClass10(player.avg)}`}>
                 {valueText(player.value, player.valueRange)}
               </div>
-              <div className="w-20 px-3 py-2.5 flex justify-center">
+              <div className="px-3 py-2.5 flex justify-center">
                 <button
                   type="button"
                   disabled={(!!mySquadId && player.squadId === mySquadId) || (!player.free && !!offerBlocked?.(player))}
