@@ -221,6 +221,9 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   const counts = useMemo(() => themeCounts(messages), [messages]);
   // Only themes that have messages get a chip; a theme that emptied out falls back to "all".
   const activeTheme: ThemeFilter = theme === "all" || counts.has(theme) ? theme : "all";
+  useEffect(() => {
+    if (theme !== activeTheme) setTheme(activeTheme);
+  }, [theme, activeTheme]);
 
   const filtered = useMemo(
     () => messages.filter((m) => (filter === "unread" ? !m.read : true) && (activeTheme === "all" || inboxThemeOf(m.category) === activeTheme)),
