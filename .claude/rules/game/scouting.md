@@ -45,7 +45,7 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 k = max(implícito, guardado decaído)                      // próprio elenco e cedidos por empréstimo: 100
 implícito = própria liga 35 · outra liga do país 20 · resto 0, + 25 se top 100 do mundo por overall, até 60
 decaído   = k − 5 × max(0, dias desde a última observação − 90) / 30   (calculado na leitura, sem passada diária)
-ruído(k)  = 2,0 × (1 − k/100)^1,2 × multChefe            // ± pontos de cada atributo 0..10
+ruído(k)  = 2,0 × (1 − k/100)^1,2 × multChefe            // ± pontos de cada atributo 0,0..10,0 (tela: ×10)
 multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe [0,7 ; 1,0 ; 1,4]
 ```
 
@@ -66,7 +66,12 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
   `seenOverallRange` com as pontas arredondadas como na tela, `seenValueRange`, `seenWageRange`, `rangeMid`), e os
   rótulos (`value`, `salary`) mostram a faixa: duas linhas com a mesma faixa empatam (ordem de entrada, sem desempate
   pela nota real). Filtro de atributo: atributo em faixa filtra pelo meio da faixa das barras
-  (`seenAttributeRange`, inteiros 0..10); atributo oculto ("?", k < 20) nunca passa num filtro de atributo ativo.
+  (`seenAttributeRange`, pontas com uma casa decimal, 0,0..10,0); atributo oculto ("?", k < 20) nunca passa num
+  filtro de atributo ativo.
+- **Escala 0–100 (4.5):** os atributos têm uma casa decimal e a tela mostra ×10 (`attrDisplay`, `src/Domain/attributes.ts`): a faixa de
+  um atributo com ruído ±0,67 aparece como, por exemplo, "48–61". Os filtros de atributo da busca chegam em inteiros
+  0–100 e são comparados uma vez em 0..10 (`filterScoutPlayers`, `range / 10` contra o valor visto arredondado a
+  uma casa); 0–100 inteiro = filtro desligado.
   Próprio elenco e quem tem ruído < 0,5 continuam com o número (exato no próprio elenco e em k 100).
 - **Salário em faixa:** com ruído ≥ 0,5, o salário de um jogador de fora é a faixa da curva do clube dele
   (`weeklyWage(ponta) × fator de salário do clube`) sobre a faixa de nível vista. O JSON das telas nunca leva o

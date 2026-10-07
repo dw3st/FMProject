@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.5",
+    date: "2026-10-07",
+    items: [
+      { pt: "Notas e posições de todos os jogadores revisadas com dados reais do mercado", en: "Every player's rating and position reviewed with real market data" },
+      { pt: "Valor de mercado dos jogadores mais próximo do real", en: "Player market values closer to the real ones" },
+      { pt: "Atributos de 0 a 100, com cores por faixa", en: "Attributes from 0 to 100, colour-coded by range" },
+      { pt: "Data de nascimento, altura e nacionalidade na ficha do jogador", en: "Date of birth, height and nationality on the player profile" },
+      { pt: "Os jogadores evoluem ponto a ponto", en: "Players now develop point by point" },
+      { pt: "O resumo do treino mostra os atributos que mudaram", en: "The training summary shows which attributes changed" },
+    ],
+  },
+  {
     version: "4.4.2",
     date: "2026-10-07",
     items: [

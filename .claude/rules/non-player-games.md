@@ -1125,3 +1125,26 @@ gols de cabeça no mundo todo. Revertido antes da coleta; ver `formations.md` �
 `rollDiscipline` escala as faltas do lado pela média do fator de temperamento do XI, quem comete e os cartões
 (`TEMPERAMENT_FOUL_NORM` = 1, `TEMPERAMENT_CARD_NORM` = 1,04); `homeTemperament`/`awayTemperament` sobrepõem o lado
 (lab, `/test`). Medição em `.claude/rules/game/personality.md`.
+
+## Recalibração pelo valor de mercado (4.5) — medição, sem constante mexida
+
+O mundo da 4.5 tem notas e posições reordenadas pelo valor do Transfermarkt e atributos com uma casa decimal
+(`.claude/rules/data/espn-import.md` → "Recalibração pelo valor de mercado"). Nenhuma constante do motor nem do
+quickSim mudou; medido para decidir.
+
+**Motor, gols e chutes** (`bun scripts/ai-formation-goals.ts --leagues premier_league,brazil_serie_a --engine 800
+--modes ai`, duas rodadas de 800 somadas por lado; "antes" = mundo do commit base da branch, num worktree descartável):
+
+| Liga | gols antes | gols depois | Δ | chutes antes | chutes depois | Δ |
+|---|---|---|---|---|---|---|
+| premier_league | 2,500 | 2,168 | **−13%** | 5,86 | 5,39 | **−8%** |
+| brazil_serie_a | 1,908 | 2,210 | **+16%** | 5,36 | 5,87 | **+10%** |
+
+Fora da meta de ±5% (ruído ~±2,5% com 1600 jogos). A multiset de notas de cada liga reordenada não mudou, mas mudou
+de linha: na Premier o goleiro médio caiu 4,80 → 4,46 e o meio subiu 5,00 → 5,10; no Brasileirão o zagueiro caiu
+4,28 → 4,09 e o goleiro 4,10 → 3,89 (mais gols). **Pendente de decisão do usuário** antes de mexer em qualquer
+constante.
+
+**quickSim** (`quicksim-spread.ts collect <liga> 100 2 --fitness 88 --ai` + `analyze`, 200 jogos do motor): Premier
+motor 2,34 × quick 2,38 (+1,5%), Brasileirão 2,15 × 2,31 (+7,4%) — dentro de ±10%. O quickSim acompanha o mundo
+novo sozinho (ele lê as mesmas notas), então não foi recalibrado.

@@ -6,7 +6,8 @@ How every roster attribute flows through the engine: what it becomes, where it i
 
 ## Part 1 — Roster Attributes → Engine Stats
 
-`TeamLineup.ts` converts raw roster attributes (0–10 scale) into engine stats. The same player fielded in different roles gets different engine stats.
+`TeamLineup.ts` converts raw roster attributes (0.0–10.0 scale, one decimal since 4.5; the screens show them ×10,
+0–100) into engine stats. The same player fielded in different roles gets different engine stats.
 
 | Roster attribute | Engine stat(s) | Formula | Notes |
 |---|---|---|---|
