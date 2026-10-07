@@ -984,6 +984,9 @@ export const upcoming: ChangelogText[] = [
   { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste; jogadores avaliam as instalações antes de aceitar o seu clube", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear; players weigh your facilities before joining" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Rostos para a equipe técnica e avatar do seu técnico, criado no novo jogo", en: "Faces for your staff and an avatar for your manager, created in the new game" },
+  { pt: "Comissão técnica completa: preparadores físico, de goleiros e geral, com estrelas e atributos", en: "Full coaching staff: fitness, goalkeeping and general coaches, with stars and attributes" },
+  { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
+  { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "Seleções nacionais: convocações, datas FIFA e a Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
   { pt: "Imprensa e notícias do mundo: coletivas que mexem com a moral e a diretoria", en: "Press and world news: press conferences that move morale and the board" },
 ];
