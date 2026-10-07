@@ -971,6 +971,10 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Notas e posições dos jogadores revisadas com dados reais do mercado, atributos de 0 a 100 com cores", en: "Player ratings and positions revised with real market data, attributes from 0 to 100 with colours" },
+  { pt: "Instalações com desgaste: assentos, gramado e equipamentos pioram com o tempo e pedem reforma", en: "Facilities wear out: seats, pitch and equipment get worse over time and need refurbishing" },
+  { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear" },
+  { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Seleções nacionais: convocações, datas FIFA e a Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
   { pt: "Imprensa e notícias do mundo: coletivas que mexem com a moral e a diretoria", en: "Press and world news: press conferences that move morale and the board" },
 ];
