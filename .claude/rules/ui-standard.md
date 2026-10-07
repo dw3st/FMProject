@@ -181,13 +181,13 @@ arquivo. `bun run ui:audit --hard` mostra só as violações duras; `--json` sai
 
 - **Duras** (falham o comando e `src/GameInterface/ui/uiAudit.test.ts`, que roda com
   `bun test src/GameInterface`): texto abaixo de 13px (`small-text`), `font-mono` fora do debug, chip feito à mão (`chip`),
-  tela do jogo sem `ScreenContainer` (`screen-container`, ver Layout),
+  tela do jogo sem `ScreenContainer` (`screen-container`, ver Layout), barra de abas feita à mão com `role="tablist"` (`tabs`, use `SegmentedTabs`),
   estilo de fonte inline (`style={{ fontSize | fontFamily | fontWeight | letterSpacing | lineHeight }}`
   ou atributo `fontSize` em SVG — `inline-font`).
 - **Leves** (só relatório): 13px em texto que não é rótulo (`size-13`), `uppercase` sem
   `font-display` (`label-font`), texto grande sem `font-display` (`display-font`), número formatado
   sem `tabular-nums` (`tabular`), `<table>` sem `TABLE_STYLE`/`StatsTable`/`DataTable` (`table`),
-  barra de abas feita à mão (`tabs`), invólucro `max-w-* mx-auto` numa tela do jogo (`screen-width`), botão de ação desenhado como link colorido (`text-button`: `text-primary` + `bg-transparent`, use `<Button>`), botão só de ícone com ícone menor que 16px (`icon-size`), botão primário cru fora do padrão (`button`), título fora das
+  invólucro `max-w-* mx-auto` numa tela do jogo (`screen-width`), botão de ação desenhado como link colorido (`text-button`: `text-primary` + `bg-transparent`, use `<Button>`), botão só de ícone com ícone menor que 16px (`icon-size`), botão primário cru fora do padrão (`button`), título fora das
   classes de título (`heading`), glow/gradiente/scale (`decorative`), tamanho arbitrário fora de 13px.
 - As telas de entrada (landing, login, start, novo jogo — passos do técnico e do clube —, carregamento)
   são auditadas como qualquer tela; só as de debug ficam de fora.

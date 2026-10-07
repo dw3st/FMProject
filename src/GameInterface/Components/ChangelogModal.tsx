@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DialogTitle } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
-import { Tabs } from "@/GameInterface/ui/Tabs";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { changelog, upcoming } from "@/GameInterface/changelog/changelog";
 
 interface Props {
@@ -36,7 +36,7 @@ export function ChangelogModal({ open, onClose }: Props) {
           <p className="text-sm text-muted-foreground m-0 mt-0.5">
             {t(tab === "news" ? "changelog.subtitle" : "changelog.upcomingSubtitle")}
           </p>
-          <Tabs
+          <SegmentedTabs
             className="mt-3"
             tabs={[
               { key: "news", label: t("changelog.tabNews") },

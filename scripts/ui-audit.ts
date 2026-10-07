@@ -342,7 +342,7 @@ export function auditFile(path: string, source: string, debug: boolean): Finding
           (a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText(sf) === "role",
         );
         if (role?.initializer?.getText(sf) === '"tablist"') {
-          add(node, "tabs", "soft", "hand-made tab bar; use <SegmentedTabs> (or <Tabs>)");
+          add(node, "tabs", "hard", "hand-made tab bar; use <SegmentedTabs>");
         }
       }
     }

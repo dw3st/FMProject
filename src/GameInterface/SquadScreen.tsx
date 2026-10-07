@@ -7,7 +7,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { sessionMatchesClubRoute } from "@/GameInterface/sessionClubMatch";
 import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
-import { Tabs } from "@/GameInterface/ui/Tabs";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { YouthTable } from "@/GameInterface/Components/YouthTable";
 import { ClubHistoryView } from "@/GameInterface/Components/ClubHistoryView";
 import { SquadDepthView } from "@/GameInterface/Components/SquadDepthView";
@@ -117,7 +117,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
           </span>
         </ScreenTitle>
 
-        <Tabs
+        <SegmentedTabs
           tabs={[
             { key: "squad", label: t("squadScreen.tabSquad") },
             ...(squad.id === mySquadId ? [{ key: "depth" as const, label: t("squadScreen.tabDepth") }] : []),
