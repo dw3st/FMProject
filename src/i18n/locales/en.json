@@ -1,4 +1,19 @@
 {
+  "attributeNames": {
+    "passing": "Passing",
+    "vision": "Vision",
+    "finishing": "Finishing",
+    "dribbling": "Dribbling",
+    "speed": "Speed",
+    "acceleration": "Acceleration",
+    "tackling": "Tackling",
+    "pressing": "Pressing",
+    "stamina": "Stamina",
+    "heading": "Heading",
+    "strength": "Strength",
+    "reflex": "Reflexes",
+    "jump": "Jumping"
+  },
   "common": {
     "continue": "Continue",
     "save": "Save",

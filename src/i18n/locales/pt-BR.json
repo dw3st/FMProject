@@ -1,4 +1,19 @@
 {
+  "attributeNames": {
+    "passing": "Passe",
+    "vision": "Visão",
+    "finishing": "Finalização",
+    "dribbling": "Drible",
+    "speed": "Velocidade",
+    "acceleration": "Aceleração",
+    "tackling": "Desarme",
+    "pressing": "Pressão",
+    "stamina": "Fôlego",
+    "heading": "Cabeceio",
+    "strength": "Força",
+    "reflex": "Reflexos",
+    "jump": "Impulsão"
+  },
   "common": {
     "continue": "Continuar",
     "save": "Salvar",

@@ -20,6 +20,8 @@ import { getMainRole } from "@/Domain/roles";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
+import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRow";
+import { groupDevelopmentChanges } from "@/GameInterface/Components/attributeChanges";
 
 const Minus = iconOf("minus");
 const TrendingDown = iconOf("trend-down");
@@ -381,17 +383,9 @@ function OtherLeaguesSection({
   );
 }
 
-function formatStatName(stat: string): string {
-  return stat
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (c) => c.toUpperCase());
-}
-
 function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t: (key: string) => string }) {
-  const ups   = changes.flatMap((c) => c.changes.filter((ch) => ch.delta > 0).map((ch) => ({ name: c.playerName, ...ch })));
-  const downs = changes.flatMap((c) => c.changes.filter((ch) => ch.delta < 0).map((ch) => ({ name: c.playerName, ...ch })));
-
-  if (ups.length === 0 && downs.length === 0) return null;
+  const players = groupDevelopmentChanges(changes);
+  if (players.length === 0) return null;
 
   return (
     <div className="card-arcade rounded-md overflow-hidden">
@@ -401,28 +395,14 @@ function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t:
           {t("daySummary.playerDevelopment")}
         </span>
       </div>
-      <div className="px-4 py-3 space-y-1">
-        {ups.map((ch, i) => (
-          <div key={`up-${i}`} className="flex items-center justify-between text-sm">
-            <span className="text-foreground/80">{ch.name}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground/60">{formatStatName(ch.stat)}</span>
-              <span className="flex items-center gap-0.5 text-chart-2 font-bold">
-                <Icon name="trend-up" className="w-3 h-3" />
-                {ch.newValue}
-              </span>
-            </div>
-          </div>
-        ))}
-        {downs.map((ch, i) => (
-          <div key={`dn-${i}`} className="flex items-center justify-between text-sm">
-            <span className="text-foreground/80">{ch.name}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground/60">{formatStatName(ch.stat)}</span>
-              <span className="flex items-center gap-0.5 text-destructive font-bold">
-                <Icon name="trend-down" className="w-3 h-3" />
-                {ch.newValue}
-              </span>
+      <div className="divide-y divide-border/50">
+        {players.map((p) => (
+          <div key={p.playerId} className="px-4 py-2.5">
+            <p className="text-sm font-semibold text-foreground m-0 mb-1">{p.playerName}</p>
+            <div className="space-y-0.5">
+              {p.changes.map((ch) => (
+                <AttributeChangeRow key={ch.stat} stat={ch.stat} from={ch.from} to={ch.to} />
+              ))}
             </div>
           </div>
         ))}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRow";
 import { Icon, iconOf } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
@@ -1010,18 +1011,8 @@ function DevelopmentBody({
       <p className="text-sm text-foreground m-0 leading-relaxed">{summary}</p>
       <div className="rounded-lg border border-border divide-y divide-border overflow-hidden">
         {message.changes.map((c) => (
-          <div
-            key={c.attribute}
-            className="flex items-center justify-between gap-4 p-3 bg-muted/10"
-          >
-            <span className="text-sm font-medium text-foreground capitalize">
-              {c.attribute}
-            </span>
-            <div className="flex items-center gap-2 text-sm font-display font-black">
-              <span className="text-muted-foreground">{c.from}</span>
-              <Icon name="arrow-right" className="w-4 h-4 text-primary" />
-              <span className="text-primary">{c.to}</span>
-            </div>
+          <div key={c.attribute} className="p-3 bg-muted/10">
+            <AttributeChangeRow stat={c.attribute} from={c.from} to={c.to} />
           </div>
         ))}
       </div>
