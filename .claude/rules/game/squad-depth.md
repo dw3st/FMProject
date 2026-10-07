@@ -20,6 +20,9 @@ posição detalhada no lugar dela (atacando para a direita); abaixo de `xl`, uma
   cobertura); vermelho < vagas; neutro se a formação não usa o grupo.
 - Posição que a formação não usa: borda neutra; some se ninguém joga nem se adapta a ela (o
   objetivo é mostrar onde falta e onde sobra, não encher o campo de cartões vazios).
-- Formação: `GET /api/saves/:id/tactics` → `formationForTactics` (livre incluída).
+- Formação: `GET /api/saves/:id/tactics` → `formationForTactics` (livre incluída); a aba mostra "carregando" até ela chegar e o erro de carga se falhar, nunca um palpite de formação.
+- A nota do cartão é a da posição (`slotValue`). Para o jogador de origem ela costuma ser o OVR do
+  elenco, mas pode diferir quando a regra do pé leva a posição natural para uma posição de nota menor
+  que a melhor da linha (o OVR usa a melhor posição da linha; ver `positions.md`).
 
 Sem efeito de partida: nada em `/test` nem `/lab`.
