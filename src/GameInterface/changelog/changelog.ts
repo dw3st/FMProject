@@ -975,6 +975,7 @@ export const upcoming: ChangelogText[] = [
   { pt: "Instalações com desgaste: assentos, gramado e equipamentos pioram com o tempo e pedem reforma", en: "Facilities wear out: seats, pitch and equipment get worse over time and need refurbishing" },
   { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste; jogadores avaliam as instalações antes de aceitar o seu clube", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear; players weigh your facilities before joining" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
+  { pt: "Rostos para a equipe técnica e avatar do seu técnico, criado no novo jogo", en: "Faces for your staff and an avatar for your manager, created in the new game" },
   { pt: "Seleções nacionais: convocações, datas FIFA e a Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
   { pt: "Imprensa e notícias do mundo: coletivas que mexem com a moral e a diretoria", en: "Press and world news: press conferences that move morale and the board" },
 ];
