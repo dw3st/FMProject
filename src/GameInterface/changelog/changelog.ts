@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.8",
+    date: "2026-10-07",
+    items: [
+      { pt: "Colunas do elenco e do olheiro alinhadas com os títulos", en: "Squad and scout columns line up with their headers" },
+    ],
+  },
+  {
     version: "4.4.7",
     date: "2026-10-07",
     items: [
