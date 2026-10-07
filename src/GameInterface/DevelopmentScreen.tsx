@@ -20,6 +20,7 @@ import type { PlayerOption } from "@/GameInterface/Development/PlayerSelector";
 import type { TrendDirection } from "@/GameInterface/Development/RecentTrend";
 import { positionLabel, roleForDevelopmentWeights } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
+import { dpRequired } from "@/GameEngine/PlayerDevelopment";
 
 function getAgePhase(age: number): AgePhase {
   if (age <= 23) return "developing";
@@ -58,25 +59,19 @@ function getAttrFocus(attrId: AttributeId, position: string): AttrFocus {
   return "limited";
 }
 
+// Progress is DP toward the next 0.1 step (seeded at half a step), so the trend reads it as a fraction of the step.
 function getAttrDirection(
   age: number,
   progress: DevelopmentProgress | undefined,
   stat: AttributeId,
+  value: number,
 ): TrendDirection {
   if (!progress) return "stable";
   const dp = progress[stat as keyof DevelopmentProgress] ?? 0;
-  if (getAgePhase(age) === "atPeak") {
-    if (dp < -2) return "down";
-    return "stable";
-  }
-  if (dp > 5) return "up";
-  if (dp < -2) return "down";
+  if (dp < 0) return "down";
+  if (getAgePhase(age) === "atPeak") return "stable";
+  if (dp / dpRequired(value) > 0.5) return "up";
   return "stable";
-}
-
-// Mirrors PlayerDevelopment.ts dpRequired formula (BASE_COST=10, SCALE=0.10)
-function dpRequired(value: number): number {
-  return 10 * (1 + value * value * 0.10);
 }
 
 function buildDevAttributes(player: RosterPlayer): DevAttribute[] {
@@ -90,7 +85,7 @@ function buildDevAttributes(player: RosterPlayer): DevAttribute[] {
     return {
       name: ATTRIBUTE_LABELS[id].label,
       value,
-      direction: getAttrDirection(player.age, player.progress, id),
+      direction: getAttrDirection(player.age, player.progress, id, value),
       focus: getAttrFocus(id, pos),
       progressPct,
     };

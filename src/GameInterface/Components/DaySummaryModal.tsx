@@ -388,8 +388,8 @@ function formatStatName(stat: string): string {
 }
 
 function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t: (key: string) => string }) {
-  const ups   = changes.flatMap((c) => c.changes.filter((ch) => ch.delta === 1).map((ch) => ({ name: c.playerName, ...ch })));
-  const downs = changes.flatMap((c) => c.changes.filter((ch) => ch.delta === -1).map((ch) => ({ name: c.playerName, ...ch })));
+  const ups   = changes.flatMap((c) => c.changes.filter((ch) => ch.delta > 0).map((ch) => ({ name: c.playerName, ...ch })));
+  const downs = changes.flatMap((c) => c.changes.filter((ch) => ch.delta < 0).map((ch) => ({ name: c.playerName, ...ch })));
 
   if (ups.length === 0 && downs.length === 0) return null;
 

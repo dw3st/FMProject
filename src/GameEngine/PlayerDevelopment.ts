@@ -13,6 +13,7 @@ import type { RosterPlayer, DevelopmentProgress, PlayerStatsRecord } from "@/typ
 import { emptyDevelopmentProgress } from "@/types/playerTypes";
 import type { PlayerDevelopmentChange, StatLevelChange } from "@/types/dayLogTypes";
 import { Player } from "@/Domain/Player";
+import { roundAttr } from "@/Domain/attributes";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -78,8 +79,21 @@ function ageDecayPerMatch(age: number): number {
   return 4.0;
 }
 
-function dpRequired(value: number): number {
-  return BASE_COST * (1 + value * value * SCALE);
+/** Size of one development step: attributes move in tenths (0.1 = one point on the 0–100 display). */
+export const ATTR_STEP = 0.1;
+
+/** DP for one 0.1 step at `value` (a tenth of the old whole-point cost, so ten steps cost one old level). */
+export function dpRequired(value: number): number {
+  return (BASE_COST * ATTR_STEP) * (1 + value * value * SCALE);
+}
+
+/**
+ * Starting progress of an untracked stat: the midpoint of the current step. Seeding the old absolute value
+ * (half a whole point, five steps' worth) would be cashed in at once by the level-up loop: +0.4..0.5 on every
+ * weighted stat at the first update of each season, since the record is reset at every rollover.
+ */
+function SEED_DP(value: number): number {
+  return dpRequired(value) * 0.5;
 }
 
 function softCapFactor(value: number): number {
@@ -174,7 +188,7 @@ function distributeAndResolve(
     ? (() => {
         const p = emptyDevelopmentProgress();
         for (const stat of Object.keys(p) as (keyof DevelopmentProgress)[]) {
-          p[stat] = dpRequired(player.stats[stat as keyof PlayerStatsRecord]) * 0.5;
+          p[stat] = SEED_DP(player.stats[stat as keyof PlayerStatsRecord]);
         }
         return p;
       })()
@@ -198,31 +212,48 @@ function distributeAndResolve(
 
       progress[stat] += effective;
 
-      // Resolve level-ups
+      // Resolve level-ups (0.1 steps)
       while (progress[stat] >= dpRequired(stats[stat])) {
         if (stats[stat] >= 10) { progress[stat] = 0; break; }
         progress[stat] -= dpRequired(stats[stat]);
-        stats[stat] += 1;
-        statChanges.push({ stat, delta: 1, newValue: stats[stat] });
+        stats[stat] = roundAttr(stats[stat] + ATTR_STEP);
+        statChanges.push({ stat, delta: ATTR_STEP, newValue: stats[stat] });
       }
 
-      // Resolve level-downs
+      // Resolve level-downs (0.1 steps)
       while (progress[stat] < 0) {
         if (stats[stat] <= 0) { progress[stat] = 0; break; }
-        progress[stat] += dpRequired(stats[stat] - 1);
-        stats[stat] -= 1;
-        statChanges.push({ stat, delta: -1, newValue: stats[stat] });
+        progress[stat] += dpRequired(stats[stat] - ATTR_STEP);
+        stats[stat] = roundAttr(stats[stat] - ATTR_STEP);
+        statChanges.push({ stat, delta: -ATTR_STEP, newValue: stats[stat] });
       }
     }
   }
+
+  const aggregated = aggregateChanges(statChanges);
 
   const updatedPlayer: RosterPlayer = { ...player, stats, progress };
   updatedPlayer.overallAvg = Player.computeOverallAvg(updatedPlayer);
 
   const levelChanges: PlayerDevelopmentChange | null =
-    statChanges.length > 0
-      ? { playerId: player.id, playerName: player.name, changes: statChanges }
+    aggregated.length > 0
+      ? { playerId: player.id, playerName: player.name, changes: aggregated }
       : null;
 
   return { updatedPlayer, levelChanges };
+}
+
+/** One entry per stat: the steps of a call summed into a single delta (entries that cancel out are dropped). */
+function aggregateChanges(changes: StatLevelChange[]): StatLevelChange[] {
+  const byStat = new Map<string, StatLevelChange>();
+  for (const c of changes) {
+    const prev = byStat.get(c.stat);
+    byStat.set(c.stat, { stat: c.stat, delta: (prev?.delta ?? 0) + c.delta, newValue: c.newValue });
+  }
+  const out: StatLevelChange[] = [];
+  for (const c of byStat.values()) {
+    const delta = Math.round(c.delta * 10) / 10;
+    if (delta !== 0) out.push({ ...c, delta });
+  }
+  return out;
 }

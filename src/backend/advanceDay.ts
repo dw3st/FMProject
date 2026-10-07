@@ -1,3 +1,4 @@
+import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
 import { fileURLToPath } from "node:url";
@@ -665,7 +666,7 @@ export async function advanceOneDay(
             if (existing) {
               existing.to = ch.newValue;
             } else {
-              entry.changes.set(ch.stat, { from: ch.newValue - ch.delta, to: ch.newValue });
+              entry.changes.set(ch.stat, { from: roundAttr(ch.newValue - ch.delta), to: ch.newValue });
             }
           }
         }
