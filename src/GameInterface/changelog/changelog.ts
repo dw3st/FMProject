@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.7",
+    date: "2026-10-07",
+    items: [
+      { pt: "Indicações do olheiro-chefe com relatório e link para a ficha do jogador", en: "Chief scout picks come with a report and a link to the player" },
+    ],
+  },
+  {
     version: "4.4.6",
     date: "2026-10-07",
     items: [
