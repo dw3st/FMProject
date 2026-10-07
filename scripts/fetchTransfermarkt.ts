@@ -66,7 +66,8 @@ for (const slug of slugs) {
   }
   let players = 0;
   for (const club of comp) {
-    const body = await cached(`club-${club.id}-${season}.json`, `/clubs/${club.id}/players?season_id=${season}`, parseClubPlayers);
+    // Elenco atual (sem season_id): numa temporada passada a API não devolve idade nem valor de mercado.
+    const body = await cached(`club-${club.id}-current.json`, `/clubs/${club.id}/players`, parseClubPlayers);
     players += parseClubPlayers(body).length;
   }
   console.log(`${slug} (${compId}, temporada ${season}): ${comp.length} clubes, ${players} jogadores`);

@@ -28,3 +28,10 @@ A temporada atual é `season_id=2026` (com 2025 `marketValue` e `age` vêm `null
 ## Regra
 
 O cache e os valores de mercado **nunca** entram no repositório (a pasta `cache/` está no `.gitignore`); só o `derived.json`.
+
+## Patch local na API
+
+Em `app/services/clubs/players.py` da cópia local, `is_current` aceita membros do tipo `additional` além de `current`.
+Sem isso, um único jogador "adicional" no elenco (comum no Brasil) fazia a API devolver idade e valor de mercado
+vazios para o clube inteiro. Os elencos são buscados sem `season_id` (elenco atual); a lista de clubes usa 2026, ou
+2025 nas ligas de ano civil.
