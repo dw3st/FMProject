@@ -1128,6 +1128,24 @@ Altura em cm (`184 cm`). Peso não existe no Transfermarkt e fica fora.
 
 ---
 
+### Task 13b: Nacionalidade de quem não tem (#96)
+
+2.368 jogadores do mundo (6,5%, sobretudo Série C, MLS, Championship) estão sem `nationality`: a ESPN criou o
+jogador sem cidadania. O Transfermarkt traz a nacionalidade no elenco.
+
+- `scripts/transfermarkt/api.ts`: `TmPlayer.nationality: string | null` (o primeiro item de `nationality`, se vier
+  lista); teste no `api.test.ts`.
+- Task 14: `derived.json` ganha `nationality` **só para casados que hoje não têm**, e só quando
+  `nationalityFlagCode(nome)` (`src/Domain/world/nationalityFlag.ts`) resolve o nome do Transfermarkt. Nome que não
+  resolve vai para o relatório ("nacionalidades sem bandeira"). Acrescente as grafias que faltarem ao mapa do
+  `nationalityFlag.ts`, com teste.
+- Task 15: `applyDerived` grava `nationality` quando o jogador não tem (nunca troca uma existente). Teste:
+  `applyDerived({ ...p, nationality: undefined }, { nationality: "Cameroon" })` → `"Cameroon"`, e um jogador com
+  nacionalidade não muda.
+- Relatório da Task 14: quantos continuam sem nacionalidade por liga.
+
+---
+
 ### Task 14: `derived.json` e relatório
 
 **Precisa da busca da Task 4 completa.**
