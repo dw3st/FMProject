@@ -114,7 +114,7 @@ Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → 
 **29 · Recalibração pelo valor de mercado (4.5, em andamento).** Falta: fórmula do valor de mercado do jogo calibrada no real, medição de gols/chutes (±5%) e quickSim (±10%), mercado da IA, smoke, documentação. Publicação junto com os atributos 0–100.
 
 **30 · Comissão técnica completa (#102) + rostos.**
-- Funções: auxiliar, preparador físico, preparador de goleiros, preparador geral (com sub-áreas: defesa, ataque, tática, técnica, bola parada), olheiros, médico/fisioterapeuta, analista de desempenho; limite por função.
+- Funções: auxiliar, preparador físico, preparador de goleiros, preparador geral (com sub-áreas: defesa, ataque, tática, técnica, bola parada), olheiros, médico/fisioterapeuta, analista de desempenho, jardineiro (cuida do gramado do estádio e do CT; o efeito entra na etapa 32); limite por função.
 - Cada profissional com atributos (determinação, disciplina, adaptação, leitura de jogadores, conhecimento da área) e nota em estrelas 1–5 por área de treino.
 - Efeitos: a evolução de cada grupo de atributos depende do preparador daquela área (goleiros só com o de goleiros); a IA segue com a nota implícita do tier.
 - Mercado: busca de funcionários na aba Transferências (jogadores × comissão).
@@ -130,6 +130,7 @@ Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → 
 **32 · Instalações vivas.**
 - Desgaste semanal de cada instalação (assentos, gramado, equipamentos), vida útil, reforma parcial e reconstrução quando passa do limite; manutenção no extrato.
 - Instalações em detalhe: tela visual com as partes do CT e da base (academia, piscina, fisioterapia, refeitório, campos), cada uma "N de 10" com % de desgaste; o jogador escolhe o que melhorar e a diretoria aprova.
+- Gramado: a condição do gramado do estádio e do CT cai com os jogos, os treinos e o tempo e é mantida pelo jardineiro (nota e quantidade); gramado ruim (grama alta, irregular) aumenta o risco de lesão no treino e nos jogos em casa.
 - Instalações pesam na decisão do jogador de aceitar o clube (como a ambição com clube menor).
 
 **33 · Torneios de base e reservas.**
