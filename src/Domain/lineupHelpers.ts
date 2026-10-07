@@ -168,7 +168,7 @@ const GK_BENCH_FITNESS_FLOOR = 85;
  * `docs/superpowers/specs/2026-09-27-stamina-design.md` §2 and `src/Domain/fitness/fitness.ts`).
  * This does not simulate the match; it is only a cheap proxy used to rank lineup candidates.
  */
-function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
+export function fitnessAdjustedValue(player: RosterPlayer, role: string): number {
   const stat = slotValue(player, role);
   const fitness = player.seasonLog?.fitness ?? DEFAULT_FITNESS;
   const load = player.seasonLog?.load ?? 0;

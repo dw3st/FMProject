@@ -11,16 +11,14 @@ import type { FormationShape } from "@/types/formationSlots";
 import { CUSTOM_FORMATION_ID, parseCustomFormation } from "@/Domain/formation/zones";
 import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
-import { replaceUnavailableStarters } from "@/Domain/lineupHelpers";
+import { fitnessAdjustedValue, replaceUnavailableStarters } from "@/Domain/lineupHelpers";
 import { isInjured } from "@/Domain/injury/injury";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { getMainRole } from "@/Domain/roles";
-import { slotValue } from "@/Domain/positions/positionAptitude";
+import { isRealIsoDate } from "@/Domain/dates";
 
 /** The saved-lineup slots of the formation screen (#84). */
 export const LINEUP_PRESET_KEYS: readonly LineupPresetKey[] = ["A", "B", "C"];
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** What the formation screen holds when the manager saves a preset. */
 export interface LineupPresetSource {
@@ -92,7 +90,7 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
   }
   const ids = (lineup as string[]).filter(Boolean);
   if (new Set(ids).size !== ids.length) return { ok: false, error: "duplicate player in preset" };
-  if (typeof savedOn !== "string" || !ISO_DATE.test(savedOn)) return { ok: false, error: "invalid preset date" };
+  if (typeof savedOn !== "string" || !isRealIsoDate(savedOn)) return { ok: false, error: "invalid preset date" };
   const playFormation = formationForTactics({ formation, customFormation });
   let slotInstructions: (SlotInstruction | null)[] = [];
   if (src.slotInstructions !== undefined) {
@@ -116,7 +114,7 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
 export interface PresetReplacement {
   /** Saved player id (may no longer be in the squad when `reason === "left"`). */
   out: string;
-  /** Replacement id; "" when nobody was available. */
+  /** Replacement id; "" when nobody was available (the saved player stays, or the slot is empty). */
   in: string;
   slot: number;
   reason: "injured" | "suspended" | "left";
@@ -132,41 +130,46 @@ export interface AppliedLineupPreset {
 }
 
 /**
- * Applies a preset to today's squad: a saved player who left the squad is replaced by the best
- * available player of the slot's line (by `slotValue`, any available player as a fallback), and an
- * injured or suspended one by `replaceUnavailableStarters` (the same rule the saved lineup follows
- * on match day).
+ * Applies a preset to today's squad: a saved player who left the squad (sold, loaned out, released)
+ * or an empty slot is filled by the best available player of the slot's line (any available player
+ * as a fallback), ranked by `fitnessAdjustedValue`; an injured or suspended one goes through
+ * `replaceUnavailableStarters` (the same rule the saved lineup follows on match day). A starter
+ * nobody can replace is reported with `in: ""`.
  */
 export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[], date: string): AppliedLineupPreset {
   const formation = formationForTactics(preset);
   const slots = getFormationSlots(formation as unknown as FormationShape);
-  const inSquad = new Set(players.map((p) => p.id));
+  const byId = new Map(players.map((p) => [p.id, p]));
   const lineup = slots.map((_, i) => preset.lineup[i] ?? "");
   const replaced: PresetReplacement[] = [];
 
   // 1. Players who left the squad (or empty slots of the preset).
-  const used = new Set(lineup.filter((id) => id && inSquad.has(id)));
+  const used = new Set(lineup.filter((id) => id && byId.has(id)));
   for (let i = 0; i < slots.length; i++) {
     const id = lineup[i]!;
-    if (id && inSquad.has(id)) continue;
+    if (id && byId.has(id)) continue;
     const role = slots[i]!.role;
     const available = players.filter((p) => !used.has(p.id) && !isUnavailable(p, date));
     const sameLine = available.filter((p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === getMainRole(role));
     const pool = sameLine.length > 0 ? sameLine : available;
-    const pick = [...pool].sort((a, b) => slotValue(b, role) - slotValue(a, role))[0];
+    const pick = [...pool].sort((a, b) => fitnessAdjustedValue(b, role) - fitnessAdjustedValue(a, role))[0];
     lineup[i] = pick?.id ?? "";
     if (pick) used.add(pick.id);
     if (id) replaced.push({ out: id, in: pick?.id ?? "", slot: i, reason: "left" });
   }
 
   // 2. Injured or suspended starters.
-  const byId = new Map(players.map((p) => [p.id, p]));
   const swapped = replaceUnavailableStarters(slots, lineup, players, date);
   for (const r of swapped.replaced) {
-    const slot = lineup.indexOf(r.out);
-    const starter = byId.get(r.out);
-    replaced.push({ out: r.out, in: r.in, slot, reason: starter && isInjured(starter, date) ? "injured" : "suspended" });
+    replaced.push({ out: r.out, in: r.in, slot: lineup.indexOf(r.out), reason: r.reason });
   }
+  // 3. Unavailable starters nobody could replace (squad too thin): they stay, flagged.
+  swapped.lineup.forEach((id, slot) => {
+    const p = id ? byId.get(id) : undefined;
+    if (p && isUnavailable(p, date)) {
+      replaced.push({ out: id, in: "", slot, reason: isInjured(p, date) ? "injured" : "suspended" });
+    }
+  });
   replaced.sort((a, b) => a.slot - b.slot);
 
   return {

@@ -70,6 +70,8 @@ describe("lineup presets route", () => {
       { lineupPresets: { A: { ...presetA, lineup: [...ids, "x"] } } },
       { lineupPresets: { A: { ...presetA, lineup: [7] } } },
       { lineupPresets: { A: { ...presetA, savedOn: 3 } } },
+      { lineupPresets: { A: { ...presetA, savedOn: "2027-02-30" } } },
+      { lineupPresets: { A: { ...presetA, lineup: ["x".repeat(65)] } } },
       { lineupPresets: { B: { ...presetB, customFormation: { slots: [] } } } },
       { lineupPresets: { A: { ...presetA, slotInstructions: [{ press: "more" }] } } }, // slot 0 = GK
     ];
