@@ -58,7 +58,8 @@ Sem reposição, a simulação do plano 1 encolhia o elenco médio 26,0 → 22,7
   7, FWD 4) ou o elenco abaixo de `MIN_SQUAD_AI = 24` (só IA), assina o melhor livre do papel mais
   carente que cabe na folha; se nenhum cabe, cria um jovem de 17–19 anos (`makeYouthPlayer`:
   determinístico por clube + tag, cópia do pior do papel com atributos −1, contrato de 3 anos).
-  Teto de 30 jogadores, que nunca impede um mínimo por papel (um elenco cheio e desequilibrado ainda recebe o goleiro que falta).
+  Teto de 30 jogadores, que nunca impede um mínimo por papel (um elenco cheio e desequilibrado ainda recebe o goleiro que falta). Um clube da IA que passa de 30 por causa de um mínimo dispensa em seguida os piores das linhas com sobra
+  (`trimSquadToCap`), o mesmo na volta de empréstimo.
 - **Folga:** a IA só assina se `folha + salário ≤ teto × (NEAR_LIMIT_RATIO − REFILL_HEADROOM)`
   (0,9 − 0,03). Sem essa folga a reposição enche o clube até perto do teto e o deixa `tight`.
 - **Humano:** só jovens até os mínimos por papel — nunca livres que ele não escolheu, nunca abaixo de um XI.

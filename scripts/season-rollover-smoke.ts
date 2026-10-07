@@ -1887,7 +1887,12 @@ try {
     const liveBids = ((await call("/api/saves/:saveId/negotiation", `/api/saves/${saveId}/negotiation`, { saveId })).body.bids ?? []) as import("@/types/transferMarketTypes").MarketBid[];
     console.log(`  live bids at the end of the run: ${liveBids.length}`);
     if (boughtPlayer && bought) {
-      const buyer = aiClubs.find((c) => c.id !== bought!.from)!;
+      // A buyer the route accepts: room under the AI cap and the player's wage under its wage cap.
+      const { aiClubFinance: finB, passesWageGate: gateB, estimateWeeklyWage: wageB } = await import("@/Domain/aiFinance/aiClubFinance");
+      const { wageFactorOf: factorB } = await import("@/Domain/finance/wages");
+      const fresh = await Promise.all(aiClubs.map(async (c) => (await plain().getSquadById(saveId!, c.id))!));
+      const buyer = fresh.find((c) => c.id !== bought!.from && c.players.length < 30
+        && gateB(finB(c), wageB(boughtPlayer, factorB(c)), 0)) ?? fresh.find((c) => c.id !== bought!.from)!;
       await plain().saveSquadById(saveId, { ...(await plain().getSquadById(saveId, buyer.id))!, aiTransferBudget: 200_000_000 });
       const mkB = (await plain().getMarket(saveId))!;
       const bid = {
@@ -1898,7 +1903,7 @@ try {
       const oldClubBudget = aiTransferBudgetOf((await plain().getSquadById(saveId, bought.from))!);
       const counter = await call("/api/saves/:saveId/bids/:bidId", `/api/saves/${saveId}/bids/smoke-bid`, { saveId, bidId: "smoke-bid" },
         { action: "counter", fee: 30_000_000, sellOnPct: 20 });
-      check(counter.status === 200, `negociação: counter on an inbox bid answered (${String(counter.body.status)})`);
+      check(counter.status === 200, `negociação: counter on an inbox bid answered (${counter.status} ${String(counter.body.status ?? counter.body.error)}; ${buyer.name} ${buyer.players.length} players)`);
       // A counter inside the AI club's max closes the sale at once; otherwise accept its answer.
       const sale = counter.body.status === "sold"
         ? counter
