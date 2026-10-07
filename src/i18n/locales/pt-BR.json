@@ -969,6 +969,16 @@
     "loadingMessages": "Carregando mensagens…",
     "emptyState": "Sem mensagens ainda — volte depois de avançar os dias.",
     "unread": "Não lidas",
+    "themes": {
+      "label": "Filtrar por tema",
+      "health": "Lesões e disciplina",
+      "growth": "Evolução",
+      "transfers": "Transferências",
+      "contracts": "Contratos",
+      "club": "Clube",
+      "competitions": "Competições",
+      "jobs": "Técnicos e propostas"
+    },
     "markAllRead": "Marcar todas como lidas",
     "signedFrom": "Contratado de",
     "soldTo": "Vendido para",

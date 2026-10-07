@@ -969,6 +969,16 @@
     "loadingMessages": "Loading messages…",
     "emptyState": "No messages yet — check back after advancing days.",
     "unread": "Unread",
+    "themes": {
+      "label": "Filter by topic",
+      "health": "Injuries & discipline",
+      "growth": "Development",
+      "transfers": "Transfers",
+      "contracts": "Contracts",
+      "club": "Club",
+      "competitions": "Competitions",
+      "jobs": "Managers & jobs"
+    },
     "markAllRead": "Mark all read",
     "signedFrom": "Signed from",
     "soldTo": "Sold to",

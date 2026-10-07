@@ -8,6 +8,8 @@ import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
 import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { inboxThemeOf, INBOX_THEMES, themeCounts, type InboxTheme } from "@/Domain/inbox/inboxThemes";
 import { objectiveText } from "@/GameInterface/boardText";
 import { formatFee } from "@/Domain/money";
 import { ManagerRenewalCard } from "@/GameInterface/Components/ManagerRenewalCard";
@@ -33,6 +35,7 @@ const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
 
 type FilterTab = "all" | "unread";
+type ThemeFilter = "all" | InboxTheme;
 
 /** Continental news uses the shared Icon abstraction (`globe`) rather than importing lucide-react
  *  directly, so it slots into `CATEGORY_META.Icon` (a `{ className }` component) like every other
@@ -191,6 +194,7 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   const { t } = useTranslation();
   const { session, inboxMessages, setInboxMessages, refreshInbox } = useGameSave();
   const [filter, setFilter] = useState<FilterTab>("all");
+  const [theme, setTheme] = useState<ThemeFilter>("all");
   // `/inbox?id=<message>` (dashboard inbox card) opens that message.
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("id") : null,
@@ -214,9 +218,13 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   const messages = inboxMessages ?? [];
   const unreadCount = messages.reduce((acc, m) => (m.read ? acc : acc + 1), 0);
 
+  const counts = useMemo(() => themeCounts(messages), [messages]);
+  // Only themes that have messages get a chip; a theme that emptied out falls back to "all".
+  const activeTheme: ThemeFilter = theme === "all" || counts.has(theme) ? theme : "all";
+
   const filtered = useMemo(
-    () => (filter === "unread" ? messages.filter((m) => !m.read) : messages),
-    [messages, filter],
+    () => messages.filter((m) => (filter === "unread" ? !m.read : true) && (activeTheme === "all" || inboxThemeOf(m.category) === activeTheme)),
+    [messages, filter, activeTheme],
   );
 
   const selected = useMemo(
@@ -326,6 +334,27 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
             <div className="md:col-span-1 card-arcade rounded-md overflow-hidden flex flex-col min-h-0">
+              <OptionChips<ThemeFilter>
+                aria-label={t("inbox.themes.label")}
+                className="shrink-0 p-3 border-b border-border"
+                value={activeTheme}
+                onChange={setTheme}
+                options={[
+                  { key: "all", label: t("common.all") },
+                  ...INBOX_THEMES.filter((th) => counts.has(th)).map((th) => {
+                    const unread = counts.get(th)?.unread ?? 0;
+                    return {
+                      key: th,
+                      label: (
+                        <>
+                          {t(`inbox.themes.${th}`)}
+                          {unread > 0 && <span className="tabular-nums ml-1.5 text-primary">{unread}</span>}
+                        </>
+                      ),
+                    };
+                  }),
+                ]}
+              />
               <div className="flex-1 overflow-y-auto divide-y divide-border">
                 {filtered.length === 0 ? (
                   <p className="p-6 text-center text-sm text-muted-foreground m-0">
