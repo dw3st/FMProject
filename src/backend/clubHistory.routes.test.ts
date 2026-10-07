@@ -33,7 +33,7 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
       ...squadA,
       players: squadA.players.map((p) => p.id === striker.id
         ? { ...p, history: [{ season: "2026-27", squadId: squadA.id, clubName: squadA.name, league: "premier_league",
-            apps: 30, goals: 18, assists: 2, avgRating: 7, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, titles: [] }] }
+            apps: 30, goals: 18, assists: 2, avgRating: 7, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }] }
         : p),
     };
     const row = (id: string, pts: number) => ({ squadId: id, name: id, mp: 38, w: 20, d: 10, l: 8, gf: 60, ga: 40, gd: 20, pts, form: [] }) as unknown as StandingRow;

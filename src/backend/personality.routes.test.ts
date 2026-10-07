@@ -84,7 +84,7 @@ describe("personality: smaller-club refusal on the routes", () => {
     const donor = elite.players.find((p) => p.age <= 28 && !p.loan)!;
     const free = {
       ...donor, id: "free_ambitious", name: "Ambitious Free", squadId: "", contract: undefined, personality: ambitious,
-      history: [{ season: "2025-26", squadId: elite.id, clubName: elite.name, league: elite.leagueSlug ?? "", apps: 30, goals: 1, assists: 1, avgRating: 6.8, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, titles: [] }],
+      history: [{ season: "2025-26", squadId: elite.id, clubName: elite.name, league: elite.leagueSlug ?? "", apps: 30, goals: 1, assists: 1, avgRating: 6.8, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] }],
     };
     await saveService.writeFreeAgents(saveId, [{ player: free, since: meta.currentDate! }]);
     await setScout(10);
@@ -128,7 +128,7 @@ describe("personality: smaller-club refusal on the routes", () => {
     const loyal = { ambition: 20, loyalty: 20, professionalism: 10, temperament: 10 };
     const history = ["2023-24", "2024-25", "2025-26"].map((season) => ({
       season, squadId: human.id, clubName: human.name, league: meta.leagueSlug, apps: 30, goals: 0, assists: 0, avgRating: 6.5,
-      cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, titles: [],
+      cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [],
     }));
     // Move him to the elite club on loan (an elite holder: a smaller-club premium would show if misapplied).
     const moved = { ...lent, squadId: elite.id, personality: loyal, history, seasonLog: emptySeasonLog(), contract: { ...lent.contract!, until: "2027-05-31" }, loan: { fromClubId: human.id, fromClubName: human.name, until: "2099-01-01", wageShare: 1 } };

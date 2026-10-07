@@ -18,6 +18,7 @@ export function seasonLabel(year: number, start: string, end: string): string {
 interface RowStats {
   apps: number; goals: number; assists: number; ratingSum: number;
   cupApps: number; cupGoals: number; contApps: number; contGoals: number;
+  yellowCards: number; redCards: number; injuries: number; daysInjured: number;
 }
 
 function statsOfLog(log: PlayerSeasonLog): RowStats {
@@ -26,6 +27,8 @@ function statsOfLog(log: PlayerSeasonLog): RowStats {
     ratingSum: log.avgRating > 0 ? log.avgRating * log.appearances : 0,
     cupApps: log.cup?.appearances ?? 0, cupGoals: log.cup?.goals ?? 0,
     contApps: log.continental?.appearances ?? 0, contGoals: log.continental?.goals ?? 0,
+    yellowCards: log.yellowCards ?? 0, redCards: log.redCards ?? 0,
+    injuries: log.injuries ?? 0, daysInjured: log.daysInjured ?? 0,
   };
 }
 
@@ -44,6 +47,8 @@ function remainingStats(log: PlayerSeasonLog, history: PlayerHistoryRow[] | unde
     s.apps -= r.apps; s.goals -= r.goals; s.assists -= r.assists;
     s.ratingSum -= (r.avgRating ?? 0) * r.apps;
     s.cupApps -= r.cupApps; s.cupGoals -= r.cupGoals; s.contApps -= r.contApps; s.contGoals -= r.contGoals;
+    s.yellowCards -= r.yellowCards; s.redCards -= r.redCards;
+    s.injuries -= r.injuries; s.daysInjured -= r.daysInjured;
   }
   for (const k of Object.keys(s) as (keyof RowStats)[]) s[k] = Math.max(0, s[k]);
   return s;
@@ -57,6 +62,7 @@ function rowFromStats(s: RowStats, club: HistoryClub, season: string, titles: st
     apps: s.apps, goals: s.goals, assists: s.assists,
     avgRating: avg > 0 ? Math.round(avg * 100) / 100 : null,
     cupApps: s.cupApps, cupGoals: s.cupGoals, contApps: s.contApps, contGoals: s.contGoals,
+    yellowCards: s.yellowCards, redCards: s.redCards, injuries: s.injuries, daysInjured: s.daysInjured,
     titles: [...titles],
   };
 }

@@ -34,6 +34,7 @@ import {
   returnDate as injuryReturnDate,
   rollSeverity,
   trainingInjuryChance,
+  withInjuryCounted,
   type InjurySeverity,
 } from "@/Domain/injury/injury";
 
@@ -263,7 +264,7 @@ export function buildTrainingEvent(
       const newInjury = injuryByPlayer.get(String(p.id));
       return {
         ...pl,
-        seasonLog: log,
+        seasonLog: newInjury ? withInjuryCounted(log, date, pl.injury, newInjury.returnDate) : log,
         ...(newInjury
           ? { injury: mergeInjury(pl.injury, { severity: newInjury.severity, returnDate: newInjury.returnDate }) }
           : {}),

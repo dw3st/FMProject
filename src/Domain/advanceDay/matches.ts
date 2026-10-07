@@ -27,7 +27,7 @@ import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
-import { clearHealed, mergeInjury, returnDate as injuryReturnDate } from "@/Domain/injury/injury";
+import { clearHealed, mergeInjury, returnDate as injuryReturnDate, withInjuryCounted } from "@/Domain/injury/injury";
 import { applyMatchCards, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
 
 /** A new match ban from this match's cards (`.claude/rules/game/discipline.md`) — for the inbox. */
@@ -308,7 +308,7 @@ function finalizeSquadsAfterMatch(
           const rd = injuryReturnDate(matchDate, inj.severity, rng);
           injuriesApplied.push({ ...inj, returnDate: rd });
           const merged = mergeInjury(p.injury, { severity: inj.severity, returnDate: rd });
-          return { ...pl, seasonLog: log, injury: merged };
+          return { ...pl, seasonLog: withInjuryCounted(log, matchDate, p.injury, rd), injury: merged };
         }
         return { ...pl, seasonLog: log };
       }),

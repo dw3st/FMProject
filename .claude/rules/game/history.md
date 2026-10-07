@@ -14,12 +14,20 @@ interface PlayerHistoryRow {
   squadId; clubName; league;
   apps; goals; assists; avgRating: number | null;
   cupApps; cupGoals; contApps; contGoals;
+  yellowCards; redCards;   // cartões, todas as competições (seasonLog.yellowCards/redCards)
+  injuries; daysInjured;   // lesões (partida + treino) e dias fora (seasonLog.injuries/daysInjured)
   titles: string[]; // "league:<slug>" | "cup:<slug>" | "continental:<slug>"
   partial?: true;   // passagem num clube que ele deixou no meio da temporada (transferência)
   open?: true;      // parcial cujos números ainda estão dentro do seasonLog atual (some na virada)
   loan?: true;      // passagem por empréstimo (`.claude/rules/game/negotiation.md`), "(empréstimo)" na tabela
 }
 ```
+
+**Lesões no log (#93):** `PlayerSeasonLog.injuries`/`daysInjured` contam cada lesão no dia em que acontece
+(`withInjuryCounted`, `src/Domain/injury/injury.ts`): +1 lesão e `returnDate − data` dias; uma lesão nova em cima de
+outra ainda em curso soma só a extensão além da volta atual. Gravado em `finalizeSquadsAfterMatch` (partida) e
+`buildTrainingEvent` (treino pesado). Os quatro campos entram nas linhas pela mesma conta de desconto das parciais
+abertas (`remainingStats`).
 
 ## Lógica pura (`src/Domain/history/history.ts`, + teste)
 
@@ -56,7 +64,8 @@ interface PlayerHistoryRow {
   `clubName` do último clube. Paginado: `?offset=&limit=` (limite 1..100, padrão 50; fora disso 400), `?mine=1` só
   os aposentados do clube do jogador. Resposta `{ total, items }`, sem `statsAtRetirement` (só a oferta de renascido
   precisa dele). A aba "Aposentados" abre em "Do meu clube", alterna para "Todos" e tem "Carregar mais".
-- `CareerTable` (`src/GameInterface/Components/CareerTable.tsx`): Temporada, Clube, J, G, A, Nota, Títulos (nomes
+- `CareerTable` (`src/GameInterface/Components/CareerTable.tsx`): Temporada, Clube, J, G, A, Nota, CA, CV, Les,
+  Dias fora (cabeçalhos com o nome completo no `title`), Títulos (nomes
   por `competitionName`), linha "Atual" e total. Usada no bloco "Carreira" do `PlayerScreen` (linha atual do
   `seasonLog`) e na aba "Aposentados" da `StatsScreen` (expandir por jogador). i18n `career.*`,
   `statsScreen.retired.*`.
@@ -68,6 +77,9 @@ interface PlayerHistoryRow {
 atual) bate com o log arquivado, nenhuma parcial dessa temporada ficou aberta e o campeão tem o título da liga.
 
 ## Limitações
+
+- Cartões e lesões só aparecem numa linha com jogos: uma temporada inteira lesionado (0 jogos) não gera linha, e
+  uma lesão numa passagem sem jogos fica na linha seguinte do mesmo log.
 
 - Um título continental decidido depois da virada do país do clube entra na linha da temporada seguinte.
 - **Título de quem saiu antes da virada.** O título da liga (e os pendentes de copa/continental) vai para a linha

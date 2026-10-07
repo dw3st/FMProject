@@ -25,8 +25,8 @@ export function StatsTable({ head, children, className = "" }: { head: ReactNode
   );
 }
 
-export function StatsHead({ children, align = "left", className = "" }: { children?: ReactNode; align?: Align; className?: string }) {
-  return <th className={`${TABLE_CELL.head} font-bold ${alignClass(align)} ${className}`}>{children}</th>;
+export function StatsHead({ children, align = "left", className = "", title }: { children?: ReactNode; align?: Align; className?: string; title?: string }) {
+  return <th title={title} className={`${TABLE_CELL.head} font-bold ${alignClass(align)} ${className}`}>{children}</th>;
 }
 
 export function StatsRow({
