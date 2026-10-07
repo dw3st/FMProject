@@ -15,7 +15,7 @@ import { stableStringify } from "@/../scripts/transfermarkt/json";
 import { matchClubs, matchPlayers } from "@/../scripts/transfermarkt/match";
 import { worldNationality } from "@/../scripts/transfermarkt/nationality";
 import { tmPosition } from "@/../scripts/transfermarkt/positions";
-import { VETERAN_CAP, YOUTH_CAP } from "@/../scripts/transfermarkt/level";
+import { LINE_CAP, VETERAN_CAP, YOUTH_CAP } from "@/../scripts/transfermarkt/level";
 import { COVERAGE_MIN } from "@/../scripts/transfermarkt/reorder";
 import { computeOverallAvg, fixedNaturalRole } from "@/Domain/playerRating";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
@@ -179,7 +179,7 @@ const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 log(`Recalibração pelo valor de mercado — ${new Date().toISOString().slice(0, 10)}`);
 log(`Mínimo de cobertura para reordenar: ${pct(COVERAGE_MIN)}`);
-log("Efeito de idade: prêmio de mercado a habilidade igual (nota do seed open-football), reordenação por liga e linha");
+log("Efeitos de idade e linha: prêmio de mercado a habilidade igual (nota do seed open-football); um conjunto de notas por liga");
 log();
 log("== Cobertura por liga (valorados ÷ jogadores) ==");
 for (const [slug, s] of Object.entries(derived.leagues)) {
@@ -213,9 +213,11 @@ for (const [slug, s] of Object.entries(derived.leagues))
   if (leagueTmClubs.has(slug) && !s.reordered) log(`  ${slug}: cobertura ${pct(s.coverage)} (sem reordenação)`);
 
 log();
-log("== Efeito de idade sobre log(valor) a habilidade igual (relativo aos 27) ==");
+log("== Efeitos sobre log(valor) a habilidade igual (idade relativa aos 27, linha ao meio-campo) ==");
 log(`ajuste sobre ${derived.effects.n} jogadores com seed e valor; inclinação ${derived.effects.slope.toFixed(3)} por ponto do seed`);
 log(`idade, estimado (faixas ≤18, ≥35): ${[...derived.effects.raw].sort((a, b) => a[0] - b[0]).map(([a, v]) => `${a} ${v.toFixed(2)}`).join(", ")}`);
+const lineTxt = (m: Record<string, number>) => Object.entries(m).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(", ");
+log(`linha, estimado: ${lineTxt(derived.effects.rawLine)}; aplicado (±${LINE_CAP}): ${lineTxt(derived.effects.line)}`);
 log(`idade, aplicado (jovem ±${YOUTH_CAP}, veterano ±${VETERAN_CAP}): ${[...derived.effects.age].sort((a, b) => a[0] - b[0]).map(([a, v]) => `${a} ${v.toFixed(2)}`).join(", ")}`);
 
 function top10(title: string, ids: string[]) {
