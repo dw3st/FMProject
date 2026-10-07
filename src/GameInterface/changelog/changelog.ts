@@ -980,6 +980,7 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Notas e posições dos jogadores revisadas com dados reais do mercado, atributos de 0 a 100 com cores", en: "Player ratings and positions revised with real market data, attributes from 0 to 100 with colours" },
+  { pt: "Responsabilidades: o diretor cuida dos contratos e a caixa de entrada só traz o que importa", en: "Responsibilities: the director handles contracts and the inbox only brings what matters" },
   { pt: "Instalações com desgaste: assentos, gramado e equipamentos pioram com o tempo e pedem reforma; jardineiro cuida do gramado, e gramado ruim aumenta as lesões", en: "Facilities wear out: seats, pitch and equipment get worse over time and need refurbishing; a groundskeeper looks after the pitch, and a bad pitch means more injuries" },
   { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste; jogadores avaliam as instalações antes de aceitar o seu clube", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear; players weigh your facilities before joining" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
