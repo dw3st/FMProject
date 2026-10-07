@@ -15,6 +15,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync,
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyEspn, type World } from "@/../scripts/espn/apply";
+import { recalibratedOverall } from "@/../scripts/espn/estimate";
 import { ESPN_LOGO_DIR, buildLogoIndex } from "@/../scripts/espn/logos";
 import type { EspnSnapshot, LeagueMapEntry } from "@/../scripts/espn/types";
 import { formatSchedules } from "@/../scripts/openfootball/leagues";
@@ -47,6 +48,19 @@ const snap = readJson<EspnSnapshot>(join(ESPN, "snapshot.json"));
 const leagueMap = readJson<LeagueMapEntry[]>(join(ESPN, "leagueMap.json"));
 const clubOverrides = readJson<Record<string, string>>(join(ESPN, "clubOverrides.json"));
 const playerOverrides = readJson<Record<string, string>>(join(ESPN, "playerOverrides.json"));
+// Market recalibration targets (committed; see espn-import.md → "Recalibração pelo valor de mercado") and the manual
+// corrections: the MAX_SQUAD cut ranks by the note the player will end the chain with, so a squad keeps the players
+// the market (or the curator) rates, not the ones the raw attributes overrate.
+const DERIVED = join(ROOT, "data_process", "transfermarkt", "derived.json");
+const marketTargets = existsSync(DERIVED)
+  ? readJson<{ players: Record<string, { targetOverall?: number }> }>(DERIVED).players ?? {}
+  : {};
+if (!existsSync(DERIVED)) console.warn("WARNING: data_process/transfermarkt/derived.json missing — the squad cut uses the importer overall");
+// Manual corrections (applyPlayerCorrections) win over the market note downstream, so they win in the cut too: a
+// curated starter is never cut for a player the market rates above his corrected note.
+const curated = readJson<Record<string, { overall?: number }>>(join(ROOT, "data_process", "curated", "playerCorrections.json"));
+const cutTargets: Record<string, { targetOverall?: number }> = { ...marketTargets };
+for (const [id, c] of Object.entries(curated)) if (c.overall !== undefined) cutTargets[id] = { targetOverall: c.overall };
 const { boundaries } = readJson<{ boundaries?: BoundaryOverrides }>(join(ROOT, "data_process", "openfootball", "pyramidOverrides.json"));
 for (const m of leagueMap) if (!snap.leagues.some((l) => l.slug === m.slug)) throw new Error(`snapshot has no league ${m.slug} — run fetchEspn.ts`);
 
@@ -66,10 +80,11 @@ const world: World = {
 
 // ── Apply ───────────────────────────────────────────────────────────────────
 const R = ROLES as Record<string, { attrWeights?: Record<string, number> }>;
-const { world: out, report, espnLogoOf, nativeLeagueOf } = applyEspn(world, snap, {
+const { world: out, report, espnLogoOf, nativeLeagueOf, trimmedOut } = applyEspn(world, snap, {
   leagueMap, clubOverrides, playerOverrides, boundaries: boundaries ?? {},
   roleWeights: (p) => R[Player.bestSpecificRole(p.stats, p.positions[0] ?? "CM")]?.attrWeights ?? {},
   overall: (p) => Player.computeOverallAvg(p),
+  trimOverall: recalibratedOverall(cutTargets, (p) => Player.computeOverallAvg(p)),
 });
 
 // ── Validate before writing anything (only needs `out`) ─────────────────────
@@ -90,6 +105,9 @@ for (const [slug, ss] of out.squads) {
 }
 writeJson(join(DATA, "leagueData.json"), out.leagues, 2);
 writeFileSync(join(DATA, "leagueSchedules.json"), formatSchedules(out.schedules));
+// Players the MAX_SQUAD cut left out, per club (gitignored): buildMarketDerived rates them too, so the cut it feeds
+// back (trimOverall) compares every candidate on the same scale and the chain converges.
+writeFileSync(join(ROOT, "data_process", "transfermarkt", "trimmed.json"), JSON.stringify(Object.fromEntries([...trimmedOut].sort(([a], [b]) => a.localeCompare(b)))));
 writeJson(join(DATA, "pyramids.json"), out.pyramids, 2);
 
 // Crests: logos/espn/{squadId}.png for clubs without a native crest, plus the index.

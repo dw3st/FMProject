@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ageAdjust, estimateStats, fillSquad, lineMedians, makePlayer, trimSquad } from "@/../scripts/espn/estimate";
+import { ageAdjust, estimateStats, fillSquad, lineMedians, makePlayer, recalibratedOverall, trimSquad } from "@/../scripts/espn/estimate";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 const st = (v: number): PlayerStatsRecord => ({
@@ -110,6 +110,21 @@ describe("trimSquad", () => {
     const out = trimSquad(players, 30, overall);
     expect(out).toHaveLength(30);
     expect(out.filter((p) => p.positions[0] === "GK").map((p) => p.id).sort()).toEqual(["g2", "g3", "g4"]);
+  });
+
+  test("the recalibrated overall decides the cut when the player has one", () => {
+    const players = [
+      ...Array.from({ length: 3 }, (_, i) => pl(`g${i}`, "GK", 5)),
+      ...Array.from({ length: 28 }, (_, i) => pl(`f${String(i).padStart(2, "0")}`, "Forward", 6)),
+      pl("vet", "Forward", 4, 31),
+    ];
+    // By the raw overall the veteran is the one cut; the market rates him above everyone.
+    expect(trimSquad(players, 30, overall).some((p) => p.id === "vet")).toBe(false);
+    const rank = recalibratedOverall({ vet: { targetOverall: 7 }, f00: {} }, overall);
+    const out = trimSquad(players, 30, rank);
+    expect(out).toHaveLength(30);
+    expect(out.some((p) => p.id === "vet")).toBe(true);
+    expect(rank(players.find((p) => p.id === "f00")!)).toBe(overall(players.find((p) => p.id === "f00")!));
   });
 
   test("returns a copy (not the same reference) when no trimming is needed", () => {

@@ -50,6 +50,12 @@ const countryOf = new Map(readJson<{ slug: string; country: string }[]>(join(DAT
 const clubOverrides = readOverrides("clubOverrides.json");
 const playerOverrides = readOverrides("playerOverrides.json");
 
+// Players the importEspn MAX_SQUAD cut left out (written by importEspn): rated with their club, so the cut that reads
+// derived.json (trimOverall) compares every candidate on the same scale and rebuilding converges.
+const TRIMMED = join(TM, "trimmed.json");
+if (!existsSync(TRIMMED)) throw new Error("data_process/transfermarkt/trimmed.json missing — run bun scripts/importEspn.ts first");
+const trimmed = readJson<Record<string, RosterPlayer[]>>(TRIMMED);
+
 const squadsByLeague = new Map<string, Squad[]>();
 for (const league of readdirSync(SQUADS).sort()) {
   const files = readdirSync(join(SQUADS, league)).filter((f) => f.endsWith(".json")).sort();
@@ -138,14 +144,15 @@ for (const [league, squads] of squadsByLeague) {
     if (covered && !tmId) (unmatchedClubs[league] ??= []).push(squad.name);
     const tmPlayers = tmId ? clubPlayers(tmId) : null;
     if (tmId && !tmPlayers) missingClubCache[league] = (missingClubCache[league] ?? 0) + 1;
+    const candidates = [...squad.players, ...(trimmed[squad.id] ?? [])];
     const pairs = tmPlayers
       ? matchPlayers(
-        squad.players.map((p) => ({ id: p.id, name: p.name, fullName: (p as { fullName?: string }).fullName, age: p.age })),
+        candidates.map((p) => ({ id: p.id, name: p.name, fullName: (p as { fullName?: string }).fullName, age: p.age })),
         tmPlayers,
         playerOverrides,
       )
       : new Map<string, string>();
-    for (const p of squad.players) {
+    for (const p of candidates) {
       playerOf.set(p.id, { p, squad, league });
       const t = pairs.has(p.id) ? tmPlayers!.find((x) => x.id === pairs.get(p.id)) : undefined;
       let match: MatchInfo | undefined;

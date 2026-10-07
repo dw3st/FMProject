@@ -71,6 +71,19 @@ export function makePlayer(a: NewPlayerInput, overall: number): RosterPlayer & {
 
 const lineOf = (p: RosterPlayer) => getMainRole(p.positions[0] ?? "");
 
+/**
+ * Ranking used by the squad cut: the market-recalibrated overall (`targetOverall` of
+ * `data_process/transfermarkt/derived.json`) when the player has one, else the importer's overall. The cut runs
+ * before the recalibration is applied, so without this a starter the market rates highly can lose his place to a
+ * youth the raw attributes overrate (#83: Cauly and Artur at São Paulo).
+ */
+export function recalibratedOverall<P extends RosterPlayer>(
+  targets: Readonly<Record<string, { targetOverall?: number } | undefined>>,
+  fallback: (p: P) => number,
+): (p: P) => number {
+  return (p) => targets[p.id]?.targetOverall ?? fallback(p);
+}
+
 /** Keeps each line's minimum (best by `overall`), then the best remaining players, up to `max`. */
 export function trimSquad<P extends RosterPlayer>(players: P[], max: number, overall: (p: P) => number): P[] {
   if (players.length <= max) return [...players];
@@ -83,11 +96,13 @@ export function trimSquad<P extends RosterPlayer>(players: P[], max: number, ove
 
 /**
  * Adds youth (17–19, id `es_youth_<squadId>_<n>`) until every line reaches MIN_BY_ROLE and the squad
- * reaches MIN_SQUAD. `baseFor(line)` gives the stats base of a youth of that line. Then trims to MAX_SQUAD.
+ * reaches MIN_SQUAD. `baseFor(line)` gives the stats base of a youth of that line. Then trims to MAX_SQUAD,
+ * ranking by `rank` (default `overall`).
  */
 export function fillSquad<P extends RosterPlayer>(
   squadId: string, players: P[], pool: NamePool, country: string,
   baseFor: (line: MainRole) => PlayerStatsRecord, overall: (p: RosterPlayer) => number,
+  rank: (p: RosterPlayer) => number = overall,
 ): RosterPlayer[] {
   const out: RosterPlayer[] = [...players];
   let n = 0;
@@ -107,5 +122,5 @@ export function fillSquad<P extends RosterPlayer>(
   }
   const PAD: MainRole[] = ["Defender", "Midfielder", "Forward", "Midfielder"];
   for (let i = 0; out.length < MIN_SQUAD; i++) addYouth(PAD[i % PAD.length]!);
-  return trimSquad(out, MAX_SQUAD, overall);
+  return trimSquad(out, MAX_SQUAD, rank);
 }

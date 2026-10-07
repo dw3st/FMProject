@@ -76,4 +76,4 @@ for (const [league, r] of [...byLeague].sort(([a], [b]) => a.localeCompare(b))) 
 }
 console.log(`${total} jogador(es) alterado(s), ${filesWritten} arquivo(s) de elenco gravado(s).`);
 if (missing.length)
-  console.warn(`Aviso: ${missing.length} id(s) do derived.json não estão no mundo (mundo regenerado?): ${missing.slice(0, 10).join(", ")}${missing.length > 10 ? ", …" : ""}`);
+  console.log(`${missing.length} id(s) do derived.json fora do mundo (cortados no MAX_SQUAD do importEspn, ou mundo regenerado): ${missing.slice(0, 10).join(", ")}${missing.length > 10 ? ", …" : ""}`);
