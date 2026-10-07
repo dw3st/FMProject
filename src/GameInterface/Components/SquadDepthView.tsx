@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { DetailedRole, Squad } from "@/types/playerTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
-import { formationForSimId, formationForTactics } from "@/Domain/matchFormations";
+import { formationForTactics } from "@/Domain/matchFormations";
 import { squadDepth, type DepthCell, type DepthPlayer, type DepthStatus } from "@/Domain/squad/depth";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
@@ -140,28 +140,42 @@ function DepthCard({ cell, playerHref, className = "" }: { cell: DepthCell; play
 export function SquadDepthView({ squad, leagueSlug, clubSlug }: { squad: Squad; leagueSlug: string; clubSlug: string }) {
   const { t } = useTranslation();
   const { session, currentDate } = useGameSave();
-  const [tactics, setTactics] = useState<TacticsSave | null>(null);
+  // The club's formation comes from tactics.json (the free formation included); nothing is shown
+  // until it arrives, so the verdict is never computed against a guessed formation.
+  const [tactics, setTactics] = useState<
+    { state: "loading" } | { state: "error" } | { state: "ok"; tactics: TacticsSave | null }
+  >({ state: "loading" });
 
   useEffect(() => {
     if (!session) return;
     let alive = true;
+    setTactics({ state: "loading" });
     fetch(`/api/saves/${session.saveId}/tactics`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((tc: TacticsSave | null) => { if (alive) setTactics(tc); })
-      .catch(() => {});
+      .then((r) => {
+        if (!r.ok) throw new Error(`tactics ${r.status}`);
+        return r.json() as Promise<TacticsSave | null>;
+      })
+      .then((tc) => { if (alive) setTactics({ state: "ok", tactics: tc }); })
+      .catch(() => { if (alive) setTactics({ state: "error" }); });
     return () => { alive = false; };
   }, [session?.saveId]);
 
   const formation = useMemo(
-    () => (tactics ? formationForTactics(tactics) : formationForSimId(session?.formation)),
-    [tactics, session?.formation],
+    () => (tactics.state === "ok" ? formationForTactics(tactics.tactics) : null),
+    [tactics],
   );
   const depth = useMemo(
-    () => squadDepth(squad.players, currentDate, formation.attacking.map((s) => s.role)),
+    () => (formation ? squadDepth(squad.players, currentDate, formation.attacking.map((s) => s.role)) : null),
     [squad.players, currentDate, formation],
   );
   const playerHref = (id: string) =>
     `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(clubSlug)}/${encodeURIComponent(id)}`;
+  if (tactics.state === "error") {
+    return <p className="m-0 text-sm text-muted-foreground">{t("warnings.errors.loadFailed")}</p>;
+  }
+  if (!formation || !depth) {
+    return <p className="m-0 text-sm text-muted-foreground">{t("squadDepth.loading")}</p>;
+  }
   const cells = Object.values(depth.cells).filter((c) => !c.hidden);
 
   return (
