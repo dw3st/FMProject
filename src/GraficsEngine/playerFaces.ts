@@ -22,9 +22,9 @@ export function playerMarkerRadius(scale: number): number {
   return Math.max(MARKER_RADIUS_MIN, Math.min(MARKER_RADIUS_MAX, Math.round(scale * 1.85)));
 }
 
-/** Name label font size for a marker radius: 11 px on the smallest dots, growing slowly with them. */
+/** Name label font size for a marker radius: 10 px on the smallest dots, growing slowly with them. */
 export function markerLabelFontSize(radius: number): number {
-  return Math.round(11 + Math.max(0, radius - MARKER_RADIUS_MIN) * 0.2);
+  return Math.round(10 + Math.max(0, radius - MARKER_RADIUS_MIN) * 0.2);
 }
 
 /** Pitch background colour (`PixiPitch` → `app.init({ background })`). */

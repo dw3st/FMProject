@@ -10,7 +10,7 @@ import {
 } from "@/GraficsEngine/playerFaces";
 
 describe("playerMarkerRadius", () => {
-  test("is bigger than the old flat 14 px on every pitch size except the smallest", () => {
+  test("is bigger never below 13 px on any pitch size", () => {
     for (const scale of [2, 4, 6, 7.5, 10, 15]) expect(playerMarkerRadius(scale)).toBeGreaterThanOrEqual(13);
   });
 
@@ -32,7 +32,7 @@ describe("playerMarkerRadius", () => {
 
   test("the name label grows slowly with the dot", () => {
 
-    expect(markerLabelFontSize(13)).toBe(11);
+    expect(markerLabelFontSize(13)).toBe(10);
 
     expect(markerLabelFontSize(24)).toBeGreaterThan(markerLabelFontSize(18));
 

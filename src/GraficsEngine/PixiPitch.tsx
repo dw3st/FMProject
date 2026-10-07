@@ -793,7 +793,7 @@ export function PixiPitch({
       world.addChild(effectsGfx);
       const effectTexts = new Map<PitchEffect, Text>();
       const effectTextStyle = new TextStyle({
-        fontSize: Math.round(markerR * 0.9),
+        fontSize: Math.max(13, Math.round(markerR * 0.9)),
         fontFamily: '"Barlow Condensed", sans-serif',
         fontWeight: '700',
         fill: 0xffffff,
