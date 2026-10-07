@@ -22,7 +22,7 @@ import {
   zoneCenter,
   zoneRole,
 } from "@/Domain/formation/zones";
-import { FORMATION_IDS } from "@/Domain/matchFormations";
+import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import {
   TACTICAL_STYLE_OPTIONS,
   DEFAULT_TACTICAL_STYLE,
@@ -97,6 +97,8 @@ export function FormationScreen() {
   const [baseSlots, setSlots] = useState<FormationSlot[]>([]);
   const [attacking, setAttacking] = useState<{ role: string; x: number; y: number }[]>([]);
   const [savedLineup, setSavedLineup] = useState<string[]>([]);
+  /** The XI as stored in tactics.json (or auto-filled on first load): `savedLineup` differs once edited. */
+  const [persistedLineup, setPersistedLineup] = useState<string[]>([]);
   const [customFormation, setCustomFormation] = useState<CustomFormation | null>(null);
   const [axesOverride, setAxesOverride] = useState<Partial<TacticalAxes> | undefined>(undefined);
   const [editing, setEditing] = useState(false);
@@ -132,6 +134,15 @@ export function FormationScreen() {
   const lineup = editing && draft ? draft.map((d) => d.playerId) : savedLineup;
   const validation = editing && draft ? validateCustomFormation(draft.map((d) => d.slot)) : null;
 
+  /** A lineup that is now the stored one (loaded, saved, or applied from a preset). */
+  function commitLineup(ids: string[]) {
+    setSavedLineup(ids);
+    setPersistedLineup(ids);
+  }
+
+  const pad11 = (ids: string[]) => Array.from({ length: 11 }, (_, i) => ids[i] ?? "");
+  const lineupDirty = pad11(lineup).join("|") !== pad11(persistedLineup).join("|");
+
   function setLineup(next: string[]) {
     if (editing && draft) setDraft(draft.map((d, i) => ({ ...d, playerId: next[i] ?? "" })));
     else setSavedLineup(next);
@@ -156,7 +167,7 @@ export function FormationScreen() {
     fetch(`/api/saves/${saveId}/tactics`)
       .then((r) => r.json())
       .then((t: TacticsSave) => {
-        if (t.lineup?.length) setSavedLineup(t.lineup);
+        if (t.lineup?.length) commitLineup(t.lineup);
         setCustomFormation(t.customFormation ?? null);
         setAxesOverride(t.axesOverride);
         setAssistantRotation(t.assistantRotation === true);
@@ -244,7 +255,7 @@ export function FormationScreen() {
   /** Uses a preset: formation, XI and instructions are saved at once; unavailable starters swapped. */
   async function handleUsePreset(key: LineupPresetKey) {
     const preset = lineupPresets[key];
-    if (!session || !squad || !preset || editing) return;
+    if (!session || !squad || !preset || editing || updating || saveStatus === "saving") return;
     const applied = applyLineupPreset(preset, squad.players, currentDate);
     setPresetBusy(true);
     setPresetError(false);
@@ -257,7 +268,11 @@ export function FormationScreen() {
         ...(applied.customFormation ? { customFormation: applied.customFormation } : {}),
       });
       if (applied.customFormation) setCustomFormation(applied.customFormation);
-      setSavedLineup(applied.lineup);
+      // Slots of the applied formation first, so the new XI never shows on the old shape.
+      const appliedFormation = formationForTactics(applied);
+      setAttacking(appliedFormation.attacking);
+      setSlots(getFormationSlots(appliedFormation as unknown as FormationShape));
+      commitLineup(applied.lineup);
       setSlotInstructions(applied.slotInstructions);
       setSelectedSlotIdx(null);
       mergeSession(updated);
@@ -266,7 +281,7 @@ export function FormationScreen() {
         key,
         lines: applied.replaced.map((r) => ({
           outName: nameOf(r.out) ?? t("formations.presets.unknownPlayer"),
-          inName: nameOf(r.in) ?? "—",
+          inName: r.in ? nameOf(r.in) ?? "—" : "",
           reason: r.reason,
         })),
       });
@@ -280,7 +295,7 @@ export function FormationScreen() {
   // Auto-fill lineup when no saved lineup exists and both slots and squad are available.
   useEffect(() => {
     if (!lineupReady || !squad || baseSlots.length === 0 || savedLineup.length > 0) return;
-    setSavedLineup(autoFillLineupWithFitness(baseSlots, squad.players, currentDate));
+    commitLineup(autoFillLineupWithFitness(baseSlots, squad.players, currentDate));
   }, [lineupReady, baseSlots, squad, savedLineup.length, currentDate]);
 
   useEffect(() => {
@@ -322,6 +337,7 @@ export function FormationScreen() {
 
   async function handleSelectFormation(id: string) {
     if (!session || id === formationId || updating) return;
+    setPresetSwaps(null);
     setUpdating(true);
     try {
       // Resolve the target slots so the current XI follows its best-fit slots in the new shape.
@@ -345,7 +361,7 @@ export function FormationScreen() {
           ...(id === CUSTOM_FORMATION_ID && customFormation ? { customFormation } : {}),
         });
         mergeSession(updated);
-        setSavedLineup(remapped);
+        commitLineup(remapped);
       } else {
         const updated = await updateSaveFormation(session.saveId, id);
         mergeSession(updated);
@@ -396,6 +412,7 @@ export function FormationScreen() {
     const base: CustomFormationSlot[] =
       formationId === CUSTOM_FORMATION_ID && customFormation ? customFormation.slots : snapToZones(attacking);
     if (base.length !== 11) return;
+    setPresetSwaps(null);
     setDraft(base.map((slot, i) => ({ slot, playerId: savedLineup[i] ?? "" })));
     setEditing(true);
     setSelectedSlotIdx(null);
@@ -432,7 +449,7 @@ export function FormationScreen() {
       });
       mergeSession(updated);
       setCustomFormation(custom);
-      setSavedLineup(ids);
+      commitLineup(ids);
       setEditing(false);
       setDraft(null);
       setSaveStatus("saved");
@@ -478,12 +495,14 @@ export function FormationScreen() {
 
   function handleAutoFill() {
     if (!squad || slots.length === 0 || editing) return;
+    setPresetSwaps(null);
     setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
     setSelectedSlotIdx(null);
   }
 
   async function handleSave() {
     if (!session || saveStatus === "saving" || !squad) return;
+    setPresetSwaps(null);
     setSaveStatus("saving");
     try {
       const starting11Ids = [...lineup];
@@ -495,7 +514,7 @@ export function FormationScreen() {
         lineup:         toSave,
       });
       mergeSession(updated);
-      setSavedLineup(toSave);
+      commitLineup(toSave);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch {
@@ -882,9 +901,10 @@ export function FormationScreen() {
           <LineupPresetsPanel
             presets={lineupPresets}
             busy={presetBusy}
-            disabled={editing || !squad}
+            disabled={editing || !squad || updating || saveStatus === "saving"}
             swaps={presetSwaps}
             error={presetError}
+            confirmUse={lineupDirty}
             onSave={handleSavePreset}
             onUse={handleUsePreset}
             onDelete={handleDeletePreset}

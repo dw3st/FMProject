@@ -9,11 +9,19 @@ import { Icon } from "@/GameInterface/Icons";
 /** One swap made when a preset was used, already resolved to names. */
 export interface PresetSwapLine {
   outName: string;
+  /** "" = nobody could replace him. */
   inName: string;
   reason: "injured" | "suspended" | "left";
 }
 
-type Pending = { key: LineupPresetKey; action: "overwrite" | "delete" } | null;
+type PendingAction = "overwrite" | "delete" | "use";
+type Pending = { key: LineupPresetKey; action: PendingAction } | null;
+
+const CONFIRM_TEXT: Record<PendingAction, string> = {
+  overwrite: "formations.presets.confirmOverwrite",
+  delete: "formations.presets.confirmDelete",
+  use: "formations.presets.confirmUse",
+};
 
 /**
  * "Saved lineups" block of the formation screen (#84): three slots (A, B, C). Dumb — the screen
@@ -26,6 +34,7 @@ export function LineupPresetsPanel({
   disabled,
   swaps,
   error,
+  confirmUse,
   onSave,
   onUse,
   onDelete,
@@ -37,6 +46,8 @@ export function LineupPresetsPanel({
   /** Swaps of the last preset used (shown under the slots); null = nothing used yet. */
   swaps: { key: LineupPresetKey; lines: PresetSwapLine[] } | null;
   error: boolean;
+  /** True when the XI on screen differs from the saved one: "Usar" asks before replacing it. */
+  confirmUse: boolean;
   onSave: (key: LineupPresetKey) => void;
   onUse: (key: LineupPresetKey) => void;
   onDelete: (key: LineupPresetKey) => void;
@@ -49,6 +60,7 @@ export function LineupPresetsPanel({
   function confirm() {
     if (!pending) return;
     if (pending.action === "overwrite") onSave(pending.key);
+    else if (pending.action === "use") onUse(pending.key);
     else onDelete(pending.key);
     setPending(null);
   }
@@ -87,9 +99,9 @@ export function LineupPresetsPanel({
               {asking ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    {t(pending!.action === "overwrite" ? "formations.presets.confirmOverwrite" : "formations.presets.confirmDelete", { key })}
+                    {t(CONFIRM_TEXT[pending!.action], { key })}
                   </span>
-                  <Button variant={pending!.action === "delete" ? "danger" : "primary"} onClick={confirm} disabled={busy}>
+                  <Button variant={pending!.action === "delete" ? "danger" : "primary"} onClick={confirm} disabled={busy || (pending!.action !== "delete" && disabled)}>
                     {t("formations.presets.confirm")}
                   </Button>
                   <Button variant="secondary" onClick={() => setPending(null)}>
@@ -99,7 +111,7 @@ export function LineupPresetsPanel({
               ) : (
                 <div className="flex flex-wrap items-center gap-2">
                   {preset && (
-                    <Button onClick={() => onUse(key)} disabled={busy || disabled}>
+                    <Button onClick={() => (confirmUse ? setPending({ key, action: "use" }) : onUse(key))} disabled={busy || disabled}>
                       <Icon name="check" size={16} />
                       {t("formations.presets.use")}
                     </Button>
@@ -141,7 +153,9 @@ export function LineupPresetsPanel({
               <ul className="mt-1 space-y-0.5">
                 {swaps.lines.map((s, i) => (
                   <li key={i} className="text-muted-foreground">
-                    {t(`formations.presets.swap.${s.reason}`, { out: s.outName, in: s.inName })}
+                    {s.inName
+                      ? t(`formations.presets.swap.${s.reason}`, { out: s.outName, in: s.inName })
+                      : t(`formations.presets.noReplacement.${s.reason}`, { out: s.outName })}
                   </li>
                 ))}
               </ul>
