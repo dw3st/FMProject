@@ -61,6 +61,7 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
 - O sorteio é o de sempre (`signedNoise(save:jogador:atributo)`), só a amplitude é por jogador: a faixa converge
   ao valor real sem pular. A personalidade usa o mesmo ruído do jogador.
 - O potencial (≤ 23), o valor e o salário saem em faixa.
+- A faixa de **valor** usa só a metade central da faixa de nível (`VALUE_RANGE_SHRINK` 0,5, `seen.ts`): o valor cresce exponencialmente com a nota (4.5), e a faixa inteira dava "€1,5M–€1,2bi" para um jogador desconhecido.
 - **A busca ordena e filtra pelo que a tela mostra (4.3.1):** com faixa na tela, a linha (`toDisplayPlayer`)
   carrega em `avg`, `valueMillions` e `wage` o **meio da faixa mostrada** (`src/Domain/scouting/seen.ts`:
   `seenOverallRange` com as pontas arredondadas como na tela, `seenValueRange`, `seenWageRange`, `rangeMid`), e os

@@ -4,7 +4,8 @@ import { filterScoutPlayers, mapSquadsToScoutPlayers, sortScoutPlayers } from "@
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import { obscureForViewer } from "@/Domain/staff/staff";
 import { computeOverallAvg } from "@/Domain/playerRating";
-import { rangeMid, seenOverallRange, seenWageRange } from "@/Domain/scouting/seen";
+import { rangeMid, seenOverallRange, seenValueRange, seenWageRange } from "@/Domain/scouting/seen";
+import { Player } from "@/Domain/Player";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 
 /**
@@ -110,5 +111,14 @@ describe("salary of a little-known player", () => {
     const seen = obscureForViewer(real("z", 6, 99_999), { knowledge: 0, noise: NOISE }, "save", 2);
     const [row] = mapSquadsToScoutPlayers([{ ...squad, players: [seen] }]);
     expect(row!.wage).toBe(seen.contract!.wage);
+  });
+});
+
+describe("seenValueRange", () => {
+  test("uses the middle half of the overall range, never the full ±noise", () => {
+    const [lo, hi] = seenValueRange([3, 7], 27);
+    expect(lo).toBeCloseTo(new Player(4, 27).valueMillions, 1);
+    expect(hi).toBeCloseTo(new Player(6, 27).valueMillions, 1);
+    expect(hi / lo).toBeLessThan(new Player(7, 27).valueMillions / new Player(3, 27).valueMillions);
   });
 });
