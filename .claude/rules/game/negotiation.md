@@ -22,18 +22,21 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
   a IA aceita até o teto (`min(verba, priceCap, valor × 1,25)`, menor com cláusula), responde uma vez com o teto
   e, numa segunda contraproposta acima dele, desiste (409 `noRounds`).
 - **Preço pedido (#88, `SellCandidate.askingPrice`):** ao colocar à venda o jogador define um preço (padrão = o
-  valor de mercado, `playerMarketValue`; passos de €0,1M abaixo de €10M e €1M acima, arredondado para cima). Com
+  valor de mercado, `playerMarketValue`, no mínimo €0,1M; passos de €0,1M abaixo de €10M e €1M acima, arredondado
+  para cima; piso `0,3 × valor`, `askingFloor`). Preço igual ao valor não é gravado ("No valor"): acompanha o valor
+  quando ele muda (evolução, idade). Pôr preço num jogador listado só pelo pedido de transferência (`requested`) vira
+  listagem manual (o flag sai; o pedido retirado não o tira mais da lista). Com
   `r = preço / valor` (`src/Domain/negotiation/askingPrice.ts`, constantes em `NEGOTIATION.ASKING`):
   - **r < 1:** chance extra diária de proposta de `freqMult − 1`, `freqMult = min(2, 1 + 2 × (1 − r))`; faixa de
-    nota da necessidade ±(0,5 + min(0,5; 2,5 × (1 − r))); até 2 clubes tentados em sequência até um conseguir
-    propor (verba, folha); a verba mínima nunca passa a de uma listagem comum (`min(valor × 0,6, preço × 0,95)`);
-    a proposta abre em `preço × (0,95..1,0)` e o teto é o preço.
+    nota da necessidade ±(0,5 + min(0,5; 2,5 × (1 − r))); o clube precisa poder pagar `0,9 × preço`
+    (`DISCOUNT_AFFORD`), e quem não pode (verba, teto do tier, folha) passa a vez ao próximo, até 2 clubes
+    (`DISCOUNT_TRIES`); a proposta abre em `preço × (0,95..1,0)` e o teto é o preço.
   - **r > 1:** a escolha diária do jogador só passa com chance `r^−2`; o clube precisa caber o valor; abre em
     `valor + (preço − valor) × (0,2..0,7)` e o teto é o preço (contraproposta até ele).
   - **r = 1 ou sem preço:** exatamente as propostas de antes (teste com o mesmo `rng`). Tudo continua limitado
     por verba, teto do tier, folha, janela, `MAX_PER_PLAYER` e `MAX_PENDING`; a cláusula de venda futura desconta a
-    abertura como antes. O pedido de transferência por moral (`requested`) usa o mesmo preço (sem preço, o valor)
-    e a chance dele × `freqMult`.
+    abertura como antes. O pedido de transferência por moral usa o mesmo preço (sem preço, o valor), a chance dele
+    × `freqMult`, e o teto do vendedor LOW nunca passa do teto do preço.
   - Medição: `bun scripts/asking-price-measure.ts [sementes] [dias]` (ver "Medição do preço pedido").
 - **Empréstimo, pedir (jogador ← IA):** duração até o fim da temporada da liga do jogador (da próxima, se faltam
   menos de 60 dias; nunca além do contrato), % do salário pago (0–100) e taxa opcional. A IA só empresta quem não
@@ -111,7 +114,7 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
 | `POST /api/saves/:id/bids/:bidId { action: accept\|reject\|counter, fee?, sellOnPct? }` | Responde uma proposta; 409 `offerClosed` (vencida, sumida, clube sem verba/folha/vaga), `noRounds` |
 | `POST /api/saves/:id/loans { playerId, fromSquadId, wageShare 0..100, fee }` | Pede empréstimo: `{ response, talk, until }` |
 | `GET/POST /api/saves/:id/loan-list { playerId }` | Lista de empréstimo (alterna) |
-| `GET/POST /api/saves/:id/sell-list { playerId, askingPrice? }` | Sem `askingPrice`: alterna. Com `askingPrice` (número > 0, até €2 bi): coloca à venda a esse preço ou só atualiza o preço (nunca tira da lista); `null` volta ao valor. 400 `invalidPrice`, `not your player`, `onLoan`; 409 `noClub` |
+| `GET/POST /api/saves/:id/sell-list { playerId, askingPrice? }` | Sem `askingPrice`: alterna. Com `askingPrice` (número entre `0,3 × valor` e €2 bi): coloca à venda a esse preço ou só atualiza o preço (nunca tira da lista); `null` ou o próprio valor = "No valor". 400 `invalidPrice`, `not your player`, `onLoan`; 409 `noClub` |
 
 ## Telas
 
@@ -124,8 +127,10 @@ Spec: `docs/superpowers/specs/2026-10-04-negotiation-loans-design.md`. Etapa 21 
 - **Transferências:** aba "Empréstimos" (propostas, cedidos, recebidos, cláusulas a receber).
 
 - **Preço pedido (#88):** "Colocar à venda" na ficha abre o campo do preço (valor de mercado como referência, −/+ no
-  passo, "Usar o valor", texto do efeito: abaixo = propostas mais rápidas, acima = menos propostas); listado, o botão
-  "Pedido €X" edita o preço. Na aba de transferências a lista de venda mostra o pedido e a % do valor, com "Preço".
+  passo, nunca abaixo do mínimo, "Usar o valor", texto do efeito: abaixo = propostas mais rápidas, acima = menos
+  propostas; texto inválido ou abaixo do mínimo desliga Salvar com aviso); listado, o botão "Pedido €X" ou
+  "No valor · €X" edita o preço. Na aba de transferências a lista de venda mostra o pedido e a % do valor (ou
+  "No valor · €X", calculado na hora), com "Preço".
 ## `/test`, `/lab`
 
 Sem efeito de partida: nada a exibir.
@@ -179,7 +184,7 @@ as propostas ficam pendentes até vencer (no máximo 2 vivas por jogador); "recu
 | Jogador | r | propostas (ignorar) | propostas (recusar) | taxa / valor | 1ª proposta (dia) |
 |---|---|---|---|---|---|
 | Zagueiro 5,31 | 1,0 | 12,6 | 19,3 | 0,83 | 2,3 |
-| | 0,8 | 16,8 | 32,8 | 0,71 | 1,1 |
+| | 0,8 | 14,2 | 22,0 | 0,75 | 1,9 |
 | | 1,2 | 6,7 | 8,4 | 1,06 | 4,3 |
 | Meia 5,27 | 1,0 | 14,5 | 21,3 | 0,86 | 1,6 |
 | | 0,8 | 18,0 | 45,1 | 0,74 | 0,8 |
@@ -188,5 +193,7 @@ as propostas ficam pendentes até vencer (no máximo 2 vivas por jogador); "recu
 | | 0,8 | 14,0 | 21,8 | 0,75 | 1,4 |
 | | 1,2 | 8,0 | 9,2 | 1,06 | 3,6 |
 
-A taxa média fica abaixo do preço pela cláusula de venda futura (25% das propostas abrem mais baixo) e pelos clubes
-cuja verba ou teto de preço não chega ao pedido (eles ainda propõem, dentro do mínimo de uma listagem comum).
+A taxa média fica abaixo do preço pela cláusula de venda futura (25% das propostas abrem mais baixo) e, com r > 1,
+porque a proposta abre entre o valor e o preço (o usuário contrapropõe até o preço). Antes de exigir `0,9 × preço` de
+verba com desconto, o zagueiro a 0,8 recebia 16,8 / 32,8 propostas com taxa/valor 0,71 (clubes sem verba propunham
+abaixo do pedido); meia e atacante não mudaram (os compradores deles já tinham verba).
