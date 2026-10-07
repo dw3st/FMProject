@@ -8,6 +8,7 @@ import { playerOverallRating, teamAvgRating } from "@/Domain/transfer/transferNe
 import { returnDueLoans, emptyMarket } from "@/backend/negotiationWorld";
 import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { addDays } from "@/Domain/dates";
+import { roundFeeUp } from "@/Domain/negotiation/negotiation";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, MarketState } from "@/types/transferMarketTypes";
@@ -222,6 +223,55 @@ describe("negotiation routes", () => {
       req(`/api/saves/${saveId}/transfers`, "POST", { saveId }, { playerId: "x", fromSquadId: "y", fee: 1, sellOnPct: 15 }),
     );
     expect(badPct.status).toBe(400);
+  }, 60_000);
+
+  test("sell list with an asking price: list at a price, update it, clear it, validation (#88)", async () => {
+    const sq = await human();
+    const p = sq.players.find((q) => !q.loan && !q.moraleLog?.transferRequest && valueOf(q) >= 10_000_000)!;
+    const value = valueOf(p);
+    const sell = (body: unknown) => route("/api/saves/:saveId/sell-list")(req(`/api/saves/${saveId}/sell-list`, "POST", { saveId }, body));
+    type Entry = { playerId: string; askingPrice?: number; requested?: true };
+    const entry = async (res: Response) =>
+      ((await res.json()) as { playerSellList: Entry[] }).playerSellList.find((c) => c.playerId === p.id);
+
+    const listed = await sell({ playerId: p.id, askingPrice: value * 0.8 + 400_000 });
+    expect(listed.status).toBe(200);
+    expect((await entry(listed))?.askingPrice).toBe(roundFeeUp(value * 0.8 + 400_000));
+    // Setting a price again updates it and never unlists him.
+    const updated = await sell({ playerId: p.id, askingPrice: value * 1.2 });
+    expect((await entry(updated))?.askingPrice).toBe(roundFeeUp(value * 1.2));
+    // His value (or null) is stored as "at value": no frozen price.
+    const atValue = await entry(await sell({ playerId: p.id, askingPrice: value }));
+    expect(atValue).toBeDefined();
+    expect(atValue!.askingPrice).toBeUndefined();
+    const cleared = await sell({ playerId: p.id, askingPrice: null });
+    const c = await entry(cleared);
+    expect(c).toBeDefined();
+    expect(c!.askingPrice).toBeUndefined();
+    // Floor: 0.3 × value.
+    expect((await sell({ playerId: p.id, askingPrice: value * 0.25 })).status).toBe(400);
+    expect((await sell({ playerId: p.id, askingPrice: value * 0.3 })).status).toBe(200);
+    for (const bad of [0, -5, "1000", 1e12]) {
+      const res = await sell({ playerId: p.id, askingPrice: bad });
+      expect(res.status).toBe(400);
+    }
+    expect((await sell({ playerId: "not-mine", askingPrice: 1_000_000 })).status).toBe(400);
+    // Plain toggle still unlists.
+    expect(await entry(await sell({ playerId: p.id }))).toBeUndefined();
+    // Pricing a player listed only by his transfer request makes it a manual listing.
+    const m0 = (await saveService.getMarket(saveId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, { ...m0, playerSellList: [...(m0.playerSellList ?? []), { playerId: p.id, priority: 1, requested: true }] });
+    const manual = await entry(await sell({ playerId: p.id, askingPrice: value * 0.9 }));
+    expect(manual?.requested).toBeUndefined();
+    expect(await entry(await sell({ playerId: p.id }))).toBeUndefined();
+    // A borrowed player cannot be priced either.
+    const base = await human();
+    const borrowed: RosterPlayer = { ...p, id: `${p.id}-loan`, loan: { fromClubId: "x", fromClubName: "X", until: "2099-01-01", wageShare: 1 } };
+    await saveService.saveSquadById(saveId, { ...base, players: [...base.players, borrowed] });
+    const onLoan = await sell({ playerId: borrowed.id, askingPrice: 1_000_000 });
+    expect(onLoan.status).toBe(400);
+    expect(((await onLoan.json()) as { error: string }).error).toBe("onLoan");
+    await saveService.saveSquadById(saveId, base);
   }, 60_000);
 
   test("a bid that would leave the squad too thin is refused (409 squadDepth)", async () => {

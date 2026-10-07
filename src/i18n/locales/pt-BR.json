@@ -979,6 +979,9 @@
     "netBalance": "Saldo Líquido",
     "mySellList": {
       "listedForSale": "Colocado à venda",
+      "asking": "Pedido {{price}} · {{pct}}% do valor",
+      "atValue": "No valor · {{price}}",
+      "askingNoValue": "Pedido {{price}}",
       "sellingPriority": "Prioridade de venda",
       "loadingError": "Algo deu errado ao carregar sua lista.",
       "updateError": "Não foi possível atualizar a lista. Tente novamente.",
@@ -2238,6 +2241,27 @@
       "accept": "Aceitar",
       "counter": "Contrapropor",
       "reject": "Recusar"
+    },
+    "asking": {
+      "title": "Preço pedido",
+      "label": "Preço pedido",
+      "down": "Baixar o preço",
+      "up": "Subir o preço",
+      "step": "Passo {{step}}",
+      "value": "Valor de mercado {{value}}",
+      "useValue": "Usar o valor",
+      "save": "Salvar preço",
+      "edit": "Preço",
+      "priceButton": "Pedido {{price}}",
+      "atValueButton": "No valor · {{price}}",
+      "invalid": "Preço inválido.",
+      "belowFloor": "Abaixo do mínimo ({{min}}).",
+      "min": "mínimo {{min}}",
+      "hint": {
+        "below": "Abaixo do valor: propostas mais rápidas, perto do seu preço.",
+        "fair": "No valor: propostas no ritmo normal.",
+        "above": "Acima do valor: menos propostas, e os clubes abrem mais baixo para negociar."
+      }
     },
     "lists": {
       "listSale": "Colocar à venda",

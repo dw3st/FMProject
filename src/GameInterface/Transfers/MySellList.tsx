@@ -1,11 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { SellCandidate } from "@/types/transferMarketTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { Icon } from "@/GameInterface/Icons";
+import { AskingPriceModal } from "@/GameInterface/Negotiation/AskingPriceModal";
+import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
+import { formatFee } from "@/Domain/money";
+
+/** "Asking €X · N% of value" or "At value · €X" (his value today, never frozen). */
+function sellListPriceText(t: TFunction, c: SellCandidate, p: RosterPlayer | undefined): string {
+  if (!p) return `${t("transfers.mySellList.sellingPriority")} ${Math.round(c.priority * 100)}%`;
+  const value = playerMarketValue(p);
+  if (c.askingPrice === undefined) return t("transfers.mySellList.atValue", { price: formatFee(value) });
+  return value > 0
+    ? t("transfers.mySellList.asking", { price: formatFee(c.askingPrice), pct: Math.round((c.askingPrice / value) * 100) })
+    : t("transfers.mySellList.askingNoValue", { price: formatFee(c.askingPrice) });
+}
 
 export function MySellList() {
   const { t } = useTranslation();
@@ -19,6 +33,7 @@ export function MySellList() {
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pricingId, setPricingId] = useState<string | null>(null);
 
   /** Primitives only — `loadSession()` returns a new object every render, so never depend on `session`. */
   const load = useCallback(async () => {
@@ -151,10 +166,21 @@ export function MySellList() {
                 >
                   {name}
                 </a>
-                <p className="text-sm text-muted-foreground m-0 mt-0.5">
-                  {t("transfers.mySellList.sellingPriority")} {Math.round(c.priority * 100)}%
+                <p className="text-sm text-muted-foreground m-0 mt-0.5 tabular-nums">
+                  {sellListPriceText(t, c, p)}
                 </p>
               </div>
+              {p && (
+                <button
+                  type="button"
+                  onClick={() => setPricingId(c.playerId)}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-border bg-muted/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title={t("negotiation.asking.title")}
+                >
+                  <Icon name="pencil" className="w-4 h-4" aria-hidden />
+                  <span className="hidden sm:inline">{t("negotiation.asking.edit")}</span>
+                </button>
+              )}
               <button
                 type="button"
                 disabled={busy}
@@ -173,6 +199,22 @@ export function MySellList() {
           );
         })}
       </ul>
+      {pricingId && saveId && byId.get(pricingId) && (() => {
+        const p = byId.get(pricingId)!;
+        const current = candidates.find((c) => c.playerId === pricingId)?.askingPrice;
+        return (
+          <AskingPriceModal
+            saveId={saveId}
+            playerId={p.id}
+            playerName={p.name}
+            value={playerMarketValue(p)}
+            {...(current !== undefined ? { current } : {})}
+            listed
+            onClose={() => setPricingId(null)}
+            onSaved={setCandidates}
+          />
+        );
+      })()}
     </div>
   );
 }

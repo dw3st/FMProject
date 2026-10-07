@@ -979,6 +979,9 @@
     "netBalance": "Net Balance",
     "mySellList": {
       "listedForSale": "Listed for sale",
+      "asking": "Asking {{price}} · {{pct}}% of value",
+      "atValue": "At value · {{price}}",
+      "askingNoValue": "Asking {{price}}",
       "sellingPriority": "Selling priority",
       "loadingError": "Something went wrong loading your list.",
       "updateError": "Could not update the list. Try again.",
@@ -2238,6 +2241,27 @@
       "accept": "Accept",
       "counter": "Counter-offer",
       "reject": "Refuse"
+    },
+    "asking": {
+      "title": "Asking price",
+      "label": "Asking price",
+      "down": "Lower the price",
+      "up": "Raise the price",
+      "step": "Step {{step}}",
+      "value": "Market value {{value}}",
+      "useValue": "Use value",
+      "save": "Save price",
+      "edit": "Price",
+      "priceButton": "Asking {{price}}",
+      "atValueButton": "At value · {{price}}",
+      "invalid": "Not a valid price.",
+      "belowFloor": "Below the minimum ({{min}}).",
+      "min": "minimum {{min}}",
+      "hint": {
+        "below": "Below his value: bids come faster, close to your price.",
+        "fair": "At his value: bids come at the usual pace.",
+        "above": "Above his value: fewer bids, and clubs open lower to negotiate."
+      }
     },
     "lists": {
       "listSale": "List for sale",

@@ -29,6 +29,7 @@ import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer
 import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
 import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
+import { parseAskingPrice, playerMarketValue } from "@/Domain/negotiation/askingPrice";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -396,9 +397,15 @@ export const transferRoutes = {
       try { body = await req.json(); } catch {
         return Response.json({ error: "invalid body" }, { status: 400 });
       }
-      const { playerId } = body as Record<string, unknown>;
+      const { playerId, askingPrice: rawPrice } = (body ?? {}) as Record<string, unknown>;
       if (typeof playerId !== "string" || playerId.length === 0) {
         return Response.json({ error: "missing playerId" }, { status: 400 });
+      }
+      // `askingPrice` present (#88): list him (or keep him listed) at that price; `null` clears the
+      // price (his value). Absent: the plain toggle.
+      const setPrice = body !== null && typeof body === "object" && "askingPrice" in body;
+      if (setPrice && rawPrice !== null && parseAskingPrice(rawPrice) === null) {
+        return Response.json({ error: "invalidPrice" }, { status: 400 });
       }
 
       // Serialise the read-decide-write of the market's sell list per save: a concurrent
@@ -426,7 +433,24 @@ export const transferRoutes = {
 
         let newList: SellCandidate[];
         const existingIdx = currentList.findIndex((c) => c.playerId === playerId);
-        if (existingIdx >= 0) {
+        if (setPrice) {
+          // Set (or clear) the asking price, listing him if he was not listed. The price has a floor
+          // (MIN_RATIO × value); a price equal to his value is stored as "at value" (no price), so it
+          // follows his value as it changes. Pricing a player listed only by his transfer request
+          // makes it a manual listing (`requested` goes: a withdrawn request no longer unlists him).
+          if (!own) return Response.json({ error: "not your player" }, { status: 400 });
+          const value = playerMarketValue(own);
+          const parsed = rawPrice === null ? undefined : parseAskingPrice(rawPrice, value);
+          if (parsed === null) return Response.json({ error: "invalidPrice" }, { status: 400 });
+          const askingPrice = parsed === value ? undefined : parsed;
+          const priced = (c: SellCandidate): SellCandidate => {
+            const { askingPrice: _old, requested: _req, ...rest } = c;
+            return askingPrice !== undefined ? { ...rest, askingPrice } : rest;
+          };
+          newList = existingIdx >= 0
+            ? currentList.map((c, i) => (i === existingIdx ? priced(c) : c))
+            : [...currentList, priced({ playerId, priority: 1.0 })];
+        } else if (existingIdx >= 0) {
           // Toggle off
           newList = currentList.filter((c) => c.playerId !== playerId);
         } else {

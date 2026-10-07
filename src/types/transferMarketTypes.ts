@@ -22,6 +22,8 @@ export interface SellCandidate {
   priority: number;
   /** Human list only: he asked to leave (transfer request, `.claude/rules/game/morale.md`). */
   requested?: true;
+  /** Human list only: asking price set by the manager, EUR (#88). Absent = his market value. */
+  askingPrice?: number;
 }
 
 export interface SquadMarketProfile {

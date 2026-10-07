@@ -24,6 +24,7 @@ import { addDays } from "@/Domain/dates";
 import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import type { LeagueData } from "@/types/playerTypes";
 import { PlayerKnowledgePanel } from "@/GameInterface/Scouting/PlayerKnowledgePanel";
+import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 
 export function PlayerScreen({
   playerId,
@@ -150,7 +151,7 @@ export function PlayerScreen({
               </button>
             ) : isOwnPlayer && !player.loan ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                {session && <ListToggles saveId={session.saveId} playerId={player.id} />}
+                {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} />}
                 <button
                   type="button"
                   onClick={() => setRenewOpen(true)}
