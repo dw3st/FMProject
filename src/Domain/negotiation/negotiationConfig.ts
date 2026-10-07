@@ -44,6 +44,30 @@ export const NEGOTIATION = {
     MAX_PER_PLAYER: 2,
   },
 
+  /**
+   * Asking price of a player the human lists for sale (#88). `r = asking / value`: below the value
+   * clubs come sooner, from a wider band and bid near the asking price; above it fewer come and they
+   * open between the value and the asking price. r = 1 (or no price) = the plain listing.
+   */
+  ASKING: {
+    /** r < 1: daily bid rate × (1 + DISCOUNT_FREQ_SLOPE × (1 − r)), at most MAX_FREQ_MULT. */
+    DISCOUNT_FREQ_SLOPE: 2,
+    MAX_FREQ_MULT: 2,
+    /** r > 1: daily bid rate × r^−PREMIUM_FREQ_POWER. */
+    PREMIUM_FREQ_POWER: 2,
+    /** r < 1: the need's rating band widens by BAND_PER_DISCOUNT × (1 − r), at most BAND_MAX_EXTRA. */
+    BAND_PER_DISCOUNT: 2.5,
+    BAND_MAX_EXTRA: 0.5,
+    /** r < 1: opening fee = asking × (DISCOUNT_FEE_MIN + rng × DISCOUNT_FEE_SPREAD). */
+    DISCOUNT_FEE_MIN: 0.95,
+    DISCOUNT_FEE_SPREAD: 0.05,
+    /** r > 1: opening fee = value + (asking − value) × (PREMIUM_FEE_MIN + rng × PREMIUM_FEE_SPREAD). */
+    PREMIUM_FEE_MIN: 0.2,
+    PREMIUM_FEE_SPREAD: 0.5,
+    /** Highest asking price accepted by the route, EUR. */
+    MAX_PRICE: 2_000_000_000,
+  },
+
   /** Rivals for the same target (Etapa 25, `.claude/rules/game/negotiation.md`). */
   RIVAL: {
     /** One candidate a day (drawn by urgency) enters with BASE × need urgency × (0,5 + 0,5 × relative rating of the target). */

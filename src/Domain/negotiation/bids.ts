@@ -13,6 +13,7 @@ import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiat
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
+import { askingBandExtra, askingFreqMult, askingOpening, askingRatio } from "@/Domain/negotiation/askingPrice";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, SellCandidate, SquadMarketProfile } from "@/types/transferMarketTypes";
@@ -30,21 +31,29 @@ export function buildAiTransferBid(args: {
   rng: () => number;
   /** The selling (human) squad: prices a player with a transfer request as a LOW-tier sale. */
   seller?: Squad;
+  /** Asking price the human set on the sell list (#88), EUR; absent = his value. */
+  askingPrice?: number;
 }): MarketBid | null {
   const { player, buyer, rng } = args;
   if (buyer.players.length >= MAX_SQUAD) return null;
   // A very ambitious player turns down a much smaller club (`personality.md`).
   if (args.seller && refusesSmallerClub(player, tierStepsDown(args.seller, buyer))) return null;
   const value = new Player(playerOverallRating(player), player.age).price;
+  // Asking price (#88): below the value, a club only needs to afford the asking price.
+  const r = askingRatio(args.askingPrice, value);
+  const ref = r < 1 ? args.askingPrice! : value;
   const cap = priceCapForTier(transferBudgetTierOf(buyer));
   const maxFee = roundFeeDown(Math.min(aiTransferBudgetOf(buyer), cap ?? Infinity, value * B.MAX_RATIO));
-  if (maxFee <= 0 || maxFee < value * B.MIN_MAX_RATIO) return null;
+  if (maxFee <= 0 || maxFee < ref * B.MIN_MAX_RATIO) return null;
   // The wage the buyer would pay (curve × personality, `renewalContract`).
-  if (!passesWageGate(aiClubFinance(buyer), renewalContract(player, buyer, args.date, 1).wage, Math.min(maxFee, value))) return null;
+  if (!passesWageGate(aiClubFinance(buyer), renewalContract(player, buyer, args.date, 1).wage, Math.min(maxFee, ref))) return null;
   const sellOnPct = rng() < B.SELL_ON_CHANCE ? (rng() < 0.5 ? 10 : 20) : 0;
   const mult = 1 + sellOnValueFraction(sellOnPct, player.age);
-  let opening = roundFeeDown(Math.min(value * (B.FEE_MIN + rng() * B.FEE_SPREAD), maxFee) / mult);
-  let ceiling = maxFee;
+  const u = rng();
+  const base = (args.askingPrice !== undefined ? askingOpening(args.askingPrice, value, u) : null) ?? value * (B.FEE_MIN + u * B.FEE_SPREAD);
+  let opening = roundFeeDown(Math.min(base, maxFee) / mult);
+  // With an asking price the club never goes above it (the human can still counter up to it).
+  let ceiling = r === 1 ? maxFee : Math.min(maxFee, Math.max(opening, roundFeeDown(args.askingPrice!)));
   // Transfer request (`.claude/rules/game/morale.md`): the buyer knows he wants out and prices the
   // human club as an AI LOW-tier seller (pressure 1.0) — the fee such a seller accepts caps the bid.
   if (args.seller && player.moraleLog?.transferRequest) {
@@ -128,20 +137,40 @@ export function generateBidsForHuman(args: {
       .filter(([id]) => needKind !== undefined || !refusesSmallerClub(player, tierStepsDown(humanSquad, squads.get(id)!)))
       .map(([id]) => squads.get(id)!);
 
-  // Listed player: one transfer bid per day.
-  const listed = args.sellList.map((c) => owned(c.playerId)).filter((p): p is RosterPlayer => !!p && !transferBidsFull(all(), p.id));
-  if (listed.length > 0 && room()) {
-    const player = listed[Math.floor(rng() * listed.length)]!;
+  // Asking price of a listed player (#88): r = asking / value (1 without a price).
+  const askingOf = (player: RosterPlayer) => args.sellList.find((c) => c.playerId === player.id)?.askingPrice;
+  const ratioOf = (player: RosterPlayer) =>
+    askingRatio(askingOf(player), new Player(playerOverallRating(player), player.age).price);
+  /** A transfer bid from a random club whose need band (± slack) covers him. */
+  const tryBid = (player: RosterPlayer, slack: number) => {
     const rating = playerOverallRating(player);
     const buyers = buyersFor(player).filter((b) => {
       const need = profiles[b.id]!.needs.find((n) => playerMatchesBand(player, n.position))!;
-      return rating >= need.targetMin - BAND_SLACK && rating <= need.targetMax + BAND_SLACK;
+      return rating >= need.targetMin - slack && rating <= need.targetMax + slack;
     });
-    if (buyers.length > 0) {
-      const buyer = buyers[Math.floor(rng() * buyers.length)]!;
-      const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad });
-      if (bid) out.push(bid);
-    }
+    if (buyers.length === 0) return;
+    const buyer = buyers[Math.floor(rng() * buyers.length)]!;
+    const asking = askingOf(player);
+    const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad, ...(asking !== undefined ? { askingPrice: asking } : {}) });
+    if (bid) out.push(bid);
+  };
+
+  // Listed player: one transfer bid per day (an asking price above his value lets it through less often).
+  const listed = args.sellList.map((c) => owned(c.playerId)).filter((p): p is RosterPlayer => !!p && !transferBidsFull(all(), p.id));
+  if (listed.length > 0 && room()) {
+    const player = listed[Math.floor(rng() * listed.length)]!;
+    const r = ratioOf(player);
+    if (r <= 1 || rng() < askingFreqMult(r)) tryBid(player, BAND_SLACK + askingBandExtra(r));
+  }
+
+  // Priced below his value: an extra daily chance (freqMult − 1) for each such player.
+  for (const c of args.sellList) {
+    if (!room()) break;
+    const player = owned(c.playerId);
+    if (!player || transferBidsFull(all(), player.id)) continue;
+    const r = ratioOf(player);
+    if (r >= 1 || rng() >= askingFreqMult(r) - 1) continue;
+    tryBid(player, BAND_SLACK + askingBandExtra(r));
   }
 
   // Transfer request (`.claude/rules/game/morale.md`): he wants out, so clubs come in more often
@@ -150,16 +179,9 @@ export function generateBidsForHuman(args: {
     if (!c.requested || !room()) continue;
     const player = owned(c.playerId);
     if (!player || transferBidsFull(all(), player.id)) continue;
-    if (rng() >= MORALE.REQUEST_BID_CHANCE) continue;
-    const rating = playerOverallRating(player);
-    const buyers = buyersFor(player).filter((b) => {
-      const need = profiles[b.id]!.needs.find((n) => playerMatchesBand(player, n.position))!;
-      return rating >= need.targetMin - MORALE.REQUEST_BAND_SLACK && rating <= need.targetMax + MORALE.REQUEST_BAND_SLACK;
-    });
-    if (buyers.length === 0) continue;
-    const buyer = buyers[Math.floor(rng() * buyers.length)]!;
-    const bid = buildAiTransferBid({ id: args.newId(), player, buyer, date, rng, seller: humanSquad });
-    if (bid) out.push(bid);
+    const r = ratioOf(player);
+    if (rng() >= Math.min(1, MORALE.REQUEST_BID_CHANCE * askingFreqMult(r))) continue;
+    tryBid(player, MORALE.REQUEST_BAND_SLACK + askingBandExtra(r));
   }
 
   // Unlisted standout: a bigger club tries its luck.
