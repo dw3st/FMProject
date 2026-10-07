@@ -6,7 +6,9 @@
  *
  * Two cases:
  *  - "realista": like the game — progress reset to zero and age +1 at every rollover (seasonTransition);
- *  - "sem virada": progress carried over, age fixed (the first version of this script).
+ *  - "sem virada": progress carried over, age fixed (the first version of this script);
+ *  - "base": a 16-year-old in the academy, 240 normal sessions a season, progress never reset (as
+ *    developYouthSeason, which divides GROWTH_DP_SCALE back out); cumulative change after each season.
  * Each season: 38 matches (every third rated 7.2, the rest 6.4), one normal training session per match.
  * `--module` points at another copy of the development code (e.g. the pre-0.1-step version) to compare.
  */
@@ -16,7 +18,7 @@ import * as CURRENT from "@/GameEngine/PlayerDevelopment";
 import type { RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import { emptyDevelopmentProgress, type PlayerStatsRecord, type RosterPlayer } from "@/types/playerTypes";
 
-type Dev = Pick<typeof CURRENT, "applyDevelopment" | "applyTrainingDevelopment">;
+type Dev = Pick<typeof CURRENT, "applyDevelopment" | "applyTrainingDevelopment"> & { GROWTH_DP_SCALE?: number };
 
 const moduleArg = process.argv.indexOf("--module");
 const dev: Dev = moduleArg >= 0
@@ -61,3 +63,19 @@ for (const realistic of [true, false]) {
     / PROFILES.length);
   console.log(["média".padEnd(16), ...avg.map((v) => v.toFixed(3).padStart(7))].join(""));
 }
+
+// Academy: mirrors developYouthSeason (CM weights, the growth scale divided back out, progress kept).
+const youthStats: PlayerStatsRecord = { passing: 4, vision: 4, finishing: 4, dribbling: 4, speed: 5, acceleration: 5,
+  tackling: 4, pressing: 4, stamina: 5, heading: 4, strength: 4, reflex: 1, jump: 3 };
+let y = { id: "pace-youth", name: "x", age: 16, positions: ["CM"], stats: { ...youthStats } } as unknown as RosterPlayer;
+const y0 = mean(y);
+const cumulative: string[] = [];
+for (let season = 0; season < SEASONS; season++) {
+  for (let i = 0; i < 240; i++) {
+    y = dev.applyTrainingDevelopment(y, "normal", weightsOf("CM"), 1 / (dev.GROWTH_DP_SCALE ?? 1)).updatedPlayer;
+  }
+  y = { ...y, age: y.age + 1 };
+  cumulative.push((mean(y) - y0).toFixed(3));
+}
+console.log(`
+base (16 anos, acumulado por temporada): ${cumulative.join(" / ")}`);

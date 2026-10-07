@@ -9,7 +9,7 @@ import { roundAttr } from "@/Domain/attributes";
 import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/playerRating";
 import { effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
 import { academyEffectsOf } from "@/Domain/facilities/facilities";
-import { applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
+import { applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, GROWTH_DP_SCALE, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import ROLES from "@/Data/roles.json";
 import type { MainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
@@ -162,8 +162,12 @@ export function developYouthSeason(player: RosterPlayer, dpMult: number): Roster
   const roleEntry = (ROLES as Record<string, { dpWeights?: RoleDPWeights }>)[player.positions[0] ?? "CM"];
   const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
   let p: RosterPlayer = { ...player, overallAvg: undefined };
+  // GROWTH_DP_SCALE slows the squad down to the old pace of whole-point steps, whose progress reset at every
+  // rollover hid most of a season's growth. Academy progress is never reset, so it never had that dead zone:
+  // dividing the scale back out keeps the academy at its old pace (.claude/rules/game/development.md, "Passo de 0,1").
+  const academyDpMult = (dpMult * rebornDpMult(player) * professionalismDpMult(player)) / GROWTH_DP_SCALE;
   for (let i = 0; i < Y.SESSIONS_PER_SEASON; i++) {
-    p = applyTrainingDevelopment(p, "normal", weights, dpMult * rebornDpMult(player) * professionalismDpMult(player)).updatedPlayer;
+    p = applyTrainingDevelopment(p, "normal", weights, academyDpMult).updatedPlayer;
   }
   return { ...p, age: p.age + 1, overallAvg: undefined };
 }
