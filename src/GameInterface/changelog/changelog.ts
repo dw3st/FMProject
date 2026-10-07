@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.9",
+    date: "2026-10-07",
+    items: [
+      { pt: "Últimos jogos em cores: vitória verde, empate amarelo e derrota vermelha", en: "Recent form in colours: green win, yellow draw, red loss" },
+      { pt: "Escudos escuros, como o da Juventus, visíveis no fundo escuro", en: "Dark crests, like Juventus', readable on the dark background" },
+    ],
+  },
+  {
     version: "4.4.8",
     date: "2026-10-07",
     items: [
