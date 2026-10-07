@@ -54,8 +54,30 @@ interface TacticsSave {
   assistantRotation?: boolean;               // rest tired starters automatically
   setPieceTakers?:  { corners?: string; freeKicks?: string; penalties?: string }; // absent = automatic
   slotInstructions?: ({ variant?: RoleVariantId; press?: "less" | "normal" | "more" } | null)[]; // index = slot
+  lineupPresets?:   Partial<Record<"A" | "B" | "C", LineupPreset>>; // saved lineups (#84)
+}
+
+interface LineupPreset {
+  formation:        string;                  // ready-made id or "custom"
+  customFormation?: CustomFormation;         // when formation === "custom"
+  lineup:           string[];                // up to 11 player ids, slot order ("" = empty)
+  slotInstructions?: (SlotInstruction | null)[];
+  savedOn:          string;                  // game date, YYYY-MM-DD
 }
 ```
+
+`lineupPresets` (#84): block "Escalações salvas" of the formation screen (`LineupPresetsPanel`), three
+slots A/B/C. "Salvar" stores the screen's formation (free formation included), XI and slot instructions
+(`buildLineupPreset`); "Usar" applies one through `applyLineupPreset` and saves formation, lineup and
+instructions in one `PUT` — a saved player who left the squad, is injured or suspended is swapped for the
+best available player of the slot (`fitnessAdjustedValue`; `replaceUnavailableStarters` for the last two)
+and the screen lists the swaps — a starter nobody can replace stays and is listed "sem reserva" (`in: ""`).
+Overwrite and delete ask for confirmation, and so does "Usar" over an unsaved XI. The tactics `PUT` runs
+under `withSaveLock`. The `PUT` takes the whole object (`null` slot = delete,
+`null` = clear all) and validates each preset with `parseLineupPresets` (`src/Domain/tactics/lineupPresets.ts`:
+known formation or a valid free formation, ≤ 11 unique string ids (≤ 64 chars), a real date (`isRealIsoDate`), instructions checked against the
+preset's own formation); 400 on any error. Presets are never read by a match; a club change (new
+`tactics.json`) drops them.
 
 `setPieceTakers` (Etapa 14): three selectors on the tactics screen (`SetPieceTakersPanel`), "Automatic"
 by default; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; reaches the engine as

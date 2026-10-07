@@ -16,6 +16,7 @@ import { requireAuth } from "@/backend/auth/middleware";
 import { isTesterEmail } from "@/backend/auth/testers";
 import { isSaveOwner } from "@/backend/auth/saveOwnership";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
+import { isRealIsoDate } from "@/Domain/dates";
 
 const REPORT_TYPES = ["bug", "improvement", "tweak"] as const;
 type ReportType = (typeof REPORT_TYPES)[number];
@@ -24,14 +25,6 @@ const DESCRIPTION_MIN = 5;
 const DESCRIPTION_MAX = 2000;
 const PAGE_MAX = 200;
 const USER_AGENT_MAX = 300;
-const GAME_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** True for a real calendar date in YYYY-MM-DD (rejects 2027-02-30, 2027-13-01…). */
-function isRealDate(s: string): boolean {
-  if (!GAME_DATE_RE.test(s)) return false;
-  const d = new Date(`${s}T00:00:00Z`);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
-}
 
 const MAX_BODY_BYTES = 16 * 1024; // 16 KB
 
@@ -222,7 +215,7 @@ function validateReportBody(
     }
     const trimmed = body.gameDate.trim();
     if (trimmed) {
-      if (!isRealDate(trimmed)) {
+      if (!isRealIsoDate(trimmed)) {
         return { ok: false, error: "gameDate must be YYYY-MM-DD" };
       }
       gameDate = trimmed;

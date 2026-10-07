@@ -22,7 +22,7 @@ import {
   zoneCenter,
   zoneRole,
 } from "@/Domain/formation/zones";
-import { FORMATION_IDS } from "@/Domain/matchFormations";
+import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import {
   TACTICAL_STYLE_OPTIONS,
   DEFAULT_TACTICAL_STYLE,
@@ -31,7 +31,9 @@ import {
   effectiveAxes,
   hasAxesOverride,
 } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction } from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
+import { applyLineupPreset, buildLineupPreset } from "@/Domain/tactics/lineupPresets";
+import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { getMainRole } from "@/Domain/roles";
 import { getDetailedPositionColor, MAIN_ROLE_ABBR, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -95,6 +97,8 @@ export function FormationScreen() {
   const [baseSlots, setSlots] = useState<FormationSlot[]>([]);
   const [attacking, setAttacking] = useState<{ role: string; x: number; y: number }[]>([]);
   const [savedLineup, setSavedLineup] = useState<string[]>([]);
+  /** The XI as stored in tactics.json (or auto-filled on first load): `savedLineup` differs once edited. */
+  const [persistedLineup, setPersistedLineup] = useState<string[]>([]);
   const [customFormation, setCustomFormation] = useState<CustomFormation | null>(null);
   const [axesOverride, setAxesOverride] = useState<Partial<TacticalAxes> | undefined>(undefined);
   const [editing, setEditing] = useState(false);
@@ -110,6 +114,11 @@ export function FormationScreen() {
   const [slotInstructions, setSlotInstructions] = useState<(SlotInstruction | null)[]>([]);
   const [instructionError, setInstructionError] = useState(false);
   const instructionShort = useInstructionShort();
+  /** Saved lineups (#84). */
+  const [lineupPresets, setLineupPresets] = useState<LineupPresets>({});
+  const [presetBusy, setPresetBusy] = useState(false);
+  const [presetError, setPresetError] = useState(false);
+  const [presetSwaps, setPresetSwaps] = useState<{ key: LineupPresetKey; lines: PresetSwapLine[] } | null>(null);
 
   const formationId = session?.formation ?? DEFAULT_FORMATION;
 
@@ -124,6 +133,15 @@ export function FormationScreen() {
   const slots = editing && draftSlots ? draftSlots : baseSlots;
   const lineup = editing && draft ? draft.map((d) => d.playerId) : savedLineup;
   const validation = editing && draft ? validateCustomFormation(draft.map((d) => d.slot)) : null;
+
+  /** A lineup that is now the stored one (loaded, saved, or applied from a preset). */
+  function commitLineup(ids: string[]) {
+    setSavedLineup(ids);
+    setPersistedLineup(ids);
+  }
+
+  const pad11 = (ids: string[]) => Array.from({ length: 11 }, (_, i) => ids[i] ?? "");
+  const lineupDirty = pad11(lineup).join("|") !== pad11(persistedLineup).join("|");
 
   function setLineup(next: string[]) {
     if (editing && draft) setDraft(draft.map((d, i) => ({ ...d, playerId: next[i] ?? "" })));
@@ -149,10 +167,11 @@ export function FormationScreen() {
     fetch(`/api/saves/${saveId}/tactics`)
       .then((r) => r.json())
       .then((t: TacticsSave) => {
-        if (t.lineup?.length) setSavedLineup(t.lineup);
+        if (t.lineup?.length) commitLineup(t.lineup);
         setCustomFormation(t.customFormation ?? null);
         setAxesOverride(t.axesOverride);
         setAssistantRotation(t.assistantRotation === true);
+        setLineupPresets(t.lineupPresets ?? {});
         mergeSession({
           formation: t.formation,
           tactical_style: t.tactical_style,
@@ -196,10 +215,87 @@ export function FormationScreen() {
     }
   }
 
+  // ── Saved lineups (#84) ─────────────────────────────────────────────────────
+
+  async function putPresets(next: LineupPresets) {
+    if (!session) return;
+    setPresetBusy(true);
+    setPresetError(false);
+    try {
+      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lineupPresets: next }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const saved = (await res.json()) as TacticsSave;
+      setLineupPresets(saved.lineupPresets ?? {});
+    } catch {
+      setPresetError(true);
+    } finally {
+      setPresetBusy(false);
+    }
+  }
+
+  function handleSavePreset(key: LineupPresetKey) {
+    if (editing) return;
+    const preset = buildLineupPreset(
+      { formation: formationId, customFormation, lineup, slotInstructions },
+      currentDate,
+    );
+    void putPresets({ ...lineupPresets, [key]: preset });
+  }
+
+  function handleDeletePreset(key: LineupPresetKey) {
+    const next: LineupPresets = { ...lineupPresets };
+    delete next[key];
+    void putPresets(next);
+  }
+
+  /** Uses a preset: formation, XI and instructions are saved at once; unavailable starters swapped. */
+  async function handleUsePreset(key: LineupPresetKey) {
+    const preset = lineupPresets[key];
+    if (!session || !squad || !preset || editing || updating || saveStatus === "saving") return;
+    const applied = applyLineupPreset(preset, squad.players, currentDate);
+    setPresetBusy(true);
+    setPresetError(false);
+    try {
+      const updated = await saveFormationAndTactics(session.saveId, {
+        formation: applied.formation,
+        tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        lineup: applied.lineup,
+        slotInstructions: applied.slotInstructions,
+        ...(applied.customFormation ? { customFormation: applied.customFormation } : {}),
+      });
+      if (applied.customFormation) setCustomFormation(applied.customFormation);
+      // Slots of the applied formation first, so the new XI never shows on the old shape.
+      const appliedFormation = formationForTactics(applied);
+      setAttacking(appliedFormation.attacking);
+      setSlots(getFormationSlots(appliedFormation as unknown as FormationShape));
+      commitLineup(applied.lineup);
+      setSlotInstructions(applied.slotInstructions);
+      setSelectedSlotIdx(null);
+      mergeSession(updated);
+      const nameOf = (id: string) => squad.players.find((p) => p.id === id)?.name;
+      setPresetSwaps({
+        key,
+        lines: applied.replaced.map((r) => ({
+          outName: nameOf(r.out) ?? t("formations.presets.unknownPlayer"),
+          inName: r.in ? nameOf(r.in) ?? "—" : "",
+          reason: r.reason,
+        })),
+      });
+    } catch {
+      setPresetError(true);
+    } finally {
+      setPresetBusy(false);
+    }
+  }
+
   // Auto-fill lineup when no saved lineup exists and both slots and squad are available.
   useEffect(() => {
     if (!lineupReady || !squad || baseSlots.length === 0 || savedLineup.length > 0) return;
-    setSavedLineup(autoFillLineupWithFitness(baseSlots, squad.players, currentDate));
+    commitLineup(autoFillLineupWithFitness(baseSlots, squad.players, currentDate));
   }, [lineupReady, baseSlots, squad, savedLineup.length, currentDate]);
 
   useEffect(() => {
@@ -241,6 +337,7 @@ export function FormationScreen() {
 
   async function handleSelectFormation(id: string) {
     if (!session || id === formationId || updating) return;
+    setPresetSwaps(null);
     setUpdating(true);
     try {
       // Resolve the target slots so the current XI follows its best-fit slots in the new shape.
@@ -264,7 +361,7 @@ export function FormationScreen() {
           ...(id === CUSTOM_FORMATION_ID && customFormation ? { customFormation } : {}),
         });
         mergeSession(updated);
-        setSavedLineup(remapped);
+        commitLineup(remapped);
       } else {
         const updated = await updateSaveFormation(session.saveId, id);
         mergeSession(updated);
@@ -315,6 +412,7 @@ export function FormationScreen() {
     const base: CustomFormationSlot[] =
       formationId === CUSTOM_FORMATION_ID && customFormation ? customFormation.slots : snapToZones(attacking);
     if (base.length !== 11) return;
+    setPresetSwaps(null);
     setDraft(base.map((slot, i) => ({ slot, playerId: savedLineup[i] ?? "" })));
     setEditing(true);
     setSelectedSlotIdx(null);
@@ -351,7 +449,7 @@ export function FormationScreen() {
       });
       mergeSession(updated);
       setCustomFormation(custom);
-      setSavedLineup(ids);
+      commitLineup(ids);
       setEditing(false);
       setDraft(null);
       setSaveStatus("saved");
@@ -397,12 +495,14 @@ export function FormationScreen() {
 
   function handleAutoFill() {
     if (!squad || slots.length === 0 || editing) return;
+    setPresetSwaps(null);
     setLineup(autoFillLineupWithFitness(slots, squad.players, currentDate));
     setSelectedSlotIdx(null);
   }
 
   async function handleSave() {
     if (!session || saveStatus === "saving" || !squad) return;
+    setPresetSwaps(null);
     setSaveStatus("saving");
     try {
       const starting11Ids = [...lineup];
@@ -414,7 +514,7 @@ export function FormationScreen() {
         lineup:         toSave,
       });
       mergeSession(updated);
-      setSavedLineup(toSave);
+      commitLineup(toSave);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch {
@@ -797,6 +897,18 @@ export function FormationScreen() {
               </div>
             </div>
           </div>
+
+          <LineupPresetsPanel
+            presets={lineupPresets}
+            busy={presetBusy}
+            disabled={editing || !squad || updating || saveStatus === "saving"}
+            swaps={presetSwaps}
+            error={presetError}
+            confirmUse={lineupDirty}
+            onSave={handleSavePreset}
+            onUse={handleUsePreset}
+            onDelete={handleDeletePreset}
+          />
 
           {/* Assistant rotation */}
           <label className="card-arcade rounded-md p-5 flex items-center justify-between gap-4 cursor-pointer">

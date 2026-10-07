@@ -1,5 +1,5 @@
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
-import type { TacticalStyle, TacticsSave, CustomFormation } from "@/types/tacticsTypes";
+import type { TacticalStyle, TacticsSave, CustomFormation, SlotInstruction } from "@/types/tacticsTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import type { FamiliarityKey } from "@/types/familiarityTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
@@ -166,6 +166,7 @@ export async function saveFormationAndTactics(
     tactical_style: TacticalStyle;
     lineup?: string[];
     customFormation?: CustomFormation;
+    slotInstructions?: (SlotInstruction | null)[];
   },
 ): Promise<GameSession> {
   const res = await fetch(`/api/saves/${saveId}/tactics`, {

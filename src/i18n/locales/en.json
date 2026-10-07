@@ -514,6 +514,36 @@
     }
   },
   "formations": {
+    "presets": {
+      "unknownPlayer": "A player",
+      "title": "Saved lineups",
+      "hint": "Keep up to three line-ups (formation, starters and instructions) and switch between them in one click.",
+      "empty": "Empty",
+      "starters_one": "{{count}} starter",
+      "starters_other": "{{count}} starters",
+      "savedOn": "Saved on {{date}}",
+      "use": "Use",
+      "save": "Save current",
+      "overwrite": "Overwrite",
+      "delete": "Delete lineup {{key}}",
+      "confirm": "Confirm",
+      "confirmOverwrite": "Replace lineup {{key}}?",
+      "confirmDelete": "Delete lineup {{key}}?",
+      "error": "Could not save. Try again.",
+      "applied": "Lineup {{key}} in use.",
+      "appliedWithSwaps": "Lineup {{key}} in use, with changes:",
+      "confirmUse": "Replace the unsaved XI with lineup {{key}}?",
+      "noReplacement": {
+        "injured": "{{out}} is injured: no replacement for the slot",
+        "suspended": "{{out}} is suspended: no replacement for the slot",
+        "left": "{{out}} left the squad: no replacement for the slot"
+      },
+      "swap": {
+        "injured": "{{out}} is injured: {{in}} comes in",
+        "suspended": "{{out}} is suspended: {{in}} comes in",
+        "left": "{{out}} left the squad: {{in}} comes in"
+      }
+    },
     "custom": "Custom",
     "editor": {
       "edit": "Edit formation",
