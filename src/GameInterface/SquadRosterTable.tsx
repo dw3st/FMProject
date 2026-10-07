@@ -18,6 +18,8 @@ import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { moraleBand, moraleOf } from "@/Domain/morale/morale";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 
 type RosterRow = DisplayPlayer & { morale: number };
@@ -167,6 +169,11 @@ export function SquadRosterTable({
               {positionLabel(t, player.natural, player.pos)}
             </div>
             <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
+              {nationalityFlagCode(player.nationality) && (
+                <span title={player.nationality} aria-label={player.nationality} role="img" className="mr-2 inline-flex align-middle">
+                  <Flag code={nationalityFlagCode(player.nationality)!} />
+                </span>
+              )}
               <a
                 href={playerDetailHref(player)}
                 title={player.personality ? t(`personality.summary.${summaryOf(player.personality.traits)}`) : undefined}
