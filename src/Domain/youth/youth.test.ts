@@ -6,7 +6,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 
 function mk(i: number, pos: string, level: number): RosterPlayer {
-  const v = Math.round(level);
+  const v = Math.round(level * 10) / 10;
   return {
     id: `p${i}`, name: `Player ${i} Silva`, age: 26, squadId: "s1", preferredFoot: "right", positions: [pos],
     stats: {
@@ -41,6 +41,7 @@ describe("youth intake", () => {
       expect(p.age).toBeGreaterThanOrEqual(16);
       expect(p.age).toBeLessThanOrEqual(17);
       expect(p.contract?.wage).toBeGreaterThan(0);
+      for (const v of Object.values(p.stats)) expect(Math.abs(v * 10 - Math.round(v * 10))).toBeLessThan(1e-9);
     }
     expect(new Set(a.map((p) => p.id)).size).toBe(a.length);
     expect(generateIntake({ ...base, year: 2028 })[0]!.id).not.toBe(a[0]!.id);

@@ -5,6 +5,7 @@ import { YOUTH as Y } from "@/Domain/youth/youthConfig";
 import { aiClubFinance, financialTierOf, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
+import { roundAttr } from "@/Domain/attributes";
 import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/playerRating";
 import { effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
 import { academyEffectsOf } from "@/Domain/facilities/facilities";
@@ -62,8 +63,7 @@ function statsFor(id: string, specific: string, target: number): PlayerStatsReco
   const best = continuous((lo + hi) / 2);
   const out = {} as Record<string, number>;
   for (const k of STAT_KEYS) {
-    // Unbiased deterministic rounding: floor(v + u).
-    const v = clamp(Math.floor(best[k] + unit(`${id}:r:${k}`)), 0, 10);
+    const v = roundAttr(best[k]);
     // An attribute the role does not use stays low (a striker has no goalkeeping).
     out[k] = (weights[k] ?? 0) > 0 ? v : Math.min(v, 2);
   }

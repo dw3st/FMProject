@@ -2,6 +2,7 @@ import { unitHash } from "@/../scripts/openfootball/ids";
 import { STAT_KEYS, playerProfile } from "@/../scripts/openfootball/derive";
 import { MAX_SQUAD, MIN_BY_ROLE, MIN_SQUAD, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
 import { getMainRole } from "@/Domain/roles";
+import { roundAttr } from "@/Domain/attributes";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 export const LINES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
@@ -33,11 +34,8 @@ export function ageAdjust(age: number): number {
 
 /**
  * base + ageAdjust(age) + shift on every attribute, ±1 on NOISE_ATTRS hash-picked attributes,
- * clamped to 0..10. Uses unbiased hash-based stochastic rounding (`floor(v + hash)`) instead of
- * `Math.round`, because with integer bases a plain round makes fractional adjustments
- * (ageAdjust's -0.5/-0.3, and any fractional `shift`) vanish on every attribute that isn't hit by
- * noise, and rounds x.5 medians up. `floor(v + u)` with `u` uniform in [0, 1) is unbiased in
- * expectation (E[floor(v+u)] = v) and leaves already-integer `v` untouched, since u < 1.
+ * clamped to 0..10 and rounded to one decimal (`roundAttr`). The decimal keeps fractional
+ * adjustments (ageAdjust's -0.5/-0.3, any fractional `shift`), so no stochastic rounding is needed.
  */
 export function estimateStats(id: string, age: number, base: PlayerStatsRecord, shift: number): PlayerStatsRecord {
   const noisy = [...STAT_KEYS].sort((a, b) => unitHash(`${id}:pick:${a}`) - unitHash(`${id}:pick:${b}`)).slice(0, NOISE_ATTRS);
@@ -45,7 +43,7 @@ export function estimateStats(id: string, age: number, base: PlayerStatsRecord, 
   for (const k of STAT_KEYS) {
     const noise = noisy.includes(k) ? (unitHash(`${id}:sign:${k}`) < 0.5 ? -1 : 1) : 0;
     const v = base[k] + ageAdjust(age) + shift + noise;
-    out[k] = Math.max(0, Math.min(10, Math.floor(v + unitHash(`${id}:round:${k}`))));
+    out[k] = roundAttr(v);
   }
   return out;
 }

@@ -3,6 +3,7 @@ import type { LineFit, PlaneFit } from "@/../scripts/openfootball/calibration";
 import { gaussianFromKey, playerId, unitHash } from "@/../scripts/openfootball/ids";
 import { mainRole, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
 import { fitLevelPredictor, predictLevel, type LevelPair, type LevelPlaneFit } from "@/../scripts/openfootball/recalibrate";
+import { roundAttr } from "@/Domain/attributes";
 import { computeOverallAvg } from "@/Domain/playerRating";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
@@ -145,7 +146,7 @@ function deriveStats(
     const jitter = gaussianFromKey(`${sp.id}:${k}:jitter`);
     const noise = f.sd * noiseScale * (LUCK_WEIGHT * luck + JITTER_WEIGHT * jitter);
     const raw = f.a + f.b * sp.overall + f.c * rep + correction + noise;
-    return clamp(Math.round(raw), 0, 10);
+    return roundAttr(clamp(raw, 0, 10));
   };
   return {
     passing: statOf("passing"), vision: statOf("vision"), finishing: statOf("finishing"),
@@ -160,7 +161,7 @@ function deriveStatsLegacy(sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, ro
   const statOf = (k: StatKey): number => {
     const f = pickFit(coeffs, role, k);
     const raw = f.a + f.b * sp.overall + f.c * rep + f.sd * NOISE_SCALE * gaussianFromKey(`${sp.id}:${k}`);
-    return clamp(Math.round(raw), 0, 10);
+    return roundAttr(clamp(raw, 0, 10));
   };
   return {
     passing: statOf("passing"), vision: statOf("vision"), finishing: statOf("finishing"),

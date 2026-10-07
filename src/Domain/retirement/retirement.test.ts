@@ -10,7 +10,7 @@ import { overallAvg } from "@/Domain/playerRating";
 import type { FreeAgent, RetiredPlayer, RosterPlayer, Squad } from "@/types/playerTypes";
 
 function mk(id: string, pos: string, level: number, age = 26): RosterPlayer {
-  const v = Math.round(level);
+  const v = Math.round(level * 10) / 10;
   return {
     id, name: `P ${id}`, age, squadId: "s1", preferredFoot: "right", positions: [pos],
     stats: {
@@ -142,9 +142,10 @@ describe("generateReborn", () => {
     expect(p.reborn).toEqual({ fromId: "star" });
     expect(p.contract?.wage).toBeGreaterThan(0);
     const target = lineAverage(sq, roleOf(p)) - 0.8;
-    expect(Math.abs(overallAvg(p) - target)).toBeLessThan(0.5);
+    expect(Math.abs(overallAvg(p) - target)).toBeLessThan(0.1);
     // Relative shape: finishing stays above tackling.
     expect(p.stats.finishing).toBeGreaterThan(p.stats.tackling);
+    for (const v of Object.values(p.stats)) expect(Math.abs(v * 10 - Math.round(v * 10))).toBeLessThan(1e-9);
   });
 
   test("DP multiplier only while young", () => {

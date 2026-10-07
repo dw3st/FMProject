@@ -1,6 +1,7 @@
 import { RETIREMENT as R } from "@/Domain/retirement/retirementConfig";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { roleOf } from "@/Domain/contracts/freeAgents";
+import { roundAttr } from "@/Domain/attributes";
 import { overallAvg, weightedScore } from "@/Domain/playerRating";
 import { lineAverage } from "@/Domain/youth/youth";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -179,7 +180,7 @@ export function generateReborn(args: {
   }
   const best = shifted((lo + hi) / 2);
   const stats = {} as Record<string, number>;
-  for (const k of STAT_KEYS) stats[k] = clamp(Math.floor(best[k] + unit(`${id}:r:${k}`)), 0, 10);
+  for (const k of STAT_KEYS) stats[k] = roundAttr(best[k]);
   const player: RosterPlayer = {
     id, name: retired.name, age: R.REBORN_AGE, squadId: squad.id, preferredFoot: retired.preferredFoot,
     positions: retired.positions, stats: stats as unknown as PlayerStatsRecord, profile: retired.profile,

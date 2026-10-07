@@ -3,6 +3,7 @@ import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance"
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 import { AI_SIGN_MAX_AGE, CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { addYearsIso, aiRenewalYears, contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
+import { roundAttr } from "@/Domain/attributes";
 import { overallAvg } from "@/Domain/playerRating";
 import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { getMainRole } from "@/Domain/roles";
@@ -44,7 +45,7 @@ function makeYouthPlayer(squad: Squad, role: MainRole, tag: string): RosterPlaye
   const lastParts = pick("l")?.name.trim().split(" ") ?? ["Silva"];
   const name = `${initial}. ${lastParts[lastParts.length - 1]}`;
   const stats = template
-    ? Object.fromEntries(Object.entries(template.stats).map(([k, v]) => [k, Math.max(0, (v as number) - 1)]))
+    ? Object.fromEntries(Object.entries(template.stats).map(([k, v]) => [k, roundAttr((v as number) - 1)]))
     : {
         passing: 2, vision: 2, finishing: 2, dribbling: 2, speed: 3, acceleration: 3, tackling: 2,
         pressing: 2, stamina: 3, heading: 2, strength: 2, reflex: 0, jump: 0,

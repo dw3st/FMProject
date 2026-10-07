@@ -67,7 +67,7 @@ describe("applyCorrection", () => {
     const r = applyCorrection(iago(), { naturalPosition: "RB", overall: 5.6 }, W);
     expect(Math.abs(computeOverallAvg(r.player) - 5.6)).toBeLessThanOrEqual(OVERALL_TOLERANCE);
     for (const v of Object.values(r.player.stats)) {
-      expect(Number.isInteger(v)).toBe(true);
+      expect(Math.abs(v * 10 - Math.round(v * 10))).toBeLessThan(1e-9);
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThanOrEqual(10);
     }
