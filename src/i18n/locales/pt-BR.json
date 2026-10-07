@@ -353,6 +353,8 @@
     "statsDesc": "Mergulhe em análises aprofundadas de desempenho de jogadores e equipe."
   },
   "playerScreen": {
+    "birthDate": "Nascido em {{date}}",
+    "height": "{{cm}} cm",
     "loadingPlayer": "Carregando jogador...",
     "playerNotFound": "Jogador não encontrado.",
     "currentTeam": "Clube atual",

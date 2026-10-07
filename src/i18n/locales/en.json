@@ -353,6 +353,8 @@
     "statsDesc": "Deep-dive into player and team performance analytics."
   },
   "playerScreen": {
+    "birthDate": "Born {{date}}",
+    "height": "{{cm}} cm",
     "loadingPlayer": "Loading player...",
     "playerNotFound": "Player not found.",
     "currentTeam": "Current team",

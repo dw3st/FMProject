@@ -110,11 +110,14 @@ export function PlayerCard({
   layout = "narrow",
   clubColors,
   nameBadge,
+  identityFacts,
 }: {
   player: DisplayPlayer;
   layout?: "narrow" | "wide";
   /** Wide layout: an extra badge after the name (the personality summary on the player screen). */
   nameBadge?: React.ReactNode;
+  /** Wide layout: extra identity facts (birth date, height) shown after age; empty = none. */
+  identityFacts?: string[];
   /** Jersey colours of the player's club; defaults to the user's club (dashboard card). */
   clubColors?: readonly string[];
 }) {
@@ -170,6 +173,9 @@ export function PlayerCard({
               <span className="text-sm text-muted-foreground">
                 {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} {t("common.foot")} · {player.age} {t("dashboard.playerCard.yearsOld")}
               </span>
+              {identityFacts && identityFacts.length > 0 && (
+                <span className="text-sm text-muted-foreground tabular-nums">· {identityFacts.join(" · ")}</span>
+              )}
             </div>
             {player.injury && (
               <p className="text-sm font-bold text-destructive mt-2 m-0">
