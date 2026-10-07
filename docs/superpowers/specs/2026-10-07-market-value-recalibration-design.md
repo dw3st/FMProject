@@ -83,11 +83,11 @@ Pedido do usuário (2026-10-07), na mesma etapa (o mundo é regenerado uma vez s
 
   | Faixa | Cor |
   |---|---|
-  | ≤ 39 | vermelho |
-  | 40–54 | laranja |
+  | ≤ 39 | vermelho forte |
+  | 40–54 | vermelho claro |
   | 55–69 | amarelo |
-  | 70–84 | verde |
-  | ≥ 85 | azul |
+  | 70–84 | verde claro |
+  | ≥ 85 | verde forte |
 
   A nota geral (overall) mantém as cores atuais.
 
