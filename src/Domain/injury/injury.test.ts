@@ -297,9 +297,6 @@ describe("clearHealed", () => {
   });
 });
 
-import { withInjuryCounted } from "@/Domain/injury/injury";
-import { emptySeasonLog } from "@/types/playerTypes";
-
 describe("withInjuryCounted", () => {
   test("counts the injury and its days out", () => {
     const log = withInjuryCounted(emptySeasonLog(), "2027-03-10", undefined, "2027-03-20");
