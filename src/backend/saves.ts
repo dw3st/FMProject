@@ -11,6 +11,7 @@ import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
+import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
 import { withSaveLock } from "@/backend/saveLock";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
@@ -240,6 +241,13 @@ export const saveRoutes = {
         if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
         slotInstructions = parsed.value;
       }
+      // Saved lineups (#84): validated whole (each preset against its own formation); never played.
+      let lineupPresets = existing.lineupPresets;
+      if (body.lineupPresets !== undefined) {
+        const parsed = parseLineupPresets(body.lineupPresets);
+        if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
+        lineupPresets = Object.keys(parsed.value).length ? parsed.value : undefined;
+      }
 
       const updated: TacticsSave = {
         formation:      formationId,
@@ -250,6 +258,7 @@ export const saveRoutes = {
         ...(axesOverride ? { axesOverride } : {}),
         ...(setPieceTakers ? { setPieceTakers } : {}),
         ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
+        ...(lineupPresets ? { lineupPresets } : {}),
       };
 
       // Today's man-marking follows the formation: a pair whose marker slot changed role (or became

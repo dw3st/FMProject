@@ -248,7 +248,28 @@ export interface TacticsSave {
    * `lineup`); `null`/absent = default (`.claude/rules/game/player-instructions.md`).
    */
   slotInstructions?: (SlotInstruction | null)[];
+  /**
+   * Saved lineups of the formation screen (#84): up to 3 slots (A, B, C). Kept on the save only;
+   * a match never reads them — "Usar" copies one into `formation` / `lineup` / `slotInstructions`.
+   */
+  lineupPresets?: LineupPresets;
 }
+
+// ── Saved lineups (#84) ──────────────────────────────────────────────────────
+
+export type LineupPresetKey = "A" | "B" | "C";
+
+/** One saved lineup: formation (free formation included), XI in slot order and slot instructions. */
+export interface LineupPreset {
+  formation: string;
+  customFormation?: CustomFormation;
+  lineup: string[];
+  slotInstructions?: (SlotInstruction | null)[];
+  /** Game date when it was saved (YYYY-MM-DD). */
+  savedOn: string;
+}
+
+export type LineupPresets = Partial<Record<LineupPresetKey, LineupPreset>>;
 
 // ── Player instructions (Etapa 27) ───────────────────────────────────────────
 
