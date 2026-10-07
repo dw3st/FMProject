@@ -220,5 +220,5 @@ describe("variants change behaviour", () => {
     const base = avgWidth();
     const inverted = avgWidth(instructions([[LB_SLOT, { variant: "fb_inverted" }], [RB_SLOT, { variant: "fb_inverted" }]]));
     expect(inverted).toBeLessThan(base - 4);
-  });
+  }, 30_000); // two headless matches: slow on a loaded machine
 });

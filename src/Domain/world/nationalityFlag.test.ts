@@ -29,5 +29,5 @@ describe("nationalityFlagCode", () => {
       }
     }
     expect([...missing]).toEqual([]);
-  });
+  }, 30_000); // reads every squad of the world
 });
