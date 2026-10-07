@@ -145,15 +145,18 @@ const TIRED_FITNESS_THRESHOLD = 75;
  * pass, see `src/Domain/fitness/fitness.ts` and `.claude/rules/non-player-games.md` → "Fadiga") —
  * not raw fitness. That compression narrows the value gap between a tired starter and a fresh
  * bench player considerably (both are pulled toward `FITNESS.FITNESS_REF`), so `BENCH_SWAP_RATIO`
- * had to be re-swept against it every time `START_COMPRESSION` changed. Re-swept with a
- * rotation-sweep harness (8 matches every 3 days, real `premier_league`/`of_championship` squads)
- * at the final `START_COMPRESSION = 0.4`: `1.17` lands a congested run at ~2.8-3.1 rotated starters
- * per match (inside the 2-3.5 target) and a normal week at ~0, and keeps the pre-existing
- * `fitness.congestion.test.ts` acceptance criterion (a starter rested by the 3rd of 3 matches in 7
- * days) passing. Depends on both `matchStartEnergy`'s compression and the fatigue
- * curve's steepness (`RuntimeLineup.ts`) — re-sweep this constant if either changes.
+ * had to be re-swept against it every time `START_COMPRESSION` changed. Swept with
+ * `bun scripts/rotation-sweep.ts [leagues] [matches] [ratio]` (8 matches every 3 days vs every 7
+ * days, real `premier_league`/`of_championship` squads, quickSim, fitness-aware XI on both sides).
+ * 2026-10-07 (world recalibrated by market value, 4.5): `1.17` had drifted to ~1.5 / ~1.2 rested
+ * starters per congested match (matches 2–8), in the old world too (1.51 / 1.36: the drift predates
+ * the regeneration), and the congestion test club's best bench/starter ratio was 1.165, just under.
+ * `1.10` gives 2.49 (Premier) / 2.11 (Championship) per congested match, 0 in a normal week, and
+ * keeps an equal-stat bench player (ratio 1.096 at fitness 60) from replacing a merely tired
+ * starter. Depends on both `matchStartEnergy`'s compression and the fatigue curve's steepness
+ * (`RuntimeLineup.ts`) and on the in-match drain — re-sweep this constant if any of them changes.
  */
-const BENCH_SWAP_RATIO = 1.17;
+export const ROTATION = { BENCH_SWAP_RATIO: 1.1 };
 
 /** GK slot is exempt from ordinary rotation unless the starter is really struggling. */
 const GK_TIRED_FITNESS_THRESHOLD = 60;
@@ -268,7 +271,7 @@ export function suggestRotation(
     }
     if (!best) continue;
 
-    if (bestValue >= fitnessAdjustedValue(starter, role) * BENCH_SWAP_RATIO) {
+    if (bestValue >= fitnessAdjustedValue(starter, role) * ROTATION.BENCH_SWAP_RATIO) {
       usedIds.delete(starterId);
       usedIds.add(best.id);
       swaps.push({ out: starterId, in: best.id });

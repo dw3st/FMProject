@@ -243,7 +243,7 @@ quando o clube nunca salvou uma escalação:
    matchStartEnergy(fôlego)) / drainMultiplier(carga)` — valoriza os dois lados pelo fôlego **que o
    motor realmente vai jogar** (comprimido), com um desconto extra por carga alta (quem está com
    carga alta vai desgastar mais rápido que o fôlego de hoje sozinho sugere).
-4. O reserva só assume se `valorReserva ≥ valorTitular × BENCH_SWAP_RATIO (1,17)` — precisa ser
+4. O reserva só assume se `valorReserva ≥ valorTitular × BENCH_SWAP_RATIO (1,10)` — precisa ser
    **melhor**, não só perto. Com o gatilho de elegibilidade sozinho, quase qualquer titular
    claramente cansado perdia tanto valor pela curva de fadiga do motor que uma razão abaixo de ~1
    quase não filtrava nada, girando o elenco da IA demais numa sequência apertada.
@@ -254,7 +254,7 @@ fôlego ≥ `GK_BENCH_FITNESS_FLOOR = 85`. Poupar um goleiro no meio de semana �
 poupar um jogador de linha.
 
 **`BENCH_SWAP_RATIO` — histórico do ajuste:** `0,85` (inicial) → `1,3` (revert temporário, sem
-`matchStartEnergy`, girava demais) → **`1,17`** (final, com a compressão em vigor). A compressão
+`matchStartEnergy`, girava demais) → `1,17` (com a compressão em vigor) → **`1,10`** (4.5, abaixo). A compressão
 estreita bastante o gap de valor entre um titular cansado e um reserva fresco (os dois são puxados
 para perto de `FITNESS_REF`), então `1,3` sozinho quase parou de girar o elenco. Reajustado com um
 script de varredura (8 partidas a cada 3 dias, elencos reais de `premier_league`/`of_championship`)
@@ -262,6 +262,36 @@ contra `START_COMPRESSION = 0,4`: `1,17` deixa uma sequência congestionada em *
 trocados por partida** (dentro do alvo 2–3,5) e uma semana normal em **~0**, mantendo o teste de
 integração `src/backend/fitness.congestion.test.ts` (3 jogos em 7 dias → pelo menos 1 titular poupado
 no 3º jogo) passando.
+
+**Reajuste para `1,10` (2026-10-07, mundo recalibrado pelo valor de mercado, 4.5).** Depois da
+regeneração o teste de congestão falhava sempre: o clube do teste (Wolves) chegava ao 2º e 3º jogos com
+titulares em fôlego 40–60 e reservas em 85–90, mas a melhor razão reserva/titular era 1,165 (Toti Gomes
+× Mosquera no zagueiro; reserva com nota 0,88–0,91 da do titular) — logo abaixo de 1,17. A deriva é
+anterior à regeneração: a varredura dá praticamente o mesmo no mundo antigo e no novo, e os dois já
+estavam abaixo da meta.
+
+```
+bun scripts/rotation-sweep.ts [ligas=premier_league,of_championship] [partidas=8] [razão]
+SQUADS_DIR=<cópia antiga dos elencos> bun scripts/rotation-sweep.ts ...   # outro mundo
+```
+
+Cada clube da liga joga N partidas (quickSim, 4-3-3, XI ciente de fôlego dos dois lados, fôlego inicial
+90, carga 0) com 3 dias (congestionado) ou 7 dias (semana normal) entre elas e a recuperação de
+produção (`applyRestDays`); conta os titulares do XI simples que o XI ciente de fôlego troca. Titulares
+trocados por partida congestionada, partidas 2–8 (todas as 8 entre parênteses):
+
+| Razão | Premier | Championship | Mundo antigo (Premier / Championship) |
+|---|---|---|---|
+| 1,17 | 1,47 (1,29) | 1,20 (1,05) | 1,51 / 1,36 |
+| 1,12 | 2,16 (1,89) | 1,91 (1,67) | — |
+| **1,10** | **2,49 (2,18)** | **2,11 (1,85)** | — |
+| 1,08 | 2,76 (2,42) | 2,44 (2,14) | 2,71 / 2,55 |
+| 1,06 | 2,96 (2,59) | 2,83 (2,47) | — |
+
+Semana normal: 0 em todas. `1,10` é o menor ajuste que põe as duas ligas na meta (2–3,5) e mantém a
+regra do teste unitário (um reserva de mesma nota não tira um titular em fôlego 60: razão 1,096 contra
+um reserva em 100); 1,08 já trocaria esse titular. A razão mora em `ROTATION.BENCH_SWAP_RATIO`
+(`lineupHelpers.ts`), mutável só para a varredura.
 
 ## 4b. Assistente de rotação (clube do jogador)
 
