@@ -47,18 +47,20 @@ export function SquadRosterTable({
   const showMorale = !!mySquadId && squad.id === mySquadId;
   const [onlyUnhappy, setOnlyUnhappy] = useState(false);
 
-  const columns = [
-    { key: "pos", label: t("dashboard.squadRosterTable.pos"), width: "w-24 min-w-[4.5rem]" },
-    { key: "name", label: t("dashboard.squadRosterTable.name"), width: "flex-1 min-w-[140px]" },
-    { key: "age", label: t("dashboard.squadRosterTable.age"), width: "w-12" },
-    { key: "avg", label: t("dashboard.squadRosterTable.avg"), width: "w-14" },
-    { key: "salary", label: t("dashboard.squadRosterTable.salary"), width: "w-20" },
-    { key: "contractUntil", label: t("dashboard.squadRosterTable.contract"), width: "w-16" },
-    { key: "valueMillions", label: t("dashboard.squadRosterTable.value"), width: "w-16" },
-    { key: "goals", label: t("dashboard.squadRosterTable.goals"), width: "w-10" },
-    { key: "avgRating", label: t("dashboard.squadRosterTable.rating"), width: "w-20" },
-    ...(showMorale ? [{ key: "morale", label: t("morale.column"), width: "w-36" }] : []),
+  // One grid template shared by the header and every row, so each label sits over its values.
+  const columns: { key: string; label: string; width: string; align: "left" | "center" }[] = [
+    { key: "pos", label: t("dashboard.squadRosterTable.pos"), width: "6rem", align: "left" },
+    { key: "name", label: t("dashboard.squadRosterTable.name"), width: "minmax(9rem,1fr)", align: "left" },
+    { key: "age", label: t("dashboard.squadRosterTable.age"), width: "4.5rem", align: "center" },
+    { key: "avg", label: t("dashboard.squadRosterTable.avg"), width: "4.5rem", align: "center" },
+    { key: "salary", label: t("dashboard.squadRosterTable.salary"), width: "7rem", align: "center" },
+    { key: "contractUntil", label: t("dashboard.squadRosterTable.contract"), width: "7rem", align: "center" },
+    { key: "valueMillions", label: t("dashboard.squadRosterTable.value"), width: "6rem", align: "center" },
+    { key: "goals", label: t("dashboard.squadRosterTable.goals"), width: "4rem", align: "center" },
+    { key: "avgRating", label: t("dashboard.squadRosterTable.rating"), width: "6rem", align: "center" },
+    ...(showMorale ? [{ key: "morale", label: t("morale.column"), width: "9rem", align: "left" as const }] : []),
   ];
+  const gridTemplateColumns = [...columns.map((c) => c.width), "4.5rem", "7rem"].join(" ");
 
   const allPlayers = useMemo<RosterRow[]>(() => {
     const wageFactor = wageFactorOf(squad);
@@ -129,13 +131,20 @@ export function SquadRosterTable({
         )}
       </div>
 
-      <div className="flex items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
+      <div className="overflow-x-auto flex-1 flex flex-col">
+      <div className="min-w-max">
+      <div
+        className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display"
+        style={{ gridTemplateColumns }}
+      >
         {columns.map((col) => (
           <button
             key={col.key}
             type="button"
             onClick={() => handleSort(col.key)}
-            className={`px-3 py-3 text-left hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 ${col.width}`}
+            className={`px-3 py-3 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 uppercase font-display font-bold tracking-[0.08em] text-[13px] ${
+              col.align === "center" ? "justify-center" : "justify-start"
+            } ${sortKey === col.key ? "text-primary" : "text-muted-foreground"}`}
           >
             {col.label}
             {sortKey === col.key &&
@@ -146,8 +155,8 @@ export function SquadRosterTable({
               ))}
           </button>
         ))}
-        <div className="w-10 px-3 py-3" />
-        <div className="w-20 px-3 py-3 text-center">{t("dashboard.squadRosterTable.action")}</div>
+        <div className="px-3 py-3 text-center">{t("dashboard.squadRosterTable.status")}</div>
+        <div className="px-3 py-3 text-center">{t("dashboard.squadRosterTable.action")}</div>
       </div>
 
       <div className="flex-1 overflow-y-auto max-h-[calc(100vh-280px)]">
@@ -157,19 +166,20 @@ export function SquadRosterTable({
             onClick={() => {
               window.location.href = playerDetailHref(player);
             }}
-            className={`flex items-center text-sm tabular-nums border-b border-border/30 cursor-pointer transition-all ${
+            style={{ gridTemplateColumns }}
+            className={`grid items-center text-sm tabular-nums border-b border-border/30 cursor-pointer transition-all ${
               index % 2 === 0
                 ? "bg-transparent hover:bg-muted/20"
                 : "bg-muted/5 hover:bg-muted/20"
             }`}
           >
             <div
-              className={`px-3 py-2.5 font-black text-sm ${positionLabelColor(player.natural, player.pos)} w-24 min-w-[4.5rem]`}
+              className={`px-3 py-2.5 font-black text-sm ${positionLabelColor(player.natural, player.pos)}`}
               title={player.positions.join(", ")}
             >
               {positionLabel(t, player.natural, player.pos)}
             </div>
-            <div className="px-3 py-2.5 flex-1 min-w-[140px] font-semibold text-foreground truncate">
+            <div className="px-3 py-2.5 min-w-0 font-semibold text-foreground truncate">
               {player.flagCode && (
                 <span title={player.ownNationality} aria-label={player.ownNationality} role="img" className="mr-2 inline-flex align-middle">
                   <Flag code={player.flagCode} />
@@ -189,26 +199,26 @@ export function SquadRosterTable({
               {player.status === "suspended" && <SuspendedBadge matches={player.suspendedMatches} className="ml-1.5" />}
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
             </div>
-            <div className="px-3 py-2.5 w-12 text-muted-foreground font-medium">{player.age}</div>
+            <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.age}</div>
             <div className="px-3 py-2.5 w-14">
               <AvgBadge value={player.avg} />
             </div>
-            <div className="px-3 py-2.5 w-20 text-muted-foreground font-medium">{player.salary}</div>
-            <div className="px-3 py-2.5 w-16 text-muted-foreground font-medium">{player.contractUntil ?? "—"}</div>
-            <div className={`px-3 py-2.5 w-16 font-bold ${ratingTextClass10(player.avg)}`}>{player.value}</div>
-            <div className="px-3 py-2.5 w-10 text-foreground font-bold">{player.goals}</div>
+            <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.salary}</div>
+            <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.contractUntil ?? "—"}</div>
+            <div className={`px-3 py-2.5 text-center font-bold ${ratingTextClass10(player.avg)}`}>{player.value}</div>
+            <div className="px-3 py-2.5 text-center text-foreground font-bold">{player.goals}</div>
             <div className="px-3 py-2.5 w-20">
               <RatingBadge value={player.avgRating} />
             </div>
             {showMorale && (
-              <div className="px-3 py-2.5 w-36">
+              <div className="px-3 py-2.5">
                 <MoraleBadge morale={player.morale} />
               </div>
             )}
             <div className="w-10 px-3 py-2.5">
               <FitStatusIcon status={player.status} injury={player.injury} suspendedMatches={player.suspendedMatches} />
             </div>
-            <div className="w-20 px-3 py-2.5 flex justify-center">
+            <div className="px-3 py-2.5 flex justify-center">
               <button
                 type="button"
                 disabled={!!mySquadId && player.squadId === mySquadId}
@@ -229,6 +239,8 @@ export function SquadRosterTable({
             </div>
           </div>
         ))}
+      </div>
+      </div>
       </div>
     </div>
   );

@@ -1447,6 +1447,7 @@
       "value": "Value",
       "goals": "G",
       "rating": "Rating",
+      "status": "Status",
       "action": "Action",
       "offer": "Offer",
       "yourPlayer": "Your player",
