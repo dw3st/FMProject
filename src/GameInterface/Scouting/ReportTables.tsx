@@ -14,6 +14,7 @@ import { GemBadge, GradeBadge } from "@/GameInterface/Scouting/Badges";
 import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
 import { playerHref, scoutingCall, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
+import { RECOMMENDATION_ORIGIN } from "@/types/scoutingTypes";
 
 const range = (r: [number, number], scale = 10) =>
   r[0] === r[1] ? `${Math.round(r[0] * scale)}` : `${Math.round(r[0] * scale)}–${Math.round(r[1] * scale)}`;
@@ -89,6 +90,7 @@ export function ReportsTab({ saveId, data, leagues, onChanged }: { saveId: strin
   const missionOptions = useMemo(() => {
     const ids = [...new Set(data.reports.map((r) => r.missionId).filter((x): x is string => !!x))];
     const label = (id: string) => {
+      if (id === RECOMMENDATION_ORIGIN) return t("scouting.recommendationReports");
       const m = data.missions.find((x) => x.id === id);
       return m ? `${t(`scouting.kind.${m.target.kind}`)} · ${targetLabel(m.target, t, leagues, i18n.language)}` : t("scouting.finishedMission");
     };

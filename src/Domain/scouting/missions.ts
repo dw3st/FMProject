@@ -11,6 +11,7 @@ import { addDays } from "@/Domain/dates";
 import { clamp } from "@/Domain/math";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { FinancialTier, RosterPlayer, Squad } from "@/types/playerTypes";
+import { RECOMMENDATION_ORIGIN } from "@/types/scoutingTypes";
 import type {
   ScoutAssignment, ScoutFocus, ScoutGrade, ScoutProspect, ScoutReport, ScoutReportText, ScoutingState,
   ShortlistReason, ShortlistStatus, ScoutTargetKind,
@@ -301,6 +302,42 @@ export function monthlyRecommendations(candidates: ScoutReport[], previous: stri
     out.push(r);
   }
   return out;
+}
+
+/**
+ * Every monthly pick has a report: a pick with a report of his from the last `RECOMMEND_REPORT_DAYS`
+ * reuses it; otherwise the chief observes him (the knowledge gain of a region mission led by the
+ * chief: `REGION_GAIN` × rating gain × chief gain) and writes a report with `missionId`
+ * `RECOMMENDATION_ORIGIN`. `entries` holds the pool entry of every pick that came without a report.
+ * Returns the state with the new reports and knowledge, and the report behind each pick (pick order).
+ */
+export function recordRecommendations(
+  state: ScoutingState, picks: ScoutReport[], entries: Map<string, PoolEntry>, ctx: ViewerContext, chiefRating: number,
+): { state: ScoutingState; reports: ScoutReport[] } {
+  const knowledge = { ...state.knowledge };
+  const known = (id: string) => Math.max(ctx.knowledgeOf(id), knowledge[id]?.k ?? 0);
+  const kctx: ViewerContext = { ...ctx, knowledgeOf: known };
+  const gain = S.REGION_GAIN * ratingGain(chiefRating) * ctx.chief.gain;
+  const since = addDays(ctx.date, -S.RECOMMEND_REPORT_DAYS);
+  const recent = (r: ScoutReport) => !r.prospectId && r.date >= since && r.date <= ctx.date;
+  const written: ScoutReport[] = [];
+  const reports: ScoutReport[] = [];
+  for (const pick of picks) {
+    const existing = state.reports.find((r) => r.playerId === pick.playerId && recent(r));
+    if (existing) { reports.push(existing); continue; }
+    const entry = entries.get(pick.playerId);
+    if (!entry) continue;
+    knowledge[pick.playerId] = gainKnowledge(known(pick.playerId), gain, ctx.date);
+    const rep = buildReport(entry, known(pick.playerId), kctx, { missionId: RECOMMENDATION_ORIGIN });
+    written.push(rep);
+    reports.push(rep);
+  }
+  if (written.length === 0) return { state, reports };
+  const ids = new Set(written.map((r) => r.id));
+  return {
+    state: { ...state, knowledge, reports: [...written, ...state.reports.filter((r) => !ids.has(r.id))].slice(0, S.MAX_REPORTS) },
+    reports,
+  };
 }
 
 export type { ShortlistReason };

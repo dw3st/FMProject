@@ -128,6 +128,9 @@ export interface ScoutingState {
   lastRecommendation?: { month: string; playerIds: string[] };
 }
 
+/** `missionId` of the reports the chief writes for his monthly picks (no mission behind them). */
+export const RECOMMENDATION_ORIGIN = "recommendation";
+
 export function emptyScoutingState(): ScoutingState {
   return { missions: [], knowledge: {}, shortlist: [], reports: [], prospects: [] };
 }

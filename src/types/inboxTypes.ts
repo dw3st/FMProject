@@ -345,7 +345,7 @@ export interface ScoutingInboxMessage extends InboxMessageBase {
   /** report: players observed this week; mission_done: in total. */
   count?: number;
   /** report: best grades of the week; recommendation: the picks. */
-  players?: { playerId: string; name: string; grade: ScoutGrade; gem?: boolean; club?: string }[];
+  players?: { playerId: string; name: string; grade: ScoutGrade; gem?: boolean; club?: string; squadId?: string; league?: string; reportId?: string }[];
   /** gem / shortlist / prospect / prospect_signed: the player. */
   playerId?: string;
   playerName?: string;

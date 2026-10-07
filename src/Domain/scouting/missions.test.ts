@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   addProspects, advanceScoutingWeek, allowedWeeks, buildReport, generateProspects, gradeOf, isGem, missionCost,
-  missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, relativeNote,
+  missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, recordRecommendations, relativeNote,
   shortlistAlerts, starterLineAverages, type PoolEntry, type ViewerContext,
 } from "@/Domain/scouting/missions";
-import { emptyScoutingState, type ScoutAssignment, type ScoutReport } from "@/types/scoutingTypes";
+import { emptyScoutingState, RECOMMENDATION_ORIGIN, type ScoutAssignment, type ScoutReport } from "@/types/scoutingTypes";
+import { ratingGain } from "@/Domain/scouting/knowledge";
+import { SCOUTING } from "@/Domain/scouting/scoutingConfig";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 
 function stats(v: number): PlayerStatsRecord {
@@ -175,5 +177,47 @@ describe("prospects", () => {
   test("starter line averages use the top of each line", () => {
     const sq: Squad = { ...top, players: [player("g1", 7, 25, "GK"), player("g2", 3, 25, "GK"), ...top.players.filter((p) => p.positions[0] !== "GK")] };
     expect(starterLineAverages(sq).GK).toBeCloseTo(starterLineAverages({ ...sq, players: [player("g1", 7, 25, "GK")] }).GK);
+  });
+});
+
+describe("the chief's monthly picks always have a report", () => {
+  const c = ctx({ date: "2027-04-01", knowledgeOf: () => 35 });
+  const own = [player("a", 8, 24), player("b", 8, 22, "ST"), player("c", 8, 26, "CB")];
+  const entries = new Map(own.map((p) => [p.id, entry(p, "England")]));
+  const picks = () => monthlyRecommendations(own.map((p) => buildReport(entry(p, "England"), 35, c, {})));
+
+  test("with no reports, every pick gets a report from the chief and his knowledge grows", () => {
+    const ps = picks();
+    expect(ps.length).toBe(3);
+    const out = recordRecommendations(emptyScoutingState(), ps, entries, c, 5);
+    expect(out.reports.map((r) => r.playerId)).toEqual(ps.map((p) => p.playerId));
+    expect(out.state.reports.length).toBe(3);
+    for (const r of out.state.reports) {
+      expect(r.missionId).toBe(RECOMMENDATION_ORIGIN);
+      expect(r.date).toBe("2027-04-01");
+      const k = out.state.knowledge[r.playerId]!;
+      expect(k.k).toBeCloseTo(35 + SCOUTING.REGION_GAIN * ratingGain(5), 1);
+      expect(k.seen).toBe("2027-04-01");
+      expect(r.k).toBe(Math.round(k.k));
+    }
+    // Deterministic.
+    expect(recordRecommendations(emptyScoutingState(), ps, entries, c, 5)).toEqual(out);
+  });
+
+  test("a pick with a recent report reuses it; an old one gets a new report", () => {
+    const ps = picks();
+    const recent = { ...buildReport(entries.get(ps[0]!.playerId)!, 60, ctx({ date: "2027-02-01" }), { missionId: "m1" }) };
+    const old = { ...buildReport(entries.get(ps[1]!.playerId)!, 60, ctx({ date: "2026-11-01" }), { missionId: "m0" }) };
+    const state = { ...emptyScoutingState(), reports: [recent, old] };
+    const out = recordRecommendations(state, ps, entries, c, 5);
+    expect(out.reports[0]).toBe(recent);
+    expect(out.state.reports.filter((r) => r.playerId === ps[0]!.playerId)).toEqual([recent]);
+    expect(out.state.knowledge[ps[0]!.playerId]).toBeUndefined();
+    expect(out.reports[1]!.missionId).toBe(RECOMMENDATION_ORIGIN);
+    expect(out.state.reports.length).toBe(4);
+    // Nothing new to write: the state is returned as is.
+    const again = recordRecommendations(out.state, ps, entries, c, 5);
+    expect(again.state).toBe(out.state);
+    expect(again.reports.map((r) => r.id)).toEqual(out.reports.map((r) => r.id));
   });
 });

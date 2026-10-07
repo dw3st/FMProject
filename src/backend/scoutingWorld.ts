@@ -5,7 +5,7 @@ import {
 } from "@/Domain/scouting/knowledge";
 import {
   addProspects, advanceScoutingWeek, buildReport, generateProspects, missionCost, missionPool, monthlyRecommendations,
-  prospectFee, pruneProspects, shortlistAlerts, starterLineAverages,
+  prospectFee, pruneProspects, recordRecommendations, shortlistAlerts, starterLineAverages,
   type MissionWeekInput, type PoolEntry, type ScoutingNews, type TravelDistance, type ViewerContext,
 } from "@/Domain/scouting/missions";
 import { newsToMessageArgs, type ScoutingMessageArgs } from "@/Domain/scouting/scoutingMessages";
@@ -412,22 +412,27 @@ export async function scoutingDay(
     const month = date.slice(0, 7);
     if (state.lastRecommendation?.month !== month) {
       const ctx = ctxFor(state)!;
-      const candidates = state.reports.filter((r) => daysBetween(r.date, date) <= 120);
+      const candidates = state.reports.filter((r) => daysBetween(r.date, date) <= S.RECOMMEND_REPORT_DAYS);
+      const entries = new Map<string, PoolEntry>();
       for (const sq of ownLeague ? await service.getSquadsInLeague(saveId, ownLeague) : []) {
         if (sq.id === ownClubId) continue;
         for (const p of sq.players) {
-          candidates.push(buildReport(
-            { player: p, squadId: sq.id, club: sq.name, league: ownLeague, country: ownCountry, forSale: forSale.has(p.id) },
-            Math.max(S.IMPLICIT_OWN_LEAGUE, ctx.knowledgeOf(p.id)), ctx, {},
-          ));
+          implicitById.set(p.id, implicitOf(p.id, sq.id));
+          const entry: PoolEntry = { player: p, squadId: sq.id, club: sq.name, league: ownLeague, country: ownCountry, forSale: forSale.has(p.id) };
+          entries.set(p.id, entry);
+          candidates.push(buildReport(entry, Math.max(S.IMPLICIT_OWN_LEAGUE, ctx.knowledgeOf(p.id)), ctx, {}));
         }
       }
       const picks = monthlyRecommendations(candidates, state.lastRecommendation?.playerIds ?? []);
-      state = { ...state, lastRecommendation: { month, playerIds: picks.map((p) => p.playerId) } };
-      if (picks.length > 0) {
+      // Every pick has a report: one without a recent report is observed and gets one now.
+      const recorded = recordRecommendations(state, picks, entries, ctx, chiefRating);
+      state = { ...recorded.state, lastRecommendation: { month, playerIds: picks.map((p) => p.playerId) } };
+      if (recorded.reports.length > 0) {
         result.messages.push({
           date, kind: "recommendation",
-          players: picks.map((p) => ({ playerId: p.playerId, name: p.name, grade: p.grade, gem: p.gem, club: p.club })),
+          players: recorded.reports.map((r) => ({
+            playerId: r.playerId, name: r.name, grade: r.grade, gem: r.gem, club: r.club, squadId: r.squadId, league: r.league, reportId: r.id,
+          })),
         });
       }
     }
