@@ -1,4 +1,5 @@
 import { Player } from "@/Domain/Player";
+import { roundAttr } from "@/Domain/attributes";
 import { weeklyWage } from "@/Domain/finance/wages";
 import { formatWageShort } from "@/Domain/money";
 import { STAFF } from "@/Domain/staff/staffConfig";
@@ -39,10 +40,10 @@ export function wageRangeLabel(range: readonly [number, number]): string {
 }
 
 /**
- * An attribute as a range (the attribute bars: whole numbers, clamped 0..10), or null when the
+ * An attribute as a range (the attribute bars: one decimal, clamped 0..10), or null when the
  * uncertainty is below the threshold (a single number).
  */
 export function seenAttributeRange(value: number, noise: number | undefined): [number, number] | null {
   if (!noise || noise < STAFF.RANGE_THRESHOLD) return null;
-  return [Math.max(0, Math.round(value - noise)), Math.min(10, Math.round(value + noise))];
+  return [roundAttr(value - noise), roundAttr(value + noise)];
 }

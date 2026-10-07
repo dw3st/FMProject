@@ -12,7 +12,7 @@ export interface ScoutFilterState {
   maxPriceM: number;
   league: string;
   nationality: string;
-  /** Per-stat min/max (0–10). Full span 0–10 means no extra constraint for that stat. */
+  /** Per-stat min/max on the displayed 0–100 scale (integers). Full span 0–100 means no extra constraint for that stat. */
   attributeRanges: Record<AttributeId, { min: number; max: number }>;
   /** When true, only show players who appear on any team's sell list. */
   onlyForSale: boolean;
@@ -27,7 +27,7 @@ export interface ScoutFilterState {
 export function defaultAttributeRanges(): Record<AttributeId, { min: number; max: number }> {
   const o = {} as Record<AttributeId, { min: number; max: number }>;
   for (const a of ATTRIBUTE_LIST) {
-    o[a.id] = { min: 0, max: 10 };
+    o[a.id] = { min: 0, max: 100 };
   }
   return o;
 }

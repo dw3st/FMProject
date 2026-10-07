@@ -71,13 +71,13 @@ describe("scout search — sorted and filtered by the view, never by the real ra
     const hidden = toDisplayPlayer(seenAs(real("h", 9), "x"), "C");
     expect(hidden.hiddenAttrs).toBe(true);
     const ranged = { ...hidden, id: "r", hiddenAttrs: undefined, statNoise: 1.2, stats: STATS(7.4) };
-    // 7.4 ± 1.2 is shown as 6–9: middle 7.5.
+    // 7.4 ± 1.2 is shown as 6.2–8.6 (one decimal): middle 7.4. Filters take 0..100.
     const f = (min: number, max: number) => ({
       ...createDefaultScoutFilters(),
       attributeRanges: { ...createDefaultScoutFilters().attributeRanges, finishing: { min, max } },
     });
-    expect(filterScoutPlayers([hidden, ranged], f(7.5, 10), new Set()).map((r) => r.id)).toEqual(["r"]);
-    expect(filterScoutPlayers([hidden, ranged], f(7.6, 10), new Set()).map((r) => r.id)).toEqual([]);
+    expect(filterScoutPlayers([hidden, ranged], f(74, 100), new Set()).map((r) => r.id)).toEqual(["r"]);
+    expect(filterScoutPlayers([hidden, ranged], f(75, 100), new Set()).map((r) => r.id)).toEqual([]);
   });
 });
 

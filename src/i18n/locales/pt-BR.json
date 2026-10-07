@@ -1906,7 +1906,7 @@
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
-      "description": "Clique na faixa para definir mín–máx (0–10)",
+      "description": "Clique na faixa para definir mín–máx (0–100)",
       "clearAll": "Limpar todos os atributos",
       "any": "qualquer"
     },

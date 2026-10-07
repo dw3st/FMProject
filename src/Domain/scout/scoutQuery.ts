@@ -2,7 +2,7 @@ import type { ScoutFilterState } from "@/Domain/scout/scoutFilterState";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { toDisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { getMainRole } from "@/Domain/roles";
-import { ATTRIBUTE_LIST } from "@/Domain/attributes";
+import { ATTRIBUTE_LIST, roundAttr } from "@/Domain/attributes";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import { rangeMid, seenAttributeRange } from "@/Domain/scouting/seen";
 import type { FreeAgent, Squad } from "@/types/playerTypes";
@@ -123,12 +123,13 @@ export function filterScoutPlayers(
     for (const attr of ATTRIBUTE_LIST) {
       const range = filters.attributeRanges?.[attr.id];
       if (!range) continue;
-      if (range.min <= 0 && range.max >= 10) continue;
+      // The screen sends 0..100 integers; converted once here and compared on 0..10.
+      if (range.min <= 0 && range.max >= 100) continue;
       // What the screen shows (`scouting.md`): hidden attributes ("?") never pass an attribute
       // filter, and an attribute shown as a range filters by the middle of that range.
       if (player.hiddenAttrs) return false;
-      const v = seenAttributeValue(player.stats[attr.id], player.statNoise);
-      if (v < range.min || v > range.max) return false;
+      const v = roundAttr(seenAttributeValue(player.stats[attr.id], player.statNoise));
+      if (v < range.min / 10 || v > range.max / 10) return false;
     }
     return true;
   });

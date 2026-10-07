@@ -98,7 +98,7 @@ function asFiniteNumber(v: unknown, fallback: number): number {
   return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 
-/** Coerce `attributeRanges` to only known attribute ids with finite, 0..10-clamped, min<=max bounds. */
+/** Coerce `attributeRanges` to only known attribute ids with finite, 0..100-clamped integer, min<=max bounds. */
 function asAttributeRanges(
   raw: unknown,
   defaults: ScoutQuery["filters"]["attributeRanges"],
@@ -112,8 +112,8 @@ function asAttributeRanges(
     const e = entry as { min?: unknown; max?: unknown };
     if (typeof e.min !== "number" || !Number.isFinite(e.min)) continue;
     if (typeof e.max !== "number" || !Number.isFinite(e.max)) continue;
-    const clampedMin = Math.min(10, Math.max(0, e.min));
-    const clampedMax = Math.min(10, Math.max(0, e.max));
+    const clampedMin = Math.round(Math.min(100, Math.max(0, e.min)));
+    const clampedMax = Math.round(Math.min(100, Math.max(0, e.max)));
     out[attr.id] = clampedMin <= clampedMax
       ? { min: clampedMin, max: clampedMax }
       : { min: clampedMax, max: clampedMin };

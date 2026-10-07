@@ -1906,7 +1906,7 @@
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
-      "description": "Click the track to set min–max (0–10)",
+      "description": "Click the track to set min–max (0–100)",
       "clearAll": "Clear all stats",
       "any": "any"
     },
