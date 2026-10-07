@@ -10,6 +10,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { HomeCard } from "@/GameInterface/Dashboard/HomeCards";
+import { RESULT_CHIP } from "@/GameInterface/formColors";
 
 type MatchOutcome = "W" | "D" | "L";
 type DayEventType = "match" | "training" | "rest";
@@ -75,9 +76,7 @@ const EVENT_ICON: Record<DayEventType, IconName> = { match: "trophy", training: 
 function eventClass(type: DayEventType, outcome: MatchOutcome | null): string {
   if (type === "rest") return "bg-chart-3/15 text-chart-3 border-chart-3/35";
   if (type === "training") return "bg-muted/50 text-muted-foreground border-border";
-  if (outcome === "W") return "bg-chart-2/15 text-chart-2 border-chart-2/35";
-  if (outcome === "D") return "bg-chart-4/15 text-chart-4 border-chart-4/35";
-  if (outcome === "L") return "bg-destructive/15 text-destructive border-destructive/35";
+  if (outcome) return RESULT_CHIP[outcome];
   return "bg-primary/20 text-primary border-primary/40";
 }
 

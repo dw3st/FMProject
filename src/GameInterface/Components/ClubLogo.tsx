@@ -55,7 +55,9 @@ export function ClubLogo({
           src={logoUrl}
           alt=""
           draggable={false}
-          className={`${imgClassName} max-w-full max-h-full object-contain`}
+          // A thin light outline keeps dark crests (Juventus' black "J") readable on the dark
+          // background; on light or coloured crests it is barely visible.
+          className={`${imgClassName} max-w-full max-h-full object-contain [filter:drop-shadow(0_0_1px_rgba(255,255,255,0.6))_drop-shadow(0_0_1px_rgba(255,255,255,0.35))]`}
           onError={() => {
             failedLogoUrls.add(logoUrl);
             setFailedUrl(logoUrl);

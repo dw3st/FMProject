@@ -25,15 +25,12 @@ import { ContinentalView, type ContinentalData } from "@/GameInterface/Component
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
 import countriesRaw from "@/Data/countries.json";
+import { RESULT_PILL } from "@/GameInterface/formColors";
 
 const countries: CountryEntry[] = Object.values(countriesRaw as Record<string, CountryEntry>);
 const COUNTRY_BY_NAME = new Map(countries.map((c) => [c.name, c]));
 
-const resultColors: Record<string, string> = {
-  W: "bg-chart-2 text-white",
-  D: "bg-zinc-600 text-white",
-  L: "bg-destructive text-white",
-};
+const resultColors: Record<string, string> = RESULT_PILL;
 
 const ZONE_BORDER: Record<LeagueZoneColor, string> = {
   blue: "border-l-blue-500",
