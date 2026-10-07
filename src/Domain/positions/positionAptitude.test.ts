@@ -64,3 +64,45 @@ describe("same-line neighbours", () => {
     expect(["training", "unsuitable"]).toContain(aptitudeFor(p, "RB"));
   });
 });
+
+describe("curated natural position (naturalPosition)", () => {
+  // Iago-like profile: left-footed defender whose attributes alone make him a CB.
+  const iago = { passing: 5, vision: 3, finishing: 0, dribbling: 3, speed: 4, acceleration: 4, tackling: 5,
+    pressing: 3, stamina: 5, heading: 3, strength: 5, reflex: 1, jump: 0 } as Partial<PlayerStatsRecord>;
+
+  test("the fixed position is the natural one, even against the foot rule", () => {
+    const p = { ...mk(["Defender"], "left", iago), naturalPosition: "RB" as const };
+    expect(preferredRole(p)).toBe("RB");
+    const a = positionAptitudes(p);
+    expect(a.RB).toBe("natural");
+    expect(Object.values(a).filter((v) => v === "natural")).toHaveLength(1);
+    // RWB is RB's neighbour: never worse than training.
+    expect(["apt", "training"]).toContain(a.RWB);
+  });
+
+  test("other aptitudes are relative to the fixed role's score", () => {
+    const free = mk(["Defender"], "right", cb);
+    expect(preferredRole(free)).toBe("CB");
+    const fixed = { ...free, stats: { ...free.stats }, naturalPosition: "LB" as const };
+    const a = positionAptitudes(fixed);
+    expect(a.LB).toBe("natural");
+    // CB scores above LB, so relative to LB it is at least apt (ratio > 1).
+    expect(a.CB).toBe("apt");
+  });
+
+  test("a position outside the player's line is ignored", () => {
+    const free = mk(["Defender"], "right", cb);
+    const p = { ...free, stats: { ...free.stats }, naturalPosition: "CAM" as const };
+    expect(preferredRole(p)).toBe("CB");
+    expect(positionAptitudes(p)).toEqual(positionAptitudes(free));
+  });
+
+  test("the memo notices a naturalPosition change on the same stats object", () => {
+    const p: RosterPlayer = mk(["Midfielder"], "right", { passing: 4, tackling: 8, pressing: 8 });
+    const before = preferredRole(p);
+    p.naturalPosition = before === "CAM" ? "CDM" : "CAM";
+    expect(preferredRole(p)).toBe(p.naturalPosition);
+    delete p.naturalPosition;
+    expect(preferredRole(p)).toBe(before);
+  });
+});

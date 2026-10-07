@@ -19,3 +19,21 @@ describe("Player.bestSpecificRole", () => {
     expect(["CB", "LB", "RB", "LWB", "RWB"]).toContain(r);
   });
 });
+
+describe("Player.computeOverallAvg with a curated natural position", () => {
+  const base = {
+    id: "p", name: "P", age: 25, squadId: "s", preferredFoot: "left" as const, positions: ["Defender"],
+    stats: stats({ tackling: 9, heading: 9, strength: 9, speed: 2, acceleration: 2 }),
+    profile: {} as never,
+  };
+  test("uses the fixed role's score, not the best of the line", () => {
+    const best = Player.computeOverallAvg(base);
+    expect(best).toBeCloseTo(Player.weightedScore(base.stats, "CB"), 10);
+    const rb = Player.computeOverallAvg({ ...base, naturalPosition: "RB" });
+    expect(rb).toBeCloseTo(Player.weightedScore(base.stats, "RB"), 10);
+    expect(rb).toBeLessThan(best);
+  });
+  test("a position outside the line is ignored", () => {
+    expect(Player.computeOverallAvg({ ...base, naturalPosition: "ST" })).toBe(Player.computeOverallAvg(base));
+  });
+});

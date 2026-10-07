@@ -1,5 +1,5 @@
-import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
-import { weightedScore } from "@/Domain/playerRating";
+import type { DetailedRole, PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
+import { fixedNaturalRole, weightedScore } from "@/Domain/playerRating";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 import { APT_RATIO, NEIGHBOUR_APT_RATIO, POSITION_PENALTY, TRAINING_RATIO, type Aptitude } from "@/Domain/positions/positionConfig";
 
@@ -7,8 +7,8 @@ export type { Aptitude } from "@/Domain/positions/positionConfig";
 
 export const DETAILED_ROLES = [
   "GK", "CB", "LB", "RB", "LWB", "RWB", "CDM", "CM", "CAM", "LM", "RM", "LW", "RW", "ST",
-] as const;
-export type DetailedRole = (typeof DETAILED_ROLES)[number];
+] as const satisfies readonly DetailedRole[];
+export type { DetailedRole };
 
 const LINE_ROLES: Record<MainRole, readonly DetailedRole[]> = {
   GK: ["GK"],
@@ -37,7 +37,14 @@ function sideAllows(foot: string | undefined, role: DetailedRole): boolean {
 
 interface Natural { role: DetailedRole; score: number }
 
-function naturalOf(stats: PlayerStatsRecord, line: MainRole, foot: string | undefined): Natural {
+function naturalOf(
+  stats: PlayerStatsRecord,
+  line: MainRole,
+  foot: string | undefined,
+  fixed: DetailedRole | undefined,
+): Natural {
+  // A curated natural position wins over the attributes and over the foot rule.
+  if (fixed) return { role: fixed, score: weightedScore(stats, fixed) };
   const roles = LINE_ROLES[line];
   let best: DetailedRole = roles[0]!;
   let bestScore = -1;
@@ -89,6 +96,7 @@ interface Profile {
   sig: number;
   line: MainRole;
   foot: string | undefined;
+  fixed: DetailedRole | undefined;
   natural: DetailedRole;
   scores: Record<DetailedRole, number>;
   aptitudes: Record<DetailedRole, Aptitude>;
@@ -102,23 +110,24 @@ function statsSignature(stats: PlayerStatsRecord): number {
   return sig;
 }
 
-// Pure memo: everything below is a function of (stats, line, foot); keyed by the stats object.
+// Pure memo: everything below is a function of (stats, line, foot, fixed natural); keyed by the stats object.
 const PROFILES = new WeakMap<object, Profile>();
 
 function profileOf(player: RosterPlayer): Profile {
   const line = lineOf(player);
   const foot = player.preferredFoot;
+  const fixed = fixedNaturalRole(player);
   const sig = statsSignature(player.stats);
   const hit = PROFILES.get(player.stats);
-  if (hit && hit.sig === sig && hit.line === line && hit.foot === foot) return hit;
-  const nat = naturalOf(player.stats, line, foot);
+  if (hit && hit.sig === sig && hit.line === line && hit.foot === foot && hit.fixed === fixed) return hit;
+  const nat = naturalOf(player.stats, line, foot, fixed);
   const scores = {} as Record<DetailedRole, number>;
   const aptitudes = {} as Record<DetailedRole, Aptitude>;
   for (const r of DETAILED_ROLES) {
     scores[r] = weightedScore(player.stats, r);
     aptitudes[r] = classify(player.stats, line, foot, nat, r);
   }
-  const profile: Profile = { sig, line, foot, natural: nat.role, scores, aptitudes };
+  const profile: Profile = { sig, line, foot, fixed, natural: nat.role, scores, aptitudes };
   PROFILES.set(player.stats, profile);
   return profile;
 }

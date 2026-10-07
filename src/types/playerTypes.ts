@@ -169,7 +169,17 @@ export interface RosterPlayer {
    * set on API responses together with the blurred stats. Never stored, never read by the engine.
    */
   scoutView?: ScoutView;
+  /**
+   * Natural position fixed by curated data (`data_process/curated/playerCorrections.json`,
+   * `.claude/rules/game/positions.md`). Ignored unless it is in the player's main line; when valid
+   * it replaces the attribute-derived natural role and the overall is that role's score.
+   */
+  naturalPosition?: DetailedRole;
 }
+
+/** The 14 detailed positions (`src/Data/roles.json`). */
+export type DetailedRole =
+  | "GK" | "CB" | "LB" | "RB" | "LWB" | "RWB" | "CDM" | "CM" | "CAM" | "LM" | "RM" | "LW" | "RW" | "ST";
 
 export interface SellOnClause {
   clubId: string;

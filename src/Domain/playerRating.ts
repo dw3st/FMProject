@@ -1,4 +1,4 @@
-import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
+import type { DetailedRole, PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 
@@ -71,8 +71,26 @@ export function bestSpecificRole(stats: PlayerStatsRecord, position: string): st
   return best;
 }
 
-/** Computes a player's overall AVG — best weighted score across their main role's specifics. */
+/**
+ * The curated natural position (`RosterPlayer.naturalPosition`) when it belongs to the player's
+ * main line; `undefined` otherwise (absent, or curated data out of line — then ignored).
+ */
+export function fixedNaturalRole(
+  player: Pick<RosterPlayer, "positions" | "naturalPosition">,
+): DetailedRole | undefined {
+  const fixed = player.naturalPosition;
+  if (!fixed) return undefined;
+  const main = getMainRole(player.positions[0] ?? "CM");
+  return MAIN_ROLE_TO_SPECIFICS[main].includes(fixed) ? fixed : undefined;
+}
+
+/**
+ * Computes a player's overall AVG — the score of the curated natural position when there is one,
+ * otherwise the best weighted score across their main role's specifics.
+ */
 export function computeOverallAvg(player: RosterPlayer): number {
+  const fixed = fixedNaturalRole(player);
+  if (fixed) return scoreForRole(player.stats, fixed);
   const main = getMainRole(player.positions[0] ?? "CM");
   return weightedScore(player.stats, main);
 }

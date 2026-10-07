@@ -25,6 +25,7 @@ bun scripts/importOpenFootball.ts   # mundo base a partir de data_process/native
 rm -rf src/Data/squads src/Data/logos/espn          # ver "Sincronizar sem lixo" abaixo
 cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (ele confere isso)
 bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
+bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) — ver abaixo
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -171,6 +172,25 @@ Nos dois casos o `id` nativo (`player_2847`, `player_3065`) é preservado — o 
 mas continua o MESMO registro (perfil, atributos recalibrados pela seção 3.5 do `importOpenFootball`,
 histórico). Sem o override, a ESPN cria um clone novo (`es_<athleteId>`) com atributos estimados do
 zero (baixos, sem a recalibração), e o craque de verdade só some do mundo.
+
+## Correções manuais de jogadores
+
+`data_process/curated/playerCorrections.json` corrige à mão o que a derivação erra (issues #82, #83):
+
+```json
+{ "<playerId>": { "name": "<só para leitura>", "naturalPosition"?: "RB", "overall"?: 5.6 } }
+```
+
+- `naturalPosition` grava `RosterPlayer.naturalPosition`: a posição natural deixa de vir dos atributos
+  (`.claude/rules/game/positions.md`). Tem que ser da linha principal do jogador.
+- `overall` reescala os atributos com o mesmo `shiftToOverall` da recalibração dos nativos (um deslocamento
+  único nos atributos com peso da posição natural, fixada ou derivada) até `computeOverallAvg` bater com o
+  alvo (±0,05); o `overallAvg` em cache sai.
+- `bun scripts/applyPlayerCorrections.ts` (lógica pura em `scripts/curated/corrections.ts`, com teste) roda
+  logo depois do `importEspn`, sobre `src/example_data/squads`. Falha alto com id inexistente ou repetido no
+  mundo, posição fora da linha, campo desconhecido. Idempotente; grava só os elencos alterados, no formato
+  original; imprime antes → depois (posição e nota).
+- Exige `src/Data/roles.json` igual a `src/example_data/roles.json` (como os importadores).
 
 ## Atletas duplicados
 

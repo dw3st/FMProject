@@ -62,6 +62,14 @@ Com a penalidade ligada x desligada (`POSITION_PENALTY` todo em 1), escalações
 XI automático da IA no mundo atual: 0,64 titulares por time com aptidão training/unsuitable na vaga;
 0 com `unsuitable` havendo alternativa na linha.
 
+## Posição natural fixada (`naturalPosition`)
+
+`RosterPlayer.naturalPosition` (dado curado, `data_process/curated/playerCorrections.json`, ver
+`.claude/rules/data/espn-import.md` → "Correções manuais de jogadores") vence os atributos e a regra do pé:
+é a natural, e as aptidões das demais posições são calculadas relativas à pontuação dela (mesmos limiares e
+vizinhanças). O overall (`computeOverallAvg`) passa a ser a pontuação dessa posição, não o melhor da linha.
+Fora da linha principal do jogador é ignorada (`fixedNaturalRole`, `playerRating.ts`).
+
 ## Telas
 
 - Elenco: sigla natural traduzida (`roles.detailedAbbr.*`) com a cor de `getDetailedPositionColor`.
