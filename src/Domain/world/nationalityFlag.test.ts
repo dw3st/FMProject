@@ -10,6 +10,8 @@ describe("nationalityFlagCode", () => {
     expect(nationalityFlagCode("England")).toBe("gb-eng");
     expect(nationalityFlagCode("  Spain ")).toBe("es");
     expect(nationalityFlagCode("Côte d’Ivoire")).toBe("ci");
+    expect(nationalityFlagCode("Curaçao")).toBe("cw");
+    expect(nationalityFlagCode("South Sudan")).toBe("ss");
     expect(nationalityFlagCode("")).toBeUndefined();
     expect(nationalityFlagCode(null)).toBeUndefined();
     expect(nationalityFlagCode("Atlantis")).toBeUndefined();

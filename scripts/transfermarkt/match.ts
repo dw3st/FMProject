@@ -20,6 +20,12 @@ function uniquePairs<A extends string, B extends string>(cands: Map<A, B[]>): Ma
   return out;
 }
 
+function tokenSubset(a: string, b: string): boolean {
+  const x = a.split(" ").filter(Boolean), y = b.split(" ").filter(Boolean);
+  const [small, big] = x.length <= y.length ? [x, y] : [y, x];
+  return small.some((t) => t.length >= 4) && small.every((t) => big.includes(t));
+}
+
 /** Club → Transfermarkt club id inside one country/league: override → exact key → loose key → prefix. */
 export function matchClubs(ours: OurClub[], tm: TmNamed[], overrides: Record<string, string>): Map<string, string> {
   const out = new Map<string, string>();
@@ -32,6 +38,8 @@ export function matchClubs(ours: OurClub[], tm: TmNamed[], overrides: Record<str
     (a, b) => clubKey(a) === clubKey(b),
     (a, b) => looseClubKey(a) === looseClubKey(b),
     (a, b) => { const x = clubKey(a), y = clubKey(b); return x.length > 2 && y.length > 2 && (x.startsWith(y) || y.startsWith(x)); },
+    // "Palmeiras" × "Sociedade Esportiva Palmeiras": every token of one name is in the other (one real word at least).
+    (a, b) => tokenSubset(clubKey(a), clubKey(b)),
   ];
   for (const same of passes) {
     const cands = new Map<string, string[]>();

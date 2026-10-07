@@ -19,6 +19,13 @@ describe("matchClubs", () => {
     expect(r.get("50")).toBe("281");
     expect(r.get("40")).toBe("31");
   });
+  test("token subset: a short name inside the full one, unique both ways", () => {
+    const tm = [{ id: "1023", name: "Sociedade Esportiva Palmeiras" }, { id: "199", name: "Sport Club Corinthians Paulista" }, { id: "9", name: "AE Kition" }];
+    const r = matchClubs([{ squadId: "a", name: "Palmeiras" }, { squadId: "b", name: "Corinthians" }, { squadId: "c", name: "AE" }], tm, {});
+    expect(r.get("a")).toBe("1023");
+    expect(r.get("b")).toBe("199");
+    expect(r.has("c")).toBe(false);
+  });
   test("a Transfermarkt club claimed twice matches nobody", () => {
     const r = matchClubs([{ squadId: "a", name: "Sporting" }, { squadId: "b", name: "Sporting" }], [{ id: "1", name: "Sporting" }], {});
     expect(r.size).toBe(0);
