@@ -103,4 +103,5 @@ Pedido do usuário (2026-10-07), na mesma etapa (o mundo é regenerado uma vez s
 
 ## Fora do escopo
 
-Altura, pé, contratos reais e o resto dos dados do Transfermarkt (próxima etapa, se quiser).
+Pé, peso, contratos reais e o resto dos dados do Transfermarkt. Data de nascimento e altura entram (issue #94):
+`derived.json` guarda `birthDate`/`heightCm` e a ficha do jogador mostra os dois quando existem.
