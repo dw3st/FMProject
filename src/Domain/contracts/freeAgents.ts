@@ -202,6 +202,27 @@ export function pruneFreeAgents(pool: FreeAgent[], date: string): FreeAgent[] {
 }
 
 /** A released player enters the pool healthy and with no club/contract. */
+/**
+ * A squad above `cap` (a human club handed to the AI: the human cap is 36, the AI's 30) keeps the
+ * best: the lowest-rated players go, never one on loan from another club (he goes back on his date)
+ * and never one that would leave his role below `MIN_BY_ROLE`.
+ */
+export function trimSquadToCap(squad: Squad, cap = MAX_SQUAD): { squad: Squad; released: RosterPlayer[] } {
+  if (squad.players.length <= cap) return { squad, released: [] };
+  const counts = countByRole(squad.players);
+  const released: RosterPlayer[] = [];
+  const ranked = [...squad.players].filter((p) => !p.loan).sort((a, b) => overallAvg(a) - overallAvg(b));
+  for (const p of ranked) {
+    if (squad.players.length - released.length <= cap) break;
+    const role = roleOf(p);
+    if (counts[role] <= MIN_BY_ROLE[role]) continue;
+    counts[role]--;
+    released.push(p);
+  }
+  const gone = new Set(released.map((p) => p.id));
+  return { squad: { ...squad, players: squad.players.filter((p) => !gone.has(p.id)) }, released };
+}
+
 export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
   // A sell-on clause or a loan ends with the contract (`.claude/rules/game/negotiation.md`).
   // Morale is the human club's only (`.claude/rules/game/morale.md`).

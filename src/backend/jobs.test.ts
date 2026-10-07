@@ -6,7 +6,8 @@ import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { recordMoney } from "@/backend/FinancialService";
-import { loadJobWorld, seasonEndExpiry } from "@/backend/jobWorld";
+import { loadJobWorld, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
+import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
 import type { RetiredPlayer } from "@/types/playerTypes";
 import { addDays } from "@/Domain/dates";
@@ -242,6 +243,25 @@ describe("jobs: sacking, offers, changing club", () => {
     const inboxAfter = await saveService.getInbox(meta.id);
     expect(inboxAfter.some((m) => m.category === "job" && m.kind === "offer")).toBe(false);
   }, 240_000);
+
+  test("a human club above the AI cap releases the extras when it becomes AI", async () => {
+    const meta = await create();
+    const old = (await saveService.getSquadById(meta.id, "33"))!;
+    // Up to 33 players (the human cap is 36), the extras copies of the squad's own players.
+    const extra = Array.from({ length: 33 - old.players.length }, (_, i) => ({ ...old.players[i % old.players.length]!, id: `extra_${i}` }));
+    await saveService.saveSquadById(meta.id, { ...old, players: [...old.players, ...extra] });
+    const freeBefore = (await saveService.getFreeAgents(meta.id)).length;
+    await releaseHumanClub(saveService, meta.id, { squadId: "33", date: meta.currentDate! });
+    const ai = (await saveService.getSquadById(meta.id, "33"))!;
+    expect(ai.players.length).toBe(MAX_SQUAD);
+    for (const [role, min] of Object.entries(MIN_BY_ROLE)) {
+      expect(ai.players.filter((p) => roleOf(p) === role).length).toBeGreaterThanOrEqual(min);
+    }
+    const free = await saveService.getFreeAgents(meta.id);
+    expect(free.length - freeBefore).toBe(3);
+    const kept = new Set(ai.players.map((p) => p.id));
+    expect(free.slice(freeBefore).every((f) => !kept.has(f.player.id) && !f.player.contract)).toBe(true);
+  }, 120_000);
 
   test("world: every employer has a prestige in 0..1", async () => {
     const meta = await create();

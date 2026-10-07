@@ -1590,8 +1590,9 @@ try {
       `base: ${withProm.length}/${rolledAI.length} AI clubs of the rolled leagues promoted an academy player (>= 85%)`);
     check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.youth === undefined),
       "base: no AI club stores an academy list");
-    check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.players.length <= 30),
-      "base: no AI squad above 30 players");
+    const aboveCap = allFiles.filter(({ squad }) => squad.id !== playerSquadId && squad.players.length > 30);
+    check(aboveCap.length === 0,
+      `base: no AI squad above 30 players (${aboveCap.map(({ squad }) => `${squad.id} ${squad.name} ${squad.players.length}`).join(", ") || "ok"})`);
     const allIds = allFiles.flatMap(({ squad }) => [...squad.players, ...(squad.youth ?? [])].map((p) => p.id));
     check(new Set(allIds).size === allIds.length, `base: player ids unique across the world (${allIds.length - new Set(allIds).size} dupes)`);
     const inbox = await plain().getInbox(saveId);
