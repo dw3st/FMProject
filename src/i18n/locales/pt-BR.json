@@ -1174,6 +1174,7 @@
     },
     "scouting": {
       "open": "Abrir a central de olheiros",
+      "recommendationLead": "Neste mês o olheiro-chefe indica:",
       "subject": {
         "report": "Relatório de observação: {{target}}",
         "mission_done": "Missão encerrada: {{target}}",
@@ -2876,6 +2877,7 @@
     },
     "mission": "Missão",
     "allMissions": "Todas as missões",
+    "recommendationReports": "Indicações do olheiro-chefe",
     "finishedMission": "Missão encerrada",
     "noReports": "Nenhum relatório ainda. Mande um olheiro em missão.",
     "status": {

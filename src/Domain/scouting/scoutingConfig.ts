@@ -58,6 +58,8 @@ export const SCOUTING = {
   GEMS_PER_WEEK: 2,
   RECOMMENDATIONS: 3,
   RECOMMEND_MIN_K: 20,
+  /** A pick with a report younger than this (days) reuses it; otherwise the chief writes one. */
+  RECOMMEND_REPORT_DAYS: 120,
 
   // ── Shortlist ────────────────────────────────────────────────────────────
   MAX_SHORTLIST: 50,

@@ -1174,6 +1174,7 @@
     },
     "scouting": {
       "open": "Open the scouting centre",
+      "recommendationLead": "This month the chief scout recommends:",
       "subject": {
         "report": "Scouting report: {{target}}",
         "mission_done": "Mission finished: {{target}}",
@@ -2876,6 +2877,7 @@
     },
     "mission": "Mission",
     "allMissions": "All missions",
+    "recommendationReports": "Chief scout picks",
     "finishedMission": "Finished mission",
     "noReports": "No reports yet. Send a scout on a mission.",
     "status": {
