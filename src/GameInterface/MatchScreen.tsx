@@ -57,6 +57,7 @@ import { aiFamiliarity, squadFamiliarityLevels } from "@/Domain/familiarity/fami
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import { TeamPanel, type DepartedPlayer } from "@/GameInterface/TeamPanel";
 import { ScoreBar, type TeamMeta } from "@/GameInterface/ScoreBar";
+import { useMatchHeading } from "@/GameInterface/useMatchHeading";
 import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
@@ -147,6 +148,9 @@ export function MatchScreen() {
   const [teamBMeta, setTeamBMeta] = useState<TeamMeta | undefined>();
   /** Squad ids behind the scoreboard crests — URLs are derived once the league catalog loads. */
   const [crestIds, setCrestIds] = useState<{ a: string; b?: string } | null>(null);
+  /** Fixture being played (competition heading under the scoreboard, #81). */
+  const [matchFixture, setMatchFixture] = useState<Fixture | null>(null);
+  const matchHeadingText = useMatchHeading(useMemo(() => loadSession()?.saveId, []), matchFixture, crestIds?.a);
   /** Both match squads (starters + bench) for the faces on the pitch (#61). */
   const [faceRoster, setFaceRoster] = useState<Record<TeamId, {
     players: { id: string; nationality?: string | null }[];
@@ -441,6 +445,7 @@ export function MatchScreen() {
           });
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
+        setMatchFixture(data.fixture);
         setFaceRoster({
           A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
           B: { players: opponentPlayers, clubColors: data.opponentSquad?.colors ?? data.save.clubColors },
@@ -931,6 +936,10 @@ export function MatchScreen() {
             scoreColorB={matchKitColors.teamB}
             aggregate={gameState.aggregate}
           />
+
+          {matchHeadingText && (
+            <p className="m-0 -mt-1 text-center text-sm text-muted-foreground truncate">{matchHeadingText}</p>
+          )}
 
           {gameState.shootout && (
             <div className="flex justify-center">

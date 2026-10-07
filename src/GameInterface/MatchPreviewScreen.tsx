@@ -27,6 +27,7 @@ import { Player } from "@/Domain/Player";
 import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
 import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { competitionName } from "@/Domain/world/labels";
+import { matchHeading } from "@/Domain/world/matchHeading";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
 import {
   FALLBACK_AWAY_ACCENT,
@@ -972,7 +973,6 @@ export function MatchPreviewScreen() {
   const competition = fixture
     ? competitionName(fixture.competition, catalogLeagues, i18n.language)
     : "Premier Division";
-  const matchday = fixture?.round ?? 1;
   const isCupTie = fixture ? isCupSlug(fixture.competition) : false;
   const cupStageName = isCupTie
     ? cupMeta?.cup?.stages.find((s) => s.round === fixture!.round)?.name
@@ -985,13 +985,9 @@ export function MatchPreviewScreen() {
   const continentalGroup = isContinentalTie
     ? continentalMeta?.continental?.groups.find((g) => g.clubs.includes(mySquadId || session.clubId))?.name
     : undefined;
-  const continentalLegLabel =
-    fixture?.leg === 1 ? t("continental.leg1") : fixture?.leg === 2 ? t("continental.leg2") : undefined;
-  const continentalPhase =
-    !isContinentalTie ? undefined :
-    continentalStageName === "group" ? t("continental.groupRound", { group: continentalGroup ?? "?", round: matchday }) :
-    continentalStageName ? [t(`continental.stage.${continentalStageName}`), continentalLegLabel].filter(Boolean).join(" · ") :
-    undefined;
+  const heading = fixture
+    ? matchHeading({ fixture, competition, cupStage: cupStageName, continentalStage: continentalStageName, continentalGroup }, t)
+    : competition;
 
   const myLogoUrl  = squadLogoUrl(mySquadId || session.clubId);
   const oppLogoUrl = opponentId ? squadLogoUrl(opponentId) : undefined;
@@ -1036,11 +1032,7 @@ export function MatchPreviewScreen() {
       {/* Match title */}
       <div className="text-center space-y-1 shrink-0">
         <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0">
-          {isCupTie
-            ? (cupStageName ? <>{t(`cups.stage.${cupStageName}`)} &bull; {competition}</> : competition)
-            : isContinentalTie
-            ? (continentalPhase ? <>{continentalPhase} &bull; {competition}</> : competition)
-            : <>{t("leagues.matchday", { round: matchday })} &bull; {competition}</>}
+          {heading}
         </p>
         <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0">
           <TitleParts accent={t("screenTitles.matchPreview.accent")}>{t("screenTitles.matchPreview.main")}</TitleParts>
