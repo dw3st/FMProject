@@ -25,6 +25,7 @@ import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
+import { mirrorX } from "@/GraficsEngine/pitchMirror";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
@@ -310,6 +311,11 @@ interface Props {
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
   /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
   effectLabels?: { save: string; wide: string; offside: string };
+  /**
+   * Draw the pitch mirrored on the x axis (#98: the user plays away, home side on the left).
+   * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
+   */
+  mirror?: boolean;
 }
 
 const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
@@ -335,6 +341,7 @@ export function PixiPitch({
   captureRef,
   faceUrls,
   effectLabels,
+  mirror = false,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -350,6 +357,7 @@ export function PixiPitch({
   const crowdClickPosRef         = useRef(crowdClickPos);
   const faceUrlsRef              = useRef(faceUrls);
   const effectLabelsRef          = useRef(effectLabels);
+  const mirrorRef                = useRef(mirror);
   const labelsOf = () => effectLabelsRef.current ?? DEFAULT_EFFECT_LABELS;
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
@@ -367,6 +375,7 @@ export function PixiPitch({
   useEffect(() => { crowdEvalConfigRef.current       = crowdEvalConfig;       }, [crowdEvalConfig]);
   useEffect(() => { crowdClickPosRef.current         = crowdClickPos;         }, [crowdClickPos]);
   useEffect(() => { effectLabelsRef.current = effectLabels; }, [effectLabels]);
+  useEffect(() => { mirrorRef.current = mirror; }, [mirror]);
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
@@ -427,9 +436,9 @@ export function PixiPitch({
 
       const m = buildMetrics(canvasWidth, canvasHeight);
 
-      // Converts game yards → canvas pixels
+      // Converts game yards → canvas pixels (mirrored on x when `mirror` is set — drawing only)
       const toPixel = (x: number, y: number) => ({
-        px: m.marginX + x * m.scale,
+        px: m.marginX + mirrorX(x, mirrorRef.current) * m.scale,
         py: m.marginY + y * m.scale,
       });
 
@@ -873,7 +882,7 @@ export function PixiPitch({
         const logicalY = cssY * (canvasHeight / rect.height);
 
         // Logical canvas → game (yards). m is built from logical dims, so this works.
-        const gameX = (logicalX - m.marginX) / m.scale;
+        const gameX = mirrorX((logicalX - m.marginX) / m.scale, mirrorRef.current);
         const gameY = (logicalY - m.marginY) / m.scale;
 
         if (playerCb) {
@@ -1002,7 +1011,7 @@ export function PixiPitch({
               const cb = 80;
               const color = (cr << 16) | (cg << 8) | cb;
               const alpha = 0.18 + s * 0.45;
-              const px0 = m.marginX + (cell.x - CELL_W / 2) * m.scale;
+              const px0 = Math.min(toPixel(cell.x - CELL_W / 2, 0).px, toPixel(cell.x + CELL_W / 2, 0).px);
               const py0 = m.marginY + (cell.y - CELL_H / 2) * m.scale;
               throughBallGfx.rect(px0, py0, cellW, cellH).fill({ color, alpha });
             }
@@ -1472,7 +1481,7 @@ export function PixiPitch({
                   const cg = Math.round(255 + (baseColor.g - 255) * t);
                   const cb2 = Math.round(255 + (baseColor.b - 255) * t);
                   const color = (cr << 16) | (cg << 8) | cb2;
-                  const px0 = m.marginX + c * CELL_W * m.scale;
+                  const px0 = Math.min(toPixel(c * CELL_W, 0).px, toPixel((c + 1) * CELL_W, 0).px);
                   const py0 = m.marginY + r * CELL_H * m.scale;
                   // Per-cell alpha scales with intensity so weak cells barely show.
                   const alpha = 0.15 + t * 0.45;

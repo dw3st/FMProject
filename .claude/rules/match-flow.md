@@ -377,3 +377,22 @@ The headless path (`quickSim`, `/lab`) does not run the phase machine at all —
 time and a shootout directly from xG. See `.claude/rules/non-player-games.md` → "quickSim
 (ligas não seguidas)" for that path, and `.claude/rules/game-engine/shot-and-save.md` for the
 shootout resolver shared by both paths.
+
+---
+
+# Home side on the left (live match presentation, #98)
+
+The user's club is always engine team A. The live match (`MatchScreen`) shows the **home side on
+the left**, like a TV broadcast: one flag, `awayView = isAwayView(fixture, mySquadId)`
+(`src/GameInterface/matchSides.ts`) — true when the user is the away side of a fixture with a home
+side; a neutral venue (`fixture.neutral`) keeps the user on the left. With it:
+
+- scoreboard, goal / half-time / full-time overlays, aggregate and penalty scores, shootout strip
+  rows and the "Resumo" panel get their A/B pairs through `toDisplayPair` / `displayTeam`
+  (display slot A = left);
+- the pitch is drawn mirrored on x (`PixiPitch` `mirror`, `GraficsEngine/pitchMirror.ts`);
+- the left team list still opens on the user's own team (#51), flip to see the opponent;
+- the result screen (`MatchResultScreen`) already lists the fixture's home side on the left.
+
+The Stats and Debug buttons of the match header (and `StatsPanel`, `DebugPanel`, engine debug mode)
+exist only outside production (#97).
