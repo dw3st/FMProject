@@ -1,7 +1,7 @@
 import type { MainRole } from "@/Domain/roles";
 import type { DetailedRole } from "@/types/playerTypes";
 import { fitSeedAgeEffects, levelOf, type SeedFit } from "@/../scripts/transfermarkt/level";
-import { COVERAGE_MIN, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
+import { COVERAGE_MIN, MIN_VALUED_PLAYERS, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
 
 /** What the Transfermarkt says about one matched player (already parsed; nationality already in world spelling). */
 export interface MatchInfo {
@@ -52,10 +52,14 @@ const round4 = (x: number) => Math.round(x * 1e4) / 1e4;
 
 /**
  * Age and line effects (seed covariate) over every valued match, then per league: coverage = valued ÷ players; at or above
- * `COVERAGE_MIN` the valued players are reordered by level and unmatched youths capped. Positions, birth
+ * `COVERAGE_MIN` (and with at least `MIN_VALUED_PLAYERS` valued) the valued players are reordered by level and unmatched youths capped. Positions, birth
  * date, height and nationality are taken from every match regardless of coverage.
  */
-export function buildDerived(players: LeaguePlayer[], coverageMin = COVERAGE_MIN): DerivedResult {
+export function buildDerived(
+  players: LeaguePlayer[],
+  coverageMin = COVERAGE_MIN,
+  minValued = MIN_VALUED_PLAYERS,
+): DerivedResult {
   const valued = players.filter((p) => p.match?.value != null && p.match.value > 0);
   const effects = fitSeedAgeEffects(valued
     .filter((p) => p.seedOverall != null)
@@ -70,7 +74,7 @@ export function buildDerived(players: LeaguePlayer[], coverageMin = COVERAGE_MIN
   for (const [slug, list] of [...byLeague].sort(([a], [b]) => a.localeCompare(b))) {
     const inLeague = list.filter((p) => level.has(p.id));
     const coverage = list.length ? inLeague.length / list.length : 0;
-    const reordered = inLeague.length > 0 && coverage >= coverageMin;
+    const reordered = inLeague.length > 0 && inLeague.length >= minValued && coverage >= coverageMin;
     leagues[slug] = {
       players: list.length,
       matched: list.filter((p) => p.match).length,

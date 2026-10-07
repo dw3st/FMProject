@@ -16,7 +16,7 @@ import { matchClubs, matchPlayers } from "@/../scripts/transfermarkt/match";
 import { worldNationality } from "@/../scripts/transfermarkt/nationality";
 import { tmPosition } from "@/../scripts/transfermarkt/positions";
 import { LINE_CAP, VETERAN_CAP, YOUTH_CAP } from "@/../scripts/transfermarkt/level";
-import { COVERAGE_MIN } from "@/../scripts/transfermarkt/reorder";
+import { COVERAGE_MIN, MIN_VALUED_PLAYERS } from "@/../scripts/transfermarkt/reorder";
 import { computeOverallAvg, fixedNaturalRole } from "@/Domain/playerRating";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { getMainRole } from "@/Domain/roles";
@@ -178,7 +178,7 @@ const before = current;
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 log(`Recalibração pelo valor de mercado — ${new Date().toISOString().slice(0, 10)}`);
-log(`Mínimo de cobertura para reordenar: ${pct(COVERAGE_MIN)}`);
+log(`Mínimo para reordenar: ${pct(COVERAGE_MIN)} de cobertura e ${MIN_VALUED_PLAYERS} jogadores casados com valor`);
 log("Efeitos de idade e linha: prêmio de mercado a habilidade igual (nota do seed open-football); um conjunto de notas por liga");
 log();
 log("== Cobertura por liga (valorados ÷ jogadores) ==");

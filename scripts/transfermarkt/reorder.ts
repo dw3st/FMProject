@@ -1,4 +1,7 @@
-export const COVERAGE_MIN = 0.6;
+/** A league is reordered only with at least this share of its players matched with a value... */
+export const COVERAGE_MIN = 0.4;
+/** ...and at least this many of them (a small league with a handful of valued players stays as it is). */
+export const MIN_VALUED_PLAYERS = 100;
 export const YOUTH_CAP_MAX_AGE = 21;
 
 /** Matched players of one league: the multiset of their current overalls, reassigned in level order. */

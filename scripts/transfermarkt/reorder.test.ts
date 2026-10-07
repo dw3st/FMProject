@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { COVERAGE_MIN, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
+import { COVERAGE_MIN, MIN_VALUED_PLAYERS, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
 
 test("matched players get the league's own multiset, ordered by level", () => {
   const r = reorderLeague([
@@ -30,4 +30,7 @@ test("unmatched youth above the club's matched median is capped there", () => {
   expect(caps.has("o")).toBe(false);
 });
 
-test("coverage threshold", () => expect(COVERAGE_MIN).toBe(0.6));
+test("coverage threshold", () => {
+  expect(COVERAGE_MIN).toBe(0.4);
+  expect(MIN_VALUED_PLAYERS).toBe(100);
+});
