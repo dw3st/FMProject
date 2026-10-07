@@ -85,11 +85,11 @@ function DepthRow({ p, href }: { p: DepthPlayer; href: string }) {
       ? t("squadDepth.suspended")
       : p.natural
         ? t("squadDepth.age", { age: p.age })
-        : t("squadDepth.adapts");
+        : `${t("squadDepth.age", { age: p.age })} · ${t("squadDepth.adapts")}`;
   return (
     <a
       href={href}
-      className={`flex items-center justify-between gap-2 min-h-7 text-sm no-underline hover:text-primary ${
+      className={`flex items-center justify-between gap-2 min-h-8 text-sm no-underline hover:text-primary ${
         out ? "text-destructive" : p.natural ? "text-foreground font-semibold" : "text-muted-foreground"
       }`}
     >
@@ -118,10 +118,12 @@ function DepthCard({ cell, playerHref, className = "" }: { cell: DepthCell; play
       <div className="flex items-center justify-between mb-0.5">
         <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${getDetailedPositionColor(cell.role)}`}>
           {t(`roles.detailedAbbr.${cell.role}`)}
+          <span className="sr-only"> — {t("squadDepth.groupStatus", { status: t(`squadDepth.legend.${status}`) })}</span>
         </span>
         <span
           className={`font-display font-bold tabular-nums text-sm ${STATUS_TEXT[status]}`}
           title={t("squadDepth.naturalsCount", { count: cell.naturals })}
+          aria-label={t("squadDepth.naturalsCount", { count: cell.naturals })}
         >
           {cell.naturals}
         </span>
@@ -204,7 +206,7 @@ export function SquadDepthView({ squad, leagueSlug, clubSlug }: { squad: Squad; 
             className="absolute -translate-x-1/2 -translate-y-1/2 w-44"
             style={{ left: `${SPOT[cell.role].x}%`, top: `${SPOT[cell.role].y}%` }}
           >
-            <DepthCard cell={cell} playerHref={playerHref} className="shadow-md" />
+            <DepthCard cell={cell} playerHref={playerHref} className="shadow-sm" />
           </div>
         ))}
       </div>

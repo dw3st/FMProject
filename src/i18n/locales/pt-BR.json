@@ -1512,7 +1512,7 @@
       "short": "Falta",
       "unused": "Fora da formação"
     },
-    "hint": "De origem conta 1, adaptado ½, lesão longa 0. Cor: um reserva por titular da formação.",
+    "hint": "De origem conta 1, adaptado ½, lesão longa 0. Cor: um reserva por titular, até dois por grupo.",
     "formation": "Formação {{formation}}",
     "customFormation": "livre",
     "adapts": "se adapta",
@@ -1521,7 +1521,9 @@
     "suspended": "suspenso",
     "nobody": "Ninguém",
     "more": "+{{count}}",
-    "naturalsCount": "{{count}} jogadores de origem",
+    "naturalsCount_one": "{{count}} jogador de origem",
+    "naturalsCount_other": "{{count}} jogadores de origem",
+    "groupStatus": "Grupo: {{status}}",
     "notInFormation": "A formação atual não usa esta posição",
     "sector": {
       "gk": "Gol",

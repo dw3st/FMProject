@@ -1512,7 +1512,7 @@
       "short": "Short",
       "unused": "Not in the formation"
     },
-    "hint": "Natural players count 1, adapted ½, long injuries 0. Colour: one backup per starter of the formation.",
+    "hint": "Natural players count 1, adapted ½, long injuries 0. Colour: one backup per starter, up to two per group.",
     "formation": "Formation {{formation}}",
     "customFormation": "custom",
     "adapts": "adapts",
@@ -1521,7 +1521,9 @@
     "suspended": "suspended",
     "nobody": "Nobody",
     "more": "+{{count}} more",
-    "naturalsCount": "{{count}} natural players",
+    "naturalsCount_one": "{{count}} natural player",
+    "naturalsCount_other": "{{count}} natural players",
+    "groupStatus": "Group: {{status}}",
     "notInFormation": "Not used by the current formation",
     "sector": {
       "gk": "Goal",
