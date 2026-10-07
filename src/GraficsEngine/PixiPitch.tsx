@@ -3,7 +3,8 @@ import { Application, CanvasSource, Container, FillGradient, Graphics, Sprite, T
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
-import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, syncRenderPair, type RenderPair } from "@/GraficsEngine/renderInterp";
+import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
+import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
@@ -576,6 +577,16 @@ export function PixiPitch({
       // swap from outside (matchStateSync, /test commands, tactics change) that moved something
       // is drawn as is.
       let renderPair: RenderPair = { prev: stateRef.current, cur: stateRef.current };
+      // Set-piece transition (setPieceTransition.ts): a restart that repositions the teams is drawn as a short
+      // eased walk from the last drawn positions to the layout, on a real-time clock frozen while paused.
+      // Only when frames are being drawn: with the tab hidden there is no animation.
+      let transitionNow = 0;
+      let transition: SetPieceTransition | null = null;
+      let setPieceStartPending = false;
+      let lastDrawnPos: Map<number, Pos> | null = null;
+      let lastDrawnBall: DrawnBall | null = null;
+      const framesVisible = () =>
+        !(typeof document !== 'undefined' && document.hidden) && app.ticker.started;
 
       const pumpSimulation = () => {
         const elapsedRealSeconds = pump(pausedRef.current);
@@ -585,6 +596,12 @@ export function PixiPitch({
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
         renderPair = nextRenderPair(renderPair, { prevState, result, steps: result.steps });
+        if (!framesVisible()) {
+          transition = null;
+          setPieceStartPending = false;
+        } else if (isSetPieceStart(prevState, result.state)) {
+          setPieceStartPending = true;
+        }
         // advanceSim returns the same reference when zero whole steps ran (not enough
         // carried+elapsed time yet, or tickState's own noop paths — e.g. matchEnd, or
         // a frozen presentation/set-piece countdown). Nothing changed: skip the emit.
@@ -917,10 +934,28 @@ export function PixiPitch({
         // Drawn positions: between the last two sim steps. Paused, carry does not move,
         // so alpha (and the drawing) stays frozen.
         const drawState = stateRef.current;
+        // A state swapped in from outside the pump that moved something (/test command) ends a transition.
+        if (drawState !== renderPair.cur && !samePositions(drawState, renderPair.cur)) transition = null;
         renderPair = syncRenderPair(renderPair, drawState);
         const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
-        const drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
-        const drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        let drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        let drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        transitionNow = advanceEffectClock(transitionNow, app.ticker.deltaMS / 1000, pausedRef.current);
+        if (setPieceStartPending) {
+          setPieceStartPending = false;
+          if (lastDrawnPos && lastDrawnBall && drawState.setPiece) {
+            const seconds = transitionSeconds(drawState.setPiece.countdown, gameSpeedRef.current);
+            transition = startTransition(lastDrawnPos, lastDrawnBall, transitionNow, seconds);
+          }
+        }
+        if (!transitionActive(transition, transitionNow, drawState)) transition = null;
+        if (transition) {
+          const k = transitionProgress(transition, transitionNow);
+          drawnPos = blendPlayers(transition.fromPlayers, drawnPos, k);
+          drawnB = blendBall(transition.fromBall, drawnB, k);
+        }
+        lastDrawnPos = drawnPos;
+        lastDrawnBall = drawnB;
 
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
