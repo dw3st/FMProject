@@ -1501,7 +1501,33 @@
     "players": "jogadores",
     "tabSquad": "Elenco",
     "tabYouth": "Base",
-    "tabHistory": "História"
+    "tabHistory": "História",
+    "tabDepth": "Profundidade"
+  },
+  "squadDepth": {
+    "legend": {
+      "ok": "Suficiente",
+      "thin": "No limite",
+      "short": "Falta",
+      "unused": "Fora da formação"
+    },
+    "hint": "De origem conta 1, adaptado ½, lesão longa 0. Cor: um reserva por titular da formação.",
+    "formation": "Formação {{formation}}",
+    "customFormation": "livre",
+    "adapts": "se adapta",
+    "age": "{{age}}a",
+    "injured": "lesionado {{days}}d",
+    "suspended": "suspenso",
+    "nobody": "Ninguém",
+    "more": "+{{count}}",
+    "naturalsCount": "{{count}} jogadores de origem",
+    "notInFormation": "A formação atual não usa esta posição",
+    "sector": {
+      "gk": "Gol",
+      "def": "Defesa",
+      "mid": "Meio-campo",
+      "att": "Ataque"
+    }
   },
   "clubHistory": {
     "since": "Histórico desde {{season}}",

@@ -10,6 +10,7 @@ import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
 import { Tabs } from "@/GameInterface/ui/Tabs";
 import { YouthTable } from "@/GameInterface/Components/YouthTable";
 import { ClubHistoryView } from "@/GameInterface/Components/ClubHistoryView";
+import { SquadDepthView } from "@/GameInterface/Components/SquadDepthView";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
 import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOverview";
 import { MoralePromises } from "@/GameInterface/Morale/MoralePromises";
@@ -23,9 +24,9 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
-  const [tab, setTab] = useState<"squad" | "youth" | "loans" | "history">(() => {
+  const [tab, setTab] = useState<"squad" | "depth" | "youth" | "loans" | "history">(() => {
     const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
-    return q === "youth" || q === "history" || q === "loans" ? q : "squad";
+    return q === "youth" || q === "history" || q === "loans" || q === "depth" ? q : "squad";
   });
   const lastTransferResult = useRef<TransferRecord | null>(null);
 
@@ -119,6 +120,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         <Tabs
           tabs={[
             { key: "squad", label: t("squadScreen.tabSquad") },
+            ...(squad.id === mySquadId ? [{ key: "depth" as const, label: t("squadScreen.tabDepth") }] : []),
             ...(squad.id === mySquadId ? [{ key: "youth" as const, label: t("squadScreen.tabYouth") }] : []),
             ...(squad.id === mySquadId ? [{ key: "loans" as const, label: t("negotiation.overview.loanedOutTab") }] : []),
             { key: "history", label: t("squadScreen.tabHistory") },
@@ -129,6 +131,8 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
 
         {tab === "history" && session ? (
           <ClubHistoryView saveId={session.saveId} squadId={squad.id} leagueSlug={league} />
+        ) : tab === "depth" && squad.id === mySquadId ? (
+          <SquadDepthView squad={squad} leagueSlug={league} clubSlug={club} />
         ) : tab === "youth" && squad.id === mySquadId ? (
           <YouthTable />
         ) : tab === "loans" && squad.id === mySquadId && session ? (

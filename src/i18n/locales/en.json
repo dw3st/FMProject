@@ -1501,7 +1501,33 @@
     "players": "players",
     "tabSquad": "Squad",
     "tabYouth": "Academy",
-    "tabHistory": "History"
+    "tabHistory": "History",
+    "tabDepth": "Depth"
+  },
+  "squadDepth": {
+    "legend": {
+      "ok": "Enough",
+      "thin": "At the limit",
+      "short": "Short",
+      "unused": "Not in the formation"
+    },
+    "hint": "Natural players count 1, adapted ½, long injuries 0. Colour: one backup per starter of the formation.",
+    "formation": "Formation {{formation}}",
+    "customFormation": "custom",
+    "adapts": "adapts",
+    "age": "{{age}}y",
+    "injured": "injured {{days}}d",
+    "suspended": "suspended",
+    "nobody": "Nobody",
+    "more": "+{{count}} more",
+    "naturalsCount": "{{count}} natural players",
+    "notInFormation": "Not used by the current formation",
+    "sector": {
+      "gk": "Goal",
+      "def": "Defence",
+      "mid": "Midfield",
+      "att": "Attack"
+    }
   },
   "clubHistory": {
     "since": "History since {{season}}",
