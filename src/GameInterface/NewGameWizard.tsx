@@ -18,7 +18,7 @@ import { Notice } from "@/GameInterface/ui/Notice";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { StatBar } from "@/GameInterface/ui/StatBar";
-import { Tabs } from "@/GameInterface/ui/Tabs";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { Icon } from "@/GameInterface/Icons";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
@@ -369,14 +369,14 @@ export function NewGameWizard() {
                 {t("newGame.showMap")}
               </button>
               <div className="overflow-x-auto mt-4 shrink-0">
-                <Tabs
+                <SegmentedTabs
                   tabs={countryLeagues.map((l) => ({ key: l.slug, label: l.name }))}
                   active={selectedLeagueSlug}
                   onChange={(slug) => {
                     setSelectedLeagueSlug(slug);
                     setSelectedTeam(null);
                   }}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap [&>button]:shrink-0"
                 />
               </div>
               {countryLeagues.length === 0 ? (

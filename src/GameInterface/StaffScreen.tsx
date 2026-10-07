@@ -9,7 +9,7 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { StatBar } from "@/GameInterface/ui/StatBar";
-import { Tabs } from "@/GameInterface/ui/Tabs";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { StaffEffects } from "@/Domain/staff/staff";
 import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
@@ -245,7 +245,7 @@ export function StaffScreen() {
       <section>
         <SectionTitle>{t("staff.market")}</SectionTitle>
         <p className="text-sm text-muted-foreground mt-2 mb-3">{t("staff.marketSubtitle")}</p>
-        <Tabs<MarketTab>
+        <SegmentedTabs<MarketTab>
           tabs={[
             ...STAFF_ROLES.map((r) => ({ key: r as MarketTab, label: t(`staff.roles.${r}`) })),
             ...(scouts ? [{ key: "scouts" as MarketTab, label: t("staff.scouts.tab") }] : []),

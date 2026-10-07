@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Panel } from "@/GameInterface/ui/Panel";
 import { DataTable } from "@/GameInterface/ui/DataTable";
 import { Button } from "@/GameInterface/ui/Button";
-import { Tabs } from "@/GameInterface/ui/Tabs";
 import { Notice } from "@/GameInterface/ui/Notice";
 
 describe("ui components", () => {
@@ -24,10 +23,6 @@ describe("ui components", () => {
   });
   test("Button variants", () => {
     expect(renderToStaticMarkup(<Button variant="danger">x</Button>)).toContain("text-destructive");
-  });
-  test("Tabs marks active", () => {
-    const html = renderToStaticMarkup(<Tabs tabs={[{ key: "a", label: "A" }, { key: "b", label: "B" }]} active="b" onChange={() => {}} />);
-    expect(html).toContain('aria-selected="true"');
   });
   test("Notice error has alert role", () => {
     expect(renderToStaticMarkup(<Notice kind="error">x</Notice>)).toContain('role="alert"');
