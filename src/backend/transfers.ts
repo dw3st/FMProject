@@ -29,6 +29,7 @@ import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer
 import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
 import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
+import { parseAskingPrice } from "@/Domain/negotiation/askingPrice";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -396,10 +397,15 @@ export const transferRoutes = {
       try { body = await req.json(); } catch {
         return Response.json({ error: "invalid body" }, { status: 400 });
       }
-      const { playerId } = body as Record<string, unknown>;
+      const { playerId, askingPrice: rawPrice } = (body ?? {}) as Record<string, unknown>;
       if (typeof playerId !== "string" || playerId.length === 0) {
         return Response.json({ error: "missing playerId" }, { status: 400 });
       }
+      // `askingPrice` present (#88): list him (or keep him listed) at that price; `null` clears the
+      // price (his value). Absent: the plain toggle.
+      const setPrice = body !== null && typeof body === "object" && "askingPrice" in body;
+      const askingPrice = setPrice && rawPrice !== null ? parseAskingPrice(rawPrice) : undefined;
+      if (askingPrice === null) return Response.json({ error: "invalidPrice" }, { status: 400 });
 
       // Serialise the read-decide-write of the market's sell list per save: a concurrent
       // dailyMarketTick (advance-day) or another sell-list toggle on the same save must not
@@ -426,7 +432,17 @@ export const transferRoutes = {
 
         let newList: SellCandidate[];
         const existingIdx = currentList.findIndex((c) => c.playerId === playerId);
-        if (existingIdx >= 0) {
+        const priced = (c: SellCandidate): SellCandidate => {
+          const { askingPrice: _old, ...rest } = c;
+          return askingPrice !== undefined ? { ...rest, askingPrice } : rest;
+        };
+        if (setPrice) {
+          // Set (or clear) the asking price, listing him if he was not listed.
+          if (!own) return Response.json({ error: "not your player" }, { status: 400 });
+          newList = existingIdx >= 0
+            ? currentList.map((c, i) => (i === existingIdx ? priced(c) : c))
+            : [...currentList, priced({ playerId, priority: 1.0 })];
+        } else if (existingIdx >= 0) {
           // Toggle off
           newList = currentList.filter((c) => c.playerId !== playerId);
         } else {
