@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer } from "@/types/playerTypes";
-import { applyLineupPreset, buildLineupPreset, parseLineupPresets } from "@/Domain/tactics/lineupPresets";
+import { applyLineupPreset, buildLineupPreset, parseLineupPresets, type PresetReplacement } from "@/Domain/tactics/lineupPresets";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, snapToZones } from "@/Domain/formation/zones";
 
@@ -109,11 +109,12 @@ describe("applyLineupPreset", () => {
     expect(applied.lineup[gk]).toBe("bGK");
     expect(applied.lineup[st]).toBe("bST");
     expect(applied.lineup[cb]).toBe("bCB");
-    expect(applied.replaced).toEqual([
+    const expected: PresetReplacement[] = [
       { out: `s${gk}`, in: "bGK", slot: gk, reason: "left" },
-      ...[{ out: `s${cb}`, in: "bCB", slot: cb, reason: "suspended" as const },
-        { out: `s${st}`, in: "bST", slot: st, reason: "injured" as const }].sort((a, b) => a.slot - b.slot),
-    ].sort((a, b) => a.slot - b.slot));
+      { out: `s${cb}`, in: "bCB", slot: cb, reason: "suspended" },
+      { out: `s${st}`, in: "bST", slot: st, reason: "injured" },
+    ];
+    expect(applied.replaced).toEqual(expected.sort((a, b) => a.slot - b.slot));
     expect(new Set(applied.lineup).size).toBe(11);
   });
 
