@@ -32,6 +32,9 @@ export const changelog: ChangelogEntry[] = [
       { pt: "Nome da competição na tela da partida", en: "Competition name on the match screen" },
       { pt: "Bandeira da nacionalidade de cada jogador no elenco", en: "Each player's nationality flag in the squad" },
       { pt: "Filtros por tema na caixa de entrada", en: "Topic filters in the inbox" },
+      { pt: "Salve até 3 escalações na tela de Formação e troque entre elas", en: "Save up to 3 lineups on the Formation screen and switch between them" },
+      { pt: "Aba Profundidade no elenco: veja quem joga em cada posição e onde falta gente", en: "Depth tab in the squad: see who plays each position and where you are short" },
+      { pt: "Defina o preço pedido ao colocar um jogador à venda", en: "Set an asking price when you list a player for sale" },
     ],
     fixes: [
       { pt: "Notas e posições do elenco do São Paulo corrigidas", en: "São Paulo squad ratings and positions corrected" },
