@@ -138,7 +138,7 @@ function pyramidTier(pyr: Pyramids, slug: string): number {
   return 1;
 }
 
-function namePools(players: RosterPlayer[]): Map<string, NamePool> {
+export function namePools(players: RosterPlayer[]): Map<string, NamePool> {
   const pools = new Map<string, { first: Set<string>; last: Set<string> }>();
   for (const p of players) {
     const parts = p.name.trim().split(/\s+/);

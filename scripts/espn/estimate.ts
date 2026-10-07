@@ -106,8 +106,12 @@ export function fillSquad<P extends RosterPlayer>(
 ): RosterPlayer[] {
   const out: RosterPlayer[] = [...players];
   let n = 0;
+  const taken = new Set(players.map((p) => p.id));
   const addYouth = (line: MainRole) => {
-    const id = `es_youth_${squadId}_${n++}`;
+    // Skips ids already in the squad (a later pass, e.g. the market recalibration, filling a squad again).
+    let id = `es_youth_${squadId}_${n++}`;
+    while (taken.has(id)) id = `es_youth_${squadId}_${n++}`;
+    taken.add(id);
     const first = pool.first[Math.floor(unitHash(`${id}:f`) * pool.first.length)] ?? "Juan";
     const last = pool.last[Math.floor(unitHash(`${id}:l`) * pool.last.length)] ?? "Silva";
     const age = 17 + Math.floor(unitHash(`${id}:a`) * 3);

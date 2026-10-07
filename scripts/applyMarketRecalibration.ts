@@ -15,6 +15,11 @@ import { applyDerived } from "@/../scripts/transfermarkt/apply";
 import type { DerivedEntry } from "@/../scripts/transfermarkt/derive";
 import ROLES_JSON from "@/Data/roles.json";
 import type { RosterPlayer } from "@/types/playerTypes";
+import { Player } from "@/Domain/Player";
+import { lineMedians, recalibratedOverall } from "@/../scripts/espn/estimate";
+import { namePools } from "@/../scripts/espn/apply";
+import { normalizeNationality } from "@/../scripts/espn/normalize";
+import { balanceSquadLines, squadLineIssues } from "@/../scripts/transfermarkt/balance";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const DATA = join(ROOT, "src", "example_data");
@@ -28,7 +33,7 @@ const DERIVED = join(ROOT, "data_process", "transfermarkt", "derived.json");
     throw new Error("src/Data/roles.json is out of sync — run cp src/example_data/roles.json src/Data/roles.json first");
 }
 
-interface SquadFile { path: string; text: string; squad: { players: RosterPlayer[] } & Record<string, unknown> }
+interface SquadFile { path: string; text: string; squad: { id: string; players: RosterPlayer[] } & Record<string, unknown> }
 
 function listSquadFiles(dir: string): string[] {
   const out: string[] = [];
@@ -44,8 +49,9 @@ const derived = JSON.parse(readFileSync(DERIVED, "utf-8")) as { players: Record<
 const entries = derived.players ?? {};
 const seen = new Set<string>();
 const byLeague = new Map<string, { players: number; changed: number }>();
-let filesWritten = 0;
 
+// 1. The market data per player (line, overall, birth date, height, nationality).
+const files: (SquadFile & { league: string; dirty: boolean })[] = [];
 for (const path of listSquadFiles(SQUADS)) {
   const text = readFileSync(path, "utf-8");
   const squad = JSON.parse(text) as SquadFile["squad"];
@@ -63,8 +69,46 @@ for (const path of listSquadFiles(SQUADS)) {
     if (next !== p) { row.changed++; dirty = true; }
     return next;
   });
-  if (dirty) { writeFileSync(path, formatLike(text, squad)); filesWritten++; }
+  files.push({ path, text, squad, league, dirty });
 }
+
+// 2. A line change can leave a squad below a line minimum (importEspn validated it before): the importer's filler
+//    youth complete it and its cut brings it back to MAX_SQUAD, ranked by the note the chain ends with
+//    (market target, the manual correction winning) — `scripts/transfermarkt/balance.ts`.
+const curated = JSON.parse(readFileSync(join(ROOT, "data_process", "curated", "playerCorrections.json"), "utf-8")) as Record<string, { overall?: number }>;
+const cutTargets: Record<string, { targetOverall?: number }> = { ...entries };
+for (const [id, c] of Object.entries(curated)) if (c.overall !== undefined) cutTargets[id] = { targetOverall: c.overall };
+const overall = (p: RosterPlayer) => Player.computeOverallAvg(p);
+const rank = recalibratedOverall(cutTargets, overall);
+const allPlayers = files.flatMap((f) => f.squad.players);
+const worldBase = lineMedians(allPlayers);
+const leagueBase = new Map<string, ReturnType<typeof lineMedians>>();
+for (const f of files) if (!leagueBase.has(f.league)) leagueBase.set(f.league, lineMedians(files.filter((g) => g.league === f.league).flatMap((g) => g.squad.players)));
+const pools = namePools(allPlayers);
+const worldNationalities = new Set(allPlayers.map((p) => p.nationality).filter((n): n is string => !!n));
+const leagueCountry = new Map((JSON.parse(readFileSync(join(DATA, "leagueData.json"), "utf-8")) as { slug: string; country: string }[]).map((l) => [l.slug, l.country]));
+let filled = 0, youthAdded = 0, cutClubs = 0, cutPlayers = 0;
+for (const f of files) {
+  const raw = leagueCountry.get(f.league) ?? "";
+  const country = normalizeNationality(raw, worldNationalities) ?? raw;
+  const r = balanceSquadLines({
+    squadId: String(f.squad.id), players: f.squad.players, pool: pools.get(country) ?? { first: [], last: [] }, country,
+    leagueBase: leagueBase.get(f.league) ?? {}, worldBase, overall, rank,
+  });
+  if (r.players === f.squad.players) continue;
+  if (r.added.length) { filled++; youthAdded += r.added.length; }
+  if (r.cut.length) { cutClubs++; cutPlayers += r.cut.length; }
+  f.squad.players = r.players;
+  f.dirty = true;
+}
+
+// 3. Never again in silence: every squad within the line minimums and 18..30 players.
+const bad = files.map((f) => ({ f, issues: squadLineIssues(f.squad.players) })).filter((x) => x.issues.length);
+if (bad.length)
+  throw new Error(`applyMarketRecalibration: ${bad.length} squad(s) outside the line limits: ${bad.slice(0, 5).map((x) => `${x.f.league}/${x.f.squad.id} (${x.issues.join(", ")})`).join("; ")}`);
+
+let filesWritten = 0;
+for (const f of files) if (f.dirty) { writeFileSync(f.path, formatLike(f.text, f.squad)); filesWritten++; }
 
 const missing = Object.keys(entries).filter((id) => !seen.has(id));
 console.log("Recalibração pelo valor de mercado: jogadores alterados por liga");
@@ -75,5 +119,6 @@ for (const [league, r] of [...byLeague].sort(([a], [b]) => a.localeCompare(b))) 
   console.log(`  ${league.padEnd(42)} ${String(r.changed).padStart(5)} / ${r.players}`);
 }
 console.log(`${total} jogador(es) alterado(s), ${filesWritten} arquivo(s) de elenco gravado(s).`);
+console.log(`Linhas: ${filled} elenco(s) completado(s) com ${youthAdded} jovem(ns); ${cutClubs} elenco(s) cortado(s) em ${cutPlayers} jogador(es); todos dentro dos mínimos por linha e de 18..30.`);
 if (missing.length)
   console.log(`${missing.length} id(s) do derived.json fora do mundo (cortados no MAX_SQUAD do importEspn, ou mundo regenerado): ${missing.slice(0, 10).join(", ")}${missing.length > 10 ? ", …" : ""}`);

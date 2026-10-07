@@ -210,6 +210,14 @@ valor de mercado reordena as notas dentro de cada liga.
   os atributos até a nota-alvo com o mesmo `rescaleToOverall` das correções manuais, copia nascimento e altura e
   preenche a nacionalidade que falta (nunca troca uma existente). Idempotente; grava só os elencos alterados; id do
   `derived.json` fora do mundo é só aviso.
+- **Linhas depois da recalibração.** A troca de linha (`positions[0]`) vem depois da validação do `importEspn`, então
+  um elenco podia ficar abaixo de um mínimo por linha (GK 3, DEF 7, MID 7, FWD 4; 107 elencos no mundo 2026/27, ex.:
+  Richards Bay com 4 meias). O mesmo script, depois de aplicar, completa a linha com os jovens de preenchimento do
+  importador (`fillSquad`, ids `es_youth_<clube>_<n>` sem repetir os existentes; base = mediana da linha no clube com
+  ≥ 3, senão na liga, senão no mundo) e corta de volta a 30 com o `trimSquad` pela mesma nota final do corte acima
+  (`scripts/transfermarkt/balance.ts`, com teste). Rodada de 2026-10-07: 107 elencos completados com 138 jovens, 41
+  cortados em 54 jogadores. No fim o script **falha** se algum elenco ficar abaixo de um mínimo por linha, com menos
+  de 18 ou mais de 30 (`squadLineIssues`), antes de gravar.
 - **Corte do elenco (`MAX_SQUAD`).** O `importEspn` corta os elencos com mais de 30 jogadores antes de a recalibração
   ser aplicada. Ele ordena pela nota com que o jogador vai terminar a cadeia (`recalibratedOverall`,
   `scripts/espn/estimate.ts`): a correção manual (`playerCorrections.json`, `overall`), senão o `targetOverall` do
