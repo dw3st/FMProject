@@ -49,6 +49,7 @@ async function cached(file: string, path: string, validate: (body: unknown) => u
 }
 
 mkdirSync(CACHE, { recursive: true });
+const failed: string[] = [];
 const map: Record<string, string | null> = JSON.parse(readFileSync(`${DIR}leagueMap.json`, "utf8"));
 const slugs = Object.entries(map)
   .filter(([slug, id]) => id && (!ONLY || ONLY.includes(slug)))
@@ -67,9 +68,18 @@ for (const slug of slugs) {
   let players = 0;
   for (const club of comp) {
     // Elenco atual (sem season_id): numa temporada passada a API não devolve idade nem valor de mercado.
-    const body = await cached(`club-${club.id}-current.json`, `/clubs/${club.id}/players`, parseClubPlayers);
+    let body: unknown;
+    try {
+      body = await cached(`club-${club.id}-current.json`, `/clubs/${club.id}/players`, parseClubPlayers);
+    } catch (e) {
+      // Erro HTTP persistente num clube (ex. 500 da API): segue sem ele e lista no fim; formato errado continua fatal.
+      if (!(e instanceof Error) || !e.message.includes("HTTP")) throw e;
+      failed.push(`${slug} ${club.id} ${club.name}: ${e.message}`);
+      continue;
+    }
     players += parseClubPlayers(body).length;
   }
   console.log(`${slug} (${compId}, temporada ${season}): ${comp.length} clubes, ${players} jogadores`);
 }
+if (failed.length) console.log(`clubes sem elenco (${failed.length}):\n${failed.join("\n")}`);
 console.log("ok");
