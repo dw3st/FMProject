@@ -10,21 +10,21 @@
 
 import { rgbLuminance } from "@/Domain/color";
 
-const MARKER_RADIUS_MIN = 16;
-const MARKER_RADIUS_MAX = 30;
+const MARKER_RADIUS_MIN = 13;
+const MARKER_RADIUS_MAX = 24;
 
 /**
- * Player marker radius in px. Was a flat 14; follows the pitch scale (~2.3 yds) so the face
- * inside stays legible (#61). Clamped to 16..30 px: a small pitch still gets a readable dot, and
- * a very large pitch gets proportionally bigger dots instead of stopping at 20 px.
+ * Player marker radius in px. Follows the pitch scale (~1.85 px per scale unit, ~20% smaller
+ * than the 2.3 of #61, see #80) so the face inside stays legible. Clamped to 13..24 px: a small
+ * pitch still gets a readable dot, and a very large pitch gets proportionally bigger dots.
  */
 export function playerMarkerRadius(scale: number): number {
-  return Math.max(MARKER_RADIUS_MIN, Math.min(MARKER_RADIUS_MAX, Math.round(scale * 2.3)));
+  return Math.max(MARKER_RADIUS_MIN, Math.min(MARKER_RADIUS_MAX, Math.round(scale * 1.85)));
 }
 
 /** Name label font size for a marker radius: 11 px on the smallest dots, growing slowly with them. */
 export function markerLabelFontSize(radius: number): number {
-  return Math.round(11 + Math.max(0, radius - MARKER_RADIUS_MIN) * 0.25);
+  return Math.round(11 + Math.max(0, radius - MARKER_RADIUS_MIN) * 0.2);
 }
 
 /** Pitch background colour (`PixiPitch` → `app.init({ background })`). */

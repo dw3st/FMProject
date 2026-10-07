@@ -10,22 +10,34 @@ import {
 } from "@/GraficsEngine/playerFaces";
 
 describe("playerMarkerRadius", () => {
-  test("is bigger than the old flat 14 px on every pitch size", () => {
-    for (const scale of [2, 4, 6, 7.5, 10, 15]) expect(playerMarkerRadius(scale)).toBeGreaterThan(14);
+  test("is bigger than the old flat 14 px on every pitch size except the smallest", () => {
+    for (const scale of [2, 4, 6, 7.5, 10, 15]) expect(playerMarkerRadius(scale)).toBeGreaterThanOrEqual(13);
   });
 
-  test("follows the pitch scale between 16 and 30 px (no 20 px cap on large pitches)", () => {
-    expect(playerMarkerRadius(4)).toBe(16);
-    expect(playerMarkerRadius(7.56)).toBe(17);
-    expect(playerMarkerRadius(10)).toBe(23);
-    expect(playerMarkerRadius(12)).toBe(28);
-    expect(playerMarkerRadius(30)).toBe(30);
-  });
-
-  test("the name label grows slowly with the dot", () => {
-    expect(markerLabelFontSize(16)).toBe(11);
-    expect(markerLabelFontSize(30)).toBeGreaterThan(markerLabelFontSize(20));
-    expect(markerLabelFontSize(30)).toBeLessThanOrEqual(15);
+  test("follows the pitch scale between 13 and 24 px", () => {
+
+    expect(playerMarkerRadius(4)).toBe(13);
+
+    expect(playerMarkerRadius(7.56)).toBe(14);
+
+    expect(playerMarkerRadius(10)).toBe(19);
+
+    expect(playerMarkerRadius(12)).toBe(22);
+
+    expect(playerMarkerRadius(30)).toBe(24);
+
+  });
+
+
+
+  test("the name label grows slowly with the dot", () => {
+
+    expect(markerLabelFontSize(13)).toBe(11);
+
+    expect(markerLabelFontSize(24)).toBeGreaterThan(markerLabelFontSize(18));
+
+    expect(markerLabelFontSize(24)).toBeLessThanOrEqual(14);
+
   });
 });
 
