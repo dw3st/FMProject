@@ -4,6 +4,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticePill";
 import { CURRENT_VERSION } from "@/GameInterface/changelog/changelog";
+import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { formatEuros } from "@/Domain/money";
 
 const ITEM = "flex items-center gap-2 text-base text-muted-foreground tabular-nums";
@@ -86,6 +87,7 @@ export function StatusBar({
               onDismiss={changelogNotice.onDismiss}
             />
           )}
+          <LanguageSwitch className="!p-0.5" />
           <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
             <Icon name="settings" size={18} />
           </button>

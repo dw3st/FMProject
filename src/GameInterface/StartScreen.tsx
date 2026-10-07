@@ -9,6 +9,7 @@ import { ChangelogNoticePill } from "@/GameInterface/Components/ChangelogNoticeP
 import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
+import { LanguageSwitch } from "@/GameInterface/Components/LanguageSwitch";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Button } from "@/GameInterface/ui/Button";
@@ -155,6 +156,7 @@ export function StartScreen() {
         >
           {t("startScreen.settings")}
         </button>
+        <LanguageSwitch />
         <div className="flex items-center gap-3">
           <button
             type="button"
