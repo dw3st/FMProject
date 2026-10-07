@@ -24,7 +24,7 @@ function EnergyReadout({ energy }: { energy: number }) {
       <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden min-w-16">
         <div className={`h-full rounded-full transition-[width] ${barClass}`} style={{ width: `${v}%` }} />
       </div>
-      <span className="text-sm font-bold tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
+      <span className="font-display font-bold text-base tabular-nums text-muted-foreground w-6 text-right">{Math.round(v)}</span>
     </div>
   );
 }
@@ -38,7 +38,7 @@ function CardMark({ red }: { red?: boolean }) {
 function EventMarkers({ events }: { events?: PlayerMatchEvents }) {
   const { t } = useTranslation();
   if (!events) return <span />;
-  const count = (n: number) => n > 1 && <span className="text-sm font-bold tabular-nums leading-none">×{n}</span>;
+  const count = (n: number) => n > 1 && <span className="font-display font-bold text-base tabular-nums leading-none">×{n}</span>;
   return (
     <span className="flex items-center gap-2 min-w-0">
       {events.goals > 0 && (
@@ -120,7 +120,7 @@ function PlayerRow({
       <div className={`flex items-center gap-2 w-full ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className="w-2 h-2 rounded-full shrink-0" style={kitDotStyle(color)} />
         <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase font-display shrink-0">{player.role}</span>
-        <span className={`flex-1 min-w-0 text-sm font-medium text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
+        <span className={`flex-1 min-w-0 text-sm font-semibold text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
           <span className="truncate">{player.name}</span>
           {starKind && <StarBadge kind={starKind} />}
         </span>
@@ -128,14 +128,14 @@ function PlayerRow({
           <Icon name="arrow-right-left" className="w-3 h-3 text-chart-2 shrink-0" aria-label={t("common.substitutedIn")} />
         )}
         {rating !== undefined && (
-          <span className={`text-sm font-bold tabular-nums shrink-0 ${ratingTextClass10(rating)}`}>{rating.toFixed(1)}</span>
+          <span className={`font-display font-bold text-base tabular-nums shrink-0 ${ratingTextClass10(rating)}`}>{rating.toFixed(1)}</span>
         )}
       </div>
 
       <div className={`flex items-center w-full gap-2 justify-between ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
         <EventMarkers events={events} />
         {departed ? (
-          <span className={`text-sm font-semibold shrink-0 ${departed === "sentOff" ? "text-destructive" : "text-muted-foreground"}`}>
+          <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] shrink-0 ${departed === "sentOff" ? "text-destructive" : "text-muted-foreground"}`}>
             {t(`match.playerEvents.${departed}`)}
           </span>
         ) : (
@@ -215,7 +215,7 @@ export function TeamPanel({
       <div className={`flex items-center justify-between gap-2 p-4 border-b border-border ${isLeft ? "" : "flex-row-reverse"}`}>
         <div className={`flex items-center gap-2 min-w-0 ${isLeft ? "" : "flex-row-reverse"}`}>
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={kitDotStyle(color)} />
-          <span className="font-bold text-foreground truncate">{teamName ?? `${t("common.team")} ${team}`}</span>
+          <span className="text-base font-semibold text-foreground truncate">{teamName ?? `${t("common.team")} ${team}`}</span>
         </div>
         <div className={`flex items-center gap-2 shrink-0 ${isLeft ? "flex-row-reverse" : ""}`}>
           {onFlip && (
@@ -230,7 +230,7 @@ export function TeamPanel({
             </button>
           )}
           {subsRemaining !== undefined && (
-            <span className={`text-sm font-semibold px-2 py-0.5 rounded border ${
+            <span className={`font-display font-bold text-sm tabular-nums px-2 py-0.5 rounded border ${
               pendingSubsCount && pendingSubsCount > 0
                 ? "text-chart-4 border-chart-4/40 bg-chart-4/10"
                 : subsRemaining > 0
