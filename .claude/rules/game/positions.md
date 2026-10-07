@@ -75,6 +75,7 @@ Fora da linha principal do jogador é ignorada (`fixedNaturalRole`, `playerRatin
 - Elenco: sigla natural traduzida (`roles.detailedAbbr.*`) com a cor de `getDetailedPositionColor`.
 - Ficha: `PositionPitch` (verde forte natural, verde claro apt, amarelo training).
 - Formação: ponto colorido por titular (aptidão na vaga) e aviso quando é training/unsuitable.
+- Elenco → aba Profundidade (#86): por posição, de origem e adaptados no campo, com veredito por grupo (`game/squad-depth.md`).
 - `/test`: `x0.90` ao lado do jogador fora de posição. `/lab`: `Variant.outOfPosition` (checkbox "Positions")
   e a linha "Out of position" (`avgOutOfPosition`) no `PairDetail`. Smoke: seção "Posições".
 
