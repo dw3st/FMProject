@@ -12,7 +12,7 @@ import { seasonLabel } from "@/Domain/history/history";
 import { sellOnOwed } from "@/Domain/negotiation/negotiation";
 import { dueLoans, outgoingLoanCount, squadsAfterLoanEnd, squadsAfterLoanStart } from "@/Domain/negotiation/loans";
 import { isExpired } from "@/Domain/contracts/contracts";
-import { MAX_SQUAD, MIN_BY_ROLE, refillSquad, roleOf, toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { MAX_SQUAD, MIN_BY_ROLE, refillSquad, roleOf, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
 import type { FreeAgent } from "@/types/playerTypes";
 import { squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
@@ -178,9 +178,12 @@ export async function returnDueLoans(
         squad: borrowerAfter, pool, isHuman: humanBorrower, tagPrefix: `loan${date.replace(/-/g, "")}`,
         nextSeasonEnd: seasonEndOf(meta.activeLeagues, borrower.leagueSlug, date),
       });
-      borrowerAfter = r.squad;
       const signed = new Set(r.signed.map((p) => p.id));
       pool = pool.filter((f) => !signed.has(f.player.id));
+      // The refill may take an AI borrower past 30 for a role minimum: its weakest surplus leaves.
+      const trimmed = humanBorrower ? { squad: r.squad, released: [] } : trimSquadToCap(r.squad);
+      borrowerAfter = trimmed.squad;
+      pool = [...pool, ...trimmed.released.map((p) => toFreeAgent(p, date))];
     }
     await service.saveSquadById(saveId, borrowerAfter);
     await service.saveSquadById(saveId, parentAfter);

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
-import { ATTRIBUTE_LABELS } from "@/Domain/attributes";
+import { ATTRIBUTE_LABELS, attrDisplay } from "@/Domain/attributes";
 import type { AttributeId } from "@/Domain/attributes";
 import { getMainRole } from "@/Domain/roles";
 import { MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
@@ -14,7 +14,7 @@ import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
-import { ratingBarFillClass10, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
+import { attributeBarClass, attributeTextClass, ratingRingStrokeHex10, ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
@@ -50,10 +50,11 @@ function StatBar({
   /** Knowledge too low: the attribute is unknown ("?"). */
   hidden?: boolean;
 }) {
-  const pct = hidden ? 0 : (value / 10) * 100;
-  const color = ratingBarFillClass10(value);
+  const display = attrDisplay(value);
+  const pct = hidden ? 0 : display;
+  const color = attributeBarClass(display);
   const range = seenAttributeRange(value, noise);
-  const shown = hidden ? "?" : range ? `${range[0]}–${range[1]}` : `${value}`;
+  const shown = hidden ? "?" : range ? `${attrDisplay(range[0])}–${attrDisplay(range[1])}` : `${display}`;
   const attr = ATTRIBUTE_LABELS[statKey as AttributeId];
   return (
     <div className="relative flex items-center gap-2 group/stat">
@@ -70,7 +71,7 @@ function StatBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`font-black text-right text-sm tabular-nums ${hidden ? "w-4 text-muted-foreground" : range ? "w-10" : "w-4"} ${hidden ? "" : ratingTextClass10(value)}`}>{shown}</span>
+      <span className={`font-black text-right text-sm tabular-nums ${hidden ? "w-6 text-muted-foreground" : range ? "w-14" : "w-6"} ${hidden ? "" : attributeTextClass(display)}`}>{shown}</span>
 
       <StatHoverPopover label={attr.label} description={attr.description} />
     </div>
@@ -109,11 +110,14 @@ export function PlayerCard({
   layout = "narrow",
   clubColors,
   nameBadge,
+  identityFacts,
 }: {
   player: DisplayPlayer;
   layout?: "narrow" | "wide";
   /** Wide layout: an extra badge after the name (the personality summary on the player screen). */
   nameBadge?: React.ReactNode;
+  /** Wide layout: extra identity facts (birth date, height) shown after age; empty = none. */
+  identityFacts?: string[];
   /** Jersey colours of the player's club; defaults to the user's club (dashboard card). */
   clubColors?: readonly string[];
 }) {
@@ -169,6 +173,9 @@ export function PlayerCard({
               <span className="text-sm text-muted-foreground">
                 {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} {t("common.foot")} · {player.age} {t("dashboard.playerCard.yearsOld")}
               </span>
+              {identityFacts && identityFacts.length > 0 && (
+                <span className="text-sm text-muted-foreground tabular-nums">· {identityFacts.join(" · ")}</span>
+              )}
             </div>
             {player.injury && (
               <p className="text-sm font-bold text-destructive mt-2 m-0">

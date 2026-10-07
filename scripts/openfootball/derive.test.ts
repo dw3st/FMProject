@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { STAT_KEYS, JITTER_WEIGHT, LUCK_WEIGHT, SOFT_CAP_SD, buildLevelCorrection, buildRoleLevelPredictor, coachName, computeTierMultipliers, deriveClubEconomy, derivePlayer, playerProfile, type ClubFits, type EconSample, type PlayerCoeffs, type TierMultipliers } from "@/../scripts/openfootball/derive";
 import { predictLevel } from "@/../scripts/openfootball/recalibrate";
+import { roundAttr } from "@/Domain/attributes";
 import { computeOverallAvg } from "@/Domain/playerRating";
 import type { SeedPlayer } from "@/../scripts/openfootball/types";
 
@@ -17,6 +18,7 @@ const coeffs: PlayerCoeffs = {
   repMin: 5.8,
   repMax: 9.5,
 };
+const oneDecimal = (v: number) => Math.abs(v * 10 - Math.round(v * 10)) < 1e-9;
 const REP = 7;
 
 const seedP: SeedPlayer = { id: "uy-x-1", name: "Juan Pérez", position: "ATT", overall: 70, potential: 72, age: 24, country: "uy", foot: "L", value: 0, clubId: "uy-x" };
@@ -30,7 +32,7 @@ describe("derivePlayer", () => {
     expect(p.preferredFoot).toBe("left");
     expect(Object.keys(p.stats).sort()).toEqual([...STAT_KEYS].sort());
     for (const v of Object.values(p.stats)) {
-      expect(Number.isInteger(v)).toBe(true);
+      expect(oneDecimal(v)).toBe(true);
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThanOrEqual(10);
     }
@@ -57,25 +59,26 @@ describe("derivePlayer", () => {
   });
   test("ajuste de papel com NaN cai no agrupado; overall não finito faz clamp lançar", () => {
     const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, passing: plane(Number.NaN, 0.09) } } };
-    expect(derivePlayer(seedP, "s", c, REP).stats.passing).toBe(Math.round(-3 + 0.1 * 70));
+    expect(derivePlayer(seedP, "s", c, REP).stats.passing).toBe(roundAttr(-3 + 0.1 * 70));
     expect(() => derivePlayer({ ...seedP, overall: Number.NaN }, "s", coeffs, REP)).toThrow("clamp: non-finite");
   });
   test("sem ruído (sd 0) segue a reta; n < 30 usa o ajuste agrupado", () => {
     const p = derivePlayer(seedP, "of_uy_x", coeffs, REP);
-    expect(p.stats.passing).toBe(Math.round(-3 + 0.09 * 70));   // 3
-    expect(p.stats.finishing).toBe(Math.round(-3 + 0.1 * 70));  // pooled → 4
+    expect(p.stats.passing).toBe(roundAttr(-3 + 0.09 * 70));   // 3.3
+    expect(p.stats.finishing).toBe(roundAttr(-3 + 0.1 * 70));  // pooled → 4
   });
   test("reputação da liga entra como covariável e é limitada a [repMin − 3, repMax]", () => {
     const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: Object.fromEntries(STAT_KEYS.map((k) => [k, plane(-3, 0.05, 0.5)])) } };
-    expect(derivePlayer(seedP, "s", c, 7).stats.passing).toBe(Math.round(-3 + 0.05 * 70 + 0.5 * 7));
-    expect(derivePlayer(seedP, "s", c, 9.5).stats.passing).toBe(Math.round(-3 + 0.05 * 70 + 0.5 * 9.5));
+    expect(derivePlayer(seedP, "s", c, 7).stats.passing).toBe(roundAttr(-3 + 0.05 * 70 + 0.5 * 7));
+    // 5.25 sits on a rounding boundary: either tenth is one-decimal rounding of the line.
+    expect(Math.abs(derivePlayer(seedP, "s", c, 9.5).stats.passing - (-3 + 0.05 * 70 + 0.5 * 9.5))).toBeLessThanOrEqual(0.05 + 1e-9);
     expect(derivePlayer(seedP, "s", c, 20)).toEqual(derivePlayer(seedP, "s", c, 9.5));
     expect(derivePlayer(seedP, "s", c, 0.5)).toEqual(derivePlayer(seedP, "s", c, 2.8));
-    expect(derivePlayer(seedP, "s", c, 2.8).stats.passing).toBe(Math.round(-3 + 0.05 * 70 + 0.5 * 2.8));
+    expect(derivePlayer(seedP, "s", c, 2.8).stats.passing).toBe(roundAttr(-3 + 0.05 * 70 + 0.5 * 2.8));
   });
   test("c não finito conta como ajuste degenerado", () => {
     const c: PlayerCoeffs = { ...coeffs, byRole: { ...coeffs.byRole, Forward: { ...coeffs.byRole.Forward, passing: plane(-3, 0.09, Number.NaN) } } };
-    expect(derivePlayer(seedP, "s", c, REP).stats.passing).toBe(Math.round(-3 + 0.1 * 70));
+    expect(derivePlayer(seedP, "s", c, REP).stats.passing).toBe(roundAttr(-3 + 0.1 * 70));
   });
   test("determinístico", () => {
     expect(derivePlayer(seedP, "s", coeffs, REP)).toEqual(derivePlayer(seedP, "s", coeffs, REP));
@@ -129,7 +132,7 @@ describe("#3 — per-player luck + soft cap", () => {
 
   test("sem ruído (sd 0) o teto suave nunca dispara — resultado idêntico ao ajuste linear", () => {
     const p = derivePlayer(seedP, "of_uy_x", coeffs, REP); // `coeffs` (sd 0) from the outer describe
-    expect(p.stats.passing).toBe(Math.round(-3 + 0.09 * 70));
+    expect(p.stats.passing).toBe(roundAttr(-3 + 0.09 * 70));
   });
 
   test("sem ruído (sd 0) a correção de nível fica perto de 0 — nada de verdade para recentrar", () => {

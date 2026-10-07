@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.5",
+    date: "2026-10-07",
+    items: [
+      { pt: "Notas e posições de todos os jogadores revisadas com dados reais do mercado", en: "Every player's rating and position reviewed with real market data" },
+      { pt: "Valor de mercado dos jogadores mais próximo do real", en: "Player market values closer to the real ones" },
+      { pt: "Atributos de 0 a 100, com cores por faixa", en: "Attributes from 0 to 100, colour-coded by range" },
+      { pt: "Data de nascimento, altura e nacionalidade na ficha do jogador", en: "Date of birth, height and nationality on the player profile" },
+      { pt: "Os jogadores evoluem ponto a ponto", en: "Players now develop point by point" },
+      { pt: "O resumo do treino mostra os atributos que mudaram", en: "The training summary shows which attributes changed" },
+    ],
+  },
+  {
     version: "4.4.9",
     date: "2026-10-07",
     items: [
@@ -979,7 +991,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Notas e posições dos jogadores revisadas com dados reais do mercado, atributos de 0 a 100 com cores", en: "Player ratings and positions revised with real market data, attributes from 0 to 100 with colours" },
   { pt: "Responsabilidades: o diretor cuida dos contratos e a caixa de entrada só traz o que importa", en: "Responsibilities: the director handles contracts and the inbox only brings what matters" },
   { pt: "Instalações com desgaste: assentos, gramado e equipamentos pioram com o tempo e pedem reforma; jardineiro cuida do gramado, e gramado ruim aumenta as lesões", en: "Facilities wear out: seats, pitch and equipment get worse over time and need refurbishing; a groundskeeper looks after the pitch, and a bad pitch means more injuries" },
   { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste; jogadores avaliam as instalações antes de aceitar o seu clube", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear; players weigh your facilities before joining" },

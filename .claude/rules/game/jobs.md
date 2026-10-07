@@ -72,6 +72,8 @@ quando chegam ofertas (o avanço rápido para ali).
 1. **Clube antigo → IA** (`releaseHumanClub`, só empregado): o saldo sai do extrato (`club_change`
    "leave", `−saldo`), ganha `financialTier` (tier natural) e `aiTransferBudget` (verba sazonal), perde
    `staff`, `styleFamiliarity` e a base (`academyToAi`: 1–2 promovidos pela regra da IA, o resto livre);
+   acima do teto da IA (30; o do jogador é 36) dispensa antes os excedentes para os livres (`trimSquadToCap`: os de
+   menor nota, nunca um emprestado de outro clube nem um que deixe a linha abaixo dos mínimos por linha);
    a lista de venda do jogador zera; ofertas de renascido pendentes do clube expiram (e a rota
    `POST /reborn/:id` só aceita aposentados do clube atual).
 2. **Técnicos (D4, Etapa 25):** `moveHumanManager` — sem troca: o técnico do clube novo vai para o pool
@@ -104,7 +106,7 @@ lista de venda só aceita jogadores do próprio elenco (400).
 ## Demissão → desemprego (`advanceDay`)
 
 No dia da demissão: mensagem `sacked`, multa (`manager`, `severance`, ver "Contrato do técnico"),
-`releaseHumanClub` (clube vira IA), `sackHumanManager` (o jogador sai, um interino `coach_<clube>_<data>` assume
+`releaseHumanClub` (clube vira IA, com o mesmo corte ao teto de 30), `sackHumanManager` (o jogador sai, um interino `coach_<clube>_<data>` assume
 e o clube ganha uma vaga, `managers.md`), `meta.clubId = ""`, `meta.board`
 removido e `meta.unemployed = { since, lastClubId, lastClubName, lastLeagueSlug, board, nextOfferDate,
 lastOfferDate?, sacking }` (`sacking` = o registro que a tela `/fired` mostra). `meta.leagueSlug` fica a

@@ -55,7 +55,7 @@ export interface Scorer {
 
 export interface StatLevelChange {
   stat:     string;
-  delta:    1 | -1;
+  delta:    number; // soma do dia em décimos (0,1 = um ponto na tela)
   newValue: number;
 }
 

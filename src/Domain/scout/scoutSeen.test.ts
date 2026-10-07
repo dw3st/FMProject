@@ -4,7 +4,8 @@ import { filterScoutPlayers, mapSquadsToScoutPlayers, sortScoutPlayers } from "@
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import { obscureForViewer } from "@/Domain/staff/staff";
 import { computeOverallAvg } from "@/Domain/playerRating";
-import { rangeMid, seenOverallRange, seenWageRange } from "@/Domain/scouting/seen";
+import { rangeMid, seenOverallRange, seenValueRange, seenWageRange } from "@/Domain/scouting/seen";
+import { Player } from "@/Domain/Player";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 
 /**
@@ -71,13 +72,13 @@ describe("scout search — sorted and filtered by the view, never by the real ra
     const hidden = toDisplayPlayer(seenAs(real("h", 9), "x"), "C");
     expect(hidden.hiddenAttrs).toBe(true);
     const ranged = { ...hidden, id: "r", hiddenAttrs: undefined, statNoise: 1.2, stats: STATS(7.4) };
-    // 7.4 ± 1.2 is shown as 6–9: middle 7.5.
+    // 7.4 ± 1.2 is shown as 6.2–8.6 (one decimal): middle 7.4. Filters take 0..100.
     const f = (min: number, max: number) => ({
       ...createDefaultScoutFilters(),
       attributeRanges: { ...createDefaultScoutFilters().attributeRanges, finishing: { min, max } },
     });
-    expect(filterScoutPlayers([hidden, ranged], f(7.5, 10), new Set()).map((r) => r.id)).toEqual(["r"]);
-    expect(filterScoutPlayers([hidden, ranged], f(7.6, 10), new Set()).map((r) => r.id)).toEqual([]);
+    expect(filterScoutPlayers([hidden, ranged], f(74, 100), new Set()).map((r) => r.id)).toEqual(["r"]);
+    expect(filterScoutPlayers([hidden, ranged], f(75, 100), new Set()).map((r) => r.id)).toEqual([]);
   });
 });
 
@@ -110,5 +111,14 @@ describe("salary of a little-known player", () => {
     const seen = obscureForViewer(real("z", 6, 99_999), { knowledge: 0, noise: NOISE }, "save", 2);
     const [row] = mapSquadsToScoutPlayers([{ ...squad, players: [seen] }]);
     expect(row!.wage).toBe(seen.contract!.wage);
+  });
+});
+
+describe("seenValueRange", () => {
+  test("uses the middle half of the overall range, never the full ±noise", () => {
+    const [lo, hi] = seenValueRange([3, 7], 27);
+    expect(lo).toBeCloseTo(new Player(4, 27).valueMillions, 1);
+    expect(hi).toBeCloseTo(new Player(6, 27).valueMillions, 1);
+    expect(hi / lo).toBeLessThan(new Player(7, 27).valueMillions / new Player(3, 27).valueMillions);
   });
 });

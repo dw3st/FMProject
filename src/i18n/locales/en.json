@@ -1,4 +1,19 @@
 {
+  "attributeNames": {
+    "passing": "Passing",
+    "vision": "Vision",
+    "finishing": "Finishing",
+    "dribbling": "Dribbling",
+    "speed": "Speed",
+    "acceleration": "Acceleration",
+    "tackling": "Tackling",
+    "pressing": "Pressing",
+    "stamina": "Stamina",
+    "heading": "Heading",
+    "strength": "Strength",
+    "reflex": "Reflexes",
+    "jump": "Jumping"
+  },
   "common": {
     "continue": "Continue",
     "save": "Save",
@@ -338,6 +353,8 @@
     "statsDesc": "Deep-dive into player and team performance analytics."
   },
   "playerScreen": {
+    "birthDate": "Born {{date}}",
+    "height": "{{cm}} cm",
     "loadingPlayer": "Loading player...",
     "playerNotFound": "Player not found.",
     "currentTeam": "Current team",
@@ -1751,6 +1768,7 @@
     "scores": "{{team}} scores"
   },
   "daySummary": {
+    "morePlayers": "+{{count}} more players",
     "title": "Day Summary",
     "matches": "Matches ({{count}})",
     "matchRound": "{{competition}} • Round {{round}}",
@@ -1907,7 +1925,7 @@
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
-      "description": "Click the track to set min–max (0–10)",
+      "description": "Click the track to set min–max (0–100)",
       "clearAll": "Clear all stats",
       "any": "any"
     },

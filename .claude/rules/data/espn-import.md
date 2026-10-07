@@ -25,7 +25,8 @@ bun scripts/importOpenFootball.ts   # mundo base a partir de data_process/native
 rm -rf src/Data/squads src/Data/logos/espn          # ver "Sincronizar sem lixo" abaixo
 cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (ele confere isso)
 bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
-bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) — ver abaixo
+bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de mercado (derived.json) — ver abaixo
+bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -75,7 +76,7 @@ logos, depois `default`, depois a primeira disponível. Grava `snapshot.json` e 
 | `matchPlayers` | Override → passe A (clube) → passe A2 (clube, sobrenome) → passe B (mundo inteiro). Ver seção abaixo |
 | `lineup` | Composição nova de cada liga coberta pela ESPN; quem sai de uma liga coberta sem aparecer em outra desce para o nível não coberto mais alto do país (o grupo com menos clubes, depois por slug) ou sai do mundo se não houver nível abaixo |
 | `aging` | (#6) o declínio é atenuado para o topo do papel: `fator = clamp(1 − (pctl − 0,9) × 5, 0,5, 1)` sobre o percentil de overall do papel no mundo pré-envelhecimento (`topDeclineFactor`); só o declínio, nunca o crescimento. Envelhece até 2 anos (`MAX_YEARS`) por curva de idade: delta médio por atributo por ano (16-21 +0,6 ... 35+ −0,6), repartido pelos `attrWeights` do melhor papel específico do jogador, com teto suave no crescimento (`1 − (v/10)²`) e o declínio pesando `speed`/`acceleration`/`stamina` em dobro. Um jogador casado cujo gap de idade ESPN−mundo é 3 envelhece os 3 anos (`playerAge`), mas o drift de atributos fica limitado a `MAX_YEARS = 2` — de propósito, para não extrapolar a curva além do calibrado |
-| `estimate` | Jogador novo (sem par no mundo): base = mediana da linha (clube próprio se tiver ≥5 jogadores casados no total e ≥3 na linha, senão liga, senão mundo; clube novo sem base própria leva `NEW_CLUB_SHIFT = −0,3`), mais ajuste de idade e ruído determinístico. `fillSquad` completa mínimos por papel e `MIN_SQUAD` com jovens 17–19; `trimSquad` corta em `MAX_SQUAD = 30` |
+| `estimate` | Jogador novo (sem par no mundo): base = mediana da linha (clube próprio se tiver ≥5 jogadores casados no total e ≥3 na linha, senão liga, senão mundo; clube novo sem base própria leva `NEW_CLUB_SHIFT = −0,3`), mais ajuste de idade e ruído determinístico. `fillSquad` completa mínimos por papel e `MIN_SQUAD` com jovens 17–19; `trimSquad` corta em `MAX_SQUAD = 30` pela nota final (ver "Corte do elenco" em "Recalibração pelo valor de mercado") |
 | `logos` | `buildLogoIndex`: `squadId → "pasta/stem"`, escudo nativo (`logos/{ligaNativa}/{slug\|id}`) vence o da ESPN (`logos/espn/{id}.png`); sem nenhum dos dois, o clube fica fora do índice |
 | `apply` | `applyEspn`: junta tudo (clubes, dedupe de atletas duplicados, jogadores, composição, tamanhos de elenco, metadados de clube novo), reconstrói pirâmide e zonas, ajusta o calendário e avança a temporada (+2 anos, `bumpSeason`) |
 
@@ -191,6 +192,48 @@ zero (baixos, sem a recalibração), e o craque de verdade só some do mundo.
   mundo, posição fora da linha, campo desconhecido. Idempotente; grava só os elencos alterados, no formato
   original; imprime antes → depois (posição e nota).
 - Exige `src/Data/roles.json` igual a `src/example_data/roles.json` (como os importadores).
+
+## Recalibração pelo valor de mercado
+
+Spec: `docs/superpowers/specs/2026-10-07-market-value-recalibration-design.md`. Os elencos do mundo são casados com
+os do Transfermarkt (API local, `scripts/fetchTransfermarkt.ts`, cache em `data_process/transfermarkt/cache/`) e o
+valor de mercado reordena as notas dentro de cada liga.
+
+- `bun scripts/buildMarketDerived.ts [--report <arquivo>]` lê o cache, `leagueMap.json`, os overrides e
+  `src/example_data/squads` **logo depois do `importEspn`** (antes de qualquer recalibração) e grava
+  `data_process/transfermarkt/derived.json`: por jogador `targetOverall`, `naturalPosition`, `birthDate`, `heightCm`
+  e `nationality` (só quando falta), mais o resumo por liga. Uma liga só é reordenada com cobertura ≥ 40% **e** pelo
+  menos 100 casados com valor (`COVERAGE_MIN`, `MIN_VALUED_PLAYERS`, `scripts/transfermarkt/reorder.ts`); nela a
+  multiset de notas da liga não muda, só quem recebe qual.
+- `bun scripts/applyMarketRecalibration.ts` aplica o `derived.json` (lógica pura em `scripts/transfermarkt/apply.ts`,
+  com teste): grava `naturalPosition` (e troca a linha de `positions[0]` quando a do Transfermarkt é outra), reescala
+  os atributos até a nota-alvo com o mesmo `rescaleToOverall` das correções manuais, copia nascimento e altura e
+  preenche a nacionalidade que falta (nunca troca uma existente). Idempotente; grava só os elencos alterados; id do
+  `derived.json` fora do mundo é só aviso.
+- **Linhas depois da recalibração.** A troca de linha (`positions[0]`) vem depois da validação do `importEspn`, então
+  um elenco podia ficar abaixo de um mínimo por linha (GK 3, DEF 7, MID 7, FWD 4; 107 elencos no mundo 2026/27, ex.:
+  Richards Bay com 4 meias). O mesmo script, depois de aplicar, completa a linha com os jovens de preenchimento do
+  importador (`fillSquad`, ids `es_youth_<clube>_<n>` sem repetir os existentes; base = mediana da linha no clube com
+  ≥ 3, senão na liga, senão no mundo) e corta de volta a 30 com o `trimSquad` pela mesma nota final do corte acima
+  (`scripts/transfermarkt/balance.ts`, com teste). Rodada de 2026-10-07: 107 elencos completados com 138 jovens, 41
+  cortados em 54 jogadores. No fim o script **falha** se algum elenco ficar abaixo de um mínimo por linha, com menos
+  de 18 ou mais de 30 (`squadLineIssues`), antes de gravar.
+- **Corte do elenco (`MAX_SQUAD`).** O `importEspn` corta os elencos com mais de 30 jogadores antes de a recalibração
+  ser aplicada. Ele ordena pela nota com que o jogador vai terminar a cadeia (`recalibratedOverall`,
+  `scripts/espn/estimate.ts`): a correção manual (`playerCorrections.json`, `overall`), senão o `targetOverall` do
+  `derived.json` commitado, senão a nota do importador. Com a nota crua do importador, um titular que os atributos
+  subestimam perdia a vaga para um jovem: no São Paulo saíam Cauly e Artur (#83), e com só a nota de mercado saíam os
+  zagueiros titulares de nota corrigida. A cadeia continua reprodutível sem o cache (só lê arquivos commitados).
+- **Convergência.** O `importEspn` grava os cortados por clube em `data_process/transfermarkt/trimmed.json`
+  (gitignored), e o `buildMarketDerived` os avalia junto do elenco: o `derived.json` cobre todos os candidatos, não só
+  quem ficou, e por isso não depende do corte. Refazer o `derived.json` sobre o mundo novo e rodar a cadeia de novo
+  não muda o corte (medido: `derived.json` idêntico entre duas rodadas, 0 elencos diferentes). O
+  `applyMarketRecalibration` lista os ids do `derived.json` fora do mundo (os cortados), sem erro.
+- Regenerar do zero: `fetchTransfermarkt` (rede, horas; retoma do cache) → `importOpenFootball` … `importEspn` →
+  `buildMarketDerived` → de novo `importOpenFootball` … `importEspn` (o corte agora lê o `derived.json` novo) →
+  `buildMarketDerived` (tem que sair igual) → o resto da cadeia de "Regenerar" acima.
+- **Nunca entram no repositório:** o cache cru, nem nenhum valor de mercado (o `derived.json` só tem nota, posição,
+  datas, altura e nacionalidade).
 
 ## Atletas duplicados
 

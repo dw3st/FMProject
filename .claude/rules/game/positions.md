@@ -70,6 +70,13 @@ XI automático da IA no mundo atual: 0,64 titulares por time com aptidão traini
 vizinhanças). O overall (`computeOverallAvg`) passa a ser a pontuação dessa posição, não o melhor da linha.
 Fora da linha principal do jogador é ignorada (`fixedNaturalRole`, `playerRating.ts`).
 
+**Desde a 4.5 a maioria vem do Transfermarkt.** Todo jogador casado com o Transfermarkt cuja posição de lá mapeia
+para uma das 14 do jogo (`scripts/transfermarkt/positions.ts`) recebe essa `naturalPosition` no mundo
+(`applyMarketRecalibration`, `.claude/rules/data/espn-import.md` → "Recalibração pelo valor de mercado"); quando a
+linha do Transfermarkt é outra, `positions[0]` também troca. Mundo de 2026-10-07: 21 466 dos 36 437 jogadores com
+posição natural do Transfermarkt. As correções manuais (`playerCorrections.json`) rodam depois e vencem. Quem não
+casou segue a regra dos atributos e do pé acima.
+
 ## Telas
 
 - Elenco: sigla natural traduzida (`roles.detailedAbbr.*`) com a cor de `getDetailedPositionColor`.

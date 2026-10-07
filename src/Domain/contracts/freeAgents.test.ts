@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { freeAgentTick, MIN_BY_ROLE, refillSquad, roleOf } from "@/Domain/contracts/freeAgents";
+import { freeAgentTick, MIN_BY_ROLE, refillSquad, roleOf, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { mulberry32 } from "@/Domain/rng";
 import type { FreeAgent, RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -139,5 +139,30 @@ describe("pool helpers and off-season dates", () => {
       if (r.signedIds.has(p.id)) expect(p.contract!.until > "2027-06-20").toBe(true);
     }
     expect(r.signedIds.size).toBeGreaterThan(0);
+  });
+});
+
+describe("trimSquadToCap", () => {
+  test("releases the lowest rated, keeps role minimums and loaned-in players", () => {
+    // 21 at the minimums (GKs the weakest of all) + 12 strong midfielders + a weak loanee = 34.
+    const players = [
+      ...full().map((p) => (roleOf(p) === "GK" ? player(p.id, "GK", 1) : p)),
+      ...Array.from({ length: 12 }, (_, i) => player(`x${i}`, "CM", 6 + (i % 3))),
+      { ...player("loanee", "CM", 1), loan: { fromClubId: "c9", fromClubName: "Other", until: "2028-05-31", wageShare: 50 } },
+    ];
+    const r = trimSquadToCap(squad(players), 30);
+    expect(r.squad.players.length).toBe(30);
+    expect(r.released.length).toBe(4);
+    expect(r.squad.players.some((p) => p.id === "loanee")).toBe(true);
+    for (const [role, min] of Object.entries(MIN_BY_ROLE)) {
+      expect(r.squad.players.filter((p) => roleOf(p) === role).length).toBeGreaterThanOrEqual(min);
+    }
+    // Only the midfield is above its minimum: its four weakest (level 5) go, never the weaker GKs.
+    expect(r.released.every((p) => p.id.startsWith("m") && p.stats.passing === 5)).toBe(true);
+  });
+
+  test("a squad within the cap is untouched", () => {
+    const sq = squad(full());
+    expect(trimSquadToCap(sq).squad).toBe(sq);
   });
 });

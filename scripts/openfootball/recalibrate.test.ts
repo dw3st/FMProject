@@ -169,12 +169,12 @@ describe("repairRounding (#34)", () => {
     const stats = st({ passing: 5, vision: 5, dribbling: 5, tackling: 2 });
     const out = repairRounding(stats, weights, 5.86, overallOf);
     expect(Math.abs(overallOf(out) - 5.86)).toBeLessThan(Math.abs(overallOf(stats) - 5.86));
-    expect(Math.abs(overallOf(out) - 5.86)).toBeLessThanOrEqual(0.15);
+    expect(Math.abs(overallOf(out) - 5.86)).toBeLessThanOrEqual(0.02);
     expect(out.tackling).toBe(2);
   });
   test("leaves an already-close profile untouched and is deterministic", () => {
     const stats = st({ passing: 6, vision: 6, dribbling: 6 });
-    expect(repairRounding(stats, weights, 6.02, overallOf)).toEqual(stats);
+    expect(repairRounding(stats, weights, 6.005, overallOf)).toEqual(stats);
     expect(repairRounding(stats, weights, 7.3, overallOf)).toEqual(repairRounding(stats, weights, 7.3, overallOf));
   });
   test("never leaves 0..10", () => {

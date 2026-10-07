@@ -23,7 +23,7 @@ import { initialFacilities } from "@/Domain/facilities/facilities";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { academyToAi } from "@/Domain/youth/youth";
 import { scoutingOnClubLeft } from "@/backend/scoutingWorld";
-import { toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { renewExpiringOnTakeover } from "@/Domain/contracts/expiry";
 import { addYearsIso } from "@/Domain/contracts/contracts";
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
@@ -265,7 +265,10 @@ export async function releaseHumanClub(
       { date: args.date, kind: "club_change", amount: -balance, label: `Leaving ${squad.name}`, ref: { stage: "leave", clubName: squad.name } },
     );
   }
-  const academy = academyToAi(squad);
+  // The human cap is 36, the AI's 30: the extras (lowest rated, role minimums kept) leave first,
+  // before the academy is judged against the AI cap.
+  const trimmed = trimSquadToCap(squad);
+  const academy = academyToAi(trimmed.squad);
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
   // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
   // the stadium it has built stays (venue capacity), works in progress are dropped.
@@ -275,9 +278,10 @@ export async function releaseHumanClub(
   // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).
   const ai: Squad = { ...rest, financialTier: tier, aiTransferBudget: aiBudgetWithPrize(grant, args.compensation ?? 0, grant) };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);
-  if (academy.released.length > 0) {
+  const leaving = [...trimmed.released, ...academy.released];
+  if (leaving.length > 0) {
     await service.writeFreeAgents(saveId, [
-      ...(await service.getFreeAgents(saveId)), ...academy.released.map((p) => toFreeAgent(p, args.date)),
+      ...(await service.getFreeAgents(saveId)), ...leaving.map((p) => toFreeAgent(p, args.date)),
     ]);
   }
   const market = await service.getMarket(saveId);

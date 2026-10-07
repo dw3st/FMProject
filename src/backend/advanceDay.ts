@@ -1,3 +1,4 @@
+import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
 import { fileURLToPath } from "node:url";
@@ -79,7 +80,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { liveBids } from "@/Domain/negotiation/bids";
-import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { applyPlayerBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
@@ -665,7 +666,7 @@ export async function advanceOneDay(
             if (existing) {
               existing.to = ch.newValue;
             } else {
-              entry.changes.set(ch.stat, { from: ch.newValue - ch.delta, to: ch.newValue });
+              entry.changes.set(ch.stat, { from: roundAttr(ch.newValue - ch.delta), to: ch.newValue });
             }
           }
         }
@@ -2025,17 +2026,23 @@ export async function advanceOneDay(
         let pool = [...pruneFreeAgents(existing, currentDate), ...releasedNow];
         // Refill: AI clubs below the minimums sign the best free agents that fit the wage cap, then
         // filler youth; the human club only gets youth up to the per-role minimums.
+        const trimmedIds: string[] = [];
         for (const { squad: sq, nextEnd } of afterExpiry) {
           const isHuman = sq.id === playerClubSquadId;
           const r = refillSquad({ squad: sq, pool, nextSeasonEnd: nextEnd, isHuman, tagPrefix: `s${nextEnd.slice(0, 4)}` });
           if (r.squad === sq) continue;
-          await saveService.saveSquadById(saveId, r.squad);
+          // A role minimum may take an AI club past 30: the weakest of the lines with a surplus leave.
+          const trimmed = isHuman ? { squad: r.squad, released: [] } : trimSquadToCap(r.squad);
+          await saveService.saveSquadById(saveId, trimmed.squad);
           if (r.signed.length > 0) {
             const ids = new Set(r.signed.map((p) => p.id));
             pool = pool.filter((f) => !ids.has(f.player.id));
           }
+          pool = [...pool, ...trimmed.released.map((p) => toFreeAgent(p, currentDate))];
+          trimmedIds.push(...trimmed.released.map((p) => p.id));
         }
         await saveService.writeFreeAgents(saveId, pool);
+        await pruneSellOnHeld(saveService, saveId, trimmedIds);
       }
 
       // 9. Academy (.claude/rules/game/youth.md): every club gets a yearly intake of 16-17 year olds.

@@ -62,3 +62,39 @@ export function ratingRingStrokeHex10(value: number): string {
   return "#9ca3af";
 }
 
+
+export type AttributeBand = "strongRed" | "lightRed" | "yellow" | "lightGreen" | "strongGreen";
+
+/** Band of an attribute's display value (0..100). The overall keeps the rating colours above. */
+export function attributeBand(display: number): AttributeBand {
+  if (display >= 85) return "strongGreen";
+  if (display >= 70) return "lightGreen";
+  if (display >= 55) return "yellow";
+  if (display >= 40) return "lightRed";
+  return "strongRed";
+}
+
+const BAND_TEXT: Record<AttributeBand, string> = {
+  strongRed: "text-red-500",
+  lightRed: "text-red-300",
+  yellow: "text-yellow-300",
+  lightGreen: "text-green-300",
+  strongGreen: "text-green-500",
+};
+const BAND_BAR: Record<AttributeBand, string> = {
+  strongRed: "bg-red-600",
+  lightRed: "bg-red-400",
+  yellow: "bg-yellow-400",
+  lightGreen: "bg-green-400",
+  strongGreen: "bg-green-600",
+};
+
+/** Text colour of an attribute's display value (0..100). */
+export function attributeTextClass(display: number): string {
+  return BAND_TEXT[attributeBand(display)];
+}
+
+/** Bar fill colour of an attribute's display value (0..100). */
+export function attributeBarClass(display: number): string {
+  return BAND_BAR[attributeBand(display)];
+}

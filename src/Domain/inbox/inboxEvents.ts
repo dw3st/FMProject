@@ -1,5 +1,6 @@
 import type { PlayerNews } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
+import { attrDisplay } from "@/Domain/attributes";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
 import type {
@@ -62,7 +63,7 @@ export function buildDevelopmentMessage(args: {
   }
 
   const preview = changes
-    .map((c) => `${c.attribute} ${c.from}→${c.to}`)
+    .map((c) => `${c.attribute} ${attrDisplay(c.from)}→${attrDisplay(c.to)}`)
     .join(", ")
     .slice(0, 120);
 

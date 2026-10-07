@@ -28,7 +28,7 @@ function AttrRangeSlider({
   t: i18n,
 }: AttrRangeSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const MAX = 10;
+  const MAX = 100;
   const minPct = (minValue / MAX) * 100;
   const maxPct = (maxValue / MAX) * 100;
   const isActive = minValue > 0 || maxValue < MAX;
@@ -107,7 +107,7 @@ function activeAttributeFilterCount(ranges: ScoutFilterState["attributeRanges"])
   let n = 0;
   for (const a of Object.keys(ATTRIBUTE_LABELS) as AttributeId[]) {
     const row = ranges[a];
-    if (row && (row.min > 0 || row.max < 10)) n += 1;
+    if (row && (row.min > 0 || row.max < 100)) n += 1;
   }
   return n;
 }
@@ -183,7 +183,7 @@ export function ScoutAttributeFiltersDisclosure({
                 <div className="card-arcade rounded-md border border-border/50 p-4 w-full">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 w-full">
                     {ATTRIBUTE_LIST.map((attr) => {
-                      const row = filters.attributeRanges[attr.id] ?? { min: 0, max: 10 };
+                      const row = filters.attributeRanges[attr.id] ?? { min: 0, max: 100 };
                       return (
                         <AttrRangeSlider
                           key={attr.id}

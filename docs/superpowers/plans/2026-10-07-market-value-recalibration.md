@@ -730,7 +730,7 @@ export function levelOf(p: ValuedPlayer, fx: Effects): number {
 
 ```ts
 import { expect, test } from "bun:test";
-import { COVERAGE_MIN, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
+import { COVERAGE_MIN, MIN_VALUED_PLAYERS, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
 
 test("matched players get the league's own multiset, ordered by level", () => {
   const r = reorderLeague([
@@ -761,7 +761,10 @@ test("unmatched youth above the club's matched median is capped there", () => {
   expect(caps.has("o")).toBe(false);
 });
 
-test("coverage threshold", () => expect(COVERAGE_MIN).toBe(0.6));
+test("coverage threshold", () => {
+  expect(COVERAGE_MIN).toBe(0.4);
+  expect(MIN_VALUED_PLAYERS).toBe(100);
+});
 ```
 
 - [ ] **Step 2: Rodar e ver falhar** — FAIL
@@ -769,7 +772,8 @@ test("coverage threshold", () => expect(COVERAGE_MIN).toBe(0.6));
 - [ ] **Step 3: Implementação**
 
 ```ts
-export const COVERAGE_MIN = 0.6;
+export const COVERAGE_MIN = 0.4;        // aprovado: era 0,6
+export const MIN_VALUED_PLAYERS = 100;
 export const YOUTH_CAP_MAX_AGE = 21;
 
 /** Matched players of one league: the multiset of their current overalls, reassigned in level order. */
@@ -1165,7 +1169,7 @@ Fluxo (puro onde der, E/S só aqui):
      (`overall` = `computeOverallAvg`; `line` = `getMainRole(tmPosition)` quando o Transfermarkt dá posição, senão
      `getMainRole(positions[0])`).
 3. `fitEffects` sobre todos os casados com `value > 0`. `levelOf` para cada um.
-4. Por liga: cobertura = casados com valor ÷ jogadores da liga. Com cobertura ≥ `COVERAGE_MIN`: `reorderLeague` e
+4. Por liga: cobertura = casados com valor ÷ jogadores da liga. Com cobertura ≥ `COVERAGE_MIN` (40%) e pelo menos `MIN_VALUED_PLAYERS` (100) casados com valor: `reorderLeague` e
    `youthCaps`. Abaixo disso, nenhuma nota muda na liga.
 5. Monta `derived.json`:
 

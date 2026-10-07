@@ -103,3 +103,14 @@ export const ATTRIBUTE_LIST: AttributeLabel[] = Object.values(ATTRIBUTE_LABELS).
   (a) => !HIDDEN_ATTRIBUTES.has(a.id),
 );
 
+
+/** Attributes live on 0..10 with one decimal (shown x10 as 0..100). */
+export function roundAttr(v: number): number {
+  if (!Number.isFinite(v)) return 0;
+  return Math.max(0, Math.min(10, Math.round(v * 10) / 10));
+}
+
+/** Display value 0..100 (integer) of an attribute. */
+export function attrDisplay(v: number): number {
+  return Math.round(roundAttr(v) * 10);
+}

@@ -125,6 +125,22 @@ Tabelas sintéticas (resultados pela força no calendário real de cada liga) pa
 | Salário do técnico / receita | 1,5–4% | 2,5% na reputação 40 (1,5% em 0, 4% em 100) |
 | Rival nas conversas de compra | 20–40% | 24% (sonda: 10 alvos aleatórios por segunda, 3 dias de conversa); piso acima de 1,1 × valor em 5% |
 
+**Recalibração pelo valor de mercado (4.5).** Mundo com as notas e posições do Transfermarkt e a fórmula de valor
+calibrada no valor real (`.claude/rules/AI-clubs/transfer-needs.md` → "Player Price Formula"); mesma semente
+(`bun scripts/market-sim.ts 3`). A fórmula nova deixa o jogador comum bem mais barato (nota mediana 3,4 → ~€0,5M) e o
+craque mais caro (6,5 aos 27 → ~€98M); as verbas da IA não mudaram.
+
+| Métrica | mundo novo, fórmula antiga | mundo novo, fórmula nova |
+|---|---|---|
+| Transferências IA × IA com taxa | 691 / 1097 / 932 (2720) | 690 / 1022 / 860 (2572, −5%) |
+| Pré-temporada / meio | 62–74% / 26–38% | 63–75% / 25–37% |
+| `open` por tier (3 temporadas) | LOW 95,5%, MEDIUM 94,7%, HIGH 98,1%, ELITE 100% | LOW 94,5%, **MEDIUM 89,8%**, HIGH 98,5%, ELITE 100% |
+| Elenco médio | 27,1 / 25,3 / 24,5 | 27,1 / 25,2 / 24,4 |
+| Rival nas conversas; piso > 1,1 × valor | 21,4%; 3,1% | 22,8%; 6,6% |
+
+O volume já estava 18% abaixo da referência da 3.9.1 só pelo mundo novo (as notas mudaram de dono); a fórmula tira
+mais 5%. O MEDIUM fica 0,2 p.p. abaixo dos 90% (`tight` sobe na 2ª e 3ª temporada). Verbas não mexidas.
+
 ## Testes e smoke
 
 ```

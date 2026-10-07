@@ -75,8 +75,15 @@ describe("filterScoutPlayers — each filter in isolation", () => {
       P({ id: "a", stats: { ...STATS(), speed: 9 } }),
       P({ id: "b", stats: { ...STATS(), speed: 3 } }),
     ];
-    const ranges = { ...createDefaultScoutFilters().attributeRanges, speed: { min: 8, max: 10 } };
+    const ranges = { ...createDefaultScoutFilters().attributeRanges, speed: { min: 80, max: 100 } };
     expect(ids(filterScoutPlayers(list, F({ attributeRanges: ranges }), none))).toEqual(["a"]);
+  });
+
+  test("attribute filter takes 0..100 and compares on 0..10", () => {
+    const list = [P({ id: "a", stats: { ...STATS(), passing: 6.3 } })];
+    const f = (min: number) => F({ attributeRanges: { ...createDefaultScoutFilters().attributeRanges, passing: { min, max: 100 } } });
+    expect(ids(filterScoutPlayers(list, f(63), none))).toEqual(["a"]);
+    expect(ids(filterScoutPlayers(list, f(64), none))).toEqual([]);
   });
 
   test("onlyForSale keeps only sell-listed ids", () => {
@@ -193,9 +200,9 @@ function legacyFilter(players: DisplayPlayer[], filters: ScoutFilterState, sellL
     for (const attr of ATTRIBUTE_LIST) {
       const range = filters.attributeRanges[attr.id];
       if (!range) continue;
-      if (range.min <= 0 && range.max >= 10) continue;
+      if (range.min <= 0 && range.max >= 100) continue;
       const v = player.stats[attr.id];
-      if (v < range.min || v > range.max) return false;
+      if (v < range.min / 10 || v > range.max / 10) return false;
     }
     return true;
   });
@@ -257,7 +264,7 @@ describe("parity with the legacy client filter/sort", () => {
     ["price", F({ minPriceM: 10, maxPriceM: 40 })],
     ["league", F({ league: "of_eredivisie" })],
     ["nationality", F({ nationality: "Spain" })],
-    ["attribute", F({ attributeRanges: { ...createDefaultScoutFilters().attributeRanges, speed: { min: 6, max: 10 }, passing: { min: 0, max: 7 } } })],
+    ["attribute", F({ attributeRanges: { ...createDefaultScoutFilters().attributeRanges, speed: { min: 60, max: 100 }, passing: { min: 0, max: 70 } } })],
     ["onlyForSale", F({ onlyForSale: true })],
     ["combined", F({ position: "Forward", minAge: 18, maxAge: 32, league: "la_liga", onlyForSale: false, name: "a" })],
   ];

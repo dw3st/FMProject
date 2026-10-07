@@ -170,15 +170,18 @@ Mbappé era o 137º por overall). Ver
      (`Player.bestSpecificRole` sobre os atributos nativos originais) e soma um único `s` a todo
      atributo com peso > 0 no `attrWeights` dessa posição (`src/Data/roles.json`), contínuo,
      limitado a 0..10, achado por bisseção até `Player.computeOverallAvg` bater com o alvo
-     (tolerância 0,01). Depois arredonda cada atributo com hash do id do jogador — mesmo esquema
-     sem viés de `scripts/espn/estimate.ts` (`floor(v + unitHash(...))`). O perfil (a forma dos 13
-     atributos) continua o nativo; só o nível muda.
-  3b. **Reparo de arredondamento (#34):** atributos são inteiros, então o overall só anda em
-     degraus de ~0,1–0,3 e o arredondamento estocástico errava o alvo por até ~0,25 (Bellingham:
-     alvo 5,86, saiu 5,62 — 321º). `repairRounding` (em `shiftToOverall`) move, de forma
-     determinística, o atributo de peso > 0 que mais aproxima o overall do alvo (±1, até 12
-     passos, para em 0,04). Só remove ruído: o multiset de alvos não muda. Efeito (pré-ESPN):
-     Bellingham 321º → 106º, Kane 32º → 9º, Haaland 11º → 3º, Salah 3º → 8º, Mbappé #1.
+     (tolerância 0,01). Depois arredonda cada atributo a **uma casa decimal** (`roundAttr`,
+     `src/Domain/attributes.ts`; desde a 4.5 os atributos são decimais 0,0–10,0 em toda a cadeia, e o
+     antigo arredondamento estocástico para inteiro com hash do id, `floor(v + unitHash(...))`, saiu
+     daqui e do `scripts/espn/estimate.ts`). O perfil (a forma dos 13 atributos) continua o nativo; só o
+     nível muda.
+  3b. **Reparo de arredondamento (#34):** com atributos inteiros o overall andava em degraus de
+     ~0,1–0,3 e o arredondamento errava o alvo por até ~0,25 (Bellingham: alvo 5,86, saiu 5,62 —
+     321º). `repairRounding` (em `shiftToOverall`) move, de forma determinística, o atributo de peso
+     > 0 que mais aproxima o overall do alvo. Desde a 4.5 o passo é ±0,1 (até 40 passos, para em
+     0,01): com uma casa decimal o erro de arredondamento já é pequeno, e o reparo só fecha o resto.
+     Só remove ruído: o multiset de alvos não muda. Efeito da versão inteira (pré-ESPN): Bellingham
+     321º → 106º, Kane 32º → 9º, Haaland 11º → 3º, Salah 3º → 8º, Mbappé #1.
   4. Nativo sem par no seed, ou de um papel sem previsor, não muda.
 - **Onde entra no importador:** depois de copiar `data_process/native/squads` para
   `src/example_data/squads` (a calibração de atributos dos `of_*`, seção 2, já rodou e usa os

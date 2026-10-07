@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { attrDisplay } from "@/Domain/attributes";
+import { attributeBarClass, attributeTextClass } from "@/GameInterface/scoreColors";
 
 type AttrDirection = "up" | "stable" | "down";
 export type AttrFocus = "primary" | "secondary" | "limited";
@@ -8,7 +10,7 @@ export interface DevAttribute {
   value: number;
   direction: AttrDirection;
   focus: AttrFocus;
-  /** 0–1: how far the DP buffer is toward the next level-up (undefined = unknown) */
+  /** 0–1: how far the DP buffer is toward the next 0.1 step, i.e. the next display point (undefined = unknown) */
   progressPct?: number;
 }
 
@@ -16,51 +18,14 @@ interface AttributesPanelProps {
   attributes: DevAttribute[];
 }
 
-const PILL_COUNT = 10;
-
-function AttributePillRow({
-  value,
-  progressPct,
-}: {
-  value: number;
-  progressPct?: number;
-}) {
-  const full = Math.min(PILL_COUNT, Math.floor(value));
-  const frac = value - full;
-  const hasProgressOutline =
-    value < PILL_COUNT &&
-    (frac > 0.04 ||
-      (progressPct !== undefined && progressPct > 0));
-
+/** Bar of an attribute on the 0..100 display scale, coloured by band. */
+function AttributeBar({ display }: { display: number }) {
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      {Array.from({ length: PILL_COUNT }, (_, i) => {
-        if (i < full) {
-          return (
-            <span
-              key={i}
-              className="h-2.5 w-5 sm:w-6 rounded-sm bg-chart-2 shrink-0"
-              aria-hidden
-            />
-          );
-        }
-        if (i === full && hasProgressOutline) {
-          return (
-            <span
-              key={i}
-              className="h-2.5 w-5 sm:w-6 rounded-sm border-2 border-chart-2 bg-background/60 shrink-0 box-border"
-              aria-hidden
-            />
-          );
-        }
-        return (
-          <span
-            key={i}
-            className="h-2.5 w-5 sm:w-6 rounded-sm bg-muted/35 border border-border/40 shrink-0"
-            aria-hidden
-          />
-        );
-      })}
+    <div className="h-2 w-full rounded bg-border overflow-hidden" aria-hidden>
+      <div
+        className={`h-full rounded ${attributeBarClass(display)}`}
+        style={{ width: `${Math.max(0, Math.min(100, display))}%` }}
+      />
     </div>
   );
 }
@@ -75,6 +40,7 @@ export function AttributesPanel({ attributes }: AttributesPanelProps) {
 
       <div className="space-y-5">
         {attributes.map((attr) => {
+          const display = attrDisplay(attr.value);
           return (
             <div key={attr.name}>
               <div className="flex items-center justify-between gap-3 mb-2">
@@ -96,22 +62,17 @@ export function AttributesPanel({ attributes }: AttributesPanelProps) {
                   </div>
                   <span className="text-sm text-muted-foreground tabular-nums mt-0.5 block">
                     {t("development.developmentProgress")}:{" "}
-                    {Math.round((attr.progressPct ?? 0) * 100)}%
+                    {Math.round(Math.min(1, attr.progressPct ?? 0) * 100)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-lg font-bold font-display text-foreground tabular-nums">
-                    {attr.value.toFixed(1)}
+                  <span className={`text-lg font-bold font-display tabular-nums ${attributeTextClass(display)}`}>
+                    {display}
                   </span>
                 </div>
               </div>
 
-              <AttributePillRow
-                value={attr.value}
-                progressPct={
-                  attr.value >= PILL_COUNT ? undefined : attr.progressPct
-                }
-              />
+              <AttributeBar display={display} />
             </div>
           );
         })}

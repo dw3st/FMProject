@@ -122,6 +122,10 @@ export interface RosterPlayer {
   progress?: DevelopmentProgress;
   /** When set (e.g. from data pipeline), used for scout / UI. */
   nationality?: string | null;
+  /** Date of birth, YYYY-MM-DD (from the data pipeline). Absent = unknown. */
+  birthDate?: string;
+  /** Height in centimetres (from the data pipeline). Absent = unknown. */
+  heightCm?: number;
   /** Cached best weighted score across all specific roles in the player's main role.
    *  Recomputed when stats change (see PlayerDevelopment.applyDevelopment). */
   overallAvg?: number;

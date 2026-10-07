@@ -1,4 +1,5 @@
 import { Player } from "@/Domain/Player";
+import { roundAttr } from "@/Domain/attributes";
 import { weeklyWage } from "@/Domain/finance/wages";
 import { formatWageShort } from "@/Domain/money";
 import { STAFF } from "@/Domain/staff/staffConfig";
@@ -23,9 +24,19 @@ export function rangeMid(range: readonly [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
 
+/**
+ * The value range uses only the middle half of the overall range: the value grows exponentially
+ * with the overall, so the full ±noise turned an unknown player into "€1.5M–€1.2bn". The overall's
+ * error is far smaller than the attribute noise anyway (rms ≈ 0.46 at ±2), so the narrower band
+ * still covers the real value in most cases.
+ */
+export const VALUE_RANGE_SHRINK = 0.5;
+
 /** Market value range (millions of €) of an overall range at `age`. */
 export function seenValueRange(range: readonly [number, number], age: number): [number, number] {
-  return [r1(new Player(range[0], age).valueMillions), r1(new Player(range[1], age).valueMillions)];
+  const mid = rangeMid(range);
+  const half = ((range[1] - range[0]) / 2) * VALUE_RANGE_SHRINK;
+  return [r1(new Player(mid - half, age).valueMillions), r1(new Player(mid + half, age).valueMillions)];
 }
 
 /** Weekly wage range (whole €) of an overall range, on the club's wage curve (`wageFactor`). */
@@ -39,10 +50,10 @@ export function wageRangeLabel(range: readonly [number, number]): string {
 }
 
 /**
- * An attribute as a range (the attribute bars: whole numbers, clamped 0..10), or null when the
+ * An attribute as a range (the attribute bars: one decimal, clamped 0..10), or null when the
  * uncertainty is below the threshold (a single number).
  */
 export function seenAttributeRange(value: number, noise: number | undefined): [number, number] | null {
   if (!noise || noise < STAFF.RANGE_THRESHOLD) return null;
-  return [Math.max(0, Math.round(value - noise)), Math.min(10, Math.round(value + noise))];
+  return [roundAttr(value - noise), roundAttr(value + noise)];
 }

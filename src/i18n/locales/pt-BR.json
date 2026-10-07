@@ -1,4 +1,19 @@
 {
+  "attributeNames": {
+    "passing": "Passe",
+    "vision": "Visão",
+    "finishing": "Finalização",
+    "dribbling": "Drible",
+    "speed": "Velocidade",
+    "acceleration": "Aceleração",
+    "tackling": "Desarme",
+    "pressing": "Pressão",
+    "stamina": "Fôlego",
+    "heading": "Cabeceio",
+    "strength": "Força",
+    "reflex": "Reflexos",
+    "jump": "Impulsão"
+  },
   "common": {
     "continue": "Continuar",
     "save": "Salvar",
@@ -338,6 +353,8 @@
     "statsDesc": "Mergulhe em análises aprofundadas de desempenho de jogadores e equipe."
   },
   "playerScreen": {
+    "birthDate": "Nascido em {{date}}",
+    "height": "{{cm}} cm",
     "loadingPlayer": "Carregando jogador...",
     "playerNotFound": "Jogador não encontrado.",
     "currentTeam": "Clube atual",
@@ -1751,6 +1768,7 @@
     "scores": "{{team}} marca"
   },
   "daySummary": {
+    "morePlayers": "+{{count}} jogadores",
     "title": "Resumo do Dia",
     "matches": "Partidas ({{count}})",
     "matchRound": "{{competition}} • Rodada {{round}}",
@@ -1907,7 +1925,7 @@
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
-      "description": "Clique na faixa para definir mín–máx (0–10)",
+      "description": "Clique na faixa para definir mín–máx (0–100)",
       "clearAll": "Limpar todos os atributos",
       "any": "qualquer"
     },

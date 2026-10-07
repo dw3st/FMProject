@@ -1,4 +1,4 @@
-import { unitHash } from "@/../scripts/openfootball/ids";
+import { roundAttr } from "@/Domain/attributes";
 import { STAT_KEYS } from "@/../scripts/openfootball/derive";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
 
@@ -65,9 +65,7 @@ export function agePlayerStats(
   }
   const out = {} as PlayerStatsRecord;
   for (const k of STAT_KEYS) {
-    const v = Math.max(0, Math.min(10, x[k]!));
-    const f = Math.floor(v);
-    out[k] = Math.min(10, f + (unitHash(`${playerId}:${k}:age`) < v - f ? 1 : 0));
+    out[k] = roundAttr(x[k]!);
   }
   return out;
 }

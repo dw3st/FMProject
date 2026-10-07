@@ -2,6 +2,7 @@ import { unitHash } from "@/../scripts/openfootball/ids";
 import { STAT_KEYS, playerProfile } from "@/../scripts/openfootball/derive";
 import { MAX_SQUAD, MIN_BY_ROLE, MIN_SQUAD, type MainRole, type NamePool } from "@/../scripts/openfootball/roster";
 import { getMainRole } from "@/Domain/roles";
+import { roundAttr } from "@/Domain/attributes";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 export const LINES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
@@ -33,11 +34,8 @@ export function ageAdjust(age: number): number {
 
 /**
  * base + ageAdjust(age) + shift on every attribute, ±1 on NOISE_ATTRS hash-picked attributes,
- * clamped to 0..10. Uses unbiased hash-based stochastic rounding (`floor(v + hash)`) instead of
- * `Math.round`, because with integer bases a plain round makes fractional adjustments
- * (ageAdjust's -0.5/-0.3, and any fractional `shift`) vanish on every attribute that isn't hit by
- * noise, and rounds x.5 medians up. `floor(v + u)` with `u` uniform in [0, 1) is unbiased in
- * expectation (E[floor(v+u)] = v) and leaves already-integer `v` untouched, since u < 1.
+ * clamped to 0..10 and rounded to one decimal (`roundAttr`). The decimal keeps fractional
+ * adjustments (ageAdjust's -0.5/-0.3, any fractional `shift`), so no stochastic rounding is needed.
  */
 export function estimateStats(id: string, age: number, base: PlayerStatsRecord, shift: number): PlayerStatsRecord {
   const noisy = [...STAT_KEYS].sort((a, b) => unitHash(`${id}:pick:${a}`) - unitHash(`${id}:pick:${b}`)).slice(0, NOISE_ATTRS);
@@ -45,7 +43,7 @@ export function estimateStats(id: string, age: number, base: PlayerStatsRecord, 
   for (const k of STAT_KEYS) {
     const noise = noisy.includes(k) ? (unitHash(`${id}:sign:${k}`) < 0.5 ? -1 : 1) : 0;
     const v = base[k] + ageAdjust(age) + shift + noise;
-    out[k] = Math.max(0, Math.min(10, Math.floor(v + unitHash(`${id}:round:${k}`))));
+    out[k] = roundAttr(v);
   }
   return out;
 }
@@ -73,6 +71,19 @@ export function makePlayer(a: NewPlayerInput, overall: number): RosterPlayer & {
 
 const lineOf = (p: RosterPlayer) => getMainRole(p.positions[0] ?? "");
 
+/**
+ * Ranking used by the squad cut: the market-recalibrated overall (`targetOverall` of
+ * `data_process/transfermarkt/derived.json`) when the player has one, else the importer's overall. The cut runs
+ * before the recalibration is applied, so without this a starter the market rates highly can lose his place to a
+ * youth the raw attributes overrate (#83: Cauly and Artur at São Paulo).
+ */
+export function recalibratedOverall<P extends RosterPlayer>(
+  targets: Readonly<Record<string, { targetOverall?: number } | undefined>>,
+  fallback: (p: P) => number,
+): (p: P) => number {
+  return (p) => targets[p.id]?.targetOverall ?? fallback(p);
+}
+
 /** Keeps each line's minimum (best by `overall`), then the best remaining players, up to `max`. */
 export function trimSquad<P extends RosterPlayer>(players: P[], max: number, overall: (p: P) => number): P[] {
   if (players.length <= max) return [...players];
@@ -85,16 +96,22 @@ export function trimSquad<P extends RosterPlayer>(players: P[], max: number, ove
 
 /**
  * Adds youth (17–19, id `es_youth_<squadId>_<n>`) until every line reaches MIN_BY_ROLE and the squad
- * reaches MIN_SQUAD. `baseFor(line)` gives the stats base of a youth of that line. Then trims to MAX_SQUAD.
+ * reaches MIN_SQUAD. `baseFor(line)` gives the stats base of a youth of that line. Then trims to MAX_SQUAD,
+ * ranking by `rank` (default `overall`).
  */
 export function fillSquad<P extends RosterPlayer>(
   squadId: string, players: P[], pool: NamePool, country: string,
   baseFor: (line: MainRole) => PlayerStatsRecord, overall: (p: RosterPlayer) => number,
+  rank: (p: RosterPlayer) => number = overall,
 ): RosterPlayer[] {
   const out: RosterPlayer[] = [...players];
   let n = 0;
+  const taken = new Set(players.map((p) => p.id));
   const addYouth = (line: MainRole) => {
-    const id = `es_youth_${squadId}_${n++}`;
+    // Skips ids already in the squad (a later pass, e.g. the market recalibration, filling a squad again).
+    let id = `es_youth_${squadId}_${n++}`;
+    while (taken.has(id)) id = `es_youth_${squadId}_${n++}`;
+    taken.add(id);
     const first = pool.first[Math.floor(unitHash(`${id}:f`) * pool.first.length)] ?? "Juan";
     const last = pool.last[Math.floor(unitHash(`${id}:l`) * pool.last.length)] ?? "Silva";
     const age = 17 + Math.floor(unitHash(`${id}:a`) * 3);
@@ -109,5 +126,5 @@ export function fillSquad<P extends RosterPlayer>(
   }
   const PAD: MainRole[] = ["Defender", "Midfielder", "Forward", "Midfielder"];
   for (let i = 0; out.length < MIN_SQUAD; i++) addYouth(PAD[i % PAD.length]!);
-  return trimSquad(out, MAX_SQUAD, overall);
+  return trimSquad(out, MAX_SQUAD, rank);
 }

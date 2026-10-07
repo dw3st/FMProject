@@ -32,6 +32,10 @@ const FLAG_OF: Record<string, string> = {
   Turkey: "tr", Türkiye: "tr", Turkmenistan: "tm", Uganda: "ug", Ukraine: "ua", "United Arab Emirates": "ae",
   "United States": "us", USA: "us", Uruguay: "uy", Uzbekistan: "uz", Vanuatu: "vu", Venezuela: "ve", Wales: "gb-wls",
   Yemen: "ye", Zambia: "zm", Zimbabwe: "zw",
+  // Transfermarkt nationalities (scripts/transfermarkt/nationality.ts)
+  Bangladesh: "bd", Bonaire: "bq", China: "cn", "Curaçao": "cw", Libya: "ly", Malaysia: "my", "New Caledonia": "nc",
+  Pakistan: "pk", "Papua New Guinea": "pg", "São Tomé & Príncipe": "st", "South Sudan": "ss", Syria: "sy",
+  "Timor-Leste": "tl",
 };
 
 export function nationalityFlagCode(nationality: string | null | undefined): string | undefined {

@@ -33,6 +33,8 @@ export interface ApplyOptions {
   roleWeights: (p: RosterPlayer) => Record<string, number>;
   /** Player overall on the 0..10 scale. */
   overall: (p: RosterPlayer) => number;
+  /** Ranking of the MAX_SQUAD cut (`recalibratedOverall`: market-recalibrated overall when known). Default `overall`. */
+  trimOverall?: (p: RosterPlayer) => number;
 }
 
 export interface EspnReport {
@@ -78,6 +80,8 @@ export interface ApplyResult {
   espnLogoOf: Map<string, string>;
   /** squadId → native league folder the club came from (only clubs that lived in a native league). */
   nativeLeagueOf: Map<string, string>;
+  /** squadId → players of that club left out by the MAX_SQUAD cut (input of `buildMarketDerived`). */
+  trimmedOut: Map<string, RosterPlayer[]>;
 }
 
 export const NEW_CLUB_SHIFT = -0.3;
@@ -134,7 +138,7 @@ function pyramidTier(pyr: Pyramids, slug: string): number {
   return 1;
 }
 
-function namePools(players: RosterPlayer[]): Map<string, NamePool> {
+export function namePools(players: RosterPlayer[]): Map<string, NamePool> {
   const pools = new Map<string, { first: Set<string>; last: Set<string> }>();
   for (const p of players) {
     const parts = p.name.trim().split(/\s+/);
@@ -518,6 +522,7 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
   const EMPTY: NamePool = { first: [], last: [] };
   let youthAdded = 0;
   let trimmed = 0;
+  const trimmedOut = new Map<string, RosterPlayer[]>();
   for (const [id, s] of built) {
     const rawCountry = s.country ?? leagueBySlug.get(leagueOfFinal.get(id)!)!.country;
     // leagueData's `country` (e.g. "Czech Republic", "Turkey") sometimes differs from the world's
@@ -525,10 +530,14 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     // players as their nationality, so a filler player doesn't reintroduce the mismatch.
     const country = normalizeNationality(rawCountry, worldNationalities) ?? rawCountry;
     const before = s.players.length;
-    const trimmedPlayers = trimSquad(s.players, MAX_SQUAD, opts.overall);
+    const trimRank = opts.trimOverall ?? opts.overall;
+    const trimmedPlayers = trimSquad(s.players, MAX_SQUAD, trimRank);
     trimmed += before - trimmedPlayers.length;
-    const filled = fillSquad(id, trimmedPlayers, pools.get(country) ?? EMPTY, country, (line) => baseFor(id, line).stats, opts.overall);
+    const filled = fillSquad(id, trimmedPlayers, pools.get(country) ?? EMPTY, country, (line) => baseFor(id, line).stats, opts.overall, trimRank);
     youthAdded += filled.filter((p) => p.id.startsWith(`es_youth_${id}_`)).length;
+    const kept = new Set(filled.map((p) => p.id));
+    const out = s.players.filter((p) => !kept.has(p.id));
+    if (out.length) trimmedOut.set(id, out);
     s.players = filled as SquadFile["players"];
   }
 
@@ -609,5 +618,5 @@ export function applyEspn(input: World, snap: EspnSnapshot, opts: ApplyOptions):
     playersRemoved: { unmatchedInCoveredClubs, inRemovedClubs, trimmed },
   };
 
-  return { world: { ...world, squads: squadsOut, pyramids }, report, espnLogoOf, nativeLeagueOf };
+  return { world: { ...world, squads: squadsOut, pyramids }, report, espnLogoOf, nativeLeagueOf, trimmedOut };
 }

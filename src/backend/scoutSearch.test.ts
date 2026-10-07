@@ -78,12 +78,12 @@ describe("parseScoutQuery", () => {
     const q = parseScoutQuery({
       filters: {
         attributeRanges: {
-          speed: { min: 2, max: 8 },
-          notARealAttribute: { min: 0, max: 10 },
+          speed: { min: 20, max: 80 },
+          notARealAttribute: { min: 0, max: 100 },
         },
       },
     });
-    expect(q.filters.attributeRanges.speed).toEqual({ min: 2, max: 8 });
+    expect(q.filters.attributeRanges.speed).toEqual({ min: 20, max: 80 });
     expect((q.filters.attributeRanges as Record<string, unknown>).notARealAttribute).toBeUndefined();
   });
 
@@ -92,8 +92,8 @@ describe("parseScoutQuery", () => {
     const q = parseScoutQuery({
       filters: {
         attributeRanges: {
-          passing: { min: "0", max: 10 },
-          vision: { min: NaN, max: 10 },
+          passing: { min: "0", max: 100 },
+          vision: { min: NaN, max: 100 },
           finishing: "not an object",
           dribbling: null,
         },
@@ -105,17 +105,17 @@ describe("parseScoutQuery", () => {
     expect(q.filters.attributeRanges.dribbling).toEqual(defaults.attributeRanges.dribbling);
   });
 
-  test("attributeRanges: bounds are clamped to 0..10 and swapped when min > max", () => {
+  test("attributeRanges: bounds are clamped to 0..100 (integers) and swapped when min > max", () => {
     const q = parseScoutQuery({
       filters: {
         attributeRanges: {
-          speed: { min: -5, max: 20 },
-          tackling: { min: 8, max: 2 },
+          speed: { min: -5, max: 200 },
+          tackling: { min: 80, max: 20.4 },
         },
       },
     });
-    expect(q.filters.attributeRanges.speed).toEqual({ min: 0, max: 10 });
-    expect(q.filters.attributeRanges.tackling).toEqual({ min: 2, max: 8 });
+    expect(q.filters.attributeRanges.speed).toEqual({ min: 0, max: 100 });
+    expect(q.filters.attributeRanges.tackling).toEqual({ min: 20, max: 80 });
   });
 
   test("attributeRanges is not an object → falls back entirely to defaults", () => {

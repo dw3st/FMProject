@@ -9,6 +9,7 @@ import { returnDueLoans, emptyMarket } from "@/backend/negotiationWorld";
 import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { addDays } from "@/Domain/dates";
 import { roundFeeUp } from "@/Domain/negotiation/negotiation";
+import { squadDepthBlocked } from "@/Domain/transfer/transferAcceptance";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, MarketState } from "@/types/transferMarketTypes";
@@ -33,12 +34,14 @@ describe("negotiation routes", () => {
   const valueOf = (p: RosterPlayer) => new Player(playerOverallRating(p), p.age).price;
   const human = async () => (await saveService.getSquadById(saveId, meta.clubId))!;
 
-  /** An AI club of the league and one of its ordinary midfielders (not a starter-level star). */
+  /** An AI club of the league and one of its ordinary midfielders (not a starter-level star) it can sell. */
   async function aiTarget(skip: string[] = []): Promise<{ club: Squad; player: RosterPlayer }> {
     const clubs = (await saveService.getSquadsInLeague(saveId, meta.leagueSlug)).filter((s) => s.id !== meta.clubId && !skip.includes(s.id));
     for (const club of clubs) {
       const avg = teamAvgRating(club);
-      const p = club.players.find((q) => q.positions[0] && ["CM", "CDM", "Midfielder"].includes(q.positions[0]) && Math.abs(playerOverallRating(q) - avg) < 0.3 && !q.loan);
+      const p = club.players.find((q) => q.positions[0] && ["CM", "CDM", "Midfielder"].includes(q.positions[0]) && Math.abs(playerOverallRating(q) - avg) < 0.3 && !q.loan
+        // He can leave: selling him keeps his club above the depth minimums.
+        && !squadDepthBlocked(q, club, false));
       if (p && club.players.length >= 20) return { club, player: p };
     }
     throw new Error("no AI target");
@@ -174,7 +177,9 @@ describe("negotiation routes", () => {
   test("loan out: a loan bid accepted moves the player away with the agreed share", async () => {
     const sq = await human();
     const p = sq.players.find((q) => !q.loan && q.positions[0] !== "GK")!;
-    const { club: borrower } = await aiTarget();
+    // A borrower with room in the squad (a full one closes the offer).
+    const borrower = (await saveService.getSquadsInLeague(saveId, meta.leagueSlug))
+      .find((s) => s.id !== meta.clubId && s.players.length < 30)!;
     const bid: MarketBid = {
       id: "bid-loan-1", kind: "loan", playerId: p.id, playerName: p.name, clubId: borrower.id, clubName: borrower.name,
       date: meta.currentDate!, expires: addDays(meta.currentDate!, 5), fee: 0, wageShare: 0.6, until: addDays(meta.currentDate!, 90),

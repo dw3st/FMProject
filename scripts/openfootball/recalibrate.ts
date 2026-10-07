@@ -8,12 +8,12 @@
  *   2. quantileTargets — rank the paired players by z and hand out the CURRENT overall multiset of
  *      that same group in rank order (preserves mean/spread; reorders by the seed-derived level).
  *   3. shiftToOverall — one additive shift on the attributes that matter for the player's best
- *      specific role, found by bisection, then rounded with unbiased hash rounding.
+ *      specific role, found by bisection, then rounded to one decimal (roundAttr).
  *
  * Pure module — no filesystem, no @/Data imports beyond types.
  */
 import { fitPlane, type PlaneFit } from "@/../scripts/openfootball/calibration";
-import { unitHash } from "@/../scripts/openfootball/ids";
+import { roundAttr } from "@/Domain/attributes";
 import type { MainRole } from "@/../scripts/openfootball/roster";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
 
@@ -124,11 +124,10 @@ export function findShift(
 /**
  * Recalibrates one player's attributes to hit `target` overall (per `overallOf`): a single
  * additive shift on every attribute with weight > 0 in `weights` (continuous, clamped 0..10),
- * found by bisection to within 0.01 of `target`, then rounded per attribute with unbiased
- * hash-based stochastic rounding keyed on `playerId` (same scheme as scripts/espn/estimate.ts:
- * `floor(v + unitHash(...))`, unbiased in expectation and leaves integers untouched). Attributes
- * with weight 0 are returned unchanged. Deterministic for a given
- * (playerId, stats, weights, target, overallOf).
+ * found by bisection to within 0.01 of `target`, then rounded per attribute to one decimal
+ * (`roundAttr`) and repaired in 0.1 steps (`repairRounding`). Attributes with weight 0 are returned
+ * unchanged. Deterministic for a given (stats, weights, target, overallOf); `playerId` is kept in the
+ * signature for the callers.
  */
 export function shiftToOverall(
   playerId: string,
@@ -142,20 +141,19 @@ export function shiftToOverall(
   const out = { ...stats };
   for (const k of Object.keys(stats) as (keyof PlayerStatsRecord)[]) {
     if ((weights[k] ?? 0) <= 0) continue;
-    const rounded = Math.floor(continuous[k] + unitHash(`${playerId}:recal:round:${k}`));
-    out[k] = Math.max(0, Math.min(10, rounded));
+    out[k] = roundAttr(continuous[k]);
   }
   return repairRounding(out, weights, target, overallOf);
 }
 
-/** Integer attributes quantise the overall in steps of ~0.1–0.3, so the stochastic rounding can
- * miss the target by a lot (Bellingham: target 5.86, rounded 5.62 — issue #34). */
-const REPAIR_TOLERANCE = 0.04;
-const REPAIR_MAX_STEPS = 12;
+/** One-decimal attributes still quantise the overall a little (integers missed by up to ~0.25 —
+ * Bellingham, issue #34); the repair closes the last gap in 0.1 steps. */
+const REPAIR_TOLERANCE = 0.01;
+const REPAIR_MAX_STEPS = 40;
 
 /**
  * Deterministic repair after rounding: while the overall is further than `REPAIR_TOLERANCE` from
- * `target`, move the single weighted attribute by ±1 that brings it closest, stopping when no
+ * `target`, move the single weighted attribute by ±0.1 that brings it closest, stopping when no
  * move improves it. Only attributes with weight > 0 move, so the profile shape is preserved and
  * the quantile multiset is hit far more tightly (no bias — it only removes rounding noise).
  */
@@ -172,9 +170,10 @@ export function repairRounding(
     let bestErr = err;
     for (const k of Object.keys(cur) as (keyof PlayerStatsRecord)[]) {
       if ((weights[k] ?? 0) <= 0) continue;
-      for (const d of [-1, 1]) {
-        const v = cur[k] + d;
-        if (v < 0 || v > 10) continue;
+      for (const d of [-0.1, 0.1]) {
+        const raw = cur[k] + d;
+        if (raw < -1e-9 || raw > 10 + 1e-9) continue;
+        const v = roundAttr(raw);
         const cand = { ...cur, [k]: v };
         const e = Math.abs(overallOf(cand) - target);
         if (e < bestErr - 1e-9) { bestErr = e; best = cand; }

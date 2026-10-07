@@ -43,7 +43,7 @@ zagueiros (Guarani: 12 zagueiros, nenhum lateral). Escopo: o **mundo inteiro** (
    nova.
 4. **Sem par.** Fica como está, salvo jovem (≤ 21) acima da mediana dos casados do próprio clube: desce a essa
    mediana.
-5. **Cobertura.** Liga com menos de 60% dos jogadores casados não é reordenada (as posições do Transfermarkt ainda
+5. **Cobertura.** Liga com menos de 40% dos jogadores casados com valor, ou com menos de 100 deles, não é reordenada (as posições do Transfermarkt ainda
    valem para os casados).
 6. **Ordem na cadeia.** Novo passo `bun scripts/applyMarketRecalibration.ts` depois do `importEspn` e antes do
    `applyPlayerCorrections` (as correções manuais vencem). Lógica pura em `scripts/transfermarkt/` com testes.
@@ -83,11 +83,11 @@ Pedido do usuário (2026-10-07), na mesma etapa (o mundo é regenerado uma vez s
 
   | Faixa | Cor |
   |---|---|
-  | ≤ 39 | vermelho |
-  | 40–54 | laranja |
+  | ≤ 39 | vermelho forte |
+  | 40–54 | vermelho claro |
   | 55–69 | amarelo |
-  | 70–84 | verde |
-  | ≥ 85 | azul |
+  | 70–84 | verde claro |
+  | ≥ 85 | verde forte |
 
   A nota geral (overall) mantém as cores atuais.
 

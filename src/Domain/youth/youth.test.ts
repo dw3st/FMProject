@@ -6,7 +6,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 
 function mk(i: number, pos: string, level: number): RosterPlayer {
-  const v = Math.round(level);
+  const v = Math.round(level * 10) / 10;
   return {
     id: `p${i}`, name: `Player ${i} Silva`, age: 26, squadId: "s1", preferredFoot: "right", positions: [pos],
     stats: {
@@ -41,6 +41,7 @@ describe("youth intake", () => {
       expect(p.age).toBeGreaterThanOrEqual(16);
       expect(p.age).toBeLessThanOrEqual(17);
       expect(p.contract?.wage).toBeGreaterThan(0);
+      for (const v of Object.values(p.stats)) expect(Math.abs(v * 10 - Math.round(v * 10))).toBeLessThan(1e-9);
     }
     expect(new Set(a.map((p) => p.id)).size).toBe(a.length);
     expect(generateIntake({ ...base, year: 2028 })[0]!.id).not.toBe(a[0]!.id);
@@ -165,4 +166,15 @@ describe("youth rollover", () => {
     expect(res.promoted.length).toBe(0);
     expect(res.squad.players.length).toBe(30);
   });
+});
+
+test("academy keeps its pace: the growth scale of the 0.1 steps does not apply", () => {
+  const stats = { passing: 4, vision: 4, finishing: 4, dribbling: 4, speed: 5, acceleration: 5, tackling: 4,
+    pressing: 4, stamina: 5, heading: 4, strength: 4, reflex: 1, jump: 3 };
+  const p = { id: "pace-youth", name: "x", age: 16, positions: ["CM"], stats } as unknown as RosterPlayer;
+  const mean = (x: RosterPlayer) => Object.values(x.stats).reduce((a, b) => a + b, 0) / 13;
+  const gain = mean(developYouthSeason(p, 1)) - mean(p);
+  // Old whole-point pace: +0.46 a season (scripts/development-pace.ts); with GROWTH_DP_SCALE it would be ~+0.25.
+  expect(gain).toBeGreaterThan(0.35);
+  expect(gain).toBeLessThan(0.65);
 });

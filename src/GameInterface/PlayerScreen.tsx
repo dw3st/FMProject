@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { formatBirthDate, heightCmOf } from "@/GameInterface/playerIdentity";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import type { Squad, RosterPlayer } from "@/types/playerTypes";
@@ -90,6 +91,16 @@ export function PlayerScreen({
     const dp = toDisplayPlayer(player, squadName, { wageFactor: squadWageFactor, currentDate: session?.currentDate });
     return { ...dp, leagueSlug: league, clubSlug: club };
   }, [player, squadName, squadWageFactor, league, club, session?.currentDate]);
+
+  const identityFacts = useMemo((): string[] => {
+    if (!player) return [];
+    const facts: string[] = [];
+    const born = player.birthDate ? formatBirthDate(player.birthDate, i18n.language) : null;
+    if (born) facts.push(t("playerScreen.birthDate", { date: born }));
+    const cm = heightCmOf(player.heightCm);
+    if (cm !== null) facts.push(t("playerScreen.height", { cm }));
+    return facts;
+  }, [player, i18n.language, t]);
 
   const mySquadId = mySquad?.id ?? session?.clubId ?? "";
   const isOwnPlayer = !!player && !!mySquadId && player.squadId === mySquadId;
@@ -194,6 +205,7 @@ export function PlayerScreen({
           layout="wide"
           clubColors={squadColors}
           nameBadge={<PersonalitySummaryBadge view={personalityViewOf(player)} className="mt-0.5" />}
+          identityFacts={identityFacts}
         />
 
         {!isOwnPlayer && session && (
