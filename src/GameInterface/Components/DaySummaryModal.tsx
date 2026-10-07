@@ -21,7 +21,8 @@ import { Icon, iconOf } from "@/GameInterface/Icons";
 import { competitionName, partitionDayMatches } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { AttributeChangeRow } from "@/GameInterface/Components/AttributeChangeRow";
-import { groupDevelopmentChanges } from "@/GameInterface/Components/attributeChanges";
+import { DEV_CHANGES_VISIBLE, groupDevelopmentChanges, trainingDevelopmentChanges } from "@/GameInterface/Components/attributeChanges";
+import { Button } from "@/GameInterface/ui/Button";
 
 const Minus = iconOf("minus");
 const TrendingDown = iconOf("trend-down");
@@ -383,9 +384,12 @@ function OtherLeaguesSection({
   );
 }
 
-function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t: (key: string) => string }) {
+function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t: TFunc }) {
+  const [expanded, setExpanded] = useState(false);
   const players = groupDevelopmentChanges(changes);
   if (players.length === 0) return null;
+  const hidden = expanded ? 0 : Math.max(0, players.length - DEV_CHANGES_VISIBLE);
+  const shown = hidden > 0 ? players.slice(0, DEV_CHANGES_VISIBLE) : players;
 
   return (
     <div className="card-arcade rounded-md overflow-hidden">
@@ -396,7 +400,7 @@ function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t:
         </span>
       </div>
       <div className="divide-y divide-border/50">
-        {players.map((p) => (
+        {shown.map((p) => (
           <div key={p.playerId} className="px-4 py-2.5">
             <p className="text-sm font-semibold text-foreground m-0 mb-1">{p.playerName}</p>
             <div className="space-y-0.5">
@@ -407,6 +411,13 @@ function DevChangesCard({ changes, t }: { changes: PlayerDevelopmentChange[]; t:
           </div>
         ))}
       </div>
+      {hidden > 0 && (
+        <div className="px-4 border-t border-border/50">
+          <Button variant="secondary" flush onClick={() => setExpanded(true)}>
+            {t("daySummary.morePlayers", { count: hidden })}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -451,6 +462,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
   const trainingEvents = dayLog.events.filter(
     (e): e is TrainingEvent => e.kind === "training" && e.squadId === mySquadId,
   );
+  const trainingDevChanges = trainingEvents.flatMap((e) => trainingDevelopmentChanges(e.effects ?? []));
   const restEvents = dayLog.events.filter(
     (e): e is RestEvent => e.kind === "rest" && e.squadId === mySquadId,
   );
@@ -538,6 +550,7 @@ export function DaySummaryModal({ dayLog, onDismiss, mySquadId, leagues }: Props
                   t={t}
                 />
               ))}
+              {trainingDevChanges.length > 0 && <DevChangesCard changes={trainingDevChanges} t={t} />}
             </section>
           )}
 

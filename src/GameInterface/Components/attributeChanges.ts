@@ -1,5 +1,5 @@
 import { roundAttr } from "@/Domain/attributes";
-import type { PlayerDevelopmentChange } from "@/types/dayLogTypes";
+import type { PlayerDevelopmentChange, TrainingEffect } from "@/types/dayLogTypes";
 
 export interface AttributeChange {
   stat: string;
@@ -18,7 +18,8 @@ export interface PlayerAttributeChanges {
 /**
  * Day's development changes grouped by player and attribute: one row per attribute, from its value
  * before the first change of the day to its value after the last one. Rows that end where they
- * started are dropped, and so are players left with none.
+ * started are dropped, and so are players left with none. Players are listed by how much they
+ * moved (sum of the display steps), then by name.
  */
 export function groupDevelopmentChanges(list: PlayerDevelopmentChange[]): PlayerAttributeChanges[] {
   const byPlayer = new Map<string, { playerName: string; stats: Map<string, AttributeChange> }>();
@@ -39,5 +40,17 @@ export function groupDevelopmentChanges(list: PlayerDevelopmentChange[]): Player
     const changes = [...stats.values()].filter((c) => roundAttr(c.from) !== roundAttr(c.to));
     if (changes.length > 0) out.push({ playerId, playerName, changes });
   }
-  return out;
+  const moved = (p: PlayerAttributeChanges) =>
+    p.changes.reduce((sum, c) => sum + Math.abs(Math.round((c.to - c.from) * 10)), 0);
+  return out.sort((a, b) => moved(b) - moved(a) || a.playerName.localeCompare(b.playerName));
 }
+
+/** Training effects as development changes (players without level changes are skipped). */
+export function trainingDevelopmentChanges(effects: TrainingEffect[]): PlayerDevelopmentChange[] {
+  return effects
+    .filter((e) => (e.levelChanges?.length ?? 0) > 0)
+    .map((e) => ({ playerId: e.playerId, playerName: e.name, changes: e.levelChanges ?? [] }));
+}
+
+/** Players to show before collapsing the rest behind "+N". */
+export const DEV_CHANGES_VISIBLE = 8;

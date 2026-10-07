@@ -1767,6 +1767,7 @@
     "scores": "{{team}} marca"
   },
   "daySummary": {
+    "morePlayers": "+{{count}} jogadores",
     "title": "Resumo do Dia",
     "matches": "Partidas ({{count}})",
     "matchRound": "{{competition}} • Rodada {{round}}",
