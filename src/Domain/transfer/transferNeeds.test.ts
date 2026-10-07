@@ -416,9 +416,14 @@ describe("processTeamTransferAttempt — AI wage control", () => {
     expect(finance.hiring).toBe("tight");
     // improvement needs are dropped while tight
     expect(processTeamTransferAttempt(buyer, need("improvement"), [seller], rng)).toBeNull();
-    // rating-4 target costs ≈ €13M > HIGH cheap cap (€12M)
-    expect(processTeamTransferAttempt(buyer, need("cover_need"), [seller], rng)).toBeNull();
-    // a cheap rating-2 forward (≈ €3M) is fine
+    // a target above the HIGH cheap cap (€12M) whose wage would still fit: refused for the fee alone
+    const pricey = basePlayer({ id: "px", name: "Pricey", positions: ["ST"], squadId: "sell", stats: flat(5.6) });
+    const pr = playerOverallRating(pricey);
+    expect(new Player(pr, pricey.age).price).toBeGreaterThan(12_000_000);
+    expect(finance.wageBill + estimateWeeklyWage(pricey, wageFactorOf(buyer))).toBeLessThanOrEqual(finance.maxWageBudget);
+    const priceyNeed = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: pr - 0.1, targetMax: pr + 0.1 }] };
+    expect(processTeamTransferAttempt(buyer, priceyNeed, [makeSquad("sell", [pricey])], rng)).toBeNull();
+    // a cheap rating-2 forward (€0.1M) is fine
     const cheap = basePlayer({ id: "ch", name: "Cheap", positions: ["ST"], squadId: "sell", stats: flat(2) });
     const r = playerOverallRating(cheap);
     const profile = { ...need("cover_need"), needs: [{ ...need("cover_need").needs[0]!, targetMin: r - 0.1, targetMax: r + 0.1 }] };

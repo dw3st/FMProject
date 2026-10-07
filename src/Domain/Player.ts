@@ -7,6 +7,26 @@ import {
 } from "@/Domain/playerRating";
 import { formatWageShort } from "@/Domain/money";
 
+/**
+ * Market value formula, fitted on the real Transfermarkt value of the 19,315 matched players of the recalibrated
+ * world (`bun scripts/fitValueFormula.ts`, 2026-10-07): weighted least squares in log (each player weighted by
+ * √value) of `log(value / 1e6) = log(VALUE_K) + VALUE_EXP × rating + log(age factor)`, the ≤ 28 band fixed at 1.
+ * Median |log(game / real)| 2.76 with the old `0.8 × rating² × age` formula → 0.43; median game ÷ real 15.8 → 1.12.
+ * A rating of 5.0 at 27 is worth ~€8M, 6.0 ~€43M, 6.5 ~€98M.
+ */
+export const VALUE_K = 0.001888;
+export const VALUE_EXP = 1.671;
+/** Age factor by band (upper age, factor), same fit. */
+export const AGE_VALUE_FACTORS: readonly (readonly [maxAge: number, factor: number])[] = [
+  [19, 1.70], [21, 1.56], [23, 1.25], [25, 1.13], [28, 1.0], [30, 0.80], [32, 0.58], [34, 0.47], [Infinity, 0.44],
+];
+/** Lowest transfer price (€0.1M): the fitted value of a weak or old player rounds to zero otherwise. */
+export const MIN_PRICE = 100_000;
+
+export function ageValueFactor(age: number): number {
+  return AGE_VALUE_FACTORS.find(([max]) => age <= max)![1];
+}
+
 export type StatusLevel = 1 | 2 | 3 | 4 | 5;
 
 /**
@@ -60,31 +80,21 @@ export class Player {
   }
 
   /**
-   * Estimated value in millions of € (float), before rounding to whole euros.
-   *
-   * Age curve is biased toward youth: a 19-year-old with decent ability commands
-   * a steep premium over the same rating at peak, reflecting years of expected
-   * growth. Veterans decline sharply after 30.
+   * Estimated value in millions of € (float), before rounding: `VALUE_K × e^(VALUE_EXP × rating) × age factor`.
+   * Constants fitted on the real Transfermarkt value (`VALUE_K` above, `scripts/fitValueFormula.ts`).
    */
   get valueMillions(): number {
-    const base = this.overallRating * this.overallRating * 0.8;
-    const a = this.age;
-    const ageFactor =
-      a <= 19 ? 2.4 :
-      a <= 21 ? 2.0 :
-      a <= 23 ? 1.6 :
-      a <= 25 ? 1.3 :
-      a <= 28 ? 1.0 :
-      a <= 30 ? 0.75 :
-      a <= 32 ? 0.50 :
-      a <= 34 ? 0.30 :
-      0.15;
-    return base * ageFactor;
+    return VALUE_K * Math.exp(VALUE_EXP * this.overallRating) * ageValueFactor(this.age);
   }
 
-  /** Estimated transfer value in whole euros. */
+  /**
+   * Estimated transfer value in euros, on the fee grid (€0.1M below €10M, €1M from there), never below
+   * `MIN_PRICE`.
+   */
   get price(): number {
-    return Math.round(this.valueMillions) * 1_000_000;
+    const v = this.valueMillions;
+    const euros = v < 10 ? Math.round(v * 10) * 100_000 : Math.round(v) * 1_000_000;
+    return Math.max(MIN_PRICE, euros);
   }
 
   /** Short label for cards / lists (e.g. `"12.5M"`). */

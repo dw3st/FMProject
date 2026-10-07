@@ -1,4 +1,4 @@
-import type { ScoutFilterState } from "@/Domain/scout/scoutFilterState";
+import { PRICE_FILTER_NO_LIMIT_M, type ScoutFilterState } from "@/Domain/scout/scoutFilterState";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { toDisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { getMainRole } from "@/Domain/roles";
@@ -117,7 +117,8 @@ export function filterScoutPlayers(
     if (filters.position !== "all" && getMainRole(player.pos) !== filters.position) return false;
     if (player.age < filters.minAge || player.age > filters.maxAge) return false;
     if (player.avg < filters.minAvg || player.avg > filters.maxAvg) return false;
-    if (player.valueMillions < filters.minPriceM || player.valueMillions > filters.maxPriceM) return false;
+    if (player.valueMillions < filters.minPriceM) return false;
+    if (filters.maxPriceM < PRICE_FILTER_NO_LIMIT_M && player.valueMillions > filters.maxPriceM) return false;
     if (filters.league !== "all" && player.leagueSlug !== filters.league) return false;
     if (filters.nationality !== "all" && player.nationality !== filters.nationality) return false;
     for (const attr of ATTRIBUTE_LIST) {

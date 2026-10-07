@@ -4,6 +4,7 @@ import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { ScoutAttributeFiltersDisclosure } from "@/GameInterface/Scout/ScoutAttributeFiltersDisclosure";
 import {
   createDefaultScoutFilters,
+  PRICE_FILTER_NO_LIMIT_M,
   type ScoutFilterState,
 } from "@/Domain/scout/scoutFilterState";
 import { Icon } from "@/GameInterface/Icons";
@@ -158,7 +159,7 @@ export function ScoutFilters({
               min={0}
               step={0.5}
               value={filters.maxPriceM}
-              onChange={(e) => setFilters({ ...filters, maxPriceM: parseFloat(e.target.value) || 200 })}
+              onChange={(e) => setFilters({ ...filters, maxPriceM: parseFloat(e.target.value) || PRICE_FILTER_NO_LIMIT_M })}
               placeholder={t("common.max")}
               className={inputClass}
             />

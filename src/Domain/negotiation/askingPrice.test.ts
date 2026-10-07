@@ -118,7 +118,8 @@ describe("asking price on AI bids", () => {
       const bid = buildAiTransferBid({ id: "x", player: w.p, buyer: w.squads.get("a")!, date: "2027-03-01", rng: mulberry32(seed), askingPrice: asking });
       expect(bid).not.toBeNull();
       expect(bid!.maxFee!).toBeLessThanOrEqual(asking);
-      if (!bid!.sellOnPct) expect(bid!.fee).toBeGreaterThanOrEqual(asking * 0.95 - 100_000);
+      // The fee is rounded down on the fee grid (one step at most below 95% of the asking price).
+      if (!bid!.sellOnPct) expect(bid!.fee).toBeGreaterThanOrEqual(asking * 0.95 - askingStep(asking));
     }
   });
   test("above the value: the bid opens between the value and the asking price", () => {

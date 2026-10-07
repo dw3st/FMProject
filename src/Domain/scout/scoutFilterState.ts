@@ -1,5 +1,12 @@
 import { ATTRIBUTE_LIST, type AttributeId } from "@/Domain/attributes";
 
+/**
+ * Default top of the price filter (Mâ‚¬). A value at or above it means no upper limit: the market value grows
+ * exponentially with the rating (`Player.valueMillions`), and the middle of a little-known star's value range can
+ * pass any round number.
+ */
+export const PRICE_FILTER_NO_LIMIT_M = 1000;
+
 export interface ScoutFilterState {
   name: string;
   position: string;
@@ -9,6 +16,7 @@ export interface ScoutFilterState {
   maxAvg: number;
   /** Market value range, millions of € (same scale as engine `Player.valueMillions`). */
   minPriceM: number;
+  /** Upper price (Mâ‚¬); `PRICE_FILTER_NO_LIMIT_M` or more = no upper limit. */
   maxPriceM: number;
   league: string;
   nationality: string;
@@ -41,7 +49,7 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     minAvg: 0,
     maxAvg: 10,
     minPriceM: 0,
-    maxPriceM: 200,
+    maxPriceM: PRICE_FILTER_NO_LIMIT_M,
     league: "all",
     nationality: "all",
     attributeRanges: defaultAttributeRanges(),

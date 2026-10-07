@@ -187,17 +187,19 @@ ageScore: < 24 → 1.0 / < 28 → 0.90 / < 30 → 0.70 / ≥ 30 → 0.20
 
 ## Player Price Formula (`Player.valueMillions`)
 
-```
-base = rating² × 0.8
+Fitted on the real Transfermarkt value of the matched players (4.5, `bun scripts/fitValueFormula.ts`; constants
+`VALUE_K`, `VALUE_EXP`, `AGE_VALUE_FACTORS`, `MIN_PRICE` in `src/Domain/Player.ts`):
 
-ageFactor:
-  age ≤ 24: × 1.3
-  age ≤ 28: × 1.0
-  age ≤ 32: × 0.7
-  age >  32: × 0.4
-
-price = round(base × ageFactor) × 1_000_000
 ```
+valueMillions = VALUE_K × e^(VALUE_EXP × rating) × ageFactor        VALUE_K = 0.001888, VALUE_EXP = 1.671
+
+ageFactor: ≤19 1.70 · ≤21 1.56 · ≤23 1.25 · ≤25 1.13 · ≤28 1.00 · ≤30 0.80 · ≤32 0.58 · ≤34 0.47 · >34 0.44
+
+price = valueMillions on the fee grid (€0.1M below €10M, €1M from there), never below MIN_PRICE (€0.1M)
+```
+
+Rating 5.0 at 27 ≈ €8M, 6.0 ≈ €43M, 6.5 ≈ €98M. Before 4.5: `round(rating² × 0.8 × ageFactor)` in whole millions
+(≤24 ×1.3, ≤28 ×1.0, ≤32 ×0.7, >32 ×0.4 in the first version; later 2.4 … 0.15).
 
 Negotiated fee = `fairPrice × (0.9 + rng() × 0.25)` — AI pays 90–115% of fair value.
 
