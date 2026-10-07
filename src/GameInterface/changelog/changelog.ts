@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.6",
+    date: "2026-10-07",
+    items: [
+      { pt: "Escanteios, faltas e laterais: os jogadores andam até a posição em vez de pular", en: "Corners, free kicks and throw-ins: players walk into position instead of jumping" },
+    ],
+  },
+  {
     version: "4.4.5",
     date: "2026-10-07",
     items: [
