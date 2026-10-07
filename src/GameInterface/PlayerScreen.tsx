@@ -1,3 +1,4 @@
+import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
@@ -150,7 +151,7 @@ export function PlayerScreen({
               </button>
             ) : isOwnPlayer && !player.loan ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                {session && <ListToggles saveId={session.saveId} playerId={player.id} />}
+                {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} />}
                 <button
                   type="button"
                   onClick={() => setRenewOpen(true)}

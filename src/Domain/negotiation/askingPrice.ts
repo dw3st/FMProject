@@ -4,7 +4,10 @@
  * No asking price (or asking = value) behaves exactly like the plain listing.
  */
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
-import { roundFeeUp } from "@/Domain/negotiation/negotiation";
+import { roundFeeDown, roundFeeUp } from "@/Domain/negotiation/negotiation";
+import { Player } from "@/Domain/Player";
+import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
+import type { RosterPlayer } from "@/types/playerTypes";
 
 const A = NEGOTIATION.ASKING;
 
@@ -46,4 +49,22 @@ export function askingStep(price: number): number {
 export function parseAskingPrice(raw: unknown): number | null {
   if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0 || raw > A.MAX_PRICE) return null;
   return roundFeeUp(raw);
+}
+
+/** One step up or down from `price`, on the field's grid; never below the smallest step. */
+export function stepAskingPrice(price: number, dir: 1 | -1): number {
+  if (dir > 0) return roundFeeUp(price + askingStep(price));
+  const down = roundFeeDown(price - askingStep(Math.max(0, price - 1)));
+  return Math.max(100_000, down);
+}
+
+/** Market value of a player, EUR — the reference of the asking price (same as the AI's fair price). */
+export function playerMarketValue(player: RosterPlayer): number {
+  return new Player(playerOverallRating(player), player.age).price;
+}
+
+/** How the asking price compares with the value, for the hint under the field. */
+export function askingBand(asking: number, value: number): "below" | "fair" | "above" {
+  const r = askingRatio(asking, value);
+  return r < 0.995 ? "below" : r > 1.005 ? "above" : "fair";
 }

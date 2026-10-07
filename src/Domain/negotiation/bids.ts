@@ -13,7 +13,7 @@ import { roundFeeDown, sellOnValueFraction } from "@/Domain/negotiation/negotiat
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
-import { askingBandExtra, askingFreqMult, askingOpening, askingRatio } from "@/Domain/negotiation/askingPrice";
+import { askingBandExtra, askingFreqMult, askingOpening, askingRatio, playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MarketBid, SellCandidate, SquadMarketProfile } from "@/types/transferMarketTypes";
@@ -140,7 +140,7 @@ export function generateBidsForHuman(args: {
   // Asking price of a listed player (#88): r = asking / value (1 without a price).
   const askingOf = (player: RosterPlayer) => args.sellList.find((c) => c.playerId === player.id)?.askingPrice;
   const ratioOf = (player: RosterPlayer) =>
-    askingRatio(askingOf(player), new Player(playerOverallRating(player), player.age).price);
+    askingRatio(askingOf(player), playerMarketValue(player));
   /** A transfer bid from a random club whose need band (± slack) covers him. */
   const tryBid = (player: RosterPlayer, slack: number) => {
     const rating = playerOverallRating(player);

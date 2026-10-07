@@ -6,7 +6,7 @@ import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import { mulberry32 } from "@/Domain/rng";
 import { buildAiTransferBid, generateBidsForHuman } from "@/Domain/negotiation/bids";
 import {
-  askingBandExtra, askingFreqMult, askingOpening, askingRatio, askingStep, parseAskingPrice,
+  askingBand, askingBandExtra, askingFreqMult, askingOpening, askingRatio, askingStep, parseAskingPrice, stepAskingPrice,
 } from "@/Domain/negotiation/askingPrice";
 
 function stats(v: number): RosterPlayer["stats"] {
@@ -89,6 +89,14 @@ describe("asking price helpers", () => {
     for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, "5", null, 3_000_000_000]) expect(parseAskingPrice(bad)).toBeNull();
     expect(askingStep(9_900_000)).toBe(100_000);
     expect(askingStep(10_000_000)).toBe(1_000_000);
+    expect(stepAskingPrice(9_900_000, 1)).toBe(10_000_000);
+    expect(stepAskingPrice(10_000_000, 1)).toBe(11_000_000);
+    expect(stepAskingPrice(10_000_000, -1)).toBe(9_900_000);
+    expect(stepAskingPrice(12_000_000, -1)).toBe(11_000_000);
+    expect(stepAskingPrice(100_000, -1)).toBe(100_000);
+    expect(askingBand(8_000_000, 10_000_000)).toBe("below");
+    expect(askingBand(10_000_000, 10_000_000)).toBe("fair");
+    expect(askingBand(12_000_000, 10_000_000)).toBe("above");
   });
 });
 
