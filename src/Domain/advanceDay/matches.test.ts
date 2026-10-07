@@ -7,6 +7,7 @@ import {
 } from "@/Domain/advanceDay/matches";
 import { addMatchLoad, decayLoad, postMatchFitness, recoverDay } from "@/Domain/fitness/fitness";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { daysBetween } from "@/Domain/dates";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
@@ -302,6 +303,9 @@ describe("buildMatchEventFromRecording — injuries", () => {
     expect(p0.injury!.returnDate > "2027-03-10").toBe(true);
     expect(injuriesApplied).toHaveLength(1);
     expect(injuriesApplied[0]!.returnDate).toBe(p0.injury!.returnDate);
+    // Career counters: one injury, its days out counted on the day it happens.
+    expect(p0.seasonLog!.injuries).toBe(1);
+    expect(p0.seasonLog!.daysInjured).toBe(daysBetween("2027-03-10", p0.injury!.returnDate));
   });
 
   test("no injuries recorded — no player gets an injury field, injuriesApplied is empty", () => {

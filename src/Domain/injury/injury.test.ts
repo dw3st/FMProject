@@ -12,9 +12,11 @@ import {
   rollSeverity,
   strengthInjuryFactor,
   trainingInjuryChance,
+  withInjuryCounted,
 } from "@/Domain/injury/injury";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import type { RosterPlayer } from "@/types/playerTypes";
+import { emptySeasonLog } from "@/types/playerTypes";
 
 function player(overrides: Partial<RosterPlayer> = {}): RosterPlayer {
   return {
@@ -292,5 +294,25 @@ describe("clearHealed", () => {
     const healed = clearHealed(p, "2027-06-01");
     expect(healed.injury).toBeUndefined();
     expect(healed.seasonLog).toBeUndefined();
+  });
+});
+
+import { withInjuryCounted } from "@/Domain/injury/injury";
+import { emptySeasonLog } from "@/types/playerTypes";
+
+describe("withInjuryCounted", () => {
+  test("counts the injury and its days out", () => {
+    const log = withInjuryCounted(emptySeasonLog(), "2027-03-10", undefined, "2027-03-20");
+    expect(log.injuries).toBe(1);
+    expect(log.daysInjured).toBe(10);
+    const again = withInjuryCounted(log, "2027-04-01", undefined, "2027-04-04");
+    expect(again).toMatchObject({ injuries: 2, daysInjured: 13 });
+  });
+  test("a new injury on top of a current one only adds the extension", () => {
+    const cur = { returnDate: "2027-03-20" };
+    expect(withInjuryCounted(emptySeasonLog(), "2027-03-12", cur, "2027-03-25").daysInjured).toBe(5);
+    expect(withInjuryCounted(emptySeasonLog(), "2027-03-12", cur, "2027-03-15").daysInjured).toBe(0);
+    // An injury that already ended does not shorten the count.
+    expect(withInjuryCounted(emptySeasonLog(), "2027-03-21", cur, "2027-03-25").daysInjured).toBe(4);
   });
 });

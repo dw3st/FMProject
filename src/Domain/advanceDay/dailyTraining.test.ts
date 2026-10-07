@@ -12,6 +12,7 @@ import {
 } from "@/types/developmentTypes";
 import { Player } from "@/Domain/Player";
 import { staffEffectsOf } from "@/Domain/staff/staff";
+import { daysBetween } from "@/Domain/dates";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
@@ -397,6 +398,8 @@ describe("buildTrainingEvent — injuries", () => {
     expect(p1.injury!.severity).toBe(newInjuries[0]!.severity);
     expect(p1.injury!.returnDate).toBe(newInjuries[0]!.returnDate);
     expect(p1.injury!.returnDate > "2027-03-10").toBe(true);
+    expect(p1.seasonLog!.injuries).toBe(1);
+    expect(p1.seasonLog!.daysInjured).toBe(daysBetween("2027-03-10", p1.injury!.returnDate));
   });
 
   test("light/normal training never rolls a new injury regardless of rng", () => {

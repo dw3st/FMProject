@@ -59,6 +59,13 @@ export interface PlayerSeasonLog {
    */
   yellowCards?: number;
   redCards?: number;
+  /**
+   * Injuries this season (match + training) and the days out they cost, counted on the day each
+   * injury happens (`returnDate − date`; only the extension when it lengthens a current injury).
+   * Absent = 0. Feeds the career rows (`.claude/rules/game/history.md`).
+   */
+  injuries?: number;
+  daysInjured?: number;
 }
 
 export function emptySeasonLog(): PlayerSeasonLog {
@@ -422,6 +429,11 @@ export interface PlayerHistoryRow {
   cupGoals: number;
   contApps: number;
   contGoals: number;
+  /** Cards (all competitions) and injuries / days out at this club this season. */
+  yellowCards: number;
+  redCards: number;
+  injuries: number;
+  daysInjured: number;
   /** "league:<slug>" | "cup:<slug>" | "continental:<slug>". */
   titles: string[];
   /** Stint at a club the player left mid-season (transfer). */

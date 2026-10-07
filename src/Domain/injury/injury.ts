@@ -1,6 +1,6 @@
 import { INJURY } from "@/Domain/injury/injuryConfig";
-import { addDays } from "@/Domain/dates";
-import type { RosterPlayer } from "@/types/playerTypes";
+import { addDays, daysBetween } from "@/Domain/dates";
+import type { PlayerSeasonLog, RosterPlayer } from "@/types/playerTypes";
 
 /**
  * Pure injury model (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). No I/O — every
@@ -130,6 +130,22 @@ export function mergeInjury(
 ): { severity: InjurySeverity; returnDate: string } {
   if (!existing) return incoming;
   return existing.returnDate > incoming.returnDate ? existing : incoming;
+}
+
+/**
+ * Counts a new injury in the season log (career counters, `.claude/rules/game/history.md`): one
+ * more injury and the days out from `date` to `returnDate`. When the player was already out past
+ * `date`, only the extension beyond his current return date counts. Pure: returns a new log.
+ */
+export function withInjuryCounted(
+  log: PlayerSeasonLog, date: string, existing: { returnDate: string } | undefined, returnDate: string,
+): PlayerSeasonLog {
+  const from = existing && existing.returnDate > date ? existing.returnDate : date;
+  return {
+    ...log,
+    injuries: (log.injuries ?? 0) + 1,
+    daysInjured: (log.daysInjured ?? 0) + Math.max(0, daysBetween(from, returnDate)),
+  };
 }
 
 export function clearHealed(player: RosterPlayer, date: string): RosterPlayer {

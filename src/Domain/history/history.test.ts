@@ -83,6 +83,20 @@ describe("history", () => {
     expect(out!.history![0]!.titles).toEqual(["league:x", "cup:y"]);
     expect(out!.history![1]!.titles).toEqual([]);
   });
+  test("cards and injuries go into the row, and partials subtract them", () => {
+    const sl = { ...log(5), yellowCards: 2, redCards: 1, injuries: 1, daysInjured: 12 };
+    let p = closePartialSeason(player({ seasonLog: sl }), club, "2027");
+    expect(p.history![0]).toMatchObject({ yellowCards: 2, redCards: 1, injuries: 1, daysInjured: 12 });
+    // More at the new club: 3 more yellows, a second injury of 20 days.
+    p = { ...p, seasonLog: { ...sl, appearances: 9, yellowCards: 5, injuries: 2, daysInjured: 32 } };
+    const current = historyRowFromLog(p.seasonLog, { ...club, squadId: "s2" }, "2027", [], p.history)!;
+    expect(current).toMatchObject({ apps: 4, yellowCards: 3, redCards: 0, injuries: 1, daysInjured: 20 });
+    const [out] = closeSeasonForPlayers([p], { p1: p.seasonLog! }, { ...club, squadId: "s2" }, "2027", {});
+    expect(out!.history![1]).toMatchObject({ yellowCards: 3, redCards: 0, injuries: 1, daysInjured: 20 });
+  });
+  test("a log without cards or injuries gives zeros", () => {
+    expect(historyRowFromLog(log(3), club, "2027")).toMatchObject({ yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0 });
+  });
   test("pending titles merge without duplicates", () => {
     const p = addPendingTitle(addPendingTitle({}, "s1", "cup:a"), "s1", "cup:a");
     expect(p).toEqual({ s1: ["cup:a"] });

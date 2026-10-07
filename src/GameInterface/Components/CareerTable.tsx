@@ -16,8 +16,13 @@ export function CareerTable({
   const all = current ? [...rows, current] : rows;
   if (all.length === 0) return <p className="text-sm text-muted-foreground m-0">{t("career.empty")}</p>;
   const total = all.reduce(
-    (a, r) => ({ apps: a.apps + r.apps, goals: a.goals + r.goals, assists: a.assists + r.assists, titles: a.titles + r.titles.length }),
-    { apps: 0, goals: 0, assists: 0, titles: 0 },
+    (a, r) => ({
+      apps: a.apps + r.apps, goals: a.goals + r.goals, assists: a.assists + r.assists,
+      yellowCards: a.yellowCards + r.yellowCards, redCards: a.redCards + r.redCards,
+      injuries: a.injuries + r.injuries, daysInjured: a.daysInjured + r.daysInjured,
+      titles: a.titles + r.titles.length,
+    }),
+    { apps: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: 0 },
   );
   const titleName = (title: string) => competitionName(title.slice(title.indexOf(":") + 1), leagues, i18n.language);
   const line = (r: PlayerHistoryRow, key: string, isCurrent: boolean) => (
@@ -28,6 +33,10 @@ export function CareerTable({
       <NumberCell strong>{r.goals}</NumberCell>
       <NumberCell>{r.assists}</NumberCell>
       <NumberCell>{r.avgRating !== null ? r.avgRating.toFixed(2) : "-"}</NumberCell>
+      <NumberCell>{r.yellowCards}</NumberCell>
+      <NumberCell>{r.redCards}</NumberCell>
+      <NumberCell>{r.injuries}</NumberCell>
+      <NumberCell>{r.daysInjured}</NumberCell>
       <StatsCell className="text-sm text-muted-foreground">{r.titles.map(titleName).join(", ")}</StatsCell>
     </StatsRow>
   );
@@ -41,6 +50,10 @@ export function CareerTable({
           <StatsHead align="center">{t("career.goals")}</StatsHead>
           <StatsHead align="center">{t("career.assists")}</StatsHead>
           <StatsHead align="center">{t("career.rating")}</StatsHead>
+          <StatsHead align="center" title={t("career.yellowCardsFull")}>{t("career.yellowCards")}</StatsHead>
+          <StatsHead align="center" title={t("career.redCardsFull")}>{t("career.redCards")}</StatsHead>
+          <StatsHead align="center" title={t("career.injuriesFull")}>{t("career.injuries")}</StatsHead>
+          <StatsHead align="center" title={t("career.daysInjuredFull")}>{t("career.daysInjured")}</StatsHead>
           <StatsHead>{t("career.titles")}</StatsHead>
         </>
       }
@@ -54,6 +67,10 @@ export function CareerTable({
         <NumberCell strong>{total.goals}</NumberCell>
         <NumberCell>{total.assists}</NumberCell>
         <StatsCell />
+        <NumberCell>{total.yellowCards}</NumberCell>
+        <NumberCell>{total.redCards}</NumberCell>
+        <NumberCell>{total.injuries}</NumberCell>
+        <NumberCell>{total.daysInjured}</NumberCell>
         <StatsCell className="tabular-nums text-muted-foreground">{total.titles > 0 ? total.titles : ""}</StatsCell>
       </StatsRow>
     </StatsTable>
