@@ -25,6 +25,35 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.5",
+    date: "2026-10-07",
+    items: [
+      { pt: "Jogando fora de casa, o time da casa aparece à esquerda, como na TV", en: "When playing away, the home side is shown on the left, like on TV" },
+    ],
+    fixes: [
+      { pt: "Botões técnicos removidos da tela da partida", en: "Technical buttons removed from the match screen" },
+    ],
+  },
+  {
+    version: "4.4.4",
+    date: "2026-10-07",
+    items: [
+      { pt: "Carreira do jogador com cartões, lesões e dias fora por temporada", en: "Player career with cards, injuries and days out per season" },
+    ],
+  },
+  {
+    version: "4.4.3",
+    date: "2026-10-07",
+    items: [
+      { pt: "Seletor de idioma (EN / PT) na tela inicial e na barra inferior", en: "Language switch (EN / PT) on the start screen and the bottom bar" },
+    ],
+    fixes: [
+      { pt: "Abas de todas as telas no mesmo estilo", en: "Tabs look the same on every screen" },
+      { pt: "Lista de jogadores ao lado do campo da partida mais legível", en: "Easier-to-read player list beside the match pitch" },
+      { pt: "Colunas do elenco e do olheiro alinhadas com os títulos", en: "Squad and scout columns line up with their headers" },
+    ],
+  },
+  {
     version: "4.4.2",
     date: "2026-10-07",
     items: [

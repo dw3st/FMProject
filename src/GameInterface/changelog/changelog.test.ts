@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { changelog, CURRENT_VERSION, upcoming, type ChangelogEntry } from "@/GameInterface/changelog/changelog";
+import PKG from "@/../package.json";
 
 function versionTuple(version: string): number[] {
   const parts = version.split(".").map((p) => Number(p));
@@ -22,6 +23,10 @@ function compareVersions(a: string, b: string): number {
 describe("changelog data", () => {
   test("is not empty", () => {
     expect(changelog.length).toBeGreaterThan(0);
+  });
+
+  test("package.json version equals CURRENT_VERSION", () => {
+    expect(PKG.version).toBe(CURRENT_VERSION);
   });
 
   test("CURRENT_VERSION equals the first entry's version", () => {
