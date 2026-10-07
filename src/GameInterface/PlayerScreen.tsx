@@ -1,4 +1,3 @@
-import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
@@ -25,6 +24,7 @@ import { addDays } from "@/Domain/dates";
 import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
 import type { LeagueData } from "@/types/playerTypes";
 import { PlayerKnowledgePanel } from "@/GameInterface/Scouting/PlayerKnowledgePanel";
+import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 
 export function PlayerScreen({
   playerId,

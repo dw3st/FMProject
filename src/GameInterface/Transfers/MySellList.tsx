@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { SellCandidate } from "@/types/transferMarketTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -9,6 +10,16 @@ import { Icon } from "@/GameInterface/Icons";
 import { AskingPriceModal } from "@/GameInterface/Negotiation/AskingPriceModal";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { formatFee } from "@/Domain/money";
+
+/** "Asking €X · N% of value" or "At value · €X" (his value today, never frozen). */
+function sellListPriceText(t: TFunction, c: SellCandidate, p: RosterPlayer | undefined): string {
+  if (!p) return `${t("transfers.mySellList.sellingPriority")} ${Math.round(c.priority * 100)}%`;
+  const value = playerMarketValue(p);
+  if (c.askingPrice === undefined) return t("transfers.mySellList.atValue", { price: formatFee(value) });
+  return value > 0
+    ? t("transfers.mySellList.asking", { price: formatFee(c.askingPrice), pct: Math.round((c.askingPrice / value) * 100) })
+    : t("transfers.mySellList.askingNoValue", { price: formatFee(c.askingPrice) });
+}
 
 export function MySellList() {
   const { t } = useTranslation();
@@ -156,12 +167,7 @@ export function MySellList() {
                   {name}
                 </a>
                 <p className="text-sm text-muted-foreground m-0 mt-0.5 tabular-nums">
-                  {p
-                    ? t("transfers.mySellList.asking", {
-                      price: formatFee(c.askingPrice ?? playerMarketValue(p)),
-                      pct: Math.round(((c.askingPrice ?? playerMarketValue(p)) / playerMarketValue(p)) * 100),
-                    })
-                    : `${t("transfers.mySellList.sellingPriority")} ${Math.round(c.priority * 100)}%`}
+                  {sellListPriceText(t, c, p)}
                 </p>
               </div>
               {p && (

@@ -57,7 +57,9 @@ export function ListToggles({ saveId, playerId, playerName, value }: { saveId: s
       {sale ? (
         <>
           <Button variant="secondary" disabled={busy} onClick={() => setPricing(true)} className="tabular-nums">
-            {t("negotiation.asking.priceButton", { price: formatFee(sale.askingPrice ?? value) })}
+            {sale.askingPrice !== undefined
+              ? t("negotiation.asking.priceButton", { price: formatFee(sale.askingPrice) })
+              : t("negotiation.asking.atValueButton", { price: formatFee(value) })}
           </Button>
           <Button variant="secondary" disabled={busy} onClick={() => void toggle("sell-list")}>
             {t("negotiation.lists.unlistSale")}

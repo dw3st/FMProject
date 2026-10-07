@@ -950,6 +950,8 @@
     "mySellList": {
       "listedForSale": "Colocado à venda",
       "asking": "Pedido {{price}} · {{pct}}% do valor",
+      "atValue": "No valor · {{price}}",
+      "askingNoValue": "Pedido {{price}}",
       "sellingPriority": "Prioridade de venda",
       "loadingError": "Algo deu errado ao carregar sua lista.",
       "updateError": "Não foi possível atualizar a lista. Tente novamente.",
@@ -2192,6 +2194,10 @@
       "save": "Salvar preço",
       "edit": "Preço",
       "priceButton": "Pedido {{price}}",
+      "atValueButton": "No valor · {{price}}",
+      "invalid": "Preço inválido.",
+      "belowFloor": "Abaixo do mínimo ({{min}}).",
+      "min": "mínimo {{min}}",
       "hint": {
         "below": "Abaixo do valor: propostas mais rápidas, perto do seu preço.",
         "fair": "No valor: propostas no ritmo normal.",
