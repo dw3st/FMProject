@@ -37,6 +37,64 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    version: "4.4.9",
+    date: "2026-10-07",
+    items: [
+      { pt: "Últimos jogos em cores: vitória verde, empate amarelo e derrota vermelha", en: "Recent form in colours: green win, yellow draw, red loss" },
+      { pt: "Escudos escuros, como o da Juventus, visíveis no fundo escuro", en: "Dark crests, like Juventus', readable on the dark background" },
+    ],
+  },
+  {
+    version: "4.4.8",
+    date: "2026-10-07",
+    items: [
+      { pt: "Colunas do elenco e do olheiro alinhadas com os títulos", en: "Squad and scout columns line up with their headers" },
+    ],
+  },
+  {
+    version: "4.4.7",
+    date: "2026-10-07",
+    items: [
+      { pt: "Indicações do olheiro-chefe com relatório e link para a ficha do jogador", en: "Chief scout picks come with a report and a link to the player" },
+    ],
+  },
+  {
+    version: "4.4.6",
+    date: "2026-10-07",
+    items: [
+      { pt: "Escanteios, faltas e laterais: os jogadores andam até a posição em vez de pular", en: "Corners, free kicks and throw-ins: players walk into position instead of jumping" },
+    ],
+  },
+  {
+    version: "4.4.5",
+    date: "2026-10-07",
+    items: [
+      { pt: "Jogando fora de casa, o time da casa aparece à esquerda, como na TV", en: "When playing away, the home side is shown on the left, like on TV" },
+    ],
+    fixes: [
+      { pt: "Botões técnicos removidos da tela da partida", en: "Technical buttons removed from the match screen" },
+    ],
+  },
+  {
+    version: "4.4.4",
+    date: "2026-10-07",
+    items: [
+      { pt: "Carreira do jogador com cartões, lesões e dias fora por temporada", en: "Player career with cards, injuries and days out per season" },
+    ],
+  },
+  {
+    version: "4.4.3",
+    date: "2026-10-07",
+    items: [
+      { pt: "Seletor de idioma (EN / PT) na tela inicial e na barra inferior", en: "Language switch (EN / PT) on the start screen and the bottom bar" },
+    ],
+    fixes: [
+      { pt: "Abas de todas as telas no mesmo estilo", en: "Tabs look the same on every screen" },
+      { pt: "Lista de jogadores ao lado do campo da partida mais legível", en: "Easier-to-read player list beside the match pitch" },
+      { pt: "Colunas do elenco e do olheiro alinhadas com os títulos", en: "Squad and scout columns line up with their headers" },
+    ],
+  },
+  {
     version: "4.4.2",
     date: "2026-10-07",
     items: [
@@ -933,6 +991,14 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Responsabilidades: o diretor cuida dos contratos e a caixa de entrada só traz o que importa", en: "Responsibilities: the director handles contracts and the inbox only brings what matters" },
+  { pt: "Instalações com desgaste: assentos, gramado e equipamentos pioram com o tempo e pedem reforma; jardineiro cuida do gramado, e gramado ruim aumenta as lesões", en: "Facilities wear out: seats, pitch and equipment get worse over time and need refurbishing; a groundskeeper looks after the pitch, and a bad pitch means more injuries" },
+  { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste; jogadores avaliam as instalações antes de aceitar o seu clube", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear; players weigh your facilities before joining" },
+  { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
+  { pt: "Rostos para a equipe técnica e avatar do seu técnico, criado no novo jogo", en: "Faces for your staff and an avatar for your manager, created in the new game" },
+  { pt: "Comissão técnica completa: preparadores físico, de goleiros e geral, com estrelas e atributos", en: "Full coaching staff: fitness, goalkeeping and general coaches, with stars and attributes" },
+  { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
+  { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "Seleções nacionais: convocações, datas FIFA e a Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
   { pt: "Imprensa e notícias do mundo: coletivas que mexem com a moral e a diretoria", en: "Press and world news: press conferences that move morale and the board" },
 ];

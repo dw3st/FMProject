@@ -30,6 +30,7 @@ import { formatEuros, formatWageShort } from "@/Domain/money";
 import { projectProgress } from "@/Domain/facilities/facilities";
 import { addDays } from "@/Domain/dates";
 import type { ClubFacilities, FacilityKind, StandId } from "@/types/facilityTypes";
+import { RESULT_PILL } from "@/GameInterface/formColors";
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
@@ -80,11 +81,7 @@ export function formatDay(date: string, lang: string, style: "short" | "year" | 
   return new Date(`${date}T12:00:00`).toLocaleDateString(lang, DAY_FORMAT[style]);
 }
 
-const FORM_CLASS: Record<FormResult, string> = {
-  W: "bg-chart-2 text-white",
-  D: "bg-zinc-600 text-white",
-  L: "bg-destructive text-white",
-};
+const FORM_CLASS: Record<FormResult, string> = RESULT_PILL;
 
 function FormPills({ results }: { results: FormResult[] }) {
   const { t } = useTranslation();

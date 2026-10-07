@@ -3,7 +3,8 @@ import { Application, CanvasSource, Container, FillGradient, Graphics, Sprite, T
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
-import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, syncRenderPair, type RenderPair } from "@/GraficsEngine/renderInterp";
+import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
+import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
 import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/markerInfo";
 import {
   addEffect, advanceEffectClock, effectAlpha, liveEffects, liveTrail, pushTrail, shouldTrail,
@@ -25,6 +26,7 @@ import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
+import { mirrorX } from "@/GraficsEngine/pitchMirror";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
@@ -310,6 +312,11 @@ interface Props {
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
   /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
   effectLabels?: { save: string; wide: string; offside: string };
+  /**
+   * Draw the pitch mirrored on the x axis (#98: the user plays away, home side on the left).
+   * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
+   */
+  mirror?: boolean;
 }
 
 const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
@@ -335,6 +342,7 @@ export function PixiPitch({
   captureRef,
   faceUrls,
   effectLabels,
+  mirror = false,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -350,6 +358,7 @@ export function PixiPitch({
   const crowdClickPosRef         = useRef(crowdClickPos);
   const faceUrlsRef              = useRef(faceUrls);
   const effectLabelsRef          = useRef(effectLabels);
+  const mirrorRef                = useRef(mirror);
   const labelsOf = () => effectLabelsRef.current ?? DEFAULT_EFFECT_LABELS;
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
@@ -367,6 +376,7 @@ export function PixiPitch({
   useEffect(() => { crowdEvalConfigRef.current       = crowdEvalConfig;       }, [crowdEvalConfig]);
   useEffect(() => { crowdClickPosRef.current         = crowdClickPos;         }, [crowdClickPos]);
   useEffect(() => { effectLabelsRef.current = effectLabels; }, [effectLabels]);
+  useEffect(() => { mirrorRef.current = mirror; }, [mirror]);
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
@@ -427,9 +437,9 @@ export function PixiPitch({
 
       const m = buildMetrics(canvasWidth, canvasHeight);
 
-      // Converts game yards → canvas pixels
+      // Converts game yards → canvas pixels (mirrored on x when `mirror` is set — drawing only)
       const toPixel = (x: number, y: number) => ({
-        px: m.marginX + x * m.scale,
+        px: m.marginX + mirrorX(x, mirrorRef.current) * m.scale,
         py: m.marginY + y * m.scale,
       });
 
@@ -567,6 +577,16 @@ export function PixiPitch({
       // swap from outside (matchStateSync, /test commands, tactics change) that moved something
       // is drawn as is.
       let renderPair: RenderPair = { prev: stateRef.current, cur: stateRef.current };
+      // Set-piece transition (setPieceTransition.ts): a restart that repositions the teams is drawn as a short
+      // eased walk from the last drawn positions to the layout, on a real-time clock frozen while paused.
+      // Only when frames are being drawn: with the tab hidden there is no animation.
+      let transitionNow = 0;
+      let transition: SetPieceTransition | null = null;
+      let setPieceStartPending = false;
+      let lastDrawnPos: Map<number, Pos> | null = null;
+      let lastDrawnBall: DrawnBall | null = null;
+      const framesVisible = () =>
+        !(typeof document !== 'undefined' && document.hidden) && app.ticker.started;
 
       const pumpSimulation = () => {
         const elapsedRealSeconds = pump(pausedRef.current);
@@ -576,6 +596,12 @@ export function PixiPitch({
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
         renderPair = nextRenderPair(renderPair, { prevState, result, steps: result.steps });
+        if (!framesVisible()) {
+          transition = null;
+          setPieceStartPending = false;
+        } else if (isSetPieceStart(prevState, result.state)) {
+          setPieceStartPending = true;
+        }
         // advanceSim returns the same reference when zero whole steps ran (not enough
         // carried+elapsed time yet, or tickState's own noop paths — e.g. matchEnd, or
         // a frozen presentation/set-piece countdown). Nothing changed: skip the emit.
@@ -873,7 +899,7 @@ export function PixiPitch({
         const logicalY = cssY * (canvasHeight / rect.height);
 
         // Logical canvas → game (yards). m is built from logical dims, so this works.
-        const gameX = (logicalX - m.marginX) / m.scale;
+        const gameX = mirrorX((logicalX - m.marginX) / m.scale, mirrorRef.current);
         const gameY = (logicalY - m.marginY) / m.scale;
 
         if (playerCb) {
@@ -908,10 +934,28 @@ export function PixiPitch({
         // Drawn positions: between the last two sim steps. Paused, carry does not move,
         // so alpha (and the drawing) stays frozen.
         const drawState = stateRef.current;
+        // A state swapped in from outside the pump that moved something (/test command) ends a transition.
+        if (drawState !== renderPair.cur && !samePositions(drawState, renderPair.cur)) transition = null;
         renderPair = syncRenderPair(renderPair, drawState);
         const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
-        const drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
-        const drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        let drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        let drawnB = drawnBall(renderPair.prev, drawState, alpha, TELEPORT_YDS);
+        transitionNow = advanceEffectClock(transitionNow, app.ticker.deltaMS / 1000, pausedRef.current);
+        if (setPieceStartPending) {
+          setPieceStartPending = false;
+          if (lastDrawnPos && lastDrawnBall && drawState.setPiece) {
+            const seconds = transitionSeconds(drawState.setPiece.countdown, gameSpeedRef.current);
+            transition = startTransition(lastDrawnPos, lastDrawnBall, transitionNow, seconds);
+          }
+        }
+        if (!transitionActive(transition, transitionNow, drawState)) transition = null;
+        if (transition) {
+          const k = transitionProgress(transition, transitionNow);
+          drawnPos = blendPlayers(transition.fromPlayers, drawnPos, k);
+          drawnB = blendBall(transition.fromBall, drawnB, k);
+        }
+        lastDrawnPos = drawnPos;
+        lastDrawnBall = drawnB;
 
         // Reconcile player sprites after substitutions — new player ids get fresh
         // sprites; old ids no longer on the pitch have their sprites destroyed.
@@ -1002,7 +1046,7 @@ export function PixiPitch({
               const cb = 80;
               const color = (cr << 16) | (cg << 8) | cb;
               const alpha = 0.18 + s * 0.45;
-              const px0 = m.marginX + (cell.x - CELL_W / 2) * m.scale;
+              const px0 = Math.min(toPixel(cell.x - CELL_W / 2, 0).px, toPixel(cell.x + CELL_W / 2, 0).px);
               const py0 = m.marginY + (cell.y - CELL_H / 2) * m.scale;
               throughBallGfx.rect(px0, py0, cellW, cellH).fill({ color, alpha });
             }
@@ -1472,7 +1516,7 @@ export function PixiPitch({
                   const cg = Math.round(255 + (baseColor.g - 255) * t);
                   const cb2 = Math.round(255 + (baseColor.b - 255) * t);
                   const color = (cr << 16) | (cg << 8) | cb2;
-                  const px0 = m.marginX + c * CELL_W * m.scale;
+                  const px0 = Math.min(toPixel(c * CELL_W, 0).px, toPixel((c + 1) * CELL_W, 0).px);
                   const py0 = m.marginY + r * CELL_H * m.scale;
                   // Per-cell alpha scales with intensity so weak cells barely show.
                   const alpha = 0.15 + t * 0.45;

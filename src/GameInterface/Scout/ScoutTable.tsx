@@ -95,7 +95,7 @@ export function ScoutTable({
         )}
       </div>
 
-      <div style={{ gridTemplateColumns: GRID_COLUMNS }} className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">
+      <div style={{ gridTemplateColumns: GRID_COLUMNS }} className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display overflow-y-hidden [scrollbar-gutter:stable]">
         {columns.map((col) => (
           <button
             key={col.key}
@@ -114,7 +114,8 @@ export function ScoutTable({
         <div className="px-3 py-3 text-center">{t("scout.table.action")}</div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto transition-opacity ${showUpdating ? "opacity-50 pointer-events-none" : ""}`}>
+      {/* Header and body reserve the same scrollbar gutter, so the columns line up when the body scrolls. */}
+      <div className={`flex-1 overflow-y-auto [scrollbar-gutter:stable] transition-opacity ${showUpdating ? "opacity-50 pointer-events-none" : ""}`}>
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-3 text-muted-foreground text-sm font-medium">
             {error ? (

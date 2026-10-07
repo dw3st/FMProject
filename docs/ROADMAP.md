@@ -100,8 +100,57 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 26 ✅ | Personalidade dos jogadores (4.2) | — | Quatro traços 1..20 (ambição, lealdade, profissionalismo, temperamento) derivados do id (sem migração; renascido herda a do original), mostrados em faixas na ficha e borrados pelo olheiro de fora; profissionalismo na evolução (DP ×0,85..×1,15, declínio ×1,1..×0,9), temperamento nas faltas e cartões (motor e quickSim), moral do clube do jogador (volatilidade, minutos, pedido de transferência, `wants_move`, lealdade ao ser listado/promessa quebrada), pedido de salário (ambição, lealdade na renovação, compatriota, clube menor e recusa `smallerClub`, também para a IA), empurrão no score do vendedor IA; linhas explicando o pedido na renovação/contratação, dica na conversa; `/test` (seletor por time, cenário `hothead`) e `/lab` (`Variant.temperament`). Spec `docs/superpowers/specs/2026-10-05-personality-design.md`, regra `.claude/rules/game/personality.md` |
 | 27 ✅ | Instruções individuais (4.1) | — | 18 variantes de função (lateral apoia/fica/invertido, ala ofensivo/defensivo, zagueiro que sai/na sobra/com bola, volante fixo/que chega, meia de ligação/que chega na área, meia armador/segundo atacante, meia por dentro, ponta por dentro, centroavante de área/pivô) e pressão individual por vaga na tela de táticas, sobre os pesos de `roles.json` e a âncora da vaga; marcação individual (até 2) por partida na prévia e ao vivo; a IA joga no padrão; matriz de instruções (`scripts/instruction-matrix.ts`, `/matrix` modo Instructions): toda variante a ±5 p.p. do padrão em 1200 jogos; falso 9, ponta aberto e meia aberto cortados na calibração; `/test` (overlay Instructions, cenários) e `/lab` (variantes, marcação, estatísticas por vaga). Spec `docs/superpowers/specs/2026-10-05-player-instructions-design.md`, regra `.claude/rules/game/player-instructions.md` |
 | 28 ✅ | Olheiros de verdade (4.3) | — | Conhecimento por jogador 0..100 (implícito: própria liga 35, país 20, fama +25, até 60; decai depois de 90 dias) e incerteza ±2,0 → 0 (atributos ocultos abaixo de 20) só nas telas, multiplicada pelo olheiro-chefe; olheiros de campo (até 4, salário de staff); missões de país, liga, continente, jogador e jovens (4/8/12 semanas, foco por linha, idade e "melhora o elenco"), relatórios com nota A–E, joias, recomendação mensal do chefe, lista de observação (até 50, alertas na segunda), jovens sem clube contratados para a base com compensação de formação; viagens no extrato (`scouting`); conhecimento e lista seguem o técnico na troca de clube; a IA e o motor leem valores exatos. Aba por aba na Central de Olheiros, bloco "Conhecimento" na ficha, aba Olheiros na Equipe técnica. Spec `docs/superpowers/specs/2026-10-05-scouting-design.md`, regra `.claude/rules/game/scouting.md` |
+| 29 | Recalibração pelo valor de mercado (4.5) — em andamento | #83, #94, #96 | Notas reordenadas por liga pelo valor de mercado do Transfermarkt (ajustado por idade e posição), posição natural do Transfermarkt, nacionalidade/nascimento/altura; atributos com uma casa decimal mostrados de 0 a 100 com cor; evolução em passos de 0,1 no ritmo de antes. Spec `docs/superpowers/specs/2026-10-07-market-value-recalibration-design.md` |
+| 30 | Responsabilidades e inbox mais limpa | #105 | O diretor cuida dos contratos por padrão (renovações, conversas de contrato, avisos de fim de contrato); o jogador pode assumir nas configurações; filtros para não receber notícias que não interessam (técnicos demitidos de outros clubes etc.). Pequena e de qualidade de vida, antes das etapas grandes |
+| 31 | Comissão técnica completa | #102 | Preparadores físico, de goleiros e geral (estrelas 1–5, atributos), limites por função, busca de funcionários na aba Transferências; junto, rostos da equipe técnica e avatar do técnico do jogador criado no novo jogo (mesma área) |
+| 32 | Olheiros por país | #104 | Conhecimento de cada olheiro por país (nacionalidade, cresce com as missões) e mapa mundial ao clicar no olheiro; usa a Central de Olheiros e o mapa-múndi do novo jogo |
+| 33 | Instalações vivas | — | Desgaste e vida útil das obras (reforma e reconstrução), instalações em detalhe (academia, piscina, fisioterapia, refeitório, campos, "N de 10" e % de desgaste) e instalações pesando na decisão do jogador de aceitar o clube |
+| 34 | Torneios de base e reservas | — | Sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas |
+| 35 | Inscrição por competição | #103 | Inscritos por torneio, limite de estrangeiros e mínimo de formados no clube; depende das competições e da base |
 
-**Mais tarde (no roadmap, sem etapa marcada):** seleções nacionais e torneios de seleções (convocação, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking); imprensa e notícias do mundo (coletivas com efeito na moral e na diretoria, página de notícias).
+### Próximas etapas em detalhe
+
+Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → plano → execução com testes, `/test` e `/lab` quando houver efeito de partida → smoke → changelog → publicação.
+
+**29 · Recalibração pelo valor de mercado (4.5, em andamento).** Falta: fórmula do valor de mercado do jogo calibrada no real, medição de gols/chutes (±5%) e quickSim (±10%), mercado da IA, smoke, documentação. Publicação junto com os atributos 0–100.
+
+**30 · Responsabilidades e inbox mais limpa (#105).**
+- Configurações → Responsabilidades: contratos (renovar, negociar, avisos de fim de contrato) com o diretor (padrão) ou com o técnico; com o diretor, ele renova pela regra da IA dentro da folha e só avisa o resultado.
+- Preferências da inbox: ligar/desligar categorias de notícia (técnicos demitidos e contratados, mercado da liga, recordes de outros clubes etc.); o padrão deixa só o que pede ação ou afeta o clube.
+- Conversas de contrato pedidas pelos jogadores vão ao diretor quando ele é o responsável.
+
+**31 · Comissão técnica completa (#102) + rostos.**
+- Funções: auxiliar, preparador físico, preparador de goleiros, preparador geral (com sub-áreas: defesa, ataque, tática, técnica, bola parada), olheiros, médico/fisioterapeuta, analista de desempenho, jardineiro (cuida do gramado do estádio e do CT; o efeito entra na etapa 33); limite por função.
+- Cada profissional com atributos (determinação, disciplina, adaptação, leitura de jogadores, conhecimento da área) e nota em estrelas 1–5 por área de treino.
+- Efeitos: a evolução de cada grupo de atributos depende do preparador daquela área (goleiros só com o de goleiros); a IA segue com a nota implícita do tier.
+- Mercado: busca de funcionários na aba Transferências (jogadores × comissão).
+- Rostos (facesjs) para a comissão e os técnicos; avatar do técnico do jogador no novo jogo (sortear + pele, cabelo e cor, barba, óculos).
+- Medição: ritmo de evolução por idade igual ao de hoje com a comissão média.
+
+**32 · Olheiros por país (#104).**
+- Cada olheiro tem conhecimento por país (alto no país de origem e vizinhos, cresce a cada missão naquele país e decai devagar).
+- O conhecimento do país multiplica o ganho das missões e a qualidade dos relatórios.
+- Ao clicar no olheiro: mapa mundial (reaproveita o do novo jogo) com conhecimento completo, moderado e nenhum.
+- Missões continuam de 4/8/12 semanas (rápida, moderada, profunda), com o olheiro ocupado e a viagem cobrada pela distância.
+
+**33 · Instalações vivas.**
+- Desgaste semanal de cada instalação (assentos, gramado, equipamentos), vida útil, reforma parcial e reconstrução quando passa do limite; manutenção no extrato.
+- Instalações em detalhe: tela visual com as partes do CT e da base (academia, piscina, fisioterapia, refeitório, campos), cada uma "N de 10" com % de desgaste; o jogador escolhe o que melhorar e a diretoria aprova.
+- Gramado: a condição do gramado do estádio e do CT cai com os jogos, os treinos e o tempo e é mantida pelo jardineiro (nota e quantidade); gramado ruim (grama alta, irregular) aumenta o risco de lesão no treino e nos jogos em casa.
+- Instalações pesam na decisão do jogador de aceitar o clube (como a ambição com clube menor).
+
+**34 · Torneios de base e reservas.**
+- Competições sub-21 e sub-19 por país, com calendário que não choca com o time principal.
+- Escalação automática pelos jovens e reservas sem minutos; partidas no quickSim; DP e moral contam.
+- Tabela e resultados na tela de Ligas; jogos do clube do jogador no calendário.
+
+**35 · Inscrição por competição (#103).**
+- Lista de inscritos por competição, com limite de estrangeiros e mínimo de formados no clube/país conforme a liga ou o torneio continental; prazo de inscrição pelas janelas.
+- A IA inscreve sozinha; jogador não inscrito não pode ser escalado naquela competição.
+
+**Depois (sem ordem ainda):** modo multiplayer (#106: vários técnicos humanos no mesmo mundo, avanço de dia sincronizado, partidas e mercado entre humanos, o ranking de técnicos como base; precisa de desenho próprio); estádio com torcida em volta do campo (#99); conquistas com recompensas (#95); escolha de ligas no novo jogo (#101, só se a medição mostrar ganho); seleções nacionais e Copa do Mundo; imprensa e notícias.
+
+**Mais tarde (no roadmap, sem etapa marcada):** seleções nacionais e torneios de seleções (convocação, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking); imprensa e notícias do mundo (coletivas com efeito na moral e na diretoria, página de notícias); **desgaste das instalações** (cada obra tem vida útil e se degrada toda semana — assentos do estádio, gramado, equipamentos —, pede reforma e, num ponto, tem de ser refeita; a manutenção entra no extrato); **instalações em detalhe** (tela visual clicável com as partes do CT e da base — academia, piscina, fisioterapia, refeitório, campos —, cada uma com nível "N de 10" e % de degradação, escolhendo o que melhorar; instalações ruins fazem jogadores recusarem o clube, como hoje a ambição recusa clube menor, e boas instalações ajudam a convencer); **torneios de base e reservas** (sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas que não jogam no time principal); **rostos da equipe e do técnico** (caricaturas no mesmo estilo dos jogadores para auxiliar, preparador, olheiros e técnicos; avatar do técnico do jogador criado no novo jogo: sortear outro + ajustes de tom de pele, cabelo e cor, barba e óculos); **comissão técnica completa** (#102: preparadores físico, de goleiros e geral com estrelas 1–5 e atributos, limites por função, busca de funcionários na aba Transferências); **inscrição por competição** (#103: estrangeiros e formados no clube); **olheiros por país** (#104: conhecimento de cada olheiro por país e mapa mundial); **escolha de ligas no novo jogo** (#101, só se a medição mostrar ganho de desempenho real; mundo inteiro continua como opção).
 
 **Com data:** #11 (ligas de ano civil com a composição de 2026) entra assim que a ESPN virar essas
 ligas para 2027 (previsão: janeiro/fevereiro de 2027): `fetchEspn` + regenerar a cadeia.

@@ -69,12 +69,15 @@ import { ReportModal } from "@/GameInterface/Components/ReportModal";
 // import that prevents tree-shaking). Loading it via a lazy() guarded by
 // process.env.NODE_ENV — which Bun's `define` constant-folds at build time —
 // makes the entire dynamic import disappear from production bundles.
-const DebugPanel = process.env.NODE_ENV !== "production"
+/** Stats and Debug buttons, their panels and the engine debug mode exist only outside production (#97). */
+const DEV_TOOLS = process.env.NODE_ENV !== "production";
+const DebugPanel = DEV_TOOLS
   ? lazy(() => import("@/GameInterface/DebugPanel").then(m => ({ default: m.DebugPanel })))
   : null;
 
 import { GoalOverlay } from "@/GameInterface/GoalOverlay";
 import { MatchOverlay } from "@/GameInterface/MatchOverlay";
+import { displaySides, displayTeam, isAwayView, toDisplayPair } from "@/GameInterface/matchSides";
 import { buildPlayedMatchRecording } from "@/GameInterface/buildPlayedMatchRecording";
 import { resolveMatchTeamKitColors } from "@/GameInterface/matchTeamColors";
 import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
@@ -740,7 +743,7 @@ export function MatchScreen() {
   }, []);
 
   useEffect(() => {
-    setDebugMode(debug);
+    setDebugMode(DEV_TOOLS && debug);
   }, [debug]);
 
   function handleMentalityChange(next: Mentality) {
@@ -844,6 +847,11 @@ export function MatchScreen() {
     );
   }
 
+  // Home side on the left when the user plays away (#98); the engine keeps the user as team A.
+  const awayView = isAwayView(matchFixture, crestIds?.a);
+  const sides = displaySides(awayView);
+  const shownTeams = toDisplayPair({ A: teamAWithCrest, B: teamBWithCrest }, awayView);
+  const shownKits = toDisplayPair({ A: matchKitColors.teamA, B: matchKitColors.teamB }, awayView);
   const passFromId = gameState.pass?.fromId;
   // toId is null during a through ball — the receiver is undetermined until landing.
   const passToId = gameState.pass?.toId ?? undefined;
@@ -873,6 +881,7 @@ export function MatchScreen() {
   };
   const possTotal = possessionRef.current.A + possessionRef.current.B;
   const possessionA = possTotal > 0 ? possessionRef.current.A / possTotal : 0.5;
+  const shownScore = toDisplayPair(score, awayView);
   const feed: MatchFeedItem[] = [
     ...eventFeed,
     ...gameState.cards.map((c): MatchFeedItem => ({
@@ -887,7 +896,7 @@ export function MatchScreen() {
   ]
     .map((item, i) => ({ item, i }))
     .sort((a, b) => a.item.minute - b.item.minute || a.i - b.i)
-    .map(({ item }) => ({ ...item, minute: item.minute + 1 }));
+    .map(({ item }) => ({ ...item, minute: item.minute + 1, team: displayTeam(item.team, awayView) }));
 
   // Half-time/extra-time: the engine's own countdown, read every frame (`breakProgress`), so the bar
   // tracks exactly what actually gates the pause (including e.g. staying put while `paused`).
@@ -903,19 +912,19 @@ export function MatchScreen() {
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
       <GoalOverlay
-        scoringTeam={goalFlash?.team ?? null}
-        score={goalFlash?.score ?? gameState.score}
-        kitColorA={matchKitColors.teamA}
-        kitColorB={matchKitColors.teamB}
-        nameA={teamAWithCrest?.name}
-        nameB={teamBWithCrest?.name}
+        scoringTeam={goalFlash ? displayTeam(goalFlash.team, awayView) : null}
+        score={toDisplayPair(goalFlash?.score ?? score, awayView)}
+        kitColorA={shownKits.A}
+        kitColorB={shownKits.B}
+        nameA={shownTeams.A?.name}
+        nameB={shownTeams.B?.name}
       />
       <MatchOverlay
         kind={matchOverlay}
-        score={score}
-        kitColorA={matchKitColors.teamA}
-        kitColorB={matchKitColors.teamB}
-        penaltiesScore={gameState.shootout?.finalScore}
+        score={shownScore}
+        kitColorA={shownKits.A}
+        kitColorB={shownKits.B}
+        penaltiesScore={gameState.shootout ? toDisplayPair(gameState.shootout.finalScore, awayView) : undefined}
         progress={overlayProgress}
       />
 
@@ -926,15 +935,15 @@ export function MatchScreen() {
       <header className="bg-card/80 backdrop-blur-sm border-b border-border px-4 py-2 shrink-0">
         <div className="max-w-7xl mx-auto flex flex-col gap-2">
           <ScoreBar
-            scoreA={score.A}
-            scoreB={score.B}
+            scoreA={shownScore.A}
+            scoreB={shownScore.B}
             matchTime={gameState.matchTime ?? 0}
             matchPhase={gameState.matchPhase ?? "preMatch"}
-            teamA={teamAWithCrest}
-            teamB={teamBWithCrest}
-            scoreColorA={matchKitColors.teamA}
-            scoreColorB={matchKitColors.teamB}
-            aggregate={gameState.aggregate}
+            teamA={shownTeams.A}
+            teamB={shownTeams.B}
+            scoreColorA={shownKits.A}
+            scoreColorB={shownKits.B}
+            aggregate={gameState.aggregate ? toDisplayPair(gameState.aggregate, awayView) : undefined}
           />
 
           {matchHeadingText && (
@@ -947,6 +956,7 @@ export function MatchScreen() {
                 shootout={gameState.shootout}
                 nameA={teamAWithCrest?.name ?? "A"}
                 nameB={teamBWithCrest?.name ?? "B"}
+                order={[sides.left, sides.right]}
               />
             </div>
           )}
@@ -984,6 +994,7 @@ export function MatchScreen() {
               <Icon name="arrow-right-left" className="w-4 h-4" />
               {t("match.subs", { remaining: gameState.subsRemainingA })}
             </button>
+            {DEV_TOOLS && (
             <button
               onClick={() => setShowStats((s) => !s)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
@@ -995,6 +1006,7 @@ export function MatchScreen() {
               <Icon name="stats" className="w-4 h-4" />
               {t("nav.stats")}
             </button>
+            )}
             {isTester && (
               <button
                 type="button"
@@ -1006,6 +1018,7 @@ export function MatchScreen() {
                 {t("nav.report")}
               </button>
             )}
+            {DEV_TOOLS && (
             <button
               onClick={() => setDebug((d) => !d)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer ${
@@ -1017,6 +1030,7 @@ export function MatchScreen() {
               <Icon name="settings" className="w-4 h-4" />
               {t("match.debug")}
             </button>
+            )}
           </div>
         </div>
       </header>
@@ -1067,7 +1081,8 @@ export function MatchScreen() {
                   canvasHeight={pitchSize.h}
                   paused={paused}
                   effectLabels={effectLabels}
-                  debugMode={debug}
+                  debugMode={DEV_TOOLS && debug}
+                  mirror={awayView}
                   initialState={gameState}
                   gameSpeed={gameSpeed}
                   teamAColor={matchKitColors.teamA}
@@ -1097,7 +1112,7 @@ export function MatchScreen() {
             </span>
           </div>
 
-          {showStats && (
+          {DEV_TOOLS && showStats && (
             <StatsPanel
               players={gameState.players}
               substitutions={gameState.substitutions ?? []}
@@ -1115,13 +1130,13 @@ export function MatchScreen() {
         </div>
 
         <MatchSummaryPanel
-          nameA={teamAWithCrest?.name}
-          nameB={teamBWithCrest?.name}
-          colorA={matchKitColors.teamA}
-          colorB={matchKitColors.teamB}
-          statsA={summaryStats("A")}
-          statsB={summaryStats("B")}
-          possessionA={possessionA}
+          nameA={shownTeams.A?.name}
+          nameB={shownTeams.B?.name}
+          colorA={shownKits.A}
+          colorB={shownKits.B}
+          statsA={summaryStats(sides.left)}
+          statsB={summaryStats(sides.right)}
+          possessionA={awayView ? 1 - possessionA : possessionA}
           feed={feed}
         />
       </main>

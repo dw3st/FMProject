@@ -47,7 +47,8 @@ export function drawEffect(g: Graphics, e: PitchEffect, now: number, ctx: Effect
     }
     case "goal": {
       const top = ctx.toPixel(e.goalX, GOAL_Y_MIN), bot = ctx.toPixel(e.goalX, GOAL_Y_MAX);
-      const outward = e.goalX > PITCH_LENGTH / 2 ? 1 : -1; // right goal bulges right
+      // Drawn side, not yards: a mirrored pitch (#98) draws the x = 0 goal on the right.
+      const outward = top.px > ctx.toPixel(PITCH_LENGTH / 2, 0).px ? 1 : -1; // right goal bulges right
       const bulge = ctx.netDepth * (1 + X.NET_BULGE * Math.sin(Math.PI * p)) * outward;
       g.moveTo(top.px, top.py).quadraticCurveTo(top.px + bulge * X.NET_CTRL, (top.py + bot.py) / 2, bot.px, bot.py)
         .stroke({ width: X.LINE_W, color: EFFECT_COLOR.WHITE, alpha: a });

@@ -8,7 +8,7 @@ import { searchScout, parseScoutQuery } from "@/backend/scoutSearch";
 import { addDays } from "@/Domain/dates";
 import { SCOUTING } from "@/Domain/scouting/scoutingConfig";
 import { YOUTH } from "@/Domain/youth/youthConfig";
-import type { ScoutProspect } from "@/types/scoutingTypes";
+import { RECOMMENDATION_ORIGIN, type ScoutProspect } from "@/types/scoutingTypes";
 import type { MatchEvent } from "@/types/dayLogTypes";
 
 function nextMonday(date: string): string {
@@ -146,6 +146,42 @@ describe("scouting routes and the weekly step", () => {
     viewer = (await loadViewer(saveService, saveId))!;
     expect(viewer.ownClubId).toBe("");
   }, 240_000);
+});
+
+describe("the chief's monthly recommendation (#100)", () => {
+  let saveId = "";
+  afterAll(async () => {
+    if (saveId) await saveService.deleteSave(saveId);
+  });
+
+  test("with no missions, every pick has a report in the scouting centre, written once", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    saveId = meta.id;
+    let date = addDays(meta.currentDate!, 1);
+    while (!date.endsWith("-01")) date = addDays(date, 1);
+    const day = await scoutingDay(saveService, saveId, { date, meta, matchEvents: [] });
+    const rec = day.messages.find((m) => m.kind === "recommendation");
+    expect(rec).toBeDefined();
+    const state = await saveService.getScouting(saveId);
+    expect(rec!.players!.length).toBeGreaterThan(0);
+    for (const p of rec!.players!) {
+      const report = state.reports.find((r) => r.playerId === p.playerId);
+      expect(report).toBeDefined();
+      expect(report!.missionId).toBe(RECOMMENDATION_ORIGIN);
+      expect(report!.id).toBe(p.reportId!);
+      expect(p.grade).toBe(report!.grade);
+      expect(p.squadId).toBe(report!.squadId);
+      expect(state.knowledge[p.playerId]!.k).toBeGreaterThan(SCOUTING.IMPLICIT_OWN_LEAGUE);
+    }
+    expect(state.reports).toHaveLength(rec!.players!.length);
+    // The same day again (a replayed day): same month, nothing new.
+    const again = await scoutingDay(saveService, saveId, { date, meta, matchEvents: [] });
+    expect(again.messages.some((m) => m.kind === "recommendation")).toBe(false);
+    expect((await saveService.getScouting(saveId)).reports).toHaveLength(state.reports.length);
+  }, 120_000);
 });
 
 describe("ownSideOpponents", () => {

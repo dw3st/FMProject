@@ -6,10 +6,13 @@ export function PenaltyShootoutStrip({
   shootout,
   nameA,
   nameB,
+  order = ["A", "B"],
 }: {
   shootout: ShootoutState;
   nameA: string;
   nameB: string;
+  /** Row order, top first (#98: home side on top when the user plays away). */
+  order?: readonly ["A" | "B", "A" | "B"];
 }) {
   const { t } = useTranslation();
   const shown = shootout.kicks.slice(0, shootout.shown);
@@ -35,8 +38,9 @@ export function PenaltyShootoutStrip({
   return (
     <div className="rounded-lg border border-border bg-foreground/5 px-3 py-2 space-y-1 min-w-64">
       <div className="text-[13px] uppercase tracking-[0.08em] text-muted-foreground font-display font-bold">{t("match.penalties")}</div>
-      {row("A", nameA)}
-      {row("B", nameB)}
+      {order.map((team) => (
+        <div key={team}>{row(team, team === "A" ? nameA : nameB)}</div>
+      ))}
     </div>
   );
 }

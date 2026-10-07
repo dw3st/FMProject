@@ -134,7 +134,7 @@ export function SquadRosterTable({
       <div className="overflow-x-auto flex-1 flex flex-col">
       <div className="min-w-max">
       <div
-        className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display"
+        className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display overflow-y-hidden [scrollbar-gutter:stable]"
         style={{ gridTemplateColumns }}
       >
         {columns.map((col) => (
@@ -146,20 +146,24 @@ export function SquadRosterTable({
               col.align === "center" ? "justify-center" : "justify-start"
             } ${sortKey === col.key ? "text-primary" : "text-muted-foreground"}`}
           >
-            {col.label}
-            {sortKey === col.key &&
-              (sortDir === "asc" ? (
-                <Icon name="chevron-up" className="w-3 h-3 text-primary" />
-              ) : (
-                <Icon name="chevron-down" className="w-3 h-3 text-primary" />
-              ))}
+            {/* The sort arrow hangs off the label so a centred label stays over its column. */}
+            <span className="relative">
+              {col.label}
+              {sortKey === col.key && (
+                <Icon
+                  name={sortDir === "asc" ? "chevron-up" : "chevron-down"}
+                  className="w-3 h-3 text-primary absolute left-full top-1/2 -translate-y-1/2 ml-1"
+                />
+              )}
+            </span>
           </button>
         ))}
         <div className="px-3 py-3 text-center">{t("dashboard.squadRosterTable.status")}</div>
         <div className="px-3 py-3 text-center">{t("dashboard.squadRosterTable.action")}</div>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-280px)]">
+      {/* Header and body reserve the same scrollbar gutter, so the columns line up when the body scrolls. */}
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] max-h-[calc(100vh-280px)]">
         {sortedPlayers.map((player, index) => (
           <div
             key={player.id}
@@ -200,14 +204,14 @@ export function SquadRosterTable({
               {player.loan && <LoanBadge from={player.loan.fromClubName} until={player.loan.until} className="ml-1.5" />}
             </div>
             <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.age}</div>
-            <div className="px-3 py-2.5 w-14">
+            <div className="px-3 py-2.5 flex justify-center">
               <AvgBadge value={player.avg} />
             </div>
             <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.salary}</div>
             <div className="px-3 py-2.5 text-center text-muted-foreground font-medium">{player.contractUntil ?? "—"}</div>
             <div className={`px-3 py-2.5 text-center font-bold ${ratingTextClass10(player.avg)}`}>{player.value}</div>
             <div className="px-3 py-2.5 text-center text-foreground font-bold">{player.goals}</div>
-            <div className="px-3 py-2.5 w-20">
+            <div className="px-3 py-2.5 flex justify-center">
               <RatingBadge value={player.avgRating} />
             </div>
             {showMorale && (
@@ -215,7 +219,7 @@ export function SquadRosterTable({
                 <MoraleBadge morale={player.morale} />
               </div>
             )}
-            <div className="w-10 px-3 py-2.5">
+            <div className="px-3 py-2.5 flex justify-center">
               <FitStatusIcon status={player.status} injury={player.injury} suspendedMatches={player.suspendedMatches} />
             </div>
             <div className="px-3 py-2.5 flex justify-center">

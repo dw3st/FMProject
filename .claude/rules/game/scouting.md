@@ -110,6 +110,13 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
   mensagens por semana.
 - Dia 1 do mês: até 3 indicações do chefe (joias, depois A) entre os relatórios dos últimos 120 dias e a própria
   liga (k 35), sem repetir as do mês anterior.
+- **Toda indicação tem relatório (#100):** `recordRecommendations` (`missions.ts`). Um indicado com relatório dos
+  últimos `RECOMMEND_REPORT_DAYS` (120) reaproveita esse relatório; um sem relatório (ex. jogador da própria liga num
+  save sem missões) é observado pelo chefe na hora — o mesmo ganho de uma observação de missão de região liderada por
+  ele (`REGION_GAIN` × ganho da nota × ganho do chefe), determinístico — e ganha um relatório (`buildReport`) com
+  `missionId = RECOMMENDATION_ORIGIN` (`"recommendation"`, `scoutingTypes.ts`): no filtro por missão da aba
+  Relatórios aparece como "Indicações do olheiro-chefe". A mensagem leva o que o relatório diz (nota, joia) e
+  `squadId`/`league`/`reportId` de cada indicado.
 
 ## Lista de observação
 
@@ -161,6 +168,9 @@ relatórios e lista continuam visíveis.
 - **Equipe técnica**: cartões dos olheiros de campo e aba "Olheiros" no mercado. **Painel**: Atenção com joia e
   alertas da lista dos últimos 7 dias. **Inbox** `scouting` (ícone `binoculars`): `report`, `mission_done`, `gem`,
   `recommendation`, `shortlist`, `prospect`, `prospect_signed`.
+  Na mensagem `recommendation` cada indicado (nota, nome, clube, joia) é um link para a ficha do jogador, como os
+  nomes da tabela de Relatórios (a ficha mostra o conhecimento e a nota do último relatório); o botão abre a aba
+  Relatórios, onde todo indicado tem o seu.
 
 ## Números
 
