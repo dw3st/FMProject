@@ -15,6 +15,7 @@ import { stableStringify } from "@/../scripts/transfermarkt/json";
 import { matchClubs, matchPlayers } from "@/../scripts/transfermarkt/match";
 import { worldNationality } from "@/../scripts/transfermarkt/nationality";
 import { tmPosition } from "@/../scripts/transfermarkt/positions";
+import { VETERAN_CAP, YOUTH_CAP } from "@/../scripts/transfermarkt/level";
 import { COVERAGE_MIN } from "@/../scripts/transfermarkt/reorder";
 import { computeOverallAvg, fixedNaturalRole } from "@/Domain/playerRating";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
@@ -29,8 +30,6 @@ const CACHE = join(TM, "cache");
 
 const args = process.argv.slice(2);
 const reportArg = args.includes("--report") ? args[args.indexOf("--report") + 1] : undefined;
-/** --median-effects: the old per-band medians, only to compare reports; never for the committed derived.json. */
-const effectsMode = args.includes("--median-effects") ? "median" : "conditional";
 
 {
   const runtimeRoles = join(ROOT, "src", "Data", "roles.json");
@@ -121,6 +120,11 @@ const withPosition = (p: RosterPlayer, pos: DetailedRole | undefined): RosterPla
 };
 const all: LeaguePlayer[] = [];
 const current = new Map<string, number>();
+// Seed overall of the of_* players (their id is "of_" + the seed id with "-" → "_"): covariate of the age fit.
+const seedOverallOf = new Map<string, number>(
+  readJson<{ players: { id: string; overall: number }[] }>(join(ROOT, "data_process", "openfootball", "seed-real.json"))
+    .players.map((sp) => [`of_${sp.id.replace(/-/g, "_")}`, sp.overall]),
+);
 const playerOf = new Map<string, { p: RosterPlayer; squad: Squad; league: string }>();
 const tmOf = new Map<string, TmPlayer>();
 const noFlag = new Map<string, number>();
@@ -159,13 +163,13 @@ for (const [league, squads] of squadsByLeague) {
       current.set(p.id, computeOverallAvg(p));
       // The league multiset is taken at the Transfermarkt position (a keeper filed as an outfielder has a junk score).
       const overall = computeOverallAvg(withPosition(p, match?.position ?? undefined));
-      all.push({ id: p.id, squadId: squad.id, league, age: p.age, overall, line, match });
+      all.push({ id: p.id, squadId: squad.id, league, age: p.age, overall, line, match, seedOverall: seedOverallOf.get(p.id) });
     }
   }
 }
 
-const derived = buildDerived(all, COVERAGE_MIN, effectsMode);
-if (effectsMode === "conditional") writeFileSync(join(TM, "derived.json"), stableStringify({ leagues: derived.leagues, players: derived.players }));
+const derived = buildDerived(all);
+writeFileSync(join(TM, "derived.json"), stableStringify({ leagues: derived.leagues, players: derived.players }));
 
 // ── 3. Report ──
 const naturalBefore = (p: RosterPlayer): DetailedRole => fixedNaturalRole(p) ?? preferredRole(p);
@@ -175,7 +179,7 @@ const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
 log(`Recalibração pelo valor de mercado — ${new Date().toISOString().slice(0, 10)}`);
 log(`Mínimo de cobertura para reordenar: ${pct(COVERAGE_MIN)}`);
-log(`Efeitos de idade/linha: ${effectsMode === "median" ? "medianas por faixa (antigo, só comparação)" : "condicionados à nota atual"}`);
+log("Efeito de idade: prêmio de mercado a habilidade igual (nota do seed open-football), reordenação por liga e linha");
 log();
 log("== Cobertura por liga (valorados ÷ jogadores) ==");
 for (const [slug, s] of Object.entries(derived.leagues)) {
@@ -209,10 +213,10 @@ for (const [slug, s] of Object.entries(derived.leagues))
   if (leagueTmClubs.has(slug) && !s.reordered) log(`  ${slug}: cobertura ${pct(s.coverage)} (sem reordenação)`);
 
 log();
-log("== Efeitos estimados sobre log(valor) (idade relativa aos 27, linha relativa ao meio) ==");
-if ("slope" in derived.effects) log(`inclinação da nota: ${(derived.effects as { slope: number }).slope.toFixed(2)} por ponto de nota`);
-log(`linha: ${Object.entries(derived.effects.line).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(", ")}`);
-log(`idade: ${[...derived.effects.age].sort((a, b) => a[0] - b[0]).map(([a, v]) => `${a} ${v.toFixed(2)}`).join(", ")}`);
+log("== Efeito de idade sobre log(valor) a habilidade igual (relativo aos 27) ==");
+log(`ajuste sobre ${derived.effects.n} jogadores com seed e valor; inclinação ${derived.effects.slope.toFixed(3)} por ponto do seed`);
+log(`idade, estimado (faixas ≤18, ≥35): ${[...derived.effects.raw].sort((a, b) => a[0] - b[0]).map(([a, v]) => `${a} ${v.toFixed(2)}`).join(", ")}`);
+log(`idade, aplicado (jovem ±${YOUTH_CAP}, veterano ±${VETERAN_CAP}): ${[...derived.effects.age].sort((a, b) => a[0] - b[0]).map(([a, v]) => `${a} ${v.toFixed(2)}`).join(", ")}`);
 
 function top10(title: string, ids: string[]) {
   const name = (id: string) => playerOf.get(id)!.p.name;

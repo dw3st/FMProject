@@ -1,76 +1,29 @@
-import type { MainRole } from "@/Domain/roles";
-
-export interface ValuedPlayer { id: string; league: string; age: number; line: MainRole; value: number }
-export interface Effects { age: Map<number, number>; line: Record<MainRole, number> }
-
-const median = (xs: number[]): number => {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
-};
-const MIN_AGE = 16, MAX_AGE = 40;
-const clampAge = (a: number) => Math.max(MIN_AGE, Math.min(MAX_AGE, Math.round(a)));
-
 /**
- * log(value) effects, estimated inside each league (so league strength never leaks in) and
- * aggregated by median: age (1-year bands, relative to 27) and main line (relative to Midfielder).
+ * Market "level" of a player: log(value) minus the market premium of his age.
+ *
+ * The age premium is estimated against an independent measure of skill — the open-football seed
+ * overall — so it only captures what the market pays for age at equal skill (youth potential, veteran
+ * discount), not the fact that most youths and veterans are weaker:
+ *
+ *   log(value) = a_league + b·seedOverall + age[band]        (least squares, one fit, league fixed effect)
+ *
+ * Bands: ≤ 18 together, 19…34 one per year, ≥ 35 together; 27 is the reference (0). Fitted only on
+ * players that have both a seed overall and a value; applied to every matched player.
+ *
+ * Caps (documented safety net): the premium removed from a young player (< 27) is at most ±0.5 in log
+ * units (×1.65), and from a veteran (> 27) at most ±0.7 (×2): thin or noisy bands never move a player
+ * past that. The main line needs no effect: the reorder works inside each league AND line (reorder.ts).
  */
-export function fitEffects(players: ValuedPlayer[]): Effects {
-  const byLeague = new Map<string, ValuedPlayer[]>();
-  for (const p of players) if (p.value > 0) byLeague.set(p.league, [...(byLeague.get(p.league) ?? []), p]);
+export interface SeedRated { league: string; age: number; value: number; seedOverall: number }
+export interface Effects { age: Map<number, number> }
+export interface SeedFit extends Effects { slope: number; raw: Map<number, number>; n: number }
 
-  const ageDiffs = new Map<number, number[]>();
-  const lineDiffs: Record<MainRole, number[]> = { GK: [], Defender: [], Midfielder: [], Forward: [] };
-  for (const list of byLeague.values()) {
-    const ref = list.filter((p) => clampAge(p.age) === 27).map((p) => Math.log(p.value));
-    if (ref.length) {
-      const r = median(ref);
-      const bands = new Map<number, number[]>();
-      for (const p of list) bands.set(clampAge(p.age), [...(bands.get(clampAge(p.age)) ?? []), Math.log(p.value)]);
-      for (const [a, xs] of bands) ageDiffs.set(a, [...(ageDiffs.get(a) ?? []), median(xs) - r]);
-    }
-    const mid = list.filter((p) => p.line === "Midfielder").map((p) => Math.log(p.value));
-    if (mid.length) {
-      const r = median(mid);
-      for (const line of Object.keys(lineDiffs) as MainRole[]) {
-        const xs = list.filter((p) => p.line === line).map((p) => Math.log(p.value));
-        if (xs.length) lineDiffs[line].push(median(xs) - r);
-      }
-    }
-  }
-  const age = new Map<number, number>();
-  for (const [a, ds] of ageDiffs) age.set(a, a === 27 ? 0 : median(ds));
-  const line = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 } as Record<MainRole, number>;
-  for (const l of Object.keys(lineDiffs) as MainRole[]) line[l] = l === "Midfielder" || !lineDiffs[l].length ? 0 : median(lineDiffs[l]);
-  return { age, line };
-}
+export const AGE_BAND_MIN = 18, AGE_BAND_MAX = 35, AGE_REF = 27;
+export const YOUTH_CAP = 0.5, VETERAN_CAP = 0.7;
+const MIN_AGE = 16, MAX_AGE = 40;
+const band = (age: number) => Math.max(AGE_BAND_MIN, Math.min(AGE_BAND_MAX, Math.round(age)));
 
-/** Nearest band with an estimate (ages at the edges borrow the closest band). */
-function ageEffect(fx: Effects, age: number): number {
-  const a = clampAge(age);
-  for (let d = 0; d <= MAX_AGE - MIN_AGE; d++) {
-    if (fx.age.has(a - d)) return fx.age.get(a - d)!;
-    if (fx.age.has(a + d)) return fx.age.get(a + d)!;
-  }
-  return 0;
-}
-
-export function levelOf(p: ValuedPlayer, fx: Effects): number {
-  return Math.log(p.value) - ageEffect(fx, p.age) - fx.line[p.line];
-}
-
-// ── Conditional effects (the market premium for age/line at a given level) ──────────────────────────
-
-export interface RatedPlayer extends ValuedPlayer { overall: number }
-
-/** Age bands of the conditional fit: ≤ 18 together, 19…34 one per year, ≥ 35 together. */
-export const COND_AGE_MIN = 18, COND_AGE_MAX = 35;
-/** Effects are clamped to ± this (log units, e^1.2 ≈ 3.3×): thin bands must not invent huge premiums. */
-export const COND_EFFECT_CAP = 1.2;
-const band = (age: number) => Math.max(COND_AGE_MIN, Math.min(COND_AGE_MAX, Math.round(age)));
-const LINES: MainRole[] = ["GK", "Defender", "Forward"]; // Midfielder is the reference
-
-/** Solves A x = b (A symmetric positive semi-definite, small) by Gaussian elimination with partial pivoting. */
+/** Solves A x = b (small, symmetric) by Gauss-Jordan with partial pivoting; empty columns give 0. */
 function solve(A: number[][], b: number[]): number[] {
   const n = b.length;
   const M = A.map((row, i) => [...row, b[i]!]);
@@ -79,7 +32,7 @@ function solve(A: number[][], b: number[]): number[] {
     for (let r = c + 1; r < n; r++) if (Math.abs(M[r]![c]!) > Math.abs(M[p]![c]!)) p = r;
     [M[c], M[p]] = [M[p]!, M[c]!];
     const piv = M[c]![c]!;
-    if (Math.abs(piv) < 1e-12) { M[c]![n] = 0; continue; } // empty column → coefficient 0
+    if (Math.abs(piv) < 1e-12) continue;
     for (let r = 0; r < n; r++) {
       if (r === c) continue;
       const f = M[r]![c]! / piv;
@@ -89,28 +42,23 @@ function solve(A: number[][], b: number[]): number[] {
   return M.map((row, i) => (Math.abs(row[i]!) < 1e-12 ? 0 : row[n]! / row[i]!));
 }
 
-/**
- * Least squares, one fit for the whole world with a fixed effect per league:
- *   log(value) = a_league + b·overall + age[band] + line[line]
- * (references: age 27 and Midfielder). Today's overall stands in for the level, so a weaker age band
- * whose value is proportional to its level gets no effect, and only the market premium (youth potential,
- * veteran discount) is removed. The league effect is absorbed by demeaning every column inside its league.
- */
-export function fitConditionalEffects(players: RatedPlayer[]): Effects & { slope: number } {
-  const valued = players.filter((p) => p.value > 0);
+const capFor = (age: number, x: number) => {
+  const cap = age < AGE_REF ? YOUTH_CAP : VETERAN_CAP;
+  return Math.max(-cap, Math.min(cap, x));
+};
+
+export function fitSeedAgeEffects(players: SeedRated[]): SeedFit {
+  const used = players.filter((p) => p.value > 0 && Number.isFinite(p.seedOverall));
   const ages: number[] = [];
-  for (let a = COND_AGE_MIN; a <= COND_AGE_MAX; a++) if (a !== 27) ages.push(a);
-  const k = 1 + ages.length + LINES.length;
-  const row = (p: RatedPlayer): number[] => [
-    p.overall,
-    ...ages.map((a) => (band(p.age) === a ? 1 : 0)),
-    ...LINES.map((l) => (p.line === l ? 1 : 0)),
-  ];
-  const byLeague = new Map<string, RatedPlayer[]>();
-  for (const p of valued) byLeague.set(p.league, [...(byLeague.get(p.league) ?? []), p]);
+  for (let a = AGE_BAND_MIN; a <= AGE_BAND_MAX; a++) if (a !== AGE_REF) ages.push(a);
+  const k = 1 + ages.length;
+  const row = (p: SeedRated) => [p.seedOverall, ...ages.map((a) => (band(p.age) === a ? 1 : 0))];
+  const byLeague = new Map<string, SeedRated[]>();
+  for (const p of used) byLeague.set(p.league, [...(byLeague.get(p.league) ?? []), p]);
   const A = Array.from({ length: k }, () => new Array<number>(k).fill(0));
   const b = new Array<number>(k).fill(0);
   for (const list of byLeague.values()) {
+    // Demeaning inside the league absorbs its fixed effect.
     const xs = list.map(row), ys = list.map((p) => Math.log(p.value));
     const mx = new Array<number>(k).fill(0);
     let my = 0;
@@ -121,12 +69,14 @@ export function fitConditionalEffects(players: RatedPlayer[]): Effects & { slope
     });
   }
   const coef = solve(A, b);
-  const cap = (x: number) => Math.max(-COND_EFFECT_CAP, Math.min(COND_EFFECT_CAP, x));
-  const age = new Map<number, number>([[27, 0]]);
-  ages.forEach((a, i) => age.set(a, cap(coef[1 + i]!)));
-  for (let a = MIN_AGE; a < COND_AGE_MIN; a++) age.set(a, age.get(COND_AGE_MIN)!);
-  for (let a = COND_AGE_MAX + 1; a <= MAX_AGE; a++) age.set(a, age.get(COND_AGE_MAX)!);
-  const line = { GK: 0, Defender: 0, Midfielder: 0, Forward: 0 } as Record<MainRole, number>;
-  LINES.forEach((l, i) => (line[l] = cap(coef[1 + ages.length + i]!)));
-  return { age, line, slope: coef[0]! };
+  const raw = new Map<number, number>([[AGE_REF, 0]]);
+  ages.forEach((a, i) => raw.set(a, coef[1 + i]!));
+  const age = new Map<number, number>();
+  for (let a = MIN_AGE; a <= MAX_AGE; a++) age.set(a, capFor(a, raw.get(band(a))!));
+  return { age, raw, slope: coef[0]!, n: used.length };
+}
+
+export function levelOf(p: { age: number; value: number }, fx: Effects): number {
+  const a = Math.max(MIN_AGE, Math.min(MAX_AGE, Math.round(p.age)));
+  return Math.log(p.value) - (fx.age.get(a) ?? 0);
 }

@@ -1,6 +1,6 @@
 import type { MainRole } from "@/Domain/roles";
 import type { DetailedRole } from "@/types/playerTypes";
-import { fitConditionalEffects, fitEffects, levelOf, type Effects, type RatedPlayer } from "@/../scripts/transfermarkt/level";
+import { fitSeedAgeEffects, levelOf, type SeedFit } from "@/../scripts/transfermarkt/level";
 import { COVERAGE_MIN, reorderLeague, youthCaps } from "@/../scripts/transfermarkt/reorder";
 
 /** What the Transfermarkt says about one matched player (already parsed; nationality already in world spelling). */
@@ -21,8 +21,10 @@ export interface LeaguePlayer {
   age: number;
   /** Current overall (`computeOverallAvg`). */
   overall: number;
-  /** Main line for the value effects: the Transfermarkt position's line when known, else positions[0]. */
+  /** Main line (the reorder works inside it): the Transfermarkt position's line when known, else positions[0]. */
   line: MainRole;
+  /** open-football seed overall, when the player comes from the seed (covariate of the age fit). */
+  seedOverall?: number;
   match?: MatchInfo;
 }
 
@@ -41,7 +43,7 @@ export interface DerivedResult {
   leagues: Record<string, LeagueSummary>;
   /** Unrounded new overall of every player whose note changes (reordered or youth-capped). */
   targets: Map<string, number>;
-  effects: Effects;
+  effects: SeedFit;
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -49,21 +51,16 @@ const round2 = (x: number) => Math.round(x * 100) / 100;
 const round4 = (x: number) => Math.round(x * 1e4) / 1e4;
 
 /**
- * Value effects over every valued match, then per league: coverage = valued ÷ players; at or above
- * `COVERAGE_MIN` the valued players are reordered by level and unmatched youths capped. Positions, birth
+ * Age effects (seed covariate) over every valued match, then per league: coverage = valued ÷ players; at or above
+ * `COVERAGE_MIN` the valued players are reordered by level inside each line and unmatched youths capped. Positions, birth
  * date, height and nationality are taken from every match regardless of coverage.
  */
-export function buildDerived(
-  players: LeaguePlayer[],
-  coverageMin = COVERAGE_MIN,
-  /** "conditional" (default): premium at equal overall; "median": the old per-band medians, for comparison. */
-  effectsMode: "conditional" | "median" = "conditional",
-): DerivedResult {
-  const valued: RatedPlayer[] = players
-    .filter((p) => p.match?.value != null && p.match.value > 0)
-    .map((p) => ({ id: p.id, league: p.league, age: p.age, line: p.line, value: p.match!.value!, overall: p.overall }));
-  const effects = effectsMode === "median" ? fitEffects(valued) : fitConditionalEffects(valued);
-  const level = new Map(valued.map((v) => [v.id, levelOf(v, effects)]));
+export function buildDerived(players: LeaguePlayer[], coverageMin = COVERAGE_MIN): DerivedResult {
+  const valued = players.filter((p) => p.match?.value != null && p.match.value > 0);
+  const effects = fitSeedAgeEffects(valued
+    .filter((p) => p.seedOverall != null)
+    .map((p) => ({ league: p.league, age: p.age, value: p.match!.value!, seedOverall: p.seedOverall! })));
+  const level = new Map(valued.map((p) => [p.id, levelOf({ age: p.age, value: p.match!.value! }, effects)]));
 
   const byLeague = new Map<string, LeaguePlayer[]>();
   for (const p of players) byLeague.set(p.league, [...(byLeague.get(p.league) ?? []), p]);
@@ -82,7 +79,7 @@ export function buildDerived(
       reordered,
     };
     if (!reordered) continue;
-    const order = reorderLeague(inLeague.map((p) => ({ id: p.id, overall: p.overall, level: level.get(p.id)! })));
+    const order = reorderLeague(inLeague.map((p) => ({ id: p.id, overall: p.overall, level: level.get(p.id)!, line: p.line })));
     for (const [id, t] of order) targets.set(id, t);
     const caps = youthCaps(
       list.map((p) => ({ id: p.id, squadId: p.squadId, age: p.age, overall: p.overall, matched: level.has(p.id) })),

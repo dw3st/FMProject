@@ -1,11 +1,20 @@
 export const COVERAGE_MIN = 0.6;
 export const YOUTH_CAP_MAX_AGE = 21;
 
-/** Matched players of one league: the multiset of their current overalls, reassigned in level order. */
-export function reorderLeague(players: { id: string; overall: number; level: number }[]): Map<string, number> {
-  const targets = players.map((p) => p.overall).sort((a, b) => b - a);
-  const order = [...players].sort((a, b) => b.level - a.level || a.id.localeCompare(b.id));
-  return new Map(order.map((p, i) => [p.id, targets[i]!]));
+/**
+ * Matched players of one league, per main line: each line's multiset of current overalls is reassigned
+ * in level order inside that line (a keeper never trades notes with a forward).
+ */
+export function reorderLeague(players: { id: string; overall: number; level: number; line: string }[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const byLine = new Map<string, typeof players>();
+  for (const p of players) byLine.set(p.line, [...(byLine.get(p.line) ?? []), p]);
+  for (const list of byLine.values()) {
+    const targets = list.map((p) => p.overall).sort((a, b) => b - a);
+    const order = [...list].sort((a, b) => b.level - a.level || a.id.localeCompare(b.id));
+    order.forEach((p, i) => out.set(p.id, targets[i]!));
+  }
+  return out;
 }
 
 const median = (xs: number[]) => {
