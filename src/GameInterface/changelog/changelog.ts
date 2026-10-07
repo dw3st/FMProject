@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.4.2",
+    date: "2026-10-07",
+    items: [
+      { pt: "Jogadores e nomes menores no campo da partida", en: "Smaller players and names on the match pitch" },
+      { pt: "Nome da competição na tela da partida", en: "Competition name on the match screen" },
+      { pt: "Bandeira da nacionalidade de cada jogador no elenco", en: "Each player's nationality flag in the squad" },
+      { pt: "Filtros por tema na caixa de entrada", en: "Topic filters in the inbox" },
+    ],
+  },
+  {
     version: "4.4.1",
     date: "2026-10-06",
     items: [
