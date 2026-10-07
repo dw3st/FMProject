@@ -61,7 +61,37 @@ Transfermarkt: um lateral continua podendo ser apto a ala pela regra de vizinhan
 Ajuste das constantes da fórmula de `Player.valueMillions` (peso da nota e curva de idade) por regressão sobre os
 casados (nota nova × valor real), só as constantes. Mede-se o mercado da IA antes/depois (`scripts/market-sim.ts`).
 
-## 5. Verificação
+## 5. Atributos de 0 a 100
+
+Pedido do usuário (2026-10-07), na mesma etapa (o mundo é regenerado uma vez só).
+
+- **Por dentro:** os 13 atributos passam a ser decimais com uma casa, 0,0–10,0 (`Math.round(v * 10) / 10`). Motor,
+  quickSim e toda fórmula que lê atributo continuam na escala 0–10, sem mudança. Mudam os pontos que arredondam para
+  inteiro: `scripts/openfootball/derive.ts`, `scripts/espn/estimate.ts` e `aging.ts`,
+  `scripts/openfootball/recalibrate.ts` (`shiftToOverall` sem arredondamento estocástico; `repairRounding` em passos
+  de 0,1 ou removido), `scripts/curated/corrections.ts`, base (`src/Domain/youth/youth.ts`), renascido
+  (`src/Domain/retirement/retirement.ts`) e olheiro (`src/Domain/scouting/seen.ts`, faixas com uma casa;
+  `scoutQuery`/`scoutSearch` com filtros em décimos).
+- **Evolução** (`src/GameEngine/PlayerDevelopment.ts`): passo de 0,1 (um ponto na tela); custo do passo = 1/10 do
+  custo atual (`BASE_COST/10 × (1 + v² × SCALE)`, no valor contínuo); valor arredondado a 0,1 a cada passo; a semente
+  do progresso mantém a mesma folga em DP de hoje contra o declínio (não 1/10 dela); `StatLevelChange.delta` vira
+  número. Meta: ritmo médio igual ao de hoje, medido em carreiras típicas (jovem, auge, veterano) antes/depois.
+  `DevelopmentScreen` usa a mesma conta (sem cópia local).
+- **Resumo do dia e inbox:** mudanças de atributo agrupadas por jogador e atributo no dia ("Velocidade 61 → 63").
+- **Tela:** todo atributo aparece ×10, inteiro de 0 a 100 (ficha, cartão do jogador, Evolução, Olheiro com filtros
+  0–100 de 1 em 1, faixas do olheiro, resumo do dia), com cor por faixa — função única em `scoreColors.ts`:
+
+  | Faixa | Cor |
+  |---|---|
+  | ≤ 39 | vermelho |
+  | 40–54 | laranja |
+  | 55–69 | amarelo |
+  | 70–84 | verde |
+  | ≥ 85 | azul |
+
+  A nota geral (overall) mantém as cores atuais.
+
+## 6. Verificação
 
 - Relatório do passo: casamento por liga, ligas de fora por cobertura, top 10 antes/depois das ligas grandes
   (Flamengo: Arrascaeta, Pedro, Jorginho no topo), trocas de posição natural e contagem por posição por clube
