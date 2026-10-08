@@ -31,6 +31,12 @@ Etapa 30 do `docs/ROADMAP.md`, issue #105 (report de tester). Aprovado em 2026-1
     O jogador avalia como uma renovação do técnico (`evaluateContractOffer` com o pedido dele): se
     recusar (ex. revoltado, `refuses`), a decisão vira "não renova" e entra no resumo como "recusou".
   - **Não renova:** fica para sair livre no fim do contrato, como hoje.
+- **Salário oferecido (decidido na implementação):** o maior entre a curva da IA (`renewalContract`) e o
+  pedido do jogador (`contractDemand` com `renewal`), e é esse valor que passa pelo teto de folha. Só a curva
+  faria quase todo titular recusar por `lowWage` (o pedido tem até +45% de importância).
+- **Titulares antes (decidido na implementação):** jogadores key/starter entram na decisão a 183 dias do fim
+  (`DIRECTOR_TALK_DAYS = MORALE.CONTRACT_TALK_DAYS`), quando já podem pedir conversa de contrato; os demais a
+  120. Assim o diretor sempre responde a conversa com uma decisão real.
 - **Execução:** a renovação acontece na hora da decisão (mesmo caminho da rota de renovação:
   `until` movido, salário novo, moral +6 de renovação aceita).
 - **Conversas de contrato** (`TalkReason "contract"`, `.claude/rules/game/morale.md`): com o diretor
