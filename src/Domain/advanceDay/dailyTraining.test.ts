@@ -312,6 +312,7 @@ describe("buildTrainingEvent", () => {
       players: [basePlayer({ id: "p1", name: "One", age: 40, seasonLog: makeSeasonLog({ fitness: 60 }) })],
     };
 
+    const realRandom = Math.random;
     Math.random = () => 1;
     try {
       const { updatedSquad } = buildTrainingEvent("s", squad, {
@@ -320,7 +321,7 @@ describe("buildTrainingEvent", () => {
       }, "2027-02-05");
       expect(updatedSquad.players[0]?.seasonLog?.fitness).toBeGreaterThanOrEqual(0);
     } finally {
-      Math.random = globalThis.Math.random;
+      Math.random = realRandom;
     }
   });
 });
