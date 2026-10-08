@@ -35,6 +35,10 @@ export const changelog: ChangelogEntry[] = [
       { pt: "CT e base mal cuidados pesam na evolução, na recuperação, na duração das lesões e na safra", en: "A neglected training ground and academy weigh on development, recovery, injury length and the youth intake" },
       { pt: "Jogadores pedem mais para vir a um clube com estrutura ruim, e os muito ambiciosos recusam", en: "Players ask for more to join a club with poor facilities, and the very ambitious refuse" },
     ],
+    fixes: [
+      { pt: "Na Comissão de Transferências, clique no cabeçalho de uma coluna para ordenar a lista inteira de profissionais livres (clique de novo para inverter)", en: "In the Transfers staff tab, click a column header to sort the whole list of free professionals (click again to reverse)" },
+      { pt: "Novo jogo: nacionalidades do técnico alinhadas e em ordem alfabética; o aviso de demissão agora explica que você recebe propostas de outros clubes", en: "New game: the manager's nationalities are aligned and in alphabetical order; the sacking note now explains that you get offers from other clubs" },
+    ],
   },
   {
     version: "4.10",
