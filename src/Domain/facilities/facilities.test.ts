@@ -7,9 +7,9 @@ import {
 } from "@/Domain/facilities/facilities";
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
-import { academyEffectsOf, committedSpend, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
+import { academyEffectsOf, committedSpend, itemBusy, itemValue, payRepairNow, projectRunning, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { comfortLevelPriceMult } from "@/Domain/facilities/facilities";
-import { FACILITY_ITEMS, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
+import { FACILITY_ITEMS, conditionOf, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import type { FacilityItemId } from "@/types/facilityTypes";
 import { clubAnnualRevenue } from "@/Domain/finance/wages";
@@ -335,5 +335,100 @@ describe("living facilities: effects of the items' condition", () => {
   test("weekly upkeep unchanged with whole levels", () => {
     expect(weeklyUpkeep(human(f), 9e7)).toBe(0);
     expect(weeklyUpkeep(human(withGroupLevel(f, "academy", 5)), 9e7)).toBe(Math.round((9e7 * 2 * F.ACADEMY_UPKEEP_SHARE) / 52));
+  });
+});
+
+describe("item projects: repair, rebuild, upgrade", () => {
+  const rev = 100_000_000;
+  const ctx = { revenue: rev, seatCost: 3000 };
+  const f0 = initialFacilities(squad(), 1);
+  const at = (id: FacilityItemId, c: number, extra = {}) => ({ ...f0, items: { ...f0.items, [id]: { ...f0.items[id], wear: wearFor(c), ...extra } } });
+
+  test("item value", () => {
+    expect(itemValue(rev, "seats", 6)).toBeCloseTo(rev * 0.03, 6);
+    expect(itemValue(rev, "stadiumPitch", 3)).toBeCloseTo(rev * 0.006 / 2, 6);
+  });
+
+  test("repair quote: cost, weeks, small; invalid targets", () => {
+    const f = at("stadiumPitch", 30);
+    const q = quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 100 }, ctx)!;
+    const value = itemValue(rev, "stadiumPitch", f.items.stadiumPitch.level);
+    expect(q.cost).toBe(Math.round(value * 0.7 * 0.6));
+    expect(q.weeks).toBe(2);
+    expect(q.small).toBe(true);
+    expect(q.item).toBe("stadiumPitch");
+    expect(q.to).toBe(100);
+    expect(quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 72 }, ctx)).toBeNull();
+    expect(quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 25 }, ctx)).toBeNull();
+    expect(quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 105 }, ctx)).toBeNull();
+    expect(quoteProject(at("stadiumPitch", 30, { condemned: true }), { kind: "repair", item: "stadiumPitch", to: 100 }, ctx)).toBeNull();
+    // A big repair is not small: seats at level 10, 0 → 100 = 3% of the revenue (all the starting
+    // levels repair under the 2% line: value share × level / 6 × 0.6).
+    expect(quoteProject(at("seats", 0, { level: 10 }), { kind: "repair", item: "seats", to: 100 }, ctx)!.small).toBe(false);
+    expect(quoteProject(at("seats", 0), { kind: "repair", item: "seats", to: 100 }, ctx)!.small).toBe(true);
+  });
+
+  test("rebuild only below 15% or condemned; upgrade up to level 10", () => {
+    expect(quoteProject(at("gym", 60), { kind: "rebuild", item: "gym" }, ctx)).toBeNull();
+    const r = quoteProject(at("gym", 10), { kind: "rebuild", item: "gym" }, ctx)!;
+    expect(r.cost).toBe(Math.round(itemValue(rev, "gym", f0.items.gym.level)));
+    expect(r.weeks).toBe(F.ITEMS.gym.rebuildWeeks);
+    expect(quoteProject(at("gym", 60, { condemned: true }), { kind: "rebuild", item: "gym" }, ctx)).not.toBeNull();
+    const u = quoteProject(f0, { kind: "upgrade", item: "gym" }, ctx)!;
+    expect(u.level).toBe(f0.items.gym.level + 1);
+    expect(u.cost).toBe(Math.round(itemValue(rev, "gym", f0.items.gym.level + 1) * 0.6));
+    expect(u.weeks).toBe(Math.ceil(F.ITEMS.gym.rebuildWeeks * 0.6));
+    expect(quoteProject(at("gym", 60, { level: 10 }), { kind: "upgrade", item: "gym" }, ctx)).toBeNull();
+  });
+
+  test("busy: one project per item; group works take the whole group", () => {
+    const q = quoteProject(at("gym", 30), { kind: "repair", item: "gym", to: 50 }, ctx)!;
+    const f = startProject(f0, q, { id: "r", date: "2027-01-01", boardShare: 0 });
+    expect(itemBusy(f, "gym")).toBe(true);
+    expect(itemBusy(f, "pool")).toBe(false);
+    expect(projectRunning(f, "training")).toBe(true);
+    expect(projectRunning(f, "academy")).toBe(false);
+    const g = startProject(f0, quoteProject(f0, { kind: "training" }, ctx)!, { id: "g", date: "2027-01-01", boardShare: 0 });
+    expect(itemBusy(g, "pool")).toBe(true);
+    expect(itemBusy(g, "seats")).toBe(false);
+    const c = startProject(f0, quoteProject(f0, { kind: "comfort" }, ctx)!, { id: "c", date: "2027-01-01", boardShare: 0 });
+    expect(itemBusy(c, "seats")).toBe(true);
+  });
+
+  test("delivery: repair to the target, rebuild to 100 same level, upgrade +1 level", () => {
+    const run = (f: ClubFacilities, req: Parameters<typeof quoteProject>[1]) => {
+      const q = quoteProject(f, req, ctx)!;
+      const s = startProject(f, q, { id: "x", date: "2027-01-01", boardShare: 0 });
+      return advanceFacilities(s, s.projects[0]!.end);
+    };
+    const rep = run(at("stadiumPitch", 30, { alert: 40 }), { kind: "repair", item: "stadiumPitch", to: 80 });
+    expect(conditionOf(rep.facilities.items.stadiumPitch)).toBeCloseTo(80, 1);
+    expect(rep.facilities.items.stadiumPitch.alert).toBeUndefined();
+    expect(rep.completed[0]!.item).toBe("stadiumPitch");
+    expect(rep.facilities.completed.at(-1)!.item).toBe("stadiumPitch");
+    const reb = run(at("gym", 5, { condemned: true, alert: 15 }), { kind: "rebuild", item: "gym" });
+    expect(reb.facilities.items.gym).toEqual({ level: f0.items.gym.level, wear: 0 });
+    const up = run(f0, { kind: "upgrade", item: "pool" });
+    expect(up.facilities.items.pool).toEqual({ level: f0.items.pool.level + 1, wear: 0 });
+    const line = up.entries.find((e) => e.kind === "facilities")!;
+    expect(line.ref).toEqual({ facility: "upgrade", item: "pool" });
+  });
+
+  test("small repair paid now: one ledger line, no board funding, nothing committed", () => {
+    const f = at("stadiumPitch", 30);
+    const q = quoteProject(f, { kind: "repair", item: "stadiumPitch", to: 100 }, ctx)!;
+    const r = payRepairNow(f, q, { id: "s", date: "2027-01-01" });
+    expect(r.entry).toEqual({
+      date: "2027-01-01", kind: "facilities", amount: -q.cost, label: "Facilities repair (stadiumPitch)",
+      ref: { facility: "repair", item: "stadiumPitch" },
+    });
+    const p = r.facilities.projects[0]!;
+    expect(p.paid).toBe(1);
+    expect(p.instalments).toBe(1);
+    expect(p.boardShare).toBe(0);
+    expect(committedSpend(r.facilities)).toBe(0);
+    const day = advanceFacilities(r.facilities, p.end);
+    expect(day.entries).toEqual([]);
+    expect(day.completed).toHaveLength(1);
   });
 });

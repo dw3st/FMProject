@@ -7,11 +7,12 @@ import { addDays, daysBetween } from "@/Domain/dates";
 import { clamp } from "@/Domain/math";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import {
-  comfortLevel, effectAt, groupLevel, initialItems, itemCondition, itemsOfGroup, lerpLevel, penalty, physioDurationMult,
+  comfortLevel, conditionOf, effectAt, groupLevel, initialItems, itemCondition, itemsOfGroup, lerpLevel, penalty,
+  physioDurationMult, wearFor,
 } from "@/Domain/facilities/facilityItems";
 import type { Squad } from "@/types/playerTypes";
 import type {
-  AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityGroup, FacilityKind, FacilityProject,
+  AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityGroup, FacilityItemId, FacilityKind, FacilityProject,
   FacilityRequest, StadiumStand, StandId,
 } from "@/types/facilityTypes";
 
@@ -293,6 +294,12 @@ export interface ProjectQuote {
   seats?: number;
   /** Total capacity after the works (stand projects). */
   newCapacity?: number;
+  /** Item projects (repair, rebuild, upgrade). */
+  item?: FacilityItemId;
+  /** Condition on delivery (repair target; rebuild/upgrade 100). */
+  to?: number;
+  /** Repair that costs ≤ `REPAIR.SMALL_REPAIR_SHARE` of the annual revenue: paid now, no board. */
+  small?: boolean;
 }
 
 export interface QuoteContext {
@@ -303,7 +310,42 @@ export interface QuoteContext {
 }
 
 /** Cost and duration of a request; `null` when it is not possible (level 5 already, bad seats). */
+/** Value of an item (EUR): annual revenue × its value share × level / 6. */
+export function itemValue(revenue: number, id: FacilityItemId, level: number): number {
+  return Math.max(0, revenue) * F.ITEMS[id].valueShare * level / 6;
+}
+
+function quoteItemProject(f: ClubFacilities, req: FacilityRequest, revenue: number): ProjectQuote | null {
+  if (req.kind !== "repair" && req.kind !== "rebuild" && req.kind !== "upgrade") return null;
+  const it = f.items[req.item];
+  if (!it) return null;
+  const c = F.ITEMS[req.item];
+  const cond = conditionOf(it);
+  if (req.kind === "repair") {
+    const to = req.to;
+    if (it.condemned || !Number.isInteger(to) || to % F.REPAIR.STEP !== 0 || to > 100 || to <= cond) return null;
+    const gain = (to - cond) / 100;
+    const cost = Math.round(itemValue(revenue, req.item, it.level) * gain * F.REPAIR.COST_SHARE);
+    return {
+      kind: "repair", item: req.item, to, cost, weeks: Math.max(1, Math.ceil(c.repairWeeks * gain)),
+      small: cost <= F.REPAIR.SMALL_REPAIR_SHARE * Math.max(0, revenue),
+    };
+  }
+  if (req.kind === "rebuild") {
+    if (!it.condemned && cond >= F.WEAR.CONDEMN_BELOW) return null;
+    return { kind: "rebuild", item: req.item, to: 100, cost: Math.round(itemValue(revenue, req.item, it.level)), weeks: c.rebuildWeeks };
+  }
+  if (it.level >= F.ITEM_MAX_LEVEL) return null;
+  const level = it.level + 1;
+  return {
+    kind: "upgrade", item: req.item, to: 100, level,
+    cost: Math.round(itemValue(revenue, req.item, level) * F.REPAIR.COST_SHARE),
+    weeks: Math.ceil(c.rebuildWeeks * F.REPAIR.UPGRADE_WEEKS_SHARE),
+  };
+}
+
 export function quoteProject(f: ClubFacilities, req: FacilityRequest, ctx: QuoteContext): ProjectQuote | null {
+  if (req.kind === "repair" || req.kind === "rebuild" || req.kind === "upgrade") return quoteItemProject(f, req, ctx.revenue);
   if (req.kind === "stand") {
     if (!validSeats(req.seats) || !f.stands.some((s) => s.id === req.stand)) return null;
     return {
@@ -367,8 +409,24 @@ export function boardDecision(args: {
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
+/** Items a project occupies: its item, or every item of a group work (comfort: the seats). */
+function projectItems(p: FacilityProject): FacilityItemId[] {
+  if (p.item) return [p.item];
+  if (p.kind === "comfort") return ["seats"];
+  const g = LEVEL_GROUP[p.kind];
+  return g ? itemsOfGroup(g) : [];
+}
+
+/** A group work (stand, comfort, training, academy) can start: none of the same kind, no project on its items. */
 export function projectRunning(f: ClubFacilities, kind: FacilityKind): boolean {
-  return f.projects.some((p) => p.kind === kind);
+  if (f.projects.some((p) => p.kind === kind)) return true;
+  const items: FacilityItemId[] = kind === "comfort" ? ["seats"] : LEVEL_GROUP[kind] ? itemsOfGroup(LEVEL_GROUP[kind]!) : [];
+  return items.some((id) => itemBusy(f, id));
+}
+
+/** An item already has a project (its own, or a group work that covers it). */
+export function itemBusy(f: ClubFacilities, item: FacilityItemId): boolean {
+  return f.projects.some((p) => projectItems(p).includes(item));
 }
 
 function instalmentCount(start: string, end: string): number {
@@ -385,6 +443,8 @@ export function startProject(
     kind: quote.kind,
     ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
     ...(quote.level !== undefined ? { level: quote.level } : {}),
+    ...(quote.item ? { item: quote.item } : {}),
+    ...(quote.to !== undefined ? { to: quote.to } : {}),
     start: args.date,
     end,
     cost: quote.cost,
@@ -393,6 +453,24 @@ export function startProject(
     paid: 0,
   };
   return { ...f, projects: [...f.projects, project] };
+}
+
+/**
+ * A small repair (`quote.small`): paid now from the balance, in one `facilities` line, no board. The
+ * project stays until its end (delivery, the works card) already paid.
+ */
+export function payRepairNow(
+  f: ClubFacilities, quote: ProjectQuote, args: { id: string; date: string },
+): { facilities: ClubFacilities; entry: LedgerEntry } {
+  const started = startProject(f, quote, { ...args, boardShare: 0 });
+  const projects = started.projects.map((p) => (p.id === args.id ? { ...p, instalments: 1, paid: 1 } : p));
+  return {
+    facilities: { ...started, projects },
+    entry: {
+      date: args.date, kind: "facilities", amount: -quote.cost, label: `Facilities repair (${quote.item ?? quote.kind})`,
+      ref: { facility: quote.kind, ...(quote.item ? { item: quote.item } : {}) },
+    },
+  };
 }
 
 /** The club's share of the instalments still to pay on the running projects. */
@@ -440,13 +518,13 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
     const boardTotal = Math.round(p.cost * p.boardShare);
     while (p.paid < p.instalments && (addDays(p.start, p.paid * F.INSTALMENT_DAYS) <= date || p.end <= date)) {
       const k = p.paid;
-      const ref = { facility: p.kind, ...(p.stand ? { stand: p.stand } : {}) };
+      const ref = { facility: p.kind, ...(p.stand ? { stand: p.stand } : {}), ...(p.item ? { item: p.item } : {}) };
       entries.push({
         date, kind: "facilities", amount: -instalmentAmount(p.cost, p.instalments, k),
-        label: `Facilities works (${p.kind})`, ref,
+        label: `Facilities works (${p.item ?? p.kind})`, ref,
       });
       const board = instalmentAmount(boardTotal, p.instalments, k);
-      if (board > 0) entries.push({ date, kind: "board_funding", amount: board, label: `Board funding (${p.kind})`, ref });
+      if (board > 0) entries.push({ date, kind: "board_funding", amount: board, label: `Board funding (${p.item ?? p.kind})`, ref });
       p = { ...p, paid: k + 1 };
     }
     if (p.end <= date) {
@@ -464,6 +542,8 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
     id: p.id, kind: p.kind, date,
     ...(p.stand ? { stand: p.stand, seats: p.seats } : {}),
     ...(p.level !== undefined ? { level: p.level } : {}),
+    ...(p.item ? { item: p.item } : {}),
+    ...(p.to !== undefined ? { to: p.to } : {}),
   }));
   const changed = entries.length > 0 || completed.length > 0;
   return {
@@ -482,6 +562,12 @@ const LEVEL_GROUP: Partial<Record<FacilityKind, FacilityGroup>> = { training: "t
  * group (comfort: the seats) to at least 2 × the new level, at 100%.
  */
 export function applyCompletion(items: ClubFacilities["items"], p: FacilityProject): ClubFacilities["items"] {
+  if (p.item) {
+    const it = items[p.item];
+    const level = p.kind === "upgrade" ? Math.min(F.ITEM_MAX_LEVEL, p.level ?? it.level + 1) : it.level;
+    // Repair: the target condition; rebuild / upgrade: 100%. Warnings and the condemnation go.
+    return { ...items, [p.item]: { level, wear: wearFor(p.kind === "repair" ? p.to ?? 100 : 100) } };
+  }
   if (p.level === undefined) return items;
   const group = LEVEL_GROUP[p.kind];
   const ids = p.kind === "comfort" ? ["seats" as const] : group ? itemsOfGroup(group) : [];
