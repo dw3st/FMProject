@@ -1735,6 +1735,7 @@
       "kickoff": "Horário",
       "weather": {
         "sunny": "Sol",
+        "clear": "Céu limpo",
         "partlyCloudy": "Parcialmente nublado",
         "cloudy": "Nublado",
         "rain": "Chuva",

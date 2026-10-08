@@ -5,7 +5,8 @@
  */
 import { mulberry32, seedFrom } from "@/Domain/rng";
 
-export type MatchWeather = "sunny" | "partlyCloudy" | "cloudy" | "rain" | "wind" | "cold" | "snow" | "hot";
+export type MatchWeather =
+  | "sunny" | "clear" | "partlyCloudy" | "cloudy" | "rain" | "wind" | "cold" | "snow" | "hot";
 
 /** Rough climate of the home country: which months are winter, or none at all. */
 export type Climate = "north" | "south" | "tropical" | "arid";
@@ -45,6 +46,25 @@ const WEATHER: Record<Season | "tropical" | "arid", [MatchWeather, number][]> = 
   arid: [["sunny", 6], ["hot", 4], ["partlyCloudy", 1], ["wind", 1]],
 };
 
+/**
+ * Approximate local sunset ("HH:MM") per season, or per climate without seasons. A kickoff at or
+ * after it is a night match: no sun, no heat (see `NIGHT_WEATHER`).
+ */
+export const SUNSET: Record<Season | "tropical" | "arid", string> = {
+  summer: "20:30",
+  spring: "19:00",
+  autumn: "19:00",
+  winter: "17:30",
+  tropical: "18:30",
+  arid: "18:30",
+};
+
+/** What a daytime draw becomes after dark. Anything not listed stays the same. */
+const NIGHT_WEATHER: Partial<Record<MatchWeather, MatchWeather>> = {
+  sunny: "clear",
+  hot: "clear",
+};
+
 const WEEKEND_KICKOFFS = ["13:30", "15:00", "16:00", "17:30", "18:30", "20:00"];
 const WEEKDAY_KICKOFFS = ["19:00", "19:45", "20:00", "20:45", "21:30"];
 
@@ -66,12 +86,15 @@ export interface MatchConditions {
   /** "HH:MM", local time of the home ground. */
   kickoff: string;
   weather: MatchWeather;
+  /** Kickoff at or after sunset (`SUNSET`): the screens show night icons (moon). */
+  night: boolean;
 }
 
 /**
  * Kickoff time and weather for a fixture. Same `{ date, home, away }` → same answer.
  * Weekends draw from afternoon/evening slots, weekdays from evening slots; the weather follows the
  * month and the home country's climate (winter in July in the south, no winter in the tropics).
+ * After sunset sun and heat become a clear sky; the draw itself is the same as by day.
  */
 export function matchConditions(
   fixture: { date: string; home: string; away: string },
@@ -83,7 +106,8 @@ export function matchConditions(
   const kickoff = pick(weekend ? WEEKEND_KICKOFFS : WEEKDAY_KICKOFFS, rng());
   const climate = climateOf(homeCountry);
   const month = Number(fixture.date.slice(5, 7));
-  const table =
-    climate === "tropical" || climate === "arid" ? WEATHER[climate] : WEATHER[seasonOf(month, climate)];
-  return { kickoff, weather: pickWeighted(table, rng()) };
+  const key = climate === "tropical" || climate === "arid" ? climate : seasonOf(month, climate);
+  const drawn = pickWeighted(WEATHER[key], rng());
+  const night = kickoff >= SUNSET[key];
+  return { kickoff, weather: night ? (NIGHT_WEATHER[drawn] ?? drawn) : drawn, night };
 }

@@ -1735,6 +1735,7 @@
       "kickoff": "Kick-off",
       "weather": {
         "sunny": "Sunny",
+        "clear": "Clear sky",
         "partlyCloudy": "Partly cloudy",
         "cloudy": "Cloudy",
         "rain": "Rain",
