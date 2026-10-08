@@ -146,6 +146,8 @@ export interface DemandInput {
   fraction?: number;
   /** Game day (forecasts): the stand under works counts half only until its works end. */
   date?: string;
+  /** Big-match multiplier (derby, cup/continental knockout: matchImportance.ts); absent = 1. */
+  importance?: number;
 }
 
 /**
@@ -159,7 +161,8 @@ export function demandOf(f: ClubFacilities, input: DemandInput): number {
   const followers = a.followers > 0 && input.followers > 0 ? Math.pow(input.followers / a.followers, F.FOLLOWERS_EXPONENT) : 1;
   const tier = tierDemand(input.tier) / tierDemand(a.tier);
   const phase = input.fraction === undefined ? 1 : seasonPhaseMult(input.fraction);
-  return Math.max(0, a.capacity * fill * followers * tier * phase);
+  const importance = input.importance ?? 1;
+  return Math.max(0, a.capacity * fill * followers * tier * phase * importance);
 }
 
 /** Attendance = min(seats available, demand) (unrounded; round only for display). */
@@ -432,6 +435,8 @@ export interface HomeGameToday {
   competition: string;
   opponentId: string;
   neutral?: boolean;
+  /** Big-match multiplier of this game (matchImportance.ts); absent = 1. */
+  importance?: number;
 }
 
 /**
@@ -445,7 +450,7 @@ export function facilitiesMatchday(
   let recordBroken: { previous: number; attendance: number; competition: string; opponentId: string } | null = null;
   const attendance = games.map((g) => {
     if (g.neutral) return 0;
-    const a = attendanceOf(cur, { ...input, date });
+    const a = attendanceOf(cur, { ...input, date, ...(g.importance !== undefined ? { importance: g.importance } : {}) });
     const r = recordAttendance(cur, {
       date, competition: g.competition, opponentId: g.opponentId,
       attendance: Math.round(a.attendance), capacity: a.capacity, demand: Math.round(a.demand),
