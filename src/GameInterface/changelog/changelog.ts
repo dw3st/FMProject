@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.7",
+    date: "2026-10-08",
+    items: [
+      { pt: "Comissão técnica completa: preparador de goleiros, treinadores de área, médico, analista e jardineiro, com estrelas, atributos e contratos", en: "Full coaching staff: goalkeeping coach, area coaches, doctor, analyst and groundskeeper, with stars, attributes and contracts" },
+      { pt: "Sete áreas de treino: o goleiro passa a evoluir reflexo e impulsão; força e fôlego também evoluem", en: "Seven training areas: goalkeepers now develop reflexes and jumping; strength and stamina develop too" },
+      { pt: "Busque profissionais livres na aba Comissão de Transferências", en: "Find free staff in the Staff tab of Transfers" },
+    ],
+  },
+  {
     version: "4.6.1",
     date: "2026-10-08",
     items: [
@@ -1014,7 +1023,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Comissão técnica completa: preparadores físico, de goleiros e geral, com estrelas e atributos; jardineiro; rostos da equipe e avatar do seu técnico", en: "Full coaching staff: fitness, goalkeeping and general coaches with stars and attributes; groundskeeper; staff faces and your manager avatar" },
+  { pt: "Rostos da equipe técnica e avatar do seu técnico", en: "Staff faces and your manager avatar" },
   { pt: "Prêmios de fim de temporada: melhor jogador, revelação, gol mais bonito, melhor técnico e seleção da temporada", en: "End-of-season awards: player of the year, young player, goal of the season, manager of the year and team of the season" },
   { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
   { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },

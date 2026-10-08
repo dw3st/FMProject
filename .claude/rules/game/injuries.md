@@ -89,7 +89,8 @@ contactInjuryChance = CONTACT_BASE × fatorEnergia × fatorCarga × fatorIdade �
 | `medium` | 30% | 7–28 |
 | `severe` | 10% | 30–120 |
 
-`returnDate(date, severity, rng)` soma a duração sorteada à data. `isInjured(player, date)` é
+`returnDate(date, severity, rng, durationMult = 1)` soma a duração sorteada à data (desde a 4.7 vezes o
+multiplicador do médico, `max(1, round(dias × mult))`, ver abaixo). `isInjured(player, date)` é
 `true` enquanto `date < injury.returnDate` (estritamente antes — no dia exato da volta o jogador já
 está apto). `clearHealed(player, date)` — pura, nunca muta — remove `injury` e ajusta
 `seasonLog.fitness` para `RETURN_FITNESS` (70) quando `date >= returnDate`; devolve o mesmo objeto
@@ -304,3 +305,12 @@ flag própria; ver `.claude/rules/game/fitness.md` → "Smoke de temporada" para
    mesma listagem completa já usada pela seção de Finanças).
 
 Rodar: `bun scripts/season-rollover-smoke.ts [--player-league <slug>] [--italy]` (~15 min).
+
+## Médico / fisioterapeuta (4.7)
+
+O médico da comissão (`.claude/rules/game/staff.md`) multiplica a **duração** de toda lesão nova
+(`StaffEffects.injuryDurationMult`, curva ×1,2 / ×1 / ×0,8 em 1★ / 3★ / 5★; vago = 2★ = ×1,1): `returnDate(date,
+severity, rng, durationMult)` → `max(1, round(dias × mult))`, com o mesmo sorteio do `rng` (nenhum número a mais). Vale
+na partida (`matches.ts`) e no treino (`dailyTraining.ts`). A IA usa as estrelas implícitas do tier (LOW 2,5★ ×1,05,
+MEDIUM 3★ ×1, HIGH 3,4★ ×0,96, ELITE 3,8★ ×0,92; média do mundo ≈ ×1,005). O risco de lesão continua do preparador
+físico.
