@@ -83,7 +83,7 @@ describe("free kicks", () => {
   test("the chosen free-kick taker takes it; the direct taker shoots", () => {
     const { s, attacker, defender } = foulSituation(PITCH_LENGTH - 22, 37);
     const cb = s.players.find(p => p.team === "A" && p.role === "CB")!;
-    const out = foul({ ...s, setPieceTakers: { A: { freeKicks: cb.rosterId } } }, defender, attacker);
+    const out = foul({ ...s, setPieceTakers: { A: { freeKicks: [cb.rosterId] } } }, defender, attacker);
     expect(out.ballHolderId).toBe(cb.id);
     const h = holder(out);
     expect(decide(h, h, true, false, out.players, null, 0, out.setPiece)).toEqual({ type: "shoot" });
@@ -171,7 +171,7 @@ describe("corners", () => {
   test("the chosen corner taker takes it, the taker crosses or plays short", () => {
     const s = buildState();
     const rb = s.players.find(p => p.team === "A" && p.role === "RB")!;
-    const out = awardCorner({ ...s, setPieceTakers: { A: { corners: rb.rosterId } } }, "A", { x: PITCH_LENGTH, y: PITCH_WIDTH }, -1, "clearance", "loose").state;
+    const out = awardCorner({ ...s, setPieceTakers: { A: { corners: [rb.rosterId] } } }, "A", { x: PITCH_LENGTH, y: PITCH_WIDTH }, -1, "clearance", "loose").state;
     expect(out.ballHolderId).toBe(rb.id);
     const t = holder(out);
     const d = decide(t, t, true, false, out.players, null, 0, out.setPiece);
@@ -293,7 +293,7 @@ describe("penalties", () => {
   test("the chosen penalty taker takes it", () => {
     const { s, attacker, defender } = foulSituation(PITCH_LENGTH - 10, 37);
     const lb = s.players.find(p => p.team === "A" && p.role === "LB")!;
-    const out = foul({ ...s, setPieceTakers: { A: { penalties: lb.rosterId } } }, defender, attacker);
+    const out = foul({ ...s, setPieceTakers: { A: { penalties: [lb.rosterId] } } }, defender, attacker);
     expect(out.setPiece?.type).toBe("penalty");
     expect(out.setPiece?.takerId).toBe(lb.id);
     expect(out.setPiecePhase).toMatchObject({ team: "A", kind: "penalty" });

@@ -87,8 +87,17 @@ describe("set-piece takers", () => {
 
   test("chosen taker wins when on the pitch; unknown id falls back to automatic", () => {
     const chosen = A.find(p => p.role === "CB")!;
-    expect(pickSetPieceTaker("corners", A, chosen.rosterId)!.id).toBe(chosen.id);
-    expect(pickSetPieceTaker("corners", A, "nobody")!.id).toBe(pickSetPieceTaker("corners", A)!.id);
+    expect(pickSetPieceTaker("corners", A, [chosen.rosterId])!.id).toBe(chosen.id);
+    expect(pickSetPieceTaker("corners", A, ["nobody"])!.id).toBe(pickSetPieceTaker("corners", A)!.id);
+  });
+
+  test("first of the up-to-3 preferred takers on the pitch wins; none on the pitch = automatic", () => {
+    const cb = A.find(p => p.role === "CB")!;
+    const st = A.find(p => p.role === "ST")!;
+    expect(pickSetPieceTaker("penalties", A, [cb.rosterId, st.rosterId])!.id).toBe(cb.id);
+    expect(pickSetPieceTaker("penalties", A, ["gone", st.rosterId, cb.rosterId])!.id).toBe(st.id);
+    expect(pickSetPieceTaker("penalties", A, ["gone", "off", "benched"])!.id).toBe(pickSetPieceTaker("penalties", A)!.id);
+    expect(pickSetPieceTaker("penalties", A, [])!.id).toBe(pickSetPieceTaker("penalties", A)!.id);
   });
 });
 

@@ -679,7 +679,8 @@
     "assistantRotationHint": "Poupa titulares cansados automaticamente antes de cada jogo.",
     "setPieceTakers": {
       "title": "Cobradores",
-      "hint": "Automático escolhe o melhor em campo. Se o escolhido não estiver jogando, volta ao automático.",
+      "hint": "Escolha até 3 por bola parada, em ordem: cobra o primeiro que estiver em campo. Se nenhum estiver jogando, volta ao automático.",
+      "order": "{{n}}ª opção",
       "auto": "Automático",
       "corners": "Escanteios",
       "freeKicks": "Faltas",

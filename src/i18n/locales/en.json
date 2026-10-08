@@ -679,7 +679,8 @@
     "assistantRotationHint": "Automatically rests tired starters before each match.",
     "setPieceTakers": {
       "title": "Set-piece takers",
-      "hint": "Automatic picks the best on the pitch. If your choice isn't playing, it goes back to automatic.",
+      "hint": "Pick up to 3 per set piece, in order: the first one on the pitch takes it. If none of them is playing, it goes back to automatic.",
+      "order": "Choice {{n}}",
       "auto": "Automatic",
       "corners": "Corners",
       "freeKicks": "Free kicks",
