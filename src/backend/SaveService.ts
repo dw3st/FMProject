@@ -23,6 +23,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { DEFAULT_MIN_ENERGY_TO_TRAIN, DEFAULT_TRAINING_INTENSITY } from "@/types/developmentTypes";
 import type { DayTransfer, StoredDayEvent, StoredDayLog, DayLog, TransferEvent } from "@/types/dayLogTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
+import { inboxAllowed, type InboxPrefs } from "@/Domain/inbox/inboxTopics";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
@@ -115,6 +116,8 @@ export interface SaveMeta {
   managerContractNotices?: string[];
   /** AI clubs without a manager (interim in charge) and the day they hire (`.claude/rules/game/managers.md`). */
   managerVacancies?: Record<string, { since: string; hireOn: string }>;
+  /** Inbox topics switched on/off by the player (`src/Domain/inbox/inboxTopics.ts`); absent = defaults. */
+  inboxPrefs?: InboxPrefs;
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────
@@ -286,7 +289,15 @@ export class SaveService {
     return this.dal.readInbox(saveId);
   }
 
-  appendInbox(saveId: string, message: InboxMessage): Promise<void> {
+  /**
+   * The single write point of the inbox: a message whose topic the player switched off
+   * (`meta.inboxPrefs`, `src/Domain/inbox/inboxTopics.ts`) is dropped; topics that ask for an
+   * action are always written. The meta is read through the DAL on every call (the day's
+   * `BufferingSaveDAL` caches it), so a preference saved mid-session holds for the next append.
+   */
+  async appendInbox(saveId: string, message: InboxMessage): Promise<void> {
+    const meta = await this.dal.readMeta(saveId);
+    if (!inboxAllowed(message, meta?.inboxPrefs)) return;
     return this.dal.appendInboxMessage(saveId, message);
   }
 
