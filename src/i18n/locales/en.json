@@ -269,7 +269,7 @@
     "sackingLabel": "Can be sacked",
     "sackingYes": "Yes",
     "sackingNo": "No",
-    "sackingHint": "If the board loses confidence, the career ends.",
+    "sackingHint": "If the board loses confidence, you are sacked and wait for offers from other clubs.",
     "avatar": {
       "title": "Your face",
       "auto": "Random",
