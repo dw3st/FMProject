@@ -15,6 +15,7 @@ import type { LeagueData } from "@/types/playerTypes";
 import type { ScoutFocus, ScoutTargetKind } from "@/types/scoutingTypes";
 import { scoutingCall, type ScoutingData, type ScoutingScout } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
+import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import countriesRaw from "@/Data/countries.json";
 
 const CONTINENT_OF = new Map(Object.values(countriesRaw as Record<string, { name: string; continent?: string }>).map((c) => [c.name, c.continent ?? ""]));
@@ -75,7 +76,7 @@ export function MissionsTab({
                     {scout.vacant ? t("scouting.vacant") : scout.name}
                   </p>
                 </div>
-                <span className="font-display font-bold tabular-nums text-sm text-primary shrink-0">{t("scouting.rating", { rating: scout.rating })}</span>
+                <span className="shrink-0"><StaffStars stars={scout.stars} /></span>
               </div>
               {mission ? (
                 <>
@@ -196,7 +197,12 @@ function NewMissionModal({
     <Modal open={!!scout} onClose={onClose} size="md">
       <div className="p-6 flex flex-col gap-5">
         <SectionTitle>{t("scouting.newMission")}</SectionTitle>
-        <p className="text-sm text-muted-foreground m-0">{scout ? `${scout.vacant ? t("scouting.vacant") : scout.name} · ${t("scouting.rating", { rating: scout.rating })}` : ""}</p>
+        {scout && (
+          <p className="text-sm text-muted-foreground m-0 flex flex-wrap items-center gap-2">
+            <span>{scout.vacant ? t("scouting.vacant") : scout.name}</span>
+            <StaffStars stars={scout.stars} />
+          </p>
+        )}
         <div className="flex flex-col gap-2">
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("scouting.targetLabel")}</span>
           <OptionChips<Region>

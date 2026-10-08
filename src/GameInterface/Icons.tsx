@@ -26,6 +26,7 @@ import {
   X,
   Globe,
   Star,
+  StarHalf,
   FastForward,
   TrendingUp,
   TrendingDown,
@@ -107,6 +108,16 @@ function StarFilled(props: SVGProps<SVGSVGElement>) {
   return <Star {...props} fill="currentColor" />;
 }
 
+/** Half star: an outlined star with its left half filled (staff stars). */
+function StarHalfFilled(props: SVGProps<SVGSVGElement>) {
+  return (
+    <span className="relative inline-flex">
+      <Star {...props} />
+      <StarHalf {...props} fill="currentColor" className={`absolute inset-0 ${props.className ?? ""}`} />
+    </span>
+  );
+}
+
 export type IconName =
   | "binoculars"
   | "gem"
@@ -137,6 +148,7 @@ export type IconName =
   | "globe"
   | "star"
   | "star-filled"
+  | "star-half"
   | "fast-forward"
   | "trend-up"
   | "trend-down"
@@ -257,6 +269,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "globe":        Globe,
   "star":         Star,
   "star-filled":  StarFilled,
+  "star-half":    StarHalfFilled,
   "fast-forward": FastForward,
   "trend-up":     TrendingUp,
   "trend-down":   TrendingDown,

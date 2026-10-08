@@ -1,39 +1,36 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Button } from "@/GameInterface/ui/Button";
 import { Label } from "@/GameInterface/ui/Label";
+import { Notice } from "@/GameInterface/ui/Notice";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
-import { StatBar } from "@/GameInterface/ui/StatBar";
+import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
-import { type StaffEffects } from "@/Domain/staff/staff";
-import { STAFF_ROLES, type StaffMember, type StaffRole } from "@/Domain/staff/staffTypes";
-import { formatEuros } from "@/Domain/money";
+import { formatWageFull } from "@/Domain/money";
+import type { CoachArea, StaffRole } from "@/Domain/staff/staffTypes";
 import { ResponsibilitiesPanel } from "@/GameInterface/Staff/ResponsibilitiesPanel";
-
-interface StaffResponse {
-  members: (StaffMember & { stars: number })[];
-  effects: StaffEffects;
-  weeklyTotal: number;
-}
-
-const fmt = (n: number, digits = 2) => n.toFixed(digits);
+import { StaffCard, VacantStaffCard } from "@/GameInterface/Staff/StaffCard";
+import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
+import { TrainingAreasPanel } from "@/GameInterface/Staff/TrainingAreasPanel";
+import { STAFF_GROUPS, formatMult, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 
 /**
- * Technical staff (`.claude/rules/game/staff.md`). Interim screen of Etapa 31a: the members and
- * their effects; the pool search and the full staff board arrive with the rest of the stage.
+ * Coaching staff (`.claude/rules/game/staff.md`): one card per professional grouped by function,
+ * the seven training areas with their coach, the profile (renew / dismiss) and the weekly bill.
+ * New professionals come from the free pool (Transfers → Staff).
  */
 export function StaffScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, refresh } = useGameSave();
   const saveId = session?.saveId;
 
-  const [data, setData] = useState<StaffResponse | null>(null);
+  const [data, setData] = useState<StaffData | null>(null);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [firing, setFiring] = useState<StaffMember | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [open, setOpen] = useState<StaffMemberView | null>(null);
   // Page tabs: the staff | responsibilities (`?tab=responsibilities` opens it).
   const [pageTab, setPageTab] = useState<"staff" | "responsibilities">(() =>
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "responsibilities"
@@ -41,34 +38,26 @@ export function StaffScreen() {
 
   const load = useCallback(async () => {
     if (!saveId) return;
-    try {
-      const s = await fetch(`/api/saves/${saveId}/staff`).then((r) => (r.ok ? r.json() : Promise.reject(r)));
-      setData(s as StaffResponse);
-      setError(false);
-    } catch {
-      setError(true);
-    }
+    const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff`);
+    if (r.ok) { setData(r.data); setError(false); }
+    else setError(true);
   }, [saveId]);
 
   useEffect(() => { void load(); }, [load]);
 
-  async function confirmFire() {
-    if (!firing || !saveId) return;
+  function changed(next: StaffData) {
+    setData(next);
+    void refresh();
+  }
+
+  async function assign(area: CoachArea, memberId: string | null) {
+    if (!saveId) return;
     setBusy(true);
-    try {
-      const res = await fetch(`/api/saves/${saveId}/staff/fire`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ memberId: firing.id }),
-      });
-      if (res.ok) {
-        setData((await res.json()) as StaffResponse);
-        void refresh();
-      }
-    } finally {
-      setBusy(false);
-      setFiring(null);
-    }
+    setActionError(null);
+    const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff/areas`, "PUT", { [area]: memberId });
+    setBusy(false);
+    if (r.ok) setData(r.data);
+    else setActionError(t(`staff.errors.${r.error}`, { defaultValue: t("staff.errors.generic") }));
   }
 
   if (error) {
@@ -78,15 +67,33 @@ export function StaffScreen() {
     return <ScreenContainer><p className="text-sm text-muted-foreground m-0">{t("staff.loading")}</p></ScreenContainer>;
   }
 
-  const effectLine = (role: StaffRole): string | null => {
+  const lang = i18n.language;
+  const areaMult = (area: string) => data.areas.find((a) => a.area === area)?.mult ?? 1;
+  const effectLine = (m: StaffMemberView): string => {
     const e = data.effects;
-    if (role === "assistant") return t("staff.effects.assistant", { mult: fmt(e.devMult) });
-    if (role === "fitness") return t("staff.effects.fitness", { recovery: fmt(e.recoveryMult), injury: fmt(e.injuryMult) });
-    if (role === "scout") return t("staff.effects.scout", { uncertainty: fmt(e.scoutUncertaintyMult), gain: fmt(e.scoutGainMult) });
-    return null;
+    switch (m.role) {
+      case "assistant": return t("staff.effects.assistant", { mult: formatMult(e.devMult, lang) });
+      case "fitness": return t("staff.effects.fitness", {
+        area: formatMult(areaMult("physical"), lang), recovery: formatMult(e.recoveryMult, lang), injury: formatMult(e.injuryMult, lang),
+      });
+      case "goalkeeping": return t("staff.effects.goalkeeping", { mult: formatMult(areaMult("goalkeeping"), lang) });
+      case "coach": {
+        const led = data.areas.filter((a) => a.memberId === m.id);
+        return led.length === 0
+          ? t("staff.effects.coachNoArea")
+          : led.map((a) => `${t(`staff.area.${a.area}`)} ${formatMult(a.mult, lang)}`).join(" · ");
+      }
+      case "medic": return t("staff.effects.medic", { mult: formatMult(e.injuryDurationMult, lang) });
+      case "analyst": return t("staff.effects.analyst", { mult: formatMult(e.familiarityMult, lang) });
+      case "scout": return t("staff.effects.scout", { uncertainty: formatMult(e.scoutUncertaintyMult, lang), gain: formatMult(e.scoutGainMult, lang) });
+      case "fieldScout": return t("staff.effects.fieldScout");
+      case "groundskeeper": return t("staff.effects.groundskeeper");
+    }
   };
-
-  const members = [...data.members].sort((a, b) => STAFF_ROLES.indexOf(a.role) - STAFF_ROLES.indexOf(b.role));
+  const vacantEffect = (role: StaffRole): string | undefined =>
+    role === "fitness" || role === "goalkeeping" ? t("staff.vacantArea")
+      : role === "coach" || role === "fieldScout" || role === "groundskeeper" ? undefined
+        : t("staff.vacantEffect");
 
   return (
     <ScreenContainer>
@@ -97,7 +104,7 @@ export function StaffScreen() {
         trailing={
           <div className="text-right">
             <Label>{t("staff.weeklyTotal")}</Label>
-            <span className="font-display font-bold tabular-nums text-xl">{formatEuros(data.weeklyTotal)}</span>
+            <span className="font-display font-bold tabular-nums text-xl">{formatWageFull(data.weeklyTotal)}</span>
           </div>
         }
       >
@@ -117,42 +124,41 @@ export function StaffScreen() {
       {pageTab === "responsibilities" && saveId && <ResponsibilitiesPanel saveId={saveId} />}
 
       {pageTab === "staff" && (
-        <section className="grid gap-6 md:grid-cols-3">
-          {members.map((m) => {
-            const stars = m.stars;
-            const effect = effectLine(m.role);
-            return (
-              <div key={m.id} className="rounded-md border border-border p-3 flex flex-col gap-3">
-                <Label>{t(`staff.roles.${m.role}`)}</Label>
-                <div>
-                  <div className="font-display font-black uppercase text-base leading-none">{m.name}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</div>
-                </div>
-                <StatBar value={stars} max={5} display={stars} label={t("staff.rating")} />
-                {m.contract && (
-                  <div className="text-sm tabular-nums">{t("staff.weeklyWage", { wage: formatEuros(m.contract.wage) })}</div>
-                )}
-                {effect && <div className="text-sm text-muted-foreground">{effect}</div>}
-                <div>
-                  <Button variant="danger" flush disabled={busy} onClick={() => setFiring(m)}>
-                    {t("staff.fire")}
-                  </Button>
-                </div>
+        <>
+          {actionError && <Notice kind="error">{actionError}</Notice>}
+          {STAFF_GROUPS.map((group) => (
+            <section key={group.key} className="flex flex-col gap-3">
+              <SectionTitle>{t(`staff.groups.${group.key}`)}</SectionTitle>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {group.roles.flatMap((role) => {
+                  const members = data.members
+                    .filter((m) => m.role === role)
+                    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
+                  const limit = data.limits[role];
+                  const cards = members.map((m) => (
+                    <StaffCard key={m.id} member={m} effect={effectLine(m)} onOpen={() => setOpen(m)} />
+                  ));
+                  if (limit && limit.used < limit.max) {
+                    cards.push(<VacantStaffCard key={`vacant-${role}`} role={role} used={limit.used} max={limit.max} effect={vacantEffect(role)} />);
+                  }
+                  return cards;
+                })}
               </div>
-            );
-          })}
-        </section>
+            </section>
+          ))}
+
+          <TrainingAreasPanel data={data} busy={busy} onAssign={(area, id) => void assign(area, id)} />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm tabular-nums m-0">{t("staff.weeklyBill", { wage: formatWageFull(data.weeklyTotal) })}</p>
+            <Button onClick={() => { window.location.href = "/transfers?tab=staff"; }}>{t("staff.findProfessionals")}</Button>
+          </div>
+        </>
       )}
 
-      <ConfirmDialog
-        open={firing !== null}
-        title={t("staff.fireConfirmTitle", { name: firing?.name ?? "" })}
-        body={t("staff.fireConfirmBody")}
-        confirmLabel={t("staff.fire")}
-        onConfirm={() => void confirmFire()}
-        onClose={() => setFiring(null)}
-        busy={busy}
-      />
+      {saveId && (
+        <StaffDetailModal saveId={saveId} member={open} mode="club" onClose={() => setOpen(null)} onChanged={changed} />
+      )}
     </ScreenContainer>
   );
 }

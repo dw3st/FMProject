@@ -82,6 +82,9 @@ describe("staff routes", () => {
     expect((await call("/fire", "POST", session.token, { role: "cook" })).status).toBe(400);
     expect((await call("/fire", "POST", session.token, { memberId: "nobody" })).status).toBe(404);
     const fired = view.members.find((m: any) => m.role === "coach");
+    // The view carries what the profile shows: today's severance and the accepted renewal years.
+    expect(fired.severance).toBeGreaterThan(0);
+    expect(Array.isArray(fired.renewYears)).toBe(true);
     const fireRes = await call("/fire", "POST", session.token, { memberId: fired.id });
     expect(fireRes.status).toBe(200);
     const fireBody = await fireRes.json() as any;

@@ -11,7 +11,7 @@ import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
 import { allowedWeeks, missionCost, seenProfile } from "@/Domain/scouting/missions";
 import { scoutMultipliersOf } from "@/Domain/scouting/knowledge";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
-import { effectiveRating, headOf, memberStars, membersOf, ratingFromStars } from "@/Domain/staff/staff";
+import { effectiveRating, effectiveStars, headOf, memberStars, membersOf, ratingFromStars } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { renewalContract } from "@/Domain/contracts/contracts";
@@ -49,13 +49,22 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
   }
 }
 
-/** The scouts that can lead a mission: the chief (vacant: rating 3) and the field scouts. */
-function scoutsOf(squad: Squad | null): { id: string; name: string; rating: number; chief: boolean; vacant?: boolean }[] {
+/**
+ * The scouts that can lead a mission: the chief (vacant: 2 stars = the old rating 3) and the field
+ * scouts. `stars` is what the screens show; `rating` (the old 1..10) drives the mission gain.
+ */
+function scoutsOf(squad: Squad | null): { id: string; name: string; stars: number; rating: number; chief: boolean; vacant?: boolean }[] {
   if (!squad) return [];
   const chief = headOf(squad, "scout");
   return [
-    { id: "chief", name: chief?.name ?? "", rating: effectiveRating(squad, "scout"), chief: true, ...(chief ? {} : { vacant: true }) },
-    ...membersOf(squad, "fieldScout").map((s) => ({ id: s.id, name: s.name, rating: ratingFromStars(memberStars(s)), chief: false })),
+    {
+      id: "chief", name: chief?.name ?? "", stars: effectiveStars(squad, "scout"), rating: effectiveRating(squad, "scout"),
+      chief: true, ...(chief ? {} : { vacant: true }),
+    },
+    ...membersOf(squad, "fieldScout").map((s) => {
+      const stars = memberStars(s);
+      return { id: s.id, name: s.name, stars, rating: ratingFromStars(stars), chief: false };
+    }),
   ];
 }
 

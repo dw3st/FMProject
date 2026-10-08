@@ -11,7 +11,7 @@ import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
 import { POOL_PAGE, returnToPool, searchPool, takeFromPool, type StaffPoolQuery, type StaffPoolSort } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import {
-  COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffRecord, type StaffRole,
+  COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffMember, type StaffRecord, type StaffRole,
 } from "@/Domain/staff/staffTypes";
 import { DP_CATEGORIES, type DPCategory } from "@/GameEngine/PlayerDevelopment";
 import { wageFactorOf } from "@/Domain/finance/wages";
@@ -46,8 +46,12 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
 const validYears = (v: unknown): v is number =>
   typeof v === "number" && Number.isInteger(v) && v >= STAFF.CONTRACT.MIN_YEARS && v <= STAFF.CONTRACT.MAX_YEARS;
 
-/** The staff screen's view: members with their stars, the seven areas, limits, effects, the weekly bill. */
-export function staffView(squad: Squad) {
+/**
+ * The staff screen's view: members with their stars, the seven areas, limits, effects, the weekly bill.
+ * With the club's context, every member also carries the severance of firing him today and the
+ * renewal offer (`renewYears`: the 1..3 years the route accepts, `renewWage`).
+ */
+export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string }) {
   const staff: StaffRecord = squad.staff ?? { members: [] };
   const assigned = resolveAreaAssignments(staff);
   const stars = areaStars(squad);
@@ -64,6 +68,7 @@ export function staffView(squad: Squad) {
       ...m,
       stars: memberStars(m),
       ...(m.role === "coach" ? { starsByArea: Object.fromEntries(COACH_AREAS.map((a) => [a, starsIn(m, a)])) } : {}),
+      ...(ctx ? memberOffer(squad, m, ctx) : {}),
     })),
     areas: DP_CATEGORIES.map((area) => {
       const memberId = stars[area] === null ? undefined : leader(area);
@@ -75,6 +80,17 @@ export function staffView(squad: Squad) {
     }])) as Record<StaffRole, { used: number; max: number }>,
     effects: staffEffectsOf(squad),
     weeklyTotal: squadStaffWages(staff),
+  };
+}
+
+function memberOffer(squad: Squad, m: StaffMember, ctx: { date: string; seasonEnd: string }) {
+  const renewals = ([1, 2, 3] as const)
+    .map((years) => ({ years, c: renewedContract(m, { ...ctx, years, clubFactor: wageFactorOf(squad) }) }))
+    .filter((r) => r.c !== null);
+  return {
+    severance: severanceOf(m, ctx.date),
+    renewYears: renewals.map((r) => r.years),
+    ...(renewals[0] ? { renewWage: renewals[0].c!.wage } : {}),
   };
 }
 
@@ -145,7 +161,7 @@ export const staffRoutes = {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const h = await human(saveId);
     if (h instanceof Response) return h;
-    return Response.json(staffView(h.squad));
+    return Response.json(staffView(h.squad, h));
   },
 
   /** `GET ?role=&minStars=&maxWage=&sort=stars|wage|age&offset=&limit=` - the free pool, asking wage at the club's factor. */
@@ -191,7 +207,7 @@ export const staffRoutes = {
       const next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       await saveService.writeStaffPool(saveId, taken.pool);
-      return Response.json(staffView(next));
+      return Response.json(staffView(next, h));
     });
   },
 
@@ -230,7 +246,7 @@ export const staffRoutes = {
       const pool = await saveService.getStaffPool(saveId, h.date);
       await saveService.writeStaffPool(saveId, returnToPool(pool, member, h.date));
       if (member.role === "fieldScout") await cancelScoutMissions(saveId, member.id);
-      return Response.json({ ...staffView(next), severance });
+      return Response.json({ ...staffView(next, h), severance });
     });
   },
 
@@ -258,7 +274,7 @@ export const staffRoutes = {
         staff: { ...staff, members: staff.members.map((m) => (m.id === member.id ? { ...m, contract } : m)) },
       };
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      return Response.json(staffView(next));
+      return Response.json(staffView(next, h));
     });
   },
 
@@ -289,7 +305,7 @@ export const staffRoutes = {
       }
       const next: Squad = { ...h.squad, staff: { ...staff, areaAssignments: assignments } };
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      return Response.json(staffView(next));
+      return Response.json(staffView(next, h));
     });
   },
 };

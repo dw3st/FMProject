@@ -6,6 +6,9 @@ import type { RosterPlayer } from "@/types/playerTypes";
 export interface ScoutingScout {
   id: string;
   name: string;
+  /** Stars 1..5 (coaching staff, `.claude/rules/game/staff.md`). */
+  stars: number;
+  /** The old 1..10 rating behind the mission gain. */
   rating: number;
   chief: boolean;
   vacant?: boolean;
