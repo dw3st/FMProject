@@ -273,20 +273,20 @@ Mundial: só se a corrida passar por janeiro (a padrão não passa); senão o te
 | `src/backend/advanceDay.ts`, `managerWorld.ts` | Ganchos; `ManagerTitle.on` |
 | `src/GameInterface/Awards/*`, `StatsScreen.tsx`, `PlayerScreen`, `CareerTable.tsx`, `ManagerRanking.tsx`, `ScoutScreen` | Telas |
 
-## Pontos abertos
+## Pontos abertos (todos aceitos como limitações, 2026-10-08)
 
-1. **Nota de liga.** O `seasonLog` só guarda a nota média da temporada inteira (liga + copa + continental). Os prêmios
+1. **Aceito.** **Nota de liga.** O `seasonLog` só guarda a nota média da temporada inteira (liga + copa + continental). Os prêmios
    por nota usam essa média, com o mínimo de jogos contado só na liga. Separar a nota de liga exigiria um campo novo no
    `seasonLog` (`leagueRatingSum`) — não feito; a diferença é pequena (copa e continental são ~10–20% dos jogos).
-2. **Transferência no meio da temporada dentro da mesma liga.** Só a linha do clube atual na virada conta: um jogador
+2. **Aceito.** **Transferência no meio da temporada dentro da mesma liga.** Só a linha do clube atual na virada conta: um jogador
    vendido de um clube a outro da mesma liga tem os jogos divididos em duas linhas e pode não alcançar o mínimo em
    nenhuma. Juntar as linhas da mesma liga é possível (as parciais abertas estão no `history`), mas complica qual linha
    recebe o prêmio; fica para depois.
-3. **Gol da temporada no motor só para ligas seguidas.** Uma liga seguida só por parte da temporada sorteia entre os gols
+3. **Aceito.** **Gol da temporada no motor só para ligas seguidas.** Uma liga seguida só por parte da temporada sorteia entre os gols
    do período seguido.
-4. **Partida ao vivo:** a lista de gols vem do cliente e é só validada por consistência (como o resto da gravação).
-5. **Mundial de janeiro e ligas de ano civil:** uma liga de ano civil que vira depois de 31/12 (não acontece com o
+4. **Aceito.** **Partida ao vivo:** a lista de gols vem do cliente e é só validada por consistência (como o resto da gravação).
+5. **Aceito.** **Mundial de janeiro e ligas de ano civil:** uma liga de ano civil que vira depois de 31/12 (não acontece com o
    calendário atual) entraria no ano seguinte.
-6. **Repetição de um dia que falhou (fase 1 do `flush` não atômica):** como o histórico e o extrato, a moral do premiado
+6. **Aceito.** **Repetição de um dia que falhou (fase 1 do `flush` não atômica):** como o histórico e o extrato, a moral do premiado
    pode ser aplicada duas vezes se só o elenco tiver sido gravado; o arquivo de prêmios, as linhas e os registros dos
    técnicos são idempotentes.
