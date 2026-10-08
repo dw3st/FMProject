@@ -20,6 +20,8 @@ import type { PlayerOption } from "@/GameInterface/Development/PlayerSelector";
 import type { TrendDirection } from "@/GameInterface/Development/RecentTrend";
 import { positionLabel, roleForDevelopmentWeights } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
+import { compareSquadPositions } from "@/Domain/positions/positionSort";
+import { overallAvg } from "@/Domain/playerRating";
 import { dpRequired } from "@/GameEngine/PlayerDevelopment";
 
 function getAgePhase(age: number): AgePhase {
@@ -155,24 +157,35 @@ export function DevelopmentScreen() {
     }
   }, [saveLoading, session]);
 
-  useEffect(() => {
-    if (squad && squad.players.length > 0 && !selectedPlayerId) {
-      setSelectedPlayerId(squad.players[0]!.id);
-    }
-  }, [squad, selectedPlayerId]);
-
   const player = useMemo(() => squad?.players.find((p) => p.id === selectedPlayerId) ?? null, [squad, selectedPlayerId]);
 
   const playerOptions = useMemo((): PlayerOption[] => {
     if (!squad) return [];
-    return squad.players.map((p) => ({
-      id:       p.id,
-      name:     p.name,
-      nationality: p.nationality,
-      position: p.stats ? preferredRole(p) : (p.positions[0] ?? "—"),
-      agePhase: getAgePhase(p.age),
-    }));
+    // Pitch order (GK, DEF, MID, FWD, then the detailed position), best rated first inside a position.
+    return squad.players
+      .map((p) => ({
+        option: {
+          id:       p.id,
+          name:     p.name,
+          nationality: p.nationality,
+          position: p.stats ? preferredRole(p) : (p.positions[0] ?? "—"),
+          agePhase: getAgePhase(p.age),
+        },
+        pos:    p.positions[0] ?? "",
+        rating: p.stats ? overallAvg(p) : 0,
+      }))
+      .sort((a, b) =>
+        compareSquadPositions({ pos: a.pos, natural: a.option.position, name: "" }, { pos: b.pos, natural: b.option.position, name: "" })
+        || b.rating - a.rating
+        || a.option.name.localeCompare(b.option.name))
+      .map((e) => e.option);
   }, [squad]);
+
+  useEffect(() => {
+    if (playerOptions.length > 0 && !selectedPlayerId) {
+      setSelectedPlayerId(playerOptions[0]!.id);
+    }
+  }, [playerOptions, selectedPlayerId]);
 
   if (saveLoading) {
     return (
