@@ -1,5 +1,8 @@
+import { AWARDS } from "@/Domain/awards/awardsConfig";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import { GOAL_Y_MAX, GOAL_Y_MIN, PENALTY_AREA_DEPTH, PENALTY_AREA_Y_MAX, PENALTY_AREA_Y_MIN } from "@/GameEngine/Domain/pitch";
-import type { MatchGoal } from "@/types/dayLogTypes";
+import type { GoalOfSeasonCandidate } from "@/types/awardTypes";
+import type { MatchEvent, MatchGoal } from "@/types/dayLogTypes";
 import type { Squad } from "@/types/playerTypes";
 
 /** Goal of the season (`.claude/rules/game/awards.md`): goal geometry and the candidates. */
@@ -53,4 +56,63 @@ export function sanitizeRecordedGoals(
   }
   if (count.home !== score.home || count.away !== score.away) return undefined;
   return out;
+}
+
+/** A goal of the season candidate: a header or a shot from outside the box, never a penalty. */
+export function isGoalCandidate(g: Pick<MatchGoal, "header" | "outsideBox" | "setPiece">): boolean {
+  return g.setPiece !== "penalty" && (g.header || g.outsideBox);
+}
+
+/** Draw weight: a header 1, a shot from outside the box 1 + (distance − 18) / 10, capped. */
+export function goalWeight(g: Pick<GoalOfSeasonCandidate, "header" | "distance">): number {
+  return g.header ? 1 : Math.min(AWARDS.GOAL_WEIGHT_CAP, 1 + Math.max(0, g.distance - 18) / 10);
+}
+
+/**
+ * Deterministic weighted draw (`goal:{seedKey}`, seedKey = `save:league:season`) over the candidates
+ * sorted by key (the file order never decides). No candidate → no award.
+ */
+export function pickGoalOfSeason(goals: GoalOfSeasonCandidate[], seedKey: string): GoalOfSeasonCandidate | undefined {
+  if (goals.length === 0) return undefined;
+  const sorted = [...goals].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  const total = sorted.reduce((s, g) => s + goalWeight(g), 0);
+  let r = mulberry32(seedFrom(`goal:${seedKey}`))() * total;
+  for (const g of sorted) {
+    r -= goalWeight(g);
+    if (r < 0) return g;
+  }
+  return sorted[sorted.length - 1];
+}
+
+/** Appends without repeating a key (a retried day). */
+export function appendGoals(cur: GoalOfSeasonCandidate[], add: GoalOfSeasonCandidate[]): GoalOfSeasonCandidate[] {
+  const seen = new Set(cur.map((g) => g.key));
+  const out = [...cur];
+  for (const g of add) {
+    if (seen.has(g.key)) continue;
+    seen.add(g.key);
+    out.push(g);
+  }
+  return out;
+}
+
+/** The goal of the season candidates of a full-engine match (`key = fixtureId:minute:playerId`). */
+export function goalCandidatesOfMatch(
+  event: Pick<MatchEvent, "fixtureId" | "home" | "away" | "goals" | "playerNames">,
+  date: string,
+  nameOf: (playerId: string) => string | undefined = () => undefined,
+): GoalOfSeasonCandidate[] {
+  return (event.goals ?? []).filter(isGoalCandidate).map((g) => ({
+    key: `${event.fixtureId}:${g.minute}:${g.playerId}`,
+    fixtureId: event.fixtureId,
+    date,
+    playerId: g.playerId,
+    playerName: event.playerNames[g.playerId] ?? nameOf(g.playerId) ?? g.playerId,
+    squadId: g.team === "home" ? event.home : event.away,
+    opponentId: g.team === "home" ? event.away : event.home,
+    minute: g.minute,
+    header: g.header,
+    distance: g.distance,
+    ...(g.setPiece && g.setPiece !== "penalty" ? { setPiece: g.setPiece } : {}),
+  }));
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { goalGeometry, sanitizeRecordedGoals } from "@/Domain/awards/goalOfSeason";
+import { appendGoals, goalCandidatesOfMatch, goalGeometry, goalWeight, isGoalCandidate, pickGoalOfSeason, sanitizeRecordedGoals } from "@/Domain/awards/goalOfSeason";
 
 describe("goal geometry", () => {
   test("inside the box vs outside, distance to the goal centre", () => {
@@ -34,5 +34,50 @@ describe("sanitizeRecordedGoals", () => {
   test("keeps only the known fields", () => {
     const out = sanitizeRecordedGoals([{ ...g("a", "home"), extra: 1, assistId: "a", setPiece: "corner" }], { home: 1, away: 0 }, home, away);
     expect(out).toEqual([{ playerId: "a", team: "home", minute: 10, header: false, distance: 20, outsideBox: true, assistId: "a", setPiece: "corner" }]);
+  });
+});
+
+describe("goal of the season", () => {
+  test("candidates: header or outside the box, never a penalty", () => {
+    expect(isGoalCandidate({ header: true, outsideBox: false })).toBe(true);
+    expect(isGoalCandidate({ header: false, outsideBox: true })).toBe(true);
+    expect(isGoalCandidate({ header: false, outsideBox: true, setPiece: "penalty" })).toBe(false);
+    expect(isGoalCandidate({ header: false, outsideBox: false })).toBe(false);
+  });
+  test("pick is deterministic per save/league/season and independent of the order; none without candidates", () => {
+    const goals = [1, 2, 3, 4].map((i) => ({ key: `k${i}`, distance: 20 + i, header: false } as never));
+    const a = pickGoalOfSeason(goals, "s1:pl:2026-27");
+    expect(a).toBeDefined();
+    expect(pickGoalOfSeason(goals, "s1:pl:2026-27")).toEqual(a);
+    expect(pickGoalOfSeason([...goals].reverse(), "s1:pl:2026-27")).toEqual(a);
+    expect(pickGoalOfSeason([], "x")).toBeUndefined();
+    const picks = new Set(Array.from({ length: 40 }, (_, i) => (pickGoalOfSeason(goals, `s${i}:pl:2026-27`) as { key: string }).key));
+    expect(picks.size).toBeGreaterThan(1);
+  });
+  test("goalWeight: header 1, long range up to the cap", () => {
+    expect(goalWeight({ header: true, distance: 9 })).toBe(1);
+    expect(goalWeight({ header: false, distance: 28 })).toBeCloseTo(2);
+    expect(goalWeight({ header: false, distance: 60 })).toBe(3);
+    expect(goalWeight({ header: false, distance: 15 })).toBe(1);
+  });
+  test("appendGoals ignores repeated keys", () => {
+    const g = { key: "f:10:p" } as never;
+    expect(appendGoals([g], [g, { key: "f:20:p" } as never])).toHaveLength(2);
+  });
+  test("goalCandidatesOfMatch keeps headers and long shots, with the club and the opponent", () => {
+    const event = {
+      fixtureId: "f", home: "h", away: "a", playerNames: { p: "P", q: "Q" },
+      goals: [
+        { playerId: "p", team: "home" as const, minute: 34, header: true, distance: 8, outsideBox: false },
+        { playerId: "q", team: "away" as const, minute: 50, header: false, distance: 27, outsideBox: true, setPiece: "direct_free_kick" as const },
+        { playerId: "q", team: "away" as const, minute: 60, header: false, distance: 12, outsideBox: false, setPiece: "penalty" as const },
+        { playerId: "p", team: "home" as const, minute: 70, header: false, distance: 10, outsideBox: false },
+      ],
+    };
+    const c = goalCandidatesOfMatch(event, "2027-01-02");
+    expect(c).toEqual([
+      { key: "f:34:p", fixtureId: "f", date: "2027-01-02", playerId: "p", playerName: "P", squadId: "h", opponentId: "a", minute: 34, header: true, distance: 8 },
+      { key: "f:50:q", fixtureId: "f", date: "2027-01-02", playerId: "q", playerName: "Q", squadId: "a", opponentId: "h", minute: 50, header: false, distance: 27, setPiece: "direct_free_kick" },
+    ]);
   });
 });
