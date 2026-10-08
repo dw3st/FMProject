@@ -27,6 +27,14 @@
  *                fresh squad; this is a sanity check that a realistic fatigue/load state doesn't
  *                blow the target up (the energy/load multipliers in `injuryRatePerMinute` can
  *                push per-minute risk up to ~3x — see `injury.ts`).
+ *   --pitch <modes>  MEASURE ONLY (no calibration, nothing written): injuries/match by pitch
+ *                condition (`docs/superpowers/specs/2026-10-08-living-facilities-design.md` §9, M1/M2).
+ *                Modes, comma-separated: `none` (no pitch, the engine before), `ai` (the home club's
+ *                AI pitch: tier × a season fraction drawn per match), or a fixed condition (`20`,
+ *                `90`). Engine at matchday fitness 88 / load 0, the same pairs and the same
+ *                Math.random stream per match in every mode (paired). With `--quicksim` also the
+ *                quickSim over the 26 calibration leagues (paired, exact).
+ *                e.g. `bun scripts/injury-calibrate.ts 150 --pitch none,ai,20,90 --quicksim`
  */
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -41,6 +49,8 @@ import type { Squad } from "@/types/playerTypes";
 import { mulberry32 } from "@/Domain/rng";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
+import { aiPitchCondition } from "@/Domain/facilities/pitch";
+import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 
 const LEAGUES = ["premier_league", "of_championship"];
 const MATCHES_PER_LEAGUE = Number(process.argv[2] ?? 150);
@@ -113,7 +123,97 @@ async function measureAll(fitness = 100, load = 0): Promise<{ matches: number; i
   return { matches, injuries, perMatch: injuries / matches };
 }
 
+// ── Pitch measurement (M1/M2 of the living facilities) ─────────────────────────
+
+const PITCH_ARG = (() => {
+  const i = process.argv.indexOf("--pitch");
+  return i >= 0 ? (process.argv[i + 1] ?? "none,ai,20,90").split(",") : null;
+})();
+
+const QUICK_LEAGUES = [
+  "premier_league", "la_liga", "serie_a", "bundesliga", "ligue_1", "brazil_serie_a", "brazil_serie_b", "brazil_serie_c",
+  "of_allsvenskan", "of_argentine_premier_division", "of_championship", "of_danish_superliga", "of_ekstraklasa",
+  "of_eredivisie", "of_greek_super_league", "of_italian_serie_c_a", "of_j_league", "of_kenyan_premier_division",
+  "of_liga_mx", "of_major_league_soccer", "of_portuguese_primeira_liga", "of_russian_second_division_b_group_2",
+  "of_saudi_professional_league", "of_spanish_second_division", "of_turkish_super_league", "of_uzbek_super_league",
+];
+
+/** Pitch of one match in a mode (`fraction` drawn per match, the same in every mode). */
+function pitchOf(mode: string, home: Squad, fraction: number): number | undefined {
+  if (mode === "none") return undefined;
+  if (mode === "ai") return aiPitchCondition(financialTierOf(home), fraction);
+  return Number(mode);
+}
+
+interface Fixture { home: Squad; away: Squad; hl: string[]; al: string[]; fraction: number; seed: number }
+
+async function fixturesOf(league: string, n: number, salt: number): Promise<Fixture[]> {
+  const squads = await loadLeague(league, 88, 0);
+  const rng = mulberry32(2026 + salt);
+  return Array.from({ length: n }, (_, i) => {
+    const [home, away] = pickPair(squads, rng);
+    return { home, away, hl: autoLineupDefaultFormation(home), al: autoLineupDefaultFormation(away), fraction: rng(), seed: salt * 100_003 + i };
+  });
+}
+
+async function measurePitch(modes: string[]): Promise<void> {
+  console.log(`Pitch measurement — engine ${LEAGUES.join(", ")} × ${MATCHES_PER_LEAGUE}, fitness 88, paired; modes ${modes.join(", ")}\n`);
+  const engine: Record<string, { matches: number; injuries: number; pitch: number; below40: number }> = {};
+  for (const m of modes) engine[m] = { matches: 0, injuries: 0, pitch: 0, below40: 0 };
+  const realRandom = Math.random;
+  for (const [li, league] of LEAGUES.entries()) {
+    const fixtures = await fixturesOf(league, MATCHES_PER_LEAGUE, li + 1);
+    for (const f of fixtures) {
+      for (const m of modes) {
+        const pitch = pitchOf(m, f.home, f.fraction);
+        Math.random = mulberry32(f.seed);
+        const r = simulateMatch(f.home, f.away, formation, formation, f.hl, f.al, pitch === undefined ? {} : { pitchCondition: pitch });
+        const e = engine[m]!;
+        e.matches++;
+        e.injuries += r.injuries.length;
+        e.pitch += pitch ?? 90;
+        if (pitch !== undefined && pitch < 40) e.below40++;
+      }
+    }
+    console.log(`  ${league} done`);
+  }
+  Math.random = realRandom;
+  const base = engine[modes[0]!]!;
+  console.log("\nEngine (both teams, per match):");
+  for (const m of modes) {
+    const e = engine[m]!;
+    const per = e.injuries / e.matches;
+    console.log(`  ${m.padEnd(5)} ${per.toFixed(3)} injuries/match (${e.injuries}/${e.matches}) · ×${(per / (base.injuries / base.matches)).toFixed(3)} vs ${modes[0]} · mean pitch ${(e.pitch / e.matches).toFixed(1)} · below 40%: ${(100 * e.below40 / e.matches).toFixed(1)}%`);
+  }
+
+  if (!DO_QUICKSIM) return;
+  const quick: Record<string, { matches: number; injuries: number }> = {};
+  for (const m of modes) quick[m] = { matches: 0, injuries: 0 };
+  for (const [li, league] of QUICK_LEAGUES.entries()) {
+    const fixtures = await fixturesOf(league, MATCHES_PER_LEAGUE * 10, 100 + li);
+    for (const [i, f] of fixtures.entries()) {
+      for (const m of modes) {
+        const pitch = pitchOf(m, f.home, f.fraction);
+        const { recording } = quickSimMatch({
+          fixtureId: `pitch-${league}-${i}`, home: f.home, away: f.away, homeLineup: f.hl, awayLineup: f.al,
+          homeRoles: roles, awayRoles: roles, ...(pitch === undefined ? {} : { pitchCondition: pitch }),
+        }, mulberry32(f.seed));
+        quick[m]!.matches++;
+        quick[m]!.injuries += recording.injuries?.length ?? 0;
+      }
+    }
+  }
+  const qb = quick[modes[0]!]!;
+  console.log(`\nquickSim (${QUICK_LEAGUES.length} leagues × ${MATCHES_PER_LEAGUE * 10}, paired):`);
+  for (const m of modes) {
+    const q = quick[m]!;
+    const per = q.injuries / q.matches;
+    console.log(`  ${m.padEnd(5)} ${per.toFixed(3)} injuries/match · ×${(per / (qb.injuries / qb.matches)).toFixed(3)} vs ${modes[0]}`);
+  }
+}
+
 async function main() {
+  if (PITCH_ARG) return measurePitch(PITCH_ARG);
   console.log(`Injury calibration — ${LEAGUES.join(", ")}, ${MATCHES_PER_LEAGUE} matches/league (${LEAGUES.length * MATCHES_PER_LEAGUE} total)`);
   console.log(`Target: ${TARGET_PER_MATCH} injuries/match (both teams combined)\n`);
 
