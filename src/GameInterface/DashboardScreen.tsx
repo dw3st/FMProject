@@ -37,6 +37,7 @@ import {
   formatDay,
   type MatchSide,
 } from "@/GameInterface/Dashboard/HomeCards";
+import { managerFaceCountry } from "@/Domain/faces/managerFace";
 
 interface LedgerApiResponse {
   entries: LedgerEntry[];
@@ -238,6 +239,7 @@ export function DashboardScreen() {
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
+        managerFace={session.manager ? { face: session.manager.face, nationality: managerFaceCountry(session.manager.nationalityIso) } : null}
         reputation={jobs?.reputation ?? null}
         pendingOffers={jobs?.offers.length ?? 0}
         contract={save?.managerContract ?? null}

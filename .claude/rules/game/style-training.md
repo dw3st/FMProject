@@ -39,7 +39,7 @@ Visual: `.claude/rules/ui-standard.md`. Pesos de tática: `.claude/rules/game-en
 Cada dia de treino do clube do jogador (`buildTrainingEvent`, só se o elenco grava familiaridade):
 
 ```
-foco   += GAIN_PER_SESSION (2) × devMult do auxiliar × intensidade × (1 − v/100)   // teto suave
+foco   += GAIN_PER_SESSION (2) × familiarityMult do analista × intensidade × (1 − v/100)   // teto suave
 demais −= DECAY_PER_DAY (0,15), nunca abaixo de DECAY_FLOOR (30)                    // abaixo do piso: fica como está
 intensidade = INTENSITY_GAIN: leve 0,7 · normal 1 · pesado 1,3
 ```
@@ -48,7 +48,7 @@ intensidade = INTENSITY_GAIN: leve 0,7 · normal 1 · pesado 1,3
   senão o foco também cai, como as demais chaves.
 - Foco = `meta.style_focus` (tela de treino; PUT `/api/saves/:id` valida com `isFamiliarityKey`; `null` limpa =
   "Auto"), senão o estilo de `tactics.json`. Dias de jogo e de descanso não mexem.
-- De 50, um foco constante (normal, auxiliar nota 5) chega a ~82 em 50 sessões e ~93 em 100.
+- De 50, um foco constante (normal, analista 3★) chega a ~82 em 50 sessões e ~93 em 100.
 
 ## Efeito no motor (`FamiliarityConfig.ts`)
 
@@ -134,3 +134,9 @@ bun test src/Domain/familiarity src/GameEngine/Configs/FamiliarityConfig.test.ts
   src/Domain/advanceDay/dailyTraining.test.ts src/Domain/advanceDay/quickSim.test.ts \
   src/backend/familiarity.routes.test.ts src/lab/familiarityLabel.test.ts
 ```
+
+## Analista de desempenho (4.7)
+
+Desde a comissão completa (`.claude/rules/game/staff.md`) o ganho de familiaridade do treino usa o **analista de
+desempenho** (`StaffEffects.familiarityMult`, curva ×0,8 / ×1 / ×1,25 em 1★ / 3★ / 5★; vago = 2★ = ×0,9) no lugar
+do multiplicador de DP do auxiliar. Com os dois em 3★ é a conta de antes. A IA não treina familiaridade (regra).

@@ -25,7 +25,7 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 | `src/Domain/scouting/knowledge.ts` (+ teste) | `implicitKnowledge`, `decayed`, `knowledgeOf`, `uncertaintyOf`, `attributesHidden`, `scoutMultipliersOf`, `ratingGain`, `gainKnowledge`, `pruneKnowledge` |
 | `src/Domain/scouting/missions.ts` (+ teste) | `starterLineAverages`, `seenProfile`, `relativeNote`/`gradeOf`, `isGem`, `buildReport`, `missionPool`, `pickObserved`, `advanceScoutingWeek`, `missionCost`, `allowedWeeks`, `monthlyRecommendations`, `shortlistAlerts`, `prospectFee`, `generateProspects`, `addProspects`, `pruneProspects` |
 | `src/Domain/scouting/scoutingMessages.ts` | Inbox `scouting` (`buildScoutingMessage`) |
-| `src/Domain/staff/staff.ts` | `obscureForViewer` (borrão com amplitude por jogador + `scoutView`), `fieldScoutMarket`, `scoutUncertaintyMultOf`/`scoutGainMultOf`; `squadStaffWages` soma os olheiros de campo |
+| `src/Domain/staff/staff.ts` | `obscureForViewer` (borrão com amplitude por jogador + `scoutView`), `scoutUncertaintyMultOf`/`scoutGainMultOf`, `effectiveStars`/`memberStars`; `squadStaffWages` soma os contratos (olheiros de campo inclusive) |
 | `src/Domain/scouting/seen.ts` | Valores vistos: faixas de nível/valor/salário/atributo e o meio da faixa (busca e telas) |
 | `src/Domain/scout/displayPlayer.ts` | `knowledge`, `hiddenAttrs`, `statNoise`, `seen`, `avgRange`, `valueRange`, `potentialRange` (de `scoutView`) |
 | `src/backend/scoutingWorld.ts` | E/S: `loadViewer`/`viewFor`/`obscureSquadForViewer` (telas), `scoutingDay` (passo do avanço do dia), `rememberPlayers`, `scoutingOnClubLeft`, `missionLeagues`, `missionDistance` |
@@ -35,7 +35,7 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 | `src/backend/advanceDay.ts` | `scoutingDay` antes do bloco financeiro; linhas `scouting` no extrato da segunda; mensagens depois do `clearInbox`; quem sai livre na virada fica conhecido |
 | `src/backend/negotiationWorld.ts` (`dropFromLineup`), `jobWorld.ts` (`releaseHumanClub`) | Passagem pelo elenco (k 100) e troca de clube |
 | `src/GameInterface/ScoutScreen.tsx`, `Scout/*`, `Scouting/*` | Central de Olheiros (abas), coluna Conhecimento, estrela da lista, missões, relatórios, observados, joias, bloco da ficha |
-| `src/GameInterface/StaffScreen.tsx` | Olheiros de campo: cartões e aba "Olheiros" no mercado |
+| `src/GameInterface/StaffScreen.tsx`, `Transfers/StaffPoolTab.tsx` | Olheiros de campo: cartões na comissão; contratação pela aba Comissão de Transferências |
 | `src/GameInterface/Dashboard/*` | Cartão Atenção: joia e alertas da lista (7 dias) |
 | `scripts/scouting-index-bench.ts` | Custo do borrão por jogador × o uniforme antigo |
 
@@ -47,6 +47,7 @@ implícito = própria liga 35 · outra liga do país 20 · resto 0, + 25 se top 
 decaído   = k − 5 × max(0, dias desde a última observação − 90) / 30   (calculado na leitura, sem passada diária)
 ruído(k)  = 2,0 × (1 − k/100)^1,2 × multChefe            // ± pontos de cada atributo 0,0..10,0 (tela: ×10)
 multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe [0,7 ; 1,0 ; 1,4]
+# desde a 4.7 a nota vem das estrelas do chefe: ratingFromStars (1★ 1, 3★ 5, 5★ 10; vaga = 2★ = nota 3), staff.md
 ```
 
 | k | ruído (chefe 5) | tela |
@@ -84,8 +85,9 @@ multChefe = [nota 1, 5, 10] = [1,3 ; 1,0 ; 0,75] (vaga = nota 3); ganho do chefe
 
 ## Olheiros e missões
 
-- O olheiro-chefe (staff) conduz uma missão; os **olheiros de campo** (`Squad.staff.scouts`, até 4, mercado
-  semanal de 5 candidatos nota 2..9, salário de staff na linha `staff`) conduzem uma cada. Vaga = nota 3.
+- O olheiro-chefe (comissão, `staff.md`) conduz uma missão; os **olheiros de campo** (membros `fieldScout` da comissão,
+  até `STAFF.LIMITS.fieldScout` = 4, contratados da lista de livres em Transferências → Comissão, com contrato e salário
+  na linha `staff`) conduzem uma cada. A nota da missão é `ratingFromStars(estrelas)`; chefe vago = 2★ = nota 3.
 - Alvos: `country`/`league` (4/8/12 semanas), `continent` (ligas de nível 1, 8/12), `youth` (≤ 19 de um país,
   4/8), `player` (até 3 semanas ou k 100). Foco opcional: linha, idade máxima, "só quem melhora o elenco"
   (nível visto ≥ média da linha − 0,3). Cancelar = o gasto não volta.
@@ -136,7 +138,7 @@ ELITE €400k) no extrato (`scouting`, `ref.stage = "prospect"`), inbox `prospec
 ## Troca de clube e desemprego
 
 `releaseHumanClub` (troca ou demissão) chama `scoutingOnClubLeft`: missões canceladas, prospectos ficam com o
-clube, olheiros de campo saem com o staff; conhecimento e lista **seguem o técnico** (decisão 2); os jogadores do
+clube, os olheiros de campo ficam com a comissão do clube (que vira IA, sem comissão gravada); conhecimento e lista **seguem o técnico** (decisão 2); os jogadores do
 clube antigo ficam com k 100. Desempregado: `409 noClub` para criar missão, contratar olheiro ou prospecto;
 relatórios e lista continuam visíveis.
 
@@ -150,7 +152,7 @@ relatórios e lista continuam visíveis.
 | `POST /api/saves/:id/scouting/shortlist { playerId, squadId?, note? }` · `DELETE .../shortlist/:playerId` | 409 `shortlistFull` |
 | `POST /api/saves/:id/scouting/prospects/:prospectId/sign` | 400 `youthFull`, 409 `offerClosed` |
 | `GET /api/saves/:id/scouting/player/:playerId?squad=` | Conhecimento, último relatório, lista, missão em andamento (bloco da ficha) |
-| `GET /api/saves/:id/staff/scouts/market`, `POST .../staff/scouts/hire { candidateId }`, `POST .../staff/scouts/fire { scoutId }` | Olheiros de campo (409 `scoutsFull`; demitir cancela a missão dele) |
+| `GET /api/saves/:id/staff/pool?role=fieldScout`, `POST .../staff/hire { memberId, years }`, `POST .../staff/fire { memberId }` | Olheiros de campo pela comissão (`staff.md`; 409 `roleFull` acima de 4; demitir paga a multa e cancela a missão dele) |
 | `POST /api/saves/:id/scout-search` | Linhas com `knowledge`, `hiddenAttrs`, faixas; filtros `onlyShortlist`, `minKnowledge` |
 
 ## Telas
@@ -165,7 +167,8 @@ relatórios e lista continuam visíveis.
 - **Ficha** (de fora): bloco "Conhecimento" (barra, observado em, nota do último relatório, estrela, "Observar"
   com a escolha do olheiro livre, aviso abaixo de 60); atributos "?" ou em faixa, nível e valor em faixa.
 - **Negociação**: valor, nível e potencial em faixa e o aviso de conhecimento baixo (< 60).
-- **Equipe técnica**: cartões dos olheiros de campo e aba "Olheiros" no mercado. **Painel**: Atenção com joia e
+- **Equipe técnica**: cartões dos olheiros de campo no grupo Olheiros; a Central mostra o chefe e os olheiros em
+  estrelas, "Dispensar" (multa) e "Buscar olheiros" (→ `/transfers?tab=staff&role=fieldScout`). **Painel**: Atenção com joia e
   alertas da lista dos últimos 7 dias. **Inbox** `scouting` (ícone `binoculars`): `report`, `mission_done`, `gem`,
   `recommendation`, `shortlist`, `prospect`, `prospect_signed`.
   Na mensagem `recommendation` cada indicado (nota, nome, clube, joia) é um link para a ficha do jogador, como os

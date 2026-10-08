@@ -299,16 +299,24 @@ try {
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     }), { params: { saveId: saveId!, ...params } }) as Request & { params: Record<string, string> });
   };
+  const scoutApiGet = async (url: string) => {
+    const handler = (scoutApi as unknown as Record<string, (r: Request & { params: Record<string, string> }) => Promise<Response>>)["/api/saves/:saveId/staff/pool"]!;
+    return handler(Object.assign(new Request(`http://localhost${url}`, {
+      method: "GET", headers: { cookie: `fs_session=${scoutSession.token}` },
+    }), { params: { saveId: saveId! } }) as Request & { params: Record<string, string> });
+  };
   {
     const lc = new Map((leagueData as Array<LeagueEntry & { country?: string }>).map((l) => [l.slug, l.country ?? ""]));
     const ownCountry = lc.get(PLAYER_LEAGUE) ?? "";
     const foreign = ownCountry === "Spain" ? "England" : "Spain";
     const foreignLeague = foreign === "Spain" ? "la_liga" : "premier_league";
     const today = (await plain().getMeta(saveId))!.currentDate!;
-    const market = await (await scoutCall("/api/saves/:saveId/staff/scouts/market", "GET")).json() as { candidates: Array<{ id: string }> };
+    // Field scouts come from the coaching-staff pool (`.claude/rules/game/staff.md`): the two best listed.
+    const poolRes = await scoutApiGet(`/api/saves/${saveId}/staff/pool?role=fieldScout&sort=stars&limit=2`);
+    const pool = await poolRes.json() as { items: Array<{ id: string }> };
     const hired: string[] = [];
-    for (const c of market.candidates.slice(0, 2)) {
-      if ((await scoutCall("/api/saves/:saveId/staff/scouts/hire", "POST", { candidateId: c.id })).status === 200) hired.push(c.id);
+    for (const c of pool.items) {
+      if ((await scoutCall("/api/saves/:saveId/staff/hire", "POST", { memberId: c.id, years: 1 })).status === 200) hired.push(c.id);
     }
     const index = await plain().getSquadIndex(saveId);
     const foreignSquads = (await Promise.all(index.inLeague(foreignLeague).map((t) => plain().getSquadById(saveId!, t.squadId))))
@@ -329,6 +337,39 @@ try {
     for (const { p, sq } of ending) await scoutCall("/api/saves/:saveId/scouting/shortlist", "POST", { playerId: p.id, squadId: sq.id });
     scoutTrack.setupOk = hired.length === 2 && statuses.every((s) => s === 200) && ending.length > 0;
     console.log(`Olheiros: field scouts ${hired.length}, missions ${statuses.join("/")}, shortlist ${ending.length}, target ${star.p.name}\n`);
+  }
+
+  // Equipe técnica (`.claude/rules/game/staff.md`): the analyst's contract is forced to end inside the
+  // season (the director, responsible by default, must renew it), a coach is dismissed in the first month
+  // through the route and another hired from the free pool, the Monday staff line is compared with the
+  // contracts, and the starting goalkeeper's reflex/jump are recorded (the Goalkeeping area trains them).
+  const staffTrack = {
+    forcedId: "", forcedKinds: new Set<string>(),
+    firedId: "", firedDone: false, fireStatus: 0, hireStatus: 0, hiredId: "", severance: 0,
+    gkId: "", gkReflex: 0, gkJump: 0,
+    mondays: 0, mondayMismatch: [] as string[],
+  };
+  {
+    const sq0 = (await plain().getSquadById(saveId, playerSquadId))!;
+    const meta0s = (await plain().getMeta(saveId))!;
+    const today = meta0s.currentDate!;
+    const seasonEnd = meta0s.activeLeagues?.find((l) => l.leagueSlug === meta0s.leagueSlug)?.end ?? addDays(today, 120);
+    const analyst = sq0.staff?.members.find((m) => m.role === "analyst");
+    if (analyst?.contract) {
+      staffTrack.forcedId = analyst.id;
+      const until = [addDays(today, 75), addDays(seasonEnd, -7)].sort()[0]!;
+      const { decision: _decision, ...contract } = analyst.contract;
+      const members = sq0.staff!.members.map((m) => (m.id === analyst.id ? { ...m, contract: { ...contract, until } } : m));
+      await plain().saveSquadById(saveId, { ...sq0, staff: { ...sq0.staff!, members } });
+    }
+    const gk = sq0.players.filter((p) => p.positions[0] === "GK")
+      .sort((a, b) => Player.computeOverallAvg(b) - Player.computeOverallAvg(a))[0];
+    if (gk) {
+      staffTrack.gkId = gk.id;
+      staffTrack.gkReflex = gk.stats.reflex ?? 0;
+      staffTrack.gkJump = gk.stats.jump ?? 0;
+    }
+    console.log(`Equipe técnica: analyst forced to end ${staffTrack.forcedId ? "ok" : "MISSING"}, goalkeeper ${gk?.name ?? "none"}\n`);
   }
 
   // Cup year per country at creation — used later to detect which cups got regenerated.
@@ -549,6 +590,31 @@ try {
     const scoutMonday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1 && meta.clubId === playerSquadId;
     const scoutActive = scoutMonday ? (await plain().getScouting(saveId)).missions.filter((m) => m.start < date).length : 0;
 
+    // Equipe técnica: dismiss a coach after the first week and hire another from the pool; Monday bill.
+    const staffMonday = new Date(`${date}T12:00:00Z`).getUTCDay() === 1 && meta.clubId === playerSquadId;
+    let staffBillBefore = 0;
+    if (meta.clubId === playerSquadId) {
+      const { squadStaffWages } = await import("@/Domain/staff/staff");
+      if (!staffTrack.firedDone && days >= 7) {
+        staffTrack.firedDone = true;
+        const sqF = (await plain().getSquadById(saveId, playerSquadId))!;
+        const coach = sqF.staff?.members.find((m) => m.role === "coach");
+        if (coach) {
+          const fireRes = await scoutCall("/api/saves/:saveId/staff/fire", "POST", { memberId: coach.id });
+          staffTrack.fireStatus = fireRes.status;
+          staffTrack.firedId = coach.id;
+          staffTrack.severance = ((await fireRes.json()) as { severance?: number }).severance ?? 0;
+          const poolRes = await scoutApiGet(`/api/saves/${saveId}/staff/pool?role=coach&sort=stars&limit=5`);
+          const candidate = ((await poolRes.json()) as { items: Array<{ id: string }> }).items.find((c) => c.id !== coach.id);
+          if (candidate) {
+            staffTrack.hireStatus = (await scoutCall("/api/saves/:saveId/staff/hire", "POST", { memberId: candidate.id, years: 2 })).status;
+            staffTrack.hiredId = candidate.id;
+          }
+        }
+      }
+      if (staffMonday) staffBillBefore = squadStaffWages((await plain().getSquadById(saveId, playerSquadId))?.staff);
+    }
+
     const td = performance.now();
     const outcome = await runBufferedDay(saveId);
     const ms = performance.now() - td;
@@ -564,6 +630,22 @@ try {
     }
     for (const m of await plain().getInbox(saveId)) {
       if (m.category === "transfer") negoMessages.set(m.id, m.kind);
+      if (m.category === "contract" && m.kind.startsWith("staff_") && (m.staff ?? []).some((x) => x.id === staffTrack.forcedId)) {
+        staffTrack.forcedKinds.add(m.kind);
+      }
+    }
+    if (staffMonday) {
+      const { squadStaffWages } = await import("@/Domain/staff/staff");
+      staffTrack.mondays++;
+      const billAfter = squadStaffWages((await plain().getSquadById(saveId, playerSquadId))?.staff);
+      const seasonsS = await plain().listLedgerSeasons(saveId);
+      const line = (await Promise.all(seasonsS.map((y) => plain().getLedger(saveId!, y)))).flat()
+        .filter((e) => e.date === date && e.kind === "staff" && e.ref?.stage !== "severance")
+        .reduce((sum, e) => sum - e.amount, 0);
+      // The contract step runs before the money: a renewal or an exit that same Monday shows in the bill after.
+      if (Math.abs(line - staffBillBefore) > 1 && Math.abs(line - billAfter) > 1) {
+        staffTrack.mondayMismatch.push(`${date}: line ${line}, contracts ${staffBillBefore}/${billAfter}`);
+      }
     }
     // Olheiros: knowledge of the player target, travel lines, prospects signed into the academy.
     {
@@ -1416,15 +1498,41 @@ try {
   check(suspensionsServedObserved > 0, `disciplina: at least one suspension served during the run (${suspensionsServedObserved} observed)`);
 
   // ── Equipe técnica ───────────────────────────────────────────────────────
-  // See `.claude/rules/game/staff.md`. The ledger has a `staff` line on every Monday that has a
-  // `wages` line, the human club kept its three professionals, and AI clubs store none.
+  // See `.claude/rules/game/staff.md`. Every role filled and the coaches within the tier's limit; no
+  // contract past its end; the forced contract renewed (or warned); the dismissal's severance and the
+  // dismissed professional back in the pool; the goalkeeper trained by the Goalkeeping area; the
+  // Monday `staff` line equal to the contracts; AI clubs store no staff.
   console.log("\n── Equipe técnica ──");
   const humanFinal = allFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
-  // The three roles; `staff.scouts` (field scouts, `.claude/rules/game/scouting.md`) is a separate list.
+  const finalStaff = humanFinal?.staff?.members ?? [];
+  // Every role but the field scouts (`.claude/rules/game/scouting.md`, hired separately).
   const { STAFF_ROLES } = await import("@/Domain/staff/staffTypes");
-  const staffRoles = STAFF_ROLES.filter((r) => !!humanFinal?.staff?.[r]);
-  check(staffRoles.length === 3,
-    `staff: the human club has its 3 professionals at the end (${staffRoles.join(", ")}; ${humanFinal?.staff?.scouts?.length ?? 0} field scout(s))`);
+  const { roleLimit } = await import("@/Domain/staff/staff");
+  const staffRoles = STAFF_ROLES.filter((r) => r !== "fieldScout" && finalStaff.some((m) => m.role === r));
+  const fieldScoutCount = finalStaff.filter((m) => m.role === "fieldScout").length;
+  check(staffRoles.length === STAFF_ROLES.length - 1,
+    `staff: the human club has every role at the end (${staffRoles.join(", ")}; ${fieldScoutCount} field scout(s))`);
+  const coachCount = finalStaff.filter((m) => m.role === "coach").length;
+  check(!!humanFinal && coachCount <= roleLimit(humanFinal, "coach"),
+    `staff: ${coachCount} area coach(es), within the tier's limit (${humanFinal ? roleLimit(humanFinal, "coach") : "?"})`);
+  const staffEnd = (await plain().getMeta(saveId))!.currentDate!;
+  const overdue = finalStaff.filter((m) => !m.contract || m.contract.until < staffEnd);
+  check(overdue.length === 0, `staff: no contract past its end on ${staffEnd} (${overdue.map((m) => `${m.name} ${m.contract?.until ?? "none"}`).join(", ") || "none"})`);
+  check(staffTrack.forcedKinds.has("staff_renewed") || staffTrack.forcedKinds.has("staff_expiring"),
+    `staff: the forced contract was renewed by the director or warned (${[...staffTrack.forcedKinds].join(", ") || "no message"})`);
+  check(staffTrack.fireStatus === 200 && staffTrack.hireStatus === 200,
+    `staff: a coach dismissed and another hired through the routes (fire ${staffTrack.fireStatus}, hire ${staffTrack.hireStatus})`);
+  const severanceLine = allLedgerEntries.find((e) => e.kind === "staff" && e.ref?.stage === "severance");
+  check(!!severanceLine && severanceLine.amount < 0 && severanceLine.amount === -staffTrack.severance,
+    `staff: the dismissal's severance is a negative staff line (${severanceLine?.amount ?? "none"}, route ${staffTrack.severance})`);
+  const staffPoolEnd = await plain().getStaffPool(saveId, staffEnd);
+  check(staffPoolEnd.members.some((m) => m.id === staffTrack.firedId),
+    `staff: the dismissed coach is back in the free pool (${staffPoolEnd.members.length} free professionals)`);
+  const gkEnd = humanFinal?.players.find((p) => p.id === staffTrack.gkId);
+  check(!!gkEnd && ((gkEnd.stats.reflex ?? 0) !== staffTrack.gkReflex || (gkEnd.stats.jump ?? 0) !== staffTrack.gkJump),
+    `staff: the starting goalkeeper's reflex/jump evolved (${staffTrack.gkReflex}/${staffTrack.gkJump} -> ${gkEnd?.stats.reflex ?? "?"}/${gkEnd?.stats.jump ?? "?"})`);
+  check(staffTrack.mondays > 0 && staffTrack.mondayMismatch.length === 0,
+    `staff: the Monday staff line equals the contracts (${staffTrack.mondays} Mondays${staffTrack.mondayMismatch.length ? `; ${staffTrack.mondayMismatch.slice(0, 3).join(" | ")}` : ""})`);
   check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.staff === undefined),
     "staff: no AI club stores staff (they use the implicit tier rating)");
   const wageDates = new Set(allLedgerEntries.filter((e) => e.kind === "wages").map((e) => e.date));
@@ -2224,7 +2332,7 @@ try {
     check(scoutTrack.mondays > 0 && scoutTrack.travelMissing.length === 0, `olheiros: a travel line per active mission every Monday (${scoutTrack.travelMissing.slice(0, 3).join("; ") || "ok"})`);
     check(scoutTrack.kinds.has("shortlist"), "olheiros: at least one shortlist alert");
     check(scoutTrack.prospectSigned && scoutTrack.prospectChecks.length === 0, `olheiros: a prospect signed into the academy with contract and compensation (${scoutTrack.prospectChecks.join(", ") || (scoutTrack.prospectSigned ? "ok" : "none signed")})`);
-    const aiScouting = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.scouts?.length ?? 0) > 0);
+    const aiScouting = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.members ?? []).some((m) => m.role === "fieldScout"));
     check(aiScouting.length === 0, `olheiros: no AI club stores field scouts (${aiScouting.length})`);
     // The search blurs every row by its knowledge: hidden below 20, a range from ±0.5, exact at 100.
     const { searchScout, parseScoutQuery } = await import("@/backend/scoutSearch");
@@ -2346,7 +2454,7 @@ try {
         "convites: the old club became AI (no staff, academy or familiarity)");
       check(!!oldClub.financialTier && (oldClub.aiTransferBudget ?? 0) > 0, "convites: the old club got an AI tier and transfer budget");
       const mine0 = (await plain().getSquadById(saveId, newClub.squadId))!;
-      check(Object.keys(mine0.staff ?? {}).length === 3 && mine0.financialTier === undefined,
+      check((mine0.staff?.members.length ?? 0) > 0 && mine0.financialTier === undefined,
         "convites: the new club has the player's staff and no AI tier");
       check(Math.abs((await ledgerSum()) - (mine0.finances?.budget ?? 0)) < 1,
         `convites: ledger sums to the new club's balance (${Math.round(mine0.finances?.budget ?? 0)})`);

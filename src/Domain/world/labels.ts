@@ -1,6 +1,7 @@
 import type { LeagueData } from "@/types/playerTypes";
 import type { Continent, CountryEntry } from "@/types/worldTypes";
 import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 
 export const CONTINENT_ORDER: Continent[] = ["Europe", "South America", "North America", "Asia", "Africa", "Oceania", "Other"];
 
@@ -34,6 +35,20 @@ export function countryDisplayName(country: CountryEntry, lang: string, t: TFn):
     }
   }
   return t(`newGame.countries.${country.slug}.name`, { defaultValue: fallback });
+}
+
+/**
+ * Display name of a nationality as written in the world data (a plain English country name, e.g.
+ * `StaffMember.nationality`): same rules as `countryDisplayName` (i18n key, then Intl by ISO, then
+ * the raw name). Unknown names come back unchanged.
+ */
+export function nationalityDisplayName(nationality: string, lang: string, t: TFn): string {
+  const name = nationality.trim();
+  const flag = nationalityFlagCode(name);
+  if (!flag) return name;
+  const iso2 = flag.startsWith("gb-") ? "GB" : flag.toUpperCase();
+  const slug = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return countryDisplayName({ slug, name, flag, iso2, playable: false, headline: "" }, lang, t);
 }
 
 export function leagueLabel(league: LeagueData, countryName: string): string {

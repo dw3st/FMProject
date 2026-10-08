@@ -1,68 +1,149 @@
 import { describe, expect, test } from "bun:test";
 import {
-  developmentMultiplier, effectiveRating, initialStaff, injuryMultiplier, makeStaffMember, obscurePlayer,
-  recoveryMultiplier, scoutGainMultOf, scoutUncertaintyMultOf, squadStaffWages, staffEffectsOf, staffMarket, staffWeeklyWage,
+  areaMultsOf, developmentMultiplier, effectiveRating, effectiveStars, initialStaff, injuryMultiplier,
+  makeProfessional, memberStars, obscurePlayer, ratingFromStars, recoveryMultiplier, resolveAreaAssignments,
+  roleLimit, scoutGainMultOf, scoutUncertaintyMultOf, signContract, squadStaffWages, staffEffectsOf,
+  staffWageFor, staffWeeklyWage, starsFromScore,
 } from "@/Domain/staff/staff";
+import { STAFF } from "@/Domain/staff/staffConfig";
+import type { StaffMember, StaffRecord } from "@/Domain/staff/staffTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const stats = { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5 };
 const player = { id: "p1", name: "X", age: 25, squadId: "s", preferredFoot: "right", positions: ["CM"], stats, profile: { summary: "", archetype: "" } } as RosterPlayer;
 const squad = (extra: Partial<Squad> = {}): Squad =>
   ({ id: "s", name: "S", colors: ["#000", "#fff"], money: 0, players: [], finances: { broadcasting: 10e6, commercial: 10e6, total: 20e6, budget: 0, followers: 1e6 }, ...extra }) as Squad;
+const fin = (income: number) => ({ broadcasting: income, commercial: 0, total: income, followers: 0, budget: 0 });
+const aiSquad = (income: number) => ({ id: "x", players: [], finances: fin(income) }) as unknown as Squad;
+const human = (staff: StaffRecord) => ({ id: "h", players: [], finances: fin(20e6), staff }) as unknown as Squad;
+const pro = (key: string, role: StaffMember["role"], stars: number) => makeProfessional(key, role, stars);
 
-describe("staff effects", () => {
+describe("rating curves (old effects)", () => {
   test("extremes and neutral", () => {
     expect(developmentMultiplier(1)).toBeCloseTo(0.9);
     expect(developmentMultiplier(5)).toBeCloseTo(1);
     expect(developmentMultiplier(10)).toBeCloseTo(1.15);
     expect(recoveryMultiplier(1)).toBeCloseTo(0.95);
-    expect(recoveryMultiplier(5)).toBeCloseTo(1);
     expect(recoveryMultiplier(10)).toBeCloseTo(1.1);
     expect(injuryMultiplier(1)).toBeCloseTo(1.1);
-    expect(injuryMultiplier(5)).toBeCloseTo(1);
     expect(injuryMultiplier(10)).toBeCloseTo(0.85);
     expect(scoutUncertaintyMultOf(1)).toBeCloseTo(1.3);
-    expect(scoutUncertaintyMultOf(5)).toBeCloseTo(1);
     expect(scoutUncertaintyMultOf(10)).toBeCloseTo(0.75);
     expect(scoutGainMultOf(1)).toBeCloseTo(0.7);
     expect(scoutGainMultOf(10)).toBeCloseTo(1.4);
   });
+});
 
-  test("field scouts are paid like the rest of the staff", () => {
-    const chief = makeStaffMember("c", "scout", 5, 1);
-    const field = makeStaffMember("f", "scout", 7, 1);
-    expect(squadStaffWages({ scout: chief, scouts: [field] }, 1)).toBe(staffWeeklyWage(5, 1) + staffWeeklyWage(7, 1));
+describe("stars", () => {
+  test("rating conversion keeps the old curve points", () => {
+    expect(ratingFromStars(1)).toBe(1);
+    expect(ratingFromStars(3)).toBe(5);
+    expect(ratingFromStars(5)).toBe(10);
+    expect(ratingFromStars(2.5)).toBe(4);
+    expect(ratingFromStars(3.8)).toBeCloseTo(7, 9);
   });
-
-  test("hired staff wins over tier; vacant role counts as 3; no staff uses the tier", () => {
-    const hired = makeStaffMember("k", "assistant", 9, 1);
-    expect(effectiveRating(squad({ staff: { assistant: hired } }), "assistant")).toBe(9);
-    expect(effectiveRating(squad({ staff: { assistant: hired } }), "scout")).toBe(3);
-    expect(effectiveRating(squad({ financialTier: "ELITE" }), "fitness")).toBe(7);
-    expect(staffEffectsOf(squad({ financialTier: "MEDIUM" })).devMult).toBeCloseTo(1);
+  test("score 10.5 is 3 stars, extremes clamp", () => {
+    expect(starsFromScore(10.5)).toBe(3);
+    expect(starsFromScore(1)).toBe(1);
+    expect(starsFromScore(20)).toBe(5);
+  });
+  test("a generated professional lands within half a star of the target", () => {
+    for (const s of [1, 2, 3, 4, 5]) expect(Math.abs(memberStars(pro(`k${s}`, "medic", s)) - s)).toBeLessThanOrEqual(0.5);
+    for (const s of [1, 2, 3, 4, 5]) expect(Math.abs(memberStars(pro(`c${s}`, "coach", s)) - s)).toBeLessThanOrEqual(0.5);
+  });
+  test("generation is deterministic", () => {
+    expect(pro("a", "scout", 3.5)).toEqual(pro("a", "scout", 3.5));
   });
 });
 
-describe("staff generation", () => {
-  test("deterministic", () => {
-    expect(makeStaffMember("a", "scout", 6, 1)).toEqual(makeStaffMember("a", "scout", 6, 1));
-    expect(initialStaff("save1", squad())).toEqual(initialStaff("save1", squad()));
+describe("effects", () => {
+  test("AI: implied stars reproduce today's ratings exactly", () => {
+    // LOW 4, MEDIUM 5, HIGH 6, ELITE 7 (staff.md) — income thresholds 15M/80M/200M.
+    expect(effectiveRating(aiSquad(1e6), "assistant")).toBe(4);
+    expect(effectiveRating(aiSquad(20e6), "fitness")).toBe(5);
+    expect(effectiveRating(aiSquad(100e6), "scout")).toBeCloseTo(6, 9);
+    expect(effectiveRating(aiSquad(300e6), "assistant")).toBeCloseTo(7, 9);
+    expect(effectiveRating(squad({ financialTier: "ELITE" }), "fitness")).toBeCloseTo(7, 9);
   });
-
-  test("starting staff within one point of the implicit rating", () => {
-    const s = initialStaff("save1", squad({ financialTier: "HIGH" }));
-    for (const role of ["assistant", "fitness", "scout"] as const) expect(Math.abs(s[role]!.rating - 6)).toBeLessThanOrEqual(1);
+  test("3 stars everywhere is neutral", () => {
+    const fx = staffEffectsOf(aiSquad(20e6));
+    expect(fx.devMult).toBe(1);
+    expect(fx.recoveryMult).toBe(1);
+    expect(fx.injuryMult).toBe(1);
+    expect(fx.injuryDurationMult).toBe(1);
+    expect(fx.familiarityMult).toBe(1);
+    for (const v of Object.values(areaMultsOf(aiSquad(20e6)))) expect(v).toBe(1);
   });
-
-  test("market: 5 per role, stable within a week, renews the next Monday", () => {
-    const mon = staffMarket("s", "2027-03-01", "fitness", 1);
-    expect(mon).toHaveLength(5);
-    expect(staffMarket("s", "2027-03-05", "fitness", 1)).toEqual(mon);
-    expect(staffMarket("s", "2027-03-08", "fitness", 1)).not.toEqual(mon);
+  test("vacant area = 0.4; vacant role = 2 stars", () => {
+    const sq = human({ members: [] });
+    for (const v of Object.values(areaMultsOf(sq))) expect(v).toBe(STAFF.AREA_VACANT_MULT);
+    expect(effectiveStars(sq, "medic")).toBe(STAFF.VACANT_STARS);
+    expect(effectiveRating(sq, "assistant")).toBe(3);
+    expect(staffEffectsOf(sq).injuryDurationMult).toBeCloseTo(1.1, 9);
+    expect(staffEffectsOf(sq).familiarityMult).toBeCloseTo(0.9, 9);
   });
+  test("1 and 5 stars on an area", () => {
+    const one = human({ members: [pro("gk1", "goalkeeping", 1)] });
+    const five = human({ members: [pro("gk5", "goalkeeping", 5)] });
+    expect(areaMultsOf(one).goalkeeping).toBeLessThan(0.8); // 1 star ± half a star of generation
+    expect(areaMultsOf(five).goalkeeping).toBeGreaterThan(1.15);
+  });
+  test("hand-built squads without finances are neutral", () => {
+    const sq = { id: "lab", players: [] } as unknown as Squad;
+    expect(staffEffectsOf(sq).devMult).toBe(1);
+  });
+});
 
-  test("wage grows with rating", () => {
+describe("area assignments", () => {
+  test("auto: each area to the best coach with room, at most 2 each", () => {
+    const a = pro("ca", "coach", 4), b = pro("cb", "coach", 2), c = pro("cc", "coach", 3);
+    const res = resolveAreaAssignments({ members: [a, b, c] });
+    const count = new Map<string, number>();
+    for (const m of Object.values(res)) count.set(m!.id, (count.get(m!.id) ?? 0) + 1);
+    for (const n of count.values()) expect(n).toBeLessThanOrEqual(2);
+    expect(Object.keys(res).length).toBe(5);
+  });
+  test("manual choice wins while valid; a coach gone frees it", () => {
+    const a = pro("ca", "coach", 4), b = pro("cb", "coach", 2), c = pro("cc", "coach", 3);
+    const res = resolveAreaAssignments({ members: [a, b, c], areaAssignments: { setPieces: b.id } });
+    expect(res.setPieces!.id).toBe(b.id);
+    const gone = resolveAreaAssignments({ members: [a, c], areaAssignments: { setPieces: b.id } });
+    expect(gone.setPieces?.id).not.toBe(b.id);
+  });
+  test("two coaches leave one area vacant", () => {
+    const res = resolveAreaAssignments({ members: [pro("x", "coach", 3), pro("y", "coach", 3)] });
+    expect(Object.keys(res).length).toBe(4);
+  });
+});
+
+describe("wages and starting staff", () => {
+  test("wage frozen at signing: the bill sums the contracts", () => {
+    const m = signContract(makeProfessional("w", "assistant", 3), { date: "2027-02-05", seasonEnd: "2027-12-06", years: 2, clubFactor: 1 });
+    expect(m.contract!.until).toBe("2028-12-06");
+    expect(m.contract!.wage).toBe(staffWageFor("assistant", memberStars(m), 1));
+    expect(squadStaffWages({ members: [m] })).toBe(m.contract!.wage);
+    expect(staffWageFor("groundskeeper", 3, 1)).toBeLessThan(staffWageFor("assistant", 3, 1));
     expect(staffWeeklyWage(9, 1)).toBeGreaterThan(staffWeeklyWage(3, 1));
+  });
+  test("initial staff: one per role, coaches up to the tier limit, no field scouts, deterministic", () => {
+    const sq = { id: "c", players: [], finances: fin(20e6) } as unknown as Squad; // MEDIUM
+    const a = initialStaff("save1", sq, { date: "2027-02-05", seasonEnd: "2027-12-06" });
+    const b = initialStaff("save1", sq, { date: "2027-02-05", seasonEnd: "2027-12-06" });
+    expect(a).toEqual(b);
+    const count = (r: string) => a.members.filter((m) => m.role === r).length;
+    expect(count("coach")).toBe(3);
+    expect(count("fieldScout")).toBe(0);
+    for (const r of ["assistant", "fitness", "goalkeeping", "medic", "analyst", "scout", "groundskeeper"]) expect(count(r)).toBe(1);
+    for (const m of a.members) {
+      expect(Math.abs(memberStars(m) - 3)).toBeLessThanOrEqual(1);
+      expect(m.contract).toBeDefined();
+    }
+  });
+  test("role limit by natural tier", () => {
+    expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "coach")).toBe(3);
+    expect(roleLimit({ finances: fin(300e6) } as unknown as Squad, "coach")).toBe(5);
+    expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "fieldScout")).toBe(4);
+    expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "medic")).toBe(1);
   });
 });
 
@@ -74,7 +155,6 @@ describe("scout noise", () => {
     for (const k of Object.keys(stats) as (keyof typeof stats)[]) expect(Math.abs(a.stats[k] - 5)).toBeLessThanOrEqual(1.55);
     expect(a.stats).not.toEqual(player.stats);
   });
-
 });
 
 import { recoverDay } from "@/Domain/fitness/fitness";
@@ -116,9 +196,9 @@ describe("lab fitness coach", () => {
     const tired = { ...player, seasonLog: { ...emptySeasonLog(), fitness: 50, load: 0 } } as RosterPlayer;
     const base = squad({ players: [tired] });
     const weak = applyRestDays(withFitnessCoach(base, 1), 2).players[0]!.seasonLog!.fitness;
-    const strong = applyRestDays(withFitnessCoach(base, 10), 2).players[0]!.seasonLog!.fitness;
+    const strong = applyRestDays(withFitnessCoach(base, 5), 2).players[0]!.seasonLog!.fitness;
     expect(strong).toBeGreaterThan(weak);
-    expect(staffEffectsOf(withFitnessCoach(base, 10)).injuryMult).toBeCloseTo(0.85);
+    expect(staffEffectsOf(withFitnessCoach(base, 5)).injuryMult).toBeLessThan(0.95);
     expect(withFitnessCoach(base, undefined)).toBe(base);
   });
 });

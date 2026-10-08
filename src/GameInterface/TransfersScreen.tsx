@@ -9,11 +9,19 @@ import { WorldTransfers } from "@/GameInterface/Transfers/WorldTransfers";
 import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOverview";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { TransfersSplitResponse } from "@/types/transferTypes";
+import { StaffPoolTab } from "@/GameInterface/Transfers/StaffPoolTab";
 import { useTransferWindows, WindowBanner, WindowsTable } from "@/GameInterface/Transfers/transferWindow";
+
+const TABS = ["my", "world", "sell", "loans", "windows", "staff"] as const;
+type TransfersTab = (typeof TABS)[number];
 
 export function TransfersScreen() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"my" | "world" | "sell" | "loans" | "windows">("my");
+  // `?tab=staff` (and `&role=`) opens the staff pool, e.g. from the staff screen or the scouting centre.
+  const [activeTab, setActiveTab] = useState<TransfersTab>(() => {
+    const tab = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
+    return TABS.includes(tab as TransfersTab) ? (tab as TransfersTab) : "my";
+  });
   const windows = useTransferWindows();
   const [club, setClub] = useState<TransfersSplitResponse["club"]>([]);
   const [world, setWorld] = useState<TransfersSplitResponse["world"]>([]);
@@ -62,6 +70,7 @@ export function TransfersScreen() {
                 { key: "sell", label: t("transfers.forSale") },
                 { key: "loans", label: t("negotiation.overview.tab") },
                 { key: "windows", label: t("transferWindows.tab") },
+                { key: "staff", label: t("transfers.staffTab") },
               ]}
               active={activeTab}
               onChange={setActiveTab}
@@ -71,9 +80,11 @@ export function TransfersScreen() {
           {t("screenTitles.transfers.main")}
         </ScreenTitle>
 
-        <WindowBanner data={windows} />
+        {activeTab !== "staff" && <WindowBanner data={windows} />}
 
-        {activeTab === "windows" ? (
+        {activeTab === "staff" ? (
+          loadSession() ? <StaffPoolTab saveId={loadSession()!.saveId} /> : null
+        ) : activeTab === "windows" ? (
           <WindowsTable data={windows} />
         ) : activeTab === "loans" ? (
           loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["bids", "rivals", "preContracts", "out", "in", "sellOn"]} /> : null

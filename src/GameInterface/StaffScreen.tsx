@@ -1,57 +1,36 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Button } from "@/GameInterface/ui/Button";
-import { DataTable, type DataTableColumn } from "@/GameInterface/ui/DataTable";
 import { Label } from "@/GameInterface/ui/Label";
+import { Notice } from "@/GameInterface/ui/Notice";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
-import { StatBar } from "@/GameInterface/ui/StatBar";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
-import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
-import type { StaffEffects } from "@/Domain/staff/staff";
-import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
-import { formatEuros } from "@/Domain/money";
+import { formatWageFull } from "@/Domain/money";
+import type { CoachArea, StaffRole } from "@/Domain/staff/staffTypes";
 import { ResponsibilitiesPanel } from "@/GameInterface/Staff/ResponsibilitiesPanel";
+import { StaffCard, VacantStaffCard } from "@/GameInterface/Staff/StaffCard";
+import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
+import { TrainingAreasPanel } from "@/GameInterface/Staff/TrainingAreasPanel";
+import { STAFF_GROUPS, formatMult, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 
-interface StaffResponse {
-  staff: StaffRecord;
-  effects: StaffEffects;
-  weeklyTotal: number;
-}
-
-interface MarketResponse {
-  week: string;
-  candidates: Record<StaffRole, StaffMember[]>;
-}
-
-/** Field scouts (`.claude/rules/game/scouting.md`): hired ones and this week's candidates. */
-interface ScoutsMarketResponse {
-  candidates: StaffMember[];
-  scouts: StaffMember[];
-  max: number;
-}
-
-type MarketTab = StaffRole | "scouts";
-
-const fmt = (n: number, digits = 2) => n.toFixed(digits);
-
+/**
+ * Coaching staff (`.claude/rules/game/staff.md`): one card per professional grouped by function,
+ * the seven training areas with their coach, the profile (renew / dismiss) and the weekly bill.
+ * New professionals come from the free pool (Transfers → Staff).
+ */
 export function StaffScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, refresh } = useGameSave();
   const saveId = session?.saveId;
 
-  const [data, setData] = useState<StaffResponse | null>(null);
-  const [market, setMarket] = useState<MarketResponse | null>(null);
+  const [data, setData] = useState<StaffData | null>(null);
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<MarketTab>("assistant");
-  const [scouts, setScouts] = useState<ScoutsMarketResponse | null>(null);
-  const [firingScout, setFiringScout] = useState<StaffMember | null>(null);
   const [busy, setBusy] = useState(false);
-  const [firing, setFiring] = useState<StaffMember | null>(null);
-  const [hireError, setHireError] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [open, setOpen] = useState<StaffMemberView | null>(null);
   // Page tabs: the staff | responsibilities (`?tab=responsibilities` opens it).
   const [pageTab, setPageTab] = useState<"staff" | "responsibilities">(() =>
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "responsibilities"
@@ -59,118 +38,62 @@ export function StaffScreen() {
 
   const load = useCallback(async () => {
     if (!saveId) return;
-    try {
-      const [s, m] = await Promise.all([
-        fetch(`/api/saves/${saveId}/staff`).then((r) => (r.ok ? r.json() : Promise.reject(r))),
-        fetch(`/api/saves/${saveId}/staff/market`).then((r) => (r.ok ? r.json() : Promise.reject(r))),
-      ]);
-      setData(s as StaffResponse);
-      setMarket(m as MarketResponse);
-      setError(false);
-      const sc = await fetch(`/api/saves/${saveId}/staff/scouts/market`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-      setScouts(sc as ScoutsMarketResponse | null);
-    } catch {
-      setError(true);
-    }
+    const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff`);
+    if (r.ok) { setData(r.data); setError(false); }
+    else setError(true);
   }, [saveId]);
 
   useEffect(() => { void load(); }, [load]);
 
-  async function post(path: "hire" | "fire", body: Record<string, string>) {
-    if (!saveId) return false;
+  function changed(next: StaffData) {
+    setData(next);
+    void refresh();
+  }
+
+  async function assign(area: CoachArea, memberId: string | null) {
+    if (!saveId) return;
     setBusy(true);
-    try {
-      const res = await fetch(`/api/saves/${saveId}/staff/${path}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) return false;
-      setData((await res.json()) as StaffResponse);
-      void refresh();
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function hire(candidate: StaffMember) {
-    setHireError(false);
-    const ok = await post("hire", { role: candidate.role, candidateId: candidate.id });
-    if (!ok) setHireError(true);
-  }
-
-  async function confirmFire() {
-    if (!firing) return;
-    await post("fire", { role: firing.role });
-    setFiring(null);
-  }
-
-  async function scoutsCall(path: "hire" | "fire", body: Record<string, string>) {
-    if (!saveId) return false;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/saves/${saveId}/staff/scouts/${path}`, {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
-      });
-      if (!res.ok) return false;
-      await load();
-      void refresh();
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function hireScout(candidate: StaffMember) {
-    setHireError(false);
-    if (!(await scoutsCall("hire", { candidateId: candidate.id }))) setHireError(true);
-  }
-
-  async function confirmFireScout() {
-    if (!firingScout) return;
-    await scoutsCall("fire", { scoutId: firingScout.id });
-    setFiringScout(null);
+    setActionError(null);
+    const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff/areas`, "PUT", { [area]: memberId });
+    setBusy(false);
+    if (r.ok) setData(r.data);
+    else setActionError(t(`staff.errors.${r.error}`, { defaultValue: t("staff.errors.generic") }));
   }
 
   if (error) {
     return <ScreenContainer><p className="text-sm text-muted-foreground m-0">{t("staff.loadFailed")}</p></ScreenContainer>;
   }
-  if (!data || !market) {
+  if (!data) {
     return <ScreenContainer><p className="text-sm text-muted-foreground m-0">{t("staff.loading")}</p></ScreenContainer>;
   }
 
-  const effectLine = (role: StaffRole): string => {
+  const lang = i18n.language;
+  const areaMult = (area: string) => data.areas.find((a) => a.area === area)?.mult ?? 1;
+  const effectLine = (m: StaffMemberView): string => {
     const e = data.effects;
-    if (role === "assistant") return t("staff.effects.assistant", { mult: fmt(e.devMult) });
-    if (role === "fitness") return t("staff.effects.fitness", { recovery: fmt(e.recoveryMult), injury: fmt(e.injuryMult) });
-    return t("staff.effects.scout", { uncertainty: fmt(e.scoutUncertaintyMult), gain: fmt(e.scoutGainMult) });
+    switch (m.role) {
+      case "assistant": return t("staff.effects.assistant", { mult: formatMult(e.devMult, lang) });
+      case "fitness": return t("staff.effects.fitness", {
+        area: formatMult(areaMult("physical"), lang), recovery: formatMult(e.recoveryMult, lang), injury: formatMult(e.injuryMult, lang),
+      });
+      case "goalkeeping": return t("staff.effects.goalkeeping", { mult: formatMult(areaMult("goalkeeping"), lang) });
+      case "coach": {
+        const led = data.areas.filter((a) => a.memberId === m.id);
+        return led.length === 0
+          ? t("staff.effects.coachNoArea")
+          : led.map((a) => `${t(`staff.area.${a.area}`)} ${formatMult(a.mult, lang)}`).join(" · ");
+      }
+      case "medic": return t("staff.effects.medic", { mult: formatMult(e.injuryDurationMult, lang) });
+      case "analyst": return t("staff.effects.analyst", { mult: formatMult(e.familiarityMult, lang) });
+      case "scout": return t("staff.effects.scout", { uncertainty: formatMult(e.scoutUncertaintyMult, lang), gain: formatMult(e.scoutGainMult, lang) });
+      case "fieldScout": return t("staff.effects.fieldScout");
+      case "groundskeeper": return t("staff.effects.groundskeeper");
+    }
   };
-
-  const columns: DataTableColumn<StaffMember>[] = [
-    { key: "name", header: tab === "scouts" ? t("staff.scouts.fieldScout") : t("staff.roles." + tab), cell: (m) => <span className={`${TABLE_STYLE.name} text-base`}>{m.name}</span> },
-    { key: "nat", header: "", cell: (m) => <span className="text-muted-foreground">{m.nationality}</span> },
-    { key: "age", header: "", cell: (m) => <span className="text-muted-foreground">{t("staff.age", { age: m.age })}</span> },
-    { key: "rating", header: t("staff.rating"), className: "w-48", cell: (m) => <StatBar value={m.rating} max={10} display={m.rating} /> },
-    { key: "wage", header: "", className: "text-right", cell: (m) => <span className="tabular-nums">{t("staff.weeklyWage", { wage: formatEuros(m.wage) })}</span> },
-    {
-      key: "hire", header: "", className: "text-right",
-      cell: (m) => {
-        if (tab === "scouts") {
-          const full = (scouts?.scouts.length ?? 0) >= (scouts?.max ?? 0);
-          return <Button disabled={busy || full} onClick={() => void hireScout(m)}>{t("staff.hire")}</Button>;
-        }
-        const current = data.staff[m.role];
-        return current?.id === m.id
-          ? <span className="text-muted-foreground">{t("staff.hired")}</span>
-          : <Button disabled={busy} onClick={() => void hire(m)}>{t("staff.hire")}</Button>;
-      },
-    },
-  ];
+  const vacantEffect = (role: StaffRole): string | undefined =>
+    role === "fitness" || role === "goalkeeping" ? t("staff.vacantArea")
+      : role === "coach" || role === "fieldScout" || role === "groundskeeper" ? undefined
+        : t("staff.vacantEffect");
 
   return (
     <ScreenContainer>
@@ -181,7 +104,7 @@ export function StaffScreen() {
         trailing={
           <div className="text-right">
             <Label>{t("staff.weeklyTotal")}</Label>
-            <span className="font-display font-bold tabular-nums text-xl">{formatEuros(data.weeklyTotal)}</span>
+            <span className="font-display font-bold tabular-nums text-xl">{formatWageFull(data.weeklyTotal)}</span>
           </div>
         }
       >
@@ -200,106 +123,42 @@ export function StaffScreen() {
 
       {pageTab === "responsibilities" && saveId && <ResponsibilitiesPanel saveId={saveId} />}
 
-      {pageTab === "staff" && <>
-      <section className="grid gap-6 md:grid-cols-3">
-        {STAFF_ROLES.map((role) => {
-          const m = data.staff[role];
-          return (
-            <div key={role} className="rounded-md border border-border p-3 flex flex-col gap-3">
-              <Label>{t(`staff.roles.${role}`)}</Label>
-              {m ? (
-                <>
-                  <div>
-                    <div className="font-display font-black uppercase text-base leading-none">{m.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</div>
-                  </div>
-                  <StatBar value={m.rating} max={10} display={m.rating} label={t("staff.rating")} />
-                  <div className="text-sm tabular-nums">{t("staff.weeklyWage", { wage: formatEuros(m.wage) })}</div>
-                </>
-              ) : (
-                <div>
-                  <div className="font-display font-black uppercase text-base leading-none text-muted-foreground">{t("staff.vacant")}</div>
-                  <div className="text-sm text-muted-foreground mt-1">{t("staff.vacantEffect")}</div>
-                </div>
-              )}
-              <div className="text-sm text-muted-foreground">{effectLine(role)}</div>
-              {m && (
-                <div>
-                  <Button variant="danger" flush disabled={busy} onClick={() => setFiring(m)}>
-                    {t("staff.fire")}
-                  </Button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </section>
+      {pageTab === "staff" && (
+        <>
+          {actionError && <Notice kind="error">{actionError}</Notice>}
+          {STAFF_GROUPS.map((group) => (
+            <section key={group.key} className="flex flex-col gap-3">
+              <SectionTitle>{t(`staff.groups.${group.key}`)}</SectionTitle>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {group.roles.flatMap((role) => {
+                  const members = data.members
+                    .filter((m) => m.role === role)
+                    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
+                  const limit = data.limits[role];
+                  const cards = members.map((m) => (
+                    <StaffCard key={m.id} member={m} effect={effectLine(m)} onOpen={() => setOpen(m)} clubColors={session?.clubColors} />
+                  ));
+                  if (limit && limit.used < limit.max) {
+                    cards.push(<VacantStaffCard key={`vacant-${role}`} role={role} used={limit.used} max={limit.max} effect={vacantEffect(role)} />);
+                  }
+                  return cards;
+                })}
+              </div>
+            </section>
+          ))}
 
-      {scouts && (
-        <section className="flex flex-col gap-3">
-          <SectionTitle>{t("staff.scouts.title")}</SectionTitle>
-          <p className="text-sm text-muted-foreground m-0 tabular-nums">{t("staff.scouts.subtitle", { count: scouts.scouts.length, max: scouts.max })}</p>
-          {scouts.scouts.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-4">
-              {scouts.scouts.map((m) => (
-                <div key={m.id} className="rounded-md border border-border p-3 flex flex-col gap-3">
-                  <Label>{t("staff.scouts.fieldScout")}</Label>
-                  <div>
-                    <div className="font-display font-black uppercase text-base leading-none">{m.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</div>
-                  </div>
-                  <StatBar value={m.rating} max={10} display={m.rating} label={t("staff.rating")} />
-                  <div className="text-sm tabular-nums">{t("staff.weeklyWage", { wage: formatEuros(m.wage) })}</div>
-                  <div>
-                    <Button variant="danger" flush disabled={busy} onClick={() => setFiringScout(m)}>{t("staff.fire")}</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+          <TrainingAreasPanel data={data} busy={busy} onAssign={(area, id) => void assign(area, id)} />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm tabular-nums m-0">{t("staff.weeklyBill", { wage: formatWageFull(data.weeklyTotal) })}</p>
+            <Button onClick={() => { window.location.href = "/transfers?tab=staff"; }}>{t("staff.findProfessionals")}</Button>
+          </div>
+        </>
       )}
 
-      <section>
-        <SectionTitle>{t("staff.market")}</SectionTitle>
-        <p className="text-sm text-muted-foreground mt-2 mb-3">{t("staff.marketSubtitle")}</p>
-        <SegmentedTabs<MarketTab>
-          tabs={[
-            ...STAFF_ROLES.map((r) => ({ key: r as MarketTab, label: t(`staff.roles.${r}`) })),
-            ...(scouts ? [{ key: "scouts" as MarketTab, label: t("staff.scouts.tab") }] : []),
-          ]}
-          active={tab}
-          onChange={setTab}
-        />
-        {hireError && <p className="text-sm text-destructive mt-3">{t("staff.hireFailed")}</p>}
-        <DataTable
-          className="mt-2"
-          columns={columns}
-          rows={tab === "scouts" ? (scouts?.candidates ?? []) : market.candidates[tab]}
-          rowKey={(m) => m.id}
-        />
-      </section>
-      </>}
-
-      <ConfirmDialog
-        open={firingScout !== null}
-        title={t("staff.fireConfirmTitle", { name: firingScout?.name ?? "" })}
-        body={t("staff.scouts.fireConfirmBody")}
-        confirmLabel={t("staff.fire")}
-        onConfirm={() => void confirmFireScout()}
-        onClose={() => setFiringScout(null)}
-        busy={busy}
-      />
-
-      <ConfirmDialog
-        open={firing !== null}
-        title={t("staff.fireConfirmTitle", { name: firing?.name ?? "" })}
-        body={t("staff.fireConfirmBody")}
-        confirmLabel={t("staff.fire")}
-        onConfirm={() => void confirmFire()}
-        onClose={() => setFiring(null)}
-        busy={busy}
-      />
+      {saveId && (
+        <StaffDetailModal saveId={saveId} member={open} mode="club" clubColors={session?.clubColors} onClose={() => setOpen(null)} onChanged={changed} />
+      )}
     </ScreenContainer>
   );
 }

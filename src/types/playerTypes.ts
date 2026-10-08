@@ -1,5 +1,5 @@
 import type { ClubFacilities } from "@/types/facilityTypes";
-import type { StaffRecord } from "@/Domain/staff/staffTypes";
+import type { StaffRecord } from "@/types/staffTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/moraleTypes";
 import type { Personality, PersonalityView } from "@/types/personalityTypes";

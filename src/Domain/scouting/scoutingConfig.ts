@@ -27,8 +27,7 @@ export const SCOUTING = {
   /** Rating of whoever leads a mission → multiplier on the knowledge gained. */
   RATING_GAIN: [0.6, 1.0, 1.4] as const,
 
-  // ── Scouts and missions ──────────────────────────────────────────────────
-  MAX_FIELD_SCOUTS: 4,
+  // ── Missions (the field-scout limit is `STAFF.LIMITS.fieldScout`) ─────────────
   REGION_WEEKS: [4, 8, 12] as const,
   CONTINENT_WEEKS: [8, 12] as const,
   YOUTH_WEEKS: [4, 8] as const,

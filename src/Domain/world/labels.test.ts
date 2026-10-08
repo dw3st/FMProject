@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, groupCountriesByContinent, leagueLabel,
+  CONTINENT_ORDER, competitionName, continentI18nKey, countryDisplayName, nationalityDisplayName, groupCountriesByContinent, leagueLabel,
   leaguesOfCountry, matchesCountryQuery, partitionDayMatches,
 } from "@/Domain/world/labels";
 import type { CountryEntry } from "@/types/worldTypes";
@@ -143,5 +143,15 @@ describe("matchesCountryQuery", () => {
   });
   test("não bate quando nenhuma parte contém a query", () => {
     expect(matchesCountryQuery("xyz", ["Brasil", "América do Sul"])).toBe(false);
+  });
+});
+
+describe("nationalityDisplayName", () => {
+  const t = (key: string, opts: { defaultValue: string }) => (key === "newGame.countries.england.name" ? "Inglaterra" : opts.defaultValue);
+  test("i18n key, then Intl by ISO, then the raw name", () => {
+    expect(nationalityDisplayName("England", "pt-BR", t)).toBe("Inglaterra");
+    expect(nationalityDisplayName("Germany", "pt-BR", t)).toBe("Alemanha");
+    expect(nationalityDisplayName("Germany", "en", t)).toBe("Germany");
+    expect(nationalityDisplayName("Atlantis", "pt-BR", t)).toBe("Atlantis");
   });
 });

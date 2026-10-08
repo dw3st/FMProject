@@ -18,11 +18,9 @@ import { isPlayerSquadId } from "@/Domain/clubLookup";
 import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import {
   applyTrainingDevelopment,
-  DEFAULT_DP_WEIGHTS,
-  type RoleDPWeights,
 } from "@/GameEngine/PlayerDevelopment";
-import rolesData from "@/Data/roles.json";
-import { staffEffectsOf } from "@/Domain/staff/staff";
+import { dpWeightsFor } from "@/Domain/development/dpWeights";
+import { areaMultsOf, staffEffectsOf } from "@/Domain/staff/staff";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { trainFamiliarity } from "@/Domain/familiarity/familiarity";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
@@ -156,6 +154,8 @@ export function buildTrainingEvent(
   const devMult = staffFx.devMult;
   const recoveryMult = staffFx.recoveryMult * ground.recoveryMult;
   const injuryMult = staffFx.injuryMult * ground.injuryMult;
+  // Training areas (`.claude/rules/game/staff.md`): growth multiplier per DP category.
+  const areas = areaMultsOf(squad);
   // Clear a healed injury BEFORE eligibility/training is decided — a player who returns today can
   // train (or be ineligible on fitness) the same day, same as `matches.ts`.
   const healedPlayerIds: string[] = [];
@@ -193,7 +193,7 @@ export function buildTrainingEvent(
           playerId: String(p.id),
           playerName: p.name,
           severity,
-          returnDate: injuryReturnDate(date, severity, rng),
+          returnDate: injuryReturnDate(date, severity, rng, staffFx.injuryDurationMult),
         };
         newInjuries.push(injury);
         injuryByPlayer.set(String(p.id), injury);
@@ -219,11 +219,11 @@ export function buildTrainingEvent(
     // the implicit rule (`src/Domain/familiarity`).
     ...(squad.styleFamiliarity
       ? {
-          // Gain only when somebody actually trained today; scaled by the assistant and the intensity.
+          // Gain only when somebody actually trained today; scaled by the analyst and the intensity.
           styleFamiliarity: trainFamiliarity(
             squad.styleFamiliarity,
             eligibleIds.size > 0 ? policy.styleFocus : undefined,
-            devMult * FAMILIARITY.INTENSITY_GAIN[policy.intensity],
+            staffFx.familiarityMult * FAMILIARITY.INTENSITY_GAIN[policy.intensity],
           ),
         }
       : {}),
@@ -235,11 +235,11 @@ export function buildTrainingEvent(
       // Apply training-driven development first (only for players who actually trained).
       let next = p;
       if (trained) {
-        const roleKey = p.positions[0] ?? "CM";
-        const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
-        const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
-        const { updatedPlayer, levelChanges, dpGained } =
-          applyTrainingDevelopment(p, policy.intensity, weights, devMult * ground.devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)));
+        const { updatedPlayer, levelChanges, dpGained } = applyTrainingDevelopment(
+          p, policy.intensity, dpWeightsFor(p),
+          devMult * ground.devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
+          areas,
+        );
         next = updatedPlayer;
         if (dpGained > 0) {
           eff!.dpGained = +dpGained.toFixed(2);

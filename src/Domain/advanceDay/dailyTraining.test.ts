@@ -440,17 +440,17 @@ describe("style familiarity on a training day", () => {
     ...extra,
   });
 
-  test("human club: the focus gains (× assistant), the rest decay", () => {
+  test("human club: the focus gains (× analyst), the rest decay", () => {
     const s = squad({ styleFamiliarity: { possession: 50, high_press: 60 } });
     const { updatedSquad } = buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity: "normal", styleFocus: "possession" }, "2027-02-05");
-    const dev = staffEffectsOf(s).devMult;
+    const dev = staffEffectsOf(s).familiarityMult;
     expect(updatedSquad.styleFamiliarity?.possession).toBeCloseTo(50 + 2 * dev * 0.5, 2);
     expect(updatedSquad.styleFamiliarity?.high_press).toBeCloseTo(60 - 0.15, 2);
   });
 
   test("intensity scales the gain: light ×0.7, heavy ×1.3", () => {
     const s = squad({ styleFamiliarity: { possession: 50 } });
-    const dev = staffEffectsOf(s).devMult;
+    const dev = staffEffectsOf(s).familiarityMult;
     const gain = (intensity: "light" | "heavy") =>
       buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity, styleFocus: "possession" }, "2027-02-05", () => 0.99)
         .updatedSquad.styleFamiliarity!.possession! - 50;
@@ -495,3 +495,54 @@ describe("training ground (facilities)", () => {
   });
 });
 
+import { initialStaff, makeProfessional, signContract } from "@/Domain/staff/staff";
+import type { StaffRecord } from "@/Domain/staff/staffTypes";
+import { dpRequired } from "@/GameEngine/PlayerDevelopment";
+
+describe("coaching staff on a training day", () => {
+  const fin = { broadcasting: 20e6, commercial: 0, total: 20e6, budget: 0, followers: 1e6 }; // MEDIUM
+  const club = (staff: StaffRecord | undefined, extra: Partial<Squad> = {}): Squad => ({
+    id: "s", name: "T", colors: ["#000", "#fff"], money: 0, finances: fin,
+    players: [basePlayer({
+      id: "p1", name: "Kid", age: 19, seasonLog: makeSeasonLog({ fitness: 95 }),
+      stats: { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5,
+        stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5 },
+    })],
+    ...(staff ? { staff } : {}),
+    ...extra,
+  });
+  // One session from a fresh record: the DP added on top of the seed (no level-up that small).
+  const progressOf = (s: Squad) => {
+    const sq = buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity: "normal" }, "2027-02-05", () => 0.99).updatedSquad;
+    const seed = 13 * dpRequired(5) * 0.5;
+    return Object.values(sq.players[0]!.progress ?? {}).reduce((a, b) => a + b, 0) - seed;
+  };
+
+  test("a club with nobody leading the areas develops at about 40% of a 3-star staff", () => {
+    const full = initialStaff("t", club(undefined), { date: "2027-02-05", seasonEnd: "2027-12-06" });
+    // Same assistant on both sides: only the areas differ.
+    const assistant = full.members.filter((m) => m.role === "assistant");
+    const vacantGain = progressOf(club({ members: assistant }));
+    const fullGain = progressOf(club(full));
+    expect(vacantGain).toBeGreaterThan(0);
+    expect(vacantGain / fullGain).toBeGreaterThan(0.25);
+    expect(vacantGain / fullGain).toBeLessThan(0.6);
+  });
+
+  test("the analyst (not the assistant) scales the familiarity gain", () => {
+    const sign = (role: "analyst" | "assistant", stars: number) => signContract(makeProfessional(`${role}${stars}`, role, stars),
+      { date: "2027-02-05", seasonEnd: "2027-12-06", years: 1, clubFactor: 1 });
+    const gain = (staff: StaffRecord) => buildTrainingEvent(
+      "s", club(staff, { styleFamiliarity: { possession: 50 } }),
+      { minEnergyToTrain: 0, intensity: "normal", styleFocus: "possession" }, "2027-02-05", () => 0.99,
+    ).updatedSquad.styleFamiliarity!.possession! - 50;
+    const a5 = club({ members: [sign("analyst", 5)] });
+    const a3 = club({ members: [sign("analyst", 3)] });
+    const g5 = gain(a5.staff!), g3 = gain(a3.staff!);
+    expect(g5 / g3).toBeCloseTo(staffEffectsOf(a5).familiarityMult / staffEffectsOf(a3).familiarityMult, 2);
+    expect(staffEffectsOf(a5).familiarityMult).toBeGreaterThan(1.1);
+    // The assistant no longer changes it.
+    const withAssistant = gain({ members: [sign("analyst", 3), sign("assistant", 5)] });
+    expect(withAssistant).toBeCloseTo(g3, 6);
+  });
+});

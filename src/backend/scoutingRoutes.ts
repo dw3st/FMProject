@@ -11,8 +11,9 @@ import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
 import { allowedWeeks, missionCost, seenProfile } from "@/Domain/scouting/missions";
 import { scoutMultipliersOf } from "@/Domain/scouting/knowledge";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
-import { effectiveRating, fieldScoutMarket, staffWeeklyWage, weekStartOf } from "@/Domain/staff/staff";
+import { effectiveRating, effectiveStars, headOf, memberStars, membersOf, ratingFromStars } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { severanceOf } from "@/Domain/staff/staffContracts";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -49,13 +50,23 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
   }
 }
 
-/** The scouts that can lead a mission: the chief (vacant: rating 3) and the field scouts. */
-function scoutsOf(squad: Squad | null): { id: string; name: string; rating: number; chief: boolean; vacant?: boolean }[] {
+/**
+ * The scouts that can lead a mission: the chief (vacant: 2 stars = the old rating 3) and the field
+ * scouts. `stars` is what the screens show; `rating` (the old 1..10) drives the mission gain.
+ */
+function scoutsOf(squad: Squad | null, date?: string): { id: string; name: string; stars: number; rating: number; chief: boolean; vacant?: boolean; severance?: number }[] {
   if (!squad) return [];
-  const chief = squad.staff?.scout;
+  const chief = headOf(squad, "scout");
   return [
-    { id: "chief", name: chief?.name ?? "", rating: effectiveRating(squad, "scout"), chief: true, ...(chief ? {} : { vacant: true }) },
-    ...(squad.staff?.scouts ?? []).map((s) => ({ id: s.id, name: s.name, rating: s.rating, chief: false })),
+    {
+      id: "chief", name: chief?.name ?? "", stars: effectiveStars(squad, "scout"), rating: effectiveRating(squad, "scout"),
+      chief: true, ...(chief ? {} : { vacant: true }),
+    },
+    ...membersOf(squad, "fieldScout").map((s) => {
+      const stars = memberStars(s);
+      // With the day: the severance of dismissing him today (shown in the confirmation).
+      return { id: s.id, name: s.name, stars, rating: ratingFromStars(stars), chief: false, ...(date ? { severance: severanceOf(s, date) } : {}) };
+    }),
   ];
 }
 
@@ -121,7 +132,7 @@ async function scoutingView(saveId: string, state: ScoutingState) {
   const viewer = await loadViewer(saveService, saveId);
   const ownCountry = viewer?.ownCountry ?? "";
   const revenue = own ? wageRevenueBasisOf(own) : 0;
-  const scouts = scoutsOf(own);
+  const scouts = scoutsOf(own, meta?.currentDate);
   const missions = await Promise.all(state.missions.map(async (m) => ({
     ...m,
     weeklyCost: own ? missionCost(m.target.kind, await missionDistance(saveService, saveId, m, ownCountry), revenue) : 0,
@@ -163,7 +174,7 @@ async function scoutingView(saveId: string, state: ScoutingState) {
     date,
     ownCountry,
     ownContinent: continentOf(ownCountry) ?? null,
-    maxFieldScouts: S.MAX_FIELD_SCOUTS,
+    maxFieldScouts: STAFF.LIMITS.fieldScout,
     maxShortlist: S.MAX_SHORTLIST,
     weeks: { region: S.REGION_WEEKS, continent: S.CONTINENT_WEEKS, youth: S.YOUTH_WEEKS, player: S.PLAYER_MAX_WEEKS },
     scouts: scouts.map((s) => ({ ...s, busy: state.missions.some((m) => m.scoutId === s.id) })),
@@ -334,70 +345,6 @@ export const scoutingRoutes = {
         date, kind: "prospect_signed", playerId: player.id, playerName: player.name, fee: prospect.fee, clubName: prospect.country,
       }), saveService);
       return Response.json(await scoutingView(saveId, next));
-    });
-  },
-
-  // ── Field scouts (staff market) ────────────────────────────────────────────
-
-  "/api/saves/:saveId/staff/scouts/market": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const h = await human(saveId);
-    if (h instanceof Response) return h;
-    const date = h.meta.currentDate ?? new Date().toISOString().slice(0, 10);
-    const hired = new Set((h.squad.staff?.scouts ?? []).map((s) => s.id));
-    return Response.json({
-      week: weekStartOf(date),
-      candidates: fieldScoutMarket(saveId, date, wageFactorOf(h.squad)).filter((c) => !hired.has(c.id)),
-      scouts: (h.squad.staff?.scouts ?? []).map((s) => ({ ...s, wage: staffWeeklyWage(s.rating, wageFactorOf(h.squad)) })),
-      max: S.MAX_FIELD_SCOUTS,
-    });
-  },
-
-  /** `POST { candidateId }` - hires a field scout of this week's market (409 `scoutsFull` past the limit). */
-  "/api/saves/:saveId/staff/scouts/hire": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const body = await readJson(req);
-    if (!body || typeof body.candidateId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
-    return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
-      if (h instanceof Response) return h;
-      const scouts = h.squad.staff?.scouts ?? [];
-      if (scouts.length >= S.MAX_FIELD_SCOUTS) return Response.json({ error: "scoutsFull" }, { status: 409 });
-      const date = h.meta.currentDate ?? new Date().toISOString().slice(0, 10);
-      const candidate = fieldScoutMarket(saveId, date, wageFactorOf(h.squad)).find((c) => c.id === body.candidateId);
-      if (!candidate || scouts.some((s) => s.id === candidate.id)) return Response.json({ error: "candidate not found" }, { status: 404 });
-      const next: Squad = { ...h.squad, staff: { ...(h.squad.staff ?? {}), scouts: [...scouts, candidate] } };
-      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      return Response.json({ scouts: next.staff!.scouts });
-    });
-  },
-
-  /** `POST { scoutId }` - dismisses a field scout; his mission is cancelled. */
-  "/api/saves/:saveId/staff/scouts/fire": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const body = await readJson(req);
-    if (!body || typeof body.scoutId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
-    return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
-      if (h instanceof Response) return h;
-      const scouts = h.squad.staff?.scouts ?? [];
-      if (!scouts.some((s) => s.id === body.scoutId)) return Response.json({ error: "scout not found" }, { status: 404 });
-      const next: Squad = { ...h.squad, staff: { ...(h.squad.staff ?? {}), scouts: scouts.filter((s) => s.id !== body.scoutId) } };
-      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      const state = await saveService.getScouting(saveId);
-      if (state.missions.some((m) => m.scoutId === body.scoutId)) {
-        await saveService.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => m.scoutId !== body.scoutId) });
-      }
-      return Response.json({ scouts: next.staff!.scouts });
     });
   },
 

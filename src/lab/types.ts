@@ -86,11 +86,11 @@ export interface Variant {
    */
   outOfPosition?: boolean;
   /**
-   * Fitness-coach rating 1..10 of this side (`src/Domain/staff`): scales the injury risk (engine and
+   * Fitness-coach stars 1..5 (halves) of this side (`src/Domain/staff`): scales the injury risk (engine and
    * quickSim) and the fitness recovery between congestion games. Absent = the squad's tier-implicit
    * staff, same as in the game for an AI club.
    */
-  staffRating?: number;
+  fitnessCoachStars?: number;
   /**
    * Familiarity 0..100 of this side with its own `tacticalStyle` (`src/Domain/familiarity`): nudges
    * the style's tactic weights (engine) or the line strengths (quickSim). Absent = neutral (50).

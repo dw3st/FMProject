@@ -7,9 +7,10 @@ import { renewalContract } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD, MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import { roundAttr } from "@/Domain/attributes";
 import { MAIN_ROLE_TO_SPECIFICS, overallAvg, weightedScore } from "@/Domain/playerRating";
-import { effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
+import { areaMultsOf, effectiveRating, staffEffectsOf } from "@/Domain/staff/staff";
+import { dpWeightsFor } from "@/Domain/development/dpWeights";
 import { academyEffectsOf } from "@/Domain/facilities/facilities";
-import { applyTrainingDevelopment, DEFAULT_DP_WEIGHTS, GROWTH_DP_SCALE, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
+import { applyTrainingDevelopment, GROWTH_DP_SCALE, type AreaMults } from "@/GameEngine/PlayerDevelopment";
 import ROLES from "@/Data/roles.json";
 import type { MainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
@@ -157,17 +158,19 @@ export function generateIntake(args: {
 
 export { potentialBand } from "@/Domain/youth/potential";
 
-/** One season of academy training (no matches): DP from training sessions, then age + 1. */
-export function developYouthSeason(player: RosterPlayer, dpMult: number): RosterPlayer {
-  const roleEntry = (ROLES as Record<string, { dpWeights?: RoleDPWeights }>)[player.positions[0] ?? "CM"];
-  const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
+/**
+ * One season of academy training (no matches): DP from training sessions, then age + 1. `areaMults` are the
+ * club's training areas (`src/Domain/staff`, growth only); absent = neutral.
+ */
+export function developYouthSeason(player: RosterPlayer, dpMult: number, areaMults: AreaMults = {}): RosterPlayer {
+  const weights = dpWeightsFor(player);
   let p: RosterPlayer = { ...player, overallAvg: undefined };
   // GROWTH_DP_SCALE slows the squad down to the old pace of whole-point steps, whose progress reset at every
   // rollover hid most of a season's growth. Academy progress is never reset, so it never had that dead zone:
   // dividing the scale back out keeps the academy at its old pace (.claude/rules/game/development.md, "Passo de 0,1").
   const academyDpMult = (dpMult * rebornDpMult(player) * professionalismDpMult(player)) / GROWTH_DP_SCALE;
   for (let i = 0; i < Y.SESSIONS_PER_SEASON; i++) {
-    p = applyTrainingDevelopment(p, "normal", weights, academyDpMult).updatedPlayer;
+    p = applyTrainingDevelopment(p, "normal", weights, academyDpMult, areaMults).updatedPlayer;
   }
   return { ...p, age: p.age + 1, overallAvg: undefined };
 }
@@ -198,7 +201,8 @@ export function processYouthRollover(args: {
   if (isHuman) {
     const assistantRating = effectiveRating(squad, "assistant");
     const devMult = staffEffectsOf(squad).devMult;
-    const aged = (squad.youth ?? []).map((p) => developYouthSeason(p, devMult));
+    const areas = areaMultsOf(squad);
+    const aged = (squad.youth ?? []).map((p) => developYouthSeason(p, devMult, areas));
     // Reborn players may stay until the end of their x1.3 window (REBORN_UNTIL_AGE).
     const leaves = (p: RosterPlayer) => p.age >= (p.reborn ? RETIREMENT.REBORN_UNTIL_AGE : Y.RELEASE_AGE);
     const autoReleased = aged.filter(leaves);

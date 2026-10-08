@@ -1,5 +1,6 @@
 import type { PlayerNews } from "@/Domain/morale/morale";
 import { randomUUID } from "crypto";
+import type { StaffContractNews } from "@/Domain/staff/staffContracts";
 import { attrDisplay } from "@/Domain/attributes";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
@@ -353,6 +354,40 @@ export function buildDirectorSummaryMessage(args: {
     leaving,
     refused,
   };
+}
+
+const STAFF_CONTRACT_SUBJECT: Record<StaffContractNews["kind"], string> = {
+  staff_expiring: "Staff contracts ending soon",
+  staff_renewed:  "Staff contracts renewed",
+  staff_leaving:  "Staff leaving at the end of the contract",
+  staff_left:     "Staff contracts ended",
+  staff_retired:  "Staff retired",
+};
+
+/**
+ * Coaching-staff contract news of a day (`.claude/rules/game/staff.md`): one message per kind,
+ * naming every professional concerned. English fallback; the screen translates.
+ */
+export function buildStaffContractMessages(date: string, news: StaffContractNews[]): ContractInboxMessage[] {
+  const kinds = [...new Set(news.map((x) => x.kind))];
+  return kinds.map((kind) => {
+    const items = news.filter((x) => x.kind === kind);
+    const untils = new Set(items.map((x) => x.until).filter(Boolean));
+    const until = untils.size === 1 ? [...untils][0] : undefined;
+    return {
+      id:        `contract-${date}-${kind}-${items.map((x) => x.member.id).join("_")}-${randomUUID()}`,
+      date,
+      createdAt: date,
+      read:      false,
+      category:  "contract" as const,
+      subject:   STAFF_CONTRACT_SUBJECT[kind],
+      preview:   items.map((x) => x.member.name).join(", ").slice(0, 120),
+      kind,
+      players:   [],
+      staff:     items.map((x) => x.member),
+      ...(until ? { until } : {}),
+    };
+  });
 }
 
 /** Academy news for the human club: the new intake, or players released at the age limit. */

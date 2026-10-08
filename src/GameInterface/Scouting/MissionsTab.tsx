@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
+import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Chip } from "@/GameInterface/ui/Chip";
@@ -8,12 +9,13 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { Icon } from "@/GameInterface/Icons";
-import { formatFee } from "@/Domain/money";
+import { formatFee, formatWageFull } from "@/Domain/money";
 import { leagueLabel } from "@/Domain/world/labels";
 import type { LeagueData } from "@/types/playerTypes";
 import type { ScoutFocus, ScoutTargetKind } from "@/types/scoutingTypes";
 import { scoutingCall, type ScoutingData, type ScoutingScout } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
+import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import countriesRaw from "@/Data/countries.json";
 
 const CONTINENT_OF = new Map(Object.values(countriesRaw as Record<string, { name: string; continent?: string }>).map((c) => [c.name, c.continent ?? ""]));
@@ -32,11 +34,29 @@ export function MissionsTab({
   const { t, i18n } = useTranslation();
   const [newFor, setNewFor] = useState<ScoutingScout | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dismissing, setDismissing] = useState<ScoutingScout | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function cancel(id: string) {
     const r = await scoutingCall(`/api/saves/${saveId}/scouting/missions/${id}`, "DELETE");
     if (r.ok) onChanged(r.json as ScoutingData);
     else setError(t("warnings.errors.loadFailed"));
+  }
+
+  // Field scouts are coaching staff (`.claude/rules/game/staff.md`): dismissed by the general fire
+  // route (severance, back to the free pool; his mission is cancelled).
+  async function dismiss() {
+    if (!dismissing) return;
+    setBusy(true);
+    try {
+      setError(null);
+      const r = await scoutingCall(`/api/saves/${saveId}/staff/fire`, "POST", { memberId: dismissing.id });
+      if (r.ok) onChanged();
+      else setError(t(`staff.errors.${r.json?.error ?? "generic"}`, { defaultValue: t("staff.errors.generic") }));
+    } finally {
+      setBusy(false);
+      setDismissing(null);
+    }
   }
 
   return (
@@ -57,7 +77,7 @@ export function MissionsTab({
                     {scout.vacant ? t("scouting.vacant") : scout.name}
                   </p>
                 </div>
-                <span className="font-display font-bold tabular-nums text-sm text-primary shrink-0">{t("scouting.rating", { rating: scout.rating })}</span>
+                <span className="shrink-0"><StaffStars stars={scout.stars} /></span>
               </div>
               {mission ? (
                 <>
@@ -88,11 +108,34 @@ export function MissionsTab({
                   </Button>
                 </>
               )}
+              {!scout.chief && (
+                <Button variant="danger" flush onClick={() => setDismissing(scout)} disabled={!data.employed} className="self-start">
+                  {t("staff.fire")}
+                </Button>
+              )}
             </div>
           );
         })}
       </div>
-      <p className="text-sm text-muted-foreground m-0">{t("scouting.fieldScoutsHint", { max: data.maxFieldScouts })}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground m-0">{t("scouting.fieldScoutsHint", { max: data.maxFieldScouts })}</p>
+        <Button
+          variant="secondary"
+          disabled={!data.employed || data.scouts.filter((x) => !x.chief).length >= data.maxFieldScouts}
+          onClick={() => { window.location.href = "/transfers?tab=staff&role=fieldScout"; }}
+        >
+          {t("scouting.findScouts")}
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={dismissing !== null}
+        title={t("staff.fireConfirmTitle", { name: dismissing?.name ?? "" })}
+        body={t("staff.scouts.fireConfirmBody", { amount: formatWageFull(dismissing?.severance ?? 0) })}
+        confirmLabel={t("staff.fire")}
+        onConfirm={() => void dismiss()}
+        onClose={() => setDismissing(null)}
+        busy={busy}
+      />
       <NewMissionModal
         saveId={saveId}
         scout={newFor}
@@ -155,7 +198,12 @@ function NewMissionModal({
     <Modal open={!!scout} onClose={onClose} size="md">
       <div className="p-6 flex flex-col gap-5">
         <SectionTitle>{t("scouting.newMission")}</SectionTitle>
-        <p className="text-sm text-muted-foreground m-0">{scout ? `${scout.vacant ? t("scouting.vacant") : scout.name} · ${t("scouting.rating", { rating: scout.rating })}` : ""}</p>
+        {scout && (
+          <p className="text-sm text-muted-foreground m-0 flex flex-wrap items-center gap-2">
+            <span>{scout.vacant ? t("scouting.vacant") : scout.name}</span>
+            <StaffStars stars={scout.stars} />
+          </p>
+        )}
         <div className="flex flex-col gap-2">
           <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("scouting.targetLabel")}</span>
           <OptionChips<Region>

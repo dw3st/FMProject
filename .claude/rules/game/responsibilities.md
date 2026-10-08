@@ -37,7 +37,7 @@ versão **4.6**. Visual: `.claude/rules/ui-standard.md`.
 | Tópico | Mensagens | Padrão |
 |---|---|---|
 | `actions` (travado) | `transfer` bid/loan_bid/rival_bid, `player`, `board`, `job`, `retirement:reborn`, `season:negative_balance` | ligado |
-| `contracts` | `contract` (resumo do diretor, avisos, renovado, saídas livres) | ligado |
+| `contracts` | `contract` (resumo do diretor, avisos, renovado, saídas livres; comissão técnica `staff_*`) | ligado |
 | `transfer_news` | o resto de `transfer` (empréstimo voltou, cláusula, janelas, pré-contrato, rival venceu), `transfer_in/out` | ligado |
 | `injuries` / `development` / `youth` / `retirement` | categorias do mesmo nome | ligado |
 | `competitions` | `season`, `cup`, `continental` | ligado |
@@ -82,3 +82,11 @@ com o diretor (renova, deixa sair, responde a conversa, um resumo, sem aviso) e 
 conversa de volta). `scripts/season-rollover-smoke.ts`, seção "Responsabilidades": ao menos um resumo e uma renovação
 do diretor, nenhum aviso de 90 dias, nenhuma conversa de contrato, nenhuma mensagem `manager_news`; na seção "Olheiros",
 sem ligar nada nenhum `report` chega, depois o smoke liga `scouting_reports` pela rota.
+
+## Comissão técnica (4.7)
+
+Com o diretor responsável (`directorHandlesContracts`) ele também renova a **comissão** toda segunda
+(`staffContractDay`, `.claude/rules/game/staff.md` → "Contratos"): a 60 dias do fim, renova por 2 anos quem tem estrelas
+≥ as implícitas do tier − 0,5 e idade < 66 (`staff_renewed`), senão marca a saída (`staff_leaving`). Com o técnico
+responsável, só o aviso `staff_expiring` (renovação na ficha do profissional). Mensagens `contract` / `staff_*`, tópico
+`contracts`.

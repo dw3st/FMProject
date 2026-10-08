@@ -14,11 +14,14 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
+import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import type { StarKind } from "@/Domain/world/stars";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
-import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
+import { matchConditions, type MatchConditions } from "@/Domain/matchday/matchConditions";
+import { weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import type { ClubVenue } from "@/types/playerTypes";
 import type {
   AttentionItem,
@@ -141,6 +144,7 @@ export function ClubCard({
   leagueName,
   managerName,
   managerRank,
+  managerFace,
   reputation,
   pendingOffers,
   contract,
@@ -158,6 +162,8 @@ export function ClubCard({
   leagueName: string;
   managerName: string | null;
   managerRank: number | null;
+  /** The human manager's face (Etapa 31b): saved avatar and nationality; absent avatar = drawn from the id. */
+  managerFace?: { face?: ManagerFace | null; nationality?: string | null } | null;
   /** Manager reputation 0..100 (`.claude/rules/game/jobs.md`); null while loading. */
   reputation: number | null;
   /** Pending job offers. */
@@ -193,6 +199,14 @@ export function ClubCard({
         </div>
       </div>
 
+      <div className="flex items-start gap-3 min-w-0">
+      {managerName && (
+        <ManagerFaceImage
+          manager={{ id: "player", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
+          clubColors={club.colors}
+          size={48}
+        />
+      )}
       <div className="flex flex-col gap-1 min-w-0">
         <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
         <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
@@ -219,6 +233,7 @@ export function ClubCard({
             {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
           </span>
         )}
+      </div>
       </div>
 
       <div className="flex flex-col gap-3 min-w-0">
@@ -322,7 +337,7 @@ export function NextMatchCard({
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">{competitionLabel}</span>
           </div>
-          {conditions && <MatchDetails stadium={stadium} kickoff={conditions.kickoff} weather={conditions.weather} />}
+          {conditions && <MatchDetails stadium={stadium} conditions={conditions} />}
         </div>
       )}
       <div className="flex flex-wrap items-end justify-between gap-3 mt-auto">
@@ -365,19 +380,8 @@ export function NextMatchCard({
   );
 }
 
-const WEATHER_ICON: Record<MatchWeather, IconName> = {
-  sunny: "sun",
-  partlyCloudy: "cloud-sun",
-  cloudy: "cloud",
-  rain: "cloud-rain",
-  wind: "wind",
-  cold: "thermometer-snowflake",
-  snow: "snowflake",
-  hot: "thermometer-sun",
-};
-
 /** Stadium + capacity, kickoff time and weather (cosmetic, see `matchConditions`). */
-function MatchDetails({ stadium, kickoff, weather }: { stadium: ClubVenue | null; kickoff: string; weather: MatchWeather }) {
+function MatchDetails({ stadium, conditions }: { stadium: ClubVenue | null; conditions: MatchConditions }) {
   const { t, i18n } = useTranslation();
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
@@ -394,11 +398,11 @@ function MatchDetails({ stadium, kickoff, weather }: { stadium: ClubVenue | null
       )}
       <span className="inline-flex items-center gap-1.5" title={t("dashboard.home.kickoff")}>
         <Icon name="clock" size={16} />
-        <span className="tabular-nums">{kickoff}</span>
+        <span className="tabular-nums">{conditions.kickoff}</span>
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <Icon name={WEATHER_ICON[weather]} size={16} />
-        {t(`dashboard.home.weather.${weather}`)}
+        <Icon name={weatherIconName(conditions)} size={16} />
+        {t(weatherLabelKey(conditions.weather))}
       </span>
     </div>
   );

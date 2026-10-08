@@ -274,6 +274,15 @@ const GRADE_RANK: Record<ScoutGrade, number> = { A: 0, B: 1, C: 2, D: 3, E: 4 };
 export type TravelDistance = "country" | "continent" | "world";
 
 /** Weekly travel cost of one active mission (€, positive). */
+/**
+ * Missions whose leader is still at the club: the chief, or one of the club's current field scouts.
+ * A field scout who left (fired, contract ended) takes his mission with him.
+ */
+export function missionsWithLeaders<M extends { scoutId: string }>(missions: M[], fieldScoutIds: Iterable<string>): M[] {
+  const ids = new Set(fieldScoutIds);
+  return missions.filter((m) => m.scoutId === "chief" || ids.has(m.scoutId));
+}
+
 export function missionCost(kind: ScoutTargetKind, distance: TravelDistance, annualRevenue: number): number {
   const share = S.TRAVEL_SHARE[distance] * (kind === "player" ? S.PLAYER_TRAVEL_MULT : 1);
   return Math.round((share * Math.max(0, annualRevenue)) / 52);

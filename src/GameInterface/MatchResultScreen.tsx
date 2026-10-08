@@ -22,9 +22,10 @@ import {
 } from "@/GameInterface/matchTeamColors";
 import { addOneDay } from "@/Domain/dates";
 import { Icon, iconOf } from "@/GameInterface/Icons";
+import { matchConditions } from "@/Domain/matchday/matchConditions";
+import { refereeFor, weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 
 const Clock = iconOf("clock");
-const Cloud = iconOf("cloud");
 const MapPin = iconOf("map-pin");
 const User = iconOf("user");
 
@@ -44,25 +45,6 @@ function RoleBadge({ role, align }: { role: string; align: "left" | "right" }) {
       {roleLabel(role)}
     </span>
   );
-}
-
-const WEATHER_OPTIONS = [
-  { icon: "☀", label: "Clear" },
-  { icon: "⛅", label: "Partly Cloudy" },
-  { icon: "🌧", label: "Light Rain" },
-  { icon: "🌫", label: "Foggy" },
-  { icon: "❄", label: "Cold" },
-];
-
-const REFEREES = ["M. Oliver", "A. Taylor", "S. Attwell", "P. Tierney", "C. Kavanagh"];
-
-function getMatchMeta(date: string, clubName: string, isHome: boolean) {
-  const seed = parseInt(date.replace(/-/g, ""), 10);
-  return {
-    weather: WEATHER_OPTIONS[seed % WEATHER_OPTIONS.length]!,
-    referee: REFEREES[seed % REFEREES.length]!,
-    venue: isHome ? `${clubName} Stadium` : "Away Ground",
-  };
 }
 
 function playerIdsForTeam(event: MatchEvent, side: "home" | "away"): string[] {
@@ -448,7 +430,19 @@ export function MatchResultScreen() {
   const homeLogoUrl = squadLogoUrl(matchEvent.home);
   const awayLogoUrl = squadLogoUrl(matchEvent.away);
 
-  const { weather, referee, venue } = getMatchMeta(resolvedDate, session.clubName, isHome);
+  const referee = refereeFor(resolvedDate);
+  // Same kickoff/weather as the dashboard card and the preview: the fixture + the home club's country.
+  const fixture = fixtures.find(
+    (f) => f.date === resolvedDate && f.home === matchEvent.home && f.away === matchEvent.away,
+  );
+  const neutral = !!fixture?.neutral;
+  const conditions = matchConditions(
+    { date: resolvedDate, home: matchEvent.home, away: matchEvent.away },
+    neutral ? null : homeSquad?.country ?? null,
+  );
+  const venue = neutral
+    ? t("cups.neutral")
+    : homeSquad?.venue?.name ?? (isHome ? `${session.clubName} Stadium` : "Away Ground");
   const competition = competitionName(matchEvent.competition, leagues, i18n.language);
   const th = matchEvent.teamStats.home;
   const ta = matchEvent.teamStats.away;
@@ -717,7 +711,8 @@ export function MatchResultScreen() {
         <div className="card-arcade rounded-md px-6 py-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <InfoCell icon={MapPin} label={t("matchResult.venue")} value={venue} />
-            <InfoCell icon={Cloud} label={t("matchResult.weather")} value={`${weather.icon} ${weather.label}`} />
+            <InfoCell icon={iconOf(weatherIconName(conditions))} label={t("matchResult.weather")}
+              value={`${t(weatherLabelKey(conditions.weather))} · ${conditions.kickoff}`} />
             <InfoCell icon={Clock} label={t("matchResult.date")} value={resolvedDate} />
             <InfoCell icon={User} label={t("matchResult.officials")} value={referee} />
           </div>

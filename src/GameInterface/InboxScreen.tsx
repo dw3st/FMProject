@@ -488,6 +488,9 @@ function leaguePrizeTexts(
   if (message.category === "contract" && message.kind === "director_summary") {
     return { subject: t("inbox.contract.directorSummarySubject"), preview: message.preview };
   }
+  if (message.category === "contract" && message.staff) {
+    return { subject: t(`inbox.contract.${message.kind}Subject`), preview: message.preview };
+  }
   if (message.category === "manager_news") {
     return {
       subject: t("inbox.managerNews.subject", { count: message.items.length }),
@@ -636,7 +639,9 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "contract" && message.kind !== "director_summary" && (
           <p className="text-sm text-foreground m-0">
             {t(`inbox.contract.${message.kind}`, {
-              players: message.players.map((p) => p.name).join(", "),
+              players: message.staff
+                ? message.staff.map((m) => `${m.name} (${t(`staff.roles.${m.role}`)})`).join(", ")
+                : message.players.map((p) => p.name).join(", "),
               until: formatInboxDate(message.until ?? ""),
             })}
           </p>

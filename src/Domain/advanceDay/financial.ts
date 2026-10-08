@@ -67,7 +67,7 @@ export function computeAdvanceDayMoney(args: {
     entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
     entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });
     entries.push({ date: currentDate, kind: "operational", amount: -weeklyOperational, label: "Operational costs" });
-    const weeklyStaff = squadStaffWages(playerSquad.staff, wageFactorOf(playerSquad));
+    const weeklyStaff = squadStaffWages(playerSquad.staff, currentDate);
     if (weeklyStaff > 0) {
       entries.push({ date: currentDate, kind: "staff", amount: -weeklyStaff, label: "Technical staff" });
     }

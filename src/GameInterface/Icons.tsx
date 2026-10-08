@@ -5,6 +5,7 @@ import {
   Pause,
   Bug,
   RefreshCw,
+  Shuffle,
   Settings,
   BarChart3,
   LayoutGrid,
@@ -26,6 +27,7 @@ import {
   X,
   Globe,
   Star,
+  StarHalf,
   FastForward,
   TrendingUp,
   TrendingDown,
@@ -75,6 +77,7 @@ import {
   Trash2,
   Sun,
   CloudSun,
+  CloudMoon,
   CloudRain,
   Wind,
   Snowflake,
@@ -107,6 +110,16 @@ function StarFilled(props: SVGProps<SVGSVGElement>) {
   return <Star {...props} fill="currentColor" />;
 }
 
+/** Half star: an outlined star with its left half filled (staff stars). */
+function StarHalfFilled(props: SVGProps<SVGSVGElement>) {
+  return (
+    <span className="relative inline-flex">
+      <Star {...props} />
+      <StarHalf {...props} fill="currentColor" className={`absolute inset-0 ${props.className ?? ""}`} />
+    </span>
+  );
+}
+
 export type IconName =
   | "binoculars"
   | "gem"
@@ -115,6 +128,7 @@ export type IconName =
   | "debug"
   | "debug-active"
   | "refresh"
+  | "shuffle"
   | "settings"
   | "stats"
   | "formation"
@@ -137,6 +151,7 @@ export type IconName =
   | "globe"
   | "star"
   | "star-filled"
+  | "star-half"
   | "fast-forward"
   | "trend-up"
   | "trend-down"
@@ -186,6 +201,8 @@ export type IconName =
   | "trash2"
   | "sun"
   | "cloud-sun"
+  | "moon"
+  | "cloud-moon"
   | "cloud-rain"
   | "wind"
   | "snowflake"
@@ -235,6 +252,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "debug":        Bug,
   "debug-active": Bug,
   "refresh":      RefreshCw,
+  "shuffle":      Shuffle,
   "settings":     Settings,
   "stats":        BarChart3,
   "formation":    LayoutGrid,
@@ -257,6 +275,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "globe":        Globe,
   "star":         Star,
   "star-filled":  StarFilled,
+  "star-half":    StarHalfFilled,
   "fast-forward": FastForward,
   "trend-up":     TrendingUp,
   "trend-down":   TrendingDown,
@@ -306,6 +325,8 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "trash2": Trash2,
   "sun": Sun,
   "cloud-sun": CloudSun,
+  "moon": Moon,
+  "cloud-moon": CloudMoon,
   "cloud-rain": CloudRain,
   "wind": Wind,
   "snowflake": Snowflake,

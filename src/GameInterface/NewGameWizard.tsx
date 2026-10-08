@@ -23,6 +23,10 @@ import { TextField } from "@/GameInterface/ui/TextField";
 import { Icon } from "@/GameInterface/Icons";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { WorldMap } from "@/GameInterface/NewGame/WorldMap";
+import { ManagerAvatarEditor } from "@/GameInterface/NewGame/ManagerAvatarEditor";
+import { FaceImage, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { managerAvatarUrl } from "@/Domain/faces/faceUrl";
+import { managerFaceCountry, randomFaceSeed, type ManagerFace } from "@/Domain/faces/managerFace";
 import {
   continentI18nKey,
   countryDisplayName,
@@ -69,6 +73,8 @@ type ManagerData = {
   nationality: Nationality | null;
   /** The board may sack the manager (`.claude/rules/game/board-fans.md`); pre-selected yes. */
   sackingEnabled: boolean;
+  /** Avatar (Etapa 31b): seed + picked traits, saved in the save meta. */
+  face: ManagerFace;
 };
 
 const database = (databasesRaw as DatabaseEntry[]).find((d) => d.playable) ?? null;
@@ -94,7 +100,9 @@ const isManagerValid = (m: ManagerData) =>
 
 export function NewGameWizard() {
   const { t, i18n } = useTranslation();
-  const [manager, setManager] = useState<ManagerData>({ name: "", background: null, nationality: null, sackingEnabled: true });
+  const [manager, setManager] = useState<ManagerData>(() => ({
+    name: "", background: null, nationality: null, sackingEnabled: true, face: { seed: randomFaceSeed() },
+  }));
   const [step, setStep] = useState<"manager" | "club">("manager");
   const [searchQuery, setSearchQuery] = useState("");
   const [countriesOpen, setCountriesOpen] = useState(false);
@@ -205,6 +213,7 @@ export function NewGameWizard() {
           name:           manager.name.trim(),
           nationalityIso: manager.nationality.id,
           backgroundId:   manager.background.id,
+          face:           manager.face,
         },
         sackingEnabled: manager.sackingEnabled,
       });
@@ -430,7 +439,13 @@ export function NewGameWizard() {
                 {startError}
               </Notice>
             )}
-            <p className="text-sm text-muted-foreground m-0 mb-3 truncate">
+            <div className="flex items-center gap-3 mb-3 min-w-0">
+            <FaceImage
+              src={managerAvatarUrl(manager.face, managerFaceCountry(manager.nationality?.id), selectedTeam?.colors)}
+              size={40}
+              fallback={playerInitials(manager.name || "?")}
+            />
+            <p className="text-sm text-muted-foreground m-0 truncate">
               {manager.nationality && managerValid
                 ? t("newGame.managerLine", {
                     name: manager.name.trim(),
@@ -440,6 +455,7 @@ export function NewGameWizard() {
                   })
                 : t("newGame.managerEmpty")}
             </p>
+            </div>
             <div className="flex items-center gap-2">
               <Button variant="secondary" className="px-3" onClick={() => setStep("manager")}>
                 {t("newGame.back")}
@@ -646,6 +662,16 @@ function ManagerForm({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <Label className="mb-3">{t("newGame.avatar.title")}</Label>
+        <ManagerAvatarEditor
+          face={draft.face}
+          nationality={managerFaceCountry(draft.nationality?.id)}
+          initials={playerInitials(draft.name || "?")}
+          onChange={(face) => setDraft({ ...draft, face })}
+        />
       </div>
 
       <div className="flex items-center justify-end gap-4 mt-8">

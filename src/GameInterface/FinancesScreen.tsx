@@ -131,7 +131,7 @@ export function FinancesScreen() {
     if (!squad) return null;
     return {
       wages: squadWeeklyWages(squad.players, wageFactorOf(squad)),
-      staff: squadStaffWages(squad.staff, wageFactorOf(squad)),
+      staff: squadStaffWages(squad.staff),
       // The manager's own wage (`.claude/rules/game/jobs.md` → "Contrato do técnico").
       manager: save?.managerContract?.squadId === squad.id ? save.managerContract.wage : 0,
       operational: weeklyOperationalCost(squad),

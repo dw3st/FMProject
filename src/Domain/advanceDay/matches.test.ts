@@ -531,3 +531,20 @@ describe("buildMatchEventFromRecording — suspensions", () => {
     expect(r.suspensionsServed).toBe(2);
   });
 });
+
+import { makeProfessional } from "@/Domain/staff/staff";
+
+describe("buildMatchEventFromRecording — the medic", () => {
+  test("a 5-star medic brings the injured player back sooner than a 1-star one (same rng)", () => {
+    const withMedic = (stars: number): Squad => ({ ...makeSquad("h", 1), staff: { members: [makeProfessional(`medic${stars}`, "medic", stars)] } });
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries: [{ team: "home", playerId: "h-p0", playerName: "h0", severity: "severe", matchMinute: 30, energy: 50 }],
+    });
+    const back = (stars: number) => buildMatchEventFromRecording(fixture, withMedic(stars), makeSquad("a", 1), recording, () => 0.5)
+      .updatedHome.players[0]!.injury!.returnDate;
+    expect(back(5) < back(1)).toBe(true);
+  });
+});

@@ -10,6 +10,7 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 | Helper | Propósito |
 |---|---|
 | `countryDisplayName(country, lang, t)` | Nome do país: chave i18n primeiro, depois `Intl.DisplayNames` pelo ISO, por último o nome cru. `GB` fica "England", nunca "United Kingdom". |
+| `nationalityDisplayName(nationality, lang, t)` | Nome de uma nacionalidade escrita como nos dados (nome em inglês, ex. `StaffMember.nationality`): mesmas regras do `countryDisplayName` via a bandeira (`nationalityFlagCode`); nome desconhecido volta igual. |
 | `leagueLabel(league, countryName)` | Rótulo `"Nome da Liga · País"` usado em combobox e seletor de liga. |
 | `competitionName(slug, leagues, lang)` | Nome de exibição de uma competição pelo slug. Liga: nome do catálogo. Continental (`ucl`/`uel`/`lib`/`sud`): nome fixo por `lang` (`CONTINENTAL_NAMES`) — "Champions League"/"Europa League" iguais em en/pt, "Copa Libertadores" igual, "Copa Sudamericana" (en) / "Copa Sul-Americana" (pt-BR). Copa (`cup_<país>`): nome próprio para as 6 grandes (`CUP_NAMES`), senão genérico localizado por `lang` a partir do `country` cru do `leagueData` ("<País> Cup" em inglês, "Copa nacional (<país>)" em português via `Intl.DisplayNames`). Slug desconhecido: `titleCase` (tira o prefixo `of_`). Ver `.claude/rules/game/cups.md` → "Interface". |
 | `groupCountriesByContinent(countries, displayName)` | Agrupa países por continente, na ordem de `CONTINENT_ORDER`, ordenado dentro do grupo pelo nome de exibição. |
@@ -77,6 +78,31 @@ max-age=31536000, immutable` e `Content-Security-Policy: default-src 'none'; sty
 import do `facesjs`). Mudou a saída do rosto (versão do `facesjs`, recorte, mistura por região)? Suba
 `FACE_VERSION`, senão o navegador continua com o SVG antigo. O `import()` dinâmico anterior não era
 separado pelo bundler do `Bun.serve` em produção (+346 KB min / +110 KB gzip na ficha e no painel).
+
+### Rostos da comissão e dos técnicos (Etapa 31b, 4.7)
+
+Mesmo estilo `facesjs`, mesmo princípio (SVG gerado no servidor, o cliente só monta a URL), versão própria
+`PERSON_FACE_VERSION` (`faceUrl.ts`): mudar estes rostos não invalida o cache dos jogadores (`FACE_VERSION` não mudou).
+
+- **Profissionais e técnicos da IA:** `personFaceSvg` (`src/Domain/faces/personFaceSvg.ts`), determinístico pelo id
+  (`person:<id>`), aparência pela nacionalidade (`pickFaceRace`), adulto: `ageFace` põe rugas, cabelo grisalho/ralo
+  (sem cabelo longo depois dos 42) e óculos com a idade (sem idade, 38–62 sorteada pelo id); camisa abotoada
+  (`baseball`, o modelo mais neutro do facesjs) na cor do clube, cinza-escuro sem clube.
+  `GET /api/faces/person/:id.svg?v=&nat=&colors=&age=` (pública, id inválido 404, idade fora de 18..90 400).
+  URL: `personFaceUrl`. Técnico da IA: nacionalidade = país do primeiro clube da carreira (estável), camisa do clube atual
+  (a rota de técnicos devolve `clubColors`, `nationality` e, do jogador, `face`).
+- **Avatar do técnico do jogador:** `SaveManager.face: ManagerFace` (`src/Domain/faces/managerFace.ts`) = `{ seed, skin?,
+  hairColor?, hairLength?, beard?, glasses? }`, só parâmetros (nunca o SVG). O novo jogo (`NewGame/ManagerAvatarEditor.tsx`)
+  sorteia a semente, tem chips (com "Sorteado") para pele (7 tons), cor e comprimento do cabelo, barba e óculos e o botão
+  "Sortear" (semente nova, tudo volta a sorteado); a prévia é um `<img>` da rota. `POST /api/saves` valida com
+  `parseManagerFace` (400 `invalid manager face`). `GET /api/faces/manager/avatar.svg?seed=&skin=&hc=&hl=&beard=&glasses=&nat=&colors=`
+  (pública, função pura da query, parâmetro inválido 400). URL: `managerAvatarUrl`; `managerFaceUrl` escolhe o avatar salvo
+  ou, sem ele (save antigo), o rosto pelo id (`player`). Nacionalidade do novo jogo → país: `managerFaceCountry`.
+- **Onde aparecem:** cartões da comissão (48px) e ficha do profissional (64px) na Equipe técnica; lista de livres da aba
+  Comissão de Transferências (32px, exceção à regra "nunca em tabelas": 50 linhas por página, lazy) e a ficha dela;
+  ranking de técnicos (32px na linha, 64px no detalhe aberto); cartão do clube no Painel (técnico do jogador, 48px);
+  novo jogo (editor 128px, resumo do passo do clube 40px). Componentes: `FaceImage` (`PlayerFace.tsx`, genérico por URL),
+  `StaffFace` e `ManagerFaceImage` (`Components/PersonFace.tsx`).
 
 ### Traços reais (piloto, ESPN)
 

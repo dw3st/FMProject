@@ -313,3 +313,19 @@ describe("withInjuryCounted", () => {
     expect(withInjuryCounted(emptySeasonLog(), "2027-03-21", cur, "2027-03-25").daysInjured).toBe(4);
   });
 });
+
+import { addDays } from "@/Domain/dates";
+
+describe("medic: injury duration multiplier", () => {
+  test("multiplies the days out with the same rng draws", () => {
+    const seq = () => { let i = 0; const v = [0.5]; return () => v[i++ % v.length]!; };
+    const base = injuryDurationDays("medium", seq());
+    expect(injuryDurationDays("medium", seq(), 1)).toBe(base);
+    expect(injuryDurationDays("medium", seq(), 0.8)).toBe(Math.max(1, Math.round(base * 0.8)));
+    expect(returnDate("2027-03-01", "light", seq(), 1.2))
+      .toBe(addDays("2027-03-01", Math.max(1, Math.round(injuryDurationDays("light", seq()) * 1.2))));
+  });
+  test("never below one day", () => {
+    expect(injuryDurationDays("light", () => 0, 0.01)).toBe(1);
+  });
+});

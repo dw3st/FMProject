@@ -1,111 +1,186 @@
-# Equipe técnica (Staff)
+# Comissão técnica (Staff)
 
-Spec: `docs/superpowers/specs/2026-10-01-staff-design.md`. Etapa 10 do `docs/ROADMAP.md`, versão **2.2**.
-Visual: `.claude/rules/ui-standard.md`.
+Spec: `docs/superpowers/specs/2026-10-08-coaching-staff-design.md` (Etapa 31a, versão **4.7**; substitui o staff de
+3 funções da Etapa 10, `docs/superpowers/specs/2026-10-01-staff-design.md`). Visual: `.claude/rules/ui-standard.md`.
+Áreas de treino: `development.md` → "Áreas de treino (4.7)".
 
 ## Regra
 
-- Três funções no clube, um profissional por função, nota 1..10:
-  - **Auxiliar técnico** (`assistant`): multiplica os pontos de desenvolvimento (DP).
-  - **Preparador físico** (`fitness`): multiplica a recuperação diária de fôlego e o risco de lesão.
-  - **Olheiro-chefe** (`scout`): multiplica a incerteza do que o jogador vê de atletas de fora do próprio
-    elenco e o conhecimento que as missões ganham; desde a 4.3 a incerteza vem do **conhecimento por
-    jogador** (`.claude/rules/game/scouting.md`). Conduz uma missão; até 4 **olheiros de campo**
-    (`staff.scouts`) conduzem as outras.
-- **Só o clube do jogador simula staff** (`Squad.staff`). Clubes da IA não gravam nada e usam a nota
-  implícita do tier (`STAFF.IMPLIED_RATING`: LOW 4, MEDIUM 5, HIGH 6, ELITE 7), no espírito de
-  `.claude/rules/AI-clubs/finance.md` (regras, não simulação). `Squad.staff` presente com a função
-  ausente = vaga = efeito de **nota 3**.
-- Sem multa, sem duração de contrato, sem migração de save (protótipo).
+- **Só o clube do jogador grava comissão** (`Squad.staff: StaffRecord { members, areaAssignments? }`). Clubes da IA
+  não gravam nada e usam as **estrelas implícitas do tier** (`STAFF.IMPLIED_STARS`: LOW 2,5★, MEDIUM 3★, HIGH 3,4★,
+  ELITE 3,8★ — as notas antigas 4/5/6/7 convertidas) em todas as funções e áreas: o auxiliar, o físico e o olheiro da
+  IA ficam idênticos aos de antes (regras, não simulação, `.claude/rules/AI-clubs/finance.md`).
+- Função sem ninguém (que não é área) = **2★** (a "nota 3" antiga). Área de treino sem responsável = **×0,4**.
+- Sem migração (protótipo).
+- Tipos de dado em `src/types/staffTypes.ts` (`StaffRole`, `StaffMember`, `StaffRecord`…); `src/Domain/staff/staffTypes.ts`
+  reexporta e guarda as listas (`STAFF_ROLES`, `COACH_AREAS`…), com checagem de tipo de que batem.
 
-Os efeitos do centro de treinamento (`.claude/rules/game/facilities.md`) se multiplicam aos do staff
-(recuperação, lesão de treino, DP do treino), com a mesma regra de nível implícito para a IA.
+## Funções
 
-## Efeitos (`src/Domain/staff/staffConfig.ts`)
+| Função | `StaffRole` | Especialidade | Efeito (1★ / 3★ / 5★) | Limite |
+|---|---|---|---|---|
+| Auxiliar técnico | `assistant` | `general` | DP total ×0,9 / ×1 / ×1,15 | 1 |
+| Preparador físico | `fitness` | `physical` | Área Físico; recuperação diária ×0,95 / ×1 / ×1,1; risco de lesão ×1,1 / ×1 / ×0,85 | 1 |
+| Preparador de goleiros | `goalkeeping` | `goalkeeping` | Área Goleiros | 1 |
+| Treinador de área | `coach` | as 5 áreas de campo | Até 2 áreas cada (Defesa, Ataque, Técnica, Tática, Bola parada) | LOW 3 · MEDIUM 3 · HIGH 4 · ELITE 5 |
+| Médico / fisioterapeuta | `medic` | `medical` | Duração das lesões ×1,2 / ×1 / ×0,8 (`injuries.md`) | 1 |
+| Analista de desempenho | `analyst` | `analysis` | Ganho de familiaridade ×0,8 / ×1 / ×1,25 (`style-training.md`) | 1 |
+| Olheiro-chefe | `scout` | `scouting` | Incerteza ×1,3 / ×1 / ×0,75; ganho das missões ×0,7 / ×1 / ×1,4 (`scouting.md`) | 1 |
+| Olheiro de campo | `fieldScout` | `scouting` | Uma missão cada | 4 (`STAFF.LIMITS.fieldScout`) |
+| Jardineiro | `groundskeeper` | `pitch` | Nenhum até a etapa do gramado (contrata e recebe salário) | 1 |
 
-Curva linear por partes passando por `[nota 1, nota 5, nota 10]`; a nota 5 é sempre exatamente neutra.
+Limite pelo tier natural do clube (`roleLimit`, `financialTierOf`), lido na hora: acima dele, 409 `roleFull`; se o
+tier cair, ninguém é demitido.
 
-| Efeito | nota 1 | nota 5 | nota 10 |
-|---|---|---|---|
-| DP (auxiliar) | x0,90 | x1,00 | x1,15 |
-| Recuperação de fôlego (físico) | x0,95 | x1,00 | x1,10 |
-| Risco de lesão (físico) | x1,10 | x1,00 | x0,85 |
-| Multiplicador da incerteza (olheiro) | x1,30 | x1,00 | x0,75 |
-| Multiplicador do conhecimento ganho nas missões (olheiro) | x0,70 | x1,00 | x1,40 |
+## Estrelas
 
-`staffEffectsOf(squad)` devolve os números (`devMult`, `recoveryMult`, `injuryMult`,
-`scoutUncertaintyMult`, `scoutGainMult`) e é a única porta de entrada: quem tem `squad.staff` usa a nota contratada, os demais o
-tier.
+- Atributos 1–20 inteiros (`StaffAttributes`): determinação, disciplina, adaptação, leitura de jogadores e
+  conhecimento por especialidade. Sem efeito próprio: só derivam as estrelas.
+- `nota(área) = 0,50 × conhecimento + 0,20 × leitura + 0,15 × determinação + 0,10 × disciplina + 0,05 × adaptação`;
+  `estrelas = arredonda para 0,5(1 + 4 × (nota − 1)/19)` (nota 10,5 = 3★). Conhecimento ausente conta 1.
+- Estrelas da função (exibição, salário, renovação) = as da especialidade; do treinador de área, a melhor área.
+- Curvas novas (`starCurve`) lineares por `[1★, 3★, 5★]`, 3★ neutro. Os efeitos que já existiam passam pela nota
+  antiga: `ratingFromStars(s) = s ≤ 3 ? 1 + 2(s − 1) : 5 + 2,5(s − 3)` e as curvas de antes (`STAFF.ASSISTANT_DEV`…).
+- Efeito de uma função = o membro de mais estrelas dela (`headOf`, `effectiveStars`); `staffEffectsOf(squad)` é a
+  única porta de entrada (`devMult`, `recoveryMult`, `injuryMult`, `injuryDurationMult`, `familiarityMult`,
+  `scoutUncertaintyMult`, `scoutGainMult`).
 
-## Onde entra
+## Áreas de treino
 
-| Efeito | Onde |
+- `areaStars(squad)` / `areaMultsOf(squad)`: Goleiros pelo preparador de goleiros, Físico pelo preparador físico, as 5
+  de campo pelos treinadores (`resolveAreaAssignments`: primeiro as escolhas válidas do jogador, `areaAssignments`, no
+  máximo 2 por treinador; depois as livres, cada uma ao treinador com mais estrelas nela que ainda tem vaga; empate:
+  id). Área sem ninguém = ×0,4. Demitir ou o contrato acabar libera as áreas dele.
+- O multiplicador entra **só no crescimento** da categoria (partida, treino, base), nunca no declínio
+  (`development.md`).
+
+## Contratos
+
+- `StaffMember.contract = { until, wage, signed, decision? }`: 1–3 temporadas (`contractEndFor`), salário congelado
+  na assinatura: `staffWageFor(role, estrelas, fator do clube) = staffWeeklyWage(ratingFromStars(estrelas), fator) ×
+  STAFF.WAGE_ROLE_SHARE[role]`. A segunda cobra a soma dos contratos (`squadStaffWages(staff, data)`, linha `staff` do
+  extrato), sem quem tem `until` antes do dia (sai mais tarde no mesmo dia: não paga a semana a mais).
+- **Demitir** (`POST /staff/fire`): multa = `round(0,5 × wage × semanas restantes)` (dias até `until` / 7, para cima),
+  linha `staff` com `ref.stage = "severance"` (`recordMoney`; extrato = saldo; `ledgerText` → `staffSeverance`); o
+  profissional volta à lista de livres. Olheiro de campo: a missão dele é cancelada.
+- **Renovação** (`staffContractDay`, `src/Domain/staff/staffContracts.ts`, no avanço do dia do clube humano): quem
+  passou do `until` sai para a lista (`staff_left`, qualquer dia; olheiro de campo leva a missão,
+  `cancelScoutMissions`); toda segunda, a ≤ 60 dias do fim, uma decisão por contrato:
+  - diretor responsável (`directorHandlesContracts`, `responsibilities.md`): renova por 2 anos se estrelas ≥ implícitas
+    do tier − 0,5 e idade < 66, salário = o maior entre o atual e a curva de hoje (`staff_renewed`); senão `decision:
+    "leave"` (`staff_leaving`);
+  - técnico responsável: aviso `staff_expiring` (`decision: "warned"`), renovação na tela. O aviso não trava: se o
+    diretor passa a responder pelos contratos, ele decide esse contrato na segunda seguinte. `decision: "leave"`
+    (do diretor) é definitiva.
+- **Envelhecimento** (`ageStaff`, na virada do país do clube do jogador, no mesmo ponto do `refreshPool`): toda a
+  comissão +1 ano; quem chega a `STAFF.POOL.RETIRE_AGE` (68) se aposenta: sai sem multa, não volta à lista, libera as
+  áreas, mensagem `staff_retired`.
+- **Renovar na tela** (`POST /staff/renew { memberId, years }`): `years` a mais a partir do `until`, total ≤ 3
+  temporadas a partir do fim desta (400 `tooManyYears`); sempre aceita.
+- Mensagens `contract` / `staff_expiring | staff_renewed | staff_leaving | staff_left | staff_retired` (`staff: [{ id, name, role }]`,
+  `players` vazio), tópico `contracts`, gravadas depois do `clearInbox`.
+- **Comissão inicial** (`initialStaff`, `createSave` e `takeOverClub`): uma de cada função e treinadores até o limite,
+  estrelas = implícitas do tier ± 0,5, contratos de 1, 2 ou 3 anos sorteados (a primeira virada já tem renovações), sem
+  olheiros de campo. Não sai da lista de livres.
+- **Troca de clube / demissão do técnico:** `releaseHumanClub` tira o `staff` (o clube vira IA e usa as estrelas
+  implícitas); a comissão não volta à lista e não há multa. O clube novo ganha a comissão inicial dele.
+- Start kit: `applyRandomStartKit` restaura o `staff` do clube do jogador (o kit não carrega comissão).
+
+## Lista de livres (`src/Domain/staff/staffPool.ts`)
+
+- `saves/{id}/staffPool.json` = `{ season, refreshedOn, members }` (sem contrato, com `since`), DAL
+  `readStaffPool`/`writeStaffPool` (bufferizado). Gerada no `createSave` e, se faltar, na primeira leitura
+  (`SaveService.getStaffPool`; a rota `GET /staff/pool` lê sob `withSaveLock`).
+- 300 profissionais determinísticos por save (coach 90, assistant 30, fitness 30, goalkeeping 30, medic 25, analyst
+  25, scout 20, fieldScout 35, groundskeeper 15); estrelas 1–2★ 30%, 2,5–3★ 40%, 3,5–4★ 22%, 4,5–5★ 8%.
+- Na virada do país do clube do jogador (`refreshPool`): sai quem tem 68+ e 1/3 dos que estão há mais tempo; entram
+  novos até 300 (semente `save:temporada`, ids com a data); todos envelhecem 1 ano. Uma vez por data de virada
+  (`refreshedOn`; a geração grava o dia): numa troca entre ligas de calendários diferentes, a virada do país do clube
+  novo renova mesmo com o mesmo rótulo de temporada. Demitidos e contratos encerrados voltam com
+  `since` = data.
+
+## Rotas (`src/backend/staffRoutes.ts`, dono do save; escrita com `withSaveLock`; sem clube → 409 `noClub`)
+
+Contratar e demitir gravam elenco, extrato, lista e olheiros num `BufferingSaveDAL` por requisição (`inUnit`), com o
+flush no fim (nada é gravado numa resposta de erro).
+
+| Rota | Faz |
 |---|---|
-| DP | `applyDevelopment(player, rating, weights, dpMult)` (pós-jogo, `matches.ts`) e `applyTrainingDevelopment(..., dpMult)` (`dailyTraining.ts`) |
-| Recuperação | `recoverDay(..., { recoveryMult })`, `applyMatchFitness(..., { recoveryMult })` (`matches.ts`, `dailyRest.ts`, `dailyTraining.ts`, `lab/fitnessCarry.ts`) |
-| Lesão, motor | `InjuryFactors.staffMult` (multiplica o produto dos fatores em `injuryRatePerMinute`/`contactInjuryChance`); `GamePlayer.injuryMult`, preenchido por `createMatchState(..., injuryMult: { A, B })`; `simulateMatch` deriva dos dois elencos (`options.injuryMult` sobrescreve); `MatchScreen`/`TestScreen` também passam |
-| Lesão, quickSim | `rollSideInjuries(..., staffMult)` com `staffEffectsOf(input.home/away).injuryMult` |
-| Lesão, treino | `trainingInjuryChance(intensity, injuryMult)` |
-| Olheiro | `obscureForViewer` (ruído determinístico por hash `save:jogador:atributo`, amplitude = `2,0 × (1 − k/100)^1,2 × multiplicador do chefe`, k = conhecimento do jogador, `scouting.md`; limitado a 0..10). Aplicado só nas respostas de tela: `scout-search` (`avgRange` quando a incerteza >= 0,5, "?" abaixo de k 20) e `GET /squad/:league/:club?scouted=1` (tela do elenco e ficha do jogador). **O motor e o avanço de dia nunca recebem valores com ruído**; o próprio elenco é sempre exato |
+| `GET /api/saves/:id/staff` | `staffView`: membros (`stars`, `starsByArea` do treinador, `severance` de hoje, `renewYears` aceitos e `renewWage`), as 7 áreas (estrelas, multiplicador, responsável), `areaAssignments`, `limits` por função, `effects`, `weeklyTotal` |
+| `GET /api/saves/:id/staff/pool?role=&minStars=&maxWage=&sort=stars\|wage\|age&offset=&limit=` | Busca (limite 1..100, padrão 50); salário pedido no fator do clube do jogador (desempregado: fator 1, a lista continua visível) |
+| `POST /api/saves/:id/staff/hire { memberId, years }` | Contrata da lista (404 `notInPool`, 409 `roleFull`, 400 `invalidYears`) |
+| `POST /api/saves/:id/staff/fire { memberId }` (ou `{ role }`) | Demite: multa, volta à lista; resposta com `severance` |
+| `POST /api/saves/:id/staff/renew { memberId, years }` | Renova (400 `tooManyYears`) |
+| `PUT /api/saves/:id/staff/areas { [área]: memberId \| null }` | Treinador de uma área de campo (`null` = automático; 400 `unknownArea`, `notACoach`, `tooManyAreas`) |
 
-## Contratação e custo
-
-- `createSave` dá ao clube do jogador três profissionais com nota no tier implícito +/-1
-  (`initialStaff`, determinístico pelo id do save). `applyRandomStartKit` restaura o `staff` depois do
-  kit (mesmo motivo do orçamento: o kit não conhece o jogador).
-- Mercado: `GET /api/saves/:id/staff/market` -> 5 candidatos por função (notas 2..9), determinísticos
-  por save + segunda-feira da semana (renova toda segunda). `POST /staff/hire { role, candidateId }`
-  substitui o atual (o candidato precisa estar no mercado da semana); `POST /staff/fire { role }`
-  deixa a função vaga. `GET /staff` devolve staff, efeitos e a folha semanal. Rotas em
-  `src/backend/staffRoutes.ts`, protegidas por `requireSaveOwner` e `withSaveLock`.
-- Salário: `staffWeeklyWage(nota, fator do clube)` = curva de jogador de nota `3 + 0,35 * nota`,
-  vezes o `wageFactor` do clube, vezes `WAGE_SHARE` (0,5). **Calculado com o fator atual do clube**
-  a cada segunda (a folha acompanha o crescimento do clube), nunca congelado na contratação.
-  Lançado no extrato como `kind: "staff"` junto com `wages`/`operational`
-  (`computeAdvanceDayMoney`); só existe quando há staff com salário.
+Os mercados semanais (`staffMarket`, `fieldScoutMarket`, `/staff/market`, `/staff/scouts/*`) não existem mais.
 
 ## Telas
 
-- `/staff` (`StaffScreen.tsx`): título "Equipe técnica"; três cartões (função, nome, nota em barra,
-  salário, efeito, Demitir com confirmação) e "Mercado" com abas por função.
-- `FinancesScreen`: tipo "Equipe técnica" nas despesas, na projeção semanal e nos filtros.
-- Tabela do Olheiro (`ScoutTable`): `AvgBadge` mostra `baixo-alto` quando `avgRange` existe.
+- **Equipe técnica** (`StaffScreen`, "SUA **COMISSÃO**" / "COACHING **STAFF**"; abas Comissão | Responsabilidades):
+  cartões por grupo (Comando; Treino; Saúde e análise; Olheiros; Estrutura) com `StaffStars`, idade, contrato ("até
+  05/2028 · €12,300/sem") e o efeito em uma linha; vaga = cartão tracejado "Vago" + "Buscar"
+  (→ `/transfers?tab=staff&role=`). Quadro **Áreas de treino** (`Staff/TrainingAreasPanel.tsx`, `TABLE_STYLE`): as 7
+  áreas, responsável (seletor do treinador nas 5 de campo, "Automático · nome"; um treinador que já cuida de 2 áreas
+  manuais aparece desligado, "Nome · já cuida de 2 áreas"), estrelas e ritmo (vaga em `text-destructive`). Ficha (`Staff/StaffDetailModal.tsx`; nacionalidade traduzida por `nationalityDisplayName`, `src/Domain/world/labels.ts`): 5 atributos em barras 1–20, estrelas por área, contrato,
+  **Renovar** (1/2/3 anos, só os que a rota aceita, com o salário novo) e **Demitir** (confirmação com a multa). Rodapé
+  com a folha e "Buscar profissionais".
+- **Transferências → aba Comissão** (`?tab=staff&role=`, `Transfers/StaffPoolTab.tsx`): filtros de função, estrelas
+  mínimas, salário máximo, ordenação; tabela com nome (abre a ficha), função, idade, estrelas, "forte em", salário
+  pedido (o filtro de salário busca 300 ms depois da digitação); "Contratar" abre `HireStaffModal` (anos, salário congelado, uso do limite; cheio ou sem clube → desligado com
+  o motivo). A faixa da janela de transferências não aparece nessa aba (a comissão não depende dela).
+- **Central de Olheiros:** chefe e olheiros de campo em estrelas; "Buscar olheiros" → aba Comissão. Dispensar um
+  olheiro de campo (aba Missões) confirma com a multa de hoje (`severance` em `GET /scouting`) e mostra o erro real
+  da rota. Na segunda, `scoutingDay` descarta missões de quem não é o chefe nem um olheiro de campo atual.
+- **Finanças:** projeção semanal = soma dos contratos; extrato com "Multa da comissão" (`staffSeverance`).
+- **Rostos (31b):** cartão (48px), ficha (64px) e lista de livres (32px) com o rosto `facesjs` do profissional (`StaffFace`, `GET /api/faces/person/:id.svg`, idade e nacionalidade; camisa do clube, neutra na lista). Ver `.claude/rules/ui-world.md` → "Rostos da comissão e dos técnicos".
+- `StaffStars` (`Staff/StaffStars.tsx`): 5 ícones `star` / `star-half` / `star-filled` (via `Icons.tsx`) e o número.
+- i18n `staff.*`, `staffPool.*`, `transfers.staffTab`, `inbox.contract.staff_*`,
+  `financesScreen.ledgerText.staffSeverance` (en, pt-BR).
 
 ## `/test`, `/lab`
 
-- `/lab`: `Variant.staffRating?: number` (slider "Fitness coach" no `VariantEditor`) -> `withFitnessCoach`
-  aplica ao elenco, afetando lesões (motor e quickSim) e a recuperação entre os jogos da congestão.
-  Ausente = staff implícito do tier. `PairDetail` já mostra lesões e fôlego.
-- `/test`: o `EnergyPanel` mostra, por time, `recovery x / injury x` do staff, e a partida do `/test`
-  usa o mesmo multiplicador de lesão. Os elencos do `/test` não têm finanças, então valem o tier LOW.
-- Nenhuma estatística nova em `Statistics.ts`: lesões e fôlego já existem.
+Sem efeito dentro da partida (evolução, recuperação entre jogos, lesão e familiaridade).
 
-## Efeito no volume de lesões
+- `/lab`: `Variant.fitnessCoachStars` (slider 1–5 em meias, 0 = tier, rótulo `3.5★`) → `withFitnessCoach` (lesões no
+  motor e no quickSim, recuperação entre os jogos da congestão). O médico não aparece (a congestão não simula o tempo
+  fora).
+- `/test`: o `EnergyPanel` mostra `recovery x / injury x` do staff de cada time; os elencos do `/test` não têm
+  finanças (tier LOW).
+- `Statistics.ts`: nada novo.
 
-Com staff implícito por tier (IA) o multiplicador médio fica perto de 1 (LOW 1,03 .. ELITE 0,94). O
-smoke de temporada confere 0,15..0,5 lesões por partida (`.claude/rules/game/injuries.md`).
+## Custo da comissão (`bun scripts/staff-bill.ts`)
+
+Folha antiga (auxiliar, físico e olheiro na nota implícita, `staffWeeklyWage` × 3) × nova (`initialStaff`), mundo de
+2026-10-08, 1273 clubes, contra a receita anual (`wageRevenueBasisOf`). Mediana por tier:
+
+| Tier | clubes | membros | antiga / receita | nova / receita (p90) | nova / antiga |
+|---|---|---|---|---|---|
+| LOW | 305 | 10 | 11,3% | 3,6% (9,4%) | 0,32 |
+| MEDIUM | 706 | 10 | 12,1% | 3,8% (8,5%) | 0,33 |
+| HIGH | 222 | 11 | 7,3% | 2,7% (4,4%) | 0,37 |
+| ELITE | 40 | 12 | 4,2% | 1,7% (2,8%) | 0,41 |
+
+A folha antiga já comia ~12% da receita do clube mediano: a curva paga um profissional de nota r como um jogador de
+nota `3 + 0,35r`, bem acima dos jogadores de um clube pequeno. Com as parcelas do desenho (1 / 0,7 / 0,4 / 0,3 / 0,1)
+a nova ficava em ~21% (MEDIUM, 1,8× a antiga). Decisão do usuário: teto de ~4% da receita; `WAGE_ROLE_SHARE` foi
+escalado por 0,18 (auxiliar e olheiros 0,18 · físico 0,126 · goleiros, treinadores e médico 0,072 · analista 0,054 ·
+jardineiro 0,018). A comissão de 10–12 profissionais fica mais barata que as 3 funções de antes.
 
 ## Testes
 
 ```
-bun test src/Domain/staff src/backend/staff.routes.test.ts src/lab src/Domain/finance \
-  src/Domain/advanceDay src/Domain/fitness src/Domain/injury
+bun test src/Domain/staff src/backend/staff.routes.test.ts src/backend/staff.advanceDay.test.ts \
+  src/backend/scouting.routes.test.ts src/Domain/finance src/Domain/advanceDay src/lab src/GameInterface
 ```
 
-Cobrem: as pontas e o neutro de cada efeito, vaga = nota 3, tier implícito, determinismo da geração e
-do mercado (renova na segunda), ruído do olheiro (zero = exato, determinístico, limitado), os
-multiplicadores nas funções puras (recuperação, lesão, DP), rotas (dono do save, função válida,
-candidato fora do mercado, contratar/demitir, linha `staff` do extrato toda segunda).
-`scripts/season-rollover-smoke.ts` tem a seção "Equipe técnica": o clube do jogador termina com as 3
-funções, nenhum clube da IA grava staff, e há uma linha `staff` em toda segunda com `wages`.
+`scripts/season-rollover-smoke.ts`, seção "Equipe técnica": todas as funções preenchidas e treinadores no limite; nenhum
+contrato vencido no fim; o contrato do analista, forçado a acabar na temporada, renovado pelo diretor (ou avisado); um
+treinador demitido pela rota depois da primeira semana (linha `staff` `severance` negativa, de volta à lista) e outro
+contratado da lista; o goleiro titular com `reflex` ou `jump` mudados; a linha `staff` de cada segunda = soma dos
+contratos; nenhum clube da IA com `staff`.
 
 ## Personalidade (Etapa 26)
 
 `obscurePlayer` também grava `personalityView` (traços ± ruído × 4, temperamento e profissionalismo "?" com ruído
 ≥ 1). Ver `.claude/rules/game/personality.md`. Desde a 4.3 o ruído é o do jogador (conhecimento, `scouting.md`).
-
-## Olheiros de campo (Etapa 28)
-
-`Squad.staff.scouts` (até 4): mercado semanal próprio (`fieldScoutMarket`, 5 candidatos nota 2..9), salário de staff
-(somado à linha `staff`), cartões e aba "Olheiros" na Equipe técnica; rotas `GET .../staff/scouts/market`,
-`POST .../staff/scouts/hire|fire`. Demitir cancela a missão dele. Ver `.claude/rules/game/scouting.md`.

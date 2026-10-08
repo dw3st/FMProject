@@ -3,6 +3,7 @@ import { unlinkSync } from "fs";
 import { randomUUID } from "crypto";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import type { Squad } from "@/types/playerTypes";
+import { generatePool } from "@/Domain/staff/staffPool";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 
 const dal = new FileSystemDAL();
@@ -124,5 +125,16 @@ describe("FileSystemDAL ledger", () => {
     created.push(saveId);
     await dal.appendLedger(saveId, 2027, []);
     expect(await dal.readLedger(saveId, 2027)).toEqual([]);
+  });
+});
+
+describe("FileSystemDAL staff pool", () => {
+  test("missing pool reads null; written pool round-trips", async () => {
+    const saveId = `test-staffpool-${randomUUID()}`;
+    created.push(saveId);
+    expect(await dal.readStaffPool(saveId)).toBeNull();
+    const pool = generatePool(saveId, "2027", "2027-02-05");
+    await dal.writeStaffPool(saveId, pool);
+    expect(await dal.readStaffPool(saveId)).toEqual(pool);
   });
 });

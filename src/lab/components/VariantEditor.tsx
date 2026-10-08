@@ -168,15 +168,16 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         <input
           type="range"
           min={0}
-          max={10}
-          value={variant.staffRating ?? 0}
+          max={5}
+          step={0.5}
+          value={variant.fitnessCoachStars ?? 0}
           onChange={(e) => {
-            const v = parseInt(e.target.value);
-            patch({ staffRating: v === 0 ? undefined : v });
+            const v = parseFloat(e.target.value);
+            patch({ fitnessCoachStars: v < 1 ? undefined : v });
           }}
           className="flex-1"
         />
-        <span className="text-white/80 w-14 text-right">{variant.staffRating ? `${variant.staffRating}/10` : "tier"}</span>
+        <span className="text-white/80 w-14 text-right">{variant.fitnessCoachStars ? `${variant.fitnessCoachStars}★` : "tier"}</span>
       </div>
 
       <div className="flex items-center gap-2 text-xs">

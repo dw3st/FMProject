@@ -50,20 +50,21 @@ export function squadFamiliarityLevels(squad: Squad, style: TacticalStyle): Fami
 }
 
 /**
- * One training day: the focus gains `GAIN_PER_SESSION × devMult × (1 − v/100)` (soft cap at
+ * One training day: the focus gains `GAIN_PER_SESSION × gainMult × (1 − v/100)` (gainMult = the analyst ×
+ * the intensity, `src/Domain/staff`; soft cap at
  * 100); every other key loses `DECAY_PER_DAY`, never below `DECAY_FLOOR` (a key already below
  * the floor is left as is). Absent keys start from INITIAL. Returns a full record.
  */
 export function trainFamiliarity(
   current: FamiliarityLevels | undefined,
   focus: FamiliarityKey | undefined,
-  devMult: number,
+  gainMult: number,
 ): Record<FamiliarityKey, number> {
   const out = {} as Record<FamiliarityKey, number>;
   for (const k of FAMILIARITY_KEYS) {
     const v = current?.[k] ?? FAMILIARITY.INITIAL;
     if (k === focus) {
-      const gain = FAMILIARITY.GAIN_PER_SESSION * devMult * (1 - v / FAMILIARITY.MAX);
+      const gain = FAMILIARITY.GAIN_PER_SESSION * gainMult * (1 - v / FAMILIARITY.MAX);
       out[k] = round2(clamp(v + Math.max(0, gain), FAMILIARITY.MIN, FAMILIARITY.MAX));
     } else {
       out[k] = v <= FAMILIARITY.DECAY_FLOOR ? v : round2(Math.max(FAMILIARITY.DECAY_FLOOR, v - FAMILIARITY.DECAY_PER_DAY));

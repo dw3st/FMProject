@@ -9,9 +9,11 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
+import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
+import type { ManagerFace } from "@/Domain/faces/managerFace";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { BoardState } from "@/types/boardTypes";
 import type { JobOffer, Unemployment } from "@/types/jobTypes";
@@ -52,6 +54,8 @@ export interface SaveManager {
   name:           string;
   nationalityIso: string;   // e.g. "br", "pt"
   backgroundId:   string;   // e.g. "former-player"
+  /** Avatar picked in the new game (Etapa 31b); absent = the face drawn from the manager id. */
+  face?:          ManagerFace;
 }
 
 export interface SaveMeta {
@@ -221,6 +225,21 @@ export class SaveService {
 
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     return this.dal.writeFreeAgents(saveId, agents);
+  }
+
+  // ── Coaching-staff pool (`.claude/rules/game/staff.md`) ─────────────────────
+
+  /** The free coaching-staff pool; generated (season = the year of `date`) and written when missing. */
+  async getStaffPool(saveId: string, date: string): Promise<StaffPool> {
+    const pool = await this.dal.readStaffPool(saveId);
+    if (pool) return pool;
+    const fresh = generatePool(saveId, date.slice(0, 4), date);
+    await this.dal.writeStaffPool(saveId, fresh);
+    return fresh;
+  }
+
+  writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
+    return this.dal.writeStaffPool(saveId, pool);
   }
 
   // ── Manager ranking ────────────────────────────────────────────────────────
@@ -828,9 +847,13 @@ export class SaveService {
         const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
         squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
         squad.wageRevenueBasis = wageRevenueBasis;
-        // Only the human club simulates staff (`.claude/rules/game/staff.md`): three professionals
-        // near its implicit tier rating, generated from the save id.
-        if (isPlayerClub) squad.staff = initialStaff(id, squad);
+        const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end
+          ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
+        // Only the human club simulates staff (`.claude/rules/game/staff.md`): every role near its
+        // implicit tier stars, contracts of 1-3 seasons, generated from the save id.
+        if (isPlayerClub) {
+          squad.staff = initialStaff(id, squad, { date: meta.currentDate ?? leagueEnd, seasonEnd: leagueEnd });
+        }
         // Style familiarity (`.claude/rules/game/style-training.md`): human club only; the saved style
         // starts ahead of the rest.
         if (isPlayerClub) squad.styleFamiliarity = initialFamiliarity(meta.tactical_style ?? DEFAULT_TACTICAL_STYLE);
@@ -842,8 +865,6 @@ export class SaveService {
         }
         // Every player starts with a fixed-wage contract ending on his league's season end
         // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
-        const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end
-          ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
         const contracted = withContracts(squad, leagueEnd);
 
         // Morale (`.claude/rules/game/morale.md`): human club only — everyone at 65, nothing open.
@@ -881,6 +902,14 @@ export class SaveService {
       } catch (e) {
         logError("board", `save ${id}: failed to set the board objective`, e);
       }
+    }
+
+    // Free coaching-staff pool (`.claude/rules/game/staff.md`), seasoned by the human club's league
+    // year (the human country's rollover refreshes it).
+    {
+      const homeYear = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug)?.year;
+      const startDate = meta.currentDate ?? playerLeagueStart ?? "";
+      await this.dal.writeStaffPool(id, generatePool(id, String(homeYear ?? startDate.slice(0, 4)), startDate));
     }
 
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own

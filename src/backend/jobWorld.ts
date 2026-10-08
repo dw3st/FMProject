@@ -270,6 +270,8 @@ export async function releaseHumanClub(
   // before the academy is judged against the AI cap.
   const trimmed = trimSquadToCap(squad);
   const academy = academyToAi(trimmed.squad);
+  // The coaching staff stays with the club (`.claude/rules/game/staff.md`): it never goes back to the
+  // free pool and costs no severance. As an AI club it stores none and uses the tier's implied stars.
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
   // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
   // the stadium it has built stays (venue capacity), works in progress are dropped.
@@ -338,7 +340,7 @@ async function takeOverClub(
   const human: Squad = {
     ...initClubMorale(rest),
     finances: { ...(rest.finances ?? { broadcasting: 0, commercial: 0, total: 0, followers: 0 }), budget: 0 },
-    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad),
+    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad, { date: args.date, seasonEnd }),
     styleFamiliarity: initialFamiliarity(DEFAULT_TACTICAL_STYLE),
   };
   // Facilities of the club (`.claude/rules/game/facilities.md`): set up from its stadium and tier.
