@@ -270,6 +270,8 @@ export async function releaseHumanClub(
   // before the academy is judged against the AI cap.
   const trimmed = trimSquadToCap(squad);
   const academy = academyToAi(trimmed.squad);
+  // The coaching staff stays with the club (`.claude/rules/game/staff.md`): it never goes back to the
+  // free pool and costs no severance. As an AI club it stores none and uses the tier's implied stars.
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
   // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
   // the stadium it has built stays (venue capacity), works in progress are dropped.

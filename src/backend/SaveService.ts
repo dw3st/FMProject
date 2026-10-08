@@ -901,6 +901,14 @@ export class SaveService {
       }
     }
 
+    // Free coaching-staff pool (`.claude/rules/game/staff.md`), seasoned by the human club's league
+    // year (the human country's rollover refreshes it).
+    {
+      const homeYear = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug)?.year;
+      const startDate = meta.currentDate ?? playerLeagueStart ?? "";
+      await this.dal.writeStaffPool(id, generatePool(id, String(homeYear ?? startDate.slice(0, 4)), startDate));
+    }
+
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own
     // replacing the imported coach of his club. Start kits never touch this file.
     await this.dal.writeManagers(id, buildInitialManagers([...squadCache.values()], playerSquadId

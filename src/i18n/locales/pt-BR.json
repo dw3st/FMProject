@@ -1191,7 +1191,15 @@
       "directorRenewed": "Renovados",
       "directorRenewedTerms": "{{years}} temporadas, {{wage}}/sem",
       "directorLeaving": "Sairão no fim do contrato",
-      "directorRefused": "Recusaram renovar"
+      "directorRefused": "Recusaram renovar",
+      "staff_expiring": "Contratos da comissão terminando (renove em Equipe técnica): {{players}}",
+      "staff_renewed": "O diretor renovou (até {{until}}): {{players}}",
+      "staff_leaving": "O diretor não vai renovar; saem no fim do contrato: {{players}}",
+      "staff_left": "Contrato encerrado, deixou o clube: {{players}}",
+      "staff_expiringSubject": "Contratos da comissão terminando",
+      "staff_renewedSubject": "Contratos da comissão renovados",
+      "staff_leavingSubject": "Comissão de saída no fim do contrato",
+      "staff_leftSubject": "Contratos da comissão encerrados"
     },
     "youth": {
       "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",

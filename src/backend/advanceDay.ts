@@ -109,7 +109,8 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
-import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { impliedStars } from "@/Domain/staff/staff";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
@@ -118,7 +119,9 @@ import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorl
 import { loadWindowContext } from "@/backend/marketWindowWorld";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
-import { buildManagerNewsMessage } from "@/Domain/inbox/inboxEvents";
+import { buildManagerNewsMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
+import { staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
+import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
 import { liveRivals } from "@/Domain/negotiation/rivals";
@@ -2449,6 +2452,43 @@ export async function advanceOneDay(
       directorOutcomes = d.outcomes;
       directorNews.push(...d.news);
     }
+    // ── Coaching-staff contracts (`.claude/rules/game/staff.md`) ──
+    // Every day whoever is past his contract leaves (back to the pool); on Monday, contracts within
+    // 60 days get one decision (director renews or lets go; the manager is warned). The free pool
+    // is refreshed when the human club's country rolls. News deferred past `clearInbox`.
+    let staffContractNews: StaffContractNews[] = [];
+    if (humanActive) {
+      const humanForStaff = await saveService.getSquadById(saveId, meta.clubId);
+      if (humanForStaff?.staff) {
+        const homeSlug = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+        const r = staffContractDay({
+          staff: humanForStaff.staff,
+          date: currentDate,
+          monday: new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1,
+          seasonEnd: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug)?.end ?? currentDate,
+          directorHandles: directorInCharge,
+          impliedStars: impliedStars(humanForStaff),
+          clubFactor: wageFactorOf(humanForStaff),
+        });
+        if (r.news.length > 0) {
+          await saveService.saveSquadById(saveId, { ...humanForStaff, staff: r.staff });
+          staffContractNews = r.news;
+        }
+        if (r.left.length > 0) {
+          let pool = await saveService.getStaffPool(saveId, currentDate);
+          for (const m of r.left) pool = returnToPool(pool, m, currentDate);
+          await saveService.writeStaffPool(saveId, pool);
+        }
+      }
+    }
+    if (seasonEnded) {
+      const homeState = updatedActiveLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
+      if (homeState) {
+        const pool = await saveService.getStaffPool(saveId, currentDate);
+        const next = refreshPool(pool, saveId, String(homeState.year), currentDate);
+        if (next !== pool) await saveService.writeStaffPool(saveId, next);
+      }
+    }
     const decidedNow = directorDecided ?? meta.directorDecisions ?? {};
     const moraleNews = humanActive
       ? [...directorNews, ...await applyMoraleDay(saveService, saveId, {
@@ -2475,6 +2515,7 @@ export async function advanceOneDay(
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
+    for (const msg of buildStaffContractMessages(currentDate, staffContractNews)) await emitInboxMessage(saveId, msg, saveService);
     if (directorOutcomes.length > 0) {
       await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: directorOutcomes }), saveService);
     }

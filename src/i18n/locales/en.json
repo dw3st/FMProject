@@ -1191,7 +1191,15 @@
       "directorRenewed": "Renewed",
       "directorRenewedTerms": "{{years}} seasons, {{wage}}/week",
       "directorLeaving": "Leaving at the end of the contract",
-      "directorRefused": "Refused to renew"
+      "directorRefused": "Refused to renew",
+      "staff_expiring": "Staff contracts ending soon (renew them in Coaching staff): {{players}}",
+      "staff_renewed": "The director renewed (until {{until}}): {{players}}",
+      "staff_leaving": "The director will not renew; they leave at the end of the contract: {{players}}",
+      "staff_left": "Contract ended, left the club: {{players}}",
+      "staff_expiringSubject": "Staff contracts ending soon",
+      "staff_renewedSubject": "Staff contracts renewed",
+      "staff_leavingSubject": "Staff leaving at the end of the contract",
+      "staff_leftSubject": "Staff contracts ended"
     },
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",
