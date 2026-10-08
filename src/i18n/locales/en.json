@@ -1169,6 +1169,40 @@
       "manager": "Manager"
     }
   },
+  "awards": {
+    "kind": {
+      "best_player": "Player of the season",
+      "young_player": "Young player of the season",
+      "top_scorer": "Top scorer",
+      "best_goalkeeper": "Goalkeeper of the season",
+      "team_of_season": "Team of the season",
+      "best_manager": "Manager of the season",
+      "goal_of_season": "Goal of the season",
+      "world_player": "World player of the year",
+      "world_manager": "World manager of the year"
+    },
+    "line": {
+      "GK": "GK",
+      "DEF": "DEF",
+      "MID": "MID",
+      "FWD": "FWD"
+    },
+    "goals_one": "{{count}} goal",
+    "goals_other": "{{count}} goals",
+    "rating": "Rating {{value}}",
+    "points": "{{value}} pts",
+    "managerResult": "finished {{position}}, target {{target}}",
+    "goal": {
+      "text": "{{player}}, {{minute}}' against {{opponent}} · {{how}}",
+      "textNoOpponent": "{{player}}, {{minute}}' · {{how}}",
+      "header": "header",
+      "distance": "from {{yards}} yards"
+    },
+    "title": "Awards",
+    "more": "+{{count}}",
+    "seasonTitle": "{{league}} {{season}}",
+    "yearTitle": "{{year}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferences",
@@ -1417,6 +1451,13 @@
         "pre_contract_joined": "{{player}} left {{club}} and joined your squad on his pre-contract.",
         "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full)."
       }
+    },
+    "awards": {
+      "leagueSubject": "{{league}} awards {{season}}",
+      "worldSubject": "World awards {{year}}",
+      "leaguePreview": "Player of the season: {{player}}",
+      "worldPreview": "Player: {{player}} · Manager: {{manager}}",
+      "worldLead": "The best of {{year}} around the world:"
     },
     "managerNews": {
       "subject_one": "Manager news in your league",
@@ -2168,7 +2209,8 @@
       "league": "League",
       "nationality": "Nationality",
       "forSaleOnly": "For Sale Only",
-      "freeAgentsOnly": "Free agents only"
+      "freeAgentsOnly": "Free agents only",
+      "awardedOnly": "Award winners only"
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
@@ -2233,6 +2275,25 @@
     "club": "Club",
     "loading": "Loading...",
     "loadFailed": "Could not load the stats.",
+    "awards": {
+      "tab": "Awards",
+      "year": "Year",
+      "league": "League",
+      "empty": "No season has ended yet.",
+      "noLeague": "No awards for this league in {{year}}.",
+      "worldTitle": "World awards {{year}}",
+      "worldPending": "The world awards for {{year}} are given in January.",
+      "individual": "Individual awards",
+      "xi": "Team of the season",
+      "slot": "Pos",
+      "player": "Player",
+      "club": "Club",
+      "rating": "Rating",
+      "manager": "Manager of the season",
+      "goal": "Goal of the season",
+      "value": "Value",
+      "loadFailed": "Could not load the awards."
+    },
     "retired": {
       "tab": "Retired",
       "empty": "No retired players yet.",
@@ -2252,6 +2313,7 @@
       "name": "Manager",
       "points": "Points",
       "titles": "Titles",
+      "awards": "Awards",
       "promotion": "Promotion · {{league}}",
       "yourRank": "You are #{{rank}} of {{total}}",
       "empty": "No managers yet.",

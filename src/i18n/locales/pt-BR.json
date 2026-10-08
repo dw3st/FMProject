@@ -1169,6 +1169,40 @@
       "manager": "Técnico"
     }
   },
+  "awards": {
+    "kind": {
+      "best_player": "Melhor jogador",
+      "young_player": "Revelação",
+      "top_scorer": "Artilheiro",
+      "best_goalkeeper": "Melhor goleiro",
+      "team_of_season": "Seleção da temporada",
+      "best_manager": "Melhor técnico",
+      "goal_of_season": "Gol da temporada",
+      "world_player": "Melhor jogador do mundo",
+      "world_manager": "Melhor técnico do mundo"
+    },
+    "line": {
+      "GK": "GOL",
+      "DEF": "DEF",
+      "MID": "MEI",
+      "FWD": "ATA"
+    },
+    "goals_one": "{{count}} gol",
+    "goals_other": "{{count}} gols",
+    "rating": "Nota {{value}}",
+    "points": "{{value}} pts",
+    "managerResult": "terminou em {{position}}º, meta {{target}}º",
+    "goal": {
+      "text": "{{player}}, {{minute}}' contra o {{opponent}} · {{how}}",
+      "textNoOpponent": "{{player}}, {{minute}}' · {{how}}",
+      "header": "de cabeça",
+      "distance": "de {{yards}} jardas"
+    },
+    "title": "Prêmios",
+    "more": "+{{count}}",
+    "seasonTitle": "{{league}} {{season}}",
+    "yearTitle": "{{year}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferências",
@@ -1417,6 +1451,13 @@
         "pre_contract_joined": "{{player}} deixou o {{club}} e chegou ao seu elenco pelo pré-contrato.",
         "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio)."
       }
+    },
+    "awards": {
+      "leagueSubject": "Prêmios da {{league}} {{season}}",
+      "worldSubject": "Prêmios mundiais {{year}}",
+      "leaguePreview": "Melhor jogador: {{player}}",
+      "worldPreview": "Jogador: {{player}} · Técnico: {{manager}}",
+      "worldLead": "Os melhores do mundo em {{year}}:"
     },
     "managerNews": {
       "subject_one": "Notícia de técnicos na sua liga",
@@ -2168,7 +2209,8 @@
       "league": "Liga",
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",
-      "freeAgentsOnly": "Só jogadores livres"
+      "freeAgentsOnly": "Só jogadores livres",
+      "awardedOnly": "Só premiados"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -2233,6 +2275,25 @@
     "club": "Clube",
     "loading": "Carregando...",
     "loadFailed": "Não foi possível carregar as estatísticas.",
+    "awards": {
+      "tab": "Prêmios",
+      "year": "Ano",
+      "league": "Liga",
+      "empty": "Nenhuma temporada encerrada ainda.",
+      "noLeague": "Nenhum prêmio desta liga em {{year}}.",
+      "worldTitle": "Prêmios mundiais {{year}}",
+      "worldPending": "Os prêmios mundiais de {{year}} saem em janeiro.",
+      "individual": "Prêmios individuais",
+      "xi": "Seleção da temporada",
+      "slot": "Pos",
+      "player": "Jogador",
+      "club": "Clube",
+      "rating": "Nota",
+      "manager": "Melhor técnico",
+      "goal": "Gol da temporada",
+      "value": "Valor",
+      "loadFailed": "Não foi possível carregar os prêmios."
+    },
     "retired": {
       "tab": "Aposentados",
       "empty": "Nenhum jogador aposentado ainda.",
@@ -2252,6 +2313,7 @@
       "name": "Técnico",
       "points": "Pontos",
       "titles": "Títulos",
+      "awards": "Prêmios",
       "promotion": "Acesso · {{league}}",
       "yourRank": "Você é o Nº {{rank}} de {{total}}",
       "empty": "Nenhum técnico ainda.",

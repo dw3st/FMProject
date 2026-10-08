@@ -26,6 +26,8 @@ export interface GoalOfSeasonCandidate {
   playerId: string; playerName: string; squadId: string; opponentId: string;
   minute: number; header: boolean; distance: number;
   setPiece?: "corner" | "free_kick" | "direct_free_kick";
+  /** Filled when the award is given (the opponent's name at the rollover). */
+  opponentName?: string;
 }
 export interface LeagueSeasonAwards {
   league: string; season: string; closedOn: string; country: string | null; tier: number;

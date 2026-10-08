@@ -78,7 +78,9 @@ export async function recordLeagueAwards(service: SaveService, saveId: string, a
   const { league, season, state } = args;
   const cleared = args.squads.map((s) => (s.players.some((p) => p.awardBoost) ? { ...s, players: s.players.map(clearAwardBoost) } : s));
   const goals = (await service.getSeasonGoals(saveId, league, state.year))?.goals ?? [];
-  const goalOfSeason = pickGoalOfSeason(goals, `${saveId}:${league}:${season}`);
+  const picked = pickGoalOfSeason(goals, `${saveId}:${league}:${season}`);
+  const opponentName = picked ? args.squads.find((s) => s.id === picked.opponentId)?.name : undefined;
+  const goalOfSeason = picked && opponentName ? { ...picked, opponentName } : picked;
   const seasonMid = addDays(state.start, Math.floor(daysBetween(state.start, state.end) / 2));
   const awards = computeLeagueAwards({
     league, season, closedOn: args.closedOn, country: args.country, tier: args.tier, weight: args.weight,
