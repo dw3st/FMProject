@@ -233,7 +233,8 @@ export class SaveService {
   async getStaffPool(saveId: string, date: string): Promise<StaffPool> {
     const pool = await this.dal.readStaffPool(saveId);
     if (pool) return pool;
-    const fresh = generatePool(saveId, date.slice(0, 4), date);
+    const { getStaffNameBook } = await import("@/backend/staffNameBook");
+    const fresh = generatePool(saveId, date.slice(0, 4), date, await getStaffNameBook());
     await this.dal.writeStaffPool(saveId, fresh);
     return fresh;
   }
@@ -852,7 +853,11 @@ export class SaveService {
         // Only the human club simulates staff (`.claude/rules/game/staff.md`): every role near its
         // implicit tier stars, contracts of 1-3 seasons, generated from the save id.
         if (isPlayerClub) {
-          squad.staff = initialStaff(id, squad, { date: meta.currentDate ?? leagueEnd, seasonEnd: leagueEnd });
+          // Nationalities and names from the world's players, mostly of the club's own country.
+          const { getStaffNameBook, leagueCountryMap } = await import("@/backend/staffNameBook");
+          squad.staff = initialStaff(id, squad, { date: meta.currentDate ?? leagueEnd, seasonEnd: leagueEnd }, {
+            book: await getStaffNameBook(), home: (await leagueCountryMap()).get(league),
+          });
         }
         // Style familiarity (`.claude/rules/game/style-training.md`): human club only; the saved style
         // starts ahead of the rest.
@@ -909,7 +914,8 @@ export class SaveService {
     {
       const homeYear = activeLeagues.find((l) => l.leagueSlug === body.leagueSlug)?.year;
       const startDate = meta.currentDate ?? playerLeagueStart ?? "";
-      await this.dal.writeStaffPool(id, generatePool(id, String(homeYear ?? startDate.slice(0, 4)), startDate));
+      const { getStaffNameBook } = await import("@/backend/staffNameBook");
+      await this.dal.writeStaffPool(id, generatePool(id, String(homeYear ?? startDate.slice(0, 4)), startDate, await getStaffNameBook()));
     }
 
     // Manager ranking (`.claude/rules/game/managers.md`): one manager per club, the player's own

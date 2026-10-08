@@ -314,6 +314,23 @@ de 30 dias pedir arredondamento diferente, ajustar o teste — a fórmula é a d
 
 ---
 
+### Task 5b: Nacionalidades da comissão (decisão do usuário, 2026-10-08)
+
+**Files:** Create `src/Domain/staff/staffOrigin.ts` (+ teste), `src/backend/staffNameBook.ts`; Modify
+`src/Domain/staff/staff.ts` (`makeProfessional`, `initialStaff`), `src/Domain/staff/staffPool.ts`
+(`generatePool`, `refreshPool`), `src/backend/SaveService.ts`, `src/backend/advanceDay.ts`, `src/backend/jobWorld.ts`.
+
+- [x] **Livro de nomes** (`buildStaffNameBook`, puro): para cada um dos 60 países de `countries.json`, nomes e
+  sobrenomes dos jogadores do mundo daquela nacionalidade (grafias diferentes: `Czechia`, `Türkiye`, `United States`);
+  com menos de 15 nomes distintos, completa com os jogadores dos clubes do país. Peso do país = clubes^0,5.
+  `getStaffNameBook()` lê o mundo base (`src/Data/squads`) uma vez por processo.
+- [x] **Sorteio** (`drawStaffOrigin`): comissão inicial de um clube 80% do país do clube, o resto de outro país do
+  mesmo continente; lista de livres de todos os países, pesada pelos clubes. RNG próprio
+  (`staff-origin:<chave>`): os atributos do profissional não mudam. Sem livro: as listas embutidas de antes.
+- [x] Teste (`staffOrigin.test.ts`, `scouting.countries.test.ts`). Commit `feat(comissão): nacionalidades e nomes de todos os países`.
+
+---
+
 ### Task 6: Medição (obrigatória)
 
 **Files:** Create `scripts/scout-country-measure.ts`; Modify a spec (seção "Medição", números reais).

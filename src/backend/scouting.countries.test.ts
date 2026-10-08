@@ -8,6 +8,7 @@ import { addDays } from "@/Domain/dates";
 import { headOf, makeProfessional, signContract } from "@/Domain/staff/staff";
 import { countryKnowledgeOf } from "@/Domain/scouting/countryKnowledge";
 import type { ScoutAssignment } from "@/types/scoutingTypes";
+import countriesRaw from "@/Data/countries.json";
 
 function nextMonday(date: string): string {
   let d = addDays(date, 1);
@@ -29,8 +30,16 @@ describe("missions teach the country to their leader", () => {
     saveId = meta.id;
     const start = meta.currentDate!;
 
-    // An English chief and a Brazilian field scout.
     const club = (await saveService.getSquadById(saveId, "33"))!;
+    // The starting staff comes from the club's country or its continent; the free pool from everywhere.
+    const europe = new Set(Object.entries(countriesRaw as Record<string, { continent?: string }>)
+      .filter(([, c]) => c.continent === "Europe").map(([k]) => k));
+    expect(club.staff!.members.every((m) => europe.has(m.nationality))).toBe(true);
+    expect(club.staff!.members.some((m) => m.nationality === "England")).toBe(true);
+    const pool = await saveService.getStaffPool(saveId, start);
+    expect(new Set(pool.members.map((m) => m.nationality)).size).toBeGreaterThan(30);
+
+    // An English chief and a Brazilian field scout.
     const field = {
       ...signContract(makeProfessional("country-field", "fieldScout", 3), { date: start, seasonEnd: "2027-05-30", years: 1, clubFactor: 1 }),
       nationality: "Brazil",

@@ -195,7 +195,20 @@ Junto das checagens de hoje:
 | `src/GameInterface/Staff/StaffDetailModal.tsx`, `StaffCard.tsx`, `src/GameInterface/Transfers/StaffPoolTab.tsx` | Bloco de países, país forte |
 | `scripts/scout-country-measure.ts` | Medição |
 
-## Pontos abertos
+## Decidido (usuário, 2026-10-08)
+
+1. **Nacionalidades da comissão ampliadas.** A comissão inicial de um clube nasce ~80% do país do clube e o resto
+   de outro país do mesmo continente; a lista de livres tem profissionais de todos os 60 países do jogo, com peso
+   maior para países com mais clubes (peso = clubes^0,5). Os nomes vêm dos jogadores daquela nacionalidade no mundo
+   (com poucos nomes: dos jogadores dos clubes do país), determinístico pelo save (`src/Domain/staff/staffOrigin.ts`,
+   `src/backend/staffNameBook.ts`). Os atributos sorteados não mudam; sem o livro (testes, `/lab`) valem as 8 listas
+   embutidas de antes. Plano: Tarefa 5b.
+2. **Tamanho das páginas.** Medir com o `worldMapPaths.ts`; acima de ~40 KB gzip por página, servir o desenho do mapa
+   como arquivo estático (como fontes e bandeiras, `src/backend/staticAssets.ts`) nesta mesma etapa.
+3. **Versão.** Esta etapa sai como **4.9** (a 4.8 está em `feat/season-awards`); o changelog conflita e é resolvido no
+   merge.
+
+## Pontos abertos (antes da decisão)
 
 1. **Só 8 nacionalidades na comissão.** `STAFF_NATIONALITIES` (`staffNames.ts`) tem Inglaterra, Espanha, Brasil,
    Alemanha, Itália, Portugal, França e Argentina — todas da Europa ou da América do Sul. Nenhum olheiro nasce
