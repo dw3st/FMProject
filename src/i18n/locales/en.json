@@ -254,7 +254,39 @@
     "sackingLabel": "Can be sacked",
     "sackingYes": "Yes",
     "sackingNo": "No",
-    "sackingHint": "If the board loses confidence, the career ends."
+    "sackingHint": "If the board loses confidence, the career ends.",
+    "avatar": {
+      "title": "Your face",
+      "auto": "Random",
+      "shuffle": "Shuffle",
+      "skin": "Skin",
+      "skinTone": "Tone {{n}}",
+      "hairColor": "Hair colour",
+      "hairColors": {
+        "black": "Black",
+        "darkBrown": "Dark brown",
+        "brown": "Brown",
+        "blond": "Blond",
+        "red": "Red",
+        "grey": "Grey"
+      },
+      "hairLength": "Hair",
+      "hairLengths": {
+        "bald": "Bald",
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long"
+      },
+      "beard": "Beard",
+      "beards": {
+        "none": "None",
+        "stubble": "Stubble",
+        "full": "Full"
+      },
+      "glasses": "Glasses",
+      "glassesNo": "No",
+      "glassesYes": "Yes"
+    }
   },
   "seasonEnd": {
     "seasonComplete": "Season Complete",
@@ -2226,6 +2258,7 @@
       "noClub": "No club",
       "interim": "Interim",
       "earnings": "Career earnings: {{amount}}",
+      "pointsLine": "{{points}} pts",
       "leftReason": {
         "sacked": "sacked",
         "moved": "left for another club",

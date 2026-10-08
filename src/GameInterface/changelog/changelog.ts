@@ -31,6 +31,7 @@ export const changelog: ChangelogEntry[] = [
       { pt: "Comissão técnica completa: preparador de goleiros, treinadores de área, médico, analista e jardineiro, com estrelas, atributos e contratos", en: "Full coaching staff: goalkeeping coach, area coaches, doctor, analyst and groundskeeper, with stars, attributes and contracts" },
       { pt: "Sete áreas de treino: o goleiro passa a evoluir reflexo e impulsão; força e fôlego também evoluem", en: "Seven training areas: goalkeepers now develop reflexes and jumping; strength and stamina develop too" },
       { pt: "Busque profissionais livres na aba Comissão de Transferências", en: "Find free staff in the Staff tab of Transfers" },
+      { pt: "Rostos para a comissão técnica e para os técnicos do ranking; no novo jogo, monte o rosto do seu técnico (pele, cabelo, barba e óculos) ou sorteie outro", en: "Faces for the coaching staff and the managers in the ranking; in a new game, build your manager's face (skin, hair, beard and glasses) or shuffle for another" },
     ],
     fixes: [
       { pt: "Jogos à noite não aparecem mais com sol, e o painel, a prévia e o resultado mostram o mesmo horário e o mesmo clima", en: "Night matches no longer show sunshine, and the dashboard, preview and result share the same kickoff time and weather" },
@@ -1026,7 +1027,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Rostos da equipe técnica e avatar do seu técnico", en: "Staff faces and your manager avatar" },
   { pt: "Prêmios de fim de temporada: melhor jogador, revelação, gol mais bonito, melhor técnico e seleção da temporada", en: "End-of-season awards: player of the year, young player, goal of the season, manager of the year and team of the season" },
   { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
   { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },

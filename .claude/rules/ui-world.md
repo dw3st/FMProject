@@ -78,6 +78,31 @@ import do `facesjs`). Mudou a saída do rosto (versão do `facesjs`, recorte, mi
 `FACE_VERSION`, senão o navegador continua com o SVG antigo. O `import()` dinâmico anterior não era
 separado pelo bundler do `Bun.serve` em produção (+346 KB min / +110 KB gzip na ficha e no painel).
 
+### Rostos da comissão e dos técnicos (Etapa 31b, 4.7)
+
+Mesmo estilo `facesjs`, mesmo princípio (SVG gerado no servidor, o cliente só monta a URL), versão própria
+`PERSON_FACE_VERSION` (`faceUrl.ts`): mudar estes rostos não invalida o cache dos jogadores (`FACE_VERSION` não mudou).
+
+- **Profissionais e técnicos da IA:** `personFaceSvg` (`src/Domain/faces/personFaceSvg.ts`), determinístico pelo id
+  (`person:<id>`), aparência pela nacionalidade (`pickFaceRace`), adulto: `ageFace` põe rugas, cabelo grisalho/ralo
+  (sem cabelo longo depois dos 42) e óculos com a idade (sem idade, 38–62 sorteada pelo id); camisa abotoada
+  (`baseball`, o modelo mais neutro do facesjs) na cor do clube, cinza-escuro sem clube.
+  `GET /api/faces/person/:id.svg?v=&nat=&colors=&age=` (pública, id inválido 404, idade fora de 18..90 400).
+  URL: `personFaceUrl`. Técnico da IA: nacionalidade = país do primeiro clube da carreira (estável), camisa do clube atual
+  (a rota de técnicos devolve `clubColors`, `nationality` e, do jogador, `face`).
+- **Avatar do técnico do jogador:** `SaveManager.face: ManagerFace` (`src/Domain/faces/managerFace.ts`) = `{ seed, skin?,
+  hairColor?, hairLength?, beard?, glasses? }`, só parâmetros (nunca o SVG). O novo jogo (`NewGame/ManagerAvatarEditor.tsx`)
+  sorteia a semente, tem chips (com "Sorteado") para pele (7 tons), cor e comprimento do cabelo, barba e óculos e o botão
+  "Sortear" (semente nova, tudo volta a sorteado); a prévia é um `<img>` da rota. `POST /api/saves` valida com
+  `parseManagerFace` (400 `invalid manager face`). `GET /api/faces/manager/avatar.svg?seed=&skin=&hc=&hl=&beard=&glasses=&nat=&colors=`
+  (pública, função pura da query, parâmetro inválido 400). URL: `managerAvatarUrl`; `managerFaceUrl` escolhe o avatar salvo
+  ou, sem ele (save antigo), o rosto pelo id (`player`). Nacionalidade do novo jogo → país: `managerFaceCountry`.
+- **Onde aparecem:** cartões da comissão (48px) e ficha do profissional (64px) na Equipe técnica; lista de livres da aba
+  Comissão de Transferências (32px, exceção à regra "nunca em tabelas": 50 linhas por página, lazy) e a ficha dela;
+  ranking de técnicos (32px na linha, 64px no detalhe aberto); cartão do clube no Painel (técnico do jogador, 48px);
+  novo jogo (editor 128px, resumo do passo do clube 40px). Componentes: `FaceImage` (`PlayerFace.tsx`, genérico por URL),
+  `StaffFace` e `ManagerFaceImage` (`Components/PersonFace.tsx`).
+
 ### Traços reais (piloto, ESPN)
 
 Piloto em 4 ligas (`brazil_serie_a`, `premier_league`, `la_liga`, `ligue_1`): cor da pele (7 tons) e

@@ -10,6 +10,8 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { formatFee } from "@/Domain/money";
+import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
+import type { ManagerFace } from "@/Domain/faces/managerFace";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
   rank: number;
@@ -19,6 +21,10 @@ type Row = Omit<ManagerRecord, "clubs"> & {
   free?: boolean;
   /** The human manager: wages and severance received in the career. */
   earnings?: number;
+  /** Face (Etapa 31b): current club's colours, nationality, and the human manager's saved avatar. */
+  clubColors?: [string, string] | null;
+  nationality?: string | null;
+  face?: ManagerFace | null;
 };
 type Page = { total: number; playerRank: number | null; items: Row[] };
 type Scope = "world" | "country" | "free";
@@ -119,7 +125,10 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             >
               <RankCell rank={m.rank} />
               <CrestCell squadId={m.squadId} />
-              <NameCell highlight={m.isPlayer}><span className="truncate">{m.name}</span></NameCell>
+              <NameCell highlight={m.isPlayer}>
+                <ManagerFaceImage manager={m} clubColors={m.clubColors} size={32} ringClassName="border border-border" className="mr-1.5" />
+                <span className="truncate">{m.name}</span>
+              </NameCell>
               <ClubCell>
                 {m.clubName ?? t("statsScreen.managers.noClub")}
                 {m.interim && <span className="text-muted-foreground"> · {t("statsScreen.managers.interim")}</span>}
@@ -129,6 +138,15 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             </StatsRow>,
             isOpen && (
               <StatsDetailRow key={`${m.id}-titles`} colSpan={6}>
+                <div className="flex items-center gap-3 mb-3">
+                  <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} />
+                  <div className="min-w-0">
+                    <p className="font-display font-black uppercase text-base leading-none m-0 truncate">{m.name}</p>
+                    <p className="text-sm text-muted-foreground m-0 mt-1">
+                      {m.clubName ?? t("statsScreen.managers.noClub")} · {t("statsScreen.managers.pointsLine", { points: m.points })}
+                    </p>
+                  </div>
+                </div>
                 {m.isPlayer && m.earnings !== undefined && (
                   <p className="text-sm text-foreground m-0 mb-3 tabular-nums">
                     {t("statsScreen.managers.earnings", { amount: formatFee(m.earnings) })}

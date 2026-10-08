@@ -13,6 +13,7 @@ import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
 import { withSaveLock } from "@/backend/saveLock";
+import { parseManagerFace } from "@/Domain/faces/managerFace";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
@@ -61,6 +62,13 @@ export const saveRoutes = {
         body = await req.json();
       } catch {
         return Response.json({ error: "invalid body" }, { status: 400 });
+      }
+      // The manager's avatar (Etapa 31b): parameters only, validated before anything is written.
+      const rawManager = body.manager as Record<string, unknown> | undefined;
+      if (rawManager && typeof rawManager === "object" && "face" in rawManager) {
+        const face = parseManagerFace(rawManager.face);
+        if (!face) return Response.json({ error: "invalid manager face" }, { status: 400 });
+        body = { ...body, manager: { ...rawManager, face } };
       }
       try {
         const meta = await saveService.createSave(body as Parameters<typeof saveService.createSave>[0]);

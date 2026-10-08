@@ -7,15 +7,16 @@ const SIZE_CLASSES = {
   48: { box: "w-12 h-12", text: "font-display text-base" },
   64: { box: "w-16 h-16", text: "font-display text-2xl" },
   96: { box: "w-24 h-24", text: "font-display text-4xl" },
+  128: { box: "w-32 h-32", text: "font-display text-5xl" },
 } as const;
 
-type PlayerFaceSize = keyof typeof SIZE_CLASSES;
+export type PlayerFaceSize = keyof typeof SIZE_CLASSES;
 
 interface PlayerFaceProps {
   playerId: string;
   nationality?: string | null;
   clubColors?: readonly string[];
-  /** Pixel size of the round avatar (32/40 lists, 48 formation pitch, 64 dashboard card, 96 player screen). */
+  /** Pixel size of the round avatar (32/40 lists, 48 formation pitch, 64 dashboard card, 96 player screen; 128 new-game avatar editor). */
   size: PlayerFaceSize;
   /** Shown until the face image loads (and if it fails). */
   fallback: string;
@@ -38,10 +39,28 @@ export function playerInitials(name: string): string {
  * Decorative: the player's name is always next to it, so it is `aria-hidden` with an empty alt.
  */
 export function PlayerFace({
-  playerId, nationality, clubColors, size, fallback, ringClassName = "border-2 border-primary/40", className = "",
+  playerId, nationality, clubColors, ...rest
 }: PlayerFaceProps) {
-  const src = faceUrl(playerId, nationality, clubColors);
-  // Status is tied to the URL it was reported for, so a new player starts as "loading"
+  return <FaceImage src={faceUrl(playerId, nationality, clubColors)} {...rest} />;
+}
+
+interface FaceImageProps {
+  /** Server face URL (`faceUrl`, `personFaceUrl`, `managerFaceUrl`). */
+  src: string;
+  size: PlayerFaceSize;
+  fallback: string;
+  ringClassName?: string;
+  className?: string;
+}
+
+/**
+ * Round face image from a server SVG URL, with the initials until it loads (and if it fails).
+ * Shared by players, coaching staff and managers (Etapa 31b). Decorative (`aria-hidden`).
+ */
+export function FaceImage({
+  src, size, fallback, ringClassName = "border-2 border-primary/40", className = "",
+}: FaceImageProps) {
+  // Status is tied to the URL it was reported for, so a new face starts as "loading"
   // without an effect (and a cached image's early onLoad is never overwritten).
   const [status, setStatus] = useState<{ src: string; value: "loaded" | "failed" } | null>(null);
   const state = status?.src === src ? status.value : "loading";

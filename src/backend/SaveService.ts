@@ -13,6 +13,7 @@ import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
+import type { ManagerFace } from "@/Domain/faces/managerFace";
 import type { ClubHistory } from "@/types/clubHistoryTypes";
 import type { BoardState } from "@/types/boardTypes";
 import type { JobOffer, Unemployment } from "@/types/jobTypes";
@@ -53,6 +54,8 @@ export interface SaveManager {
   name:           string;
   nationalityIso: string;   // e.g. "br", "pt"
   backgroundId:   string;   // e.g. "former-player"
+  /** Avatar picked in the new game (Etapa 31b); absent = the face drawn from the manager id. */
+  face?:          ManagerFace;
 }
 
 export interface SaveMeta {

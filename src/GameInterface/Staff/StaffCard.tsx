@@ -3,12 +3,13 @@ import { Button } from "@/GameInterface/ui/Button";
 import { formatWageFull } from "@/Domain/money";
 import type { StaffRole } from "@/Domain/staff/staffTypes";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
+import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { contractEnd, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 
 const LABEL = "block font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
 /** One professional of the club: role, name, age, stars, contract and what he does. Click opens the profile. */
-export function StaffCard({ member, effect, onOpen }: { member: StaffMemberView; effect: string; onOpen: () => void }) {
+export function StaffCard({ member, effect, onOpen, clubColors }: { member: StaffMemberView; effect: string; onOpen: () => void; clubColors?: readonly string[] }) {
   const { t } = useTranslation();
   const c = member.contract;
   const leaving = c?.decision === "leave";
@@ -18,7 +19,8 @@ export function StaffCard({ member, effect, onOpen }: { member: StaffMemberView;
       onClick={onOpen}
       className="text-left rounded-md border border-border bg-card p-4 flex flex-col gap-3 hover:border-primary transition-colors"
     >
-      <div className="flex items-start justify-between gap-2 w-full">
+      <div className="flex items-start gap-3 w-full">
+        <StaffFace member={member} clubColors={clubColors} size={48} />
         <div className="min-w-0">
           <span className={LABEL}>{t(`staff.roles.${member.role}`)}</span>
           <p className="font-display font-black uppercase text-base leading-none m-0 mt-1 truncate">{member.name}</p>

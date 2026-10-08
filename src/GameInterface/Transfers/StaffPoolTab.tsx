@@ -14,6 +14,7 @@ import { COACH_AREAS, ROLE_SPECIALTY, STAFF_ROLES, isStaffRole, type CoachArea, 
 import { DP_CATEGORIES } from "@/GameEngine/PlayerDevelopment";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
+import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { staffCall, type StaffData, type StaffPoolPage } from "@/GameInterface/Staff/staffApi";
 import { HireStaffModal } from "@/GameInterface/Transfers/HireStaffModal";
 
@@ -172,9 +173,12 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
                 {page.items.map((m) => (
                   <tr key={m.id} className={TABLE_STYLE.row}>
                     <td className={TABLE_CELL.body}>
-                      <button type="button" className={`${TABLE_STYLE.name} text-left hover:text-primary cursor-pointer bg-transparent border-0 p-0`} onClick={() => setViewing(m)}>
-                        {m.name}
-                      </button>
+                      <span className="flex items-center gap-3">
+                        <StaffFace member={m} size={32} ringClassName="border border-border" />
+                        <button type="button" className={`${TABLE_STYLE.name} text-left hover:text-primary cursor-pointer bg-transparent border-0 p-0`} onClick={() => setViewing(m)}>
+                          {m.name}
+                        </button>
+                      </span>
                     </td>
                     <td className={`${TABLE_CELL.body} text-sm`}>{t(`staff.roles.${m.role}`)}</td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.number}`}>{m.age}</td>

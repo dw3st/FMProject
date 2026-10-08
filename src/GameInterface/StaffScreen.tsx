@@ -136,7 +136,7 @@ export function StaffScreen() {
                     .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
                   const limit = data.limits[role];
                   const cards = members.map((m) => (
-                    <StaffCard key={m.id} member={m} effect={effectLine(m)} onOpen={() => setOpen(m)} />
+                    <StaffCard key={m.id} member={m} effect={effectLine(m)} onOpen={() => setOpen(m)} clubColors={session?.clubColors} />
                   ));
                   if (limit && limit.used < limit.max) {
                     cards.push(<VacantStaffCard key={`vacant-${role}`} role={role} used={limit.used} max={limit.max} effect={vacantEffect(role)} />);
@@ -157,7 +157,7 @@ export function StaffScreen() {
       )}
 
       {saveId && (
-        <StaffDetailModal saveId={saveId} member={open} mode="club" onClose={() => setOpen(null)} onChanged={changed} />
+        <StaffDetailModal saveId={saveId} member={open} mode="club" clubColors={session?.clubColors} onClose={() => setOpen(null)} onChanged={changed} />
       )}
     </ScreenContainer>
   );

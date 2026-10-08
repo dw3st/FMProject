@@ -117,6 +117,7 @@ Os mercados semanais (`staffMarket`, `fieldScoutMarket`, `/staff/market`, `/staf
   o motivo). A faixa da janela de transferências não aparece nessa aba (a comissão não depende dela).
 - **Central de Olheiros:** chefe e olheiros de campo em estrelas; "Buscar olheiros" → aba Comissão.
 - **Finanças:** projeção semanal = soma dos contratos; extrato com "Multa da comissão" (`staffSeverance`).
+- **Rostos (31b):** cartão (48px), ficha (64px) e lista de livres (32px) com o rosto `facesjs` do profissional (`StaffFace`, `GET /api/faces/person/:id.svg`, idade e nacionalidade; camisa do clube, neutra na lista). Ver `.claude/rules/ui-world.md` → "Rostos da comissão e dos técnicos".
 - `StaffStars` (`Staff/StaffStars.tsx`): 5 ícones `star` / `star-half` / `star-filled` (via `Icons.tsx`) e o número.
 - i18n `staff.*`, `staffPool.*`, `transfers.staffTab`, `inbox.contract.staff_*`,
   `financesScreen.ledgerText.staffSeverance` (en, pt-BR).

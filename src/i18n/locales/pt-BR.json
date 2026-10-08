@@ -254,7 +254,39 @@
     "sackingLabel": "Pode ser demitido",
     "sackingYes": "Sim",
     "sackingNo": "Não",
-    "sackingHint": "Se a diretoria perder a confiança, a carreira termina."
+    "sackingHint": "Se a diretoria perder a confiança, a carreira termina.",
+    "avatar": {
+      "title": "Seu rosto",
+      "auto": "Sorteado",
+      "shuffle": "Sortear",
+      "skin": "Pele",
+      "skinTone": "Tom {{n}}",
+      "hairColor": "Cor do cabelo",
+      "hairColors": {
+        "black": "Preto",
+        "darkBrown": "Castanho-escuro",
+        "brown": "Castanho",
+        "blond": "Loiro",
+        "red": "Ruivo",
+        "grey": "Grisalho"
+      },
+      "hairLength": "Cabelo",
+      "hairLengths": {
+        "bald": "Careca",
+        "short": "Curto",
+        "medium": "Médio",
+        "long": "Longo"
+      },
+      "beard": "Barba",
+      "beards": {
+        "none": "Sem barba",
+        "stubble": "Por fazer",
+        "full": "Cheia"
+      },
+      "glasses": "Óculos",
+      "glassesNo": "Não",
+      "glassesYes": "Sim"
+    }
   },
   "seasonEnd": {
     "seasonComplete": "Temporada Concluída",
@@ -2226,6 +2258,7 @@
       "noClub": "Sem clube",
       "interim": "Interino",
       "earnings": "Ganhos na carreira: {{amount}}",
+      "pointsLine": "{{points}} pts",
       "leftReason": {
         "sacked": "demitido",
         "moved": "saiu para outro clube",

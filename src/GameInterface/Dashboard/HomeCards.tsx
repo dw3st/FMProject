@@ -14,6 +14,8 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
+import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import type { StarKind } from "@/Domain/world/stars";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
@@ -142,6 +144,7 @@ export function ClubCard({
   leagueName,
   managerName,
   managerRank,
+  managerFace,
   reputation,
   pendingOffers,
   contract,
@@ -159,6 +162,8 @@ export function ClubCard({
   leagueName: string;
   managerName: string | null;
   managerRank: number | null;
+  /** The human manager's face (Etapa 31b): saved avatar and nationality; absent avatar = drawn from the id. */
+  managerFace?: { face?: ManagerFace | null; nationality?: string | null } | null;
   /** Manager reputation 0..100 (`.claude/rules/game/jobs.md`); null while loading. */
   reputation: number | null;
   /** Pending job offers. */
@@ -194,6 +199,14 @@ export function ClubCard({
         </div>
       </div>
 
+      <div className="flex items-start gap-3 min-w-0">
+      {managerName && (
+        <ManagerFaceImage
+          manager={{ id: "player", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
+          clubColors={club.colors}
+          size={48}
+        />
+      )}
       <div className="flex flex-col gap-1 min-w-0">
         <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
         <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
@@ -220,6 +233,7 @@ export function ClubCard({
             {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
           </span>
         )}
+      </div>
       </div>
 
       <div className="flex flex-col gap-3 min-w-0">

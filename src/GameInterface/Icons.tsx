@@ -5,6 +5,7 @@ import {
   Pause,
   Bug,
   RefreshCw,
+  Shuffle,
   Settings,
   BarChart3,
   LayoutGrid,
@@ -127,6 +128,7 @@ export type IconName =
   | "debug"
   | "debug-active"
   | "refresh"
+  | "shuffle"
   | "settings"
   | "stats"
   | "formation"
@@ -250,6 +252,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "debug":        Bug,
   "debug-active": Bug,
   "refresh":      RefreshCw,
+  "shuffle":      Shuffle,
   "settings":     Settings,
   "stats":        BarChart3,
   "formation":    LayoutGrid,

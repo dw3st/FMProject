@@ -12,6 +12,7 @@ import { formatWageFull } from "@/Domain/money";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { COACH_AREAS, ROLE_SPECIALTY, type CoachArea, type StaffMember } from "@/Domain/staff/staffTypes";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
+import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { contractEnd, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 
 type Years = "1" | "2" | "3";
@@ -29,8 +30,10 @@ export type StaffProfile = StaffMember & {
  * pool mode shows the asking wage and hands the hire over to `onHire`.
  */
 export function StaffDetailModal({
-  saveId, member, mode, onClose, onChanged, onHire,
+  saveId, member, mode, onClose, onChanged, onHire, clubColors,
 }: {
+  /** Shirt colours of the face (the club's staff); none in the free pool (neutral). */
+  clubColors?: readonly string[];
   saveId: string;
   member: StaffProfile | null;
   mode: "club" | "pool";
@@ -80,11 +83,14 @@ export function StaffDetailModal({
     <>
       <Modal open onClose={onClose} size="md">
         <div className="p-6 flex flex-col gap-5">
-          <div>
-            <Label>{t(`staff.roles.${m.role}`)}</Label>
-            <SectionTitle className="mt-1">{m.name}</SectionTitle>
-            <p className="text-sm text-muted-foreground m-0 mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</p>
-            <div className="mt-2"><StaffStars stars={m.stars} /></div>
+          <div className="flex items-start gap-4">
+            <StaffFace member={m} clubColors={mode === "club" ? clubColors : undefined} size={64} />
+            <div className="min-w-0">
+              <Label>{t(`staff.roles.${m.role}`)}</Label>
+              <SectionTitle className="mt-1">{m.name}</SectionTitle>
+              <p className="text-sm text-muted-foreground m-0 mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</p>
+              <div className="mt-2"><StaffStars stars={m.stars} /></div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">

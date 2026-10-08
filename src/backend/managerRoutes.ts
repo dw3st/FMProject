@@ -2,6 +2,7 @@ import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { rankManagers, rankingPage } from "@/Domain/managers/managers";
+import { managerFaceCountry } from "@/Domain/faces/managerFace";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -60,6 +61,12 @@ export const managerRoutes = {
         // Every manager's passages (Etapa 25), with the clubs' names.
         clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })),
         ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0 } : {}),
+        // Face (Etapa 31b): shirt in the current club's colours; the human manager's saved avatar and
+        // nationality, an AI manager's appearance from the country of his first club (stable).
+        clubColors: m.squadId ? index.byId(m.squadId)?.colors ?? null : null,
+        ...(m.isPlayer
+          ? { face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) }
+          : { nationality: countryOfClub(m.clubs?.[0]?.squadId ?? m.squadId) }),
       })),
     });
   },
