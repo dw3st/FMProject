@@ -2,6 +2,7 @@ import { STAFF } from "@/Domain/staff/staffConfig";
 import { makeProfessional, memberStars, staffWageFor } from "@/Domain/staff/staff";
 import { STAFF_ROLES, type StaffMember, type StaffRole } from "@/Domain/staff/staffTypes";
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import { isScoutRole, strongCountry } from "@/Domain/scouting/countryKnowledge";
 
 /**
  * Free coaching-staff pool of a save (`saves/{id}/staffPool.json`, `.claude/rules/game/staff.md`).
@@ -92,16 +93,20 @@ export interface StaffPoolQuery {
   offset?: number;
   limit?: number;
 }
-export type StaffPoolItem = StaffMember & { stars: number; askingWage: number };
+export type StaffPoolItem = StaffMember & { stars: number; askingWage: number; strongCountry?: { country: string; k: number } };
 
 export const POOL_PAGE = { DEFAULT: 50, MAX: 100 } as const;
 
 /** Filter, sort and page the pool; the asking wage is what the user's club would pay (its wage factor). */
-export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number): { total: number; items: StaffPoolItem[] } {
+/** With `date`, scouts also carry their strongest country (`strongCountry`). */
+export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number, date?: string): { total: number; items: StaffPoolItem[] } {
   const items: StaffPoolItem[] = pool.members
     .map((m) => {
       const stars = memberStars(m);
-      return { ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor) };
+      return {
+        ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor),
+        ...(date && isScoutRole(m.role) ? { strongCountry: strongCountry(m, date) } : {}),
+      };
     })
     .filter((m) => (!q.role || m.role === q.role)
       && (q.minStars === undefined || m.stars >= q.minStars)
