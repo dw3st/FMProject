@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.6",
+    date: "2026-10-07",
+    items: [
+      { pt: "O diretor cuida das renovações e das conversas de contrato; você escolhe quem cuida disso na Equipe técnica", en: "The director handles renewals and contract talks; choose who handles them in the Staff screen" },
+      { pt: "Escolha quais notícias chegam à caixa de entrada no botão Preferências", en: "Choose which news reaches your inbox with the Preferences button" },
+      { pt: "Na partida, os jogadores aparecem com o nome de camisa", en: "In the match, players are shown with their shirt name" },
+    ],
+    fixes: [
+      { pt: "Lista da Evolução em ordem de campo, com filtro por posição", en: "Development list in pitch order, with a position filter" },
+      { pt: "Trocar o papel de um jogador no elenco não recarrega mais a ficha", en: "Changing a player's squad role no longer reloads the profile" },
+    ],
+  },
+  {
     version: "4.5",
     date: "2026-10-07",
     items: [
@@ -991,7 +1004,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Responsabilidades: o diretor cuida dos contratos e a caixa de entrada só traz o que importa", en: "Responsibilities: the director handles contracts and the inbox only brings what matters" },
   { pt: "Comissão técnica completa: preparadores físico, de goleiros e geral, com estrelas e atributos; jardineiro; rostos da equipe e avatar do seu técnico", en: "Full coaching staff: fitness, goalkeeping and general coaches with stars and attributes; groundskeeper; staff faces and your manager avatar" },
   { pt: "Prêmios de fim de temporada: melhor jogador, revelação, gol mais bonito, melhor técnico e seleção da temporada", en: "End-of-season awards: player of the year, young player, goal of the season, manager of the year and team of the season" },
   { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },

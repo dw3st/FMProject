@@ -159,13 +159,20 @@ export interface InjuryInboxMessage extends InboxMessageBase {
 /**
  * Contract news for the human club (`docs/superpowers/specs/2026-09-30-contracts-design.md` §2):
  * contracts about to end (90 days before the season's end), a renewal, or players who left free.
+ * `director_summary`: the director's contract decisions of a Monday
+ * (`docs/superpowers/specs/2026-10-07-responsibilities-inbox-design.md` §1).
  */
 export interface ContractInboxMessage extends InboxMessageBase {
   category: "contract";
-  kind:     "expiring" | "renewed" | "released";
+  kind:     "expiring" | "renewed" | "released" | "director_summary";
+  /** Everyone the message is about (director_summary: every decided player). */
   players:  { id: string; name: string }[];
   /** Renewed only: new contract end (ISO). */
   until?:   string;
+  /** director_summary: renewed (years, weekly wage), leaving at the end of the contract, refused. */
+  renewed?: { id: string; name: string; years: number; wage: number }[];
+  leaving?: { id: string; name: string }[];
+  refused?: { id: string; name: string }[];
 }
 
 /**

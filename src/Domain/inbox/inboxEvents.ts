@@ -328,6 +328,33 @@ export function buildContractMessage(args: {
   };
 }
 
+/** The director's contract decisions of the day (renewed, leaving, refused) in one message. */
+export function buildDirectorSummaryMessage(args: {
+  date: string;
+  outcomes: { playerId: string; name: string; outcome: "renewed" | "leaving" | "refused"; years?: number; wage?: number }[];
+}): ContractInboxMessage {
+  const { date, outcomes } = args;
+  const renewed = outcomes.filter((o) => o.outcome === "renewed")
+    .map((o) => ({ id: o.playerId, name: o.name, years: o.years ?? 1, wage: o.wage ?? 0 }));
+  const leaving = outcomes.filter((o) => o.outcome === "leaving").map((o) => ({ id: o.playerId, name: o.name }));
+  const refused = outcomes.filter((o) => o.outcome === "refused").map((o) => ({ id: o.playerId, name: o.name }));
+  const players = outcomes.map((o) => ({ id: o.playerId, name: o.name }));
+  return {
+    id:        `contract-${date}-director_summary-${randomUUID()}`,
+    date,
+    createdAt: date,
+    read:      false,
+    category:  "contract",
+    subject:   "Contract decisions of the director",
+    preview:   players.map((p) => p.name).join(", ").slice(0, 120),
+    kind:      "director_summary",
+    players,
+    renewed,
+    leaving,
+    refused,
+  };
+}
+
 /** Academy news for the human club: the new intake, or players released at the age limit. */
 export function buildYouthMessage(args: {
   date:     string;

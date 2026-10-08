@@ -304,6 +304,8 @@
     "contractEndedBody": "Seu contrato com o {{club}} acabou sem renovação. Outros clubes vão fazer propostas."
   },
   "staff": {
+    "tabStaff": "Equipe",
+    "tabResponsibilities": "Responsabilidades",
     "subtitle": "Três profissionais definem desenvolvimento, recuperação e observação.",
     "loading": "Carregando equipe...",
     "loadFailed": "Não foi possível carregar a equipe.",
@@ -1020,7 +1022,83 @@
     },
     "worldTransfersCard": "Clubes de IA e outros"
   },
+  "responsibilities": {
+    "title": "Responsabilidades",
+    "subtitle": "Quem cuida de cada área do clube.",
+    "loading": "Carregando…",
+    "contracts": {
+      "label": "Contratos",
+      "director": "Diretor: renova (ou deixa sair) os contratos que vencem e responde as conversas de contrato dos jogadores. Você ainda pode renovar qualquer um na ficha.",
+      "manager": "Técnico: você recebe o aviso de 90 dias e as conversas de contrato, e renova na ficha do jogador."
+    },
+    "owner": {
+      "director": "Diretor",
+      "manager": "Técnico"
+    }
+  },
   "inbox": {
+    "prefs": {
+      "button": "Preferências",
+      "title": "Preferências de notícias",
+      "subtitle": "Escolha quais notícias chegam à caixa de entrada. Uma notícia desligada não é guardada.",
+      "on": "Ligado",
+      "off": "Desligado",
+      "locked": "Pede ação: sempre ligado.",
+      "topics": {
+        "actions": {
+          "label": "Ações",
+          "description": "Propostas, empréstimos, conversas dos jogadores, diretoria, propostas de emprego"
+        },
+        "contracts": {
+          "label": "Contratos",
+          "description": "Resumo do diretor, avisos, saídas livres"
+        },
+        "transfer_news": {
+          "label": "Transferências",
+          "description": "Jogadores vendidos ou comprados, empréstimos que voltam, cláusulas, janelas"
+        },
+        "injuries": {
+          "label": "Lesões",
+          "description": "Lesões, voltas, suspensões"
+        },
+        "development": {
+          "label": "Evolução",
+          "description": "Mudanças de atributos"
+        },
+        "youth": {
+          "label": "Base",
+          "description": "Safra nova, dispensas"
+        },
+        "retirement": {
+          "label": "Aposentadorias",
+          "description": "Jogadores que se aposentaram"
+        },
+        "competitions": {
+          "label": "Competições",
+          "description": "Copa, continental, fim de temporada, prêmios"
+        },
+        "club_records": {
+          "label": "Recordes",
+          "description": "Recordes do clube"
+        },
+        "facilities": {
+          "label": "Instalações",
+          "description": "Obras, recordes de público"
+        },
+        "scouting_alerts": {
+          "label": "Alertas dos olheiros",
+          "description": "Joias, alertas da lista de observação, prospectos"
+        },
+        "scouting_reports": {
+          "label": "Relatórios dos olheiros",
+          "description": "Relatórios semanais, missões encerradas, indicações do mês"
+        },
+        "manager_news": {
+          "label": "Técnicos",
+          "description": "Técnicos demitidos e contratados na sua liga"
+        }
+      }
+    },
     "noMessagesInView": "Nenhuma mensagem nesta visualização.",
     "selectMessage": "Selecione uma mensagem para ler.",
     "loadingMessages": "Carregando mensagens…",
@@ -1100,7 +1178,14 @@
     "contract": {
       "expiring": "Contratos que terminam nesta temporada: {{players}}",
       "renewed": "{{players}} assinou novo contrato (até {{until}})",
-      "released": "Contrato encerrado, saiu como jogador livre: {{players}}"
+      "released": "Contrato encerrado, saiu como jogador livre: {{players}}",
+      "director_summary": "O diretor decidiu os contratos de: {{players}}",
+      "directorSummarySubject": "Decisões de contrato do diretor",
+      "directorSummaryIntro": "O diretor cuidou dos contratos que estão terminando.",
+      "directorRenewed": "Renovados",
+      "directorRenewedTerms": "{{years}} temporadas, {{wage}}/sem",
+      "directorLeaving": "Sairão no fim do contrato",
+      "directorRefused": "Recusaram renovar"
     },
     "youth": {
       "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",

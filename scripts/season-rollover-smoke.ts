@@ -286,6 +286,9 @@ try {
   const scoutTrack = {
     setupOk: false, playerTarget: "", playerTargetSquad: "", playerScout: "", playerMaxK: 0, mondays: 0, travelMissing: [] as string[], reports: 0,
     prospectSigned: false, prospectChecks: [] as string[], kinds: new Set<string>(),
+    // Scouting reports are a default-off inbox topic (`.claude/rules/game/responsibilities.md`): the
+    // smoke first checks no report message lands, then switches the topic on for the checks below.
+    reportsOn: false, reportsHiddenOk: false, reportsLeaked: 0,
   };
   const { apiRoutes: scoutApi } = await import("@/backend/routes");
   const scoutSession = instrLogin("smoke-reborn@test.local").session;
@@ -399,6 +402,13 @@ try {
     talksSeen: new Set<string>(), answered: [] as string[], resolved: new Set<string>(),
   };
   const { answerTalk } = await import("@/Domain/morale/morale");
+
+  // ── Responsabilidades (see "Responsabilidades" section below) ──
+  // The director (default) handles contracts; manager news is a default-off inbox topic.
+  const respTrack = {
+    summaries: new Set<string>(), expiring: new Set<string>(), managerNews: new Set<string>(),
+    contractTalks: new Set<string>(), renewed: 0,
+  };
 
   // ── Mercado vivo (see "Mercado vivo" section below, `.claude/rules/game/transfer-windows.md`) ──
   const { loadWindowContext } = await import("@/backend/marketWindowWorld");
@@ -557,8 +567,17 @@ try {
     }
     // Olheiros: knowledge of the player target, travel lines, prospects signed into the academy.
     {
-      for (const m of await plain().getInbox(saveId)) if (m.category === "scouting") scoutTrack.kinds.add(m.kind);
+      for (const m of await plain().getInbox(saveId)) {
+        if (m.category !== "scouting") continue;
+        if (!scoutTrack.reportsOn && m.kind === "report") scoutTrack.reportsLeaked++;
+        scoutTrack.kinds.add(m.kind);
+      }
       const st = await plain().getScouting(saveId);
+      // Reports exist but none reached the inbox: the default holds; switch the topic on.
+      if (!scoutTrack.reportsOn && st.reports.length > 0) {
+        scoutTrack.reportsHiddenOk = scoutTrack.reportsLeaked === 0;
+        scoutTrack.reportsOn = (await scoutCall("/api/saves/:saveId/inbox-prefs", "PUT", { scouting_reports: true })).status === 200;
+      }
       scoutTrack.playerMaxK = Math.max(scoutTrack.playerMaxK, st.knowledge[scoutTrack.playerTarget]?.k ?? 0);
       // A weak field scout may need a second player mission to reach 100 (up to 3 weeks each).
       if (scoutTrack.playerMaxK < 100 && !st.missions.some((m) => m.scoutId === scoutTrack.playerScout) && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
@@ -697,7 +716,10 @@ try {
           moraleTrack.min = Math.min(moraleTrack.min, p.morale);
           moraleTrack.max = Math.max(moraleTrack.max, p.morale);
         }
-        for (const t of mine.moraleClub?.talks ?? []) moraleTrack.talksSeen.add(t.id);
+        for (const t of mine.moraleClub?.talks ?? []) {
+          moraleTrack.talksSeen.add(t.id);
+          if (t.reason === "contract") respTrack.contractTalks.add(t.id);
+        }
         const open = (mine.moraleClub?.talks ?? [])[0];
         if (open && moraleTrack.answered.length < 3) {
           const answer = open.reason === "contract" ? "promise_renewal" : open.reason === "wants_move" ? "promise_sale" : "promise_minutes";
@@ -714,7 +736,12 @@ try {
       }
       for (const m of await plain().getInbox(saveId)) {
         if (m.category === "player" && (m.kind === "promise_kept" || m.kind === "promise_broken")) moraleTrack.resolved.add(m.id);
+        if (m.category === "contract" && m.kind === "director_summary") respTrack.summaries.add(m.id);
+        if (m.category === "contract" && m.kind === "expiring") respTrack.expiring.add(m.id);
+        if (m.category === "manager_news") respTrack.managerNews.add(m.id);
+        if (m.category === "player" && m.kind === "talk" && m.reason === "contract") respTrack.contractTalks.add(m.id);
       }
+      for (const d of Object.values(metaAfter.directorDecisions ?? {})) if (d.renew) respTrack.renewed++;
     }
 
     // Which leagues rolled today (year advanced).
@@ -2085,6 +2112,18 @@ try {
   check(moraleTrack.talksSeen.size > 0, `moral: at least one talk request during the run (${moraleTrack.talksSeen.size})`);
   check(moraleTrack.resolved.size > 0, `moral: at least one promise resolved during the run (${moraleTrack.resolved.size})`);
 
+  // ── Responsabilidades (`.claude/rules/game/responsibilities.md`) ──
+  // The director (default) renews and sends a summary; no 90-day warning, no contract talk; the
+  // default-off topics (manager news; scouting reports, checked under "Olheiros") never land.
+  console.log("\n── Responsabilidades ──");
+  console.log(`  ${respTrack.summaries.size} director summary(ies); renewals seen ${respTrack.renewed}; `
+    + `expiring ${respTrack.expiring.size}; contract talks ${respTrack.contractTalks.size}; manager news ${respTrack.managerNews.size}`);
+  check(respTrack.summaries.size > 0, `responsabilidades: at least one director summary (${respTrack.summaries.size})`);
+  check(respTrack.renewed > 0, "responsabilidades: the director renewed at least one contract");
+  check(respTrack.expiring.size === 0, `responsabilidades: no 90-day warning with the director (${respTrack.expiring.size})`);
+  check(respTrack.contractTalks.size === 0, `responsabilidades: no contract talk reached the manager (${respTrack.contractTalks.size})`);
+  check(respTrack.managerNews.size === 0, `responsabilidades: no manager news with the default prefs (${respTrack.managerNews.size})`);
+
   // ── Personalidade (`.claude/rules/game/personality.md`) ──
   // Every player of the world has a personality in 1..20 (derived from the id); the reborn player
   // accepted above has the original's; discipline stays in the band checked under "Disciplina";
@@ -2178,6 +2217,8 @@ try {
     console.log(`  ${scoutTrack.mondays} Monday(s), ${scoutTrack.reports} report(s), knowledge entries ${Object.keys(st.knowledge).length}, inbox kinds ${[...scoutTrack.kinds].join(",")}`);
     check(scoutTrack.setupOk, "olheiros: field scouts hired, three missions and a shortlist created through the routes");
     check(scoutTrack.playerMaxK >= 100, `olheiros: the player mission brought knowledge to 100 (${scoutTrack.playerMaxK})`);
+    check(scoutTrack.reportsHiddenOk, `olheiros: with the default inbox prefs no report message lands (${scoutTrack.reportsLeaked} leaked)`);
+    check(scoutTrack.reportsOn, "olheiros: scouting reports switched on through PUT /inbox-prefs");
     check(scoutTrack.reports > 0 && scoutTrack.kinds.has("report"), `olheiros: reports written and announced (${scoutTrack.reports})`);
     check(scoutTrack.kinds.has("mission_done"), "olheiros: a mission finished with its message");
     check(scoutTrack.mondays > 0 && scoutTrack.travelMissing.length === 0, `olheiros: a travel line per active mission every Monday (${scoutTrack.travelMissing.slice(0, 3).join("; ") || "ok"})`);
