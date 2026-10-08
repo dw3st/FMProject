@@ -15,6 +15,15 @@ export interface ScoutingScout {
   busy: boolean;
   /** Field scouts: the severance of dismissing him today (€). */
   severance?: number;
+  /** Staff member id (the chief's real id; vacant: ""). */
+  memberId: string;
+  nationality: string;
+  /** Country he knows best (vacant chief: null). */
+  strongCountry: { country: string; k: number } | null;
+  /** Knowledge of every country he knows (> 0). */
+  countries: Record<string, number>;
+  /** Mean knowledge over the countries a continent mission visits. */
+  continents: Record<string, number>;
 }
 
 interface ScoutingMissionView extends ScoutAssignment {
@@ -92,4 +101,31 @@ export async function scoutingCall(url: string, method: string, body?: unknown):
 /** A player link that resolves the club by id in any league (`squadRouteResolve`). */
 export function playerHref(playerId: string, squadId: string, leagueSlug?: string): string {
   return `/player/${encodeURIComponent(leagueSlug || "any")}/${encodeURIComponent(squadId)}/${encodeURIComponent(playerId)}`;
+}
+
+/** One country of `GET /api/saves/:id/staff/:memberId/countries` (`src/backend/staffRoutes.ts`). */
+export interface ScoutCountryView {
+  country: string;
+  slug: string;
+  name: string;
+  flag: string;
+  iso2: string;
+  continent: string;
+  k: number;
+  band: "full" | "moderate" | "none";
+  native: boolean;
+  last?: string;
+}
+
+export interface ScoutCountriesData {
+  memberId: string;
+  name: string;
+  nationality: string;
+  countries: ScoutCountryView[];
+}
+
+export async function getScoutCountries(saveId: string, memberId: string): Promise<ScoutCountriesData> {
+  const r = await fetch(`/api/saves/${saveId}/staff/${encodeURIComponent(memberId)}/countries`);
+  if (!r.ok) throw new Error(String(r.status));
+  return (await r.json()) as ScoutCountriesData;
 }

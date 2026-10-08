@@ -18,10 +18,15 @@ import {
   COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffMember, type StaffRecord, type StaffRole,
 } from "@/Domain/staff/staffTypes";
 import { DP_CATEGORIES, type DPCategory } from "@/GameEngine/PlayerDevelopment";
+import {
+  countryBand, countryKnowledgeOf, isScoutRole, strongCountry,
+} from "@/Domain/scouting/countryKnowledge";
+import countriesRaw from "@/Data/countries.json";
 import { wageFactorOf } from "@/Domain/finance/wages";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
+type CountryInfo = { slug: string; name: string; flag: string; iso2: string; continent?: string };
 
 interface Human { meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
 
@@ -72,6 +77,7 @@ export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string 
       ...m,
       stars: memberStars(m),
       ...(m.role === "coach" ? { starsByArea: Object.fromEntries(COACH_AREAS.map((a) => [a, starsIn(m, a)])) } : {}),
+      ...(ctx && isScoutRole(m.role) ? { strongCountry: strongCountry(m, ctx.date) } : {}),
       ...(ctx ? memberOffer(squad, m, ctx) : {}),
     })),
     areas: DP_CATEGORIES.map((area) => {
@@ -194,7 +200,7 @@ export const staffRoutes = {
       // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
       const h = await human(saveId);
       const factor = h instanceof Response ? 1 : wageFactorOf(h.squad);
-      return Response.json(searchPool(pool, q, factor));
+      return Response.json(searchPool(pool, q, factor, meta.currentDate ?? undefined));
     });
   },
 
@@ -296,6 +302,39 @@ export const staffRoutes = {
   },
 
   /** `PUT { [area]: memberId | null }` - the user's coach for a field area (`null` = automatic). */
+  /**
+   * `GET` - what a scout (of the club's staff or of the free pool) knows of every game country
+   * (`.claude/rules/game/scouting.md` → "Conhecimento por país"). 404 `notFound`, 400 `notAScout`.
+   */
+  "/api/saves/:saveId/staff/:memberId/countries": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSaveOwner(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const meta = await saveService.getMeta(saveId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const date = meta.currentDate ?? "";
+    const id = req.params.memberId!;
+    const own = meta.clubId ? await saveService.getSquadById(saveId, meta.clubId) : null;
+    let member = own?.staff?.members.find((m) => m.id === id);
+    if (!member) {
+      const pool = await withSaveLock(saveId, () => saveService.getStaffPool(saveId, date));
+      member = pool.members.find((m) => m.id === id);
+    }
+    if (!member) return Response.json({ error: "notFound" }, { status: 404 });
+    if (!isScoutRole(member.role)) return Response.json({ error: "notAScout" }, { status: 400 });
+    const scout = member;
+    const countries = Object.entries(countriesRaw as Record<string, CountryInfo>).map(([country, c]) => {
+      const k = Math.round(countryKnowledgeOf(scout, country, date));
+      const last = scout.countryKnowledge?.[country]?.last;
+      return {
+        country, slug: c.slug, name: c.name, flag: c.flag, iso2: c.iso2, continent: c.continent ?? "",
+        k, band: countryBand(k), native: country === scout.nationality, ...(last ? { last } : {}),
+      };
+    });
+    return Response.json({ memberId: scout.id, name: scout.name, nationality: scout.nationality, countries });
+  },
+
   "/api/saves/:saveId/staff/areas": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);

@@ -2,6 +2,7 @@ import { obscurePersonality, personalityOf } from "@/Domain/personality/personal
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { STAFF_NAME_POOLS, STAFF_NATIONALITIES } from "@/Domain/staff/staffNames";
+import { drawStaffOrigin, type StaffNameBook } from "@/Domain/staff/staffOrigin";
 import {
   COACH_AREAS, ROLE_SPECIALTY, STAFF_ROLES,
   type CoachArea, type Specialty, type StaffAttributes, type StaffMember, type StaffRecord, type StaffRole,
@@ -267,11 +268,20 @@ export function roleLimit(squad: Squad, role: StaffRole): number {
 // -- Generation -------------------------------------------------------------
 
 /** Deterministic professional of about `targetStars` (attributes 1..20 around the matching score), no contract. */
-export function makeProfessional(key: string, role: StaffRole, targetStars: number): StaffMember {
+/**
+ * With `origin` the nationality and the name come from the world's players (`drawStaffOrigin`:
+ * a club's starting staff mostly from `home`, the free pool from every country); without it, the
+ * small built-in pools (tests, /lab). The attributes are the same either way.
+ */
+export function makeProfessional(
+  key: string, role: StaffRole, targetStars: number, origin?: { book: StaffNameBook; home?: string },
+): StaffMember {
   const rng = mulberry32(seedFrom(`staff:${key}`));
-  const nationality = STAFF_NATIONALITIES[Math.floor(rng() * STAFF_NATIONALITIES.length)]!;
+  let nationality = STAFF_NATIONALITIES[Math.floor(rng() * STAFF_NATIONALITIES.length)]!;
   const pool = STAFF_NAME_POOLS[nationality]!;
-  const name = `${pool.first[Math.floor(rng() * pool.first.length)]!} ${pool.last[Math.floor(rng() * pool.last.length)]!}`;
+  let name = `${pool.first[Math.floor(rng() * pool.first.length)]!} ${pool.last[Math.floor(rng() * pool.last.length)]!}`;
+  const drawn = origin ? drawStaffOrigin(origin.book, mulberry32(seedFrom(`staff-origin:${key}`)), origin.home) : null;
+  if (drawn) ({ nationality, name } = drawn);
   const level = 1 + (19 * (clamp(targetStars, STAFF.MIN_STARS, STAFF.MAX_STARS) - 1)) / 4; // score of the target
   const attr = (x: number) => clamp(Math.round(x), STAFF.ATTR_MIN, STAFF.ATTR_MAX);
   const noise = () => (rng() - 0.5) * 6;
@@ -303,7 +313,9 @@ export function makeProfessional(key: string, role: StaffRole, targetStars: numb
 }
 
 /** The human club's starting staff: every role (coaches to the limit, no field scouts), stars = implied ± half. */
-export function initialStaff(key: string, squad: Squad, at: { date: string; seasonEnd: string }): StaffRecord {
+export function initialStaff(
+  key: string, squad: Squad, at: { date: string; seasonEnd: string }, origin?: { book: StaffNameBook; home?: string },
+): StaffRecord {
   const implied = impliedStars(squad);
   const factor = wageFactorOf(squad);
   const members: StaffMember[] = [];
@@ -316,7 +328,7 @@ export function initialStaff(key: string, squad: Squad, at: { date: string; seas
       const delta = (Math.floor(rng() * 3) - 1) * STAFF.START_SPREAD_STARS;
       const span = STAFF.CONTRACT.MAX_YEARS - STAFF.CONTRACT.MIN_YEARS + 1;
       const years = STAFF.CONTRACT.MIN_YEARS + Math.floor(rng() * span);
-      const m = makeProfessional(`${key}:start:${role}:${i}`, role, implied + delta);
+      const m = makeProfessional(`${key}:start:${role}:${i}`, role, implied + delta, origin);
       members.push(signContract(m, { ...at, years, clubFactor: factor }));
     }
   }

@@ -1,5 +1,6 @@
 import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
 import { gainKnowledge, ratingGain, uncertaintyOf } from "@/Domain/scouting/knowledge";
+import { countryGainMult, countryNoiseMult } from "@/Domain/scouting/countryKnowledge";
 import { obscurePlayer } from "@/Domain/staff/staff";
 import { overallAvg } from "@/Domain/playerRating";
 import { Player } from "@/Domain/Player";
@@ -75,8 +76,14 @@ export interface SeenProfile {
   wageDemand: number;
 }
 
-export function seenProfile(player: RosterPlayer, k: number, ctx: Pick<ViewerContext, "saveId" | "chief" | "ownWageFactor">): SeenProfile {
-  const noise = uncertaintyOf(k, ctx.chief.uncertainty);
+/**
+ * `noiseMult`: a mission report's country multiplier (`countryNoiseMult` of the leader's knowledge of
+ * the player's country); 1 everywhere else.
+ */
+export function seenProfile(
+  player: RosterPlayer, k: number, ctx: Pick<ViewerContext, "saveId" | "chief" | "ownWageFactor">, noiseMult = 1,
+): SeenProfile {
+  const noise = uncertaintyOf(k, ctx.chief.uncertainty) * noiseMult;
   const seen = obscurePlayer(player, noise, ctx.saveId);
   const ov = overallAvg({ ...seen, overallAvg: undefined });
   const lo = clamp(ov - noise, 0, 10);
@@ -120,10 +127,12 @@ function reportText(seenOverall: number, lineAverage: number, grade: ScoutGrade,
 }
 
 /** The report of one observed player at knowledge `k` (seen values, never the real ones). */
-export function buildReport(entry: PoolEntry, k: number, ctx: ViewerContext, args: { missionId?: string; youthMission?: boolean }): ScoutReport {
+export function buildReport(
+  entry: PoolEntry, k: number, ctx: ViewerContext, args: { missionId?: string; youthMission?: boolean; noiseMult?: number },
+): ScoutReport {
   const p = entry.player;
   const line = lineOf(p);
-  const seen = seenProfile(p, k, ctx);
+  const seen = seenProfile(p, k, ctx, args.noiseMult ?? 1);
   const lineAvg = ctx.lineAverages[line] ?? 5;
   const grade = gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg));
   return {
@@ -193,6 +202,27 @@ export interface MissionWeekInput {
   leaderRating: number;
   /** Region missions: the candidates. Player missions: the target (empty when he vanished). */
   pool: PoolEntry[];
+  /**
+   * The leader's knowledge of a country at the start of the week (`countryKnowledgeOf`); absent = the
+   * neutral `SCOUTING.COUNTRY.NEUTRAL` (today's pace). Multiplies the gain and the report precision.
+   */
+  countryK?: (country: string) => number;
+}
+
+/** Countries a mission worked in this week: country → players observed there. */
+export interface MissionVisit {
+  missionId: string;
+  scoutId: string;
+  kind: ScoutTargetKind;
+  countries: Record<string, number>;
+}
+
+/** What one week of `visit` teaches its leader: the growth rate of each visited country. */
+export function countryVisits(visit: Pick<MissionVisit, "kind" | "countries">): { country: string; rate: number }[] {
+  const rate = S.COUNTRY.GROWTH[visit.kind];
+  return Object.entries(visit.countries)
+    .filter(([c, n]) => c && n > 0)
+    .map(([country]) => ({ country, rate }));
 }
 
 export type ScoutingNews =
@@ -206,6 +236,8 @@ export interface WeekResult {
   news: ScoutingNews[];
   /** Reports written this week. */
   reports: ScoutReport[];
+  /** Missions that worked this week (at least one player observed) and the countries they visited. */
+  visits: MissionVisit[];
 }
 
 /**
@@ -220,6 +252,7 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
   const news: ScoutingNews[] = [];
   const reports: ScoutReport[] = [];
   const missions: ScoutAssignment[] = [];
+  const visits: MissionVisit[] = [];
   let gems = 0;
   const kctx: ViewerContext = { ...ctx, knowledgeOf: known };
   const byId = new Map(inputs.map((i) => [i.mission.id, i]));
@@ -228,20 +261,32 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
     if (!input) { missions.push(mission); continue; }
     const gain = ratingGain(input.leaderRating) * ctx.chief.gain;
     const youth = mission.target.kind === "youth";
+    const countryK = (e: PoolEntry) => input.countryK?.(e.country) ?? S.COUNTRY.NEUTRAL;
     let observed: PoolEntry[];
     let done = false;
     if (mission.target.kind === "player") {
       observed = input.pool.slice(0, 1);
-      for (const e of observed) knowledge[e.player.id] = gainKnowledge(known(e.player.id), S.PLAYER_GAIN * gain, ctx.date);
+      for (const e of observed) {
+        knowledge[e.player.id] = gainKnowledge(known(e.player.id), S.PLAYER_GAIN * gain * countryGainMult(countryK(e)), ctx.date);
+      }
       const k = observed[0] ? known(observed[0].player.id) : 100;
       done = observed.length === 0 || k >= 100 || mission.weeksDone + 1 >= Math.min(mission.weeks, S.PLAYER_MAX_WEEKS);
     } else {
       observed = pickObserved(input.pool, observedPerWeek(input.leaderRating), `${ctx.saveId}:${mission.id}:${ctx.date}`, known);
-      for (const e of observed) knowledge[e.player.id] = gainKnowledge(known(e.player.id), S.REGION_GAIN * gain, ctx.date);
+      for (const e of observed) {
+        knowledge[e.player.id] = gainKnowledge(known(e.player.id), S.REGION_GAIN * gain * countryGainMult(countryK(e)), ctx.date);
+      }
       done = mission.weeksDone + 1 >= mission.weeks;
     }
+    if (observed.length > 0) {
+      const countries: Record<string, number> = {};
+      for (const e of observed) if (e.country) countries[e.country] = (countries[e.country] ?? 0) + 1;
+      visits.push({ missionId: mission.id, scoutId: mission.scoutId, kind: mission.target.kind, countries });
+    }
     const written = observed
-      .map((e) => buildReport(e, known(e.player.id), kctx, { missionId: mission.id, youthMission: youth }))
+      .map((e) => buildReport(e, known(e.player.id), kctx, {
+        missionId: mission.id, youthMission: youth, noiseMult: countryNoiseMult(countryK(e)),
+      }))
       .sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade] || b.overall[1] - a.overall[1] || (a.playerId < b.playerId ? -1 : 1))
       .slice(0, S.REPORTS_PER_WEEK);
     reports.push(...written);
@@ -266,6 +311,7 @@ export function advanceScoutingWeek(state: ScoutingState, inputs: MissionWeekInp
     },
     news,
     reports,
+    visits,
   };
 }
 
@@ -407,10 +453,12 @@ export function generateProspects(args: {
  * observation), is kept for `PROSPECT_DAYS` and announced (`prospect` news).
  */
 export function addProspects(
-  state: ScoutingState, prospects: ScoutProspect[], ctx: ViewerContext, args: { missionId: string; leaderRating: number },
+  state: ScoutingState, prospects: ScoutProspect[], ctx: ViewerContext,
+  args: { missionId: string; leaderRating: number; countryK?: number },
 ): { state: ScoutingState; news: ScoutingNews[] } {
   if (prospects.length === 0) return { state, news: [] };
-  const k = Math.min(100, S.REGION_GAIN * ratingGain(args.leaderRating) * ctx.chief.gain);
+  const kc = args.countryK ?? S.COUNTRY.NEUTRAL;
+  const k = Math.min(100, S.REGION_GAIN * ratingGain(args.leaderRating) * ctx.chief.gain * countryGainMult(kc));
   const news: ScoutingNews[] = [];
   const added: ScoutProspect[] = [];
   const reports: ScoutReport[] = [];
@@ -419,7 +467,7 @@ export function addProspects(
     if (existing.has(pr.player.id)) continue;
     const report = buildReport(
       { player: pr.player, squadId: "", club: "", league: "", country: pr.country, prospectId: pr.player.id },
-      k, ctx, { missionId: args.missionId, youthMission: true },
+      k, ctx, { missionId: args.missionId, youthMission: true, noiseMult: countryNoiseMult(kc) },
     );
     added.push({ ...pr, reportId: report.id });
     reports.push(report);

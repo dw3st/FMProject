@@ -12,6 +12,8 @@ export interface StaffMemberView extends StaffMember {
   /** Years (1..3) the renewal route accepts today, and the wage of a renewal. */
   renewYears?: number[];
   renewWage?: number;
+  /** Scouts: the country they know best (`scouting.md` → "Conhecimento por país"). */
+  strongCountry?: { country: string; k: number };
 }
 
 export interface StaffAreaView {

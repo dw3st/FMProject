@@ -5,8 +5,9 @@ import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import {
-  continentOf, loadViewer, missionDistance, missionLeagues, viewFor,
+  continentMissionCountries, continentOf, loadViewer, missionDistance, missionLeagues, viewFor,
 } from "@/backend/scoutingWorld";
+import { countryKnowledgeMap, meanKnowledge, strongCountry } from "@/Domain/scouting/countryKnowledge";
 import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
 import { allowedWeeks, missionCost, seenProfile } from "@/Domain/scouting/missions";
 import { scoutMultipliersOf } from "@/Domain/scouting/knowledge";
@@ -20,6 +21,7 @@ import { YOUTH } from "@/Domain/youth/youthConfig";
 import { daysBetween } from "@/Domain/dates";
 import type { SaveMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
+import type { StaffMember } from "@/types/staffTypes";
 import type {
   ScoutAssignment, ScoutFocus, ScoutProspect, ScoutTarget, ScoutTargetKind, ScoutingState, ShortlistEntry,
 } from "@/types/scoutingTypes";
@@ -54,18 +56,21 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
  * The scouts that can lead a mission: the chief (vacant: 2 stars = the old rating 3) and the field
  * scouts. `stars` is what the screens show; `rating` (the old 1..10) drives the mission gain.
  */
-function scoutsOf(squad: Squad | null, date?: string): { id: string; name: string; stars: number; rating: number; chief: boolean; vacant?: boolean; severance?: number }[] {
+function scoutsOf(squad: Squad | null, date?: string): { id: string; name: string; stars: number; rating: number; chief: boolean; vacant?: boolean; severance?: number; member?: StaffMember }[] {
   if (!squad) return [];
   const chief = headOf(squad, "scout");
   return [
     {
       id: "chief", name: chief?.name ?? "", stars: effectiveStars(squad, "scout"), rating: effectiveRating(squad, "scout"),
-      chief: true, ...(chief ? {} : { vacant: true }),
+      chief: true, ...(chief ? { member: chief } : { vacant: true }),
     },
     ...membersOf(squad, "fieldScout").map((s) => {
       const stars = memberStars(s);
       // With the day: the severance of dismissing him today (shown in the confirmation).
-      return { id: s.id, name: s.name, stars, rating: ratingFromStars(stars), chief: false, ...(date ? { severance: severanceOf(s, date) } : {}) };
+      return {
+        id: s.id, name: s.name, stars, rating: ratingFromStars(stars), chief: false, member: s,
+        ...(date ? { severance: severanceOf(s, date) } : {}),
+      };
     }),
   ];
 }
@@ -132,7 +137,22 @@ async function scoutingView(saveId: string, state: ScoutingState) {
   const viewer = await loadViewer(saveService, saveId);
   const ownCountry = viewer?.ownCountry ?? "";
   const revenue = own ? wageRevenueBasisOf(own) : 0;
-  const scouts = scoutsOf(own, meta?.currentDate);
+  const today = meta?.currentDate ?? "";
+  // Each scout's country knowledge (`.claude/rules/game/scouting.md` → "Conhecimento por país").
+  const continentCountries = new Map(await Promise.all(
+    [...CONTINENTS].map(async (c) => [c!, await continentMissionCountries(saveService, saveId, c!)] as const),
+  ));
+  const scouts = scoutsOf(own, meta?.currentDate).map(({ member, ...s }) => ({
+    ...s,
+    /** The staff member behind the scout (the chief's real id; vacant: ""). */
+    memberId: member?.id ?? "",
+    nationality: member?.nationality ?? "",
+    strongCountry: member ? strongCountry(member, today) : null,
+    countries: member ? countryKnowledgeMap(member, today) : {},
+    continents: member
+      ? Object.fromEntries([...continentCountries].map(([c, list]) => [c, meanKnowledge(member, list, today)]))
+      : {},
+  }));
   const missions = await Promise.all(state.missions.map(async (m) => ({
     ...m,
     weeklyCost: own ? missionCost(m.target.kind, await missionDistance(saveService, saveId, m, ownCountry), revenue) : 0,
@@ -363,6 +383,8 @@ export const scoutingRoutes = {
     const state = await saveService.getScouting(saveId);
     return Response.json({
       view: viewFor(viewer, found.player, league),
+      // Country of his club's league (free agent: ""): the scouts' knowledge of it on the screen.
+      country: viewer.leagueCountry.get(league) ?? "",
       report: state.reports.find((r) => r.playerId === found.player.id) ?? null,
       shortlisted: state.shortlist.some((e) => e.playerId === found.player.id),
       mission: state.missions.find((m) => m.target.kind === "player" && m.target.playerId === found.player.id) ?? null,
