@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { saveRoutes } from "@/backend/saves";
 import { advanceDayRoutes } from "@/backend/advanceDay";
 import { advanceUntilRoutes } from "@/backend/advanceUntil";
@@ -508,6 +509,13 @@ export const apiRoutes = {
       ? autoLineupForFormationWithFitness(opponentSquad, oppFormation, matchDate)
       : [];
     const matchMarking = save.matchMarking && save.matchMarking.date === matchDate ? save.matchMarking : null;
+    // Stadium crowd and both managers on the touchline (spec 2026-10-08-match-visual §7).
+    const crowd = saveIdParam && matchFixture && opponentSquad
+      ? await matchCrowd(saveService, save, matchFixture, mySquad, opponentSquad)
+      : null;
+    const managers = saveIdParam && opponentSquad
+      ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id))
+      : null;
 
     return Response.json({
       save,
@@ -524,6 +532,8 @@ export const apiRoutes = {
       rotationApplied: resolved.rotationApplied,
       oppLineup,
       matchMarking,
+      crowd,
+      managers,
     });
   },
 
