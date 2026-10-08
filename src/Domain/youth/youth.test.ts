@@ -178,3 +178,15 @@ test("academy keeps its pace: the growth scale of the 0.1 steps does not apply",
   expect(gain).toBeGreaterThan(0.35);
   expect(gain).toBeLessThan(0.65);
 });
+
+describe("academy and training areas", () => {
+  test("a season with every area vacant (0.4) grows less than with neutral areas", () => {
+    const young = generateIntake({ saveId: "save1", squad: squad(), year: 2027, nextSeasonEnd: "2028-05-31" })[0]!;
+    const all = (v: number) => ({ goalkeeping: v, defending: v, shooting: v, technical: v, passing: v, physical: v, setPieces: v });
+    const neutral = overallAvg(developYouthSeason(young, 1, all(1))) - overallAvg(young);
+    const vacant = overallAvg(developYouthSeason(young, 1, all(0.4))) - overallAvg(young);
+    expect(overallAvg(developYouthSeason(young, 1, all(1)))).toBe(overallAvg(developYouthSeason(young, 1)));
+    expect(vacant).toBeLessThan(neutral);
+    expect(vacant).toBeGreaterThan(0);
+  });
+});

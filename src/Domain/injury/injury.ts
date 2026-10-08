@@ -93,18 +93,24 @@ export function rollSeverity(rng: () => number = Math.random): InjurySeverity {
 }
 
 /** Days out for a severity: uniform integer in `INJURY.DURATION_DAYS[severity]` (inclusive). */
-export function injuryDurationDays(severity: InjurySeverity, rng: () => number = Math.random): number {
+/**
+ * Days out for `severity`. `mult` is the medic's multiplier (`src/Domain/staff`, 1 = neutral): applied on
+ * the same draw, so the rng sequence never changes.
+ */
+export function injuryDurationDays(severity: InjurySeverity, rng: () => number = Math.random, mult = 1): number {
   const [min, max] = INJURY.DURATION_DAYS[severity];
-  return min + Math.floor(rng() * (max - min + 1));
+  const days = min + Math.floor(rng() * (max - min + 1));
+  return mult === 1 ? days : Math.max(1, Math.round(days * mult));
 }
 
-/** ISO return date: `date` plus a random duration for `severity` (`INJURY.DURATION_DAYS`). */
+/** ISO return date: `date` plus a random duration for `severity` (`INJURY.DURATION_DAYS`), × the medic's multiplier. */
 export function returnDate(
   date: string,
   severity: InjurySeverity,
   rng: () => number = Math.random,
+  durationMult = 1,
 ): string {
-  return addDays(date, injuryDurationDays(severity, rng));
+  return addDays(date, injuryDurationDays(severity, rng, durationMult));
 }
 
 /** True when the player is currently sidelined by an injury on `date` (strictly before `returnDate`). */

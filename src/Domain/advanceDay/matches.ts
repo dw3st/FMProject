@@ -17,15 +17,15 @@ import type {
   MatchPlayerStats,
   PlayerDevelopmentChange,
 } from "@/types/dayLogTypes";
-import { applyDevelopment, DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
-import rolesData from "@/Data/roles.json";
+import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
+import { dpWeightsFor } from "@/Domain/development/dpWeights";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
-import { staffEffectsOf } from "@/Domain/staff/staff";
+import { areaMultsOf, staffEffectsOf } from "@/Domain/staff/staff";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { clearHealed, mergeInjury, returnDate as injuryReturnDate, withInjuryCounted } from "@/Domain/injury/injury";
 import { applyMatchCards, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
@@ -223,7 +223,8 @@ function finalizeSquadsAfterMatch(
   function applyMatchToSquad(squad: Squad): Squad {
     // Members who did not play recover like a rest day: staff × training ground
     // (`.claude/rules/game/facilities.md`); the post-match fitness of who played is untouched.
-    const recoveryMult = staffEffectsOf(squad).recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
+    const staffFx = staffEffectsOf(squad);
+    const recoveryMult = staffFx.recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
     return {
       ...squad,
       players: squad.players.map((p0) => {
@@ -305,7 +306,8 @@ function finalizeSquadsAfterMatch(
         }
         const inj = injuryByPlayer.get(p.id);
         if (inj) {
-          const rd = injuryReturnDate(matchDate, inj.severity, rng);
+          // The medic (`src/Domain/staff`) shortens or lengthens the time out, same draw.
+          const rd = injuryReturnDate(matchDate, inj.severity, rng, staffFx.injuryDurationMult);
           injuriesApplied.push({ ...inj, returnDate: rd });
           const merged = mergeInjury(p.injury, { severity: inj.severity, returnDate: rd });
           return { ...pl, seasonLog: withInjuryCounted(log, matchDate, p.injury, rd), injury: merged };
@@ -320,15 +322,15 @@ function finalizeSquadsAfterMatch(
   ): { updatedSquad: Squad; changes: PlayerDevelopmentChange[] } {
     const allChanges: PlayerDevelopmentChange[] = [];
     const { devMult } = staffEffectsOf(squad);
+    // Training areas (`.claude/rules/game/staff.md`): growth only, per DP category.
+    const areas = areaMultsOf(squad);
     const updatedPlayers = squad.players.map((p) => {
-      const roleKey = p.positions[0] ?? "CM";
-      const roleEntry = (rolesData as Record<string, { dpWeights?: RoleDPWeights }>)[roleKey];
-      const weights = roleEntry?.dpWeights ?? DEFAULT_DP_WEIGHTS;
       const rating = playerRatings[p.id] ?? 0;
       const { updatedPlayer, levelChanges } = applyDevelopment(
-        p, rating, weights,
+        p, rating, dpWeightsFor(p),
         devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
         professionalismDecayMult(p),
+        areas,
       );
       if (levelChanges) allChanges.push(levelChanges);
       return updatedPlayer;
