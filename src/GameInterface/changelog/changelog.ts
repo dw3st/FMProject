@@ -32,6 +32,9 @@ export const changelog: ChangelogEntry[] = [
       { pt: "Sete áreas de treino: o goleiro passa a evoluir reflexo e impulsão; força e fôlego também evoluem", en: "Seven training areas: goalkeepers now develop reflexes and jumping; strength and stamina develop too" },
       { pt: "Busque profissionais livres na aba Comissão de Transferências", en: "Find free staff in the Staff tab of Transfers" },
     ],
+    fixes: [
+      { pt: "Jogos à noite não aparecem mais com sol, e o painel, a prévia e o resultado mostram o mesmo horário e o mesmo clima", en: "Night matches no longer show sunshine, and the dashboard, preview and result share the same kickoff time and weather" },
+    ],
   },
   {
     version: "4.6.1",
