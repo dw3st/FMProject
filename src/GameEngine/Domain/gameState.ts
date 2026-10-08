@@ -736,7 +736,8 @@ export function forceInjurySubstitution(
   gameBus.emit('injury', { playerId: player.id, playerName: player.name, team, minute, severity });
   debugLog('injury', `${player.name} (team ${team}) injured — ${severity}, minute ${minute}`, {
     playerId: player.id,
-    data: { severity, minute, team, energy: player.energy },
+    // injuryMult: staff × the match pitch (`matchInjuryMults`), 1 when neither applies.
+    data: { severity, minute, team, energy: player.energy, injuryMult: player.injuryMult ?? 1 },
   });
 
   const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;

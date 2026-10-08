@@ -27,6 +27,8 @@ interface Props {
   /** Style familiarity effects of each side: attribute multiplier and press stamina multiplier. */
   styleA?: StyleEffects;
   styleB?: StyleEffects;
+  /** Pitch of the match (both sides): condition and the injury multiplier it gives. */
+  pitch?: { condition: number; injuryMult: number };
 }
 
 interface StyleEffects {
@@ -35,7 +37,7 @@ interface StyleEffects {
   pressStamina: number;
 }
 
-export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB, styleA, styleB }: Props) {
+export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB, styleA, styleB, pitch }: Props) {
   const prevRef = useRef<Map<number, { energy: number; matchTime: number }>>(new Map());
   const smoothedDrainRef = useRef<Map<number, number>>(new Map());
   const lastMatchTimeRef = useRef(0);
@@ -80,6 +82,7 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
       <div className="px-4 py-2 border-b border-border">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Energy &amp; Fatigue
+          {pitch && <span className="ml-2 normal-case tabular-nums">· pitch {pitch.condition}% · injury x{pitch.injuryMult.toFixed(2)}</span>}
         </h3>
       </div>
       <div className="flex gap-4 p-2">
