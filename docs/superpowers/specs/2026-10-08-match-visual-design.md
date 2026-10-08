@@ -263,3 +263,22 @@ Aceitos pelo usuário com a recomendação desta spec:
 4. **Decidido — fatores de importância:** clássico ×1,20, mata-mata de copa ×1,15, mata-mata continental ×1,25,
    produto com teto ×1,30; fase de grupos continental sem aumento.
 5. **Decidido — `/test`:** os toggles "Estádio" e "Árbitros" começam desligados.
+
+## Resultados (Tarefas 8, 12, 13)
+
+- **Encolhimento do campo (ponto aberto 1):** fica em **0,9**. Fileiras de torcida na lateral de cima/baixo
+  (`standSeatGrid`): 1100×700 → 5, 900×520 → 3, e na proporção da partida ao vivo (124/80) 700×451 → 4, 900×580 → 4,
+  1100×709 → 6, 1500×967 → 6; nenhuma abaixo de 3. Conferido na tela do `/test` (713×460): arquibancada legível nos
+  quatro lados, setor visitante no fundo da direita.
+- **Medição — resultado** (`bun scripts/match-importance-measure.ts`), variação da bilheteria da temporada:
+
+| Liga | clubes | com clássico por cidade | jogos clássicos por clube | mediana | p90 | máx. |
+|---|---|---|---|---|---|---|
+| premier_league | 20 | 6 | 2,00 | +2,1% | +6,0% | +6,0% |
+| brazil_serie_a | 20 | 14 | 1,85 | +3,0% | +4,0% | +4,0% |
+| of_championship | 24 | 0 | 0,96 | +1,7% | +1,7% | +1,7% |
+
+- **Custo de desenho:** a lógica por quadro do árbitro, bandeirinhas e técnicos custa ~6 µs (bench sem navegador,
+  3600 quadros de `11v11-classic`); os dados da torcida de uma textura ~8 ms uma vez (4–5 mil torcedores); a torcida
+  é um único sprite. A leitura de FPS/ms no navegador ficou pendente: a aba do Chrome automatizado reporta
+  `document.hidden`, e o ticker não roda.

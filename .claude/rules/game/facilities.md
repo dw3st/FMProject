@@ -149,3 +149,24 @@ a considerar o público e as parcelas do dia.
 - O custo por lugar usa o peso do país do ranking de técnicos; sem cache na meta ele é calculado na primeira consulta
   (lê os elencos de nível 1 do país e das 5 grandes) e guardado em memória por processo, por país e temporada.
 - A familiaridade de estilo e a evolução da base fora de jogo (`developYouthSeason`) usam só o auxiliar, não o CT.
+
+## Jogos importantes (Etapa 38, 4.12)
+
+Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md` §6. Só o **clube do jogador** (a IA não muda).
+
+- `matchImportanceMult` (`src/Domain/facilities/matchImportance.ts`): clássico (`isDerby` de `board-fans.md`: mesma
+  cidade, ou o líder da liga com jogos) ×1,20; mata-mata de copa ×1,15; mata-mata continental ×1,25 (fase de grupos
+  não conta); produto com teto ×1,30. Multiplica a **demanda** (`DemandInput.importance`, ausente = 1): público =
+  min(capacidade, demanda), então onde a demanda já passa da capacidade nada muda; jogo comum é idêntico ao de antes.
+- Calculada no servidor (`src/backend/matchImportance.ts`, `homeMatchImportance`): no avanço do dia ao empilhar os
+  jogos em casa (`HomeGameToday.importance` → `facilitiesMatchday`), no `match-setup` (`crowd.importance`, a prévia e a
+  partida usam o mesmo público) e no `GET /facilities` (`importanceByFixture` dos jogos em casa da temporada, com o
+  líder de hoje para os jogos futuros — aproximação só de previsão).
+- Medição (`bun scripts/match-importance-measure.ts`, temporada de jogos em casa: um por adversário da liga, o
+  líder — o clube com mais seguidores — conta como clássico, 1,5 jogo de copa em mata-mata, torcida 60):
+
+| Liga | clubes | com clássico por cidade | jogos clássicos por clube | bilheteria: mediana | p90 | máx. |
+|---|---|---|---|---|---|---|
+| premier_league | 20 | 6 | 2,00 | +2,1% | +6,0% | +6,0% |
+| brazil_serie_a | 20 | 14 | 1,85 | +3,0% | +4,0% | +4,0% |
+| of_championship | 24 | 0 | 0,96 | +1,7% | +1,7% | +1,7% |

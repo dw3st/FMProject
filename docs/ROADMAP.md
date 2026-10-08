@@ -109,7 +109,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 35 ✅ | Partida ao vivo: mapa de calor e táticas completas (4.9) | #108 | Mapa de calor da posse (12×8, meu time/adversário, últimos 10 min/jogo todo) abaixo do Resumo, espelhado como o campo quando visitante; aba Tática no painel de substituições com estilo e os quatro eixos só para a partida (mentalidade por cima, familiaridade do clube), sem gravar a tática; `/test` com o mapa opcional. Spec `docs/superpowers/specs/2026-10-08-live-tactics-design.md`, regra `.claude/rules/match-flow.md` |
 | 36 | Torneios de base e reservas | — | Sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas |
 | 37 | Inscrição por competição | #103 | Inscritos por torneio, limite de estrangeiros e mínimo de formados no clube; depende das competições e da base |
-| 38 | Visual da partida e estádio | #107, #99 | Árbitros e bandeirinhas, técnicos à beira do campo com gestos pela mentalidade, animações de chute; estádio em volta do campo com a torcida proporcional ao público |
+| 38 ✅ | Visual da partida e estádio (4.12) | #107, #99 | Árbitro e bandeirinhas que seguem o lance (cartão e bandeira), técnicos à beira do campo com o rosto e gestos pela mentalidade e no gol, animações de chute de longe, cabeçada e defesa, tudo só no desenho; estádio numa faixa fina em volta do campo (campo ×0,9) com a torcida proporcional ao público, assada numa textura; público do clube do jogador ×1,20 no clássico, ×1,15 no mata-mata de copa, ×1,25 no continental (teto ×1,30), só na demanda (bilheteria da temporada: mediana +1,7% a +3,0%); `match-setup` com público e técnicos; `/test` com estádio, árbitros, público e medidor de desenho. Spec `docs/superpowers/specs/2026-10-08-match-visual-design.md`, regras `graphics-engine.md`, `match-flow.md`, `game/facilities.md` |
 | 39 | VAR e reclamação do técnico | #109 | Revisão de lances polêmicos (pênalti, gol, vermelho) e o técnico podendo reclamar, com risco de cartão e suspensão |
 | 40 | Conquistas | #95 | Desafios com recompensas (itens de perfil, atributos do técnico, jogador criado ou lenda aposentada) |
 | 41 | Seleções nacionais | — | Convocações, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking |
@@ -171,7 +171,7 @@ Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etap
 - A IA inscreve sozinha; jogador não inscrito não pode ser escalado naquela competição.
 - **Decidido (2026-10-07):** regras reais simplificadas das principais competições (ex. Brasileirão até 9 estrangeiros relacionados; Premier 8 formados no país em 25; Champions 8 formados no clube/país) e uma regra padrão por continente nas demais.
 
-**38 · Visual da partida e estádio (#107, #99).**
+**38 ✅ · Visual da partida e estádio (#107, #99, 4.12).** Decidido: faixa fina em volta do campo (campo ×0,9), torcida proporcional ao público; público ×1,20 clássico / ×1,15 copa / ×1,25 continental (teto ×1,30), só o clube do jogador; efeito medido na bilheteria da temporada: mediana +2,1% (Premier), +3,0% (Brasileirão), +1,7% (Championship).
 - Árbitro e bandeirinhas desenhados seguindo o lance; técnicos à beira do campo com gesto quando a mentalidade muda.
 - Animações curtas (chute de longe, cabeçada, defesa) só no desenho.
 - Estádio em volta do campo com a torcida proporcional ao público esperado (instalações, 3.9).
