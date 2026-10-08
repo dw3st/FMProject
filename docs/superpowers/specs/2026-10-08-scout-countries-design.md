@@ -168,6 +168,28 @@ Metas:
 
 Se uma meta falhar, ajustar `GAIN_MULT`/`NOISE_MULT` e registrar os números aqui antes do merge.
 
+### Medição (Tarefa 6, 2026-10-08)
+
+`bun scripts/scout-country-measure.ts` (Premier League, 577 jogadores, olheiro 3★ = nota 5, chefe 3★, missão de país
+de 12 semanas, mesma semente; o conhecimento do país fica fixo nas 12 semanas). "Concordância" = relatórios cuja nota
+A–E é a mesma do relatório com k 100.
+
+| Líder | semana | k médio dos observados | observados com k ≥ 60 | concordância da nota |
+|---|---|---|---|---|
+| hoje (sem a etapa) | 4 / 8 / 12 | 30,7 / 31,4 / 32,2 | 1 / 4 / 8 | 70,0% / 65,0% / 66,7% |
+| k 0 (desconhecido) | 4 / 8 / 12 | 23,0 / 23,9 / 24,8 | 0 / 0 / 1 | 50,0% / 45,0% / 46,7% |
+| k 40 (moderado) | 4 / 8 / 12 | 30,7 / 31,4 / 32,2 | 1 / 4 / 8 | 70,0% / 65,0% / 66,7% |
+| k 90 (próprio país) | 4 / 8 / 12 | 35,8 / 36,2 / 37,3 | 1 / 3 / 8 | 75,0% / 70,0% / 68,3% |
+
+- k 40 **idêntico** a hoje (mesma saída).
+- Depois de 12 semanas: próprio país **+15,7%** de conhecimento médio (meta ≤ +20%); desconhecido **−23,1%** (meta
+  ≥ −25%).
+- Concordância da nota: próprio país 68,3% ≥ hoje 66,7% ≥ desconhecido 46,7%.
+- Conhecimento do país numa missão profunda (0,06 por semana): de 0, 21,9 → 39,0 → 52,3 (semanas 4/8/12); de 40,
+  53,2 → 63,4 → 71,4. Queda de 71 (piso do continente 40): +180 dias 71, +270 dias 56, +365 dias 40,2.
+
+Todas as metas passam com `GAIN_MULT` [0,75; 1; 1,2] e `NOISE_MULT` [1,15; 1; 0,85] da spec: nada ajustado.
+
 ## 8. Smoke (`scripts/season-rollover-smoke.ts`, seção "Olheiros")
 
 Junto das checagens de hoje:
