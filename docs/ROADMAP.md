@@ -106,7 +106,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 32 | Prêmios de fim de temporada | #110 | Melhor jogador, revelação, gol mais bonito, melhor técnico, melhor goleiro/zagueiro/meia/atacante e seleção da temporada por liga; no perfil do jogador e do técnico, filtráveis no olheiro e nas estatísticas |
 | 33 | Olheiros por país | #104 | Conhecimento de cada olheiro por país (nacionalidade, cresce com as missões) e mapa mundial ao clicar no olheiro; usa a Central de Olheiros e o mapa-múndi do novo jogo |
 | 34 | Instalações vivas | — | Desgaste e vida útil das obras (reforma e reconstrução), instalações em detalhe (academia, piscina, fisioterapia, refeitório, campos, "N de 10" e % de desgaste) e instalações pesando na decisão do jogador de aceitar o clube |
-| 35 | Partida ao vivo: mapa de calor e táticas completas | #108 | Mini mapa de calor durante o jogo; estilo tático e instruções de equipe mudáveis ao vivo (hoje: mentalidade, formação, instruções individuais) |
+| 35 ✅ | Partida ao vivo: mapa de calor e táticas completas (4.10) | #108 | Mapa de calor da posse (12×8, meu time/adversário, últimos 10 min/jogo todo) abaixo do Resumo, espelhado como o campo quando visitante; aba Tática no painel de substituições com estilo e os quatro eixos só para a partida (mentalidade por cima, familiaridade do clube), sem gravar a tática; `/test` com o mapa opcional. Spec `docs/superpowers/specs/2026-10-08-live-tactics-design.md`, regra `.claude/rules/match-flow.md` |
 | 36 | Torneios de base e reservas | — | Sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas |
 | 37 | Inscrição por competição | #103 | Inscritos por torneio, limite de estrangeiros e mínimo de formados no clube; depende das competições e da base |
 | 38 | Visual da partida e estádio | #107, #99 | Árbitros e bandeirinhas, técnicos à beira do campo com gestos pela mentalidade, animações de chute; estádio em volta do campo com a torcida proporcional ao público |
@@ -156,7 +156,7 @@ Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etap
 - Instalações pesam na decisão do jogador de aceitar o clube (como a ambição com clube menor).
 - **Decidido (2026-10-07):** vida útil de 1 a 5 temporadas por item, com desgaste progressivo (mais lento no começo e acelerando perto do fim); itens de uso intenso (gramado do estádio e do CT, academia) desgastam mais rápido que os de estrutura (arquibancada, refeitório); reforma parcial a qualquer momento; abaixo de ~40% passa a pesar (lesão no gramado ruim, menos evolução no CT ruim); abaixo de ~15% precisa refazer a obra.
 
-**35 · Partida ao vivo: mapa de calor e táticas completas (#108).**
+**35 ✅ · Partida ao vivo: mapa de calor e táticas completas (#108, 4.10).**
 - Mapa de calor pequeno ao lado do campo (posições da bola por time nos últimos minutos e no jogo todo), alternável.
 - Painel tático na partida: estilo tático e eixos (pressão, linha, largura, construção) mudáveis ao vivo, além da mentalidade e da formação que já existem; vale só para o jogo, sem gravar a tática.
 

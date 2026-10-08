@@ -25,6 +25,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.10",
+    date: "2026-10-08",
+    items: [
+      { pt: "Na partida, um mapa de calor mostra onde a bola esteve com o seu time e com o adversário, nos últimos 10 minutos ou no jogo todo", en: "In the match, a heat map shows where the ball was with your team and with the opponent, in the last 10 minutes or the whole match" },
+      { pt: "Mude o estilo tático e as instruções da equipe (pressão, linha, largura, construção) durante a partida, na aba Tática das substituições; a tática salva não muda", en: "Change the tactical style and team instructions (pressing, line, width, build-up) during the match, in the Tactics tab of substitutions; your saved tactics stay the same" },
+    ],
+  },
+  {
     version: "4.7",
     date: "2026-10-08",
     items: [
@@ -1030,7 +1038,6 @@ export const upcoming: ChangelogText[] = [
   { pt: "Prêmios de fim de temporada: melhor jogador, revelação, gol mais bonito, melhor técnico e seleção da temporada", en: "End-of-season awards: player of the year, young player, goal of the season, manager of the year and team of the season" },
   { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
   { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },
-  { pt: "Na partida: mapa de calor e táticas completas ao vivo", en: "In the match: heat map and full live tactics" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "Partida com árbitros, técnicos à beira do campo e estádio com torcida", en: "Matches with referees, managers on the touchline and a stadium full of fans" },

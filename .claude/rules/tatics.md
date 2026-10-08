@@ -164,3 +164,11 @@ Detalhes e números: `.claude/rules/game/formations.md`.
 - **A IA não joga mais sempre 4-3-3:** cada clube escolhe por temporada (`chooseAiFormation`) pelo
   encaixe do elenco, popularidade, estilo e volume de gols, guardado em `Squad.aiFormation`; contra um
   adversário bem mais forte usa a forma defensiva. O clube do jogador usa `TacticsSave.formation`.
+
+---
+
+## Táticas ao vivo (Etapa 35, 4.10)
+
+Na partida ao vivo, a aba "Tática" do painel de substituições muda o estilo e os quatro eixos só para o
+jogo (time A, com a mentalidade por cima e a familiaridade do clube); nunca grava `tactics.json`. Ver
+`.claude/rules/match-flow.md` → "Live heat map and live tactics".
