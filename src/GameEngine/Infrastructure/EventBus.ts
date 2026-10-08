@@ -308,7 +308,11 @@ export interface GameEvents {
     /** Player instructions (`/test`): one slot's role variant / pressing, live. */
     | { type: 'setInstruction'; team: import('@/GameEngine/types').TeamId; slot: number; instruction: import('@/types/tacticsTypes').SlotInstruction | null }
     /** Man-marking (`/test`): the team's slots mark the opponent slots (replaces the pairs). */
-    | { type: 'setManMarks'; team: import('@/GameEngine/types').TeamId; marks: { slot: number; targetSlot: number }[] };
+    | { type: 'setManMarks'; team: import('@/GameEngine/types').TeamId; marks: { slot: number; targetSlot: number }[] }
+    /** Substitution panel (`/test`): queue a substitution (engine ids, flushed at the next stoppage). */
+    | { type: 'queueSub'; team: import('@/GameEngine/types').TeamId; outId: number; inId: number }
+    /** Substitution panel (`/test`): two starters swap slots (`swapPlayerPositions`, no substitution used). */
+    | { type: 'swapPositions'; team: import('@/GameEngine/types').TeamId; aId: number; bId: number };
 
   /**
    * Emitted when team tactics change at runtime (TestScreen tactic buttons).
@@ -336,6 +340,9 @@ export interface GameEvents {
    * (e.g. the user's own sub in MatchScreen) — Statistics counts only the former as a fatigue sub.
    */
   playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' | 'injury' };
+
+  /** Two starters of `team` swapped slots mid-match (`swapPlayerPositions`, #115) — no substitution used. */
+  positionsSwapped: { team: TeamId; aId: number; bId: number };
 
   /**
    * Emitted when a player suffers an in-match injury — either the per-minute risk roll or a

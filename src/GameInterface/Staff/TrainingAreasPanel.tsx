@@ -4,8 +4,9 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { COACH_AREAS, type CoachArea } from "@/Domain/staff/staffTypes";
 import { STAFF_AREAS_PER_COACH } from "@/Domain/staff/staff";
+import { STAFF } from "@/Domain/staff/staffConfig";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
-import { formatMult, type StaffData } from "@/GameInterface/Staff/staffApi";
+import { formatEffect, type StaffData } from "@/GameInterface/Staff/staffApi";
 
 const AUTO = "__auto";
 /** Screen order of the seven areas. */
@@ -36,7 +37,7 @@ export function TrainingAreasPanel({
   return (
     <section className="flex flex-col gap-3">
       <SectionTitle>{t("staff.areasTitle")}</SectionTitle>
-      <p className="text-sm text-muted-foreground m-0">{t("staff.areasSubtitle")}</p>
+      <p className="text-sm text-muted-foreground m-0">{t("staff.areasSubtitle", { pct: Math.round((1 - STAFF.AREA_VACANT_MULT) * 100) })}</p>
       <div className={TABLE_STYLE.shell}>
         <table className="w-full">
           <thead className={TABLE_STYLE.head}>
@@ -87,7 +88,7 @@ export function TrainingAreasPanel({
                   </td>
                   <td className={TABLE_CELL.body}><StaffStars stars={vacant ? null : view!.stars} /></td>
                   <td className={`${TABLE_CELL.body} ${vacant ? "text-center font-black font-display text-destructive tabular-nums" : TABLE_STYLE.key}`}>
-                    {view ? formatMult(view.mult, i18n.language) : ""}
+                    {view ? formatEffect(view.mult, i18n.language, t("staff.noEffect")) : ""}
                   </td>
                 </tr>
               );

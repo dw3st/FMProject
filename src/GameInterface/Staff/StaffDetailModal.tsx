@@ -33,8 +33,10 @@ export type StaffProfile = StaffMember & {
  * pool mode shows the asking wage and hands the hire over to `onHire`.
  */
 export function StaffDetailModal({
-  saveId, member, mode, onClose, onChanged, onHire, clubColors,
+  saveId, member, mode, onClose, onChanged, onHire, clubColors, effect,
 }: {
+  /** What he does for the club today, as the staff card says it ("Player development +6%"). */
+  effect?: string;
   /** Shirt colours of the face (the club's staff); none in the free pool (neutral). */
   clubColors?: readonly string[];
   saveId: string;
@@ -95,6 +97,14 @@ export function StaffDetailModal({
               <div className="mt-2"><StaffStars stars={m.stars} /></div>
             </div>
           </div>
+
+          {effect && (
+            <div className="flex flex-col gap-1">
+              <Label>{t("staff.effectTitle")}</Label>
+              <p className="text-sm m-0">{effect}</p>
+              <p className="text-sm text-muted-foreground m-0">{t("staff.effectsHelp")}</p>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <Label>{t("staff.attributesTitle")}</Label>
