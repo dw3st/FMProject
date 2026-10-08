@@ -227,6 +227,9 @@ Junto das checagens de hoje:
    embutidas de antes. Plano: Tarefa 5b.
 2. **Tamanho das páginas.** Medir com o `worldMapPaths.ts`; acima de ~40 KB gzip por página, servir o desenho do mapa
    como arquivo estático (como fontes e bandeiras, `src/backend/staticAssets.ts`) nesta mesma etapa.
+   **Medido (Tarefa 10, `bun build src/pages/<página>/entry.tsx --minify`, main `d0894ecd` × esta branch):**
+   `worldMapPaths.ts` sozinho 30,7 KB gzip; Equipe técnica 396,1 → 431,6 KB gzip (+35,5), Transferências 394,6 → 429,2
+   (+34,6), Olheiro 414,0 → 451,2 (+37,2), ficha do jogador +0,7. Abaixo de ~40 KB: o desenho fica no bundle.
 3. **Versão.** Esta etapa sai como **4.9** (a 4.8 está em `feat/season-awards`); o changelog conflita e é resolvido no
    merge.
 

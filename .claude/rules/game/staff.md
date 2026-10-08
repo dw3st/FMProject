@@ -184,3 +184,17 @@ contratos; nenhum clube da IA com `staff`.
 
 `obscurePlayer` também grava `personalityView` (traços ± ruído × 4, temperamento e profissionalismo "?" com ruído
 ≥ 1). Ver `.claude/rules/game/personality.md`. Desde a 4.3 o ruído é o do jogador (conhecimento, `scouting.md`).
+
+## Nacionalidades e conhecimento por país (4.9)
+
+- **Origem** (`src/Domain/staff/staffOrigin.ts`, `src/backend/staffNameBook.ts`): um livro de nomes por país dos 60 de
+  `countries.json`, com nomes e sobrenomes dos jogadores do mundo base daquela nacionalidade (`Czechia`, `Türkiye`,
+  `United States` contam para o país do jogo; com menos de 15 nomes, completa com os jogadores dos clubes do país),
+  lido uma vez por processo. A comissão inicial do clube (`initialStaff`, criação e troca de clube) nasce 80% do país do
+  clube e o resto de outro país do continente; a lista de livres (`generatePool`/`refreshPool`) sorteia entre todos os
+  países com peso clubes^0,5. RNG próprio (`staff-origin:<chave>`): os atributos não mudam. Sem o livro (testes,
+  `/lab`): as 8 listas embutidas de `staffNames.ts`.
+- **Olheiros** (`scout`, `fieldScout`) guardam `countryKnowledge` (conhecimento por país, `scouting.md`); o campo vai com
+  o profissional para a lista de livres. `GET /staff` e `/staff/pool` trazem `strongCountry`; a coluna "Forte em" da
+  aba Comissão e os cartões mostram o país forte; a ficha de um olheiro abre o mapa de países
+  (`GET /api/saves/:id/staff/:memberId/countries`).
