@@ -58,8 +58,7 @@ describe("scouting routes and the weekly step", () => {
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "country", country: "Spain" }, weeks: 5 })).status).toBe(400);
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "continent", continent: "Europe" }, weeks: 4 })).status).toBe(400);
 
-    // A field scout (hired straight into the staff: the weekly market is gone, Etapa 31a).
-    expect((await call("/api/saves/:saveId/staff/scouts/market", "GET", session.token)).status).toBe(410);
+    // A field scout (put straight into the staff; hiring from the pool is covered by staff.routes.test.ts).
     const field = signContract(makeProfessional("test-field-scout", "fieldScout", 3), {
       date: "2027-02-05", seasonEnd: "2027-05-30", years: 1, clubFactor: 1,
     });
@@ -140,7 +139,7 @@ describe("scouting routes and the weekly step", () => {
     expect((await call(SIGN, "POST", session.token, undefined, { prospectId: "pr_two" })).status).toBe(400);
 
     // Firing the field scout cancels his mission.
-    await call("/api/saves/:saveId/staff/scouts/fire", "POST", session.token, { scoutId: field.id });
+    expect((await call("/api/saves/:saveId/staff/fire", "POST", session.token, { memberId: field.id })).status).toBe(200);
     expect((await saveService.getScouting(saveId)).missions.some((m) => m.scoutId === field.id)).toBe(false);
 
     // Unemployed: no new missions.

@@ -337,51 +337,6 @@ export const scoutingRoutes = {
     });
   },
 
-  // ── Field scouts (staff market) ────────────────────────────────────────────
-
-  "/api/saves/:saveId/staff/scouts/market": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    // The weekly field-scout market is gone: field scouts come from the staff pool (Etapa 31a).
-    return Response.json({ error: "gone" }, { status: 410 });
-  },
-
-  /** `POST { candidateId }` - hires a field scout of this week's market (409 `scoutsFull` past the limit). */
-  "/api/saves/:saveId/staff/scouts/hire": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    // Hiring goes through the staff pool now (Etapa 31a).
-    return Response.json({ error: "gone" }, { status: 410 });
-  },
-
-  /** `POST { scoutId }` - dismisses a field scout; his mission is cancelled. */
-  "/api/saves/:saveId/staff/scouts/fire": async (req: Req) => {
-    const saveId = req.params.saveId!;
-    const auth = requireSaveOwner(req, saveId);
-    if (auth instanceof Response) return auth;
-    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const body = await readJson(req);
-    if (!body || typeof body.scoutId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
-    return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
-      if (h instanceof Response) return h;
-      const scouts = membersOf(h.squad, "fieldScout");
-      if (!scouts.some((s) => s.id === body.scoutId)) return Response.json({ error: "scout not found" }, { status: 404 });
-      const members = (h.squad.staff?.members ?? []).filter((m) => m.id !== body.scoutId);
-      const next: Squad = { ...h.squad, staff: { ...(h.squad.staff ?? { members: [] }), members } };
-      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      const state = await saveService.getScouting(saveId);
-      if (state.missions.some((m) => m.scoutId === body.scoutId)) {
-        await saveService.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => m.scoutId !== body.scoutId) });
-      }
-      return Response.json({ scouts: membersOf(next, "fieldScout") });
-    });
-  },
-
   /** `GET` - one player as the user sees him (knowledge, last observation, latest report). */
   "/api/saves/:saveId/scouting/player/:playerId": async (req: Req) => {
     const saveId = req.params.saveId!;

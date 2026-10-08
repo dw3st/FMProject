@@ -27,8 +27,10 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
     case "commercial":
     case "wages":
     case "operational":
-    case "staff":
       return { key: entry.kind };
+    case "staff":
+      // Coaching staff (`.claude/rules/game/staff.md`): wages, or the severance of a dismissal.
+      return { key: ref?.stage === "severance" ? "staffSeverance" : "staff" };
     case "gate":
       return ref?.competition ? { key: "gate", competition: ref.competition } : null;
     case "transfer_in":

@@ -1,32 +1,141 @@
 import { saveService } from "@/backend/SaveService";
+import type { SaveMeta } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { areaStars, headOf, squadStaffWages, staffEffectsOf } from "@/Domain/staff/staff";
-import { isStaffRole, type StaffRecord } from "@/Domain/staff/staffTypes";
+import { recordMoney } from "@/backend/FinancialService";
+import {
+  areaMultsOf, areaStars, memberStars, resolveAreaAssignments, roleLimit, signContract, squadStaffWages,
+  staffEffectsOf, starsIn, STAFF_AREAS_PER_COACH,
+} from "@/Domain/staff/staff";
+import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
+import { POOL_PAGE, returnToPool, searchPool, takeFromPool, type StaffPoolQuery, type StaffPoolSort } from "@/Domain/staff/staffPool";
+import { STAFF } from "@/Domain/staff/staffConfig";
+import {
+  COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffRecord, type StaffRole,
+} from "@/Domain/staff/staffTypes";
+import { DP_CATEGORIES, type DPCategory } from "@/GameEngine/PlayerDevelopment";
+import { wageFactorOf } from "@/Domain/finance/wages";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
-async function loadHumanSquad(saveId: string) {
+interface Human { meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
+
+/** The human club (409 `noClub` when unemployed). */
+async function human(saveId: string): Promise<Human | Response> {
   const meta = await saveService.getMeta(saveId);
-  if (!meta) return null;
+  if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+  if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
   const ref = await saveService.resolveSquadId(saveId, meta.clubId);
-  if (!ref) return null;
-  const squad = await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug);
-  if (!squad) return null;
-  return { meta, ref, squad };
+  const squad = ref ? await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
+  if (!ref || !squad) return Response.json({ error: "squad not found" }, { status: 404 });
+  const date = meta.currentDate ?? "";
+  const seasonEnd = meta.activeLeagues?.find((l) => l.leagueSlug === ref.leagueSlug)?.end ?? date;
+  return { meta, squad, ref, date, seasonEnd };
 }
 
-function staffView(squad: Squad) {
+async function readJson(req: Request): Promise<Record<string, unknown> | null> {
+  try {
+    const body = await req.json();
+    return body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+const validYears = (v: unknown): v is number =>
+  typeof v === "number" && Number.isInteger(v) && v >= STAFF.CONTRACT.MIN_YEARS && v <= STAFF.CONTRACT.MAX_YEARS;
+
+/** The staff screen's view: members with their stars, the seven areas, limits, effects, the weekly bill. */
+export function staffView(squad: Squad) {
   const staff: StaffRecord = squad.staff ?? { members: [] };
-  // Wages are the contracts' frozen wages (Etapa 31a).
-  return { staff, effects: staffEffectsOf(squad), areas: areaStars(squad), weeklyTotal: squadStaffWages(staff) };
+  const assigned = resolveAreaAssignments(staff);
+  const stars = areaStars(squad);
+  const mults = areaMultsOf(squad);
+  const best = (role: StaffRole) => staff.members.filter((m) => m.role === role)
+    .sort((a, b) => memberStars(b) - memberStars(a) || a.id.localeCompare(b.id))[0]?.id;
+  const leader = (area: DPCategory): string | undefined => {
+    if (area === "physical") return best("fitness");
+    if (area === "goalkeeping") return best("goalkeeping");
+    return assigned[area as CoachArea]?.id;
+  };
+  return {
+    members: staff.members.map((m) => ({
+      ...m,
+      stars: memberStars(m),
+      ...(m.role === "coach" ? { starsByArea: Object.fromEntries(COACH_AREAS.map((a) => [a, starsIn(m, a)])) } : {}),
+    })),
+    areas: DP_CATEGORIES.map((area) => {
+      const memberId = stars[area] === null ? undefined : leader(area);
+      return { area, stars: stars[area], mult: mults[area], ...(memberId ? { memberId } : {}) };
+    }),
+    areaAssignments: staff.areaAssignments ?? {},
+    limits: Object.fromEntries(STAFF_ROLES.map((r) => [r, {
+      used: staff.members.filter((m) => m.role === r).length, max: roleLimit(squad, r),
+    }])) as Record<StaffRole, { used: number; max: number }>,
+    effects: staffEffectsOf(squad),
+    weeklyTotal: squadStaffWages(staff),
+  };
+}
+
+async function ledgerSeason(saveId: string, leagueSlug: string, date: string): Promise<number> {
+  return (await saveService.getLeagueMeta(saveId, leagueSlug))?.year ?? parseInt(date.slice(0, 4), 10);
+}
+
+function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
+  const q: StaffPoolQuery = {};
+  const role = params.get("role");
+  if (role) {
+    if (!isStaffRole(role)) return null;
+    q.role = role;
+  }
+  const num = (k: string): number | null | undefined => {
+    const raw = params.get(k);
+    if (raw === null || raw === "") return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+  const minStars = num("minStars");
+  const maxWage = num("maxWage");
+  const offset = num("offset");
+  const limit = num("limit");
+  if (minStars === null || maxWage === null || offset === null || limit === null) return null;
+  if (minStars !== undefined) {
+    if (minStars < STAFF.MIN_STARS || minStars > STAFF.MAX_STARS) return null;
+    q.minStars = minStars;
+  }
+  if (maxWage !== undefined) {
+    if (maxWage < 0) return null;
+    q.maxWage = maxWage;
+  }
+  if (offset !== undefined) {
+    if (!Number.isInteger(offset) || offset < 0) return null;
+    q.offset = offset;
+  }
+  if (limit !== undefined) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > POOL_PAGE.MAX) return null;
+    q.limit = limit;
+  }
+  const sort = params.get("sort");
+  if (sort) {
+    if (sort !== "stars" && sort !== "wage" && sort !== "age") return null;
+    q.sort = sort as StaffPoolSort;
+  }
+  return q;
+}
+
+/** Cancels the missions a dismissed field scout was running (`.claude/rules/game/scouting.md`). */
+async function cancelScoutMissions(saveId: string, scoutId: string): Promise<void> {
+  const state = await saveService.getScouting(saveId);
+  if (state.missions.some((m) => m.scoutId === scoutId)) {
+    await saveService.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => m.scoutId !== scoutId) });
+  }
 }
 
 /**
- * Technical staff (`.claude/rules/game/staff.md`): the human club's three professionals, the
- * weekly market of candidates, hiring (replaces the current one) and firing (role left vacant).
- * The wage is charged by the Monday ledger line (`kind: "staff"`), never at hiring.
+ * Coaching staff (`.claude/rules/game/staff.md`): the human club's staff, the free pool search,
+ * hiring (contract 1-3 seasons, frozen wage), firing (severance, back to the pool), renewal and the
+ * coach area assignments. Wages are charged by the Monday ledger line (`kind: "staff"`).
  */
 export const staffRoutes = {
   "/api/saves/:saveId/staff": async (req: Req) => {
@@ -34,48 +143,152 @@ export const staffRoutes = {
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const found = await loadHumanSquad(saveId);
-    if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
-    return Response.json(staffView(found.squad));
+    const h = await human(saveId);
+    if (h instanceof Response) return h;
+    return Response.json(staffView(h.squad));
   },
 
-  "/api/saves/:saveId/staff/market": async (req: Req) => {
+  /** `GET ?role=&minStars=&maxWage=&sort=stars|wage|age&offset=&limit=` - the free pool, asking wage at the club's factor. */
+  "/api/saves/:saveId/staff/pool": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    // The weekly market is gone: the staff pool replaces it (Etapa 31a).
-    return Response.json({ error: "gone" }, { status: 410 });
+    const q = parsePoolQuery(new URL(req.url).searchParams);
+    if (!q) return Response.json({ error: "invalid query" }, { status: 400 });
+    const meta = await saveService.getMeta(saveId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
+    // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
+    const h = await human(saveId);
+    const factor = h instanceof Response ? 1 : wageFactorOf(h.squad);
+    return Response.json(searchPool(pool, q, factor));
   },
 
-  /** `POST` `{ role, candidateId }` - hire a candidate of this week's market, replacing the current one. */
+  /** `POST { memberId, years }` - signs a professional of the pool (409 `roleFull` past the tier's limit). */
   "/api/saves/:saveId/staff/hire": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    // Provisional until the staff pool lands (Etapa 31a): no market to hire from.
-    return Response.json({ error: "gone" }, { status: 410 });
+    const body = await readJson(req);
+    if (!body || typeof body.memberId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    if (!validYears(body.years)) return Response.json({ error: "invalidYears" }, { status: 400 });
+    const years = body.years;
+    const memberId = body.memberId;
+    return withSaveLock(saveId, async () => {
+      const h = await human(saveId);
+      if (h instanceof Response) return h;
+      const pool = await saveService.getStaffPool(saveId, h.date);
+      const taken = takeFromPool(pool, memberId);
+      if (!taken) return Response.json({ error: "notInPool" }, { status: 404 });
+      const staff = h.squad.staff ?? { members: [] };
+      const role = taken.member.role;
+      if (staff.members.filter((m) => m.role === role).length >= roleLimit(h.squad, role)) {
+        return Response.json({ error: "roleFull" }, { status: 409 });
+      }
+      const signed = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, clubFactor: wageFactorOf(h.squad) });
+      const next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
+      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      await saveService.writeStaffPool(saveId, taken.pool);
+      return Response.json(staffView(next));
+    });
   },
 
-  /** `POST` `{ role }` - dismiss the professional; the role stays vacant (effect of rating 3). */
+  /** `POST { memberId }` (or `{ role }`) - dismisses a professional: severance in the ledger, back to the pool. */
   "/api/saves/:saveId/staff/fire": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    let body: unknown;
-    try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { role, memberId } = (body ?? {}) as Record<string, unknown>;
-    if (!isStaffRole(role) && typeof memberId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    const body = await readJson(req);
+    const memberId = body?.memberId;
+    const role = body?.role;
+    if (typeof memberId !== "string" && !isStaffRole(role)) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     return withSaveLock(saveId, async () => {
-      const found = await loadHumanSquad(saveId);
-      if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
-      const staff = found.squad.staff ?? { members: [] };
-      const id = typeof memberId === "string" ? memberId : headOf(found.squad, role as Parameters<typeof headOf>[1])?.id;
-      if (!id || !staff.members.some((m) => m.id === id)) return Response.json({ error: "member not found" }, { status: 404 });
-      const next: Squad = { ...found.squad, staff: { ...staff, members: staff.members.filter((m) => m.id !== id) } };
-      await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+      const h = await human(saveId);
+      if (h instanceof Response) return h;
+      const staff = h.squad.staff ?? { members: [] };
+      const member = typeof memberId === "string"
+        ? staff.members.find((m) => m.id === memberId)
+        : staff.members.filter((m) => m.role === role).sort((a, b) => memberStars(b) - memberStars(a) || a.id.localeCompare(b.id))[0];
+      if (!member) return Response.json({ error: "notYourStaff" }, { status: 404 });
+      const severance = severanceOf(member, h.date);
+      const areaAssignments = staff.areaAssignments
+        ? Object.fromEntries(Object.entries(staff.areaAssignments).filter(([, id]) => id !== member.id))
+        : undefined;
+      let next: Squad = {
+        ...h.squad,
+        staff: { members: staff.members.filter((m) => m.id !== member.id), ...(areaAssignments ? { areaAssignments } : {}) },
+      };
+      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      if (severance > 0) {
+        next = await recordMoney(saveService, saveId, await ledgerSeason(saveId, h.ref.leagueSlug, h.date), h.ref, {
+          date: h.date, kind: "staff", amount: -severance, label: `Staff severance: ${member.name}`, ref: { stage: "severance" },
+        });
+      }
+      const pool = await saveService.getStaffPool(saveId, h.date);
+      await saveService.writeStaffPool(saveId, returnToPool(pool, member, h.date));
+      if (member.role === "fieldScout") await cancelScoutMissions(saveId, member.id);
+      return Response.json({ ...staffView(next), severance });
+    });
+  },
+
+  /** `POST { memberId, years }` - renews a contract from its current end (400 `tooManyYears`). */
+  "/api/saves/:saveId/staff/renew": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSaveOwner(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await readJson(req);
+    if (!body || typeof body.memberId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    if (!validYears(body.years)) return Response.json({ error: "invalidYears" }, { status: 400 });
+    const years = body.years;
+    const memberId = body.memberId;
+    return withSaveLock(saveId, async () => {
+      const h = await human(saveId);
+      if (h instanceof Response) return h;
+      const staff = h.squad.staff ?? { members: [] };
+      const member = staff.members.find((m) => m.id === memberId);
+      if (!member) return Response.json({ error: "notYourStaff" }, { status: 404 });
+      const contract = renewedContract(member, { date: h.date, seasonEnd: h.seasonEnd, years, clubFactor: wageFactorOf(h.squad) });
+      if (!contract) return Response.json({ error: "tooManyYears" }, { status: 400 });
+      const next: Squad = {
+        ...h.squad,
+        staff: { ...staff, members: staff.members.map((m) => (m.id === member.id ? { ...m, contract } : m)) },
+      };
+      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      return Response.json(staffView(next));
+    });
+  },
+
+  /** `PUT { [area]: memberId | null }` - the user's coach for a field area (`null` = automatic). */
+  "/api/saves/:saveId/staff/areas": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSaveOwner(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await readJson(req);
+    if (!body) return Response.json({ error: "invalid body" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const h = await human(saveId);
+      if (h instanceof Response) return h;
+      const staff = h.squad.staff ?? { members: [] };
+      const coaches = new Set(staff.members.filter((m) => m.role === "coach").map((m) => m.id));
+      const assignments: Partial<Record<CoachArea, string>> = { ...(staff.areaAssignments ?? {}) };
+      for (const [area, id] of Object.entries(body)) {
+        if (!isCoachArea(area)) return Response.json({ error: "unknownArea" }, { status: 400 });
+        if (id === null) { delete assignments[area]; continue; }
+        if (typeof id !== "string" || !coaches.has(id)) return Response.json({ error: "notACoach" }, { status: 400 });
+        assignments[area] = id;
+      }
+      const load = new Map<string, number>();
+      for (const id of Object.values(assignments)) load.set(id!, (load.get(id!) ?? 0) + 1);
+      if ([...load.values()].some((n) => n > STAFF_AREAS_PER_COACH)) {
+        return Response.json({ error: "tooManyAreas" }, { status: 400 });
+      }
+      const next: Squad = { ...h.squad, staff: { ...staff, areaAssignments: assignments } };
+      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       return Response.json(staffView(next));
     });
   },

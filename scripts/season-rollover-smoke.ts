@@ -299,16 +299,24 @@ try {
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     }), { params: { saveId: saveId!, ...params } }) as Request & { params: Record<string, string> });
   };
+  const scoutApiGet = async (url: string) => {
+    const handler = (scoutApi as unknown as Record<string, (r: Request & { params: Record<string, string> }) => Promise<Response>>)["/api/saves/:saveId/staff/pool"]!;
+    return handler(Object.assign(new Request(`http://localhost${url}`, {
+      method: "GET", headers: { cookie: `fs_session=${scoutSession.token}` },
+    }), { params: { saveId: saveId! } }) as Request & { params: Record<string, string> });
+  };
   {
     const lc = new Map((leagueData as Array<LeagueEntry & { country?: string }>).map((l) => [l.slug, l.country ?? ""]));
     const ownCountry = lc.get(PLAYER_LEAGUE) ?? "";
     const foreign = ownCountry === "Spain" ? "England" : "Spain";
     const foreignLeague = foreign === "Spain" ? "la_liga" : "premier_league";
     const today = (await plain().getMeta(saveId))!.currentDate!;
-    const market = await (await scoutCall("/api/saves/:saveId/staff/scouts/market", "GET")).json() as { candidates: Array<{ id: string }> };
+    // Field scouts come from the coaching-staff pool (`.claude/rules/game/staff.md`): the two best listed.
+    const poolRes = await scoutApiGet(`/api/saves/${saveId}/staff/pool?role=fieldScout&sort=stars&limit=2`);
+    const pool = await poolRes.json() as { items: Array<{ id: string }> };
     const hired: string[] = [];
-    for (const c of market.candidates.slice(0, 2)) {
-      if ((await scoutCall("/api/saves/:saveId/staff/scouts/hire", "POST", { candidateId: c.id })).status === 200) hired.push(c.id);
+    for (const c of pool.items) {
+      if ((await scoutCall("/api/saves/:saveId/staff/hire", "POST", { memberId: c.id, years: 1 })).status === 200) hired.push(c.id);
     }
     const index = await plain().getSquadIndex(saveId);
     const foreignSquads = (await Promise.all(index.inLeague(foreignLeague).map((t) => plain().getSquadById(saveId!, t.squadId))))

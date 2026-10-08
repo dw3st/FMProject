@@ -8,13 +8,13 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { StatBar } from "@/GameInterface/ui/StatBar";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
-import { memberStars, type StaffEffects } from "@/Domain/staff/staff";
-import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
+import { type StaffEffects } from "@/Domain/staff/staff";
+import { STAFF_ROLES, type StaffMember, type StaffRole } from "@/Domain/staff/staffTypes";
 import { formatEuros } from "@/Domain/money";
 import { ResponsibilitiesPanel } from "@/GameInterface/Staff/ResponsibilitiesPanel";
 
 interface StaffResponse {
-  staff: StaffRecord;
+  members: (StaffMember & { stars: number })[];
   effects: StaffEffects;
   weeklyTotal: number;
 }
@@ -86,7 +86,7 @@ export function StaffScreen() {
     return null;
   };
 
-  const members = [...data.staff.members].sort((a, b) => STAFF_ROLES.indexOf(a.role) - STAFF_ROLES.indexOf(b.role));
+  const members = [...data.members].sort((a, b) => STAFF_ROLES.indexOf(a.role) - STAFF_ROLES.indexOf(b.role));
 
   return (
     <ScreenContainer>
@@ -119,7 +119,7 @@ export function StaffScreen() {
       {pageTab === "staff" && (
         <section className="grid gap-6 md:grid-cols-3">
           {members.map((m) => {
-            const stars = memberStars(m);
+            const stars = m.stars;
             const effect = effectLine(m.role);
             return (
               <div key={m.id} className="rounded-md border border-border p-3 flex flex-col gap-3">
