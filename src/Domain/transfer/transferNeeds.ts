@@ -1,5 +1,6 @@
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
 import { Player } from "@/Domain/Player";
+import { playerValueModel } from "@/Domain/awards/awardValue";
 import {
   aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
@@ -218,7 +219,7 @@ export function findCandidates(
       if (rating < need.targetMin || rating > need.targetMax) continue;
       // Hard age filter: future_investment only targets players ≤ 23
       if (need.intentType === "future_investment" && player.age > 23) continue;
-      const price = new Player(rating, player.age).price;
+      const price = playerValueModel(player, rating).price;
       if (cap != null && price > cap) continue;
       if (refusesSmallerClub(player, steps)) continue;
       out.push(player);
@@ -421,7 +422,7 @@ export function processTeamTransferAttempt(
   let best: { player: RosterPlayer; score: number; fee: number } | null = null;
   for (const player of candidates) {
     const rating = playerOverallRating(player);
-    const fairPrice = new Player(rating, player.age).price;
+    const fairPrice = playerValueModel(player, rating).price;
     const fee = Math.round(fairPrice * (0.9 + rng() * 0.25));
     if (fee > buyerBudget) continue;
     // The wage it would pay: the curve shaped by his personality (`renewalContract`, `personality.md`).

@@ -1,5 +1,5 @@
 import { addDays } from "@/Domain/dates";
-import { Player } from "@/Domain/Player";
+import { playerValueModel } from "@/Domain/awards/awardValue";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
@@ -38,7 +38,7 @@ export function buildAiTransferBid(args: {
   if (buyer.players.length >= MAX_SQUAD) return null;
   // A very ambitious player turns down a much smaller club (`personality.md`).
   if (args.seller && refusesSmallerClub(player, tierStepsDown(args.seller, buyer))) return null;
-  const value = new Player(playerOverallRating(player), player.age).price;
+  const value = playerValueModel(player, playerOverallRating(player)).price;
   // Asking price (#88): below the value a club must afford close to the asking price (the bid sits
   // near it); above it, at least the value. Without a price: the plain listing.
   const r = askingRatio(args.askingPrice, value);

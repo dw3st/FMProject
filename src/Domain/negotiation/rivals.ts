@@ -1,5 +1,5 @@
 import { addDays } from "@/Domain/dates";
-import { Player } from "@/Domain/Player";
+import { playerValueModel } from "@/Domain/awards/awardValue";
 import { getMainRole } from "@/Domain/roles";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { contractDemand } from "@/Domain/contracts/contracts";
@@ -44,7 +44,7 @@ export function rivalCandidates(args: {
 }): RivalCandidate[] {
   const { player } = args;
   const rating = playerOverallRating(player);
-  const value = new Player(rating, player.age).price;
+  const value = playerValueModel(player, rating).price;
   const out: RivalCandidate[] = [];
   const seller = args.squadOf(args.sellerId) ?? null;
   for (const [id, prof] of Object.entries(args.profiles)) {
@@ -100,7 +100,7 @@ export function rollRival(args: {
   }
   const chance = R.BASE * Math.min(1, Math.max(0, c.urgency)) * (0.5 + 0.5 * relativeRating(player, c.squad));
   if (rng() >= chance) return null;
-  const value = new Player(playerOverallRating(player), player.age).price;
+  const value = playerValueModel(player, playerOverallRating(player)).price;
   const cap = priceCapForTier(transferBudgetTierOf(c.squad)) ?? Infinity;
   const fee = roundFeeDown(Math.min(value * (R.FEE_MIN + rng() * R.FEE_SPREAD), aiTransferBudgetOf(c.squad), cap));
   if (fee <= 0) return null;

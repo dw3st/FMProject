@@ -29,3 +29,12 @@ describe("toDisplayPlayer — scouting fields", () => {
     expect(toDisplayPlayer(seenWith(100, 0), "Club").statNoise).toBe(0);
   });
 });
+
+describe("toDisplayPlayer — season-award value (`awards.md`)", () => {
+  test("an award winner shows the boosted value; without one, the value of before", () => {
+    const own = { id: "p1", name: "P", age: 26, positions: ["CM"], preferredFoot: "right", stats: STATS } as RosterPlayer;
+    const plain = toDisplayPlayer(own, "Club");
+    const boosted = toDisplayPlayer({ ...own, awardBoost: { season: "2026-27", league: "pl", mult: 1.1 } }, "Club");
+    expect(boosted.valueMillions).toBeCloseTo(plain.valueMillions * 1.1);
+  });
+});

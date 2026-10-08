@@ -32,11 +32,11 @@ export function rangeMid(range: readonly [number, number]): number {
  */
 export const VALUE_RANGE_SHRINK = 0.5;
 
-/** Market value range (millions of €) of an overall range at `age`. */
-export function seenValueRange(range: readonly [number, number], age: number): [number, number] {
+/** Market value range (millions of €) of an overall range at `age` (× the award boost, `awardValueMult`). */
+export function seenValueRange(range: readonly [number, number], age: number, valueMult = 1): [number, number] {
   const mid = rangeMid(range);
   const half = ((range[1] - range[0]) / 2) * VALUE_RANGE_SHRINK;
-  return [r1(new Player(mid - half, age).valueMillions), r1(new Player(mid + half, age).valueMillions)];
+  return [r1(new Player(mid - half, age, valueMult).valueMillions), r1(new Player(mid + half, age, valueMult).valueMillions)];
 }
 
 /** Weekly wage range (whole €) of an overall range, on the club's wage curve (`wageFactor`). */
