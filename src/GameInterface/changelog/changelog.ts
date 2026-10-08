@@ -32,6 +32,9 @@ export const changelog: ChangelogEntry[] = [
       { pt: "Estádio em volta do campo, com a torcida dos dois times proporcional ao público do jogo", en: "A stadium around the pitch, with both sets of fans filling it in proportion to the crowd" },
       { pt: "Clássicos e mata-matas de copa e continental atraem mais público no seu estádio", en: "Derbies and cup or continental knockout ties draw bigger crowds to your stadium" },
     ],
+    fixes: [
+      { pt: "Nomes dos clubes do Brasil e de Portugal com acentos e sem sufixos (São Paulo, Grêmio, Atlético Mineiro, Vitória de Guimarães) (#121)", en: "Brazilian and Portuguese club names now have their accents and no stray suffixes (São Paulo, Grêmio, Atlético Mineiro, Vitória de Guimarães) (#121)" },
+    ],
   },
   {
     version: "4.11",
