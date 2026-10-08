@@ -353,7 +353,14 @@
     "statsDesc": "Mergulhe em análises aprofundadas de desempenho de jogadores e equipe."
   },
   "playerScreen": {
-    "birthDate": "Nascido em {{date}}",
+    "facts": {
+      "position": "Posição",
+      "foot": "Pé",
+      "age": "Idade",
+      "nationality": "Nacionalidade",
+      "birthDate": "Nascimento",
+      "height": "Altura"
+    },
     "height": "{{cm}} cm",
     "loadingPlayer": "Carregando jogador...",
     "playerNotFound": "Jogador não encontrado.",

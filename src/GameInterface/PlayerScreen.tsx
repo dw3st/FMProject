@@ -26,6 +26,7 @@ import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/
 import type { LeagueData } from "@/types/playerTypes";
 import { PlayerKnowledgePanel } from "@/GameInterface/Scouting/PlayerKnowledgePanel";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
+import type { IdentityFact } from "@/GameInterface/Components/FactCard";
 
 export function PlayerScreen({
   playerId,
@@ -92,13 +93,13 @@ export function PlayerScreen({
     return { ...dp, leagueSlug: league, clubSlug: club };
   }, [player, squadName, squadWageFactor, league, club, session?.currentDate]);
 
-  const identityFacts = useMemo((): string[] => {
+  const identityFacts = useMemo((): IdentityFact[] => {
     if (!player) return [];
-    const facts: string[] = [];
+    const facts: IdentityFact[] = [];
     const born = player.birthDate ? formatBirthDate(player.birthDate, i18n.language) : null;
-    if (born) facts.push(t("playerScreen.birthDate", { date: born }));
+    if (born) facts.push({ label: t("playerScreen.facts.birthDate"), value: born });
     const cm = heightCmOf(player.heightCm);
-    if (cm !== null) facts.push(t("playerScreen.height", { cm }));
+    if (cm !== null) facts.push({ label: t("playerScreen.facts.height"), value: t("playerScreen.height", { cm }) });
     return facts;
   }, [player, i18n.language, t]);
 

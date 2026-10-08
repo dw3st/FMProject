@@ -19,6 +19,9 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { valueText } from "@/GameInterface/Scouting/KnowledgeBar";
 import { seenAttributeRange } from "@/Domain/scouting/seen";
+import { FactCard, type IdentityFact } from "@/GameInterface/Components/FactCard";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 
 const STAT_ABBR: Partial<Record<keyof PlayerStatsRecord, string>> = {
   finishing:    "FIN",
@@ -116,8 +119,8 @@ export function PlayerCard({
   layout?: "narrow" | "wide";
   /** Wide layout: an extra badge after the name (the personality summary on the player screen). */
   nameBadge?: React.ReactNode;
-  /** Wide layout: extra identity facts (birth date, height) shown after age; empty = none. */
-  identityFacts?: string[];
+  /** Wide layout: extra identity facts (birth date, height) shown as cards after the nationality; empty = none. */
+  identityFacts?: IdentityFact[];
   /** Jersey colours of the player's club; defaults to the user's club (dashboard card). */
   clubColors?: readonly string[];
 }) {
@@ -166,16 +169,23 @@ export function PlayerCard({
               {nameBadge}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
-              <span className={`text-sm font-bold px-2 py-0.5 rounded border ${posColor}`}>
+            <div className="flex flex-wrap items-stretch justify-center sm:justify-start gap-2 mt-3">
+              <FactCard label={t("playerScreen.facts.position")} tone={posColor}>
                 {positionLabel(t, player.natural, player.pos)}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")} {t("common.foot")} · {player.age} {t("dashboard.playerCard.yearsOld")}
-              </span>
-              {identityFacts && identityFacts.length > 0 && (
-                <span className="text-sm text-muted-foreground tabular-nums">· {identityFacts.join(" · ")}</span>
+              </FactCard>
+              <FactCard label={t("playerScreen.facts.foot")}>
+                {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")}
+              </FactCard>
+              <FactCard label={t("playerScreen.facts.age")}>{player.age}</FactCard>
+              {player.ownNationality && (
+                <FactCard label={t("playerScreen.facts.nationality")} title={player.ownNationality}>
+                  {nationalityFlagCode(player.ownNationality) && <Flag code={nationalityFlagCode(player.ownNationality)!} />}
+                  <span className="truncate max-w-[160px]">{player.ownNationality}</span>
+                </FactCard>
               )}
+              {identityFacts?.map((f) => (
+                <FactCard key={f.label} label={f.label}>{f.value}</FactCard>
+              ))}
             </div>
             {player.injury && (
               <p className="text-sm font-bold text-destructive mt-2 m-0">
