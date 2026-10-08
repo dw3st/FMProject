@@ -12,6 +12,7 @@ import { youthRoutes } from "@/backend/youthRoutes";
 import { facilityRoutes } from "@/backend/facilityRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
+import { awardsRoutes } from "@/backend/awardsRoutes";
 import { jobRoutes } from "@/backend/jobRoutes";
 import { negotiationRoutes } from "@/backend/negotiationRoutes";
 import { marketRoutes } from "@/backend/marketRoutes";
@@ -93,6 +94,7 @@ export const apiRoutes = {
   ...facilityRoutes,
   ...rebornRoutes,
   ...managerRoutes,
+  ...awardsRoutes,
   ...jobRoutes,
   ...negotiationRoutes,
   ...marketRoutes,

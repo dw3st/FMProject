@@ -35,6 +35,7 @@ describe("buildQuickMatchEvent", () => {
     expect(r.event.score.home + r.event.score.away).toBeGreaterThan(0);
 
     expect(r.event.compact).toBe(true);
+    expect(r.event.goals).toBeUndefined(); // quickSim never records goal positions (season awards)
     expect(r.event.playerStats).toEqual({});
     expect(r.event.playerRatings).toEqual({});
     expect(r.event.developmentChanges).toEqual([]);

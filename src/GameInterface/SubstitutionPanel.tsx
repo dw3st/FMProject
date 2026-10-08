@@ -13,6 +13,8 @@ import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Compo
 import { ManMarkingPanel } from "@/GameInterface/Components/ManMarkingPanel";
 import { DragGhost, useDragDrop } from "@/GameInterface/Components/useDragDrop";
 import type { SlotInstruction } from "@/types/tacticsTypes";
+import { LiveTacticsPanel } from "@/GameInterface/Components/LiveTacticsPanel";
+import type { ComponentProps } from "react";
 
 // ── Energy bar helpers ───────────────────────────────────────────────────────
 
@@ -68,6 +70,8 @@ export interface SubstitutionPanelProps {
   onInstruction?: (slot: number, instruction: SlotInstruction | null) => void;
   /** Live man-marking (engine ids of opponents on the pitch). */
   onManMarks?: (marks: { markerSlot: number; targetId: number }[]) => void;
+  /** Live tactical style and axes (Etapa 35) — this match only. */
+  liveTactics?: ComponentProps<typeof LiveTacticsPanel>;
   onClose: () => void;
 }
 
@@ -83,10 +87,11 @@ export function SubstitutionPanel({
   onChangeFormation,
   onInstruction,
   onManMarks,
+  liveTactics,
   onClose,
 }: SubstitutionPanelProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"subs" | "formation" | "instructions">("subs");
+  const [activeTab, setActiveTab] = useState<"subs" | "formation" | "tactics" | "instructions">("subs");
   const [instrSlot, setInstrSlot] = useState<number | null>(null);
   const instructionShort = useInstructionShort();
   const [selectedOutId, setSelectedOutId] = useState<number | null>(null);
@@ -207,6 +212,7 @@ export function SubstitutionPanel({
             tabs={[
               { key: "subs", label: t("substitutionPanel.playerSwap") },
               { key: "formation", label: t("substitutionPanel.formation") },
+              ...(liveTactics ? [{ key: "tactics" as const, label: t("substitutionPanel.tabTactics") }] : []),
               ...(onInstruction ? [{ key: "instructions" as const, label: t("substitutionPanel.tabInstructions") }] : []),
             ]}
             active={activeTab}
@@ -423,6 +429,8 @@ export function SubstitutionPanel({
               </div>
             </>
           )}
+
+          {activeTab === "tactics" && liveTactics && <LiveTacticsPanel {...liveTactics} />}
 
           {activeTab === "instructions" && onInstruction && (
             <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">

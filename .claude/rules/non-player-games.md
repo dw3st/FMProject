@@ -1148,3 +1148,8 @@ constante.
 **quickSim** (`quicksim-spread.ts collect <liga> 100 2 --fitness 88 --ai` + `analyze`, 200 jogos do motor): Premier
 motor 2,34 × quick 2,38 (+1,5%), Brasileirão 2,15 × 2,31 (+7,4%) — dentro de ±10%. O quickSim acompanha o mundo
 novo sozinho (ele lê as mesmas notas), então não foi recalibrado.
+
+## Gols da partida (Etapa 32)
+
+O quickSim não grava a lista de gols (`MatchEvent.goals` ausente, `compact`): as ligas no quickSim não têm gol da
+temporada. Os demais prêmios valem em todas as ligas. Ver `.claude/rules/game/awards.md`.

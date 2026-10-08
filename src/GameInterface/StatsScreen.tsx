@@ -18,11 +18,12 @@ import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { AwardsView } from "@/GameInterface/Awards/AwardsView";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
-type Tab = "rankings" | "team" | "retired" | "managers";
-const TABS: Tab[] = ["rankings", "team", "retired", "managers"];
+type Tab = "rankings" | "team" | "retired" | "managers" | "awards";
+const TABS: Tab[] = ["rankings", "team", "retired", "managers", "awards"];
 type TableKey = keyof CompetitionRankings;
 const TABLES: TableKey[] = ["scorers", "assists", "ratings", "appearances"];
 /** Column label of each ranking table's value. */
@@ -329,6 +330,7 @@ export function StatsScreen() {
             { key: "team" as const, label: t("statsScreen.myTeam") },
             { key: "retired" as const, label: t("statsScreen.retired.tab") },
             { key: "managers" as const, label: t("statsScreen.managers.tab") },
+            { key: "awards" as const, label: t("statsScreen.awards.tab") },
           ]}
           active={tab}
           onChange={setTab}
@@ -352,6 +354,17 @@ export function StatsScreen() {
           session?.saveId ? <RetiredList saveId={session.saveId} leagues={leagues} /> : null
         ) : tab === "managers" ? (
           session?.saveId ? <ManagerRanking saveId={session.saveId} leagues={leagues} refreshKey={currentDate} /> : null
+        ) : tab === "awards" ? (
+          session?.saveId ? (
+            <AwardsView
+              saveId={session.saveId}
+              leagues={leagues}
+              countryByName={COUNTRY_BY_NAME}
+              myClubId={session.clubId ?? ""}
+              ownLeague={ownLeague}
+              currentDate={currentDate ?? ""}
+            />
+          ) : null
         ) : error ? (
           <p className="text-sm text-muted-foreground">{t("statsScreen.loadFailed")}</p>
         ) : !data ? (

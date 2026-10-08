@@ -25,13 +25,37 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    version: "4.9",
+    version: "4.10",
     date: "2026-10-08",
     items: [
       { pt: "Cada olheiro conhece melhor alguns países: o dele, os vizinhos e os que visitou nas missões — e lá encontra mais e erra menos", en: "Each scout knows some countries better: his own, its neighbours and the ones he visited on missions — and there he finds more and errs less" },
       { pt: "Clique no olheiro para ver no mapa-múndi o que ele conhece de cada país", en: "Click a scout to see on the world map what he knows of each country" },
       { pt: "Ao criar uma missão, veja o quanto o olheiro conhece o destino e o ritmo dele lá", en: "When creating a mission, see how well the scout knows the destination and his pace there" },
       { pt: "A comissão técnica agora vem de todos os países do jogo, quase toda do país do clube", en: "Coaching staff now come from every country in the game, mostly from the club's own country" },
+    ],
+  },
+  {
+    version: "4.9",
+    date: "2026-10-08",
+    items: [
+      { pt: "Na partida, um mapa de calor mostra onde a bola esteve com o seu time e com o adversário, nos últimos 10 minutos ou no jogo todo", en: "In the match, a heat map shows where the ball was with your team and with the opponent, in the last 10 minutes or the whole match" },
+      { pt: "Mude o estilo tático e as instruções da equipe (pressão, linha, largura, construção) durante a partida, na aba Tática das substituições; a tática salva não muda", en: "Change the tactical style and team instructions (pressing, line, width, build-up) during the match, in the Tactics tab of substitutions; your saved tactics stay the same" },
+    ],
+  },
+  {
+    version: "4.8",
+    date: "2026-10-08",
+    items: [
+      { pt: "Prêmios de fim de temporada em todas as ligas: melhor jogador, revelação, artilheiro, melhor goleiro, seleção, melhor técnico e gol da temporada", en: "End-of-season awards in every league: player, young player, top scorer, goalkeeper, team of the season, manager and goal of the season" },
+      { pt: "Melhor jogador e melhor técnico do mundo, todo janeiro", en: "World player and manager of the year, every January" },
+      { pt: "Premiados ficam mais valorizados e mais procurados por clubes grandes; aba Prêmios em Estatísticas e filtro no olheiro", en: "Award winners are worth more and wanted by bigger clubs; Awards tab in Stats and a scout filter" },
+    ],
+  },
+  {
+    version: "4.7.1",
+    date: "2026-10-08",
+    items: [
+      { pt: "Painel com o rosto do técnico do mesmo tamanho do escudo; notas da partida em ordem de posição; ficha do jogador com os dados reorganizados, salário mensal em euro e data de fim do contrato; descrições dos atributos e a explicação da evolução agora em português", en: "Dashboard shows the manager's face at the same size as the crest; match ratings listed by position; player profile with reordered facts, monthly salary in euros and contract end date; attribute descriptions and the development explanation are now translated" },
     ],
   },
   {
@@ -1037,9 +1061,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Prêmios de fim de temporada: melhor jogador, revelação, gol mais bonito, melhor técnico e seleção da temporada", en: "End-of-season awards: player of the year, young player, goal of the season, manager of the year and team of the season" },
   { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },
-  { pt: "Na partida: mapa de calor e táticas completas ao vivo", en: "In the match: heat map and full live tactics" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "Partida com árbitros, técnicos à beira do campo e estádio com torcida", en: "Matches with referees, managers on the touchline and a stadium full of fans" },

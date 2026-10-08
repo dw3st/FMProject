@@ -27,6 +27,7 @@ import type { DayTransfer, StoredDayEvent, StoredDayLog, DayLog, TransferEvent }
 import type { InboxMessage } from "@/types/inboxTypes";
 import { inboxAllowed, type InboxPrefs } from "@/Domain/inbox/inboxTopics";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
+import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 import { clubAnnualRevenue, clubWageFactor, squadCurveBill } from "@/Domain/finance/wages";
 import { initialStaff } from "@/Domain/staff/staff";
 import { initialFacilities } from "@/Domain/facilities/facilities";
@@ -357,6 +358,30 @@ export class SaveService {
 
   listLedgerSeasons(saveId: string): Promise<number[]> {
     return this.dal.listLedgerSeasons(saveId);
+  }
+
+  // ── Season awards (`.claude/rules/game/awards.md`) ──────────────────────────
+
+  getAwardsYear(saveId: string, year: number): Promise<AwardsYear | null> {
+    return this.dal.readAwardsYear(saveId, year);
+  }
+  writeAwardsYear(saveId: string, data: AwardsYear): Promise<void> {
+    return this.dal.writeAwardsYear(saveId, data);
+  }
+  listAwardYears(saveId: string): Promise<number[]> {
+    return this.dal.listAwardYears(saveId);
+  }
+  getSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null> {
+    return this.dal.readSeasonGoals(saveId, league, year);
+  }
+  writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void> {
+    return this.dal.writeSeasonGoals(saveId, data);
+  }
+  deleteSeasonGoals(saveId: string, league: string, year: number): Promise<void> {
+    return this.dal.deleteSeasonGoals(saveId, league, year);
+  }
+  listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]> {
+    return this.dal.listSeasonGoalFiles(saveId);
   }
 
   appendLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {

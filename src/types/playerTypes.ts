@@ -4,6 +4,7 @@ import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type { ClubMoraleState, PlayerMoraleLog, SquadStatus } from "@/types/moraleTypes";
 import type { Personality, PersonalityView } from "@/types/personalityTypes";
 import type { ScoutView } from "@/types/scoutingTypes";
+import type { PlayerAward } from "@/types/awardTypes";
 
 export interface PlayerStatsRecord {
   passing: number;
@@ -156,6 +157,11 @@ export interface RosterPlayer {
    * parent club's; the borrowing club pays `wageShare` (0..1) of the wage. Returns at `until`.
    */
   loan?: PlayerLoan;
+  /**
+   * Market-value boost of a season award (`.claude/rules/game/awards.md`), until the next rollover
+   * of his league. Never read by the engine.
+   */
+  awardBoost?: { season: string; league: string; mult: number };
   /**
    * Morale 0..100 (`.claude/rules/game/morale.md`). Human club only; absent = the neutral start
    * (65). AI clubs never store it and play at the neutral value.
@@ -446,4 +452,6 @@ export interface PlayerHistoryRow {
   open?: true;
   /** Stint on loan (`.claude/rules/game/negotiation.md`). */
   loan?: true;
+  /** Season awards won with this row (`.claude/rules/game/awards.md`). */
+  awards?: PlayerAward[];
 }

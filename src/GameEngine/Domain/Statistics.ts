@@ -12,7 +12,21 @@
  */
 
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
-import type { TeamId } from '@/GameEngine/types';
+import type { SetPieceGoalKind, TeamId } from '@/GameEngine/types';
+
+/** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
+export interface GoalLogEntry {
+  scorerId: number;
+  assistId?: number;
+  team: TeamId;
+  /** `matchMinute` at the goal (0-based, the screen shows +1). */
+  minute: number;
+  header: boolean;
+  setPiece?: SetPieceGoalKind;
+  fromX: number;
+  fromY: number;
+  goalX: number;
+}
 
 // ── Data structures ───────────────────────────────────────────────────────────
 
@@ -193,6 +207,8 @@ const teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number;
  * average is only over players who actually played — see `TeamStats.avgEndEnergy`.
  */
 const endEnergy = new Map<number, { team: TeamId; energy: number }>();
+/** Goals of the match in order (`getGoalLog`). */
+let goalLog: GoalLogEntry[] = [];
 
 /** Players currently man-marked (refreshed by every `manMarkTick`; cleared at `initStats`). */
 let markedNow = new Set<number>();
@@ -240,6 +256,12 @@ gameBus.on('goalScored',    e => {
   if (e.setPiece) get(e.scorerId).setPieceGoals++;
   if (e.setPiece === 'direct_free_kick') get(e.scorerId).directFreeKickGoals++;
   if (e.assistId != null) get(e.assistId).assists++;
+  goalLog.push({
+    scorerId: e.scorerId, team: e.team, minute: e.minute, header: e.header === true,
+    fromX: e.fromX, fromY: e.fromY, goalX: e.goalX,
+    ...(e.assistId != null ? { assistId: e.assistId } : {}),
+    ...(e.setPiece ? { setPiece: e.setPiece } : {}),
+  });
   notify();
 });
 
@@ -363,6 +385,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   store.clear();
   playerTeam.clear();
   endEnergy.clear();
+  goalLog = [];
   markedNow = new Set();
   teamFlags.A = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
   teamFlags.B = { extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0 };
@@ -438,6 +461,11 @@ export function getTeamStats(team: TeamId): TeamStats {
   return result;
 }
 
+/** Goals of the match so far, in order (a copy). */
+export function getGoalLog(): GoalLogEntry[] {
+  return goalLog.map((g) => ({ ...g }));
+}
+
 /** Snapshot of all player stats — useful for end-of-match summaries. */
 export function getAllPlayerStats(): Map<number, PlayerStats> {
   return new Map([...store].map(([id, s]) => [id, { ...s }]));
@@ -451,6 +479,8 @@ export interface StatsSnapshot {
   teams:     Array<[number, TeamId]>;
   endEnergy: Array<[number, { team: TeamId; energy: number }]>;
   teamFlags: Record<TeamId, { extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number }>;
+  /** Goals so far (absent in snapshots taken before the goal log existed). */
+  goals?: GoalLogEntry[];
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -460,6 +490,7 @@ export function exportStatsState(): StatsSnapshot {
     teams:     [...playerTeam],
     endEnergy: [...endEnergy].map(([id, e]) => [id, { ...e }]),
     teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
+    goals:     goalLog.map((g) => ({ ...g })),
   };
 }
 
@@ -471,6 +502,7 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, s] of snap.players) store.set(id, { ...emptyStats(), ...s });
   for (const [id, team] of snap.teams) playerTeam.set(id, team);
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
+  goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
   teamFlags.A = { ...teamFlags.A, ...snap.teamFlags.A };
   teamFlags.B = { ...teamFlags.B, ...snap.teamFlags.B };
   notify();

@@ -185,7 +185,7 @@ contratos; nenhum clube da IA com `staff`.
 `obscurePlayer` também grava `personalityView` (traços ± ruído × 4, temperamento e profissionalismo "?" com ruído
 ≥ 1). Ver `.claude/rules/game/personality.md`. Desde a 4.3 o ruído é o do jogador (conhecimento, `scouting.md`).
 
-## Nacionalidades e conhecimento por país (4.9)
+## Nacionalidades e conhecimento por país (4.10)
 
 - **Origem** (`src/Domain/staff/staffOrigin.ts`, `src/backend/staffNameBook.ts`): um livro de nomes por país dos 60 de
   `countries.json`, com nomes e sobrenomes dos jogadores do mundo base daquela nacionalidade (`Czechia`, `Türkiye`,

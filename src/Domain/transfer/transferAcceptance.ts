@@ -3,6 +3,7 @@ import { closePartialSeason } from "@/Domain/history/history";
 import { MIN_BY_ROLE, roleOf } from "@/Domain/contracts/freeAgents";
 import type { Squad, RosterPlayer, PlayerContract, SellOnClause } from "@/types/playerTypes";
 import { Player } from "@/Domain/Player";
+import { playerValueModel } from "@/Domain/awards/awardValue";
 import { aiFinancialPressure } from "@/Domain/aiFinance/aiClubFinance";
 import { sellPush, tierStepsDown } from "@/Domain/personality/personality";
 
@@ -112,7 +113,7 @@ export function saleContext(
 ): SaleContext {
   const pRating = playerOverallRating(player);
   const relativeStrength = pRating - teamAvgRating(fromSquad);
-  const value = new Player(pRating, player.age).price;
+  const value = playerValueModel(player, pRating).price;
   // AI sellers: pressure from their financial tier (they keep no balance). The human club's
   // listed players are evaluated on its real budget.
   let financialPressure: number;

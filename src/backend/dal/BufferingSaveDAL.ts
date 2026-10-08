@@ -18,6 +18,7 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
+import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 
 /** Max buffered writes in flight during `flush()`. */
 export const FLUSH_CONCURRENCY = 32;
@@ -414,5 +415,45 @@ export class BufferingSaveDAL implements ISaveDAL {
     // append's entries instead of overwriting them.
     const current = (this.cache.get(key) as LedgerEntry[] | undefined) ?? [];
     await this.writeLedger(saveId, season, [...current, ...entries]);
+  }
+
+  // ── Season awards ─────────────────────────────────────────────────────────────
+  //
+  // Plain buffered resources (phase 1 of the flush). A season-goals delete is a tombstone
+  // (`null` in the cache) whose thunk deletes the file; a later write replaces it.
+
+  readAwardsYear(saveId: string, year: number): Promise<AwardsYear | null> {
+    return this.readThrough(`awards:${saveId}:${year}`, () => this.inner.readAwardsYear(saveId, year));
+  }
+  async writeAwardsYear(saveId: string, data: AwardsYear): Promise<void> {
+    this.buffer(`awards:${saveId}:${data.year}`, data, () => this.inner.writeAwardsYear(saveId, data));
+  }
+  async listAwardYears(saveId: string): Promise<number[]> {
+    const years = new Set(await this.inner.listAwardYears(saveId));
+    const prefix = `awards:${saveId}:`;
+    for (const [key, v] of this.cache) if (key.startsWith(prefix) && v) years.add(Number(key.slice(prefix.length)));
+    return [...years].sort((a, b) => a - b);
+  }
+  readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null> {
+    return this.readThrough(`seasonGoals:${saveId}:${league}:${year}`, () => this.inner.readSeasonGoals(saveId, league, year));
+  }
+  async writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void> {
+    this.buffer(`seasonGoals:${saveId}:${data.league}:${data.year}`, data, () => this.inner.writeSeasonGoals(saveId, data));
+  }
+  async deleteSeasonGoals(saveId: string, league: string, year: number): Promise<void> {
+    this.buffer(`seasonGoals:${saveId}:${league}:${year}`, null, () => this.inner.deleteSeasonGoals(saveId, league, year));
+  }
+  async listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]> {
+    const out = new Map<string, { league: string; year: number }>(
+      (await this.inner.listSeasonGoalFiles(saveId)).map((f) => [`${f.league}:${f.year}`, f]),
+    );
+    const prefix = `seasonGoals:${saveId}:`;
+    for (const [key, v] of this.cache) {
+      if (!key.startsWith(prefix)) continue;
+      const rest = key.slice(prefix.length);
+      if (v) { const g = v as SeasonGoals; out.set(rest, { league: g.league, year: g.year }); }
+      else if (this.pending.has(key)) out.delete(rest);
+    }
+    return [...out.values()];
   }
 }

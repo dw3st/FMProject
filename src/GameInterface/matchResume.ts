@@ -19,6 +19,7 @@ import type { StatsSnapshot } from "@/GameEngine/Domain/Statistics";
 import type { Mentality, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 import type { MatchFeedItem } from "@/GameInterface/MatchSummaryPanel";
+import type { HeatmapSnapshot } from "@/Domain/match/possessionHeatmap";
 
 export const MATCH_SNAPSHOT_STORAGE_KEY = "fmproject:matchSnapshot";
 export const MATCH_SNAPSHOT_VERSION = 1;
@@ -35,6 +36,8 @@ export interface TeamTacticsSnapshot {
   mentality: Mentality;
   axesOverride?: TacticsSave["axesOverride"];
   familiarity?: FamiliarityLevels;
+  /** The saved tactics the live panel restores (Etapa 35); absent = `style` / `axesOverride`. */
+  saved?: { style: TacticalStyle; axesOverride?: TacticsSave["axesOverride"] };
 }
 
 export interface MatchSnapshot {
@@ -52,6 +55,8 @@ export interface MatchSnapshot {
     eventFeed: MatchFeedItem[];
     /** Game-seconds of possession per team. */
     possession: { A: number; B: number };
+    /** Possession heat map (Etapa 35); absent or malformed = empty. */
+    heatmap?: HeatmapSnapshot;
   };
 }
 

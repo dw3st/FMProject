@@ -6,7 +6,7 @@ import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 
 type Page = {
   total: number; playerRank: number | null;
-  items: { rank: number; id: string; isPlayer: boolean; points: number; clubName: string | null; squadId: string }[];
+  items: { rank: number; id: string; isPlayer: boolean; points: number; clubName: string | null; squadId: string; awards: unknown[] }[];
 };
 
 describe("GET /api/saves/:saveId/managers", () => {
@@ -32,7 +32,10 @@ describe("GET /api/saves/:saveId/managers", () => {
     const foreign = managers.find((m) => index.byId(m.squadId)?.leagueSlug === "la_liga")!;
     const t = { season: "2026-27", kind: "league" as const, competition: "x", squadId: "", points: 0 };
     await saveService.writeManagers(saveId, managers.map((m) =>
-      m.id === english.id ? { ...m, points: 100, titles: [{ ...t, squadId: m.squadId, points: 100 }] }
+      m.id === english.id ? {
+        ...m, points: 100, titles: [{ ...t, squadId: m.squadId, points: 100 }],
+        awards: [{ season: "2026-27", kind: "best_manager" as const, competition: "premier_league", squadId: m.squadId }],
+      }
       : m.id === foreign.id ? { ...m, points: 150, titles: [{ ...t, squadId: m.squadId, points: 150 }] }
       : m));
 
@@ -54,6 +57,9 @@ describe("GET /api/saves/:saveId/managers", () => {
     expect(world.items.map((m) => m.id)).toEqual([foreign.id, english.id, world.items[2]!.id]);
     expect(world.items.map((m) => m.rank)).toEqual([1, 2, 3]);
     expect(typeof world.items[0]!.clubName).toBe("string");
+    // Season awards (Etapa 32): every item carries its list (empty when none).
+    expect(world.items[1]!.awards).toEqual([{ season: "2026-27", kind: "best_manager", competition: "premier_league", squadId: english.squadId }]);
+    expect(world.items[0]!.awards).toEqual([]);
     expect(world.playerRank).toBeGreaterThan(2);
 
     const country = (await (await call("?scope=country&offset=0&limit=100")).json()) as Page;

@@ -38,7 +38,7 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 | `src/GameInterface/StaffScreen.tsx`, `Transfers/StaffPoolTab.tsx` | Olheiros de campo: cartões na comissão; contratação pela aba Comissão de Transferências |
 | `src/GameInterface/Dashboard/*` | Cartão Atenção: joia e alertas da lista (7 dias) |
 | `scripts/scouting-index-bench.ts` | Custo do borrão por jogador × o uniforme antigo |
-| `src/Domain/scouting/countryKnowledge.ts` (+ teste) | Conhecimento de cada olheiro por país (4.9): base pela nacionalidade, leitura com queda, crescimento, multiplicadores, faixas, país forte |
+| `src/Domain/scouting/countryKnowledge.ts` (+ teste) | Conhecimento de cada olheiro por país (4.10): base pela nacionalidade, leitura com queda, crescimento, multiplicadores, faixas, país forte |
 | `src/GameInterface/Scouting/ScoutCountriesPanel.tsx`, `ScoutCountriesModal.tsx`, `StrongCountry.tsx` | Mapa-múndi e lista de países do olheiro, selo do país forte |
 | `scripts/scout-country-measure.ts` | Medição do ritmo por país |
 
@@ -202,7 +202,7 @@ da busca coerentes com k ("?" abaixo de 20, faixa a partir de ±0,5, exato em 10
 faixa vista (e não pela nota real: pelo menos uma inversão contra a nota real entre as linhas em faixa), o salário
 em faixa nessas linhas (nunca o exato) e o custo do borrão (≤ 2×). Teste: `src/Domain/scout/scoutSeen.test.ts`.
 
-## Conhecimento por país (4.9)
+## Conhecimento por país (4.10)
 
 Spec `docs/superpowers/specs/2026-10-08-scout-countries-design.md`. Cada olheiro (chefe e de campo) conhece cada país
 de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.ts`.
@@ -257,3 +257,8 @@ de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.
 Tópicos de notícia (`.claude/rules/game/responsibilities.md`): `report`, `mission_done` e `recommendation` são
 `scouting_reports`, **desligado por padrão** (não são gravados); joias, alertas da lista e prospectos são
 `scouting_alerts`, ligado. Relatórios e indicações do chefe continuam na aba Relatórios.
+
+## Prêmios (Etapa 32)
+
+Filtro `onlyAwarded` ("Só premiados") na busca: jogador com algum prêmio no histórico (`DisplayPlayer.awarded`). O
+prêmio é público: vale com qualquer conhecimento. Ver `.claude/rules/game/awards.md`.

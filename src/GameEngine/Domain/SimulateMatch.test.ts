@@ -116,3 +116,27 @@ describe("simulateMatch: style familiarity execution", () => {
     expect(getTeamExecutionMult("B")).toBeCloseTo(1 + FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE);
   }, 60_000);
 });
+
+describe("simulateMatch goal log (season awards)", () => {
+  test("one entry per goal, with minute, shot point and a scorer of the match", () => {
+    const squad = loadSquad("33.json");
+    let goalsSeen = 0;
+    // Goalless runs happen (and the engine has no seed): keep simulating until some goals were checked.
+    for (let i = 0; i < 12 && (i < 4 || goalsSeen === 0); i++) {
+      const r = simulateMatch(squad, loadSquad("34.json"), undefined, undefined, undefined, undefined, { knockout: true });
+      expect(r.goals.length).toBe(r.score.A + r.score.B);
+      const ids = new Set([...r.players.map((p) => p.id), ...r.substitutions.map((s) => s.playerOutId), ...r.injuries.map((x) => x.playerId), ...r.cards.map((c) => c.playerId)]);
+      for (const g of r.goals) {
+        expect(g.minute).toBeGreaterThanOrEqual(0);
+        expect(ids.has(g.scorerId)).toBe(true);
+        expect(g.goalX === 0 || g.goalX === 115).toBe(true);
+        expect(Math.hypot(g.goalX - g.fromX, 37 - g.fromY)).toBeGreaterThan(0);
+        if (g.setPiece === "penalty") expect(Math.abs(g.goalX - g.fromX)).toBeLessThanOrEqual(18);
+      }
+      const byTeam = { A: r.goals.filter((g) => g.team === "A").length, B: r.goals.filter((g) => g.team === "B").length };
+      expect(byTeam).toEqual(r.score);
+      goalsSeen += r.goals.length;
+    }
+    expect(goalsSeen).toBeGreaterThan(0);
+  }, 120_000);
+});

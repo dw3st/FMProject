@@ -14,6 +14,21 @@
     "reflex": "Reflexes",
     "jump": "Jumping"
   },
+  "attributeDescriptions": {
+    "passing": "How accurately the player delivers short and medium passes.",
+    "vision": "How well the player sees options, especially forward or difficult passes.",
+    "finishing": "How accurate the player is when shooting at goal.",
+    "dribbling": "How well the player carries the ball and beats pressure while moving.",
+    "speed": "Top movement speed.",
+    "acceleration": "How quickly the player reaches speed and reacts to movement changes.",
+    "tackling": "How well the player wins the ball in challenges.",
+    "pressing": "How effectively the player closes down opponents and applies pressure.",
+    "stamina": "How well the player maintains performance across 90 minutes.",
+    "heading": "How effectively the player wins and directs aerial duels.",
+    "strength": "Physical power in duels, holding up play, and shot force.",
+    "reflex": "Goalkeeper reaction ability for close-range and fast shots.",
+    "jump": "Goalkeeper reach and extension for high balls and long-range efforts."
+  },
   "common": {
     "continue": "Continue",
     "save": "Save",
@@ -877,6 +892,23 @@
       "medium": "medium",
       "severe": "severe"
     },
+    "heatmap": {
+      "title": "Possession map",
+      "team": "Team",
+      "period": "Period",
+      "mine": "My team",
+      "opponent": "Opponent",
+      "recent": "Last 10 min",
+      "all": "Whole match",
+      "aria": "Where the ball was with {{team}} ({{window}})",
+      "attack": "Attacking direction",
+      "empty": "No possession yet"
+    },
+    "liveTactics": {
+      "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
+      "mentalityNote": "The mentality (match bar) still applies on top.",
+      "reset": "Back to saved tactics"
+    },
     "summary": {
       "title": "Summary",
       "possession": "Possession",
@@ -1169,6 +1201,40 @@
       "manager": "Manager"
     }
   },
+  "awards": {
+    "kind": {
+      "best_player": "Player of the season",
+      "young_player": "Young player of the season",
+      "top_scorer": "Top scorer",
+      "best_goalkeeper": "Goalkeeper of the season",
+      "team_of_season": "Team of the season",
+      "best_manager": "Manager of the season",
+      "goal_of_season": "Goal of the season",
+      "world_player": "World player of the year",
+      "world_manager": "World manager of the year"
+    },
+    "line": {
+      "GK": "GK",
+      "DEF": "DEF",
+      "MID": "MID",
+      "FWD": "FWD"
+    },
+    "goals_one": "{{count}} goal",
+    "goals_other": "{{count}} goals",
+    "rating": "Rating {{value}}",
+    "points": "{{value}} pts",
+    "managerResult": "finished {{position}}, target {{target}}",
+    "goal": {
+      "text": "{{player}}, {{minute}}' against {{opponent}} · {{how}}",
+      "textNoOpponent": "{{player}}, {{minute}}' · {{how}}",
+      "header": "header",
+      "distance": "from {{yards}} yards"
+    },
+    "title": "Awards",
+    "more": "+{{count}}",
+    "seasonTitle": "{{league}} {{season}}",
+    "yearTitle": "{{year}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferences",
@@ -1269,7 +1335,8 @@
       "player": "Player",
       "facilities": "Facilities",
       "manager_news": "Managers",
-      "scouting": "Scouting"
+      "scouting": "Scouting",
+      "awards": "Awards"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
@@ -1416,6 +1483,13 @@
         "pre_contract_joined": "{{player}} left {{club}} and joined your squad on his pre-contract.",
         "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full)."
       }
+    },
+    "awards": {
+      "leagueSubject": "{{league}} awards {{season}}",
+      "worldSubject": "World awards {{year}}",
+      "leaguePreview": "Player of the season: {{player}}",
+      "worldPreview": "Player: {{player}} · Manager: {{manager}}",
+      "worldLead": "The best of {{year}} around the world:"
     },
     "managerNews": {
       "subject_one": "Manager news in your league",
@@ -1652,6 +1726,9 @@
   },
   "dashboard": {
     "playerCard": {
+      "marketValue": "Market value",
+      "monthlySalary": "Monthly salary (€)",
+      "contractEnd": "Contract ends",
       "value": "Value",
       "salary": "Salary",
       "energy": "Energy",
@@ -1947,6 +2024,7 @@
     "matchRatings": "Match ratings",
     "squadPerformance": "Squad performance",
     "noPlayerData": "No player data",
+    "substitutes": "Substitutes",
     "goal": "goal",
     "goals": "goals",
     "assist": "assist",
@@ -1987,7 +2065,8 @@
     "selectBench": "Tap a player on the bench →",
     "cancelSelection": "Cancel selection",
     "changeFormationHint": "Change formation mid-match. Players keep their positions and adapt to the new shape.",
-    "tabInstructions": "Instructions"
+    "tabInstructions": "Instructions",
+    "tabTactics": "Tactics"
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -2132,6 +2211,14 @@
     "scouting": "Scouting"
   },
   "developmentScreen": {
+    "explanation": {
+      "developingImproving": "Young and developing well. Regular playing time and good form are accelerating growth in key areas.",
+      "developing": "Still in the development phase. Needs consistent match time and good performances to continue progressing.",
+      "approachingPeak": "Approaching peak years with continued improvement potential in key areas.",
+      "atPeak": "At peak age, maintaining level through consistent performances. Mental attributes can still grow.",
+      "declining": "Age-related physical decline is affecting this player. Mental and technical attributes remain more stable.",
+      "default": "Development is progressing as expected for this player's age and role."
+    },
     "squad": "Squad",
     "searchPlayers": "Search players…",
     "noPlayersMatch": "No players match \"{{query}}\"",
@@ -2167,7 +2254,8 @@
       "league": "League",
       "nationality": "Nationality",
       "forSaleOnly": "For Sale Only",
-      "freeAgentsOnly": "Free agents only"
+      "freeAgentsOnly": "Free agents only",
+      "awardedOnly": "Award winners only"
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
@@ -2232,6 +2320,25 @@
     "club": "Club",
     "loading": "Loading...",
     "loadFailed": "Could not load the stats.",
+    "awards": {
+      "tab": "Awards",
+      "year": "Year",
+      "league": "League",
+      "empty": "No season has ended yet.",
+      "noLeague": "No awards for this league in {{year}}.",
+      "worldTitle": "World awards {{year}}",
+      "worldPending": "The world awards for {{year}} are given in January.",
+      "individual": "Individual awards",
+      "xi": "Team of the season",
+      "slot": "Pos",
+      "player": "Player",
+      "club": "Club",
+      "rating": "Rating",
+      "manager": "Manager of the season",
+      "goal": "Goal of the season",
+      "value": "Value",
+      "loadFailed": "Could not load the awards."
+    },
     "retired": {
       "tab": "Retired",
       "empty": "No retired players yet.",
@@ -2251,6 +2358,7 @@
       "name": "Manager",
       "points": "Points",
       "titles": "Titles",
+      "awards": "Awards",
       "promotion": "Promotion · {{league}}",
       "yourRank": "You are #{{rank}} of {{total}}",
       "empty": "No managers yet.",

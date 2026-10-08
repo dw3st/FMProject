@@ -14,6 +14,21 @@
     "reflex": "Reflexos",
     "jump": "Impulsão"
   },
+  "attributeDescriptions": {
+    "passing": "Precisão do jogador nos passes curtos e médios.",
+    "vision": "Quanto o jogador enxerga as opções, sobretudo passes para frente ou difíceis.",
+    "finishing": "Precisão do jogador ao chutar a gol.",
+    "dribbling": "Quanto o jogador conduz a bola e escapa da pressão em movimento.",
+    "speed": "Velocidade máxima de deslocamento.",
+    "acceleration": "Quão rápido o jogador atinge a velocidade e reage a mudanças de movimento.",
+    "tackling": "Quanto o jogador ganha a bola nas disputas.",
+    "pressing": "Eficácia do jogador em fechar o adversário e pressionar.",
+    "stamina": "Quanto o jogador mantém o rendimento ao longo dos 90 minutos.",
+    "heading": "Eficácia do jogador em ganhar e direcionar as disputas aéreas.",
+    "strength": "Força física nas disputas, ao segurar a bola e no chute.",
+    "reflex": "Reação do goleiro em chutes de perto e rápidos.",
+    "jump": "Alcance e extensão do goleiro em bolas altas e chutes de longe."
+  },
   "common": {
     "continue": "Continuar",
     "save": "Salvar",
@@ -877,6 +892,23 @@
       "medium": "média",
       "severe": "grave"
     },
+    "heatmap": {
+      "title": "Mapa de posse",
+      "team": "Time",
+      "period": "Período",
+      "mine": "Meu time",
+      "opponent": "Adversário",
+      "recent": "Últimos 10 min",
+      "all": "Jogo todo",
+      "aria": "Onde a bola esteve com {{team}} ({{window}})",
+      "attack": "Direção do ataque",
+      "empty": "Ainda sem posse"
+    },
+    "liveTactics": {
+      "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",
+      "mentalityNote": "A mentalidade (barra da partida) continua valendo por cima.",
+      "reset": "Voltar à tática salva"
+    },
     "summary": {
       "title": "Resumo",
       "possession": "Posse",
@@ -1169,6 +1201,40 @@
       "manager": "Técnico"
     }
   },
+  "awards": {
+    "kind": {
+      "best_player": "Melhor jogador",
+      "young_player": "Revelação",
+      "top_scorer": "Artilheiro",
+      "best_goalkeeper": "Melhor goleiro",
+      "team_of_season": "Seleção da temporada",
+      "best_manager": "Melhor técnico",
+      "goal_of_season": "Gol da temporada",
+      "world_player": "Melhor jogador do mundo",
+      "world_manager": "Melhor técnico do mundo"
+    },
+    "line": {
+      "GK": "GOL",
+      "DEF": "DEF",
+      "MID": "MEI",
+      "FWD": "ATA"
+    },
+    "goals_one": "{{count}} gol",
+    "goals_other": "{{count}} gols",
+    "rating": "Nota {{value}}",
+    "points": "{{value}} pts",
+    "managerResult": "terminou em {{position}}º, meta {{target}}º",
+    "goal": {
+      "text": "{{player}}, {{minute}}' contra o {{opponent}} · {{how}}",
+      "textNoOpponent": "{{player}}, {{minute}}' · {{how}}",
+      "header": "de cabeça",
+      "distance": "de {{yards}} jardas"
+    },
+    "title": "Prêmios",
+    "more": "+{{count}}",
+    "seasonTitle": "{{league}} {{season}}",
+    "yearTitle": "{{year}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferências",
@@ -1269,7 +1335,8 @@
       "player": "Jogador",
       "facilities": "Instalações",
       "manager_news": "Técnicos",
-      "scouting": "Olheiros"
+      "scouting": "Olheiros",
+      "awards": "Prêmios"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1416,6 +1483,13 @@
         "pre_contract_joined": "{{player}} deixou o {{club}} e chegou ao seu elenco pelo pré-contrato.",
         "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio)."
       }
+    },
+    "awards": {
+      "leagueSubject": "Prêmios da {{league}} {{season}}",
+      "worldSubject": "Prêmios mundiais {{year}}",
+      "leaguePreview": "Melhor jogador: {{player}}",
+      "worldPreview": "Jogador: {{player}} · Técnico: {{manager}}",
+      "worldLead": "Os melhores do mundo em {{year}}:"
     },
     "managerNews": {
       "subject_one": "Notícia de técnicos na sua liga",
@@ -1652,6 +1726,9 @@
   },
   "dashboard": {
     "playerCard": {
+      "marketValue": "Valor de mercado",
+      "monthlySalary": "Salário mensal (€)",
+      "contractEnd": "Fim do contrato",
       "value": "Valor",
       "salary": "Salário",
       "energy": "Energia",
@@ -1947,6 +2024,7 @@
     "matchRatings": "Avaliações da partida",
     "squadPerformance": "Desempenho do elenco",
     "noPlayerData": "Sem dados de jogadores",
+    "substitutes": "Reservas que entraram",
     "goal": "gol",
     "goals": "gols",
     "assist": "assistência",
@@ -1987,7 +2065,8 @@
     "selectBench": "Toque em um jogador no banco →",
     "cancelSelection": "Cancelar seleção",
     "changeFormationHint": "Mude de formação durante a partida. Os jogadores mantêm suas posições e se adaptam à nova estrutura.",
-    "tabInstructions": "Instruções"
+    "tabInstructions": "Instruções",
+    "tabTactics": "Tática"
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -2132,6 +2211,14 @@
     "scouting": "Olheiros"
   },
   "developmentScreen": {
+    "explanation": {
+      "developingImproving": "Jovem e evoluindo bem. Minutos regulares e boa forma estão acelerando o crescimento nas áreas principais.",
+      "developing": "Ainda em fase de desenvolvimento. Precisa de minutos constantes e boas atuações para continuar evoluindo.",
+      "approachingPeak": "Chegando ao auge, ainda com margem para melhorar nas áreas principais.",
+      "atPeak": "No auge da idade, mantendo o nível com atuações constantes. Os atributos mentais ainda podem crescer.",
+      "declining": "O declínio físico da idade está afetando este jogador. Os atributos mentais e técnicos se mantêm mais estáveis.",
+      "default": "A evolução segue o esperado para a idade e a função deste jogador."
+    },
     "squad": "Elenco",
     "searchPlayers": "Buscar jogadores…",
     "noPlayersMatch": "Nenhum jogador corresponde a \"{{query}}\"",
@@ -2167,7 +2254,8 @@
       "league": "Liga",
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",
-      "freeAgentsOnly": "Só jogadores livres"
+      "freeAgentsOnly": "Só jogadores livres",
+      "awardedOnly": "Só premiados"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -2232,6 +2320,25 @@
     "club": "Clube",
     "loading": "Carregando...",
     "loadFailed": "Não foi possível carregar as estatísticas.",
+    "awards": {
+      "tab": "Prêmios",
+      "year": "Ano",
+      "league": "Liga",
+      "empty": "Nenhuma temporada encerrada ainda.",
+      "noLeague": "Nenhum prêmio desta liga em {{year}}.",
+      "worldTitle": "Prêmios mundiais {{year}}",
+      "worldPending": "Os prêmios mundiais de {{year}} saem em janeiro.",
+      "individual": "Prêmios individuais",
+      "xi": "Seleção da temporada",
+      "slot": "Pos",
+      "player": "Jogador",
+      "club": "Clube",
+      "rating": "Nota",
+      "manager": "Melhor técnico",
+      "goal": "Gol da temporada",
+      "value": "Valor",
+      "loadFailed": "Não foi possível carregar os prêmios."
+    },
     "retired": {
       "tab": "Aposentados",
       "empty": "Nenhum jogador aposentado ainda.",
@@ -2251,6 +2358,7 @@
       "name": "Técnico",
       "points": "Pontos",
       "titles": "Títulos",
+      "awards": "Prêmios",
       "promotion": "Acesso · {{league}}",
       "yourRank": "Você é o Nº {{rank}} de {{total}}",
       "empty": "Nenhum técnico ainda.",

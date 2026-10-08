@@ -91,6 +91,12 @@ describe("filterScoutPlayers — each filter in isolation", () => {
     expect(ids(filterScoutPlayers(list, F({ onlyForSale: true }), new Set(["c", "a"])))).toEqual(["a", "c"]);
     expect(ids(filterScoutPlayers(list, F({ onlyForSale: false }), new Set(["c"])))).toEqual(["a", "b", "c"]);
   });
+
+  test("onlyAwarded keeps award winners, whatever the knowledge", () => {
+    const list = [P({ id: "a", awarded: true, knowledge: 5 }), P({ id: "b" }), P({ id: "c", awarded: true })];
+    expect(ids(filterScoutPlayers(list, F({ onlyAwarded: true }), none))).toEqual(["a", "c"]);
+    expect(ids(filterScoutPlayers(list, F({ onlyAwarded: false }), none))).toEqual(["a", "b", "c"]);
+  });
 });
 
 describe("sortScoutPlayers", () => {

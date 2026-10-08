@@ -1,6 +1,6 @@
 # Olheiros por país (Etapa 33)
 
-Etapa 33 do `docs/ROADMAP.md`, issue #104, versão **4.9**. Desenho aprovado em 2026-10-07/08. Depende da 4.7
+Etapa 33 do `docs/ROADMAP.md`, issue #104, versão **4.10**. Desenho aprovado em 2026-10-07/08. Depende da 4.7
 (comissão: olheiro-chefe e olheiros de campo são `StaffMember` com nacionalidade, atributos 1–20 e estrelas) e da
 4.3 (olheiros: conhecimento por jogador, missões, relatórios). Regras que esta etapa muda:
 `.claude/rules/game/scouting.md`, `.claude/rules/game/staff.md`, `.claude/rules/ui-world.md` (reuso do mapa).
@@ -230,7 +230,7 @@ Junto das checagens de hoje:
    **Medido (Tarefa 10, `bun build src/pages/<página>/entry.tsx --minify`, main `d0894ecd` × esta branch):**
    `worldMapPaths.ts` sozinho 30,7 KB gzip; Equipe técnica 396,1 → 431,6 KB gzip (+35,5), Transferências 394,6 → 429,2
    (+34,6), Olheiro 414,0 → 451,2 (+37,2), ficha do jogador +0,7. Abaixo de ~40 KB: o desenho fica no bundle.
-3. **Versão.** Esta etapa sai como **4.9** (a 4.8 está em `feat/season-awards`); o changelog conflita e é resolvido no
+3. **Versão.** Esta etapa sai como **4.10** (a 4.8 e a 4.9 saíram antes); o changelog conflita e é resolvido no
    merge.
 
 ## Pontos abertos (antes da decisão)

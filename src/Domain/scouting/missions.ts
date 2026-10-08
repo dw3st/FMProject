@@ -4,6 +4,7 @@ import { countryGainMult, countryNoiseMult } from "@/Domain/scouting/countryKnow
 import { obscurePlayer } from "@/Domain/staff/staff";
 import { overallAvg } from "@/Domain/playerRating";
 import { Player } from "@/Domain/Player";
+import { awardValueMult } from "@/Domain/awards/awardValue";
 import { generateIntake } from "@/Domain/youth/youth";
 import { potentialBand } from "@/Domain/youth/potential";
 import { weeklyWage } from "@/Domain/finance/wages";
@@ -88,7 +89,7 @@ export function seenProfile(
   const lo = clamp(ov - noise, 0, 10);
   const hi = clamp(ov + noise, 0, 10);
   const pot = player.age <= S.GROWTH_AGE ? potentialBand({ ...seen, overallAvg: undefined }) : [ov, ov] as [number, number];
-  const value = (o: number) => r1(new Player(o, player.age).valueMillions);
+  const value = (o: number) => r1(new Player(o, player.age, awardValueMult(player)).valueMillions);
   return {
     noise,
     seenOverall: r1(ov),

@@ -1,4 +1,5 @@
 import { shirtName } from "@/Domain/shirtName";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
 import { readableOnDark } from "@/GameInterface/matchTeamColors";
@@ -61,6 +62,7 @@ export function MatchSummaryPanel({
   statsB,
   possessionA,
   feed,
+  extra,
 }: {
   nameA?: string;
   nameB?: string;
@@ -71,12 +73,14 @@ export function MatchSummaryPanel({
   /** Share of possession of team A, 0..1 (B = 1 − A). */
   possessionA: number;
   feed: MatchFeedItem[];
+  /** Extra block between the numbers and the feed (the live heat map, Etapa 35). */
+  extra?: ReactNode;
 }) {
   const { t } = useTranslation();
   const pA = Math.round(possessionA * 100);
   const cards = (s: SummaryTeamStats) => `${s.yellowCards} / ${s.redCards}`;
   return (
-    <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0">
+    <aside className="w-64 card-arcade border-l border-border flex flex-col shrink-0 min-h-0 overflow-y-auto">
       <div className="px-4 pt-4 pb-3 border-b border-border">
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("match.summary.title")}</h3>
         <div className="mt-2 flex items-center justify-between text-base font-semibold">
@@ -94,6 +98,7 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
       </div>
+      {extra && <div className="px-4 pt-4">{extra}</div>}
       <div className="px-4 pt-4 pb-1">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
           {t("match.summary.events")}

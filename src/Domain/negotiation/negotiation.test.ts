@@ -14,6 +14,7 @@ import { saleContext, squadsAfterAcceptedTransfer } from "@/Domain/transfer/tran
 import { clubWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 
 function stats(v: number): RosterPlayer["stats"] {
   return {
@@ -348,5 +349,33 @@ describe("review fixes", () => {
     const f = toFreeAgent(p, "2027-06-01");
     expect(f.player.sellOn).toBeUndefined();
     expect(f.player.loan).toBeUndefined();
+  });
+});
+
+describe("award winners draw bigger clubs (Etapa 32)", () => {
+  const roll = NEGOTIATION.BID.UNLISTED_CHANCE * 1.5; // above the plain chance, below the doubled one
+  const setup = (awarded: boolean) => {
+    const base = squad("h");
+    const star = { ...base.players.find((q) => q.id === "hcm0")!, stats: stats(7) };
+    const winner = { ...base.players.find((q) => q.id === "hst0")!, ...(awarded ? { awardBoost: { season: "2026-27", league: "x", mult: 1.15 } } : {}) };
+    const human = { ...base, players: base.players.map((p) => (p.id === star.id ? star : p.id === winner.id ? winner : p)) };
+    const buyer = squad("b", 7, { financialTier: "HIGH", aiTransferBudget: 500_000_000 });
+    const profiles = {
+      b: {
+        squadId: "b", sellList: [], lastUpdateDay: "2027-03-01",
+        needs: (["GK", "Defender", "Midfielder", "Forward"] as const).map((position) => ({ position, targetMin: 0, targetMax: 10, urgency: 1, budgetTier: "high" as const, intentType: "improvement" as const })),
+      },
+    };
+    let n = 0;
+    return generateBidsForHuman({
+      date: "2027-03-01", rng: () => roll, humanSquad: human, squads: new Map([["b", buyer]]), profiles,
+      sellList: [], loanList: [], pending: [], seasonEndOf: () => "2027-05-31", newId: () => String(++n),
+    });
+  };
+  test("no award winner: the plain chance misses", () => {
+    expect(setup(false)).toEqual([]);
+  });
+  test("an award winner doubles the chance and is the target, even if not the best", () => {
+    expect(setup(true).map((b) => b.playerId)).toEqual(["hst0"]);
   });
 });

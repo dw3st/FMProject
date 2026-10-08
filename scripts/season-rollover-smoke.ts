@@ -471,6 +471,116 @@ try {
     vacancySince: new Map<string, string>(), vacancyFilled: 0, vacancyLate: [] as string[],
   };
 
+  // ── Prêmios (see "Prêmios" section below, `.claude/rules/game/awards.md`) ──
+  const { AWARDS } = await import("@/Domain/awards/awardsConfig");
+  const { awardKindsByPlayer } = await import("@/Domain/awards/awardEffects");
+  const awardsTrack = {
+    leagues: 0, missing: [] as string[], xiBad: [] as string[], minAppsBad: [] as string[], xiComplement: 0,
+    youngBad: [] as string[], gkBad: [] as string[], scorerBad: [] as string[],
+    goalInQuick: [] as string[], goalMissing: [] as string[], goalLeagues: 0,
+    rowMissing: [] as string[], boostMissing: [] as string[], boostReleased: 0, moraleUp: 0, moraleApplied: 0, moraleMissing: [] as string[],
+    managerMissing: [] as string[], playerMessage: null as boolean | null,
+  };
+  async function checkAwardsOfDay(
+    date: string, rolled: string[], before: LeagueSeasonState[], prePlayer: Squad | null,
+    engineLeagues: Set<string>, playerLeague: string,
+  ): Promise<void> {
+    const svcA = plain();
+    const saveIdA = saveId!;
+    const file = await svcA.getAwardsYear(saveIdA, Number(date.slice(0, 4)));
+    // Every player of the world (squads, free agents, retired) with his history rows.
+    type Holder = { age: number | null; positions: string[]; history?: Squad["players"][number]["history"]; awardBoost?: unknown; squadId: string | null };
+    const holders = new Map<string, Holder>();
+    for (const sq of await svcA.getAllSquads(saveIdA)) {
+      for (const p of sq.players) holders.set(p.id, { age: p.age - 1, positions: p.positions, history: p.history, awardBoost: p.awardBoost, squadId: sq.id });
+    }
+    for (const f of await svcA.getFreeAgents(saveIdA)) {
+      if (!holders.has(f.player.id)) holders.set(f.player.id, { age: f.player.age - 1, positions: f.player.positions, history: f.player.history, squadId: null });
+    }
+    for (const r of await svcA.getRetired(saveIdA)) {
+      if (!holders.has(r.id)) holders.set(r.id, { age: null, positions: r.positions, history: r.history, squadId: null });
+    }
+    const postPlayer = prePlayer ? await svcA.getSquadById(saveIdA, playerSquadId) : null;
+    // Players signed from the free pool today (rollover refill, free-agent tick).
+    const signedFreeToday = new Set(((await svcA.getDayLog(saveIdA, date))?.transfers ?? []).filter((m) => m.kind === "free").map((m) => m.playerId));
+    const managers = await svcA.getManagers(saveIdA);
+    for (const slug of rolled) {
+      const b = before.find((l) => l.leagueSlug === slug);
+      if (!b) continue;
+      const season = seasonLabel(b.year, b.start, b.end);
+      const entry = file?.leagues.find((l) => l.league === slug && l.season === season);
+      if (!entry) { awardsTrack.missing.push(`${slug} ${season}`); continue; }
+      awardsTrack.leagues++;
+      const tag = `${slug} ${season}`;
+      // The closing row (not a partial of an earlier club of the same league): the one the awards go on.
+      const rowOf = (id: string) => {
+        const rows = holders.get(id)?.history?.filter((r) => r.season === season && r.league === slug) ?? [];
+        return rows.find((r) => !r.partial) ?? rows[0];
+      };
+      const leagueApps = (id: string) => { const r = rowOf(id); return r ? r.apps - r.cupApps - r.contApps : -1; };
+      const minApps = Math.ceil(b.totalRounds * AWARDS.MIN_ROUNDS_SHARE);
+      // XI: 11 unique players in the 4-3-3 slots (the complement below the minimum is only counted).
+      const ids = entry.teamOfSeason.map((p) => p.playerId);
+      const slots = entry.teamOfSeason.map((p) => p.slot ?? "").sort().join(",");
+      if (ids.length !== 11 || new Set(ids).size !== 11 || slots !== [...AWARDS.XI_SLOTS].sort().join(",")) awardsTrack.xiBad.push(tag);
+      awardsTrack.xiComplement += ids.filter((id) => leagueApps(id) < minApps).length;
+      for (const [k, p] of [["best", entry.bestPlayer], ["young", entry.youngPlayer], ["gk", entry.bestGoalkeeper]] as const) {
+        if (p && leagueApps(p.playerId) < minApps) awardsTrack.minAppsBad.push(`${tag} ${k} ${p.name} (${leagueApps(p.playerId)} < ${minApps})`);
+      }
+      if (entry.youngPlayer) {
+        const age = holders.get(entry.youngPlayer.playerId)?.age;
+        if (age !== null && age !== undefined && age > AWARDS.YOUNG_MAX_AGE) awardsTrack.youngBad.push(`${tag} ${entry.youngPlayer.name} (${age})`);
+      }
+      if (entry.bestGoalkeeper && holders.get(entry.bestGoalkeeper.playerId)?.positions[0] !== "GK") awardsTrack.gkBad.push(`${tag} ${entry.bestGoalkeeper.name}`);
+      if (entry.topScorer) {
+        let max = 0;
+        for (const h of holders.values()) for (const r of h.history ?? []) {
+          if (r.season === season && r.league === slug) max = Math.max(max, r.goals - r.cupGoals - r.contGoals);
+        }
+        if (entry.topScorer.value !== max) awardsTrack.scorerBad.push(`${tag} ${entry.topScorer.name} ${entry.topScorer.value} != ${max}`);
+      }
+      // Goal of the season: only in the full-engine leagues, and there whenever a candidate exists.
+      if (!engineLeagues.has(slug)) {
+        if (entry.goalOfSeason) awardsTrack.goalInQuick.push(tag);
+      } else {
+        const goals = (await svcA.getSeasonGoals(saveIdA, slug, b.year))?.goals ?? [];
+        if (goals.length > 0 && !entry.goalOfSeason) awardsTrack.goalMissing.push(tag);
+        if (entry.goalOfSeason) awardsTrack.goalLeagues++;
+      }
+      // Each winner: the award on his row; the value boost (value-boosting awards); morale on the human club.
+      for (const [id, kinds] of awardKindsByPlayer(entry)) {
+        const row = rowOf(id);
+        if (!row || !kinds.every((k) => row.awards?.some((a) => a.kind === k && a.league === slug))) awardsTrack.rowMissing.push(`${tag} ${id}`);
+        const h = holders.get(id);
+        if (h?.squadId && kinds.some((k) => AWARDS.VALUE_MULT[k] !== undefined) && !h.awardBoost) {
+          // The boost lives until the next rollover of his league, and `toFreeAgent` drops it: a
+          // winner released at contract expiry (passo 8, after the awards) and re-signed from the
+          // free pool the same day — by another club or his own — has none, by the rule. The day
+          // log's `free` moves prove the re-signing; anyone else must have the boost.
+          if (signedFreeToday.has(id)) awardsTrack.boostReleased++;
+          else awardsTrack.boostMissing.push(`${tag} ${id}${row && h.squadId !== row.squadId ? ` (${row.squadId} -> ${h.squadId})` : ""}`);
+        }
+        if (prePlayer && postPlayer && h?.squadId === playerSquadId && kinds.some((k) => AWARDS.MORALE[k] !== undefined)) {
+          // The award event is on his morale log (the day's drift and other events can still pull a
+          // morale near 100 down, so the final value is only reported).
+          const p1 = postPlayer.players.find((p) => p.id === id);
+          const m0 = prePlayer.players.find((p) => p.id === id)?.morale ?? 65;
+          const m1 = p1?.morale ?? 65;
+          if (p1?.moraleLog?.awards?.includes(`league:${slug}:${season}`)) awardsTrack.moraleApplied++;
+          else awardsTrack.moraleMissing.push(`${id} ${m0} -> ${m1}`);
+          if (m1 > m0) awardsTrack.moraleUp++;
+        }
+      }
+      const bm = entry.bestManager;
+      if (bm && !managers.find((m) => m.id === bm.managerId)?.awards?.some((a) => a.kind === "best_manager" && a.competition === slug && a.season === season)) {
+        awardsTrack.managerMissing.push(`${tag} ${bm.managerId}`);
+      }
+      if (slug === playerLeague) {
+        awardsTrack.playerMessage = (await svcA.getInbox(saveIdA)).some((m) => m.id === `awards-league-${slug}-${season}`);
+      }
+    }
+  }
+
   for (let guard = 0; guard < MAX_DAYS; guard++) {
     const svc = plain();
     const meta = (await svc.getMeta(saveId))!;
@@ -851,6 +961,10 @@ try {
       })
       .map((l) => l.leagueSlug);
     if (rolledToday.length > 0) rolls.push({ date, leagues: rolledToday });
+    if (rolledToday.length > 0) {
+      await checkAwardsOfDay(date, rolledToday, leaguesBefore, prePlayerSquad,
+        new Set([meta.leagueSlug, ...(meta.followedLeagues ?? [])]), meta.leagueSlug);
+    }
 
     // Membership may only change for leagues whose own country rolled today.
     const foldersAfter = await folderMembership(saveId);
@@ -1836,6 +1950,31 @@ try {
     check(champs > 0 && champTitle === champs, `história do clube: ${champTitle}/${champs} champions have the league title`);
     const mine = await fsDal.readClubHistory(saveId, playerSquadId);
     console.log(`  player club: ${mine?.seasons.length ?? 0} season(s), records ${Object.keys(mine?.records ?? {}).join(", ")}`);
+  }
+
+  // ── Prêmios ──────────────────────────────────────────────────────────────
+  // See `.claude/rules/game/awards.md`: every rolled league gives its awards at its rollover; the goal of
+  // the season only in the full-engine leagues; the world ceremony is in January (covered by a test).
+  console.log("\n── Prêmios ──");
+  {
+    const t = awardsTrack;
+    const rolledCount = rolls.reduce((n, r) => n + r.leagues.length, 0);
+    console.log(`  ${t.leagues}/${rolledCount} rolled league(s) with awards; ${t.goalLeagues} with a goal of the season; `
+      + `${t.xiComplement} team-of-the-season pick(s) below the minimum (complement, informative)`);
+    check(t.leagues > 0 && t.missing.length === 0, `prêmios: every rolled league has its entry (${t.missing.length} missing: ${t.missing.slice(0, 5).join("; ")})`);
+    check(t.xiBad.length === 0, `prêmios: team of the season = 11 unique players in the 4-3-3 slots (${t.xiBad.join("; ")})`);
+    check(t.minAppsBad.length === 0, `prêmios: best player, young player and goalkeeper reach the minimum league games (${t.minAppsBad.slice(0, 5).join("; ")})`);
+    check(t.youngBad.length === 0, `prêmios: young player aged <= ${AWARDS.YOUNG_MAX_AGE} in the season (${t.youngBad.join("; ")})`);
+    check(t.gkBad.length === 0, `prêmios: best goalkeeper is a goalkeeper (${t.gkBad.join("; ")})`);
+    check(t.scorerBad.length === 0, `prêmios: top scorer has the most league goals (${t.scorerBad.slice(0, 5).join("; ")})`);
+    check(t.goalInQuick.length === 0, `prêmios: no goal of the season in a quick-sim league (${t.goalInQuick.join("; ")})`);
+    check(t.goalMissing.length === 0, `prêmios: goal of the season whenever a full-engine league had a candidate (${t.goalMissing.join("; ")})`);
+    check(t.rowMissing.length === 0, `prêmios: every winner has the award on his season row (${t.rowMissing.length}: ${t.rowMissing.slice(0, 5).join("; ")})`);
+    check(t.boostMissing.length === 0, `prêmios: every winner in a squad has the value boost, except the ${t.boostReleased} released and re-signed the same day (${t.boostMissing.length}: ${t.boostMissing.slice(0, 5).join("; ")})`);
+    check(t.moraleMissing.length === 0, `prêmios: ${t.moraleApplied} winner(s) of the player's club got the award morale event (${t.moraleUp} ended the day higher; missing: ${t.moraleMissing.join("; ")})`);
+    check(t.managerMissing.length === 0, `prêmios: every best manager has the award on his record (${t.managerMissing.join("; ")})`);
+    check(t.playerMessage === true, `prêmios: awards message of the player's league in the inbox (${String(t.playerMessage)})`);
+    console.log("  mundial: coberto por awards.world.test.ts (a corrida não passa por janeiro)");
   }
 
   // ── Técnicos ─────────────────────────────────────────────────────────────

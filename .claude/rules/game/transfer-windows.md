@@ -105,7 +105,8 @@ Versão **4.0**. Técnicos da IA e contrato do técnico do jogador: `managers.md
 ## Day log
 
 `StoredDayLog.transfers: { playerId, from, to, fee, kind: transfer|loan|free|pre_contract, date }[]` — transferências IA ×
-IA do mercado, vendas a rivais, compras/vendas/empréstimos pelas rotas e chegadas de pré-contrato. O smoke confere
+IA do mercado, vendas a rivais, compras/vendas/empréstimos pelas rotas, chegadas de pré-contrato e contratações de livres
+da IA (`free`, `from: ""`: reposição da virada e `freeAgentTick`). O smoke confere
 que nenhuma compra/início de empréstimo saiu fora da janela do comprador.
 
 ## Medição (`bun scripts/market-sim.ts 3 [--no-windows] [--no-market]`, mundo inteiro, sem clube humano)

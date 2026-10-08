@@ -33,6 +33,7 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   transfer_out: "transfer_news",
   scouting: "scouting_alerts",
   manager_news: "manager_news",
+  awards: "competitions",
   // Board (objective, warnings, manager contract offer...), job offers and player talks ask for an answer.
   board: "actions",
   job: "actions",

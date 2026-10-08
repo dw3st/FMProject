@@ -60,7 +60,7 @@ grande o bastante ou tem ponto. O mapa é `aria-hidden`: a lista cobre teclado e
 com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` do script e regerar
 (`worldMapCountries.test.ts` falha se faltar).
 
-### Mapa do olheiro (4.9)
+### Mapa do olheiro (4.10)
 
 O mesmo `WorldMap` é o mapa de conhecimento por país do olheiro (`Scouting/ScoutCountriesPanel.tsx`): props opcionais
 `fillClassFor` (cor por país; aqui pela faixa), `captionFor` ("Inglaterra · 90"), `hint`, `outlinedSlug` (contorno da

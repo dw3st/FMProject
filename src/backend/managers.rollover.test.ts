@@ -55,6 +55,7 @@ describe("manager ranking at the rollover", () => {
     expect(me.seasons).toBe(1);
     const league = me.titles.find((t) => t.kind === "league");
     expect(league?.competition).toBe("premier_league");
+    expect(league?.on).toBe(today);
     expect(league!.points).toBeGreaterThanOrEqual(20);
     expect(league!.points).toBeLessThanOrEqual(120);
     expect(me.points).toBe(me.titles.reduce((s, t) => s + t.points, 0));

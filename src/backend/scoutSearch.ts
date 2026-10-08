@@ -143,6 +143,7 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyForSale: f.onlyForSale === true,
       onlyFree: f.onlyFree === true,
       onlyShortlist: f.onlyShortlist === true,
+      onlyAwarded: f.onlyAwarded === true,
       minKnowledge: asFiniteNumber(f.minKnowledge, 0),
     },
     sortKey: typeof b.sortKey === "string" ? b.sortKey : "avg",

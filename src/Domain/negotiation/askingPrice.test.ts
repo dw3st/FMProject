@@ -8,6 +8,7 @@ import { respondToHumanCounter, sellOnValueFraction } from "@/Domain/negotiation
 import { buildAiTransferBid, generateBidsForHuman } from "@/Domain/negotiation/bids";
 import {
   askingBand, askingBandExtra, askingFloor, defaultAskingPrice, askingFreqMult, askingOpening, askingRatio, askingStep, parseAskingPrice, stepAskingPrice,
+  playerMarketValue,
 } from "@/Domain/negotiation/askingPrice";
 
 function stats(v: number): RosterPlayer["stats"] {
@@ -202,5 +203,16 @@ describe("asking price: floor, transfer request, counters", () => {
       expect(answer.bid.fee).toBeLessThanOrEqual(asking / (1 + sellOnValueFraction(20, w.p.age)));
       expect(respondToHumanCounter(bid, answer.bid.fee, 20, w.p.age).kind).toBe("accept");
     }
+  });
+});
+
+describe("market value with a season award (`awards.md`)", () => {
+  test("an award winner is worth × the boost, on the fee grid; without one, the value of before", () => {
+    const p = player("a", 6);
+    const rating = playerOverallRating(p);
+    expect(playerMarketValue(p)).toBe(new Player(rating, p.age).price);
+    const boosted = { ...p, awardBoost: { season: "2026-27", league: "pl", mult: 1.15 } };
+    expect(playerMarketValue(boosted)).toBe(new Player(rating, p.age, 1.15).price);
+    expect(playerMarketValue(boosted)).toBeGreaterThan(playerMarketValue(p));
   });
 });

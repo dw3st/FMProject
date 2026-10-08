@@ -16,6 +16,7 @@ import { wageFactorOf } from "@/Domain/finance/wages";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { PlayerAwards } from "@/GameInterface/Awards/PlayerAwards";
 import { ListToggles } from "@/GameInterface/Negotiation/ListToggles";
 import { PlayerMoralePanel } from "@/GameInterface/Morale/PlayerMoralePanel";
 import { PersonalityPanel, PersonalitySummaryBadge } from "@/GameInterface/Components/PersonalityPanel";
@@ -97,9 +98,9 @@ export function PlayerScreen({
     if (!player) return [];
     const facts: IdentityFact[] = [];
     const born = player.birthDate ? formatBirthDate(player.birthDate, i18n.language) : null;
-    if (born) facts.push({ label: t("playerScreen.facts.birthDate"), value: born });
+    if (born) facts.push({ kind: "birthDate", label: t("playerScreen.facts.birthDate"), value: born });
     const cm = heightCmOf(player.heightCm);
-    if (cm !== null) facts.push({ label: t("playerScreen.facts.height"), value: t("playerScreen.height", { cm }) });
+    if (cm !== null) facts.push({ kind: "height", label: t("playerScreen.facts.height"), value: t("playerScreen.height", { cm }) });
     return facts;
   }, [player, i18n.language, t]);
 
@@ -208,6 +209,8 @@ export function PlayerScreen({
           nameBadge={<PersonalitySummaryBadge view={personalityViewOf(player)} className="mt-0.5" />}
           identityFacts={identityFacts}
         />
+
+        <PlayerAwards history={player.history} leagues={leagues} />
 
         {!isOwnPlayer && session && (
           <PlayerKnowledgePanel saveId={session.saveId} playerId={player.id} squadId={squadId} />
