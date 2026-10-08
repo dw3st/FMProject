@@ -30,6 +30,11 @@ export const changelog: ChangelogEntry[] = [
     items: [
       { pt: "O diretor cuida das renovações e das conversas de contrato; você escolhe quem cuida disso na Equipe técnica", en: "The director handles renewals and contract talks; choose who handles them in the Staff screen" },
       { pt: "Escolha quais notícias chegam à caixa de entrada no botão Preferências", en: "Choose which news reaches your inbox with the Preferences button" },
+      { pt: "Na partida, os jogadores aparecem com o nome de camisa", en: "In the match, players are shown with their shirt name" },
+    ],
+    fixes: [
+      { pt: "Lista da Evolução em ordem de campo, com filtro por posição", en: "Development list in pitch order, with a position filter" },
+      { pt: "Trocar o papel de um jogador no elenco não recarrega mais a ficha", en: "Changing a player's squad role no longer reloads the profile" },
     ],
   },
   {
