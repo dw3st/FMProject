@@ -187,3 +187,9 @@ Championship).
 - O estilo `possession` cruza pouco (3,3 por jogo; 3,0 gols em 200 jogos) e o `direct_play` ficou bem
   mais aéreo (15 lançamentos, 2,7 gols em 200 jogos). A tabela de estilos de `pass.md` (2.1.1: 2,75 e 3,03) é de antes
   das faltas e do jogo aéreo, então a comparação é só indicativa. Não rebalanceado nesta etapa.
+
+## Registro dos gols (Etapa 32)
+
+`goalScored` leva também `fromX`, `fromY`, `goalX` e `minute`; `Statistics.getGoalLog()` guarda a lista da partida e
+vira `MatchEvent.goals` (cabeçada, bola parada, distância, fora da área). Só dado: nada muda no motor. Ver
+`.claude/rules/game/awards.md`.

@@ -197,3 +197,9 @@ A taxa média fica abaixo do preço pela cláusula de venda futura (25% das prop
 porque a proposta abre entre o valor e o preço (o usuário contrapropõe até o preço). Antes de exigir `0,9 × preço` de
 verba com desconto, o zagueiro a 0,8 recebia 16,8 / 32,8 propostas com taxa/valor 0,71 (clubes sem verba propunham
 abaixo do pedido); meia e atacante não mudaram (os compradores deles já tinham verba).
+
+## Prêmios (Etapa 32)
+
+O valor de mercado de um premiado sobe (`awardBoost`, ×1,10–1,15 até a próxima virada da liga dele) em todo cálculo
+(`playerValueModel`: preço pedido, ofertas, rivais, aceitação). A proposta de clube maior por um jogador fora da lista
+tem chance × 2 quando o elenco tem um premiado, e o alvo é ele. Ver `.claude/rules/game/awards.md`.

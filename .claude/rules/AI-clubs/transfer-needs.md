@@ -304,3 +304,9 @@ once `marketFrozen` replaced its only caller. The human club is still excluded s
 `findCandidates` pula o jogador muito ambicioso (≥ 17) de um clube 2+ tiers naturais acima do comprador;
 `evaluateTransferOffer(..., { buyer })` soma o empurrão de ambição/lealdade ao score do vendedor. Ver
 `.claude/rules/game/personality.md`.
+
+## Prêmios (Etapa 32)
+
+`Player.valueMillions` multiplica pelo `valueMult` do premiado (`playerValueModel`, `awardBoost`). `scoreImprovement`
+soma `AWARDS.IMPROVEMENT_BONUS` (0,08) para premiado. Medição do mercado (`market-sim --awards`) em
+`.claude/rules/game/awards.md`.

@@ -162,3 +162,10 @@ da invariante.
 Testes: `bun test src/Domain/managers src/backend/managers.market.test.ts src/backend/managers.rollover.test.ts`.
 Smoke: seção "Mercado vivo" (um técnico por clube toda segunda, passagens fechadas com motivo, demissões, vagas
 preenchidas em ≤ 21 dias, todo interino sobre uma vaga).
+
+## Prêmios (Etapa 32)
+
+`ManagerRecord.awards?: ManagerAward[]` (`best_manager` da liga na virada, `world_manager` em janeiro; sem repetir
+temporada + tipo + competição). `ManagerTitle.on` = data do crédito do título (os pontos de títulos do ano entram no
+melhor técnico do mundo). A rota `/managers` devolve `awards` em todo item; a aba Técnicos tem a coluna "Prêmios" e os
+selos no detalhe. Ver `.claude/rules/game/awards.md`.

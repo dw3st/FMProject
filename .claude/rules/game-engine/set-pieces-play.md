@@ -212,3 +212,8 @@ zagueiros que sobem marcam.
   continua o fixo da formação (só a barreira é dinâmica).
 - Escanteio curto é raro com `balanced` (a nota do curto só ganha com `possession`).
 - A IA sempre usa cobradores automáticos.
+
+## Registro dos gols (Etapa 32)
+
+O gol de bola parada leva o `setPiece` também em `MatchEvent.goals` (gol da temporada: falta direta de fora da área
+conta, pênalti nunca). Ver `.claude/rules/game/awards.md`.
