@@ -3,6 +3,7 @@ import { competitionName } from "@/Domain/world/labels";
 import type { LeagueData, PlayerHistoryRow } from "@/types/playerTypes";
 import { NumberCell, StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
+import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 
 /** Career rows (closed seasons), an optional current-season row, and totals. Dumb component. */
 export function CareerTable({
@@ -37,7 +38,19 @@ export function CareerTable({
       <NumberCell>{r.redCards}</NumberCell>
       <NumberCell>{r.injuries}</NumberCell>
       <NumberCell>{r.daysInjured}</NumberCell>
-      <StatsCell className="text-sm text-muted-foreground">{r.titles.map(titleName).join(", ")}</StatsCell>
+      <StatsCell className="text-sm text-muted-foreground">
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+          {r.titles.length > 0 && <span>{r.titles.map(titleName).join(", ")}</span>}
+          {(r.awards ?? []).map((a, j) => (
+            <AwardBadge
+              key={`${a.kind}-${j}`}
+              kind={a.kind}
+              iconOnly
+              title={a.year !== undefined ? String(a.year) : `${competitionName(a.league ?? r.league, leagues, i18n.language)} ${r.season}`}
+            />
+          ))}
+        </span>
+      </StatsCell>
     </StatsRow>
   );
   return (

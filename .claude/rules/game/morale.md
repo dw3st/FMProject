@@ -209,3 +209,9 @@ só quer sair com moral < 40; profissional ignora a perda de DP por moral baixa 
 
 Com o diretor cuidando dos contratos, a conversa de motivo `contract` não vira pedido nem mensagem: `moraleDay` recebe
 `directorContractTalk` e responde na hora (+3 se ele renova, −10 se não). Ver `.claude/rules/game/responsibilities.md`.
+
+## Prêmios (Etapa 32)
+
+`afterAward(squad, playerId, kinds)`: o premiado do clube do jogador ganha moral pelo `withEventDelta` (melhor jogador /
+mundial +10, revelação / artilheiro / goleiro +8, seleção +5, gol da temporada +4; o maior prêmio da virada). Ver
+`.claude/rules/game/awards.md`.

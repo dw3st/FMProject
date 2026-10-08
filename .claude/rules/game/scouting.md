@@ -218,3 +218,8 @@ em faixa nessas linhas (nunca o exato) e o custo do borrão (≤ 2×). Teste: `s
 Tópicos de notícia (`.claude/rules/game/responsibilities.md`): `report`, `mission_done` e `recommendation` são
 `scouting_reports`, **desligado por padrão** (não são gravados); joias, alertas da lista e prospectos são
 `scouting_alerts`, ligado. Relatórios e indicações do chefe continuam na aba Relatórios.
+
+## Prêmios (Etapa 32)
+
+Filtro `onlyAwarded` ("Só premiados") na busca: jogador com algum prêmio no histórico (`DisplayPlayer.awarded`). O
+prêmio é público: vale com qualquer conhecimento. Ver `.claude/rules/game/awards.md`.

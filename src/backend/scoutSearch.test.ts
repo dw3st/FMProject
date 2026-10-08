@@ -12,6 +12,9 @@ describe("parseScoutQuery", () => {
     expect(q.filters.minAge).toBe(20);
     expect(q.filters.maxAge).toBe(30);
     expect(q.filters.onlyForSale).toBe(true);
+    expect(q.filters.onlyAwarded).toBe(false);
+    expect(parseScoutQuery({ filters: { ...filters, onlyAwarded: true } }).filters.onlyAwarded).toBe(true);
+    expect(parseScoutQuery({ filters: { ...filters, onlyAwarded: "yes" } }).filters.onlyAwarded).toBe(false);
     expect(q.sortKey).toBe("age");
     expect(q.sortDir).toBe("asc");
     expect(q.page).toBe(2);

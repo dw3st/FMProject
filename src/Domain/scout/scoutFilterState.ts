@@ -30,6 +30,8 @@ export interface ScoutFilterState {
   onlyShortlist?: boolean;
   /** Only players known at least this well (0 = everyone). */
   minKnowledge?: number;
+  /** Only players with a season award in their history (`.claude/rules/game/awards.md`). */
+  onlyAwarded?: boolean;
 }
 
 export function defaultAttributeRanges(): Record<AttributeId, { min: number; max: number }> {
@@ -57,5 +59,6 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     onlyFree: false,
     onlyShortlist: false,
     minKnowledge: 0,
+    onlyAwarded: false,
   };
 }

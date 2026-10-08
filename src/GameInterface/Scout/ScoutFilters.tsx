@@ -203,6 +203,10 @@ export function ScoutFilters({
           <Icon name="binoculars" className="w-4 h-4" />
           {t("scouting.filters.known")}
         </Chip>
+        <Chip selected={!!filters.onlyAwarded} onClick={() => setFilters({ ...filters, onlyAwarded: !filters.onlyAwarded })}>
+          <Icon name="award" className="w-4 h-4" />
+          {t("scout.filters.awardedOnly")}
+        </Chip>
       </div>
 
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />

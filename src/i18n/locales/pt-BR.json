@@ -892,6 +892,23 @@
       "medium": "média",
       "severe": "grave"
     },
+    "heatmap": {
+      "title": "Mapa de posse",
+      "team": "Time",
+      "period": "Período",
+      "mine": "Meu time",
+      "opponent": "Adversário",
+      "recent": "Últimos 10 min",
+      "all": "Jogo todo",
+      "aria": "Onde a bola esteve com {{team}} ({{window}})",
+      "attack": "Direção do ataque",
+      "empty": "Ainda sem posse"
+    },
+    "liveTactics": {
+      "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",
+      "mentalityNote": "A mentalidade (barra da partida) continua valendo por cima.",
+      "reset": "Voltar à tática salva"
+    },
     "summary": {
       "title": "Resumo",
       "possession": "Posse",
@@ -1184,6 +1201,40 @@
       "manager": "Técnico"
     }
   },
+  "awards": {
+    "kind": {
+      "best_player": "Melhor jogador",
+      "young_player": "Revelação",
+      "top_scorer": "Artilheiro",
+      "best_goalkeeper": "Melhor goleiro",
+      "team_of_season": "Seleção da temporada",
+      "best_manager": "Melhor técnico",
+      "goal_of_season": "Gol da temporada",
+      "world_player": "Melhor jogador do mundo",
+      "world_manager": "Melhor técnico do mundo"
+    },
+    "line": {
+      "GK": "GOL",
+      "DEF": "DEF",
+      "MID": "MEI",
+      "FWD": "ATA"
+    },
+    "goals_one": "{{count}} gol",
+    "goals_other": "{{count}} gols",
+    "rating": "Nota {{value}}",
+    "points": "{{value}} pts",
+    "managerResult": "terminou em {{position}}º, meta {{target}}º",
+    "goal": {
+      "text": "{{player}}, {{minute}}' contra o {{opponent}} · {{how}}",
+      "textNoOpponent": "{{player}}, {{minute}}' · {{how}}",
+      "header": "de cabeça",
+      "distance": "de {{yards}} jardas"
+    },
+    "title": "Prêmios",
+    "more": "+{{count}}",
+    "seasonTitle": "{{league}} {{season}}",
+    "yearTitle": "{{year}}"
+  },
   "inbox": {
     "prefs": {
       "button": "Preferências",
@@ -1284,7 +1335,8 @@
       "player": "Jogador",
       "facilities": "Instalações",
       "manager_news": "Técnicos",
-      "scouting": "Olheiros"
+      "scouting": "Olheiros",
+      "awards": "Prêmios"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",
@@ -1431,6 +1483,13 @@
         "pre_contract_joined": "{{player}} deixou o {{club}} e chegou ao seu elenco pelo pré-contrato.",
         "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio)."
       }
+    },
+    "awards": {
+      "leagueSubject": "Prêmios da {{league}} {{season}}",
+      "worldSubject": "Prêmios mundiais {{year}}",
+      "leaguePreview": "Melhor jogador: {{player}}",
+      "worldPreview": "Jogador: {{player}} · Técnico: {{manager}}",
+      "worldLead": "Os melhores do mundo em {{year}}:"
     },
     "managerNews": {
       "subject_one": "Notícia de técnicos na sua liga",
@@ -2006,7 +2065,8 @@
     "selectBench": "Toque em um jogador no banco →",
     "cancelSelection": "Cancelar seleção",
     "changeFormationHint": "Mude de formação durante a partida. Os jogadores mantêm suas posições e se adaptam à nova estrutura.",
-    "tabInstructions": "Instruções"
+    "tabInstructions": "Instruções",
+    "tabTactics": "Tática"
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -2194,7 +2254,8 @@
       "league": "Liga",
       "nationality": "Nacionalidade",
       "forSaleOnly": "Apenas à Venda",
-      "freeAgentsOnly": "Só jogadores livres"
+      "freeAgentsOnly": "Só jogadores livres",
+      "awardedOnly": "Só premiados"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -2259,6 +2320,25 @@
     "club": "Clube",
     "loading": "Carregando...",
     "loadFailed": "Não foi possível carregar as estatísticas.",
+    "awards": {
+      "tab": "Prêmios",
+      "year": "Ano",
+      "league": "Liga",
+      "empty": "Nenhuma temporada encerrada ainda.",
+      "noLeague": "Nenhum prêmio desta liga em {{year}}.",
+      "worldTitle": "Prêmios mundiais {{year}}",
+      "worldPending": "Os prêmios mundiais de {{year}} saem em janeiro.",
+      "individual": "Prêmios individuais",
+      "xi": "Seleção da temporada",
+      "slot": "Pos",
+      "player": "Jogador",
+      "club": "Clube",
+      "rating": "Nota",
+      "manager": "Melhor técnico",
+      "goal": "Gol da temporada",
+      "value": "Valor",
+      "loadFailed": "Não foi possível carregar os prêmios."
+    },
     "retired": {
       "tab": "Aposentados",
       "empty": "Nenhum jogador aposentado ainda.",
@@ -2278,6 +2358,7 @@
       "name": "Técnico",
       "points": "Pontos",
       "titles": "Títulos",
+      "awards": "Prêmios",
       "promotion": "Acesso · {{league}}",
       "yourRank": "Você é o Nº {{rank}} de {{total}}",
       "empty": "Nenhum técnico ainda.",

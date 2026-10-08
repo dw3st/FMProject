@@ -58,6 +58,8 @@ export const managerRoutes = {
         clubName: m.squadId ? index.byId(m.squadId)?.name ?? null : null,
         free: !m.squadId,
         interim: !!m.interim,
+        // Season awards (Etapa 32): best manager of a league, world manager of the year.
+        awards: m.awards ?? [],
         // Every manager's passages (Etapa 25), with the clubs' names.
         clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: index.byId(c.squadId)?.name ?? null })),
         ...(m.isPlayer ? { earnings: meta.managerEarnings ?? 0 } : {}),

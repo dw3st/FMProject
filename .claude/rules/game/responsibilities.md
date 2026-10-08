@@ -90,3 +90,7 @@ Com o diretor responsável (`directorHandlesContracts`) ele também renova a **c
 ≥ as implícitas do tier − 0,5 e idade < 66 (`staff_renewed`), senão marca a saída (`staff_leaving`). Com o técnico
 responsável, só o aviso `staff_expiring` (renovação na ficha do profissional). Mensagens `contract` / `staff_*`, tópico
 `contracts`.
+
+## Prêmios (Etapa 32)
+
+A categoria de inbox `awards` (prêmios da liga do jogador e cerimônia mundial) pertence ao tópico `competitions`.

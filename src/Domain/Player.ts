@@ -42,6 +42,8 @@ export class Player {
   constructor(
     readonly overallRating: number,
     readonly age: number,
+    /** Season-award market boost (`awardValueMult`, `.claude/rules/game/awards.md`); 1 = none. */
+    readonly valueMult: number = 1,
   ) {}
 
   static weightedScore = weightedScore;
@@ -84,7 +86,7 @@ export class Player {
    * Constants fitted on the real Transfermarkt value (`VALUE_K` above, `scripts/fitValueFormula.ts`).
    */
   get valueMillions(): number {
-    return VALUE_K * Math.exp(VALUE_EXP * this.overallRating) * ageValueFactor(this.age);
+    return VALUE_K * Math.exp(VALUE_EXP * this.overallRating) * ageValueFactor(this.age) * this.valueMult;
   }
 
   /**

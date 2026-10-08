@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import { evaluateTransferOffer } from "@/Domain/transfer/transferAcceptance";
+import { evaluateTransferOffer, saleContext, saleDecisionScore } from "@/Domain/transfer/transferAcceptance";
 import { Player } from "@/Domain/Player";
 import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
 
@@ -115,5 +115,17 @@ describe("evaluateTransferOffer role minimums", () => {
     const squad = makeSquad([...defs, ...others], 5_000_000);
     const res = evaluateTransferOffer(defs[0]!, squad, 500_000_000);
     expect(res).toEqual({ accepted: false, reason: "squadDepth" });
+  });
+});
+
+describe("sale context with a season award (`awards.md`)", () => {
+  test("the expected value of an award winner rises: the same offer scores lower", () => {
+    const player = makePlayer("star", 6, 26, "CM");
+    const squad = makeSquad([player, ...Array.from({ length: 15 }, (_, i) => makePlayer(`${i}`, 6, 26, "CM"))]);
+    const plain = saleContext(player, squad);
+    expect(plain.value).toBe(new Player(playerOverallRating(player), player.age).price);
+    const boosted = saleContext({ ...player, awardBoost: { season: "2026-27", league: "pl", mult: 1.15 } }, squad);
+    expect(boosted.value).toBeGreaterThan(plain.value);
+    expect(saleDecisionScore(boosted, 10_000_000)).toBeLessThan(saleDecisionScore(plain, 10_000_000));
   });
 });

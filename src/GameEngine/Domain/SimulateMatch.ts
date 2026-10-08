@@ -20,7 +20,7 @@ import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
 import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot } from '@/GameEngine/Domain/gameState';
-import { initStats, getAllPlayerStats, getTeamStats } from '@/GameEngine/Domain/Statistics';
+import { initStats, getAllPlayerStats, getGoalLog, getTeamStats, type GoalLogEntry } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
 import type { PlayerStats as MatchPlayerStats, TeamStats } from '@/GameEngine/Domain/Statistics';
@@ -51,6 +51,8 @@ export interface MatchResult {
   cards: import('@/GameEngine/types').CardRecord[];
   /** Extra time / shootout outcome of a knockout match; null otherwise or when decided in 90'. */
   decider:       KnockoutDecider | null;
+  /** Every goal with minute and shot position, in order (engine ids; data for the season awards). */
+  goals:         GoalLogEntry[];
   durationMs:    number;
 }
 
@@ -257,6 +259,7 @@ export function simulateMatch(
     injuries:      s.injuries,
     cards:         s.cards,
     decider:       knockoutDecider(s),
+    goals:         getGoalLog(),
     durationMs:    performance.now() - startMs,
   };
 }

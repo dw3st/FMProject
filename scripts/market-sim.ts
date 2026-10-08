@@ -7,7 +7,12 @@
  * league tables are synthetic (strength-based results on each league's real calendar), sackings follow
  * `weeklySackChance` / `rolloverSackChance`, vacancies hire through `chooseHire`.
  *
- * Usage: bun scripts/market-sim.ts [seasons=3] [--no-windows] [--no-market] [--seed N]
+ * `--awards` (Etapa 32, `.claude/rules/game/awards.md`): at the end of each synthetic league season the award
+ * winners are drawn with the league rule (best XI by line on the player's rating + N(0; 0,3) noise, from a
+ * separate rng so the market sequence matches the run without it) and get `awardBoost`; the summary prints
+ * how many winners were sold and their fee ÷ value without the boost.
+ *
+ * Usage: bun scripts/market-sim.ts [seasons=3] [--no-windows] [--no-market] [--awards] [--seed N]
  */
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
@@ -39,6 +44,11 @@ import { managerWeeklyWage } from "@/Domain/managers/managerContract";
 import { liveRivals, rivalCandidates, rivalFloor, rollRival } from "@/Domain/negotiation/rivals";
 import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import { Player } from "@/Domain/Player";
+import { applyAwardBoost, clearAwardBoost } from "@/Domain/awards/awardEffects";
+import { AWARDS } from "@/Domain/awards/awardsConfig";
+import { getMainRole } from "@/Domain/roles";
+import type { AwardKind } from "@/types/awardTypes";
+import type { RosterPlayer } from "@/types/playerTypes";
 import type { FinancialTier, FreeAgent, LeagueZone, Squad } from "@/types/playerTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { RivalBid } from "@/types/transferMarketTypes";
@@ -52,6 +62,7 @@ const seasons = Number(args[0] && !args[0].startsWith("--") ? args[0] : 3);
 const WINDOWS_ON = !args.includes("--no-windows");
 /** Managers only (fast calibration of sackings / hirings / the free pool). */
 const MARKET_ON = !args.includes("--no-market");
+const AWARDS_ON = args.includes("--awards");
 const seedArg = args.indexOf("--seed");
 const SEED = seedArg >= 0 ? Number(args[seedArg + 1]) : 12345;
 const START_YEAR = 2026;
@@ -91,9 +102,33 @@ for (const league of readdirSync(SQUADS_DIR)) {
 }
 const leagueClubs = new Map<string, string[]>();
 for (const s of squads) leagueClubs.set(s.leagueSlug!, [...(leagueClubs.get(s.leagueSlug!) ?? []), s.id]);
-console.log(`${squads.length} clubs, ${leagueClubs.size} leagues, ${seasons} seasons, windows=${WINDOWS_ON}, seed=${SEED}`);
+console.log(`${squads.length} clubs, ${leagueClubs.size} leagues, ${seasons} seasons, windows=${WINDOWS_ON}, awards=${AWARDS_ON}, seed=${SEED}`);
 
 const rng = mulberry32(SEED);
+// Award draw: its own stream, so the market sees the same rng sequence with and without `--awards`.
+const awardRng = mulberry32(SEED ^ 0x5eed);
+const gauss = () => Math.sqrt(-2 * Math.log(1 - awardRng())) * Math.cos(2 * Math.PI * awardRng());
+/** End of a league season: drop the old boosts of the league, draw the winners, apply the new boosts. */
+const drawLeagueAwards = (slug: string, season: string): number => {
+  const clubIds = new Set(leagueClubs.get(slug) ?? []);
+  const scored: { p: RosterPlayer; line: string; score: number }[] = [];
+  squads = squads.map((s) => (clubIds.has(s.id) ? { ...s, players: s.players.map(clearAwardBoost) } : s));
+  for (const s of squads) {
+    if (!clubIds.has(s.id)) continue;
+    for (const p of s.players) scored.push({ p, line: getMainRole(p.positions[0] ?? ""), score: playerOverallRating(p) + 0.3 * gauss() });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  const kinds = new Map<string, AwardKind[]>();
+  const give = (id: string | undefined, k: AwardKind) => { if (id) kinds.set(id, [...(kinds.get(id) ?? []), k]); };
+  const xi = (Object.entries(AWARDS.XI_LINES) as [string, number][]).flatMap(([line, n]) => scored.filter((c) => c.line === line).slice(0, n));
+  for (const c of xi) give(c.p.id, "team_of_season");
+  give([...xi].sort((a, b) => b.score - a.score)[0]?.p.id, "best_player");
+  give(xi.find((c) => c.line === "Forward")?.p.id, "top_scorer");
+  give(xi.find((c) => c.line === "GK")?.p.id, "best_goalkeeper");
+  give(scored.find((c) => c.p.age - 1 <= AWARDS.YOUNG_MAX_AGE)?.p.id, "young_player");
+  squads = squads.map((s) => (clubIds.has(s.id) ? { ...s, players: s.players.map((p) => (kinds.has(p.id) ? applyAwardBoost(p, kinds.get(p.id)!, slug, season) : p)) } : s));
+  return kinds.size;
+};
 let market = initMarketState(squads, rng);
 let pool: FreeAgent[] = [];
 
@@ -248,6 +283,7 @@ for (let season = 0; season < seasons; season++) {
   changes = [];
   const seasonCounts = empty();
   let signings = 0, outside = 0, pre = 0, mid = 0, freeSigned = 0;
+  let awardedSold = 0, awardedFeeRatio = 0, awardedDrawn = 0;
   let date = `${year}-06-01`;
   const end = `${year + 1}-05-31`;
   let day = 0;
@@ -270,6 +306,10 @@ for (let season = 0; season < seasons; season++) {
       squads[byId.get(tx.buyerSquad.id)!] = applyAITransferSpend(tx.updatedBuyer, tx.fee);
       squads[byId.get(tx.sellerSquad.id)!] = applyAITransferSale(tx.updatedSeller, tx.fee);
       signings++;
+      if (tx.player.awardBoost) {
+        awardedSold++;
+        awardedFeeRatio += tx.fee / Math.max(1, new Player(playerOverallRating(tx.player), tx.player.age).price);
+      }
     }
     const fa = MARKET_ON ? freeAgentTick({ squads, pool, date, rng, seasonEndOf: () => end }) : { signedIds: new Set<string>(), squads };
     if (fa.signedIds.size > 0) {
@@ -327,6 +367,7 @@ for (let season = 0; season < seasons; season++) {
       }
       if (!ls.done && ls.next >= ls.dates.length && date >= ls.end) {
         ls.done = true;
+        if (AWARDS_ON) awardedDrawn += drawLeagueAwards(ls.slug, ls.start.slice(0, 4));
         const t = table(ls);
         const rel = (zonesOf.get(ls.slug) ?? []).find((z) => z.id === "rel")?.fromEnd ?? 0;
         t.forEach((row, i) => {
@@ -384,6 +425,7 @@ for (let season = 0; season < seasons; season++) {
   console.log(`  manager changes: tier 1 ${t1}/${tierOne.size} (${(100 * t1 / tierOne.size).toFixed(1)}%), tier 2+ ${t2}/${squads.length - tierOne.size} (${(100 * t2 / (squads.length - tierOne.size)).toFixed(1)}%); ` +
     `in-season ${changes.filter((c) => c.kind === "sack").length}, rollover ${changes.filter((c) => c.kind === "rollover").length}; ` +
     `free pool ${freePool} (${(freePool / squads.length).toFixed(3)} × clubs); invariant breaks ${breaks.missing.length + breaks.doubled.length}`);
+  if (AWARDS_ON) console.log(`  awards: ${awardedDrawn} winners drawn, ${awardedSold} winners sold (fee ÷ value without the boost ${(awardedFeeRatio / Math.max(1, awardedSold)).toFixed(2)})`);
   report("hiring state, sampled monthly", seasonCounts);
 }
 

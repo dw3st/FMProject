@@ -121,4 +121,11 @@ describe("seenValueRange", () => {
     expect(hi).toBeCloseTo(new Player(6, 27).valueMillions, 1);
     expect(hi / lo).toBeLessThan(new Player(7, 27).valueMillions / new Player(3, 27).valueMillions);
   });
+  test("an award winner's range is × the boost; without one, the numbers of before", () => {
+    const plain = seenValueRange([3, 7], 27);
+    expect(seenValueRange([3, 7], 27, 1)).toEqual(plain);
+    const boosted = seenValueRange([3, 7], 27, 1.15);
+    expect(boosted[0]).toBeCloseTo(new Player(4, 27).valueMillions * 1.15, 1);
+    expect(boosted[1]).toBeCloseTo(new Player(6, 27).valueMillions * 1.15, 1);
+  });
 });

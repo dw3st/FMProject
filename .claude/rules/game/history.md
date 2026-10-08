@@ -94,3 +94,9 @@ atual) bate com o log arquivado, nenhuma parcial dessa temporada ficou aberta e 
   em todo jogador do mundo e em cada aposentado de `retired.json`. Cresce linearmente com as temporadas jogadas
   (dezenas de bytes por linha); sem corte por enquanto. O `RetiredPlayer` guarda `history` e `statsAtRetirement`
   (atributos, usados só pelo renascido); as linhas não repetem atributos e a lista de aposentados não os envia.
+
+## Prêmios (Etapa 32)
+
+`PlayerHistoryRow.awards?: PlayerAward[]` (`{ kind, league? , year? }`): os prêmios da liga entram na linha da temporada
+na virada (`recordLeagueAwards`), o mundial na linha da temporada da lista curta em janeiro. A `CareerTable` mostra os
+selos na coluna Títulos. Ver `.claude/rules/game/awards.md`.

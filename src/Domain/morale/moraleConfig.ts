@@ -78,6 +78,8 @@ export const MORALE = {
   TALK_VALID_DAYS: 14,
   /** After a talk is answered, no new request from him for this long. */
   TALK_QUIET_DAYS: 28,
+  /** Season award events remembered in `moraleLog.awards` (a retried day never applies one twice). */
+  AWARD_KEYS: 4,
   /** Minutes talk: morale below this and below the expected minutes. */
   MINUTES_TALK_BELOW: 40,
   /** Contract talk: key/starter in the last CONTRACT_TALK_DAYS of his contract. */
