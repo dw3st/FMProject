@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
-import { advanceOneDay, getLeagueData, getPyramids } from "@/backend/advanceDay";
+import { advanceOneDay, getLeagueData, getPyramids, runBufferedDay } from "@/backend/advanceDay";
 import { applyBroadcasting } from "@/backend/FinancialService";
 import { countryByLeague, cupPrizeBase } from "@/backend/cupWorld";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
@@ -134,7 +134,7 @@ describe("finance prizes — league merit at rollover", () => {
   test("the player's club gets a `prize` ledger entry in the new season's file, matching leaguePrize(broadcasting, position, n)", async () => {
     // Iceland: a calendar-year league with no pyramid (season-rollover-smoke.ts and
     // finance.ledger.test.ts's "rollover broadcasting (L4)" test both use it to force a
-    // standalone rollover without waiting out a real season or dragging in a whole pyramid).
+    // rollover without waiting out a real season).
     let meta = await saveService.createSave({
       leagueSlug: "of_icelandic_urvalsdeild", leagueName: "Úrvalsdeild",
       clubId: "of_is_breidablik", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -153,8 +153,11 @@ describe("finance prizes — league merit at rollover", () => {
     expect(aiClubId).toBeTruthy();
     const aiBefore = (await saveService.getSquadById(saveId, aiClubId))!;
 
+    // That day rolls every calendar-year league (all end on 11-30, ~59 units, Russia's pyramid
+    // included). Buffered like the live route (~11 s); the unbuffered day takes ~47 s and nearly
+    // fills the 60 s timeout.
     await saveService.updateMeta(saveId, { currentDate: stateBefore.end });
-    const outcome = await advanceOneDay(saveService, saveId, null, { marketFrozen: true });
+    const outcome = await runBufferedDay(saveId, null, { marketFrozen: true });
     expect(outcome.ok).toBe(true);
 
     const metaAfter = await saveService.getMeta(saveId);
