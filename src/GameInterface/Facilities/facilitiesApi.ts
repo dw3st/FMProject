@@ -17,6 +17,8 @@ export interface FacilitiesViewData {
   committed: number;
   demandInput: { followers: number; tier: number; fans: number };
   season: { start: string; end: string } | null;
+  /** Big-match multiplier (derby, knockout) of each coming home game, by fixture id; absent = 1. */
+  importanceByFixture?: Record<string, number>;
   quotes: { comfort: ProjectQuote | null; training: ProjectQuote | null; academy: ProjectQuote | null };
   effects: {
     training: { current: TrainingGroundEffects; next: TrainingGroundEffects };
