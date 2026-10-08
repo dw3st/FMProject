@@ -118,7 +118,8 @@ Os mercados semanais (`staffMarket`, `fieldScoutMarket`, `/staff/market`, `/staf
 ## Telas
 
 - **Equipe técnica** (`StaffScreen`, "SUA **COMISSÃO**" / "COACHING **STAFF**"; abas Comissão | Responsabilidades):
-  cartões por grupo (Comando; Treino; Saúde e análise; Olheiros; Estrutura) com `StaffStars`, idade, contrato ("até
+  cartões por grupo (Comando; Treino; Saúde e análise; Olheiros; Estrutura) com `StaffStars` (número com largura fixa, `min-w-[3ch]`: as estrelas alinham entre linhas com 3 e
+  3,5), idade, contrato ("até
   05/2028 · €12,300/sem") e o efeito em uma linha, em texto e porcentagem contra um profissional médio de 3★
   (`formatEffect`, `Staff/staffApi.ts`: "Evolução dos jogadores +6%", "Duração das lesões −8%", "sem efeito" no neutro;
   nunca o multiplicador cru `×1,06`), com a linha de ajuda "comparado a um profissional médio (3 estrelas)" acima dos

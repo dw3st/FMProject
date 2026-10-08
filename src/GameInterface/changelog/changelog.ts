@@ -34,6 +34,7 @@ export const changelog: ChangelogEntry[] = [
     ],
     fixes: [
       { pt: "Equipe técnica: os efeitos aparecem em texto claro (\"Evolução dos jogadores +6%\", \"Duração das lesões −8%\"), comparados a um profissional médio de 3 estrelas", en: "Coaching staff: effects now read in plain words (\"Player development +6%\", \"Injury duration −8%\"), compared with an average 3-star professional" },
+      { pt: "As estrelas da comissão ficam alinhadas entre as linhas, com nota inteira ou com meia estrela", en: "Coaching staff stars now line up across rows, with whole or half-star ratings" },
     ],
   },
   {
