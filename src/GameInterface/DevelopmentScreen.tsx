@@ -10,7 +10,7 @@ import { RecentTrend } from "@/GameInterface/Development/RecentTrend";
 import { DevelopmentExplanation } from "@/GameInterface/Development/DevelopmentExplanation";
 import { DevelopmentWarnings } from "@/GameInterface/Development/DevelopmentWarnings";
 import { DevelopmentTrainingConfig } from "@/GameInterface/Development/DevelopmentTrainingConfig";
-import { ATTRIBUTE_LABELS } from "@/Domain/attributes";
+import { attributeText } from "@/GameInterface/attributeText";
 import type { AttributeId } from "@/Domain/attributes";
 import type { RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
@@ -76,7 +76,7 @@ function getAttrDirection(
   return "stable";
 }
 
-function buildDevAttributes(player: RosterPlayer): DevAttribute[] {
+function buildDevAttributes(player: RosterPlayer, nameOf: (id: string) => string): DevAttribute[] {
   const pos = roleForDevelopmentWeights(player.positions ?? []);
   const stats = player.stats as unknown as Record<string, number>;
   const attrIds = getVisibleAttrs(pos);
@@ -85,7 +85,7 @@ function buildDevAttributes(player: RosterPlayer): DevAttribute[] {
     const dp    = player.progress?.[id as keyof DevelopmentProgress];
     const progressPct = dp !== undefined ? Math.max(0, dp) / dpRequired(value) : undefined;
     return {
-      name: ATTRIBUTE_LABELS[id].label,
+      name: nameOf(id),
       value,
       direction: getAttrDirection(player.age, player.progress, id, value),
       focus: getAttrFocus(id, pos),
@@ -94,7 +94,7 @@ function buildDevAttributes(player: RosterPlayer): DevAttribute[] {
   });
 }
 
-function buildRoleFocus(player: RosterPlayer): { primary: string[]; secondary: string[]; limited: string[] } {
+function buildRoleFocus(player: RosterPlayer, nameOf: (id: string) => string): { primary: string[]; secondary: string[]; limited: string[] } {
   const pos = roleForDevelopmentWeights(player.positions ?? []);
   const visible = getVisibleAttrs(pos);
   const primary: string[] = [];
@@ -102,28 +102,23 @@ function buildRoleFocus(player: RosterPlayer): { primary: string[]; secondary: s
   const limited: string[] = [];
   for (const id of visible) {
     const focus = getAttrFocus(id, pos);
-    if (focus === "primary") primary.push(ATTRIBUTE_LABELS[id].label);
-    else if (focus === "secondary") secondary.push(ATTRIBUTE_LABELS[id].label);
-    else limited.push(ATTRIBUTE_LABELS[id].label);
+    if (focus === "primary") primary.push(nameOf(id));
+    else if (focus === "secondary") secondary.push(nameOf(id));
+    else limited.push(nameOf(id));
   }
   return { primary, secondary, limited };
 }
 
+/** Key of the development explanation (`developmentScreen.explanation.<key>`). */
 function buildExplanation(player: RosterPlayer): string {
   const phase = getAgePhase(player.age);
   const status = getDevStatus(player.age, player.progress);
-
-  if (phase === "developing" && status === "improving")
-    return "Young and developing well. Regular playing time and good form are accelerating growth in key areas.";
-  if (phase === "developing")
-    return "Still in the development phase. Needs consistent match time and good performances to continue progressing.";
-  if (phase === "approachingPeak")
-    return "Approaching peak years with continued improvement potential in key areas.";
-  if (phase === "atPeak")
-    return "At peak age, maintaining level through consistent performances. Mental attributes can still grow.";
-  if (status === "declining")
-    return "Age-related physical decline is affecting this player. Mental and technical attributes remain more stable.";
-  return "Development is progressing as expected for this player's age and role.";
+  if (phase === "developing" && status === "improving") return "developingImproving";
+  if (phase === "developing") return "developing";
+  if (phase === "approachingPeak") return "approachingPeak";
+  if (phase === "atPeak") return "atPeak";
+  if (status === "declining") return "declining";
+  return "default";
 }
 
 /** Returns stable warning codes; UI translates them through `warnings.development.<code>`. */
@@ -205,9 +200,10 @@ export function DevelopmentScreen() {
 
   const agePhase = getAgePhase(player.age);
   const devStatus = getDevStatus(player.age, player.progress);
-  const attributes = buildDevAttributes(player);
-  const roleFocus = buildRoleFocus(player);
-  const explanation = buildExplanation(player);
+  const nameOf = (id: string) => attributeText(t, id).name;
+  const attributes = buildDevAttributes(player, nameOf);
+  const roleFocus = buildRoleFocus(player, nameOf);
+  const explanation = t(`developmentScreen.explanation.${buildExplanation(player)}`);
   const warnings = buildWarnings(player);
   const recentForm = buildRecentForm(player);
 

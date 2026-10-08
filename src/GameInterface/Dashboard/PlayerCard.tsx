@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
-import { ATTRIBUTE_LABELS, attrDisplay } from "@/Domain/attributes";
-import type { AttributeId } from "@/Domain/attributes";
+import { attrDisplay } from "@/Domain/attributes";
+import { useAttributeText } from "@/GameInterface/attributeText";
 import { getMainRole } from "@/Domain/roles";
 import { MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
@@ -60,7 +60,7 @@ function StatBar({
   const color = attributeBarClass(display);
   const range = seenAttributeRange(value, noise);
   const shown = hidden ? "?" : range ? `${attrDisplay(range[0])}–${attrDisplay(range[1])}` : `${display}`;
-  const attr = ATTRIBUTE_LABELS[statKey as AttributeId];
+  const attr = useAttributeText()(statKey);
   return (
     <div className="relative flex items-center gap-2 group/stat">
       <span
@@ -78,7 +78,7 @@ function StatBar({
       </div>
       <span className={`font-black text-right text-sm tabular-nums ${hidden ? "w-6 text-muted-foreground" : range ? "w-14" : "w-6"} ${hidden ? "" : attributeTextClass(display)}`}>{shown}</span>
 
-      <StatHoverPopover label={attr.label} description={attr.description} />
+      <StatHoverPopover label={attr.name} description={attr.description} />
     </div>
   );
 }

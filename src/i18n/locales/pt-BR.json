@@ -14,6 +14,21 @@
     "reflex": "Reflexos",
     "jump": "Impulsão"
   },
+  "attributeDescriptions": {
+    "passing": "Precisão do jogador nos passes curtos e médios.",
+    "vision": "Quanto o jogador enxerga as opções, sobretudo passes para frente ou difíceis.",
+    "finishing": "Precisão do jogador ao chutar a gol.",
+    "dribbling": "Quanto o jogador conduz a bola e escapa da pressão em movimento.",
+    "speed": "Velocidade máxima de deslocamento.",
+    "acceleration": "Quão rápido o jogador atinge a velocidade e reage a mudanças de movimento.",
+    "tackling": "Quanto o jogador ganha a bola nas disputas.",
+    "pressing": "Eficácia do jogador em fechar o adversário e pressionar.",
+    "stamina": "Quanto o jogador mantém o rendimento ao longo dos 90 minutos.",
+    "heading": "Eficácia do jogador em ganhar e direcionar as disputas aéreas.",
+    "strength": "Força física nas disputas, ao segurar a bola e no chute.",
+    "reflex": "Reação do goleiro em chutes de perto e rápidos.",
+    "jump": "Alcance e extensão do goleiro em bolas altas e chutes de longe."
+  },
   "common": {
     "continue": "Continuar",
     "save": "Salvar",
@@ -2136,6 +2151,14 @@
     "scouting": "Olheiros"
   },
   "developmentScreen": {
+    "explanation": {
+      "developingImproving": "Jovem e evoluindo bem. Minutos regulares e boa forma estão acelerando o crescimento nas áreas principais.",
+      "developing": "Ainda em fase de desenvolvimento. Precisa de minutos constantes e boas atuações para continuar evoluindo.",
+      "approachingPeak": "Chegando ao auge, ainda com margem para melhorar nas áreas principais.",
+      "atPeak": "No auge da idade, mantendo o nível com atuações constantes. Os atributos mentais ainda podem crescer.",
+      "declining": "O declínio físico da idade está afetando este jogador. Os atributos mentais e técnicos se mantêm mais estáveis.",
+      "default": "A evolução segue o esperado para a idade e a função deste jogador."
+    },
     "squad": "Elenco",
     "searchPlayers": "Buscar jogadores…",
     "noPlayersMatch": "Nenhum jogador corresponde a \"{{query}}\"",
