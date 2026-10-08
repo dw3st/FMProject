@@ -74,4 +74,21 @@ export const SCOUTING = {
   /** Weekly travel per active mission, share of the annual revenue / 52 (player missions: half). */
   TRAVEL_SHARE: { country: 0.0004, continent: 0.0008, world: 0.0015 } as const,
   PLAYER_TRAVEL_MULT: 0.5,
+
+  // ── Country knowledge of each scout (Etapa 33) ───────────────────────────
+  COUNTRY: {
+    NATIVE: 90,
+    CONTINENT: 40,
+    OTHER: 0,
+    /** Knowledge at which the mission multipliers are exactly 1 (today's pace). */
+    NEUTRAL: 40,
+    /** `[k 0, k NEUTRAL, k 100]`. */
+    GAIN_MULT: [0.75, 1.0, 1.2] as const,
+    NOISE_MULT: [1.15, 1.0, 0.85] as const,
+    /** Share of the gap to 100 learned per worked week. Continent: per country observed that week. */
+    GROWTH: { country: 0.06, league: 0.06, youth: 0.06, player: 0.03, continent: 0.02 } as const,
+    DECAY_GRACE_DAYS: 180,
+    DECAY_PER_30_DAYS: 5,
+    BANDS: { full: 70, moderate: 25 } as const,
+  },
 } as const;

@@ -38,6 +38,9 @@ Spec: `docs/superpowers/specs/2026-10-05-scouting-design.md` (decisões em abert
 | `src/GameInterface/StaffScreen.tsx`, `Transfers/StaffPoolTab.tsx` | Olheiros de campo: cartões na comissão; contratação pela aba Comissão de Transferências |
 | `src/GameInterface/Dashboard/*` | Cartão Atenção: joia e alertas da lista (7 dias) |
 | `scripts/scouting-index-bench.ts` | Custo do borrão por jogador × o uniforme antigo |
+| `src/Domain/scouting/countryKnowledge.ts` (+ teste) | Conhecimento de cada olheiro por país (4.10): base pela nacionalidade, leitura com queda, crescimento, multiplicadores, faixas, país forte |
+| `src/GameInterface/Scouting/ScoutCountriesPanel.tsx`, `ScoutCountriesModal.tsx`, `StrongCountry.tsx` | Mapa-múndi e lista de países do olheiro, selo do país forte |
+| `scripts/scout-country-measure.ts` | Medição do ritmo por país |
 
 ## Conhecimento e incerteza
 
@@ -198,6 +201,42 @@ alerta da lista, um prospecto contratado (base, contrato, compensação), nenhum
 da busca coerentes com k ("?" abaixo de 20, faixa a partir de ±0,5, exato em 100), a busca ordenada pelo meio da
 faixa vista (e não pela nota real: pelo menos uma inversão contra a nota real entre as linhas em faixa), o salário
 em faixa nessas linhas (nunca o exato) e o custo do borrão (≤ 2×). Teste: `src/Domain/scout/scoutSeen.test.ts`.
+
+## Conhecimento por país (4.10)
+
+Spec `docs/superpowers/specs/2026-10-08-scout-countries-design.md`. Cada olheiro (chefe e de campo) conhece cada país
+de 0 a 100. Constantes em `SCOUTING.COUNTRY`; lógica pura em `countryKnowledge.ts`.
+
+- **Base pela nacionalidade:** 90 no próprio país, 40 nos países do mesmo continente (`countries.json`), 0 no resto.
+  Nada gravado enquanto não muda.
+- **Dado:** `StaffMember.countryKnowledge?: Record<país, { k, last }>` (esparso), só em olheiros. Acompanha o
+  profissional (volta à lista de livres com ele, `returnToPool`); os livres gerados nunca têm o campo.
+- **Leitura (`countryKnowledgeOf`):** sem entrada = base; no próprio país `max(base, k)` (nunca cai); nos demais, depois
+  de 180 dias sem missão, −5 a cada 30 dias, nunca abaixo da base. Calculada na leitura, sem passada diária.
+- **Crescimento:** toda segunda em que a missão trabalha (pelo menos um observado), cada país visitado:
+  `k ← efetivo + (100 − efetivo) × taxa` (país/liga/jovens 0,06, jogador 0,03, continente 0,02 por país com observado),
+  `last` = a segunda. Missão profunda: de 0 a ~52, de 40 a ~71. País da missão de jogador = país da liga do clube dele.
+- **Onde age — só nas missões** (`advanceScoutingWeek`, `addProspects`): ganho de cada observado ×
+  `countryGainMult(k do líder no país do observado)` (k0 ×0,75, k40 ×1, k90 ×1,167, k100 ×1,2) e incerteza do relatório
+  × `countryNoiseMult` (×1,15 … ×0,85), com o k do **início da semana**. Em 40 os dois são exatamente 1 (teste de
+  igualdade). Chefe vago: multiplicadores 1, nada gravado. Fora das missões nada muda (recomendação mensal,
+  adversários, lista de observação, implícito, telas).
+- **Gravação:** `scoutingDay` (segunda), depois de `advanceScoutingWeek`: `WeekResult.visits` → `countryVisits` →
+  `growCountryKnowledge` + `pruneCountryKnowledge` no líder; relê o elenco e grava uma vez.
+- **Rotas:** `GET /scouting` (cada olheiro com `memberId`, `nationality`, `strongCountry`, `countries`, `continents` —
+  média dos países que uma missão de continente visita, `continentMissionCountries`); `GET /scouting/player/:id`
+  (`country`); `GET /staff` e `/staff/pool` (`strongCountry` nos olheiros); `GET /staff/:memberId/countries` (clube ou
+  lista; 404 `notFound`, 400 `notAScout`): os 60 países com `k`, `band`, `native`, `last`.
+- **Telas:** ficha do olheiro (Equipe técnica, aba Comissão) e botão "Conhecimento por país" na aba Missões abrem o
+  mapa-múndi do novo jogo colorido por faixa (completo ≥ 70, moderado 25–69, nenhum) com a lista ao lado (abaixo de
+  `xl`, só a lista); país forte (bandeira, nome, valor) nos cartões, na coluna "Forte em" da aba Comissão e na aba
+  Missões; na nova missão, o conhecimento do olheiro no alvo, a faixa e o ritmo; ao observar um jogador, o número ao
+  lado de cada olheiro é o conhecimento dele no país do clube.
+- **Medição** (`bun scripts/scout-country-measure.ts`, Premier League, missão de 12 semanas, olheiro 3★): k médio dos
+  observados hoje 32,2 = k 40; próprio país 37,3 (+15,7%); desconhecido 24,8 (−23,1%); concordância da nota A–E com a
+  real 68,3% / 66,7% / 46,7%.
+- Smoke, seção "Olheiros": o conhecimento do chefe no país da missão cresce (com `last` numa segunda), todo olheiro do
+  clube ≥ 90 no próprio país, nenhum clube da IA com `countryKnowledge`, queda das entradas paradas há 210+ dias.
 
 ## Limitações
 

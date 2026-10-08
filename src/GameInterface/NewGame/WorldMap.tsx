@@ -29,11 +29,20 @@ interface WorldMapProps {
   countries: CountryEntry[];
   selectedSlug: string | null;
   displayName: (c: CountryEntry) => string;
-  onSelect: (c: CountryEntry) => void;
+  /** Click on a playable country. Absent: a read-only map (no hand cursor, no click, nothing dimmed). */
+  onSelect?: (c: CountryEntry) => void;
   /** Country highlighted right now, shared with the country list (hover or keyboard focus there). */
   hoveredSlug: string | null;
-  /** The pointer entered a playable country on the map (`null` when it leaves the map). */
+  /** The pointer entered a country on the map (`null` when it leaves the map). */
   onHover: (c: CountryEntry | null) => void;
+  /** Fill class of each country (the scout's knowledge map); absent: the new-game colours. */
+  fillClassFor?: (c: CountryEntry) => string;
+  /** Caption of the highlighted country (default: its name). */
+  captionFor?: (c: CountryEntry) => string;
+  /** Caption with nothing highlighted (default: the new-game hint). */
+  hint?: string;
+  /** Country always outlined (the scout's nationality). */
+  outlinedSlug?: string | null;
 }
 
 /**
@@ -42,32 +51,41 @@ interface WorldMapProps {
  * country is shared with the list: hovering or focusing a row lights the country here, and
  * hovering a country here lights its row.
  */
-export function WorldMap({ countries, selectedSlug, displayName, onSelect, hoveredSlug, onHover }: WorldMapProps) {
+export function WorldMap({
+  countries, selectedSlug, displayName, onSelect, hoveredSlug, onHover, fillClassFor, captionFor, hint, outlinedSlug,
+}: WorldMapProps) {
   const { t } = useTranslation();
   const byIso = useMemo(() => [...mappableCountries(countries).entries()], [countries]);
   const selected = countries.find((c) => c.slug === selectedSlug) ?? null;
   const hovered = countries.find((c) => c.slug === hoveredSlug) ?? null;
   const caption = hovered ?? selected;
   const hoveredIsos = byIso.filter(([, c]) => c.slug === hoveredSlug).map(([iso]) => iso);
+  const outlinedIsos = outlinedSlug ? byIso.filter(([, c]) => c.slug === outlinedSlug).map(([iso]) => iso) : [];
+  const interactive = !!onSelect;
 
   const fillFor = (country: CountryEntry) =>
-    country.slug === selectedSlug
-      ? "fill-primary"
-      : country.slug === hoveredSlug
-        ? "fill-primary/70"
-        : "fill-primary/35";
+    fillClassFor
+      ? fillClassFor(country)
+      : country.slug === selectedSlug
+        ? "fill-primary"
+        : country.slug === hoveredSlug
+          ? "fill-primary/70"
+          : "fill-primary/35";
   const handlersFor = (country: CountryEntry) =>
-    country.playable
-      ? { onMouseEnter: () => onHover(country), onClick: () => onSelect(country) }
-      : {};
+    !interactive
+      ? { onMouseEnter: () => onHover(country) }
+      : country.playable
+        ? { onMouseEnter: () => onHover(country), onClick: () => onSelect(country) }
+        : {};
+  const cursorFor = (country: CountryEntry) => (!interactive ? "" : country.playable ? "cursor-pointer" : "opacity-40");
 
   return (
     <div className="relative w-full">
       <p className="text-sm text-muted-foreground m-0 mb-2 h-5 truncate">
         {caption ? (
-          <span className="text-foreground">{displayName(caption)}</span>
+          <span className="text-foreground">{captionFor ? captionFor(caption) : displayName(caption)}</span>
         ) : (
-          t("newGame.mapHint")
+          hint ?? t("newGame.mapHint")
         )}
       </p>
       <svg
@@ -81,10 +99,19 @@ export function WorldMap({ countries, selectedSlug, displayName, onSelect, hover
           <g
             key={iso}
             {...handlersFor(country)}
-            className={`${fillFor(country)} ${country.playable ? "cursor-pointer" : "opacity-40"} transition-colors motion-reduce:transition-none`}
+            className={`${fillFor(country)} ${cursorFor(country)} transition-colors motion-reduce:transition-none`}
           >
             <path d={COUNTRY_PATHS[iso]} />
           </g>
+        ))}
+        {outlinedIsos.map((iso) => (
+          <path
+            key={`o-${iso}`}
+            d={COUNTRY_PATHS[iso]}
+            className="fill-none stroke-foreground pointer-events-none"
+            strokeWidth={0.8}
+            strokeLinejoin="round"
+          />
         ))}
         {/* Outline of the highlighted country, drawn over its neighbours (borders are shared). */}
         {hoveredIsos.map((iso) => (
@@ -108,7 +135,7 @@ export function WorldMap({ countries, selectedSlug, displayName, onSelect, hover
               cy={marker[1]}
               r={lit ? MARKER_RADIUS * 1.4 : MARKER_RADIUS}
               {...handlersFor(country)}
-              className={`${fillFor(country)} ${lit ? "stroke-foreground" : "stroke-background"} ${country.playable ? "cursor-pointer" : "opacity-40"} transition-colors motion-reduce:transition-none`}
+              className={`${fillFor(country)} ${lit ? "stroke-foreground" : "stroke-background"} ${cursorFor(country)} transition-colors motion-reduce:transition-none`}
               strokeWidth={1.5}
             />
           );

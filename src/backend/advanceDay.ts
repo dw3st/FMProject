@@ -2537,7 +2537,8 @@ export async function advanceOneDay(
       const homeState = updatedActiveLeagues.find((l) => l.leagueSlug === meta.leagueSlug);
       if (homeState) {
         const pool = await saveService.getStaffPool(saveId, currentDate);
-        const next = refreshPool(pool, saveId, String(homeState.year), currentDate);
+        const { getStaffNameBook } = await import("@/backend/staffNameBook");
+        const next = refreshPool(pool, saveId, String(homeState.year), currentDate, await getStaffNameBook());
         if (next !== pool) await saveService.writeStaffPool(saveId, next);
       }
     }

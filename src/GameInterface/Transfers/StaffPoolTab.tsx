@@ -14,6 +14,7 @@ import { COACH_AREAS, ROLE_SPECIALTY, STAFF_ROLES, isStaffRole, type CoachArea, 
 import { DP_CATEGORIES } from "@/GameEngine/PlayerDevelopment";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
+import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { staffCall, type StaffData, type StaffPoolPage } from "@/GameInterface/Staff/staffApi";
 import { HireStaffModal } from "@/GameInterface/Transfers/HireStaffModal";
@@ -189,7 +190,9 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
                     <td className={`${TABLE_CELL.body} text-sm`}>{t(`staff.roles.${m.role}`)}</td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.number}`}>{m.age}</td>
                     <td className={TABLE_CELL.body}><StaffStars stars={m.stars} /></td>
-                    <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>{strongIn(m)}</td>
+                    <td className={`${TABLE_CELL.body} text-sm text-muted-foreground`}>
+                      {m.strongCountry ? <StrongCountry country={m.strongCountry.country} k={m.strongCountry.k} /> : strongIn(m)}
+                    </td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.key}`}>{formatWageFull(m.askingWage)}</td>
                     <td className={`${TABLE_CELL.body} text-right`}>
                       <Button variant="secondary" flush disabled={!staff} onClick={() => setHiring(m)}>{t("staffPool.hire")}</Button>
