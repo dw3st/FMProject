@@ -304,6 +304,8 @@
     "contractEndedBody": "Your contract at {{club}} ended without a renewal. Other clubs will make you offers."
   },
   "staff": {
+    "tabStaff": "Staff",
+    "tabResponsibilities": "Responsibilities",
     "subtitle": "Three professionals shape development, recovery and scouting.",
     "loading": "Loading staff...",
     "loadFailed": "Could not load the staff.",
@@ -1013,7 +1015,83 @@
     },
     "worldTransfersCard": "AI and other clubs"
   },
+  "responsibilities": {
+    "title": "Responsibilities",
+    "subtitle": "Who handles each area of the club.",
+    "loading": "Loading…",
+    "contracts": {
+      "label": "Contracts",
+      "director": "Director: renews (or lets go) the contracts about to end and answers the players' contract talks. You can still renew anyone on the player page.",
+      "manager": "Manager: you get the 90-day warning and the contract talks, and renew on the player page."
+    },
+    "owner": {
+      "director": "Director",
+      "manager": "Manager"
+    }
+  },
   "inbox": {
+    "prefs": {
+      "button": "Preferences",
+      "title": "News preferences",
+      "subtitle": "Choose which news reaches the inbox. A switched-off news item is not kept.",
+      "on": "On",
+      "off": "Off",
+      "locked": "Asks for an action: always on.",
+      "topics": {
+        "actions": {
+          "label": "Actions",
+          "description": "Bids, loan offers, player talks, board, job offers"
+        },
+        "contracts": {
+          "label": "Contracts",
+          "description": "Director summary, warnings, players leaving free"
+        },
+        "transfer_news": {
+          "label": "Transfer news",
+          "description": "Players sold or bought, loans back, sell-on money, windows"
+        },
+        "injuries": {
+          "label": "Injuries",
+          "description": "Injuries, returns, suspensions"
+        },
+        "development": {
+          "label": "Development",
+          "description": "Attribute changes"
+        },
+        "youth": {
+          "label": "Academy",
+          "description": "New intake, players released"
+        },
+        "retirement": {
+          "label": "Retirements",
+          "description": "Players who retired"
+        },
+        "competitions": {
+          "label": "Competitions",
+          "description": "Cup, continental, end of season, prizes"
+        },
+        "club_records": {
+          "label": "Club records",
+          "description": "Records broken by the club"
+        },
+        "facilities": {
+          "label": "Facilities",
+          "description": "Works, attendance records"
+        },
+        "scouting_alerts": {
+          "label": "Scouting alerts",
+          "description": "Gems, shortlist alerts, prospects"
+        },
+        "scouting_reports": {
+          "label": "Scouting reports",
+          "description": "Weekly reports, missions finished, monthly picks"
+        },
+        "manager_news": {
+          "label": "Manager news",
+          "description": "Managers sacked and hired in your league"
+        }
+      }
+    },
     "noMessagesInView": "No messages in this view.",
     "selectMessage": "Select a message to read it.",
     "loadingMessages": "Loading messages…",
@@ -1094,7 +1172,13 @@
       "expiring": "Contracts ending this season: {{players}}",
       "renewed": "{{players}} signed a new contract (until {{until}})",
       "released": "Contract ended, left as a free agent: {{players}}",
-      "director_summary": "The director decided on the contracts of: {{players}}"
+      "director_summary": "The director decided on the contracts of: {{players}}",
+      "directorSummarySubject": "Contract decisions of the director",
+      "directorSummaryIntro": "The director dealt with the contracts ending soon.",
+      "directorRenewed": "Renewed",
+      "directorRenewedTerms": "{{years}} seasons, {{wage}}/week",
+      "directorLeaving": "Leaving at the end of the contract",
+      "directorRefused": "Refused to renew"
     },
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",
