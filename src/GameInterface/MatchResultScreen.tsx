@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
+import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import type { Squad, RosterPlayer, LeagueData } from "@/types/playerTypes";
@@ -53,15 +54,30 @@ function playerIdsForTeam(event: MatchEvent, side: "home" | "away"): string[] {
     .map(([id]) => id);
 }
 
-function sortPlayerIds(ids: string[], event: MatchEvent): string[] {
-  return [...ids].sort((a, b) => {
-    const ga = event.playerStats[a]?.goals ?? 0;
-    const gb = event.playerStats[b]?.goals ?? 0;
-    if (ga !== gb) return gb - ga;
-    const ra = event.playerRatings[a] ?? 0;
-    const rb = event.playerRatings[b] ?? 0;
-    return rb - ra;
+/**
+ * Pitch order of the result list (#114): starters by line (GK, DEF, MID, FWD) and detailed
+ * position, best rated first inside a position; the substitutes who came on go below, in the order
+ * they entered.
+ */
+function orderResultPlayers(
+  ids: string[],
+  event: MatchEvent,
+  byId: Map<string, RosterPlayer>,
+): { starters: string[]; subs: string[] } {
+  const entered = new Map<string, number>();
+  event.substitutions.forEach((s, i) => {
+    if (ids.includes(s.playerInId) && !entered.has(s.playerInId)) entered.set(s.playerInId, i);
   });
+  const sortable = (id: string) => {
+    const p = byId.get(id);
+    return { pos: p?.positions[0] ?? "", natural: p ? preferredRole(p) : undefined, name: "" };
+  };
+  const rating = (id: string) => event.playerRatings[id] ?? 0;
+  const starters = ids
+    .filter((id) => !entered.has(id))
+    .sort((a, b) => compareSquadPositions(sortable(a), sortable(b)) || rating(b) - rating(a));
+  const subs = ids.filter((id) => entered.has(id)).sort((a, b) => entered.get(a)! - entered.get(b)!);
+  return { starters, subs };
 }
 
 function rosterById(squad: Squad | null): Map<string, RosterPlayer> {
@@ -209,8 +225,17 @@ function ResultTeamCard({
   accentHex: string;
 }) {
   const { t } = useTranslation();
-  const ids = sortPlayerIds(playerIdsForTeam(event, teamSide), event);
   const byId = rosterById(squad);
+  const { starters, subs } = orderResultPlayers(playerIdsForTeam(event, teamSide), event, byId);
+  const renderRow = (id: string) => (
+    <ResultPlayerRow
+      key={id}
+      playerId={id}
+      event={event}
+      roster={byId.get(id)}
+      align={side === "home" ? "left" : "right"}
+    />
+  );
   const isHome = side === "home";
   const accentBorder =
     isHome
@@ -246,18 +271,18 @@ function ResultTeamCard({
           {t("matchResult.squadPerformance")}
         </p>
         <div>
-          {ids.length === 0 ? (
+          {starters.length + subs.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("matchResult.noPlayerData")}</p>
           ) : (
-            ids.map((id) => (
-              <ResultPlayerRow
-                key={id}
-                playerId={id}
-                event={event}
-                roster={byId.get(id)}
-                align={isHome ? "left" : "right"}
-              />
-            ))
+            <>
+              {starters.map(renderRow)}
+              {subs.length > 0 && (
+                <p className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground mt-3 mb-1.5 ${isHome ? "" : "text-right"}`}>
+                  {t("matchResult.substitutes")}
+                </p>
+              )}
+              {subs.map(renderRow)}
+            </>
           )}
         </div>
       </div>

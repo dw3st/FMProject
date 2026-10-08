@@ -32,6 +32,8 @@ export function FactCard({
 }
 
 export interface IdentityFact {
+  /** Where the fact goes in the header order (#117); absent = after the fixed facts. */
+  kind?: "height" | "birthDate";
   label: string;
   value: string;
 }

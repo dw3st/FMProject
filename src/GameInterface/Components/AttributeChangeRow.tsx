@@ -1,14 +1,12 @@
-import { useTranslation } from "react-i18next";
-import { ATTRIBUTE_LABELS, attrDisplay } from "@/Domain/attributes";
-import type { AttributeId } from "@/Domain/attributes";
+import { attrDisplay } from "@/Domain/attributes";
+import { useAttributeText } from "@/GameInterface/attributeText";
 import { Icon } from "@/GameInterface/Icons";
 import { attributeTextClass } from "@/GameInterface/scoreColors";
 
 /** Translated attribute name; unknown ids fall back to the English label or the raw id. */
 export function useAttributeName(): (stat: string) => string {
-  const { t } = useTranslation();
-  return (stat) =>
-    t(`attributeNames.${stat}`, { defaultValue: ATTRIBUTE_LABELS[stat as AttributeId]?.label ?? stat });
+  const text = useAttributeText();
+  return (stat) => text(stat).name;
 }
 
 /** One attribute change on the 0..100 display scale: "Velocidade 61 → 63". */

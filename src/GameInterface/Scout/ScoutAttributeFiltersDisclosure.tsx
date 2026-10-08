@@ -6,6 +6,7 @@ import {
   type ScoutFilterState,
 } from "@/Domain/scout/scoutFilterState";
 import { ATTRIBUTE_LIST, ATTRIBUTE_LABELS, type AttributeId } from "@/Domain/attributes";
+import { attributeText } from "@/GameInterface/attributeText";
 import { Icon } from "@/GameInterface/Icons";
 
 // ── Range slider (adapted from TacticSlider in FormationScreen) ───────────────
@@ -187,8 +188,8 @@ export function ScoutAttributeFiltersDisclosure({
                       return (
                         <AttrRangeSlider
                           key={attr.id}
-                          label={attr.label}
-                          description={attr.description}
+                          label={attributeText(t, attr.id).name}
+                          description={attributeText(t, attr.id).description}
                           minValue={row.min}
                           maxValue={row.max}
                           onChange={(min, max) => patchAttr(attr.id, min, max)}
