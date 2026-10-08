@@ -1,19 +1,26 @@
 import { randomUUID } from "node:crypto";
-import { saveService, type SaveMeta } from "@/backend/SaveService";
+import { SaveService, saveService, type SaveMeta } from "@/backend/SaveService";
+import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
+import { recordMoney } from "@/backend/FinancialService";
+import { logError } from "@/Logger";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import {
-  academyEffectsAt, academyEffectsOf, boardDecision, impliedLevel, comfortPriceMult, committedSpend, effectiveCapacity, projectRunning,
-  quoteProject, startProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf, validSeats, weeklyUpkeep, withFacilities,
+  academyEffectsAt, academyEffectsOf, boardDecision, impliedLevel, comfortPriceMult, committedSpend, effectiveCapacity, itemBusy,
+  payRepairNow, projectProgress, projectRunning, quoteProject, startProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf,
+  validSeats, weeklyUpkeep, withFacilities, type ProjectQuote,
 } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
-import { comfortLevel, groupLevel } from "@/Domain/facilities/facilityItems";
+import {
+  FACILITY_ITEMS, ITEM_GROUP, comfortLevel, conditionOf, groupLevel, isFacilityItemId, itemEffects,
+} from "@/Domain/facilities/facilityItems";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
-import type { FacilityRequest, StandId } from "@/types/facilityTypes";
+import type { ClubFacilities, FacilityItemId, FacilityRequest, StandId } from "@/types/facilityTypes";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -28,14 +35,14 @@ interface Human {
 }
 
 /** The human club (with facilities set up if missing), or 409 `noClub` when unemployed. */
-async function loadHuman(saveId: string): Promise<Human | Response> {
-  const meta = await saveService.getMeta(saveId);
+async function loadHuman(saveId: string, service: SaveService = saveService): Promise<Human | Response> {
+  const meta = await service.getMeta(saveId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
-  const index = await saveService.getSquadIndex(saveId);
+  const index = await service.getSquadIndex(saveId);
   const entry = index.byId(meta.clubId);
   if (!entry) return Response.json({ error: "squad not found" }, { status: 404 });
-  let squad = await saveService.getSquad(saveId, entry.leagueSlug, entry.stem);
+  let squad = await service.getSquad(saveId, entry.leagueSlug, entry.stem);
   if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
   // A save from before the items (Etapa 34) has facilities without `items`: set up again (no migration).
   if (!squad.facilities?.items) squad = await withInitialFacilities(squad, entry.leagueSlug);
@@ -54,7 +61,87 @@ function parseFacilityRequest(body: unknown): FacilityRequest | null {
     return { kind: "stand", stand: b.stand as StandId, seats: b.seats };
   }
   if (b.kind === "comfort" || b.kind === "training" || b.kind === "academy") return { kind: b.kind };
+  if (b.kind === "repair" || b.kind === "rebuild" || b.kind === "upgrade") {
+    if (!isFacilityItemId(b.item)) return null;
+    if (b.kind !== "repair") return { kind: b.kind, item: b.item };
+    const to = b.to;
+    if (typeof to !== "number" || !Number.isInteger(to) || to % FACILITIES.REPAIR.STEP !== 0 || to <= 0 || to > 100) return null;
+    return { kind: "repair", item: b.item, to };
+  }
   return null;
+}
+
+/** Repair targets offered on screen: +25, +50 (rounded up to the step) and up to 100%. */
+export function repairTargets(condition: number): { "25": number; "50": number; "100": number } {
+  const step = FACILITIES.REPAIR.STEP;
+  const up = (gain: number) => Math.min(100, Math.ceil((condition + gain) / step) * step);
+  return { "25": up(25), "50": up(50), "100": 100 };
+}
+
+interface MoneyContext { board: number; balance: number; revenue: number; committed: number }
+
+interface Forecast {
+  /** Small repair: paid now by the club (no board). */
+  paidByClub: boolean;
+  approved: boolean;
+  boardShare?: number;
+  reason?: string;
+}
+
+/** What happens to a quote if requested now: paid by the club (small repair) or the board's decision. */
+function forecast(quote: ProjectQuote, args: MoneyContext): Forecast {
+  if (quote.small) {
+    return args.balance - args.committed >= quote.cost
+      ? { paidByClub: true, approved: true }
+      : { paidByClub: true, approved: false, reason: "no_money" };
+  }
+  const d = boardDecision({ ...args, cost: quote.cost });
+  return d.approved
+    ? { paidByClub: false, approved: true, boardShare: d.boardShare }
+    : { paidByClub: false, approved: false, reason: d.reason };
+}
+
+/** Per-item view: level, condition, effects, works, and the quotes with what would happen. */
+function itemsView(f: ClubFacilities, date: string, money: MoneyContext) {
+  const ctx = { revenue: money.revenue, seatCost: 0 };
+  const withForecast = (q: ProjectQuote | null) => (q ? { ...q, forecast: forecast(q, money) } : null);
+  return FACILITY_ITEMS.map((id: FacilityItemId) => {
+    const it = f.items[id];
+    const condition = conditionOf(it);
+    const project = f.projects.find((p) => itemBusy({ ...f, projects: [p] }, id));
+    const targets = repairTargets(condition);
+    return {
+      id, group: ITEM_GROUP[id], level: it.level, condition, condemned: it.condemned === true,
+      effects: itemEffects(id, condition),
+      project: project ? { ...project, progress: projectProgress(project, date) } : null,
+      quotes: {
+        repair: {
+          "25": withForecast(quoteProject(f, { kind: "repair", item: id, to: targets["25"] }, ctx)),
+          "50": withForecast(quoteProject(f, { kind: "repair", item: id, to: targets["50"] }, ctx)),
+          "100": withForecast(quoteProject(f, { kind: "repair", item: id, to: 100 }, ctx)),
+        },
+        rebuild: withForecast(quoteProject(f, { kind: "rebuild", item: id }, ctx)),
+        upgrade: withForecast(quoteProject(f, { kind: "upgrade", item: id }, ctx)),
+      },
+    };
+  });
+}
+
+/**
+ * A small repair in its own buffered unit (squad and ledger line written together), flushed only
+ * when the answer is ok.
+ */
+async function inUnit(saveId: string, fn: (service: SaveService) => Promise<Response>): Promise<Response> {
+  const buffer = new BufferingSaveDAL(new FileSystemDAL());
+  const service = new SaveService(buffer);
+  try {
+    const res = await fn(service);
+    if (res.ok) await buffer.flush();
+    return res;
+  } catch (err) {
+    logError("facilities", `save ${saveId}: failed to pay a repair`, err);
+    return Response.json({ error: "failed to pay a repair" }, { status: 500 });
+  }
 }
 
 async function facilitiesView(h: Human) {
@@ -96,6 +183,9 @@ async function facilitiesView(h: Human) {
       fans: h.meta.board?.fans ?? BOARD_FANS.START,
     },
     season: state ? { start: state.start, end: state.end } : null,
+    items: itemsView(f, h.date, {
+      board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, revenue, committed: committedSpend(f),
+    }),
     quotes: {
       comfort: quoteProject(f, { kind: "comfort" }, ctx),
       training: quoteProject(f, { kind: "training" }, ctx),
@@ -141,10 +231,33 @@ export const facilityRoutes = {
       const h = await loadHuman(saveId);
       if (h instanceof Response) return h;
       const f = h.squad.facilities!;
-      if (projectRunning(f, request.kind)) return Response.json({ error: "busy" }, { status: 409 });
+      const itemRequest = request.kind === "repair" || request.kind === "rebuild" || request.kind === "upgrade";
+      if (itemRequest ? itemBusy(f, request.item) : projectRunning(f, request.kind)) {
+        return Response.json({ error: "busy" }, { status: 409 });
+      }
       const revenue = wageRevenueBasisOf(h.squad);
       const quote = quoteProject(f, request, { revenue, seatCost: await seatCostFor(saveService, saveId, h.meta, h.ref.leagueSlug) });
-      if (!quote) return Response.json({ error: "maxLevel" }, { status: 400 });
+      if (!quote) {
+        // An upgrade at level 10 (or a group work at 5) is `maxLevel`; any other item request that
+        // cannot be quoted (target not above the condition, rebuild above 15%, repair of a
+        // condemned item) is invalid.
+        const maxed = request.kind === "upgrade" || !itemRequest;
+        return Response.json({ error: maxed ? "maxLevel" : "invalidRequest" }, { status: 400 });
+      }
+      // Small repair (at most 2% of the annual revenue): paid now from the balance, no board.
+      if (quote.small) {
+        if ((h.squad.finances?.budget ?? 0) - committedSpend(f) < quote.cost) {
+          return Response.json({ approved: false, reason: "no_money", view: await facilitiesView(h) });
+        }
+        return inUnit(saveId, async (service) => {
+          const paid = payRepairNow(f, quote, { id: `fac_${randomUUID()}`, date: h.date });
+          await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, withFacilities(h.squad, paid.facilities));
+          const season = (await service.getLeagueMeta(saveId, h.meta.leagueSlug))?.year ?? parseInt(h.date.slice(0, 4), 10);
+          const squad = await recordMoney(service, saveId, season, h.ref, paid.entry);
+          const project = paid.facilities.projects.at(-1)!;
+          return Response.json({ approved: true, paidByClub: true, boardShare: 0, project, view: await facilitiesView({ ...h, squad }) });
+        });
+      }
       const decision = boardDecision({
         board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, cost: quote.cost, revenue,
         committed: committedSpend(f),
@@ -153,6 +266,7 @@ export const facilityRoutes = {
         facility: quote.kind, cost: quote.cost,
         ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
         ...(quote.level !== undefined ? { level: quote.level } : {}),
+        ...(quote.item ? { item: quote.item } : {}),
       };
       // A refusal is answered on screen only (no inbox line: the request was just made).
       if (!decision.approved) {

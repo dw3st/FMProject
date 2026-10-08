@@ -99,6 +99,7 @@ export function FinancesScreen() {
       club: d.club ?? "",
       player: d.player ?? "",
       facility: d.facility ? t(`facilities.kind.${d.facility}`) : "",
+      item: d.item ? t(`facilities.item.${d.item}`) : "",
     });
   };
 

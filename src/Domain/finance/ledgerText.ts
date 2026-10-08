@@ -18,7 +18,11 @@ export interface LedgerDescription {
   player?: string;
   /** Facilities lines: the project kind (`facilities.kind.*`). */
   facility?: string;
+  /** Item projects (repair, rebuild, upgrade): the facility item (`facilities.item.*`). */
+  item?: string;
 }
+
+const ITEM_KEY: Record<string, string> = { repair: "facilityRepair", rebuild: "facilityRebuild", upgrade: "facilityUpgrade" };
 
 export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): LedgerDescription | null {
   const ref = entry.ref;
@@ -47,7 +51,14 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
         : null;
     case "facilities":
     case "board_funding":
-      // `.claude/rules/game/facilities.md`: the project kind (and stand) of an instalment.
+      // `.claude/rules/game/facilities.md`: the project kind (and stand) of an instalment; item
+      // projects name the item (a small repair is one line paid at once).
+      if (ref?.facility && ref.item && ITEM_KEY[ref.facility]) {
+        return {
+          key: entry.kind === "facilities" ? ITEM_KEY[ref.facility]! : "boardFundingItem",
+          facility: ref.facility, item: ref.item,
+        };
+      }
       return ref?.facility ? { key: entry.kind === "facilities" ? "facilityInstalment" : "boardFunding", facility: ref.facility } : null;
     case "facilities_upkeep":
       return { key: "facilitiesUpkeep" };

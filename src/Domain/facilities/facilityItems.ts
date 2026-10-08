@@ -183,3 +183,37 @@ export function withGroupLevel(f: ClubFacilities, g: FacilityGroup | "comfort", 
   for (const id of ids) items[id] = { ...items[id], level: clamp(2 * level, 1, F.ITEM_MAX_LEVEL) };
   return { ...f, items };
 }
+
+// ── Effects shown on screen ───────────────────────────────────────────────────
+
+export type ItemEffectKey =
+  | "matchInjury" | "demand" | "price" | "trainingInjury" | "trainingDev" | "recovery" | "injuryDays"
+  | "intakeQuality" | "promise";
+
+/** One effect of an item at a condition: a multiplier, or an addition (`intakeQuality`). */
+export interface ItemEffect {
+  key: ItemEffectKey;
+  value: number;
+}
+
+/**
+ * What an item costs the club at a condition (empty from 40% up). The physio's days out here are
+ * the condition part only (the level part is shown with the training ground).
+ */
+export function itemEffects(id: FacilityItemId, condition: number): ItemEffect[] {
+  if (penalty(condition) <= 0) return [];
+  const m = (key: ItemEffectKey, atZero: number): ItemEffect => ({ key, value: effectAt(atZero, condition) });
+  switch (id) {
+    case "stadiumPitch": return [m("matchInjury", W.PITCH_INJURY_MAX)];
+    case "seats": return [m("demand", W.SEATS_DEMAND_MIN), m("price", W.SEATS_PRICE_MIN)];
+    case "stadiumStructure": return [m("demand", W.STRUCTURE_DEMAND_MIN)];
+    case "trainingPitches": return [m("trainingInjury", W.PITCH_INJURY_MAX), m("trainingDev", W.TRAINING_PITCH_DEV_MIN)];
+    case "gym": return [m("trainingDev", W.GYM_DEV_MIN)];
+    case "canteen": return [m("trainingDev", W.CANTEEN_DEV_MIN)];
+    case "pool": return [m("recovery", W.POOL_RECOVERY_MIN)];
+    case "physio": return [m("recovery", W.PHYSIO_RECOVERY_MIN), m("injuryDays", W.PHYSIO_DURATION_MAX)];
+    case "academyPitches": return [{ key: "intakeQuality", value: -W.ACADEMY_QUALITY_MAX_LOSS * penalty(condition) }];
+    case "academyLodging":
+      return [{ key: "intakeQuality", value: -W.ACADEMY_QUALITY_MAX_LOSS * penalty(condition) }, m("promise", W.LODGING_PROMISE_MIN)];
+  }
+}

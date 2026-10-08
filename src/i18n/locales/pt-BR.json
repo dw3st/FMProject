@@ -2196,7 +2196,11 @@
       "managerCompensation": "Compensação pelo técnico",
       "scoutingTravel": "Viagens de observação: {{competition}}",
       "scoutingTravelPlayer": "Viagens de observação: {{player}}",
-      "prospectFee": "Compensação de formação: {{player}}"
+      "prospectFee": "Compensação de formação: {{player}}",
+      "facilityRepair": "Reforma: {{item}}",
+      "facilityRebuild": "Reconstrução: {{item}}",
+      "facilityUpgrade": "Melhoria: {{item}}",
+      "boardFundingItem": "Verba da diretoria: {{item}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -2872,7 +2876,10 @@
       "stand": "Ampliação de setor",
       "comfort": "Conforto",
       "training": "Centro de treinamento",
-      "academy": "Base"
+      "academy": "Base",
+      "repair": "Reforma",
+      "rebuild": "Reconstrução",
+      "upgrade": "Melhoria"
     },
     "comfort": {
       "about": "Cadeiras, cobertura, camarotes: ingresso mais caro.",
@@ -2921,6 +2928,18 @@
       "attendance_record": "{{attendance}} torcedores: novo recorde de público em casa (o anterior era {{previous}}).",
       "standWhat": "o setor {{stand}} (+{{seats}} lugares)",
       "levelWhat": "{{what}} nível {{level}}"
+    },
+    "item": {
+      "stadiumPitch": "Gramado do estádio",
+      "seats": "Arquibancadas e assentos",
+      "stadiumStructure": "Estrutura e iluminação",
+      "trainingPitches": "Campos de treino",
+      "gym": "Academia",
+      "pool": "Piscina",
+      "physio": "Fisioterapia",
+      "canteen": "Refeitório",
+      "academyPitches": "Campos da base",
+      "academyLodging": "Alojamento da base"
     }
   },
   "transferWindows": {

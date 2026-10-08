@@ -2196,7 +2196,11 @@
       "managerCompensation": "Manager compensation",
       "scoutingTravel": "Scouting travel: {{competition}}",
       "scoutingTravelPlayer": "Scouting travel: {{player}}",
-      "prospectFee": "Training compensation: {{player}}"
+      "prospectFee": "Training compensation: {{player}}",
+      "facilityRepair": "Repair: {{item}}",
+      "facilityRebuild": "Rebuild: {{item}}",
+      "facilityUpgrade": "Upgrade: {{item}}",
+      "boardFundingItem": "Board funding: {{item}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -2872,7 +2876,10 @@
       "stand": "Stand expansion",
       "comfort": "Comfort",
       "training": "Training ground",
-      "academy": "Academy"
+      "academy": "Academy",
+      "repair": "Repair",
+      "rebuild": "Rebuild",
+      "upgrade": "Upgrade"
     },
     "comfort": {
       "about": "Seats, roofing, boxes: a higher ticket price.",
@@ -2921,6 +2928,18 @@
       "attendance_record": "{{attendance}} fans: a new home attendance record (the old one was {{previous}}).",
       "standWhat": "the {{stand}} stand (+{{seats}} seats)",
       "levelWhat": "{{what}} level {{level}}"
+    },
+    "item": {
+      "stadiumPitch": "Stadium pitch",
+      "seats": "Stands and seats",
+      "stadiumStructure": "Structure and lighting",
+      "trainingPitches": "Training pitches",
+      "gym": "Gym",
+      "pool": "Pool",
+      "physio": "Physio room",
+      "canteen": "Canteen",
+      "academyPitches": "Academy pitches",
+      "academyLodging": "Academy lodging"
     }
   },
   "transferWindows": {

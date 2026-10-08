@@ -53,6 +53,7 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { groupTable } from "@/Domain/continental/groupTable";
+import { matchPitchCondition } from "@/Domain/facilities/pitch";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -508,6 +509,14 @@ export const apiRoutes = {
       ? autoLineupForFormationWithFitness(opponentSquad, oppFormation, matchDate)
       : [];
     const matchMarking = save.matchMarking && save.matchMarking.date === matchDate ? save.matchMarking : null;
+    // Pitch of the stadium the match is played in (`src/Domain/facilities/pitch.ts`).
+    let pitchCondition: number | null = null;
+    if (matchFixture && opponentSquad && matchDate) {
+      const homeSquad = matchFixture.home === myInternalId ? mySquad : opponentSquad;
+      const homeLeague = (await saveService.getSquadIndex(save.id)).byId(homeSquad.id)?.leagueSlug;
+      const window = (save.activeLeagues ?? []).find((l) => l.leagueSlug === homeLeague);
+      pitchCondition = matchPitchCondition(homeSquad, matchFixture, window, matchDate);
+    }
 
     return Response.json({
       save,
@@ -524,6 +533,7 @@ export const apiRoutes = {
       rotationApplied: resolved.rotationApplied,
       oppLineup,
       matchMarking,
+      pitchCondition,
     });
   },
 

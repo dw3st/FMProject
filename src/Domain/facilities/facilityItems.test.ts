@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import {
   FACILITY_ITEMS, ITEM_GROUP, comfortLevel, conditionOf, crossings, effectAt, groupLevel, initialItems,
-  itemWearToday, itemsOfGroup, lerpLevel, lifeScale, penalty, physioDurationMult, wearDay, wearFor,
+  itemEffects, itemWearToday, itemsOfGroup, lerpLevel, lifeScale, penalty, physioDurationMult, wearDay, wearFor,
   type FacilityItems, type WearDayInput,
 } from "@/Domain/facilities/facilityItems";
 import type { ClubFacilities } from "@/types/facilityTypes";
@@ -155,5 +155,15 @@ describe("physio and injury duration", () => {
     expect(physioDurationMult({ level: 10, wear: 0 }, 3)).toBeCloseTo(0.88, 10);
     expect(physioDurationMult({ level: 2, wear: 0 }, 3)).toBeCloseTo(1.12, 10);
     expect(physioDurationMult({ level: 6, wear: 0, condemned: true }, 3)).toBeCloseTo(1.15 * 1.25, 10);
+  });
+});
+
+describe("itemEffects", () => {
+  test("nothing from 40% up; the maximum at 0%", () => {
+    for (const id of FACILITY_ITEMS) expect(itemEffects(id, 40)).toEqual([]);
+    expect(itemEffects("stadiumPitch", 0)).toEqual([{ key: "matchInjury", value: F.WEAR.PITCH_INJURY_MAX }]);
+    expect(itemEffects("physio", 20).map((e) => e.key)).toEqual(["recovery", "injuryDays"]);
+    expect(itemEffects("academyLodging", 0)[0]).toEqual({ key: "intakeQuality", value: -F.WEAR.ACADEMY_QUALITY_MAX_LOSS });
+    expect(itemEffects("seats", 20)[0]!.value).toBeCloseTo(effectAt(F.WEAR.SEATS_DEMAND_MIN, 20), 10);
   });
 });
