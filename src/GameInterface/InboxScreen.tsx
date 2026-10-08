@@ -36,6 +36,7 @@ const JobIcon = iconOf("file-signature");
 const TagIcon = iconOf("tag");
 const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
+const AwardIcon = iconOf("award");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -176,6 +177,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-2/15",
     border: "border-chart-2/30",
     Icon: ScoutIcon,
+  },
+  awards: {
+    labelKey: "inbox.categories.awards",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: AwardIcon,
   },
 };
 

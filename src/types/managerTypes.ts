@@ -1,3 +1,5 @@
+import type { ManagerAward } from "@/types/awardTypes";
+
 /** Kind of achievement that scores manager-ranking points (`.claude/rules/game/managers.md`). */
 type ManagerTitleKind = "league" | "cup" | "continental" | "promotion";
 
@@ -10,6 +12,8 @@ export interface ManagerTitle {
   /** Club the manager was in charge of. */
   squadId: string;
   points: number;
+  /** Date the title was credited (world manager of the year, `.claude/rules/game/awards.md`). */
+  on?: string;
 }
 
 /** Why a manager left a club (Etapa 25). */
@@ -51,6 +55,8 @@ export interface ManagerRecord {
   retired?: true;
   /** Objective target of the current club for a season (cached for the Monday review). */
   target?: { season: string; target: number };
+  /** Best manager of a league season / of the world (`.claude/rules/game/awards.md`). */
+  awards?: ManagerAward[];
 }
 
 /** Cached country weight (`meta.managerWeights[country]`): computed once per country per season. */

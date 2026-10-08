@@ -1269,7 +1269,8 @@
       "player": "Jogador",
       "facilities": "Instalações",
       "manager_news": "Técnicos",
-      "scouting": "Olheiros"
+      "scouting": "Olheiros",
+      "awards": "Prêmios"
     },
     "developmentLevelUpOne": "{{player}} subiu um atributo hoje.",
     "developmentLevelUpMany": "{{player}} subiu {{count}} atributos hoje.",

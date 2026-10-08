@@ -106,6 +106,24 @@ export interface MatchCard {
   matchMinute:  number;
 }
 
+/**
+ * One goal of a full-engine match (`.claude/rules/game/awards.md`): absent in quickSim. Data only,
+ * nothing in the engine reads it.
+ */
+export interface MatchGoal {
+  /** Roster id of the scorer. */
+  playerId: string;
+  team: "home" | "away";
+  /** Displayed minute (`matchMinute + 1`). */
+  minute: number;
+  header: boolean;
+  setPiece?: "corner" | "free_kick" | "direct_free_kick" | "penalty";
+  /** Yards from the shot point to the goal centre (1 decimal). */
+  distance: number;
+  outsideBox: boolean;
+  assistId?: string;
+}
+
 export interface MatchEvent {
   kind:          "match";
   fixtureId:     string;
@@ -128,6 +146,8 @@ export interface MatchEvent {
   injuries?: MatchInjury[];
   /** Cards, in chronological order. Absent/omitted means none were shown. */
   cards?: MatchCard[];
+  /** Goals with minute and shot position: full engine only (absent in quickSim and older events). */
+  goals?: MatchGoal[];
   /** Attribute level-ups/downs that occurred this match. */
   developmentChanges: PlayerDevelopmentChange[];
   durationMs:    number;

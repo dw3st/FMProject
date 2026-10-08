@@ -154,6 +154,8 @@ export interface PlayedMatchRecording {
   injuries?: import("@/types/dayLogTypes").MatchInjury[];
   /** Cards shown, in chronological order (a second yellow = the yellow, then a red). */
   cards?: MatchCard[];
+  /** Goals with minute and shot position (validated by `sanitizeRecordedGoals`). */
+  goals?: import("@/types/dayLogTypes").MatchGoal[];
   durationMs: number;
   /** Knockout only: extra-time goals and shootout, home/away. Absent when decided in 90'. */
   decider?: import("@/types/calendarTypes").MatchDecider;

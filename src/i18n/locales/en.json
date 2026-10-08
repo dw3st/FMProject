@@ -1269,7 +1269,8 @@
       "player": "Player",
       "facilities": "Facilities",
       "manager_news": "Managers",
-      "scouting": "Scouting"
+      "scouting": "Scouting",
+      "awards": "Awards"
     },
     "developmentLevelUpOne": "{{player}} levelled up one attribute today.",
     "developmentLevelUpMany": "{{player}} levelled up {{count}} attributes today.",
