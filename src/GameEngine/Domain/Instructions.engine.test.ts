@@ -160,6 +160,10 @@ describe("man-marking", () => {
     });
     // Seeded: the average distance depends on the match's random rolls and sat right at the limit (6.0–6.3 in
     // ~1 run of 4 unseeded). A fixed match still catches a real regression in the marking.
+    // A match the way the day advance plays it (formations and XIs, unseeded) before the seeded ones: state
+    // the engine keeps between ticks (cached defensive intents) must not leak into the next match — it made
+    // this test depend on the test files run before it.
+    simulateMatch(loadSquad("40.json"), loadSquad("33.json"), F433, F433);
     const spy = spyOn(Math, "random").mockImplementation(mulberry32(MARK_SEED));
     let result: ReturnType<typeof run>;
     try {
@@ -173,7 +177,7 @@ describe("man-marking", () => {
     expect(sum / n).toBeLessThanOrEqual(6);
     expect(result.teamStats.B.manMarked).toBeGreaterThan(30);
     expect(shotsMarked).toBe(result.teamStats.B.markedTargetShots);
-  });
+  }, 30_000); // three headless matches: slow on a loaded machine
 });
 
 describe("emergency goalkeeper", () => {
