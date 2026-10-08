@@ -46,7 +46,7 @@ export function PlayerTalkBody({ message }: { message: PlayerInboxMessage }) {
           reason={message.reason ?? null}
           clubName={message.clubName}
           onClose={() => setOpen(false)}
-          onDone={() => { setAnswered(true); reload(); void refresh(); }}
+          onDone={() => { setAnswered(true); void reload(); void refresh(); }}
         />
       )}
     </div>

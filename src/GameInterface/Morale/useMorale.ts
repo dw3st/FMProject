@@ -23,10 +23,12 @@ export interface MoraleData {
   promises: PlayerPromise[];
 }
 
-/** The human club's morale overview; `reload` after a talk or a status change. Null while loading or without a club. */
-export function useMorale(saveId: string | undefined): { data: MoraleData | null; reload: () => void } {
+/**
+ * The human club's morale overview; `reload` after a talk or a status change (resolves once the new
+ * data is in, keeping the old data meanwhile). Null while loading or without a club.
+ */
+export function useMorale(saveId: string | undefined): { data: MoraleData | null; reload: () => Promise<void> } {
   const [data, setData] = useState<MoraleData | null>(null);
-  const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!saveId) return;
     const controller = new AbortController();
@@ -35,7 +37,13 @@ export function useMorale(saveId: string | undefined): { data: MoraleData | null
       .then((d) => { if (!controller.signal.aborted) setData(d); })
       .catch(() => { /* keep the last data */ });
     return () => controller.abort();
-  }, [saveId, tick]);
-  const reload = useCallback(() => setTick((n) => n + 1), []);
+  }, [saveId]);
+  const reload = useCallback(async () => {
+    if (!saveId) return;
+    try {
+      const r = await fetch(`/api/saves/${saveId}/morale`);
+      if (r.ok) setData((await r.json()) as MoraleData);
+    } catch { /* keep the last data */ }
+  }, [saveId]);
   return { data, reload };
 }

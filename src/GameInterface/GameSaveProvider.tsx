@@ -32,8 +32,11 @@ export interface GameSaveContextValue {
   inboxMessages: InboxMessage[] | null;
   /** Cached unread count derived from inboxMessages. */
   unreadInboxCount: number;
-  /** Refetch save JSON + club squad; syncs budget, tactics fields, and session storage. */
-  refresh: () => Promise<void>;
+  /**
+   * Refetch save JSON + club squad; syncs budget, tactics fields, and session storage.
+   * `background` keeps `loading` false, so the current screen stays mounted (no loading flash).
+   */
+  refresh: (opts?: { background?: boolean }) => Promise<void>;
   /** Refetch inbox messages only. */
   refreshInbox: () => Promise<void>;
   /** Persist and broadcast session updates (e.g. after tactics APIs that already wrote to disk). */
@@ -140,7 +143,7 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { background?: boolean }) => {
     const s = loadSession();
     if (!s) {
       setSession(null);
@@ -151,7 +154,7 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setLoading(true);
+    if (!opts?.background) setLoading(true);
     try {
       const squadUrl = (league: string, club: string) =>
         club ? fetch(`/api/saves/${s.saveId}/squad/${league}/${club}`) : Promise.resolve(null);

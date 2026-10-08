@@ -220,7 +220,7 @@ export function PlayerScreen({
             playerId={player.id}
             playerName={player.name}
             onRenew={() => setRenewOpen(true)}
-            onChanged={() => void refresh()}
+            onChanged={() => void refresh({ background: true })}
           />
         )}
 

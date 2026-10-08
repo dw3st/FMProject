@@ -28,6 +28,8 @@ export function PlayerMoralePanel({
   const { data, reload } = useMorale(saveId);
   const [talkOpen, setTalkOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  // The chip just clicked, shown while the PUT and the morale reload are in flight.
+  const [pending, setPending] = useState<SquadStatus | "auto" | null>(null);
   const row = data?.players.find((p) => p.id === playerId);
   if (!data || !row) return null;
   const talk = data.talks.find((x) => x.playerId === playerId) ?? null;
@@ -36,14 +38,20 @@ export function PlayerMoralePanel({
   async function setStatus(key: SquadStatus | "auto") {
     if (saving) return;
     setSaving(true);
+    setPending(key);
     try {
-      await fetch(`/api/saves/${saveId}/players/${encodeURIComponent(playerId)}/squad-status`, {
+      const res = await fetch(`/api/saves/${saveId}/players/${encodeURIComponent(playerId)}/squad-status`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: key === "auto" ? null : key }),
       });
-      reload();
+      if (!res.ok) { setPending(null); return; }
+      // Only this panel and the club squad in the background: never remount the player screen.
+      await reload();
+      setPending(null);
       onChanged();
+    } catch {
+      setPending(null);
     } finally {
       setSaving(false);
     }
@@ -85,7 +93,7 @@ export function PlayerMoralePanel({
             { key: "auto" as const, label: t("morale.statusAuto", { status: t(`morale.status.${row.suggested}`) }) },
             ...SQUAD_STATUSES.map((s) => ({ key: s, label: t(`morale.status.${s}`) })),
           ]}
-          value={row.manualStatus ? row.status : "auto"}
+          value={pending ?? (row.manualStatus ? row.status : "auto")}
           onChange={(k) => void setStatus(k)}
           disabled={saving}
         />
