@@ -189,7 +189,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; accepted?: boolean; reason?: string };
       if (!res.ok) {
-        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub"].includes(body.error)) setContractError(refusalText(body.error));
+        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) setContractError(refusalText(body.error));
         else setMessage(errorText(body.error));
         return;
       }
@@ -224,7 +224,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         preference?: { winner: string; clubName: string; reason: string };
       };
       if (!res.ok) {
-        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub"].includes(body.error)) {
+        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) {
           setContractError(refusalText(body.error));
         } else if (body.error === "windowClosed") {
           setMessage(windowClosedText(t, i18n.language, body.opensOn));

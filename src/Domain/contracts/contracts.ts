@@ -9,8 +9,9 @@ import { seedFrom } from "@/Domain/rng";
 import {
   ambitionDemandMult, compatriotMult, loyaltyRenewalMult, refusesSmallerClub, seasonsAtClub, smallerClubMult, tierStepsDown,
 } from "@/Domain/personality/personality";
+import { appealDemandMult, facilitiesAppeal, refusesPoorFacilities } from "@/Domain/facilities/facilities";
 
-type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub";
+type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub" | "poorFacilities";
 
 /**
  * Where a signing comes from (`.claude/rules/game/personality.md`): the player's current club (a
@@ -38,8 +39,12 @@ export interface DemandBreakdown {
   compatriot: number;
   /** A club smaller than his current/last one (ambition). */
   smallerClub: number;
+  /** Signing only: the human club's training ground (and academy, up to 21) below 50% (`facilitiesAppeal`). */
+  facilities: number;
   /** Ambition ≥ 17 and the club two or more tiers smaller. */
   refuses: boolean;
+  /** Signing only: ambition ≥ 17 and the training ground below 25%. */
+  refusesFacilities: boolean;
 }
 
 export interface ContractOfferResult {
@@ -94,6 +99,9 @@ function personalityParts(player: RosterPlayer, squad: Squad, ctx: DemandContext
     compatriot: own ? 1 : compatriotMult(player, squad.country),
     smallerClub: smallerClubMult(player, steps),
     refuses: refusesSmallerClub(player, steps),
+    // Poor facilities cost only a signing, never a renewal (the AI has none: 1).
+    facilities: own ? 1 : appealDemandMult(facilitiesAppeal(squad, player)),
+    refusesFacilities: !own && refusesPoorFacilities(player, squad),
   };
 }
 
@@ -107,7 +115,7 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   const base = playerWeeklyWage(player, wageFactorOf(squad)) * importance * young * moraleDemandMult(player);
   const parts = personalityParts(player, squad, ctx);
   return {
-    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub),
+    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities),
     base: Math.round(base),
     ...parts,
   };
@@ -129,6 +137,7 @@ export function evaluateContractOffer(
   const demand = breakdown.demand;
   // A very ambitious player turns down a much smaller club whatever the terms (`personality.md`).
   if (breakdown.refuses) return { accepted: false, reason: "smallerClub", demand };
+  if (breakdown.refusesFacilities) return { accepted: false, reason: "poorFacilities", demand };
   if (!Number.isInteger(offer.years) || offer.years < C.MIN_YEARS || offer.years > C.MAX_YEARS) {
     return { accepted: false, reason: "invalidYears", demand };
   }

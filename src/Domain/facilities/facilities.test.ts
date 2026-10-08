@@ -8,7 +8,7 @@ import {
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
 import { academyEffectsOf, committedSpend, itemBusy, itemValue, payRepairNow, projectRunning, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
-import { comfortLevelPriceMult } from "@/Domain/facilities/facilities";
+import { comfortLevelPriceMult, facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { FACILITY_ITEMS, conditionOf, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import type { FacilityItemId } from "@/types/facilityTypes";
@@ -430,5 +430,19 @@ describe("item projects: repair, rebuild, upgrade", () => {
     const day = advanceFacilities(r.facilities, p.end);
     expect(day.entries).toEqual([]);
     expect(day.completed).toHaveLength(1);
+  });
+});
+
+describe("facilitiesAppeal", () => {
+  test("AI club 100; training ground mean; up to 21 also the academy", () => {
+    const sq = squad();
+    expect(facilitiesAppeal(sq, { age: 26 })).toBe(100);
+    const f = initialFacilities(sq, 1);
+    const items = { ...f.items };
+    for (const id of ["trainingPitches", "gym", "pool", "physio", "canteen"] as FacilityItemId[]) items[id] = { ...items[id], wear: wearFor(20) };
+    for (const id of ["academyPitches", "academyLodging"] as FacilityItemId[]) items[id] = { ...items[id], wear: wearFor(80) };
+    const human = { ...sq, facilities: { ...f, items } };
+    expect(facilitiesAppeal(human, { age: 26 })).toBeCloseTo(20, 8);
+    expect(facilitiesAppeal(human, { age: 19 })).toBeCloseTo(50, 8);
   });
 });

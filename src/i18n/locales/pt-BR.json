@@ -2423,7 +2423,8 @@
       "invalidYears": "Escolha entre 1 e 5 anos.",
       "squadFull": "Seu elenco está cheio (36 jogadores).",
       "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação.",
-      "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa."
+      "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
+      "poorFacilities": "Ambicioso demais para um CT neste estado: recusa."
     }
   },
   "career": {
@@ -2683,12 +2684,14 @@
       "preference": {
         "wage": "Ele prefere o {{club}}: oferta salarial mais alta",
         "prestige": "Ele prefere o {{club}}: clube maior",
-        "starter": "Ele prefere o {{club}}: mais chances de jogar"
+        "starter": "Ele prefere o {{club}}: mais chances de jogar",
+        "facilities": "Ele prefere o {{club}}: instalações melhores"
       },
       "prefers": {
         "wage": "O clube aceita, mas ele prefere a oferta salarial do {{club}}. Suba o salário para convencê-lo.",
         "prestige": "O clube aceita, mas ele prefere ir para o {{club}}, um clube maior.",
-        "starter": "O clube aceita, mas ele espera jogar mais no {{club}}."
+        "starter": "O clube aceita, mas ele espera jogar mais no {{club}}.",
+        "facilities": "O clube aceita, mas ele prefere o {{club}}: o estado do seu CT o afasta."
       },
       "lost": "Tarde demais: ele foi para o {{club}} por {{fee}}."
     },
@@ -3160,7 +3163,8 @@
       "settled": "Acomodado: {{pct}}",
       "loyal": "Leal ao clube: {{pct}}",
       "compatriot": "Joga no país dele: {{pct}}",
-      "smallerClub": "Quer um clube maior: {{pct}}"
+      "smallerClub": "Quer um clube maior: {{pct}}",
+      "facilities": "Instalações ruins: {{pct}}"
     }
   },
   "scouting": {

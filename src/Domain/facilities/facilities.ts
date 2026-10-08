@@ -10,7 +10,9 @@ import {
   comfortLevel, conditionOf, effectAt, groupLevel, initialItems, itemCondition, itemsOfGroup, lerpLevel, penalty,
   physioDurationMult, wearFor,
 } from "@/Domain/facilities/facilityItems";
-import type { Squad } from "@/types/playerTypes";
+import { personalityOf } from "@/Domain/personality/personality";
+import { PERSONALITY } from "@/Domain/personality/personalityConfig";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type {
   AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityGroup, FacilityItemId, FacilityKind, FacilityProject,
   FacilityRequest, StadiumStand, StandId,
@@ -614,4 +616,40 @@ export function facilitiesMatchday(
     return a.attendance;
   });
   return { facilities: cur, attendance, recordBroken };
+}
+
+// ── Signings ──────────────────────────────────────────────────────────────────
+
+const meanCondition = (f: ClubFacilities, g: FacilityGroup): number => {
+  const ids = itemsOfGroup(g);
+  return ids.reduce((s, id) => s + itemCondition(f, id), 0) / ids.length;
+};
+
+/**
+ * How a club's facilities look to a player it wants to sign, 0..100: the mean condition of the
+ * training ground (a player up to 21: training ground and academy). No living facilities (AI clubs,
+ * old saves): 100, no effect.
+ */
+export function facilitiesAppeal(squad: Squad, player: Pick<RosterPlayer, "age">): number {
+  const f = livingFacilities(squad);
+  if (!f) return 100;
+  const training = meanCondition(f, "training");
+  return player.age <= F.APPEAL.YOUTH_MAX_AGE ? (training + meanCondition(f, "academy")) / 2 : training;
+}
+
+/** 0 from `APPEAL.THRESHOLD` up, 1 at 0. */
+const appealGap = (appeal: number): number => clamp((F.APPEAL.THRESHOLD - appeal) / F.APPEAL.THRESHOLD, 0, 1);
+
+/** × a signing's wage demand for poor facilities (up to +10% with everything at 0). */
+export const appealDemandMult = (appeal: number): number => 1 + F.APPEAL.DEMAND_MAX * appealGap(appeal);
+
+/** Taken off the club's `preferenceScore` for poor facilities (up to 0.10). */
+export const appealPreferencePenalty = (appeal: number): number => F.APPEAL.PREFERENCE_MAX * appealGap(appeal);
+
+/** A very ambitious player (ambition ≥ 17) refuses a club whose training ground is below 25%. */
+export function refusesPoorFacilities(player: RosterPlayer, squad: Squad): boolean {
+  const f = livingFacilities(squad);
+  if (!f) return false;
+  return personalityOf(player).ambition >= PERSONALITY.SMALLER_CLUB_REFUSE_AMBITION
+    && meanCondition(f, "training") < F.APPEAL.REFUSE_BELOW;
 }
