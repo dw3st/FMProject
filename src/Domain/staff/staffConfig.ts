@@ -59,9 +59,14 @@ export const STAFF = {
   ATTR_MAX: 20,
   /** Per-role limit by the club's natural tier. */
   LIMITS: { coach: { LOW: 3, MEDIUM: 3, HIGH: 4, ELITE: 5 }, fieldScout: 4, other: 1 },
-  /** Share of the staff wage curve per role (keeps the bill near 1.7x the old 3-role bill; `scripts/staff-bill.ts`). */
+  /**
+   * Share of the staff wage curve per role: the design's 1 / 0.7 / 0.4 / 0.3 / 0.1 scaled by 0.18 so the
+   * median starting bill stays under ~4% of the club's revenue in every tier (`scripts/staff-bill.ts`;
+   * the old 3-role bill was already ~12% of revenue for a median club, see `staff.md` → "Custo da comissão").
+   */
   WAGE_ROLE_SHARE: {
-    assistant: 1, scout: 1, fieldScout: 1, fitness: 0.7, goalkeeping: 0.4, coach: 0.4, medic: 0.4, analyst: 0.3, groundskeeper: 0.1,
+    assistant: 0.18, scout: 0.18, fieldScout: 0.18, fitness: 0.126, goalkeeping: 0.072, coach: 0.072, medic: 0.072,
+    analyst: 0.054, groundskeeper: 0.018,
   } satisfies Record<StaffRole, number>,
   /** Starting staff: implied stars of the tier +/- this (halves). */
   START_SPREAD_STARS: 0.5,
