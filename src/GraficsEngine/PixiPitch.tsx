@@ -28,6 +28,7 @@ import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX } from "@/GraficsEngine/pitchMirror";
+import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
@@ -45,59 +46,6 @@ import type { GridMatrix } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
-
-const PITCH_SPEC = {
-  lengthYds: PITCH_LENGTH,
-  widthYds: PITCH_WIDTH,
-  centreCircleRadiusYds: 10,
-  goalAreaDepthYds: 6,
-  goalAreaWidthYds: 18,
-  penaltyAreaDepthYds: 18,
-  penaltyAreaWidthYds: 44,
-  penaltySpotDistanceYds: 12,
-  cornerArcRadiusYds: 1,
-} as const;
-
-interface PitchMetrics {
-  scale: number;
-  width: number; height: number;
-  marginX: number; marginY: number;
-  centreCircleRadius: number;
-  goalAreaDepth: number; goalAreaWidth: number;
-  penaltyAreaDepth: number; penaltyAreaWidth: number;
-  penaltySpotDistance: number;
-  cornerArcRadius: number;
-  goalNetDepth: number;
-}
-
-function buildMetrics(canvasW: number, canvasH: number): PitchMetrics {
-  const goalNetDepthYds = 2;
-  const totalLengthYds = PITCH_SPEC.lengthYds + 2 * goalNetDepthYds;
-  const scale = Math.min(canvasW / totalLengthYds, canvasH / PITCH_SPEC.widthYds);
-
-  const netDepth = Math.round(goalNetDepthYds * scale);
-  const pitchW   = Math.round(PITCH_SPEC.lengthYds * scale);
-  const pitchH   = Math.round(PITCH_SPEC.widthYds  * scale);
-
-  const totalW      = pitchW + 2 * netDepth;
-  const outerMargin = Math.round((canvasW - totalW) / 2);
-
-  return {
-    scale,
-    width:  pitchW,
-    height: pitchH,
-    marginX: outerMargin + netDepth,
-    marginY: Math.round((canvasH - pitchH) / 2),
-    centreCircleRadius:  Math.round(PITCH_SPEC.centreCircleRadiusYds  * scale),
-    goalAreaDepth:       Math.round(PITCH_SPEC.goalAreaDepthYds        * scale),
-    goalAreaWidth:       Math.round(PITCH_SPEC.goalAreaWidthYds        * scale),
-    penaltyAreaDepth:    Math.round(PITCH_SPEC.penaltyAreaDepthYds     * scale),
-    penaltyAreaWidth:    Math.round(PITCH_SPEC.penaltyAreaWidthYds     * scale),
-    penaltySpotDistance: Math.round(PITCH_SPEC.penaltySpotDistanceYds  * scale),
-    cornerArcRadius:     Math.round(PITCH_SPEC.cornerArcRadiusYds      * scale),
-    goalNetDepth: netDepth,
-  };
-}
 
 /** Width of the team-colour ring around a player's face. */
 const MARKER_RING_W = 3;
@@ -447,7 +395,7 @@ export function PixiPitch({
         };
       }
 
-      const m = buildMetrics(canvasWidth, canvasHeight);
+      const m = buildMetrics(canvasWidth, canvasHeight, { stadium: false });
 
       // Converts game yards → canvas pixels (mirrored on x when `mirror` is set — drawing only)
       const toPixel = (x: number, y: number) => ({
