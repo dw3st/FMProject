@@ -89,4 +89,8 @@ describe("formatLike", () => {
     expect(formatLike('{\n  "a": 1\n}\n', { a: 2 })).toBe('{\n  "a": 2\n}\n');
     expect(formatLike('{\n\t"a": 1\n}', { a: 2 })).toBe('{\n\t"a": 2\n}');
   });
+  test("keeps the format of a top-level array (leagueData.json), CRLF included", () => {
+    expect(formatLike('[\r\n  {\r\n    "a": 1\r\n  }\r\n]\r\n', [{ a: 2 }])).toBe('[\r\n  {\r\n    "a": 2\r\n  }\r\n]\r\n');
+    expect(formatLike('[{"a":1}]', [{ a: 2 }])).toBe('[{"a":2}]');
+  });
 });

@@ -142,9 +142,12 @@ function withoutCache(p: RosterPlayer): RosterPlayer {
   return rest as RosterPlayer;
 }
 
-/** Serialises a squad file the way the original was written (indentation and trailing newline). */
+/**
+ * Serialises a JSON file (a squad object, or a top-level array like `leagueData.json`) the way the
+ * original was written (indentation, line endings and trailing newline).
+ */
 export function formatLike(original: string, value: unknown): string {
-  const m = /^\{\r?\n([ \t]+)"/.exec(original);
+  const m = /^[{[]\r?\n([ \t]+)["{[]/.exec(original);
   const indent = m ? m[1]! : undefined;
   const text = indent ? JSON.stringify(value, null, indent) : JSON.stringify(value);
   const eol = original.includes("\r\n") ? "\r\n" : "\n";

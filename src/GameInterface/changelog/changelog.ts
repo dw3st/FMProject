@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.13.1",
+    date: "2026-10-08",
+    items: [
+      { pt: "Nomes dos clubes do Brasil e de Portugal com acentos e sem sufixos (São Paulo, Grêmio, Atlético Mineiro, Vitória de Guimarães) (#121)", en: "Brazilian and Portuguese club names now have their accents and no stray suffixes (São Paulo, Grêmio, Atlético Mineiro, Vitória de Guimarães) (#121)" },
+    ],
+  },
+  {
     version: "4.13",
     date: "2026-10-08",
     items: [

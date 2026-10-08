@@ -27,6 +27,7 @@ cp -R src/example_data/. src/Data/  # sincroniza o runtime antes do importEspn (
 bun scripts/importEspn.ts           # overlay 2026/27: clubes, elencos, pirâmide, calendário, escudos
 bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de mercado (derived.json) — ver abaixo
 bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
+bun scripts/applyClubNameCorrections.ts  # nomes de exibição dos clubes (acentos, sem sufixos) — ver abaixo
 rm -rf src/Data/squads src/Data/logos/espn
 cp -R src/example_data/. src/Data/
 bun run kits:generate 5             # falha se src/Data/squads ainda tiver lixo (ver abaixo)
@@ -192,6 +193,28 @@ zero (baixos, sem a recalibração), e o craque de verdade só some do mundo.
   mundo, posição fora da linha, campo desconhecido. Idempotente; grava só os elencos alterados, no formato
   original; imprime antes → depois (posição e nota).
 - Exige `src/Data/roles.json` igual a `src/example_data/roles.json` (como os importadores).
+
+## Nomes de clubes
+
+`data_process/curated/clubNameCorrections.json` dá o nome de exibição de um clube quando o dado de origem traz uma
+grafia de dados (issue #121): sem acento ("Sao Paulo", "Gremio"), com sufixo ("Chapecoense-sc", "Fortaleza EC",
+"Nautico Recife") ou abreviado ("RB Bragantino", "C.D. Nacional").
+
+```json
+{ "<squadId>": { "name": "São Paulo", "shortName"?: "SPFC" } }
+```
+
+- Escopo atual: clubes de língua portuguesa (Brasil A/B/C e a liga portuguesa). Só entra o que está errado; nome
+  próprio não é traduzido. Os demais idiomas ficam para depois.
+- `bun scripts/applyClubNameCorrections.ts` (lógica pura em `scripts/curated/clubNames.ts`, com teste) roda logo
+  depois do `applyPlayerCorrections`, sobre `src/example_data`: troca o `name` do elenco (e o `shortName`, se a
+  correção trouxer um) e o `name` da entrada de `standings` do `leagueData.json` (um `shortName` só onde a entrada
+  já tem). Escudos (`logoIndex.json`) e `slug` são por id e não mudam. Falha alto com id inexistente ou repetido no
+  mundo, campo desconhecido, nome vazio, com espaço nas pontas ou com entidade HTML. Idempotente; grava só os
+  arquivos alterados, no formato original; imprime antes → depois.
+- Fica no fim da cadeia de propósito: o casamento de clubes do `importOpenFootball`/`importEspn` usa os nomes de
+  origem (chaves sem acento) e nunca vê o nome corrigido. Os nativos em `data_process/native` continuam com a
+  grafia de origem.
 
 ## Recalibração pelo valor de mercado
 
