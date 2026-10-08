@@ -97,9 +97,9 @@ export function PlayerScreen({
     if (!player) return [];
     const facts: IdentityFact[] = [];
     const born = player.birthDate ? formatBirthDate(player.birthDate, i18n.language) : null;
-    if (born) facts.push({ label: t("playerScreen.facts.birthDate"), value: born });
+    if (born) facts.push({ kind: "birthDate", label: t("playerScreen.facts.birthDate"), value: born });
     const cm = heightCmOf(player.heightCm);
-    if (cm !== null) facts.push({ label: t("playerScreen.facts.height"), value: t("playerScreen.height", { cm }) });
+    if (cm !== null) facts.push({ kind: "height", label: t("playerScreen.facts.height"), value: t("playerScreen.height", { cm }) });
     return facts;
   }, [player, i18n.language, t]);
 

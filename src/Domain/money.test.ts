@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   formatEuros,
+  monthlyFromWeekly,
   formatEurosDetailed,
   formatEurosText,
   formatFee,
@@ -48,5 +49,12 @@ describe("money labels are always in euros", () => {
       formatEuros(5e6), formatFee(5e6), formatEurosDetailed(5e6), formatEurosText(5e6), formatWageFull(5e3),
     ];
     for (const l of labels) expect(l).not.toMatch(/[£$]/);
+  });
+});
+
+describe("monthlyFromWeekly", () => {
+  test("52 weeks over 12 months", () => {
+    expect(monthlyFromWeekly(12_000)).toBe(52_000);
+    expect(monthlyFromWeekly(0)).toBe(0);
   });
 });

@@ -22,6 +22,8 @@ import { seenAttributeRange } from "@/Domain/scouting/seen";
 import { FactCard, type IdentityFact } from "@/GameInterface/Components/FactCard";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { formatEuros, monthlyFromWeekly } from "@/Domain/money";
+import { formatBirthDate } from "@/GameInterface/playerIdentity";
 
 const STAT_ABBR: Partial<Record<keyof PlayerStatsRecord, string>> = {
   finishing:    "FIN",
@@ -119,12 +121,12 @@ export function PlayerCard({
   layout?: "narrow" | "wide";
   /** Wide layout: an extra badge after the name (the personality summary on the player screen). */
   nameBadge?: React.ReactNode;
-  /** Wide layout: extra identity facts (birth date, height) shown as cards after the nationality; empty = none. */
+  /** Wide layout: extra identity facts; `kind` places height after the foot and birth date after the age (#117). */
   identityFacts?: IdentityFact[];
   /** Jersey colours of the player's club; defaults to the user's club (dashboard card). */
   clubColors?: readonly string[];
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, currentDate, squad } = useGameSave();
   const jerseyColors = clubColors ?? squad?.colors;
   const starIds = useStarPlayers(session?.saveId, currentDate);
@@ -146,6 +148,15 @@ export function PlayerCard({
   const statGroups = mainRole === "GK" ? GK_STAT_GROUPS : STAT_GROUPS;
 
   if (layout === "wide") {
+    const heightFact = identityFacts?.find((f) => f.kind === "height");
+    const birthFact = identityFacts?.find((f) => f.kind === "birthDate");
+    const otherFacts = identityFacts?.filter((f) => !f.kind) ?? [];
+    const monthly = player.wageRange
+      ? `${formatEuros(monthlyFromWeekly(player.wageRange[0]))}–${formatEuros(monthlyFromWeekly(player.wageRange[1]))}`
+      : formatEuros(monthlyFromWeekly(player.wage));
+    const contractEnd = player.contractEnd ? formatBirthDate(player.contractEnd, i18n.language) : null;
+    const tileLabel = "text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold";
+    const tileValue = "text-lg md:text-xl font-black font-display m-0 tabular-nums";
     return (
       <div className="card-arcade rounded-md overflow-hidden">
         {/* Hero — uses horizontal space */}
@@ -170,20 +181,22 @@ export function PlayerCard({
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
             <div className="flex flex-wrap items-stretch justify-center sm:justify-start gap-2 mt-3">
-              <FactCard label={t("playerScreen.facts.position")} tone={posColor}>
-                {positionLabel(t, player.natural, player.pos)}
-              </FactCard>
-              <FactCard label={t("playerScreen.facts.foot")}>
-                {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")}
-              </FactCard>
-              <FactCard label={t("playerScreen.facts.age")}>{player.age}</FactCard>
               {player.ownNationality && (
                 <FactCard label={t("playerScreen.facts.nationality")} title={player.ownNationality}>
                   {nationalityFlagCode(player.ownNationality) && <Flag code={nationalityFlagCode(player.ownNationality)!} />}
                   <span className="truncate max-w-[160px]">{player.ownNationality}</span>
                 </FactCard>
               )}
-              {identityFacts?.map((f) => (
+              <FactCard label={t("playerScreen.facts.position")} tone={posColor}>
+                {positionLabel(t, player.natural, player.pos)}
+              </FactCard>
+              <FactCard label={t("playerScreen.facts.foot")}>
+                {player.preferredFoot === "right" ? t("dashboard.playerCard.rightFoot") : t("dashboard.playerCard.leftFoot")}
+              </FactCard>
+              {heightFact && <FactCard label={heightFact.label}>{heightFact.value}</FactCard>}
+              <FactCard label={t("playerScreen.facts.age")}>{player.age}</FactCard>
+              {birthFact && <FactCard label={birthFact.label}>{birthFact.value}</FactCard>}
+              {otherFacts.map((f) => (
                 <FactCard key={f.label} label={f.label}>{f.value}</FactCard>
               ))}
             </div>
@@ -211,21 +224,25 @@ export function PlayerCard({
         {/* Two columns: story | stats grid */}
         <div className="grid lg:grid-cols-2 border-t border-border/50">
           <div className="p-6 md:p-8 space-y-6 border-b lg:border-b-0 lg:border-r border-border/50">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
               <div className="card-arcade rounded-md p-4 text-center border border-border/50">
-                <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{t("dashboard.playerCard.value")}</p>
-                <p className={`text-lg md:text-xl font-black font-display m-0 tabular-nums ${ratingTextClass10(player.avg)}`}>{valueText(player.value, player.valueRange)}</p>
+                <p className={tileLabel}>{t("dashboard.playerCard.marketValue")}</p>
+                <p className={`${tileValue} ${ratingTextClass10(player.avg)}`}>{valueText(player.value, player.valueRange)}</p>
               </div>
               <div className="card-arcade rounded-md p-4 text-center border border-border/50">
-                <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 font-display font-bold">{t("dashboard.playerCard.salary")}</p>
-                <p className="text-lg md:text-xl font-black text-foreground font-display m-0">{player.salary}</p>
+                <p className={tileLabel}>{t("dashboard.playerCard.monthlySalary")}</p>
+                <p className={`${tileValue} text-foreground`}>{monthly}</p>
               </div>
               <div className="card-arcade rounded-md p-4 text-center border border-border/50">
-                <p className="text-[13px] text-muted-foreground uppercase tracking-[0.08em] mb-1 m-0 inline-flex items-center gap-1 justify-center w-full font-display font-bold">
+                <p className={tileLabel}>{t("dashboard.playerCard.contractEnd")}</p>
+                <p className={`${tileValue} text-foreground`}>{contractEnd ?? "—"}</p>
+              </div>
+              <div className="card-arcade rounded-md p-4 text-center border border-border/50">
+                <p className={`${tileLabel} inline-flex items-center gap-1 justify-center w-full`}>
                   {t("dashboard.playerCard.energy")}
                   <LoadIndicator load={player.load} size={16} />
                 </p>
-                <p className="text-lg md:text-xl font-black text-foreground font-display m-0">{player.energy}%</p>
+                <p className={`${tileValue} text-foreground`}>{player.energy}%</p>
               </div>
             </div>
             {player.aptitudes && <PositionPitch aptitudes={player.aptitudes} />}

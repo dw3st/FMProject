@@ -1652,6 +1652,9 @@
   },
   "dashboard": {
     "playerCard": {
+      "marketValue": "Market value",
+      "monthlySalary": "Monthly salary (€)",
+      "contractEnd": "Contract ends",
       "value": "Value",
       "salary": "Salary",
       "energy": "Energy",
