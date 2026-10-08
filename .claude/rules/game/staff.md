@@ -107,7 +107,7 @@ flush no fim (nada é gravado numa resposta de erro).
 | Rota | Faz |
 |---|---|
 | `GET /api/saves/:id/staff` | `staffView`: membros (`stars`, `starsByArea` do treinador, `severance` de hoje, `renewYears` aceitos e `renewWage`), as 7 áreas (estrelas, multiplicador, responsável), `areaAssignments`, `limits` por função, `effects`, `weeklyTotal` |
-| `GET /api/saves/:id/staff/pool?role=&minStars=&maxWage=&sort=stars\|wage\|age&offset=&limit=` | Busca (limite 1..100, padrão 50); salário pedido no fator do clube do jogador (desempregado: fator 1, a lista continua visível) |
+| `GET /api/saves/:id/staff/pool?role=&minStars=&maxWage=&sort=name\|role\|age\|stars\|wage&dir=asc\|desc&offset=&limit=` | Busca (limite 1..100, padrão 50); ordenação na lista inteira (sem `dir`: estrelas da maior, o resto crescente; função na ordem de `STAFF_ROLES`; 400 para coluna ou sentido inválido), clicando no cabeçalho da coluna na aba Comissão; salário pedido no fator do clube do jogador (desempregado: fator 1, a lista continua visível) |
 | `POST /api/saves/:id/staff/hire { memberId, years }` | Contrata da lista (404 `notInPool`, 409 `roleFull`, 400 `invalidYears`) |
 | `POST /api/saves/:id/staff/fire { memberId }` (ou `{ role }`) | Demite: multa, volta à lista; resposta com `severance` |
 | `POST /api/saves/:id/staff/renew { memberId, years }` | Renova (400 `tooManyYears`) |

@@ -4,14 +4,14 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Label } from "@/GameInterface/ui/Label";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { formatWageFull } from "@/Domain/money";
 import { starsIn } from "@/Domain/staff/staff";
-import type { StaffPoolItem } from "@/Domain/staff/staffPool";
 import { COACH_AREAS, ROLE_SPECIALTY, STAFF_ROLES, isStaffRole, type CoachArea, type StaffRole } from "@/Domain/staff/staffTypes";
 import { DP_CATEGORIES } from "@/GameEngine/PlayerDevelopment";
+import { defaultPoolSortDir, type StaffPoolItem, type StaffPoolSort, type StaffPoolSortDir } from "@/Domain/staff/staffPool";
+import { Icon } from "@/GameInterface/Icons";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
 import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
@@ -21,8 +21,27 @@ import { HireStaffModal } from "@/GameInterface/Transfers/HireStaffModal";
 
 type RoleKey = "all" | StaffRole;
 type MinStars = "any" | "2" | "3" | "4" | "4.5";
-type Sort = "stars" | "wage" | "age";
 const PAGE = 50;
+
+/** A column header that sorts the whole pool by it (server-side); the active one shows its direction. */
+function SortHeader({ col, label, align, sort, dir, onSort }: {
+  col: StaffPoolSort; label: string; align: "left" | "center";
+  sort: StaffPoolSort; dir: StaffPoolSortDir; onSort: (col: StaffPoolSort) => void;
+}) {
+  const active = sort === col;
+  return (
+    <th className={`${TABLE_CELL.head} ${align === "left" ? "text-left" : "text-center"}`} aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        onClick={() => onSort(col)}
+        className={`inline-flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer font-display font-bold uppercase tracking-[0.08em] text-[13px] hover:text-primary transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}
+      >
+        {label}
+        {active && <Icon name={dir === "asc" ? "chevron-up" : "chevron-down"} size={16} className="text-primary" />}
+      </button>
+    </th>
+  );
+}
 
 const coachAreasOf = (m: StaffPoolItem): Record<CoachArea, number> =>
   Object.fromEntries(COACH_AREAS.map((a) => [a, starsIn(m, a)])) as Record<CoachArea, number>;
@@ -46,7 +65,12 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
     const id = setTimeout(() => setMaxWageQuery(maxWage), 300);
     return () => clearTimeout(id);
   }, [maxWage]);
-  const [sort, setSort] = useState<Sort>("stars");
+  const [sort, setSort] = useState<StaffPoolSort>("stars");
+  const [dir, setDir] = useState<StaffPoolSortDir>("desc");
+  const onSort = (col: StaffPoolSort) => {
+    if (col === sort) setDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSort(col); setDir(defaultPoolSortDir(col)); }
+  };
   const [page, setPage] = useState<StaffPoolPage | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [staff, setStaff] = useState<StaffData | null>(null);
@@ -55,13 +79,13 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
   const [notice, setNotice] = useState<string | null>(null);
 
   const query = useCallback((offset: number) => {
-    const p = new URLSearchParams({ sort, offset: String(offset), limit: String(PAGE) });
+    const p = new URLSearchParams({ sort, dir, offset: String(offset), limit: String(PAGE) });
     if (role !== "all") p.set("role", role);
     if (minStars !== "any") p.set("minStars", minStars);
     const wage = Number(maxWageQuery.replace(/[^\d]/g, ""));
     if (maxWageQuery.trim() !== "" && Number.isFinite(wage)) p.set("maxWage", String(wage));
     return `/api/saves/${saveId}/staff/pool?${p}`;
-  }, [saveId, role, minStars, maxWageQuery, sort]);
+  }, [saveId, role, minStars, maxWageQuery, sort, dir]);
 
   const loadStaff = useCallback(async () => {
     const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff`);
@@ -137,20 +161,6 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
             onChange={(e) => setMaxWage(e.target.value)}
             className="w-48"
           />
-          <div className="flex flex-col gap-2">
-            <Label>{t("staffPool.sort")}</Label>
-            <SegmentedTabs<Sort>
-              compact
-              tabs={[
-                { key: "stars", label: t("staffPool.sortStars") },
-                { key: "wage", label: t("staffPool.sortWage") },
-                { key: "age", label: t("staffPool.sortAge") },
-              ]}
-              active={sort}
-              onChange={setSort}
-              aria-label={t("staffPool.sort")}
-            />
-          </div>
         </div>
       </div>
 
@@ -167,12 +177,12 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
             <table className="w-full">
               <thead className={TABLE_STYLE.head}>
                 <tr>
-                  <th className={`${TABLE_CELL.head} text-left`}>{t("staffPool.colName")}</th>
-                  <th className={`${TABLE_CELL.head} text-left`}>{t("staffPool.colRole")}</th>
-                  <th className={`${TABLE_CELL.head} text-center`}>{t("staffPool.colAge")}</th>
-                  <th className={`${TABLE_CELL.head} text-left`}>{t("staffPool.colStars")}</th>
+                  <SortHeader col="name" label={t("staffPool.colName")} align="left" sort={sort} dir={dir} onSort={onSort} />
+                  <SortHeader col="role" label={t("staffPool.colRole")} align="left" sort={sort} dir={dir} onSort={onSort} />
+                  <SortHeader col="age" label={t("staffPool.colAge")} align="center" sort={sort} dir={dir} onSort={onSort} />
+                  <SortHeader col="stars" label={t("staffPool.colStars")} align="left" sort={sort} dir={dir} onSort={onSort} />
                   <th className={`${TABLE_CELL.head} text-left`}>{t("staffPool.colStrong")}</th>
-                  <th className={`${TABLE_CELL.head} text-center`}>{t("staffPool.colWage")}</th>
+                  <SortHeader col="wage" label={t("staffPool.colWage")} align="center" sort={sort} dir={dir} onSort={onSort} />
                   <th className={TABLE_CELL.head} />
                 </tr>
               </thead>
