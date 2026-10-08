@@ -29,17 +29,22 @@ describe("season awards at the rollover", () => {
     const plSquads = await saveService.getSquadsInLeague(saveId, "premier_league");
     let star = "";
     // A veteran standout of an AI club whose contract ends with the season: the AI never renews a
-    // 35-year-old, so he is released at the rollover (and may be re-signed the same day).
+    // 33-year-old, so he is released at the rollover (and here re-signed the same day).
     let veteran = "";
     for (const sq of plSquads) {
       const players = sq.players.map((p, i) => {
         const isStar = sq.id === "33" && i === sq.players.findIndex((x) => x.positions[0] !== "GK");
-        const isVet = sq.id === "34" && i === sq.players.findIndex((x) => x.positions[0] !== "GK");
+        // Club 34 loses every goalkeeper (33 after the rollover: never renewed, never retired, still
+        // signable) and refills from the free pool.
+        const isVet = sq.id === "34" && i === sq.players.findIndex((x) => x.positions[0] === "GK");
+        const leavingGk = sq.id === "34" && p.positions[0] === "GK";
         if (isStar) star = p.id;
         if (isVet) veteran = p.id;
         return {
           ...p,
-          ...(isVet ? { age: 35, contract: { ...p.contract!, until: today } } : {}),
+          // Club 34 with a tiny wage bill: the refill's wage gate never blocks it.
+          ...(sq.id === "34" ? { contract: { ...p.contract!, wage: 100, ...(leavingGk ? { until: today } : {}) } } : {}),
+          ...(leavingGk ? { age: 32 } : {}),
           seasonLog: {
             ...(p.seasonLog ?? emptySeasonLog()), appearances: 30,
             goals: isStar ? 40 : i % 6, assists: i % 4, avgRating: isStar ? 9.5 : isVet ? 9.4 : 6 + (i % 15) / 10,
@@ -98,13 +103,17 @@ describe("season awards at the rollover", () => {
     expect(p.moraleLog?.awards).toContain(`league:premier_league:${entry.season}`);
 
     // The released veteran: the award stays on his closing row, the value boost goes with the
-    // release (`toFreeAgent`), wherever he is now (free agents, or re-signed by another club).
-    expect(entry.teamOfSeason.some((x) => x.playerId === veteran)).toBe(true);
+    // release (`toFreeAgent`) even when he is re-signed the same day.
+    expect(entry.bestGoalkeeper?.playerId).toBe(veteran);
     const vetSquad = (await saveService.getAllSquads(saveId)).find((s) => s.players.some((x) => x.id === veteran));
     const vet = vetSquad?.players.find((x) => x.id === veteran)
       ?? (await saveService.getFreeAgents(saveId)).find((f) => f.player.id === veteran)?.player;
     expect(vet).toBeDefined();
-    expect(vetSquad?.id).not.toBe("34");
+    // Here club 34 re-signs him from the pool (its goalkeepers all left): same club, no boost,
+    // and the day log records the free signing (what the season smoke reads).
+    expect(vetSquad?.id).toBe("34");
+    const dayLog = await saveService.getDayLog(saveId, today);
+    expect(dayLog?.transfers?.some((m) => m.playerId === veteran && m.kind === "free" && m.to === "34" && m.fee === 0)).toBe(true);
     const vetRow = vet!.history!.find((r) => r.league === "premier_league" && r.season === entry.season && !r.partial)!;
     expect(vetRow.squadId).toBe("34");
     expect(vetRow.awards?.some((a) => a.kind === "team_of_season")).toBe(true);

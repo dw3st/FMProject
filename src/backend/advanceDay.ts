@@ -1460,7 +1460,11 @@ export async function advanceOneDay(
         });
         if (fa.signedIds.size > 0) {
           for (const sq of fa.squads) {
-            if (fa.changedIds.has(sq.id)) await saveService.saveSquadById(saveId, sq);
+            if (!fa.changedIds.has(sq.id)) continue;
+            await saveService.saveSquadById(saveId, sq);
+            for (const p of sq.players) {
+              if (fa.signedIds.has(p.id)) dayMoves.push({ playerId: p.id, from: "", to: sq.id, fee: 0, kind: "free", date: currentDate });
+            }
           }
           await saveService.writeFreeAgents(saveId, freeAgentPool.filter((f) => !fa.signedIds.has(f.player.id)));
         }
@@ -2077,6 +2081,8 @@ export async function advanceOneDay(
           if (r.signed.length > 0) {
             const ids = new Set(r.signed.map((p) => p.id));
             pool = pool.filter((f) => !ids.has(f.player.id));
+            // Free signings in the day log (a released award winner re-signed today has no boost).
+            for (const p of r.signed) dayMoves.push({ playerId: p.id, from: "", to: sq.id, fee: 0, kind: "free", date: currentDate });
           }
           pool = [...pool, ...trimmed.released.map((p) => toFreeAgent(p, currentDate))];
           trimmedIds.push(...trimmed.released.map((p) => p.id));

@@ -490,6 +490,8 @@ try {
       if (!holders.has(r.id)) holders.set(r.id, { age: null, positions: r.positions, history: r.history, squadId: null });
     }
     const postPlayer = prePlayer ? await svcA.getSquadById(saveIdA, playerSquadId) : null;
+    // Players signed from the free pool today (rollover refill, free-agent tick).
+    const signedFreeToday = new Set(((await svcA.getDayLog(saveIdA, date))?.transfers ?? []).filter((m) => m.kind === "free").map((m) => m.playerId));
     const managers = await svcA.getManagers(saveIdA);
     for (const slug of rolled) {
       const b = before.find((l) => l.leagueSlug === slug);
@@ -540,14 +542,12 @@ try {
         if (!row || !kinds.every((k) => row.awards?.some((a) => a.kind === k && a.league === slug))) awardsTrack.rowMissing.push(`${tag} ${id}`);
         const h = holders.get(id);
         if (h?.squadId && kinds.some((k) => AWARDS.VALUE_MULT[k] !== undefined) && !h.awardBoost) {
-          // The boost lives until the next rollover of his league, and `toFreeAgent` drops it. After
-          // the awards (passo 3) a winner only leaves the award club the same day by a loan return
-          // or a pre-contract (both with the human club, both keep the boost) or by a release at
-          // contract expiry / trim and a re-signing from the free pool (boost gone, by the rule).
-          const moved = !!row && h.squadId !== row.squadId;
-          const humanMove = h.squadId === playerSquadId || row?.squadId === playerSquadId;
-          if (moved && !humanMove) awardsTrack.boostReleased++;
-          else awardsTrack.boostMissing.push(`${tag} ${id}${moved ? ` (${row!.squadId} -> ${h.squadId})` : ""}`);
+          // The boost lives until the next rollover of his league, and `toFreeAgent` drops it: a
+          // winner released at contract expiry (passo 8, after the awards) and re-signed from the
+          // free pool the same day — by another club or his own — has none, by the rule. The day
+          // log's `free` moves prove the re-signing; anyone else must have the boost.
+          if (signedFreeToday.has(id)) awardsTrack.boostReleased++;
+          else awardsTrack.boostMissing.push(`${tag} ${id}${row && h.squadId !== row.squadId ? ` (${row.squadId} -> ${h.squadId})` : ""}`);
         }
         if (prePlayer && postPlayer && h?.squadId === playerSquadId && kinds.some((k) => AWARDS.MORALE[k] !== undefined)) {
           // The award event is on his morale log (the day's drift and other events can still pull a
