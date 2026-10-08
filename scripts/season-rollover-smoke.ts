@@ -32,6 +32,7 @@ import { readdir } from "fs/promises";
 import { seasonLabel } from "@/Domain/history/history";
 import { rankManagers } from "@/Domain/managers/managers";
 import { comfortPriceMult } from "@/Domain/facilities/facilities";
+import { firstHomePitch, pitchRolloverPairs, type PitchByYear } from "@/../scripts/smoke/aiPitchRollover";
 import { FACILITY_ITEMS, conditionOf, itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
 
 // Windows-safe default for the runtime dir; must be set before backend modules load.
@@ -209,8 +210,11 @@ try {
     prev: new Map<string, number>(), outOfRange: [] as string[], rose: [] as string[], samples: 0,
     forcedOn: null as string | null, wornSeen: false, repairAsked: false, repairStatus: 0,
     repairPaid: false, repairCost: 0, repairLine: 0, repairFunding: 0, repairedSeen: false, repairedCondition: 0,
-    // AI home pitch by club and league year: first and last home game of each season.
-    aiPitch: new Map<string, Map<number, { first: number; last: number }>>(),
+    // AI home pitch by club and league year: first and last home game of each season. The run ends at
+    // the player's rollover, before any rolled league plays its new season, so the first home game of
+    // the new season is computed at the rollover from the new calendar (`aiPitchNext`).
+    aiPitch: new Map<string, Map<number, { first: number; last: number }>>() as PitchByYear,
+    aiPitchNext: 0,
   };
 
   // Instalações (`.claude/rules/game/facilities.md`): a happy board (forced to 90 for the request,
@@ -1064,6 +1068,29 @@ try {
       })
       .map((l) => l.leagueSlug);
     if (rolledToday.length > 0) rolls.push({ date, leagues: rolledToday });
+    // Instalações vivas: an AI club of a rolled league starts its new season on a new pitch. Its last home
+    // game of the old season was observed in the day logs; the first one of the new season is the
+    // first home fixture of the new calendar, on the window of the new season and the club's new tier.
+    if (rolledToday.length > 0 && preIndex) {
+      const rolledSet0 = new Set(rolledToday);
+      const afterIdx = await idMembership(saveId);
+      const fxCache = new Map<string, Awaited<ReturnType<ReturnType<typeof plain>["getAllFixturesForLeague"]>>>();
+      for (const [club, byYear] of wearTrack.aiPitch) {
+        const oldLeague = preIndex.get(club);
+        if (!oldLeague || !rolledSet0.has(oldLeague) || club === metaAfter.clubId) continue;
+        const oldYear = leaguesBefore.find((l) => l.leagueSlug === oldLeague)?.year;
+        if (oldYear === undefined || !byYear.has(oldYear)) continue;
+        const newLeague = afterIdx.get(club);
+        const st = leaguesAfter.find((l) => l.leagueSlug === newLeague);
+        if (!newLeague || !st || st.year <= oldYear || byYear.has(st.year)) continue;
+        if (!fxCache.has(newLeague)) fxCache.set(newLeague, await plain().getAllFixturesForLeague(saveId, newLeague));
+        const squad = await plain().getSquadById(saveId, club);
+        const first = squad ? firstHomePitch(squad, fxCache.get(newLeague)!, st) : null;
+        if (!first) continue;
+        byYear.set(st.year, { first: first.condition, last: first.condition });
+        wearTrack.aiPitchNext++;
+      }
+    }
     if (rolledToday.length > 0) {
       await checkAwardsOfDay(date, rolledToday, leaguesBefore, prePlayerSquad,
         new Set([meta.leagueSlug, ...(meta.followedLeagues ?? [])]), meta.leagueSlug);
@@ -1847,19 +1874,9 @@ try {
       `instalações vivas: one "facilities" repair line = the cost (${wearTrack.repairLine} == ${wearTrack.repairCost}), no board funding`);
     check(wearTrack.repairedSeen && wearTrack.repairedCondition >= 99,
       `instalações vivas: delivered → "repaired", condition ${wearTrack.repairedCondition.toFixed(1)}%`);
-    let aiPairs = 0;
-    const aiBad: string[] = [];
-    for (const [club, byYear] of wearTrack.aiPitch) {
-      const years = [...byYear.keys()].sort((a, b) => a - b);
-      for (let i = 1; i < years.length; i++) {
-        const prev = byYear.get(years[i - 1]!)!;
-        const nxt = byYear.get(years[i]!)!;
-        aiPairs++;
-        if (!(prev.last < nxt.first)) aiBad.push(`${club} ${years[i - 1]}: ${prev.last.toFixed(1)} → ${nxt.first.toFixed(1)}`);
-      }
-    }
-    check(aiPairs > 0 && aiBad.length === 0,
-      `instalações vivas: ${aiPairs} AI club(s) of a rolled league start the new season on a better pitch than they ended the old one (${aiBad.slice(0, 3).join("; ")})`);
+    const aiRoll = pitchRolloverPairs(wearTrack.aiPitch);
+    check(aiRoll.ok,
+      `instalações vivas: ${aiRoll.pairs} AI club(s) of a rolled league (${wearTrack.aiPitchNext} new-season first home games) start the new season on a better pitch than they ended the old one (${aiRoll.bad.slice(0, 3).join("; ")})`);
     check(wearTrack.demandFacilities > 1, `instalações vivas: the demand route with the training ground at 20% has facilities ×${wearTrack.demandFacilities} > 1`);
     // Big matches (Etapa 38): a home cup knockout tie draws more demand than the nearest ordinary
     // league home game (x1.15 on the demand; fans and season phase move it a little).
