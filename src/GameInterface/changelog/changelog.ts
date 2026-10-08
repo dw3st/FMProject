@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.13",
+    date: "2026-10-08",
+    items: [
+      { pt: "Substituições num mini campo: toque num titular e num reserva para trocar, com o banco ordenado por posição", en: "Substitutions on a mini pitch: tap a starter and a substitute to swap them, with the bench sorted by position" },
+      { pt: "Toque em dois titulares para trocá-los de posição na partida, sem gastar substituição", en: "Tap two starters to swap their positions during the match, without using a substitution" },
+      { pt: "Até 3 cobradores por bola parada, em ordem: cobra o primeiro que estiver em campo", en: "Up to 3 takers per set piece, in order: the first one on the pitch takes it" },
+    ],
+  },
+  {
     version: "4.10",
     date: "2026-10-08",
     items: [

@@ -52,7 +52,7 @@ interface TacticsSave {
   axesOverride?:    Partial<TacticalAxes>;   // axes edited on top of the style
   lineup:           string[];                // ordered playerIds — index = formation slot index
   assistantRotation?: boolean;               // rest tired starters automatically
-  setPieceTakers?:  { corners?: string; freeKicks?: string; penalties?: string }; // absent = automatic
+  setPieceTakers?:  { corners?: string[]; freeKicks?: string[]; penalties?: string[] }; // up to 3 ids each, in order; absent = automatic
   slotInstructions?: ({ variant?: RoleVariantId; press?: "less" | "normal" | "more" } | null)[]; // index = slot
   lineupPresets?:   Partial<Record<"A" | "B" | "C", LineupPreset>>; // saved lineups (#84)
 }
@@ -79,8 +79,9 @@ known formation or a valid free formation, ≤ 11 unique string ids (≤ 64 char
 preset's own formation); 400 on any error. Presets are never read by a match; a club change (new
 `tactics.json`) drops them.
 
-`setPieceTakers` (Etapa 14): three selectors on the tactics screen (`SetPieceTakersPanel`), "Automatic"
-by default; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; reaches the engine as
+`setPieceTakers` (Etapa 14; up to 3 per duty since 4.13, #116): three ordered selectors per duty on the
+tactics screen (`SetPieceTakersPanel`), "Automatic" when empty; the match uses the first one on the pitch,
+none = automatic; validated by `parseSetPieceTakers` on `PUT /api/saves/:id/tactics`; reaches the engine as
 `GameState.setPieceTakers` (simulated matches and the live match). The AI never sets it. See
 `.claude/rules/game-engine/set-pieces-play.md` → "Cobradores".
 
