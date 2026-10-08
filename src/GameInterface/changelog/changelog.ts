@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.6.1",
+    date: "2026-10-08",
+    items: [
+      {
+        pt: "Ficha do jogador: posição, pé, idade, nacionalidade, nascimento e altura agora aparecem em cartões lado a lado, mais fáceis de ler.",
+        en: "Player profile: position, foot, age, nationality, date of birth and height now show as side-by-side cards, easier to read.",
+      },
+    ],
+  },
+  {
     version: "4.6",
     date: "2026-10-07",
     items: [
