@@ -118,7 +118,7 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 
 ### Próximas etapas em detalhe
 
-Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → plano → execução com testes, `/test` e `/lab` quando houver efeito de partida → smoke → changelog → publicação.
+Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etapa; publicação autônoma quando testes e smoke passam): desenho aprovado pelo usuário → spec → plano → execução com testes, `/test` e `/lab` quando houver efeito de partida → smoke → changelog → publicação.
 
 **29 · Recalibração pelo valor de mercado (4.5) ✅.** Publicada em 2026-10-07. Gols por liga mudaram (Premier −13%, Brasileirão +16%; média do mundo igual), aceito pelo usuário; quickSim dentro de ±10%; `BENCH_SWAP_RATIO` 1,17 → 1,10; elencos completados nos mínimos por linha depois da recalibração.
 
@@ -134,23 +134,27 @@ Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → 
 - Mercado: busca de funcionários na aba Transferências (jogadores × comissão).
 - Rostos (facesjs) para a comissão e os técnicos; avatar do técnico do jogador no novo jogo (sortear + pele, cabelo e cor, barba, óculos).
 - Medição: ritmo de evolução por idade igual ao de hoje com a comissão média.
+- **Decidido (2026-10-07):** faltar um preparador faz a área evoluir a ~40% do ritmo (ninguém trava); limite de profissionais por função pelo tamanho do clube; a IA não contrata comissão (qualidade implícita pela divisão/tier); contratos de 1 a 3 anos com salário fixo, multa de metade do restante ao demitir e renovação perto do fim; busca na aba Transferências com filtros por função, estrelas e salário.
 
 **32 · Prêmios de fim de temporada (#110).**
 - Na virada de cada liga: melhor jogador, revelação (≤ 21), artilheiro, melhor goleiro/zagueiro/meia/atacante pela nota média (mínimo de jogos), seleção da temporada (XI), melhor técnico (campanha × meta); gol da temporada sorteado entre os gols de fora da área ou de cabeça da liga.
 - Prêmios gravados no histórico do jogador e do técnico (linha da temporada), aparecem na ficha (selos), no ranking de técnicos e na aba Estatísticas; filtro "premiados" no olheiro.
 - Inbox com os premiados da liga do jogador; prêmio de jogador do clube do jogador mexe na moral.
+- **Decidido (2026-10-07):** prêmios por liga (melhor jogador, revelação, artilheiro, melhor goleiro, seleção, melhor técnico, gol da temporada) + mundiais (melhor jogador e melhor técnico do mundo); o premiado ganha moral (clube do jogador), valor de mercado um pouco maior por uma temporada e fica mais procurado por clubes grandes.
 
 **33 · Olheiros por país (#104).**
 - Cada olheiro tem conhecimento por país (alto no país de origem e vizinhos, cresce a cada missão naquele país e decai devagar).
 - O conhecimento do país multiplica o ganho das missões e a qualidade dos relatórios.
 - Ao clicar no olheiro: mapa mundial (reaproveita o do novo jogo) com conhecimento completo, moderado e nenhum.
 - Missões continuam de 4/8/12 semanas (rápida, moderada, profunda), com o olheiro ocupado e a viagem cobrada pela distância.
+- **Decidido (2026-10-07):** cada olheiro tem nacionalidade; conhece muito o próprio país e moderadamente os do mesmo continente; o resto aprende nas missões.
 
 **34 · Instalações vivas.**
 - Desgaste semanal de cada instalação (assentos, gramado, equipamentos), vida útil, reforma parcial e reconstrução quando passa do limite; manutenção no extrato.
 - Instalações em detalhe: tela visual com as partes do CT e da base (academia, piscina, fisioterapia, refeitório, campos), cada uma "N de 10" com % de desgaste; o jogador escolhe o que melhorar e a diretoria aprova.
 - Gramado: a condição do gramado do estádio e do CT cai com os jogos, os treinos e o tempo e é mantida pelo jardineiro (nota e quantidade); gramado ruim (grama alta, irregular) aumenta o risco de lesão no treino e nos jogos em casa.
 - Instalações pesam na decisão do jogador de aceitar o clube (como a ambição com clube menor).
+- **Decidido (2026-10-07):** vida útil de 1 a 5 temporadas por item, com desgaste progressivo (mais lento no começo e acelerando perto do fim); itens de uso intenso (gramado do estádio e do CT, academia) desgastam mais rápido que os de estrutura (arquibancada, refeitório); reforma parcial a qualquer momento; abaixo de ~40% passa a pesar (lesão no gramado ruim, menos evolução no CT ruim); abaixo de ~15% precisa refazer a obra.
 
 **35 · Partida ao vivo: mapa de calor e táticas completas (#108).**
 - Mapa de calor pequeno ao lado do campo (posições da bola por time nos últimos minutos e no jogo todo), alternável.
@@ -160,10 +164,12 @@ Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → 
 - Competições sub-21 e sub-19 por país, com calendário que não choca com o time principal.
 - Escalação automática pelos jovens e reservas sem minutos; partidas no quickSim; DP e moral contam.
 - Tabela e resultados na tela de Ligas; jogos do clube do jogador no calendário.
+- **Decidido (2026-10-07):** jogos da base simulados (só resultado, tabela e quem se destacou); escalação automática com jovens e reservas sem minutos, com opção de mandar alguém jogar.
 
 **37 · Inscrição por competição (#103).**
 - Lista de inscritos por competição, com limite de estrangeiros e mínimo de formados no clube/país conforme a liga ou o torneio continental; prazo de inscrição pelas janelas.
 - A IA inscreve sozinha; jogador não inscrito não pode ser escalado naquela competição.
+- **Decidido (2026-10-07):** regras reais simplificadas das principais competições (ex. Brasileirão até 9 estrangeiros relacionados; Premier 8 formados no país em 25; Champions 8 formados no clube/país) e uma regra padrão por continente nas demais.
 
 **38 · Visual da partida e estádio (#107, #99).**
 - Árbitro e bandeirinhas desenhados seguindo o lance; técnicos à beira do campo com gesto quando a mentalidade muda.
@@ -173,6 +179,7 @@ Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → 
 **39 · VAR e reclamação do técnico (#109).**
 - Revisão de pênalti, gol (impedimento/falta) e vermelho direto com uma chance de erro do juiz corrigida pelo VAR; pausa curta na partida.
 - Botão "reclamar com o árbitro": chance de amarelo/vermelho ao técnico, suspensão nos próximos jogos (o auxiliar comanda), efeito na moral e na diretoria.
+- **Decidido (2026-10-07):** reclamar tem pequeno ganho (moral do time e da torcida; raramente mais rigor do juiz com o adversário) e risco (cartão, suspensão com o auxiliar no comando, diretoria irritada se exagerar).
 
 **40 · Conquistas (#95).**
 - Lista de desafios por carreira com recompensas cosméticas e algumas de jogo (jogador criado na base, lenda aposentada); desenho próprio antes.
