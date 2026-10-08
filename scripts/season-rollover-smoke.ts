@@ -467,7 +467,7 @@ try {
     leagues: 0, missing: [] as string[], xiBad: [] as string[], minAppsBad: [] as string[], xiComplement: 0,
     youngBad: [] as string[], gkBad: [] as string[], scorerBad: [] as string[],
     goalInQuick: [] as string[], goalMissing: [] as string[], goalLeagues: 0,
-    rowMissing: [] as string[], boostMissing: [] as string[], moraleUp: 0, moraleNotUp: [] as string[],
+    rowMissing: [] as string[], boostMissing: [] as string[], boostReleased: 0, moraleUp: 0, moraleApplied: 0, moraleMissing: [] as string[],
     managerMissing: [] as string[], playerMessage: null as boolean | null,
   };
   async function checkAwardsOfDay(
@@ -499,7 +499,11 @@ try {
       if (!entry) { awardsTrack.missing.push(`${slug} ${season}`); continue; }
       awardsTrack.leagues++;
       const tag = `${slug} ${season}`;
-      const rowOf = (id: string) => holders.get(id)?.history?.find((r) => r.season === season && r.league === slug);
+      // The closing row (not a partial of an earlier club of the same league): the one the awards go on.
+      const rowOf = (id: string) => {
+        const rows = holders.get(id)?.history?.filter((r) => r.season === season && r.league === slug) ?? [];
+        return rows.find((r) => !r.partial) ?? rows[0];
+      };
       const leagueApps = (id: string) => { const r = rowOf(id); return r ? r.apps - r.cupApps - r.contApps : -1; };
       const minApps = Math.ceil(b.totalRounds * AWARDS.MIN_ROUNDS_SHARE);
       // XI: 11 unique players in the 4-3-3 slots (the complement below the minimum is only counted).
@@ -535,12 +539,25 @@ try {
         const row = rowOf(id);
         if (!row || !kinds.every((k) => row.awards?.some((a) => a.kind === k && a.league === slug))) awardsTrack.rowMissing.push(`${tag} ${id}`);
         const h = holders.get(id);
-        if (h?.squadId && kinds.some((k) => AWARDS.VALUE_MULT[k] !== undefined) && !h.awardBoost) awardsTrack.boostMissing.push(`${tag} ${id}`);
+        if (h?.squadId && kinds.some((k) => AWARDS.VALUE_MULT[k] !== undefined) && !h.awardBoost) {
+          // The boost lives until the next rollover of his league, and `toFreeAgent` drops it. After
+          // the awards (passo 3) a winner only leaves the award club the same day by a loan return
+          // or a pre-contract (both with the human club, both keep the boost) or by a release at
+          // contract expiry / trim and a re-signing from the free pool (boost gone, by the rule).
+          const moved = !!row && h.squadId !== row.squadId;
+          const humanMove = h.squadId === playerSquadId || row?.squadId === playerSquadId;
+          if (moved && !humanMove) awardsTrack.boostReleased++;
+          else awardsTrack.boostMissing.push(`${tag} ${id}${moved ? ` (${row!.squadId} -> ${h.squadId})` : ""}`);
+        }
         if (prePlayer && postPlayer && h?.squadId === playerSquadId && kinds.some((k) => AWARDS.MORALE[k] !== undefined)) {
+          // The award event is on his morale log (the day's drift and other events can still pull a
+          // morale near 100 down, so the final value is only reported).
+          const p1 = postPlayer.players.find((p) => p.id === id);
           const m0 = prePlayer.players.find((p) => p.id === id)?.morale ?? 65;
-          const m1 = postPlayer.players.find((p) => p.id === id)?.morale ?? 65;
+          const m1 = p1?.morale ?? 65;
+          if (p1?.moraleLog?.awards?.includes(`league:${slug}:${season}`)) awardsTrack.moraleApplied++;
+          else awardsTrack.moraleMissing.push(`${id} ${m0} -> ${m1}`);
           if (m1 > m0) awardsTrack.moraleUp++;
-          else awardsTrack.moraleNotUp.push(`${id} ${m0} -> ${m1}`);
         }
       }
       const bm = entry.bestManager;
@@ -1937,8 +1954,8 @@ try {
     check(t.goalInQuick.length === 0, `prêmios: no goal of the season in a quick-sim league (${t.goalInQuick.join("; ")})`);
     check(t.goalMissing.length === 0, `prêmios: goal of the season whenever a full-engine league had a candidate (${t.goalMissing.join("; ")})`);
     check(t.rowMissing.length === 0, `prêmios: every winner has the award on his season row (${t.rowMissing.length}: ${t.rowMissing.slice(0, 5).join("; ")})`);
-    check(t.boostMissing.length === 0, `prêmios: every winner in a squad has the value boost (${t.boostMissing.length}: ${t.boostMissing.slice(0, 5).join("; ")})`);
-    check(t.moraleNotUp.length === 0, `prêmios: ${t.moraleUp} winner(s) of the player's club gained morale (${t.moraleNotUp.join("; ")})`);
+    check(t.boostMissing.length === 0, `prêmios: every winner in a squad has the value boost, except the ${t.boostReleased} released and re-signed the same day (${t.boostMissing.length}: ${t.boostMissing.slice(0, 5).join("; ")})`);
+    check(t.moraleMissing.length === 0, `prêmios: ${t.moraleApplied} winner(s) of the player's club got the award morale event (${t.moraleUp} ended the day higher; missing: ${t.moraleMissing.join("; ")})`);
     check(t.managerMissing.length === 0, `prêmios: every best manager has the award on his record (${t.managerMissing.join("; ")})`);
     check(t.playerMessage === true, `prêmios: awards message of the player's league in the inbox (${String(t.playerMessage)})`);
     console.log("  mundial: coberto por awards.world.test.ts (a corrida não passa por janeiro)");

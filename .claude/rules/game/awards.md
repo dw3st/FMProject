@@ -79,12 +79,16 @@ Num dia de janeiro, se `awards/{ano − 1}.json` tem ligas e ainda não tem `wor
 ## Efeitos
 
 - **Valor (`RosterPlayer.awardBoost`):** melhor jogador / mundial ×1,15; artilheiro, revelação, goleiro ×1,12; seleção
-  ×1,10 (o maior vale). Até a próxima virada da liga dele; `toFreeAgent` apaga. `Player(rating, idade, valueMult)`;
+  ×1,10 (o maior vale). Até a próxima virada da liga dele; `toFreeAgent` apaga. Um premiado de contrato vencido é
+  liberado na mesma virada (passo 8, depois dos prêmios) e pode ser recontratado no mesmo dia pela reposição: fica sem o
+  bônus (regra, não falha). Volta de empréstimo e pré-contrato mantêm o bônus. `Player(rating, idade, valueMult)`;
   todo valor sobre um `RosterPlayer` passa por `playerValueModel`. O motor não lê valor.
 - **Clubes grandes:** `scoreImprovement` + `IMPROVEMENT_BONUS` (0,08) para premiado; proposta de clube maior pelo
   jogador do humano com chance × `BIG_CLUB_BID_MULT` (2) quando há premiado livre, e o alvo é ele.
 - **Moral (clube do jogador):** `afterAward` pelo `withEventDelta`: melhor jogador / mundial +10, revelação /
-  artilheiro / goleiro +8, seleção +5, gol +4 (o maior prêmio da virada).
+  artilheiro / goleiro +8, seleção +5, gol +4 (o maior prêmio da virada). O evento fica em `moraleLog.awards`
+  (`league:<liga>:<temporada>`, `world:<ano>`; os 4 últimos): um dia refeito não aplica de novo, e o registro prova o
+  efeito mesmo com a moral perto de 100 (a deriva da segunda pode baixá-la no mesmo dia).
 
 ## Rotas
 
@@ -118,8 +122,9 @@ bun test src/Domain/awards src/backend/awards.goals.test.ts src/backend/awards.r
 `scripts/season-rollover-smoke.ts`, seção "Prêmios": cada liga virada tem a entrada; XI de 11 únicos nas vagas do
 4-3-3 (o complemento abaixo do mínimo é só contado); mínimos de jogos de liga do melhor jogador, revelação e goleiro;
 revelação ≤ 21; goleiro da linha GK; artilheiro = máximo de gols de liga; gol da temporada só nas ligas do motor (e
-presente quando houve candidato); prêmio na linha e `awardBoost` de cada premiado; moral subiu no premiado do clube
-do jogador; técnico com o registro; mensagem da liga do jogador na inbox. Mundial: `awards.world.test.ts`.
+presente quando houve candidato); prêmio na linha (a de fechamento, não uma parcial) e `awardBoost` de cada premiado
+num elenco, salvo quem saiu do clube do prêmio no mesmo dia entre clubes da IA (liberado e recontratado: contado à parte);
+o evento `league:<liga>:<temporada>` no `moraleLog.awards` do premiado do clube do jogador (a moral final só é contada); técnico com o registro; mensagem da liga do jogador na inbox. Mundial: `awards.world.test.ts`.
 
 ## Medição do mercado (`bun scripts/market-sim.ts 3 [--awards]`, semente 12345)
 
@@ -156,6 +161,5 @@ Dentro do aceite (±5%, ≥ 90% `open`, elenco igual). O MEDIUM já fica abaixo 
 - **Gol da temporada:** liga seguida só por parte da temporada sorteia entre os gols do período seguido; a lista da
   partida ao vivo vem do cliente e só é validada por consistência.
 - **Mundial e ano civil:** uma liga de ano civil que virasse depois de 31/12 entraria no ano seguinte (não acontece hoje).
-- **Repetição de um dia que falhou (fase 1 do `flush` não atômica):** como o histórico e o extrato, a moral do premiado
-  pode ser aplicada duas vezes se só o elenco tiver sido gravado; o arquivo de prêmios, as linhas e os registros dos
-  técnicos são idempotentes.
+- **Repetição de um dia que falhou (fase 1 do `flush` não atômica):** o arquivo de prêmios, as linhas, os registros dos
+  técnicos e a moral (`moraleLog.awards`) são idempotentes.

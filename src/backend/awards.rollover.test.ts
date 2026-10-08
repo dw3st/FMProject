@@ -28,15 +28,21 @@ describe("season awards at the rollover", () => {
     // A full season in every Premier League log; the human club's first player is the standout.
     const plSquads = await saveService.getSquadsInLeague(saveId, "premier_league");
     let star = "";
+    // A veteran standout of an AI club whose contract ends with the season: the AI never renews a
+    // 35-year-old, so he is released at the rollover (and may be re-signed the same day).
+    let veteran = "";
     for (const sq of plSquads) {
       const players = sq.players.map((p, i) => {
         const isStar = sq.id === "33" && i === sq.players.findIndex((x) => x.positions[0] !== "GK");
+        const isVet = sq.id === "34" && i === sq.players.findIndex((x) => x.positions[0] !== "GK");
         if (isStar) star = p.id;
+        if (isVet) veteran = p.id;
         return {
           ...p,
+          ...(isVet ? { age: 35, contract: { ...p.contract!, until: today } } : {}),
           seasonLog: {
             ...(p.seasonLog ?? emptySeasonLog()), appearances: 30,
-            goals: isStar ? 40 : i % 6, assists: i % 4, avgRating: isStar ? 9.5 : 6 + (i % 15) / 10,
+            goals: isStar ? 40 : i % 6, assists: i % 4, avgRating: isStar ? 9.5 : isVet ? 9.4 : 6 + (i % 15) / 10,
           },
         };
       });
@@ -88,6 +94,21 @@ describe("season awards at the rollover", () => {
     expect(row.awards?.every((a) => a.league === "premier_league")).toBe(true);
     expect(p.awardBoost).toMatchObject({ league: "premier_league", season: entry.season, mult: 1.15 });
     expect(p.morale!).toBeGreaterThan(moraleBefore);
+    // The award event is recorded on his morale log (the proof the effect ran, whatever the day's drift).
+    expect(p.moraleLog?.awards).toContain(`league:premier_league:${entry.season}`);
+
+    // The released veteran: the award stays on his closing row, the value boost goes with the
+    // release (`toFreeAgent`), wherever he is now (free agents, or re-signed by another club).
+    expect(entry.teamOfSeason.some((x) => x.playerId === veteran)).toBe(true);
+    const vetSquad = (await saveService.getAllSquads(saveId)).find((s) => s.players.some((x) => x.id === veteran));
+    const vet = vetSquad?.players.find((x) => x.id === veteran)
+      ?? (await saveService.getFreeAgents(saveId)).find((f) => f.player.id === veteran)?.player;
+    expect(vet).toBeDefined();
+    expect(vetSquad?.id).not.toBe("34");
+    const vetRow = vet!.history!.find((r) => r.league === "premier_league" && r.season === entry.season && !r.partial)!;
+    expect(vetRow.squadId).toBe("34");
+    expect(vetRow.awards?.some((a) => a.kind === "team_of_season")).toBe(true);
+    expect(vet!.awardBoost).toBeUndefined();
 
     const managers = await saveService.getManagers(saveId);
     const bm = managers.find((m) => m.id === entry.bestManager!.managerId)!;
@@ -111,6 +132,15 @@ describe("season awards at the rollover", () => {
       state: { ...pl, end: today }, squads: inLeague, table: [], managers, targets: new Map(), tierChanges: {},
       playerClubId: null, leagueName: "Premier League",
     });
+    // Retried with the human club: the award morale is not applied twice.
+    const mine = await recordLeagueAwards(saveService, saveId, {
+      league: "premier_league", season: entry.season, closedOn: today, country: "England", tier: 1, weight: entry.weight,
+      state: { ...pl, end: today }, squads: inLeague, table: [], managers, targets: new Map(), tierChanges: {},
+      playerClubId: "33", leagueName: "Premier League",
+    });
+    expect(mine.squads.find((s) => s.id === "33")!.players.find((x) => x.id === star)!.morale).toBe(
+      inLeague.find((s) => s.id === "33")!.players.find((x) => x.id === star)!.morale,
+    );
     const p2 = res.squads.flatMap((s) => s.players).find((x) => x.id === star)!;
     const row2 = p2.history!.find((r) => r.league === "premier_league" && r.season === entry.season)!;
     expect(row2.awards!.filter((a) => a.kind === "best_player")).toHaveLength(1);

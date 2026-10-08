@@ -101,7 +101,7 @@ export async function recordLeagueAwards(service: SaveService, saveId: string, a
       }),
     };
     if (s.id === args.playerClubId) {
-      for (const p of s.players) if (kinds.has(p.id)) next = afterAward(next, p.id, kinds.get(p.id)!);
+      for (const p of s.players) if (kinds.has(p.id)) next = afterAward(next, p.id, kinds.get(p.id)!, `league:${league}:${season}`);
     }
     return next;
   });
@@ -163,7 +163,7 @@ export async function runWorldCeremony(service: SaveService, saveId: string, dat
     if (squad) {
       const sq = squad;
       let next: Squad = { ...sq, players: sq.players.map((p) => (p.id === wp.id ? update(p, sq.leagueSlug ?? wp.league) : p)) };
-      if (sq.id === args.playerClubId) next = afterAward(next, wp.id, ["world_player"]);
+      if (sq.id === args.playerClubId) next = afterAward(next, wp.id, ["world_player"], `world:${year}`);
       await service.saveSquadById(saveId, next);
     } else {
       const free = await service.getFreeAgents(saveId);

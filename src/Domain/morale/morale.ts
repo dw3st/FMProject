@@ -645,10 +645,18 @@ export function refusesRenewal(squad: Squad, player: RosterPlayer): boolean {
  * A season award (`.claude/rules/game/awards.md`): only the largest award of the rollover counts,
  * scaled by the temperament like every event. No award with a morale value → same squad.
  */
-export function afterAward(squad: Squad, playerId: string, kinds: AwardKind[]): Squad {
+export function afterAward(squad: Squad, playerId: string, kinds: AwardKind[], key?: string): Squad {
   const delta = Math.max(0, ...kinds.map((k) => AWARDS.MORALE[k] ?? 0));
-  if (delta <= 0 || !squad.players.some((p) => p.id === playerId)) return squad;
-  return { ...squad, players: squad.players.map((p) => (p.id === playerId ? withEventDelta(p, delta) : p)) };
+  const player = squad.players.find((p) => p.id === playerId);
+  if (delta <= 0 || !player) return squad;
+  // The award event is recorded once (`moraleLog.awards`): a retried day applies nothing twice, and
+  // the event stays visible even when the morale is already at the top of the scale.
+  if (key && player.moraleLog?.awards?.includes(key)) return squad;
+  const moved = withEventDelta(player, delta);
+  const next = key
+    ? { ...moved, moraleLog: { ...logOf(moved), awards: [...(logOf(moved).awards ?? []), key].slice(-MORALE.AWARD_KEYS) } }
+    : moved;
+  return { ...squad, players: squad.players.map((p) => (p.id === playerId ? next : p)) };
 }
 
 /** The manager put him on the sell list: −8 unless he asked for it (request or sale promise). */
