@@ -199,41 +199,41 @@ export function ClubCard({
         </div>
       </div>
 
-      <div className="flex items-start gap-3 min-w-0">
-      {managerName && (
-        <ManagerFaceImage
-          manager={{ id: "player", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
-          clubColors={club.colors}
-          size={48}
-        />
-      )}
-      <div className="flex flex-col gap-1 min-w-0">
-        <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
-        <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
-        {managerRank !== null && (
-          <a
-            href="/stats?tab=managers"
-            className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline"
-          >
-            {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
-          </a>
+      <div className="flex items-center gap-4 min-w-0">
+        {managerName && (
+          <ManagerFaceImage
+            manager={{ id: "player", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
+            clubColors={club.colors}
+            size={64}
+          />
         )}
-        {reputation !== null && (
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {t("dashboard.clubSidebar.reputation", { value: Math.round(reputation) })}
-          </span>
-        )}
-        {pendingOffers > 0 && (
-          <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
-            {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
-          </a>
-        )}
-        {contract && (
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
-          </span>
-        )}
-      </div>
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className={label}>{t("dashboard.clubSidebar.manager")}</span>
+          <span className="font-semibold text-foreground truncate">{managerName ?? "—"}</span>
+          {managerRank !== null && (
+            <a
+              href="/stats?tab=managers"
+              className="text-sm text-muted-foreground no-underline hover:text-foreground hover:underline truncate"
+            >
+              {t("dashboard.clubSidebar.managerRank", { rank: managerRank })}
+            </a>
+          )}
+          {reputation !== null && (
+            <span className="text-sm text-muted-foreground tabular-nums truncate">
+              {t("dashboard.clubSidebar.reputation", { value: Math.round(reputation) })}
+            </span>
+          )}
+          {contract && (
+            <span className="text-sm text-muted-foreground tabular-nums truncate">
+              {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
+            </span>
+          )}
+          {pendingOffers > 0 && (
+            <a href="/inbox" className="text-sm font-semibold text-primary no-underline hover:underline">
+              {t("dashboard.clubSidebar.pendingOffers", { count: pendingOffers })}
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 min-w-0">

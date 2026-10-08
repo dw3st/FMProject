@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.7.1",
+    date: "2026-10-08",
+    items: [
+      { pt: "Painel com o rosto do técnico do mesmo tamanho do escudo; notas da partida em ordem de posição; ficha do jogador com os dados reorganizados, salário mensal em euro e data de fim do contrato; descrições dos atributos e a explicação da evolução agora em português", en: "Dashboard shows the manager's face at the same size as the crest; match ratings listed by position; player profile with reordered facts, monthly salary in euros and contract end date; attribute descriptions and the development explanation are now translated" },
+    ],
+  },
+  {
     version: "4.7",
     date: "2026-10-08",
     items: [

@@ -51,3 +51,8 @@ export function formatWageShort(weekly: number): string {
 export function formatWageFull(n: number): string {
   return `€${Math.round(n).toLocaleString("en-US")}`;
 }
+
+/** Monthly wage from a weekly one (52 weeks / 12 months), in euros. */
+export function monthlyFromWeekly(weekly: number): number {
+  return (weekly * 52) / 12;
+}
