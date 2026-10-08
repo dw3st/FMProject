@@ -4,7 +4,8 @@
  * Implements the spec in .claude/rules/game/development.md:
  *  - Performance-based DP after each match
  *  - Age growth multiplier + age decay
- *  - Role-based DP distribution (5 categories → 10 stats)
+ *  - Role-based DP distribution: 7 training areas (`.claude/rules/game/staff.md`) → 13 stats
+ *  - Growth multiplier per training area (staff), never on the age decay
  *  - Soft cap at high attribute values
  *  - Level-up / level-down resolution
  */
@@ -55,19 +56,25 @@ const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
 export const DP_CATEGORIES = ["goalkeeping", "defending", "shooting", "technical", "passing", "physical", "setPieces"] as const;
 export type DPCategory = (typeof DP_CATEGORIES)[number];
 
-const CATEGORY_STATS: Partial<Record<DPCategory, (keyof PlayerStatsRecord)[]>> = {
-  shooting:  ["finishing", "heading"],
-  passing:   ["passing", "vision"],
-  defending: ["tackling", "pressing"],
-  technical: ["dribbling"],
-  physical:  ["speed", "acceleration"],
+const CATEGORY_STATS: Record<DPCategory, (keyof PlayerStatsRecord)[]> = {
+  goalkeeping: ["reflex", "jump", "pressing"],
+  defending:   ["tackling", "pressing"],
+  shooting:    ["finishing"],
+  technical:   ["dribbling"],
+  passing:     ["passing", "vision"],
+  physical:    ["speed", "acceleration", "strength", "stamina"],
+  setPieces:   ["heading"],
 };
 
-export type RoleDPWeights = Partial<Record<DPCategory, number>>;
+export type RoleDPWeights = Record<DPCategory, number>;
+/** Growth multiplier per training area (`staff.areaMultsOf`); absent = 1. */
+export type AreaMults = Partial<Record<DPCategory, number>>;
 
 /** Fallback weights when a player's role isn't found in roles.json or has no dpWeights. */
 export const DEFAULT_DP_WEIGHTS: RoleDPWeights = {
-  shooting: 0.1,
+  goalkeeping: 0,
+  shooting: 0.07,
+  setPieces: 0.03,
   passing: 0.3,
   defending: 0.2,
   technical: 0.25,
@@ -138,6 +145,7 @@ export interface DevelopmentResult {
  * @param weights     Role DP category weights (from roles.json)
  * @param dpMult      Assistant-coach multiplier on the DP earned (`src/Domain/staff`); default 1
  * @param decayMult   Multiplier on the age decay (professionalism, `src/Domain/personality`); default 1
+ * @param areaMults   Growth multiplier per training area (staff, `src/Domain/staff`); never on the decay
  */
 export function applyDevelopment(
   player: RosterPlayer,
@@ -145,11 +153,12 @@ export function applyDevelopment(
   weights: RoleDPWeights,
   dpMult = 1,
   decayMult = 1,
+  areaMults: AreaMults = {},
 ): DevelopmentResult {
   const earnedDP = BASE_DP * performanceMultiplier(matchRating) * dpMult;
-  const netDP    = earnedDP * ageGrowthMultiplier(player.age) * GROWTH_DP_SCALE
-    - ageDecayPerMatch(player.age) * decayDpScale(player.age) * decayMult;
-  return distributeAndResolve(player, netDP, weights);
+  const growth   = earnedDP * ageGrowthMultiplier(player.age) * GROWTH_DP_SCALE;
+  const decay    = ageDecayPerMatch(player.age) * decayDpScale(player.age) * decayMult;
+  return distributeAndResolve(player, growth, decay, weights, areaMults);
 }
 
 /**
@@ -182,6 +191,7 @@ export function applyTrainingDevelopment(
   intensity: "light" | "normal" | "heavy",
   weights: RoleDPWeights,
   dpMult = 1,
+  areaMults: AreaMults = {},
 ): TrainingDevelopmentResult {
   const ageFactor = trainingAgeFactor(player.age);
   if (ageFactor === 0) {
@@ -190,15 +200,20 @@ export function applyTrainingDevelopment(
 
   const earnedDP = BASE_DP * TRAINING_DP_RATIO[intensity] * ageFactor * dpMult;
   const netDP    = earnedDP * ageGrowthMultiplier(player.age) * GROWTH_DP_SCALE;
-  const result   = distributeAndResolve(player, netDP, weights);
+  const result   = distributeAndResolve(player, netDP, 0, weights, areaMults);
   return { ...result, dpGained: netDP };
 }
 
-/** Shared core: split netDP across category weights, apply soft cap, resolve level-ups/downs. */
+/**
+ * Shared core: per category `(growth × area multiplier − decay) × weight`, split across the category's stats,
+ * soft cap, level-ups/downs. With every multiplier at 1 it is `(growth − decay) × weight`, the old net DP.
+ */
 function distributeAndResolve(
   player: RosterPlayer,
-  netDP: number,
-  weights: RoleDPWeights,
+  growth: number,
+  decay: number,
+  weights: Partial<RoleDPWeights>,
+  areaMults: AreaMults,
 ): DevelopmentResult {
   // Seed progress at the midpoint of each stat's current level cost so that players
   // without any tracked history aren't immediately at the cliff edge: any tiny decay
@@ -222,9 +237,9 @@ function distributeAndResolve(
   const statChanges: StatLevelChange[] = [];
 
   for (const [category, weight] of Object.entries(weights) as [DPCategory, number][]) {
-    const categoryDP = netDP * weight;
-    const statsInCategory = CATEGORY_STATS[category] ?? [];
-    if (statsInCategory.length === 0) continue;
+    const statsInCategory = CATEGORY_STATS[category];
+    if (!statsInCategory || weight === 0) continue;
+    const categoryDP = (growth * (areaMults[category] ?? 1) - decay) * weight;
     const dpPerStat = categoryDP / statsInCategory.length;
 
     for (const stat of statsInCategory) {
