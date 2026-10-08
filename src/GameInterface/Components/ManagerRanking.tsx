@@ -12,6 +12,7 @@ import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { formatFee } from "@/Domain/money";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
+import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
   rank: number;
@@ -112,6 +113,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
           <StatsHead>{t("statsScreen.club")}</StatsHead>
           <StatsHead align="center">{t("statsScreen.managers.points")}</StatsHead>
           <StatsHead align="center">{t("statsScreen.managers.titles")}</StatsHead>
+          <StatsHead align="center">{t("statsScreen.managers.awards")}</StatsHead>
         </>}
       >
         {rows.map((m) => {
@@ -120,7 +122,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
             <StatsRow
               key={m.id}
               highlight={m.isPlayer}
-              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
+              onActivate={m.titles.length > 0 || (m.clubs?.length ?? 0) > 0 || (m.awards?.length ?? 0) > 0 ? () => setOpen(isOpen ? null : m.id) : undefined}
               expanded={isOpen}
             >
               <RankCell rank={m.rank} />
@@ -135,9 +137,10 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
               </ClubCell>
               <NumberCell strong>{m.points}</NumberCell>
               <NumberCell>{m.titles.length}</NumberCell>
+              <NumberCell>{m.awards?.length ? m.awards.length : ""}</NumberCell>
             </StatsRow>,
             isOpen && (
-              <StatsDetailRow key={`${m.id}-titles`} colSpan={6}>
+              <StatsDetailRow key={`${m.id}-titles`} colSpan={7}>
                 <div className="flex items-center gap-3 mb-3">
                   <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} />
                   <div className="min-w-0">
@@ -169,6 +172,17 @@ export function ManagerRanking({ saveId, leagues, refreshKey }: { saveId: string
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+                {m.awards && m.awards.length > 0 && (
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {[...m.awards].reverse().map((a, i) => (
+                      <AwardBadge
+                        key={i}
+                        kind={a.kind}
+                        title={a.kind === "world_manager" ? String(a.year ?? a.season) : `${competitionName(a.competition, leagues, i18n.language)} ${a.season}`}
+                      />
+                    ))}
                   </div>
                 )}
                 <ul className="m-0 p-0 list-none space-y-1">
