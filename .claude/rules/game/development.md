@@ -276,7 +276,8 @@ Desde a 4.5 os atributos têm uma casa decimal e evoluem em passos de 0,1 (um po
   o declínio dos 30–34. Sem ela, o mesmo DP subia ~2× e caía ~3× mais rápido.
   - `GROWTH_DP_SCALE = 0,43` multiplica o DP ganho (partida e treino).
   - `decayDpScale(idade)` multiplica o declínio por idade: 28–29 → 1,5 (a zona morta também escondia o pouco
-    crescimento dessas idades), 30–34 → 0,35, 35+ → 0,7. As tabelas de idade não mudaram.
+    crescimento dessas idades), 30–34 → 0,35, 35+ → 0,7. As tabelas de idade não mudaram. (Recalibrado na 4.7 para
+    28–29 → 1,0 e 30–34 → 0,39: ver "Áreas de treino".)
 - **Base:** o progresso da base nunca é zerado (sem zona morta), então `developYouthSeason` divide a
   `GROWTH_DP_SCALE` de volta: um jovem de 16 anos segue em +0,50 / +0,85 / +1,15 acumulado em 3 temporadas (antes
   +0,46 / +0,92 / +1,15).
@@ -293,3 +294,69 @@ partida; Δ da média dos 13 atributos, média de três perfis (meia com tudo 5,
 Por perfil os números antigos andam em múltiplos de 1/13 (zona morta: o atacante tem Δ 0 aos 27 e aos 31), por isso a
 calibração é pela média. Sem virada (idade fixa, progresso carregado; não é o que o jogo faz) o ritmo novo fica em
 cerca da metade do antigo no crescimento.
+
+---
+
+## Áreas de treino (4.7)
+
+Etapa 31a (comissão técnica, `docs/superpowers/specs/2026-10-08-coaching-staff-design.md`, `.claude/rules/game/staff.md`).
+As categorias de DP passam a 7 (`DP_CATEGORIES`, `src/GameEngine/PlayerDevelopment.ts`), cada uma uma área de treino:
+
+| Área | Categoria | Atributos |
+|---|---|---|
+| Goleiros | `goalkeeping` | reflex, jump, pressing |
+| Defesa | `defending` | tackling, pressing |
+| Ataque | `shooting` | finishing |
+| Técnica | `technical` | dribbling |
+| Tática | `passing` | passing, vision |
+| Físico | `physical` | speed, acceleration, strength, stamina |
+| Bola parada | `setPieces` | heading |
+
+- **Pesos pela posição natural:** `dpWeightsFor(player)` (`src/Domain/development/dpWeights.ts`) lê
+  `roles.json[preferredRole(player)].dpWeights`. Antes partida, treino e base liam `positions[0]`, que no mundo é a
+  linha ("Defender"…): todo jogador de linha caía em `DEFAULT_DP_WEIGHTS`. Muda a distribuição por atributo (cada um
+  segue o próprio papel), não o total de DP.
+- **Multiplicador de área** (`areaMultsOf(squad)`, `src/Domain/staff/staff.ts`): só no crescimento da categoria
+  (partida, treino, base), nunca no declínio por idade: `DP(categoria) = (crescimento × multÁrea − declínio) × peso`.
+  3★ = 1 (neutro), 1★ ×0,7, 5★ ×1,25, área vaga ×0,4. A IA usa as estrelas implícitas do tier.
+- **Pesos do goleiro:** `goalkeeping 0,31 · passing 0,12 · technical 0,27 · physical 0,30` (os de antes com
+  `defending` trocado por `goalkeeping`). A spec previa `goalkeeping 0,50`: o overall do goleiro é quase só reflex e
+  jump, então com 0,50 ele crescia 1,7–1,8× o overall de um jogador de linha (meta 0,6–1,4×).
+- **`decayDpScale` recalibrado:** 28–29 1,5 → **1,0**, 30–34 0,35 → **0,39** (35+ 0,7 igual). Físico divide o DP
+  entre 4 atributos e o cabeceio ganhou área própria: cada atributo recebe uma parte menor e a semente de meio passo
+  (progresso zerado na virada) esconde mais da variação. Sem o ajuste, 27 anos saía −29% e 31 −21% do ritmo de antes.
+
+Medição (`bun scripts/development-pace.ts [--areas <1..5|vaga>]`, caso "realista"; "antes" =
+`--module`/`--roles` com as cópias do commit anterior). Δ em 3 temporadas; "linha" = média dos três perfis de linha.
+
+| Média dos 13 atributos (linha) | 18 | 21 | 24 | 27 | 31 | 33 |
+|---|---|---|---|---|---|---|
+| Antes (5 categorias) | 0,385 | 0,308 | 0,256 | 0,051 | −0,121 | −0,382 |
+| 3★ (neutro) | 0,390 | 0,313 | 0,251 | 0,049 | −0,126 | −0,377 |
+| Diferença | +1,3% | +1,6% | −2,0% | −3,9% | +4,1% | −1,3% |
+
+| Áreas | 18 | 21 | 24 | 27 | 31 | 33 | base 16 anos (3 temporadas) |
+|---|---|---|---|---|---|---|---|
+| Vagas (×0,4) | 0,144 | 0,095 | 0,069 | −0,008 | −0,138 | −0,377 | 0,215 / 0,438 / 0,585 |
+| 1★ (×0,7) | 0,310 | 0,210 | 0,154 | 0,026 | −0,138 | −0,377 | 0,369 / 0,677 / 0,923 |
+| 2★ | 0,346 | 0,246 | 0,187 | 0,031 | −0,133 | −0,377 | 0,454 / 0,769 / 1,062 |
+| 3★ | 0,390 | 0,313 | 0,251 | 0,049 | −0,126 | −0,377 | 0,500 / 0,885 / 1,192 |
+| 4★ | 0,428 | 0,341 | 0,279 | 0,064 | −0,123 | −0,377 | 0,554 / 0,954 / 1,262 |
+| 5★ (×1,25) | 0,469 | 0,372 | 0,300 | 0,074 | −0,123 | −0,377 | 0,608 / 1,038 / 1,362 |
+
+O DP da área é exatamente ×0,4 / ×1,25 (teste); a variação realizada fica em 27–37% (vagas) e ×1,20 (5★) do
+crescimento de 3★ aos 18–24, porque a virada zera o progresso e a parte menor de cada atributo some na semente de meio
+passo. Na base (progresso nunca zerado) as vagas dão 43–49%. O declínio aos 33 é idêntico em todas as linhas (a área
+nunca toca o declínio); aos 31 o pouco crescimento que resta é o que muda.
+
+Goleiro (reflex 5, jump 5, pressing 5, passing 4, o resto 3), 3★:
+
+| Goleiro | 18 | 21 | 24 | 27 | 31 | 33 |
+|---|---|---|---|---|---|---|
+| Δ reflex (= Δ jump) | +0,6 | +0,4 | +0,4 | +0,1 | −0,2 | −0,5 |
+| Δ overall | 0,598 | 0,399 | 0,379 | 0,100 | −0,199 | −0,498 |
+| Δ overall da linha | 0,466 | 0,364 | 0,292 | 0,047 | −0,142 | −0,406 |
+| Goleiro / linha | 1,28× | 1,10× | 1,30× | | | |
+| Antes (5 categorias): Δ overall | 0,145 | 0,101 | 0,101 | 0 | −0,038 | −0,091 |
+
+Antes o goleiro não evoluía reflex nem jump (Δ 0 em toda idade) e o overall dele quase não andava (0,31× o da linha).

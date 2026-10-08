@@ -62,8 +62,8 @@ test("decline steps down by 0.1 and keeps one decimal", () => {
 });
 
 test("age decay scale by band (pace calibration)", () => {
-  expect(decayDpScale(28)).toBe(1.5);
-  expect(decayDpScale(30)).toBe(0.35);
-  expect(decayDpScale(34)).toBe(0.35);
+  expect(decayDpScale(28)).toBe(1.0);
+  expect(decayDpScale(30)).toBe(0.39);
+  expect(decayDpScale(34)).toBe(0.39);
   expect(decayDpScale(35)).toBe(0.7);
 });

@@ -48,11 +48,13 @@ soma a sua parte.
 Regra: o peso antigo de `shooting` se divide entre `shooting` e `setPieces` pelo perfil (atacante fica com mais
 finalização; zagueiro ganha cabeceio); `physical` mantém o peso (os 4 atributos dividem o mesmo DP: speed e
 acceleration crescem à metade do ritmo por atributo de antes, strength e stamina passam a crescer); o goleiro ganha
-`goalkeeping` dominante e perde `defending` (o pressing dele vem pela área de Goleiros).
+`goalkeeping` dominante e perde `defending` (o pressing dele vem pela área de Goleiros). O goleiro ficou com os pesos
+de antes trocando `defending` por `goalkeeping` (0,31); os 0,50 do desenho fizeram o overall dele crescer 1,7–1,8× o
+de um jogador de linha (medição da Tarefa 6, abaixo).
 
 | Papel | goalkeeping | shooting | setPieces | passing | defending | technical | physical |
 |---|---|---|---|---|---|---|---|
-| GK | 0,50 | 0 | 0 | 0,15 | 0 | 0,05 | 0,30 |
+| GK | 0,31 | 0 | 0 | 0,12 | 0 | 0,27 | 0,30 |
 | CB | 0 | 0 | 0,10 | 0,10 | 0,45 | 0,20 | 0,15 |
 | LB / RB | 0 | 0,03 | 0,02 | 0,20 | 0,30 | 0,20 | 0,25 |
 | LWB / RWB | 0 | 0,03 | 0,02 | 0,25 | 0,20 | 0,20 | 0,30 |
@@ -72,8 +74,7 @@ jogadores), então todo jogador de linha cai em `DEFAULT_DP_WEIGHTS` e só o gol
 corrigir, as categorias novas nunca chegariam ao zagueiro (cabeceio) nem ao atacante. Passa a existir um único
 `dpWeightsFor(player)` (`PlayerDevelopment.ts`): `roles[preferredRole(player)].dpWeights` (a posição natural,
 `positions.md`; o goleiro continua GK), com `DEFAULT_DP_WEIGHTS` só se o papel não tiver pesos. Isso muda a
-distribuição por atributo dos jogadores de linha (passam a seguir o próprio papel), não o total de DP — ver Ponto
-aberto 1.
+distribuição por atributo dos jogadores de linha (passam a seguir o próprio papel), não o total de DP — Decidido 1.
 
 ## 2. Funções, estrelas e efeitos
 
@@ -177,8 +178,8 @@ ninguém é demitido, só não se contrata mais).
   |---|---|---|---|---|---|---|---|---|---|
   | Parcela da curva (`× WAGE_SHARE` 0,5 de hoje) | 1 | 1 | 1 | 0,7 | 0,4 | 0,4 | 0,4 | 0,3 | 0,1 |
 
-  Com essas parcelas a folha inicial de um clube MEDIUM (10 profissionais) fica em ~1,7× a de hoje (3) — ver Ponto
-  aberto 2. A medição da Tarefa 15 imprime folha/receita por tier; meta: folha da comissão ≤ 4% da receita anual.
+  Com essas parcelas a folha inicial de um clube MEDIUM (10 profissionais) fica em ~1,7× a de hoje (3) — Decidido 2.
+  A medição da Tarefa 15 imprime folha/receita por tier; meta: folha da comissão ≤ 4% da receita anual.
 - **Demitir:** multa = `round(0,5 × wage × semanas restantes)` (dias até `until` / 7, arredondado para cima), uma
   linha `staff` com `ref.stage = "severance"` no extrato (`recordMoney`, a soma = saldo continua). O profissional volta
   à lista de livres.
@@ -294,16 +295,41 @@ Aceite:
 | `src/GameInterface/StaffScreen.tsx`, `Staff/*`, `Transfers/StaffPoolTab.tsx`, `TransfersScreen.tsx` | Telas |
 | `scripts/development-pace.ts`, `scripts/staff-bill.ts` | Medições |
 
-## Pontos abertos
+## Decididos (2026-10-08, pelo usuário)
 
-1. **Pesos por papel nunca valeram para jogadores de linha.** `positions[0]` é a linha no mundo, então hoje todo
+1. **Decidido — pesos pela posição natural (aprovado).** `positions[0]` é a linha no mundo, então hoje todo
    jogador de linha usa `DEFAULT_DP_WEIGHTS`. O plano passa a usar a posição natural (`preferredRole`); sem isso as
    categorias novas (cabeceio do zagueiro, finalização do atacante) não teriam efeito. Isso muda a distribuição por
    atributo do mundo inteiro (o total de DP e o ritmo médio ficam iguais, medido na Tarefa 6). Se o usuário preferir
-   não mexer, a alternativa é chavear `roles.json` também pela linha ("Defender" etc.) com um peso por linha.
-2. **Custo da comissão.** A decisão manda usar a curva atual (`staffWeeklyWage`); com 10 profissionais em vez de 3, a
+   não mexer, a alternativa era chavear `roles.json` também pela linha ("Defender" etc.) com um peso por linha. O
+   usuário aprovou `dpWeightsFor` → `preferredRole`.
+2. **Decidido — salário com parcela por função e teto de ~4% da receita (aprovado).** A decisão manda usar a curva atual (`staffWeeklyWage`); com 10 profissionais em vez de 3, a
    curva pura triplicaria a folha da comissão (~2,3% → ~7,7% da receita num clube como o Fulham) e comeria metade
    da margem de 15% do clube. O desenho mantém a curva e acrescenta uma parcela por função (`WAGE_ROLE_SHARE`) para a
-   folha inicial ficar em ~1,7× a de hoje. Os valores finais saem da medição (`scripts/staff-bill.ts`).
-3. **`jump` de jogador de linha** continua sem evoluir (só a área de Goleiros o treina, e só o GK tem peso nela); ele
-   pesa nas disputas aéreas (`aerial.md`), mas é baixo no mundo (~0,9/10) e não fazia parte do pedido.
+   folha inicial ficar em ~1,7× a de hoje. Os valores finais saem da medição (`scripts/staff-bill.ts`). O usuário
+   aprovou `WAGE_ROLE_SHARE` com a meta de folha da comissão ≤ ~4% da receita anual.
+3. **Decidido — `jump` de jogador de linha sem evoluir (aceito como limitação).** Só a área de Goleiros o treina, e
+   só o GK tem peso nela; ele pesa nas disputas aéreas (`aerial.md`), mas é baixo no mundo (~0,9/10) e não fazia
+   parte do pedido.
+
+## Medição do ritmo (Tarefa 6, 2026-10-08)
+
+`bun scripts/development-pace.ts [--areas <1..5|vaga>]`, caso "realista" (tabelas completas em
+`.claude/rules/game/development.md` → "Áreas de treino (4.7)"). Média dos 13 atributos, perfis de linha:
+
+| | 18 | 21 | 24 | 27 | 31 | 33 |
+|---|---|---|---|---|---|---|
+| Antes | 0,385 | 0,308 | 0,256 | 0,051 | −0,121 | −0,382 |
+| 3★ (final) | 0,390 | 0,313 | 0,251 | 0,049 | −0,126 | −0,377 |
+| Vagas | 0,144 | 0,095 | 0,069 | −0,008 | −0,138 | −0,377 |
+| 5★ | 0,469 | 0,372 | 0,300 | 0,074 | −0,123 | −0,377 |
+
+- Aceite 1: 3★ a −3,9%..+4,1% em todas as idades. Exigiu recalibrar `decayDpScale` (28–29 1,5 → 1,0; 30–34 0,35 →
+  0,39): com os pesos da spec e a escala antiga, 27 anos saía −29% e 31 −21% (Físico em 4 atributos e o cabeceio à
+  parte deixam cada atributo com uma parte menor, que a semente de meio passo esconde). Os multiplicadores de área não
+  mudaram (3★ = 1 exato, teste).
+- Aceite 2: o DP é exatamente ×0,4 / ×1,25; a variação realizada aos 18–24 fica em 27–37% (vagas) e ×1,20 (5★) por
+  causa da zona morta da virada; na base (sem virada) as vagas dão 43–49%. Declínio igual (33: −0,377 em todas).
+- Aceite 3: reflex e jump do goleiro evoluem (+0,6 aos 18); overall do goleiro / linha 1,28× / 1,10× / 1,30× aos
+  18/21/24 e cai a partir dos 31 — com o peso de goleiros da spec (0,50) dava 1,84× / 1,81× / 1,71×, por isso o goleiro
+  ficou com `goalkeeping 0,31 · passing 0,12 · technical 0,27 · physical 0,30`.

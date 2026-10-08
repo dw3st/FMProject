@@ -2,7 +2,7 @@
   "GK":  {
     "mainRole": "GK",
     "position": { "x": 50, "y": 95 },
-    "dpWeights": { "goalkeeping": 0.50, "shooting": 0.00, "setPieces": 0.00, "passing": 0.15, "defending": 0.00, "technical": 0.05, "physical": 0.30 },
+    "dpWeights": { "goalkeeping": 0.31, "shooting": 0.00, "setPieces": 0.00, "passing": 0.12, "defending": 0.00, "technical": 0.27, "physical": 0.30 },
     "attrWeights": {
       "passing": 0.6, "vision": 0.0, "finishing": 0.0, "dribbling": 0.0,
       "speed": 0.0, "acceleration": 0.0, "tackling": 0.0, "pressing": 0.0,

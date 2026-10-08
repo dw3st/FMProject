@@ -12,8 +12,10 @@ describe("dpWeights", () => {
     for (const [role, v] of Object.entries(ROLES)) {
       expect(Object.keys(v.dpWeights).sort()).toEqual([...DP_CATEGORIES].sort());
       expect(Object.values(v.dpWeights).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 9);
-      if (role === "GK") expect(v.dpWeights.goalkeeping).toBeGreaterThan(0.4);
-      else expect(v.dpWeights.goalkeeping).toBe(0);
+      // The goalkeeper's own area leads (`development.md` → "Áreas de treino": 0.31, calibrated by the pace script).
+      if (role === "GK") {
+        for (const [k, w] of Object.entries(v.dpWeights)) if (k !== "goalkeeping") expect(v.dpWeights.goalkeeping!).toBeGreaterThan(w);
+      } else expect(v.dpWeights.goalkeeping).toBe(0);
     }
   });
   test("weights follow the natural position, not the line in positions[0]", () => {
@@ -22,6 +24,6 @@ describe("dpWeights", () => {
     expect(preferredRole(st)).toBe("ST");
     expect(dpWeightsFor(st) as Record<string, number>).toEqual(ROLES.ST!.dpWeights);
     const gk = { ...st, id: "g", positions: ["GK"], stats: { ...st.stats, reflex: 7, jump: 6, passing: 4 } } as unknown as RosterPlayer;
-    expect(dpWeightsFor(gk).goalkeeping).toBeGreaterThan(0.4);
+    expect(dpWeightsFor(gk).goalkeeping).toBeGreaterThan(0.3);
   });
 });
