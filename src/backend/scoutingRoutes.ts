@@ -163,7 +163,7 @@ async function scoutingView(saveId: string, state: ScoutingState) {
     date,
     ownCountry,
     ownContinent: continentOf(ownCountry) ?? null,
-    maxFieldScouts: S.MAX_FIELD_SCOUTS,
+    maxFieldScouts: STAFF.LIMITS.fieldScout,
     maxShortlist: S.MAX_SHORTLIST,
     weeks: { region: S.REGION_WEEKS, continent: S.CONTINENT_WEEKS, youth: S.YOUTH_WEEKS, player: S.PLAYER_MAX_WEEKS },
     scouts: scouts.map((s) => ({ ...s, busy: state.missions.some((m) => m.scoutId === s.id) })),

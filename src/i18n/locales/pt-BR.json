@@ -344,7 +344,7 @@
       "subtitle": "{{count}} de {{max}} contratados. Cada um conduz uma missão.",
       "fieldScout": "Olheiro de campo",
       "tab": "Olheiros",
-      "fireConfirmBody": "A missão dele é cancelada."
+      "fireConfirmBody": "Ele sai com multa de metade do contrato restante; a missão dele é cancelada."
     }
   },
   "comingSoon": {
@@ -2959,7 +2959,8 @@
     "cancelMission": "Cancelar missão",
     "idle": "Sem missão",
     "newMission": "Nova missão",
-    "fieldScoutsHint": "Contrate até {{max}} olheiros de campo na Equipe técnica para fazer mais missões.",
+    "fieldScoutsHint": "Até {{max}} olheiros de campo fazem mais missões; eles vêm dos profissionais livres em Transferências.",
+    "findScouts": "Buscar olheiros",
     "targetLabel": "Alvo",
     "country": "País",
     "pickCountry": "Escolha um país",

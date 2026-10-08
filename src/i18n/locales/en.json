@@ -344,7 +344,7 @@
       "subtitle": "{{count}} of {{max}} hired. Each one leads one scouting mission.",
       "fieldScout": "Field scout",
       "tab": "Scouts",
-      "fireConfirmBody": "His mission is cancelled."
+      "fireConfirmBody": "He leaves with a severance of half his remaining contract; his mission is cancelled."
     }
   },
   "comingSoon": {
@@ -2959,7 +2959,8 @@
     "cancelMission": "Cancel mission",
     "idle": "No mission",
     "newMission": "New mission",
-    "fieldScoutsHint": "Hire up to {{max}} field scouts in Technical staff to run more missions.",
+    "fieldScoutsHint": "Up to {{max}} field scouts run more missions; they come from the free staff in Transfers.",
+    "findScouts": "Find scouts",
     "targetLabel": "Target",
     "country": "Country",
     "pickCountry": "Choose a country",

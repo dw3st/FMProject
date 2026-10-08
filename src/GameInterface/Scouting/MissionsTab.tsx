@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
+import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Chip } from "@/GameInterface/ui/Chip";
@@ -32,11 +33,28 @@ export function MissionsTab({
   const { t, i18n } = useTranslation();
   const [newFor, setNewFor] = useState<ScoutingScout | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dismissing, setDismissing] = useState<ScoutingScout | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function cancel(id: string) {
     const r = await scoutingCall(`/api/saves/${saveId}/scouting/missions/${id}`, "DELETE");
     if (r.ok) onChanged(r.json as ScoutingData);
     else setError(t("warnings.errors.loadFailed"));
+  }
+
+  // Field scouts are coaching staff (`.claude/rules/game/staff.md`): dismissed by the general fire
+  // route (severance, back to the free pool; his mission is cancelled).
+  async function dismiss() {
+    if (!dismissing) return;
+    setBusy(true);
+    try {
+      const r = await scoutingCall(`/api/saves/${saveId}/staff/fire`, "POST", { memberId: dismissing.id });
+      if (r.ok) onChanged();
+      else setError(t("warnings.errors.loadFailed"));
+    } finally {
+      setBusy(false);
+      setDismissing(null);
+    }
   }
 
   return (
@@ -88,11 +106,34 @@ export function MissionsTab({
                   </Button>
                 </>
               )}
+              {!scout.chief && (
+                <Button variant="danger" flush onClick={() => setDismissing(scout)} disabled={!data.employed} className="self-start">
+                  {t("staff.fire")}
+                </Button>
+              )}
             </div>
           );
         })}
       </div>
-      <p className="text-sm text-muted-foreground m-0">{t("scouting.fieldScoutsHint", { max: data.maxFieldScouts })}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground m-0">{t("scouting.fieldScoutsHint", { max: data.maxFieldScouts })}</p>
+        <Button
+          variant="secondary"
+          disabled={!data.employed || data.scouts.filter((x) => !x.chief).length >= data.maxFieldScouts}
+          onClick={() => { window.location.href = "/transfers?tab=staff&role=fieldScout"; }}
+        >
+          {t("scouting.findScouts")}
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={dismissing !== null}
+        title={t("staff.fireConfirmTitle", { name: dismissing?.name ?? "" })}
+        body={t("staff.scouts.fireConfirmBody")}
+        confirmLabel={t("staff.fire")}
+        onConfirm={() => void dismiss()}
+        onClose={() => setDismissing(null)}
+        busy={busy}
+      />
       <NewMissionModal
         saveId={saveId}
         scout={newFor}
