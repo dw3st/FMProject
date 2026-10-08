@@ -23,6 +23,16 @@ describe("toDisplayPlayer — scouting fields", () => {
     }
   });
 
+  test("awarded: any award on a history row, even for an unknown player", () => {
+    expect(toDisplayPlayer(seenWith(0, 2), "Club").awarded).toBeUndefined();
+    const row = { season: "2026-27", squadId: "s", clubName: "C", league: "premier_league", apps: 30, goals: 0, assists: 0,
+      avgRating: 7, cupApps: 0, cupGoals: 0, contApps: 0, contGoals: 0, yellowCards: 0, redCards: 0, injuries: 0, daysInjured: 0, titles: [] };
+    const plain = { ...seenWith(0, 2), history: [row] } as RosterPlayer;
+    expect(toDisplayPlayer(plain, "Club").awarded).toBeUndefined();
+    const won = { ...seenWith(0, 2), history: [{ ...row, awards: [{ kind: "team_of_season" as const, league: "premier_league" }] }] } as RosterPlayer;
+    expect(toDisplayPlayer(won, "Club").awarded).toBe(true);
+  });
+
   test("attributes hidden below 20, exact noise at 100", () => {
     expect(toDisplayPlayer(seenWith(19.9, 1.6), "Club").hiddenAttrs).toBe(true);
     expect(toDisplayPlayer(seenWith(20, 1.5), "Club").hiddenAttrs).toBeUndefined();

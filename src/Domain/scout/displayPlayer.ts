@@ -21,6 +21,8 @@ export interface DisplayPlayer {
   personality?: PersonalityView;
   /** Reborn academy star (own badge). */
   reborn?: boolean;
+  /** Has a season award on a history row (`.claude/rules/game/awards.md`): public, any knowledge. */
+  awarded?: boolean;
   /** On loan here (`.claude/rules/game/negotiation.md`): parent club name and return date. */
   loan?: { fromClubName: string; until: string };
   squadId?: string;
@@ -186,6 +188,7 @@ export function toDisplayPlayer(
     preferredFoot: player.preferredFoot,
     injury: injuryInfo,
     ...(player.reborn ? { reborn: true } : {}),
+    ...(player.history?.some((r) => r.awards?.length) ? { awarded: true } : {}),
     personality: personalityViewOf(player),
     ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
     ...scoutFields(player, avg, options?.wageFactor ?? 1),
