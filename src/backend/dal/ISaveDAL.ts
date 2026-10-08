@@ -1,4 +1,5 @@
 import type { SaveMeta } from "@/backend/SaveService";
+import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -37,6 +38,11 @@ export interface ISaveDAL {
   // ── Free agents ───────────────────────────────────────────────────────────
   readFreeAgents(saveId: string): Promise<FreeAgent[]>;
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void>;
+
+  // ── Coaching-staff free pool (`.claude/rules/game/staff.md`) ───────────────
+  /** `null` when the save has no pool yet. */
+  readStaffPool(saveId: string): Promise<StaffPool | null>;
+  writeStaffPool(saveId: string, pool: StaffPool): Promise<void>;
 
   // ── Scouting (human manager, `.claude/rules/game/scouting.md`) ─────────────
   /** `null` when nothing was ever observed. */

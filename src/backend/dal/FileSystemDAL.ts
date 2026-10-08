@@ -1,5 +1,6 @@
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
+import type { StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import type { ScoutingState } from "@/types/scoutingTypes";
 import type { ManagerRecord } from "@/types/managerTypes";
@@ -26,6 +27,7 @@ function seasonArchivePath(saveId: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/season.json`;
 }
 function freeAgentsPath(saveId: string) { return `${SAVES_DIR}/${saveId}/freeAgents.json`; }
+function staffPoolPath(saveId: string) { return `${SAVES_DIR}/${saveId}/staffPool.json`; }
 function retiredPath(saveId: string) { return `${SAVES_DIR}/${saveId}/retired.json`; }
 function scoutingPath(saveId: string) { return `${SAVES_DIR}/${saveId}/scouting.json`; }
 function clubHistoryPath(saveId: string, squadId: string) {
@@ -131,6 +133,17 @@ export class FileSystemDAL implements ISaveDAL {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
     await Bun.write(freeAgentsPath(saveId), JSON.stringify(agents));
     bumpSaveDataVersion(saveId);
+  }
+
+  async readStaffPool(saveId: string): Promise<StaffPool | null> {
+    const file = Bun.file(staffPoolPath(saveId));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<StaffPool>;
+  }
+
+  async writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
+    await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
+    await Bun.write(staffPoolPath(saveId), JSON.stringify(pool));
   }
 
   async readScouting(saveId: string): Promise<ScoutingState | null> {

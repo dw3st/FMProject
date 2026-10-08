@@ -9,6 +9,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
+import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
 import { emptyScoutingState, type ScoutingState } from "@/types/scoutingTypes";
 import type { CountryWeight, ManagerRecord } from "@/types/managerTypes";
@@ -221,6 +222,21 @@ export class SaveService {
 
   writeFreeAgents(saveId: string, agents: FreeAgent[]): Promise<void> {
     return this.dal.writeFreeAgents(saveId, agents);
+  }
+
+  // ── Coaching-staff pool (`.claude/rules/game/staff.md`) ─────────────────────
+
+  /** The free coaching-staff pool; generated (season = the year of `date`) and written when missing. */
+  async getStaffPool(saveId: string, date: string): Promise<StaffPool> {
+    const pool = await this.dal.readStaffPool(saveId);
+    if (pool) return pool;
+    const fresh = generatePool(saveId, date.slice(0, 4), date);
+    await this.dal.writeStaffPool(saveId, fresh);
+    return fresh;
+  }
+
+  writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
+    return this.dal.writeStaffPool(saveId, pool);
   }
 
   // ── Manager ranking ────────────────────────────────────────────────────────
