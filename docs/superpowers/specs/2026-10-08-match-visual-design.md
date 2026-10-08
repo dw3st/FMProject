@@ -250,12 +250,16 @@ bandeirinhas pulam para o alvo.
 Torcida animada (ola, cantos), som, câmera, VAR (Etapa 39), reclamação do técnico (Etapa 39), árbitro com
 personalidade, quarto árbitro, placas de publicidade, efeito da torcida no resultado.
 
-## Pontos abertos
+## Pontos abertos — decididos (2026-10-08)
 
-1. **Espaço para a faixa:** com 10% de encolhimento, a sobra vertical é ~3,7 jardas por lado; com 1,5 de recuo
-   para bandeirinhas e técnicos, a arquibancada das laterais fica com ~2,2 jardas (≈ 15–25 px num canvas de
-   1100 px). Se ficar fina demais para ler a ocupação, subir para 12% (`PITCH_SHRINK = 0,88`) — decisão na Tarefa 8
-   olhando a tela, registrada aqui.
-2. **Clássico pelo líder em previsões:** o gráfico de público usa o líder de hoje para jogos futuros (aproximação);
-   a bilheteria do dia e a prévia usam o líder do dia do jogo.
-3. **Técnico da IA sem registro** (save sem `managers.json`): silhueta na cor do clube.
+Aceitos pelo usuário com a recomendação desta spec:
+
+1. **Decidido — espaço para a faixa:** campo encolhido 10% (`PITCH_SHRINK = 0,9`). Se na Tarefa 8 a
+   arquibancada lateral ficar fina demais para ler a ocupação (menos de ~3 fileiras), sobe para 12%
+   (`PITCH_SHRINK = 0,88`), decisão registrada aqui olhando a tela.
+2. **Decidido — clássico pelo líder em previsões:** o gráfico de público usa o líder de hoje para jogos futuros
+   (aproximação); a bilheteria do dia e a prévia usam o líder do dia do jogo.
+3. **Decidido — técnico da IA sem registro** (save sem `managers.json`): silhueta na cor do clube.
+4. **Decidido — fatores de importância:** clássico ×1,20, mata-mata de copa ×1,15, mata-mata continental ×1,25,
+   produto com teto ×1,30; fase de grupos continental sem aumento.
+5. **Decidido — `/test`:** os toggles "Estádio" e "Árbitros" começam desligados.
