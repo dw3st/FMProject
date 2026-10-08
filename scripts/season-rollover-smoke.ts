@@ -53,7 +53,7 @@ const { applyBroadcasting } = await import("@/backend/FinancialService");
 const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { pyramidByLeague, pyramidLeagueSlugs, tierOfLeague } = await import("@/Domain/season/countryRollover");
 const { computeAdvanceDayMoney } = await import("@/Domain/advanceDay/financial");
-const { addDays, addOneDay } = await import("@/Domain/dates");
+const { addDays, addOneDay, daysBetween } = await import("@/Domain/dates");
 const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/aiFinance/seasonReaction");
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 const { continentalGoodClubsThisSeason } = await import("@/backend/continentalWorld");
@@ -289,8 +289,13 @@ try {
     // Scouting reports are a default-off inbox topic (`.claude/rules/game/responsibilities.md`): the
     // smoke first checks no report message lands, then switches the topic on for the checks below.
     reportsOn: false, reportsHiddenOk: false, reportsLeaked: 0,
+    // Country knowledge (4.9): the chief's knowledge of the foreign country before its mission, and the
+    // last Monday the mission worked (from the stored entry).
+    chiefId: "", foreign: "", chiefKBefore: -1, chiefLast: "",
   };
   const { apiRoutes: scoutApi } = await import("@/backend/routes");
+  const { countryKnowledgeOf, baseCountryKnowledge } = await import("@/Domain/scouting/countryKnowledge");
+  const { headOf } = await import("@/Domain/staff/staff");
   const scoutSession = instrLogin("smoke-reborn@test.local").session;
   const scoutCall = async (route: string, method: string, body?: unknown, params: Record<string, string> = {}) => {
     const handler = (scoutApi as unknown as Record<string, (r: Request & { params: Record<string, string> }) => Promise<Response>>)[route]!;
@@ -336,6 +341,12 @@ try {
       .slice(0, 5);
     for (const { p, sq } of ending) await scoutCall("/api/saves/:saveId/scouting/shortlist", "POST", { playerId: p.id, squadId: sq.id });
     scoutTrack.setupOk = hired.length === 2 && statuses.every((s) => s === 200) && ending.length > 0;
+    const chiefNow = headOf((await plain().getSquadById(saveId, playerSquadId))!, "scout");
+    if (chiefNow) {
+      scoutTrack.chiefId = chiefNow.id;
+      scoutTrack.foreign = foreign;
+      scoutTrack.chiefKBefore = countryKnowledgeOf(chiefNow, foreign, today);
+    }
     console.log(`Olheiros: field scouts ${hired.length}, missions ${statuses.join("/")}, shortlist ${ending.length}, target ${star.p.name}\n`);
   }
 
@@ -778,6 +789,11 @@ try {
         });
       }
       scoutTrack.reports = Math.max(scoutTrack.reports, st.reports.length);
+      if (scoutTrack.chiefId && (await plain().getMeta(saveId))?.clubId === playerSquadId) {
+        const chiefM = (await plain().getSquadById(saveId, playerSquadId))?.staff?.members.find((m) => m.id === scoutTrack.chiefId);
+        const last = chiefM?.countryKnowledge?.[scoutTrack.foreign]?.last;
+        if (last && last > scoutTrack.chiefLast) scoutTrack.chiefLast = last;
+      }
       if (scoutMonday) {
         scoutTrack.mondays++;
         const seasons = await plain().listLedgerSeasons(saveId);
@@ -2473,6 +2489,34 @@ try {
     check(scoutTrack.prospectSigned && scoutTrack.prospectChecks.length === 0, `olheiros: a prospect signed into the academy with contract and compensation (${scoutTrack.prospectChecks.join(", ") || (scoutTrack.prospectSigned ? "ok" : "none signed")})`);
     const aiScouting = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.members ?? []).some((m) => m.role === "fieldScout"));
     check(aiScouting.length === 0, `olheiros: no AI club stores field scouts (${aiScouting.length})`);
+    // Country knowledge (4.9, `.claude/rules/game/scouting.md` → "Conhecimento por país").
+    {
+      const endDate = (await plain().getMeta(saveId))!.currentDate!;
+      const own = await plain().getSquadById(saveId, playerSquadId);
+      const scouts = (own?.staff?.members ?? []).filter((m) => m.role === "scout" || m.role === "fieldScout");
+      const chiefM = scouts.find((m) => m.id === scoutTrack.chiefId);
+      const entry = chiefM?.countryKnowledge?.[scoutTrack.foreign];
+      const after = chiefM ? countryKnowledgeOf(chiefM, scoutTrack.foreign, scoutTrack.chiefLast || endDate) : -1;
+      check(!!chiefM && !!entry && after > scoutTrack.chiefKBefore && new Date(`${scoutTrack.chiefLast}T12:00:00Z`).getUTCDay() === 1
+        && entry.last === scoutTrack.chiefLast,
+        `olheiros: the chief's knowledge of ${scoutTrack.foreign} grew on the mission (${scoutTrack.chiefKBefore} → ${after}, last ${scoutTrack.chiefLast || "none"})`);
+      const belowNative = scouts.filter((m) => countryKnowledgeOf(m, m.nationality, endDate) < 90);
+      check(scouts.length > 0 && belowNative.length === 0, `olheiros: every scout knows his own country at 90+ (${belowNative.length} of ${scouts.length} below)`);
+      const aiCountry = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.members ?? []).some((m) => m.countryKnowledge));
+      check(aiCountry.length === 0, `olheiros: no AI club stores country knowledge (${aiCountry.length})`);
+      const idle = scouts.flatMap((m) => Object.entries(m.countryKnowledge ?? {})
+        .filter(([c, e]) => c !== m.nationality && daysBetween(e.last, endDate) > 210)
+        .map(([c, e]) => ({ m, c, e })));
+      if (idle.length === 0) {
+        console.log("  note: no country entry idle for 210+ days at the end of the run (decay covered by countryKnowledge.test.ts)");
+      } else {
+        const wrong = idle.filter(({ m, c, e }) => {
+          const k = countryKnowledgeOf(m, c, endDate);
+          return !(k < e.k || k === baseCountryKnowledge(m.nationality, c)) || k < baseCountryKnowledge(m.nationality, c);
+        });
+        check(wrong.length === 0, `olheiros: idle country knowledge decays toward the base (${wrong.length} of ${idle.length} off)`);
+      }
+    }
     // The search blurs every row by its knowledge: hidden below 20, a range from ±0.5, exact at 100.
     const { searchScout, parseScoutQuery } = await import("@/backend/scoutSearch");
     const foreignLeague = (leagueData.find((l) => l.slug === PLAYER_LEAGUE) as { country?: string } | undefined)?.country === "Spain" ? "premier_league" : "la_liga";

@@ -60,6 +60,14 @@ grande o bastante ou tem ponto. O mapa é `aria-hidden`: a lista cobre teclado e
 com liga: adicionar o código numérico ISO → ISO2 em `NUMERIC_TO_GAME_ISO2` do script e regerar
 (`worldMapCountries.test.ts` falha se faltar).
 
+### Mapa do olheiro (4.10)
+
+O mesmo `WorldMap` é o mapa de conhecimento por país do olheiro (`Scouting/ScoutCountriesPanel.tsx`): props opcionais
+`fillClassFor` (cor por país; aqui pela faixa), `captionFor` ("Inglaterra · 90"), `hint`, `outlinedSlug` (contorno da
+nacionalidade) e `onSelect` opcional (sem ele: sem clique, sem cursor de mão, nada esmaecido). O novo jogo passa os
+props de antes. Tamanho: `worldMapPaths.ts` ~31 KB gzip; as páginas Equipe técnica, Transferências e Olheiro cresceram
+~35–37 KB gzip (abaixo do limite de ~40 KB decidido), então o desenho continua no bundle.
+
 ## Rostos dos jogadores
 
 `PlayerFace` (`src/GameInterface/Components/PlayerFace.tsx`) mostra um rosto `facesjs` (Apache-2.0),

@@ -137,12 +137,13 @@ describe("buildRestEvent", () => {
     const squad = baseSquad([
       basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ fitness: 99 }) }),
     ]);
+    const realRandom = Math.random;
     Math.random = () => 1;
     try {
       const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.fitness).toBeLessThanOrEqual(100);
     } finally {
-      Math.random = globalThis.Math.random;
+      Math.random = realRandom;
     }
   });
 
@@ -150,12 +151,13 @@ describe("buildRestEvent", () => {
     const squad = baseSquad([
       basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ trainingSessions: 0.5 }) }),
     ]);
+    const realRandom = Math.random;
     Math.random = () => 1;
     try {
       const { updatedSquad } = buildRestEvent("s", squad, "2027-02-05");
       expect(updatedSquad.players[0]!.seasonLog!.trainingSessions).toBeGreaterThanOrEqual(0);
     } finally {
-      Math.random = globalThis.Math.random;
+      Math.random = realRandom;
     }
   });
 

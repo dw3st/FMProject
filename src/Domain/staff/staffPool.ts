@@ -2,6 +2,8 @@ import { STAFF } from "@/Domain/staff/staffConfig";
 import { makeProfessional, memberStars, staffWageFor } from "@/Domain/staff/staff";
 import { STAFF_ROLES, type StaffMember, type StaffRole } from "@/Domain/staff/staffTypes";
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import { isScoutRole, strongCountry } from "@/Domain/scouting/countryKnowledge";
+import type { StaffNameBook } from "@/Domain/staff/staffOrigin";
 
 /**
  * Free coaching-staff pool of a save (`saves/{id}/staffPool.json`, `.claude/rules/game/staff.md`).
@@ -32,14 +34,14 @@ export function sampleStars(rng: () => number): number {
   return band[0] + Math.floor(rng() * steps) / 2;
 }
 
-function fillRoles(members: StaffMember[], saveId: string, season: string, date: string, tag: string): StaffMember[] {
+function fillRoles(members: StaffMember[], saveId: string, season: string, date: string, tag: string, book?: StaffNameBook): StaffMember[] {
   const rng = mulberry32(seedFrom(`staff-pool:${saveId}:${season}${tag}`));
   const ids = new Set(members.map((m) => m.id));
   const out = [...members];
   for (const role of STAFF_ROLES) {
     let have = out.filter((m) => m.role === role).length;
     for (let i = 0; have < STAFF.POOL.BY_ROLE[role]; i++) {
-      const m = makeProfessional(`${saveId}:pool:${season}:${role}:${tag}${i}`, role, sampleStars(rng));
+      const m = makeProfessional(`${saveId}:pool:${season}:${role}:${tag}${i}`, role, sampleStars(rng), book ? { book } : undefined);
       if (ids.has(m.id)) continue;
       ids.add(m.id);
       out.push({ ...m, since: date });
@@ -49,8 +51,9 @@ function fillRoles(members: StaffMember[], saveId: string, season: string, date:
   return out;
 }
 
-export function generatePool(saveId: string, season: string, date: string): StaffPool {
-  return { season, refreshedOn: date, members: fillRoles([], saveId, season, date, "") };
+/** `book`: nationalities and names from the world's players (`staffOrigin.ts`); absent = the built-in pools. */
+export function generatePool(saveId: string, season: string, date: string, book?: StaffNameBook): StaffPool {
+  return { season, refreshedOn: date, members: fillRoles([], saveId, season, date, "", book) };
 }
 
 /**
@@ -58,7 +61,7 @@ export function generatePool(saveId: string, season: string, date: string): Staf
  * longest-listed leave, and each role is filled back to `POOL.BY_ROLE`. Applied once per date: a
  * pool already refreshed on (or generated after) `date` is returned unchanged.
  */
-export function refreshPool(pool: StaffPool, saveId: string, season: string, date: string): StaffPool {
+export function refreshPool(pool: StaffPool, saveId: string, season: string, date: string, book?: StaffNameBook): StaffPool {
   if (pool.refreshedOn !== undefined && pool.refreshedOn >= date) return pool;
   const aged = pool.members.map((m) => ({ ...m, age: m.age + 1 })).filter((m) => m.age < STAFF.POOL.RETIRE_AGE);
   const drop = Math.floor(STAFF.POOL.REFRESH_SHARE * aged.length);
@@ -67,7 +70,7 @@ export function refreshPool(pool: StaffPool, saveId: string, season: string, dat
     .slice(0, drop);
   const gone = new Set(oldest.map((m) => m.id));
   // The tag carries the date: two refreshes under the same season label never redraw the same ids.
-  return { season, refreshedOn: date, members: fillRoles(aged.filter((m) => !gone.has(m.id)), saveId, season, date, `r${date}:`) };
+  return { season, refreshedOn: date, members: fillRoles(aged.filter((m) => !gone.has(m.id)), saveId, season, date, `r${date}:`, book) };
 }
 
 export function takeFromPool(pool: StaffPool, id: string): { pool: StaffPool; member: StaffMember } | null {
@@ -92,16 +95,20 @@ export interface StaffPoolQuery {
   offset?: number;
   limit?: number;
 }
-export type StaffPoolItem = StaffMember & { stars: number; askingWage: number };
+export type StaffPoolItem = StaffMember & { stars: number; askingWage: number; strongCountry?: { country: string; k: number } };
 
 export const POOL_PAGE = { DEFAULT: 50, MAX: 100 } as const;
 
 /** Filter, sort and page the pool; the asking wage is what the user's club would pay (its wage factor). */
-export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number): { total: number; items: StaffPoolItem[] } {
+/** With `date`, scouts also carry their strongest country (`strongCountry`). */
+export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number, date?: string): { total: number; items: StaffPoolItem[] } {
   const items: StaffPoolItem[] = pool.members
     .map((m) => {
       const stars = memberStars(m);
-      return { ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor) };
+      return {
+        ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor),
+        ...(date && isScoutRole(m.role) ? { strongCountry: strongCountry(m, date) } : {}),
+      };
     })
     .filter((m) => (!q.role || m.role === q.role)
       && (q.minStars === undefined || m.stars >= q.minStars)

@@ -10,12 +10,17 @@ import { Notice } from "@/GameInterface/ui/Notice";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { Icon } from "@/GameInterface/Icons";
 import { formatFee, formatWageFull } from "@/Domain/money";
-import { leagueLabel } from "@/Domain/world/labels";
+import { leagueLabel, nationalityDisplayName } from "@/Domain/world/labels";
 import type { LeagueData } from "@/types/playerTypes";
 import type { ScoutFocus, ScoutTargetKind } from "@/types/scoutingTypes";
 import { scoutingCall, type ScoutingData, type ScoutingScout } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
+import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
+import { ScoutCountriesModal } from "@/GameInterface/Scouting/ScoutCountriesModal";
+import { KnowledgeBar } from "@/GameInterface/Scouting/KnowledgeBar";
+import { countryBand, countryGainMult } from "@/Domain/scouting/countryKnowledge";
+import { formatMult } from "@/GameInterface/Staff/staffApi";
 import countriesRaw from "@/Data/countries.json";
 
 const CONTINENT_OF = new Map(Object.values(countriesRaw as Record<string, { name: string; continent?: string }>).map((c) => [c.name, c.continent ?? ""]));
@@ -35,6 +40,7 @@ export function MissionsTab({
   const [newFor, setNewFor] = useState<ScoutingScout | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dismissing, setDismissing] = useState<ScoutingScout | null>(null);
+  const [mapOf, setMapOf] = useState<ScoutingScout | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function cancel(id: string) {
@@ -79,6 +85,17 @@ export function MissionsTab({
                 </div>
                 <span className="shrink-0"><StaffStars stars={scout.stars} /></span>
               </div>
+              {scout.vacant ? (
+                <p className="text-sm text-muted-foreground m-0">{t("scoutCountries.vacant")}</p>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {scout.strongCountry && <StrongCountry country={scout.strongCountry.country} k={scout.strongCountry.k} />}
+                  <Button variant="secondary" flush onClick={() => setMapOf(scout)} title={t("scoutCountries.openMap")}>
+                    <Icon name="globe" size={16} />
+                    {t("scoutCountries.title")}
+                  </Button>
+                </div>
+              )}
               {mission ? (
                 <>
                   <div>
@@ -136,6 +153,7 @@ export function MissionsTab({
         onClose={() => setDismissing(null)}
         busy={busy}
       />
+      <ScoutCountriesModal saveId={saveId} memberId={mapOf?.memberId || null} name={mapOf?.name ?? ""} onClose={() => setMapOf(null)} />
       <NewMissionModal
         saveId={saveId}
         scout={newFor}
@@ -158,7 +176,7 @@ function NewMissionModal({
   onClose: () => void;
   onCreated: (next: ScoutingData) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [kind, setKind] = useState<Region>("country");
   const [country, setCountry] = useState("");
   const [league, setLeague] = useState("");
@@ -194,6 +212,14 @@ function NewMissionModal({
   }
 
   const ready = kind === "league" ? !!league : kind === "continent" ? !!continent : !!country;
+  // The scout's knowledge of the target (`scouting.md` → "Conhecimento por país"): it sets his pace there.
+  const targetName = kind === "league"
+    ? leagues.find((l) => l.slug === league)?.name ?? ""
+    : kind === "continent" ? t(`scouting.continents.${continent}`, { defaultValue: continent }) : nationalityDisplayName(country, i18n.language, t);
+  const targetK = !scout || !ready || scout.vacant ? null
+    : kind === "continent" ? scout.continents[continent] ?? 0
+    : kind === "league" ? scout.countries[leagues.find((l) => l.slug === league)?.country ?? ""] ?? 0
+    : scout.countries[country] ?? 0;
   return (
     <Modal open={!!scout} onClose={onClose} size="md">
       <div className="p-6 flex flex-col gap-5">
@@ -262,6 +288,20 @@ function NewMissionModal({
             <Chip selected={improves} onClick={() => setImproves(!improves)}>{t("scouting.improves")}</Chip>
           </div>
         </div>
+        {targetK !== null && scout && (
+          <div className="flex flex-col gap-2">
+            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+              {t("scoutCountries.onTarget", { scout: scout.name, target: targetName })}
+            </span>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <KnowledgeBar value={targetK} />
+              <span className="text-muted-foreground">{t(`scoutCountries.band.${countryBand(targetK)}`)}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {t("scoutCountries.pace", { mult: formatMult(countryGainMult(targetK), i18n.language) })}
+              </span>
+            </div>
+          </div>
+        )}
         {error && <Notice kind="error">{error}</Notice>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>

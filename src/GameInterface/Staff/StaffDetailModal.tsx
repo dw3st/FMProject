@@ -15,6 +15,8 @@ import { COACH_AREAS, ROLE_SPECIALTY, type CoachArea, type StaffMember } from "@
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { contractEnd, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { ScoutCountriesPanel } from "@/GameInterface/Scouting/ScoutCountriesPanel";
+import { isScoutRole } from "@/Domain/scouting/countryKnowledge";
 
 type Years = "1" | "2" | "3";
 const GENERAL = ["determination", "discipline", "adaptability", "playerReading"] as const;
@@ -82,7 +84,7 @@ export function StaffDetailModal({
 
   return (
     <>
-      <Modal open onClose={onClose} size="md">
+      <Modal open onClose={onClose} size={isScoutRole(m.role) ? "xl" : "md"}>
         <div className="p-6 flex flex-col gap-5">
           <div className="flex items-start gap-4">
             <StaffFace member={m} clubColors={mode === "club" ? clubColors : undefined} size={64} />
@@ -115,6 +117,8 @@ export function StaffDetailModal({
               ))}
             </div>
           )}
+
+          {isScoutRole(m.role) && <ScoutCountriesPanel saveId={saveId} memberId={m.id} />}
 
           {mode === "club" && c && (
             <div className="flex flex-col gap-3">

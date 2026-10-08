@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.10",
+    date: "2026-10-08",
+    items: [
+      { pt: "Cada olheiro conhece melhor alguns países: o dele, os vizinhos e os que visitou nas missões — e lá encontra mais e erra menos", en: "Each scout knows some countries better: his own, its neighbours and the ones he visited on missions — and there he finds more and errs less" },
+      { pt: "Clique no olheiro para ver no mapa-múndi o que ele conhece de cada país", en: "Click a scout to see on the world map what he knows of each country" },
+      { pt: "Ao criar uma missão, veja o quanto o olheiro conhece o destino e o ritmo dele lá", en: "When creating a mission, see how well the scout knows the destination and his pace there" },
+      { pt: "A comissão técnica agora vem de todos os países do jogo, quase toda do país do clube", en: "Coaching staff now come from every country in the game, mostly from the club's own country" },
+    ],
+  },
+  {
     version: "4.9",
     date: "2026-10-08",
     items: [
@@ -1051,10 +1061,10 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
   { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "Partida com árbitros, técnicos à beira do campo e estádio com torcida", en: "Matches with referees, managers on the touchline and a stadium full of fans" },
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
+  { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
 ];

@@ -3281,5 +3281,28 @@
       "gem": "Joia encontrada: {{name}} ({{club}})",
       "shortlist": "Observado: {{name}} ({{reason}})"
     }
+  },
+  "scoutCountries": {
+    "title": "Conhecimento por país",
+    "scout": "Olheiro",
+    "hint": "Passe o cursor num país para ver o quanto ele o conhece",
+    "legend": {
+      "full": "Completo",
+      "moderate": "Moderado",
+      "none": "Nenhum"
+    },
+    "native": "País de origem",
+    "lastMission": "Última missão: {{date}}",
+    "strongTitle": "Mais forte em {{country}} ({{k}}/100)",
+    "onTarget": "Conhecimento de {{scout}} em {{target}}",
+    "pace": "ritmo {{mult}}",
+    "band": {
+      "full": "completo",
+      "moderate": "moderado",
+      "none": "nenhum"
+    },
+    "vacant": "Sem olheiro-chefe",
+    "openMap": "Países que este olheiro conhece",
+    "observeHint": "O número ao lado de cada olheiro é o conhecimento dele em {{country}}: quanto maior, mais rápido ele aprende."
   }
 }

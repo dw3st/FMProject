@@ -19,6 +19,7 @@ import {
 } from "@/Domain/jobs/jobs";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { initialStaff } from "@/Domain/staff/staff";
+import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { academyToAi } from "@/Domain/youth/youth";
@@ -340,7 +341,9 @@ async function takeOverClub(
   const human: Squad = {
     ...initClubMorale(rest),
     finances: { ...(rest.finances ?? { broadcasting: 0, commercial: 0, total: 0, followers: 0 }), budget: 0 },
-    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad, { date: args.date, seasonEnd }),
+    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad, { date: args.date, seasonEnd }, {
+      book: await getStaffNameBook(), home: (await leagueCountryMap()).get(entry.leagueSlug),
+    }),
     styleFamiliarity: initialFamiliarity(DEFAULT_TACTICAL_STYLE),
   };
   // Facilities of the club (`.claude/rules/game/facilities.md`): set up from its stadium and tier.
