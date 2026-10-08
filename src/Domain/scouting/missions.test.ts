@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  addProspects, advanceScoutingWeek, allowedWeeks, buildReport, generateProspects, gradeOf, isGem, missionCost,
+  addProspects, advanceScoutingWeek, allowedWeeks, buildReport, countryVisits, generateProspects, gradeOf, isGem, missionCost,
   missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, recordRecommendations, relativeNote,
   shortlistAlerts, starterLineAverages, type PoolEntry, type ViewerContext,
 } from "@/Domain/scouting/missions";
@@ -219,5 +219,69 @@ describe("the chief's monthly picks always have a report", () => {
     const again = recordRecommendations(out.state, ps, entries, c, 5);
     expect(again.state).toBe(out.state);
     expect(again.reports.map((r) => r.id)).toEqual(out.reports.map((r) => r.id));
+  });
+});
+
+describe("country knowledge of the mission leader", () => {
+  const pool = Array.from({ length: 30 }, (_, i) => entry(player(`p${i}`, 5 + (i % 3))));
+  const country = mission({ weeks: 2 });
+  const play = mission({ id: "m2", target: { kind: "player", playerId: "p3" }, weeks: 3 });
+  const cont = mission({ id: "m3", scoutId: "f1", target: { kind: "continent", continent: "Europe" }, weeks: 8 });
+  const contPool = pool.map((e, i) => ({ ...e, country: i % 2 ? "Spain" : "Portugal" }));
+  const state = { ...emptyScoutingState(), missions: [country, play, cont] };
+  const inputs = (countryK?: (c: string) => number) => [
+    { mission: country, leaderRating: 5, pool, countryK },
+    { mission: play, leaderRating: 5, pool: [pool[3]!], countryK },
+    { mission: cont, leaderRating: 5, pool: contPool, countryK },
+  ];
+
+  test("neutral (40) is exactly today's week", () => {
+    const today = advanceScoutingWeek(state, inputs(), ctx());
+    const neutral = advanceScoutingWeek(state, inputs(() => 40), ctx());
+    expect(neutral.state).toEqual(today.state);
+    expect(neutral.news).toEqual(today.news);
+    expect(neutral.reports).toEqual(today.reports);
+  });
+
+  test("the gain follows the country multiplier", () => {
+    const single = { ...emptyScoutingState(), missions: [country] };
+    const run = (k: number) => advanceScoutingWeek(single, [{ mission: country, leaderRating: 5, pool, countryK: () => k }], ctx()).state.knowledge;
+    const n = run(40);
+    const hi = run(90);
+    const lo = run(0);
+    for (const id of Object.keys(n)) {
+      expect(hi[id]!.k).toBeCloseTo(n[id]!.k * (1.2 - 0.2 * 10 / 60), 0);
+      expect(lo[id]!.k).toBeCloseTo(n[id]!.k * 0.75, 0);
+    }
+    expect(Object.keys(hi)).toEqual(Object.keys(n));
+  });
+
+  test("report noise follows the country multiplier", () => {
+    const p = player("a", 6);
+    const narrow = buildReport(entry(p), 30, ctx(), { noiseMult: 0.85 });
+    const wide = buildReport(entry(p), 30, ctx(), {});
+    expect(narrow.overall[1] - narrow.overall[0]).toBeLessThan(wide.overall[1] - wide.overall[0]);
+  });
+
+  test("visits per worked mission; a vanished player target does not appear", () => {
+    const r = advanceScoutingWeek(state, [
+      { mission: country, leaderRating: 5, pool },
+      { mission: play, leaderRating: 5, pool: [] },
+      { mission: cont, leaderRating: 5, pool: contPool },
+    ], ctx());
+    expect(r.visits.map((v) => v.missionId)).toEqual(["m1", "m3"]);
+    expect(r.visits[0]).toEqual({ missionId: "m1", scoutId: "chief", kind: "country", countries: { Spain: 11 } });
+    const c = r.visits[1]!.countries;
+    expect((c.Spain ?? 0) + (c.Portugal ?? 0)).toBe(11);
+    expect(countryVisits(r.visits[0]!)).toEqual([{ country: "Spain", rate: 0.06 }]);
+    expect(countryVisits(r.visits[1]!).every((v) => v.rate === 0.02)).toBe(true);
+  });
+
+  test("prospects learn at the country pace", () => {
+    const pr = { player: player("pr", 4, 16), country: "Spain", expires: "2027-03-31", reportId: "", fee: 50_000 };
+    const n = addProspects(emptyScoutingState(), [pr], ctx(), { missionId: "m", leaderRating: 5 }).state.knowledge.pr!.k;
+    const hi = addProspects(emptyScoutingState(), [pr], ctx(), { missionId: "m", leaderRating: 5, countryK: 90 }).state.knowledge.pr!.k;
+    expect(addProspects(emptyScoutingState(), [pr], ctx(), { missionId: "m", leaderRating: 5, countryK: 40 }).state.knowledge.pr!.k).toBe(n);
+    expect(hi).toBe(Math.round(SCOUTING.REGION_GAIN * (1.2 - 0.2 * 10 / 60)));
   });
 });
