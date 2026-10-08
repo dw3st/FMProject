@@ -4,12 +4,15 @@ import {
   gainKnowledge, implicitKnowledge, knowledgeOf, pruneKnowledge, scoutMultipliersOf, uncertaintyOf,
 } from "@/Domain/scouting/knowledge";
 import {
-  addProspects, advanceScoutingWeek, buildReport, generateProspects, missionCost, missionPool, missionsWithLeaders, monthlyRecommendations,
+  addProspects, advanceScoutingWeek, buildReport, countryVisits, generateProspects, missionCost, missionPool, missionsWithLeaders, monthlyRecommendations,
   prospectFee, pruneProspects, recordRecommendations, shortlistAlerts, starterLineAverages,
   type MissionWeekInput, type PoolEntry, type ScoutingNews, type TravelDistance, type ViewerContext,
 } from "@/Domain/scouting/missions";
 import { newsToMessageArgs, type ScoutingMessageArgs } from "@/Domain/scouting/scoutingMessages";
-import { effectiveRating, memberStars, membersOf, obscureForViewer, ratingFromStars } from "@/Domain/staff/staff";
+import {
+  countryKnowledgeOf, growCountryKnowledge, pruneCountryKnowledge,
+} from "@/Domain/scouting/countryKnowledge";
+import { effectiveRating, headOf, memberStars, membersOf, obscureForViewer, ratingFromStars } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
@@ -17,6 +20,7 @@ import { computeOverallAvg } from "@/Domain/playerRating";
 import { addDays, daysBetween } from "@/Domain/dates";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import type { FinancialTier, RosterPlayer, Squad } from "@/types/playerTypes";
+import type { StaffMember } from "@/types/staffTypes";
 import type { MatchEvent } from "@/types/dayLogTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type {
@@ -183,19 +187,31 @@ function sellListed(market: MarketState | null): Set<string> {
 
 /** Leagues a region mission observes. */
 export async function missionLeagues(service: SaveService, saveId: string, mission: Pick<ScoutAssignment, "target">): Promise<string[]> {
-  const { leagues, pyramids } = await catalog();
+  const { leagues } = await catalog();
   const present = new Set((await service.getSquadIndex(saveId)).leagues());
   const t = mission.target;
   if (t.kind === "league") return t.league && present.has(t.league) ? [t.league] : [];
   if (t.kind === "country" || t.kind === "youth") {
     return leagues.filter((l) => l.country === t.country && present.has(l.slug)).map((l) => l.slug);
   }
-  if (t.kind === "continent") {
-    const countries = [...new Set(leagues.filter((l) => l.country && continentOf(l.country) === t.continent).map((l) => l.country!))];
-    const { topLeagueOf } = await import("@/backend/continentalWorld");
-    return countries.map((c) => topLeagueOf(c, leagues, pyramids)).filter((s): s is string => !!s && present.has(s));
-  }
+  if (t.kind === "continent") return (await continentMissionTargets(service, saveId, t.continent ?? "")).map((x) => x.league);
   return [];
+}
+
+/** The countries a continent mission visits (those whose top league is in the save) and that league. */
+async function continentMissionTargets(service: SaveService, saveId: string, continent: string): Promise<{ country: string; league: string }[]> {
+  const { leagues, pyramids } = await catalog();
+  const present = new Set((await service.getSquadIndex(saveId)).leagues());
+  const countries = [...new Set(leagues.filter((l) => l.country && continentOf(l.country) === continent).map((l) => l.country!))];
+  const { topLeagueOf } = await import("@/backend/continentalWorld");
+  return countries
+    .map((country) => ({ country, league: topLeagueOf(country, leagues, pyramids) ?? "" }))
+    .filter((x) => !!x.league && present.has(x.league));
+}
+
+/** Countries a continent mission visits (`missionLeagues`). */
+export async function continentMissionCountries(service: SaveService, saveId: string, continent: string): Promise<string[]> {
+  return (await continentMissionTargets(service, saveId, continent)).map((x) => x.country);
 }
 
 /** Where a mission's target is, seen from the human club (travel cost). */
@@ -327,6 +343,15 @@ export async function scoutingDay(
     const ctx = ctxFor(state);
     if (own && ctx && state.missions.length > 0) {
       const scouts = new Map(membersOf(own, "fieldScout").map((s) => [s.id, ratingFromStars(memberStars(s))]));
+      // Who leads each mission (vacant chief: nobody, neutral country multipliers).
+      const leaders = new Map<string, StaffMember | undefined>([
+        ["chief", headOf(own, "scout")],
+        ...membersOf(own, "fieldScout").map((s) => [s.id, s] as [string, StaffMember]),
+      ]);
+      const countryKOf = (scoutId: string) => {
+        const leader = leaders.get(scoutId);
+        return leader ? (c: string) => countryKnowledgeOf(leader, c, date) : undefined;
+      };
       const inputs: MissionWeekInput[] = [];
       const youthMissions: { mission: ScoutAssignment; rating: number }[] = [];
       const revenue = wageRevenueBasisOf(own);
@@ -353,7 +378,7 @@ export async function scoutingDay(
           pool = missionPool(mission.target.kind, mission.focus, pool, ctxFor(state)!);
           if (mission.target.kind === "youth") youthMissions.push({ mission, rating });
         }
-        inputs.push({ mission, leaderRating: rating, pool });
+        inputs.push({ mission, leaderRating: rating, pool, countryK: countryKOf(mission.scoutId) });
         // A player mission whose target vanished (or joined the club) just ends: no trip to pay.
         if (mission.target.kind === "player" && pool.length === 0) continue;
         const cost = missionCost(mission.target.kind, await missionDistance(service, saveId, mission, ownCountry), revenue);
@@ -378,9 +403,30 @@ export async function scoutingDay(
           nextSeasonEnd: args.nextSeasonEnd ?? addDays(date, 365),
           fee: prospectFee(countryTier(topSquads), wageFactorOf(own)),
         });
-        const added = addProspects(state, prospects, ctxFor(state)!, { missionId: mission.id, leaderRating: rating });
+        const countryK = countryKOf(mission.scoutId)?.(country);
+        const added = addProspects(state, prospects, ctxFor(state)!, {
+          missionId: mission.id, leaderRating: rating, ...(countryK !== undefined ? { countryK } : {}),
+        });
         state = added.state;
         news = [...news, ...added.news];
+      }
+      // The leaders learn the countries they worked in (stored on the staff member).
+      const visits = week.visits.filter((v) => leaders.get(v.scoutId));
+      if (visits.length > 0) {
+        const fresh = (await service.getSquadById(saveId, ownClubId)) ?? own;
+        const byScout = new Map<string, StaffMember>();
+        for (const v of visits) {
+          const leader = leaders.get(v.scoutId)!;
+          const cur = byScout.get(leader.id) ?? fresh.staff?.members.find((m) => m.id === leader.id) ?? leader;
+          const countryKnowledge = growCountryKnowledge(cur, countryVisits(v), date);
+          byScout.set(leader.id, { ...cur, countryKnowledge: pruneCountryKnowledge({ ...cur, countryKnowledge }, date) });
+        }
+        if (fresh.staff) {
+          await service.saveSquadById(saveId, {
+            ...fresh,
+            staff: { ...fresh.staff, members: fresh.staff.members.map((m) => byScout.get(m.id) ?? m) },
+          });
+        }
       }
       result.messages.push(...news.map((n) => newsToMessageArgs(date, n)));
     }
