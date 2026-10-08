@@ -1160,7 +1160,10 @@ function resolveInMatchPenalty(state: GameState, rng: () => number = Math.random
   const s: GameState = { ...state, setPiece: null };
   if (scored) {
     const newScore = { ...s.score, [taker.team]: s.score[taker.team] + 1 };
-    gameBus.emit('goalScored', { team: taker.team, score: newScore, scorerId: taker.id, setPiece: 'penalty' });
+    gameBus.emit('goalScored', {
+      team: taker.team, score: newScore, scorerId: taker.id, setPiece: 'penalty',
+      fromX: taker.x, fromY: taker.y, goalX: taker.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
+    });
     const concedingTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
     return { state: resetToKickoff({ ...s, score: newScore }, concedingTeam), passCompleted: false, tackled: false, goalScored: taker.team };
   }
@@ -3514,6 +3517,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         gameBus.emit('goalScored', {
           team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: s.shot.header === true,
           ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+          fromX: s.shot.fromX, fromY: s.shot.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
         });
         const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
         return {

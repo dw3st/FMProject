@@ -4,7 +4,8 @@ import type { Squad } from "@/types/playerTypes";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { toMatchTeamStats } from "@/Domain/advanceDay/matchTeamStats";
-import { getTeamStats, getPlayerStats } from "@/GameEngine/Domain/Statistics";
+import { getGoalLog, getTeamStats, getPlayerStats } from "@/GameEngine/Domain/Statistics";
+import { goalGeometry } from "@/Domain/awards/goalOfSeason";
 import { getPlayerRating } from "@/GameEngine/Domain/PlayerRating";
 import { knockoutDecider } from "@/GameEngine/Domain/gameState";
 
@@ -175,6 +176,30 @@ export function buildPlayedMatchRecording(
     matchMinute:  c.matchMinute,
   }));
 
+  // Goals with minute and shot position (season awards), engine ids → roster ids (same map as the stats).
+  const engineToRoster = new Map<number, string>();
+  for (const gp of gameState.players) {
+    const rid = nameToRoster.get(gp.name);
+    if (rid) engineToRoster.set(gp.id, rid);
+  }
+  for (const sub of gameState.substitutions ?? []) if (!engineToRoster.has(sub.playerOutId)) engineToRoster.set(sub.playerOutId, sub.playerOutRosterId);
+  for (const inj of gameState.injuries ?? []) if (!engineToRoster.has(inj.playerId)) engineToRoster.set(inj.playerId, inj.playerRosterId);
+  for (const c of gameState.cards ?? []) if (!engineToRoster.has(c.playerId)) engineToRoster.set(c.playerId, c.playerRosterId);
+  const goals: import("@/types/dayLogTypes").MatchGoal[] = getGoalLog().flatMap((g) => {
+    const playerId = engineToRoster.get(g.scorerId);
+    if (!playerId) return [];
+    const assistId = g.assistId != null ? engineToRoster.get(g.assistId) : undefined;
+    return [{
+      playerId,
+      team: g.team === "A" ? (myIsHome ? "home" as const : "away" as const) : (myIsHome ? "away" as const : "home" as const),
+      minute: g.minute + 1,
+      header: g.header,
+      ...(g.setPiece ? { setPiece: g.setPiece } : {}),
+      ...goalGeometry(g),
+      ...(assistId ? { assistId } : {}),
+    }];
+  });
+
   const kd = knockoutDecider(gameState);
   const side = <T extends { A: number; B: number }>(v: T) =>
     ({ home: myIsHome ? v.A : v.B, away: myIsHome ? v.B : v.A });
@@ -195,6 +220,7 @@ export function buildPlayedMatchRecording(
     substitutions,
     injuries,
     ...(cards.length > 0 ? { cards } : {}),
+    goals,
     durationMs,
     ...(decider ? { decider } : {}),
   };

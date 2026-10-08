@@ -13,6 +13,7 @@ import type {
   MatchSubstitution,
   MatchInjury,
   MatchCard,
+  MatchGoal,
   Scorer,
   MatchPlayerStats,
   PlayerDevelopmentChange,
@@ -29,6 +30,7 @@ import { areaMultsOf, staffEffectsOf } from "@/Domain/staff/staff";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { clearHealed, mergeInjury, returnDate as injuryReturnDate, withInjuryCounted } from "@/Domain/injury/injury";
 import { applyMatchCards, isUnavailable, serveSuspension } from "@/Domain/discipline/discipline";
+import { goalGeometry, sanitizeRecordedGoals } from "@/Domain/awards/goalOfSeason";
 
 /** A new match ban from this match's cards (`.claude/rules/game/discipline.md`) — for the inbox. */
 interface AppliedSuspension {
@@ -410,6 +412,7 @@ export function buildMatchEventFromRecording(
 ): MatchSimResult {
   const { playerNames, playerTeams } = rosterNameAndTeamMaps(homeSquad, awaySquad);
   const scorers = buildScorers(recording.playerStats, playerNames, playerTeams);
+  const goals = sanitizeRecordedGoals(recording.goals, recording.score, homeSquad, awaySquad);
 
   const { updatedHome, updatedAway, homeDevChanges, awayDevChanges, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed } = finalizeSquadsAfterMatch(
     homeSquad,
@@ -445,6 +448,7 @@ export function buildMatchEventFromRecording(
     substitutions: recording.substitutions ?? [],
     injuries: recording.injuries ?? [],
     ...(recording.cards && recording.cards.length > 0 ? { cards: recording.cards } : {}),
+    ...(goals ? { goals } : {}),
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: recording.durationMs,
     ...(recording.decider ? { decider: recording.decider } : {}),
@@ -641,6 +645,22 @@ export function buildMatchEvent(
     energy:      inj.energy,
   }));
 
+  // Goals with minute and shot position (season awards): engine ids → roster ids, A = home.
+  const goals: MatchGoal[] = result.goals.flatMap((g) => {
+    const playerId = engineIdToRosterId.get(g.scorerId);
+    if (!playerId) return [];
+    const assistId = g.assistId != null ? engineIdToRosterId.get(g.assistId) : undefined;
+    return [{
+      playerId,
+      team: g.team === "A" ? "home" as const : "away" as const,
+      minute: g.minute + 1,
+      header: g.header,
+      ...(g.setPiece ? { setPiece: g.setPiece } : {}),
+      ...goalGeometry(g),
+      ...(assistId ? { assistId } : {}),
+    }];
+  });
+
   const cards: MatchCard[] = result.cards.map((c) => ({
     team:         c.team === "A" ? "home" : "away",
     playerId:     c.playerRosterId,
@@ -678,6 +698,7 @@ export function buildMatchEvent(
     substitutions,
     injuries,
     ...(cards.length > 0 ? { cards } : {}),
+    goals,
     developmentChanges: [...homeDevChanges, ...awayDevChanges],
     durationMs: result.durationMs,
     ...(result.decider
