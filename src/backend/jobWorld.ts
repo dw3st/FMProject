@@ -338,7 +338,7 @@ async function takeOverClub(
   const human: Squad = {
     ...initClubMorale(rest),
     finances: { ...(rest.finances ?? { broadcasting: 0, commercial: 0, total: 0, followers: 0 }), budget: 0 },
-    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad),
+    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad, { date: args.date, seasonEnd }),
     styleFamiliarity: initialFamiliarity(DEFAULT_TACTICAL_STYLE),
   };
   // Facilities of the club (`.claude/rules/game/facilities.md`): set up from its stadium and tier.

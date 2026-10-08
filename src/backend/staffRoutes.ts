@@ -1,9 +1,8 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { wageFactorOf } from "@/Domain/finance/wages";
-import { squadStaffWages, staffEffectsOf, staffMarket, staffWeeklyWage, weekStartOf } from "@/Domain/staff/staff";
-import { STAFF_ROLES, isStaffRole, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
+import { areaStars, headOf, squadStaffWages, staffEffectsOf } from "@/Domain/staff/staff";
+import { isStaffRole, type StaffRecord } from "@/Domain/staff/staffTypes";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -19,17 +18,9 @@ async function loadHumanSquad(saveId: string) {
 }
 
 function staffView(squad: Squad) {
-  const factor = wageFactorOf(squad);
-  const staff: StaffRecord = squad.staff ?? {};
-  // Members carry the wage at the club's CURRENT factor (the bill follows club growth).
-  const members: StaffRecord = {};
-  for (const role of STAFF_ROLES) {
-    const m = staff[role];
-    if (m) members[role] = { ...m, wage: staffWeeklyWage(m.rating, factor) };
-  }
-  // Field scouts (`.claude/rules/game/scouting.md`).
-  if (staff.scouts?.length) members.scouts = staff.scouts.map((s) => ({ ...s, wage: staffWeeklyWage(s.rating, factor) }));
-  return { staff: members, effects: staffEffectsOf(squad), weeklyTotal: squadStaffWages(staff, factor) };
+  const staff: StaffRecord = squad.staff ?? { members: [] };
+  // Wages are the contracts' frozen wages (Etapa 31a).
+  return { staff, effects: staffEffectsOf(squad), areas: areaStars(squad), weeklyTotal: squadStaffWages(staff) };
 }
 
 /**
@@ -53,14 +44,8 @@ export const staffRoutes = {
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const found = await loadHumanSquad(saveId);
-    if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
-    const date = found.meta.currentDate ?? new Date().toISOString().slice(0, 10);
-    const factor = wageFactorOf(found.squad);
-    const candidates = Object.fromEntries(
-      STAFF_ROLES.map((role) => [role, staffMarket(saveId, date, role, factor)]),
-    ) as Record<StaffRole, StaffMember[]>;
-    return Response.json({ week: weekStartOf(date), candidates });
+    // The weekly market is gone: the staff pool replaces it (Etapa 31a).
+    return Response.json({ error: "gone" }, { status: 410 });
   },
 
   /** `POST` `{ role, candidateId }` - hire a candidate of this week's market, replacing the current one. */
@@ -69,22 +54,8 @@ export const staffRoutes = {
     const auth = requireSaveOwner(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    let body: unknown;
-    try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { role, candidateId } = (body ?? {}) as Record<string, unknown>;
-    if (!isStaffRole(role) || typeof candidateId !== "string") {
-      return Response.json({ error: "missing or invalid fields" }, { status: 400 });
-    }
-    return withSaveLock(saveId, async () => {
-      const found = await loadHumanSquad(saveId);
-      if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
-      const date = found.meta.currentDate ?? new Date().toISOString().slice(0, 10);
-      const candidate = staffMarket(saveId, date, role, wageFactorOf(found.squad)).find((c) => c.id === candidateId);
-      if (!candidate) return Response.json({ error: "candidate not found" }, { status: 404 });
-      const next: Squad = { ...found.squad, staff: { ...(found.squad.staff ?? {}), [role]: candidate } };
-      await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
-      return Response.json(staffView(next));
-    });
+    // Provisional until the staff pool lands (Etapa 31a): no market to hire from.
+    return Response.json({ error: "gone" }, { status: 410 });
   },
 
   /** `POST` `{ role }` - dismiss the professional; the role stays vacant (effect of rating 3). */
@@ -95,13 +66,15 @@ export const staffRoutes = {
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;
     try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { role } = (body ?? {}) as Record<string, unknown>;
-    if (!isStaffRole(role)) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    const { role, memberId } = (body ?? {}) as Record<string, unknown>;
+    if (!isStaffRole(role) && typeof memberId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     return withSaveLock(saveId, async () => {
       const found = await loadHumanSquad(saveId);
       if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
-      const { [role]: _removed, ...rest } = found.squad.staff ?? {};
-      const next: Squad = { ...found.squad, staff: rest };
+      const staff = found.squad.staff ?? { members: [] };
+      const id = typeof memberId === "string" ? memberId : headOf(found.squad, role as Parameters<typeof headOf>[1])?.id;
+      if (!id || !staff.members.some((m) => m.id === id)) return Response.json({ error: "member not found" }, { status: 404 });
+      const next: Squad = { ...found.squad, staff: { ...staff, members: staff.members.filter((m) => m.id !== id) } };
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
       return Response.json(staffView(next));
     });

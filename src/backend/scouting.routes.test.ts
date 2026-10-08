@@ -6,6 +6,7 @@ import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { scoutingDay, loadViewer, ownSideOpponents, viewFor } from "@/backend/scoutingWorld";
 import { searchScout, parseScoutQuery } from "@/backend/scoutSearch";
 import { addDays } from "@/Domain/dates";
+import { makeProfessional, signContract } from "@/Domain/staff/staff";
 import { SCOUTING } from "@/Domain/scouting/scoutingConfig";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { RECOMMENDATION_ORIGIN, type ScoutProspect } from "@/types/scoutingTypes";
@@ -57,11 +58,13 @@ describe("scouting routes and the weekly step", () => {
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "country", country: "Spain" }, weeks: 5 })).status).toBe(400);
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "continent", continent: "Europe" }, weeks: 4 })).status).toBe(400);
 
-    // A field scout.
-    const market = await (await call("/api/saves/:saveId/staff/scouts/market", "GET", session.token)).json() as any;
-    expect(market.candidates).toHaveLength(5);
-    const field = market.candidates[0];
-    expect((await call("/api/saves/:saveId/staff/scouts/hire", "POST", session.token, { candidateId: field.id })).status).toBe(200);
+    // A field scout (hired straight into the staff: the weekly market is gone, Etapa 31a).
+    expect((await call("/api/saves/:saveId/staff/scouts/market", "GET", session.token)).status).toBe(410);
+    const field = signContract(makeProfessional("test-field-scout", "fieldScout", 3), {
+      date: "2027-02-05", seasonEnd: "2027-05-30", years: 1, clubFactor: 1,
+    });
+    const ownClub = (await saveService.getSquadById(saveId, "33"))!;
+    await saveService.saveSquadById(saveId, { ...ownClub, staff: { ...ownClub.staff!, members: [...ownClub.staff!.members, field] } });
 
     // Missions: country (chief), youth (field scout); the chief is then busy.
     expect((await call(MISSIONS, "POST", session.token, { scoutId: "chief", target: { kind: "country", country: "Spain" }, weeks: 4 })).status).toBe(200);

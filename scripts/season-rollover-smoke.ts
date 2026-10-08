@@ -1420,11 +1420,12 @@ try {
   // `wages` line, the human club kept its three professionals, and AI clubs store none.
   console.log("\n── Equipe técnica ──");
   const humanFinal = allFiles.find(({ squad }) => squad.id === playerSquadId)?.squad;
-  // The three roles; `staff.scouts` (field scouts, `.claude/rules/game/scouting.md`) is a separate list.
+  // Every role but the field scouts (`.claude/rules/game/scouting.md`, hired separately).
   const { STAFF_ROLES } = await import("@/Domain/staff/staffTypes");
-  const staffRoles = STAFF_ROLES.filter((r) => !!humanFinal?.staff?.[r]);
-  check(staffRoles.length === 3,
-    `staff: the human club has its 3 professionals at the end (${staffRoles.join(", ")}; ${humanFinal?.staff?.scouts?.length ?? 0} field scout(s))`);
+  const staffRoles = STAFF_ROLES.filter((r) => r !== "fieldScout" && (humanFinal?.staff?.members ?? []).some((m) => m.role === r));
+  const fieldScoutCount = (humanFinal?.staff?.members ?? []).filter((m) => m.role === "fieldScout").length;
+  check(staffRoles.length === STAFF_ROLES.length - 1,
+    `staff: the human club has every role at the end (${staffRoles.join(", ")}; ${fieldScoutCount} field scout(s))`);
   check(allFiles.every(({ squad }) => squad.id === playerSquadId || squad.staff === undefined),
     "staff: no AI club stores staff (they use the implicit tier rating)");
   const wageDates = new Set(allLedgerEntries.filter((e) => e.kind === "wages").map((e) => e.date));
@@ -2224,7 +2225,7 @@ try {
     check(scoutTrack.mondays > 0 && scoutTrack.travelMissing.length === 0, `olheiros: a travel line per active mission every Monday (${scoutTrack.travelMissing.slice(0, 3).join("; ") || "ok"})`);
     check(scoutTrack.kinds.has("shortlist"), "olheiros: at least one shortlist alert");
     check(scoutTrack.prospectSigned && scoutTrack.prospectChecks.length === 0, `olheiros: a prospect signed into the academy with contract and compensation (${scoutTrack.prospectChecks.join(", ") || (scoutTrack.prospectSigned ? "ok" : "none signed")})`);
-    const aiScouting = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.scouts?.length ?? 0) > 0);
+    const aiScouting = allFiles.filter(({ squad }) => squad.id !== playerSquadId && (squad.staff?.members ?? []).some((m) => m.role === "fieldScout"));
     check(aiScouting.length === 0, `olheiros: no AI club stores field scouts (${aiScouting.length})`);
     // The search blurs every row by its knowledge: hidden below 20, a range from ±0.5, exact at 100.
     const { searchScout, parseScoutQuery } = await import("@/backend/scoutSearch");
@@ -2346,7 +2347,7 @@ try {
         "convites: the old club became AI (no staff, academy or familiarity)");
       check(!!oldClub.financialTier && (oldClub.aiTransferBudget ?? 0) > 0, "convites: the old club got an AI tier and transfer budget");
       const mine0 = (await plain().getSquadById(saveId, newClub.squadId))!;
-      check(Object.keys(mine0.staff ?? {}).length === 3 && mine0.financialTier === undefined,
+      check((mine0.staff?.members.length ?? 0) > 0 && mine0.financialTier === undefined,
         "convites: the new club has the player's staff and no AI tier");
       check(Math.abs((await ledgerSum()) - (mine0.finances?.budget ?? 0)) < 1,
         `convites: ledger sums to the new club's balance (${Math.round(mine0.finances?.budget ?? 0)})`);

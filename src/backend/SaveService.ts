@@ -828,9 +828,13 @@ export class SaveService {
         const wageRevenueBasis = clubAnnualRevenue(squad, homeGames);
         squad.wageFactor = clubWageFactor(wageRevenueBasis, squadCurveBill(squad.players));
         squad.wageRevenueBasis = wageRevenueBasis;
-        // Only the human club simulates staff (`.claude/rules/game/staff.md`): three professionals
-        // near its implicit tier rating, generated from the save id.
-        if (isPlayerClub) squad.staff = initialStaff(id, squad);
+        const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end
+          ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
+        // Only the human club simulates staff (`.claude/rules/game/staff.md`): every role near its
+        // implicit tier stars, contracts of 1-3 seasons, generated from the save id.
+        if (isPlayerClub) {
+          squad.staff = initialStaff(id, squad, { date: meta.currentDate ?? leagueEnd, seasonEnd: leagueEnd });
+        }
         // Style familiarity (`.claude/rules/game/style-training.md`): human club only; the saved style
         // starts ahead of the rest.
         if (isPlayerClub) squad.styleFamiliarity = initialFamiliarity(meta.tactical_style ?? DEFAULT_TACTICAL_STYLE);
@@ -842,8 +846,6 @@ export class SaveService {
         }
         // Every player starts with a fixed-wage contract ending on his league's season end
         // (`.claude/rules/game/contracts.md`); wages are summed from these from now on.
-        const leagueEnd = activeLeagues.find((l) => l.leagueSlug === league)?.end
-          ?? defaultSeasonEnd(playerLeagueStart ?? "2026-08-01");
         const contracted = withContracts(squad, leagueEnd);
 
         // Morale (`.claude/rules/game/morale.md`): human club only — everyone at 65, nothing open.

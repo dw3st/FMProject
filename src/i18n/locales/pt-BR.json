@@ -326,7 +326,13 @@
     "roles": {
       "assistant": "Auxiliar técnico",
       "fitness": "Preparador físico",
-      "scout": "Olheiro-chefe"
+      "goalkeeping": "Preparador de goleiros",
+      "coach": "Treinador de área",
+      "medic": "Médico / fisioterapeuta",
+      "analyst": "Analista de desempenho",
+      "scout": "Olheiro-chefe",
+      "fieldScout": "Olheiro de campo",
+      "groundskeeper": "Jardineiro"
     },
     "effects": {
       "assistant": "Pontos de desenvolvimento x{{mult}}",

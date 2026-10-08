@@ -6,7 +6,7 @@ import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { tierStepsDown } from "@/Domain/personality/personality";
-import { makeStaffMember } from "@/Domain/staff/staff";
+import { makeProfessional } from "@/Domain/staff/staff";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import type { SaveMeta } from "@/backend/SaveService";
 import { emptySeasonLog, type Squad } from "@/types/playerTypes";
@@ -67,7 +67,10 @@ describe("personality: smaller-club refusal on the routes", () => {
    */
   async function setScout(rating: number) {
     const h = (await saveService.getSquadById(saveId, meta.clubId))!;
-    await saveService.saveSquadById(saveId, { ...h, staff: { ...h.staff, scout: makeStaffMember("t", "scout", rating, 1) } });
+    // Old 1..10 rating -> stars (10 = 5 stars, 1 = 1 star).
+    const chief = makeProfessional(`t:${rating}`, "scout", rating >= 10 ? 5 : 1);
+    const others = (h.staff?.members ?? []).filter((m) => m.role !== "scout");
+    await saveService.saveSquadById(saveId, { ...h, staff: { ...(h.staff ?? { members: [] }), members: [...others, chief] } });
     const s = await saveService.getScouting(saveId);
     const knowledge = { ...s.knowledge };
     if (rating >= 10) knowledge.free_ambitious = { k: 100, seen: meta.currentDate! };

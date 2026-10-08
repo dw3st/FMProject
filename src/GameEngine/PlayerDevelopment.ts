@@ -51,9 +51,11 @@ const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
 
 // ── Category → stat mapping ─────────────────────────────────────────────────
 
-type DPCategory = "shooting" | "passing" | "defending" | "technical" | "physical";
+/** Training areas = DP categories (`.claude/rules/game/staff.md`). */
+export const DP_CATEGORIES = ["goalkeeping", "defending", "shooting", "technical", "passing", "physical", "setPieces"] as const;
+export type DPCategory = (typeof DP_CATEGORIES)[number];
 
-const CATEGORY_STATS: Record<DPCategory, (keyof PlayerStatsRecord)[]> = {
+const CATEGORY_STATS: Partial<Record<DPCategory, (keyof PlayerStatsRecord)[]>> = {
   shooting:  ["finishing", "heading"],
   passing:   ["passing", "vision"],
   defending: ["tackling", "pressing"],
@@ -61,7 +63,7 @@ const CATEGORY_STATS: Record<DPCategory, (keyof PlayerStatsRecord)[]> = {
   physical:  ["speed", "acceleration"],
 };
 
-export type RoleDPWeights = Record<DPCategory, number>;
+export type RoleDPWeights = Partial<Record<DPCategory, number>>;
 
 /** Fallback weights when a player's role isn't found in roles.json or has no dpWeights. */
 export const DEFAULT_DP_WEIGHTS: RoleDPWeights = {
@@ -221,7 +223,8 @@ function distributeAndResolve(
 
   for (const [category, weight] of Object.entries(weights) as [DPCategory, number][]) {
     const categoryDP = netDP * weight;
-    const statsInCategory = CATEGORY_STATS[category];
+    const statsInCategory = CATEGORY_STATS[category] ?? [];
+    if (statsInCategory.length === 0) continue;
     const dpPerStat = categoryDP / statsInCategory.length;
 
     for (const stat of statsInCategory) {

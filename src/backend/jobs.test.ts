@@ -149,7 +149,7 @@ describe("jobs: sacking, offers, changing club", () => {
     expect(kidPromoted || kidFree).toBe(true);
 
     const mine = (await saveService.getSquadById(meta.id, target))!;
-    expect(Object.keys(mine.staff ?? {}).length).toBe(3);
+    expect(mine.staff?.members.length ?? 0).toBeGreaterThan(8);
     expect(mine.styleFamiliarity?.balanced).toBe(75);
     expect(mine.moraleClub).toEqual({ talks: [], promises: [] });
     expect(mine.players.every((p) => p.morale === 65)).toBe(true);

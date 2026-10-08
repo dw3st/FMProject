@@ -4,8 +4,7 @@ import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { recordSaveOwnership } from "@/backend/auth/saveOwnership";
 import { computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
-import { wageFactorOf } from "@/Domain/finance/wages";
-import { squadStaffWages } from "@/Domain/staff/staff";
+import { roleLimit, squadStaffWages } from "@/Domain/staff/staff";
 
 describe("staff routes", () => {
   let saveId = "";
@@ -13,7 +12,7 @@ describe("staff routes", () => {
     if (saveId) await saveService.deleteSave(saveId);
   });
 
-  test("owner-only, starting staff, market, hire, fire, ledger line", async () => {
+  test("owner-only, starting staff, fire, ledger line", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -39,38 +38,33 @@ describe("staff routes", () => {
     // Not the owner: indistinguishable from a missing save.
     expect((await call("", "GET", other.session.token)).status).toBe(404);
 
-    // The human club starts with three professionals.
+    // The human club starts with every role (coaches to the tier limit, no field scouts).
     const start = await (await call("", "GET", session.token)).json() as any;
-    expect(Object.keys(start.staff).sort()).toEqual(["assistant", "fitness", "scout"]);
+    const saved = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
+    const roles = (start.staff.members as { role: string }[]).map((m) => m.role);
+    for (const r of ["assistant", "fitness", "goalkeeping", "medic", "analyst", "scout", "groundskeeper"]) {
+      expect(roles.filter((x) => x === r)).toHaveLength(1);
+    }
+    expect(roles.filter((x) => x === "coach")).toHaveLength(roleLimit(saved, "coach"));
+    expect(roles.filter((x) => x === "fieldScout")).toHaveLength(0);
     expect(start.weeklyTotal).toBeGreaterThan(0);
 
-    // Market: 5 per role, deterministic.
-    const market = await (await call("/market", "GET", session.token)).json() as any;
-    for (const role of ["assistant", "fitness", "scout"]) expect(market.candidates[role]).toHaveLength(5);
-    const again = await (await call("/market", "GET", session.token)).json() as any;
-    expect(again).toEqual(market);
+    // The weekly market is gone (the staff pool replaces it).
+    expect((await call("/market", "GET", session.token)).status).toBe(410);
 
-    // Validation.
-    expect((await call("/hire", "POST", session.token, { role: "cook", candidateId: "x" })).status).toBe(400);
-    expect((await call("/hire", "POST", session.token, { role: "fitness", candidateId: "nope" })).status).toBe(404);
-
-    // Hire replaces the current one.
-    const pick = market.candidates.fitness[0];
-    const hired = await (await call("/hire", "POST", session.token, { role: "fitness", candidateId: pick.id })).json() as any;
-    expect(hired.staff.fitness.id).toBe(pick.id);
-    const saved = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
-    expect(saved.staff!.fitness!.id).toBe(pick.id);
-
-    // The Monday ledger carries a staff line equal to the staff bill.
+    // The Monday ledger carries a staff line equal to the contracts' wages.
     const entries = computeAdvanceDayMoney({ currentDate: "2027-03-01", playerSquad: saved, homeFixturesToday: [] });
     const line = entries.find((e) => e.kind === "staff");
     expect(line).toBeDefined();
-    expect(-line!.amount).toBe(squadStaffWages(saved.staff, wageFactorOf(saved)));
+    expect(-line!.amount).toBe(squadStaffWages(saved.staff));
     expect(computeAdvanceDayMoney({ currentDate: "2027-03-02", playerSquad: saved, homeFixturesToday: [] }).some((e) => e.kind === "staff")).toBe(false);
 
-    // Fire leaves the role vacant.
-    const fired = await (await call("/fire", "POST", session.token, { role: "fitness" })).json() as any;
-    expect(fired.staff.fitness).toBeUndefined();
-    expect(fired.effects.injuryMult).toBeGreaterThan(1); // vacant = rating 3
+    // Validation and fire: the role stays vacant (2 stars = the old rating 3).
+    expect((await call("/fire", "POST", session.token, { role: "cook" })).status).toBe(400);
+    expect((await call("/fire", "POST", session.token, { memberId: "nope" })).status).toBe(404);
+    const fitness = (start.staff.members as { id: string; role: string }[]).find((m) => m.role === "fitness")!;
+    const fired = await (await call("/fire", "POST", session.token, { memberId: fitness.id })).json() as any;
+    expect((fired.staff.members as { role: string }[]).some((m) => m.role === "fitness")).toBe(false);
+    expect(fired.effects.injuryMult).toBeGreaterThan(1);
   }, 60_000);
 });

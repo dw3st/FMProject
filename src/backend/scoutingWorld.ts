@@ -9,7 +9,7 @@ import {
   type MissionWeekInput, type PoolEntry, type ScoutingNews, type TravelDistance, type ViewerContext,
 } from "@/Domain/scouting/missions";
 import { newsToMessageArgs, type ScoutingMessageArgs } from "@/Domain/scouting/scoutingMessages";
-import { effectiveRating, obscureForViewer } from "@/Domain/staff/staff";
+import { effectiveRating, memberStars, membersOf, obscureForViewer, ratingFromStars } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
@@ -311,7 +311,7 @@ export async function scoutingDay(
     state = pruneProspects(state, date);
     const ctx = ctxFor(state);
     if (own && ctx && state.missions.length > 0) {
-      const scouts = new Map((own.staff?.scouts ?? []).map((s) => [s.id, s.rating]));
+      const scouts = new Map(membersOf(own, "fieldScout").map((s) => [s.id, ratingFromStars(memberStars(s))]));
       const inputs: MissionWeekInput[] = [];
       const youthMissions: { mission: ScoutAssignment; rating: number }[] = [];
       const revenue = wageRevenueBasisOf(own);

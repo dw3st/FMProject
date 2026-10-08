@@ -326,7 +326,13 @@
     "roles": {
       "assistant": "Assistant coach",
       "fitness": "Fitness coach",
-      "scout": "Chief scout"
+      "goalkeeping": "Goalkeeping coach",
+      "coach": "Area coach",
+      "medic": "Doctor / physio",
+      "analyst": "Performance analyst",
+      "scout": "Chief scout",
+      "fieldScout": "Field scout",
+      "groundskeeper": "Groundskeeper"
     },
     "effects": {
       "assistant": "Development points x{{mult}}",
