@@ -26,7 +26,7 @@ describe("inboxTopicOf", () => {
     expect(inboxTopicOf(msg("contract", "expiring"))).toBe("contracts");
     expect(inboxTopicOf(msg("contract", "released"))).toBe("contracts");
     expect(inboxTopicOf(msg("scouting", "prospect"))).toBe("scouting_alerts");
-    expect(inboxTopicOf(msg("scouting", "gem"))).toBe("scouting_reports");
+    expect(inboxTopicOf(msg("scouting", "gem"))).toBe("scouting_alerts");
   });
 });
 

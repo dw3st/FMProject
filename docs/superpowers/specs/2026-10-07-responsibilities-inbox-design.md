@@ -62,8 +62,8 @@ Cada tópico tem um padrão e um flag `locked`:
 | Tópico | Mensagens | Padrão | Pode desligar |
 |---|---|---|---|
 | `manager_news` | técnicos demitidos e contratados | desligado | sim |
-| `scouting_reports` | relatórios, missão encerrada, indicação mensal, joias | desligado | sim |
-| `scouting_alerts` | alertas da lista de observação, prospectos | ligado | sim |
+| `scouting_reports` | relatórios, missão encerrada, indicação mensal | desligado | sim |
+| `scouting_alerts` | joias, alertas da lista de observação, prospectos | ligado | sim |
 | `development` | evolução de atributos | ligado | sim |
 | `injuries` | lesões, volta, suspensões | ligado | sim |
 | `youth` | safra, dispensas | ligado | sim |

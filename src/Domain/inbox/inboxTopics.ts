@@ -49,7 +49,6 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",
   "scouting:recommendation": "scouting_reports",
-  "scouting:gem": "scouting_reports",
 };
 
 export function inboxTopicOf(m: InboxMessage): InboxTopic {
