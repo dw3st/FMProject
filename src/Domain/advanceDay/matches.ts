@@ -328,13 +328,16 @@ function finalizeSquadsAfterMatch(
   ): { updatedSquad: Squad; changes: PlayerDevelopmentChange[] } {
     const allChanges: PlayerDevelopmentChange[] = [];
     const { devMult } = staffEffectsOf(squad);
+    // A worn training ground (human club only, below 40%) prepares the players worse: × match DP,
+    // growth only (`.claude/rules/game/facilities.md`).
+    const { matchDevMult } = trainingGroundEffectsOf(squad);
     // Training areas (`.claude/rules/game/staff.md`): growth only, per DP category.
     const areas = areaMultsOf(squad);
     const updatedPlayers = squad.players.map((p) => {
       const rating = playerRatings[p.id] ?? 0;
       const { updatedPlayer, levelChanges } = applyDevelopment(
         p, rating, dpWeightsFor(p),
-        devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
+        devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
         professionalismDecayMult(p),
         areas,
       );

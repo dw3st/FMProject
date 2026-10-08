@@ -303,6 +303,22 @@ describe("living facilities: effects of the items' condition", () => {
     expect(g.injuryDurationMult).toBeCloseTo(1.125, 10);
   });
 
+  test("match DP: neutral at the start, the AI and from 40% up; falls with the CT items below 40%", () => {
+    expect(trainingGroundEffectsOf(human(f)).matchDevMult).toBe(1);
+    expect(trainingGroundEffectsOf(sq).matchDevMult).toBe(1);
+    expect(trainingGroundEffectsOf(human(withCondition(f, { trainingPitches: 41, gym: 41, canteen: 41 }))).matchDevMult).toBe(1);
+    // Pool and physio do not touch the match DP.
+    expect(trainingGroundEffectsOf(human(withCondition(f, { pool: 0, physio: 0 }))).matchDevMult).toBe(1);
+    const at = (c: number) => trainingGroundEffectsOf(human(withCondition(f, { trainingPitches: c, gym: c, canteen: c }))).matchDevMult;
+    expect(at(20)).toBeCloseTo(1 + (F.WEAR.CT_MATCH_DEV_MIN - 1) * 0.5, 10);
+    expect(at(0)).toBeCloseTo(F.WEAR.CT_MATCH_DEV_MIN, 10);
+    expect(at(0)).toBeLessThan(at(20));
+    expect(at(20)).toBeLessThan(1);
+    // Mean of the three items: 0%, 40% and 40% = the mean condition 26.7% (a third of the penalty).
+    const one = trainingGroundEffectsOf(human(withCondition(f, { trainingPitches: 0, gym: 40, canteen: 40 }))).matchDevMult;
+    expect(one).toBeCloseTo(1 + (F.WEAR.CT_MATCH_DEV_MIN - 1) / 3, 6);
+  });
+
   test("physio level: a better physio shortens injuries, neutral at the starting level", () => {
     const up = { ...f, items: { ...f.items, physio: { level: 10, wear: 0 } } };
     expect(trainingGroundEffectsOf(human(up)).injuryDurationMult).toBeLessThan(1);

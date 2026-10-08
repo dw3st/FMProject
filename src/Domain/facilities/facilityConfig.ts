@@ -117,6 +117,11 @@ export const FACILITIES = {
     TRAINING_PITCH_DEV_MIN: 0.95,
     GYM_DEV_MIN: 0.93,
     CANTEEN_DEV_MIN: 0.97,
+    /**
+     * Match DP (human club, growth only) at a mean condition 0 of the training pitches, gym and canteen
+     * (decision of 2026-10-08, M3: the training DP alone moved the evolution only −2..−7%).
+     */
+    CT_MATCH_DEV_MIN: 0.82,
     POOL_RECOVERY_MIN: 0.97,
     PHYSIO_RECOVERY_MIN: 0.97,
     /**

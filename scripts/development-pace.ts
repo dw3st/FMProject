@@ -13,7 +13,8 @@
  * Each season: 38 matches (every third rated 7.2, the rest 6.4), one normal training session per match.
  * `--areas` sets every training area to that many stars (3 = neutral, the default) or vacant.
  * `--ct` puts every training-ground item (pitches, gym, canteen) at that condition: the training DP × their
- * effects below 40% (`trainingGroundEffectsOf`, living facilities M3); default 90 = no effect. `--sessions` = normal
+ * effects below 40% and the match DP × `CT_MATCH_DEV_MIN` (`trainingGroundEffectsOf`, living facilities M3);
+ * default 90 = no effect. `--sessions` = normal
  * training sessions per season (default 38, one per match; the game has ~200 training days).
  * `--module` / `--roles` point at another copy of the development code / role weights (e.g. the version before
  * the training areas) to compare.
@@ -53,6 +54,8 @@ const SESSIONS = Number(argOf("--sessions") ?? 38);
 const W = FACILITIES.WEAR;
 /** Training DP × the training ground items at `--ct` (same product as `trainingGroundEffectsOf`). */
 const CT_DP = effectAt(W.TRAINING_PITCH_DEV_MIN, ctCondition) * effectAt(W.GYM_DEV_MIN, ctCondition) * effectAt(W.CANTEEN_DEV_MIN, ctCondition);
+/** Match DP × the training ground at `--ct` (`matchDevMult`: the mean condition of the same three items). */
+const CT_MATCH_DP = effectAt(W.CT_MATCH_DEV_MIN, ctCondition);
 
 const PROFILES: { name: string; role: string; stats: PlayerStatsRecord }[] = [
   { name: "meia (tudo 5)", role: "CM", stats: { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5,
@@ -79,7 +82,7 @@ function run(role: string, stats: PlayerStatsRecord, age0: number, realistic: bo
   for (let season = 0; season < SEASONS; season++) {
     if (realistic) p = { ...p, age: age0 + season, progress: emptyDevelopmentProgress() };
     for (let m = 0; m < 38; m++) {
-      p = dev.applyDevelopment(p, m % 3 === 0 ? 7.2 : 6.4, weights, 1, 1, AREAS).updatedPlayer;
+      p = dev.applyDevelopment(p, m % 3 === 0 ? 7.2 : 6.4, weights, CT_MATCH_DP, 1, AREAS).updatedPlayer;
       // Sessions spread over the matches (SESSIONS / 38 per match, the remainder on the first ones).
       const sessions = Math.floor(SESSIONS / 38) + (m < SESSIONS % 38 ? 1 : 0);
       for (let k = 0; k < sessions; k++) p = dev.applyTrainingDevelopment(p, "normal", weights, CT_DP, AREAS).updatedPlayer;
@@ -89,7 +92,7 @@ function run(role: string, stats: PlayerStatsRecord, age0: number, realistic: bo
 }
 
 const f = (v: number) => v.toFixed(3).padStart(7);
-console.log(`CT ${ctCondition}% (DP do treino ×${CT_DP.toFixed(3)}) · ${SESSIONS} treinos/temporada · áreas: ${areasArg === "vaga" ? "vagas" : `${areasArg} estrelas`} (×${areaMult.toFixed(3)})${moduleArg ? ` · módulo ${moduleArg}` : ""}${rolesArg ? ` · pesos ${rolesArg}` : ""}`);
+console.log(`CT ${ctCondition}% (DP do treino ×${CT_DP.toFixed(3)}, de partida ×${CT_MATCH_DP.toFixed(3)}) · ${SESSIONS} treinos/temporada · áreas: ${areasArg === "vaga" ? "vagas" : `${areasArg} estrelas`} (×${areaMult.toFixed(3)})${moduleArg ? ` · módulo ${moduleArg}` : ""}${rolesArg ? ` · pesos ${rolesArg}` : ""}`);
 for (const realistic of [true, false]) {
   console.log(realistic ? "\nrealista (virada zera o progresso, idade +1)" : "\nsem virada (idade fixa)");
   console.log(["perfil".padEnd(22), ...AGES.map((a) => `${a}`.padStart(7))].join(""));

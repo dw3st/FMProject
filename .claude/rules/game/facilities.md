@@ -31,7 +31,7 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
 | `src/backend/facilityRoutes.ts` | `GET /api/saves/:id/facilities`, `POST /api/saves/:id/facilities/request` |
 | `src/backend/advanceDay.ts` | Bloco financeiro: obras do dia, público dos jogos em casa, bilheteria pelo público, parcelas, mensagens adiadas |
 | `src/Domain/advanceDay/financial.ts` | `PlayerHomeFixtureToday.attendance/priceMult`; manutenção na segunda (`facilities_upkeep`) |
-| `src/Domain/advanceDay/dailyTraining.ts`, `dailyRest.ts`, `matches.ts` | Efeitos do CT na recuperação, lesão de treino e DP do treino |
+| `src/Domain/advanceDay/dailyTraining.ts`, `dailyRest.ts`, `matches.ts` | Efeitos do CT na recuperação, lesão de treino, DP do treino e (condição, clube do jogador) DP de partida |
 | `src/Domain/youth/youth.ts` | Efeitos da base na safra |
 | `src/GameInterface/Facilities/FacilitiesView.tsx`, `facilitiesApi.ts`, `FacilityItemsPanel.tsx` | Tela Clube (`ClubScreen.tsx`, `/club`) |
 | `src/Domain/facilities/facilityItems.ts`, `pitch.ts` (+ testes) | Itens, condição, desgaste, efeitos; gramado da IA e de cada jogo |
@@ -82,8 +82,9 @@ demanda; últimas 80) e o recorde (`facilities.record`). Recorde batido (havendo
 | Base: chance de promessa | 3% | 4% | 5% | 7% | 9% |
 
 - O CT multiplica os efeitos do staff (`staffEffectsOf`) na recuperação (descanso, dia de treino e quem não jogou no
-  dia de jogo), na lesão de treino pesado e na DP do treino. **Nunca dentro da partida:** o motor, o quickSim, a DP
-  de partida, o fôlego de quem jogou e a familiaridade de estilo não mudam.
+  dia de jogo), na lesão de treino pesado e na DP do treino. **Nunca dentro da partida:** o motor, o quickSim, o fôlego de quem
+  jogou e a familiaridade de estilo não mudam. A DP de partida só muda pela **condição** dos itens do CT do clube do
+  jogador (abaixo de 40%, ver "Efeitos abaixo de 40%"); o nível do CT não mexe nela.
 - A base entra em `generateIntake` **relativa ao nível implícito do tier** (`academyEffectsOf`: efeito do nível
   3 + nível − implícito): a IA fica sempre no neutro (o tier já conta no `TIER_BONUS`) e o clube do jogador ganha
   ou perde só pelos níveis que construiu acima ou abaixo do implícito do seu tier.
@@ -198,6 +199,7 @@ largada é a de antes.
 | Estrutura | Demanda | ×0,95 | `demandOf` |
 | Campos de treino | Lesão no treino pesado; chance nova no normal/leve (até 0,5%); DP do treino | ×1,6; `HEAVY × 0,5 × penalty`; ×0,95 | `trainingGroundEffectsOf` |
 | Academia / refeitório | DP do treino | ×0,93 / ×0,97 | idem |
+| Campos de treino + academia + refeitório (média da condição) | DP de partida, só crescimento (nunca o declínio por idade) | ×0,82 (`CT_MATCH_DEV_MIN`) | `matchDevMult` → `finalizeSquadsAfterMatch` |
 | Piscina | Recuperação diária | ×0,97 | idem |
 | Fisioterapia | Recuperação; dias fora de toda lesão nova (com o médico) | ×0,97; ×1,25 | idem; `injuryDurationMult` (nível: ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15) |
 | Campos da base / alojamento | Nível da safra; promessa | −0,15 cada; ×0,8 | `academyEffectsOf` |
@@ -281,17 +283,18 @@ ruído, igual ao do modo 90); gramado 20% × 90% ~×1,3 (✓: quickSim ×1,30; m
 ~150–200 lesões). `AI_PITCH` não mudou.
 
 **M3 — CT ruim na evolução** (`bun scripts/development-pace.ts --ct 20 [--sessions 200]`, caso realista de 3
-temporadas; DP do treino ×0,927 com o CT a 20%, ×0,857 a 0%): o Δ da média dos 13 atributos quase não muda.
+temporadas; com o CT a 20%: DP do treino ×0,927 e, desde a decisão de 2026-10-08, DP de partida ×0,910
+(`CT_MATCH_DEV_MIN` 0,82 em 0%); a 0%: ×0,857 e ×0,82).
 
-| Δ média 13 (linha / goleiro) | 18 anos | 21 | 24 |
+| Δ média 13 (linha / goleiro), CT 90% → 20% | 18 anos | 21 | 24 |
 |---|---|---|---|
-| 38 treinos/temporada, CT 90% → 20% | 0,390 → 0,385 (−1,3%) / 0,731 → 0,700 (−4,2%) | 0,313 → 0,313 / 0,538 → 0,538 | igual |
-| 200 treinos/temporada, CT 90% → 20% | 0,559 → 0,544 (−2,7%) / 1,038 → 0,992 (−4,4%) | 0,390 → 0,382 (−2,1%) / 0,754 → 0,700 (−7,2%) | 0,326 → 0,308 (−5,5%) / igual |
+| 38 treinos/temporada | 0,390 → 0,367 (−5,9%) / 0,731 → 0,677 (−7,4%) | 0,313 → 0,279 (−10,9%) / 0,538 → 0,523 (−2,8%) | 0,251 → 0,238 (−5,2%) / 0,438 → 0,408 (−6,8%) |
+| 200 treinos/temporada | 0,559 → 0,526 (−5,9%) / 1,038 → 0,977 (−5,9%) | 0,390 → 0,367 (−5,9%) / 0,754 → 0,677 (−10,2%) | 0,326 → 0,297 (−8,9%) / 0,608 → 0,592 (−2,6%) |
 
-**Abaixo da meta da spec (−5% a −8% num jovem):** o CT só pesa na DP do **treino** (a DP de partida, que é a maior
-parte do crescimento, não muda) e o teto do multiplicador é ×0,927 a 20%. Para chegar à meta seria preciso aumentar
-os mínimos (`TRAINING_PITCH_DEV_MIN`/`GYM_DEV_MIN`/`CANTEEN_DEV_MIN`) ou levar o CT à DP de partida — fora do desenho;
-**não mexido, decisão do usuário.**
+Média das 12 células: **−6,5%** (meta −5% a −8% ✓; antes, só com a DP do treino, −2,2%: de 0% a −7,2% por célula).
+O passo de 0,1 e a virada que zera o progresso deixam cada célula em degraus (uma célula anda 0,0077 por passo de um
+atributo, 1–3% do Δ), por isso a calibração é pela média, como em `development.md`: 0,86 dava −5,5%, 0,84 −6,0%, 0,82
+−6,5%, 0,80 −7,9% (com a linha de 21 anos saltando para −17%). Com o CT a 40% ou mais nada muda (teste).
 
 **M4 — linha do tempo do desgaste** (`bun scripts/facilities-wear.ts`, nível 6 novo, 278 dias de temporada com 25
 jogos em casa e 199 treinos normais, 87 dias de entressafra): gramado do estádio a 40% em **0,43 temporada (19/01)**

@@ -569,6 +569,43 @@ describe("buildMatchEventFromRecording — the medic", () => {
   });
 });
 
+describe("buildMatchEventFromRecording — training ground and the match DP", () => {
+  // Age 25 with a 6.5 rating: a little DP, no step crossed, so the progress shows the DP earned.
+  const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+  const recording = baseRecording({
+    playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+    playerEnergy: { "h-p0": 80, "a-p0": 80 },
+    playerRatings: { "h-p0": 6.5, "a-p0": 6.5 },
+  });
+  const dpOf = (p: RosterPlayer) => Object.values(p.progress ?? {}).reduce((a, b) => a + b, 0);
+  const base = makeSquad("h", 1);
+  const f = initialFacilities(base, 1);
+  const withCt = (c: number): Squad => ({
+    ...base,
+    facilities: { ...f, items: { ...f.items, ...Object.fromEntries((["trainingPitches", "gym", "canteen"] as const)
+      .map((id) => [id, { ...f.items[id], wear: wearFor(c) }])) } },
+  });
+  const homeDp = (s: Squad) => dpOf(buildMatchEventFromRecording(fixture, s, makeSquad("a", 1), recording, () => 0.5).updatedHome.players[0]!);
+
+  test("CT at 20% earns less match DP; at 50% (and the starting facilities) the same as the AI", () => {
+    const ai = homeDp(base);
+    expect(homeDp(withCt(50))).toBeCloseTo(ai, 10);
+    expect(homeDp({ ...base, facilities: f })).toBeCloseTo(ai, 10);
+    const seed = dpOf(buildMatchEventFromRecording(fixture, base, makeSquad("a", 1), baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() }, playerEnergy: { "h-p0": 80, "a-p0": 80 },
+    }), () => 0.5).updatedHome.players[0]!);
+    const earned = (s: Squad) => homeDp(s) - seed;
+    expect(earned(base)).toBeGreaterThan(0);
+    expect(earned(withCt(20)) / earned(base)).toBeCloseTo(trainingGroundEffectsOf(withCt(20)).matchDevMult, 6);
+    expect(earned(withCt(20))).toBeLessThan(earned(base));
+  });
+
+  test("the AI opponent is untouched by the human club's training ground", () => {
+    const awayDp = (s: Squad) => dpOf(buildMatchEventFromRecording(fixture, s, makeSquad("a", 1), recording, () => 0.5).updatedAway.players[0]!);
+    expect(awayDp(withCt(20))).toBeCloseTo(awayDp(base), 10);
+  });
+});
+
 describe("buildMatchEvent — goals (season awards)", () => {
   test("event.goals: roster ids of the match, one per goal, sides match the score", () => {
     const home = loadRealSquad("33.json");

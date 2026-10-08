@@ -102,8 +102,8 @@ temporada (por volta de abril numa liga europeia); sem jardineiro, em ~0,5 tempo
 | Campos da base | Nível da safra | − 0,15 | `academyEffectsOf.qualityBonus` |
 | Alojamento | Nível da safra; chance de promessa | − 0,15; × 0,8 | idem |
 
-CT com todos os itens em 20% (metade da penalidade): DP do treino × ~0,925, lesão de treino pesado × 1,3. Nunca
-dentro da partida, exceto o gramado do estádio (lesões).
+CT com todos os itens em 20% (metade da penalidade): DP do treino × ~0,925, DP de partida × 0,91 (Decidido 5), lesão
+de treino pesado × 1,3. Nunca dentro da partida, exceto o gramado do estádio (lesões).
 
 ### Interdição (< 15%)
 
@@ -240,17 +240,18 @@ ruído, igual ao do modo 90); gramado 20% × 90% ~×1,3 (✓: quickSim ×1,30; m
 ~150–200 lesões). `AI_PITCH` não mudou.
 
 **M3 — CT ruim na evolução** (`bun scripts/development-pace.ts --ct 20 [--sessions 200]`, caso realista de 3
-temporadas; DP do treino ×0,927 com o CT a 20%, ×0,857 a 0%): o Δ da média dos 13 atributos quase não muda.
+temporadas; com o CT a 20%: DP do treino ×0,927 e, desde a decisão de 2026-10-08, DP de partida ×0,910
+(`CT_MATCH_DEV_MIN` 0,82 em 0%); a 0%: ×0,857 e ×0,82).
 
-| Δ média 13 (linha / goleiro) | 18 anos | 21 | 24 |
+| Δ média 13 (linha / goleiro), CT 90% → 20% | 18 anos | 21 | 24 |
 |---|---|---|---|
-| 38 treinos/temporada, CT 90% → 20% | 0,390 → 0,385 (−1,3%) / 0,731 → 0,700 (−4,2%) | 0,313 → 0,313 / 0,538 → 0,538 | igual |
-| 200 treinos/temporada, CT 90% → 20% | 0,559 → 0,544 (−2,7%) / 1,038 → 0,992 (−4,4%) | 0,390 → 0,382 (−2,1%) / 0,754 → 0,700 (−7,2%) | 0,326 → 0,308 (−5,5%) / igual |
+| 38 treinos/temporada | 0,390 → 0,367 (−5,9%) / 0,731 → 0,677 (−7,4%) | 0,313 → 0,279 (−10,9%) / 0,538 → 0,523 (−2,8%) | 0,251 → 0,238 (−5,2%) / 0,438 → 0,408 (−6,8%) |
+| 200 treinos/temporada | 0,559 → 0,526 (−5,9%) / 1,038 → 0,977 (−5,9%) | 0,390 → 0,367 (−5,9%) / 0,754 → 0,677 (−10,2%) | 0,326 → 0,297 (−8,9%) / 0,608 → 0,592 (−2,6%) |
 
-**Abaixo da meta da spec (−5% a −8% num jovem):** o CT só pesa na DP do **treino** (a DP de partida, que é a maior
-parte do crescimento, não muda) e o teto do multiplicador é ×0,927 a 20%. Para chegar à meta seria preciso aumentar
-os mínimos (`TRAINING_PITCH_DEV_MIN`/`GYM_DEV_MIN`/`CANTEEN_DEV_MIN`) ou levar o CT à DP de partida — fora do desenho;
-**não mexido, decisão do usuário.**
+Média das 12 células: **−6,5%** (meta −5% a −8% ✓; antes, só com a DP do treino, −2,2%: de 0% a −7,2% por célula).
+O passo de 0,1 e a virada que zera o progresso deixam cada célula em degraus (uma célula anda 0,0077 por passo de um
+atributo, 1–3% do Δ), por isso a calibração é pela média, como em `development.md`: 0,86 dava −5,5%, 0,84 −6,0%, 0,82
+−6,5%, 0,80 −7,9% (com a linha de 21 anos saltando para −17%). Com o CT a 40% ou mais nada muda (teste).
 
 **M4 — linha do tempo do desgaste** (`bun scripts/facilities-wear.ts`, nível 6 novo, 278 dias de temporada com 25
 jogos em casa e 199 treinos normais, 87 dias de entressafra): gramado do estádio a 40% em **0,43 temporada (19/01)**
@@ -291,3 +292,9 @@ Os pontos abertos da primeira versão, decididos pelo usuário:
    Neutro no nível e na condição iniciais. Aplicado onde a `returnDate` é calculada para o clube do jogador
    (`finalizeSquadsAfterMatch` em `matches.ts`, `buildTrainingEvent` em `dailyTraining.ts`): `injuryReturnDate(...,
    medic × physio)`. A IA não muda (sem instalações: × 1).
+5. **CT ruim pesa também na DP de partida (preparação pior).** Com a DP só do treino a M3 ficava em −2% (meta −5% a
+   −8%). `trainingGroundEffectsOf(squad).matchDevMult = effectAt(WEAR.CT_MATCH_DEV_MIN (0,82), média da condição de
+   campos de treino, academia e refeitório)`: 1 a partir de 40%, nas condições iniciais e para a IA (sem
+   instalações); × 0,91 a 20%, × 0,82 em 0%. Multiplica a DP de partida em `finalizeSquadsAfterMatch` junto do
+   auxiliar, renascido, profissionalismo e moral; só o crescimento (o declínio por idade não muda, como as áreas da
+   4.7). Medido na M3 (§9): −6,5% na média.

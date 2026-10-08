@@ -68,26 +68,34 @@ export interface ClubTrainingEffects extends TrainingGroundEffects {
   normalSessionInjury: number;
   /** Physio: × days out of a new injury of the club (1 for the AI). */
   injuryDurationMult: number;
+  /**
+   * × match DP (growth only, never the age decline): a worn training ground prepares the players worse.
+   * Mean condition of the training pitches, gym and canteen; 1 from 40% up and for the AI.
+   */
+  matchDevMult: number;
 }
 
 /**
  * Training-ground effects of a club: the group level, then the items below 40% (human club only).
- * Never applied inside a match.
+ * Never applied inside a match (the match DP is applied after it, in `finalizeSquadsAfterMatch`).
  */
 export function trainingGroundEffectsOf(squad: Squad): ClubTrainingEffects {
   const base = trainingEffectsAt(facilityLevels(squad).training);
   const f = livingFacilities(squad);
-  if (!f) return { ...base, normalSessionInjury: 0, injuryDurationMult: 1 };
+  if (!f) return { ...base, normalSessionInjury: 0, injuryDurationMult: 1, matchDevMult: 1 };
   const W = F.WEAR;
   const pitches = itemCondition(f, "trainingPitches");
+  const gym = itemCondition(f, "gym");
+  const canteen = itemCondition(f, "canteen");
   return {
-    devMult: base.devMult * effectAt(W.TRAINING_PITCH_DEV_MIN, pitches) * effectAt(W.GYM_DEV_MIN, itemCondition(f, "gym"))
-      * effectAt(W.CANTEEN_DEV_MIN, itemCondition(f, "canteen")),
+    devMult: base.devMult * effectAt(W.TRAINING_PITCH_DEV_MIN, pitches) * effectAt(W.GYM_DEV_MIN, gym)
+      * effectAt(W.CANTEEN_DEV_MIN, canteen),
     recoveryMult: base.recoveryMult * effectAt(W.POOL_RECOVERY_MIN, itemCondition(f, "pool"))
       * effectAt(W.PHYSIO_RECOVERY_MIN, itemCondition(f, "physio")),
     injuryMult: base.injuryMult * effectAt(W.PITCH_INJURY_MAX, pitches),
     normalSessionInjury: INJURY.HEAVY_TRAINING_CHANCE * W.NORMAL_TRAINING_INJURY_SHARE * penalty(pitches),
     injuryDurationMult: physioDurationMult(f.items.physio, impliedLevel(squad)),
+    matchDevMult: effectAt(W.CT_MATCH_DEV_MIN, (pitches + gym + canteen) / 3),
   };
 }
 
