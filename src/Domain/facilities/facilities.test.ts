@@ -7,7 +7,11 @@ import {
 } from "@/Domain/facilities/facilities";
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { gateRevenue } from "@/Domain/finance/gate";
-import { academyEffectsOf, committedSpend } from "@/Domain/facilities/facilities";
+import { academyEffectsOf, committedSpend, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
+import { comfortLevelPriceMult } from "@/Domain/facilities/facilities";
+import { FACILITY_ITEMS, wearFor, withGroupLevel } from "@/Domain/facilities/facilityItems";
+import { INJURY } from "@/Domain/injury/injuryConfig";
+import type { FacilityItemId } from "@/types/facilityTypes";
 import { clubAnnualRevenue } from "@/Domain/finance/wages";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import type { Squad } from "@/types/playerTypes";
@@ -64,9 +68,22 @@ describe("stadium", () => {
   });
 
   test("comfort raises the price 6% per level", () => {
-    expect(comfortPriceMult(1)).toBe(1);
-    expect(comfortPriceMult(3)).toBeCloseTo(1.12, 10);
-    expect(comfortPriceMult(5)).toBeCloseTo(1.24, 10);
+    expect(comfortLevelPriceMult(1)).toBe(1);
+    expect(comfortLevelPriceMult(3)).toBeCloseTo(1.12, 10);
+    expect(comfortLevelPriceMult(5)).toBeCloseTo(1.24, 10);
+    const f = initialFacilities(squad(), 1);
+    expect(comfortPriceMult(f)).toBe(1);
+    expect(comfortPriceMult(withGroupLevel(f, "comfort", 3))).toBeCloseTo(1.12, 10);
+  });
+
+  test("worn seats and structure: demand × 0.9 × 0.95 and price × 0.95 at 0%", () => {
+    const f = initialFacilities(squad(), 1);
+    const base = demandOf(f, { followers: 2_000_000, tier: 1, fans: 60 });
+    const worn = withCondition(f, { seats: 0, stadiumStructure: 0 });
+    expect(demandOf(worn, { followers: 2_000_000, tier: 1, fans: 60 })).toBeCloseTo(base * 0.9 * 0.95, 6);
+    expect(comfortPriceMult(worn)).toBeCloseTo(0.95, 10);
+    // At 40% or more nothing changes.
+    expect(demandOf(withCondition(f, { seats: 40, stadiumStructure: 41 }), { followers: 2_000_000, tier: 1, fans: 60 })).toBeCloseTo(base, 6);
   });
 
   test("expanding without demand does not raise the estimated revenue", () => {
@@ -124,12 +141,15 @@ describe("costs", () => {
     expect(quoteProject(f, { kind: "stand", stand: "north", seats: 1500 }, ctx)).toBeNull();
     expect(quoteProject(f, { kind: "stand", stand: "north", seats: 11000 }, ctx)).toBeNull();
     expect(quoteProject(f, { kind: "stand", stand: "north", seats: 3000 }, ctx)!.cost).toBe(9_000_000);
-    const tr = quoteProject({ ...f, training: 2 }, { kind: "training" }, ctx)!;
+    const tr = quoteProject(withGroupLevel(f, "training", 2), { kind: "training" }, ctx)!;
     expect(tr.level).toBe(3);
     expect(tr.cost).toBe(6_000_000);
     expect(tr.weeks).toBeGreaterThanOrEqual(12);
     expect(tr.weeks).toBeLessThanOrEqual(40);
-    expect(quoteProject({ ...f, academy: 5 }, { kind: "academy" }, ctx)).toBeNull();
+    expect(quoteProject(withGroupLevel(f, "academy", 5), { kind: "academy" }, ctx)).toBeNull();
+    // A fractional group level asks for the next whole level.
+    const half = { ...f, items: { ...f.items, gym: { ...f.items.gym, level: f.items.gym.level + 1 } } };
+    expect(quoteProject(half, { kind: "training" }, ctx)!.level).toBe(Math.floor(f.items.gym.level / 2) + 1);
     expect(quoteProject(f, { kind: "comfort" }, ctx)!.cost).toBe(40000 * 100);
   });
 
@@ -137,7 +157,7 @@ describe("costs", () => {
     const sq = squad();
     const f = initialFacilities(sq, 1);
     expect(weeklyUpkeep(withFacilities(sq, f), 9e7)).toBe(0);
-    expect(weeklyUpkeep(withFacilities(sq, { ...f, training: f.training + 2 }), 9e7)).toBe(Math.round((9e7 * 2 * F.TRAINING_UPKEEP_SHARE) / 52));
+    expect(weeklyUpkeep(withFacilities(sq, withGroupLevel(f, "training", 5)), 9e7)).toBe(Math.round((9e7 * 2 * F.TRAINING_UPKEEP_SHARE) / 52));
     expect(weeklyUpkeep(sq, 9e7)).toBe(0);
   });
 });
@@ -161,9 +181,9 @@ describe("effects", () => {
     const elite = squad({ finances: { broadcasting: 2e8, commercial: 2e8, total: 4e8, budget: 0, followers: 1e8 } });
     expect(academyEffectsOf(elite)).toEqual(academyEffectsAt(3));
     const f = initialFacilities(elite, 1);
-    expect(f.academy).toBe(4);
+    expect(facilityLevels(withFacilities(elite, f)).academy).toBe(4);
     expect(academyEffectsOf(withFacilities(elite, f))).toEqual(academyEffectsAt(3));
-    expect(academyEffectsOf(withFacilities(elite, { ...f, academy: 5 }))).toEqual(academyEffectsAt(4));
+    expect(academyEffectsOf(withFacilities(elite, withGroupLevel(f, "academy", 5)))).toEqual(academyEffectsAt(4));
   });
 
   test("AI clubs use the implied level by tier; the human club its stored levels", () => {
@@ -172,7 +192,7 @@ describe("effects", () => {
     const elite = squad({ finances: { broadcasting: 2e8, commercial: 2e8, total: 4e8, budget: 0, followers: 1e8 } });
     expect(facilityLevels(elite)).toEqual({ training: 4, academy: 4 });
     const f = initialFacilities(low, 1);
-    expect(facilityLevels(withFacilities(low, { ...f, training: 5 }))).toEqual({ training: 5, academy: 2 });
+    expect(facilityLevels(withFacilities(low, withGroupLevel(f, "training", 5)))).toEqual({ training: 5, academy: 2 });
     const mid = squad({ finances: { broadcasting: 3e7, commercial: 1e7, total: 4e7, budget: 0, followers: 1e6 } });
     expect(facilityLevels(mid)).toEqual({ training: 3, academy: 3 });
   });
@@ -239,5 +259,81 @@ describe("projects", () => {
     f = r1.facilities;
     expect(recordAttendance(f, row(19000)).recordBroken).toBeNull();
     expect(recordAttendance(f, row(25000)).recordBroken).toEqual({ previous: 20000, attendance: 25000 });
+  });
+});
+
+function withCondition(f: ClubFacilities, conds: Partial<Record<FacilityItemId, number>>): ClubFacilities {
+  const items = { ...f.items };
+  for (const [id, c] of Object.entries(conds) as [FacilityItemId, number][]) items[id] = { ...items[id], wear: wearFor(c) };
+  return { ...f, items };
+}
+
+describe("living facilities: effects of the items' condition", () => {
+  const sq = squad();
+  const f = initialFacilities(sq, 1);
+  const human = (x: ClubFacilities) => withFacilities(sq, x);
+
+  test("starting items: levels and effects are today's (group level = implied)", () => {
+    expect(facilityLevels(human(f))).toEqual(facilityLevels(sq));
+    const ground = trainingGroundEffectsOf(human(f));
+    expect({ recoveryMult: ground.recoveryMult, injuryMult: ground.injuryMult, devMult: ground.devMult })
+      .toEqual(trainingEffectsAt(facilityLevels(sq).training));
+    expect(ground.normalSessionInjury).toBe(0);
+    expect(ground.injuryDurationMult).toBe(1);
+    expect(academyEffectsOf(human(f))).toEqual(academyEffectsAt(3));
+    for (const id of FACILITY_ITEMS) expect(f.items[id].level).toBe(id === "seats" ? 2 : 6);
+  });
+
+  test("AI clubs: no penalties, physio neutral", () => {
+    const g = trainingGroundEffectsOf(sq);
+    expect(g.normalSessionInjury).toBe(0);
+    expect(g.injuryDurationMult).toBe(1);
+  });
+
+  test("training pitches, gym and canteen at 20%: development, injuries, normal-session risk", () => {
+    const worn = human(withCondition(f, { trainingPitches: 20, gym: 20, canteen: 20, pool: 20, physio: 20 }));
+    const lv = trainingEffectsAt(facilityLevels(sq).training);
+    const g = trainingGroundEffectsOf(worn);
+    expect(g.devMult).toBeCloseTo(lv.devMult * 0.975 * 0.965 * 0.985, 10);
+    expect(g.injuryMult).toBeCloseTo(lv.injuryMult * 1.3, 10);
+    expect(g.recoveryMult).toBeCloseTo(lv.recoveryMult * 0.985 * 0.985, 10);
+    expect(g.normalSessionInjury).toBeCloseTo(INJURY.HEAVY_TRAINING_CHANCE * 0.5 * 0.5, 12);
+    expect(g.normalSessionInjury).toBeLessThanOrEqual(0.005);
+    // Physio at 20%: injuries last 12.5% longer.
+    expect(g.injuryDurationMult).toBeCloseTo(1.125, 10);
+  });
+
+  test("physio level: a better physio shortens injuries, neutral at the starting level", () => {
+    const up = { ...f, items: { ...f.items, physio: { level: 10, wear: 0 } } };
+    expect(trainingGroundEffectsOf(human(up)).injuryDurationMult).toBeLessThan(1);
+    const down = { ...f, items: { ...f.items, physio: { level: 2, wear: 0 } } };
+    expect(trainingGroundEffectsOf(human(down)).injuryDurationMult).toBeGreaterThan(1);
+  });
+
+  test("academy pitches and lodging at 0%: intake −0.3, promise × 0.8", () => {
+    const worn = human(withCondition(f, { academyPitches: 0, academyLodging: 0 }));
+    const e = academyEffectsOf(worn);
+    expect(e.qualityBonus).toBeCloseTo(-0.3, 10);
+    expect(e.promiseChance).toBeCloseTo(academyEffectsAt(3).promiseChance * 0.8, 10);
+  });
+
+  test("group works raise every item of the group to 2 × the new level at 100%", () => {
+    let x = withCondition(f, { gym: 30 });
+    const q = quoteProject(x, { kind: "training" }, { revenue: 1e8, seatCost: 3000 })!;
+    expect(q.level).toBe(4);
+    x = startProject(x, q, { id: "t", date: "2027-01-01", boardShare: 0 });
+    const done = advanceFacilities(x, x.projects[0]!.end).facilities;
+    for (const id of ["trainingPitches", "gym", "pool", "physio", "canteen"] as const) {
+      expect(done.items[id].level).toBe(8);
+      expect(done.items[id].wear).toBe(0);
+    }
+    expect(done.items.seats).toEqual(x.items.seats);
+    const c = startProject(f, quoteProject(f, { kind: "comfort" }, { revenue: 1e8, seatCost: 3000 })!, { id: "c", date: "2027-01-01", boardShare: 0 });
+    expect(advanceFacilities(c, c.projects[0]!.end).facilities.items.seats.level).toBe(4);
+  });
+
+  test("weekly upkeep unchanged with whole levels", () => {
+    expect(weeklyUpkeep(human(f), 9e7)).toBe(0);
+    expect(weeklyUpkeep(human(withGroupLevel(f, "academy", 5)), 9e7)).toBe(Math.round((9e7 * 2 * F.ACADEMY_UPKEEP_SHARE) / 52));
   });
 });

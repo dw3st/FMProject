@@ -98,7 +98,7 @@ temporada (por volta de abril numa liga europeia); sem jardineiro, em ~0,5 tempo
 | Academia | DP do treino | × 0,93 | idem |
 | Refeitório | DP do treino | × 0,97 | idem |
 | Piscina | Recuperação diária | × 0,97 | `trainingGroundEffectsOf.recoveryMult` (descanso, treino, dia de jogo) |
-| Fisioterapia | Recuperação diária | × 0,97 | idem |
+| Fisioterapia | Recuperação diária; duração das lesões do clube (ver "Decidido" 4) | × 0,97; × 1,25 | idem; `injuryDurationMult` → `matches.ts`, `dailyTraining.ts` |
 | Campos da base | Nível da safra | − 0,15 | `academyEffectsOf.qualityBonus` |
 | Alojamento | Nível da safra; chance de promessa | − 0,15; × 0,8 | idem |
 
@@ -230,15 +230,23 @@ no dia N o gramado do estádio é forçado a 45% e cai abaixo de 40% → mensage
 primeiro dia da nova; lesões na faixa 0,15–0,5 (já existe); a rota `demand` de um jogador de fora com o CT forçado a
 20% traz `facilities > 1`; nenhum clube da IA grava instalações.
 
-## Pontos abertos
+## Decidido (2026-10-08)
 
-1. **Treino normal e lesões:** hoje só o treino pesado lesiona. Para o CT ruim pesar no treino comum, a spec cria uma
-   chance pequena no treino normal/leve proporcional à penalidade dos campos (`HEAVY_TRAINING_CHANCE × 0,5 ×
-   penalty`, máx. 0,5% por sessão). Se o usuário preferir manter "só o pesado lesiona", basta zerar
-   `WEAR.NORMAL_TRAINING_INJURY_SHARE`.
-2. **Reforma pequena sem diretoria e saldo:** a decisão diz "paga direto do caixa"; a spec recusa (`no_money`) se o
-   saldo menos o comprometido não cobre, em vez de deixar o saldo negativo. Alternativa: permitir o negativo (como a
-   compra de jogador).
-3. **Renovações:** a decisão fala em contratação; a linha de instalações não entra na renovação do próprio jogador.
-4. **Fisioterapia:** fica só na recuperação diária; não mexe na duração das lesões (o médico já faz isso) para não
-   tocar `matches.ts`/`dailyTraining.ts` em mais pontos.
+Os pontos abertos da primeira versão, decididos pelo usuário:
+
+1. **Treino normal e lesões — aprovado.** Gramado do CT ruim cria uma chance pequena de lesão no treino normal/leve,
+   proporcional à penalidade dos campos (`HEAVY_TRAINING_CHANCE × WEAR.NORMAL_TRAINING_INJURY_SHARE (0,5) ×
+   penalty`, máx. 0,5% por sessão).
+2. **Reforma pequena sem saldo — aprovado.** A reforma pequena (paga do caixa, sem diretoria) é recusada com
+   `no_money` se o saldo menos o comprometido (`committedSpend`) não cobre; o saldo nunca fica negativo por ela.
+3. **Renovações — aprovado.** Instalações ruins aumentam o pedido de salário só nas contratações; a renovação do
+   próprio jogador não tem a linha de instalações.
+4. **Fisioterapia — muda também a duração das lesões.** Além da recuperação diária (× 0,97 em 0%), a fisioterapia
+   multiplica os dias fora de toda lesão nova do clube do jogador (partida e treino), junto com o médico
+   (`injuries.md`): `trainingGroundEffectsOf(squad).injuryDurationMult = nível × condição`, com
+   - condição: `effectAt(WEAR.PHYSIO_DURATION_MAX (1,25), condição)` (1 a partir de 40%, × 1,25 em 0% ou interditada);
+   - nível: `clamp(1 − 0,03 × (nível − 2 × nível implícito do tier), 0,85, 1,15)` (neutro no nível inicial; nível
+     10 num clube MEDIUM × 0,88).
+   Neutro no nível e na condição iniciais. Aplicado onde a `returnDate` é calculada para o clube do jogador
+   (`finalizeSquadsAfterMatch` em `matches.ts`, `buildTrainingEvent` em `dailyTraining.ts`): `injuryReturnDate(...,
+   medic × physio)`. A IA não muda (sem instalações: × 1).

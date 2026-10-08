@@ -228,7 +228,8 @@ function finalizeSquadsAfterMatch(
     // Members who did not play recover like a rest day: staff × training ground
     // (`.claude/rules/game/facilities.md`); the post-match fitness of who played is untouched.
     const staffFx = staffEffectsOf(squad);
-    const recoveryMult = staffFx.recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
+    const ground = trainingGroundEffectsOf(squad);
+    const recoveryMult = staffFx.recoveryMult * ground.recoveryMult;
     return {
       ...squad,
       players: squad.players.map((p0) => {
@@ -310,8 +311,9 @@ function finalizeSquadsAfterMatch(
         }
         const inj = injuryByPlayer.get(p.id);
         if (inj) {
-          // The medic (`src/Domain/staff`) shortens or lengthens the time out, same draw.
-          const rd = injuryReturnDate(matchDate, inj.severity, rng, staffFx.injuryDurationMult);
+          // The medic (`src/Domain/staff`) and the human club's physio (`facilities.md`) shorten or
+          // lengthen the time out, same draw.
+          const rd = injuryReturnDate(matchDate, inj.severity, rng, staffFx.injuryDurationMult * ground.injuryDurationMult);
           injuriesApplied.push({ ...inj, returnDate: rd });
           const merged = mergeInjury(p.injury, { severity: inj.severity, returnDate: rd });
           return { ...pl, seasonLog: withInjuryCounted(log, matchDate, p.injury, rd), injury: merged };

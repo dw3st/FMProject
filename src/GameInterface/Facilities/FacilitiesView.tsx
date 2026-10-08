@@ -68,7 +68,7 @@ export function FacilitiesView({
           sub={avgAttendance === null ? undefined : t("facilities.kpi.occupancy", { pct: Math.round(avgOcc * 100) })} />
         <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record?.date} />
         <Kpi label={t("facilities.kpi.ticket")} value={`+${Math.round((data.priceMult - 1) * 100)}%`}
-          sub={t("facilities.kpi.comfortLevel", { level: f.comfort })} />
+          sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort) })} />
       </div>
 
       {outcome && <OutcomeNotice outcome={outcome} onClose={() => setOutcome(null)} />}
@@ -99,7 +99,7 @@ export function FacilitiesView({
           )}
           <div className="border-t border-border pt-4">
             <LevelBlock
-              kind="comfort" level={f.comfort} data={data} busy={running("comfort")} pending={pending}
+              kind="comfort" level={data.levels.comfort} data={data} busy={running("comfort")} pending={pending}
               current={t("facilities.comfort.effect", { pct: Math.round((data.priceMult - 1) * 100) })}
               next={t("facilities.comfort.effect", { pct: Math.round((data.priceMult - 1) * 100) + FACILITIES.COMFORT_PRICE_STEP * 100 })}
               onAsk={() => void ask({ kind: "comfort" })}
@@ -113,7 +113,7 @@ export function FacilitiesView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="card-arcade rounded-md p-4">
           <LevelBlock
-            kind="training" level={f.training} data={data} busy={running("training")} pending={pending}
+            kind="training" level={data.levels.training} data={data} busy={running("training")} pending={pending}
             current={trainingText(data.effects.training.current, t)}
             next={trainingText(data.effects.training.next, t)}
             onAsk={() => void ask({ kind: "training" })}
@@ -121,7 +121,7 @@ export function FacilitiesView({
         </section>
         <section className="card-arcade rounded-md p-4">
           <LevelBlock
-            kind="academy" level={f.academy} data={data} busy={running("academy")} pending={pending}
+            kind="academy" level={data.levels.academy} data={data} busy={running("academy")} pending={pending}
             current={academyText(data.effects.academy.current, t)}
             next={academyText(data.effects.academy.next, t)}
             onAsk={() => void ask({ kind: "academy" })}
@@ -365,6 +365,11 @@ function AskRow({ data, cost, busy, pending, onAsk, disabled }: {
   );
 }
 
+/** A derived group level (mean of the item levels / 2) with at most one decimal. */
+function levelText(level: number): string {
+  return String(Math.round(level * 10) / 10);
+}
+
 function LevelMarks({ level }: { level: number }) {
   return (
     <div className="flex gap-1.5" aria-hidden>
@@ -391,7 +396,7 @@ function LevelBlock({
           <p className="text-sm text-muted-foreground mt-1 mb-0">{t(`facilities.${kind}.about`)}</p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className="font-display font-bold text-lg tabular-nums leading-none">{t("facilities.level", { level })}</span>
+          <span className="font-display font-bold text-lg tabular-nums leading-none">{t("facilities.level", { level: levelText(level) })}</span>
           <LevelMarks level={level} />
         </div>
       </div>

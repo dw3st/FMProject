@@ -79,6 +79,82 @@ export const FACILITIES = {
   /** Days between monthly instalments. */
   INSTALMENT_DAYS: 30,
 
+  // ── Living facilities (Etapa 34) ──────────────────────────────────────────
+  /** Items: `docs/superpowers/specs/2026-10-08-living-facilities-design.md`. */
+  ITEM_MAX_LEVEL: 10,
+  /**
+   * life = seasons at level 5; time/matches/training = shares of a typical season's wear; pitch =
+   * share of the groundskeeper's effect; valueShare = value at level 6 as a share of annual revenue.
+   */
+  ITEMS: {
+    stadiumPitch:     { group: "stadium",  life: 1,   time: 0.4, matches: 0.6, training: 0,   pitch: 1,   valueShare: 0.006, repairWeeks: 2, rebuildWeeks: 4 },
+    seats:            { group: "stadium",  life: 4,   time: 0.6, matches: 0.4, training: 0,   pitch: 0,   valueShare: 0.03,  repairWeeks: 4, rebuildWeeks: 12 },
+    stadiumStructure: { group: "stadium",  life: 5,   time: 1,   matches: 0,   training: 0,   pitch: 0,   valueShare: 0.025, repairWeeks: 4, rebuildWeeks: 16 },
+    trainingPitches:  { group: "training", life: 1,   time: 0.4, matches: 0,   training: 0.6, pitch: 1,   valueShare: 0.008, repairWeeks: 2, rebuildWeeks: 4 },
+    gym:              { group: "training", life: 2,   time: 0.3, matches: 0,   training: 0.7, pitch: 0,   valueShare: 0.008, repairWeeks: 3, rebuildWeeks: 6 },
+    pool:             { group: "training", life: 4,   time: 0.6, matches: 0,   training: 0.4, pitch: 0,   valueShare: 0.006, repairWeeks: 3, rebuildWeeks: 8 },
+    physio:           { group: "training", life: 3,   time: 0.7, matches: 0,   training: 0.3, pitch: 0,   valueShare: 0.006, repairWeeks: 3, rebuildWeeks: 8 },
+    canteen:          { group: "training", life: 5,   time: 1,   matches: 0,   training: 0,   pitch: 0,   valueShare: 0.005, repairWeeks: 3, rebuildWeeks: 8 },
+    academyPitches:   { group: "academy",  life: 1.5, time: 1,   matches: 0,   training: 0,   pitch: 0.5, valueShare: 0.006, repairWeeks: 2, rebuildWeeks: 4 },
+    academyLodging:   { group: "academy",  life: 4,   time: 1,   matches: 0,   training: 0,   pitch: 0,   valueShare: 0.01,  repairWeeks: 4, rebuildWeeks: 10 },
+  },
+  WEAR: {
+    /** condition = 100 × (1 − wear^POWER). */
+    POWER: 2,
+    WARN_BELOW: 40,
+    CONDEMN_BELOW: 15,
+    HOME_GAMES_REF: 25,
+    TRAINING_DAYS_REF: 200,
+    SESSION: { light: 0.7, normal: 1, heavy: 1.3 },
+    /** lifeScale(level) = BASE + STEP × level (level 5 = 1). */
+    LIFE_BASE: 0.75,
+    LIFE_STEP: 0.05,
+    /** Starting wear by kind (deterministic per club and item): condition 100%..80% at worst. */
+    START_PITCH: [0.05, 0.25],
+    START_OTHER: [0.05, 0.45],
+    /** Effects at condition 0 (linear from 40%). */
+    PITCH_INJURY_MAX: 1.6,
+    TRAINING_PITCH_DEV_MIN: 0.95,
+    GYM_DEV_MIN: 0.93,
+    CANTEEN_DEV_MIN: 0.97,
+    POOL_RECOVERY_MIN: 0.97,
+    PHYSIO_RECOVERY_MIN: 0.97,
+    /**
+     * Physio (human club only): × days out of a new injury. Condition: 1 → DURATION_MAX as it goes
+     * 40% → 0%; level: × (1 − LEVEL_STEP × (level − 2 × implied level of the tier)), within
+     * [LEVEL_MIN, LEVEL_MAX]. Neutral at the starting level and condition.
+     */
+    PHYSIO_DURATION_MAX: 1.25,
+    PHYSIO_DURATION_LEVEL_STEP: 0.03,
+    PHYSIO_DURATION_LEVEL_MIN: 0.85,
+    PHYSIO_DURATION_LEVEL_MAX: 1.15,
+    /** Normal/light sessions on a bad training pitch: HEAVY_TRAINING_CHANCE × this × penalty. */
+    NORMAL_TRAINING_INJURY_SHARE: 0.5,
+    SEATS_DEMAND_MIN: 0.9,
+    SEATS_PRICE_MIN: 0.95,
+    STRUCTURE_DEMAND_MIN: 0.95,
+    ACADEMY_QUALITY_MAX_LOSS: 0.15,
+    LODGING_PROMISE_MIN: 0.8,
+  },
+  REPAIR: {
+    /** Repair cost = value × Δcondition/100 × this; upgrade = value(level + 1) × this. */
+    COST_SHARE: 0.6,
+    /** ≤ this share of annual revenue: paid from the balance, no board. */
+    SMALL_REPAIR_SHARE: 0.02,
+    STEP: 5,
+    UPGRADE_WEEKS_SHARE: 0.6,
+  },
+  /** Groundskeeper wear multiplier on pitches (stars 1/3/5; nobody = NONE; × EXTRA per extra one). */
+  GROUNDSKEEPER: { CURVE: [1.3, 1, 0.75] as [number, number, number], NONE: 1.6, EXTRA: 0.9 },
+  /** AI home pitch: START − DROP × fraction of the home club's league window. Neutral venue: NEUTRAL. */
+  AI_PITCH: {
+    START: { LOW: 70, MEDIUM: 80, HIGH: 88, ELITE: 94 },
+    DROP: { LOW: 40, MEDIUM: 44, HIGH: 40, ELITE: 30 },
+    NEUTRAL: 90,
+  },
+  /** Signings (`contracts.ts`, `rivals.ts`): appeal below THRESHOLD costs up to DEMAND/PREFERENCE; refusal below REFUSE_BELOW. */
+  APPEAL: { THRESHOLD: 50, DEMAND_MAX: 0.1, PREFERENCE_MAX: 0.1, REFUSE_BELOW: 25, YOUTH_MAX_AGE: 21 },
+
   // ── Board decision ────────────────────────────────────────────────────────
   BOARD: {
     /** Below this (or with a negative balance): refused. */

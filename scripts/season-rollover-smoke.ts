@@ -31,6 +31,7 @@ import { fileURLToPath } from "node:url";
 import { readdir } from "fs/promises";
 import { seasonLabel } from "@/Domain/history/history";
 import { rankManagers } from "@/Domain/managers/managers";
+import { comfortPriceMult } from "@/Domain/facilities/facilities";
 
 // Windows-safe default for the runtime dir; must be set before backend modules load.
 process.env.RUNTIME_DATA_DIR ||= fileURLToPath(new URL("../src/Data", import.meta.url));
@@ -1708,7 +1709,7 @@ try {
     check(funded === Math.round(facTrack.cost * facTrack.boardShare),
       `instalações: board funding ${funded} == ${Math.round(facTrack.boardShare * 100)}% of the cost`);
     // League gates match the logged attendance (x comfort price).
-    const priceMult = 1 + 0.06 * ((f?.comfort ?? 1) - 1);
+    const priceMult = f ? comfortPriceMult(f) : 1;
     const byDate = new Map((f?.attendance ?? []).map((r) => [`${r.date}:${r.competition}`, r]));
     const matched = allLedgerEntries.filter((e) => e.kind === "gate" && !!e.ref?.competition
       && !isCupSlug(e.ref.competition) && !isContinentalSlug(e.ref.competition) && byDate.has(`${e.date}:${e.ref.competition}`));

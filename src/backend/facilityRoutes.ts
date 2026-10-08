@@ -4,10 +4,11 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import {
-  academyEffectsAt, boardDecision, comfortPriceMult, committedSpend, effectiveCapacity, projectRunning, quoteProject,
-  startProject, totalSeats, trainingEffectsAt, validSeats, weeklyUpkeep, withFacilities,
+  academyEffectsAt, academyEffectsOf, boardDecision, impliedLevel, comfortPriceMult, committedSpend, effectiveCapacity, projectRunning,
+  quoteProject, startProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf, validSeats, weeklyUpkeep, withFacilities,
 } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { comfortLevel, groupLevel } from "@/Domain/facilities/facilityItems";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -36,7 +37,8 @@ async function loadHuman(saveId: string): Promise<Human | Response> {
   if (!entry) return Response.json({ error: "squad not found" }, { status: 404 });
   let squad = await saveService.getSquad(saveId, entry.leagueSlug, entry.stem);
   if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
-  if (!squad.facilities) squad = await withInitialFacilities(squad, entry.leagueSlug);
+  // A save from before the items (Etapa 34) has facilities without `items`: set up again (no migration).
+  if (!squad.facilities?.items) squad = await withInitialFacilities(squad, entry.leagueSlug);
   return {
     meta, squad, ref: { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
     date: meta.currentDate ?? new Date().toISOString().slice(0, 10),
@@ -60,13 +62,26 @@ async function facilitiesView(h: Human) {
   const revenue = wageRevenueBasisOf(h.squad);
   const ctx = { revenue, seatCost: await seatCostFor(saveService, h.meta.id, h.meta, h.ref.leagueSlug) };
   const state = (h.meta.activeLeagues ?? []).find((l) => l.leagueSlug === h.meta.leagueSlug);
-  const nextLevel = (lv: number) => Math.min(FACILITIES.MAX_LEVEL, lv + 1);
+  const nextLevel = (lv: number) => Math.min(FACILITIES.MAX_LEVEL, Math.floor(lv) + 1);
+  const levels = { comfort: comfortLevel(f), training: groupLevel(f, "training"), academy: groupLevel(f, "academy") };
+  const own = trainingGroundEffectsOf(h.squad);
+  // The academy screen shows the absolute level's effect (as before) minus what the items' condition costs.
+  const academyAbs = academyEffectsAt(levels.academy);
+  const academyRel = academyEffectsAt(FACILITIES.NEUTRAL_LEVEL + levels.academy - impliedLevel(h.squad));
+  const academyReal = academyEffectsOf(h.squad);
+  const academyNow = {
+    ...academyAbs,
+    qualityBonus: academyAbs.qualityBonus + academyReal.qualityBonus - academyRel.qualityBonus,
+    promiseChance: academyRel.promiseChance > 0 ? academyAbs.promiseChance * (academyReal.promiseChance / academyRel.promiseChance) : academyAbs.promiseChance,
+  };
   return {
     date: h.date,
     facilities: f,
     capacity: totalSeats(f),
     effectiveCapacity: effectiveCapacity(f),
-    priceMult: comfortPriceMult(f.comfort),
+    priceMult: comfortPriceMult(f),
+    /** Group levels 1..5 derived from the items (fractional: the mean of the item levels / 2). */
+    levels,
     seatCost: ctx.seatCost,
     revenue,
     balance: h.squad.finances?.budget ?? 0,
@@ -87,8 +102,12 @@ async function facilitiesView(h: Human) {
       academy: quoteProject(f, { kind: "academy" }, ctx),
     },
     effects: {
-      training: { current: trainingEffectsAt(f.training), next: trainingEffectsAt(nextLevel(f.training)) },
-      academy: { current: academyEffectsAt(f.academy), next: academyEffectsAt(nextLevel(f.academy)) },
+      // Current: the group level with the condition of the items; next: the level the works reach.
+      training: {
+        current: { recoveryMult: own.recoveryMult, injuryMult: own.injuryMult, devMult: own.devMult },
+        next: trainingEffectsAt(nextLevel(levels.training)),
+      },
+      academy: { current: academyNow, next: academyEffectsAt(nextLevel(levels.academy)) },
     },
   };
 }

@@ -1520,7 +1520,7 @@ export async function advanceOneDay(
       // Facilities day: instalments / finished works, then today's home attendance.
       let facilityEntries: LedgerEntry[] = [];
       let attendanceToday: number[] | null = null;
-      if (playerSquad?.facilities) {
+      if (playerSquad?.facilities?.items) {
         const day = advanceFacilities(playerSquad.facilities, currentDate);
         facilityEntries = day.entries;
         for (const p of day.completed) {
@@ -1553,7 +1553,7 @@ export async function advanceOneDay(
       }
       if (playerSquad && (isWeeklyTick || playerHomeFixturesToday.length > 0 || facilityEntries.length > 0 || scouting.entries.length > 0)) {
         const catalogForFinance = await getLeagueData();
-        const priceMult = playerSquad.facilities ? comfortPriceMult(playerSquad.facilities.comfort) : 1;
+        const priceMult = playerSquad.facilities?.items ? comfortPriceMult(playerSquad.facilities) : 1;
         const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f, i) => ({
           competition: f.competition, kind: f.kind, ...(f.neutral ? { neutral: true } : {}),
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),

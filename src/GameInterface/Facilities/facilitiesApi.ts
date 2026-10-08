@@ -9,6 +9,8 @@ export interface FacilitiesViewData {
   capacity: number;
   effectiveCapacity: number;
   priceMult: number;
+  /** Group levels 1..5 derived from the items (fractional). */
+  levels: { comfort: number; training: number; academy: number };
   seatCost: number;
   revenue: number;
   balance: number;

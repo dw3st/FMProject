@@ -49,7 +49,8 @@ describe("facilities routes", () => {
     const squad0 = (await saveService.getSquadById(saveId, "33"))!;
     expect(start.capacity).toBe(squad0.venue!.capacity);
     expect(start.facilities.stands).toHaveLength(4);
-    expect(start.facilities.comfort).toBe(1);
+    expect(start.levels.comfort).toBe(1);
+    expect(Object.keys(start.facilities.items)).toHaveLength(10);
     expect(start.seatCost).toBeGreaterThanOrEqual(1500);
     expect(start.seatCost).toBeLessThanOrEqual(6000);
 

@@ -8,7 +8,8 @@ import {
 import { addMatchLoad, decayLoad, postMatchFitness, recoverDay } from "@/Domain/fitness/fitness";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import { daysBetween } from "@/Domain/dates";
-import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
+import { initialFacilities, trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
+import { wearFor } from "@/Domain/facilities/facilityItems";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
@@ -546,6 +547,25 @@ describe("buildMatchEventFromRecording — the medic", () => {
     const back = (stars: number) => buildMatchEventFromRecording(fixture, withMedic(stars), makeSquad("a", 1), recording, () => 0.5)
       .updatedHome.players[0]!.injury!.returnDate;
     expect(back(5) < back(1)).toBe(true);
+  });
+
+  test("the human club's physio: worn lengthens the time out, a better one shortens it (same rng)", () => {
+    const base = makeSquad("h", 1);
+    const f = initialFacilities(base, 1);
+    const withPhysio = (physio: { level: number; wear: number }): Squad => ({ ...base, facilities: { ...f, items: { ...f.items, physio } } });
+    const fixture = { id: "fx1", date: "2027-03-10", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+    const recording = baseRecording({
+      playerStats: { "h-p0": emptyStats(), "a-p0": emptyStats() },
+      playerEnergy: { "h-p0": 50, "a-p0": 50 },
+      injuries: [{ team: "home", playerId: "h-p0", playerName: "h0", severity: "severe", matchMinute: 30, energy: 50 }],
+    });
+    const back = (s: Squad) => daysBetween("2027-03-10", buildMatchEventFromRecording(fixture, s, makeSquad("a", 1), recording, () => 0.5)
+      .updatedHome.players[0]!.injury!.returnDate);
+    const level = f.items.physio.level;
+    const neutral = back(withPhysio({ level, wear: 0.2 }));
+    expect(neutral).toBe(back(base));
+    expect(back(withPhysio({ level, wear: wearFor(0) }))).toBeGreaterThan(neutral);
+    expect(back(withPhysio({ level: 10, wear: 0 }))).toBeLessThan(neutral);
   });
 });
 

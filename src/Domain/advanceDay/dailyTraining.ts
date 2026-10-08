@@ -186,14 +186,17 @@ export function buildTrainingEvent(
       // The raw session cost scales down with how tired the player already is (a worn-down
       // player has less fitness left to lose) — see `.claude/rules/game/fitness.md`.
       const scaledFitnessDelta = +(fitnessDelta * (log.fitness / 100)).toFixed(1);
-      // Heavy training's small flat chance of a light injury — light/normal training never rolls.
-      if (rng() < trainingInjuryChance(policy.intensity, injuryMult)) {
+      // Heavy training's small flat chance of an injury; light/normal only on bad training pitches
+      // (`.claude/rules/game/facilities.md`, at most 0.5% a session).
+      const normalRisk = policy.intensity === "heavy" ? 0 : ground.normalSessionInjury;
+      if (rng() < trainingInjuryChance(policy.intensity, injuryMult) + normalRisk) {
         const severity = rollSeverity(rng);
         const injury: NewTrainingInjury = {
           playerId: String(p.id),
           playerName: p.name,
           severity,
-          returnDate: injuryReturnDate(date, severity, rng, staffFx.injuryDurationMult),
+          // Medic and physio (human club) shorten or lengthen the time out, same draw.
+          returnDate: injuryReturnDate(date, severity, rng, staffFx.injuryDurationMult * ground.injuryDurationMult),
         };
         newInjuries.push(injury);
         injuryByPlayer.set(String(p.id), injury);

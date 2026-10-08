@@ -221,6 +221,7 @@ export function itemWearToday(id: FacilityItemId, level: number, d: WearDayInput
   - `weeklyUpkeep`: usa `groupLevel`.
   - `facilitiesView` (rota): acrescenta `levels: { comfort, training, academy }`; os textos de efeito usam esses níveis.
   - `dailyTraining.ts` (uma linha): `trainingInjuryChance(policy.intensity, injuryMult)` vira `trainingInjuryChance(policy.intensity, injuryMult) + (policy.intensity === "heavy" ? 0 : ground.normalSessionInjury)`.
+  - **Fisioterapia e duração das lesões (decisão 4 do usuário, 2026-10-08):** `trainingGroundEffectsOf` ganha `injuryDurationMult` (`physioDurationMult` em `facilityItems.ts`: nível relativo a 2 × implícito, ±3% por nível, limitado a 0,85..1,15, × `effectAt(PHYSIO_DURATION_MAX 1,25, condição)`; 1 para a IA). `matches.ts` (`finalizeSquadsAfterMatch`) e `dailyTraining.ts` multiplicam o `staffFx.injuryDurationMult` do médico por ele em `injuryReturnDate`. Testes: `facilityItems.test.ts` (curva), `facilities.test.ts`, `dailyTraining.test.ts` e `matches.test.ts` (mesma rng: fisioterapia em 0% → mais dias; nível 10 → menos; inicial = sem instalações).
 
 - [ ] **Step 4: Rodar** `bun test src/Domain/facilities src/Domain/advanceDay/dailyTraining.test.ts src/Domain/youth src/backend/facilities.routes.test.ts` → PASS; `bunx tsc --noEmit -p .` limpo (inclui os leitores da Task 1).
 - [ ] **Step 5: Commit** — `feat(instalações): condição pesa no CT, na base e no público; níveis derivados dos itens`.

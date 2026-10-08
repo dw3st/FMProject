@@ -9,6 +9,9 @@ const NAME: Record<FacilityKind, string> = {
   comfort: "stadium comfort",
   training: "training ground",
   academy: "academy",
+  repair: "repair",
+  rebuild: "rebuild",
+  upgrade: "upgrade",
 };
 
 const REASON: Record<BoardRefusal, string> = {
