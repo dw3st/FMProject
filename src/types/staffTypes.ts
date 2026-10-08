@@ -52,6 +52,8 @@ export interface StaffMember {
   contract?: StaffContract;
   /** In the pool since (ISO). */
   since?: string;
+  /** Scouts only: countries they learned on missions (sparse; absent = derived from the nationality). */
+  countryKnowledge?: Record<string, CountryKnowledgeEntry>;
 }
 
 /** The human club's staff (`Squad.staff`); AI clubs never store it. */
