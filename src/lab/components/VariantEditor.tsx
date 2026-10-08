@@ -170,14 +170,14 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
           min={0}
           max={5}
           step={0.5}
-          value={variant.staffRating ?? 0}
+          value={variant.fitnessCoachStars ?? 0}
           onChange={(e) => {
             const v = parseFloat(e.target.value);
-            patch({ staffRating: v < 1 ? undefined : v });
+            patch({ fitnessCoachStars: v < 1 ? undefined : v });
           }}
           className="flex-1"
         />
-        <span className="text-white/80 w-14 text-right">{variant.staffRating ? `${variant.staffRating}★` : "tier"}</span>
+        <span className="text-white/80 w-14 text-right">{variant.fitnessCoachStars ? `${variant.fitnessCoachStars}★` : "tier"}</span>
       </div>
 
       <div className="flex items-center gap-2 text-xs">

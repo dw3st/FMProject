@@ -398,8 +398,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       loadVariantFormation(variantB),
     ]);
 
-    const baseSquadA = withFitnessCoach(prefixIds(buildSquad(variantA.squad, variantA.label), "A"), variantA.staffRating);
-    const baseSquadB = withFitnessCoach(prefixIds(buildSquad(variantB.squad, variantB.label), "B"), variantB.staffRating);
+    const baseSquadA = withFitnessCoach(prefixIds(buildSquad(variantA.squad, variantA.label), "A"), variantA.fitnessCoachStars);
+    const baseSquadB = withFitnessCoach(prefixIds(buildSquad(variantB.squad, variantB.label), "B"), variantB.fitnessCoachStars);
 
     // Apply per-team tactics ONCE — all matches use them.
     // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
