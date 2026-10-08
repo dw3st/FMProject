@@ -217,8 +217,9 @@ export function staffWageFor(role: StaffRole, stars: number, clubFactor: number)
 }
 
 /** Monday ledger line: the contracts' frozen wages. */
-export function squadStaffWages(staff: StaffRecord | undefined): number {
-  return (staff?.members ?? []).reduce((s, m) => s + (m.contract?.wage ?? 0), 0);
+export function squadStaffWages(staff: StaffRecord | undefined, date?: string): number {
+  // With a date, a contract that ended before it is not paid (he leaves later that same day).
+  return (staff?.members ?? []).reduce((s, m) => s + (m.contract && !(date && m.contract.until < date) ? m.contract.wage : 0), 0);
 }
 
 /** Signs `m` for `years` seasons: the wage is frozen at the club's factor of the signing day. */

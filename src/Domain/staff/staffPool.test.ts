@@ -49,6 +49,18 @@ describe("staff pool", () => {
     for (const [role, n] of Object.entries(STAFF.POOL.BY_ROLE)) {
       expect(next.members.filter((m) => m.role === role).length).toBe(n);
     }
-    expect(refreshPool(next, "save1", "2028", "2028-01-10")).toEqual(next); // same season: no-op
+    expect(refreshPool(next, "save1", "2028", "2028-01-10")).toBe(next); // same date: no-op
+  });
+  test("refresh is keyed by the rollover date, not the season label (club switched leagues)", () => {
+    const first = refreshPool(pool, "save1", "2028", "2028-01-10");
+    // A later rollover of another country under the same year label still renews the pool.
+    const second = refreshPool(first, "save1", "2028", "2028-06-01");
+    expect(second).not.toBe(first);
+    expect(second.refreshedOn).toBe("2028-06-01");
+    expect(second.members.some((m) => !first.members.some((o) => o.id === m.id))).toBe(true);
+    expect(new Set(second.members.map((m) => m.id)).size).toBe(second.members.length);
+    // An earlier date (or the generation day) never refreshes again.
+    expect(refreshPool(second, "save1", "2029", "2028-05-01")).toBe(second);
+    expect(refreshPool(pool, "save1", "2027", "2027-02-05")).toBe(pool);
   });
 });

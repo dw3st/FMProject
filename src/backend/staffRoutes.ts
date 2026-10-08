@@ -1,5 +1,9 @@
-import { saveService } from "@/backend/SaveService";
+import { saveService, SaveService } from "@/backend/SaveService";
 import type { SaveMeta } from "@/backend/SaveService";
+import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
+import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
+import { cancelScoutMissions } from "@/backend/scoutingWorld";
+import { logError } from "@/Logger";
 import { requireSaveOwner } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
@@ -22,12 +26,12 @@ type Req = Request & { params: Record<string, string> };
 interface Human { meta: SaveMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
 
 /** The human club (409 `noClub` when unemployed). */
-async function human(saveId: string): Promise<Human | Response> {
-  const meta = await saveService.getMeta(saveId);
+async function human(saveId: string, service: SaveService = saveService): Promise<Human | Response> {
+  const meta = await service.getMeta(saveId);
   if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
   if (meta.unemployed || !meta.clubId) return Response.json({ error: "noClub" }, { status: 409 });
-  const ref = await saveService.resolveSquadId(saveId, meta.clubId);
-  const squad = ref ? await saveService.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
+  const ref = await service.resolveSquadId(saveId, meta.clubId);
+  const squad = ref ? await service.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
   if (!ref || !squad) return Response.json({ error: "squad not found" }, { status: 404 });
   const date = meta.currentDate ?? "";
   const seasonEnd = meta.activeLeagues?.find((l) => l.leagueSlug === ref.leagueSlug)?.end ?? date;
@@ -94,8 +98,26 @@ function memberOffer(squad: Squad, m: StaffMember, ctx: { date: string; seasonEn
   };
 }
 
-async function ledgerSeason(saveId: string, leagueSlug: string, date: string): Promise<number> {
-  return (await saveService.getLeagueMeta(saveId, leagueSlug))?.year ?? parseInt(date.slice(0, 4), 10);
+async function ledgerSeason(service: SaveService, saveId: string, leagueSlug: string, date: string): Promise<number> {
+  return (await service.getLeagueMeta(saveId, leagueSlug))?.year ?? parseInt(date.slice(0, 4), 10);
+}
+
+/**
+ * One unit of work (under the save lock): every write of `fn` (squad, ledger, pool, scouting) goes
+ * to a BufferingSaveDAL flushed at the end, so a request never leaves half of them on disk. Nothing
+ * is written when `fn` answers with an error status.
+ */
+async function inUnit(saveId: string, what: string, fn: (service: SaveService) => Promise<Response>): Promise<Response> {
+  const buffer = new BufferingSaveDAL(new FileSystemDAL());
+  const service = new SaveService(buffer);
+  try {
+    const res = await fn(service);
+    if (res.ok) await buffer.flush();
+    return res;
+  } catch (err) {
+    logError("staff", `save ${saveId}: failed to ${what}`, err);
+    return Response.json({ error: `failed to ${what}` }, { status: 500 });
+  }
 }
 
 function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
@@ -140,14 +162,6 @@ function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
   return q;
 }
 
-/** Cancels the missions a dismissed field scout was running (`.claude/rules/game/scouting.md`). */
-async function cancelScoutMissions(saveId: string, scoutId: string): Promise<void> {
-  const state = await saveService.getScouting(saveId);
-  if (state.missions.some((m) => m.scoutId === scoutId)) {
-    await saveService.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => m.scoutId !== scoutId) });
-  }
-}
-
 /**
  * Coaching staff (`.claude/rules/game/staff.md`): the human club's staff, the free pool search,
  * hiring (contract 1-3 seasons, frozen wage), firing (severance, back to the pool), renewal and the
@@ -172,13 +186,16 @@ export const staffRoutes = {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const q = parsePoolQuery(new URL(req.url).searchParams);
     if (!q) return Response.json({ error: "invalid query" }, { status: 400 });
-    const meta = await saveService.getMeta(saveId);
-    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-    const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
-    // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
-    const h = await human(saveId);
-    const factor = h instanceof Response ? 1 : wageFactorOf(h.squad);
-    return Response.json(searchPool(pool, q, factor));
+    // Under the lock: a missing pool is generated and written on the first read.
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getMeta(saveId);
+      if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+      const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
+      // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
+      const h = await human(saveId);
+      const factor = h instanceof Response ? 1 : wageFactorOf(h.squad);
+      return Response.json(searchPool(pool, q, factor));
+    });
   },
 
   /** `POST { memberId, years }` - signs a professional of the pool (409 `roleFull` past the tier's limit). */
@@ -192,10 +209,10 @@ export const staffRoutes = {
     if (!validYears(body.years)) return Response.json({ error: "invalidYears" }, { status: 400 });
     const years = body.years;
     const memberId = body.memberId;
-    return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
+    return withSaveLock(saveId, () => inUnit(saveId, "hire", async (service) => {
+      const h = await human(saveId, service);
       if (h instanceof Response) return h;
-      const pool = await saveService.getStaffPool(saveId, h.date);
+      const pool = await service.getStaffPool(saveId, h.date);
       const taken = takeFromPool(pool, memberId);
       if (!taken) return Response.json({ error: "notInPool" }, { status: 404 });
       const staff = h.squad.staff ?? { members: [] };
@@ -205,10 +222,10 @@ export const staffRoutes = {
       }
       const signed = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, clubFactor: wageFactorOf(h.squad) });
       const next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
-      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
-      await saveService.writeStaffPool(saveId, taken.pool);
+      await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      await service.writeStaffPool(saveId, taken.pool);
       return Response.json(staffView(next, h));
-    });
+    }));
   },
 
   /** `POST { memberId }` (or `{ role }`) - dismisses a professional: severance in the ledger, back to the pool. */
@@ -221,8 +238,8 @@ export const staffRoutes = {
     const memberId = body?.memberId;
     const role = body?.role;
     if (typeof memberId !== "string" && !isStaffRole(role)) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
-    return withSaveLock(saveId, async () => {
-      const h = await human(saveId);
+    return withSaveLock(saveId, () => inUnit(saveId, "fire", async (service) => {
+      const h = await human(saveId, service);
       if (h instanceof Response) return h;
       const staff = h.squad.staff ?? { members: [] };
       const member = typeof memberId === "string"
@@ -237,17 +254,17 @@ export const staffRoutes = {
         ...h.squad,
         staff: { members: staff.members.filter((m) => m.id !== member.id), ...(areaAssignments ? { areaAssignments } : {}) },
       };
-      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       if (severance > 0) {
-        next = await recordMoney(saveService, saveId, await ledgerSeason(saveId, h.ref.leagueSlug, h.date), h.ref, {
+        next = await recordMoney(service, saveId, await ledgerSeason(service, saveId, h.ref.leagueSlug, h.date), h.ref, {
           date: h.date, kind: "staff", amount: -severance, label: `Staff severance: ${member.name}`, ref: { stage: "severance" },
         });
       }
-      const pool = await saveService.getStaffPool(saveId, h.date);
-      await saveService.writeStaffPool(saveId, returnToPool(pool, member, h.date));
-      if (member.role === "fieldScout") await cancelScoutMissions(saveId, member.id);
+      const pool = await service.getStaffPool(saveId, h.date);
+      await service.writeStaffPool(saveId, returnToPool(pool, member, h.date));
+      if (member.role === "fieldScout") await cancelScoutMissions(service, saveId, [member.id]);
       return Response.json({ ...staffView(next, h), severance });
-    });
+    }));
   },
 
   /** `POST { memberId, years }` - renews a contract from its current end (400 `tooManyYears`). */

@@ -50,6 +50,19 @@ describe("computeAdvanceDayMoney", () => {
     expect(operational.amount).not.toBe(-Math.round(weeklyWages * 0.1));
   });
 
+  test("Monday staff line: a contract that ended before today is not charged", () => {
+    const member = (id: string, until: string, wage: number) => ({
+      id, name: id, nationality: "England", role: "medic" as const, age: 40,
+      attributes: { determination: 10, discipline: 10, adaptability: 10, playerReading: 10, knowledge: {} },
+      contract: { until, wage, signed: "2026-08-01" },
+    });
+    // 2027-03-08 is a Monday: the medic's contract ended on Sunday (he leaves later in the day).
+    const sq = squad({ staff: { members: [member("ended", "2027-03-07", 1000), member("today", "2027-03-08", 300), member("on", "2028-05-31", 200)] } });
+    const line = computeAdvanceDayMoney({ currentDate: "2027-03-08", playerSquad: sq, homeFixturesToday: [] })
+      .find((e) => e.kind === "staff");
+    expect(line!.amount).toBe(-500);
+  });
+
   test("a non-Monday with no home fixture: no entries", () => {
     const entries = computeAdvanceDayMoney({ currentDate: "2027-03-09", playerSquad: squad(), homeFixturesToday: [] }); // Tuesday
     expect(entries).toEqual([]);

@@ -38,7 +38,7 @@ export function directorRenews(m: StaffMember, impliedStars: number): boolean {
 }
 
 export interface StaffContractNews {
-  kind: "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left";
+  kind: "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left" | "staff_retired";
   member: { id: string; name: string; role: StaffMember["role"] };
   until?: string;
 }
@@ -62,7 +62,9 @@ export function staffContractDay(a: {
       news.push({ kind: "staff_left", member: tag(m) });
       continue;
     }
-    if (!c || !a.monday || c.decision || daysBetween(a.date, c.until) > C.RENEW_WINDOW_DAYS) {
+    // A manager's warning does not lock the contract: once the director is in charge he decides it.
+    const decided = c?.decision === "leave" || (c?.decision === "warned" && !a.directorHandles);
+    if (!c || !a.monday || decided || daysBetween(a.date, c.until) > C.RENEW_WINDOW_DAYS) {
       kept.push(m);
       continue;
     }
@@ -78,14 +80,34 @@ export function staffContractDay(a: {
       kept.push({ ...m, contract: next });
       news.push({ kind: "staff_renewed", member: tag(m), until: next.until });
     } else {
-      kept.push({ ...m, contract: { ...c, decision: "leave" } });
+      kept.push({ ...m, contract: { ...c, decision: "leave" as const } });
       news.push({ kind: "staff_leaving", member: tag(m), until: c.until });
     }
   }
   if (news.length === 0) return { staff: a.staff, left, news };
-  const ids = new Set(kept.map((m) => m.id));
-  const areaAssignments = a.staff.areaAssignments
-    ? Object.fromEntries(Object.entries(a.staff.areaAssignments).filter(([, id]) => ids.has(id!)))
+  return { staff: withMembers(a.staff, kept), left, news };
+}
+
+/** `staff` with only `members`, dropping the manual area assignments of whoever left. */
+function withMembers(staff: StaffRecord, members: StaffMember[]): StaffRecord {
+  const ids = new Set(members.map((m) => m.id));
+  const areaAssignments = staff.areaAssignments
+    ? Object.fromEntries(Object.entries(staff.areaAssignments).filter(([, id]) => ids.has(id!)))
     : undefined;
-  return { staff: { members: kept, ...(areaAssignments ? { areaAssignments } : {}) }, left, news };
+  return { members, ...(areaAssignments ? { areaAssignments } : {}) };
+}
+
+/**
+ * The human club's country rolled: every professional is a year older and whoever reaches the free
+ * pool's retirement age (`STAFF.POOL.RETIRE_AGE`) retires (no severance; not back to the pool).
+ */
+export function ageStaff(staff: StaffRecord): { staff: StaffRecord; retired: StaffMember[]; news: StaffContractNews[] } {
+  const aged = staff.members.map((m) => ({ ...m, age: m.age + 1 }));
+  const retired = aged.filter((m) => m.age >= STAFF.POOL.RETIRE_AGE);
+  const kept = aged.filter((m) => m.age < STAFF.POOL.RETIRE_AGE);
+  return {
+    staff: withMembers(staff, kept),
+    retired,
+    news: retired.map((m) => ({ kind: "staff_retired" as const, member: { id: m.id, name: m.name, role: m.role } })),
+  };
 }

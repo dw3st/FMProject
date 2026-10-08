@@ -4,7 +4,7 @@ import {
   gainKnowledge, implicitKnowledge, knowledgeOf, pruneKnowledge, scoutMultipliersOf, uncertaintyOf,
 } from "@/Domain/scouting/knowledge";
 import {
-  addProspects, advanceScoutingWeek, buildReport, generateProspects, missionCost, missionPool, monthlyRecommendations,
+  addProspects, advanceScoutingWeek, buildReport, generateProspects, missionCost, missionPool, missionsWithLeaders, monthlyRecommendations,
   prospectFee, pruneProspects, recordRecommendations, shortlistAlerts, starterLineAverages,
   type MissionWeekInput, type PoolEntry, type ScoutingNews, type TravelDistance, type ViewerContext,
 } from "@/Domain/scouting/missions";
@@ -161,6 +161,16 @@ export async function scoutingOnClubLeft(service: SaveService, saveId: string, p
   await service.writeScouting(saveId, { ...state, knowledge, missions: [], prospects: [] });
 }
 
+/** Field scouts who left the club (fired, contract ended) take their missions with them. */
+export async function cancelScoutMissions(service: SaveService, saveId: string, scoutIds: string[]): Promise<void> {
+  if (scoutIds.length === 0) return;
+  const state = await service.getScouting(saveId);
+  const gone = new Set(scoutIds);
+  if (state.missions.some((m) => gone.has(m.scoutId))) {
+    await service.writeScouting(saveId, { ...state, missions: state.missions.filter((m) => !gone.has(m.scoutId)) });
+  }
+}
+
 // ── Pools ────────────────────────────────────────────────────────────────────
 
 function sellListed(market: MarketState | null): Set<string> {
@@ -309,6 +319,11 @@ export async function scoutingDay(
 
   if (monday) {
     state = pruneProspects(state, date);
+    // Safety net: a mission led by someone who is no longer at the club ends (no zombie missions).
+    if (own) {
+      const missions = missionsWithLeaders(state.missions, membersOf(own, "fieldScout").map((m) => m.id));
+      if (missions.length !== state.missions.length) state = { ...state, missions };
+    }
     const ctx = ctxFor(state);
     if (own && ctx && state.missions.length > 0) {
       const scouts = new Map(membersOf(own, "fieldScout").map((s) => [s.id, ratingFromStars(memberStars(s))]));

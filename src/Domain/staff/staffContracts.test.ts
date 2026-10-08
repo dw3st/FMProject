@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { makeProfessional, signContract } from "@/Domain/staff/staff";
-import { renewedContract, severanceOf, staffContractDay } from "@/Domain/staff/staffContracts";
+import { ageStaff, renewedContract, severanceOf, staffContractDay } from "@/Domain/staff/staffContracts";
+import { STAFF } from "@/Domain/staff/staffConfig";
 
 const signed = (key: string, stars: number, until: string, age?: number) => {
   const m = signContract(makeProfessional(key, "medic", stars), { date: "2027-02-05", seasonEnd: until, years: 1, clubFactor: 1 });
@@ -53,6 +54,32 @@ describe("staff contracts", () => {
     const b = staffContractDay({ staff: a.staff, date: "2027-10-18", monday: true, seasonEnd: "2027-12-06",
       directorHandles: false, impliedStars: 3, clubFactor: 1 });
     expect(b.news.length).toBe(0);
+  });
+  test("a manager's warning does not lock the contract once the director is in charge", () => {
+    const m = signed("w", 4, "2027-12-06", 50);
+    const warned = staffContractDay({ staff: { members: [m] }, date: "2027-10-11", monday: true, seasonEnd: "2027-12-06",
+      directorHandles: false, impliedStars: 3, clubFactor: 1 });
+    expect(warned.staff.members[0]!.contract!.decision).toBe("warned");
+    const director = staffContractDay({ staff: warned.staff, date: "2027-10-18", monday: true, seasonEnd: "2027-12-06",
+      directorHandles: true, impliedStars: 3, clubFactor: 1 });
+    expect(director.news[0]!.kind).toBe("staff_renewed");
+    expect(director.staff.members[0]!.contract!.until).toBe("2029-12-06");
+    expect(director.staff.members[0]!.contract!.decision).toBeUndefined();
+    // A director's "leave" stays decided.
+    const weak = signed("w2", 1.5, "2027-12-06");
+    const leave = staffContractDay({ staff: { members: [weak] }, date: "2027-10-11", monday: true, seasonEnd: "2027-12-06",
+      directorHandles: true, impliedStars: 3, clubFactor: 1 });
+    expect(staffContractDay({ staff: leave.staff, date: "2027-10-18", monday: true, seasonEnd: "2027-12-06",
+      directorHandles: true, impliedStars: 3, clubFactor: 1 }).news).toEqual([]);
+  });
+  test("ageing at the rollover: a year older, the retirement age retires (areas freed)", () => {
+    const young = signed("y", 3, "2028-12-06", 40);
+    const c = { ...signContract(makeProfessional("oldcoach", "coach", 3), { date: "2027-02-05", seasonEnd: "2027-12-06", years: 1, clubFactor: 1 }), age: STAFF.POOL.RETIRE_AGE - 1 };
+    const r = ageStaff({ members: [young, c], areaAssignments: { setPieces: c.id } });
+    expect(r.staff.members.map((m) => [m.id, m.age])).toEqual([[young.id, 41]]);
+    expect(r.retired.map((m) => m.id)).toEqual([c.id]);
+    expect(r.news).toEqual([{ kind: "staff_retired", member: { id: c.id, name: c.name, role: "coach" } }]);
+    expect(r.staff.areaAssignments).toEqual({});
   });
   test("a departing coach frees his manual area assignment", () => {
     const c = signContract(makeProfessional("coachx", "coach", 3), { date: "2027-02-05", seasonEnd: "2027-12-06", years: 1, clubFactor: 1 });

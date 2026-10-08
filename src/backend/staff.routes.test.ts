@@ -133,6 +133,20 @@ describe("staff routes", () => {
     expect((fitnessFired.members as { role: string }[]).some((m) => m.role === "fitness")).toBe(false);
     expect(fitnessFired.effects.injuryMult).toBeGreaterThan(1);
 
+    // A field scout fired by the route takes his mission with him (one buffered unit: squad, ledger,
+    // pool and scouting together).
+    const scoutsInPool = await (await call("/pool?role=fieldScout", "GET", session.token)).json() as any;
+    const scoutId = scoutsInPool.items[0].id as string;
+    expect((await call("/hire", "POST", session.token, { memberId: scoutId, years: 1 })).status).toBe(200);
+    const scouting = await saveService.getScouting(saveId);
+    const mission = (id: string, leader: string) => ({
+      id, scoutId: leader, target: { kind: "country" as const, country: "Spain" }, start: meta.currentDate!, weeks: 4, weeksDone: 0,
+    });
+    await saveService.writeScouting(saveId, { ...scouting, missions: [mission("m-field", scoutId), mission("m-chief", "chief")] });
+    expect((await call("/fire", "POST", session.token, { memberId: scoutId })).status).toBe(200);
+    expect((await saveService.getScouting(saveId)).missions.map((m) => m.id)).toEqual(["m-chief"]);
+    expect((await saveService.getStaffPool(saveId, meta.currentDate!)).members.some((m) => m.id === scoutId)).toBe(true);
+
     // Unemployed: no hiring, the pool still lists.
     await saveService.updateMeta(saveId, { clubId: "" });
     expect((await call("/hire", "POST", session.token, { memberId: coaches.items[1].id, years: 1 })).status).toBe(409);

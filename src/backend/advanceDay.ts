@@ -61,7 +61,7 @@ import type { JobOffer, Unemployment } from "@/types/jobTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { mergeOffers, pruneOffers, sackHumanManager } from "@/Domain/jobs/jobs";
 import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/jobWorld";
-import { rememberPlayers, scoutingDay } from "@/backend/scoutingWorld";
+import { cancelScoutMissions, rememberPlayers, scoutingDay } from "@/backend/scoutingWorld";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { addDays, addOneDay } from "@/Domain/dates";
 import {
@@ -120,7 +120,7 @@ import { loadWindowContext } from "@/backend/marketWindowWorld";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
 import { buildManagerNewsMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
-import { staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
+import { ageStaff, staffContractDay, type StaffContractNews } from "@/Domain/staff/staffContracts";
 import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
@@ -2453,9 +2453,10 @@ export async function advanceOneDay(
       directorNews.push(...d.news);
     }
     // ── Coaching-staff contracts (`.claude/rules/game/staff.md`) ──
-    // Every day whoever is past his contract leaves (back to the pool); on Monday, contracts within
-    // 60 days get one decision (director renews or lets go; the manager is warned). The free pool
-    // is refreshed when the human club's country rolls. News deferred past `clearInbox`.
+    // Every day whoever is past his contract leaves (back to the pool; a field scout's missions end);
+    // on Monday, contracts within 60 days get one decision (director renews or lets go; the manager
+    // is warned). When the human club's country rolls the staff ages a year (the retirement age
+    // retires) and the free pool is refreshed, once per rollover date. News deferred past `clearInbox`.
     let staffContractNews: StaffContractNews[] = [];
     if (humanActive) {
       const humanForStaff = await saveService.getSquadById(saveId, meta.clubId);
@@ -2470,14 +2471,19 @@ export async function advanceOneDay(
           impliedStars: impliedStars(humanForStaff),
           clubFactor: wageFactorOf(humanForStaff),
         });
-        if (r.news.length > 0) {
-          await saveService.saveSquadById(saveId, { ...humanForStaff, staff: r.staff });
-          staffContractNews = r.news;
+        let staff = r.staff;
+        staffContractNews = r.news;
+        if (seasonEnded) {
+          const aged = ageStaff(staff);
+          staff = aged.staff;
+          staffContractNews = [...staffContractNews, ...aged.news];
         }
+        if (staff !== humanForStaff.staff) await saveService.saveSquadById(saveId, { ...humanForStaff, staff });
         if (r.left.length > 0) {
           let pool = await saveService.getStaffPool(saveId, currentDate);
           for (const m of r.left) pool = returnToPool(pool, m, currentDate);
           await saveService.writeStaffPool(saveId, pool);
+          await cancelScoutMissions(saveService, saveId, r.left.filter((m) => m.role === "fieldScout").map((m) => m.id));
         }
       }
     }

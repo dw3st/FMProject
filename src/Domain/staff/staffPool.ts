@@ -10,6 +10,11 @@ import { mulberry32, seedFrom } from "@/Domain/rng";
 export interface StaffPool {
   /** Season label it was generated / refreshed for (the year of the human club's league). */
   season: string;
+  /**
+   * Date (ISO) of the last refresh applied (or of the generation). A rollover of the human club's
+   * country refreshes it once per date, whatever the season label of a league switched to.
+   */
+  refreshedOn?: string;
   members: StaffMember[];
 }
 
@@ -45,22 +50,24 @@ function fillRoles(members: StaffMember[], saveId: string, season: string, date:
 }
 
 export function generatePool(saveId: string, season: string, date: string): StaffPool {
-  return { season, members: fillRoles([], saveId, season, date, "") };
+  return { season, refreshedOn: date, members: fillRoles([], saveId, season, date, "") };
 }
 
 /**
- * New season: everyone a year older, the 68+ retire, a third of the longest-listed leave, and each
- * role is filled back to `POOL.BY_ROLE`. Same season = no change.
+ * The human club's country rolled on `date`: everyone a year older, the 68+ retire, a third of the
+ * longest-listed leave, and each role is filled back to `POOL.BY_ROLE`. Applied once per date: a
+ * pool already refreshed on (or generated after) `date` is returned unchanged.
  */
 export function refreshPool(pool: StaffPool, saveId: string, season: string, date: string): StaffPool {
-  if (pool.season === season) return pool;
+  if (pool.refreshedOn !== undefined && pool.refreshedOn >= date) return pool;
   const aged = pool.members.map((m) => ({ ...m, age: m.age + 1 })).filter((m) => m.age < STAFF.POOL.RETIRE_AGE);
   const drop = Math.floor(STAFF.POOL.REFRESH_SHARE * aged.length);
   const oldest = [...aged]
     .sort((a, b) => (a.since ?? "").localeCompare(b.since ?? "") || a.id.localeCompare(b.id))
     .slice(0, drop);
   const gone = new Set(oldest.map((m) => m.id));
-  return { season, members: fillRoles(aged.filter((m) => !gone.has(m.id)), saveId, season, date, "r") };
+  // The tag carries the date: two refreshes under the same season label never redraw the same ids.
+  return { season, refreshedOn: date, members: fillRoles(aged.filter((m) => !gone.has(m.id)), saveId, season, date, `r${date}:`) };
 }
 
 export function takeFromPool(pool: StaffPool, id: string): { pool: StaffPool; member: StaffMember } | null {

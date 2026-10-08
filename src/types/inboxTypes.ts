@@ -1,4 +1,4 @@
-import type { StaffRole } from "@/Domain/staff/staffTypes";
+import type { StaffRole } from "@/types/staffTypes";
 import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
@@ -167,7 +167,7 @@ export interface ContractInboxMessage extends InboxMessageBase {
   category: "contract";
   kind:     "expiring" | "renewed" | "released" | "director_summary"
     /** Coaching-staff contracts (`.claude/rules/game/staff.md`); `players` is empty, `staff` lists them. */
-    | "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left";
+    | "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left" | "staff_retired";
   /** Everyone the message is about (director_summary: every decided player). */
   players:  { id: string; name: string }[];
   /** Renewed only: new contract end (ISO). */

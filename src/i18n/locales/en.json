@@ -1325,7 +1325,9 @@
       "staff_expiringSubject": "Staff contracts ending soon",
       "staff_renewedSubject": "Staff contracts renewed",
       "staff_leavingSubject": "Staff leaving at the end of the contract",
-      "staff_leftSubject": "Staff contracts ended"
+      "staff_leftSubject": "Staff contracts ended",
+      "staff_retired": "Retired from football and left the club: {{players}}",
+      "staff_retiredSubject": "Staff retired"
     },
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",

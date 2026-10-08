@@ -44,16 +44,33 @@ describe("staff contracts in the day", () => {
       contract: { ...m.contract!, until },
     });
 
+    const mission = (id: string, leader: string, start: string) => ({
+      id, scoutId: leader, target: { kind: "country" as const, country: "Spain" }, start, weeks: 4, weeksDone: 0,
+    });
+
     // A Monday with the director in charge (the default).
     const monday = await advanceTo(isMonday);
     let club = (await saveService.getSquadById(saveId, "33"))!;
     const medic = club.staff!.members.find((m) => m.role === "medic")!;
     const analyst = club.staff!.members.find((m) => m.role === "analyst")!;
-    const members = club.staff!.members.map((m) =>
-      m.id === medic.id ? strong(m, addDays(monday, 30)) : m.id === analyst.id ? { ...m, contract: { ...m.contract!, until: addDays(monday, -1) } } : m);
+    // A field scout whose contract ended yesterday, running a mission.
+    const pool0 = await saveService.getStaffPool(saveId, monday);
+    const scout = pool0.members.find((m) => m.role === "fieldScout")!;
+    await saveService.writeStaffPool(saveId, { ...pool0, members: pool0.members.filter((m) => m.id !== scout.id) });
+    const endedScout: StaffMember = { ...scout, contract: { until: addDays(monday, -1), wage: 999, signed: addDays(monday, -200) } };
+    const members = [...club.staff!.members.map((m) =>
+      m.id === medic.id ? strong(m, addDays(monday, 30)) : m.id === analyst.id ? { ...m, contract: { ...m.contract!, until: addDays(monday, -1) } } : m), endedScout];
     club = { ...club, staff: { ...club.staff!, members } };
     await saveService.saveSquadById(saveId, club);
-    const mondayBill = squadStaffWages(club.staff);
+    // Missions: the departing scout's, the chief's, and one led by someone who is not at the club
+    // (the Monday safety net drops it).
+    const scoutingNow = await saveService.getScouting(saveId);
+    await saveService.writeScouting(saveId, { ...scoutingNow, missions: [
+      mission("m-scout", scout.id, addDays(monday, -7)), mission("m-chief", "chief", addDays(monday, -7)), mission("m-ghost", "ghost", addDays(monday, -7)),
+    ] });
+    // Whoever's contract ended before today (the analyst, the scout) is not paid this Monday.
+    const mondayBill = squadStaffWages(club.staff, monday);
+    expect(mondayBill).toBe(squadStaffWages(club.staff) - endedScout.contract!.wage - members.find((m) => m.id === analyst.id)!.contract!.wage);
 
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
     club = (await saveService.getSquadById(saveId, "33"))!;
@@ -66,6 +83,9 @@ describe("staff contracts in the day", () => {
     const inbox = (await saveService.getInbox(saveId)).filter((m): m is ContractInboxMessage => m.category === "contract");
     expect(inbox.some((m) => m.kind === "staff_renewed" && m.staff!.some((s) => s.id === medic.id))).toBe(true);
     expect(inbox.some((m) => m.kind === "staff_left" && m.staff!.some((s) => s.id === analyst.id))).toBe(true);
+    // The departing field scout's mission ended with him; the chief's goes on.
+    expect(club.staff!.members.some((m) => m.id === scout.id)).toBe(false);
+    expect((await saveService.getScouting(saveId)).missions.map((m) => m.id)).toEqual(["m-chief"]);
     // The Monday line is the contracts' sum of the squad the day started with.
     const season = (await saveService.getLeagueMeta(saveId, "premier_league"))!.year;
     const line = (await saveService.getLedger(saveId, season)).find((e) => e.kind === "staff" && e.date === monday && !e.ref);
@@ -90,9 +110,15 @@ describe("staff contracts in the day", () => {
       .filter((m): m is ContractInboxMessage => m.category === "contract" && m.kind === "staff_expiring");
     expect(warnings.filter((m) => m.staff!.some((s) => s.id === gk.id))).toHaveLength(1);
 
-    // The human country's rollover refreshes the pool for the new season.
+    // The human country's rollover ages the staff (the retirement age retires) and refreshes the pool.
     const fresh = (await saveService.getMeta(saveId))!;
     const today = fresh.currentDate!;
+    club = (await saveService.getSquadById(saveId, "33"))!;
+    const veteran = club.staff!.members.find((m) => m.role === "medic")!;
+    const agesBefore = new Map(club.staff!.members.map((m) => [m.id, m.id === veteran.id ? STAFF.POOL.RETIRE_AGE - 1 : m.age]));
+    await saveService.saveSquadById(saveId, {
+      ...club, staff: { ...club.staff!, members: club.staff!.members.map((m) => (m.id === veteran.id ? { ...m, age: STAFF.POOL.RETIRE_AGE - 1 } : m)) },
+    });
     await saveService.updateMeta(saveId, {
       activeLeagues: (fresh.activeLeagues ?? []).map((l) =>
         l.leagueSlug === "premier_league" || l.leagueSlug === "of_championship" ? { ...l, end: today } : l),
@@ -100,6 +126,14 @@ describe("staff contracts in the day", () => {
     const before = await saveService.getStaffPool(saveId, today);
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
     const after = await saveService.getStaffPool(saveId, today);
+    club = (await saveService.getSquadById(saveId, "33"))!;
+    expect(club.staff!.members.some((m) => m.id === veteran.id)).toBe(false);
+    for (const m of club.staff!.members) expect(m.age).toBe(agesBefore.get(m.id)! + 1);
+    expect(after.members.some((m) => m.id === veteran.id)).toBe(false);
+    const retiredNews = (await saveService.getInbox(saveId))
+      .filter((m): m is ContractInboxMessage => m.category === "contract" && m.kind === "staff_retired");
+    expect(retiredNews.some((m) => m.staff!.some((s) => s.id === veteran.id))).toBe(true);
+    expect(after.refreshedOn).toBe(today);
     const year = (await saveService.getMeta(saveId))!.activeLeagues!.find((l) => l.leagueSlug === "premier_league")!.year;
     expect(after.season).toBe(String(year));
     expect(after.season).not.toBe(before.season);

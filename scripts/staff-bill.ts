@@ -14,8 +14,10 @@ import { join } from "path";
 import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { initialStaff, squadStaffWages, staffWeeklyWage } from "@/Domain/staff/staff";
-import { STAFF } from "@/Domain/staff/staffConfig";
 import type { Squad } from "@/types/playerTypes";
+
+/** The 3-role staff of before 4.7 rated every role at the tier's implied rating. */
+const OLD_IMPLIED_RATING = { LOW: 4, MEDIUM: 5, HIGH: 6, ELITE: 7 } as const;
 
 const SQUADS_DIR = join(import.meta.dir, "..", "src", "Data", "squads");
 const TIERS = ["LOW", "MEDIUM", "HIGH", "ELITE"] as const;
@@ -47,7 +49,7 @@ for (const league of readdirSync(SQUADS_DIR)) {
     const factor = wageFactorOf(squad);
     const revenue = wageRevenueBasisOf(squad);
     if (!(revenue > 0)) continue;
-    const oldBill = 3 * staffWeeklyWage(STAFF.IMPLIED_RATING[tier], factor);
+    const oldBill = 3 * staffWeeklyWage(OLD_IMPLIED_RATING[tier], factor);
     const staff = initialStaff(`bill:${squad.id}`, squad, { date: "2026-08-01", seasonEnd: "2027-05-31" });
     const newBill = squadStaffWages(staff);
     const r = rows[tier]!;

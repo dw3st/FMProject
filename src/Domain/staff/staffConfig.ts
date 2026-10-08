@@ -27,9 +27,6 @@ export const STAFF = {
   /** Overall is shown as a range once the uncertainty reaches this. */
   RANGE_THRESHOLD: 0.5,
 
-  /** AI clubs do not simulate staff: they use the implicit rating of their financial tier. */
-  IMPLIED_RATING: { LOW: 4, MEDIUM: 5, HIGH: 6, ELITE: 7 },
-
   /** Wage: a professional of rating r is paid like a player of overall `BASE + SLOPE * r`, times `SHARE`. */
   WAGE_BASE: 3,
   WAGE_SLOPE: 0.35,
