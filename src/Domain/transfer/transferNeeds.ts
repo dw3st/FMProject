@@ -1,6 +1,7 @@
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
 import { Player } from "@/Domain/Player";
 import { playerValueModel } from "@/Domain/awards/awardValue";
+import { AWARDS } from "@/Domain/awards/awardsConfig";
 import {
   aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf,
 } from "@/Domain/aiFinance/aiClubFinance";
@@ -329,6 +330,8 @@ function scoreImprovement(
     priceScore(fee, buyerBudget) * 0.15 +
     sellScore * 0.10 +
     improvementAgeScore(player.age) * 0.10 +
+    // Award winners (`awards.md`): bigger clubs look harder at them.
+    (player.awardBoost ? AWARDS.IMPROVEMENT_BONUS : 0) +
     noise
   );
 }

@@ -1,5 +1,6 @@
 import { addDays } from "@/Domain/dates";
 import { playerValueModel } from "@/Domain/awards/awardValue";
+import { AWARDS } from "@/Domain/awards/awardsConfig";
 import { MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiClubFinance, aiTransferBudgetOf, passesWageGate, transferBudgetTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
@@ -190,10 +191,12 @@ export function generateBidsForHuman(args: {
     tryBid(player, MORALE.REQUEST_BAND_SLACK + askingBandExtra(r), r < 1);
   }
 
-  // Unlisted standout: a bigger club tries its luck.
-  if (room() && rng() < B.UNLISTED_CHANCE) {
+  // Unlisted standout: a bigger club tries its luck — twice as often, and for him, with an award winner (`awards.md`).
+  if (room()) {
     const free = humanSquad.players.filter((p) => !p.loan && !squadDepthBlocked(p, humanSquad, false) && !hasBid(all(), p.id, "transfer") && !args.sellList.some((c) => c.playerId === p.id));
-    const best = free.sort((a, b) => playerOverallRating(b) - playerOverallRating(a))[0];
+    const byRating = free.sort((a, b) => playerOverallRating(b) - playerOverallRating(a));
+    const awarded = byRating.find((p) => p.awardBoost);
+    const best = rng() < B.UNLISTED_CHANCE * (awarded ? AWARDS.BIG_CLUB_BID_MULT : 1) ? (awarded ?? byRating[0]) : undefined;
     if (best) {
       const humanAvg = teamAvgRating(humanSquad);
       const buyers = buyersFor(best).filter((b) => transferBudgetTierOf(b) === "high" && teamAvgRating(b) > humanAvg);
