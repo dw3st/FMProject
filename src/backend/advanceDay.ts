@@ -116,6 +116,9 @@ import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
 import { continentalPoints, cupPoints, leaguePoints, promotionPoints } from "@/Domain/managers/managers";
 import { createAiManagerDesk, createManagerTracker } from "@/backend/managerWorld";
+import { recordLeagueAwards, recordSeasonGoals, runWorldCeremony } from "@/backend/awardsWorld";
+import { tierFactor } from "@/Domain/awards/awardsConfig";
+import type { AwardsInboxMessage } from "@/types/inboxTypes";
 import { loadWindowContext } from "@/backend/marketWindowWorld";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
 import { getCountries } from "@/backend/continentalWorld";
@@ -646,6 +649,10 @@ export async function advanceOneDay(
       };
     }
 
+    // ── Goal of the season candidates (`.claude/rules/game/awards.md`) ───────────
+    // Full-engine league matches only (quickSim events carry no `goals`); idempotent by key.
+    await recordSeasonGoals(saveService, saveId, currentDate, dayEvents.filter((e): e is MatchEvent => e.kind === "match"), activeLeagues);
+
     // ── Aggregate development messages for user's club ────────────────────────
     // One message per player per day, merging stat changes across multiple matches.
     if (playerSquadId) {
@@ -756,6 +763,9 @@ export async function advanceOneDay(
     const deferredRetirementMessages: Parameters<typeof buildRetirementMessage>[0][] = [];
     // Club history: beaten records of the human club (`.claude/rules/game/club-history.md`), same deferral.
     const clubRecordMessages: ClubRecordBroken[] = [];
+    // Season awards (`.claude/rules/game/awards.md`): the player's league at its rollover, the world
+    // ceremony in January. Same deferral.
+    const deferredAwardsMessages: AwardsInboxMessage[] = [];
     // Negotiation news (`.claude/rules/game/negotiation.md`): bids, loans back, sell-on money.
     // Deferred like the rest: emitted after any `clearInbox` this day.
     const negotiationNews: Parameters<typeof buildTransferNegotiationMessage>[0][] = [];
@@ -887,7 +897,7 @@ export async function advanceOneDay(
     // Manager ranking (`.claude/rules/game/managers.md`): titles and seasons of the day, written once at the end.
     const managerTracker = createManagerTracker({
       service: saveService, saveId, getIndex: () => index, catalog: getLeagueData, pyramids: getPyramids,
-      weights: meta.managerWeights,
+      weights: meta.managerWeights, date: currentDate,
     });
     // AI managers (`.claude/rules/game/managers.md` → "Técnicos da IA"): Monday review, rollover
     // sackings, vacancies and hirings. Not in the start-kit pre-simulation (no career yet).
@@ -1711,6 +1721,13 @@ export async function advanceOneDay(
           const season = seasonLabel(state.year, state.start, state.end);
           const table = standings[slug] ?? [];
           const championId = table.length > 0 && table[0]!.mp > 0 ? table[0]!.squadId : null;
+          // Season awards (`.claude/rules/game/awards.md`): the managers who ran the season and the
+          // board targets, taken before the rollover sackings below.
+          const awardManagers = await managerTracker.list();
+          const awardTargets = new Map(aiDesk ? await aiDesk.targets(slug, season) : []);
+          if (playerClubSquadId && board?.objective && board.objective.leagueSlug === slug) {
+            awardTargets.set(playerClubSquadId, board.objective.target);
+          }
           // Manager ranking: league title (tier × country weight), promotions out of this league, one more season.
           {
             const tier = unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1;
@@ -1752,6 +1769,19 @@ export async function advanceOneDay(
                 { squadId: ref.squad.id, clubName: ref.squad.name, league: slug }, season, titlesByClub,
               ),
             };
+          }
+          // Season awards on the closing rows (+ value boost, morale, manager, year file, inbox).
+          {
+            const leagueTier = unit.pyramid ? (tierOfLeague(unit.pyramid, slug) ?? 1) : 1;
+            const res = await recordLeagueAwards(saveService, saveId, {
+              league: slug, season, closedOn: currentDate, country: unitCountry, tier: leagueTier,
+              weight: unitWeight * tierFactor(leagueTier), state, squads: transition.squadsToSave.map((r) => r.squad),
+              table, managers: awardManagers, targets: awardTargets, tierChanges: plan.tierChanges,
+              playerClubId: playerClubSquadId, leagueName: state.leagueName,
+            });
+            transition.squadsToSave.forEach((ref, i) => { ref.squad = res.squads[i]!; });
+            await managerTracker.apply(res.managers);
+            if (res.message) deferredAwardsMessages.push(res.message);
           }
           // Club history: the season row, scorers and records of every club of the league.
           clubRecordMessages.push(...await recordLeagueSeasonHistory(saveService, saveId, {
@@ -2430,6 +2460,16 @@ export async function advanceOneDay(
     if (newOffers.length > 0) jobOffers = mergeOffers(jobOffers, newOffers);
     const jobMessages: Parameters<typeof buildJobMessage>[0][] = newOffers.map((offer) => ({ date: currentDate, kind: "offer" as const, offer }));
 
+    // ── World awards (`.claude/rules/game/awards.md` §5): January, once per year, after the rollovers ──
+    {
+      const msg = await runWorldCeremony(saveService, saveId, currentDate, {
+        managers: () => managerTracker.list(),
+        applyManagers: (fn) => managerTracker.apply(fn),
+        playerClubId: !ended && !unemployed && meta.clubId ? meta.clubId : null,
+      });
+      if (msg) deferredAwardsMessages.push(msg);
+    }
+
     // ── Morale of the human club (`.claude/rules/game/morale.md`): today's matches, bids, Monday ──
     // After the market and the rollover (the squad as it ends the day); news deferred past `clearInbox`.
     // The start-kit pre-simulation (`marketFrozen`) is the world before the career: no morale yet.
@@ -2570,6 +2610,7 @@ export async function advanceOneDay(
     }
     for (const msg of jobMessages) await emitInboxMessage(saveId, buildJobMessage(msg), saveService);
     for (const r of clubRecordMessages) await emitInboxMessage(saveId, buildClubRecordMessage(currentDate, r), saveService);
+    for (const msg of deferredAwardsMessages) await emitInboxMessage(saveId, msg, saveService);
 
     // Manager news of the player's league (sackings / hirings), grouped in one message.
     const managerNews = aiDesk?.news() ?? [];

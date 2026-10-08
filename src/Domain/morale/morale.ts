@@ -641,7 +641,6 @@ export function refusesRenewal(squad: Squad, player: RosterPlayer): boolean {
   return !clubMoraleOf(squad).promises.some((p) => p.playerId === player.id && p.kind === "renewal");
 }
 
-/** The manager put him on the sell list: −8 unless he asked for it (request or sale promise). */
 /**
  * A season award (`.claude/rules/game/awards.md`): only the largest award of the rollover counts,
  * scaled by the temperament like every event. No award with a morale value → same squad.
@@ -652,6 +651,7 @@ export function afterAward(squad: Squad, playerId: string, kinds: AwardKind[]): 
   return { ...squad, players: squad.players.map((p) => (p.id === playerId ? withEventDelta(p, delta) : p)) };
 }
 
+/** The manager put him on the sell list: −8 unless he asked for it (request or sale promise). */
 export function afterListedForSale(squad: Squad, playerId: string): Squad {
   const player = squad.players.find((p) => p.id === playerId);
   if (!player) return squad;
