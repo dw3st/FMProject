@@ -221,11 +221,12 @@ export type AdvanceDayOutcome =
 export async function runBufferedDay(
   saveId: string,
   playedMatchOverride: PlayedMatchRecording | null = null,
+  options: AdvanceOneDayOptions = {},
 ): Promise<AdvanceDayOutcome> {
   // Each squad is read at most once and written once.
   const buffer = new BufferingSaveDAL(new FileSystemDAL());
   const dayService = new SaveService(buffer);
-  const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride);
+  const outcome = await advanceOneDay(dayService, saveId, playedMatchOverride, options);
   if (!outcome.ok) return outcome;
   try {
     await buffer.flush();

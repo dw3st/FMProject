@@ -1,3 +1,4 @@
+import { shirtName } from "@/Domain/shirtName";
 import { useTranslation } from "react-i18next";
 import type { TeamId } from "@/GameEngine/types";
 import { readableOnDark } from "@/GameInterface/matchTeamColors";
@@ -108,7 +109,7 @@ export function MatchSummaryPanel({
             <span className="w-8 shrink-0 font-display font-bold tabular-nums text-muted-foreground">{e.minute}'</span>
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_MARK[e.kind]}`} aria-hidden />
             <span className="min-w-0 flex-1 text-foreground">
-              {t(`match.summary.kind.${e.kind}`, { player: e.player, playerIn: e.playerIn ?? "" })}
+              {t(`match.summary.kind.${e.kind}`, { player: shirtName(e.player), playerIn: e.playerIn ? shirtName(e.playerIn) : "" })}
             </span>
           </li>
         ))}

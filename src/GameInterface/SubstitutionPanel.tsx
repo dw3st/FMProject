@@ -1,3 +1,4 @@
+import { shirtName } from "@/Domain/shirtName";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GamePlayer, GameState, PendingSub } from "@/GameEngine/types";
@@ -259,7 +260,7 @@ export function SubstitutionPanel({
                       <div className="flex items-center gap-2 min-w-0">
                         <RoleBadge role={selectedOut.role} />
                         <span className={`text-sm font-bold truncate ${roleNameClass(selectedOut.role)}`}>
-                          {selectedOut.name}
+                          {shirtName(selectedOut.name)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm text-muted-foreground tabular-nums">
@@ -324,7 +325,7 @@ export function SubstitutionPanel({
                           <span
                             className={`flex-1 min-w-0 text-sm font-semibold truncate ${roleNameClass(p.role)}`}
                           >
-                            {p.name}
+                            {shirtName(p.name)}
                           </span>
                           <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>
                             {r10.toFixed(1)}
@@ -397,7 +398,7 @@ export function SubstitutionPanel({
                             <span
                               className={`flex-1 min-w-0 text-sm font-semibold truncate ${roleNameClass(p.role)}`}
                             >
-                              {p.name}
+                              {shirtName(p.name)}
                             </span>
                             <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>
                               {r10.toFixed(1)}
@@ -437,7 +438,7 @@ export function SubstitutionPanel({
                       onClick={() => setInstrSlot(p.slotIndex)}
                       className="py-2"
                     >
-                      {p.role} · {p.name.split(" ").pop()}{tag ? ` · ${tag}` : ""}{instr?.press && instr.press !== "normal" ? ` · ${t(`instructions.press.${instr.press}`)}` : ""}
+                      {p.role} · {shirtName(p.name)}{tag ? ` · ${tag}` : ""}{instr?.press && instr.press !== "normal" ? ` · ${t(`instructions.press.${instr.press}`)}` : ""}
                     </Chip>
                   );
                 })}

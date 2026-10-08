@@ -1,3 +1,4 @@
+import { shirtName } from "@/Domain/shirtName";
 import { useTranslation } from "react-i18next";
 import type { GamePlayer } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
@@ -121,7 +122,7 @@ function PlayerRow({
         <div className="w-2 h-2 rounded-full shrink-0" style={kitDotStyle(color)} />
         <span className="w-8 text-[13px] font-bold text-muted-foreground uppercase font-display shrink-0">{player.role}</span>
         <span className={`flex-1 min-w-0 text-sm font-semibold text-foreground truncate flex items-center gap-1.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
-          <span className="truncate">{player.name}</span>
+          <span className="truncate" title={player.name}>{shirtName(player.name)}</span>
           {starKind && <StarBadge kind={starKind} />}
         </span>
         {isSubbedIn && (

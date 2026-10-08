@@ -1,3 +1,4 @@
+import { shirtName } from "@/Domain/shirtName";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
@@ -535,20 +536,20 @@ export function MatchScreen() {
     const offs = [
       gameBus.on("injury", (data) => {
         showNotice(
-          t("match.injuryNotice", { player: data.playerName, severity: t(`match.injurySeverity.${data.severity}`) }),
+          t("match.injuryNotice", { player: shirtName(data.playerName), severity: t(`match.injurySeverity.${data.severity}`) }),
           "danger",
         );
       }),
       gameBus.on("offsideCalled", (e) => {
         push({ minute: minuteNow(), team: e.team, kind: "offside", player: nameOf(e.receiverId) });
-        showNotice(t("match.notice.offside", { player: nameOf(e.receiverId), team: team(e.team) }), "info");
+        showNotice(t("match.notice.offside", { player: shirtName(nameOf(e.receiverId)), team: team(e.team) }), "info");
       }),
       gameBus.on("freeKickAwarded", (e) => {
         if (e.dangerous) showNotice(t("match.notice.freeKick", { team: team(e.team) }), "warn");
       }),
       gameBus.on("card", (e) => {
         const key = e.card === "yellow" ? "yellow" : e.secondYellow ? "secondYellow" : "red";
-        showNotice(t(`match.notice.${key}`, { player: e.playerName, team: team(e.team) }), e.card === "red" ? "danger" : "warn");
+        showNotice(t(`match.notice.${key}`, { player: shirtName(e.playerName), team: team(e.team) }), e.card === "red" ? "danger" : "warn");
       }),
       gameBus.on("penaltyAwarded", (e) => {
         showNotice(t("match.notice.penalty", { team: team(e.team) }), "warn");

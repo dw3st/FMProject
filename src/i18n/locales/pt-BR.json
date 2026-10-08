@@ -1983,6 +1983,15 @@
     "squad": "Elenco",
     "searchPlayers": "Buscar jogadores…",
     "noPlayersMatch": "Nenhum jogador corresponde a \"{{query}}\"",
+    "noPlayersInLine": "Nenhum jogador nesta posição",
+    "positionFilter": {
+      "label": "Posição",
+      "all": "Todos",
+      "GK": "GOL",
+      "Defender": "DEF",
+      "Midfielder": "MEI",
+      "Forward": "ATA"
+    },
     "loading": "Carregando...",
     "noSquadData": "Nenhum dado do elenco encontrado.",
     "agePhases": {

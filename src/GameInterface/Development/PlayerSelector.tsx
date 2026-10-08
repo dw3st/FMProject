@@ -2,10 +2,14 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { AgePhase } from "@/GameInterface/Development/PlayerProfile";
 import { getAgePhaseDisplay } from "@/GameInterface/Development/PlayerProfile";
-import { getMainRole } from "@/Domain/roles";
+import { getMainRole, type MainRole } from "@/Domain/roles";
 import { MAIN_ROLE_ABBR, MAIN_ROLE_BADGE_CLASSES, positionLabel } from "@/GameInterface/positionHelpers";
 import { Icon } from "@/GameInterface/Icons";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
+
+type LineFilter = "all" | MainRole;
+const LINE_FILTERS: readonly LineFilter[] = ["all", "GK", "Defender", "Midfielder", "Forward"];
 
 export interface PlayerOption {
   id:       string;
@@ -27,17 +31,19 @@ interface PlayerSelectorProps {
 export function PlayerSelector({ players, selectedId, onSelect, clubColors }: PlayerSelectorProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
+  const [line, setLine] = useState<LineFilter>("all");
   const agePhaseDisplay = getAgePhaseDisplay(t);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return players;
-    return players.filter((p) => {
+    const inLine = line === "all" ? players : players.filter((p) => getMainRole(p.position) === line);
+    if (!q) return inLine;
+    return inLine.filter((p) => {
       const abbr = `${MAIN_ROLE_ABBR[getMainRole(p.position)]} ${positionLabel(t, p.position, p.position)}`;
       const phaseLabel = agePhaseDisplay[p.agePhase].label;
       return `${p.position} ${abbr} ${phaseLabel} ${p.name}`.toLowerCase().includes(q);
     });
-  }, [players, query, agePhaseDisplay, t]);
+  }, [players, query, line, agePhaseDisplay, t]);
 
   if (players.length === 0) return null;
 
@@ -59,10 +65,20 @@ export function PlayerSelector({ players, selectedId, onSelect, clubColors }: Pl
         />
       </div>
 
+      <OptionChips
+        className="shrink-0"
+        aria-label={t("developmentScreen.positionFilter.label")}
+        options={LINE_FILTERS.map((key) => ({ key, label: t(`developmentScreen.positionFilter.${key}`) }))}
+        value={line}
+        onChange={setLine}
+      />
+
       <div className="flex-1 min-h-[12rem] overflow-y-auto rounded-md border border-border/40 bg-card/30 py-1.5 -mx-0.5">
         {filtered.length === 0 && (
           <div className="px-4 py-6 text-sm text-muted-foreground text-center">
-            {t("developmentScreen.noPlayersMatch", { query })}
+            {query.trim()
+              ? t("developmentScreen.noPlayersMatch", { query })
+              : t("developmentScreen.noPlayersInLine")}
           </div>
         )}
 

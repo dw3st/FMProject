@@ -269,8 +269,8 @@ describe("finance ledger — rollover broadcasting (L4)", () => {
 
   test("the new season's broadcasting credit lands in the year+1 ledger file; budget == sum across both seasons", async () => {
     // Iceland: a calendar-year league with no pyramid (season-rollover-smoke.ts and
-    // continentalWorld.rollover.test.ts both use it to force a standalone rollover without
-    // waiting out a real season or dragging in a whole country's pyramid).
+    // continentalWorld.rollover.test.ts both use it to force a rollover without waiting out a
+    // real season).
     let meta = await saveService.createSave({
       leagueSlug: "of_icelandic_urvalsdeild", leagueName: "Úrvalsdeild",
       clubId: "of_is_breidablik", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -282,10 +282,14 @@ describe("finance ledger — rollover broadcasting (L4)", () => {
     const oldYear = stateBefore.year;
     const broadcastingFee = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!.finances!.broadcasting;
 
-    // Jump straight to the season's last day — the next advanceOneDay call rolls the (standalone,
-    // pyramid-less) league over.
+    // Jump straight to the season's last day — the next day rolls the (standalone, pyramid-less)
+    // league over. Every calendar-year league ends on 11-30 too, so that same day rolls ~59 units
+    // (Russia's 7-league pyramid included). Run it the way the live route does (buffered day,
+    // ~11 s): the unbuffered `advanceOneDay(saveService, …)` reads and writes every squad straight
+    // to disk (~47 s) and blew the 60 s timeout, and the afterAll then deleted the save
+    // under the still-running day ("moveSquad: squad … not found").
     await saveService.updateMeta(saveId, { currentDate: stateBefore.end });
-    const outcome = await advanceOneDay(saveService, saveId);
+    const outcome = await runBufferedDay(saveId);
     expect(outcome.ok).toBe(true);
 
     const metaAfter = await saveService.getMeta(saveId);

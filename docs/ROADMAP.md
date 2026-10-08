@@ -103,14 +103,22 @@ escolhidos por afinidade (o mesmo código ou os mesmos testes).
 | 29 ✅ | Recalibração pelo valor de mercado (4.5) | #83, #94, #96 | Notas reordenadas por liga pelo valor de mercado do Transfermarkt (ajustado por idade e posição), posição natural do Transfermarkt, nacionalidade/nascimento/altura; atributos com uma casa decimal mostrados de 0 a 100 com cor; evolução em passos de 0,1 no ritmo de antes. Spec `docs/superpowers/specs/2026-10-07-market-value-recalibration-design.md` |
 | 30 | Responsabilidades e inbox mais limpa | #105 | O diretor cuida dos contratos por padrão (renovações, conversas de contrato, avisos de fim de contrato); o jogador pode assumir nas configurações; filtros para não receber notícias que não interessam (técnicos demitidos de outros clubes etc.). Pequena e de qualidade de vida, antes das etapas grandes |
 | 31 | Comissão técnica completa | #102 | Preparadores físico, de goleiros e geral (estrelas 1–5, atributos), limites por função, busca de funcionários na aba Transferências; junto, rostos da equipe técnica e avatar do técnico do jogador criado no novo jogo (mesma área) |
-| 32 | Olheiros por país | #104 | Conhecimento de cada olheiro por país (nacionalidade, cresce com as missões) e mapa mundial ao clicar no olheiro; usa a Central de Olheiros e o mapa-múndi do novo jogo |
-| 33 | Instalações vivas | — | Desgaste e vida útil das obras (reforma e reconstrução), instalações em detalhe (academia, piscina, fisioterapia, refeitório, campos, "N de 10" e % de desgaste) e instalações pesando na decisão do jogador de aceitar o clube |
-| 34 | Torneios de base e reservas | — | Sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas |
-| 35 | Inscrição por competição | #103 | Inscritos por torneio, limite de estrangeiros e mínimo de formados no clube; depende das competições e da base |
+| 32 | Prêmios de fim de temporada | #110 | Melhor jogador, revelação, gol mais bonito, melhor técnico, melhor goleiro/zagueiro/meia/atacante e seleção da temporada por liga; no perfil do jogador e do técnico, filtráveis no olheiro e nas estatísticas |
+| 33 | Olheiros por país | #104 | Conhecimento de cada olheiro por país (nacionalidade, cresce com as missões) e mapa mundial ao clicar no olheiro; usa a Central de Olheiros e o mapa-múndi do novo jogo |
+| 34 | Instalações vivas | — | Desgaste e vida útil das obras (reforma e reconstrução), instalações em detalhe (academia, piscina, fisioterapia, refeitório, campos, "N de 10" e % de desgaste) e instalações pesando na decisão do jogador de aceitar o clube |
+| 35 | Partida ao vivo: mapa de calor e táticas completas | #108 | Mini mapa de calor durante o jogo; estilo tático e instruções de equipe mudáveis ao vivo (hoje: mentalidade, formação, instruções individuais) |
+| 36 | Torneios de base e reservas | — | Sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas |
+| 37 | Inscrição por competição | #103 | Inscritos por torneio, limite de estrangeiros e mínimo de formados no clube; depende das competições e da base |
+| 38 | Visual da partida e estádio | #107, #99 | Árbitros e bandeirinhas, técnicos à beira do campo com gestos pela mentalidade, animações de chute; estádio em volta do campo com a torcida proporcional ao público |
+| 39 | VAR e reclamação do técnico | #109 | Revisão de lances polêmicos (pênalti, gol, vermelho) e o técnico podendo reclamar, com risco de cartão e suspensão |
+| 40 | Conquistas | #95 | Desafios com recompensas (itens de perfil, atributos do técnico, jogador criado ou lenda aposentada) |
+| 41 | Seleções nacionais | — | Convocações, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking |
+| 42 | Imprensa e notícias | — | Coletivas com efeito na moral e na diretoria, página de notícias do mundo |
+| 43 | Multiplayer | #106 | Vários técnicos humanos no mesmo mundo; precisa de desenho próprio |
 
 ### Próximas etapas em detalhe
 
-Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → plano → execução com testes, `/test` e `/lab` quando houver efeito de partida → smoke → changelog → publicação.
+Cada etapa segue o fluxo de sempre (as decisões já tomadas estão em cada etapa; publicação autônoma quando testes e smoke passam): desenho aprovado pelo usuário → spec → plano → execução com testes, `/test` e `/lab` quando houver efeito de partida → smoke → changelog → publicação.
 
 **29 · Recalibração pelo valor de mercado (4.5) ✅.** Publicada em 2026-10-07. Gols por liga mudaram (Premier −13%, Brasileirão +16%; média do mundo igual), aceito pelo usuário; quickSim dentro de ±10%; `BENCH_SWAP_RATIO` 1,17 → 1,10; elencos completados nos mínimos por linha depois da recalibração.
 
@@ -120,37 +128,67 @@ Cada etapa segue o fluxo de sempre: desenho aprovado pelo usuário → spec → 
 - Conversas de contrato pedidas pelos jogadores vão ao diretor quando ele é o responsável.
 
 **31 · Comissão técnica completa (#102) + rostos.**
-- Funções: auxiliar, preparador físico, preparador de goleiros, preparador geral (com sub-áreas: defesa, ataque, tática, técnica, bola parada), olheiros, médico/fisioterapeuta, analista de desempenho, jardineiro (cuida do gramado do estádio e do CT; o efeito entra na etapa 33); limite por função.
+- Funções: auxiliar, preparador físico, preparador de goleiros, preparador geral (com sub-áreas: defesa, ataque, tática, técnica, bola parada), olheiros, médico/fisioterapeuta, analista de desempenho, jardineiro (cuida do gramado do estádio e do CT; o efeito entra na etapa 34); limite por função.
 - Cada profissional com atributos (determinação, disciplina, adaptação, leitura de jogadores, conhecimento da área) e nota em estrelas 1–5 por área de treino.
 - Efeitos: a evolução de cada grupo de atributos depende do preparador daquela área (goleiros só com o de goleiros); a IA segue com a nota implícita do tier.
 - Mercado: busca de funcionários na aba Transferências (jogadores × comissão).
 - Rostos (facesjs) para a comissão e os técnicos; avatar do técnico do jogador no novo jogo (sortear + pele, cabelo e cor, barba, óculos).
 - Medição: ritmo de evolução por idade igual ao de hoje com a comissão média.
+- **Decidido (2026-10-07):** faltar um preparador faz a área evoluir a ~40% do ritmo (ninguém trava); limite de profissionais por função pelo tamanho do clube; a IA não contrata comissão (qualidade implícita pela divisão/tier); contratos de 1 a 3 anos com salário fixo, multa de metade do restante ao demitir e renovação perto do fim; busca na aba Transferências com filtros por função, estrelas e salário.
 
-**32 · Olheiros por país (#104).**
+**32 · Prêmios de fim de temporada (#110).**
+- Na virada de cada liga: melhor jogador, revelação (≤ 21), artilheiro, melhor goleiro/zagueiro/meia/atacante pela nota média (mínimo de jogos), seleção da temporada (XI), melhor técnico (campanha × meta); gol da temporada sorteado entre os gols de fora da área ou de cabeça da liga.
+- Prêmios gravados no histórico do jogador e do técnico (linha da temporada), aparecem na ficha (selos), no ranking de técnicos e na aba Estatísticas; filtro "premiados" no olheiro.
+- Inbox com os premiados da liga do jogador; prêmio de jogador do clube do jogador mexe na moral.
+- **Decidido (2026-10-07):** prêmios por liga (melhor jogador, revelação, artilheiro, melhor goleiro, seleção, melhor técnico, gol da temporada) + mundiais (melhor jogador e melhor técnico do mundo); o premiado ganha moral (clube do jogador), valor de mercado um pouco maior por uma temporada e fica mais procurado por clubes grandes.
+
+**33 · Olheiros por país (#104).**
 - Cada olheiro tem conhecimento por país (alto no país de origem e vizinhos, cresce a cada missão naquele país e decai devagar).
 - O conhecimento do país multiplica o ganho das missões e a qualidade dos relatórios.
 - Ao clicar no olheiro: mapa mundial (reaproveita o do novo jogo) com conhecimento completo, moderado e nenhum.
 - Missões continuam de 4/8/12 semanas (rápida, moderada, profunda), com o olheiro ocupado e a viagem cobrada pela distância.
+- **Decidido (2026-10-07):** cada olheiro tem nacionalidade; conhece muito o próprio país e moderadamente os do mesmo continente; o resto aprende nas missões.
 
-**33 · Instalações vivas.**
+**34 · Instalações vivas.**
 - Desgaste semanal de cada instalação (assentos, gramado, equipamentos), vida útil, reforma parcial e reconstrução quando passa do limite; manutenção no extrato.
 - Instalações em detalhe: tela visual com as partes do CT e da base (academia, piscina, fisioterapia, refeitório, campos), cada uma "N de 10" com % de desgaste; o jogador escolhe o que melhorar e a diretoria aprova.
 - Gramado: a condição do gramado do estádio e do CT cai com os jogos, os treinos e o tempo e é mantida pelo jardineiro (nota e quantidade); gramado ruim (grama alta, irregular) aumenta o risco de lesão no treino e nos jogos em casa.
 - Instalações pesam na decisão do jogador de aceitar o clube (como a ambição com clube menor).
+- **Decidido (2026-10-07):** vida útil de 1 a 5 temporadas por item, com desgaste progressivo (mais lento no começo e acelerando perto do fim); itens de uso intenso (gramado do estádio e do CT, academia) desgastam mais rápido que os de estrutura (arquibancada, refeitório); reforma parcial a qualquer momento; abaixo de ~40% passa a pesar (lesão no gramado ruim, menos evolução no CT ruim); abaixo de ~15% precisa refazer a obra.
 
-**34 · Torneios de base e reservas.**
+**35 · Partida ao vivo: mapa de calor e táticas completas (#108).**
+- Mapa de calor pequeno ao lado do campo (posições da bola por time nos últimos minutos e no jogo todo), alternável.
+- Painel tático na partida: estilo tático e eixos (pressão, linha, largura, construção) mudáveis ao vivo, além da mentalidade e da formação que já existem; vale só para o jogo, sem gravar a tática.
+
+**36 · Torneios de base e reservas.**
 - Competições sub-21 e sub-19 por país, com calendário que não choca com o time principal.
 - Escalação automática pelos jovens e reservas sem minutos; partidas no quickSim; DP e moral contam.
 - Tabela e resultados na tela de Ligas; jogos do clube do jogador no calendário.
+- **Decidido (2026-10-07):** jogos da base simulados (só resultado, tabela e quem se destacou); escalação automática com jovens e reservas sem minutos, com opção de mandar alguém jogar.
 
-**35 · Inscrição por competição (#103).**
+**37 · Inscrição por competição (#103).**
 - Lista de inscritos por competição, com limite de estrangeiros e mínimo de formados no clube/país conforme a liga ou o torneio continental; prazo de inscrição pelas janelas.
 - A IA inscreve sozinha; jogador não inscrito não pode ser escalado naquela competição.
+- **Decidido (2026-10-07):** regras reais simplificadas das principais competições (ex. Brasileirão até 9 estrangeiros relacionados; Premier 8 formados no país em 25; Champions 8 formados no clube/país) e uma regra padrão por continente nas demais.
 
-**Depois (sem ordem ainda):** modo multiplayer (#106: vários técnicos humanos no mesmo mundo, avanço de dia sincronizado, partidas e mercado entre humanos, o ranking de técnicos como base; precisa de desenho próprio); estádio com torcida em volta do campo (#99); conquistas com recompensas (#95); seleções nacionais e Copa do Mundo; imprensa e notícias.
+**38 · Visual da partida e estádio (#107, #99).**
+- Árbitro e bandeirinhas desenhados seguindo o lance; técnicos à beira do campo com gesto quando a mentalidade muda.
+- Animações curtas (chute de longe, cabeçada, defesa) só no desenho.
+- Estádio em volta do campo com a torcida proporcional ao público esperado (instalações, 3.9).
 
-**Mais tarde (no roadmap, sem etapa marcada):** seleções nacionais e torneios de seleções (convocação, datas FIFA, Copa do Mundo, convite ao técnico pelo ranking); imprensa e notícias do mundo (coletivas com efeito na moral e na diretoria, página de notícias); **desgaste das instalações** (cada obra tem vida útil e se degrada toda semana — assentos do estádio, gramado, equipamentos —, pede reforma e, num ponto, tem de ser refeita; a manutenção entra no extrato); **instalações em detalhe** (tela visual clicável com as partes do CT e da base — academia, piscina, fisioterapia, refeitório, campos —, cada uma com nível "N de 10" e % de degradação, escolhendo o que melhorar; instalações ruins fazem jogadores recusarem o clube, como hoje a ambição recusa clube menor, e boas instalações ajudam a convencer); **torneios de base e reservas** (sub-21 e sub-19 com calendário próprio, para dar minutos e evolução aos jovens e reservas que não jogam no time principal); **rostos da equipe e do técnico** (caricaturas no mesmo estilo dos jogadores para auxiliar, preparador, olheiros e técnicos; avatar do técnico do jogador criado no novo jogo: sortear outro + ajustes de tom de pele, cabelo e cor, barba e óculos); **comissão técnica completa** (#102: preparadores físico, de goleiros e geral com estrelas 1–5 e atributos, limites por função, busca de funcionários na aba Transferências); **inscrição por competição** (#103: estrangeiros e formados no clube); **olheiros por país** (#104: conhecimento de cada olheiro por país e mapa mundial); **escolha de ligas no novo jogo** (#101, só se a medição mostrar ganho de desempenho real; mundo inteiro continua como opção).
+**39 · VAR e reclamação do técnico (#109).**
+- Revisão de pênalti, gol (impedimento/falta) e vermelho direto com uma chance de erro do juiz corrigida pelo VAR; pausa curta na partida.
+- Botão "reclamar com o árbitro": chance de amarelo/vermelho ao técnico, suspensão nos próximos jogos (o auxiliar comanda), efeito na moral e na diretoria.
+- **Decidido (2026-10-07):** reclamar tem pequeno ganho (moral do time e da torcida; raramente mais rigor do juiz com o adversário) e risco (cartão, suspensão com o auxiliar no comando, diretoria irritada se exagerar).
+
+**40 · Conquistas (#95).**
+- Lista de desafios por carreira com recompensas cosméticas e algumas de jogo (jogador criado na base, lenda aposentada); desenho próprio antes.
+
+**41–43 · Seleções nacionais, imprensa e multiplayer:** cada uma com desenho próprio quando chegar a vez.
+
+**Depois (sem ordem ainda):** nada no momento; tudo que chegou está nas etapas 30–43.
+
+**Mais tarde:** tudo que estava aqui foi encaixado nas etapas 30–43 (acima); escolha de ligas no novo jogo descartada por enquanto (#101: ganho só nos dias sem jogo; save de 44 MB não é problema).
 
 **Com data:** #11 (ligas de ano civil com a composição de 2026) entra assim que a ESPN virar essas
 ligas para 2027 (previsão: janeiro/fevereiro de 2027): `fetchEspn` + regenerar a cadeia.
