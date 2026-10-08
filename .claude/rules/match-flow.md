@@ -420,3 +420,25 @@ Spec: `docs/superpowers/specs/2026-10-08-live-tactics-design.md`.
   salva" restores the saved one; the resume snapshot keeps the live and the saved tactics. The AI (team B)
   never reacts. Limitation: the familiarity *execution* (attributes × 1 ± 0,02) is baked into the players at
   kickoff, so a live style change moves the tactical weights, not those attributes.
+
+---
+
+# Substitution panel: mini pitch and position swaps (#115, 4.13)
+
+The "Troca de jogador" tab of the live substitution panel (`SubstitutionPanel` → `Components/SubsPitchView.tsx`)
+shows the XI on a mini pitch (each starter in his slot of the current formation, attacking to the right: position
+in `getDetailedPositionColor`, rating, energy, yellow card / injury / "going off" marks) and the bench sorted by
+position (`compareSquadPositions`). Below `md` the pitch and the bench stack.
+
+- Tap flow (`GameInterface/subsSelection.ts`, `tapSubsPlayer`, pure + tested): starter then substitute (or the other
+  way) queues a substitution in `pendingSubsA` (limit and the "already going off" rule unchanged, flushed at the next
+  stoppage); two outfield starters **swap positions** at once, without using a substitution; tapping the selected
+  player again clears. Dragging works the same (substitute onto starter, starter onto starter).
+- Engine: `swapPlayerPositions(state, team, aId, bId)` (`gameState.ts`): each player takes the other's slot index,
+  role, anchor and bounds (as on a formation change), the slot keeps its instruction and man-marking, energy and
+  pitch position stay, and the engine stats are rebuilt for the new role from `fit` (the out-of-position factor, as
+  for a substitute). Goalkeepers, the same player, another team or a player off the pitch: state unchanged. Emits
+  `positionsSwapped` and a debug line (`instruction`). Test: `SwapPositions.engine.test.ts`.
+- `/test`: button "Subs A" opens the same panel for team A (test commands `queueSub` and `swapPositions`; the
+  Formation / Instructions tabs stay in `/test`'s own controls). No new statistic, nothing in `/lab`: a swap only
+  moves players between existing slots.

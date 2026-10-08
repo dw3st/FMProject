@@ -12,7 +12,7 @@ import {
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import { tickState, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -1592,6 +1592,18 @@ export function PixiPitch({
           stateRef.current = { ...stateRef.current, players: cmd.players };
         } else if (cmd.type === 'setInstruction') {
           stateRef.current = applyPlayerInstruction(stateRef.current, cmd.team, cmd.slot, cmd.instruction);
+        } else if (cmd.type === 'swapPositions') {
+          stateRef.current = swapPlayerPositions(stateRef.current, cmd.team, cmd.aId, cmd.bId);
+          gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the new slots
+        } else if (cmd.type === 'queueSub') {
+          const s = stateRef.current;
+          const key = cmd.team === 'A' ? 'pendingSubsA' : 'pendingSubsB';
+          const queue = s[key];
+          const left = (cmd.team === 'A' ? s.subsRemainingA : s.subsRemainingB) - queue.length;
+          if (left > 0 && !queue.some(q => q.outId === cmd.outId || q.inId === cmd.inId)) {
+            stateRef.current = { ...s, [key]: [...queue, { outId: cmd.outId, inId: cmd.inId }] };
+            gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the queued sub
+          }
         } else if (cmd.type === 'setManMarks') {
           stateRef.current = setManMarksBySlot(stateRef.current, cmd.team, cmd.marks.map(m => ({ slot: m.slot, targetSlot: m.targetSlot })));
         } else if (cmd.type === 'setTeamIntent') {

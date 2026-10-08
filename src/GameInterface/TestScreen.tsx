@@ -69,6 +69,7 @@ const AXIS_ROWS: { key: keyof TacticalAxes; label: string; values: string[] }[] 
 ];
 import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
 import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
+import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -450,6 +451,8 @@ export function TestScreen() {
   const [liveOffBallIntents, setLiveOffBallIntents] = useState<Record<number, OffBallIntentKey>>({});
   const [liveBallHolder, setLiveBallHolder]     = useState<number>(-1);
   const [liveGameState, setLiveGameState]       = useState<GameState | null>(null);
+  // Live substitution panel for Team A (#115): same panel as the match, via test commands.
+  const [showSubs, setShowSubs] = useState(false);
   const liveStateRef = useRef<GameState | null>(null);
   const [livePlayer, setLivePlayer] = useState<GamePlayer | null>(null);
   const lastDefensiveScoresRef = useRef<Record<number, unknown>>({});
@@ -1304,6 +1307,12 @@ export function TestScreen() {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
           <Icon name={paused ? 'play' : 'pause'} size={14} />{paused ? 'Play' : 'Pause'}
         </button>
+        {mode === '11v11' && liveGameState && (
+          <button onClick={() => { setPaused(true); setShowSubs(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
+            <Icon name="arrow-right-left" size={14} />Subs A
+          </button>
+        )}
         <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/30 p-0.5">
           {SPEEDS.map(s => (
             <button key={s.value} onClick={() => setSpeed(s.value)}
@@ -1711,6 +1720,15 @@ export function TestScreen() {
         </div>
       )}
 
+      {showSubs && liveGameState && (
+        <SubstitutionPanel
+          gameState={liveGameState}
+          playerTeam="A"
+          onQueueSub={sub => gameBus.emit('testCommand', { type: 'queueSub', team: 'A', outId: sub.outId, inId: sub.inId })}
+          onSwapPositions={(aId, bId) => gameBus.emit('testCommand', { type: 'swapPositions', team: 'A', aId, bId })}
+          onClose={() => setShowSubs(false)}
+        />
+      )}
     </div>
   );
 }
