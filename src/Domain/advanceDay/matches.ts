@@ -469,6 +469,8 @@ export function buildMatchEvent(
     awayFormation: Formation;
     awayLineup: string[];
     tactics?: { A: TeamTactics; B: TeamTactics };
+    /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
+    pitchCondition?: number;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -490,6 +492,7 @@ export function buildMatchEvent(
     {
       knockout: fixture.knockout === true,
       ...(sim.tactics ? { tactics: sim.tactics } : {}),
+      ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
     },
   );
@@ -742,6 +745,8 @@ export function buildQuickMatchEvent(
     /** When given, each lineup slot plays its formation slot role (as in the engine). */
     homeFormation?: Formation;
     awayFormation?: Formation;
+    /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
+    pitchCondition?: number;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -757,6 +762,7 @@ export function buildQuickMatchEvent(
       knockout: fixture.knockout === true,
       neutral: fixture.neutral === true,
       aggregate: fixture.aggregate,
+      ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
     },
     rng,
   );

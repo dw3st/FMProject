@@ -52,6 +52,9 @@ export const penalty = (condition: number): number => clamp((W.WARN_BELOW - cond
 /** Multiplier `1 → atZero` as the condition goes 40% → 0%. */
 export const effectAt = (atZero: number, condition: number): number => 1 + (atZero - 1) * penalty(condition);
 
+/** × injury risk of both sides of a match on a pitch in this condition (1 from 40% up, 1.6 at 0%). */
+export const pitchInjuryMult = (condition: number): number => effectAt(W.PITCH_INJURY_MAX, condition);
+
 /** Condition of an item of the club's facilities. */
 export const itemCondition = (f: ClubFacilities, id: FacilityItemId): number => conditionOf(f.items[id]);
 

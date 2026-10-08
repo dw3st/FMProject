@@ -1,5 +1,5 @@
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
-import { conditionOf, effectAt } from "@/Domain/facilities/facilityItems";
+import { conditionOf } from "@/Domain/facilities/facilityItems";
 import { livingFacilities, seasonFraction } from "@/Domain/facilities/facilities";
 import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { clamp } from "@/Domain/math";
@@ -16,10 +16,7 @@ export function aiPitchCondition(tier: FinancialTier, fraction: number): number 
   return F.AI_PITCH.START[tier] - F.AI_PITCH.DROP[tier] * f;
 }
 
-/** × injury risk of both sides on a pitch in this condition (1 from 40% up, 1.6 at 0%). */
-export function pitchInjuryMult(condition: number): number {
-  return effectAt(F.WEAR.PITCH_INJURY_MAX, condition);
-}
+export { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
 
 /**
  * Condition of the pitch of a fixture: neutral venue → `AI_PITCH.NEUTRAL`; a home club with the

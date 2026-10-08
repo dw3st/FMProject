@@ -174,3 +174,19 @@ describe("cup fixtures", () => {
     expect(deciderCount).toBeGreaterThan(0);
   });
 });
+
+describe("buildQuickMatchEvent — pitch condition", () => {
+  test("passes the pitch to the quickSim: a ruined pitch injures more (paired seeds)", () => {
+    const home = makeSquad("h");
+    const away = makeSquad("a");
+    const fixture = { id: "fx1", date: "2027-02-05", competition: "la_liga", round: 1, home: "h", away: "a" } as Fixture;
+    const sim = { homeLineup: home.players.map((p) => p.id), awayLineup: away.players.map((p) => p.id) };
+    let good = 0;
+    let bad = 0;
+    for (let seed = 1; seed <= 1500; seed++) {
+      good += buildQuickMatchEvent(fixture, home, away, { ...sim, pitchCondition: 90 }, mulberry32(seed)).event.injuries?.length ?? 0;
+      bad += buildQuickMatchEvent(fixture, home, away, { ...sim, pitchCondition: 0 }, mulberry32(seed)).event.injuries?.length ?? 0;
+    }
+    expect(bad).toBeGreaterThan(good * 1.3);
+  });
+});
