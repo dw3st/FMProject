@@ -221,6 +221,47 @@ diretoria de item.
 
 Os números medidos substituem as estimativas nesta seção e em `facilities.md`.
 
+### Medido (2026-10-08)
+
+**M1/M2 — lesões pelo gramado** (`bun scripts/injury-calibrate.ts 300 --pitch none,ai,20,90 --quicksim`; motor
+Premier + Championship, 600 jogos por modo, fôlego 88, mesmos pares e mesmo `Math.random` por jogo — o motor carrega
+estado entre partidas, então o pareamento não é exato: o modo 90 = sem gramado deu ×1,021 só de ruído; quickSim 26
+ligas × 3000 jogos, pareado e exato):
+
+| Modo | Motor (lesões/jogo) | × sem gramado | quickSim | × sem gramado |
+|---|---|---|---|---|
+| sem gramado (antes) | 0,240 | 1 | 0,256 | 1 |
+| IA (tier × fração sorteada; média 64%, 9,3% dos jogos abaixo de 40%) | 0,245 | 1,021 | 0,257 | 1,005 |
+| 20% | 0,333 | 1,389 | 0,332 | 1,298 |
+| 90% | 0,245 | 1,021 (ruído) | 0,256 | 1,000 |
+
+Metas: volume do mundo na faixa 0,15–0,5 e ≤ +3% sobre o sem gramado (✓: +0,5% exato no quickSim; o +2,1% do motor é
+ruído, igual ao do modo 90); gramado 20% × 90% ~×1,3 (✓: quickSim ×1,30; motor ×1,36 sobre o 90, ruído de ±13% com
+~150–200 lesões). `AI_PITCH` não mudou.
+
+**M3 — CT ruim na evolução** (`bun scripts/development-pace.ts --ct 20 [--sessions 200]`, caso realista de 3
+temporadas; DP do treino ×0,927 com o CT a 20%, ×0,857 a 0%): o Δ da média dos 13 atributos quase não muda.
+
+| Δ média 13 (linha / goleiro) | 18 anos | 21 | 24 |
+|---|---|---|---|
+| 38 treinos/temporada, CT 90% → 20% | 0,390 → 0,385 (−1,3%) / 0,731 → 0,700 (−4,2%) | 0,313 → 0,313 / 0,538 → 0,538 | igual |
+| 200 treinos/temporada, CT 90% → 20% | 0,559 → 0,544 (−2,7%) / 1,038 → 0,992 (−4,4%) | 0,390 → 0,382 (−2,1%) / 0,754 → 0,700 (−7,2%) | 0,326 → 0,308 (−5,5%) / igual |
+
+**Abaixo da meta da spec (−5% a −8% num jovem):** o CT só pesa na DP do **treino** (a DP de partida, que é a maior
+parte do crescimento, não muda) e o teto do multiplicador é ×0,927 a 20%. Para chegar à meta seria preciso aumentar
+os mínimos (`TRAINING_PITCH_DEV_MIN`/`GYM_DEV_MIN`/`CANTEEN_DEV_MIN`) ou levar o CT à DP de partida — fora do desenho;
+**não mexido, decisão do usuário.**
+
+**M4 — linha do tempo do desgaste** (`bun scripts/facilities-wear.ts`, nível 6 novo, 278 dias de temporada com 25
+jogos em casa e 199 treinos normais, 87 dias de entressafra): gramado do estádio a 40% em **0,43 temporada (19/01)**
+sem jardineiro, **0,71 (30/04)** com 3★, 1,09 (set. da temporada seguinte) com 5★ — meta ~0,5 / ~0,8 (✓, 3★ em fim de
+abril); campos de treino iguais ao gramado; estrutura a 96% / 85% / 67% no fim de cada uma das 3 temporadas (nunca
+abaixo de 40% ✓); academia a 40% em 1,52 temporada, fisioterapia em 2,41, assentos/piscina/refeitório/alojamento acima
+de 40% nas 3 temporadas.
+
+**M5 — contratação** (`bun scripts/facilities-wear.ts --demand`): pedido ×1,00 com o CT a 100% e 50%, ×1,05 a 25%,
+×1,10 a 0%; recusa só com ambição ≥ 17 e CT abaixo de 25% (ambição 16 aceita sempre) ✓.
+
 ## 10. Smoke (`scripts/season-rollover-smoke.ts`, seção "Instalações")
 
 Além do que já confere: condição de todo item em 0..100 todo dia e caindo ao longo da temporada (fora reformas);

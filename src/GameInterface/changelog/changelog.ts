@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.11",
+    date: "2026-10-08",
+    items: [
+      { pt: "Nova aba Clube na barra superior com as instalações do clube (estádio, centro de treinamento e base); Finanças fica só com o dinheiro (#120)", en: "New Club tab in the top bar with the club's facilities (stadium, training ground and academy); Finances keeps only the money (#120)" },
+      { pt: "Instalações vivas: gramado, assentos, estrutura, campos de treino, academia, piscina, fisioterapia, refeitório e base, cada um com nível de 1 a 10 e condição que se desgasta com o tempo, os jogos e os treinos", en: "Living facilities: pitch, seats, structure, training pitches, gym, pool, physio room, canteen and academy, each with a level from 1 to 10 and a condition that wears with time, games and training" },
+      { pt: "Reforme, reconstrua ou melhore cada item: reformas pequenas o clube paga na hora; as grandes passam pela diretoria", en: "Repair, rebuild or upgrade each item: the club pays small repairs at once; the big works go to the board" },
+      { pt: "Gramado ruim causa mais lesões, também nos jogos fora de casa; o jardineiro cuida dos gramados", en: "A bad pitch causes more injuries, away games included; the groundskeeper looks after the pitches" },
+      { pt: "CT e base mal cuidados pesam na evolução, na recuperação, na duração das lesões e na safra", en: "A neglected training ground and academy weigh on development, recovery, injury length and the youth intake" },
+      { pt: "Jogadores pedem mais para vir a um clube com estrutura ruim, e os muito ambiciosos recusam", en: "Players ask for more to join a club with poor facilities, and the very ambitious refuse" },
+    ],
+  },
+  {
     version: "4.10",
     date: "2026-10-08",
     items: [
@@ -1061,7 +1073,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
   { pt: "Partida com árbitros, técnicos à beira do campo e estádio com torcida", en: "Matches with referees, managers on the touchline and a stadium full of fans" },

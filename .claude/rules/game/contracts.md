@@ -130,3 +130,9 @@ compatriota. Ver `.claude/rules/game/personality.md`.
 Com o diretor responsável (padrão), as renovações do clube do jogador são decididas por ele toda segunda (regra da IA,
 pagando o pedido do jogador) e o aviso de 90 dias não sai; o técnico pode assumir na Equipe técnica e sempre pode
 renovar na ficha. Ver `.claude/rules/game/responsibilities.md`.
+
+## Instalações (Etapa 34, 4.11)
+
+Numa contratação do clube do jogador (não na renovação) o pedido ganha a parte `facilities` (até +10% com o CT em 0;
+≤ 21 anos conta também a base) e o muito ambicioso (≥ 17) recusa com o CT abaixo de 25% (`poorFacilities`, 400 na
+compra, no livre e no pré-contrato). `renewalContract` (o que a IA paga) não muda. Ver `.claude/rules/game/facilities.md`.

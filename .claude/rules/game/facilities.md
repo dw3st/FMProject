@@ -16,7 +16,9 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
   capacidade, conforto 1, CT e base no nível implícito do tier, ou seja, neutros para um clube MEDIUM), apagadas no `releaseHumanClub` (o estádio construído
   fica em `venue.capacity`, obras em andamento são abandonadas). O start kit não as carrega (`stripHumanOnly`) e
   `applyRandomStartKit` as restaura.
-- Nada novo na barra superior: aba **Instalações** dentro de **Finanças**; cartão **Obras** no Painel.
+- Aba **Clube** na barra superior (`/club`, #120, desde a 4.11; antes ficava em Finanças → Instalações); cartão
+  **Obras** no Painel. Desde a 4.11 os níveis de conforto, CT e base são derivados dos dez itens (seção "Instalações
+  vivas" no fim).
 
 ## Arquivos
 
@@ -31,7 +33,8 @@ Visual: `.claude/rules/ui-standard.md`. Diretoria: `board-fans.md`. Extrato: `fi
 | `src/Domain/advanceDay/financial.ts` | `PlayerHomeFixtureToday.attendance/priceMult`; manutenção na segunda (`facilities_upkeep`) |
 | `src/Domain/advanceDay/dailyTraining.ts`, `dailyRest.ts`, `matches.ts` | Efeitos do CT na recuperação, lesão de treino e DP do treino |
 | `src/Domain/youth/youth.ts` | Efeitos da base na safra |
-| `src/GameInterface/Facilities/FacilitiesView.tsx`, `facilitiesApi.ts` | Aba Instalações |
+| `src/GameInterface/Facilities/FacilitiesView.tsx`, `facilitiesApi.ts`, `FacilityItemsPanel.tsx` | Tela Clube (`ClubScreen.tsx`, `/club`) |
+| `src/Domain/facilities/facilityItems.ts`, `pitch.ts` (+ testes) | Itens, condição, desgaste, efeitos; gramado da IA e de cada jogo |
 | `src/GameInterface/Dashboard/HomeCards.tsx` (`WorksCard`) | Cartão Obras |
 | `src/GameInterface/MatchPreviewScreen.tsx` | Público esperado / capacidade (jogo em casa) |
 
@@ -107,7 +110,7 @@ demanda; últimas 80) e o recorde (`facilities.record`). Recorde batido (havendo
 
 ## Telas
 
-- **Finanças → Instalações** (`SegmentedTabs`; `?tab=facilities` abre direto): KPIs (capacidade, público médio da
+- **Clube** (`/club`; `/finances?tab=facilities` redireciona): KPIs (capacidade, público médio da
   temporada, recorde, ingresso); estádio em SVG visto de cima, setores coloridos pela ocupação média (só exibição:
   a média da temporada repartida com leve preferência pelo setor Oeste) com rótulos em HTML (lugares, %); clicar num
   setor abre o painel de ampliação (+1K … +10K, custo, prazo, nova capacidade, previsão da diretoria, "Pedir à
@@ -149,3 +152,164 @@ a considerar o público e as parcelas do dia.
 - O custo por lugar usa o peso do país do ranking de técnicos; sem cache na meta ele é calculado na primeira consulta
   (lê os elencos de nível 1 do país e das 5 grandes) e guardado em memória por processo, por país e temporada.
 - A familiaridade de estilo e a evolução da base fora de jogo (`developYouthSeason`) usam só o auxiliar, não o CT.
+
+## Instalações vivas (Etapa 34, 4.11)
+
+Spec: `docs/superpowers/specs/2026-10-08-living-facilities-design.md`. Plano: `docs/superpowers/plans/2026-10-08-living-facilities.md`.
+
+### Itens
+
+`ClubFacilities.items: Record<FacilityItemId, FacilityItem>` (`{ level 1..10, wear ≥ 0, condemned?, alert? }`), só o
+clube do jogador. Os níveis 1–5 de conforto, CT e base são **derivados**: `groupLevel` = média dos níveis dos itens do
+grupo / 2 (contínuo; item interditado conta nível 1), `comfortLevel` = nível dos assentos / 2; as tabelas 1..5 são
+lidas por interpolação (`lerpLevel`). Saves sem `items`: recriados pelo `initialFacilities` na primeira leitura da rota.
+
+| Item | Grupo | Vida (temporadas, nível 5) | Desgaste (tempo / jogos em casa / treinos) | Jardineiro |
+|---|---|---|---|---|
+| `stadiumPitch` Gramado do estádio | estádio | 1 | 0,40 / 0,60 / 0 | sim |
+| `seats` Arquibancadas e assentos | estádio | 4 | 0,60 / 0,40 / 0 | — |
+| `stadiumStructure` Estrutura e iluminação | estádio | 5 | 1 / 0 / 0 | — |
+| `trainingPitches` Campos de treino | CT | 1 | 0,40 / 0 / 0,60 | sim |
+| `gym` Academia | CT | 2 | 0,30 / 0 / 0,70 | — |
+| `pool` Piscina | CT | 4 | 0,60 / 0 / 0,40 | — |
+| `physio` Fisioterapia | CT | 3 | 0,70 / 0 / 0,30 | — |
+| `canteen` Refeitório | CT | 5 | 1 / 0 / 0 | — |
+| `academyPitches` Campos da base | base | 1,5 | 1 / 0 / 0 | metade |
+| `academyLodging` Alojamento da base | base | 4 | 1 / 0 / 0 | — |
+
+```
+condição = 100 × (1 − min(1, wear)²)          (interditado: 0)      40% ⇔ wear 0,775 · 15% ⇔ wear 0,922
+Δwear/dia = [tempo/365 + jogos × jogos em casa hoje/25 + treinos × sessão/200] / (vida × (0,75 + 0,05 × nível))
+            × jardineiro (só gramados)          sessão = leve 0,7 · normal 1 · pesado 1,3 (0 em jogo, folga, sem clube)
+```
+
+Criação: CT e base no nível 2 × implícito do tier (MEDIUM 6 de 10), gramado e estrutura idem, assentos em 2; desgaste
+inicial determinístico (`fac:<clube>:<item>`): gramados 0,05–0,25, demais 0,05–0,45 — nada abaixo de 40%, então a
+largada é a de antes.
+
+### Efeitos abaixo de 40% (`itemEffects`, `FACILITIES.WEAR`)
+
+`penalty = clamp((40 − cond)/40, 0, 1)`; cada efeito `1 + (máximo − 1) × penalty`.
+
+| Item | Efeito | Em 0% | Onde |
+|---|---|---|---|
+| Gramado do estádio | Lesões dos dois times nos jogos em casa | ×1,6 | `matchInjuryMults` (motor), `staffMult` (quickSim) |
+| Assentos | Demanda; preço | ×0,90; ×0,95 | `demandOf`, `comfortPriceMult` |
+| Estrutura | Demanda | ×0,95 | `demandOf` |
+| Campos de treino | Lesão no treino pesado; chance nova no normal/leve (até 0,5%); DP do treino | ×1,6; `HEAVY × 0,5 × penalty`; ×0,95 | `trainingGroundEffectsOf` |
+| Academia / refeitório | DP do treino | ×0,93 / ×0,97 | idem |
+| Piscina | Recuperação diária | ×0,97 | idem |
+| Fisioterapia | Recuperação; dias fora de toda lesão nova (com o médico) | ×0,97; ×1,25 | idem; `injuryDurationMult` (nível: ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15) |
+| Campos da base / alojamento | Nível da safra; promessa | −0,15 cada; ×0,8 | `academyEffectsOf` |
+
+Abaixo de **15%** o item fica `condemned` (condição 0, nível 1 no grupo) até a **reconstrução**; não aceita reforma.
+Mensagens `worn` (cruzou 40%) e `condemned` (15%), uma por cruzamento (`alert`), adiadas para depois do `clearInbox`.
+
+### Gramado de todo jogo (`src/Domain/facilities/pitch.ts`)
+
+`matchPitchCondition(mandante, fixture, janela, data)`: campo neutro 90; mandante humano com itens → condição do
+`stadiumPitch`; IA → `START[tier] − DROP[tier] × fração da janela da liga do mandante` (START 70/80/88/94, DROP
+40/44/40/30 por LOW/MEDIUM/HIGH/ELITE; nada gravado, renova na temporada nova). Calculado no `advanceDay` antes de
+cada partida (motor e quickSim), gravado em `MatchEvent.pitchCondition`, e devolvido pelo `/api/match-setup`
+(`pitchCondition`, prévia "Gramado: N%"). Fator `pitchInjuryMult` × staff nas lesões dos dois times.
+
+### Jardineiro
+
+Fator dos gramados = curva das estrelas do melhor (1★ ×1,3, 3★ ×1, 5★ ×0,75) × 0,9 por jardineiro a mais; sem
+jardineiro ×1,6; campos da base com metade do desvio. Limite LOW 1 · MEDIUM 1 · HIGH 2 · ELITE 2 (`staff.md`).
+
+### Reforma, reconstrução, melhoria (`POST .../facilities/request`)
+
+| Pedido | Corpo | Regra |
+|---|---|---|
+| Reforma | `{ kind: "repair", item, to }` | `to` múltiplo de 5, acima da condição, ≤ 100; item não interditado |
+| Reconstrução | `{ kind: "rebuild", item }` | só abaixo de 15% ou interditado; volta a 100% no mesmo nível |
+| Melhoria | `{ kind: "upgrade", item }` | +1 nível (≤ 10), 100% na entrega |
+| Obras de grupo | `comfort` / `training` / `academy` | próximo nível do grupo; cada item do grupo vai a `max(nível, 2 × novo)` e 100% |
+
+`valor = receita × VALUE_SHARE[item] × nível / 6`; reforma = valor × Δcondição/100 × 0,6; reconstrução = valor;
+melhoria = valor(nível + 1) × 0,6. **Reforma pequena** (≤ 2% da receita anual, `SMALL_REPAIR_SHARE` — decisão do
+usuário: quase toda reforma é pequena) é paga na hora (`payRepairNow` + `recordMoney`, uma linha `facilities` com
+`ref.facility = "repair"`, num `BufferingSaveDAL` da requisição), sem diretoria; `no_money` se o saldo menos o
+comprometido não cobre. Reforma grande, reconstrução e melhoria passam pelo `boardDecision` com parcelas mensais.
+Um projeto por item (`itemBusy`; obra de grupo ocupa o grupo, 409 `busy`); 400 `invalidRequest` (pedido impossível
+para o item) ou `maxLevel` (melhoria no nível 10). Entrega: condição no alvo, `condemned`/`alert` saem, inbox
+`repaired` (melhoria: `upgraded`). Extrato: `facilityRepair/Rebuild/Upgrade` e `boardFundingItem` com o item.
+`GET .../facilities` traz `items` (nível, condição, efeitos, obra, cotações de reforma +25/+50/100%, reconstrução e
+melhoria, cada uma com `forecast`: pago pelo clube ou a previsão da diretoria).
+
+### Contratação
+
+`facilitiesAppeal` = condição média do CT (≤ 21 anos: média de CT e base); só o clube do jogador (IA = 100).
+Numa contratação (não na renovação) o pedido ganha `facilities = 1 + 0,10 × clamp((50 − appeal)/50, 0, 1)`
+(`demandBreakdown`, linha "Instalações ruins: +N%"); recusa `poorFacilities` com ambição ≥ 17 e CT < 25% (compra,
+livre, pré-contrato → 400); `preferenceScore` desconta até 0,10 (`preferredClub` pode responder `facilities`).
+A rota `demand` devolve `facilities` (e `refusesPoorFacilities` quando o olheiro vê a ambição).
+
+### Telas (#120)
+
+Aba **Clube** na barra superior (`/club`, `ClubScreen` → `FacilitiesView`), depois de Elenco: as instalações saíram de
+Finanças (que fica só com o dinheiro; `/finances?tab=facilities` redireciona para `/club`). Seção nova **Instalações
+em detalhe** (`FacilityItemsPanel`): três tabelas (Estádio, CT, Base), por item "N de 10", barra de condição (primária
+≥ 40, âmbar 15–39, vermelha < 15/"Interditado"), efeito atual abaixo de 40%, obra em andamento, botões Reformar
+(até +25/+50/100%), Reconstruir e Melhorar com painel de custo, prazo e "Pago pelo clube" ou a previsão da diretoria.
+Painel: Obras mostra as reformas (link para `/club`), Atenção lista itens desgastados/interditados da última semana.
+Prévia: "Gramado: N%" (vermelho abaixo de 40). Desempregado: `/club` vira a tela "Sem clube".
+
+### `/test`, `/lab`
+
+`/test`: seletor **Pitch** (100/90/60/40/20/0, padrão 90) para o jogo todo, `EnergyPanel` com `pitch N% · injury ×`,
+QuickSim com a condição, cenário `bad-pitch` (10%), `debugLog('injury')` com `injuryMult`. `/lab`:
+`Variant.pitchCondition` (slider; a da variante A vale para o jogo), rótulo `· pitch N%`, linha "Pitch" no `PairDetail`.
+
+### Medições (2026-10-08)
+
+**M1/M2 — lesões pelo gramado** (`bun scripts/injury-calibrate.ts 300 --pitch none,ai,20,90 --quicksim`; motor
+Premier + Championship, 600 jogos por modo, fôlego 88, mesmos pares e mesmo `Math.random` por jogo — o motor carrega
+estado entre partidas, então o pareamento não é exato: o modo 90 = sem gramado deu ×1,021 só de ruído; quickSim 26
+ligas × 3000 jogos, pareado e exato):
+
+| Modo | Motor (lesões/jogo) | × sem gramado | quickSim | × sem gramado |
+|---|---|---|---|---|
+| sem gramado (antes) | 0,240 | 1 | 0,256 | 1 |
+| IA (tier × fração sorteada; média 64%, 9,3% dos jogos abaixo de 40%) | 0,245 | 1,021 | 0,257 | 1,005 |
+| 20% | 0,333 | 1,389 | 0,332 | 1,298 |
+| 90% | 0,245 | 1,021 (ruído) | 0,256 | 1,000 |
+
+Metas: volume do mundo na faixa 0,15–0,5 e ≤ +3% sobre o sem gramado (✓: +0,5% exato no quickSim; o +2,1% do motor é
+ruído, igual ao do modo 90); gramado 20% × 90% ~×1,3 (✓: quickSim ×1,30; motor ×1,36 sobre o 90, ruído de ±13% com
+~150–200 lesões). `AI_PITCH` não mudou.
+
+**M3 — CT ruim na evolução** (`bun scripts/development-pace.ts --ct 20 [--sessions 200]`, caso realista de 3
+temporadas; DP do treino ×0,927 com o CT a 20%, ×0,857 a 0%): o Δ da média dos 13 atributos quase não muda.
+
+| Δ média 13 (linha / goleiro) | 18 anos | 21 | 24 |
+|---|---|---|---|
+| 38 treinos/temporada, CT 90% → 20% | 0,390 → 0,385 (−1,3%) / 0,731 → 0,700 (−4,2%) | 0,313 → 0,313 / 0,538 → 0,538 | igual |
+| 200 treinos/temporada, CT 90% → 20% | 0,559 → 0,544 (−2,7%) / 1,038 → 0,992 (−4,4%) | 0,390 → 0,382 (−2,1%) / 0,754 → 0,700 (−7,2%) | 0,326 → 0,308 (−5,5%) / igual |
+
+**Abaixo da meta da spec (−5% a −8% num jovem):** o CT só pesa na DP do **treino** (a DP de partida, que é a maior
+parte do crescimento, não muda) e o teto do multiplicador é ×0,927 a 20%. Para chegar à meta seria preciso aumentar
+os mínimos (`TRAINING_PITCH_DEV_MIN`/`GYM_DEV_MIN`/`CANTEEN_DEV_MIN`) ou levar o CT à DP de partida — fora do desenho;
+**não mexido, decisão do usuário.**
+
+**M4 — linha do tempo do desgaste** (`bun scripts/facilities-wear.ts`, nível 6 novo, 278 dias de temporada com 25
+jogos em casa e 199 treinos normais, 87 dias de entressafra): gramado do estádio a 40% em **0,43 temporada (19/01)**
+sem jardineiro, **0,71 (30/04)** com 3★, 1,09 (set. da temporada seguinte) com 5★ — meta ~0,5 / ~0,8 (✓, 3★ em fim de
+abril); campos de treino iguais ao gramado; estrutura a 96% / 85% / 67% no fim de cada uma das 3 temporadas (nunca
+abaixo de 40% ✓); academia a 40% em 1,52 temporada, fisioterapia em 2,41, assentos/piscina/refeitório/alojamento acima
+de 40% nas 3 temporadas.
+
+**M5 — contratação** (`bun scripts/facilities-wear.ts --demand`): pedido ×1,00 com o CT a 100% e 50%, ×1,05 a 25%,
+×1,10 a 0%; recusa só com ambição ≥ 17 e CT abaixo de 25% (ambição 16 aceita sempre) ✓.
+
+### Testes
+
+```
+bun test src/Domain/facilities src/backend/facilities.routes.test.ts src/backend/facilities.advanceDay.test.ts \
+  src/Domain/contracts src/Domain/negotiation src/Domain/finance/ledgerText.test.ts src/GameInterface/Dashboard
+```
+
+Smoke (`season-rollover-smoke.ts`, "Instalações"): condição em 0..100 e sem subir fora de entregas; gramado forçado a
+45% → `worn`; reforma pequena pela rota (linha `repair` = custo, sem verba da diretoria) → `repaired` a ~100%; clubes
+da IA de liga virada começam a temporada nova num gramado melhor; rota `demand` com o CT a 20% → `facilities > 1`.

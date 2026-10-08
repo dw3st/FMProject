@@ -370,3 +370,10 @@ receita/despesa do jogador por tipo, em todas as temporadas.
   real desse número.
 - **Fase 1 do flush não é atômica entre o squad e o lançamento do extrato** de um mesmo
   `recordMoney` — ver a seção "Extrato" acima.
+
+## Reforma paga na hora (Etapa 34, 4.11)
+
+A reforma pequena de um item das instalações (≤ 2% da receita anual) é paga pela rota na hora: uma linha
+`facilities` com `ref = { facility: "repair", item }` (`ledgerText` → `facilityRepair`), sem `board_funding`, gravada
+com o squad no mesmo `BufferingSaveDAL` da requisição. Reconstrução, melhoria e reforma grande seguem as parcelas
+mensais (`facilityRebuild`/`facilityUpgrade`/`boardFundingItem`). Ver `facilities.md`.

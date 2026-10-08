@@ -27,7 +27,7 @@ Spec: `docs/superpowers/specs/2026-10-08-coaching-staff-design.md` (Etapa 31a, v
 | Analista de desempenho | `analyst` | `analysis` | Ganho de familiaridade ×0,8 / ×1 / ×1,25 (`style-training.md`) | 1 |
 | Olheiro-chefe | `scout` | `scouting` | Incerteza ×1,3 / ×1 / ×0,75; ganho das missões ×0,7 / ×1 / ×1,4 (`scouting.md`) | 1 |
 | Olheiro de campo | `fieldScout` | `scouting` | Uma missão cada | 4 (`STAFF.LIMITS.fieldScout`) |
-| Jardineiro | `groundskeeper` | `pitch` | Nenhum até a etapa do gramado (contrata e recebe salário) | 1 |
+| Jardineiro | `groundskeeper` | `pitch` | Desgaste dos gramados do clube ×1,3 / ×1 / ×0,75 (× 0,9 por jardineiro a mais; sem nenhum ×1,6; base pela metade) — `StaffEffects.pitchWearMult`, `facilities.md` (4.11) | LOW 1 · MEDIUM 1 · HIGH 2 · ELITE 2 |
 
 Limite pelo tier natural do clube (`roleLimit`, `financialTierOf`), lido na hora: acima dele, 409 `roleFull`; se o
 tier cair, ninguém é demitido.
