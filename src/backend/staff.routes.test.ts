@@ -72,6 +72,16 @@ describe("staff routes", () => {
     expect(coaches.items.every((m: any) => m.role === "coach" && m.stars >= 3)).toBe(true);
     expect((await call("/pool?role=chef", "GET", session.token)).status).toBe(400);
     expect((await call("/pool?limit=500", "GET", session.token)).status).toBe(400);
+    // Sorting by column over the whole pool, both ways; unknown column or direction is a 400.
+    const byName = await (await call("/pool?sort=name&dir=asc&limit=100", "GET", session.token)).json() as any;
+    for (let i = 1; i < byName.items.length; i++) expect(byName.items[i - 1].name.localeCompare(byName.items[i].name)).toBeLessThanOrEqual(0);
+    const oldest = await (await call("/pool?sort=age&dir=desc&limit=5", "GET", session.token)).json() as any;
+    const youngestLast = await (await call(`/pool?sort=age&dir=asc&offset=${oldest.total - 1}&limit=1`, "GET", session.token)).json() as any;
+    expect(oldest.items[0].age).toBe(youngestLast.items[0].age);
+    const wageDesc = await (await call("/pool?sort=wage&dir=desc&limit=20", "GET", session.token)).json() as any;
+    for (let i = 1; i < wageDesc.items.length; i++) expect(wageDesc.items[i - 1].askingWage).toBeGreaterThanOrEqual(wageDesc.items[i].askingWage);
+    expect((await call("/pool?sort=height", "GET", session.token)).status).toBe(400);
+    expect((await call("/pool?sort=age&dir=up", "GET", session.token)).status).toBe(400);
 
     // Coaches at the limit: hiring another is refused.
     const candidate = coaches.items[0];
