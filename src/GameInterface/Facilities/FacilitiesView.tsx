@@ -13,11 +13,13 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
+import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
 
 /**
- * Finances → Facilities (`.claude/rules/game/facilities.md`): the stadium drawn from above (stands
+ * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
  * coloured by occupancy), the expansion panel, attendance per home game against capacity and
- * demand, training ground and academy cards, works in progress. Every request goes to the board.
+ * demand, training ground and academy cards, the ten items in detail, works in progress. Every
+ * request goes to the board, except a small repair (paid by the club).
  */
 export function FacilitiesView({
   saveId, squadId, fixtures, leagues, currentDate,
@@ -68,7 +70,7 @@ export function FacilitiesView({
           sub={avgAttendance === null ? undefined : t("facilities.kpi.occupancy", { pct: Math.round(avgOcc * 100) })} />
         <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record?.date} />
         <Kpi label={t("facilities.kpi.ticket")} value={`+${Math.round((data.priceMult - 1) * 100)}%`}
-          sub={t("facilities.kpi.comfortLevel", { level: f.comfort })} />
+          sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort) })} />
       </div>
 
       {outcome && <OutcomeNotice outcome={outcome} onClose={() => setOutcome(null)} />}
@@ -99,7 +101,7 @@ export function FacilitiesView({
           )}
           <div className="border-t border-border pt-4">
             <LevelBlock
-              kind="comfort" level={f.comfort} data={data} busy={running("comfort")} pending={pending}
+              kind="comfort" level={data.levels.comfort} data={data} busy={running("comfort")} pending={pending}
               current={t("facilities.comfort.effect", { pct: Math.round((data.priceMult - 1) * 100) })}
               next={t("facilities.comfort.effect", { pct: Math.round((data.priceMult - 1) * 100) + FACILITIES.COMFORT_PRICE_STEP * 100 })}
               onAsk={() => void ask({ kind: "comfort" })}
@@ -113,7 +115,7 @@ export function FacilitiesView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="card-arcade rounded-md p-4">
           <LevelBlock
-            kind="training" level={f.training} data={data} busy={running("training")} pending={pending}
+            kind="training" level={data.levels.training} data={data} busy={running("training")} pending={pending}
             current={trainingText(data.effects.training.current, t)}
             next={trainingText(data.effects.training.next, t)}
             onAsk={() => void ask({ kind: "training" })}
@@ -121,13 +123,15 @@ export function FacilitiesView({
         </section>
         <section className="card-arcade rounded-md p-4">
           <LevelBlock
-            kind="academy" level={f.academy} data={data} busy={running("academy")} pending={pending}
+            kind="academy" level={data.levels.academy} data={data} busy={running("academy")} pending={pending}
             current={academyText(data.effects.academy.current, t)}
             next={academyText(data.effects.academy.next, t)}
             onAsk={() => void ask({ kind: "academy" })}
           />
         </section>
       </div>
+
+      <FacilityItemsPanel data={data} pending={pending} onAsk={ask} />
 
       <ProjectsList data={data} nf={nf} />
     </div>
@@ -161,6 +165,7 @@ function buildSeasonGames(data: FacilitiesViewData | null, fixtures: Fixture[], 
         ...data.demandInput,
         ...(data.season ? { fraction: seasonFraction(fx.date, data.season.start, data.season.end) } : {}),
         date: fx.date,
+        ...(data.importanceByFixture?.[fx.id] !== undefined ? { importance: data.importanceByFixture[fx.id] } : {}),
       });
       return { date: fx.date, competition: fx.competition, attendance: a.attendance, capacity: a.capacity, demand: a.demand, played: false };
     });
@@ -365,6 +370,11 @@ function AskRow({ data, cost, busy, pending, onAsk, disabled }: {
   );
 }
 
+/** A derived group level (mean of the item levels / 2) with at most one decimal. */
+function levelText(level: number): string {
+  return String(Math.round(level * 10) / 10);
+}
+
 function LevelMarks({ level }: { level: number }) {
   return (
     <div className="flex gap-1.5" aria-hidden>
@@ -391,7 +401,7 @@ function LevelBlock({
           <p className="text-sm text-muted-foreground mt-1 mb-0">{t(`facilities.${kind}.about`)}</p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className="font-display font-bold text-lg tabular-nums leading-none">{t("facilities.level", { level })}</span>
+          <span className="font-display font-bold text-lg tabular-nums leading-none">{t("facilities.level", { level: levelText(level) })}</span>
           <LevelMarks level={level} />
         </div>
       </div>
@@ -438,8 +448,12 @@ function OutcomeNotice({ outcome, onClose }: { outcome: { kind: FacilityKind; re
   const { t } = useTranslation();
   const r = outcome.result;
   const ok = r.approved;
+  const what = r.approved && r.project.item
+    ? `${t(`facilities.kind.${outcome.kind}`)}: ${t(`facilities.item.${r.project.item}`)}`
+    : t(`facilities.kind.${outcome.kind}`);
   const text = r.approved
-    ? t("facilities.outcome.approved", { what: t(`facilities.kind.${outcome.kind}`), date: r.project.end })
+    ? t("facilities.outcome.approved", { what, date: r.project.end })
+      + (r.paidByClub ? ` ${t("facilities.items.paidByClub")}` : "")
       + (r.boardShare > 0 ? ` ${t("facilities.preview.funded", { pct: Math.round(r.boardShare * 100) })}` : "")
     : t(`facilities.reason.${r.reason}`);
   return (
@@ -548,9 +562,12 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
         <p className="text-sm text-muted-foreground m-0">{t("facilities.projects.none")}</p>
       ) : projects.map((p) => {
         const progress = projectProgress(p, data.date);
+        const paidNow = p.boardShare === 0 && p.instalments === 1 && p.paid === 1 && p.item !== undefined;
         const what = p.kind === "stand"
           ? t("facilities.projects.stand", { stand: t(`facilities.stand.${p.stand}`), seats: nf(p.seats ?? 0) })
-          : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
+          : p.item
+            ? t("facilities.projects.item", { what: t(`facilities.kind.${p.kind}`), item: t(`facilities.item.${p.item}`) })
+            : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
         return (
           <div key={p.id} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -558,6 +575,7 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
               <span className="text-sm text-muted-foreground tabular-nums">
                 {t("facilities.projects.delivery", { date: p.end })} · {formatEuros(p.cost)}
                 {p.boardShare > 0 ? ` · ${t("facilities.preview.funded", { pct: Math.round(p.boardShare * 100) })}` : ""}
+                {paidNow ? ` · ${t("facilities.items.paidByClub")}` : ""}
               </span>
             </div>
             <div className="flex items-center gap-3">

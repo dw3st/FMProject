@@ -144,13 +144,18 @@ export const contractRoutes = {
     if (renewal) {
       parts = { ambition: b.ambition, loyalty: b.loyalty };
     } else {
+      // Poor facilities of our club (a signing only): the club's own condition, always known.
+      parts = { facilities: b.facilities };
       // The uncertainty of this very player (`.claude/rules/game/scouting.md`).
       const viewer = await loadViewer(saveService, saveId);
       const noise = viewer ? viewFor(viewer, player, fromSquad?.leagueSlug ?? (from ? (await saveService.getSquadIndex(saveId)).byId(from)?.leagueSlug ?? "" : "")).noise : 0;
       const view = obscurePersonality(personalityOf(player), noise, saveId, player.id);
       if (!view.uncertain && Object.values(view.traits).every((v) => v !== null)) {
         const seen = demandBreakdown({ ...player, personality: view.traits as Personality }, mine, date, { fromSquad });
-        parts = { ambition: seen.ambition, compatriot: seen.compatriot, smallerClub: seen.smallerClub, refusesSmallerClub: seen.refuses };
+        parts = {
+          ...parts, ambition: seen.ambition, compatriot: seen.compatriot, smallerClub: seen.smallerClub, refusesSmallerClub: seen.refuses,
+          refusesPoorFacilities: seen.refusesFacilities,
+        };
       }
     }
     return Response.json({

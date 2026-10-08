@@ -1,3 +1,4 @@
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { useState, useEffect, useMemo } from "react";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { slotValue, preferredRole } from "@/Domain/positions/positionAptitude";
@@ -26,8 +27,6 @@ import { refereeFor, weatherIconName, weatherLabelKey } from "@/GameInterface/ma
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
 import { Player } from "@/Domain/Player";
-import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
-import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { competitionName } from "@/Domain/world/labels";
 import { matchHeading } from "@/Domain/world/matchHeading";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
@@ -42,6 +41,9 @@ import {
 } from "@/GameInterface/matchTeamColors";
 
 const Clock = iconOf("clock");
+const Sprout = iconOf("sprout");
+/** Info grid columns by number of cells (literal classes for Tailwind). */
+const INFO_COLS: Record<number, string> = { 4: "sm:grid-cols-4", 5: "sm:grid-cols-5", 6: "sm:grid-cols-6" };
 const Cloud = iconOf("cloud");
 const MapPin = iconOf("map-pin");
 const Users = iconOf("squad");
@@ -586,6 +588,10 @@ interface MatchSetupData {
   oppLineup?: string[];
   /** Man-marking already chosen for today's match. */
   matchMarking?: { date: string; marks: MarkPair[] } | null;
+  /** Condition 0..100 of the pitch the match is played on (`src/Domain/facilities/pitch.ts`). */
+  pitchCondition?: number | null;
+  /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
+  crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
 }
 
 export function MatchPreviewScreen() {
@@ -593,9 +599,6 @@ export function MatchPreviewScreen() {
   const [matchSetup, setMatchSetup] = useState<MatchSetupData | null>(null);
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [mySquadId, setMySquadId] = useState<string>("");
-  // Expected attendance (`.claude/rules/game/facilities.md`): only asked for a home game.
-  const homeGame = !!fixture && !!mySquadId && fixture.home === mySquadId && !fixture.neutral;
-  const { data: facilitiesData } = useFacilities(homeGame ? session?.saveId : undefined, session?.currentDate ?? null);
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
   // Static catalog lookups: club slug/name for any squadId.
@@ -952,13 +955,9 @@ export function MatchPreviewScreen() {
   const venue = fixture?.neutral
     ? t("cups.neutral")
     : homeGround?.venue?.name ?? (isHome ? `${session.clubName} Stadium` : "Away Ground");
-  const expectedCrowd = fixture && isHome && !fixture.neutral && facilitiesData
-    ? attendanceOf(facilitiesData.facilities, {
-        ...facilitiesData.demandInput,
-        ...(facilitiesData.season ? { fraction: seasonFraction(fixture.date, facilitiesData.season.start, facilitiesData.season.end) } : {}),
-        date: fixture.date,
-      })
-    : null;
+  const pitch = typeof matchSetup?.pitchCondition === "number" ? matchSetup.pitchCondition : null;
+  // Expected attendance (`.claude/rules/game/facilities.md`): home games only, from match-setup.
+  const expectedCrowd = fixture && isHome && !fixture.neutral && matchSetup?.crowd?.known ? matchSetup.crowd : null;
   const competition = fixture
     ? competitionName(fixture.competition, catalogLeagues, i18n.language)
     : "Premier Division";
@@ -1090,8 +1089,12 @@ export function MatchPreviewScreen() {
       {/* Match info */}
       <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
         <div className="card-arcade rounded-md px-6 py-4">
-          <div className={`grid grid-cols-2 ${expectedCrowd ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-6`}>
+          <div className={`grid grid-cols-2 ${INFO_COLS[4 + (expectedCrowd ? 1 : 0) + (pitch !== null ? 1 : 0)]} gap-6`}>
             <InfoCell icon={MapPin} label={t("matchPreview.venue")} value={venue} />
+            {pitch !== null && (
+              <InfoCell icon={Sprout} label={t("matchPreview.pitch")} value={`${Math.round(pitch)}%`}
+                valueClass={pitch < FACILITIES.WEAR.WARN_BELOW ? "text-destructive" : undefined} />
+            )}
             {expectedCrowd && (
               <InfoCell icon={Users} label={t("matchPreview.expectedCrowd")}
                 value={`${Math.round(expectedCrowd.attendance).toLocaleString(i18n.language)} / ${expectedCrowd.capacity.toLocaleString(i18n.language)}`} />
@@ -1257,10 +1260,12 @@ function InfoCell({
   icon: Icon,
   label,
   value,
+  valueClass,
 }: {
   icon: typeof MapPin;
   label: string;
   value: string;
+  valueClass?: string;
 }) {
   return (
     <div className="space-y-1">
@@ -1268,7 +1273,7 @@ function InfoCell({
         <Icon className="w-4 h-4" />
         <span className="text-[13px] font-bold uppercase tracking-[0.08em] font-display">{label}</span>
       </div>
-      <p className="text-base font-semibold text-foreground m-0 tabular-nums">{value}</p>
+      <p className={`text-base font-semibold m-0 tabular-nums ${valueClass ?? "text-foreground"}`}>{value}</p>
     </div>
   );
 }

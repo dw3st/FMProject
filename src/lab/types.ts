@@ -107,6 +107,11 @@ export interface Variant {
    */
   temperament?: number;
   /**
+   * Pitch condition 0..100 of the match (`src/Domain/facilities/pitch.ts`): injury risk of both
+   * sides below 40%. Variant A (the home side) sets it for the match. Absent = 90.
+   */
+  pitchCondition?: number;
+  /**
    * Player instructions of this side (`player-instructions.md`): per-slot role variant / pressing
    * (index = slot of `formation`). Absent = default. Full engine only (the quickSim ignores them).
    */
@@ -204,6 +209,8 @@ export interface TeamRawStats {
   morale: number;
   /** Mean temperament (1..20) of the side's XI (the override, or each player's own), summed across games. */
   temperament: number;
+  /** Pitch condition the match was played on (90 when absent), summed across games. */
+  pitchCondition: number;
   // Discipline (`.claude/rules/game-engine/fouls.md`), summed across games.
   /** Fouls committed. */
   fouls: number;
@@ -348,6 +355,8 @@ export interface PerMatchView {
   avgMorale: number;
   /** Mean temperament of the XI (1..20, 10.5 = neutral). */
   avgTemperament: number;
+  /** Pitch condition the matches were played on (0..100). */
+  avgPitchCondition: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;
@@ -445,6 +454,8 @@ export interface VariantSummary {
   avgMorale: number;
   /** Mean temperament of the XI (1..20, 10.5 = neutral). */
   avgTemperament: number;
+  /** Pitch condition the matches were played on (0..100). */
+  avgPitchCondition: number;
   /** Fouls committed per match. */
   avgFouls: number;
   avgYellowCards: number;

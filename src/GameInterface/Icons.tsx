@@ -67,6 +67,7 @@ import {
   ArrowRightLeft,
   Cloud,
   Clock,
+  Sprout,
   FileSignature,
   Loader2,
   SlidersHorizontal,
@@ -192,6 +193,7 @@ export type IconName =
   | "arrow-right-left"
   | "cloud"
   | "clock"
+  | "sprout"
   | "file-signature"
   | "loader2"
   | "sliders-horizontal"
@@ -317,6 +319,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "arrow-right-left": ArrowRightLeft,
   "cloud": Cloud,
   "clock": Clock,
+  "sprout": Sprout,
   "file-signature": FileSignature,
   "loader2": Loader2,
   "sliders-horizontal": SlidersHorizontal,

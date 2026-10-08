@@ -18,7 +18,7 @@ import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngin
 import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlots';
 import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
-import { assignMarkTargets } from '@/GameEngine/Domain/DefensivePositioning';
+import { assignMarkTargets, resetDefensiveIntentCache } from '@/GameEngine/Domain/DefensivePositioning';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
   applyContinuousFatigue,
@@ -370,6 +370,7 @@ export function createMatchState(
   lineupB?:   string[],
   injuryMult: { A?: number; B?: number } = {},
 ): GameState {
+  resetDefensiveIntentCache();
   const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
     m === undefined || m === 1
       ? r
@@ -736,7 +737,8 @@ export function forceInjurySubstitution(
   gameBus.emit('injury', { playerId: player.id, playerName: player.name, team, minute, severity });
   debugLog('injury', `${player.name} (team ${team}) injured — ${severity}, minute ${minute}`, {
     playerId: player.id,
-    data: { severity, minute, team, energy: player.energy },
+    // injuryMult: staff × the match pitch (`matchInjuryMults`), 1 when neither applies.
+    data: { severity, minute, team, energy: player.energy, injuryMult: player.injuryMult ?? 1 },
   });
 
   const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;

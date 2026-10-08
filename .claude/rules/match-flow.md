@@ -420,3 +420,24 @@ Spec: `docs/superpowers/specs/2026-10-08-live-tactics-design.md`.
   salva" restores the saved one; the resume snapshot keeps the live and the saved tactics. The AI (team B)
   never reacts. Limitation: the familiarity *execution* (attributes × 1 ± 0,02) is baked into the players at
   kickoff, so a live style change moves the tactical weights, not those attributes.
+
+---
+
+# Stadium, officials and managers (Etapa 38, #107/#99, 4.12)
+
+Spec: `docs/superpowers/specs/2026-10-08-match-visual-design.md`. Drawing only (`src/GraficsEngine`, see
+`graphics-engine.md`): nothing enters the `GameState`, the engine, the quickSim or `/lab`.
+
+- `POST /api/match-setup` (with `saveId`) returns `crowd` (`attendance`, `capacity`, `neutral`, `importance`,
+  `known`) and `managers` (`mine`: id `player`, saved avatar, nationality; `opponent`: the club's `managers.json`
+  record or null) — `src/backend/matchCrowd.ts`. A home game of the human club uses `attendanceOf` with the
+  season phase, the date and the big-match multiplier (the number the gate of the day charges); away = the AI
+  rule (home capacity × `GATE.FILL_RATE`); neutral venue = `known: false`. The preview shows the same number.
+- `MatchScreen` passes `stadium = { fill: attendance / capacity (or 0.65), homeTeam, neutral, seed: fixture.id }`
+  — `homeTeam` is the engine team of the fixture's home side (A when the human is at home or on a neutral venue).
+  With #98 the home side is drawn on the left, so the home fans fill most of the stand and the away block sits
+  in the right end stand. `officials` on, `coaches` per team (face `managerFaceUrl` in the kit colours; no record
+  = a disc in the colour). The `key` of the pitch only changes with the size (and the stadium appearing once).
+- Changing the mentality plays the human manager's gesture (`coachCue`: attack / defend / balanced, a new `seq`
+  each time); a goal makes the scoring team's manager celebrate. The AI never changes mentality.
+- `/test`: chips Stadium, Officials, the crowd (0/25/50/Default 65/75/100%) and Neutral; off by default.

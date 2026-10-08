@@ -184,6 +184,7 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgOutOfPosition: r2(t.outOfPosition / matches),
     avgMorale: r2(t.morale / matches),
     avgTemperament: r2(t.temperament / matches),
+    avgPitchCondition: r2(t.pitchCondition / matches),
     avgFouls: r2(t.fouls / matches),
     avgYellowCards: r2(t.yellowCards / matches),
     avgRedCards: r2(t.redCards / matches),
@@ -228,7 +229,7 @@ function emptyTotals(): VariantTotals {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -270,6 +271,7 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.outOfPosition         += src.outOfPosition;
   dst.morale                += src.morale;
   dst.temperament           += src.temperament;
+  dst.pitchCondition        += src.pitchCondition;
   dst.fouls                 += src.fouls;
   dst.yellowCards           += src.yellowCards;
   dst.redCards              += src.redCards;
@@ -339,6 +341,7 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgOutOfPosition: r2(totals.outOfPosition / games),
     avgMorale: r2(totals.morale / games),
     avgTemperament: r2(totals.temperament / games),
+    avgPitchCondition: r2(totals.pitchCondition / games),
     avgFouls: r2(totals.fouls / games),
     avgYellowCards: r2(totals.yellowCards / games),
     avgRedCards: r2(totals.redCards / games),

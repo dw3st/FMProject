@@ -438,7 +438,10 @@ function facilityTexts(
   message: Extract<InboxMessage, { category: "facilities" }>,
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): { subject: string; body: string } {
-  const what = message.facility
+  const item = message.item ? t(`facilities.item.${message.item}`) : "";
+  const what = message.item
+    ? message.facility && message.kind === "approved" ? `${t(`facilities.kind.${message.facility}`)}: ${item}` : item
+    : message.facility
     ? message.facility === "stand" && message.stand
       ? t("facilities.inbox.standWhat", { stand: t(`facilities.stand.${message.stand}`), seats: (message.seats ?? 0).toLocaleString() })
       : t("facilities.inbox.levelWhat", { what: t(`facilities.kind.${message.facility}`), level: message.level ?? "" })
@@ -448,10 +451,13 @@ function facilityTexts(
     pct: Math.round((message.boardShare ?? 0) * 100),
     attendance: (message.attendance ?? 0).toLocaleString(), previous: (message.previous ?? 0).toLocaleString(),
     reason: message.reason ? t(`facilities.reason.${message.reason}`) : "",
+    condition: Math.round(message.condition ?? 0), level: message.level ?? "",
   };
   const body = message.kind === "approved" && (message.boardShare ?? 0) > 0
     ? t("facilities.inbox.approvedFunded", vars)
-    : t(`facilities.inbox.${message.kind}`, vars);
+    : message.kind === "repaired" && message.facility === "upgrade"
+      ? t("facilities.inbox.upgraded", vars)
+      : t(`facilities.inbox.${message.kind}`, vars);
   return { subject: t(`facilities.inbox.subject.${message.kind}`, vars), body };
 }
 

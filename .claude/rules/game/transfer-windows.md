@@ -158,3 +158,8 @@ abrir, e Convites).
 - Ligas europeias de ano civil têm janelas próprias pelo calendário delas, não as da UEFA.
 - Rival só nas compras com taxa do humano; IA × IA não disputa (o primeiro que tenta compra).
 - Um jogador com pré-contrato ainda pode ser vendido pela IA antes da virada: o pré-contrato cai (inbox).
+
+## Instalações (Etapa 34, 4.11)
+
+`PreferenceInput.facilitiesAppeal` (só o clube do jogador): `preferenceScore` desconta até 0,10 com o CT abaixo de
+50%; `preferredClub` pode dar o motivo `facilities` (`prefers_rival` traduzido). Ver `facilities.md`.

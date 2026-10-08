@@ -27,7 +27,7 @@ Spec: `docs/superpowers/specs/2026-10-08-coaching-staff-design.md` (Etapa 31a, v
 | Analista de desempenho | `analyst` | `analysis` | Ganho de familiaridade ×0,8 / ×1 / ×1,25 (`style-training.md`) | 1 |
 | Olheiro-chefe | `scout` | `scouting` | Incerteza ×1,3 / ×1 / ×0,75; ganho das missões ×0,7 / ×1 / ×1,4 (`scouting.md`) | 1 |
 | Olheiro de campo | `fieldScout` | `scouting` | Uma missão cada | 4 (`STAFF.LIMITS.fieldScout`) |
-| Jardineiro | `groundskeeper` | `pitch` | Nenhum até a etapa do gramado (contrata e recebe salário) | 1 |
+| Jardineiro | `groundskeeper` | `pitch` | Desgaste dos gramados do clube ×1,3 / ×1 / ×0,75 (× 0,9 por jardineiro a mais; sem nenhum ×1,6; base pela metade) — `StaffEffects.pitchWearMult`, `facilities.md` (4.11) | LOW 1 · MEDIUM 1 · HIGH 2 · ELITE 2 |
 
 Limite pelo tier natural do clube (`roleLimit`, `financialTierOf`), lido na hora: acima dele, 409 `roleFull`; se o
 tier cair, ninguém é demitido.
@@ -107,7 +107,7 @@ flush no fim (nada é gravado numa resposta de erro).
 | Rota | Faz |
 |---|---|
 | `GET /api/saves/:id/staff` | `staffView`: membros (`stars`, `starsByArea` do treinador, `severance` de hoje, `renewYears` aceitos e `renewWage`), as 7 áreas (estrelas, multiplicador, responsável), `areaAssignments`, `limits` por função, `effects`, `weeklyTotal` |
-| `GET /api/saves/:id/staff/pool?role=&minStars=&maxWage=&sort=stars\|wage\|age&offset=&limit=` | Busca (limite 1..100, padrão 50); salário pedido no fator do clube do jogador (desempregado: fator 1, a lista continua visível) |
+| `GET /api/saves/:id/staff/pool?role=&minStars=&maxWage=&sort=name\|role\|age\|stars\|wage&dir=asc\|desc&offset=&limit=` | Busca (limite 1..100, padrão 50); ordenação na lista inteira (sem `dir`: estrelas da maior, o resto crescente; função na ordem de `STAFF_ROLES`; 400 para coluna ou sentido inválido), clicando no cabeçalho da coluna na aba Comissão; salário pedido no fator do clube do jogador (desempregado: fator 1, a lista continua visível) |
 | `POST /api/saves/:id/staff/hire { memberId, years }` | Contrata da lista (404 `notInPool`, 409 `roleFull`, 400 `invalidYears`) |
 | `POST /api/saves/:id/staff/fire { memberId }` (ou `{ role }`) | Demite: multa, volta à lista; resposta com `severance` |
 | `POST /api/saves/:id/staff/renew { memberId, years }` | Renova (400 `tooManyYears`) |

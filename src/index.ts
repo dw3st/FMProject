@@ -18,6 +18,7 @@ import developmentPage from "./pages/development/index.html";
 import seasonEndPage from "./pages/season-end/index.html";
 import firedPage from "./pages/fired/index.html";
 import financesPage from "./pages/finances/index.html";
+import clubPage from "./pages/club/index.html";
 import statsPage from "./pages/stats/index.html";
 import matchPreviewPage from "./pages/match-preview/index.html";
 import matchResultPage from "./pages/match-result/index.html";
@@ -49,6 +50,7 @@ const server = serve({
     "/match-result": matchResultPage,
     "/development": developmentPage,
     "/finances": financesPage,
+    "/club": clubPage,
     "/staff": staffPage,
     "/stats": statsPage,
     "/season-end": seasonEndPage,

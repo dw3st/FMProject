@@ -196,3 +196,8 @@ da rota `demand` moldado pela personalidade; moral em 0..100.
 - A faixa vista do olheiro pode estar errada (é a regra); as recusas usam o valor real.
 - Temporadas no clube contam pelo `history`: no começo da carreira ninguém tem desconto de lealdade além da
   temporada atual (1/4 do desconto).
+
+## Instalações (Etapa 34)
+
+`demandBreakdown` ganhou `facilities` (só contratação no clube do jogador) e `refusesFacilities` (ambição ≥ 17 e CT
+< 25% → `poorFacilities`); a rota `demand` mostra a recusa só quando o olheiro vê a ambição. Ver `facilities.md`.

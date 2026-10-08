@@ -55,7 +55,13 @@ export const STAFF = {
   ATTR_MIN: 1,
   ATTR_MAX: 20,
   /** Per-role limit by the club's natural tier. */
-  LIMITS: { coach: { LOW: 3, MEDIUM: 3, HIGH: 4, ELITE: 5 }, fieldScout: 4, other: 1 },
+  LIMITS: {
+    coach: { LOW: 3, MEDIUM: 3, HIGH: 4, ELITE: 5 },
+    /** Groundskeepers keep the pitches (`facilities.md`, Etapa 34): more of them at bigger clubs. */
+    groundskeeper: { LOW: 1, MEDIUM: 1, HIGH: 2, ELITE: 2 },
+    fieldScout: 4,
+    other: 1,
+  },
   /**
    * Share of the staff wage curve per role: the design's 1 / 0.7 / 0.4 / 0.3 / 0.1 scaled by 0.18 so the
    * median starting bill stays under ~4% of the club's revenue in every tier (`scripts/staff-bill.ts`;

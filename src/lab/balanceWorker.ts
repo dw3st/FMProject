@@ -104,7 +104,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0,
+    avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, outOfPosition: 0, morale: 0, temperament: 0, pitchCondition: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0,
     corners: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -143,6 +143,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.outOfPosition               += src.outOfPosition;
   dst.morale                      += src.morale;
   dst.temperament                 += src.temperament;
+  dst.pitchCondition              += src.pitchCondition;
   dst.fouls                       += src.fouls;
   dst.yellowCards                 += src.yellowCards;
   dst.redCards                    += src.redCards;
@@ -215,6 +216,8 @@ let sideFamiliarity: { A?: number; B?: number } = {};
 let sideMorale: { A?: number; B?: number } = {};
 /** Temperament override (1..20) of each whole side (set per worker message). Absent = each player's own. */
 let sideTemperament: { A?: number; B?: number } = {};
+/** Pitch condition of the match (variant A, the home side; set per worker message). Absent = 90. */
+let matchPitch: number | undefined;
 /** Player instructions of each side (set per worker message): full engine only. */
 let sideInstructions: { A?: TeamInstructions; B?: TeamInstructions } = {};
 
@@ -253,6 +256,8 @@ function runOneMatch(
   teamB.morale = sideMorale.B ?? MORALE.NEUTRAL;
   teamA.temperament = xiTemperament(squadA, simEngine === "quick" ? quickLineupA : fit.fullLineupA, sideTemperament.A);
   teamB.temperament = xiTemperament(squadB, simEngine === "quick" ? quickLineupB : fit.fullLineupB, sideTemperament.B);
+  teamA.pitchCondition = matchPitch ?? 90;
+  teamB.pitchCondition = matchPitch ?? 90;
 
   if (simEngine === "quick") {
     const q = quickSimMatch({
@@ -270,6 +275,7 @@ function runOneMatch(
       awayMorale: sideMorale.B,
       homeTemperament: sideTemperament.A,
       awayTemperament: sideTemperament.B,
+      ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
     });
     const hA = q.recording.teamStats.home;
     const hB = q.recording.teamStats.away;
@@ -323,6 +329,7 @@ function runOneMatch(
     morale: sideMorale,
     temperament: sideTemperament,
     instructions: sideInstructions,
+    ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
     onTick: slotCollector.onTick,
   });
   const slotRaws = slotCollector.finish(r);
@@ -413,6 +420,7 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
     sideMorale = { A: variantA.morale, B: variantB.morale };
     sideTemperament = { A: variantA.temperament, B: variantB.temperament };
+    matchPitch = variantA.pitchCondition;
     sideInstructions = {
       A: { slotInstructions: variantA.slotInstructions, manMarks: variantA.manMarks },
       B: { slotInstructions: variantB.slotInstructions, manMarks: variantB.manMarks },

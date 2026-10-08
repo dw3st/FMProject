@@ -139,11 +139,31 @@ describe("wages and starting staff", () => {
       expect(m.contract).toBeDefined();
     }
   });
+  test("initial staff of a big club: still one groundskeeper", () => {
+    const sq = { id: "c", players: [], finances: fin(300e6) } as unknown as Squad; // ELITE
+    const a = initialStaff("save1", sq, { date: "2027-02-05", seasonEnd: "2027-12-06" });
+    expect(a.members.filter((m) => m.role === "groundskeeper")).toHaveLength(1);
+  });
   test("role limit by natural tier", () => {
     expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "coach")).toBe(3);
     expect(roleLimit({ finances: fin(300e6) } as unknown as Squad, "coach")).toBe(5);
     expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "fieldScout")).toBe(4);
     expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "medic")).toBe(1);
+    // Groundskeepers (Etapa 34): LOW 1, MEDIUM 1, HIGH 2, ELITE 2.
+    expect(roleLimit({ finances: fin(1e6) } as unknown as Squad, "groundskeeper")).toBe(1);
+    expect(roleLimit({ finances: fin(20e6) } as unknown as Squad, "groundskeeper")).toBe(1);
+    expect(roleLimit({ finances: fin(100e6) } as unknown as Squad, "groundskeeper")).toBe(2);
+    expect(roleLimit({ finances: fin(300e6) } as unknown as Squad, "groundskeeper")).toBe(2);
+  });
+
+  test("groundskeeper: pitch wear multiplier by stars and count; none 1.6; AI 1", () => {
+    const keepers = (...stars: number[]) => human({ members: stars.map((s, i) => pro(`g${i}`, "groundskeeper", s)) });
+    expect(staffEffectsOf(keepers()).pitchWearMult).toBeCloseTo(1.6, 10);
+    expect(staffEffectsOf(keepers(3)).pitchWearMult).toBeCloseTo(1, 10);
+    expect(staffEffectsOf(keepers(5)).pitchWearMult).toBeCloseTo(0.75, 10);
+    expect(staffEffectsOf(keepers(1)).pitchWearMult).toBeCloseTo(1.3, 10);
+    expect(staffEffectsOf(keepers(3, 3)).pitchWearMult).toBeCloseTo(0.9, 10);
+    expect(staffEffectsOf(aiSquad(20e6)).pitchWearMult).toBe(1);
   });
 });
 

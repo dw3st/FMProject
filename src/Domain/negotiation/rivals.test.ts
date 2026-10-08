@@ -83,6 +83,15 @@ describe("rivals for the same target", () => {
     expect(preferredClub([c, { ...d, pref: { ...d.pref, starter: 1 } }])!.winner.id).toBe("d");
   });
 
+  test("preference: poor facilities of the human club cost up to 0.10", () => {
+    const base = { wage: 100, demand: 100, prestige: 0.5, starter: 0.5 };
+    expect(preferenceScore({ ...base, facilitiesAppeal: 25 })).toBeCloseTo(preferenceScore(base) - 0.05, 10);
+    expect(preferenceScore({ ...base, facilitiesAppeal: 80 })).toBeCloseTo(preferenceScore(base), 10);
+    const human = { id: "h", pref: { ...base, facilitiesAppeal: 0 } };
+    const rival = { id: "r", pref: { ...base, prestige: 0.45 } };
+    expect(preferredClub([human, rival])).toMatchObject({ winner: { id: "r" }, reason: "facilities" });
+  });
+
   test("starter chance: a star starts, a weak player sits", () => {
     const strong = player("star", 9, 25, "CM");
     const weak = player("weak", 2, 25, "CM");

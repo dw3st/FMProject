@@ -28,6 +28,20 @@ describe("staff pool", () => {
     expect(page2.total).toBe(300);
     expect(page2.items.length).toBe(50);
   });
+  test("sorts by every column, both directions, ids breaking ties", () => {
+    for (const sort of ["name", "role", "age", "stars", "wage"] as const) {
+      const asc = searchPool(pool, { sort, dir: "asc", limit: 100 }, 1).items;
+      const desc = searchPool(pool, { sort, dir: "desc", offset: 200, limit: 100 }, 1).items.reverse();
+      expect(asc.length).toBe(100);
+      // The bottom of the descending list is the top of the ascending one, by the column's value.
+      const v = (m: (typeof asc)[number]) => (sort === "name" ? m.name : sort === "role" ? m.role : sort === "age" ? m.age : sort === "stars" ? m.stars : m.askingWage);
+      expect(desc.map(v)).toEqual(asc.map(v));
+    }
+    const byName = searchPool(pool, { sort: "name", limit: 100 }, 1).items;
+    for (let i = 1; i < byName.length; i++) expect(byName[i - 1]!.name.localeCompare(byName[i]!.name)).toBeLessThanOrEqual(0);
+    // No direction: stars open best first.
+    expect(searchPool(pool, { sort: "stars", limit: 1 }, 1).items[0]!.stars).toBe(Math.max(...pool.members.map(memberStars)));
+  });
   test("take and return", () => {
     const id = pool.members[0]!.id;
     const t = takeFromPool(pool, id)!;

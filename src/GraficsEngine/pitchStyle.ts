@@ -72,3 +72,16 @@ export const EFFECT_COLOR = { HIGHLIGHT: 0xffd34d, WHITE: 0xffffff, RED_CARD: 0x
  * ~2.25 yd from 45 yd. Repositions are tens of yards. 4 leaves room above the longest shot.
  */
 export const TELEPORT_YDS = 4;
+
+/** Stadium band around the pitch (spec 2026-10-08-match-visual-design.md). */
+export const STADIUM = {
+  PITCH_SHRINK: 0.9,
+  /** Run-off between the touchline and the stand (officials, technical areas). */
+  RUNOFF_YDS: 1.5,
+  /** Behind the goals: past the net. */
+  END_RUNOFF_YDS: 1,
+  SEAT_PX: 5, MAX_SEATS: 6000, CONCRETE_EVERY: 4,
+  AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,
+  STAND_COLOR: 0x1f2a36, CONCRETE: 0x2c3946, ROOF_EDGE: 0x445566,
+  GOAL_PULSE_S: 0.6,
+} as const;

@@ -5,9 +5,16 @@ import { GATE, gateFromAttendance, type GateKind } from "@/Domain/finance/gate";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { addDays, daysBetween } from "@/Domain/dates";
 import { clamp } from "@/Domain/math";
-import type { Squad } from "@/types/playerTypes";
+import { INJURY } from "@/Domain/injury/injuryConfig";
+import {
+  comfortLevel, conditionOf, effectAt, groupLevel, initialItems, itemCondition, itemsOfGroup, lerpLevel, penalty,
+  physioDurationMult, wearFor,
+} from "@/Domain/facilities/facilityItems";
+import { personalityOf } from "@/Domain/personality/personality";
+import { PERSONALITY } from "@/Domain/personality/personalityConfig";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type {
-  AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityKind, FacilityProject,
+  AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityGroup, FacilityItemId, FacilityKind, FacilityProject,
   FacilityRequest, StadiumStand, StandId,
 } from "@/types/facilityTypes";
 
@@ -18,13 +25,22 @@ const lvlIdx = (level: number) => clamp(Math.round(level), F.MIN_LEVEL, F.MAX_LE
 // ── Levels and effects ────────────────────────────────────────────────────────
 
 /** Level by financial tier — AI clubs, and the starting level of a human club. */
-function impliedLevel(squad: Squad): number {
+export function impliedLevel(squad: Squad): number {
   return F.IMPLIED_LEVEL[financialTierOf(squad)];
 }
 
-/** Training ground and academy levels: the stored ones (human club) or the tier's implied level. */
+/** Facilities with the ten items (a save from before the items has none: treated as absent). */
+export function livingFacilities(squad: Squad): ClubFacilities | null {
+  return squad.facilities?.items ? squad.facilities : null;
+}
+
+/**
+ * Training ground and academy levels 1..5 (continuous): derived from the human club's items, or the
+ * tier's implied level.
+ */
 export function facilityLevels(squad: Squad): { training: number; academy: number } {
-  if (squad.facilities) return { training: squad.facilities.training, academy: squad.facilities.academy };
+  const f = livingFacilities(squad);
+  if (f) return { training: groupLevel(f, "training"), academy: groupLevel(f, "academy") };
   const l = impliedLevel(squad);
   return { training: l, academy: l };
 }
@@ -38,14 +54,49 @@ export interface TrainingGroundEffects {
   devMult: number;
 }
 
+/** Effects of a training-ground level (a fractional level interpolates the 1..5 tables). */
 export function trainingEffectsAt(level: number): TrainingGroundEffects {
-  const i = lvlIdx(level);
-  return { recoveryMult: F.TRAINING_RECOVERY[i]!, injuryMult: F.TRAINING_INJURY[i]!, devMult: F.TRAINING_DEV[i]! };
+  return {
+    recoveryMult: lerpLevel(F.TRAINING_RECOVERY, level),
+    injuryMult: lerpLevel(F.TRAINING_INJURY, level),
+    devMult: lerpLevel(F.TRAINING_DEV, level),
+  };
 }
 
-/** Training-ground effects of a club. Never applied inside a match. */
-export function trainingGroundEffectsOf(squad: Squad): TrainingGroundEffects {
-  return trainingEffectsAt(facilityLevels(squad).training);
+export interface ClubTrainingEffects extends TrainingGroundEffects {
+  /** Chance of an injury in a light/normal session (bad training pitches; 0 for the AI). */
+  normalSessionInjury: number;
+  /** Physio: × days out of a new injury of the club (1 for the AI). */
+  injuryDurationMult: number;
+  /**
+   * × match DP (growth only, never the age decline): a worn training ground prepares the players worse.
+   * Mean condition of the training pitches, gym and canteen; 1 from 40% up and for the AI.
+   */
+  matchDevMult: number;
+}
+
+/**
+ * Training-ground effects of a club: the group level, then the items below 40% (human club only).
+ * Never applied inside a match (the match DP is applied after it, in `finalizeSquadsAfterMatch`).
+ */
+export function trainingGroundEffectsOf(squad: Squad): ClubTrainingEffects {
+  const base = trainingEffectsAt(facilityLevels(squad).training);
+  const f = livingFacilities(squad);
+  if (!f) return { ...base, normalSessionInjury: 0, injuryDurationMult: 1, matchDevMult: 1 };
+  const W = F.WEAR;
+  const pitches = itemCondition(f, "trainingPitches");
+  const gym = itemCondition(f, "gym");
+  const canteen = itemCondition(f, "canteen");
+  return {
+    devMult: base.devMult * effectAt(W.TRAINING_PITCH_DEV_MIN, pitches) * effectAt(W.GYM_DEV_MIN, gym)
+      * effectAt(W.CANTEEN_DEV_MIN, canteen),
+    recoveryMult: base.recoveryMult * effectAt(W.POOL_RECOVERY_MIN, itemCondition(f, "pool"))
+      * effectAt(W.PHYSIO_RECOVERY_MIN, itemCondition(f, "physio")),
+    injuryMult: base.injuryMult * effectAt(W.PITCH_INJURY_MAX, pitches),
+    normalSessionInjury: INJURY.HEAVY_TRAINING_CHANCE * W.NORMAL_TRAINING_INJURY_SHARE * penalty(pitches),
+    injuryDurationMult: physioDurationMult(f.items.physio, impliedLevel(squad)),
+    matchDevMult: effectAt(W.CT_MATCH_DEV_MIN, (pitches + gym + canteen) / 3),
+  };
 }
 
 export interface AcademyEffects {
@@ -58,11 +109,11 @@ export interface AcademyEffects {
 }
 
 export function academyEffectsAt(level: number): AcademyEffects {
-  const i = lvlIdx(level);
+  const l = clamp(level, F.MIN_LEVEL, F.MAX_LEVEL);
   return {
-    qualityBonus: (i + 1 - F.NEUTRAL_LEVEL) * F.ACADEMY_QUALITY_STEP,
-    intakeMax: F.ACADEMY_INTAKE_MAX[i]!,
-    promiseChance: F.ACADEMY_PROMISE[i]!,
+    qualityBonus: (l - F.NEUTRAL_LEVEL) * F.ACADEMY_QUALITY_STEP,
+    intakeMax: F.ACADEMY_INTAKE_MAX[lvlIdx(l)]!,
+    promiseChance: lerpLevel(F.ACADEMY_PROMISE, l),
   };
 }
 
@@ -72,8 +123,17 @@ export function academyEffectsAt(level: number): AcademyEffects {
  * club gains or loses only for the levels it built above or below its tier's implied level.
  */
 export function academyEffectsOf(squad: Squad): AcademyEffects {
-  if (!squad.facilities) return academyEffectsAt(F.NEUTRAL_LEVEL);
-  return academyEffectsAt(F.NEUTRAL_LEVEL + squad.facilities.academy - impliedLevel(squad));
+  const f = livingFacilities(squad);
+  if (!f) return academyEffectsAt(F.NEUTRAL_LEVEL);
+  const e = academyEffectsAt(F.NEUTRAL_LEVEL + groupLevel(f, "academy") - impliedLevel(squad));
+  const W = F.WEAR;
+  const pitches = itemCondition(f, "academyPitches");
+  const lodging = itemCondition(f, "academyLodging");
+  return {
+    qualityBonus: e.qualityBonus - W.ACADEMY_QUALITY_MAX_LOSS * (penalty(pitches) + penalty(lodging)),
+    intakeMax: e.intakeMax,
+    promiseChance: e.promiseChance * effectAt(W.LODGING_PROMISE_MIN, lodging),
+  };
 }
 
 // ── Stadium ───────────────────────────────────────────────────────────────────
@@ -115,9 +175,14 @@ export function effectiveCapacity(f: ClubFacilities, date?: string): number {
   }, 0);
 }
 
-/** Ticket price multiplier of the comfort level (level 1 = × 1). */
-export function comfortPriceMult(comfort: number): number {
-  return 1 + F.COMFORT_PRICE_STEP * (clamp(Math.round(comfort), F.MIN_LEVEL, F.MAX_LEVEL) - 1);
+/** Ticket price multiplier of a comfort level (level 1 = × 1). */
+export function comfortLevelPriceMult(comfort: number): number {
+  return 1 + F.COMFORT_PRICE_STEP * (clamp(comfort, F.MIN_LEVEL, F.MAX_LEVEL) - 1);
+}
+
+/** Ticket price multiplier of the facilities: comfort (the seats' level) and the seats' condition. */
+export function comfortPriceMult(f: ClubFacilities): number {
+  return comfortLevelPriceMult(comfortLevel(f)) * effectAt(F.WEAR.SEATS_PRICE_MIN, itemCondition(f, "seats"));
 }
 
 /** Season phase multiplier on demand from the fraction of the league window elapsed. */
@@ -146,6 +211,8 @@ export interface DemandInput {
   fraction?: number;
   /** Game day (forecasts): the stand under works counts half only until its works end. */
   date?: string;
+  /** Big-match multiplier (derby, cup/continental knockout: matchImportance.ts); absent = 1. */
+  importance?: number;
 }
 
 /**
@@ -159,7 +226,11 @@ export function demandOf(f: ClubFacilities, input: DemandInput): number {
   const followers = a.followers > 0 && input.followers > 0 ? Math.pow(input.followers / a.followers, F.FOLLOWERS_EXPONENT) : 1;
   const tier = tierDemand(input.tier) / tierDemand(a.tier);
   const phase = input.fraction === undefined ? 1 : seasonPhaseMult(input.fraction);
-  return Math.max(0, a.capacity * fill * followers * tier * phase);
+  // Worn seats and structure keep some fans away (only below 40%).
+  const upkeep = effectAt(F.WEAR.SEATS_DEMAND_MIN, itemCondition(f, "seats"))
+    * effectAt(F.WEAR.STRUCTURE_DEMAND_MIN, itemCondition(f, "stadiumStructure"));
+  const importance = input.importance ?? 1;
+  return Math.max(0, a.capacity * fill * followers * tier * phase * upkeep * importance);
 }
 
 /** Attendance = min(seats available, demand) (unrounded; round only for display). */
@@ -171,7 +242,7 @@ export function attendanceOf(f: ClubFacilities, input: DemandInput): { attendanc
 
 /** Gate of one home game of the human club. */
 export function facilitiesGate(f: ClubFacilities, input: DemandInput, kind: GateKind, neutral = false): number {
-  return gateFromAttendance(attendanceOf(f, input).attendance, kind, neutral, comfortPriceMult(f.comfort));
+  return gateFromAttendance(attendanceOf(f, input).attendance, kind, neutral, comfortPriceMult(f));
 }
 
 /** Logs a home game; returns the broken record (only when a previous record existed). */
@@ -192,15 +263,15 @@ export function recordAttendance(
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-/** A human club's facilities: stands from its capacity, comfort 1, training/academy at the tier's level. */
+/**
+ * A human club's facilities: stands from its capacity, the ten items at 2 × the tier's level (seats
+ * 2 = comfort 1) with a little starting wear (never below ~80%: the starting effects are today's).
+ */
 export function initialFacilities(squad: Squad, tier: number): ClubFacilities {
   const capacity = squad.venue?.capacity ?? 0;
-  const level = impliedLevel(squad);
   return {
     stands: splitStands(capacity),
-    comfort: F.MIN_LEVEL,
-    training: level,
-    academy: level,
+    items: initialItems(squad.id, impliedLevel(squad)),
     projects: [],
     completed: [],
     anchor: { capacity, followers: squad.finances?.followers ?? 0, tier: Math.max(1, tier) },
@@ -236,6 +307,12 @@ export interface ProjectQuote {
   seats?: number;
   /** Total capacity after the works (stand projects). */
   newCapacity?: number;
+  /** Item projects (repair, rebuild, upgrade). */
+  item?: FacilityItemId;
+  /** Condition on delivery (repair target; rebuild/upgrade 100). */
+  to?: number;
+  /** Repair that costs ≤ `REPAIR.SMALL_REPAIR_SHARE` of the annual revenue: paid now, no board. */
+  small?: boolean;
 }
 
 export interface QuoteContext {
@@ -246,7 +323,42 @@ export interface QuoteContext {
 }
 
 /** Cost and duration of a request; `null` when it is not possible (level 5 already, bad seats). */
+/** Value of an item (EUR): annual revenue × its value share × level / 6. */
+export function itemValue(revenue: number, id: FacilityItemId, level: number): number {
+  return Math.max(0, revenue) * F.ITEMS[id].valueShare * level / 6;
+}
+
+function quoteItemProject(f: ClubFacilities, req: FacilityRequest, revenue: number): ProjectQuote | null {
+  if (req.kind !== "repair" && req.kind !== "rebuild" && req.kind !== "upgrade") return null;
+  const it = f.items[req.item];
+  if (!it) return null;
+  const c = F.ITEMS[req.item];
+  const cond = conditionOf(it);
+  if (req.kind === "repair") {
+    const to = req.to;
+    if (it.condemned || !Number.isInteger(to) || to % F.REPAIR.STEP !== 0 || to > 100 || to <= cond) return null;
+    const gain = (to - cond) / 100;
+    const cost = Math.round(itemValue(revenue, req.item, it.level) * gain * F.REPAIR.COST_SHARE);
+    return {
+      kind: "repair", item: req.item, to, cost, weeks: Math.max(1, Math.ceil(c.repairWeeks * gain)),
+      small: cost <= F.REPAIR.SMALL_REPAIR_SHARE * Math.max(0, revenue),
+    };
+  }
+  if (req.kind === "rebuild") {
+    if (!it.condemned && cond >= F.WEAR.CONDEMN_BELOW) return null;
+    return { kind: "rebuild", item: req.item, to: 100, cost: Math.round(itemValue(revenue, req.item, it.level)), weeks: c.rebuildWeeks };
+  }
+  if (it.level >= F.ITEM_MAX_LEVEL) return null;
+  const level = it.level + 1;
+  return {
+    kind: "upgrade", item: req.item, to: 100, level,
+    cost: Math.round(itemValue(revenue, req.item, level) * F.REPAIR.COST_SHARE),
+    weeks: Math.ceil(c.rebuildWeeks * F.REPAIR.UPGRADE_WEEKS_SHARE),
+  };
+}
+
 export function quoteProject(f: ClubFacilities, req: FacilityRequest, ctx: QuoteContext): ProjectQuote | null {
+  if (req.kind === "repair" || req.kind === "rebuild" || req.kind === "upgrade") return quoteItemProject(f, req, ctx.revenue);
   if (req.kind === "stand") {
     if (!validSeats(req.seats) || !f.stands.some((s) => s.id === req.stand)) return null;
     return {
@@ -255,7 +367,8 @@ export function quoteProject(f: ClubFacilities, req: FacilityRequest, ctx: Quote
       newCapacity: totalSeats(f) + req.seats,
     };
   }
-  const current = f[req.kind];
+  if (req.kind !== "comfort" && req.kind !== "training" && req.kind !== "academy") return null;
+  const current = Math.floor(req.kind === "comfort" ? comfortLevel(f) : groupLevel(f, req.kind));
   if (current >= F.MAX_LEVEL) return null;
   const level = current + 1;
   const i = level - 1;
@@ -269,11 +382,12 @@ export function quoteProject(f: ClubFacilities, req: FacilityRequest, ctx: Quote
 
 /** Weekly upkeep (EUR): training ground and academy levels above the tier's implied level. */
 export function weeklyUpkeep(squad: Squad, revenue: number): number {
-  const f = squad.facilities;
+  const f = livingFacilities(squad);
   if (!f) return 0;
   const base = impliedLevel(squad);
   const yearly = Math.max(0, revenue)
-    * (Math.max(0, f.training - base) * F.TRAINING_UPKEEP_SHARE + Math.max(0, f.academy - base) * F.ACADEMY_UPKEEP_SHARE);
+    * (Math.max(0, groupLevel(f, "training") - base) * F.TRAINING_UPKEEP_SHARE
+      + Math.max(0, groupLevel(f, "academy") - base) * F.ACADEMY_UPKEEP_SHARE);
   return Math.round(yearly / 52);
 }
 
@@ -308,8 +422,24 @@ export function boardDecision(args: {
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
+/** Items a project occupies: its item, or every item of a group work (comfort: the seats). */
+function projectItems(p: FacilityProject): FacilityItemId[] {
+  if (p.item) return [p.item];
+  if (p.kind === "comfort") return ["seats"];
+  const g = LEVEL_GROUP[p.kind];
+  return g ? itemsOfGroup(g) : [];
+}
+
+/** A group work (stand, comfort, training, academy) can start: none of the same kind, no project on its items. */
 export function projectRunning(f: ClubFacilities, kind: FacilityKind): boolean {
-  return f.projects.some((p) => p.kind === kind);
+  if (f.projects.some((p) => p.kind === kind)) return true;
+  const items: FacilityItemId[] = kind === "comfort" ? ["seats"] : LEVEL_GROUP[kind] ? itemsOfGroup(LEVEL_GROUP[kind]!) : [];
+  return items.some((id) => itemBusy(f, id));
+}
+
+/** An item already has a project (its own, or a group work that covers it). */
+export function itemBusy(f: ClubFacilities, item: FacilityItemId): boolean {
+  return f.projects.some((p) => projectItems(p).includes(item));
 }
 
 function instalmentCount(start: string, end: string): number {
@@ -326,6 +456,8 @@ export function startProject(
     kind: quote.kind,
     ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
     ...(quote.level !== undefined ? { level: quote.level } : {}),
+    ...(quote.item ? { item: quote.item } : {}),
+    ...(quote.to !== undefined ? { to: quote.to } : {}),
     start: args.date,
     end,
     cost: quote.cost,
@@ -334,6 +466,24 @@ export function startProject(
     paid: 0,
   };
   return { ...f, projects: [...f.projects, project] };
+}
+
+/**
+ * A small repair (`quote.small`): paid now from the balance, in one `facilities` line, no board. The
+ * project stays until its end (delivery, the works card) already paid.
+ */
+export function payRepairNow(
+  f: ClubFacilities, quote: ProjectQuote, args: { id: string; date: string },
+): { facilities: ClubFacilities; entry: LedgerEntry } {
+  const started = startProject(f, quote, { ...args, boardShare: 0 });
+  const projects = started.projects.map((p) => (p.id === args.id ? { ...p, instalments: 1, paid: 1 } : p));
+  return {
+    facilities: { ...started, projects },
+    entry: {
+      date: args.date, kind: "facilities", amount: -quote.cost, label: `Facilities repair (${quote.item ?? quote.kind})`,
+      ref: { facility: quote.kind, ...(quote.item ? { item: quote.item } : {}) },
+    },
+  };
 }
 
 /** The club's share of the instalments still to pay on the running projects. */
@@ -374,31 +524,29 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
   const entries: LedgerEntry[] = [];
   const completed: FacilityProject[] = [];
   let stands = f.stands;
-  let comfort = f.comfort;
-  let training = f.training;
-  let academy = f.academy;
+  let items = f.items;
   const remaining: FacilityProject[] = [];
   for (const p0 of f.projects) {
     let p = p0;
     const boardTotal = Math.round(p.cost * p.boardShare);
     while (p.paid < p.instalments && (addDays(p.start, p.paid * F.INSTALMENT_DAYS) <= date || p.end <= date)) {
       const k = p.paid;
-      const ref = { facility: p.kind, ...(p.stand ? { stand: p.stand } : {}) };
+      const ref = { facility: p.kind, ...(p.stand ? { stand: p.stand } : {}), ...(p.item ? { item: p.item } : {}) };
       entries.push({
         date, kind: "facilities", amount: -instalmentAmount(p.cost, p.instalments, k),
-        label: `Facilities works (${p.kind})`, ref,
+        label: `Facilities works (${p.item ?? p.kind})`, ref,
       });
       const board = instalmentAmount(boardTotal, p.instalments, k);
-      if (board > 0) entries.push({ date, kind: "board_funding", amount: board, label: `Board funding (${p.kind})`, ref });
+      if (board > 0) entries.push({ date, kind: "board_funding", amount: board, label: `Board funding (${p.item ?? p.kind})`, ref });
       p = { ...p, paid: k + 1 };
     }
     if (p.end <= date) {
       completed.push(p);
       if (p.kind === "stand" && p.stand && p.seats) {
         stands = stands.map((s) => (s.id === p.stand ? { ...s, seats: s.seats + p.seats! } : s));
-      } else if (p.kind === "comfort") comfort = p.level ?? comfort;
-      else if (p.kind === "training") training = p.level ?? training;
-      else if (p.kind === "academy") academy = p.level ?? academy;
+      } else {
+        items = applyCompletion(items, p);
+      }
     } else {
       remaining.push(p);
     }
@@ -407,15 +555,39 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
     id: p.id, kind: p.kind, date,
     ...(p.stand ? { stand: p.stand, seats: p.seats } : {}),
     ...(p.level !== undefined ? { level: p.level } : {}),
+    ...(p.item ? { item: p.item } : {}),
+    ...(p.to !== undefined ? { to: p.to } : {}),
   }));
   const changed = entries.length > 0 || completed.length > 0;
   return {
     facilities: changed
-      ? { ...f, stands, comfort, training, academy, projects: remaining, completed: [...f.completed, ...done].slice(-F.COMPLETED_KEEP) }
+      ? { ...f, stands, items, projects: remaining, completed: [...f.completed, ...done].slice(-F.COMPLETED_KEEP) }
       : f,
     entries,
     completed,
   };
+}
+
+const LEVEL_GROUP: Partial<Record<FacilityKind, FacilityGroup>> = { training: "training", academy: "academy" };
+
+/**
+ * Items after a finished project. Group works (comfort, training, academy) raise every item of the
+ * group (comfort: the seats) to at least 2 × the new level, at 100%.
+ */
+export function applyCompletion(items: ClubFacilities["items"], p: FacilityProject): ClubFacilities["items"] {
+  if (p.item) {
+    const it = items[p.item];
+    const level = p.kind === "upgrade" ? Math.min(F.ITEM_MAX_LEVEL, p.level ?? it.level + 1) : it.level;
+    // Repair: the target condition; rebuild / upgrade: 100%. Warnings and the condemnation go.
+    return { ...items, [p.item]: { level, wear: wearFor(p.kind === "repair" ? p.to ?? 100 : 100) } };
+  }
+  if (p.level === undefined) return items;
+  const group = LEVEL_GROUP[p.kind];
+  const ids = p.kind === "comfort" ? ["seats" as const] : group ? itemsOfGroup(group) : [];
+  if (ids.length === 0) return items;
+  const out = { ...items };
+  for (const id of ids) out[id] = { level: Math.min(F.ITEM_MAX_LEVEL, Math.max(out[id].level, 2 * p.level)), wear: 0 };
+  return out;
 }
 
 /** The squad with its facilities; the venue capacity follows the built seats. */
@@ -432,6 +604,8 @@ export interface HomeGameToday {
   competition: string;
   opponentId: string;
   neutral?: boolean;
+  /** Big-match multiplier of this game (matchImportance.ts); absent = 1. */
+  importance?: number;
 }
 
 /**
@@ -445,7 +619,7 @@ export function facilitiesMatchday(
   let recordBroken: { previous: number; attendance: number; competition: string; opponentId: string } | null = null;
   const attendance = games.map((g) => {
     if (g.neutral) return 0;
-    const a = attendanceOf(cur, { ...input, date });
+    const a = attendanceOf(cur, { ...input, date, ...(g.importance !== undefined ? { importance: g.importance } : {}) });
     const r = recordAttendance(cur, {
       date, competition: g.competition, opponentId: g.opponentId,
       attendance: Math.round(a.attendance), capacity: a.capacity, demand: Math.round(a.demand),
@@ -455,4 +629,40 @@ export function facilitiesMatchday(
     return a.attendance;
   });
   return { facilities: cur, attendance, recordBroken };
+}
+
+// ── Signings ──────────────────────────────────────────────────────────────────
+
+const meanCondition = (f: ClubFacilities, g: FacilityGroup): number => {
+  const ids = itemsOfGroup(g);
+  return ids.reduce((s, id) => s + itemCondition(f, id), 0) / ids.length;
+};
+
+/**
+ * How a club's facilities look to a player it wants to sign, 0..100: the mean condition of the
+ * training ground (a player up to 21: training ground and academy). No living facilities (AI clubs,
+ * old saves): 100, no effect.
+ */
+export function facilitiesAppeal(squad: Squad, player: Pick<RosterPlayer, "age">): number {
+  const f = livingFacilities(squad);
+  if (!f) return 100;
+  const training = meanCondition(f, "training");
+  return player.age <= F.APPEAL.YOUTH_MAX_AGE ? (training + meanCondition(f, "academy")) / 2 : training;
+}
+
+/** 0 from `APPEAL.THRESHOLD` up, 1 at 0. */
+const appealGap = (appeal: number): number => clamp((F.APPEAL.THRESHOLD - appeal) / F.APPEAL.THRESHOLD, 0, 1);
+
+/** × a signing's wage demand for poor facilities (up to +10% with everything at 0). */
+export const appealDemandMult = (appeal: number): number => 1 + F.APPEAL.DEMAND_MAX * appealGap(appeal);
+
+/** Taken off the club's `preferenceScore` for poor facilities (up to 0.10). */
+export const appealPreferencePenalty = (appeal: number): number => F.APPEAL.PREFERENCE_MAX * appealGap(appeal);
+
+/** A very ambitious player (ambition ≥ 17) refuses a club whose training ground is below 25%. */
+export function refusesPoorFacilities(player: RosterPlayer, squad: Squad): boolean {
+  const f = livingFacilities(squad);
+  if (!f) return false;
+  return personalityOf(player).ambition >= PERSONALITY.SMALLER_CLUB_REFUSE_AMBITION
+    && meanCondition(f, "training") < F.APPEAL.REFUSE_BELOW;
 }

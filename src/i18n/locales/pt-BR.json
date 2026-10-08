@@ -269,7 +269,7 @@
     "sackingLabel": "Pode ser demitido",
     "sackingYes": "Sim",
     "sackingNo": "Não",
-    "sackingHint": "Se a diretoria perder a confiança, a carreira termina.",
+    "sackingHint": "Se a diretoria perder a confiança, você é demitido e aguarda propostas de outros clubes.",
     "avatar": {
       "title": "Seu rosto",
       "auto": "Sorteado",
@@ -441,7 +441,7 @@
       "analyst": "Ganho de familiaridade de estilo {{mult}}",
       "scout": "Incerteza {{uncertainty}} · conhecimento ganho {{gain}}",
       "fieldScout": "Conduz uma missão de observação",
-      "groundskeeper": "Sem efeito por enquanto: o gramado chega numa próxima versão"
+      "groundskeeper": "Desgaste do gramado {{mult}}"
     },
     "errors": {
       "generic": "Não foi possível concluir.",
@@ -464,10 +464,6 @@
     "minStars": "Estrelas mínimas",
     "any": "Qualquer",
     "maxWage": "Salário máximo (€/sem)",
-    "sort": "Ordenar por",
-    "sortStars": "Estrelas",
-    "sortWage": "Salário",
-    "sortAge": "Idade",
     "colName": "Nome",
     "colRole": "Função",
     "colAge": "Idade",
@@ -535,7 +531,8 @@
     "main": "Navegação principal",
     "vsOpponent": "vs {{opponent}}",
     "changelog": "Novidades",
-    "dashboard": "Painel"
+    "dashboard": "Painel",
+    "club": "Clube"
   },
   "settings": {
     "language": "Idioma",
@@ -2017,7 +2014,8 @@
     "rotationApplied": "O assistente poupou {{count}} jogadores",
     "rotationUndo": "Desfazer",
     "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}",
-    "expectedCrowd": "Público esperado"
+    "expectedCrowd": "Público esperado",
+    "pitch": "Gramado"
   },
   "matchResult": {
     "matchdayRound": "Rodada {{round}} • {{competition}}",
@@ -2196,7 +2194,11 @@
       "managerCompensation": "Compensação pelo técnico",
       "scoutingTravel": "Viagens de observação: {{competition}}",
       "scoutingTravelPlayer": "Viagens de observação: {{player}}",
-      "prospectFee": "Compensação de formação: {{player}}"
+      "prospectFee": "Compensação de formação: {{player}}",
+      "facilityRepair": "Reforma: {{item}}",
+      "facilityRebuild": "Reconstrução: {{item}}",
+      "facilityUpgrade": "Melhoria: {{item}}",
+      "boardFundingItem": "Verba da diretoria: {{item}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -2419,7 +2421,8 @@
       "invalidYears": "Escolha entre 1 e 5 anos.",
       "squadFull": "Seu elenco está cheio (36 jogadores).",
       "unhappy": "Ele está revoltado e não renova sem uma promessa de renovação.",
-      "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa."
+      "smallerClub": "Ambicioso demais para um clube deste tamanho: recusa.",
+      "poorFacilities": "Ambicioso demais para um CT neste estado: recusa."
     }
   },
   "career": {
@@ -2518,6 +2521,10 @@
     },
     "noClub": {
       "main": "Sem",
+      "accent": "Clube"
+    },
+    "club": {
+      "main": "Seu",
       "accent": "Clube"
     }
   },
@@ -2679,12 +2686,14 @@
       "preference": {
         "wage": "Ele prefere o {{club}}: oferta salarial mais alta",
         "prestige": "Ele prefere o {{club}}: clube maior",
-        "starter": "Ele prefere o {{club}}: mais chances de jogar"
+        "starter": "Ele prefere o {{club}}: mais chances de jogar",
+        "facilities": "Ele prefere o {{club}}: instalações melhores"
       },
       "prefers": {
         "wage": "O clube aceita, mas ele prefere a oferta salarial do {{club}}. Suba o salário para convencê-lo.",
         "prestige": "O clube aceita, mas ele prefere ir para o {{club}}, um clube maior.",
-        "starter": "O clube aceita, mas ele espera jogar mais no {{club}}."
+        "starter": "O clube aceita, mas ele espera jogar mais no {{club}}.",
+        "facilities": "O clube aceita, mas ele prefere o {{club}}: o estado do seu CT o afasta."
       },
       "lost": "Tarde demais: ele foi para o {{club}} por {{fee}}."
     },
@@ -2866,13 +2875,17 @@
       "busy": "Já há uma obra em andamento.",
       "maxLevel": "Já está no nível máximo.",
       "noClub": "Você está sem clube.",
-      "error": "Algo deu errado."
+      "error": "Algo deu errado.",
+      "invalidRequest": "Esse pedido não é possível para este item."
     },
     "kind": {
       "stand": "Ampliação de setor",
       "comfort": "Conforto",
       "training": "Centro de treinamento",
-      "academy": "Base"
+      "academy": "Base",
+      "repair": "Reforma",
+      "rebuild": "Reconstrução",
+      "upgrade": "Melhoria"
     },
     "comfort": {
       "about": "Cadeiras, cobertura, camarotes: ingresso mais caro.",
@@ -2905,14 +2918,18 @@
       "none": "Nenhuma obra em andamento.",
       "stand": "Setor {{stand}} +{{seats}} lugares",
       "level": "{{what}} nível {{level}}",
-      "delivery": "entrega {{date}}"
+      "delivery": "entrega {{date}}",
+      "item": "{{what}}: {{item}}"
     },
     "inbox": {
       "subject": {
         "approved": "Obra aprovada: {{what}}",
         "refused": "Obra recusada: {{what}}",
         "completed": "Obra concluída: {{what}}",
-        "attendance_record": "Novo recorde de público"
+        "attendance_record": "Novo recorde de público",
+        "worn": "Desgastado: {{what}}",
+        "condemned": "Interditado: {{what}}",
+        "repaired": "Obra concluída: {{what}}"
       },
       "approved": "A diretoria aprovou {{what}} ({{cost}}). Pronta em {{date}}; paga em parcelas mensais.",
       "approvedFunded": "A diretoria aprovou {{what}} ({{cost}}) e paga {{pct}}% com verba própria. Pronta em {{date}}; paga em parcelas mensais.",
@@ -2920,7 +2937,65 @@
       "completed": "{{what}}: obra concluída.",
       "attendance_record": "{{attendance}} torcedores: novo recorde de público em casa (o anterior era {{previous}}).",
       "standWhat": "o setor {{stand}} (+{{seats}} lugares)",
-      "levelWhat": "{{what}} nível {{level}}"
+      "levelWhat": "{{what}} nível {{level}}",
+      "worn": "{{what}} caiu para {{condition}}% e começa a custar ao clube. Reforme na tela Clube.",
+      "condemned": "{{what}} caiu para {{condition}}% e foi interditado. Só a reconstrução o recupera.",
+      "repaired": "{{what}} voltou a {{condition}}%.",
+      "upgraded": "{{what}} agora é nível {{level}} de 10, a 100%."
+    },
+    "item": {
+      "stadiumPitch": "Gramado do estádio",
+      "seats": "Arquibancadas e assentos",
+      "stadiumStructure": "Estrutura e iluminação",
+      "trainingPitches": "Campos de treino",
+      "gym": "Academia",
+      "pool": "Piscina",
+      "physio": "Fisioterapia",
+      "canteen": "Refeitório",
+      "academyPitches": "Campos da base",
+      "academyLodging": "Alojamento da base"
+    },
+    "attention": {
+      "worn": "{{item}} em {{pct}}%: começa a custar ao clube",
+      "condemned": "{{item}} interditado: reconstrua"
+    },
+    "items": {
+      "title": "Instalações em detalhe",
+      "about": "Todo item se desgasta com o tempo, os jogos e os treinos. Abaixo de 40% custa ao clube; abaixo de 15% fica interditado até a reconstrução.",
+      "group": {
+        "stadium": "Estádio",
+        "training": "Centro de treinamento",
+        "academy": "Base"
+      },
+      "item": "Item",
+      "level": "Nível",
+      "levelOf": "{{level}} de 10",
+      "condition": "Condição",
+      "actions": "Obras",
+      "condemned": "Interditado",
+      "repair": "Reformar",
+      "rebuild": "Reconstruir",
+      "upgrade": "Melhorar",
+      "to": "Até {{pct}}%",
+      "full": "Já está em perfeito estado",
+      "onlyRebuild": "Interditado: só a reconstrução o recupera",
+      "rebuildBelow": "Só abaixo de 15% (ou interditado)",
+      "aboutRepair": "Recupera parte da condição; o nível fica.",
+      "aboutRebuild": "Refeito do zero no mesmo nível, de volta a 100%.",
+      "aboutUpgrade": "Um nível acima (nível {{level}} de 10), entregue a 100%.",
+      "paidByClub": "Pago pelo clube agora (reforma pequena).",
+      "confirmPay": "Pagar e começar"
+    },
+    "effect": {
+      "matchInjury": "Lesões nos jogos em casa {{pct}}",
+      "demand": "Demanda de público {{pct}}",
+      "price": "Preço do ingresso {{pct}}",
+      "trainingInjury": "Lesões no treino {{pct}}",
+      "trainingDev": "Evolução no treino {{pct}}",
+      "recovery": "Recuperação diária {{pct}}",
+      "injuryDays": "Dias fora por lesão {{pct}}",
+      "intakeQuality": "Nível da safra {{value}}",
+      "promise": "Chance de promessa {{pct}}"
     }
   },
   "transferWindows": {
@@ -3141,7 +3216,8 @@
       "settled": "Acomodado: {{pct}}",
       "loyal": "Leal ao clube: {{pct}}",
       "compatriot": "Joga no país dele: {{pct}}",
-      "smallerClub": "Quer um clube maior: {{pct}}"
+      "smallerClub": "Quer um clube maior: {{pct}}",
+      "facilities": "Instalações ruins: {{pct}}"
     }
   },
   "scouting": {

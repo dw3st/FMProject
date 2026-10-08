@@ -32,7 +32,7 @@ import type {
 import { formatEuros, formatWageShort } from "@/Domain/money";
 import { projectProgress } from "@/Domain/facilities/facilities";
 import { addDays } from "@/Domain/dates";
-import type { ClubFacilities, FacilityKind, StandId } from "@/types/facilityTypes";
+import type { ClubFacilities, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
 import { RESULT_PILL } from "@/GameInterface/formColors";
 
 // ── Shared ───────────────────────────────────────────────────────────────────
@@ -605,6 +605,15 @@ export function AttentionCard({
           text: t("scouting.attention.shortlist", { name: item.name, reason: t(`inbox.scouting.reason.${item.reason}`) }),
           href: "/scout?tab=shortlist",
         };
+      case "facilityWorn":
+        return {
+          icon: "construction",
+          tone: item.condemned ? "text-destructive" : "text-chart-4",
+          text: t(item.condemned ? "facilities.attention.condemned" : "facilities.attention.worn", {
+            item: t(`facilities.item.${item.item}`), pct: Math.round(item.condition),
+          }),
+          href: "/club",
+        };
     }
   }
 
@@ -801,12 +810,14 @@ export function WeekFinancesCard({ week, balance }: { week: WeekMoney | null; ba
  */
 export function WorksCard({ facilities, today }: { facilities: ClubFacilities; today: string }) {
   const { t, i18n } = useTranslation();
-  const what = (p: { kind: FacilityKind; stand?: StandId; seats?: number; level?: number }) => p.kind === "stand"
+  const what = (p: { kind: FacilityKind; stand?: StandId; seats?: number; level?: number; item?: FacilityItemId }) => p.kind === "stand"
     ? t("facilities.projects.stand", { stand: t(`facilities.stand.${p.stand}`), seats: (p.seats ?? 0).toLocaleString(i18n.language) })
-    : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
+    : p.item
+      ? t("facilities.projects.item", { what: t(`facilities.kind.${p.kind}`), item: t(`facilities.item.${p.item}`) })
+      : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
   const recent = recentlyCompleted(facilities, today);
   return (
-    <HomeCard title={t("dashboard.home.works")} href="/finances?tab=facilities" linkLabel={t("financesScreen.tabFacilities")}>
+    <HomeCard title={t("dashboard.home.works")} href="/club" linkLabel={t("nav.club")}>
       <div className="flex flex-col gap-3">
         {facilities.projects.map((p) => {
           const progress = Math.round(projectProgress(p, today) * 100);

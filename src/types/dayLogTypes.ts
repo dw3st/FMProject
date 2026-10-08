@@ -158,6 +158,8 @@ export interface MatchEvent {
    * developmentChanges are empty to keep the day log small. UI must not expect player rows.
    */
   compact?: true;
+  /** Condition 0..100 of the pitch the match was played on (`matchPitchCondition`). Absent: not tracked. */
+  pitchCondition?: number;
 }
 
 // ── Training event ─────────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer
 import { loadWindowContext, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
 import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
+import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { parseAskingPrice, playerMarketValue } from "@/Domain/negotiation/askingPrice";
 
 function splitTransfersByClub(
@@ -222,7 +223,14 @@ export const transferRoutes = {
         if (answer.kind === "accept" && accepting.length > 0) {
           const prestige = await prestigeOf(saveService, saveId, date0, [buyerSquad.id, ...accepting.map((r) => r.clubId)]);
           const options = [
-            { id: buyerSquad.id, name: buyerSquad.name, pref: { wage: contractWage, demand, prestige: prestige.get(buyerSquad.id) ?? 0.5, starter: starterChance(player, buyerSquad) } },
+            {
+              id: buyerSquad.id, name: buyerSquad.name,
+              pref: {
+                wage: contractWage, demand, prestige: prestige.get(buyerSquad.id) ?? 0.5, starter: starterChance(player, buyerSquad),
+                // Poor facilities of the human club weigh on the choice (the AI rival has none).
+                facilitiesAppeal: facilitiesAppeal(buyerSquad, player),
+              },
+            },
             ...(await Promise.all(accepting.map(async (r) => {
               const club = await saveService.getSquadById(saveId, r.clubId);
               return {

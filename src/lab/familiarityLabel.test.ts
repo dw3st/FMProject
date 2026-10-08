@@ -18,3 +18,10 @@ describe("lab: morale in the variant label", () => {
     expect(variantAutoLabel(v({ familiarity: 100, morale: 100 }))).toBe("4-3-3 · Possession · fam 100 · mor 100");
   });
 });
+
+describe("lab: pitch condition in the variant label", () => {
+  test("absent or 90 = no suffix; set = ' · pitch N%'", () => {
+    expect(variantAutoLabel(v({ pitchCondition: 90 }))).toBe("4-3-3 · Possession");
+    expect(variantAutoLabel(v({ pitchCondition: 20 }))).toBe("4-3-3 · Possession · pitch 20%");
+  });
+});

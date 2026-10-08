@@ -228,7 +228,8 @@ function finalizeSquadsAfterMatch(
     // Members who did not play recover like a rest day: staff × training ground
     // (`.claude/rules/game/facilities.md`); the post-match fitness of who played is untouched.
     const staffFx = staffEffectsOf(squad);
-    const recoveryMult = staffFx.recoveryMult * trainingGroundEffectsOf(squad).recoveryMult;
+    const ground = trainingGroundEffectsOf(squad);
+    const recoveryMult = staffFx.recoveryMult * ground.recoveryMult;
     return {
       ...squad,
       players: squad.players.map((p0) => {
@@ -310,8 +311,9 @@ function finalizeSquadsAfterMatch(
         }
         const inj = injuryByPlayer.get(p.id);
         if (inj) {
-          // The medic (`src/Domain/staff`) shortens or lengthens the time out, same draw.
-          const rd = injuryReturnDate(matchDate, inj.severity, rng, staffFx.injuryDurationMult);
+          // The medic (`src/Domain/staff`) and the human club's physio (`facilities.md`) shorten or
+          // lengthen the time out, same draw.
+          const rd = injuryReturnDate(matchDate, inj.severity, rng, staffFx.injuryDurationMult * ground.injuryDurationMult);
           injuriesApplied.push({ ...inj, returnDate: rd });
           const merged = mergeInjury(p.injury, { severity: inj.severity, returnDate: rd });
           return { ...pl, seasonLog: withInjuryCounted(log, matchDate, p.injury, rd), injury: merged };
@@ -326,13 +328,16 @@ function finalizeSquadsAfterMatch(
   ): { updatedSquad: Squad; changes: PlayerDevelopmentChange[] } {
     const allChanges: PlayerDevelopmentChange[] = [];
     const { devMult } = staffEffectsOf(squad);
+    // A worn training ground (human club only, below 40%) prepares the players worse: × match DP,
+    // growth only (`.claude/rules/game/facilities.md`).
+    const { matchDevMult } = trainingGroundEffectsOf(squad);
     // Training areas (`.claude/rules/game/staff.md`): growth only, per DP category.
     const areas = areaMultsOf(squad);
     const updatedPlayers = squad.players.map((p) => {
       const rating = playerRatings[p.id] ?? 0;
       const { updatedPlayer, levelChanges } = applyDevelopment(
         p, rating, dpWeightsFor(p),
-        devMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
+        devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)),
         professionalismDecayMult(p),
         areas,
       );
@@ -467,6 +472,8 @@ export function buildMatchEvent(
     awayFormation: Formation;
     awayLineup: string[];
     tactics?: { A: TeamTactics; B: TeamTactics };
+    /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
+    pitchCondition?: number;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -488,6 +495,7 @@ export function buildMatchEvent(
     {
       knockout: fixture.knockout === true,
       ...(sim.tactics ? { tactics: sim.tactics } : {}),
+      ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
       ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
     },
   );
@@ -713,7 +721,8 @@ export function buildMatchEvent(
       : {}),
   };
 
-  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
+  const withPitch = sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event;
+  return { event: withPitch, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
@@ -740,6 +749,8 @@ export function buildQuickMatchEvent(
     /** When given, each lineup slot plays its formation slot role (as in the engine). */
     homeFormation?: Formation;
     awayFormation?: Formation;
+    /** Condition 0..100 of the pitch (`matchPitchCondition`); absent = 90. */
+    pitchCondition?: number;
   },
   rng: Rng = Math.random,
 ): MatchSimResult {
@@ -755,11 +766,13 @@ export function buildQuickMatchEvent(
       knockout: fixture.knockout === true,
       neutral: fixture.neutral === true,
       aggregate: fixture.aggregate,
+      ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
     },
     rng,
   );
   // quickSim never benches an injured player (see `finalizeSquadsAfterMatch`'s
   // `fullMinutesForInjured` doc comment) — skip the synthetic sub-out the engine path needs.
   const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng, true);
-  return { ...r, event: compactMatchEvent(r.event) };
+  const event = compactMatchEvent(r.event);
+  return { ...r, event: sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event };
 }

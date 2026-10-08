@@ -4,6 +4,7 @@ import { roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import { initialFacilities } from "@/Domain/facilities/facilities";
+import { withGroupLevel } from "@/Domain/facilities/facilityItems";
 
 function mk(i: number, pos: string, level: number): RosterPlayer {
   const v = Math.round(level * 10) / 10;
@@ -50,7 +51,7 @@ describe("youth intake", () => {
   test("academy level (facilities): quality ±0.15/level, up to 6 players at level 5", () => {
     const withAcademy = (level: number) => {
       const sq = squad();
-      return squad({ facilities: { ...initialFacilities(sq, 1), academy: level } });
+      return squad({ facilities: withGroupLevel(initialFacilities(sq, 1), "academy", level) });
     };
     const meanLevel = (sq: Squad) => {
       const all: number[] = [];

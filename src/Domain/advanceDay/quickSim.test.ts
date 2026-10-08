@@ -581,6 +581,35 @@ describe("quickSim aggregate", () => {
 
 // ── injuries (Task 3, docs/superpowers/archive/2026-09-28-injuries.md) ───────────
 
+describe("quickSimMatch — pitch condition (Etapa 34)", () => {
+  const home = makeSquad("h", 5);
+  const away = makeSquad("a", 5);
+  const input = (pitchCondition?: number) => ({
+    fixtureId: "f1", home, away, homeLineup: lineupOf(home), awayLineup: lineupOf(away),
+    ...(pitchCondition !== undefined ? { pitchCondition } : {}),
+  });
+
+  test("a good pitch (90) changes nothing: same rng, same recording", () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      // durationMs is wall-clock time: everything else must be identical.
+      const a = { ...quickSimMatch(input(90), mulberry32(seed)).recording, durationMs: 0 };
+      const b = { ...quickSimMatch(input(), mulberry32(seed)).recording, durationMs: 0 };
+      expect(a).toEqual(b);
+    }
+  });
+
+  test("a ruined pitch (0) raises the injuries by ~60% (paired seeds)", () => {
+    let good = 0;
+    let bad = 0;
+    for (let seed = 1; seed <= 4000; seed++) {
+      good += quickSimMatch(input(90), mulberry32(seed)).recording.injuries?.length ?? 0;
+      bad += quickSimMatch(input(0), mulberry32(seed)).recording.injuries?.length ?? 0;
+    }
+    expect(bad / good).toBeGreaterThan(1.4);
+    expect(bad / good).toBeLessThan(1.8);
+  });
+});
+
 describe("quickSimMatch — injuries", () => {
   function extremeRiskSquad(id: string): Squad {
     const s = makeSquad(id, 5);

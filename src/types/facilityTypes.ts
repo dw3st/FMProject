@@ -6,8 +6,26 @@
 
 export type StandId = "north" | "south" | "east" | "west";
 
-/** What a project builds. One project per kind at a time. */
-export type FacilityKind = "stand" | "comfort" | "training" | "academy";
+/** What a project builds. One project per kind (per item for item projects) at a time. */
+export type FacilityKind = "stand" | "comfort" | "training" | "academy" | "repair" | "rebuild" | "upgrade";
+
+/** The ten facility items (`docs/superpowers/specs/2026-10-08-living-facilities-design.md`). */
+export type FacilityItemId =
+  | "stadiumPitch" | "seats" | "stadiumStructure"
+  | "trainingPitches" | "gym" | "pool" | "physio" | "canteen"
+  | "academyPitches" | "academyLodging";
+export type FacilityGroup = "stadium" | "training" | "academy";
+
+export interface FacilityItem {
+  /** 1..10 ("N de 10"). */
+  level: number;
+  /** Fraction of the useful life consumed (≥ 0); the condition is derived (`conditionOf`). */
+  wear: number;
+  /** Below 15%: unusable (condition counts 0, level 1) until rebuilt. */
+  condemned?: true;
+  /** Last threshold warned (40 or 15); cleared when the condition goes back above it. */
+  alert?: 40 | 15;
+}
 
 export interface StadiumStand {
   id: StandId;
@@ -20,8 +38,12 @@ export interface FacilityProject {
   /** Stand projects: which stand and how many seats it adds. */
   stand?: StandId;
   seats?: number;
-  /** Level projects (comfort, training, academy): the level reached on completion. */
+  /** Level projects (comfort, training, academy, upgrade): the level reached on completion. */
   level?: number;
+  /** Item projects (repair, rebuild, upgrade). */
+  item?: FacilityItemId;
+  /** Repair: target condition (rebuild/upgrade: 100). */
+  to?: number;
   /** Day the board approved it (first instalment due). */
   start: string;
   /** Completion day: the effect applies from this day on. */
@@ -42,6 +64,8 @@ export interface CompletedFacilityProject {
   stand?: StandId;
   seats?: number;
   level?: number;
+  item?: FacilityItemId;
+  to?: number;
   date: string;
 }
 
@@ -59,12 +83,11 @@ export interface AttendanceRow {
 
 export interface ClubFacilities {
   stands: StadiumStand[];
-  /** Comfort 1..5: +6% ticket price per level above 1. */
-  comfort: number;
-  /** Training ground 1..5 (3 = neutral). */
-  training: number;
-  /** Academy 1..5 (3 = neutral). */
-  academy: number;
+  /**
+   * The ten items (level 1..10 and wear). The old group levels 1..5 (comfort, training ground,
+   * academy) are derived from them (`groupLevel`, `comfortLevel` in `facilityItems.ts`).
+   */
+  items: Record<FacilityItemId, FacilityItem>;
   projects: FacilityProject[];
   completed: CompletedFacilityProject[];
   /**
@@ -82,6 +105,8 @@ export interface ClubFacilities {
 /** Body of `POST /api/saves/:id/facilities/request`. */
 export type FacilityRequest =
   | { kind: "stand"; stand: StandId; seats: number }
-  | { kind: "comfort" | "training" | "academy" };
+  | { kind: "comfort" | "training" | "academy" }
+  | { kind: "repair"; item: FacilityItemId; to: number }
+  | { kind: "rebuild" | "upgrade"; item: FacilityItemId };
 
 export type BoardRefusal = "board_low" | "negative_balance" | "too_big" | "no_money";

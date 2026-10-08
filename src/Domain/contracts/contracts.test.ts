@@ -3,6 +3,8 @@ import {
   addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer, initialContract, isExpired, renewalContract,
 } from "@/Domain/contracts/contracts";
 import { currentWage, squadWeeklyWages } from "@/Domain/finance/wages";
+import { initialFacilities } from "@/Domain/facilities/facilities";
+import { itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 function player(id: string, age: number, level = 5): RosterPlayer {
@@ -180,5 +182,49 @@ describe("personality (`personality.md`)", () => {
     const one = demandBreakdown(amb, mid, "d", { fromSquad: elite });
     expect(one.refuses).toBe(false);
     expect(one.smallerClub).toBeGreaterThan(1);
+  });
+});
+
+describe("facilities (`facilities.md` → contratação)", () => {
+  const withP = (p: RosterPlayer, ambition: number): RosterPlayer => ({ ...p, personality: { ...p.personality!, ambition } });
+  /** A human club whose training ground (and academy) items sit at a condition. */
+  const human = (training: number, academy = 90): Squad => {
+    const sq = squad([player("x", 26)]);
+    const f = initialFacilities(sq, 1);
+    const items = { ...f.items };
+    for (const id of itemsOfGroup("training")) items[id] = { ...items[id], wear: wearFor(training) };
+    for (const id of itemsOfGroup("academy")) items[id] = { ...items[id], wear: wearFor(academy) };
+    return { ...sq, facilities: { ...f, items } };
+  };
+
+  test("a signing asks more at a club with a poor training ground; never on a renewal or at an AI club", () => {
+    const p = player("s", 26);
+    const b = demandBreakdown(p, human(25), "d");
+    expect(b.facilities).toBeCloseTo(1.05, 10);
+    expect(b.demand).toBe(Math.round(b.base * b.ambition * b.loyalty * b.compatriot * b.smallerClub * 1.05));
+    expect(demandBreakdown(p, human(60), "d").facilities).toBe(1);
+    expect(demandBreakdown(p, squad([player("x", 26)]), "d").facilities).toBe(1);
+    const own = human(25);
+    const member = own.players[0]!;
+    expect(demandBreakdown(member, own, "d").facilities).toBe(1);
+    expect(demandBreakdown(p, own, "d", { renewal: true }).facilities).toBe(1);
+  });
+
+  test("a young player also looks at the academy", () => {
+    const young = player("y", 19);
+    expect(demandBreakdown(young, human(20, 80), "d").facilities).toBeCloseTo(1, 10); // appeal 50
+    expect(demandBreakdown(young, human(20, 20), "d").facilities).toBeCloseTo(1.06, 10); // appeal 20
+  });
+
+  test("refusal only with ambition ≥ 17 and the training ground below 25%", () => {
+    const offer = { wage: 10_000_000, years: 2 };
+    expect(evaluateContractOffer(offer, withP(player("a", 26), 17), human(20), "d").reason).toBe("poorFacilities");
+    expect(evaluateContractOffer(offer, withP(player("b", 26), 16), human(20), "d").accepted).toBe(true);
+    expect(evaluateContractOffer(offer, withP(player("c", 26), 20), human(30), "d").accepted).toBe(true);
+  });
+
+  test("what the AI pays (renewalContract) does not change", () => {
+    const p = player("r", 26);
+    expect(renewalContract(p, human(0), END, 2).wage).toBe(renewalContract(p, squad([player("x", 26)]), END, 2).wage);
   });
 });
