@@ -13,6 +13,7 @@ import { scoutMultipliersOf } from "@/Domain/scouting/knowledge";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { effectiveRating, effectiveStars, headOf, memberStars, membersOf, ratingFromStars } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { severanceOf } from "@/Domain/staff/staffContracts";
 import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { YOUTH } from "@/Domain/youth/youthConfig";
@@ -53,7 +54,7 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
  * The scouts that can lead a mission: the chief (vacant: 2 stars = the old rating 3) and the field
  * scouts. `stars` is what the screens show; `rating` (the old 1..10) drives the mission gain.
  */
-function scoutsOf(squad: Squad | null): { id: string; name: string; stars: number; rating: number; chief: boolean; vacant?: boolean }[] {
+function scoutsOf(squad: Squad | null, date?: string): { id: string; name: string; stars: number; rating: number; chief: boolean; vacant?: boolean; severance?: number }[] {
   if (!squad) return [];
   const chief = headOf(squad, "scout");
   return [
@@ -63,7 +64,8 @@ function scoutsOf(squad: Squad | null): { id: string; name: string; stars: numbe
     },
     ...membersOf(squad, "fieldScout").map((s) => {
       const stars = memberStars(s);
-      return { id: s.id, name: s.name, stars, rating: ratingFromStars(stars), chief: false };
+      // With the day: the severance of dismissing him today (shown in the confirmation).
+      return { id: s.id, name: s.name, stars, rating: ratingFromStars(stars), chief: false, ...(date ? { severance: severanceOf(s, date) } : {}) };
     }),
   ];
 }
@@ -130,7 +132,7 @@ async function scoutingView(saveId: string, state: ScoutingState) {
   const viewer = await loadViewer(saveService, saveId);
   const ownCountry = viewer?.ownCountry ?? "";
   const revenue = own ? wageRevenueBasisOf(own) : 0;
-  const scouts = scoutsOf(own);
+  const scouts = scoutsOf(own, meta?.currentDate);
   const missions = await Promise.all(state.missions.map(async (m) => ({
     ...m,
     weeklyCost: own ? missionCost(m.target.kind, await missionDistance(saveService, saveId, m, ownCountry), revenue) : 0,

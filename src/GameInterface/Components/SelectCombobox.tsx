@@ -13,9 +13,10 @@ import { Icon } from "@/GameInterface/Icons";
 /**
  * `group`/`subgroup` (optional) render a header row whenever they change from the previous
  * visible option, so the list can be grouped (e.g. continent -> country -> competition).
- * Options must already be sorted by group.
+ * Options must already be sorted by group. `disabled` options stay listed but cannot be picked
+ * (put the reason in the label).
  */
-type Option<T extends string> = { value: T; label: string; group?: string; subgroup?: string };
+type Option<T extends string> = { value: T; label: string; group?: string; subgroup?: string; disabled?: boolean };
 
 export function SelectCombobox<T extends string>({
   label,
@@ -109,7 +110,8 @@ export function SelectCombobox<T extends string>({
               )}
               <ComboboxOption
                 value={opt.value}
-                className={`group flex items-center justify-between gap-2 ${opt.subgroup ? "pl-6 pr-3" : "px-3"} py-2 cursor-pointer transition-colors data-[focus]:bg-primary/10 data-[selected]:text-primary`}
+                disabled={opt.disabled}
+                className={`group flex items-center justify-between gap-2 ${opt.subgroup ? "pl-6 pr-3" : "px-3"} py-2 cursor-pointer transition-colors data-[focus]:bg-primary/10 data-[selected]:text-primary data-[disabled]:cursor-not-allowed data-[disabled]:text-muted-foreground`}
               >
                 <span className="font-medium truncate">{opt.label}</span>
                 <Icon name="check" className="w-4 h-4 opacity-0 group-data-[selected]:opacity-100 text-primary shrink-0" />

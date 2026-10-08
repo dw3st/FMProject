@@ -45,7 +45,7 @@ describe("staff contracts in the day", () => {
     });
 
     const mission = (id: string, leader: string, start: string) => ({
-      id, scoutId: leader, target: { kind: "country" as const, country: "Spain" }, start, weeks: 4, weeksDone: 0,
+      id, scoutId: leader, target: { kind: "country" as const, country: "Spain" }, start, weeks: 4, weeksDone: 0, observed: 0,
     });
 
     // A Monday with the director in charge (the default).

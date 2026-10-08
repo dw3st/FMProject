@@ -388,6 +388,7 @@
     "multCol": "Ritmo",
     "auto": "Automático",
     "autoWith": "Automático · {{name}}",
+    "coachFull": "{{name}} · já cuida de {{n}} áreas",
     "nobody": "Ninguém",
     "area": {
       "goalkeeping": "Goleiros",
@@ -439,7 +440,7 @@
       "invalidYears": "Escolha de 1 a 3 anos."
     },
     "scouts": {
-      "fireConfirmBody": "Ele sai com multa de metade do contrato restante; a missão dele é cancelada."
+      "fireConfirmBody": "Ele sai com multa de {{amount}} (metade do contrato restante) e volta à lista de livres; a missão dele é cancelada."
     }
   },
   "staffPool": {

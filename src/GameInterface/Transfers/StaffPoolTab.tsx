@@ -39,6 +39,12 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
   });
   const [minStars, setMinStars] = useState<MinStars>("any");
   const [maxWage, setMaxWage] = useState("");
+  // The search follows the wage field only after the user stops typing (~300 ms).
+  const [maxWageQuery, setMaxWageQuery] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setMaxWageQuery(maxWage), 300);
+    return () => clearTimeout(id);
+  }, [maxWage]);
   const [sort, setSort] = useState<Sort>("stars");
   const [page, setPage] = useState<StaffPoolPage | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -51,10 +57,10 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
     const p = new URLSearchParams({ sort, offset: String(offset), limit: String(PAGE) });
     if (role !== "all") p.set("role", role);
     if (minStars !== "any") p.set("minStars", minStars);
-    const wage = Number(maxWage.replace(/[^\d]/g, ""));
-    if (maxWage.trim() !== "" && Number.isFinite(wage)) p.set("maxWage", String(wage));
+    const wage = Number(maxWageQuery.replace(/[^\d]/g, ""));
+    if (maxWageQuery.trim() !== "" && Number.isFinite(wage)) p.set("maxWage", String(wage));
     return `/api/saves/${saveId}/staff/pool?${p}`;
-  }, [saveId, role, minStars, maxWage, sort]);
+  }, [saveId, role, minStars, maxWageQuery, sort]);
 
   const loadStaff = useCallback(async () => {
     const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff`);

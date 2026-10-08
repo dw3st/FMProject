@@ -10,6 +10,7 @@ As telas **nunca montam rótulo de liga ou de país à mão** (concatenar `nome 
 | Helper | Propósito |
 |---|---|
 | `countryDisplayName(country, lang, t)` | Nome do país: chave i18n primeiro, depois `Intl.DisplayNames` pelo ISO, por último o nome cru. `GB` fica "England", nunca "United Kingdom". |
+| `nationalityDisplayName(nationality, lang, t)` | Nome de uma nacionalidade escrita como nos dados (nome em inglês, ex. `StaffMember.nationality`): mesmas regras do `countryDisplayName` via a bandeira (`nationalityFlagCode`); nome desconhecido volta igual. |
 | `leagueLabel(league, countryName)` | Rótulo `"Nome da Liga · País"` usado em combobox e seletor de liga. |
 | `competitionName(slug, leagues, lang)` | Nome de exibição de uma competição pelo slug. Liga: nome do catálogo. Continental (`ucl`/`uel`/`lib`/`sud`): nome fixo por `lang` (`CONTINENTAL_NAMES`) — "Champions League"/"Europa League" iguais em en/pt, "Copa Libertadores" igual, "Copa Sudamericana" (en) / "Copa Sul-Americana" (pt-BR). Copa (`cup_<país>`): nome próprio para as 6 grandes (`CUP_NAMES`), senão genérico localizado por `lang` a partir do `country` cru do `leagueData` ("<País> Cup" em inglês, "Copa nacional (<país>)" em português via `Intl.DisplayNames`). Slug desconhecido: `titleCase` (tira o prefixo `of_`). Ver `.claude/rules/game/cups.md` → "Interface". |
 | `groupCountriesByContinent(countries, displayName)` | Agrupa países por continente, na ordem de `CONTINENT_ORDER`, ordenado dentro do grupo pelo nome de exibição. |

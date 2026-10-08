@@ -13,6 +13,8 @@ export interface ScoutingScout {
   chief: boolean;
   vacant?: boolean;
   busy: boolean;
+  /** Field scouts: the severance of dismissing him today (€). */
+  severance?: number;
 }
 
 interface ScoutingMissionView extends ScoutAssignment {

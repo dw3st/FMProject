@@ -9,7 +9,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { Icon } from "@/GameInterface/Icons";
-import { formatFee } from "@/Domain/money";
+import { formatFee, formatWageFull } from "@/Domain/money";
 import { leagueLabel } from "@/Domain/world/labels";
 import type { LeagueData } from "@/types/playerTypes";
 import type { ScoutFocus, ScoutTargetKind } from "@/types/scoutingTypes";
@@ -49,9 +49,10 @@ export function MissionsTab({
     if (!dismissing) return;
     setBusy(true);
     try {
+      setError(null);
       const r = await scoutingCall(`/api/saves/${saveId}/staff/fire`, "POST", { memberId: dismissing.id });
       if (r.ok) onChanged();
-      else setError(t("warnings.errors.loadFailed"));
+      else setError(t(`staff.errors.${r.json?.error ?? "generic"}`, { defaultValue: t("staff.errors.generic") }));
     } finally {
       setBusy(false);
       setDismissing(null);
@@ -129,7 +130,7 @@ export function MissionsTab({
       <ConfirmDialog
         open={dismissing !== null}
         title={t("staff.fireConfirmTitle", { name: dismissing?.name ?? "" })}
-        body={t("staff.scouts.fireConfirmBody")}
+        body={t("staff.scouts.fireConfirmBody", { amount: formatWageFull(dismissing?.severance ?? 0) })}
         confirmLabel={t("staff.fire")}
         onConfirm={() => void dismiss()}
         onClose={() => setDismissing(null)}

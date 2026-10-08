@@ -388,6 +388,7 @@
     "multCol": "Pace",
     "auto": "Automatic",
     "autoWith": "Automatic · {{name}}",
+    "coachFull": "{{name}} · already leads {{n}} areas",
     "nobody": "Nobody",
     "area": {
       "goalkeeping": "Goalkeeping",
@@ -439,7 +440,7 @@
       "invalidYears": "Choose 1 to 3 years."
     },
     "scouts": {
-      "fireConfirmBody": "He leaves with a severance of half his remaining contract; his mission is cancelled."
+      "fireConfirmBody": "He leaves with a severance of {{amount}} (half his remaining contract) and goes back to the free pool; his mission is cancelled."
     }
   },
   "staffPool": {

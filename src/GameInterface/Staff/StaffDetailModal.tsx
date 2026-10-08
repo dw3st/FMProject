@@ -9,6 +9,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { StatBar } from "@/GameInterface/ui/StatBar";
 import { formatWageFull } from "@/Domain/money";
+import { nationalityDisplayName } from "@/Domain/world/labels";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { COACH_AREAS, ROLE_SPECIALTY, type CoachArea, type StaffMember } from "@/Domain/staff/staffTypes";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
@@ -41,7 +42,7 @@ export function StaffDetailModal({
   onChanged?: (next: StaffData) => void;
   onHire?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [years, setYears] = useState<Years | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +89,7 @@ export function StaffDetailModal({
             <div className="min-w-0">
               <Label>{t(`staff.roles.${m.role}`)}</Label>
               <SectionTitle className="mt-1">{m.name}</SectionTitle>
-              <p className="text-sm text-muted-foreground m-0 mt-1">{m.nationality} · {t("staff.age", { age: m.age })}</p>
+              <p className="text-sm text-muted-foreground m-0 mt-1">{nationalityDisplayName(m.nationality, i18n.language, t)} · {t("staff.age", { age: m.age })}</p>
               <div className="mt-2"><StaffStars stars={m.stars} /></div>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { COACH_AREAS, type CoachArea } from "@/Domain/staff/staffTypes";
+import { STAFF_AREAS_PER_COACH } from "@/Domain/staff/staff";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { formatMult, type StaffData } from "@/GameInterface/Staff/staffApi";
 
@@ -28,6 +29,9 @@ export function TrainingAreasPanel({
   const coaches = data.members.filter((m) => m.role === "coach");
   const nameOf = (id: string | undefined) => data.members.find((m) => m.id === id)?.name ?? "";
   const byArea = new Map(data.areas.map((a) => [a.area, a]));
+  // Manual areas per coach: a coach already leading two by hand cannot take a third.
+  const manualLoad = new Map<string, number>();
+  for (const id of Object.values(data.areaAssignments)) if (id) manualLoad.set(id, (manualLoad.get(id) ?? 0) + 1);
 
   return (
     <section className="flex flex-col gap-3">
@@ -65,7 +69,14 @@ export function TrainingAreasPanel({
                               ? t("staff.autoWith", { name: nameOf(view.memberId) })
                               : t("staff.auto"),
                           },
-                          ...coaches.map((c) => ({ value: c.id, label: c.name })),
+                          ...coaches.map((c) => {
+                            const full = c.id !== manual && (manualLoad.get(c.id) ?? 0) >= STAFF_AREAS_PER_COACH;
+                            return {
+                              value: c.id,
+                              label: full ? t("staff.coachFull", { name: c.name, n: STAFF_AREAS_PER_COACH }) : c.name,
+                              disabled: full,
+                            };
+                          }),
                         ]}
                       />
                     ) : (

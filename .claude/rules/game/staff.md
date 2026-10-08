@@ -12,6 +12,8 @@ Spec: `docs/superpowers/specs/2026-10-08-coaching-staff-design.md` (Etapa 31a, v
   IA ficam idênticos aos de antes (regras, não simulação, `.claude/rules/AI-clubs/finance.md`).
 - Função sem ninguém (que não é área) = **2★** (a "nota 3" antiga). Área de treino sem responsável = **×0,4**.
 - Sem migração (protótipo).
+- Tipos de dado em `src/types/staffTypes.ts` (`StaffRole`, `StaffMember`, `StaffRecord`…); `src/Domain/staff/staffTypes.ts`
+  reexporta e guarda as listas (`STAFF_ROLES`, `COACH_AREAS`…), com checagem de tipo de que batem.
 
 ## Funções
 
@@ -56,20 +58,26 @@ tier cair, ninguém é demitido.
 
 - `StaffMember.contract = { until, wage, signed, decision? }`: 1–3 temporadas (`contractEndFor`), salário congelado
   na assinatura: `staffWageFor(role, estrelas, fator do clube) = staffWeeklyWage(ratingFromStars(estrelas), fator) ×
-  STAFF.WAGE_ROLE_SHARE[role]`. A segunda cobra a soma dos contratos (`squadStaffWages`, linha `staff` do extrato).
+  STAFF.WAGE_ROLE_SHARE[role]`. A segunda cobra a soma dos contratos (`squadStaffWages(staff, data)`, linha `staff` do
+  extrato), sem quem tem `until` antes do dia (sai mais tarde no mesmo dia: não paga a semana a mais).
 - **Demitir** (`POST /staff/fire`): multa = `round(0,5 × wage × semanas restantes)` (dias até `until` / 7, para cima),
   linha `staff` com `ref.stage = "severance"` (`recordMoney`; extrato = saldo; `ledgerText` → `staffSeverance`); o
   profissional volta à lista de livres. Olheiro de campo: a missão dele é cancelada.
 - **Renovação** (`staffContractDay`, `src/Domain/staff/staffContracts.ts`, no avanço do dia do clube humano): quem
-  passou do `until` sai para a lista (`staff_left`, qualquer dia); toda segunda, a ≤ 60 dias do fim, uma decisão por
-  contrato:
+  passou do `until` sai para a lista (`staff_left`, qualquer dia; olheiro de campo leva a missão,
+  `cancelScoutMissions`); toda segunda, a ≤ 60 dias do fim, uma decisão por contrato:
   - diretor responsável (`directorHandlesContracts`, `responsibilities.md`): renova por 2 anos se estrelas ≥ implícitas
     do tier − 0,5 e idade < 66, salário = o maior entre o atual e a curva de hoje (`staff_renewed`); senão `decision:
     "leave"` (`staff_leaving`);
-  - técnico responsável: aviso `staff_expiring` (`decision: "warned"`), renovação na tela.
+  - técnico responsável: aviso `staff_expiring` (`decision: "warned"`), renovação na tela. O aviso não trava: se o
+    diretor passa a responder pelos contratos, ele decide esse contrato na segunda seguinte. `decision: "leave"`
+    (do diretor) é definitiva.
+- **Envelhecimento** (`ageStaff`, na virada do país do clube do jogador, no mesmo ponto do `refreshPool`): toda a
+  comissão +1 ano; quem chega a `STAFF.POOL.RETIRE_AGE` (68) se aposenta: sai sem multa, não volta à lista, libera as
+  áreas, mensagem `staff_retired`.
 - **Renovar na tela** (`POST /staff/renew { memberId, years }`): `years` a mais a partir do `until`, total ≤ 3
   temporadas a partir do fim desta (400 `tooManyYears`); sempre aceita.
-- Mensagens `contract` / `staff_expiring | staff_renewed | staff_leaving | staff_left` (`staff: [{ id, name, role }]`,
+- Mensagens `contract` / `staff_expiring | staff_renewed | staff_leaving | staff_left | staff_retired` (`staff: [{ id, name, role }]`,
   `players` vazio), tópico `contracts`, gravadas depois do `clearInbox`.
 - **Comissão inicial** (`initialStaff`, `createSave` e `takeOverClub`): uma de cada função e treinadores até o limite,
   estrelas = implícitas do tier ± 0,5, contratos de 1, 2 ou 3 anos sorteados (a primeira virada já tem renovações), sem
@@ -80,15 +88,21 @@ tier cair, ninguém é demitido.
 
 ## Lista de livres (`src/Domain/staff/staffPool.ts`)
 
-- `saves/{id}/staffPool.json` = `{ season, members }` (sem contrato, com `since`), DAL `readStaffPool`/`writeStaffPool`
-  (bufferizado). Gerada no `createSave` e, se faltar, na primeira leitura (`SaveService.getStaffPool`).
+- `saves/{id}/staffPool.json` = `{ season, refreshedOn, members }` (sem contrato, com `since`), DAL
+  `readStaffPool`/`writeStaffPool` (bufferizado). Gerada no `createSave` e, se faltar, na primeira leitura
+  (`SaveService.getStaffPool`; a rota `GET /staff/pool` lê sob `withSaveLock`).
 - 300 profissionais determinísticos por save (coach 90, assistant 30, fitness 30, goalkeeping 30, medic 25, analyst
   25, scout 20, fieldScout 35, groundskeeper 15); estrelas 1–2★ 30%, 2,5–3★ 40%, 3,5–4★ 22%, 4,5–5★ 8%.
 - Na virada do país do clube do jogador (`refreshPool`): sai quem tem 68+ e 1/3 dos que estão há mais tempo; entram
-  novos até 300 (semente `save:temporada`); todos envelhecem 1 ano. Demitidos e contratos encerrados voltam com
+  novos até 300 (semente `save:temporada`, ids com a data); todos envelhecem 1 ano. Uma vez por data de virada
+  (`refreshedOn`; a geração grava o dia): numa troca entre ligas de calendários diferentes, a virada do país do clube
+  novo renova mesmo com o mesmo rótulo de temporada. Demitidos e contratos encerrados voltam com
   `since` = data.
 
 ## Rotas (`src/backend/staffRoutes.ts`, dono do save; escrita com `withSaveLock`; sem clube → 409 `noClub`)
+
+Contratar e demitir gravam elenco, extrato, lista e olheiros num `BufferingSaveDAL` por requisição (`inUnit`), com o
+flush no fim (nada é gravado numa resposta de erro).
 
 | Rota | Faz |
 |---|---|
@@ -107,15 +121,17 @@ Os mercados semanais (`staffMarket`, `fieldScoutMarket`, `/staff/market`, `/staf
   cartões por grupo (Comando; Treino; Saúde e análise; Olheiros; Estrutura) com `StaffStars`, idade, contrato ("até
   05/2028 · €12,300/sem") e o efeito em uma linha; vaga = cartão tracejado "Vago" + "Buscar"
   (→ `/transfers?tab=staff&role=`). Quadro **Áreas de treino** (`Staff/TrainingAreasPanel.tsx`, `TABLE_STYLE`): as 7
-  áreas, responsável (seletor do treinador nas 5 de campo, "Automático · nome"), estrelas e ritmo (vaga em
-  `text-destructive`). Ficha (`Staff/StaffDetailModal.tsx`): 5 atributos em barras 1–20, estrelas por área, contrato,
+  áreas, responsável (seletor do treinador nas 5 de campo, "Automático · nome"; um treinador que já cuida de 2 áreas
+  manuais aparece desligado, "Nome · já cuida de 2 áreas"), estrelas e ritmo (vaga em `text-destructive`). Ficha (`Staff/StaffDetailModal.tsx`; nacionalidade traduzida por `nationalityDisplayName`, `src/Domain/world/labels.ts`): 5 atributos em barras 1–20, estrelas por área, contrato,
   **Renovar** (1/2/3 anos, só os que a rota aceita, com o salário novo) e **Demitir** (confirmação com a multa). Rodapé
   com a folha e "Buscar profissionais".
 - **Transferências → aba Comissão** (`?tab=staff&role=`, `Transfers/StaffPoolTab.tsx`): filtros de função, estrelas
   mínimas, salário máximo, ordenação; tabela com nome (abre a ficha), função, idade, estrelas, "forte em", salário
-  pedido; "Contratar" abre `HireStaffModal` (anos, salário congelado, uso do limite; cheio ou sem clube → desligado com
+  pedido (o filtro de salário busca 300 ms depois da digitação); "Contratar" abre `HireStaffModal` (anos, salário congelado, uso do limite; cheio ou sem clube → desligado com
   o motivo). A faixa da janela de transferências não aparece nessa aba (a comissão não depende dela).
-- **Central de Olheiros:** chefe e olheiros de campo em estrelas; "Buscar olheiros" → aba Comissão.
+- **Central de Olheiros:** chefe e olheiros de campo em estrelas; "Buscar olheiros" → aba Comissão. Dispensar um
+  olheiro de campo (aba Missões) confirma com a multa de hoje (`severance` em `GET /scouting`) e mostra o erro real
+  da rota. Na segunda, `scoutingDay` descarta missões de quem não é o chefe nem um olheiro de campo atual.
 - **Finanças:** projeção semanal = soma dos contratos; extrato com "Multa da comissão" (`staffSeverance`).
 - **Rostos (31b):** cartão (48px), ficha (64px) e lista de livres (32px) com o rosto `facesjs` do profissional (`StaffFace`, `GET /api/faces/person/:id.svg`, idade e nacionalidade; camisa do clube, neutra na lista). Ver `.claude/rules/ui-world.md` → "Rostos da comissão e dos técnicos".
 - `StaffStars` (`Staff/StaffStars.tsx`): 5 ícones `star` / `star-half` / `star-filled` (via `Icons.tsx`) e o número.
