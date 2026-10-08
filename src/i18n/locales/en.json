@@ -892,6 +892,23 @@
       "medium": "medium",
       "severe": "severe"
     },
+    "heatmap": {
+      "title": "Possession map",
+      "team": "Team",
+      "period": "Period",
+      "mine": "My team",
+      "opponent": "Opponent",
+      "recent": "Last 10 min",
+      "all": "Whole match",
+      "aria": "Where the ball was with {{team}} ({{window}})",
+      "attack": "Attacking direction",
+      "empty": "No possession yet"
+    },
+    "liveTactics": {
+      "hint": "Change the style and the team instructions for this match only. Your saved tactics do not change.",
+      "mentalityNote": "The mentality (match bar) still applies on top.",
+      "reset": "Back to saved tactics"
+    },
     "summary": {
       "title": "Summary",
       "possession": "Possession",
@@ -2048,7 +2065,8 @@
     "selectBench": "Tap a player on the bench →",
     "cancelSelection": "Cancel selection",
     "changeFormationHint": "Change formation mid-match. Players keep their positions and adapt to the new shape.",
-    "tabInstructions": "Instructions"
+    "tabInstructions": "Instructions",
+    "tabTactics": "Tactics"
   },
   "scoreBar": {},
   "matchOverlay": {
