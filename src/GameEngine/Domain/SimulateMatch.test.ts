@@ -121,7 +121,8 @@ describe("simulateMatch goal log (season awards)", () => {
   test("one entry per goal, with minute, shot point and a scorer of the match", () => {
     const squad = loadSquad("33.json");
     let goalsSeen = 0;
-    for (let i = 0; i < 4; i++) {
+    // Goalless runs happen (and the engine has no seed): keep simulating until some goals were checked.
+    for (let i = 0; i < 12 && (i < 4 || goalsSeen === 0); i++) {
       const r = simulateMatch(squad, loadSquad("34.json"), undefined, undefined, undefined, undefined, { knockout: true });
       expect(r.goals.length).toBe(r.score.A + r.score.B);
       const ids = new Set([...r.players.map((p) => p.id), ...r.substitutions.map((s) => s.playerOutId), ...r.injuries.map((x) => x.playerId), ...r.cards.map((c) => c.playerId)]);
