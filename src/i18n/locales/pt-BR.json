@@ -535,7 +535,8 @@
     "main": "Navegação principal",
     "vsOpponent": "vs {{opponent}}",
     "changelog": "Novidades",
-    "dashboard": "Painel"
+    "dashboard": "Painel",
+    "club": "Clube"
   },
   "settings": {
     "language": "Idioma",
@@ -2017,7 +2018,8 @@
     "rotationApplied": "O assistente poupou {{count}} jogadores",
     "rotationUndo": "Desfazer",
     "suspendedReplaced": "{{out}} suspenso, substituído por {{in}}",
-    "expectedCrowd": "Público esperado"
+    "expectedCrowd": "Público esperado",
+    "pitch": "Gramado"
   },
   "matchResult": {
     "matchdayRound": "Rodada {{round}} • {{competition}}",
@@ -2524,6 +2526,10 @@
     "noClub": {
       "main": "Sem",
       "accent": "Clube"
+    },
+    "club": {
+      "main": "Seu",
+      "accent": "Clube"
     }
   },
   "jobs": {
@@ -2873,7 +2879,8 @@
       "busy": "Já há uma obra em andamento.",
       "maxLevel": "Já está no nível máximo.",
       "noClub": "Você está sem clube.",
-      "error": "Algo deu errado."
+      "error": "Algo deu errado.",
+      "invalidRequest": "Esse pedido não é possível para este item."
     },
     "kind": {
       "stand": "Ampliação de setor",
@@ -2915,14 +2922,18 @@
       "none": "Nenhuma obra em andamento.",
       "stand": "Setor {{stand}} +{{seats}} lugares",
       "level": "{{what}} nível {{level}}",
-      "delivery": "entrega {{date}}"
+      "delivery": "entrega {{date}}",
+      "item": "{{what}}: {{item}}"
     },
     "inbox": {
       "subject": {
         "approved": "Obra aprovada: {{what}}",
         "refused": "Obra recusada: {{what}}",
         "completed": "Obra concluída: {{what}}",
-        "attendance_record": "Novo recorde de público"
+        "attendance_record": "Novo recorde de público",
+        "worn": "Desgastado: {{what}}",
+        "condemned": "Interditado: {{what}}",
+        "repaired": "Obra concluída: {{what}}"
       },
       "approved": "A diretoria aprovou {{what}} ({{cost}}). Pronta em {{date}}; paga em parcelas mensais.",
       "approvedFunded": "A diretoria aprovou {{what}} ({{cost}}) e paga {{pct}}% com verba própria. Pronta em {{date}}; paga em parcelas mensais.",
@@ -2930,7 +2941,11 @@
       "completed": "{{what}}: obra concluída.",
       "attendance_record": "{{attendance}} torcedores: novo recorde de público em casa (o anterior era {{previous}}).",
       "standWhat": "o setor {{stand}} (+{{seats}} lugares)",
-      "levelWhat": "{{what}} nível {{level}}"
+      "levelWhat": "{{what}} nível {{level}}",
+      "worn": "{{what}} caiu para {{condition}}% e começa a custar ao clube. Reforme na tela Clube.",
+      "condemned": "{{what}} caiu para {{condition}}% e foi interditado. Só a reconstrução o recupera.",
+      "repaired": "{{what}} voltou a {{condition}}%.",
+      "upgraded": "{{what}} agora é nível {{level}} de 10, a 100%."
     },
     "item": {
       "stadiumPitch": "Gramado do estádio",
@@ -2943,6 +2958,48 @@
       "canteen": "Refeitório",
       "academyPitches": "Campos da base",
       "academyLodging": "Alojamento da base"
+    },
+    "attention": {
+      "worn": "{{item}} em {{pct}}%: começa a custar ao clube",
+      "condemned": "{{item}} interditado: reconstrua"
+    },
+    "items": {
+      "title": "Instalações em detalhe",
+      "about": "Todo item se desgasta com o tempo, os jogos e os treinos. Abaixo de 40% custa ao clube; abaixo de 15% fica interditado até a reconstrução.",
+      "group": {
+        "stadium": "Estádio",
+        "training": "Centro de treinamento",
+        "academy": "Base"
+      },
+      "item": "Item",
+      "level": "Nível",
+      "levelOf": "{{level}} de 10",
+      "condition": "Condição",
+      "actions": "Obras",
+      "condemned": "Interditado",
+      "repair": "Reformar",
+      "rebuild": "Reconstruir",
+      "upgrade": "Melhorar",
+      "to": "Até {{pct}}%",
+      "full": "Já está em perfeito estado",
+      "onlyRebuild": "Interditado: só a reconstrução o recupera",
+      "rebuildBelow": "Só abaixo de 15% (ou interditado)",
+      "aboutRepair": "Recupera parte da condição; o nível fica.",
+      "aboutRebuild": "Refeito do zero no mesmo nível, de volta a 100%.",
+      "aboutUpgrade": "Um nível acima (nível {{level}} de 10), entregue a 100%.",
+      "paidByClub": "Pago pelo clube agora (reforma pequena).",
+      "confirmPay": "Pagar e começar"
+    },
+    "effect": {
+      "matchInjury": "Lesões nos jogos em casa {{pct}}",
+      "demand": "Demanda de público {{pct}}",
+      "price": "Preço do ingresso {{pct}}",
+      "trainingInjury": "Lesões no treino {{pct}}",
+      "trainingDev": "Evolução no treino {{pct}}",
+      "recovery": "Recuperação diária {{pct}}",
+      "injuryDays": "Dias fora por lesão {{pct}}",
+      "intakeQuality": "Nível da safra {{value}}",
+      "promise": "Chance de promessa {{pct}}"
     }
   },
   "transferWindows": {

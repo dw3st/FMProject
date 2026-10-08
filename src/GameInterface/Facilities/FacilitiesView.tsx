@@ -13,11 +13,13 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
+import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
 
 /**
- * Finances → Facilities (`.claude/rules/game/facilities.md`): the stadium drawn from above (stands
+ * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
  * coloured by occupancy), the expansion panel, attendance per home game against capacity and
- * demand, training ground and academy cards, works in progress. Every request goes to the board.
+ * demand, training ground and academy cards, the ten items in detail, works in progress. Every
+ * request goes to the board, except a small repair (paid by the club).
  */
 export function FacilitiesView({
   saveId, squadId, fixtures, leagues, currentDate,
@@ -128,6 +130,8 @@ export function FacilitiesView({
           />
         </section>
       </div>
+
+      <FacilityItemsPanel data={data} pending={pending} onAsk={ask} />
 
       <ProjectsList data={data} nf={nf} />
     </div>
@@ -443,8 +447,12 @@ function OutcomeNotice({ outcome, onClose }: { outcome: { kind: FacilityKind; re
   const { t } = useTranslation();
   const r = outcome.result;
   const ok = r.approved;
+  const what = r.approved && r.project.item
+    ? `${t(`facilities.kind.${outcome.kind}`)}: ${t(`facilities.item.${r.project.item}`)}`
+    : t(`facilities.kind.${outcome.kind}`);
   const text = r.approved
-    ? t("facilities.outcome.approved", { what: t(`facilities.kind.${outcome.kind}`), date: r.project.end })
+    ? t("facilities.outcome.approved", { what, date: r.project.end })
+      + (r.paidByClub ? ` ${t("facilities.items.paidByClub")}` : "")
       + (r.boardShare > 0 ? ` ${t("facilities.preview.funded", { pct: Math.round(r.boardShare * 100) })}` : "")
     : t(`facilities.reason.${r.reason}`);
   return (
@@ -553,9 +561,12 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
         <p className="text-sm text-muted-foreground m-0">{t("facilities.projects.none")}</p>
       ) : projects.map((p) => {
         const progress = projectProgress(p, data.date);
+        const paidNow = p.boardShare === 0 && p.instalments === 1 && p.paid === 1 && p.item !== undefined;
         const what = p.kind === "stand"
           ? t("facilities.projects.stand", { stand: t(`facilities.stand.${p.stand}`), seats: nf(p.seats ?? 0) })
-          : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
+          : p.item
+            ? t("facilities.projects.item", { what: t(`facilities.kind.${p.kind}`), item: t(`facilities.item.${p.item}`) })
+            : t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
         return (
           <div key={p.id} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -563,6 +574,7 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
               <span className="text-sm text-muted-foreground tabular-nums">
                 {t("facilities.projects.delivery", { date: p.end })} · {formatEuros(p.cost)}
                 {p.boardShare > 0 ? ` · ${t("facilities.preview.funded", { pct: Math.round(p.boardShare * 100) })}` : ""}
+                {paidNow ? ` · ${t("facilities.items.paidByClub")}` : ""}
               </span>
             </div>
             <div className="flex items-center gap-3">

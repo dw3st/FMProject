@@ -17,8 +17,6 @@ import type { LedgerEntry, LedgerKind } from "@/Domain/finance/ledger";
 import { describeLedgerEntry } from "@/Domain/finance/ledgerText";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { formatEuros } from "@/Domain/money";
-import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
-import { FacilitiesView } from "@/GameInterface/Facilities/FacilitiesView";
 import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
 import { facilitiesGate, seasonFraction } from "@/Domain/facilities/facilities";
 
@@ -82,9 +80,10 @@ export function FinancesScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
-  // Tabs: overview | facilities (`.claude/rules/game/facilities.md`); `?tab=facilities` opens it.
-  const [tab, setTab] = useState<"overview" | "facilities">(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "facilities" ? "facilities" : "overview");
+  // The facilities moved to the Club screen (#120): old `/finances?tab=facilities` links go there.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "facilities") window.location.replace("/club");
+  }, []);
   // Attendance-based gate of the coming home games (the same model the server uses).
   const { data: facilitiesData } = useFacilities(session?.saveId, session?.currentDate ?? null);
 
@@ -218,26 +217,6 @@ export function FinancesScreen() {
         >
           {t("screenTitles.finances.main")}
         </ScreenTitle>
-
-        <SegmentedTabs
-          tabs={[
-            { key: "overview", label: t("financesScreen.tabOverview") },
-            { key: "facilities", label: t("financesScreen.tabFacilities") },
-          ]}
-          active={tab}
-          onChange={(k) => setTab(k)}
-          aria-label={t("screenTitles.finances.main")}
-        />
-
-        {tab === "facilities" ? (
-          <FacilitiesView
-            saveId={session.saveId}
-            squadId={squad?.id ?? session.clubId}
-            fixtures={fixtures}
-            leagues={leagues}
-            currentDate={session.currentDate ?? null}
-          />
-        ) : (<>
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -469,7 +448,6 @@ export function FinancesScreen() {
             </div>
           )}
         </div>
-        </>)}
     </ScreenContainer>
   );
 }

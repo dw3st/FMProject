@@ -3,6 +3,7 @@
  * the player's club, the attention list, season highlights and the week's money. No I/O, no React —
  * the screen fetches and renders, these functions only shape what it already has.
  */
+import type { FacilityItemId } from "@/types/facilityTypes";
 import { moraleAttention } from "@/Domain/morale/morale";
 import { daysBetween } from "@/Domain/dates";
 import { WINDOWS } from "@/Domain/market/windowConfig";
@@ -100,7 +101,8 @@ export type AttentionItem =
   | { kind: "managerRenewal" }
   // Etapa 28 (`.claude/rules/game/scouting.md`): a gem found / a shortlist alert in the last 7 days.
   | { kind: "scoutGem"; name: string; club: string }
-  | { kind: "shortlistAlert"; name: string; reason: ShortlistReason };
+  | { kind: "shortlistAlert"; name: string; reason: ShortlistReason }
+  | { kind: "facilityWorn"; item: FacilityItemId; condemned: boolean; condition: number };
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
 const ATTENTION_GROUP_AFTER = 3;
@@ -180,6 +182,15 @@ export function attentionItems(input: {
     if (m.category !== "scouting" || daysBetween(m.date, today) > SCOUTING_ATTENTION_DAYS) continue;
     if (m.kind === "gem") items.push({ kind: "scoutGem", name: m.playerName ?? "", club: m.clubName ?? "" });
     else if (m.kind === "shortlist" && m.reason) items.push({ kind: "shortlistAlert", name: m.playerName ?? "", reason: m.reason });
+  }
+
+  // Facility items that fell below 40% (or were condemned) in the last week (`facilities.md`).
+  const seen = new Set<string>();
+  for (const m of inbox) {
+    if (m.category !== "facilities" || (m.kind !== "worn" && m.kind !== "condemned") || !m.item) continue;
+    if (daysBetween(m.date, today) > SCOUTING_ATTENTION_DAYS || seen.has(m.item)) continue;
+    seen.add(m.item);
+    items.push({ kind: "facilityWorn", item: m.item, condemned: m.kind === "condemned", condition: m.condition ?? 0 });
   }
 
   return items;

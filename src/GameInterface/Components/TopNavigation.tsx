@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { icon: "home", labelKey: "nav.dashboard",   href: "/dashboard" },
   // `/squad` is a prefix: the real link is the player's own club (see `hrefOf`).
   { icon: "squad", labelKey: "nav.squad",       href: "/squad" },
+  { icon: "building", labelKey: "nav.club",     href: "/club" },
   { icon: "formation", labelKey: "nav.formation",   href: "/formation" },
   { icon: "trend-up", labelKey: "nav.development", href: "/development" },
   { icon: "finances", labelKey: "nav.finances",    href: "/finances" },
