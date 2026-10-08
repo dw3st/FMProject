@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
+import { createMatchState, changeFormation, isLivePhase, matchMinute, PRESENTATION_DURATION, applyTeamInstructions, applyPlayerInstruction, setManMarks, setManMarksBySlot, swapPlayerPositions } from "@/GameEngine/Domain/gameState";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDebugMode } from "@/GameEngine/Support/DebugLog";
@@ -815,6 +815,11 @@ export function MatchScreen() {
     });
   }
 
+  /** Two starters swap positions (#115): no substitution used, only this match. */
+  function handleSwapPositions(aId: number, bId: number) {
+    setGameState((prev) => (prev ? swapPlayerPositions(prev, "A", aId, bId) : prev));
+  }
+
   /** Live instruction change (player instructions): only this match, never saved. */
   function handleInstruction(slot: number, instruction: SlotInstruction | null) {
     setGameState((prev) => (prev ? applyPlayerInstruction(prev, "A", slot, instruction) : prev));
@@ -1218,6 +1223,7 @@ export function MatchScreen() {
           playerTeam="A"
           ratings={ratings}
           onQueueSub={handleQueueSub}
+          onSwapPositions={handleSwapPositions}
           onChangeFormation={handleChangeFormation}
           onInstruction={handleInstruction}
           onManMarks={handleManMarks}

@@ -1238,6 +1238,63 @@ export function changeFormation(
   });
 }
 
+// ── Swap two starters' positions mid-match (#115) ─────────────────────────────
+
+/**
+ * Two outfield starters of `team` swap slots (e.g. invert the wingers) without using a
+ * substitution. Each takes the other's slot index, role, anchor and bounds, as on a formation
+ * change; the slot keeps its instruction and man-marking (they belong to the slot). Energy, pitch
+ * position and attributes stay — the engine stats are rebuilt for the new role with the
+ * out-of-position factor, as for a substitute entering that slot. Goalkeepers, the same player,
+ * players not on the pitch or of another team are refused (the state comes back unchanged).
+ */
+export function swapPlayerPositions(state: GameState, team: TeamId, idA: number, idB: number): GameState {
+  if (idA === idB) return state;
+  const a = state.players.find(p => p.id === idA && p.team === team);
+  const b = state.players.find(p => p.id === idB && p.team === team);
+  if (!a || !b || a.role === 'GK' || b.role === 'GK' || a.slotIndex < 0 || b.slotIndex < 0) return state;
+  const formation = team === 'A' ? state.formationA : state.formationB;
+  const instructions = state.slotInstructions?.[team];
+
+  const moveTo = (p: GamePlayer, slotIndex: number): GamePlayer => {
+    const slotDef = formation.attacking[slotIndex];
+    if (!slotDef) return p;
+    const role = slotDef.role;
+    const setup = slotSetup(slotDef, slotIndex, p.attackDir, formation, instructions?.[slotIndex]);
+    const baseStats = p.fit
+      ? teamLineup(scaleStats(p.fit.stats, factorFromAptitudes(p.fit.aptitudes, role)), role)
+      : p.baseStats;
+    const next: GamePlayer = {
+      ...p,
+      role,
+      slotIndex,
+      basePosition:    setup.basePosition,
+      bounds:          setup.bounds,
+      ballSupportScale: roleEngine(role).ballSupportScale,
+      baseStats,
+      runtimeStats:    getRuntimeLineup(baseStats, { energy: p.energy }),
+      fatigueBaselineEnergy: p.energy,
+      decisionMemory:  EMPTY_DECISION_MEMORY,
+    };
+    delete next.engine;
+    delete next.instruction;
+    delete next.manMarkTargetId;
+    if (setup.engine) next.engine = setup.engine;
+    if (setup.instruction) next.instruction = setup.instruction;
+    return next;
+  };
+
+  const nextA = moveTo(a, b.slotIndex);
+  const nextB = moveTo(b, a.slotIndex);
+  debugLog('instruction', `${a.name} (${a.role}) <-> ${b.name} (${b.role})`, {
+    playerId: a.id, data: { swappedWith: b.id, slots: [a.slotIndex, b.slotIndex] },
+  });
+  gameBus.emit('positionsSwapped', { team, aId: a.id, bId: b.id });
+  const players = state.players.map(p => (p.id === a.id ? nextA : p.id === b.id ? nextB : p));
+  // The marking pairs follow the slot: re-resolve the marker ids and the `manMarkTargetId` flags.
+  return refreshManMarks({ ...state, players });
+}
+
 // ── Player instructions (Etapa 27, `.claude/rules/game/player-instructions.md`) ──
 
 /**

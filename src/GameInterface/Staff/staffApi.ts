@@ -62,9 +62,15 @@ export async function staffCall<T>(url: string, method: "GET" | "POST" | "PUT" =
   }
 }
 
-/** `×1,06` in the user's language. */
-export function formatMult(n: number, lang: string): string {
-  return `×${n.toLocaleString(lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/**
+ * A multiplier as the change against an average professional (3 stars, ×1): `×1,06` → `+6%`,
+ * `×0,92` → `−8%`, ×1 (rounded) → `noEffect` ("no effect"). The sign is the change of the quantity
+ * itself, so the label says whether more is better (development) or worse (injury duration).
+ */
+export function formatEffect(mult: number, lang: string, noEffect: string): string {
+  const pct = Math.round((mult - 1) * 100);
+  if (pct === 0) return noEffect;
+  return `${pct > 0 ? "+" : "−"}${Math.abs(pct).toLocaleString(lang)}%`;
 }
 
 /** `12/2028`: month and year of a contract end. */

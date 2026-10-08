@@ -20,15 +20,19 @@ O posicionamento estático por formação (layouts de `SetPieceLayouts.ts`) cont
 
 ## Cobradores (§4)
 
-- `TacticsSave.setPieceTakers?: { corners?, freeKicks?, penalties? }` (ids de jogador). Tela de táticas:
-  um seletor por função, padrão **Automático**. A rota `PUT /api/saves/:id/tactics` aceita
-  `setPieceTakers` (`null`/`""` = automático; chave desconhecida ou tipo errado → 400).
+- `TacticsSave.setPieceTakers?: { corners?, freeKicks?, penalties? }`, cada função uma lista de **até 3**
+  ids de jogador em ordem de preferência (#116, 4.13). Tela de táticas (`SetPieceTakersPanel`): três
+  seletores por função (1, 2, 3; vazio = **Automático**; o 2º só abre com o 1º escolhido; um jogador já
+  escolhido na função não aparece de novo). A rota `PUT /api/saves/:id/tactics` valida com
+  `parseSetPieceTakers` (`MAX_TAKERS_PER_DUTY`): `null`/lista vazia = automático, `""` é descartado;
+  chave desconhecida, valor que não é lista, mais de 3, id não string/longo ou jogador repetido → 400.
+  O mesmo jogador pode estar em funções diferentes. Sem migração: o formato antigo (um id) é 400.
 - Chega ao motor por `GameState.setPieceTakers` (`{ A?, B? }`, ids de elenco): `simulateMatch`
   (`TeamTactics.setPieceTakers`, vindo de `computeMatchSimulationLineups` só para o lado do jogador) e
   a partida ao vivo (`MatchScreen`, time A). **A IA nunca define cobradores.**
-- `pickSetPieceTaker(duty, jogadoresEmCampo, escolhido?)`: o escolhido se estiver em campo; senão o
-  melhor jogador de linha por `setPieceTakerScore` — escanteio = (passe + visão) / 2, falta e pênalti =
-  finalização (`shootAccuracy`). Escolhido fora de campo (lesão, expulsão, banco) → automático.
+- `pickSetPieceTaker(duty, jogadoresEmCampo, escolhidos?)`: o primeiro dos escolhidos (em ordem) que
+  estiver em campo; nenhum em campo (lesão, expulsão, banco) → o melhor jogador de linha por
+  `setPieceTakerScore` — escanteio = (passe + visão) / 2, falta e pênalti = finalização (`shootAccuracy`).
 - Usado no escanteio, na falta direta / cruzada e no pênalti. Falta rápida (fora da zona) continua
   com o jogador mais perto.
 

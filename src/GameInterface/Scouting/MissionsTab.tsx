@@ -20,7 +20,7 @@ import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
 import { ScoutCountriesModal } from "@/GameInterface/Scouting/ScoutCountriesModal";
 import { KnowledgeBar } from "@/GameInterface/Scouting/KnowledgeBar";
 import { countryBand, countryGainMult } from "@/Domain/scouting/countryKnowledge";
-import { formatMult } from "@/GameInterface/Staff/staffApi";
+import { formatEffect } from "@/GameInterface/Staff/staffApi";
 import countriesRaw from "@/Data/countries.json";
 
 const CONTINENT_OF = new Map(Object.values(countriesRaw as Record<string, { name: string; continent?: string }>).map((c) => [c.name, c.continent ?? ""]));
@@ -297,7 +297,7 @@ function NewMissionModal({
               <KnowledgeBar value={targetK} />
               <span className="text-muted-foreground">{t(`scoutCountries.band.${countryBand(targetK)}`)}</span>
               <span className="tabular-nums text-muted-foreground">
-                {t("scoutCountries.pace", { mult: formatMult(countryGainMult(targetK), i18n.language) })}
+                {t("scoutCountries.pace", { value: formatEffect(countryGainMult(targetK), i18n.language, t("staff.noEffect")) })}
               </span>
             </div>
           </div>

@@ -35,7 +35,7 @@ export function StaffCard({ member, effect, onOpen, clubColors }: { member: Staf
           {leaving ? ` · ${t("staff.leaving")}` : ""}
         </p>
       )}
-      <p className="text-sm text-muted-foreground m-0">{effect}</p>
+      <p className="text-sm text-muted-foreground m-0 tabular-nums" title={t("staff.effectsHelp")}>{effect}</p>
       {member.strongCountry && <StrongCountry country={member.strongCountry.country} k={member.strongCountry.k} />}
     </button>
   );

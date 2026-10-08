@@ -2,8 +2,8 @@
  * SetPieces — pure decision-side logic of the set pieces (Etapa 14,
  * `.claude/rules/game-engine/set-pieces-play.md`):
  *
- *   - Takers: automatic pick by attribute (corners = delivery, free kicks / penalties = finishing),
- *     or the user's choice when that player is on the pitch.
+ *   - Takers: the first of the user's up-to-3 choices who is on the pitch, else the automatic pick
+ *     by attribute (corners = delivery, free kicks / penalties = finishing).
  *   - Direct free kick: range/angle test, xG before the wall, wall size and spots.
  *   - Box set pieces (corner, crossed free kick): where both teams stand, and the taker's
  *     delivery options (near post / penalty spot / far post / short).
@@ -40,13 +40,14 @@ export function setPieceTakerScore(duty: SetPieceDuty, p: GamePlayer): number {
 }
 
 /**
- * Taker for `duty` among `pool` (one team's players on the pitch): the chosen player when he is in
- * the pool, else the best outfielder by `setPieceTakerScore` (ties: lowest slot index).
+ * Taker for `duty` among `pool` (one team's players on the pitch): the first of the manager's
+ * preferred takers (up to 3, in order) who is in the pool, else the best outfielder by
+ * `setPieceTakerScore` (ties: lowest slot index).
  */
-export function pickSetPieceTaker(duty: SetPieceDuty, pool: GamePlayer[], preferredRosterId?: string): GamePlayer | null {
+export function pickSetPieceTaker(duty: SetPieceDuty, pool: GamePlayer[], preferredRosterIds?: readonly string[]): GamePlayer | null {
   if (pool.length === 0) return null;
-  if (preferredRosterId) {
-    const chosen = pool.find(p => p.rosterId === preferredRosterId);
+  for (const id of preferredRosterIds ?? []) {
+    const chosen = pool.find(p => p.rosterId === id);
     if (chosen) return chosen;
   }
   const outfield = pool.filter(p => p.role !== 'GK');

@@ -306,11 +306,11 @@ export interface MatchMarking {
   marks: MatchMark[];
 }
 
-/** Manager's set-piece takers per duty (player ids). Absent duty = automatic. */
+/** Manager's set-piece takers per duty: up to 3 player ids in order of preference. Absent duty = automatic. */
 export interface SetPieceTakersSave {
-  corners?:   string;
-  freeKicks?: string;
-  penalties?: string;
+  corners?:   string[];
+  freeKicks?: string[];
+  penalties?: string[];
 }
 
 export const DEFAULT_TACTICAL_STYLE: TacticalStyle = "balanced";

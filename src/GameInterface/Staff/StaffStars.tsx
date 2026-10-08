@@ -3,7 +3,9 @@ import { Icon } from "@/GameInterface/Icons";
 
 /**
  * Coaching-staff stars (`.claude/rules/game/staff.md`): five icons to the half star and the number
- * beside them. `stars` null = vacant (no one in the role or area).
+ * beside them. `stars` null = vacant (no one in the role or area). The number has a fixed width
+ * (`min-w-[3ch]`, "3" as wide as "3,5"), so the stars line up across rows even when the block is
+ * right-aligned or centred (#126).
  */
 export function StaffStars({ stars, size = 16, showNumber = true }: { stars: number | null; size?: number; showNumber?: boolean }) {
   const { t, i18n } = useTranslation();
@@ -19,7 +21,7 @@ export function StaffStars({ stars, size = 16, showNumber = true }: { stars: num
           </span>
         ))}
       </span>
-      {showNumber && <span className="text-sm font-semibold tabular-nums">{label}</span>}
+      {showNumber && <span className="inline-block min-w-[3ch] text-left text-sm font-semibold tabular-nums">{label}</span>}
     </span>
   );
 }
