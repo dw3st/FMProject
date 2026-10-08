@@ -22,6 +22,9 @@ import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import type { ClubFacilities, FacilityItemId, FacilityRequest, StandId } from "@/types/facilityTypes";
 import type { Squad } from "@/types/playerTypes";
+import { playerCupSlug } from "@/backend/cupWorld";
+import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { homeMatchImportance } from "@/backend/matchImportance";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -144,6 +147,37 @@ async function inUnit(saveId: string, fn: (service: SaveService) => Promise<Resp
   }
 }
 
+/**
+ * Big-match multiplier of each home game of the human club not played yet this season (league, cup,
+ * continental), by fixture id — the attendance chart. A league game against the leader uses today's
+ * leader (forecast only; the gate of the day uses the leader of that day).
+ */
+async function importanceByFixture(h: Human): Promise<Record<string, number>> {
+  const saveId = h.meta.id;
+  const clubId = h.squad.id;
+  const leagueSlug = h.meta.leagueSlug;
+  if (!leagueSlug) return {};
+  const cupSlug = await playerCupSlug(leagueSlug);
+  const continentalSlug = await playerContinentalSlug(saveService, saveId, clubId);
+  const slugs = [leagueSlug, cupSlug, continentalSlug].filter((x): x is string => !!x);
+  const fixtures = (await Promise.all(slugs.map((slug) => saveService.getAllFixturesForLeague(saveId, slug))))
+    .flat()
+    .filter((f) => f.home === clubId && !f.played && !f.neutral);
+  if (fixtures.length === 0) return {};
+  const standings = await saveService.getLeagueStandings(saveId, leagueSlug);
+  const cache = new Map<string, Promise<Squad | null>>([[clubId, Promise.resolve(h.squad)]]);
+  const squadOf = (id: string) => {
+    let p = cache.get(id);
+    if (!p) { p = saveService.getSquadById(saveId, id); cache.set(id, p); }
+    return p;
+  };
+  const out: Record<string, number> = {};
+  for (const f of fixtures) {
+    out[f.id] = (await homeMatchImportance(saveService, saveId, f, clubId, { leagueSlug, standings, squadOf })).mult;
+  }
+  return out;
+}
+
 async function facilitiesView(h: Human) {
   const f = h.squad.facilities!;
   const revenue = wageRevenueBasisOf(h.squad);
@@ -186,6 +220,8 @@ async function facilitiesView(h: Human) {
     items: itemsView(f, h.date, {
       board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, revenue, committed: committedSpend(f),
     }),
+    /** Big-match multiplier of each coming home game (`demandInput.importance` of that game). */
+    importanceByFixture: await importanceByFixture(h),
     quotes: {
       comfort: quoteProject(f, { kind: "comfort" }, ctx),
       training: quoteProject(f, { kind: "training" }, ctx),

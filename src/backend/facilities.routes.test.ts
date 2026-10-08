@@ -58,6 +58,13 @@ describe("facilities routes", () => {
     expect(Object.keys(start.facilities.items)).toHaveLength(10);
     expect(start.seatCost).toBeGreaterThanOrEqual(1500);
     expect(start.seatCost).toBeLessThanOrEqual(6000);
+    // Big-match multiplier: one key per home league game not played yet (cup/continental too), all in 1..1,3.
+    const leagueHome = (await saveService.getAllFixturesForLeague(saveId, "premier_league"))
+      .filter((f) => f.home === "33" && !f.played && !f.neutral);
+    const importance = start.importanceByFixture as Record<string, number>;
+    expect(leagueHome.length).toBeGreaterThan(0);
+    for (const f of leagueHome) expect(importance[f.id]).toBeGreaterThanOrEqual(1);
+    expect(Object.values(importance).every((v) => v >= 1 && v <= 1.3)).toBe(true);
 
     // Validation.
     expect((await call("/request", "POST", session.token, { kind: "stand", stand: "east", seats: 1500 })).status).toBe(400);

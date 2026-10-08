@@ -1861,6 +1861,16 @@ try {
     check(aiPairs > 0 && aiBad.length === 0,
       `instalações vivas: ${aiPairs} AI club(s) of a rolled league start the new season on a better pitch than they ended the old one (${aiBad.slice(0, 3).join("; ")})`);
     check(wearTrack.demandFacilities > 1, `instalações vivas: the demand route with the training ground at 20% has facilities ×${wearTrack.demandFacilities} > 1`);
+    // Big matches (Etapa 38): a home cup knockout tie draws more demand than the nearest ordinary
+    // league home game (x1.15 on the demand; fans and season phase move it a little).
+    const rows = f?.attendance ?? [];
+    const leagueRows = rows.filter((r) => !isCupSlug(r.competition) && !isContinentalSlug(r.competition));
+    const knockoutRows = rows.filter((r) => isCupSlug(r.competition));
+    const nearest = (date: string) => leagueRows.reduce<(typeof rows)[number] | null>((best, r) =>
+      !best || Math.abs(Date.parse(r.date) - Date.parse(date)) < Math.abs(Date.parse(best.date) - Date.parse(date)) ? r : best, null);
+    const higher = knockoutRows.filter((r) => { const n = nearest(r.date); return !!n && r.demand >= n.demand; });
+    if (knockoutRows.length === 0) console.log("  (instalações: no home cup tie in the run — big-match demand not checked)");
+    else check(higher.length > 0, `instalações: ${higher.length}/${knockoutRows.length} home cup tie(s) with demand ≥ the nearest league home game`);
   }
 
   console.log("\n── Fôlego ──");

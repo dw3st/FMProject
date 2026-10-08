@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   academyEffectsAt, advanceFacilities, attendanceOf, boardDecision, comfortPriceMult, demandOf,
-  effectiveCapacity, facilitiesGate, facilityLevels, initialFacilities, instalmentAmount, quoteProject,
+  effectiveCapacity, facilitiesGate, facilitiesMatchday, facilityLevels, initialFacilities, instalmentAmount, quoteProject,
   recordAttendance, seasonPhaseMult, seatCost, splitStands, standWeeks, startProject, totalSeats,
   trainingEffectsAt, weeklyUpkeep, withFacilities,
 } from "@/Domain/facilities/facilities";
@@ -48,6 +48,17 @@ describe("stadium", () => {
       }
     }
     expect(facilitiesGate(f, { followers: 2_000_000, tier: 1, fans: 60 }, "league", true)).toBe(0);
+  });
+
+  test("importance multiplies the demand; absent = unchanged; attendance never above capacity", () => {
+    const f = initialFacilities(squad(), 1);
+    const input = { followers: 2_000_000, tier: 1, fans: 60 };
+    expect(demandOf(f, { ...input, importance: 1 })).toBe(demandOf(f, input));
+    expect(demandOf(f, { ...input, importance: 1.2 })).toBeCloseTo(demandOf(f, input) * 1.2, 6);
+    const a = attendanceOf(f, { ...input, fans: 100, importance: 1.3 });
+    expect(a.attendance).toBeLessThanOrEqual(a.capacity);
+    const day = facilitiesMatchday(f, [{ competition: "cup_x", opponentId: "c2", importance: 1.2 }], "2027-03-01", input);
+    expect(day.attendance[0]).toBeCloseTo(Math.min(40000, demandOf(f, input) * 1.2), 6);
   });
 
   test("phase averages ~1 over the season", () => {

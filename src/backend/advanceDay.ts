@@ -77,6 +77,7 @@ import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/ad
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
 import { matchPitchCondition } from "@/Domain/facilities/pitch";
+import { homeMatchImportance } from "@/backend/matchImportance";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -408,7 +409,10 @@ export async function advanceOneDay(
     // The player's club home fixtures today, across every competition (league, cup, continental —
     // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
     // loop below processes each competition's rounds for the day.
-    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean; opponentId: string }> = [];
+    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean; opponentId: string; importance?: number }> = [];
+    // Big-match demand (derby, knockout — spec 2026-10-08-match-visual §6): the league table is read
+    // once, before today's games are played (the same table the board sees).
+    let importanceStandings: StandingRow[] | null | undefined;
 
     const tactics = await saveService.getTactics(saveId);
 
@@ -539,7 +543,18 @@ export async function advanceOneDay(
           const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
           if (fixture.home === playerSquadId) {
             const gateKind: GateKind = isContinentalSlug(leagueSlug) ? "continental" : isCupSlug(leagueSlug) ? "cup" : "league";
-            playerHomeFixturesToday.push({ competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true, opponentId: fixture.away });
+            if (importanceStandings === undefined) {
+              importanceStandings = meta.leagueSlug ? await saveService.getLeagueStandings(saveId, meta.leagueSlug) : null;
+            }
+            const importance = await homeMatchImportance(saveService, saveId, fixture, playerSquadId, {
+              leagueSlug: meta.leagueSlug ?? "",
+              standings: importanceStandings,
+              squadOf: async (id) => (id === homeSquad.id ? homeSquad : id === awaySquad.id ? awaySquad : saveService.getSquadById(saveId, id)),
+            });
+            playerHomeFixturesToday.push({
+              competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true, opponentId: fixture.away,
+              ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
+            });
           }
           const useRecording =
             playedMatchOverride !== null &&

@@ -51,6 +51,8 @@ export interface FacilitiesViewData {
   season: { start: string; end: string } | null;
   /** The ten items with their quotes. */
   items: FacilityItemView[];
+  /** Big-match multiplier (derby, knockout) of each coming home game, by fixture id; absent = 1. */
+  importanceByFixture?: Record<string, number>;
   quotes: { comfort: ProjectQuote | null; training: ProjectQuote | null; academy: ProjectQuote | null };
   effects: {
     training: { current: TrainingGroundEffects; next: TrainingGroundEffects };

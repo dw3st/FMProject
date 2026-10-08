@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.12",
+    date: "2026-10-08",
+    items: [
+      { pt: "A partida ganhou árbitro e bandeirinhas, os técnicos à beira do campo e animações de chute de longe, cabeçada e defesa", en: "Matches now show the referee and assistants, both managers on the touchline and animations for long shots, headers and saves" },
+      { pt: "Estádio em volta do campo, com a torcida dos dois times proporcional ao público do jogo", en: "A stadium around the pitch, with both sets of fans filling it in proportion to the crowd" },
+      { pt: "Clássicos e mata-matas de copa e continental atraem mais público no seu estádio", en: "Derbies and cup or continental knockout ties draw bigger crowds to your stadium" },
+    ],
+  },
+  {
     version: "4.11",
     date: "2026-10-08",
     items: [
@@ -1079,7 +1088,6 @@ export const CURRENT_VERSION = latest.version;
 export const upcoming: ChangelogText[] = [
   { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
-  { pt: "Partida com árbitros, técnicos à beira do campo e estádio com torcida", en: "Matches with referees, managers on the touchline and a stadium full of fans" },
   { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
   { pt: "Conquistas com recompensas para o seu perfil e o seu técnico", en: "Achievements with rewards for your profile and your manager" },
 ];

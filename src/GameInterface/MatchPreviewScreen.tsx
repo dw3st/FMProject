@@ -27,8 +27,6 @@ import { refereeFor, weatherIconName, weatherLabelKey } from "@/GameInterface/ma
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
 import { Player } from "@/Domain/Player";
-import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
-import { attendanceOf, seasonFraction } from "@/Domain/facilities/facilities";
 import { competitionName } from "@/Domain/world/labels";
 import { matchHeading } from "@/Domain/world/matchHeading";
 import { clearMatchSnapshot } from "@/GameInterface/matchResume";
@@ -592,6 +590,8 @@ interface MatchSetupData {
   matchMarking?: { date: string; marks: MarkPair[] } | null;
   /** Condition 0..100 of the pitch the match is played on (`src/Domain/facilities/pitch.ts`). */
   pitchCondition?: number | null;
+  /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
+  crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
 }
 
 export function MatchPreviewScreen() {
@@ -599,9 +599,6 @@ export function MatchPreviewScreen() {
   const [matchSetup, setMatchSetup] = useState<MatchSetupData | null>(null);
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [mySquadId, setMySquadId] = useState<string>("");
-  // Expected attendance (`.claude/rules/game/facilities.md`): only asked for a home game.
-  const homeGame = !!fixture && !!mySquadId && fixture.home === mySquadId && !fixture.neutral;
-  const { data: facilitiesData } = useFacilities(homeGame ? session?.saveId : undefined, session?.currentDate ?? null);
   const [opponentSquad, setOpponentSquad] = useState<Squad | null>(null);
   const [catalogLeagues, setCatalogLeagues] = useState<LeagueData[]>([]);
   // Static catalog lookups: club slug/name for any squadId.
@@ -959,13 +956,8 @@ export function MatchPreviewScreen() {
     ? t("cups.neutral")
     : homeGround?.venue?.name ?? (isHome ? `${session.clubName} Stadium` : "Away Ground");
   const pitch = typeof matchSetup?.pitchCondition === "number" ? matchSetup.pitchCondition : null;
-  const expectedCrowd = fixture && isHome && !fixture.neutral && facilitiesData
-    ? attendanceOf(facilitiesData.facilities, {
-        ...facilitiesData.demandInput,
-        ...(facilitiesData.season ? { fraction: seasonFraction(fixture.date, facilitiesData.season.start, facilitiesData.season.end) } : {}),
-        date: fixture.date,
-      })
-    : null;
+  // Expected attendance (`.claude/rules/game/facilities.md`): home games only, from match-setup.
+  const expectedCrowd = fixture && isHome && !fixture.neutral && matchSetup?.crowd?.known ? matchSetup.crowd : null;
   const competition = fixture
     ? competitionName(fixture.competition, catalogLeagues, i18n.language)
     : "Premier Division";

@@ -1,8 +1,8 @@
 import { shirtName } from "@/Domain/shirtName";
-import { useEffect, useRef } from "react";
-import { Application, CanvasSource, Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { useEffect, useRef, type MutableRefObject } from "react";
+import { Application, CanvasSource, Container, FillGradient, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, STADIUM, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
@@ -28,6 +28,14 @@ import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { mirrorX } from "@/GraficsEngine/pitchMirror";
+import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
+import { drawStand, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
+import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
+import { addAnim, animOffset, isLongShot, liveAnims, type PlayerAnim } from "@/GraficsEngine/playerAnims";
+import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
+import { seedFrom } from "@/Domain/rng";
+import type { TeamId } from "@/GameEngine/types";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
@@ -45,59 +53,6 @@ import type { GridMatrix } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { DEFAULT_EVAL_CONFIG } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { EvaluationConfig } from "@/GameEngine/Infrastructure/SpatialEvaluation";
 import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
-
-const PITCH_SPEC = {
-  lengthYds: PITCH_LENGTH,
-  widthYds: PITCH_WIDTH,
-  centreCircleRadiusYds: 10,
-  goalAreaDepthYds: 6,
-  goalAreaWidthYds: 18,
-  penaltyAreaDepthYds: 18,
-  penaltyAreaWidthYds: 44,
-  penaltySpotDistanceYds: 12,
-  cornerArcRadiusYds: 1,
-} as const;
-
-interface PitchMetrics {
-  scale: number;
-  width: number; height: number;
-  marginX: number; marginY: number;
-  centreCircleRadius: number;
-  goalAreaDepth: number; goalAreaWidth: number;
-  penaltyAreaDepth: number; penaltyAreaWidth: number;
-  penaltySpotDistance: number;
-  cornerArcRadius: number;
-  goalNetDepth: number;
-}
-
-function buildMetrics(canvasW: number, canvasH: number): PitchMetrics {
-  const goalNetDepthYds = 2;
-  const totalLengthYds = PITCH_SPEC.lengthYds + 2 * goalNetDepthYds;
-  const scale = Math.min(canvasW / totalLengthYds, canvasH / PITCH_SPEC.widthYds);
-
-  const netDepth = Math.round(goalNetDepthYds * scale);
-  const pitchW   = Math.round(PITCH_SPEC.lengthYds * scale);
-  const pitchH   = Math.round(PITCH_SPEC.widthYds  * scale);
-
-  const totalW      = pitchW + 2 * netDepth;
-  const outerMargin = Math.round((canvasW - totalW) / 2);
-
-  return {
-    scale,
-    width:  pitchW,
-    height: pitchH,
-    marginX: outerMargin + netDepth,
-    marginY: Math.round((canvasH - pitchH) / 2),
-    centreCircleRadius:  Math.round(PITCH_SPEC.centreCircleRadiusYds  * scale),
-    goalAreaDepth:       Math.round(PITCH_SPEC.goalAreaDepthYds        * scale),
-    goalAreaWidth:       Math.round(PITCH_SPEC.goalAreaWidthYds        * scale),
-    penaltyAreaDepth:    Math.round(PITCH_SPEC.penaltyAreaDepthYds     * scale),
-    penaltyAreaWidth:    Math.round(PITCH_SPEC.penaltyAreaWidthYds     * scale),
-    penaltySpotDistance: Math.round(PITCH_SPEC.penaltySpotDistanceYds  * scale),
-    cornerArcRadius:     Math.round(PITCH_SPEC.cornerArcRadiusYds      * scale),
-    goalNetDepth: netDepth,
-  };
-}
 
 /** Width of the team-colour ring around a player's face. */
 const MARKER_RING_W = 3;
@@ -318,7 +273,37 @@ interface Props {
    * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
    */
   mirror?: boolean;
+  /**
+   * Draw-time meter (/test): every PERF_SAMPLE_FRAMES frames gets `{ fps, drawMs }` (ticker FPS and
+   * the average time of the frame callback). Absent: no measuring at all.
+   */
+  perfRef?: MutableRefObject<PitchPerf | null>;
+  /**
+   * Stadium band with the crowd (spec 2026-10-08-match-visual §1–§2). Read at mount: switching it on
+   * or off needs a remount (put it in the `key`); `fill` / `homeTeam` / `neutral` / `seed` changes
+   * re-bake the crowd texture. Absent / null: the plain pitch.
+   */
+  stadium?: PitchStadium | null;
+  /** Referee, assistants and both managers on the touchline (§3–§4). Read at mount. */
+  officials?: boolean;
+  /** Managers' face (server URL) and club colour (CSS hex) per engine team; no face = a disc in the colour. */
+  coaches?: Partial<Record<TeamId, { faceUrl?: string; color: string }>>;
+  /** A new `seq` plays the gesture on that team's manager (the human's mentality change). */
+  coachCue?: { team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null;
 }
+
+export interface PitchStadium {
+  /** 0..1, attendance / capacity. */
+  fill: number;
+  /** Engine team of the home club (its fans fill most of the stand). */
+  homeTeam: TeamId;
+  neutral: boolean;
+  /** Fixture id (or "test"): the same game fills the same seats. */
+  seed: string;
+}
+
+export interface PitchPerf { fps: number; drawMs: number }
+const PERF_SAMPLE_FRAMES = 30;
 
 const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
 
@@ -344,6 +329,11 @@ export function PixiPitch({
   faceUrls,
   effectLabels,
   mirror = false,
+  perfRef,
+  stadium = null,
+  officials = false,
+  coaches,
+  coachCue = null,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -360,6 +350,13 @@ export function PixiPitch({
   const faceUrlsRef              = useRef(faceUrls);
   const effectLabelsRef          = useRef(effectLabels);
   const mirrorRef                = useRef(mirror);
+  const perfRefRef               = useRef(perfRef);
+  const stadiumRef               = useRef(stadium);
+  const coachesRef               = useRef(coaches);
+  /** Set by the Pixi setup: re-bakes the crowd texture from `stadiumRef`. */
+  const redrawCrowdRef           = useRef<(() => void) | null>(null);
+  /** Set by the Pixi setup: plays a gesture on a team's manager. */
+  const coachCueFnRef            = useRef<((team: TeamId, kind: CoachGestureKind) => void) | null>(null);
   const labelsOf = () => effectLabelsRef.current ?? DEFAULT_EFFECT_LABELS;
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
@@ -378,7 +375,17 @@ export function PixiPitch({
   useEffect(() => { crowdClickPosRef.current         = crowdClickPos;         }, [crowdClickPos]);
   useEffect(() => { effectLabelsRef.current = effectLabels; }, [effectLabels]);
   useEffect(() => { mirrorRef.current = mirror; }, [mirror]);
+  useEffect(() => { perfRefRef.current = perfRef; }, [perfRef]);
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
+  useEffect(() => { coachesRef.current = coaches; }, [coaches]);
+  // Crowd texture: re-baked only when what it shows changes (never per frame).
+  useEffect(() => {
+    stadiumRef.current = stadium;
+    redrawCrowdRef.current?.();
+  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
+  }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
   useEffect(() => {
@@ -436,13 +443,55 @@ export function PixiPitch({
         };
       }
 
-      const m = buildMetrics(canvasWidth, canvasHeight);
+      const m = buildMetrics(canvasWidth, canvasHeight, { stadium: !!stadiumRef.current });
 
       // Converts game yards → canvas pixels (mirrored on x when `mirror` is set — drawing only)
       const toPixel = (x: number, y: number) => ({
         px: m.marginX + mirrorX(x, mirrorRef.current) * m.scale,
         py: m.marginY + y * m.scale,
       });
+
+      const fillA = teamAColor ? cssColorToPixiHex(teamAColor) : DEFAULT_TEAM_A;
+      const fillB = teamBColor ? cssColorToPixiHex(teamBColor) : DEFAULT_TEAM_B;
+
+      // ── Stadium: stand + crowd baked into ONE texture (spec 2026-10-08-match-visual §2) ──
+      // Re-baked only when the fill, the home team, the venue or the mirror change; zero cost per frame.
+      let crowdSprite: Sprite | null = null;
+      let crowdTexture: Texture | null = null;
+      const bakeCrowd = () => {
+        const st = stadiumRef.current;
+        if (!m.stand || !st) return;
+        const g = new Graphics();
+        // The home club is drawn on the left when it is team A and the pitch is not mirrored (or B, mirrored).
+        const homeLeft = (st.homeTeam === "A") !== mirrorRef.current;
+        drawStand(g, m.stand, {
+          fill: st.fill,
+          homeColor: st.homeTeam === "A" ? fillA : fillB,
+          awayColor: st.homeTeam === "A" ? fillB : fillA,
+          homeSide: homeLeft ? "left" : "right",
+          neutral: st.neutral,
+          seed: st.seed,
+        });
+        const texture = app.renderer.generateTexture({
+          target: g,
+          resolution: app.renderer.resolution,
+          frame: new Rectangle(0, 0, canvasWidth, canvasHeight),
+        });
+        g.destroy();
+        if (!crowdSprite) {
+          crowdSprite = new Sprite(texture);
+          crowdSprite.eventMode = 'none';
+          app.stage.addChildAt(crowdSprite, 0);
+        } else {
+          crowdSprite.texture = texture;
+        }
+        crowdTexture?.destroy(true);
+        crowdTexture = texture;
+      };
+      bakeCrowd();
+      redrawCrowdRef.current = bakeCrowd;
+      /** Start of the last home-goal pulse on the effects clock (null: none running). */
+      let crowdPulseAt: number | null = null;
 
       // Mowing stripes (static, drawn once — the pitch remounts on resize)
       const stripesGraphics = new Graphics();
@@ -666,8 +715,6 @@ export function PixiPitch({
         dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.9 },
       });
 
-      const fillA = teamAColor ? cssColorToPixiHex(teamAColor) : DEFAULT_TEAM_A;
-      const fillB = teamBColor ? cssColorToPixiHex(teamBColor) : DEFAULT_TEAM_B;
       // A kit that blends into the grass (dark green) gets a thin light outline instead of the
       // usual dark one, per team, so its dots stay visible.
       const outlineOf = (color: number) => needsLightOutline(color)
@@ -873,6 +920,169 @@ export function PixiPitch({
         pushEffect({ kind: "offside", lineX: e.lineX ?? null, x: p.x, y: p.y }, labelsOf().offside);
       });
 
+      const framesShown = () => !document.hidden && app.ticker.started;
+      const engineGoalX = (dir: number) => (dir === 1 ? PITCH_LENGTH : 0);
+      /** Drawn x sign: engine yards → px along x (−1 when the pitch is mirrored). */
+      const xSign = () => (mirrorRef.current ? -1 : 1);
+
+      // ── Home-goal pulse of the crowd ──
+      const unsubCrowdGoal = gameBus.on("goalScored", (e) => {
+        if (!crowdSprite || !framesShown()) return;
+        if (stadiumRef.current && e.team === stadiumRef.current.homeTeam) crowdPulseAt = effectNow;
+      });
+
+      // ── Player animations: long shot, header, save (spec 2026-10-08-match-visual §5) ──
+      let anims: PlayerAnim[] = [];
+      const animGfx = new Graphics();
+      animGfx.zIndex = 7;
+      world.addChild(animGfx);
+      const unsubAnimShot = gameBus.on("shot", (e) => {
+        if (!framesShown()) return;
+        const p = playerPos(e.player);
+        if (!p) return;
+        const goalX = engineGoalX(p.attackDir);
+        if (!isLongShot(p, goalX)) return;
+        anims = addAnim(anims, { playerId: p.id, kind: "longShot", dir: { x: goalX - p.x, y: PITCH_WIDTH / 2 - p.y }, side: 1 }, effectNow);
+      });
+      const unsubAnimHeader = gameBus.on("header", (e) => {
+        if (!framesShown()) return;
+        const p = playerPos(e.player);
+        if (!p) return;
+        anims = addAnim(anims, { playerId: p.id, kind: "header", dir: { x: p.attackDir, y: 0 }, side: 1 }, effectNow);
+      });
+      const keeperSave = (keeperId: number, side: 1 | -1) => {
+        anims = addAnim(anims, { playerId: keeperId, kind: "save", dir: { x: 0, y: side }, side }, effectNow);
+      };
+      const unsubAnimSave = gameBus.on("shotResolved", (e) => {
+        if (e.isGoal || !e.inPosts || !framesShown()) return;
+        const shooter = playerPos(e.player);
+        if (!shooter) return;
+        const gk = stateRef.current.players.find((q) => q.team !== shooter.team && q.role === "GK");
+        if (!gk) return;
+        keeperSave(gk.id, e.toY >= gk.y ? 1 : -1);
+      });
+      const unsubAnimPenalty = gameBus.on("penaltyResolved", (e) => {
+        if (e.scored || e.keeperId === null || !framesShown()) return;
+        keeperSave(e.keeperId, seedFrom(`${Math.floor(stateRef.current.matchTime)}:${e.takerId}`) % 2 === 0 ? 1 : -1);
+      });
+
+      // ── Referee, assistants, managers (spec 2026-10-08-match-visual §3–§4) ──
+      const officialsOn = officials;
+      const referee = officialsOn ? makeOfficial(markerR, false) : null;
+      const assistantC: Record<AssistantSide, Container | null> = {
+        top: officialsOn ? makeOfficial(markerR, true) : null,
+        bottom: officialsOn ? makeOfficial(markerR, true) : null,
+      };
+      // Just under the players' layer: a player is never covered by an official.
+      for (const c of [referee, assistantC.top, assistantC.bottom]) if (c) { c.zIndex = -0.5; world.addChild(c); }
+      let refPos: YdPos | null = null;
+      const arPos: Record<AssistantSide, YdPos | null> = { top: null, bottom: null };
+      let lastFoulSpot: YdPos | null = null;
+      /** After a card the referee's target stays on the foul spot (passed to refereeTarget as the ball). */
+      let refHold: { spot: YdPos; until: number } | null = null;
+      let refCard: { card: "yellow" | "red"; until: number } | null = null;
+      const flagUntil: Record<AssistantSide, number> = { top: -1, bottom: -1 };
+      const unsubRefFoul = gameBus.on("foul", (e) => { lastFoulSpot = { x: e.x, y: e.y }; });
+      const unsubRefCard = gameBus.on("card", (e) => {
+        if (!officialsOn || !framesShown()) return;
+        const spot = lastFoulSpot ?? playerPos(e.playerId) ?? null;
+        if (spot) refHold = { spot: { x: spot.x, y: spot.y }, until: effectNow + OFFICIALS.CARD_HOLD_S };
+        refCard = { card: e.card, until: effectNow + EFFECT_DURATION.card };
+      });
+      const unsubArFlag = gameBus.on("offsideCalled", (e) => {
+        if (!officialsOn || !framesShown()) return;
+        const lineX = e.lineX ?? playerPos(e.receiverId)?.x;
+        if (lineX === undefined) return;
+        flagUntil[assistantForLineX(lineX)] = effectNow + EFFECT_DURATION.offside;
+      });
+
+      // Managers: drawn left = team A unless mirrored. They never switch sides at half time.
+      type DrawnSide = "left" | "right";
+      const coachSpot = coachSlots(m, canvasHeight);
+      const teamOfDrawnSide = (side: DrawnSide): TeamId => ((side === "left") !== mirrorRef.current ? "A" : "B");
+      const coachSprites: Partial<Record<DrawnSide, { sprite: CoachSprite; team: TeamId }>> = {};
+      const coachGest: Partial<Record<TeamId, { kind: CoachGestureKind; at: number }>> = {};
+      if (officialsOn) {
+        for (const side of ["left", "right"] as const) {
+          const team = teamOfDrawnSide(side);
+          const info = coachesRef.current?.[team];
+          const color = info?.color ? cssColorToPixiHex(info.color) : team === "A" ? fillA : fillB;
+          const sprite = makeCoach(markerR, color);
+          sprite.root.x = coachSpot[side].x;
+          sprite.root.y = coachSpot[side].y;
+          sprite.root.zIndex = -0.6;
+          world.addChild(sprite.root);
+          coachSprites[side] = { sprite, team };
+          const url = info?.faceUrl;
+          if (url) {
+            const size = faceRasterSize(sprite.headR - 1, app.renderer.resolution);
+            void loadFaceCanvas(url, size).then((canvas) => {
+              if (!canvas || facesDisposed || sprite.root.destroyed) return;
+              let texture = faceTextures.get(url);
+              if (!texture) {
+                texture = new Texture({ source: new CanvasSource({ resource: canvas, transparent: true }) });
+                faceTextures.set(url, texture);
+              }
+              const face = new Sprite(texture);
+              face.anchor.set(0.5);
+              face.width = face.height = (sprite.headR - 1) * 2;
+              sprite.head.addChild(face);
+            });
+          }
+        }
+      }
+      const startGesture = (team: TeamId, kind: CoachGestureKind) => {
+        if (!officialsOn || !framesShown()) return;
+        coachGest[team] = { kind, at: effectNow };
+      };
+      coachCueFnRef.current = startGesture;
+      const unsubCoachGoal = gameBus.on("goalScored", (e) => startGesture(e.team, "celebrate"));
+
+      /** Moves and draws the officials and the managers (once per frame, engine yards in). */
+      const drawOfficials = (ball: YdPos, players: YdPos[]) => {
+        if (!officialsOn) return;
+        const st = stateRef.current;
+        const dtGame = pausedRef.current ? 0 : (app.ticker.deltaMS / 1000) * gameSpeedRef.current;
+        const holder = st.players.find((p) => p.id === st.ballHolderId);
+        const attackDir: 1 | -1 = holder?.attackDir === -1 ? -1 : 1;
+        if (refHold && effectNow >= refHold.until) refHold = null;
+        const target = refHold
+          ? refereeTarget({ ball: refHold.spot, attackDir, players, setPiece: true })
+          : refereeTarget({ ball, attackDir, players, setPiece: !!st.setPiece });
+        refPos = refPos ? stepToward(refPos, target, dtGame, OFFICIALS.REF_SPEED) : target;
+        if (referee) {
+          const { px, py } = toPixel(refPos.x, refPos.y);
+          referee.x = px;
+          referee.y = py;
+          if (refCard && effectNow >= refCard.until) refCard = null;
+          showCard(referee, refCard?.card ?? null);
+        }
+        for (const side of ["top", "bottom"] as const) {
+          const c = assistantC[side];
+          if (!c) continue;
+          const t = assistantTarget({ players: st.players, ball }, side);
+          const cur = arPos[side];
+          const next = cur ? stepToward(cur, t, dtGame, OFFICIALS.AR_SPEED, false) : t;
+          arPos[side] = next;
+          const { px, py } = toPixel(next.x, next.y);
+          c.x = px;
+          // Without a stadium there may be no run-off: keep the assistant on the canvas.
+          c.y = Math.min(canvasHeight - markerR, Math.max(markerR, py));
+          setFlagRaised(c, effectNow < flagUntil[side]);
+        }
+        for (const side of ["left", "right"] as const) {
+          const entry = coachSprites[side];
+          if (!entry) continue;
+          const g = coachGest[entry.team];
+          if (g && effectNow - g.at >= GESTURE_DURATION) delete coachGest[entry.team];
+          const live = coachGest[entry.team];
+          const pose = live ? coachGesture(live.kind, effectNow - live.at) : coachGesture("balanced", 0);
+          const dir = st.players.find((p) => p.team === entry.team)?.attackDir ?? 1;
+          drawCoachArms(entry.sprite, markerR, pose, (dir * xSign()) as 1 | -1);
+          entry.sprite.root.y = coachSpot[side].y - pose.jumpPx;
+        }
+      };
+
       // ── Crowd heatmap overlay ──
       // Added LAST so it draws on top of pitch lines, players, and debug overlays.
       // Alpha is set per-cell during rendering so the underlying game stays visible.
@@ -929,7 +1139,7 @@ export function PixiPitch({
       // every frame — including when `keepTickerAlive` keeps the ticker
       // running — but `pump(true)` returns 0, so it's a no-op that only
       // advances the shared pump's internal clock (no backlog on resume).
-      app.ticker.add(() => {
+      const drawFrame = () => {
         pumpSimulation();
 
         // Drawn positions: between the last two sim steps. Paused, carry does not move,
@@ -981,14 +1191,41 @@ export function PixiPitch({
         // ballHolderId keeps the last toucher while the ball travels: glow only on a real holder.
         const st0 = stateRef.current;
         const glowId = st0.pass || st0.shot || st0.looseBall ? null : st0.ballHolderId;
+        // Short player animations: an offset on top of the interpolated marker (engine untouched).
+        anims = liveAnims(anims, effectNow);
+        const animOf = new Map(anims.map((a) => [a.playerId, a] as const));
+        animGfx.clear();
         for (const player of stateRef.current.players) {
           const g     = playerGraphics.get(player.id);
           const label = playerLabels.get(player.id);
           if (!g) continue;
           const at = drawnPos.get(player.id) ?? player;
           const { px, py } = toPixel(at.x, at.y);
-          g.x = px;
-          g.y = py;
+          const anim = animOf.get(player.id);
+          const off = anim ? animOffset(anim, effectNow) : null;
+          const liftPx = off ? off.liftYds * m.scale * BALL.LIFT_PX_PER_YD : 0;
+          g.x = px + (off ? xSign() * off.dx * m.scale : 0);
+          g.y = py + (off ? off.dy * m.scale : 0) - liftPx;
+          g.scale.set(off ? off.scale : 1);
+          g.rotation = off ? xSign() * off.rotation : 0;
+          const markerShadow = g.children[0];
+          if (markerShadow) {
+            // The shadow stays on the ground while the marker lifts (header), and shrinks.
+            markerShadow.y = liftPx / (off?.scale ?? 1);
+            markerShadow.scale.set(Math.max(0.6, 1 - (off?.liftYds ?? 0) * 0.25));
+          }
+          if (anim?.kind === "longShot" && off) {
+            // Three short "force lines" behind the shooter.
+            const k = (effectNow - anim.startedAt) / anim.duration;
+            const ux = -xSign() * anim.dir.x, uy = -anim.dir.y;
+            const nx = -uy, ny = ux;
+            for (const s of [-1, 0, 1]) {
+              const bx0 = g.x + ux * markerR * 1.2 + nx * s * markerR * 0.5;
+              const by0 = g.y + uy * markerR * 1.2 + ny * s * markerR * 0.5;
+              animGfx.moveTo(bx0, by0).lineTo(bx0 + ux * markerR * 0.9, by0 + uy * markerR * 0.9)
+                .stroke({ width: 2, color: 0xffffff, alpha: 0.7 * (1 - k) });
+            }
+          }
           const badge = g.getChildByLabel("card");
           if (badge) badge.visible = booked.has(player.id);
           if (player.id === glowId) {
@@ -1443,6 +1680,11 @@ export function PixiPitch({
 
         // ── Pitch effects + trail (real-time clock, frozen while paused) ──
         effectNow = advanceEffectClock(effectNow, app.ticker.deltaMS / 1000, pausedRef.current);
+        drawOfficials(drawnB, [...drawnPos.values()]);
+        if (crowdSprite) {
+          if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
+          crowdSprite.alpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
+        }
         const st = stateRef.current;
         pendingGoalShot = null; // a goal shot only pairs with a goalScored of the same tick
         // The trail follows the DRAWN ball: elevation in yards = h * LIFT (px = h * scale * LIFT).
@@ -1558,6 +1800,22 @@ export function PixiPitch({
             crowdHeatmapGfx.circle(px, py, 3).stroke({ width: 1, color: 0x000000, alpha: 0.6 });
           }
         }
+      };
+      // Draw-time meter for /test (`perfRef`): average callback time over 30 frames + ticker FPS.
+      let perfFrames = 0;
+      let perfMsSum = 0;
+      app.ticker.add(() => {
+        const meter = perfRefRef.current;
+        if (!meter) { drawFrame(); return; }
+        const t0 = performance.now();
+        drawFrame();
+        perfMsSum += performance.now() - t0;
+        perfFrames += 1;
+        if (perfFrames >= PERF_SAMPLE_FRAMES) {
+          meter.current = { fps: app.ticker.FPS, drawMs: perfMsSum / perfFrames };
+          perfFrames = 0;
+          perfMsSum = 0;
+        }
       });
 
       // ── Test command handler (mutates stateRef directly for debug tools) ──
@@ -1663,6 +1921,19 @@ export function PixiPitch({
         unsubFoulFx();
         unsubCardFx();
         unsubOffsideFx();
+        unsubCrowdGoal();
+        unsubAnimShot();
+        unsubAnimHeader();
+        unsubAnimSave();
+        unsubAnimPenalty();
+        unsubRefFoul();
+        unsubRefCard();
+        unsubArFlag();
+        unsubCoachGoal();
+        redrawCrowdRef.current = null;
+        coachCueFnRef.current = null;
+        crowdTexture?.destroy(true);
+        crowdTexture = null;
         for (const txt of effectTexts.values()) txt.destroy();
         effectTexts.clear();
       };

@@ -4,7 +4,9 @@ import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatc
 import { MORALE } from '@/Domain/morale/moraleConfig';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
-import type { DebugOverlays } from "@/GraficsEngine/PixiPitch";
+import type { DebugOverlays, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
 import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
@@ -353,6 +355,14 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
 
 type Mode = '11v11' | 'scenario';
 
+type CrowdFillKey = "0" | "25" | "50" | "default" | "75" | "100";
+const CROWD_FILLS: Record<CrowdFillKey, number> = { "0": 0, "25": 0.25, "50": 0.5, default: 0.65, "75": 0.75, "100": 1 };
+const CROWD_FILL_OPTIONS: { key: CrowdFillKey; label: string }[] = [
+  { key: "0", label: "0%" }, { key: "25", label: "25%" }, { key: "50", label: "50%" },
+  { key: "default", label: "Default" }, { key: "75", label: "75%" }, { key: "100", label: "100%" },
+];
+const TEST_COACHES = { A: { color: "#2d6cdf" }, B: { color: "#df3b2d" } } as const;
+
 export function TestScreen() {
   const [mode, setMode]           = useState<Mode>(() => {
     const v = urlStr('mode'); return VALID_MODES.has(v ?? '') ? (v as Mode) : '11v11';
@@ -415,6 +425,22 @@ export function TestScreen() {
   const [resetKey, setResetKey]   = useState(0);
   const [paused, setPaused]       = useState(false);
   const [speed, setSpeed]         = useState(1);
+  /** Draw-time meter: filled by the pitch every 30 frames, read once a second. */
+  const pitchPerfRef = useRef<PitchPerf | null>(null);
+  const [pitchPerf, setPitchPerf] = useState<PitchPerf | null>(null);
+  // Stadium / officials (spec 2026-10-08-match-visual §9): off by default so the tuning scenarios keep their scale.
+  const [stadiumOn, setStadiumOn] = useState(false);
+  const [officialsOn, setOfficialsOn] = useState(false);
+  const [crowdFill, setCrowdFill] = useState<CrowdFillKey>("default");
+  const [neutralVenue, setNeutralVenue] = useState(false);
+  const pitchStadium = useMemo<PitchStadium | null>(
+    () => (stadiumOn ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test" } : null),
+    [stadiumOn, crowdFill, neutralVenue],
+  );
+  useEffect(() => {
+    const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
+    return () => clearInterval(id);
+  }, []);
   const [debug, setDebug]         = useState(true);
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -1346,6 +1372,17 @@ export function TestScreen() {
             </button>
           ))}
         </div>
+        <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap" title="Pixi frame rate and average draw time per frame">
+          {pitchPerf ? `FPS ${Math.round(pitchPerf.fps)} · ${pitchPerf.drawMs.toFixed(1)} ms` : "FPS –"}
+        </span>
+        <Chip selected={stadiumOn} onClick={() => setStadiumOn(v => !v)} title="Stadium band with the crowd">Stadium</Chip>
+        <Chip selected={officialsOn} onClick={() => setOfficialsOn(v => !v)} title="Referee, assistants and managers">Officials</Chip>
+        {stadiumOn && (
+          <>
+            <OptionChips options={CROWD_FILL_OPTIONS} value={crowdFill} onChange={setCrowdFill} />
+            <Chip selected={neutralVenue} onClick={() => setNeutralVenue(v => !v)}>Neutral</Chip>
+          </>
+        )}
         <button onClick={() => setDebug(d => { setDebugMode(!d); return !d; })}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
             debug
@@ -1569,7 +1606,7 @@ export function TestScreen() {
         >
           {activeState && pitchSize ? (
             <PixiPitch
-              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}`}
+              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? "s" : ""}${officialsOn ? "o" : ""}`}
               canvasWidth={pitchSize.w}
               canvasHeight={pitchSize.h}
               paused={paused}
@@ -1586,6 +1623,10 @@ export function TestScreen() {
               crowdClickPos={pitchClickPos}
               keepTickerAlive={true}
               captureRef={pitchCaptureRef}
+              perfRef={pitchPerfRef}
+              stadium={pitchStadium}
+              officials={officialsOn}
+              coaches={TEST_COACHES}
             />
           ) : (
             <div className="text-muted-foreground text-sm font-mono">

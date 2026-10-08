@@ -35,7 +35,10 @@ import { staffEffectsOf } from "@/Domain/staff/staff";
 import { getFormationSlots } from "@/types/formationSlots";
 import type { FormationShape } from "@/types/formationSlots";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
-import { faceUrl } from "@/Domain/faces/faceUrl";
+import { faceUrl, managerFaceUrl } from "@/Domain/faces/faceUrl";
+import type { MatchCrowd, MatchManagers } from "@/backend/matchCrowd";
+import { STADIUM } from "@/GraficsEngine/pitchStyle";
+import type { PitchStadium } from "@/GraficsEngine/PixiPitch";
 
 /**
  * Base (1x) real-time delay before navigating to the result screen after full time. Scaled down
@@ -181,6 +184,10 @@ export function MatchScreen() {
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   /** Live-match mentality for team A (my club). Team B (AI) always stays balanced. Not saved. */
   const [mentality, setMentality] = useState<Mentality>(DEFAULT_MENTALITY);
+  /** Stadium crowd and managers of the match (`match-setup`, spec 2026-10-08-match-visual §7). */
+  const [touchline, setTouchline] = useState<{ crowd: MatchCrowd | null; managers: MatchManagers | null } | null>(null);
+  /** Gesture of the human's manager on a mentality change (a new `seq` plays it). */
+  const [coachCue, setCoachCue] = useState<{ team: TeamId; kind: "attack" | "defend" | "balanced"; seq: number } | null>(null);
   /** Team A's saved tactical style — set once from match-setup, read by mentality changes. */
   const myTacticalStyleRef = useRef<TacticalStyle>(DEFAULT_TACTICAL_STYLE);
   const myAxesOverrideRef = useRef<TacticsSave["axesOverride"]>(undefined);
@@ -322,6 +329,8 @@ export function MatchScreen() {
           myTactics: TacticsSave;
           /** Man-marking chosen for this match in the preview (player instructions). */
           matchMarking?: { date: string; marks: { slot: number; targetId: string }[] } | null;
+          crowd?: MatchCrowd | null;
+          managers?: MatchManagers | null;
         };
       })
       .then((data) => {
@@ -465,6 +474,7 @@ export function MatchScreen() {
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMatchFixture(data.fixture);
+        setTouchline({ crowd: data.crowd ?? null, managers: data.managers ?? null });
         setFaceRoster({
           A: { players: myEligiblePlayers, clubColors: data.save.clubColors },
           B: { players: opponentPlayers, clubColors: data.opponentSquad?.colors ?? data.save.clubColors },
@@ -769,6 +779,8 @@ export function MatchScreen() {
     setMentality(next);
     mentalityRef.current = next;
     applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, next, myFamiliarityRef.current);
+    const kind = next === "attacking" ? "attack" : next === "defensive" ? "defend" : "balanced";
+    setCoachCue((prev) => ({ team: "A", kind, seq: (prev?.seq ?? 0) + 1 }));
   }
 
   /** Live style / axes of team A (Etapa 35): the engine config only — never `PUT /tactics`. */
@@ -850,6 +862,29 @@ export function MatchScreen() {
     };
     return { A: side("A", matchKitColors.teamA), B: side("B", matchKitColors.teamB) };
   }, [faceRoster, matchKitColors]);
+
+  // Stadium: the crowd of the match (the number the gate charges) or the default fill; the home
+  // club's fans fill most of the stand. Engine team A is the human club.
+  const stadium = useMemo<PitchStadium | null>(() => {
+    if (!matchFixture || !crestIds) return null;
+    const crowd = touchline?.crowd;
+    const fill = crowd?.known && crowd.capacity > 0 ? crowd.attendance / crowd.capacity : STADIUM.DEFAULT_FILL;
+    const homeTeam: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
+    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id };
+  }, [matchFixture, crestIds, touchline]);
+
+  // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
+  const coaches = useMemo(() => {
+    const colorsOf = (tm: TeamId, kit: string) => {
+      const club = faceRoster?.[tm].clubColors ?? [];
+      return [kit, ...club.filter((c) => c.toLowerCase() !== kit.toLowerCase())];
+    };
+    const mgr = touchline?.managers;
+    return {
+      A: { color: matchKitColors.teamA, ...(mgr ? { faceUrl: managerFaceUrl(mgr.mine, colorsOf("A", matchKitColors.teamA)) } : {}) },
+      B: { color: matchKitColors.teamB, ...(mgr?.opponent ? { faceUrl: managerFaceUrl(mgr.opponent, colorsOf("B", matchKitColors.teamB)) } : {}) },
+    };
+  }, [touchline, faceRoster, matchKitColors]);
 
   const [teamAWithCrest, teamBWithCrest] = useMemo(() => {
     if (!crestIds) return [teamAMeta, teamBMeta];
@@ -1107,7 +1142,7 @@ export function MatchScreen() {
               // the scoreboard or the control bar.
               <div className="relative shrink-0" style={{ width: pitchSize.w, height: pitchSize.h }}>
                 <PixiPitch
-                  key={`${pitchSize.w}x${pitchSize.h}`}
+                  key={`${pitchSize.w}x${pitchSize.h}${stadium ? "s" : ""}`}
                   canvasWidth={pitchSize.w}
                   canvasHeight={pitchSize.h}
                   paused={paused}
@@ -1119,6 +1154,10 @@ export function MatchScreen() {
                   teamAColor={matchKitColors.teamA}
                   teamBColor={matchKitColors.teamB}
                   faceUrls={faceUrls}
+                  stadium={stadium}
+                  officials
+                  coaches={coaches}
+                  coachCue={coachCue}
                 />
                 {notice && (
                   <div

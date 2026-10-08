@@ -165,6 +165,7 @@ function buildSeasonGames(data: FacilitiesViewData | null, fixtures: Fixture[], 
         ...data.demandInput,
         ...(data.season ? { fraction: seasonFraction(fx.date, data.season.start, data.season.end) } : {}),
         date: fx.date,
+        ...(data.importanceByFixture?.[fx.id] !== undefined ? { importance: data.importanceByFixture[fx.id] } : {}),
       });
       return { date: fx.date, competition: fx.competition, attendance: a.attendance, capacity: a.capacity, demand: a.demand, played: false };
     });
