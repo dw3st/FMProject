@@ -21,6 +21,8 @@ import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
 import { Icon, iconOf } from "@/GameInterface/Icons";
+import { matchConditions } from "@/Domain/matchday/matchConditions";
+import { refereeFor, weatherIconName, weatherLabelKey } from "@/GameInterface/matchWeather";
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
 import { Player } from "@/Domain/Player";
@@ -102,25 +104,6 @@ function getOrderedPlayers(players: RosterPlayer[], lineup: string[]): RosterPla
     if (!used.has(p.id)) result.push(p);
   }
   return result;
-}
-
-const WEATHER_OPTIONS = [
-  { icon: "☀", label: "Clear" },
-  { icon: "⛅", label: "Partly Cloudy" },
-  { icon: "🌧", label: "Light Rain" },
-  { icon: "🌫", label: "Foggy" },
-  { icon: "❄", label: "Cold" },
-];
-
-const REFEREES = ["M. Oliver", "A. Taylor", "S. Attwell", "P. Tierney", "C. Kavanagh"];
-
-function getMatchMeta(date: string, clubName: string, isHome: boolean) {
-  const seed = parseInt(date.replace(/-/g, ""), 10);
-  return {
-    weather: WEATHER_OPTIONS[seed % WEATHER_OPTIONS.length]!,
-    referee: REFEREES[seed % REFEREES.length]!,
-    venue: isHome ? `${clubName} Stadium` : "Away Ground",
-  };
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -961,8 +944,14 @@ export function MatchPreviewScreen() {
   const oppTactics: TacticalStyle = DEFAULT_TACTICAL_STYLE;
 
   const currentDate = session.currentDate ?? "";
-  const { weather, referee, venue: venueOrHost } = getMatchMeta(currentDate, session.clubName, isHome);
-  const venue = fixture?.neutral ? t("cups.neutral") : venueOrHost;
+  const referee = refereeFor(currentDate);
+  // Home ground: ours or the opponent's, none on a neutral ground — same rule as the dashboard card,
+  // so the kickoff and the weather (`matchConditions`) match it.
+  const homeGround = !fixture || fixture.neutral ? null : isHome ? matchSetup?.mySquad ?? null : opponentSquad;
+  const conditions = fixture ? matchConditions(fixture, homeGround?.country ?? null) : null;
+  const venue = fixture?.neutral
+    ? t("cups.neutral")
+    : homeGround?.venue?.name ?? (isHome ? `${session.clubName} Stadium` : "Away Ground");
   const expectedCrowd = fixture && isHome && !fixture.neutral && facilitiesData
     ? attendanceOf(facilitiesData.facilities, {
         ...facilitiesData.demandInput,
@@ -1107,8 +1096,9 @@ export function MatchPreviewScreen() {
               <InfoCell icon={Users} label={t("matchPreview.expectedCrowd")}
                 value={`${Math.round(expectedCrowd.attendance).toLocaleString(i18n.language)} / ${expectedCrowd.capacity.toLocaleString(i18n.language)}`} />
             )}
-            <InfoCell icon={Cloud} label={t("matchPreview.weather")} value={`${weather.icon} ${weather.label}`} />
-            <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value="20:00 GMT" />
+            <InfoCell icon={conditions ? iconOf(weatherIconName(conditions)) : Cloud} label={t("matchPreview.weather")}
+              value={conditions ? t(weatherLabelKey(conditions.weather)) : "—"} />
+            <InfoCell icon={Clock} label={t("matchPreview.kickoff")} value={conditions?.kickoff ?? "—"} />
             <InfoCell icon={User} label={t("matchPreview.officials")} value={referee} />
           </div>
           {/* A 2nd leg with an aggregate already shows continental.aggregateNote under the header

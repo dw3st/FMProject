@@ -75,6 +75,7 @@ import {
   Trash2,
   Sun,
   CloudSun,
+  CloudMoon,
   CloudRain,
   Wind,
   Snowflake,
@@ -186,6 +187,8 @@ export type IconName =
   | "trash2"
   | "sun"
   | "cloud-sun"
+  | "moon"
+  | "cloud-moon"
   | "cloud-rain"
   | "wind"
   | "snowflake"
@@ -306,6 +309,8 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "trash2": Trash2,
   "sun": Sun,
   "cloud-sun": CloudSun,
+  "moon": Moon,
+  "cloud-moon": CloudMoon,
   "cloud-rain": CloudRain,
   "wind": Wind,
   "snowflake": Snowflake,
