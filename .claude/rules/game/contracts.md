@@ -124,3 +124,9 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
 clube (até −10% com 4 temporadas), compatriota (até −5%), clube menor (+10% × ambição por degrau de tier natural) e a
 recusa `smallerClub` (ambição ≥ 17, 2+ degraus). `renewalContract` (o que a IA paga) aplica ambição/lealdade/
 compatriota. Ver `.claude/rules/game/personality.md`.
+
+## Responsabilidades (Etapa 30, 4.6)
+
+Com o diretor responsável (padrão), as renovações do clube do jogador são decididas por ele toda segunda (regra da IA,
+pagando o pedido do jogador) e o aviso de 90 dias não sai; o técnico pode assumir na Equipe técnica e sempre pode
+renovar na ficha. Ver `.claude/rules/game/responsibilities.md`.

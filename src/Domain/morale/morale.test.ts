@@ -222,6 +222,26 @@ describe("moraleDay", () => {
     expect(talkReasonOf(f0, "backup", "2027-03-01", { talks: [], promises: [] })).toBeNull();
   });
 
+  test("the director answers a contract talk at once: no request, morale as the answer", () => {
+    const sq = fullSquad();
+    sq.players = sq.players.map((p) => (p.id === "f0" ? { ...p, morale: 65, contract: { until: "2027-06-30", wage: 1000 } } : p));
+    const base = { squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId };
+    // The manager in charge: the talk request opens.
+    const manager = moraleDay(base);
+    expect(manager.squad.moraleClub!.talks.some((t) => t.playerId === "f0" && t.reason === "contract")).toBe(true);
+    expect(manager.news.some((n) => n.kind === "talk" && n.playerId === "f0")).toBe(true);
+    // The director refuses: −10, quiet, no request, no news.
+    const refused = moraleDay({ ...base, directorContractTalk: () => false });
+    const f0 = refused.squad.players.find((p) => p.id === "f0")!;
+    expect(f0.morale).toBe(65 + MORALE.RENEWAL_REFUSED);
+    expect(f0.moraleLog!.quietUntil).toBeDefined();
+    expect(refused.squad.moraleClub!.talks.some((t) => t.playerId === "f0")).toBe(false);
+    expect(refused.news.some((n) => n.playerId === "f0")).toBe(false);
+    // The director renews: as a renewal promise (+3).
+    const renewed = moraleDay({ ...base, directorContractTalk: () => true });
+    expect(renewed.squad.players.find((p) => p.id === "f0")!.morale).toBe(65 + MORALE.PROMISE_MADE);
+  });
+
   test("bid for an unhappy player: wants_move talk", () => {
     const sq = fullSquad();
     sq.players = sq.players.map((p) => (p.id === "m4" ? { ...p, morale: 50 } : p));

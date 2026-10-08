@@ -249,6 +249,12 @@ export interface MoraleDayInput {
   unavailable?: ReadonlySet<string>;
   /** The human club's country rolled over today: the minutes windows start over. */
   seasonRolled?: boolean;
+  /**
+   * The director handles contracts (`docs/superpowers/specs/2026-10-07-responsibilities-inbox-design.md`):
+   * a contract talk is answered at once instead of opening a request — `true` = he renews (as a
+   * renewal promise: +3), `false` = refused (−10). No talk request, no news.
+   */
+  directorContractTalk?: (p: RosterPlayer) => boolean;
   newId: () => string;
 }
 
@@ -428,6 +434,12 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
       // Talk triggers.
       if (weekCount >= MORALE.MAX_NEW_TALKS_PER_WEEK || hasOpenTalk(state, p.id) || quiet(p, date) || p.loan) continue;
       const reason = talkReasonOf(p, status, date, state);
+      if (reason === "contract" && input.directorContractTalk) {
+        const renews = input.directorContractTalk(p);
+        const answered = withEventDelta(p, renews ? MORALE.PROMISE_MADE : MORALE.RENEWAL_REFUSED);
+        set({ ...answered, moraleLog: { ...logOf(answered), quietUntil: addDays(date, MORALE.TALK_QUIET_DAYS) } });
+        continue;
+      }
       if (reason) {
         const talk: TalkRequest = {
           id: input.newId(), playerId: p.id, playerName: p.name, reason, date,

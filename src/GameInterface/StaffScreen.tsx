@@ -14,6 +14,7 @@ import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { StaffEffects } from "@/Domain/staff/staff";
 import { STAFF_ROLES, type StaffMember, type StaffRecord, type StaffRole } from "@/Domain/staff/staffTypes";
 import { formatEuros } from "@/Domain/money";
+import { ResponsibilitiesPanel } from "@/GameInterface/Staff/ResponsibilitiesPanel";
 
 interface StaffResponse {
   staff: StaffRecord;
@@ -51,6 +52,10 @@ export function StaffScreen() {
   const [busy, setBusy] = useState(false);
   const [firing, setFiring] = useState<StaffMember | null>(null);
   const [hireError, setHireError] = useState(false);
+  // Page tabs: the staff | responsibilities (`?tab=responsibilities` opens it).
+  const [pageTab, setPageTab] = useState<"staff" | "responsibilities">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "responsibilities"
+      ? "responsibilities" : "staff");
 
   const load = useCallback(async () => {
     if (!saveId) return;
@@ -183,6 +188,19 @@ export function StaffScreen() {
         {t("screenTitles.staff.main")}
       </ScreenTitle>
 
+      <SegmentedTabs<"staff" | "responsibilities">
+        tabs={[
+          { key: "staff", label: t("staff.tabStaff") },
+          { key: "responsibilities", label: t("staff.tabResponsibilities") },
+        ]}
+        active={pageTab}
+        onChange={setPageTab}
+        aria-label={t("screenTitles.staff.main")}
+      />
+
+      {pageTab === "responsibilities" && saveId && <ResponsibilitiesPanel saveId={saveId} />}
+
+      {pageTab === "staff" && <>
       <section className="grid gap-6 md:grid-cols-3">
         {STAFF_ROLES.map((role) => {
           const m = data.staff[role];
@@ -261,6 +279,7 @@ export function StaffScreen() {
           rowKey={(m) => m.id}
         />
       </section>
+      </>}
 
       <ConfirmDialog
         open={firingScout !== null}

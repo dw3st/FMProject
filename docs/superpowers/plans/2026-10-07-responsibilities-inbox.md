@@ -216,7 +216,7 @@ Para cada jogador (não `loan`) com `daysBetween(date, contract.until) <= DIRECT
 
 ### Task 6: Smoke, regras, changelog
 
-- [ ] `scripts/season-rollover-smoke.ts`, seção "Responsabilidades": com o diretor (padrão) houve ≥ 1 renovação e ≥ 1 `director_summary`; nenhuma mensagem de `manager_news` nem `scouting_reports` na inbox do jogador; nenhuma conversa `contract` aberta.
+- [ ] `scripts/season-rollover-smoke.ts`, seção "Responsabilidades": com o diretor (padrão) houve ≥ 1 renovação e ≥ 1 `director_summary`; nenhuma mensagem de `manager_news` nem `scouting_reports` na inbox do jogador; nenhuma conversa `contract` aberta. Sem ligar nada, nenhuma mensagem `scouting:report` chega; antes das checagens de relatório da seção "Olheiros", o smoke liga `scouting_reports` no próprio save (`PUT /inbox-prefs`). A joia (`scouting:gem`) é `scouting_alerts`, ligada por padrão.
 - [ ] Regra nova `.claude/rules/game/responsibilities.md` (tópicos, padrões, diretor, rotas, telas, testes); atualizar `contracts.md`, `morale.md`, `scouting.md`.
 - [ ] Changelog: entrada nova **4.6** (pt/en): o diretor cuida das renovações e das conversas de contrato; você escolhe quais notícias recebe. Tirar o item correspondente de `upcoming`. `package.json` "4.6" (o teste amarra os dois; o arquivo é CRLF — conferir que a entrada entrou).
 - [ ] `bun test` completo e o smoke, **um de cada vez** (memória). Commit — `docs: responsabilidades e caixa de entrada (4.6)`.

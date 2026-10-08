@@ -209,3 +209,9 @@ em faixa nessas linhas (nunca o exato) e o custo do borrão (≤ 2×). Teste: `s
 - O conhecimento de um aposentado só sai do arquivo quando ele estava na lista (os demais saem pela poda).
 - A personalidade não é revelada à parte pelos relatórios (usa o mesmo ruído dos atributos).
 - Sem rede de olheiros por região, empréstimo de olheiros ou regras FIFA de menores (16 anos em qualquer país).
+
+## Caixa de entrada (Etapa 30, 4.6)
+
+Tópicos de notícia (`.claude/rules/game/responsibilities.md`): `report`, `mission_done` e `recommendation` são
+`scouting_reports`, **desligado por padrão** (não são gravados); joias, alertas da lista e prospectos são
+`scouting_alerts`, ligado. Relatórios e indicações do chefe continuam na aba Relatórios.

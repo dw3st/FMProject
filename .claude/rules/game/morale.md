@@ -204,3 +204,8 @@ Temperamento escala todo delta de evento (`withEventDelta`, ×1 ± 0,25), ambiç
 listado sem pedir (×1 + 0,5 t) e a promessa quebrada (×1 − 0,3 t); leal (≥ 15) não pede transferência por moral e
 só quer sair com moral < 40; profissional ignora a perda de DP por moral baixa e aceita bem "cobrar". Ver
 `.claude/rules/game/personality.md`.
+
+## Responsabilidades (Etapa 30, 4.6)
+
+Com o diretor cuidando dos contratos, a conversa de motivo `contract` não vira pedido nem mensagem: `moraleDay` recebe
+`directorContractTalk` e responde na hora (+3 se ele renova, −10 se não). Ver `.claude/rules/game/responsibilities.md`.

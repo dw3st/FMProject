@@ -20,6 +20,8 @@ import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scoutingText";
+import { InboxPrefsPanel } from "@/GameInterface/Inbox/InboxPrefsPanel";
+import { formatEuros } from "@/Domain/money";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -202,6 +204,8 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   );
   const [busy, setBusy] = useState(false);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  // Preferences panel (which news topics reach the inbox) in place of the message list.
+  const [showPrefs, setShowPrefs] = useState(false);
 
   useEffect(() => {
     if (inboxMessages === null) {
@@ -306,6 +310,16 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
             active={filter}
             onChange={setFilter}
           />
+          <Button
+            variant="secondary"
+            aria-pressed={showPrefs}
+            onClick={() => setShowPrefs((v) => !v)}
+            disabled={!session}
+            className={showPrefs ? "text-foreground" : ""}
+          >
+            <Icon name="settings" size={16} />
+            <span className="hidden sm:inline">{t("inbox.prefs.button")}</span>
+          </Button>
           <button
             type="button"
             onClick={handleMarkAllRead}
@@ -329,7 +343,9 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
 
       {/* Content */}
       <div className="flex-1 min-h-0 p-4">
-        {loading ? (
+        {showPrefs && session ? (
+          <InboxPrefsPanel saveId={session.saveId} />
+        ) : loading ? (
           <div className="card-arcade rounded-md p-12 text-center h-full flex items-center justify-center">
             <p className="text-muted-foreground text-sm m-0">{t("inbox.loadingMessages")}</p>
           </div>
@@ -468,6 +484,9 @@ function leaguePrizeTexts(
   if (message.category === "scouting") {
     const x = scoutingTexts(message, t);
     return { subject: x.subject, preview: x.body };
+  }
+  if (message.category === "contract" && message.kind === "director_summary") {
+    return { subject: t("inbox.contract.directorSummarySubject"), preview: message.preview };
   }
   if (message.category === "manager_news") {
     return {
@@ -613,7 +632,8 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
           </p>
         )}
         {message.category === "board" && message.kind === "contract_offer" && <RenewalBody />}
-        {message.category === "contract" && (
+        {message.category === "contract" && message.kind === "director_summary" && <DirectorSummaryBody message={message} />}
+        {message.category === "contract" && message.kind !== "director_summary" && (
           <p className="text-sm text-foreground m-0">
             {t(`inbox.contract.${message.kind}`, {
               players: message.players.map((p) => p.name).join(", "),
@@ -624,6 +644,55 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
       </div>
     </div>
   );
+}
+
+/** The director's contract decisions of a Monday: renewed (years, wage), leaving, refused. */
+function DirectorSummaryBody({ message }: { message: Extract<InboxMessage, { category: "contract" }> }) {
+  const { t } = useTranslation();
+  const { session } = useGameSave();
+  const href = (id: string) => session
+    ? `/player/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}/${encodeURIComponent(id)}`
+    : undefined;
+  const name = (p: { id: string; name: string }) => {
+    const h = href(p.id);
+    return h ? <a href={h} className="font-semibold text-primary hover:underline">{p.name}</a> : <span className="font-semibold">{p.name}</span>;
+  };
+  const renewed = message.renewed ?? [];
+  const leaving = message.leaving ?? [];
+  const refused = message.refused ?? [];
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      <p className="m-0 text-foreground">{t("inbox.contract.directorSummaryIntro")}</p>
+      {renewed.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel>{t("inbox.contract.directorRenewed")}</SectionLabel>
+          <ul className="m-0 p-0 list-none flex flex-col gap-1">
+            {renewed.map((p) => (
+              <li key={p.id} className="tabular-nums">
+                {name(p)} <span className="text-muted-foreground">· {t("inbox.contract.directorRenewedTerms", { years: p.years, wage: formatEuros(p.wage) })}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {leaving.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel>{t("inbox.contract.directorLeaving")}</SectionLabel>
+          <ul className="m-0 p-0 list-none flex flex-col gap-1">{leaving.map((p) => <li key={p.id}>{name(p)}</li>)}</ul>
+        </div>
+      )}
+      {refused.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel>{t("inbox.contract.directorRefused")}</SectionLabel>
+          <ul className="m-0 p-0 list-none flex flex-col gap-1">{refused.map((p) => <li key={p.id}>{name(p)}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{children}</span>;
 }
 
 function RetirementBody({
