@@ -144,6 +144,8 @@ async function scoutingView(saveId: string, state: ScoutingState) {
   ));
   const scouts = scoutsOf(own, meta?.currentDate).map(({ member, ...s }) => ({
     ...s,
+    /** The staff member behind the scout (the chief's real id; vacant: ""). */
+    memberId: member?.id ?? "",
     nationality: member?.nationality ?? "",
     strongCountry: member ? strongCountry(member, today) : null,
     countries: member ? countryKnowledgeMap(member, today) : {},

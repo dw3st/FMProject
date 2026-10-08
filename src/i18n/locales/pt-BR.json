@@ -3194,6 +3194,7 @@
       "none": "nenhum"
     },
     "vacant": "Sem olheiro-chefe",
-    "openMap": "Países que este olheiro conhece"
+    "openMap": "Países que este olheiro conhece",
+    "observeHint": "O número ao lado de cada olheiro é o conhecimento dele em {{country}}: quanto maior, mais rápido ele aprende."
   }
 }

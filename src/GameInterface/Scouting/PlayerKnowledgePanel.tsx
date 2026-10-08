@@ -10,17 +10,20 @@ import { KnowledgeBar } from "@/GameInterface/Scouting/KnowledgeBar";
 import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
 import { GemBadge, GradeBadge } from "@/GameInterface/Scouting/Badges";
 import { scoutingCall, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
+import { nationalityDisplayName } from "@/Domain/world/labels";
 
 interface PlayerScouting {
   view: ScoutView;
   report: ScoutReport | null;
   shortlisted: boolean;
   mission: ScoutAssignment | null;
+  /** Country of his club's league (free agent: ""). */
+  country: string;
 }
 
 /** "Knowledge" block of the player sheet (players outside the user's club, `scouting.md`). */
 export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: string; playerId: string; squadId: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [info, setInfo] = useState<PlayerScouting | null>(null);
   const [scouting, setScouting] = useState<ScoutingData | null>(null);
   const [scoutId, setScoutId] = useState<string | null>(null);
@@ -82,7 +85,11 @@ export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: st
             <OptionChips<string>
               value={chosen}
               onChange={setScoutId}
-              options={free.map((s) => ({ key: s.id, label: s.chief ? t("scouting.chief") : s.name }))}
+              options={free.map((s) => {
+                // Each scout's knowledge of the player's country (it sets his pace there); free agent: "—".
+                const k = info.country ? `${s.countries?.[info.country] ?? 0}` : "—";
+                return { key: s.id, label: `${s.chief ? t("scouting.chief") : s.name} · ${k}` };
+              })}
             />
             <Button onClick={() => void observe()}>
               <Icon name="binoculars" size={16} />
@@ -90,6 +97,9 @@ export function PlayerKnowledgePanel({ saveId, playerId, squadId }: { saveId: st
             </Button>
           </div>
         )
+      )}
+      {info.country && !info.mission && info.view.knowledge < 100 && scouting?.employed && free.length > 0 && (
+        <p className="text-sm text-muted-foreground m-0">{t("scoutCountries.observeHint", { country: nationalityDisplayName(info.country, i18n.language, t) })}</p>
       )}
       {error && <Notice kind="error">{error}</Notice>}
     </section>

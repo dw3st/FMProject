@@ -3194,6 +3194,7 @@
       "none": "none"
     },
     "vacant": "No chief scout",
-    "openMap": "Countries this scout knows"
+    "openMap": "Countries this scout knows",
+    "observeHint": "The number next to each scout is his knowledge of {{country}}: the higher, the faster he learns."
   }
 }

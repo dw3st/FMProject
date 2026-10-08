@@ -15,6 +15,15 @@ export interface ScoutingScout {
   busy: boolean;
   /** Field scouts: the severance of dismissing him today (€). */
   severance?: number;
+  /** Staff member id (the chief's real id; vacant: ""). */
+  memberId: string;
+  nationality: string;
+  /** Country he knows best (vacant chief: null). */
+  strongCountry: { country: string; k: number } | null;
+  /** Knowledge of every country he knows (> 0). */
+  countries: Record<string, number>;
+  /** Mean knowledge over the countries a continent mission visits. */
+  continents: Record<string, number>;
 }
 
 interface ScoutingMissionView extends ScoutAssignment {

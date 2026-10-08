@@ -5,6 +5,7 @@ import type { StaffRole } from "@/Domain/staff/staffTypes";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { contractEnd, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
 
 const LABEL = "block font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
@@ -35,6 +36,7 @@ export function StaffCard({ member, effect, onOpen, clubColors }: { member: Staf
         </p>
       )}
       <p className="text-sm text-muted-foreground m-0">{effect}</p>
+      {member.strongCountry && <StrongCountry country={member.strongCountry.country} k={member.strongCountry.k} />}
     </button>
   );
 }
