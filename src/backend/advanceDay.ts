@@ -75,6 +75,8 @@ import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/d
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
+import { wearDay } from "@/Domain/facilities/facilityItems";
+import { matchPitchCondition } from "@/Domain/facilities/pitch";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -110,7 +112,7 @@ import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, play
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
-import { impliedStars } from "@/Domain/staff/staff";
+import { impliedStars, staffEffectsOf } from "@/Domain/staff/staff";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
@@ -595,9 +597,11 @@ export async function advanceOneDay(
               : isKnockoutComp(leagueSlug)
                 ? (playerLeagueClubs.has(fixture.home) || playerLeagueClubs.has(fixture.away) ? "full" : "fast")
                 : resolveSimMode(leagueSlug, meta);
+            // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
+            const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
             const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
-              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition })
+              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition });
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
             const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
@@ -1521,9 +1525,28 @@ export async function advanceOneDay(
       let facilityEntries: LedgerEntry[] = [];
       let attendanceToday: number[] | null = null;
       if (playerSquad?.facilities?.items) {
-        const day = advanceFacilities(playerSquad.facilities, currentDate);
+        // Today's wear (time, home games, training), then the 40% / 15% warnings.
+        const session = isRestDay || teamsPlayingToday.has(playerSquadId)
+          ? null
+          : resolveTrainingPolicy(meta, playerEntry.stem, playerSquadId).intensity;
+        const worn = wearDay(playerSquad.facilities.items, {
+          homeGames: playerHomeFixturesToday.filter((g) => !g.neutral).length,
+          session,
+          pitchWearMult: staffEffectsOf(playerSquad).pitchWearMult,
+        });
+        for (const c of worn.crossings) {
+          facilityMessages.push({ date: currentDate, kind: c.kind, item: c.item, condition: Math.round(c.condition) });
+        }
+        const day = advanceFacilities({ ...playerSquad.facilities, items: worn.items }, currentDate);
         facilityEntries = day.entries;
         for (const p of day.completed) {
+          if (p.item) {
+            facilityMessages.push({
+              date: currentDate, kind: "repaired", facility: p.kind, item: p.item, condition: p.kind === "repair" ? p.to ?? 100 : 100,
+              ...(p.kind === "upgrade" ? { level: day.facilities.items[p.item].level } : {}),
+            });
+            continue;
+          }
           facilityMessages.push({
             date: currentDate, kind: "completed", facility: p.kind,
             ...(p.stand ? { stand: p.stand, seats: p.seats } : {}), ...(p.level !== undefined ? { level: p.level } : {}),

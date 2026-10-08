@@ -718,7 +718,8 @@ export function buildMatchEvent(
       : {}),
   };
 
-  return { event, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
+  const withPitch = sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event;
+  return { event: withPitch, updatedHome: devHome, updatedAway: devAway, injuriesApplied, healedPlayerIds, suspensionsApplied, suspensionsServed };
 }
 
 /** Drops per-player detail from a match event (quickSim leagues) — scorers and team stats stay. */
@@ -769,5 +770,6 @@ export function buildQuickMatchEvent(
   // quickSim never benches an injured player (see `finalizeSquadsAfterMatch`'s
   // `fullMinutesForInjured` doc comment) — skip the synthetic sub-out the engine path needs.
   const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording, rng, true);
-  return { ...r, event: compactMatchEvent(r.event) };
+  const event = compactMatchEvent(r.event);
+  return { ...r, event: sim.pitchCondition !== undefined ? { ...event, pitchCondition: sim.pitchCondition } : event };
 }

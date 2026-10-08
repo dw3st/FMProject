@@ -3,7 +3,7 @@ import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarType
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
-import type { BoardRefusal, FacilityKind, StandId } from "@/types/facilityTypes";
+import type { BoardRefusal, FacilityItemId, FacilityKind, StandId } from "@/types/facilityTypes";
 import type { ScoutGrade, ScoutTarget, ShortlistReason } from "@/types/scoutingTypes";
 import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 
@@ -330,7 +330,7 @@ export interface PlayerInboxMessage extends InboxMessageBase {
  */
 export interface FacilityInboxMessage extends InboxMessageBase {
   category: "facilities";
-  kind: "approved" | "refused" | "completed" | "attendance_record";
+  kind: "approved" | "refused" | "completed" | "attendance_record" | "worn" | "condemned" | "repaired";
   facility?: FacilityKind;
   stand?: StandId;
   seats?: number;
@@ -345,6 +345,10 @@ export interface FacilityInboxMessage extends InboxMessageBase {
   attendance?: number;
   previous?: number;
   competition?: string;
+  /** worn / condemned / repaired (and item projects): the item. */
+  item?: FacilityItemId;
+  /** worn / condemned: condition when crossing; repaired: condition reached. */
+  condition?: number;
 }
 
 /**
