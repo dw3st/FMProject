@@ -32,6 +32,9 @@ export const changelog: ChangelogEntry[] = [
       { pt: "Toque em dois titulares para trocá-los de posição na partida, sem gastar substituição", en: "Tap two starters to swap their positions during the match, without using a substitution" },
       { pt: "Até 3 cobradores por bola parada, em ordem: cobra o primeiro que estiver em campo", en: "Up to 3 takers per set piece, in order: the first one on the pitch takes it" },
     ],
+    fixes: [
+      { pt: "Equipe técnica: os efeitos aparecem em texto claro (\"Evolução dos jogadores +6%\", \"Duração das lesões −8%\"), comparados a um profissional médio de 3 estrelas", en: "Coaching staff: effects now read in plain words (\"Player development +6%\", \"Injury duration −8%\"), compared with an average 3-star professional" },
+    ],
   },
   {
     version: "4.10",

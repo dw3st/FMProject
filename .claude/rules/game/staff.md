@@ -119,7 +119,10 @@ Os mercados semanais (`staffMarket`, `fieldScoutMarket`, `/staff/market`, `/staf
 
 - **Equipe técnica** (`StaffScreen`, "SUA **COMISSÃO**" / "COACHING **STAFF**"; abas Comissão | Responsabilidades):
   cartões por grupo (Comando; Treino; Saúde e análise; Olheiros; Estrutura) com `StaffStars`, idade, contrato ("até
-  05/2028 · €12,300/sem") e o efeito em uma linha; vaga = cartão tracejado "Vago" + "Buscar"
+  05/2028 · €12,300/sem") e o efeito em uma linha, em texto e porcentagem contra um profissional médio de 3★
+  (`formatEffect`, `Staff/staffApi.ts`: "Evolução dos jogadores +6%", "Duração das lesões −8%", "sem efeito" no neutro;
+  nunca o multiplicador cru `×1,06`), com a linha de ajuda "comparado a um profissional médio (3 estrelas)" acima dos
+  cartões e na ficha (que repete o efeito); o ritmo das áreas e o ritmo de um país no olheiro usam o mesmo formato; vaga = cartão tracejado "Vago" + "Buscar"
   (→ `/transfers?tab=staff&role=`). Quadro **Áreas de treino** (`Staff/TrainingAreasPanel.tsx`, `TABLE_STYLE`): as 7
   áreas, responsável (seletor do treinador nas 5 de campo, "Automático · nome"; um treinador que já cuida de 2 áreas
   manuais aparece desligado, "Nome · já cuida de 2 áreas"), estrelas e ritmo (vaga em `text-destructive`). Ficha (`Staff/StaffDetailModal.tsx`; nacionalidade traduzida por `nationalityDisplayName`, `src/Domain/world/labels.ts`): 5 atributos em barras 1–20, estrelas por área, contrato,

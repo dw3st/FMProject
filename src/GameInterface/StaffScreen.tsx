@@ -14,7 +14,8 @@ import { ResponsibilitiesPanel } from "@/GameInterface/Staff/ResponsibilitiesPan
 import { StaffCard, VacantStaffCard } from "@/GameInterface/Staff/StaffCard";
 import { StaffDetailModal } from "@/GameInterface/Staff/StaffDetailModal";
 import { TrainingAreasPanel } from "@/GameInterface/Staff/TrainingAreasPanel";
-import { STAFF_GROUPS, formatMult, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { STAFF } from "@/Domain/staff/staffConfig";
+import { STAFF_GROUPS, formatEffect, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 
 /**
  * Coaching staff (`.claude/rules/game/staff.md`): one card per professional grouped by function,
@@ -68,30 +69,32 @@ export function StaffScreen() {
   }
 
   const lang = i18n.language;
+  const vacantSlowdown = Math.round((1 - STAFF.AREA_VACANT_MULT) * 100);
   const areaMult = (area: string) => data.areas.find((a) => a.area === area)?.mult ?? 1;
+  const pct = (mult: number) => formatEffect(mult, lang, t("staff.noEffect"));
   const effectLine = (m: StaffMemberView): string => {
     const e = data.effects;
     switch (m.role) {
-      case "assistant": return t("staff.effects.assistant", { mult: formatMult(e.devMult, lang) });
+      case "assistant": return t("staff.effects.assistant", { value: pct(e.devMult) });
       case "fitness": return t("staff.effects.fitness", {
-        area: formatMult(areaMult("physical"), lang), recovery: formatMult(e.recoveryMult, lang), injury: formatMult(e.injuryMult, lang),
+        area: pct(areaMult("physical")), recovery: pct(e.recoveryMult), injury: pct(e.injuryMult),
       });
-      case "goalkeeping": return t("staff.effects.goalkeeping", { mult: formatMult(areaMult("goalkeeping"), lang) });
+      case "goalkeeping": return t("staff.effects.goalkeeping", { value: pct(areaMult("goalkeeping")) });
       case "coach": {
         const led = data.areas.filter((a) => a.memberId === m.id);
         return led.length === 0
           ? t("staff.effects.coachNoArea")
-          : led.map((a) => `${t(`staff.area.${a.area}`)} ${formatMult(a.mult, lang)}`).join(" · ");
+          : led.map((a) => t("staff.effects.coachArea", { area: t(`staff.area.${a.area}`), value: pct(a.mult) })).join(" · ");
       }
-      case "medic": return t("staff.effects.medic", { mult: formatMult(e.injuryDurationMult, lang) });
-      case "analyst": return t("staff.effects.analyst", { mult: formatMult(e.familiarityMult, lang) });
-      case "scout": return t("staff.effects.scout", { uncertainty: formatMult(e.scoutUncertaintyMult, lang), gain: formatMult(e.scoutGainMult, lang) });
+      case "medic": return t("staff.effects.medic", { value: pct(e.injuryDurationMult) });
+      case "analyst": return t("staff.effects.analyst", { value: pct(e.familiarityMult) });
+      case "scout": return t("staff.effects.scout", { uncertainty: pct(e.scoutUncertaintyMult), gain: pct(e.scoutGainMult) });
       case "fieldScout": return t("staff.effects.fieldScout");
       case "groundskeeper": return t("staff.effects.groundskeeper");
     }
   };
   const vacantEffect = (role: StaffRole): string | undefined =>
-    role === "fitness" || role === "goalkeeping" ? t("staff.vacantArea")
+    role === "fitness" || role === "goalkeeping" ? t("staff.vacantArea", { pct: vacantSlowdown })
       : role === "coach" || role === "fieldScout" || role === "groundskeeper" ? undefined
         : t("staff.vacantEffect");
 
@@ -126,6 +129,7 @@ export function StaffScreen() {
       {pageTab === "staff" && (
         <>
           {actionError && <Notice kind="error">{actionError}</Notice>}
+          <p className="text-sm text-muted-foreground m-0">{t("staff.effectsHelp")}</p>
           {STAFF_GROUPS.map((group) => (
             <section key={group.key} className="flex flex-col gap-3">
               <SectionTitle>{t(`staff.groups.${group.key}`)}</SectionTitle>
@@ -157,7 +161,7 @@ export function StaffScreen() {
       )}
 
       {saveId && (
-        <StaffDetailModal saveId={saveId} member={open} mode="club" clubColors={session?.clubColors} onClose={() => setOpen(null)} onChanged={changed} />
+        <StaffDetailModal saveId={saveId} member={open} mode="club" effect={open ? effectLine(open) : undefined} clubColors={session?.clubColors} onClose={() => setOpen(null)} onChanged={changed} />
       )}
     </ScreenContainer>
   );
