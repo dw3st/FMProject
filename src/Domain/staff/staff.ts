@@ -1,5 +1,6 @@
 import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { STAFF_NAME_POOLS, STAFF_NATIONALITIES } from "@/Domain/staff/staffNames";
 import {
   COACH_AREAS, ROLE_SPECIALTY, STAFF_ROLES,
@@ -178,6 +179,22 @@ export interface StaffEffects {
   scoutUncertaintyMult: number;
   /** Chief scout: multiplier on the knowledge gained by every mission. */
   scoutGainMult: number;
+  /**
+   * Groundskeepers: × wear of the human club's pitches (`facilities.md`). Best one's stars on
+   * `[1.3, 1, 0.75]`, × 0.9 per extra one; nobody × 1.6. Clubs without staff (AI): 1 (their pitch
+   * is a formula by tier).
+   */
+  pitchWearMult: number;
+}
+
+/** Groundskeepers' multiplier on the pitches' wear (see `StaffEffects.pitchWearMult`). */
+export function pitchWearMultOf(squad: Squad): number {
+  if (!squad.staff) return 1;
+  const G = FACILITIES.GROUNDSKEEPER;
+  const keepers = membersOf(squad, "groundskeeper");
+  if (keepers.length === 0) return G.NONE;
+  const best = Math.max(...keepers.map(memberStars));
+  return starCurve(best, G.CURVE) * Math.pow(G.EXTRA, keepers.length - 1);
 }
 
 export function staffEffectsOf(squad: Squad): StaffEffects {
@@ -192,6 +209,7 @@ export function staffEffectsOf(squad: Squad): StaffEffects {
     familiarityMult: starCurve(effectiveStars(squad, "analyst"), STAFF.ANALYST_FAMILIARITY),
     scoutUncertaintyMult: scoutUncertaintyMultOf(scout),
     scoutGainMult: scoutGainMultOf(scout),
+    pitchWearMult: pitchWearMultOf(squad),
   };
 }
 
@@ -241,6 +259,7 @@ export function signContract(
 /** How many professionals of `role` the club may employ (its natural tier). */
 export function roleLimit(squad: Squad, role: StaffRole): number {
   if (role === "coach") return STAFF.LIMITS.coach[financialTierOf(squad)];
+  if (role === "groundskeeper") return STAFF.LIMITS.groundskeeper[financialTierOf(squad)];
   if (role === "fieldScout") return STAFF.LIMITS.fieldScout;
   return STAFF.LIMITS.other;
 }
@@ -290,7 +309,9 @@ export function initialStaff(key: string, squad: Squad, at: { date: string; seas
   const members: StaffMember[] = [];
   for (const role of STAFF_ROLES) {
     if (role === "fieldScout") continue;
-    for (let i = 0; i < roleLimit(squad, role); i++) {
+    // One groundskeeper at the start whatever the limit (bigger clubs may hire a second one).
+    const count = role === "groundskeeper" ? 1 : roleLimit(squad, role);
+    for (let i = 0; i < count; i++) {
       const rng = mulberry32(seedFrom(`staff-start:${key}:${role}:${i}`));
       const delta = (Math.floor(rng() * 3) - 1) * STAFF.START_SPREAD_STARS;
       const span = STAFF.CONTRACT.MAX_YEARS - STAFF.CONTRACT.MIN_YEARS + 1;

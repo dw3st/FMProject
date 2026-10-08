@@ -441,7 +441,7 @@
       "analyst": "Ganho de familiaridade de estilo {{mult}}",
       "scout": "Incerteza {{uncertainty}} · conhecimento ganho {{gain}}",
       "fieldScout": "Conduz uma missão de observação",
-      "groundskeeper": "Sem efeito por enquanto: o gramado chega numa próxima versão"
+      "groundskeeper": "Desgaste do gramado {{mult}}"
     },
     "errors": {
       "generic": "Não foi possível concluir.",

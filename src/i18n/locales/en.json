@@ -441,7 +441,7 @@
       "analyst": "Style familiarity gain {{mult}}",
       "scout": "Uncertainty {{uncertainty}} · knowledge gained {{gain}}",
       "fieldScout": "Leads one scouting mission",
-      "groundskeeper": "No effect yet: the pitch arrives in a later update"
+      "groundskeeper": "Pitch wear {{mult}}"
     },
     "errors": {
       "generic": "Could not complete the action.",
