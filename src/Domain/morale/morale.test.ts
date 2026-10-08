@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  afterAward,
   afterListedForSale,
   afterRenewal,
   answerTalk,
@@ -20,6 +21,7 @@ import {
   talkReasonOf,
   windowMatches,
   withMoraleExecution,
+  moraleOf,
   type ClubMatchSummary,
 } from "@/Domain/morale/morale";
 import { MORALE } from "@/Domain/morale/moraleConfig";
@@ -380,5 +382,19 @@ describe("personality (`personality.md`)", () => {
     const r = answerTalk({ squad: pro, playerId: "d3", answer: "demand", date: "2027-03-01", newId });
     if ("error" in r) throw new Error(r.error);
     expect(r.change).toBe(MORALE.DEMAND_GOOD);
+  });
+});
+
+describe("season awards (`awards.md`)", () => {
+  test("afterAward uses only the largest award (scaled by the temperament)", () => {
+    const sq = { players: [{ id: "a", morale: 65 }, { id: "b", morale: 65 }] } as never as Squad;
+    const both = moraleOf(afterAward(sq, "a", ["team_of_season", "best_player"]).players[0]!);
+    expect(both).toBe(moraleOf(afterAward(sq, "a", ["best_player"]).players[0]!));
+    expect(both).toBeGreaterThan(moraleOf(afterAward(sq, "a", ["team_of_season"]).players[0]!));
+    expect(both).toBeGreaterThan(65);
+    expect(afterAward(sq, "a", []).players[0]).toBe(sq.players[0]);
+    expect(afterAward(sq, "a", ["best_manager"])).toBe(sq);
+    expect(afterAward(sq, "zz", ["best_player"])).toBe(sq);
+    expect(afterAward(sq, "a", ["best_player"]).players[1]).toBe(sq.players[1]);
   });
 });

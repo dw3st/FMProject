@@ -226,5 +226,5 @@ export function trimSquadToCap(squad: Squad, cap = MAX_SQUAD): { squad: Squad; r
 export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
   // A sell-on clause or a loan ends with the contract (`.claude/rules/game/negotiation.md`).
   // Morale is the human club's only (`.claude/rules/game/morale.md`).
-  return { player: { ...stripPlayerMorale(player), squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined }, since: date };
+  return { player: { ...stripPlayerMorale(player), squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined, awardBoost: undefined }, since: date };
 }

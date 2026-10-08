@@ -6,6 +6,8 @@
  * neutral start (65), whose match effect is exactly zero.
  */
 import { MORALE } from "@/Domain/morale/moraleConfig";
+import { AWARDS } from "@/Domain/awards/awardsConfig";
+import type { AwardKind } from "@/types/awardTypes";
 import { clamp } from "@/Domain/math";
 import { addDays, daysBetween } from "@/Domain/dates";
 import { overallAvg } from "@/Domain/playerRating";
@@ -640,6 +642,16 @@ export function refusesRenewal(squad: Squad, player: RosterPlayer): boolean {
 }
 
 /** The manager put him on the sell list: −8 unless he asked for it (request or sale promise). */
+/**
+ * A season award (`.claude/rules/game/awards.md`): only the largest award of the rollover counts,
+ * scaled by the temperament like every event. No award with a morale value → same squad.
+ */
+export function afterAward(squad: Squad, playerId: string, kinds: AwardKind[]): Squad {
+  const delta = Math.max(0, ...kinds.map((k) => AWARDS.MORALE[k] ?? 0));
+  if (delta <= 0 || !squad.players.some((p) => p.id === playerId)) return squad;
+  return { ...squad, players: squad.players.map((p) => (p.id === playerId ? withEventDelta(p, delta) : p)) };
+}
+
 export function afterListedForSale(squad: Squad, playerId: string): Squad {
   const player = squad.players.find((p) => p.id === playerId);
   if (!player) return squad;
