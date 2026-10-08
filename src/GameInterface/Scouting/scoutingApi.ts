@@ -93,3 +93,30 @@ export async function scoutingCall(url: string, method: string, body?: unknown):
 export function playerHref(playerId: string, squadId: string, leagueSlug?: string): string {
   return `/player/${encodeURIComponent(leagueSlug || "any")}/${encodeURIComponent(squadId)}/${encodeURIComponent(playerId)}`;
 }
+
+/** One country of `GET /api/saves/:id/staff/:memberId/countries` (`src/backend/staffRoutes.ts`). */
+export interface ScoutCountryView {
+  country: string;
+  slug: string;
+  name: string;
+  flag: string;
+  iso2: string;
+  continent: string;
+  k: number;
+  band: "full" | "moderate" | "none";
+  native: boolean;
+  last?: string;
+}
+
+export interface ScoutCountriesData {
+  memberId: string;
+  name: string;
+  nationality: string;
+  countries: ScoutCountryView[];
+}
+
+export async function getScoutCountries(saveId: string, memberId: string): Promise<ScoutCountriesData> {
+  const r = await fetch(`/api/saves/${saveId}/staff/${encodeURIComponent(memberId)}/countries`);
+  if (!r.ok) throw new Error(String(r.status));
+  return (await r.json()) as ScoutCountriesData;
+}

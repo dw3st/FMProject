@@ -3173,5 +3173,27 @@
       "gem": "Gem found: {{name}} ({{club}})",
       "shortlist": "Shortlist: {{name}} ({{reason}})"
     }
+  },
+  "scoutCountries": {
+    "title": "Knowledge by country",
+    "scout": "Scout",
+    "hint": "Hover a country to see what he knows of it",
+    "legend": {
+      "full": "Full",
+      "moderate": "Moderate",
+      "none": "None"
+    },
+    "native": "Home country",
+    "lastMission": "Last mission: {{date}}",
+    "strongTitle": "Strongest in {{country}} ({{k}}/100)",
+    "onTarget": "{{scout}}'s knowledge of {{target}}",
+    "pace": "pace {{mult}}",
+    "band": {
+      "full": "full",
+      "moderate": "moderate",
+      "none": "none"
+    },
+    "vacant": "No chief scout",
+    "openMap": "Countries this scout knows"
   }
 }
