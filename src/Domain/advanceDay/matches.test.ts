@@ -548,3 +548,42 @@ describe("buildMatchEventFromRecording — the medic", () => {
     expect(back(5) < back(1)).toBe(true);
   });
 });
+
+describe("buildMatchEvent — goals (season awards)", () => {
+  test("event.goals: roster ids of the match, one per goal, sides match the score", () => {
+    const home = loadRealSquad("33.json");
+    const away = loadRealSquad("34.json");
+    const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
+    const fixture = { id: "fx1", date: "2027-02-05", competition: "premier_league", round: 1, home: home.id, away: away.id } as Fixture;
+    const { event } = buildMatchEvent(fixture, home, away, {
+      homeFormation: formation, homeLineup: autoLineupDefaultFormation(home), awayFormation: formation, awayLineup: autoLineupDefaultFormation(away),
+    });
+    expect(event.goals).toBeDefined();
+    const goals = event.goals!;
+    expect(goals.filter((g) => g.team === "home").length).toBe(event.score.home);
+    expect(goals.filter((g) => g.team === "away").length).toBe(event.score.away);
+    const homeIds = new Set(home.players.map((p) => p.id));
+    const awayIds = new Set(away.players.map((p) => p.id));
+    for (const g of goals) {
+      expect((g.team === "home" ? homeIds : awayIds).has(g.playerId)).toBe(true);
+      expect(g.minute).toBeGreaterThanOrEqual(1);
+      expect(g.distance).toBeGreaterThan(0);
+      if (g.setPiece === "penalty") expect(g.outsideBox).toBe(false);
+    }
+  }, 30_000);
+});
+
+describe("buildMatchEventFromRecording — goals of a live match", () => {
+  const fixture = { id: "fx1", date: "2027-02-05", competition: "premier_league", round: 1, home: "h", away: "a" } as Fixture;
+  const goal = { playerId: "h-p0", team: "home" as const, minute: 34, header: true, distance: 8, outsideBox: false };
+  test("a consistent list is kept", () => {
+    const { event } = buildMatchEventFromRecording(fixture, makeSquad("h", 1), makeSquad("a", 1),
+      baseRecording({ score: { home: 1, away: 0 }, goals: [goal] }));
+    expect(event.goals).toEqual([goal]);
+  });
+  test("a list that does not match the score is dropped", () => {
+    const { event } = buildMatchEventFromRecording(fixture, makeSquad("h", 1), makeSquad("a", 1),
+      baseRecording({ score: { home: 2, away: 0 }, goals: [goal] }));
+    expect(event.goals).toBeUndefined();
+  });
+});

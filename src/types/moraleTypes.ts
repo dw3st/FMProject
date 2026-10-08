@@ -31,6 +31,8 @@ export interface PlayerMoraleLog {
   transferRequest?: string;
   /** No new talk request from him before this date. */
   quietUntil?: string;
+  /** Season award events already applied (`league:<slug>:<season>`, `world:<year>`; newest last, bounded). */
+  awards?: string[];
 }
 
 /** A pending talk request (answered through `POST /api/saves/:id/talks/:playerId`). */

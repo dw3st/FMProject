@@ -5,7 +5,7 @@
  */
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { roundFeeDown, roundFeeUp } from "@/Domain/negotiation/negotiation";
-import { Player } from "@/Domain/Player";
+import { playerValueModel } from "@/Domain/awards/awardValue";
 import { playerOverallRating } from "@/Domain/transfer/transferNeeds";
 import type { RosterPlayer } from "@/types/playerTypes";
 
@@ -75,7 +75,7 @@ export function stepAskingPrice(price: number, dir: 1 | -1, floor = MIN_PRICE): 
 
 /** Market value of a player, EUR — the reference of the asking price (same as the AI's fair price). */
 export function playerMarketValue(player: RosterPlayer): number {
-  return new Player(playerOverallRating(player), player.age).price;
+  return playerValueModel(player, playerOverallRating(player)).price;
 }
 
 /** How the asking price compares with the value, for the hint under the field. */

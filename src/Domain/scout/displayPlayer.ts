@@ -3,6 +3,7 @@ import type { PersonalityView } from "@/types/personalityTypes";
 import { positionAptitudes, preferredRole, type Aptitude, type DetailedRole } from "@/Domain/positions/positionAptitude";
 import type { RosterPlayer, PlayerStatsRecord } from "@/types/playerTypes";
 import { Player, type StatusLevel } from "@/Domain/Player";
+import { awardValueMult, playerValueModel } from "@/Domain/awards/awardValue";
 import { isInjured } from "@/Domain/injury/injury";
 import { isSuspended } from "@/Domain/discipline/discipline";
 import { daysBetween } from "@/Domain/dates";
@@ -20,6 +21,8 @@ export interface DisplayPlayer {
   personality?: PersonalityView;
   /** Reborn academy star (own badge). */
   reborn?: boolean;
+  /** Has a season award on a history row (`.claude/rules/game/awards.md`): public, any knowledge. */
+  awarded?: boolean;
   /** On loan here (`.claude/rules/game/negotiation.md`): parent club name and return date. */
   loan?: { fromClubName: string; until: string };
   squadId?: string;
@@ -118,7 +121,7 @@ function scoutFields(player: RosterPlayer, avg: number, wageFactor: number): Par
   if (range) {
     out.avgRange = range;
     out.avg = rangeMid(range);
-    out.valueRange = seenValueRange(range, player.age);
+    out.valueRange = seenValueRange(range, player.age, awardValueMult(player));
     out.valueMillions = rangeMid(out.valueRange);
     out.value = out.valueMillions >= 100 ? `${Math.round(out.valueMillions)}M` : `${out.valueMillions.toFixed(1)}M`;
     out.wageRange = seenWageRange(range, wageFactor);
@@ -138,7 +141,7 @@ export function toDisplayPlayer(
   options?: { squadCountry?: string | null; wageFactor?: number; currentDate?: string },
 ): DisplayPlayer {
   const avg = Player.overallAvg(player);
-  const domain = new Player(avg, player.age);
+  const domain = playerValueModel(player, avg);
   const log = player.seasonLog;
   const nat =
     (player.nationality && String(player.nationality).trim()) ||
@@ -185,6 +188,7 @@ export function toDisplayPlayer(
     preferredFoot: player.preferredFoot,
     injury: injuryInfo,
     ...(player.reborn ? { reborn: true } : {}),
+    ...(player.history?.some((r) => r.awards?.length) ? { awarded: true } : {}),
     personality: personalityViewOf(player),
     ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
     ...scoutFields(player, avg, options?.wageFactor ?? 1),

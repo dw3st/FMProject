@@ -12,6 +12,7 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
+import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 import { mkdir, readdir, rm, unlink } from "fs/promises";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { runPool } from "@/backend/dal/pool";
@@ -45,6 +46,19 @@ function tacticsPath(saveId: string)    { return `${SAVES_DIR}/${saveId}/tactics
 function marketPath(saveId: string)      { return `${SAVES_DIR}/${saveId}/market.json`; }
 function inboxPath(saveId: string)       { return `${SAVES_DIR}/${saveId}/inbox.json`; }
 function ledgerPath(saveId: string, season: number) { return `${SAVES_DIR}/${saveId}/ledger/${season}.json`; }
+/** Awards files: validate before building a path (league slug and year come from the world / meta). */
+function awardYear(year: number): number {
+  if (!Number.isInteger(year) || year < 1900 || year > 2999) throw new Error(`invalid awards year: ${year}`);
+  return year;
+}
+function awardLeague(league: string): string {
+  if (!/^[a-z0-9_]+$/.test(league)) throw new Error(`invalid league slug: ${league}`);
+  return league;
+}
+function awardsPath(saveId: string, year: number) { return `${SAVES_DIR}/${saveId}/awards/${awardYear(year)}.json`; }
+function seasonGoalsPath(saveId: string, league: string, year: number) {
+  return `${SAVES_DIR}/${saveId}/seasonGoals/${awardLeague(league)}-${awardYear(year)}.json`;
+}
 function dayLogPath(saveId: string, date: string) {
   const [yyyy, mm] = date.split("-");
   return `${SAVES_DIR}/${saveId}/days/${yyyy}/${mm}/${date}.json`;
@@ -477,5 +491,56 @@ export class FileSystemDAL implements ISaveDAL {
   async writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}/ledger`, { recursive: true });
     await Bun.write(ledgerPath(saveId, season), JSON.stringify(entries, null, 2));
+  }
+
+  // ── Season awards ─────────────────────────────────────────────────────────────
+
+  async readAwardsYear(saveId: string, year: number): Promise<AwardsYear | null> {
+    const file = Bun.file(awardsPath(saveId, year));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<AwardsYear>;
+  }
+
+  async writeAwardsYear(saveId: string, data: AwardsYear): Promise<void> {
+    const path = awardsPath(saveId, data.year);
+    await mkdir(`${SAVES_DIR}/${saveId}/awards`, { recursive: true });
+    await Bun.write(path, JSON.stringify(data));
+  }
+
+  async listAwardYears(saveId: string): Promise<number[]> {
+    let names: string[];
+    try { names = await readdir(`${SAVES_DIR}/${saveId}/awards`); } catch { return []; }
+    return names
+      .map((n) => /^(\d{4})\.json$/.exec(n)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+      .sort((a, b) => a - b);
+  }
+
+  async readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null> {
+    const file = Bun.file(seasonGoalsPath(saveId, league, year));
+    if (!(await file.exists())) return null;
+    return file.json() as Promise<SeasonGoals>;
+  }
+
+  async writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void> {
+    const path = seasonGoalsPath(saveId, data.league, data.year);
+    await mkdir(`${SAVES_DIR}/${saveId}/seasonGoals`, { recursive: true });
+    await Bun.write(path, JSON.stringify(data));
+  }
+
+  async deleteSeasonGoals(saveId: string, league: string, year: number): Promise<void> {
+    try { await unlink(seasonGoalsPath(saveId, league, year)); } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    }
+  }
+
+  async listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]> {
+    let names: string[];
+    try { names = await readdir(`${SAVES_DIR}/${saveId}/seasonGoals`); } catch { return []; }
+    return names
+      .map((n) => /^([a-z0-9_]+)-(\d{4})\.json$/.exec(n))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => ({ league: m[1]!, year: Number(m[2]) }));
   }
 }

@@ -5,6 +5,7 @@ import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
 import type { BoardRefusal, FacilityKind, StandId } from "@/types/facilityTypes";
 import type { ScoutGrade, ScoutTarget, ShortlistReason } from "@/types/scoutingTypes";
+import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 
 export type InboxCategory =
   | "development"
@@ -24,7 +25,8 @@ export type InboxCategory =
   | "player"
   | "facilities"
   | "manager_news"
-  | "scouting";
+  | "scouting"
+  | "awards";
 
 interface InboxMessageBase {
   id:        string;
@@ -371,6 +373,19 @@ export interface ScoutingInboxMessage extends InboxMessageBase {
   expires?: string;
 }
 
+/** Season awards (`.claude/rules/game/awards.md`): the player's league, or the world ceremony. */
+export interface AwardsInboxMessage extends InboxMessageBase {
+  category: "awards";
+  kind: "league" | "world";
+  /** league: the league's awards. */
+  awards?: LeagueSeasonAwards;
+  leagueName?: string;
+  /** league: the player's club (highlighted). */
+  myClubId?: string;
+  /** world: the ceremony. */
+  world?: WorldAwards;
+}
+
 export type InboxMessage =
   | DevelopmentInboxMessage
   | TransferInInboxMessage
@@ -389,4 +404,5 @@ export type InboxMessage =
   | PlayerInboxMessage
   | FacilityInboxMessage
   | ManagerNewsInboxMessage
-  | ScoutingInboxMessage;
+  | ScoutingInboxMessage
+  | AwardsInboxMessage;

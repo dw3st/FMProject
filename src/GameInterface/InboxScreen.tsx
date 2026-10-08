@@ -20,6 +20,7 @@ import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import type { MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scoutingText";
+import { AwardsInboxBody, awardsTexts } from "@/GameInterface/Awards/AwardsInboxBody";
 import { InboxPrefsPanel } from "@/GameInterface/Inbox/InboxPrefsPanel";
 import { formatEuros } from "@/Domain/money";
 
@@ -36,6 +37,7 @@ const JobIcon = iconOf("file-signature");
 const TagIcon = iconOf("tag");
 const TalkIcon = iconOf("talk");
 const ScoutIcon = iconOf("binoculars");
+const AwardIcon = iconOf("award");
 
 type FilterTab = "all" | "unread";
 type ThemeFilter = "all" | InboxTheme;
@@ -176,6 +178,13 @@ const CATEGORY_META: Record<
     bg: "bg-chart-2/15",
     border: "border-chart-2/30",
     Icon: ScoutIcon,
+  },
+  awards: {
+    labelKey: "inbox.categories.awards",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: AwardIcon,
   },
 };
 
@@ -485,6 +494,7 @@ function leaguePrizeTexts(
     const x = scoutingTexts(message, t);
     return { subject: x.subject, preview: x.body };
   }
+  if (message.category === "awards") return awardsTexts(message, t);
   if (message.category === "contract" && message.kind === "director_summary") {
     return { subject: t("inbox.contract.directorSummarySubject"), preview: message.preview };
   }
@@ -626,6 +636,7 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
         {message.category === "player" && <PlayerTalkBody message={message} />}
         {message.category === "manager_news" && <ManagerNewsBody message={message} />}
         {message.category === "scouting" && <ScoutingInboxBody message={message} leagues={leagues} />}
+        {message.category === "awards" && <AwardsInboxBody message={message} />}
         {message.category === "board" && (
           <p className="text-sm text-foreground m-0">
             {boardText(

@@ -8,7 +8,8 @@ export interface GameEvents {
   /** Emitted whenever possession or pass state changes significantly. */
   stateChanged: GameState;
   /** Emitted the moment a goal is scored. */
-  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind };
+  /** `fromX/fromY` = shot point (the spot for a penalty), `goalX` = attacked goal line, `minute` = `matchMinute` (data only, awards). */
+  goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; fromX: number; fromY: number; goalX: number; minute: number };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
   shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean; fromX: number; fromY: number; toX: number; toY: number };
 

@@ -11,6 +11,7 @@ import type { TacticsSave } from "@/types/tacticsTypes";
 import type { MarketState } from "@/types/transferMarketTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
+import type { AwardsYear, SeasonGoals } from "@/types/awardTypes";
 
 export interface SquadFile {
   leagueSlug: string;
@@ -123,4 +124,16 @@ export interface ISaveDAL {
    * buffered) so a write re-run after a partial flush never duplicates entries.
    */
   writeLedger(saveId: string, season: number, entries: LedgerEntry[]): Promise<void>;
+
+  // ── Season awards (`.claude/rules/game/awards.md`) ───────────────────────────
+  /** `awards/{year}.json`: league seasons closed in `year` (+ the world awards for it). */
+  readAwardsYear(saveId: string, year: number): Promise<AwardsYear | null>;
+  writeAwardsYear(saveId: string, data: AwardsYear): Promise<void>;
+  /** Years with an awards file, ascending. */
+  listAwardYears(saveId: string): Promise<number[]>;
+  /** `seasonGoals/{league}-{year}.json`: goal-of-the-season candidates. */
+  readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null>;
+  writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void>;
+  deleteSeasonGoals(saveId: string, league: string, year: number): Promise<void>;
+  listSeasonGoalFiles(saveId: string): Promise<{ league: string; year: number }[]>;
 }

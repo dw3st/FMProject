@@ -396,3 +396,27 @@ side; a neutral venue (`fixture.neutral`) keeps the user on the left. With it:
 
 The Stats and Debug buttons of the match header (and `StatsPanel`, `DebugPanel`, engine debug mode)
 exist only outside production (#97).
+
+---
+
+# Live heat map and live tactics (Etapa 35, #108, 4.9)
+
+Spec: `docs/superpowers/specs/2026-10-08-live-tactics-design.md`.
+
+- **Possession heat map** (`src/Domain/match/possessionHeatmap.ts`, card `Components/PossessionHeatmap.tsx`,
+  below the "Resumo" numbers): where the ball was while each team had it (holder, or the passer while a pass
+  is in the air), 12 × 8 grid, "Meu time"/"Adversário" × "Últimos 10 min"/"Jogo todo". Sampled in the
+  `stateChanged` handler (the same one that accumulates possession, so it keeps counting with the tab
+  hidden), weighted by the game-seconds since the previous emission, live phases only; fixed arrays (whole
+  match + a ring of 10 one-minute buckets of played time — its own continuous clock, since the displayed
+  minute repeats after half-time stoppage). Stored with team A attacking +x (the half-time switch undone);
+  drawn mirrored on x when the user plays away, like the pitch, with an arrow for the shown team's attack.
+  The card re-reads once a second (never per tick); the accumulator lives in a ref and goes into the resume
+  snapshot (`ui.heatmap`). Drawing only: no `GameState` field, no engine read. `/test`: "Heatmap" button.
+- **Live tactics:** "Tática" tab of the substitution panel (`Components/LiveTacticsPanel.tsx`): tactical
+  style and the four axes for this match (`src/Domain/tactics/liveTactics.ts` → `applyTeamTacticsConfig` /
+  `applyTeamAttackConfig` on team A only, with the current mentality on top and the club's familiarity
+  record, whose value for the chosen style drives the weights). Never `PUT /tactics`; "Voltar à tática
+  salva" restores the saved one; the resume snapshot keeps the live and the saved tactics. The AI (team B)
+  never reacts. Limitation: the familiarity *execution* (attributes × 1 ± 0,02) is baked into the players at
+  kickoff, so a live style change moves the tactical weights, not those attributes.

@@ -33,3 +33,8 @@ melhores dessa faixa. Rota `GET /api/saves/:id/stars` -> `{ stars: Record<id, ki
 (`src/Domain/finance/ledgerText.ts`) devolve chave + partes; `FinancesScreen` monta o texto com
 `financesScreen.ledgerText.*`. `label` só serve de fallback. Estágios novos em `ref.stage`:
 `runner_up`, `participation`, `group_draw`, `group_win`.
+
+## Aba Prêmios (Etapa 32)
+
+`/stats?tab=awards`: seletores de ano e liga (`GET /api/saves/:id/awards`), mundiais do ano, prêmios individuais,
+seleção, técnico e gol da temporada da liga. Ver `.claude/rules/game/awards.md`.

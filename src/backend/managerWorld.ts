@@ -36,6 +36,8 @@ export function createManagerTracker(args: {
   pyramids: () => Promise<Pyramids>;
   /** Weights already computed this save (`meta.managerWeights`). */
   weights?: Record<string, CountryWeight>;
+  /** Day of the credits: stamped on each title (`ManagerTitle.on`, world manager of the year). */
+  date?: string;
 }) {
   const { service, saveId } = args;
   let managers: ManagerRecord[] | null = null;
@@ -93,7 +95,7 @@ export function createManagerTracker(args: {
 
     async credit(title: ManagerTitle): Promise<void> {
       const cur = await load();
-      const next = awardTitle(cur, title);
+      const next = awardTitle(cur, args.date && !title.on ? { ...title, on: args.date } : title);
       if (next !== cur) { managers = next; changed = true; }
       else if (!cur.some((m) => m.squadId === title.squadId)) {
         logError("managers", `save ${saveId}: no manager for club ${title.squadId}`, { title });
@@ -213,6 +215,8 @@ export function createAiManagerDesk(args: {
   return {
     vacancies: () => vacancies,
     vacanciesChanged: () => changed,
+    /** Board objective target of every club of a league (cached on the managers; season awards). */
+    targets: targetsOf,
     news: () => news,
     openVacancy,
     /** A vacancy that no longer applies (the human took the club). */

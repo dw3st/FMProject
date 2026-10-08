@@ -12,6 +12,7 @@ import {
 import { Player } from "@/Domain/Player";
 import { aiClubFinance, estimateWeeklyWage } from "@/Domain/aiFinance/aiClubFinance";
 import { wageFactorOf } from "@/Domain/finance/wages";
+import { AWARDS } from "@/Domain/awards/awardsConfig";
 
 function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" | "name">): RosterPlayer {
   return {
@@ -446,5 +447,20 @@ describe("processTeamTransferAttempt — AI transfer budget", () => {
     expect(processTeamTransferAttempt(broke, need, [makeSquad("sell", [target])], rng)).toBeNull();
     const funded = { ...makeSquad("buy", roster, { ...fin, budget: 0 }), aiTransferBudget: 50_000_000 };
     expect(processTeamTransferAttempt(funded, need, [makeSquad("sell", [target])], rng)).not.toBeNull();
+  });
+});
+
+describe("award winners (Etapa 32)", () => {
+  test("improvement target: award winner scores + IMPROVEMENT_BONUS; other intents unchanged", () => {
+    const p = basePlayer({ id: "p", name: "P", positions: ["CM"] });
+    const won = { ...p, awardBoost: { season: "2026-27", league: "x", mult: 1.15 } };
+    const need = (intentType: "cover_need" | "improvement" | "future_investment") => ({
+      position: "Midfielder" as const, targetMin: 5, targetMax: 9, urgency: 0.5, budgetTier: "high" as const, intentType,
+    });
+    const fee = 5_000_000;
+    const s = (pl: RosterPlayer, k: "cover_need" | "improvement" | "future_investment") => scoreCandidate(pl, need(k), fee, 30_000_000, () => 0.5, [], 5);
+    expect(s(won, "improvement")).toBeCloseTo(s(p, "improvement") + AWARDS.IMPROVEMENT_BONUS, 10);
+    expect(s(won, "cover_need")).toBe(s(p, "cover_need"));
+    expect(s(won, "future_investment")).toBe(s(p, "future_investment"));
   });
 });

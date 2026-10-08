@@ -125,9 +125,10 @@ describe("pool helpers and off-season dates", () => {
   });
   test("toFreeAgent clears injury, contract and club", async () => {
     const { toFreeAgent } = await import("@/Domain/contracts/freeAgents");
-    const hurt = { ...player("h", "CB", 5), injury: { severity: "light", returnDate: "2027-07-01" } } as RosterPlayer;
+    const hurt = { ...player("h", "CB", 5), injury: { severity: "light", returnDate: "2027-07-01" }, awardBoost: { season: "2026-27", league: "pl", mult: 1.1 } } as RosterPlayer;
     const fa = toFreeAgent(hurt, "2027-06-01");
     expect(fa.player.injury).toBeUndefined();
+    expect(fa.player.awardBoost).toBeUndefined(); // the season-award value bonus ends with the club
     expect(fa.player.contract).toBeUndefined();
     expect(fa.player.squadId).toBe("");
   });

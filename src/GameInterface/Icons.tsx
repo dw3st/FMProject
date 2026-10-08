@@ -58,6 +58,7 @@ import {
   User,
   Activity,
   ArrowRight,
+  ArrowLeft,
   UserPlus,
   CheckCheck,
   Award,
@@ -182,6 +183,7 @@ export type IconName =
   | "user"
   | "activity"
   | "arrow-right"
+  | "arrow-left"
   | "user-plus"
   | "check-check"
   | "award"
@@ -306,6 +308,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "user": User,
   "activity": Activity,
   "arrow-right": ArrowRight,
+  "arrow-left": ArrowLeft,
   "user-plus": UserPlus,
   "check-check": CheckCheck,
   "award": Award,

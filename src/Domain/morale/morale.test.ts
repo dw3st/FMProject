@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  afterAward,
   afterListedForSale,
   afterRenewal,
   answerTalk,
@@ -20,6 +21,7 @@ import {
   talkReasonOf,
   windowMatches,
   withMoraleExecution,
+  moraleOf,
   type ClubMatchSummary,
 } from "@/Domain/morale/morale";
 import { MORALE } from "@/Domain/morale/moraleConfig";
@@ -380,5 +382,35 @@ describe("personality (`personality.md`)", () => {
     const r = answerTalk({ squad: pro, playerId: "d3", answer: "demand", date: "2027-03-01", newId });
     if ("error" in r) throw new Error(r.error);
     expect(r.change).toBe(MORALE.DEMAND_GOOD);
+  });
+});
+
+describe("season awards (`awards.md`)", () => {
+  test("afterAward uses only the largest award (scaled by the temperament)", () => {
+    const sq = { players: [{ id: "a", morale: 65 }, { id: "b", morale: 65 }] } as never as Squad;
+    const both = moraleOf(afterAward(sq, "a", ["team_of_season", "best_player"]).players[0]!);
+    expect(both).toBe(moraleOf(afterAward(sq, "a", ["best_player"]).players[0]!));
+    expect(both).toBeGreaterThan(moraleOf(afterAward(sq, "a", ["team_of_season"]).players[0]!));
+    expect(both).toBeGreaterThan(65);
+    expect(afterAward(sq, "a", []).players[0]).toBe(sq.players[0]);
+    expect(afterAward(sq, "a", ["best_manager"])).toBe(sq);
+    expect(afterAward(sq, "zz", ["best_player"])).toBe(sq);
+    expect(afterAward(sq, "a", ["best_player"]).players[1]).toBe(sq.players[1]);
+  });
+
+  test("afterAward records the award event once (keyed), even at the top of the scale", () => {
+    const sq = { players: [{ id: "a", morale: 99.4 }] } as never as Squad;
+    const once = afterAward(sq, "a", ["best_player"], "league:premier_league:2026-27");
+    expect(moraleOf(once.players[0]!)).toBe(100);
+    expect(once.players[0]!.moraleLog?.awards).toEqual(["league:premier_league:2026-27"]);
+    // A retried day applies nothing twice.
+    expect(afterAward(once, "a", ["best_player"], "league:premier_league:2026-27")).toBe(once);
+    // Another award event is applied and kept, the list bounded.
+    const top = { players: [{ id: "a", morale: 50 }] } as never as Squad;
+    let s = top;
+    for (let i = 0; i < 6; i++) s = afterAward(s, "a", ["team_of_season"], `league:l${i}:2027`);
+    expect(s.players[0]!.moraleLog?.awards).toEqual(["league:l2:2027", "league:l3:2027", "league:l4:2027", "league:l5:2027"]);
+    // No morale award → nothing recorded.
+    expect(afterAward(sq, "a", ["best_manager"], "league:x:2027")).toBe(sq);
   });
 });
