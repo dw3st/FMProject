@@ -877,6 +877,23 @@
       "medium": "média",
       "severe": "grave"
     },
+    "heatmap": {
+      "title": "Mapa de posse",
+      "team": "Time",
+      "period": "Período",
+      "mine": "Meu time",
+      "opponent": "Adversário",
+      "recent": "Últimos 10 min",
+      "all": "Jogo todo",
+      "aria": "Onde a bola esteve com {{team}} ({{window}})",
+      "attack": "Direção do ataque",
+      "empty": "Ainda sem posse"
+    },
+    "liveTactics": {
+      "hint": "Mude o estilo e as instruções da equipe só nesta partida. A tática salva não muda.",
+      "mentalityNote": "A mentalidade (barra da partida) continua valendo por cima.",
+      "reset": "Voltar à tática salva"
+    },
     "summary": {
       "title": "Resumo",
       "possession": "Posse",
@@ -1987,7 +2004,8 @@
     "selectBench": "Toque em um jogador no banco →",
     "cancelSelection": "Cancelar seleção",
     "changeFormationHint": "Mude de formação durante a partida. Os jogadores mantêm suas posições e se adaptam à nova estrutura.",
-    "tabInstructions": "Instruções"
+    "tabInstructions": "Instruções",
+    "tabTactics": "Tática"
   },
   "scoreBar": {},
   "matchOverlay": {

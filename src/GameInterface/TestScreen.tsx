@@ -8,6 +8,8 @@ import { DebugPanel } from "@/GameInterface/DebugPanel";
 import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { EnergyPanel } from "@/GameInterface/EnergyPanel";
+import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
+import { createPossessionHeatmap, samplePossessionHeatmap, type PossessionHeatmap as HeatmapAcc } from "@/Domain/match/possessionHeatmap";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
 import type { CrowdMode } from "@/GameEngine/Infrastructure/CrowdGrid";
 import { Icon } from "@/GameInterface/Icons";
@@ -405,6 +407,9 @@ export function TestScreen() {
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
+  /** Optional possession heat map (Etapa 35): filled on every emitted state, reset with the match. */
+  const [heatmapOpen, setHeatmapOpen] = useState(false);
+  const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
   const [debugOverlays, setDebugOverlays] = useState<DebugOverlays>(() => {
     try {
@@ -571,6 +576,7 @@ export function TestScreen() {
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
     }
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old match back
+    heatmapRef.current = createPossessionHeatmap();
     setMatchState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -586,6 +592,7 @@ export function TestScreen() {
     const base = scenario.createState();
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
+    heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -606,6 +613,7 @@ export function TestScreen() {
     const base = scenario.createState();
     const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
+    heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
   }, [famA, famB, moraleA, moraleB, tempA, tempB]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -647,6 +655,7 @@ export function TestScreen() {
     uiThrottleRef.current = throttle;
     const off = gameBus.on('stateChanged', s => {
       liveStateRef.current = s;
+      if (heatmapRef.current) samplePossessionHeatmap(heatmapRef.current, s);
       setLiveBallHolder(s.ballHolderId);
       throttle.push(s, pausedRef.current);
     });
@@ -1468,7 +1477,18 @@ export function TestScreen() {
         >
           Energy
         </button>
+        <button
+          className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10"
+          onClick={() => setHeatmapOpen((o) => !o)}
+        >
+          Heatmap
+        </button>
       </div>
+      {heatmapOpen && (
+        <div className="mt-2 w-72 rounded border border-white/10 p-3">
+          <PossessionHeatmap heatmap={heatmapRef} mirror={false} />
+        </div>
+      )}
       {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">

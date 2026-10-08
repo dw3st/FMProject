@@ -86,6 +86,13 @@ import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/Bro
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
+import {
+  createPossessionHeatmap, exportPossessionHeatmap, importPossessionHeatmap, samplePossessionHeatmap,
+  type PossessionHeatmap as HeatmapAcc,
+} from "@/Domain/match/possessionHeatmap";
+import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
+import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
+import type { TacticalAxes } from "@/types/tacticsTypes";
 
 // Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
 // No max cap — the pitch fills the available host space (which is itself constrained by the column
@@ -178,6 +185,11 @@ export function MatchScreen() {
   const myTacticalStyleRef = useRef<TacticalStyle>(DEFAULT_TACTICAL_STYLE);
   const myAxesOverrideRef = useRef<TacticsSave["axesOverride"]>(undefined);
   const myFamiliarityRef = useRef<FamiliarityLevels | undefined>(undefined);
+  /** Live style and axes of team A (Etapa 35): this match only, never saved. `saved` = the club's tactics. */
+  const [liveTactics, setLiveTactics] = useState<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
+  const savedTacticsRef = useRef<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
+  /** Possession heat map, filled on every emitted state (drawing only). */
+  const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [showSubPanel, setShowSubPanel] = useState(false);
   const [goalFlash, setGoalFlash] = useState<{
     team: TeamId;
@@ -348,6 +360,8 @@ export function MatchScreen() {
         };
         myTacticalStyleRef.current = teamA.style;
         myAxesOverrideRef.current = teamA.axesOverride;
+        savedTacticsRef.current = teamA.saved ?? { style: teamA.style, axesOverride: teamA.axesOverride };
+        setLiveTactics({ style: teamA.style, axesOverride: teamA.axesOverride });
         myFamiliarityRef.current = teamA.familiarity;
         aiTacticsRef.current = teamB;
         mentalityRef.current = teamA.mentality;
@@ -410,6 +424,7 @@ export function MatchScreen() {
             A: snap.ui.possession.A, B: snap.ui.possession.B,
             lastTime: state.matchTime, lastPhase: state.matchPhase,
           };
+          heatmapRef.current = importPossessionHeatmap(snap.ui.heatmap, state);
           // Resume paused at the same minute; the overlay of a break in progress comes back too
           // (its gameBus event already fired before the reload).
           setPaused(true);
@@ -482,6 +497,7 @@ export function MatchScreen() {
       };
       gameStateRef.current = next;
       accumulatePossession(possessionRef.current, next);
+      if (heatmapRef.current) samplePossessionHeatmap(heatmapRef.current, next);
       for (const p of next.players) knownPlayersRef.current.set(p.id, p);
       throttle.push(next, pausedRef.current);
     });
@@ -716,6 +732,7 @@ export function MatchScreen() {
             mentality: mentalityRef.current,
             axesOverride: myAxesOverrideRef.current,
             familiarity: myFamiliarityRef.current,
+            saved: savedTacticsRef.current,
           },
           B: aiTacticsRef.current,
         },
@@ -723,6 +740,7 @@ export function MatchScreen() {
           gameSpeed: gameSpeedRef.current,
           eventFeed: eventFeedRef.current,
           possession: { A: possessionRef.current.A, B: possessionRef.current.B },
+          ...(heatmapRef.current ? { heatmap: exportPossessionHeatmap(heatmapRef.current) } : {}),
         },
       });
     };
@@ -749,8 +767,20 @@ export function MatchScreen() {
 
   function handleMentalityChange(next: Mentality) {
     setMentality(next);
-    applyTeamTacticsConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current, myFamiliarityRef.current);
-    applyTeamAttackConfig("A", myTacticalStyleRef.current, next, myAxesOverrideRef.current, myFamiliarityRef.current);
+    mentalityRef.current = next;
+    applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, next, myFamiliarityRef.current);
+  }
+
+  /** Live style / axes of team A (Etapa 35): the engine config only — never `PUT /tactics`. */
+  function setMyLiveTactics(next: LiveTactics) {
+    myTacticalStyleRef.current = next.style;
+    myAxesOverrideRef.current = next.axesOverride;
+    setLiveTactics(next);
+    applyLiveTactics("A", next, mentalityRef.current, myFamiliarityRef.current);
+  }
+
+  function handleLiveAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {
+    setMyLiveTactics(withLiveAxis({ style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, key, value));
   }
 
   function handleOpenSubPanel() {
@@ -1139,6 +1169,7 @@ export function MatchScreen() {
           statsB={summaryStats(sides.right)}
           possessionA={awayView ? 1 - possessionA : possessionA}
           feed={feed}
+          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} />}
         />
       </main>
 
@@ -1151,6 +1182,13 @@ export function MatchScreen() {
           onChangeFormation={handleChangeFormation}
           onInstruction={handleInstruction}
           onManMarks={handleManMarks}
+          liveTactics={{
+            live: liveTactics,
+            saved: savedTacticsRef.current,
+            onStyle: (style) => setMyLiveTactics(withLiveStyle(style)),
+            onAxis: handleLiveAxis,
+            onReset: () => setMyLiveTactics({ ...savedTacticsRef.current }),
+          }}
           onClose={handleCloseSubPanel}
         />
       )}
