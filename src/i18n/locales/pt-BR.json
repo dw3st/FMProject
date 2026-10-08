@@ -1093,7 +1093,8 @@
     "contract": {
       "expiring": "Contratos que terminam nesta temporada: {{players}}",
       "renewed": "{{players}} assinou novo contrato (até {{until}})",
-      "released": "Contrato encerrado, saiu como jogador livre: {{players}}"
+      "released": "Contrato encerrado, saiu como jogador livre: {{players}}",
+      "director_summary": "O diretor decidiu os contratos de: {{players}}"
     },
     "youth": {
       "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",

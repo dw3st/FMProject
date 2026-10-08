@@ -10,6 +10,7 @@ import { computeMinutesPlayed, substitutionsWithExits } from "@/Domain/advanceDa
 import { moraleDay, type ClubMatchSummary, type PlayerNews } from "@/Domain/morale/morale";
 import { teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import type { MatchEvent } from "@/types/dayLogTypes";
+import type { RosterPlayer } from "@/types/playerTypes";
 import type { MarketState, SellCandidate } from "@/types/transferMarketTypes";
 
 /** The human club's side of a played match: result (penalties decide a level knockout) and minutes. */
@@ -71,6 +72,8 @@ export async function applyMoraleDay(
     unavailable?: ReadonlySet<string>;
     /** The club's country rolled over today. */
     seasonRolled?: boolean;
+    /** The director handles contracts: his answer to a contract talk (`true` = he renews). */
+    directorContractTalk?: (p: RosterPlayer) => boolean;
   },
 ): Promise<PlayerNews[]> {
   const squad = await service.getSquadById(saveId, args.clubId);
@@ -94,6 +97,7 @@ export async function applyMoraleDay(
     sellList: market?.playerSellList ?? [],
     ...(args.unavailable ? { unavailable: args.unavailable } : {}),
     ...(args.seasonRolled ? { seasonRolled: true } : {}),
+    ...(args.directorContractTalk ? { directorContractTalk: args.directorContractTalk } : {}),
     newId: () => randomUUID(),
   });
   await service.saveSquadById(saveId, out.squad);

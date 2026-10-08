@@ -1093,7 +1093,8 @@
     "contract": {
       "expiring": "Contracts ending this season: {{players}}",
       "renewed": "{{players}} signed a new contract (until {{until}})",
-      "released": "Contract ended, left as a free agent: {{players}}"
+      "released": "Contract ended, left as a free agent: {{players}}",
+      "director_summary": "The director decided on the contracts of: {{players}}"
     },
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",

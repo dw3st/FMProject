@@ -46,6 +46,7 @@ import {
   compensationFee, contractUntil, MANAGER_CONTRACT, managerWeeklyWage, offerSeasons, type ManagerContract,
 } from "@/Domain/managers/managerContract";
 import { vacancyHireOn } from "@/Domain/managers/aiManagers";
+import { directorHandlesContracts } from "@/Domain/responsibilities/director";
 
 /**
  * Job offers and club changes of the human manager — save I/O (`.claude/rules/game/jobs.md`).
@@ -432,8 +433,9 @@ export async function acceptJobOffer(
   if (taken.board.objective) {
     await service.appendInbox(saveId, buildBoardMessage({ date, kind: "objective", objective: taken.board.objective, leagueName }));
   }
-  // Inside the contract-warning window the 90-day notice was missed: send it now.
-  if (taken.expiring.length > 0) {
+  // Inside the contract-warning window the 90-day notice was missed: send it now (only when the
+  // manager handles contracts; the director decides them himself).
+  if (taken.expiring.length > 0 && !directorHandlesContracts(meta.responsibilities)) {
     await service.appendInbox(saveId, buildContractMessage({ date, kind: "expiring", players: taken.expiring }));
   }
   const newState = activeLeagues.find((l) => l.leagueSlug === taken.leagueSlug);
@@ -465,6 +467,7 @@ export async function acceptJobOffer(
     jobsMidSeason: newState ? seasonLabel(newState.year, newState.start, newState.end) : meta.jobsMidSeason,
     unemployed: undefined,
     rotationOverride: undefined,
+    directorDecisions: undefined,
     matchMarking: undefined,
     style_focus: undefined,
   });

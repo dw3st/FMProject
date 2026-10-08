@@ -1,6 +1,10 @@
 import { roundAttr } from "@/Domain/attributes";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { applyMoraleDay } from "@/backend/moraleWorld";
+import { applyDirectorDay } from "@/backend/directorWorld";
+import type { PlayerNews } from "@/Domain/morale/morale";
+import type { RosterPlayer } from "@/types/playerTypes";
+import { directorHandlesContracts, type DirectorDecision, type DirectorOutcome } from "@/Domain/responsibilities/director";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "crypto";
 import { saveService, SaveService, type SaveMeta } from "@/backend/SaveService";
@@ -27,6 +31,7 @@ import {
   buildDevelopmentMessage,
   buildInjuryMessage,
   buildContractMessage,
+  buildDirectorSummaryMessage,
   buildRetirementMessage,
   buildTransferNegotiationMessage,
   buildPlayerMessage,
@@ -756,7 +761,8 @@ export async function advanceOneDay(
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
-    if (playerSquadId) {
+    // With the director in charge of contracts there is no 90-day warning (he decides them himself).
+    if (playerSquadId && !directorHandlesContracts(meta.responsibilities)) {
       const leagueEnd = activeLeagues.find((l) => l.leagueSlug === meta.leagueSlug)?.end;
       if (leagueEnd && currentDate === addDays(leagueEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE)) {
         const humanSquad = await saveService.getSquadById(saveId, playerSquadId);
@@ -2423,14 +2429,35 @@ export async function advanceOneDay(
     // ── Morale of the human club (`.claude/rules/game/morale.md`): today's matches, bids, Monday ──
     // After the market and the rollover (the squad as it ends the day); news deferred past `clearInbox`.
     // The start-kit pre-simulation (`marketFrozen`) is the world before the career: no morale yet.
-    const moraleNews = !ended && meta.clubId && !unemployed && !options.marketFrozen
-      ? await applyMoraleDay(saveService, saveId, {
+    // ── The director's Monday (contracts, `docs/superpowers/specs/2026-10-07-responsibilities-inbox-design.md`) ──
+    // Before morale: a renewed player no longer asks for a contract talk, and the director answers
+    // the others' talks with his decision. The summary is deferred past `clearInbox` like the rest.
+    const humanActive = !ended && !!meta.clubId && !unemployed && !options.marketFrozen;
+    const directorInCharge = humanActive && directorHandlesContracts(meta.responsibilities);
+    let directorDecided: Record<string, DirectorDecision> | undefined;
+    let directorOutcomes: DirectorOutcome[] = [];
+    const directorNews: PlayerNews[] = [];
+    if (directorInCharge && new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1) {
+      const homeSlug = index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug;
+      const d = await applyDirectorDay(saveService, saveId, {
+        clubId: meta.clubId, date: currentDate,
+        league: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug),
+        decided: meta.directorDecisions ?? {},
+      });
+      directorDecided = d.decided;
+      directorOutcomes = d.outcomes;
+      directorNews.push(...d.news);
+    }
+    const decidedNow = directorDecided ?? meta.directorDecisions ?? {};
+    const moraleNews = humanActive
+      ? [...directorNews, ...await applyMoraleDay(saveService, saveId, {
           clubId: meta.clubId, date: currentDate,
           events: dayEvents.filter((e): e is MatchEvent => e.kind === "match"),
           bids: moraleBids,
           unavailable: moraleUnavailable,
           seasonRolled: seasonEnded,
-        })
+          ...(directorInCharge ? { directorContractTalk: (p: RosterPlayer) => decidedNow[p.id]?.renew === true } : {}),
+        })]
       : [];
 
     // Transfers + inbox are cleared when the PLAYER's country rolls; the season news goes in after.
@@ -2447,6 +2474,9 @@ export async function advanceOneDay(
     // Injury/return news (queued above, same reason): always after any `clearInbox` this day.
     for (const msg of deferredInjuryMessages) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService);
     for (const msg of deferredContractMessages) await emitInboxMessage(saveId, buildContractMessage(msg), saveService);
+    if (directorOutcomes.length > 0) {
+      await emitInboxMessage(saveId, buildDirectorSummaryMessage({ date: currentDate, outcomes: directorOutcomes }), saveService);
+    }
     for (const msg of deferredYouthMessages) await emitInboxMessage(saveId, buildYouthMessage(msg), saveService);
     for (const msg of facilityMessages) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService);
     for (const msg of deferredRetirementMessages) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService);
@@ -2514,6 +2544,7 @@ export async function advanceOneDay(
     if (managerContractNotices !== meta.managerContractNotices) metaPatch.managerContractNotices = managerContractNotices;
     if (managerEarned > 0) metaPatch.managerEarnings = (meta.managerEarnings ?? 0) + managerEarned;
     if (aiDesk?.vacanciesChanged()) metaPatch.managerVacancies = aiDesk.vacancies();
+    if (directorDecided) metaPatch.directorDecisions = directorDecided;
     // Man-marking is chosen per match day (player instructions): the advance clears it.
     if (meta.matchMarking) metaPatch.matchMarking = undefined;
     if (ended) {

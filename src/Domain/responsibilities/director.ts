@@ -99,3 +99,19 @@ export function directorDecisions(args: {
   }
   return { squad, outcomes, decided: out, news };
 }
+
+/** Who handles the human club's contracts (`SaveMeta.responsibilities`); absent = the director. */
+export interface Responsibilities {
+  contracts: "director" | "manager";
+}
+
+export function directorHandlesContracts(r: Responsibilities | undefined): boolean {
+  return r?.contracts !== "manager";
+}
+
+export function isResponsibilities(v: unknown): v is Responsibilities {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  const keys = Object.keys(v);
+  const c = (v as { contracts?: unknown }).contracts;
+  return keys.length === 1 && keys[0] === "contracts" && (c === "director" || c === "manager");
+}

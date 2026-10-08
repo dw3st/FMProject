@@ -35,6 +35,7 @@ import { defaultSeasonEnd, withContracts } from "@/Domain/contracts/contracts";
 import { buildSquadIndex, type SquadIndex } from "@/backend/squadIndex";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { logError } from "@/Logger";
+import type { DirectorDecision, Responsibilities } from "@/Domain/responsibilities/director";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -118,6 +119,10 @@ export interface SaveMeta {
   managerVacancies?: Record<string, { since: string; hireOn: string }>;
   /** Inbox topics switched on/off by the player (`src/Domain/inbox/inboxTopics.ts`); absent = defaults. */
   inboxPrefs?: InboxPrefs;
+  /** Who handles the human club's contracts (renewals, contract talks); absent = the director. */
+  responsibilities?: Responsibilities;
+  /** The director's decisions of the current season, by player (`src/Domain/responsibilities/director.ts`). */
+  directorDecisions?: Record<string, DirectorDecision>;
 }
 
 // ── SaveService ──────────────────────────────────────────────────────────────
