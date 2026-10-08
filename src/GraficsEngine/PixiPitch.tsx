@@ -1,5 +1,5 @@
 import { shirtName } from "@/Domain/shirtName";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FATIGUE_BAR, HOLDER_GLOW, MARKER_SHADOW, PITCH_STRIPES, TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
@@ -318,7 +318,15 @@ interface Props {
    * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
    */
   mirror?: boolean;
+  /**
+   * Draw-time meter (/test): every PERF_SAMPLE_FRAMES frames gets `{ fps, drawMs }` (ticker FPS and
+   * the average time of the frame callback). Absent: no measuring at all.
+   */
+  perfRef?: MutableRefObject<PitchPerf | null>;
 }
+
+export interface PitchPerf { fps: number; drawMs: number }
+const PERF_SAMPLE_FRAMES = 30;
 
 const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE" };
 
@@ -344,6 +352,7 @@ export function PixiPitch({
   faceUrls,
   effectLabels,
   mirror = false,
+  perfRef,
 }: Props) {
   const hostRef                  = useRef<HTMLDivElement | null>(null);
   const appRef                   = useRef<Application | null>(null);
@@ -360,6 +369,7 @@ export function PixiPitch({
   const faceUrlsRef              = useRef(faceUrls);
   const effectLabelsRef          = useRef(effectLabels);
   const mirrorRef                = useRef(mirror);
+  const perfRefRef               = useRef(perfRef);
   const labelsOf = () => effectLabelsRef.current ?? DEFAULT_EFFECT_LABELS;
   /** Set by the Pixi setup: (re)applies `faceUrlsRef` to the markers already on the pitch. */
   const refreshFacesRef          = useRef<(() => void) | null>(null);
@@ -378,6 +388,7 @@ export function PixiPitch({
   useEffect(() => { crowdClickPosRef.current         = crowdClickPos;         }, [crowdClickPos]);
   useEffect(() => { effectLabelsRef.current = effectLabels; }, [effectLabels]);
   useEffect(() => { mirrorRef.current = mirror; }, [mirror]);
+  useEffect(() => { perfRefRef.current = perfRef; }, [perfRef]);
   useEffect(() => { faceUrlsRef.current = faceUrls; refreshFacesRef.current?.(); }, [faceUrls]);
 
   // Stop/start ticker on pause — unless keepTickerAlive is set (test screen needs live rendering)
@@ -929,7 +940,7 @@ export function PixiPitch({
       // every frame — including when `keepTickerAlive` keeps the ticker
       // running — but `pump(true)` returns 0, so it's a no-op that only
       // advances the shared pump's internal clock (no backlog on resume).
-      app.ticker.add(() => {
+      const drawFrame = () => {
         pumpSimulation();
 
         // Drawn positions: between the last two sim steps. Paused, carry does not move,
@@ -1557,6 +1568,22 @@ export function PixiPitch({
             crowdHeatmapGfx.circle(px, py, 3).fill({ color: 0xffffff, alpha: 0.95 });
             crowdHeatmapGfx.circle(px, py, 3).stroke({ width: 1, color: 0x000000, alpha: 0.6 });
           }
+        }
+      };
+      // Draw-time meter for /test (`perfRef`): average callback time over 30 frames + ticker FPS.
+      let perfFrames = 0;
+      let perfMsSum = 0;
+      app.ticker.add(() => {
+        const meter = perfRefRef.current;
+        if (!meter) { drawFrame(); return; }
+        const t0 = performance.now();
+        drawFrame();
+        perfMsSum += performance.now() - t0;
+        perfFrames += 1;
+        if (perfFrames >= PERF_SAMPLE_FRAMES) {
+          meter.current = { fps: app.ticker.FPS, drawMs: perfMsSum / perfFrames };
+          perfFrames = 0;
+          perfMsSum = 0;
         }
       });
 

@@ -3,7 +3,7 @@ import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatc
 import { MORALE } from '@/Domain/morale/moraleConfig';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
-import type { DebugOverlays } from "@/GraficsEngine/PixiPitch";
+import type { DebugOverlays, PitchPerf } from "@/GraficsEngine/PixiPitch";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
 import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
@@ -403,6 +403,13 @@ export function TestScreen() {
   const [resetKey, setResetKey]   = useState(0);
   const [paused, setPaused]       = useState(false);
   const [speed, setSpeed]         = useState(1);
+  /** Draw-time meter: filled by the pitch every 30 frames, read once a second. */
+  const pitchPerfRef = useRef<PitchPerf | null>(null);
+  const [pitchPerf, setPitchPerf] = useState<PitchPerf | null>(null);
+  useEffect(() => {
+    const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
+    return () => clearInterval(id);
+  }, []);
   const [debug, setDebug]         = useState(true);
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -1314,6 +1321,9 @@ export function TestScreen() {
             </button>
           ))}
         </div>
+        <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap" title="Pixi frame rate and average draw time per frame">
+          {pitchPerf ? `FPS ${Math.round(pitchPerf.fps)} · ${pitchPerf.drawMs.toFixed(1)} ms` : "FPS –"}
+        </span>
         <button onClick={() => setDebug(d => { setDebugMode(!d); return !d; })}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
             debug
@@ -1553,6 +1563,7 @@ export function TestScreen() {
               crowdClickPos={pitchClickPos}
               keepTickerAlive={true}
               captureRef={pitchCaptureRef}
+              perfRef={pitchPerfRef}
             />
           ) : (
             <div className="text-muted-foreground text-sm font-mono">
