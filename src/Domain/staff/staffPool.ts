@@ -86,12 +86,19 @@ export function returnToPool(pool: StaffPool, member: StaffMember, date: string)
   return { ...pool, members: [...pool.members.filter((m) => m.id !== member.id), back] };
 }
 
-export type StaffPoolSort = "stars" | "wage" | "age";
+export const STAFF_POOL_SORTS = ["name", "role", "age", "stars", "wage"] as const;
+export type StaffPoolSort = (typeof STAFF_POOL_SORTS)[number];
+export type StaffPoolSortDir = "asc" | "desc";
+export const isStaffPoolSort = (v: unknown): v is StaffPoolSort => (STAFF_POOL_SORTS as readonly unknown[]).includes(v);
+/** The direction a column opens in: best first for stars, A-Z / youngest / cheapest for the rest. */
+export const defaultPoolSortDir = (sort: StaffPoolSort): StaffPoolSortDir => (sort === "stars" ? "desc" : "asc");
 export interface StaffPoolQuery {
   role?: StaffRole;
   minStars?: number;
   maxWage?: number;
   sort?: StaffPoolSort;
+  /** Absent: `defaultPoolSortDir(sort)`. */
+  dir?: StaffPoolSortDir;
   offset?: number;
   limit?: number;
 }
@@ -114,10 +121,19 @@ export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: numbe
       && (q.minStars === undefined || m.stars >= q.minStars)
       && (q.maxWage === undefined || m.askingWage <= q.maxWage));
   const sort = q.sort ?? "stars";
-  items.sort((a, b) => {
-    const d = sort === "stars" ? b.stars - a.stars : sort === "wage" ? a.askingWage - b.askingWage : a.age - b.age;
-    return d || a.id.localeCompare(b.id);
-  });
+  const sign = (q.dir ?? defaultPoolSortDir(sort)) === "asc" ? 1 : -1;
+  const roleIndex = (r: StaffRole) => (STAFF_ROLES as readonly StaffRole[]).indexOf(r);
+  const key = (a: StaffPoolItem, b: StaffPoolItem): number => {
+    switch (sort) {
+      case "name": return a.name.localeCompare(b.name);
+      case "role": return roleIndex(a.role) - roleIndex(b.role);
+      case "age": return a.age - b.age;
+      case "stars": return a.stars - b.stars;
+      case "wage": return a.askingWage - b.askingWage;
+    }
+  };
+  // The id breaks ties the same way in both directions, so paging stays stable.
+  items.sort((a, b) => sign * key(a, b) || a.id.localeCompare(b.id));
   const offset = Math.max(0, q.offset ?? 0);
   const limit = Math.min(POOL_PAGE.MAX, Math.max(1, q.limit ?? POOL_PAGE.DEFAULT));
   return { total: items.length, items: items.slice(offset, offset + limit) };

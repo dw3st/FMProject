@@ -88,6 +88,11 @@ function effectivePressRange(player: GamePlayer, intent: TeamIntent = 'balanced'
 /** Last-computed defensive intent per player id — written each tick, read by computeDefensivePosition. */
 const _intentCache: Record<number, DefensiveIntent> = {};
 
+/** Forget every cached intent: a new match must not start with the last match's (player ids repeat). */
+export function resetDefensiveIntentCache(): void {
+  for (const id of Object.keys(_intentCache)) delete _intentCache[Number(id)];
+}
+
 /**
  * Ball-relative depth system:
  *

@@ -3,6 +3,7 @@ import { requireSaveOwner } from "@/backend/auth/middleware";
 import { getLeagueData } from "@/backend/advanceDay";
 import { rankManagers, rankingPage } from "@/Domain/managers/managers";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
+import { clubCountryResolver } from "@/backend/matchCrowd";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -36,13 +37,9 @@ export const managerRoutes = {
     const meta = await saveService.getMeta(saveId);
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     const index = await saveService.getSquadIndex(saveId);
-    const catalog = await getLeagueData();
-    const countryOf = new Map(catalog.map((l) => [l.slug, l.country] as const));
-    const countryOfClub = (squadId: string) => {
-      const slug = index.byId(squadId)?.leagueSlug;
-      return slug ? countryOf.get(slug) ?? null : null;
-    };
-    const myCountry = countryOf.get(index.byId(meta.clubId)?.leagueSlug ?? meta.leagueSlug) ?? null;
+    const countryOfClub = await clubCountryResolver(saveService, saveId);
+    const myCountry = countryOfClub(meta.clubId)
+      ?? (await getLeagueData()).find((l) => l.slug === meta.leagueSlug)?.country ?? null;
     // Retired managers (free for too long) leave the ranking tab (`.claude/rules/game/managers.md`).
     const page = rankingPage(
       rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired)),

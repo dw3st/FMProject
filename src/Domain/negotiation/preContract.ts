@@ -4,6 +4,7 @@ import { aiShouldRenew, contractDemand, evaluateContractOffer, renewalContract }
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { preferenceScore, starterChance } from "@/Domain/negotiation/rivals";
+import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 /**
@@ -21,7 +22,7 @@ export function preContractEligible(player: RosterPlayer, date: string): boolean
 
 export type PreContractAnswer =
   | { accepted: true; preference: { human: number; current: number } }
-  | { accepted: false; reason: "notEligible" | "lowWage" | "tooManyYears" | "invalidYears" | "prefersCurrent" | "smallerClub"; demand: number; preference?: { human: number; current: number } };
+  | { accepted: false; reason: "notEligible" | "lowWage" | "tooManyYears" | "invalidYears" | "prefersCurrent" | "smallerClub" | "poorFacilities"; demand: number; preference?: { human: number; current: number } };
 
 /**
  * The player's answer: the contract terms must be acceptable (`evaluateContractOffer` at the human
@@ -46,13 +47,16 @@ export function answerPreContract(args: {
   const demand = contractDemand(player, human, date, ctx);
   if (!preContractEligible(player, date)) return { accepted: false, reason: "notEligible", demand };
   const terms = evaluateContractOffer(args.offer, player, human, date, ctx);
-  if (!terms.accepted) return { accepted: false, reason: terms.reason as "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub", demand: terms.demand };
+  if (!terms.accepted) return { accepted: false, reason: terms.reason as "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub" | "poorFacilities", demand: terms.demand };
   const renewal = renewalContract(player, current, args.nextSeasonEnd, 1);
   const fin = aiClubFinance(current);
   const billWithout = squadWeeklyWages(current.players.filter((p) => p.id !== player.id), wageFactorOf(current));
   const aiRenews = aiShouldRenew(player, current, renewal.wage, billWithout, fin.maxWageBudget);
   const preference = {
-    human: preferenceScore({ wage: args.offer.wage, demand, prestige: args.humanPrestige, starter: starterChance(player, human) }),
+    human: preferenceScore({
+      wage: args.offer.wage, demand, prestige: args.humanPrestige, starter: starterChance(player, human),
+      facilitiesAppeal: facilitiesAppeal(human, player),
+    }),
     current: preferenceScore({ wage: renewal.wage, demand: contractDemand(player, current, date), prestige: args.currentPrestige, starter: starterChance(player, current) }),
   };
   if (aiRenews && preference.current >= preference.human) {

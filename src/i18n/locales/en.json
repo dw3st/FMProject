@@ -269,7 +269,7 @@
     "sackingLabel": "Can be sacked",
     "sackingYes": "Yes",
     "sackingNo": "No",
-    "sackingHint": "If the board loses confidence, the career ends.",
+    "sackingHint": "If the board loses confidence, you are sacked and wait for offers from other clubs.",
     "avatar": {
       "title": "Your face",
       "auto": "Random",
@@ -445,7 +445,7 @@
       "analyst": "Learning tactical styles {{value}}",
       "scout": "Report uncertainty {{uncertainty}} · Knowledge gained {{gain}}",
       "fieldScout": "Leads one scouting mission",
-      "groundskeeper": "No effect yet: the pitch arrives in a later update"
+      "groundskeeper": "Pitch wear {{value}}"
     },
     "errors": {
       "generic": "Could not complete the action.",
@@ -468,10 +468,6 @@
     "minStars": "Minimum stars",
     "any": "Any",
     "maxWage": "Max wage (€/wk)",
-    "sort": "Sort by",
-    "sortStars": "Stars",
-    "sortWage": "Wage",
-    "sortAge": "Age",
     "colName": "Name",
     "colRole": "Role",
     "colAge": "Age",
@@ -539,7 +535,8 @@
     "main": "Main navigation",
     "vsOpponent": "vs {{opponent}}",
     "changelog": "What's new",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "club": "Club"
   },
   "settings": {
     "language": "Language",
@@ -2022,7 +2019,8 @@
     "rotationApplied": "The assistant rested {{count}} players",
     "rotationUndo": "Undo",
     "suspendedReplaced": "{{out}} suspended, replaced by {{in}}",
-    "expectedCrowd": "Expected crowd"
+    "expectedCrowd": "Expected crowd",
+    "pitch": "Pitch"
   },
   "matchResult": {
     "matchdayRound": "Matchday {{round}} • {{competition}}",
@@ -2200,7 +2198,11 @@
       "managerCompensation": "Manager compensation",
       "scoutingTravel": "Scouting travel: {{competition}}",
       "scoutingTravelPlayer": "Scouting travel: {{player}}",
-      "prospectFee": "Training compensation: {{player}}"
+      "prospectFee": "Training compensation: {{player}}",
+      "facilityRepair": "Repair: {{item}}",
+      "facilityRebuild": "Rebuild: {{item}}",
+      "facilityUpgrade": "Upgrade: {{item}}",
+      "boardFundingItem": "Board funding: {{item}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -2423,7 +2425,8 @@
       "invalidYears": "Choose between 1 and 5 years.",
       "squadFull": "Your squad is full (36 players).",
       "unhappy": "He is furious and will not renew without a renewal promise.",
-      "smallerClub": "Too ambitious for a club this size: he refuses."
+      "smallerClub": "Too ambitious for a club this size: he refuses.",
+      "poorFacilities": "Too ambitious for a training ground in this state: he refuses."
     }
   },
   "career": {
@@ -2522,6 +2525,10 @@
     },
     "noClub": {
       "main": "No",
+      "accent": "Club"
+    },
+    "club": {
+      "main": "Your",
       "accent": "Club"
     }
   },
@@ -2683,12 +2690,14 @@
       "preference": {
         "wage": "He prefers {{club}}: the better wage offer",
         "prestige": "He prefers {{club}}: the bigger club",
-        "starter": "He prefers {{club}}: more chances to play"
+        "starter": "He prefers {{club}}: more chances to play",
+        "facilities": "He prefers {{club}}: better facilities"
       },
       "prefers": {
         "wage": "The club accepts, but he prefers {{club}}'s wage offer. Raise the wage to win him over.",
         "prestige": "The club accepts, but he prefers to join {{club}}, a bigger club.",
-        "starter": "The club accepts, but he expects to play more at {{club}}."
+        "starter": "The club accepts, but he expects to play more at {{club}}.",
+        "facilities": "The club accepts, but he prefers {{club}}: your training ground puts him off."
       },
       "lost": "Too late: he joined {{club}} for {{fee}}."
     },
@@ -2870,13 +2879,17 @@
       "busy": "Works already under way.",
       "maxLevel": "Already at the top level.",
       "noClub": "You have no club.",
-      "error": "Something went wrong."
+      "error": "Something went wrong.",
+      "invalidRequest": "That request is not possible for this item."
     },
     "kind": {
       "stand": "Stand expansion",
       "comfort": "Comfort",
       "training": "Training ground",
-      "academy": "Academy"
+      "academy": "Academy",
+      "repair": "Repair",
+      "rebuild": "Rebuild",
+      "upgrade": "Upgrade"
     },
     "comfort": {
       "about": "Seats, roofing, boxes: a higher ticket price.",
@@ -2909,14 +2922,18 @@
       "none": "No works under way.",
       "stand": "{{stand}} stand +{{seats}} seats",
       "level": "{{what}} level {{level}}",
-      "delivery": "ready {{date}}"
+      "delivery": "ready {{date}}",
+      "item": "{{what}}: {{item}}"
     },
     "inbox": {
       "subject": {
         "approved": "Works approved: {{what}}",
         "refused": "Works refused: {{what}}",
         "completed": "Works finished: {{what}}",
-        "attendance_record": "New attendance record"
+        "attendance_record": "New attendance record",
+        "worn": "Worn: {{what}}",
+        "condemned": "Closed: {{what}}",
+        "repaired": "Works finished: {{what}}"
       },
       "approved": "The board approved {{what}} ({{cost}}). Ready on {{date}}; paid in monthly instalments.",
       "approvedFunded": "The board approved {{what}} ({{cost}}) and pays {{pct}}% itself. Ready on {{date}}; paid in monthly instalments.",
@@ -2924,7 +2941,65 @@
       "completed": "{{what}} is finished.",
       "attendance_record": "{{attendance}} fans: a new home attendance record (the old one was {{previous}}).",
       "standWhat": "the {{stand}} stand (+{{seats}} seats)",
-      "levelWhat": "{{what}} level {{level}}"
+      "levelWhat": "{{what}} level {{level}}",
+      "worn": "{{what}} is down to {{condition}}% and starts to cost the club. Repair it in the Club screen.",
+      "condemned": "{{what}} is down to {{condition}}% and has been closed. Only a rebuild brings it back.",
+      "repaired": "{{what}} is back to {{condition}}%.",
+      "upgraded": "{{what}} is now level {{level}} of 10, at 100%."
+    },
+    "item": {
+      "stadiumPitch": "Stadium pitch",
+      "seats": "Stands and seats",
+      "stadiumStructure": "Structure and lighting",
+      "trainingPitches": "Training pitches",
+      "gym": "Gym",
+      "pool": "Pool",
+      "physio": "Physio room",
+      "canteen": "Canteen",
+      "academyPitches": "Academy pitches",
+      "academyLodging": "Academy lodging"
+    },
+    "attention": {
+      "worn": "{{item}} at {{pct}}%: it starts to cost the club",
+      "condemned": "{{item}} is closed: rebuild it"
+    },
+    "items": {
+      "title": "Facilities in detail",
+      "about": "Every item wears with time, games and training. Below 40% it costs the club; below 15% it closes until rebuilt.",
+      "group": {
+        "stadium": "Stadium",
+        "training": "Training ground",
+        "academy": "Academy"
+      },
+      "item": "Item",
+      "level": "Level",
+      "levelOf": "{{level}} of 10",
+      "condition": "Condition",
+      "actions": "Works",
+      "condemned": "Closed",
+      "repair": "Repair",
+      "rebuild": "Rebuild",
+      "upgrade": "Upgrade",
+      "to": "To {{pct}}%",
+      "full": "Already in perfect condition",
+      "onlyRebuild": "Closed: only a rebuild brings it back",
+      "rebuildBelow": "Only below 15% (or closed)",
+      "aboutRepair": "Restores part of the condition; the level stays.",
+      "aboutRebuild": "Rebuilt from scratch at the same level, back to 100%.",
+      "aboutUpgrade": "One level up (level {{level}} of 10), delivered at 100%.",
+      "paidByClub": "Paid by the club now (small repair).",
+      "confirmPay": "Pay and start"
+    },
+    "effect": {
+      "matchInjury": "Injuries in home games {{pct}}",
+      "demand": "Crowd demand {{pct}}",
+      "price": "Ticket price {{pct}}",
+      "trainingInjury": "Training injuries {{pct}}",
+      "trainingDev": "Training development {{pct}}",
+      "recovery": "Daily recovery {{pct}}",
+      "injuryDays": "Days out when injured {{pct}}",
+      "intakeQuality": "Intake level {{value}}",
+      "promise": "Wonderkid chance {{pct}}"
     }
   },
   "transferWindows": {
@@ -3145,7 +3220,8 @@
       "settled": "Settled: {{pct}}",
       "loyal": "Loyal to the club: {{pct}}",
       "compatriot": "Plays in his country: {{pct}}",
-      "smallerClub": "Wants a bigger club: {{pct}}"
+      "smallerClub": "Wants a bigger club: {{pct}}",
+      "facilities": "Poor facilities: {{pct}}"
     }
   },
   "scouting": {

@@ -15,6 +15,11 @@ interface Props<K extends string> {
   onChange: (key: K) => void;
   disabled?: boolean;
   className?: string;
+  /**
+   * Grid columns (e.g. `"grid-cols-2 sm:grid-cols-3"`): the chips line up in equal-width columns
+   * instead of wrapping as a row (long lists such as nationalities).
+   */
+  columns?: string;
   "aria-label"?: string;
 }
 
@@ -23,10 +28,11 @@ interface Props<K extends string> {
  * The standard chip group of the game (`.claude/rules/ui-standard.md` → Chip).
  */
 export function OptionChips<K extends string>({
-  options, value, onChange, disabled, className = "", "aria-label": ariaLabel,
+  options, value, onChange, disabled, className = "", columns, "aria-label": ariaLabel,
 }: Props<K>) {
+  const layout = columns ? `grid ${columns}` : "flex flex-wrap";
   return (
-    <div role="group" aria-label={ariaLabel} className={`flex flex-wrap gap-1.5 ${className}`}>
+    <div role="group" aria-label={ariaLabel} className={`${layout} gap-1.5 ${className}`}>
       {options.map((o) => (
         <Chip
           key={o.key}
@@ -34,6 +40,7 @@ export function OptionChips<K extends string>({
           title={o.title}
           disabled={disabled || o.disabled}
           onClick={() => onChange(o.key)}
+          className={columns ? "w-full h-full min-w-0" : ""}
         >
           {o.label}
         </Chip>

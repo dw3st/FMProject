@@ -590,8 +590,11 @@ function ManagerForm({
   onCancel: () => void;
   onSubmit: (m: ManagerData) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [draft, setDraft] = useState<ManagerData>(initial);
+  const nationalityName = (nat: Nationality) => t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name });
+  // Alphabetical by the name in the current language.
+  const nationalities = [...MANAGER_NATIONALITIES].sort((a, b) => nationalityName(a).localeCompare(nationalityName(b), i18n.language));
 
   useEffect(() => {
     setDraft(initial);
@@ -618,18 +621,18 @@ function ManagerForm({
           <Label className="mt-6 mb-2">{t("newGame.nationality")}</Label>
           <OptionChips
             aria-label={t("newGame.nationality")}
-            className="gap-2"
+            columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-2"
             value={draft.nationality?.id ?? null}
             onChange={(id) => {
               const nat = MANAGER_NATIONALITIES.find((n) => n.id === id);
               if (nat) setDraft({ ...draft, nationality: nat });
             }}
-            options={MANAGER_NATIONALITIES.map((nat) => ({
+            options={nationalities.map((nat) => ({
               key: nat.id,
               label: (
                 <>
                   <Flag code={nat.flag} />
-                  {t(`newGame.nationalities.${nat.id}`, { defaultValue: nat.name })}
+                  {nationalityName(nat)}
                 </>
               ),
             }))}

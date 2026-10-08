@@ -12,7 +12,7 @@ import {
   staffEffectsOf, starsIn, STAFF_AREAS_PER_COACH,
 } from "@/Domain/staff/staff";
 import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
-import { POOL_PAGE, returnToPool, searchPool, takeFromPool, type StaffPoolQuery, type StaffPoolSort } from "@/Domain/staff/staffPool";
+import { POOL_PAGE, returnToPool, searchPool, takeFromPool, isStaffPoolSort, type StaffPoolQuery } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import {
   COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffMember, type StaffRecord, type StaffRole,
@@ -162,8 +162,13 @@ function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
   }
   const sort = params.get("sort");
   if (sort) {
-    if (sort !== "stars" && sort !== "wage" && sort !== "age") return null;
-    q.sort = sort as StaffPoolSort;
+    if (!isStaffPoolSort(sort)) return null;
+    q.sort = sort;
+  }
+  const dir = params.get("dir");
+  if (dir) {
+    if (dir !== "asc" && dir !== "desc") return null;
+    q.dir = dir;
   }
   return q;
 }
@@ -184,7 +189,7 @@ export const staffRoutes = {
     return Response.json(staffView(h.squad, h));
   },
 
-  /** `GET ?role=&minStars=&maxWage=&sort=stars|wage|age&offset=&limit=` - the free pool, asking wage at the club's factor. */
+  /** `GET ?role=&minStars=&maxWage=&sort=name|role|age|stars|wage&dir=asc|desc&offset=&limit=` - the free pool, asking wage at the club's factor. */
   "/api/saves/:saveId/staff/pool": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSaveOwner(req, saveId);

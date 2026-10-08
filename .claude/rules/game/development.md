@@ -360,3 +360,14 @@ Goleiro (reflex 5, jump 5, pressing 5, passing 4, o resto 3), 3★:
 | Antes (5 categorias): Δ overall | 0,145 | 0,101 | 0,101 | 0 | −0,038 | −0,091 |
 
 Antes o goleiro não evoluía reflex nem jump (Δ 0 em toda idade) e o overall dele quase não andava (0,31× o da linha).
+
+---
+
+## Condição do CT na DP de partida (Etapa 34, instalações vivas)
+
+O clube do jogador com os itens de DP do CT (campos de treino, academia, refeitório) abaixo de 40% de condição também
+ganha menos DP de partida: × `effectAt(CT_MATCH_DEV_MIN 0,82, média da condição)` (× 0,91 a 20%), em
+`finalizeSquadsAfterMatch` junto do auxiliar, renascido, profissionalismo e moral (`trainingGroundEffectsOf().matchDevMult`).
+Só o crescimento; o declínio por idade não muda. IA e condição ≥ 40%: × 1. Medição (`bun scripts/development-pace.ts
+--ct 20 [--sessions 200]`): Δ da média dos 13 atributos −6,5% na média de 18/21/24 anos, linha e goleiro. Ver
+`.claude/rules/game/facilities.md` → M3.

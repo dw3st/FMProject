@@ -3,7 +3,7 @@
  * Used to check the 0.1-step development keeps the old pace, and the training areas of the coaching staff
  * (`.claude/rules/game/staff.md`, `development.md` → "Áreas de treino").
  *
- *   bun scripts/development-pace.ts [--areas <1..5|vaga>] [--module <PlayerDevelopment.ts copy>] [--roles <roles.json copy>]
+ *   bun scripts/development-pace.ts [--areas <1..5|vaga>] [--ct <condition 0..100>] [--module <PlayerDevelopment.ts copy>] [--roles <roles.json copy>]
  *
  * Cases:
  *  - "realista": like the game — progress reset to zero and age +1 at every rollover (seasonTransition);
@@ -12,6 +12,10 @@
  *    developYouthSeason, which divides GROWTH_DP_SCALE back out); cumulative change after each season.
  * Each season: 38 matches (every third rated 7.2, the rest 6.4), one normal training session per match.
  * `--areas` sets every training area to that many stars (3 = neutral, the default) or vacant.
+ * `--ct` puts every training-ground item (pitches, gym, canteen) at that condition: the training DP × their
+ * effects below 40% and the match DP × `CT_MATCH_DEV_MIN` (`trainingGroundEffectsOf`, living facilities M3);
+ * default 90 = no effect. `--sessions` = normal
+ * training sessions per season (default 38, one per match; the game has ~200 training days).
  * `--module` / `--roles` point at another copy of the development code / role weights (e.g. the version before
  * the training areas) to compare.
  * Columns: the mean of the 13 attributes ("média 13") and the overall (`Player.computeOverallAvg`).
@@ -25,6 +29,8 @@ import { DP_CATEGORIES } from "@/GameEngine/PlayerDevelopment";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { starCurve } from "@/Domain/staff/staff";
 import { Player } from "@/Domain/Player";
+import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { effectAt } from "@/Domain/facilities/facilityItems";
 import { emptyDevelopmentProgress, type PlayerStatsRecord, type RosterPlayer } from "@/types/playerTypes";
 
 type Dev = Pick<typeof CURRENT, "applyDevelopment" | "applyTrainingDevelopment"> & { GROWTH_DP_SCALE?: number };
@@ -42,6 +48,14 @@ const rolesData = (rolesArg ? JSON.parse(readFileSync(resolve(rolesArg), "utf8")
 const areasArg = argOf("--areas") ?? "3";
 const areaMult = areasArg === "vaga" ? STAFF.AREA_VACANT_MULT : starCurve(Number(areasArg), STAFF.AREA_MULT);
 const AREAS: AreaMults = Object.fromEntries(DP_CATEGORIES.map((c) => [c, areaMult]));
+const ctCondition = Number(argOf("--ct") ?? 90);
+/** Normal training sessions per season (default 38: one per match, the first version of the case). */
+const SESSIONS = Number(argOf("--sessions") ?? 38);
+const W = FACILITIES.WEAR;
+/** Training DP × the training ground items at `--ct` (same product as `trainingGroundEffectsOf`). */
+const CT_DP = effectAt(W.TRAINING_PITCH_DEV_MIN, ctCondition) * effectAt(W.GYM_DEV_MIN, ctCondition) * effectAt(W.CANTEEN_DEV_MIN, ctCondition);
+/** Match DP × the training ground at `--ct` (`matchDevMult`: the mean condition of the same three items). */
+const CT_MATCH_DP = effectAt(W.CT_MATCH_DEV_MIN, ctCondition);
 
 const PROFILES: { name: string; role: string; stats: PlayerStatsRecord }[] = [
   { name: "meia (tudo 5)", role: "CM", stats: { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5,
@@ -68,15 +82,17 @@ function run(role: string, stats: PlayerStatsRecord, age0: number, realistic: bo
   for (let season = 0; season < SEASONS; season++) {
     if (realistic) p = { ...p, age: age0 + season, progress: emptyDevelopmentProgress() };
     for (let m = 0; m < 38; m++) {
-      p = dev.applyDevelopment(p, m % 3 === 0 ? 7.2 : 6.4, weights, 1, 1, AREAS).updatedPlayer;
-      p = dev.applyTrainingDevelopment(p, "normal", weights, 1, AREAS).updatedPlayer;
+      p = dev.applyDevelopment(p, m % 3 === 0 ? 7.2 : 6.4, weights, CT_MATCH_DP, 1, AREAS).updatedPlayer;
+      // Sessions spread over the matches (SESSIONS / 38 per match, the remainder on the first ones).
+      const sessions = Math.floor(SESSIONS / 38) + (m < SESSIONS % 38 ? 1 : 0);
+      for (let k = 0; k < sessions; k++) p = dev.applyTrainingDevelopment(p, "normal", weights, CT_DP, AREAS).updatedPlayer;
     }
   }
   return [mean(p) - mean(start), overall(p) - overall(start), p.stats.reflex - start.stats.reflex, p.stats.jump - start.stats.jump];
 }
 
 const f = (v: number) => v.toFixed(3).padStart(7);
-console.log(`áreas: ${areasArg === "vaga" ? "vagas" : `${areasArg} estrelas`} (×${areaMult.toFixed(3)})${moduleArg ? ` · módulo ${moduleArg}` : ""}${rolesArg ? ` · pesos ${rolesArg}` : ""}`);
+console.log(`CT ${ctCondition}% (DP do treino ×${CT_DP.toFixed(3)}, de partida ×${CT_MATCH_DP.toFixed(3)}) · ${SESSIONS} treinos/temporada · áreas: ${areasArg === "vaga" ? "vagas" : `${areasArg} estrelas`} (×${areaMult.toFixed(3)})${moduleArg ? ` · módulo ${moduleArg}` : ""}${rolesArg ? ` · pesos ${rolesArg}` : ""}`);
 for (const realistic of [true, false]) {
   console.log(realistic ? "\nrealista (virada zera o progresso, idade +1)" : "\nsem virada (idade fixa)");
   console.log(["perfil".padEnd(22), ...AGES.map((a) => `${a}`.padStart(7))].join(""));

@@ -56,6 +56,8 @@ export interface LedgerEntry {
     facility?: string;
     /** Stand projects: which stand. */
     stand?: string;
+    /** Item projects (repair, rebuild, upgrade): which facility item. */
+    item?: string;
   };
 }
 

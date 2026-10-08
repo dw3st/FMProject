@@ -140,6 +140,9 @@ Painel virou cartão do próprio Painel (`DashboardScreen`):
 `SCREEN_MAX_WIDTH`, gutter da rolagem reservado), então o logo alinha com a borda esquerda dos cartões
 e o Continuar com a borda direita.
 
+- Abas (4.11, #120): Painel, Elenco, **Clube** (instalações, `/club`), Formação, Desenvolvimento, Finanças, Equipe
+  técnica, Ligas, Transferências, Olheiro, Estatísticas. Com a aba a mais, a regra de encolher para só ícone continua
+  valendo (`useCompactTabs`).
 - `TopNavigation` (56px, `h-14`; o `main` do `Layout` usa `pt-14`): `Wordmark sm` e ~28px até a
   primeira aba; abas no centro (ícone 16px + rótulo `font-display font-bold uppercase text-sm`,
   `gap-3.5`, ativa sublinhada com `border-b-2 border-primary`, `whitespace-nowrap`). Quando o
@@ -157,7 +160,7 @@ e o Continuar com a borda direita.
   Configurações. A data fica só no bloco do dia.
 
 **Largura das telas do jogo (#54): uma regra só.** Toda tela renderizada dentro do `Layout` (Painel,
-Elenco/Base, Jogador, Formação, Desenvolvimento, Finanças, Transferências, Olheiro, Equipe técnica,
+Elenco/Base, Jogador, Clube, Formação, Desenvolvimento, Finanças, Transferências, Olheiro, Equipe técnica,
 Ligas, Estatísticas, Caixa de entrada, Fim de temporada, "em breve") envolve o conteúdo em
 `<ScreenContainer>` (`src/GameInterface/ui/ScreenContainer.tsx`): `px-6 py-5`, largura total do
 espaço disponível até `max-w-[1440px]` (`SCREEN_MAX_WIDTH`), centralizada, blocos em coluna com

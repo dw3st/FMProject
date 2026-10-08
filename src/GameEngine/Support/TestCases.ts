@@ -8,6 +8,7 @@
  * Layer: GameEngine — no React, no Pixi, no DOM.
  */
 
+import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
 import type { GameState, GamePlayer, Formation, TeamId, PlayerRole } from '@/GameEngine/types';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import { getRuntimeLineup } from '@/GameEngine/Domain/RuntimeLineup';
@@ -442,6 +443,17 @@ export const TEST_SCENARIOS: TestScenario[] = [
         ...p, personality: { ambition: 10.5, loyalty: 10.5, professionalism: 10.5, temperament },
       }));
       return createMatchState(temper(teamRedPlayers, 20), f433, temper(teamBluePlayers, 1), f433);
+    },
+  },
+
+  {
+    id:          'bad-pitch',
+    name:        '11v11 — Bad pitch (10%)',
+    description: 'Both sides on a pitch at 10% condition: injury risk x1.45 for every player of both teams (x1.6 at 0%, x1 from 40% up; `docs/superpowers/specs/2026-10-08-living-facilities-design.md`). The Pitch selector multiplies on top of it. Open the Energy panel (`pitch xN`) and watch the injury log entries (`injuryMult`).',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const mult = pitchInjuryMult(10);
+      return createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433, undefined, undefined, { A: mult, B: mult });
     },
   },
 

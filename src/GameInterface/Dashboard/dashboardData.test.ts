@@ -107,6 +107,17 @@ describe("attentionItems", () => {
     expect(items[0]).toMatchObject({ kind: "lowFitnessGroup", count: 4 });
   });
 
+  test("facility items worn or condemned in the last week, once per item", () => {
+    const msg = (date: string, kind: "worn" | "condemned", item: string, condition: number) =>
+      ({ id: `${date}${kind}`, date, createdAt: date, read: false, category: "facilities", subject: "", preview: "", kind, item, condition }) as never;
+    const inbox = [msg(today, "condemned", "gym", 14), msg(today, "worn", "gym", 39), msg(today, "worn", "pool", 38), msg("2000-01-01", "worn", "canteen", 30)];
+    const items = attentionItems({ players: [player("x")], today, seasonEnd: null, inbox });
+    expect(items).toEqual([
+      { kind: "facilityWorn", item: "gym", condemned: true, condition: 14 },
+      { kind: "facilityWorn", item: "pool", condemned: false, condition: 38 },
+    ]);
+  });
+
   test("nothing to report", () => {
     expect(attentionItems({ players: [player("x")], today, seasonEnd: "2027-05-31", inbox: [] })).toEqual([]);
   });

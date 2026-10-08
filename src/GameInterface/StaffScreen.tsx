@@ -90,12 +90,14 @@ export function StaffScreen() {
       case "analyst": return t("staff.effects.analyst", { value: pct(e.familiarityMult) });
       case "scout": return t("staff.effects.scout", { uncertainty: pct(e.scoutUncertaintyMult), gain: pct(e.scoutGainMult) });
       case "fieldScout": return t("staff.effects.fieldScout");
-      case "groundskeeper": return t("staff.effects.groundskeeper");
+      case "groundskeeper": return t("staff.effects.groundskeeper", { value: pct(e.pitchWearMult) });
     }
   };
   const vacantEffect = (role: StaffRole): string | undefined =>
     role === "fitness" || role === "goalkeeping" ? t("staff.vacantArea", { pct: vacantSlowdown })
-      : role === "coach" || role === "fieldScout" || role === "groundskeeper" ? undefined
+      // Nobody keeps the pitches: they wear 1.6× faster (`pitchWearMult` already says so).
+      : role === "groundskeeper" ? t("staff.effects.groundskeeper", { value: pct(data.effects.pitchWearMult) })
+      : role === "coach" || role === "fieldScout" ? undefined
         : t("staff.vacantEffect");
 
   return (

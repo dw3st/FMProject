@@ -14,6 +14,7 @@ import { Player } from "@/Domain/Player";
 import { staffEffectsOf } from "@/Domain/staff/staff";
 import { daysBetween } from "@/Domain/dates";
 import { initialFacilities } from "@/Domain/facilities/facilities";
+import { wearFor } from "@/Domain/facilities/facilityItems";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { addTrainingLoad, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -403,7 +404,7 @@ describe("buildTrainingEvent — injuries", () => {
     expect(p1.seasonLog!.daysInjured).toBe(daysBetween("2027-03-10", p1.injury!.returnDate));
   });
 
-  test("light/normal training never rolls a new injury regardless of rng", () => {
+  test("light/normal training on a club without bad training pitches never injures", () => {
     for (const intensity of ["light", "normal"] as const) {
       const squad: Squad = {
         id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
@@ -414,6 +415,34 @@ describe("buildTrainingEvent — injuries", () => {
       );
       expect(newInjuries).toEqual([]);
     }
+  });
+
+  test("bad training pitches: a normal session can injure (≤ 0.5%), the physio lengthens the time out", () => {
+    const base: Squad = {
+      id: "s", name: "T", colors: ["#000", "#fff"], money: 0,
+      players: [basePlayer({ id: "p1", name: "One", seasonLog: makeSeasonLog({ fitness: 90 }) })],
+    };
+    const f = initialFacilities(base, 1);
+    const at = (conds: Partial<Record<"trainingPitches" | "physio", number>>): Squad => ({
+      ...base,
+      facilities: {
+        ...f,
+        items: {
+          ...f.items,
+          ...(conds.trainingPitches !== undefined ? { trainingPitches: { ...f.items.trainingPitches, wear: wearFor(conds.trainingPitches) } } : {}),
+          ...(conds.physio !== undefined ? { physio: { ...f.items.physio, wear: wearFor(conds.physio) } } : {}),
+        },
+      },
+    });
+    const normal = { minEnergyToTrain: 60, intensity: "normal" as const };
+    // Good pitches: no chance; pitches at 0%: HEAVY × 0.5 = 0.5% (rng 0.004 hits, 0.006 does not).
+    expect(buildTrainingEvent("s", at({}), normal, "2027-03-10", () => 0.004).newInjuries).toEqual([]);
+    expect(buildTrainingEvent("s", at({ trainingPitches: 0 }), normal, "2027-03-10", () => 0.004).newInjuries).toHaveLength(1);
+    expect(buildTrainingEvent("s", at({ trainingPitches: 0 }), normal, "2027-03-10", () => 0.006).newInjuries).toEqual([]);
+    // Same draws, physio at 0%: the injury lasts longer (× 1.25).
+    const heavy = { minEnergyToTrain: 60, intensity: "heavy" as const };
+    const days = (s: Squad) => daysBetween("2027-03-10", buildTrainingEvent("s", s, heavy, "2027-03-10", () => 0.5 * 0.01).newInjuries[0]!.returnDate);
+    expect(days(at({ physio: 0 }))).toBeGreaterThan(days(at({})));
   });
 
   test("healedPlayerIds reports players whose injury cleared today", () => {
@@ -488,7 +517,7 @@ describe("training ground (facilities)", () => {
       venue: { name: "A", city: "B", capacity: 10000 },
       players: [basePlayer({ id: "p1", name: "One" }), basePlayer({ id: "p2", name: "Two" })],
     };
-    const withGround = (level: number): Squad => ({ ...base, facilities: { ...initialFacilities(base, 1), training: level } });
+    const withGround = (level: number): Squad => ({ ...base, facilities: withGroupLevel(initialFacilities(base, 1), "training", level) });
     const policy = { minEnergyToTrain: 90, intensity: "normal" as const };
     const fitnessOf = (s: Squad) => buildTrainingEvent("s", tired(s), policy, "2027-02-05", () => 0.99)
       .updatedSquad.players.reduce((a, p) => a + (p.seasonLog?.fitness ?? 0), 0);
@@ -497,6 +526,7 @@ describe("training ground (facilities)", () => {
 });
 
 import { initialStaff, makeProfessional, signContract } from "@/Domain/staff/staff";
+import { withGroupLevel } from "@/Domain/facilities/facilityItems";
 import type { StaffRecord } from "@/Domain/staff/staffTypes";
 import { dpRequired } from "@/GameEngine/PlayerDevelopment";
 

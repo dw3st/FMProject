@@ -36,6 +36,12 @@ describe("describeLedgerEntry", () => {
     expect(describeLedgerEntry({ kind: "prize", ref: { competition: "lib", stage: "sf" } }))
       .toEqual({ key: "contStage", competition: "lib", stage: "sf", stageScope: "continental" });
   });
+  test("facility item projects name the item", () => {
+    expect(describeLedgerEntry({ kind: "facilities", ref: { facility: "repair", item: "stadiumPitch" } }))
+      .toEqual({ key: "facilityRepair", facility: "repair", item: "stadiumPitch" });
+    expect(describeLedgerEntry({ kind: "board_funding", ref: { facility: "upgrade", item: "gym" } })?.key).toBe("boardFundingItem");
+    expect(describeLedgerEntry({ kind: "facilities", ref: { facility: "training" } })?.key).toBe("facilityInstalment");
+  });
   test("board bonus", () => {
     expect(describeLedgerEntry({ kind: "prize", ref: { stage: "board_bonus" } })).toEqual({ key: "boardBonus" });
   });

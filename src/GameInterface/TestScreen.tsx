@@ -1,9 +1,12 @@
+import { pitchInjuryMult } from '@/Domain/facilities/facilityItems';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { MORALE } from '@/Domain/morale/moraleConfig';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PixiPitch, DEFAULT_DEBUG_OVERLAYS } from "@/GraficsEngine/PixiPitch";
-import type { DebugOverlays } from "@/GraficsEngine/PixiPitch";
+import type { DebugOverlays, PitchPerf, PitchStadium } from "@/GraficsEngine/PixiPitch";
+import { Chip } from "@/GameInterface/ui/Chip";
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { DebugPanel } from "@/GameInterface/DebugPanel";
 import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
@@ -97,6 +100,15 @@ const FAMILIARITY_TEST_OPTIONS = [0, 25, 50, 75, 100] as const;
 const MORALE_TEST_OPTIONS = [undefined, 0, 25, 50, 65, 80, 100] as const;
 /** Temperament of a whole side (`personality.md`; 10.5 = neutral); undefined = each player's own. */
 const TEMPERAMENT_TEST_OPTIONS = [undefined, 1, 5, 10, 15, 20] as const;
+/** Pitch condition of the whole match (`src/Domain/facilities/pitch.ts`; 90 = default, x1 from 40% up). */
+const PITCH_TEST_OPTIONS = [100, 90, 60, 40, 20, 0] as const;
+
+/** The state with every player's injury risk × the pitch factor (on top of what the build set). */
+function withPitch(state: GameState, pitch: number): GameState {
+  const m = pitchInjuryMult(pitch);
+  if (m === 1) return state;
+  return { ...state, players: state.players.map((p) => ({ ...p, injuryMult: (p.injuryMult ?? 1) * m })) };
+}
 
 const MENTALITY_LABEL: Record<Mentality, string> = {
   attacking: 'Attack',
@@ -344,6 +356,14 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
 
 type Mode = '11v11' | 'scenario';
 
+type CrowdFillKey = "0" | "25" | "50" | "default" | "75" | "100";
+const CROWD_FILLS: Record<CrowdFillKey, number> = { "0": 0, "25": 0.25, "50": 0.5, default: 0.65, "75": 0.75, "100": 1 };
+const CROWD_FILL_OPTIONS: { key: CrowdFillKey; label: string }[] = [
+  { key: "0", label: "0%" }, { key: "25", label: "25%" }, { key: "50", label: "50%" },
+  { key: "default", label: "Default" }, { key: "75", label: "75%" }, { key: "100", label: "100%" },
+];
+const TEST_COACHES = { A: { color: "#2d6cdf" }, B: { color: "#df3b2d" } } as const;
+
 export function TestScreen() {
   const [mode, setMode]           = useState<Mode>(() => {
     const v = urlStr('mode'); return VALID_MODES.has(v ?? '') ? (v as Mode) : '11v11';
@@ -380,6 +400,8 @@ export function TestScreen() {
   // Temperament of each whole side (`personality.md`): fouls and cards; undefined = each player's own.
   const [tempA, setTempA] = useState<number | undefined>(undefined);
   const [tempB, setTempB] = useState<number | undefined>(undefined);
+  // Pitch condition of the whole match (both sides): injury risk below 40%.
+  const [pitch, setPitch] = useState<number>(90);
   // Intent overrides — 'auto' lets the engine decide on possession transfer;
   // a fixed value force-pins the team's intent every tick so we can study its effect.
   // Player instructions per team (`player-instructions.md`): slot variants / pressing, man-marking.
@@ -404,6 +426,22 @@ export function TestScreen() {
   const [resetKey, setResetKey]   = useState(0);
   const [paused, setPaused]       = useState(false);
   const [speed, setSpeed]         = useState(1);
+  /** Draw-time meter: filled by the pitch every 30 frames, read once a second. */
+  const pitchPerfRef = useRef<PitchPerf | null>(null);
+  const [pitchPerf, setPitchPerf] = useState<PitchPerf | null>(null);
+  // Stadium / officials (spec 2026-10-08-match-visual §9): off by default so the tuning scenarios keep their scale.
+  const [stadiumOn, setStadiumOn] = useState(false);
+  const [officialsOn, setOfficialsOn] = useState(false);
+  const [crowdFill, setCrowdFill] = useState<CrowdFillKey>("default");
+  const [neutralVenue, setNeutralVenue] = useState(false);
+  const pitchStadium = useMemo<PitchStadium | null>(
+    () => (stadiumOn ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test" } : null),
+    [stadiumOn, crowdFill, neutralVenue],
+  );
+  useEffect(() => {
+    const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
+    return () => clearInterval(id);
+  }, []);
   const [debug, setDebug]         = useState(true);
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -573,7 +611,7 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    let state: GameState = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    let state: GameState = withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch);
     for (const team of ['A', 'B'] as const) {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
@@ -585,7 +623,7 @@ export function TestScreen() {
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -593,7 +631,7 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    const state = withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
@@ -614,12 +652,12 @@ export function TestScreen() {
     setTeamTemperamentOverride('A', tempA);
     setTeamTemperamentOverride('B', tempB);
     const base = scenario.createState();
-    const state = { ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) };
+    const state = withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
     setScenarioState(state);
     setPlayerList(state.players);
-  }, [famA, famB, moraleA, moraleB, tempA, tempB]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [famA, famB, moraleA, moraleB, tempA, tempB, pitch]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // When attr sliders change, patch live player stats immediately
@@ -1013,6 +1051,26 @@ export function TestScreen() {
             ))}
           </div>
 
+          {/* Pitch of the whole match (both sides): injury risk x1 from 40%, x1.6 at 0% */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Pitch ({pitch}% · injury x{pitchInjuryMult(pitch).toFixed(2)})</p>
+            <div className="flex gap-1 flex-wrap">
+              {PITCH_TEST_OPTIONS.map(v => (
+                <button
+                  key={v}
+                  onClick={() => setPitch(v)}
+                  className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors cursor-pointer ${
+                    pitch === v
+                      ? 'bg-primary/20 border-primary/40 text-primary'
+                      : 'bg-secondary/20 border-border/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {v}%
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Per-team tactics */}
           <div className="grid grid-cols-2 gap-4">
             {(
@@ -1323,6 +1381,17 @@ export function TestScreen() {
             </button>
           ))}
         </div>
+        <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap" title="Pixi frame rate and average draw time per frame">
+          {pitchPerf ? `FPS ${Math.round(pitchPerf.fps)} · ${pitchPerf.drawMs.toFixed(1)} ms` : "FPS –"}
+        </span>
+        <Chip selected={stadiumOn} onClick={() => setStadiumOn(v => !v)} title="Stadium band with the crowd">Stadium</Chip>
+        <Chip selected={officialsOn} onClick={() => setOfficialsOn(v => !v)} title="Referee, assistants and managers">Officials</Chip>
+        {stadiumOn && (
+          <>
+            <OptionChips options={CROWD_FILL_OPTIONS} value={crowdFill} onChange={setCrowdFill} />
+            <Chip selected={neutralVenue} onClick={() => setNeutralVenue(v => !v)}>Neutral</Chip>
+          </>
+        )}
         <button onClick={() => setDebug(d => { setDebugMode(!d); return !d; })}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
             debug
@@ -1498,7 +1567,7 @@ export function TestScreen() {
           <PossessionHeatmap heatmap={heatmapRef} mirror={false} />
         </div>
       )}
-      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} /></div>}
+      {quickSimOpen && <div className="mt-2"><QuickSimPanel familiarity={{ home: famA, away: famB }} morale={{ home: moraleA ?? MORALE.NEUTRAL, away: moraleB ?? MORALE.NEUTRAL }} temperament={{ home: tempA, away: tempB }} pitchCondition={pitch} /></div>}
       {statsOpen && (
         <div className="mt-2 rounded border border-white/10 overflow-hidden">
           <StatsPanel
@@ -1517,6 +1586,7 @@ export function TestScreen() {
             teamColorB="#df3b2d"
             staffA={staffOfTestSquad(SQUADS[squadA]!)}
             staffB={staffOfTestSquad(SQUADS[squadB]!)}
+            pitch={{ condition: pitch, injuryMult: pitchInjuryMult(pitch) }}
             styleA={{ familiarity: famA, execution: getTeamExecutionMult('A'), pressStamina: getDefenseConfig('A').PRESS_STAMINA_MULT }}
             styleB={{ familiarity: famB, execution: getTeamExecutionMult('B'), pressStamina: getDefenseConfig('B').PRESS_STAMINA_MULT }}
           />
@@ -1545,7 +1615,7 @@ export function TestScreen() {
         >
           {activeState && pitchSize ? (
             <PixiPitch
-              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}`}
+              key={`${pitchKey}-${pitchSize.w}x${pitchSize.h}-${stadiumOn ? "s" : ""}${officialsOn ? "o" : ""}`}
               canvasWidth={pitchSize.w}
               canvasHeight={pitchSize.h}
               paused={paused}
@@ -1562,6 +1632,10 @@ export function TestScreen() {
               crowdClickPos={pitchClickPos}
               keepTickerAlive={true}
               captureRef={pitchCaptureRef}
+              perfRef={pitchPerfRef}
+              stadium={pitchStadium}
+              officials={officialsOn}
+              coaches={TEST_COACHES}
             />
           ) : (
             <div className="text-muted-foreground text-sm font-mono">

@@ -1153,3 +1153,9 @@ novo sozinho (ele lê as mesmas notas), então não foi recalibrado.
 
 O quickSim não grava a lista de gols (`MatchEvent.goals` ausente, `compact`): as ligas no quickSim não têm gol da
 temporada. Os demais prêmios valem em todas as ligas. Ver `.claude/rules/game/awards.md`.
+
+## Gramado no quickSim (Etapa 34, 4.11)
+
+`QuickSimInput.pitchCondition` (o gramado do mandante, `matchPitchCondition`) multiplica o `staffMult` das lesões dos
+dois lados por `pitchInjuryMult` (×1 a partir de 40%, até ×1,6). Ausente/90 = o sorteio de antes, idêntico. Medição
+em `.claude/rules/game/facilities.md` → "Medições".

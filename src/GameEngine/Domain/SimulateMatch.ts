@@ -33,6 +33,21 @@ export type { Squad } from '@/types/playerTypes';
 import '@/GameEngine/Domain/Statistics';
 import '@/GameEngine/Domain/PlayerRating';
 import { staffEffectsOf } from '@/Domain/staff/staff';
+import { pitchInjuryMult } from '@/Domain/facilities/facilityItems';
+
+/**
+ * Injury multiplier of each side: the fitness coach (`options.injuryMult`, else each squad's staff)
+ * × the match pitch (`options.pitchCondition`, absent = 90 → × 1).
+ */
+export function matchInjuryMults(
+  squadA: Squad, squadB: Squad, options: Pick<SimulateMatchOptions, 'injuryMult' | 'pitchCondition'>,
+): { A: number; B: number } {
+  const pitch = pitchInjuryMult(options.pitchCondition ?? 90);
+  return {
+    A: (options.injuryMult?.A ?? staffEffectsOf(squadA).injuryMult) * pitch,
+    B: (options.injuryMult?.B ?? staffEffectsOf(squadB).injuryMult) * pitch,
+  };
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -73,6 +88,11 @@ export interface SimulateMatchOptions {
    * (`staffEffectsOf`: the human club's hired coach, the financial tier for AI clubs).
    */
   injuryMult?: { A?: number; B?: number };
+  /**
+   * Condition 0..100 of the match pitch (`src/Domain/facilities/pitch.ts`): below 40% it multiplies
+   * both sides' injury risk (× 1.6 at 0%). Absent = 90 (neutral).
+   */
+  pitchCondition?: number;
   /**
    * Style familiarity (0..100) per side, read ONLY when `tactics` is omitted (the caller applied its
    * own tactics, e.g. the lab): sets each team's execution multiplier (`FamiliarityConfig.ts`).
@@ -208,10 +228,7 @@ export function simulateMatch(
 
   // Build state — skip preMatch presentation so the loop starts in firstHalf
   let s: GameState = {
-    ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB, {
-      A: options.injuryMult?.A ?? staffEffectsOf(squadA).injuryMult,
-      B: options.injuryMult?.B ?? staffEffectsOf(squadB).injuryMult,
-    }),
+    ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB, matchInjuryMults(squadA, squadB, options)),
     matchPhase:            'firstHalf',
     presentationCountdown: 0,
     knockout:              options.knockout === true,

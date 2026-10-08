@@ -75,6 +75,9 @@ import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/d
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
+import { wearDay } from "@/Domain/facilities/facilityItems";
+import { matchPitchCondition } from "@/Domain/facilities/pitch";
+import { homeMatchImportance } from "@/backend/matchImportance";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeMatchSimulationLineups } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -110,7 +113,7 @@ import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, play
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
-import { impliedStars } from "@/Domain/staff/staff";
+import { impliedStars, staffEffectsOf } from "@/Domain/staff/staff";
 import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
@@ -406,7 +409,10 @@ export async function advanceOneDay(
     // The player's club home fixtures today, across every competition (league, cup, continental —
     // see computeAdvanceDayMoney / .claude/rules/game/finances.md). Filled while the main match
     // loop below processes each competition's rounds for the day.
-    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean; opponentId: string }> = [];
+    const playerHomeFixturesToday: Array<{ competition: string; kind: GateKind; neutral?: boolean; opponentId: string; importance?: number }> = [];
+    // Big-match demand (derby, knockout — spec 2026-10-08-match-visual §6): the league table is read
+    // once, before today's games are played (the same table the board sees).
+    let importanceStandings: StandingRow[] | null | undefined;
 
     const tactics = await saveService.getTactics(saveId);
 
@@ -537,7 +543,18 @@ export async function advanceOneDay(
           const userPlaysThis = fixture.home === playerSquadId || fixture.away === playerSquadId;
           if (fixture.home === playerSquadId) {
             const gateKind: GateKind = isContinentalSlug(leagueSlug) ? "continental" : isCupSlug(leagueSlug) ? "cup" : "league";
-            playerHomeFixturesToday.push({ competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true, opponentId: fixture.away });
+            if (importanceStandings === undefined) {
+              importanceStandings = meta.leagueSlug ? await saveService.getLeagueStandings(saveId, meta.leagueSlug) : null;
+            }
+            const importance = await homeMatchImportance(saveService, saveId, fixture, playerSquadId, {
+              leagueSlug: meta.leagueSlug ?? "",
+              standings: importanceStandings,
+              squadOf: async (id) => (id === homeSquad.id ? homeSquad : id === awaySquad.id ? awaySquad : saveService.getSquadById(saveId, id)),
+            });
+            playerHomeFixturesToday.push({
+              competition: leagueSlug, kind: gateKind, neutral: fixture.neutral === true, opponentId: fixture.away,
+              ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
+            });
           }
           const useRecording =
             playedMatchOverride !== null &&
@@ -595,9 +612,11 @@ export async function advanceOneDay(
               : isKnockoutComp(leagueSlug)
                 ? (playerLeagueClubs.has(fixture.home) || playerLeagueClubs.has(fixture.away) ? "full" : "fast")
                 : resolveSimMode(leagueSlug, meta);
+            // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
+            const pitchCondition = matchPitchCondition(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
             const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, sim)
-              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, sim);
+              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition })
+              : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition });
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
             const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
@@ -1520,10 +1539,29 @@ export async function advanceOneDay(
       // Facilities day: instalments / finished works, then today's home attendance.
       let facilityEntries: LedgerEntry[] = [];
       let attendanceToday: number[] | null = null;
-      if (playerSquad?.facilities) {
-        const day = advanceFacilities(playerSquad.facilities, currentDate);
+      if (playerSquad?.facilities?.items) {
+        // Today's wear (time, home games, training), then the 40% / 15% warnings.
+        const session = isRestDay || teamsPlayingToday.has(playerSquadId)
+          ? null
+          : resolveTrainingPolicy(meta, playerEntry.stem, playerSquadId).intensity;
+        const worn = wearDay(playerSquad.facilities.items, {
+          homeGames: playerHomeFixturesToday.filter((g) => !g.neutral).length,
+          session,
+          pitchWearMult: staffEffectsOf(playerSquad).pitchWearMult,
+        });
+        for (const c of worn.crossings) {
+          facilityMessages.push({ date: currentDate, kind: c.kind, item: c.item, condition: Math.round(c.condition) });
+        }
+        const day = advanceFacilities({ ...playerSquad.facilities, items: worn.items }, currentDate);
         facilityEntries = day.entries;
         for (const p of day.completed) {
+          if (p.item) {
+            facilityMessages.push({
+              date: currentDate, kind: "repaired", facility: p.kind, item: p.item, condition: p.kind === "repair" ? p.to ?? 100 : 100,
+              ...(p.kind === "upgrade" ? { level: day.facilities.items[p.item].level } : {}),
+            });
+            continue;
+          }
           facilityMessages.push({
             date: currentDate, kind: "completed", facility: p.kind,
             ...(p.stand ? { stand: p.stand, seats: p.seats } : {}), ...(p.level !== undefined ? { level: p.level } : {}),
@@ -1553,7 +1591,7 @@ export async function advanceOneDay(
       }
       if (playerSquad && (isWeeklyTick || playerHomeFixturesToday.length > 0 || facilityEntries.length > 0 || scouting.entries.length > 0)) {
         const catalogForFinance = await getLeagueData();
-        const priceMult = playerSquad.facilities ? comfortPriceMult(playerSquad.facilities.comfort) : 1;
+        const priceMult = playerSquad.facilities?.items ? comfortPriceMult(playerSquad.facilities) : 1;
         const homeFixturesToday: PlayerHomeFixtureToday[] = playerHomeFixturesToday.map((f, i) => ({
           competition: f.competition, kind: f.kind, ...(f.neutral ? { neutral: true } : {}),
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),

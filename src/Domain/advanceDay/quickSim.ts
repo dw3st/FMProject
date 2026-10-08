@@ -27,6 +27,7 @@ import { staffEffectsOf } from "@/Domain/staff/staff";
 import { familiarityFactor } from "@/Domain/familiarity/familiarity";
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
 import { moraleQuickSimMult } from "@/Domain/morale/morale";
+import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
 
 const ATTACKING_MID_SET = new Set<string>(ATTACKING_MID_ROLES);
 const DEFENSIVE_MID_SET = new Set<string>(DEFENSIVE_MID_ROLES);
@@ -90,6 +91,11 @@ export interface QuickSimInput {
    */
   homeTemperament?: number;
   awayTemperament?: number;
+  /**
+   * Condition 0..100 of the match pitch (`src/Domain/facilities/pitch.ts`): below 40% it
+   * multiplies both sides' injury risk (× 1.6 at 0%). Absent = 90 (no change, no extra draw).
+   */
+  pitchCondition?: number;
 }
 
 export interface QuickSimResult {
@@ -816,9 +822,11 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
 
   // Same total-minutes convention as the extra-time energy drain above (120' once ET was played).
   const totalMinutes = decider?.extraTime ? 120 : 90;
+  // Match pitch (Etapa 34): × both sides' injury risk below 40%; 90 / absent = × 1, same draws.
+  const pitchMult = pitchInjuryMult(input.pitchCondition ?? 90);
   const injuries = [
-    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult),
-    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult),
+    ...rollSideInjuries(homeXI, "home", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.home).injuryMult * pitchMult),
+    ...rollSideInjuries(awayXI, "away", playerStats, tacklesFailed, totalMinutes, rng, staffEffectsOf(input.away).injuryMult * pitchMult),
   ].sort((a, b) => a.matchMinute - b.matchMinute);
 
   // Discipline last, so every earlier rng draw (goals, events, injuries) is unchanged by it.

@@ -9,7 +9,11 @@ import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationL
 import { respondToOffer, roundFeeDown, roundFeeUp } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { refusesSmallerClub, tierStepsDown } from "@/Domain/personality/personality";
+import { appealPreferencePenalty } from "@/Domain/facilities/facilities";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
+
+const penaltyOf = (p: PreferenceInput): number =>
+  p.facilitiesAppeal === undefined ? 0 : appealPreferencePenalty(p.facilitiesAppeal);
 import type { RivalBid, SquadMarketProfile } from "@/types/transferMarketTypes";
 
 /**
@@ -156,16 +160,22 @@ export interface PreferenceInput {
   prestige: number;
   /** `starterChance`. */
   starter: number;
+  /** `facilitiesAppeal` of the club (human club only; absent = no effect). */
+  facilitiesAppeal?: number;
 }
 
-/** How much the player wants to join a club: wage 45%, prestige 35%, chance of starting 20%. */
+/**
+ * How much the player wants to join a club: wage 45%, prestige 35%, chance of starting 20%, minus
+ * up to 0.10 for poor facilities (`appealPreferencePenalty`).
+ */
 export function preferenceScore(i: PreferenceInput): number {
   const wage = i.demand > 0 ? Math.min(P.WAGE_CAP, i.wage / i.demand) : P.WAGE_CAP;
-  return P.WAGE * wage + P.PRESTIGE * i.prestige + P.STARTER * i.starter;
+  const facilities = i.facilitiesAppeal === undefined ? 0 : appealPreferencePenalty(i.facilitiesAppeal);
+  return P.WAGE * wage + P.PRESTIGE * i.prestige + P.STARTER * i.starter - facilities;
 }
 
 /** Which club wins the player: the higher preference, ties to the more prestigious club. */
-export function preferredClub<T extends { id: string; pref: PreferenceInput }>(options: T[]): { winner: T; reason: "wage" | "prestige" | "starter" } | null {
+export function preferredClub<T extends { id: string; pref: PreferenceInput }>(options: T[]): { winner: T; reason: "wage" | "prestige" | "starter" | "facilities" } | null {
   if (options.length === 0) return null;
   const sorted = [...options].sort((a, b) =>
     preferenceScore(b.pref) - preferenceScore(a.pref) || b.pref.prestige - a.pref.prestige);
@@ -176,7 +186,8 @@ export function preferredClub<T extends { id: string; pref: PreferenceInput }>(o
     wage: P.WAGE * (Math.min(P.WAGE_CAP, winner.pref.wage / Math.max(1, winner.pref.demand)) - Math.min(P.WAGE_CAP, runner.pref.wage / Math.max(1, runner.pref.demand))),
     prestige: P.PRESTIGE * (winner.pref.prestige - runner.pref.prestige),
     starter: P.STARTER * (winner.pref.starter - runner.pref.starter),
+    facilities: penaltyOf(runner.pref) - penaltyOf(winner.pref),
   };
-  const reason = (Object.entries(d).sort((a, b) => b[1] - a[1])[0]![0]) as "wage" | "prestige" | "starter";
+  const reason = (Object.entries(d).sort((a, b) => b[1] - a[1])[0]![0]) as "wage" | "prestige" | "starter" | "facilities";
   return { winner, reason };
 }

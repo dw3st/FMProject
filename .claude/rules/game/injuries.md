@@ -314,3 +314,18 @@ severity, rng, durationMult)` → `max(1, round(dias × mult))`, com o mesmo sor
 na partida (`matches.ts`) e no treino (`dailyTraining.ts`). A IA usa as estrelas implícitas do tier (LOW 2,5★ ×1,05,
 MEDIUM 3★ ×1, HIGH 3,4★ ×0,96, ELITE 3,8★ ×0,92; média do mundo ≈ ×1,005). O risco de lesão continua do preparador
 físico.
+
+## Gramado e fisioterapia (Etapa 34, 4.11)
+
+Ver `.claude/rules/game/facilities.md` → "Instalações vivas".
+
+- **Gramado do jogo:** toda partida (motor e quickSim) recebe a condição do gramado do mandante
+  (`matchPitchCondition`: humano = item `stadiumPitch`; IA = tier × fração da temporada; neutro 90). Abaixo de 40% o
+  risco de lesão dos **dois** times × `pitchInjuryMult` (até ×1,6 em 0%), multiplicado ao staff
+  (`matchInjuryMults` no motor; `staffMult` do `rollSideInjuries` no quickSim). 90 / ausente = ×1 (nada muda).
+- **Treino:** campos de treino do clube do jogador abaixo de 40% → lesão no treino pesado × até 1,6 e uma chance nova
+  no treino normal/leve (`HEAVY_TRAINING_CHANCE × 0,5 × penalty`, até 0,5% por sessão).
+- **Duração:** a fisioterapia do clube do jogador multiplica os dias fora de toda lesão nova junto com o médico
+  (`trainingGroundEffectsOf(squad).injuryDurationMult` = nível × condição: ×1,25 em 0%/interditada; nível
+  ×(1 − 0,03 × (nível − 2 × implícito)), 0,85..1,15; neutra na largada). A IA não muda.
+- Medido (M1/M2): ver a tabela de medições em `facilities.md`.

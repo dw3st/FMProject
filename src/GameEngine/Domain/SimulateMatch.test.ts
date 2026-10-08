@@ -140,3 +140,22 @@ describe("simulateMatch goal log (season awards)", () => {
     expect(goalsSeen).toBeGreaterThan(0);
   }, 120_000);
 });
+
+import { matchInjuryMults } from "@/GameEngine/Domain/SimulateMatch";
+import { staffEffectsOf } from "@/Domain/staff/staff";
+
+describe("simulateMatch: pitch condition (Etapa 34)", () => {
+  const sq = (id: string, income: number) =>
+    ({ id, name: id, colors: ["#000", "#fff"], money: 0, players: [], finances: { broadcasting: income, commercial: 0, total: income, budget: 0, followers: 0 } }) as unknown as Squad;
+  const a = sq("a", 1e6);
+  const b = sq("b", 300e6);
+  test("the pitch multiplies both sides' injury risk; a good pitch is neutral", () => {
+    expect(matchInjuryMults(a, b, {})).toEqual({ A: staffEffectsOf(a).injuryMult, B: staffEffectsOf(b).injuryMult });
+    expect(matchInjuryMults(a, b, { pitchCondition: 90 })).toEqual(matchInjuryMults(a, b, {}));
+    const bad = matchInjuryMults(a, b, { pitchCondition: 0 });
+    expect(bad.A).toBeCloseTo(staffEffectsOf(a).injuryMult * 1.6, 10);
+    expect(bad.B).toBeCloseTo(staffEffectsOf(b).injuryMult * 1.6, 10);
+    // An explicit staff multiplier is multiplied too.
+    expect(matchInjuryMults(a, b, { pitchCondition: 20, injuryMult: { A: 1 } }).A).toBeCloseTo(1.3, 10);
+  });
+});
