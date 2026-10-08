@@ -33,6 +33,14 @@ export interface StaffContract {
   decision?: "leave" | "warned";
 }
 
+/** What a scout knows of a country (`.claude/rules/game/scouting.md` → "Conhecimento por país"). */
+export interface CountryKnowledgeEntry {
+  /** 0..100, one decimal, value on `last`. */
+  k: number;
+  /** Last day a mission worked in this country (ISO). */
+  last: string;
+}
+
 export interface StaffMember {
   id: string;
   name: string;
