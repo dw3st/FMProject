@@ -992,13 +992,13 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Responsabilidades: o diretor cuida dos contratos e a caixa de entrada só traz o que importa", en: "Responsibilities: the director handles contracts and the inbox only brings what matters" },
-  { pt: "Instalações com desgaste: assentos, gramado e equipamentos pioram com o tempo e pedem reforma; jardineiro cuida do gramado, e gramado ruim aumenta as lesões", en: "Facilities wear out: seats, pitch and equipment get worse over time and need refurbishing; a groundskeeper looks after the pitch, and a bad pitch means more injuries" },
-  { pt: "Instalações em detalhe: academia, piscina, fisioterapia e refeitório, cada uma com seu nível e desgaste; jogadores avaliam as instalações antes de aceitar o seu clube", en: "Facilities in detail: gym, pool, physio and canteen, each with its own level and wear; players weigh your facilities before joining" },
-  { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
-  { pt: "Rostos para a equipe técnica e avatar do seu técnico, criado no novo jogo", en: "Faces for your staff and an avatar for your manager, created in the new game" },
-  { pt: "Comissão técnica completa: preparadores físico, de goleiros e geral, com estrelas e atributos", en: "Full coaching staff: fitness, goalkeeping and general coaches, with stars and attributes" },
+  { pt: "Comissão técnica completa: preparadores físico, de goleiros e geral, com estrelas e atributos; jardineiro; rostos da equipe e avatar do seu técnico", en: "Full coaching staff: fitness, goalkeeping and general coaches with stars and attributes; groundskeeper; staff faces and your manager avatar" },
+  { pt: "Prêmios de fim de temporada: melhor jogador, revelação, gol mais bonito, melhor técnico e seleção da temporada", en: "End-of-season awards: player of the year, young player, goal of the season, manager of the year and team of the season" },
   { pt: "Olheiros que conhecem melhor alguns países, com mapa mundial do conhecimento", en: "Scouts who know some countries better, with a world map of their knowledge" },
+  { pt: "Instalações vivas: desgaste, reformas, academia, piscina, fisioterapia e gramado, que pesam na contratação", en: "Living facilities: wear, refurbishments, gym, pool, physio and pitch, which weigh on signings" },
+  { pt: "Na partida: mapa de calor e táticas completas ao vivo", en: "In the match: heat map and full live tactics" },
+  { pt: "Torneios sub-21 e sub-19 para dar jogos aos jovens e reservas", en: "Under-21 and under-19 tournaments to give games to youngsters and reserves" },
   { pt: "Inscrição de jogadores por competição, com limite de estrangeiros e de formados no clube", en: "Player registration per competition, with foreign and homegrown limits" },
-  { pt: "Seleções nacionais: convocações, datas FIFA e a Copa do Mundo", en: "National teams: call-ups, international breaks and the World Cup" },
-  { pt: "Imprensa e notícias do mundo: coletivas que mexem com a moral e a diretoria", en: "Press and world news: press conferences that move morale and the board" },
+  { pt: "Partida com árbitros, técnicos à beira do campo e estádio com torcida", en: "Matches with referees, managers on the touchline and a stadium full of fans" },
+  { pt: "VAR e reclamação do técnico com o árbitro", en: "VAR and arguing with the referee" },
 ];
