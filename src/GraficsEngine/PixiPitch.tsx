@@ -1,3 +1,4 @@
+import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef } from "react";
 import { Application, CanvasSource, Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { faceRasterSize, loadFaceCanvas, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
@@ -734,7 +735,7 @@ export function PixiPitch({
         world.addChild(marker);
         playerGraphics.set(player.id, marker);
 
-        const label = new Text({ text: player.name, style: labelStyle });
+        const label = new Text({ text: shirtName(player.name), style: labelStyle });
         label.anchor.set(0.5, 1);
         label.x = px;
         label.y = py - (markerR + 3);
@@ -864,7 +865,7 @@ export function PixiPitch({
       const unsubCardFx = gameBus.on("card", (e) => {
         const p = playerPos(e.playerId);
         if (!p) return;
-        pushEffect({ kind: "card", x: p.x, y: p.y, card: e.card, name: e.playerName }, e.playerName);
+        pushEffect({ kind: "card", x: p.x, y: p.y, card: e.card, name: e.playerName }, shirtName(e.playerName));
       });
       const unsubOffsideFx = gameBus.on("offsideCalled", (e) => {
         const p = playerPos(e.receiverId);
@@ -1005,7 +1006,7 @@ export function PixiPitch({
             fatigueGfx.roundRect(barX, barY, barW * fill, FATIGUE_BAR.H, 2).fill(fatigueColor(player.energy));
           }
           if (label) {
-            if (label.text !== player.name) label.text = player.name;
+            { const shirt = shirtName(player.name); if (label.text !== shirt) label.text = shirt; }
             label.x = px;
             label.y = py - (markerR + 3);
           }
