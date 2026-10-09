@@ -25,6 +25,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "4.14.3",
+    date: "2026-10-09",
+    items: [
+      { pt: "Barra superior com ícones maiores e coloridos, mais fáceis de reconhecer", en: "Top bar with bigger, coloured icons that are easier to recognise" },
+      { pt: "A barra inferior mostra quantas pessoas estão jogando agora", en: "The bottom bar shows how many people are playing right now" },
+      { pt: "Na partida, um setor do estádio em obra aparece vazio e como canteiro de obras", en: "In the match, a stand under construction shows empty, as a building site" },
+      { pt: "Abrir o relato de problema durante a partida pausa o jogo", en: "Opening the problem report during a match pauses the game" },
+    ],
+    fixes: [
+      { pt: "As assistências no resultado da partida não parecem mais uma inicial antes do nome", en: "Assists on the match result no longer look like an initial before the name" },
+      { pt: "A posição de cada jogador na partida é a mesma do elenco", en: "Each player's position in the match is the same as in the squad" },
+      { pt: "As abas da barra superior voltam a mostrar os nomes ao sair da partida", en: "The top bar tabs show their names again after leaving a match" },
+    ],
+  },
+  {
     version: "4.14.2",
     date: "2026-10-09",
     items: [

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
-import { aptitudeFor, positionAptitudes, preferredRole, scaleStats } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, naturalFromAptitudes, positionAptitudes, preferredRole, scaleStats } from "@/Domain/positions/positionAptitude";
 
 const BASE: PlayerStatsRecord = {
   passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5,
@@ -104,5 +104,17 @@ describe("curated natural position (naturalPosition)", () => {
     expect(preferredRole(p)).toBe(p.naturalPosition);
     delete p.naturalPosition;
     expect(preferredRole(p)).toBe(before);
+  });
+});
+
+describe("naturalFromAptitudes (#135)", () => {
+  test("is the preferred role of the player, not the line code nor the slot", () => {
+    const winger = { ...mk(["Forward"], "left"), naturalPosition: "RW" } as RosterPlayer;
+    expect(naturalFromAptitudes(positionAptitudes(winger), "ST")).toBe(preferredRole(winger));
+    expect(naturalFromAptitudes(positionAptitudes(winger), "ST")).toBe("RW");
+  });
+  test("falls back when there is no aptitude record", () => {
+    expect(naturalFromAptitudes(undefined, "CM")).toBe("CM");
+    expect(naturalFromAptitudes({ ST: "apt" }, "CM")).toBe("CM");
   });
 });

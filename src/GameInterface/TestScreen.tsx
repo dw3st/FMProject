@@ -434,9 +434,12 @@ export function TestScreen() {
   const [officialsOn, setOfficialsOn] = useState(false);
   const [crowdFill, setCrowdFill] = useState<CrowdFillKey>("default");
   const [neutralVenue, setNeutralVenue] = useState(false);
+  const [standWorks, setStandWorks] = useState(false);
   const pitchStadium = useMemo<PitchStadium | null>(
-    () => (stadiumOn ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test" } : null),
-    [stadiumOn, crowdFill, neutralVenue],
+    () => (stadiumOn
+      ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}) }
+      : null),
+    [stadiumOn, crowdFill, neutralVenue, standWorks],
   );
   useEffect(() => {
     const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
@@ -1390,6 +1393,7 @@ export function TestScreen() {
           <>
             <OptionChips options={CROWD_FILL_OPTIONS} value={crowdFill} onChange={setCrowdFill} />
             <Chip selected={neutralVenue} onClick={() => setNeutralVenue(v => !v)}>Neutral</Chip>
+            <Chip selected={standWorks} onClick={() => setStandWorks(v => !v)} title="North stand under works (#137)">Works</Chip>
           </>
         )}
         <button onClick={() => setDebug(d => { setDebugMode(!d); return !d; })}

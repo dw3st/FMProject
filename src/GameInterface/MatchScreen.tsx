@@ -796,6 +796,13 @@ export function MatchScreen() {
     setMyLiveTactics(withLiveAxis({ style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, key, value));
   }
 
+  // #136: reporting a problem pauses the match so the text is not lost when the match ends. Closing
+  // the report never resumes on its own (the tester resumes with Play when ready).
+  function handleOpenReport() {
+    setPaused(true);
+    setReportOpen(true);
+  }
+
   function handleOpenSubPanel() {
     setPaused(true);
     setShowSubPanel(true);
@@ -876,7 +883,8 @@ export function MatchScreen() {
     const crowd = touchline?.crowd;
     const fill = crowd?.known && crowd.capacity > 0 ? crowd.attendance / crowd.capacity : STADIUM.DEFAULT_FILL;
     const homeTeam: TeamId = matchFixture.neutral || matchFixture.home === crestIds.a ? "A" : "B";
-    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id };
+    // A stand under works (only a home game of the human club) is drawn empty, as a building site.
+    return { fill, homeTeam, neutral: !!matchFixture.neutral, seed: matchFixture.id, ...(crowd?.works ? { works: crowd.works } : {}) };
   }, [matchFixture, crestIds, touchline]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
@@ -1082,7 +1090,7 @@ export function MatchScreen() {
             {isTester && (
               <button
                 type="button"
-                onClick={() => setReportOpen(true)}
+                onClick={handleOpenReport}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all font-semibold text-sm cursor-pointer bg-secondary/50 border-border hover:border-primary/50 text-foreground"
                 aria-label={t("nav.report")}
               >

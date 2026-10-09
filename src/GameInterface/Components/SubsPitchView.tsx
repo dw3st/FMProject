@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { shirtName } from "@/Domain/shirtName";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
 import type { GamePlayer, GameState, PendingSub } from "@/GameEngine/types";
-import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
+import { gamePlayerNaturalRole, getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { Icon } from "@/GameInterface/Icons";
 import { PitchMarkingsSvg } from "@/GameInterface/Components/PitchMarkingsSvg";
@@ -91,7 +91,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
     () =>
       bench
         .filter((p) => !queuedInIds.has(p.id))
-        .sort((a, b) => compareSquadPositions({ pos: a.role, name: a.name }, { pos: b.role, name: b.name })),
+        .sort((a, b) => compareSquadPositions({ pos: gamePlayerNaturalRole(a), name: a.name }, { pos: gamePlayerNaturalRole(b), name: b.name })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [bench, pendingQueue],
   );
@@ -189,6 +189,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
               const isSelected = selection?.kind === "starter" && selection.id === p.id;
               const over = drag?.over === `slot:${p.id}`;
               const r10 = displayRating10(p, ratings);
+              const natural = gamePlayerNaturalRole(p);
               return (
                 <button
                   key={p.id}
@@ -208,9 +209,17 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                   style={pos}
                 >
                   <span className="flex items-center gap-1">
-                    <span className={`font-display font-bold text-sm leading-none ${getDetailedPositionColor(p.role)}`}>
-                      {t(`roles.detailedAbbr.${p.role}`, { defaultValue: p.role })}
+                    <span className={`font-display font-bold text-sm leading-none ${getDetailedPositionColor(natural)}`}>
+                      {t(`roles.detailedAbbr.${natural}`, { defaultValue: natural })}
                     </span>
+                    {natural !== p.role && (
+                      <span
+                        className="font-display font-bold text-sm leading-none text-muted-foreground"
+                        title={t("substitutionPanel.playingAs", { role: t(`roles.detailedAbbr.${p.role}`, { defaultValue: p.role }) })}
+                      >
+                        →{t(`roles.detailedAbbr.${p.role}`, { defaultValue: p.role })}
+                      </span>
+                    )}
                     {yellowIds.has(p.id) && (
                       <span className="inline-block w-2.5 h-3.5 rounded-sm bg-card-yellow" title={t("substitutionPanel.booked")} aria-label={t("substitutionPanel.booked")} />
                     )}
@@ -258,8 +267,8 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                         : "border-border/60 hover:border-primary/40 hover:bg-secondary/40"
                     }`}
                   >
-                    <span className={`w-9 shrink-0 font-display font-bold text-sm ${getDetailedPositionColor(p.role)}`}>
-                      {t(`roles.detailedAbbr.${p.role}`, { defaultValue: p.role })}
+                    <span className={`w-9 shrink-0 font-display font-bold text-sm ${getDetailedPositionColor(gamePlayerNaturalRole(p))}`}>
+                      {t(`roles.detailedAbbr.${gamePlayerNaturalRole(p)}`, { defaultValue: gamePlayerNaturalRole(p) })}
                     </span>
                     <span className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">{shirtName(p.name)}</span>
                     <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>{r10.toFixed(1)}</span>

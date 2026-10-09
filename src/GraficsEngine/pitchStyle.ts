@@ -84,4 +84,6 @@ export const STADIUM = {
   AWAY_SHARE: 0.12, DEFAULT_FILL: 0.65,
   STAND_COLOR: 0x1f2a36, CONCRETE: 0x2c3946, ROOF_EDGE: 0x445566,
   GOAL_PULSE_S: 0.6,
+  /** A stand under works (#137): bare base, scaffolding lines and hazard tape along the pitch. */
+  WORKS_BASE: 0x3b3a33, WORKS_SCAFFOLD: 0x6b6a5e, WORKS_TAPE: 0xe0a526, WORKS_TAPE_DARK: 0x1b1b18,
 } as const;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
-import { crowdBaseColor, crowdSeats, standConcreteRows, standSeatGrid } from "@/GraficsEngine/crowd";
+import { crowdBaseColor, crowdSeats, standConcreteRows, standSeatGrid, standSideOf, worksSides } from "@/GraficsEngine/crowd";
 import { contrastRatio } from "@/GraficsEngine/playerFaces";
 import { STADIUM } from "@/GraficsEngine/pitchStyle";
 
@@ -69,5 +69,35 @@ describe("crowd", () => {
     const dark = 0x1a2430;
     expect(contrastRatio(crowdBaseColor(dark), STADIUM.STAND_COLOR)).toBeGreaterThan(contrastRatio(dark, STADIUM.STAND_COLOR));
     expect(crowdBaseColor(0xffd400)).toBe(0xffd400);
+  });
+});
+
+describe("stands under works (#137)", () => {
+  test("facility stands map onto the drawn sides; the mirror swaps the ends only", () => {
+    expect(standSideOf("north", false)).toBe("left");
+    expect(standSideOf("south", false)).toBe("right");
+    expect(standSideOf("west", false)).toBe("bottom");
+    expect(standSideOf("east", false)).toBe("top");
+    expect(standSideOf("north", true)).toBe("right");
+    expect(standSideOf("south", true)).toBe("left");
+    expect(standSideOf("west", true)).toBe("bottom");
+    expect(worksSides(["north", "west"], false)).toEqual(["left", "bottom"]);
+    expect(worksSides(undefined, false)).toEqual([]);
+  });
+
+  test("no fan sits in a stand under works; the rest still follows the fill", () => {
+    const works = ["left"] as const;
+    const open = standSeatGrid(stand).filter((s) => s.side !== "left").length;
+    for (const fill of [0.5, 1]) {
+      const seats = crowdSeats({ ...base, fill, works: [...works] });
+      expect(seats.some((s) => s.side === "left")).toBe(false);
+      expect(Math.abs(seats.length / open - fill)).toBeLessThanOrEqual(0.02);
+    }
+  });
+
+  test("away end under works: the away fans move to another stand", () => {
+    const seats = crowdSeats({ ...base, fill: 0.8, works: ["right"] });
+    expect(seats.some((s) => s.side === "right")).toBe(false);
+    expect(seats.filter((s) => s.team === "away").length).toBeGreaterThan(0);
   });
 });
