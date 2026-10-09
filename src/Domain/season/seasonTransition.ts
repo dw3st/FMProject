@@ -70,9 +70,16 @@ function resetSquadForNewSeason(squad: Squad, isPlayerClub: boolean): { squad: S
     progress: emptyDevelopmentProgress(),
   }));
 
+  // Academy (`squad.youth`): ages with the youth rollover, but its season counters (youth games,
+  // injuries) restart like the squad's; fitness and load carry on (it recovers every day).
+  const youth = squad.youth?.map((p) => ({
+    ...p,
+    seasonLog: { ...emptySeasonLog(), ...(p.seasonLog ? { fitness: p.seasonLog.fitness, load: p.seasonLog.load } : {}) },
+  }));
+
   // AI clubs get no TV money: their transfer budget comes from their tier (src/Domain/aiFinance).
   return {
-    squad: { ...squad, players },
+    squad: { ...squad, players, ...(youth ? { youth } : {}) },
     playerBroadcasting: isPlayerClub ? broadcasting : 0,
   };
 }
