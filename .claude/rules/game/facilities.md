@@ -149,6 +149,7 @@ a considerar o público e as parcelas do dia.
 ## Limitações
 
 - A ocupação por setor no desenho é ilustrativa (o público não é simulado por setor).
+- Na partida ao vivo (#137) o setor em obra no dia do jogo em casa aparece vazio e como canteiro de obras no estádio desenhado (`MatchCrowd.works`, `standsUnderWorksOn`); só desenho, o público já conta o setor pela metade.
 - A demanda não distingue adversário nem competição (só a fase da temporada); um clássico lota como um jogo comum.
 - O custo por lugar usa o peso do país do ranking de técnicos; sem cache na meta ele é calculado na primeira consulta
   (lê os elencos de nível 1 do país e das 5 grandes) e guardado em memória por processo, por país e temporada.

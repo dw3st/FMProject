@@ -30,6 +30,8 @@ import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/
 import { mirrorX } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics } from "@/GraficsEngine/pitchMetrics";
 import { drawStand, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
+import { worksSides } from "@/GraficsEngine/crowd";
+import type { StandId } from "@/types/facilityTypes";
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
 import { addAnim, animOffset, isLongShot, liveAnims, type PlayerAnim } from "@/GraficsEngine/playerAnims";
@@ -300,6 +302,8 @@ export interface PitchStadium {
   neutral: boolean;
   /** Fixture id (or "test"): the same game fills the same seats. */
   seed: string;
+  /** Club stands under works on the day (#137): drawn empty, as a building site. */
+  works?: StandId[];
 }
 
 export interface PitchPerf { fps: number; drawMs: number }
@@ -382,7 +386,7 @@ export function PixiPitch({
   useEffect(() => {
     stadiumRef.current = stadium;
     redrawCrowdRef.current?.();
-  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), mirror]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (coachCue) coachCueFnRef.current?.(coachCue.team, coachCue.kind);
   }, [coachCue?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -471,6 +475,7 @@ export function PixiPitch({
           homeSide: homeLeft ? "left" : "right",
           neutral: st.neutral,
           seed: st.seed,
+          works: worksSides(st.works, mirrorRef.current),
         });
         const texture = app.renderer.generateTexture({
           target: g,
