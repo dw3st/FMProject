@@ -579,6 +579,9 @@
     "upcomingSubtitle": "No que estamos trabalhando agora"
   },
   "status": {
+    "onlineShort": "{{count}} online",
+    "online_one": "{{count}} pessoa jogando agora",
+    "online_other": "{{count}} pessoas jogando agora",
     "budget": "Orçamento",
     "unread": "Não lidas",
     "players": "Jogadores"

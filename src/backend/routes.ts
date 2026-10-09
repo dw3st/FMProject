@@ -41,6 +41,7 @@ import { popularityOf } from "@/Domain/aiFinance/aiClubFinance";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { authRoutes } from "@/backend/auth/routes";
 import { reportRoutes } from "@/backend/reports";
+import { presenceRoutes } from "@/backend/presence";
 import { faceRoutes } from "@/backend/faces";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { requireAuth, requireSaveOwner } from "@/backend/auth/middleware";
@@ -82,6 +83,7 @@ async function loadClubProfileLeagueData(): Promise<ClubProfileLeagueEntry[]> {
 export const apiRoutes = {
   ...authRoutes,
   ...reportRoutes,
+  ...presenceRoutes,
   ...faceRoutes,
   ...staticAssetRoutes,
   ...saveRoutes,

@@ -159,7 +159,7 @@ e o Continuar com a borda direita.
   (mostra troféu + "Jogo", com o adversário no `title`/`aria-label`); botão só ícone (`w-9`, mesmo estilo) "Avançar até o próximo jogo", com
   `title`/`aria-label`, só quando o próximo jogo está a mais de 2 dias; Continuar (`h-9`, primário),
   sempre o último.
-- `StatusBar` (36px): orçamento, mensagens, jogadores à esquerda; à direita a versão (`v3.x`, abre as
+- `StatusBar` (36px): orçamento, mensagens, jogadores e "N online" (#134: `usePresence` pinga `POST /api/presence/ping` a cada 60 s com a página visível; o servidor, `src/backend/presence.ts`, conta em memória os usuários distintos com ping nos últimos 2,5 min e só devolve o número) à esquerda; à direita a versão (`v3.x`, abre as
   Novidades), a pílula "Novo: vX" ao lado dela (sempre numa linha, `whitespace-nowrap`) e
   Configurações. A data fica só no bloco do dia.
 
